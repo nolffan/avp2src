@@ -79,7 +79,7 @@ MP3 decoder) and the Sierra updater (`SierraUp.exe`, `SierraPt.dll`).
 | # | Package | Depends on | Status |
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), the 1.0.9.6 install in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
-| 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE-NOTES.md`, as nolfsrc's | 1 | |
+| 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | |
 | 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolfsrc's, with each binary's revision), `build/all.sh` assembling a game directory (with the loose files the game reads: `console.PCX`, `childmodel.map`), `build/variant.sh` (debug, modern) | 2 | |
 | 4 | `game`: `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `small`: `ltmsg.dll` and `AVP2Up.dll` (resource scripts from the retail resources; `tools/rsrcdiff.py`), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | |

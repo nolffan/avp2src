@@ -77,5 +77,6 @@ make progress   # score the build against them
 make help       # everything else
 ```
 
-The retail game's bugs, as they are found, are listed in `RETAIL_BUGS.md`;
-what the modern build changes is `MODERN.md`.
+The retail game's bugs, as they are found, are listed in
+[`docs/RETAIL_BUGS.md`](docs/RETAIL_BUGS.md); what the modern build changes
+is [`docs/MODERN.md`](docs/MODERN.md).
