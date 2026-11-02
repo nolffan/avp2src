@@ -1,0 +1,1808 @@
+# d3d.ren link aliases: /ALTERNATENAME:<unresolved>=<defined>, each with its shipped-address
+# evidence in a comment above it. Built into weak externals by
+# tools/mkaliasobj.py (VC6 LINK has no /ALTERNATENAME).
+# Address-proven aliases: each unresolved symbol and
+# its target read back as the same d3d.ren address (the comment above each).
+# 0x1000a0e0
+/ALTERNATENAME:?_AllocateTArray@Arr10009f10@@QAEPAUElem10009f10@@KPAVIAllocator@@@Z=?sub_1000a0e0@C1000a0e0@@QAEPAXKPAVSub1000a0e0Alloc@@@Z
+# 0x1001c790
+/ALTERNATENAME:?sub_1001c790@Arr1001c6e0@@QBEAAUT1001c6e0@@K@Z=?sub_1001c790@C1001c790@@QAEPAUElem1001c790@@K@Z
+# 0x1001c790
+/ALTERNATENAME:?sub_1001c790@Arr1001c720@@QBEAAUT1001c720@@K@Z=?sub_1001c790@C1001c790@@QAEPAUElem1001c790@@K@Z
+# 0x10050790
+/ALTERNATENAME:?sub_10050790@Arr10050730@@QBEAAUT10050730@@K@Z=?sub_10050790@C10050790@@QAEPAUS10050790Element@@K@Z
+# 0x1007ee40
+/ALTERNATENAME:?sub_1007ee40@Arr1005a@@QBEAAUT1005a@@K@Z=?sub_1007ee40@C1007ee40@@QAEPAUS1007ee40Element@@K@Z
+# 0x1007ee60
+/ALTERNATENAME:?sub_1007ee60@Arr100158d0@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1007ee60
+/ALTERNATENAME:?sub_1007ee60@Arr1001c@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x10023230  ltmatrix.h's MatVMul_H, out of line (w30_1000f020_osqipni.obj, near); big2b1b0/big40e10
+# call it as `sub_10023230` (the shipped calls at 0x1002b1d4, 0x1002b206, 0x10040eda, 0x10040f63)
+/ALTERNATENAME:_sub_10023230=?MatVMul_H@@YAMPAV?$_CVector@M@@PAVLTMatrix@@0@Z
+# 0x1000a680 / 0x1000a690  DefaultCache::SetCacheSize / GetCacheSize (dynarray.h, out of line in the
+# /Qip TUs: w64_10009f10_qip, d3dr5b, w7_100500a0_qip), which d3dbatcha.cpp spells CValue1000a680
+# and d3dbatchc.cpp C1000a690
+/ALTERNATENAME:?sub_1000a680@CValue1000a680@@QAEXK@Z=?SetCacheSize@DefaultCache@@QAEXK@Z
+/ALTERNATENAME:?sub_1000a690@CValue1000a680@@QAEKXZ=?GetCacheSize@DefaultCache@@QBEKXZ
+/ALTERNATENAME:?sub_1000a690@C1000a690@@QAEKXZ=?GetCacheSize@DefaultCache@@QBEKXZ
+# 0x10021a80
+/ALTERNATENAME:?GetNumAllocatedElements@Arr10021ad0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x10021a80
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1007c290@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1007ee60
+/ALTERNATENAME:?sub_1007ee60@Arr32@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1007ee60
+/ALTERNATENAME:?sub_1007ee60@ArrP@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1001dc30
+/ALTERNATENAME:?sub_1001dc30@Arr1001d@@QBEAAGK@Z=?sub_1001dc30@Sub1001dc30Array@@QAEPAGK@Z
+# 0x1007c870  operator[] of CMoArray<void*>: `call 0x1007c870` at 0x1007f6f8 (d3dr4b.cpp's 0x1007f670) and
+# 0x1007f62f (0x1007f5a0).  Was aimed at 0x1003b740, an unrelated cdecl function.
+/ALTERNATENAME:?sub_1007c870@ArrP@@QBEAAPAXK@Z=?sub_1007c870@Obj1007c870@@QAEXK@Z
+# 0x1002e6c0
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr10009f10@@QAEXPAVIAllocator@@K@Z=?sub_1002e6c0@Obj1002e6c0@@QAEXPAUIAllocator@@K@Z
+# 0x1003abe4
+/ALTERNATENAME:?sub_1003abe4@C1003abe4@@QAEXXZ=??0C1003abe4@@QAE@XZ
+# 0x1007a3b0
+/ALTERNATENAME:?sub_1007a3b0@C1007a0d0@@QAEXXZ=?sub_1007a3b0@C1007a3b0@@QAEXXZ
+# 0x1007dcc4
+/ALTERNATENAME:?sub_1007dcc4@C1007dc00@@QAEXXZ=?sub_1007dcc4@Obj1007dcc4@@QAEXXZ
+# 0x1000eec0
+/ALTERNATENAME:?sub_1000eec0@D3DVec3@@QAEXMMM@Z=?sub_1000eec0@Vec1004b6f0@@QAEXMMM@Z
+# 0x1000eec0
+/ALTERNATENAME:?sub_1000eec0@LTVec44ff4@@QAEXMMM@Z=?sub_1000eec0@Vec1004b6f0@@QAEXMMM@Z
+# 0x1000eec0
+/ALTERNATENAME:?sub_1000eec0@LTVec60010@@QAEXMMM@Z=?sub_1000eec0@Vec1004b6f0@@QAEXMMM@Z
+# 0x1000eec0
+/ALTERNATENAME:?sub_1000eec0@Vert60010@@QAEXMMM@Z=?sub_1000eec0@Vec1004b6f0@@QAEXMMM@Z
+# 0x1001e4d0
+/ALTERNATENAME:?sub_1001e4d0@Mat4D@@QAEXPAUVec3D@@00@Z=?sub_1001e4d0@Mat1001e480@@QAEXPAVVec1004b6f0@@00@Z
+# 0x1000a680
+/ALTERNATENAME:?sub_1000a680@Node1000a670@@QAEXK@Z=?SetCacheSize@DefaultCache@@QAEXK@Z
+# 0x1007b8d0
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUC1007b8d0Thing@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUCtx1007b8d0@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1008bf68
+/ALTERNATENAME:?g_pOffscreen@@3PAUDDSurface@@A=?g_1008bf68@@3KA
+# 0x1007b8d0
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUObj10091a10@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0
+/ALTERNATENAME:?sub_1007b8d0@@YAPAURoot1007b8d0@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1000a6a0
+/ALTERNATENAME:?sub_1000a6a0@@YAPAXPAX@Z=?sub_1000a6a0@@YAPAXPAUPool1000a6a0@@@Z
+# 0x1000a6e0
+/ALTERNATENAME:?dl_Remove_1000a6e0@@YAXPAUCheapLink@@@Z=?sub_1000a6e0@@YAXPAUDLink@@@Z
+# 0x1000a6e0 -- dl_Remove, called twice by ObjectBank<Node56ab4>::Free (calls at 0x10050d71, 0x10050d7c)
+/ALTERNATENAME:?dl_Remove@@YAXPAULink56ab4@@@Z=?sub_1000a6e0@@YAXPAUDLink@@@Z
+# 0x1003b760
+/ALTERNATENAME:?sub_1003b760@@YAXXZ=?sub_1003b760@@YAXPAX0@Z
+# 0x10050bf0
+/ALTERNATENAME:?sub_10050bf0@@YAXXZ=?sub_1003b760@@YAXPAX0@Z
+# 0x1005dae0
+/ALTERNATENAME:?sub_1005dae0@@YAXXZ=?sub_100688e0@@YAXKPAX@Z
+# 0x100646a0
+/ALTERNATENAME:?sub_100646a0@@YAXXZ=?sub_100688e0@@YAXKPAX@Z
+# d3dr4a.cpp's two GenCopyList instantiations and d3dr3c_os.cpp's 0x1003b7f0:
+# each callee address read off the shipped call sites (0x1005a1d0 calls
+# 0x1000a1f0; 0x1007ed00 calls 0x1007ef40, 0x1007ee60, 0x1005a3c0 and
+# 0x1007f3c0; 0x1003b7f0 calls 0x1007b8d0). Address resolution cannot place these:
+# the two GenCopyList bodies are masked-identical, so neither places uniquely.
+# 0x1000a1f0
+/ALTERNATENAME:?sub_1000a1f0@Arr1005a@@QAEKK@Z=?sub_1000a1f0@Obj1000a1f0@@QAEXK@Z
+# 0x1007ef40
+/ALTERNATENAME:?sub_1007ef40@Arr1007e@@QAEKK@Z=?sub_1007ef40@C1007eea0@@QAEJPAX@Z
+# 0x1007ee60
+/ALTERNATENAME:?sub_1007ee60@Arr1007e@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1005a3c0
+/ALTERNATENAME:?sub_1005a3c0@Arr1007e@@QBEAAUT1007e@@K@Z=?sub_1005a3c0@C1005a3c0@@QAEXK@Z
+# 0x1007f3c0
+/ALTERNATENAME:?sub_1007f3c0@Arr1007e@@QAEXPAUIAllocator@@@Z=?sub_1007f3c0@C1007f3c0@@QAEIPAX@Z
+# 0x1007b8d0
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUCtx1003b7f0@@XZ=?sub_1007b8d0@@YAPAXXZ
+
+# sub_<addr> references whose address is already defined under another
+# class/signature/type spelling (views of one shipped function). The address is
+# the one both names carry; 'read back' = an identical caller's shipped call
+# lands on it. Calling convention and stack-argument size checked equal.
+# 0x10008fd0  defined in big8fd0.obj (written, 1989 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10008fd0@CShadowRenderer@@QAEXPAUShadowGeometry@@0PAXK1@Z=?sub_10008fd0@CD3DModelDraw@@QAEXPAUModelVertSet@@0PAURVert@@P81@AEXPAUModelVert@@1@ZPAULTMat@@@Z
+# 0x10009c90  defined in d3dbatchc.obj (written, 10 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10009c90@Arr1007f810@@QBEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+# 0x10009cc0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10009cc0@Arr1007f810@@QAEPAXKPAVLAllocR5C@@@Z=?sub_10009cc0@C10009cc0@@QAEPAXKPAVIAllocator@@@Z
+# 0x10009cf0  defined in d3dbatchb.obj (written, 69 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10009cf0@Arr1007f810@@QAEXPAVLAllocR5C@@K@Z=?sub_10009cf0@Obj10009cf0@@QAEXPAUIAllocator@@K@Z
+# 0x10009d40  defined in d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009d40@Arr1007c@@QBEAAKK@Z=?sub_10009d40@C10009d40@@QAEPAKK@Z
+# 0x10009d40  defined in d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009d40@C1007f7b0@@QAEPAKK@Z=?sub_10009d40@C10009d40@@QAEPAKK@Z
+# 0x10009d40  defined in d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009d40@Obj1007c870@@QAEPAXK@Z=?sub_10009d40@C10009d40@@QAEPAKK@Z
+# 0x10009d60  defined in d3dr5d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009d60@C10009d60@@QAEJPAX0PAUC10091df0@@@Z=?Insert2@Arr10009d60@@QAEJKABKPAVIAllocator@@@Z
+# 0x10009ef0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009ef0@Arr1001d200@@QBEAAUT1001d200@@K@Z=?sub_10009ef0@C10009ef0@@QAEPAUElem10009ef0@@K@Z
+# 0x10009ef0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009ef0@C1001d1c0@@QAEPAUElem10009ef0@@K@Z=?sub_10009ef0@C10009ef0@@QAEPAUElem10009ef0@@K@Z
+# 0x10009f10  CMoArray<SavedVert589c4>::InternalNiceSetSize, w64_10009f10_qip.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009f10@C10009f10@@QAEJPAX0PAUC10091df0@@@Z=?InternalNiceSetSize@?$CMoArray@USavedVert589c4@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z
+# 0x1000a3c0  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1000a3c0@Arr1005a2d0@@QAEXK@Z=?sub_1000a3c0@C1000a3c0@@QAEXK@Z
+# 0x1000a600  defined in d3dr2b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1000a600@Arr1005a@@QAEKKABUT1005a@@@Z=?sub_1000a600@Arr1000a600@@QAEKKPBX@Z
+# 0x1000a670  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000a670@Cache1007f810@@QBEKXZ=?sub_1000a670@Node1000a670@@QBEKXZ
+# 0x1000a670  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000a670@List1000a670@@QBEPAPAUSPoly5dca0@@XZ=?sub_1000a670@Node1000a670@@QBEKXZ
+# 0x1000a670  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000a670@List1005dcf4@@QBEPAPAUSPoly5dca0@@XZ=?sub_1000a670@Node1000a670@@QBEKXZ
+# 0x1000a680  DefaultCache::SetCacheSize, dynarray.h out of line (the /Qip TUs emit it)
+/ALTERNATENAME:?sub_1000a680@Cache1007f810@@QAEXK@Z=?SetCacheSize@DefaultCache@@QAEXK@Z
+# 0x1000a700  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000a700@@YAXPAUSGeoObj@@PAPAUSrcVert@@PAJ@Z=?sub_1000a700@@YAXPAUSub1000a700Geom@@PAPAXPAK@Z
+# 0x1000a700  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000a700@@YAXPAXPAPAXPAK@Z=?sub_1000a700@@YAXPAUSub1000a700Geom@@PAPAXPAK@Z
+# 0x1000d9b0  defined in d3dlow.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9b0@@YAXPAULTVec@@PAE@Z=?sub_1000d9b0@@YAXPAV?$_CVector@M@@PAE@Z
+# 0x1000d9b0  defined in d3dlow.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9b0@@YAXPAX0@Z=?sub_1000d9b0@@YAXPAV?$_CVector@M@@PAE@Z
+# 0x1000d9d0  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9d0@RVert@@QAEXMM@Z=?sub_1000d9d0@Obj1000d9d0@@QAEXKK@Z
+# 0x1000d9d0  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9d0@Vert2ef34@@QAEXMM@Z=?sub_1000d9d0@Obj1000d9d0@@QAEXKK@Z
+# 0x1000d9d0  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9d0@Vert3e620@@QAEXKK@Z=?sub_1000d9d0@Obj1000d9d0@@QAEXKK@Z
+# 0x1000d9d0  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9d0@Vert60010@@QAEXMM@Z=?sub_1000d9d0@Obj1000d9d0@@QAEXKK@Z
+# 0x1000d9d0  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9d0@Vert6d910@@QAEXMM@Z=?sub_1000d9d0@Obj1000d9d0@@QAEXKK@Z
+# 0x1000d9d0  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000d9d0@Vert70d10@@QAEXMM@Z=?sub_1000d9d0@Obj1000d9d0@@QAEXKK@Z
+# 0x1000eef0  defined in d3dr3c.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000eef0@@YAPAUElem124a4@@PAXPAPAUBucket124a4@@KK@Z=?sub_1000eef0@@YAPAUElem1000eef0@@PAUOwner1000eef0@@PAPAUBucket1000eef0@@KK@Z
+# 0x1000eef0  the same, called with three arguments in w30_1000f020_osqipni.cpp
+/ALTERNATENAME:?sub_1000eef0@@YAPAUElem124a4@@PAXPAPAUBucket124a4@@K@Z=?sub_1000eef0@@YAPAUElem1000eef0@@PAUOwner1000eef0@@PAPAUBucket1000eef0@@KK@Z
+# 0x1000ef60  defined in d3dlow.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000ef60@@YAXPAX0@Z=?sub_1000ef60@@YAXPAXPAUStruct1000ef60@@@Z
+# 0x1000efa0  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1000efa0@@YAIPAXK@Z=?sub_1000efa0@@YAIPAUSub1000efa0Texture@@K@Z
+# 0x1000efa0  the same, declared int32 in w30_1000f020_osqipni.cpp
+/ALTERNATENAME:?sub_1000efa0@@YAJPAXK@Z=?sub_1000efa0@@YAIPAUSub1000efa0Texture@@K@Z
+# 0x10011420  defined in d3dbatcha.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10011420@@YAIPAPAURVert@@PAJPAX@Z=?sub_10011420@@YAXKKK@Z
+# 0x10011420  defined in d3dbatcha.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10011420@@YAIPAPAUSrcVert@@PAJPAX@Z=?sub_10011420@@YAXKKK@Z
+# 0x10015470  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015470@@YAPAVD3DModelCache@@XZ=?sub_10015470@@YAPAXXZ
+# 0x100154b0  defined in d3dr2d_os.obj (written, 40 bytes differ); name-carried address
+/ALTERNATENAME:?sub_100154b0@LTVec60010@@QBEMABU1@@Z=?sub_100154b0@VecDist@@QBEMABV1@@Z
+# 0x100154b0  defined in d3dr2d_os.obj (written, 40 bytes differ); name-carried address
+/ALTERNATENAME:?sub_100154b0@LTVec@@QBEMABU1@@Z=?sub_100154b0@VecDist@@QBEMABV1@@Z
+# 0x10015530  defined in d3dbatchd.obj (written, 77 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10015530@Vec4b720@@QAEXM@Z=?sub_10015530@LTVec@@QAEXM@Z
+# 0x10015590  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015590@LTVec@@QBE?AU1@U1@@Z=?sub_10015590@LTVec@@QBE?AV1@V1@@Z
+# 0x10015590  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015590@Vec4b720@@QBE?AU1@U1@@Z=?sub_10015590@LTVec@@QBE?AV1@V1@@Z
+# 0x100155f0  defined in d3dbatchb.obj (written, 39 bytes differ); name-carried address
+/ALTERNATENAME:?sub_100155f0@LTVec@@QBE?AU1@U1@@Z=?sub_100155f0@Vec3@@QBE?AU1@U1@@Z
+# 0x100155f0  defined in d3dbatchb.obj (written, 39 bytes differ); name-carried address
+/ALTERNATENAME:?sub_100155f0@Vec4b720@@QBE?AU1@U1@@Z=?sub_100155f0@Vec3@@QBE?AU1@U1@@Z
+# 0x10015640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015640@LTVec60010@@QBE?AU1@U1@@Z=?sub_10015640@Vec3@@QBE?AU1@U1@@Z
+# 0x10015640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015640@LTVec@@QBE?AU1@U1@@Z=?sub_10015640@Vec3@@QBE?AU1@U1@@Z
+# 0x10015640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015640@Vec4b720@@QBE?AU1@U1@@Z=?sub_10015640@Vec3@@QBE?AU1@U1@@Z
+# 0x10015640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015640@Vec4e3e4@@QBE?AU1@U1@@Z=?sub_10015640@Vec3@@QBE?AU1@U1@@Z
+# 0x10015640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015640@VecDist@@QBE?AV1@V1@@Z=?sub_10015640@Vec3@@QBE?AU1@U1@@Z
+# 0x10015690  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015690@LTVec@@QBE?AU1@M@Z=?sub_10015690@LTVec@@QBE?AV1@M@Z
+# 0x10015690  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015690@Vec10027eb0@@QBE?AV1@M@Z=?sub_10015690@LTVec@@QBE?AV1@M@Z
+# 0x10015690  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015690@Vec26728@@QBE?AV1@M@Z=?sub_10015690@LTVec@@QBE?AV1@M@Z
+# 0x10015690  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015690@Vec49bb0@@QBE?AU1@M@Z=?sub_10015690@LTVec@@QBE?AV1@M@Z
+# 0x10015690  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015690@Vec4b720@@QBE?AU1@M@Z=?sub_10015690@LTVec@@QBE?AV1@M@Z
+# 0x10015690  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015690@Vec4e3e4@@QBE?AU1@M@Z=?sub_10015690@LTVec@@QBE?AV1@M@Z
+# 0x10015740  defined in d3dr4b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015740@LTMat@@QAE?AU1@XZ=?sub_10015740@LTMatrix10015740@@QAE?AU1@XZ
+# 0x10015740  defined in d3dr4b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015740@Mat4b720@@QAE?AU1@XZ=?sub_10015740@LTMatrix10015740@@QAE?AU1@XZ
+# 0x100157e0  defined in d3dlow.obj (written, 15 bytes differ); name-carried address
+/ALTERNATENAME:?sub_100157e0@LTMat@@QAE?AU1@XZ=?sub_100157e0@C100157e0@@QAEPAVLTMatrix@@PAV2@@Z
+# 0x10015800  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015800@LTMat@@QAE?AU1@AAU1@@Z=?sub_10015800@LTMat@@QAE?AV1@AAV1@@Z
+# 0x10015800  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10015800@Mat5a960@@QAE?AV1@AAV1@@Z=?sub_10015800@LTMat@@QAE?AV1@AAV1@@Z
+# 0x100158a0  defined in d3dr4a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158a0@D3DObjectSub1c0@@QBEPAXXZ=?sub_100158a0@C100158a0@@QBEKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@CSceneShadow@@QAEPAUVec4b720@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@D3DObject@@QAEPAULTVec@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@Obj44ff4@@QAEPAULTVec44ff4@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@Obj60010@@QAEPAULTVec60010@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@Obj61a30@@QAEPAV?$_CVector@M@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@ObjLine40e10@@QAEPAUVec40e10@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@ObjPG5a960@@QAEPAUVec5a960@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158b0  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158b0@S10048180Obj@@QAEPAULTVec@@XZ=?sub_100158b0@C100158b0@@QAEPAKXZ
+# 0x100158d0  defined in d3dr4b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100158d0@C10015910@@QAEPAUEnt10015910@@K@Z=?sub_100158d0@C100158d0@@QAEPAXK@Z
+# 0x10016324  defined in big16324.obj (written, 8461 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10016324@CD3DModelDraw@@QAEXPAUD3DObject@@E@Z=?sub_10016324@CModelDraw@@QAEXPAUSModel@@E@Z
+# 0x10019a24  defined in d3dlow.obj (written, 18 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10019a24@CD3DModelLight@@QAEXXZ=?sub_10019a24@C10019a24@@QAEXXZ
+# 0x1001c790  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1001c790@Arr1001c790@@QAEPAULTMat@@K@Z=?sub_1001c790@C1001c790@@QAEPAUElem1001c790@@K@Z
+# 0x1001c7b0  defined in d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001c7b0@Arr1001c@@QAEKK@Z=?sub_1001c7b0@C1001c2c0@@QAEJPAX@Z
+# 0x1001c880  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001c880@Arr1001c@@QAEKK@Z=?sub_1001c880@C1001c880@@QAEXK@Z
+# 0x1001ca80  defined in d3dr2b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001ca80@Arr1001c@@QAEXK@Z=?sub_1001ca80@Arr1001ca80@@QAEXK@Z
+# 0x1001ccb0  defined in d3dr2d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001ccb0@Arr1001cce0@@QAEJKPBX@Z=?sub_1001ccb0@Obj1001ccb0@@QAEXKK@Z
+# 0x1001cce0  defined in d3dr4b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001cce0@Arr1001c6c0@@QAEJPBX@Z=?sub_1001cce0@Arr1001cce0@@QAEJPBX@Z
+# 0x1001cd10  defined in d3dbatchb.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001cd10@Arr1001c@@QAEXPAUIAllocator@@@Z=?sub_1001cd10@Obj1001cd10@@QAEXK@Z
+# 0x1001cd10  defined in d3dbatchb.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001cd10@C1001c680@@QAEXPAUC10091df0@@@Z=?sub_1001cd10@Obj1001cd10@@QAEXK@Z
+# 0x1001d270  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001d270@Arr32@@QAEJK@Z=?sub_1001d270@C1001d270@@QAEXK@Z
+# 0x1001d340  defined in d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001d340@Arr32@@QAEJK@Z=?sub_1001d340@C1001d2a0@@QAEJPAX@Z
+# 0x1001d780  defined in d3dr2b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001d780@Arr1001d@@QAEKKABG@Z=?sub_1001d780@Arr1001d780@@QAEKKPBX@Z
+# 0x1001d7e0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001d7e0@Arr1001d@@QAEXPAUIAllocator@@@Z=?sub_1001d7e0@C1001d7e0@@QAEIPAX@Z
+# 0x1001d7e0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001d7e0@Arr32@@QAEXPAUIAllocator@@@Z=?sub_1001d7e0@C1001d7e0@@QAEIPAX@Z
+# 0x1001dc30  defined in d3dbatchd.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001dc30@Arr1001dd70@@QBEAAGK@Z=?sub_1001dc30@Sub1001dc30Array@@QAEPAGK@Z
+# 0x1001dc50  defined in d3dr4b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001dc50@Arr1001d@@QAEXK@Z=?sub_1001dc50@Arr1001dc50@@QAEXK@Z
+# 0x1001dc50  defined in d3dr4b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001dc50@C1001cf40@@QAEXK@Z=?sub_1001dc50@Arr1001dc50@@QAEXK@Z
+# 0x1001deb0  defined in d3dr2b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001deb0@Arr1001db90@@QAEXK@Z=?sub_1001deb0@Arr1001deb0@@QAEXK@Z
+# 0x1001e010  defined in d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001e010@Arr1001e040@@QAEJKPBX@Z=?sub_1001e010@C1001dee0@@QAEJPAX0@Z
+# 0x1001e040  defined in d3dr4b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001e040@Arr1001dbb0@@QAEJPBX@Z=?sub_1001e040@Arr1001e040@@QAEJPBX@Z
+# 0x1001e040  defined in d3dr4b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001e040@C1001dbb0@@QAEXK@Z=?sub_1001e040@Arr1001e040@@QAEJPBX@Z
+# 0x1001e070  defined in d3dbatchd.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001e070@Arr1001db70@@QAEXPAUIAllocator@@@Z=?sub_1001e070@C1001e070@@QAEXK@Z
+# 0x1001e0c0  defined in d3dr4c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1001e0c0@Arr100158d0@@QBEPAPAXK@Z=?sub_1001e0c0@C1001e0c0@@QAEPAKK@Z
+# 0x1001e140  defined in d3dlow.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1001e140@LTMat@@QAEXU1@@Z=?sub_1001e140@C1001e140@@QAEXKKKKKKKKKKKKKKKK@Z
+# 0x1001e140  defined in d3dlow.obj (identical); w29_10027f70.obj's LTMatrix::Init spelling (sixteen
+# floats; was a by-value Mat10027f70): 0x10027f70 calls 0x1001e140 at 0x10027fee, thiscall, 0x40 of
+# stack arguments moved as dwords both
+/ALTERNATENAME:?sub_1001e140@Obj10027f70@@QAEXMMMMMMMMMMMMMMMM@Z=?sub_1001e140@C1001e140@@QAEXKKKKKKKKKKKKKKKK@Z
+# 0x1001e360  now defined in w31_1001e360.obj (was big66f08.obj) as XForm66f08::sub_1001e360(LTVec) (identical, 173 bytes; the
+# old C1001e360 target in d3dbatcha.obj no longer exists -- retargeted); same 12-byte by-value argument
+/ALTERNATENAME:?sub_1001e360@D3DXForm@@QAEXULTVec@@@Z=?sub_1001e360@XForm66f08@@QAEXULTVec@@@Z
+# 0x1001e480  defined in d3dr2a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1001e480@LTMat@@QAEXPAULTVec@@@Z=?sub_1001e480@Mat1001e480@@QAEXAAVVec1004b6f0@@@Z
+# 0x1001e480  defined in d3dr2a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1001e480@Mat5a960@@QAEXAAUVec5a960@@@Z=?sub_1001e480@Mat1001e480@@QAEXAAVVec1004b6f0@@@Z
+# 0x1001e4d0  defined in d3dr2a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1001e4d0@Mat5a960@@QAEXPAUVec5a960@@00@Z=?sub_1001e4d0@Mat1001e480@@QAEXPAVVec1004b6f0@@00@Z
+# 0x1001e520  defined in d3dr3a.obj (written, 188 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1001e520@@YAXPAUThing26728@@@Z=?sub_1001e520@@YAXPAUS1001e520Stamped@@@Z
+# 0x1001ef30  defined in big1ef30.obj (written, 12 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1001ef30@@YAXPAUXForm26728@@PAXMMMMPAVMat26728@@VVec26728@@@Z=?sub_1001ef30@@YAJPAUD3DXForm@@PAUD3DLens@@MMMMPAULTMat@@ULTVec@@@Z
+# 0x10021ad0  defined in d3dr5d_os.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10021ad0@C10021bf0@@QAEXKKPAUIAllocator@@@Z=?Insert2@Arr10021ad0@@QAEJKABKPAVIAllocator@@@Z
+# 0x10021bf0  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10021bf0@Arr1007ca00@@QAEJKPBX@Z=?sub_10021bf0@C10021bf0@@QAEXKK@Z
+# 0x10023330  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10023330@Vec4b720@@QBEMXZ=?sub_10023330@LTVec@@QBEMXZ
+# 0x10023330  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10023330@Vec4e3e4@@QBEMXZ=?sub_10023330@LTVec@@QBEMXZ
+# 0x10023350  defined in d3dr2c.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10023350@LTVec@@QBE?AU1@XZ=?sub_10023350@LTVecC@@QBE?AV1@XZ
+# 0x10023350  defined in d3dr2c.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10023350@Vec4b720@@QBE?AU1@XZ=?sub_10023350@LTVecC@@QBE?AV1@XZ
+# 0x100234b0  defined in d3dr4b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100234b0@XForm26728@@QAEPAU1@XZ=?sub_100234b0@C100234b0@@QAEPAU1@XZ
+# 0x10024020  defined in big24020.obj (written, 50 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10024020@@YAXPAX@Z=_sub_10024020
+# 0x10025680  defined in w38_10028030_qip.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10025680@@YAXPAX@Z=?sub_10025680@@YAXPAUObj28030@@@Z
+# 0x10026500  defined in d3dr5b.obj (written, 59 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10026500@@YAXK@Z=?sub_10026500@@YAXPAX@Z
+# 0x10027f50  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10027f50@LTVec60010@@QBEMU1@@Z=?sub_10027f50@Vec3@@QBEMU1@@Z
+# 0x10027f50  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10027f50@LTVec@@QBEMU1@@Z=?sub_10027f50@Vec3@@QBEMU1@@Z
+# 0x10027f50  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10027f50@Vec4b720@@QBEMU1@@Z=?sub_10027f50@Vec3@@QBEMU1@@Z
+# 0x1002803c  0x10028030 (the /Qip stack entry, w38_10028030_qip.obj, loads the three register arguments from the stack, so a stack call to it is correct); name-carried address
+/ALTERNATENAME:?sub_1002803c@@YAJPAUObj26728@@PAPAURVert26728@@PAJPAVMat26728@@@Z=?sub_10028030@@YAJPAUObj28030@@PAPAURVert28030@@PAJPAUMat28030@@@Z
+# 0x1002e7f0  defined in d3dr2d.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1002e7f0@Arr10050560@@QAEKK@Z=?sub_1002e7f0@Obj1002e7f0@@QAEXK@Z
+# 0x1002e9d0  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1002e9d0@Arr100506b0@@QAEXK@Z=?sub_1002e9d0@C1002e9d0@@QAEXK@Z
+# 0x1002ec00  defined in d3dr2b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1002ec00@C10050800@@QAEXKK@Z=?sub_1002ec00@Arr1002ec00@@QAEKKPBX@Z
+# 0x1002ec30  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1002ec30@C10050690@@QAEIPAUC10091df0@@@Z=?sub_1002ec30@C1002ec30@@QAEIPAX@Z
+# 0x10039f90  defined in d3dmid.obj (written, 65 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_10039f90@@YAKPAXKPAK1@Z=?sub_10039f90@@YAKPAUD3DSharedTexture@@KPAK1@Z
+# 0x1003abe4  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1003abe4@RTexture@@QAEXXZ=??0C1003abe4@@QAE@XZ
+# 0x1003b740  defined in d3dr2d.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1003b740@@YAXPAEPAUObj1003b7f0@@@Z=?sub_1003b740@@YAXPAX0@Z
+# 0x1003b924  defined in d3dr2d.obj (written, 49 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1003b924@Bank1003b920@@QAEXXZ=??0sub_1003b924@@QAE@XZ
+# 0x1003b964  defined in d3dr2b.obj (written, 52 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1003b964@Obj1008eda0@@QAEXPAX@Z=?sub_1003b964@Obj1003b964@@QAEXPAUCtx1003b964@@@Z
+# 0x1003d950  d3dr2b.cpp's 0x1003b964 declares it with a "Default" name (icl's cold-call layout, as shipped); defined in w6_1003b9c4_os.cpp
+/ALTERNATENAME:?sub_1003d950_SetDefaultStates@Obj1003b964@@QAEXPAUCtx1003b964@@@Z=?sub_1003d950@Obj1003b964@@QAEXPAUCtx1003b964@@@Z
+# 0x10040780  defined in d3dr3d.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10040780@@YAXPAX@Z=?sub_10040780@@YAXK@Z
+# 0x10043660  defined in d3dr5c.obj (written, 214 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10043660@@YAXPAUState10043660@@@Z=?sub_10043660@@YAXPAK@Z
+# 0x10043780  defined in w35_10043e10_qip.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10043780@@YAXPAUState10043660@@@Z=?sub_10043780@@YAXPAK@Z
+# 0x10044f74  defined in d3dbatcha.obj (written, 84 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10044f74@CD3DModelDraw@@QAEXPAX0K@Z=?sub_10044f74@C10044f74@@QAEXKKK@Z
+# 0x10044ff4  defined in big44ff4.obj (written, 12 bytes differ); name-carried address
+/ALTERNATENAME:?sub_10044ff4@CD3DModelDraw@@QAEXXZ=?sub_10044ff4@C10044ff4@@QAEXXZ
+# 0x10048150  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10048150@SPlane@@QBEMULTVec@@@Z=?sub_10048150@Plane10048150@@QBEMUVec3@@@Z
+# 0x10048180  defined in w54_10048180_osoiqipsf.obj (was big48180.obj, written); name-carried address
+/ALTERNATENAME:?sub_10048180@CD3DModelDraw@@QAEXXZ=?sub_10048180@C10048180@@QAEXXZ
+# 0x10049bb4 now the /Qip register body sub_10049bb0$ in
+# w54_10048180_osoiqipsf.obj, called only from 0x10048180 in the same TU: no alias.
+# 0x1004b630  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b630@Item49bb0@@QAEPAUVec49bb0@@XZ=?sub_1004b630@C1004b630@@QAEKXZ
+# 0x1004b630  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b630@Item4e3e4@@QAEPAUVec4e3e4@@XZ=?sub_1004b630@C1004b630@@QAEKXZ
+# 0x1004b630  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b630@SPoly@@QBEPAUSPlane@@XZ=?sub_1004b630@C1004b630@@QAEKXZ
+# 0x1004b640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b640@Vec49bb0@@QAEXU1@@Z=?sub_1004b640@Vec3@@QAEXU1@@Z
+# 0x1004b640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b640@Vec4e3e4@@QAEXU1@@Z=?sub_1004b640@Vec3@@QAEXU1@@Z
+# 0x1004b640  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b640@Vec5a960@@QAEXU1@@Z=?sub_1004b640@Vec3@@QAEXU1@@Z
+# 0x1004b6f0  defined in d3dr2a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b6f0@Vec4b720@@QAEAAU1@ABU1@@Z=?sub_1004b6f0@Vec1004b6f0@@QAEAAV1@ABV1@@Z
+# 0x1004b710  defined in d3dr2a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004b710@CSceneShadow@@QAEPAUVec4b720@@XZ=?sub_1004b710@C1004b710@@QAEPAXXZ
+# 0x1004b720  defined in big4b720.obj (written, 7379 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1004b720@C10048180@@QAEXJ@Z=?sub_1004b720@CShadowRenderer@@QAEXK@Z
+# 0x1004e2f0  defined in d3dbatcha.obj (written, 14 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1004e2f0@Vec4b720@@QAEPAMK@Z=?sub_1004e2f0@C1004e2f0@@QAEPAKK@Z
+# 0x1004e2f0  defined in d3dbatcha.obj (written, 14 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1004e2f0@Vec4e3e4@@QAEAAMK@Z=?sub_1004e2f0@C1004e2f0@@QAEPAKK@Z
+# 0x1004e300  defined in d3dr2c_os.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004e300@@YAXPAUMat4b720@@PAUVec4b720@@@Z=?sub_1004e300@@YAXPAULTMatC@@PAVLTVecC@@@Z
+# 0x1004e340  defined in d3dr4a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004e340@CWorldShadow@@QBEPAUCLodTable@@K@Z=?sub_1004e340@C1004e340@@QBEKK@Z
+# 0x1004e360  defined in d3dbatcha.obj (written, 35 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1004e360@CLodTable@@QBEPAUShadowGeometry@@K@Z=?sub_1004e360@C1004e360@@QAEPAXK@Z
+# 0x1004e3a0  defined in d3dr4a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004e3a0@CSceneShadow@@QBEIK@Z=?sub_1004e3a0@C1004e3a0@@QBEIK@Z
+# 0x1004e3d0  defined in d3dbatcha.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004e3d0@CWorldShadow@@QBEKXZ=?sub_1004e3d0@C1004e360@@QAEKXZ
+# 0x1004e3e4  defined in big4e3e4.obj (written, 8247 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1004e3e4@CShadowRenderer@@QAEXPAUShadowFrustum@@PAUShadowItem@@M@Z=?sub_1004e3e4@CShadowRenderer@@QAEXPAUFrustum4e3e4@@PAUItem4e3e4@@M@Z
+# 0x1004fb70  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1004fb70@Arr4b720@@QBEPAXXZ=?sub_1004fb70@Obj1004fb70@@QBEKXZ
+# 0x10050790  defined in d3dbatcha.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10050790@Arr100506f0@@QBEAAUT100506f0@@K@Z=?sub_10050790@C10050790@@QAEPAUS10050790Element@@K@Z
+# 0x10050790  defined in d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10050790@Arr10050@@QBEAAUT10050@@K@Z=?sub_10050790@C10050790@@QAEPAUS10050790Element@@K@Z
+# 0x100507e0  defined in d3dr4a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100507e0@Arr10050560@@QBEAAUT10050560@@K@Z=?sub_100507e0@Arr10050@@QBEAAUT10050@@K@Z
+# 0x10050d30  defined in d3dr2c_os.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10050d30@C10050da0@@QAEPAUNode10050d30@@XZ=?sub_10050d30@C10050d30Bank@@QAEPAUC10050d00@@XZ
+# 0x10050d60  defined in d3dr2d_os.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10050d60@C10050dc0@@QAEXPAX@Z=?sub_10050d60@Obj10050d60@@QAEXPAUNode10050d60@@@Z
+# 0x1005a390  defined in d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005a390@Arr1005a@@QAEKK@Z=?sub_1005a390@C10009f10@@QAEJPAX@Z
+# 0x1005a3c0  defined in d3dbatchd.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005a3c0@Arr1005a@@QBEAAUT1005a@@K@Z=?sub_1005a3c0@C1005a3c0@@QAEXK@Z
+# 0x1005a3c0  defined in d3dbatchd.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005a3c0@Arr16@@QBEAAUT16@@K@Z=?sub_1005a3c0@C1005a3c0@@QAEXK@Z
+# 0x1005a3e0  defined in d3dr4a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005a3e0@Arr1005a2f0@@QAEJPBX@Z=?sub_1005a3e0@Arr1005a@@QAEKABUT1005a@@@Z
+# 0x1005a3e0  defined in d3dr4a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005a3e0@C1005a2f0@@QAEXK@Z=?sub_1005a3e0@Arr1005a@@QAEKABUT1005a@@@Z
+# 0x1005a600  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1005a600@C1000adc0@@QAEXXZ=?sub_1005a600@C1005a600@@QAEXXZ
+# 0x1005a960  defined in big5a960.obj (written, 11126 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1005a960@@YAXPAUC1008b880A@@PAUS1005d9c0Item@@@Z=?sub_1005a960@@YAXPAUCtxPG5a960@@PAVObjPG5a960@@@Z
+# 0x1005f780  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1005f780@Arr10050560@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1005f780  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005f780@Arr10050670@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1005f780  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1005f780@Arr1007c480@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1005f780  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1005f780@Arr1007c@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x1005f780  defined in d3dbatchc.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1005f780@List1000a670@@QBEKXZ=?sub_1005f780@C1005f780@@QAEKXZ
+# 0x100647c0  defined in d3dr2c.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100647c0@RVert@@QBEMXZ=?sub_100647c0@C100647c0@@QAEMXZ
+# 0x100647d0  defined in d3dr2d.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100647d0@RVert@@QBEMXZ=?sub_100647d0@Obj100647d0@@QBEMXZ
+# 0x100647e0  defined in d3dr2b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100647e0@RVert@@QAEXMM@Z=?sub_100647e0@Obj100647e0@@QAEXKK@Z
+# 0x10066cf0  defined in d3dr2d.obj (identical); name-carried address
+/ALTERNATENAME:?sub_10066cf0@@YAXPAURVert@@@Z=?sub_10066cf0@@YAXPAE@Z
+# 0x10066f00  defined in big66f08.obj (written, 2614 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_10066f00@@YAXPAX@Z=?sub_10066f00@@YAXPAVXForm66f08@@PAVObject66f08@@@Z
+# 0x10067aa0  defined in big66f08.obj (written, 3077 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_10067aa0@@YAXPAUCtx1007b8e0@@PAUElem1007b8e0@@@Z=?sub_10067aa0@@YAXPAVXForm66f08@@PAVObject66f08@@@Z
+# 0x10067aa0  defined in big66f08.obj (written, 3077 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_10067aa0@@YAXPAX0@Z=?sub_10067aa0@@YAXPAVXForm66f08@@PAVObject66f08@@@Z
+# 0x100688e0  defined in d3dr3c.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100688e0@@YAXPAXPAVD3DObject@@@Z=?sub_100688e0@@YAXKPAX@Z
+# 0x1006a6a0  defined in d3dr3a_os.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1006a6a0@@YAPAVRT4b720@@KK@Z=?sub_1006a6a0@@YAPAVCObj1006a6a0@@KK@Z
+# 0x1006a710  defined in d3dr3b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1006a710@@YAPAVRT4b720@@KK@Z=?sub_1006a710@@YAPAXKK@Z
+# 0x100736f0  defined in d3dr4b.obj (identical); name-carried address
+/ALTERNATENAME:?sub_100736f0@D3DModel@@QBEPBDXZ=?sub_100736f0@C100736f0@@QAEPAXXZ
+# 0x1007a0d0  defined in d3dr4c.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007a0d0@Obj1007a0d0@@QAEXXZ=?sub_1007a0d0@C1007a0d0@@QAEPAV1@XZ
+# 0x1007a3b0  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007a3b0@PFormat@@QAEXXZ=?sub_1007a3b0@C1007a3b0@@QAEXXZ
+# 0x1007a3b0  w6_10039730_qip.cpp's cold-named spelling (0x10038630, 0x1003a080)
+/ALTERNATENAME:?InitDefault1007a3b0@PFormat@@QAEXXZ=?sub_1007a3b0@C1007a3b0@@QAEXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUC10091a10A@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUC10091a10R5C@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUD3DContext@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUD3DObjectMgr@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUMgr1007b8d0@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAURoot10043a30@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007b8d0@@YAPAUSLMAnimMgr@@XZ=?sub_1007b8d0@@YAPAXXZ
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007b8e0@Arr1007b8e0@@QAEXPAEP6AXPAX1@Z@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAX@Z@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007b8e0@C1007b8e0@@QAEXPAXP6AXXZ@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007b8e0@CSetA@@QAEXPAXP6AXXZ@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007b8e0@Ctx1007b8d0Sub@@QAEXPAXP6AXXZ@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007b8e0@Reg10043a30@@QAEXPAXP6AXXZ@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007b8e0  defined in d3dbatchc.obj (written, 87 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007b8e0@Reg1007b8e0@@QAEXPAXP6AXXZ@Z=?sub_1007b8e0@C1007b8e0@@QAEXPAUCtx1007b8e0@@P6AX0PAUElem1007b8e0@@@Z@Z
+# 0x1007bae0  defined in d3dr4a_o2.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007bae0@Mgr1007b8d0@@QAEXXZ=?sub_1007bae0@C1007bae0@@QAEXXZ
+# 0x1007c290  defined in d3dr5d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007c290@C1007c730@@QAEXKKPAUIAllocator@@@Z=?InternalNiceSetSize@Arr1007c290@@QAEJKJPAVIAllocator@@@Z
+# 0x1007c730  defined in d3dr2a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007c730@Arr1007c480@@QAEKK@Z=?sub_1007c730@C1007c730@@QAEXK@Z
+# 0x1007c870  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007c870@Arr1007c480@@QBEAAUT1007c480@@K@Z=?sub_1007c870@Obj1007c870@@QAEXK@Z
+# 0x1007c9d0  defined in d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007c9d0@Arr1007c@@QAEXK@Z=?sub_1007c9d0@C1007c890@@QAEJPAX@Z
+# 0x1007ca00  defined in d3dr4b.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ca00@Arr1007c6b0@@QAEJPBX@Z=?sub_1007ca00@Arr1007ca00@@QAEJPBX@Z
+# 0x1007ca30  defined in d3dbatchd.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007ca30@Arr1007c480@@QAEXPAVLAllocR5C@@@Z=?sub_1007ca30@C1007ca30@@QAEXK@Z
+# 0x1007ca30  defined in d3dbatchd.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ca30@Arr1007c670@@QAEXPAUIAllocator@@@Z=?sub_1007ca30@C1007ca30@@QAEXK@Z
+# 0x1007ca60  defined in d3dr4a.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007ca60@D3DRenderInfo@@QAEJXZ=?sub_1007ca60@C1007ca60@@QAEIXZ
+# 0x1007dcc4  defined in d3dbatchb_os.obj (written, 36 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007dcc4@C1007e850@@QAEXXZ=?sub_1007dcc4@Obj1007dcc4@@QAEXXZ
+# 0x1007dd24  defined in d3dr5c.obj (written, 147 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007dd24@Batch1007e1c0@@QAEJPAUD3DDevice7R5C@@KK@Z=?sub_1007dd24@Batch1007dd24@@QAEJPAUD3DDevice7R5C@@KK@Z
+# 0x1007dec4  defined in d3dr2d.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007dec4@Batch1007dd24@@QAEXXZ=?sub_1007dec4@Obj1007dec4@@QAEXXZ
+# 0x1007dfa4  defined in d3dr5b.obj (written, 106 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007dfa4@Batch1007e110@@QAEXXZ=?sub_1007dfa4@CVertBufSet@@QAEPAEXZ
+# 0x1007e030  defined in d3dr5b.obj (written, 75 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007e030@Batch100038e0@@QAEXXZ=?sub_1007e030@C1007e030@@QAEXXZ
+# 0x1007e3c0  defined in d3dr5b.obj (written, 84 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007e3c0@D3DModelCache@@QAEJPAUD3DObject@@K@Z=?sub_1007e3c0@C1007e3c0@@QAEKKK@Z
+# 0x1007e7c0  defined in d3dr4c.obj (written, 49 bytes differ); name-carried address
+/ALTERNATENAME:?sub_1007e7c0@D3DModelCache@@QAEXXZ=?sub_1007e7c0@C1007e7c0@@QAEXXZ
+# 0x1007e7f4  defined in d3dr2a_os.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007e7f4@C1007e3c0@@QAEXXZ=?sub_1007e7f4@C1007e7f4@@QAEXXZ
+# 0x1007ee40  defined in d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ee40@C1005a3c0@@QAEXK@Z=?sub_1007ee40@C1007ee40@@QAEPAUS1007ee40Element@@K@Z
+# 0x1007ee60  defined in d3dbatchb.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ee60@Arr1001d@@QBEKXZ=?sub_1007ee60@Obj1007ee60@@QBEKXZ
+# 0x1007ee60  defined in d3dbatchb.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ee60@Arr1005a@@QBEKXZ=?sub_1007ee60@Obj1007ee60@@QBEKXZ
+# 0x1007ee60  defined in d3dbatchb.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ee60@Arr16@@QBEKXZ=?sub_1007ee60@Obj1007ee60@@QBEKXZ
+# 0x1007ee60  defined in d3dbatchb.obj (identical); name-carried address
+/ALTERNATENAME:?sub_1007ee60@Arr4b720@@QBEKXZ=?sub_1007ee60@Obj1007ee60@@QBEKXZ
+# 0x1007ee70  defined in d3dr2d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ee70@Arr16@@QAEJK@Z=?sub_1007ee70@Obj1007ee70@@QAEXK@Z
+# 0x1007ef40  defined in d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007ef40@Arr1005a@@QAEKK@Z=?sub_1007ef40@C1007eea0@@QAEJPAX@Z
+# 0x1007f120  defined in d3dr2d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007f120@C1007ee00@@QAEXK@Z=?sub_1007f120@Obj1007f120@@QAEXK@Z
+# 0x1007f360  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007f360@Arr1007e@@QAEKKABUT1007e@@@Z=?sub_1007f360@C1007f360@@QAEXKK@Z
+# 0x1007f3c0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007f3c0@Arr16@@QAEXPAUIAllocator@@@Z=?sub_1007f3c0@C1007f3c0@@QAEIPAX@Z
+# 0x1007f3c0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007f3c0@C1007ede0@@QAEIPAUC10091df0@@@Z=?sub_1007f3c0@C1007f3c0@@QAEIPAX@Z
+# 0x1007f3c0  defined in d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007f3c0@C1007f3f0@@QAEIPAUC10091df0@@@Z=?sub_1007f3c0@C1007f3c0@@QAEIPAX@Z
+# 0x1007f420  defined in d3dr5d_os.obj (written, 284 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007f420@Arr1007f7e0@@QAEKKKPAUIAllocator@@@Z=?InternalNiceSetSize@Arr1007f420@@QAEJKJPAVIAllocator@@@Z
+# 0x1007f810  defined in d3dr5c.obj (written, 80 bytes differ); read back from identical callers
+/ALTERNATENAME:?sub_1007f810@C1007f8b0@@QAEXKPAUIAllocator@@@Z=?sub_1007f810@Arr1007f810@@QAEIKPAVLAllocR5C@@@Z
+# 0x1007f8b0  defined in d3dr2a.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007f8b0@ArrP@@QAEJK@Z=?sub_1007f8b0@C1007f8b0@@QAEXK@Z
+# References to functions defined under a NON-address name (the CMoArray
+# helpers, named ctors/methods). 'read back' = an identical caller's shipped
+# call lands on the address; 'source' = the address the declaration's own
+# comment gives, which is where the definition is placed.
+# 0x10009f10  InternalNiceSetSize, w64_10009f10_qip.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009f10@C10009f10@@QAEJPAX0PAUC10091df0@@@Z=?InternalNiceSetSize@?$CMoArray@USavedVert589c4@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z
+# 0x10009d60  Insert2, d3dr5d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_10009d60@C10009d60@@QAEJPAX0PAUC10091df0@@@Z=?Insert2@Arr10009d60@@QAEJKABKPAVIAllocator@@@Z
+# 0x10021ad0  Insert2, d3dr5d_os.obj (identical); read back from identical callers
+# (the identical wrapper 0x10021bf0 pushes its second argument by value into
+# the const-reference slot -- the shipped pair does exactly that)
+/ALTERNATENAME:?sub_10021ad0@C10021bf0@@QAEXKKPAUIAllocator@@@Z=?Insert2@Arr10021ad0@@QAEJKABKPAVIAllocator@@@Z
+# 0x1007c290  InternalNiceSetSize, d3dr5d.obj (identical); read back from identical callers
+/ALTERNATENAME:?sub_1007c290@C1007c730@@QAEXKKPAUIAllocator@@@Z=?InternalNiceSetSize@Arr1007c290@@QAEJKJPAVIAllocator@@@Z
+# 0x10009cc0  d3dbatchc.obj (identical); read back from identical callers
+/ALTERNATENAME:?_AllocateTArray@Arr10009d60@@QAEPAKKPAVIAllocator@@@Z=?sub_10009cc0@C10009cc0@@QAEPAXKPAVIAllocator@@@Z
+# 0x10009c90  d3dbatchc.obj (written, 10 bytes differ); read back from identical callers
+/ALTERNATENAME:?GetNumAllocatedElements@Arr10009d60@@QAEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+# 0x10009c90  d3dbatchc.obj (written, 10 bytes differ); read back from identical callers
+/ALTERNATENAME:?GetNumAllocatedElements@Arr10009f10@@QAEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+# 0x10009cf0  d3dbatchb.obj (written, 69 bytes differ); read back from identical callers
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr10009d60@@QAEXPAVIAllocator@@K@Z=?sub_10009cf0@Obj10009cf0@@QAEXPAUIAllocator@@K@Z
+# 0x10021aa0  d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?_AllocateTArray@Arr1007c290@@QAEPAKKPAVIAllocator@@@Z=?sub_10021aa0@C10021aa0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x10021aa0  d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?_AllocateTArray@Arr10021ad0@@QAEPAKKPAVIAllocator@@@Z=?sub_10021aa0@C10021aa0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00  d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1007c290@@QAEXPAVIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x1001cf00  d3dbatcha.obj (identical); read back from identical callers
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr10021ad0@@QAEXPAVIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x1000a670  d3dbatchb.obj (identical); read back from 8 identical callers
+/ALTERNATENAME:?GetWantedCache@DefaultCache@@QBEKXZ=?sub_1000a670@Node1000a670@@QBEKXZ
+# 0x10035bb4  d3dr2c.obj (identical); read back from identical callers
+/ALTERNATENAME:??0Elem10035bb4@@QAE@XZ=?sub_10035bb4@C10035bb4@@QAEPAV1@XZ
+# 0x10015830  d3dr5b.obj (identical); source (big19d64.cpp: "ctor 0x10015830")
+/ALTERNATENAME:??0Query10015830@@QAE@XZ=??0C10015830@@QAE@XZ
+# 0x10036254  d3dr2b.obj (identical); source (d3dr5c.cpp: "0x10036254, ctor")
+/ALTERNATENAME:??0Node10036380@@QAE@PAXPAU0@@Z=?sub_10036254@Node10036254@@QAEPAU1@KPAU1@@Z
+# 0x10034ed0  d3dopt2d.obj (written, 3 bytes differ); source (d3dblit.cpp: "0x10034ed0 (slot +0xa4)")
+/ALTERNATENAME:?d3d_GetOptimized2DBlend@@YAIPAK@Z=?d3d_GetOptimized2DBlend@@YAIPAW4LTSurfaceBlend@@@Z
+# 0x10027f50  d3dbatchb.obj (identical); source (big26728.cpp: "0x10027f50 LTVector::Dot")
+/ALTERNATENAME:?Dot@Vec26728@@QBEMV1@@Z=?sub_10027f50@Vec3@@QBEMU1@@Z
+# 0x10027eb0  d3dr3b.obj (written, 112 bytes differ); source (big26728.cpp: "0x10027eb0 LTMatrix::TransformPlane")
+/ALTERNATENAME:?TransformPlane@Mat26728@@QAE?AVPlane26728@@AAV2@@Z=?sub_10027eb0@Mat10027eb0@@QAE?AVPlane10027eb0@@AAV2@@Z
+# 0x10027f70  d3dr5c.obj (written, 123 bytes differ); source (big26728.cpp: "0x10027f70 LTMatrix::SetBasisVectors")
+/ALTERNATENAME:?SetBasisVectors@Mat26728@@QAEXPAVVec26728@@00@Z=?sub_10027f70@Obj10027f70@@QAEXPBUVec10027f70@@00@Z
+# 0x10028010  d3dr2a.obj (identical, 28 bytes; its signature is now (Vec1004b6f0 by value) -- retargeted); source (big26728.cpp: "0x10028010 SetTranslation"); a
+# 12-byte vector by value and three floats are the same stack block
+/ALTERNATENAME:?SetTranslation@Mat26728@@QAEXVVec26728@@@Z=?sub_10028010@Mat1001e480@@QAEXVVec1004b6f0@@@Z
+# 0x1001e0a0  now defined in d3dr4c.cpp (C1001e0c0::sub_1001e0a0, byte-identical twin of 0x10009d40); no alias
+# 0x1000a630  d3dbatchb.obj (identical); read back from identical callers 0x1005a0f0 and 0x1005a2b0
+# (d3dr4a's third caller, 0x1007ed00, reads back at 0x1007f3c0 and now calls that by name)
+/ALTERNATENAME:?sub_1000a630@Arr1005a@@QAEXPAUIAllocator@@@Z=?sub_1000a630@Obj1000a630@@QAEXK@Z
+# 0x1007f3c0  d3dbatchc.obj (identical); read back from identical caller 0x1007ed00
+/ALTERNATENAME:?sub_1007f3c0@Arr1005a@@QAEXPAUIAllocator@@@Z=?sub_1007f3c0@C1007f3c0@@QAEIPAX@Z
+# 0x1001c790  d3dbatchc.obj (identical); read back from identical caller 0x1001c8b0. CAVEAT: the
+# identical callers 0x1001c5a0 and 0x1001c4c0 read back at 0x1001c8b0, the operator[] forwarder
+# `return Get(i);`, which icl inlines into them here (moving its definition below them does not
+# stop it), so their call reaches Get directly: the same result, but not the shipped call target.
+/ALTERNATENAME:?sub_1001c790@Arr1001c@@QBEAAUT1001c@@K@Z=?sub_1001c790@C1001c790@@QAEPAUElem1001c790@@K@Z
+# 0x1007c870 (after the moves; the definition is byte-identical there)
+/ALTERNATENAME:?sub_1007c870@Arr1007c480@@QBEAAPAXK@Z=?sub_1007c870@Obj1007c870@@QAEXK@Z
+# 0x1007c870 as CMoArray<>::operator[], the spelling 0x100038e0 (d3dr5c_o2.cpp) calls it by
+/ALTERNATENAME:??A?$CMoArray@PAUD3DVertexBuffer7R5C@@UDefaultCache@@@@QBEAAPAUD3DVertexBuffer7R5C@@K@Z=?sub_1007c870@Obj1007c870@@QAEXK@Z
+# 0x10042da0  d3dr3c.cpp's own definition (byte-identical twin of 0x100688e0), under d3dr3a's spelling
+/ALTERNATENAME:?sub_10042da0@@YAXXZ=?sub_10042da0@@YAXKPAX@Z
+
+# ---- w11_1007e9f0_osoi.cpp (CMoArray members 0x1007e9f0..0x1007fa50, all byte-identical) ----
+# Callers' spellings of the six functions -> their definitions (the address is in both names).
+# 0x1007e9f0  InternalNiceSetSize, called from 0x1007ee93 (Obj1007ee70's NiceSetSize wrapper)
+/ALTERNATENAME:?sub_1007e9f0@Obj1007ee70@@QAEXKKPAUIAllocator@@@Z=?sub_1007e9f0@Arr1007e9f0@@QAEJKJPAVIAllocator@@@Z
+# 0x1007eea0  SetSize2, called from 0x1007ef5b (0x1007ef40 wrapper) and via 0x1007f3c0
+/ALTERNATENAME:?sub_1007eea0@C1007eea0@@QAEJPAXPAUC10091df0@@@Z=?sub_1007eea0@Arr1007e9f0@@QAEJKPAVIAllocator@@@Z
+# 0x1007eea0
+/ALTERNATENAME:?sub_1007eea0@C1007f3c0@@QAEIKPAX@Z=?sub_1007eea0@Arr1007e9f0@@QAEJKPAVIAllocator@@@Z
+# 0x1007ef70  Remove2, called from 0x1007f13b (0x1007f120 wrapper)
+/ALTERNATENAME:?sub_1007ef70@Obj1007f120@@QAEXKPAUIAllocator@@@Z=?sub_1007ef70@Arr1007e9f0@@QAEXKPAVIAllocator@@@Z
+# 0x1007f150  Insert2, called from 0x1007f382 (0x1007f360 wrapper)
+/ALTERNATENAME:?sub_1007f150@C1007f360@@QAEXKKPAUIAllocator@@@Z=?sub_1007f150@Arr1007e9f0@@QAEJKABUElem1007e9f0@@PAVIAllocator@@@Z
+# 0x1007f8e0  Remove2 (T = pointer), called from 0x1007fa0b (0x1007f9f0 wrapper)
+/ALTERNATENAME:?sub_1007f8e0@Arr1007f9f0@@QAEXKPAUIAllocator@@@Z=?sub_1007f8e0@Arr1007f8e0@@QAEXKPAVIAllocator@@@Z
+# 0x1007fa50  Term (T = pointer)
+/ALTERNATENAME:?sub_1007fa50@ArrP@@QAEXPAUIAllocator@@@Z=?sub_1007fa50@Arr1007f8e0@@QAEXPAVIAllocator@@@Z
+# Helpers the six call, as w11_1007e9f0_osoi.cpp spells them -> existing definitions; each
+# address is the call target in the shipped (byte-identical) bodies.
+# 0x1007eb80  call at 0x1007ea41, 0x1007eeed, 0x1007f034, 0x1007f245
+/ALTERNATENAME:?_AllocateTArray@Arr1007e9f0@@QAEPAUElem1007e9f0@@KPAVIAllocator@@@Z=?sub_1007eb80@Arr1007eb80@@QAEPAUElem1007eb80@@KPAVIAllocator@@@Z
+# 0x1007ebe0  call at 0x1007eadc, 0x1007ef36, 0x1007f0f0, 0x1007f345
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1007e9f0@@QAEXPAVIAllocator@@K@Z=?sub_1007ebe0@C1007ebe0@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80  call at 0x1007eac7, 0x1007ef25, 0x1007f0dc, 0x1007f330
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1007e9f0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x10009cc0  call at 0x1007f970
+/ALTERNATENAME:?_AllocateTArray@Arr1007f8e0@@QAEPAPAXKPAVIAllocator@@@Z=?sub_10009cc0@C10009cc0@@QAEPAXKPAVIAllocator@@@Z
+# 0x10009cf0  call at 0x1007f9c2
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1007f8e0@@QAEXPAVIAllocator@@K@Z=?sub_10009cf0@Obj10009cf0@@QAEXPAUIAllocator@@K@Z
+# 0x10009c90  call at 0x1007f9ae
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1007f8e0@@QAEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+# 0x1007f810  call at 0x1007fa6b
+/ALTERNATENAME:?SetSize2@Arr1007f8e0@@QAEJKPAVIAllocator@@@Z=?sub_1007f810@Arr1007f810@@QAEIKPAVLAllocR5C@@@Z
+# ---- END w11_1007e9f0_osoi.cpp ----
+# 0x1006d550 -- big3dd50.cpp's CLightDesc3dd50 spelling of the member
+# w9_1006d210_osoi.cpp defines under big0ae20.cpp's spelling: both callers
+# call 0x1006d550 (0x1000b22d in 0x1000ae20, 0x1003e14e in 0x1003dd50).
+/ALTERNATENAME:?sub_1006d550@CLightDesc3dd50@@QAEJPAUSurf3dd50@@KKK@Z=?sub_1006d550@CLightDesc0ae20@@QAEJPAUSurf0ae20@@KKK@Z
+# 0x1006d210 -- the same pair's commit member (0x1000b255 and 0x1003e176).
+/ALTERNATENAME:?sub_1006d210@CLightDesc3dd50@@QAEJPAX@Z=?sub_1006d210@CLightDesc0ae20@@QAEJPAX@Z
+# ---- aliases for the functions in w10_*.cpp (each proven by the shipped address) ----
+# 0x10073400  quat->matrix; three callers spell its pointer types differently (0x10020c16, 0x1001523b)
+/ALTERNATENAME:?sub_10073400@@YAXPAURot10020c00@@PAUMat10020c00@@@Z=_sub_10073400
+# 0x10073400
+/ALTERNATENAME:?sub_10073400@@YAXPAUSub100151b0Rot@@PAVLTMat@@@Z=_sub_10073400
+# 0x10073700  the collector callback; both references take only its address (mov $0x10073700 at 0x10048505 / 0x1004bfce)
+/ALTERNATENAME:?sub_10073700@@YAKPAX0@Z=?sub_10073700@@YAXPAUWObject73700@@PAUShadowQuery73700@@@Z
+# 0x10073700
+/ALTERNATENAME:?sub_10073700@@YAXXZ=?sub_10073700@@YAXPAUWObject73700@@PAUShadowQuery73700@@@Z
+# 0x1007c760  CMoArray SetSize2, called from 0x1007c85b and 0x1007ca4b
+/ALTERNATENAME:?sub_1007c760@Arr1007c840@@QAEXKPAUIAllocator@@@Z=?sub_1007c760@MoArray1007c760@@QAEIKPAUIAllocator@@@Z
+# 0x1007c760
+/ALTERNATENAME:?sub_1007c760@C1007ca30@@QAEXKK@Z=?sub_1007c760@MoArray1007c760@@QAEIKPAUIAllocator@@@Z
+# 0x1007c890  CMoArray Remove2, called from 0x1007c9eb
+/ALTERNATENAME:?sub_1007c890@C1007c890@@QAEJPAXPAUC10091df0@@@Z=?sub_1007c890@MoArray1007c760@@QAEXKPAUIAllocator@@@Z
+# 0x1007cab4  called from 0x1007ca6c (register entry of 0x1007cab0; the shim's %eax is never read)
+/ALTERNATENAME:?sub_1007cab4@C1007ca60@@QAEKXZ=?sub_1007cab4@D3DRenderInfo@@QAEKXZ
+# 0x1007cc94  register entry of 0x1007cc90 (big7cc90.cpp), called from 0x1007ca9e; same two stack arguments
+/ALTERNATENAME:?sub_1007cc94@C1007ca60@@QAEXKK@Z=?sub_1007cc90@D3DRenderInfo@@QAEXKPAULTMat@@@Z
+# 0x1007dcc0  four-byte /Qip stack shim (mov 0x4(%esp),%eax) of 0x1007dcc4, whose body never reads %eax; called from 0x1000377d
+/ALTERNATENAME:?sub_1007dcc0@C10003770@@QAEXXZ=?sub_1007dcc4@Obj1007dcc4@@QAEXXZ
+# 0x1007def4  called from 0x1007dcd6 and 0x1007e27c
+/ALTERNATENAME:?sub_1007def4@C1007e270@@QAEXXZ=?sub_1007def4@Obj1007dcc4@@QAEXXZ
+# 0x1000a670 / 0x1000a680 / 0x1000a690  w10_1007c250.cpp now calls them as
+# DefaultCache::GetWantedCache / SetCacheSize / GetCacheSize (dynarray.h's
+# names), which are aliased above.
+# 0x1001cf00  _DeleteAndDestroyArray, called from 0x1007c82e / 0x1007c999
+/ALTERNATENAME:?_DeleteAndDestroyArray@MoArray1007c760@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80  GetNumAllocatedElements, called from 0x1007c81d / 0x1007c985
+/ALTERNATENAME:?GetNumAllocatedElements@MoArray1007c760@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x10021aa0  _AllocateTArray (4-byte T), called from 0x1007c7d6 / 0x1007c931
+/ALTERNATENAME:?_AllocateTArray@MoArray1007c760@@QAEPAPAXKPAUIAllocator@@@Z=?sub_10021aa0@C10021aa0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x10073640  the animation record's validity test, called from 0x1007cae8
+/ALTERNATENAME:?sub_10073640@D3DAnimRecord@@QBEKXZ=?sub_10073640@Item10073640@@QBEIXZ
+# 0x1007e7f4  the model cache's flush, called from 0x1007e7ac (on the cold-named base)
+/ALTERNATENAME:?sub_1007e7f4@DefaultFlush1007e7f4@@QAEXXZ=?sub_1007e7f4@C1007e7f4@@QAEXXZ
+# ---- END w10_*.cpp ----
+# w5_1002e4c0.cpp: CMoArray<T12> members, each caller's class spelling
+# onto the one definition.  Evidence: every call site's e8 target is the
+# address in the name -- 0x100507b0 calls 0x1002e4c0; 0x1002ec30 and
+# 0x1002e7f0 call 0x1002e710; 0x1002e9d0 calls 0x1002e820; 0x1002ec00 calls
+# 0x1002ea00 (see w5_1002e4c0.cpp and d3dr2b_o2.cpp / d3dbatchc.cpp / d3dr2d.cpp).
+# 0x1002e4c0
+/ALTERNATENAME:?sub_1002e4c0@Arr100507b0@@QAEKKKPAUIAllocator@@@Z=?sub_1002e4c0@Arr1002e4c0@@QAEKKKPAUIAllocator@@@Z
+# 0x1002e710
+/ALTERNATENAME:?sub_1002e710@C1002ec30@@QAEIKPAX@Z=?sub_1002e710@Arr1002e4c0@@QAEKKPAUIAllocator@@@Z
+# 0x1002e710
+/ALTERNATENAME:?sub_1002e710@Obj1002e7f0@@QAEXKPAUIAllocator@@@Z=?sub_1002e710@Arr1002e4c0@@QAEKKPAUIAllocator@@@Z
+# 0x1002e820
+/ALTERNATENAME:?sub_1002e820@C1002e9d0@@QAEXKPAUIAllocator@@@Z=?sub_1002e820@Arr1002e4c0@@QAEXKPAUIAllocator@@@Z
+# 0x1002ea00
+/ALTERNATENAME:?sub_1002ea00@Arr1002ec00@@QAEKKPBXPAUIAllocator@@@Z=?sub_1002ea00@Arr1002e4c0@@QAEKKPBXPAUIAllocator@@@Z
+# w5_1002e4c0.cpp: the helpers those four call, by their shipped call targets
+# (0x1002e524 -> 0x1002e690, 0x1002e5b2 -> 0x1002e6c0, 0x1002e59e -> 0x10009c90).
+# 0x1002e690
+/ALTERNATENAME:?_AllocateTArray@Arr1002e4c0@@QAEPAUElem1002e4c0@@KPAUIAllocator@@@Z=?sub_1002e690@C1002e690@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1002e6c0
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1002e4c0@@QAEXPAUIAllocator@@K@Z=?sub_1002e6c0@Obj1002e6c0@@QAEXPAUIAllocator@@K@Z
+# 0x10009c90
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1002e4c0@@QAEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+
+# ---- functions written for the link; evidence per line ----
+# 0x10040cc0  d3dr4a_o2.cpp's 0x10040dd0 takes only its address (`movl $0x10040cc0,0x4(%esp)`); defined in w7_10040cc0.cpp with its real (void*, light*) list
+/ALTERNATENAME:?sub_10040cc0@@YAXXZ=?sub_10040cc0@@YAXPAXPAUC1001e210@@@Z
+# 0x10043664  the /Qip register entry of 0x10043660: `8b 44 24 04` at 0x10043660 falls into it; one function, defined (from the stack entry) in d3dr5c.cpp
+/ALTERNATENAME:_sub_10043664=?sub_10043660@@YAXPAK@Z
+# 0x10043a80  d3dr3c.cpp's 0x10043d70 hands it to the queue as a callback; defined in w7_10040cc0.cpp with its real (void*, obj*) list
+/ALTERNATENAME:?sub_10043a80@@YAXPAX@Z=?sub_10043a80@@YAXPAXPAUW7Obj43a80@@@Z
+# 0x100500a0  three callers' spellings of the queue's Add (`mov 0x1008ef3c,%ecx ; call 0x100500a0`); defined in w7_100500a0.cpp
+/ALTERNATENAME:?sub_100500a0@C100500a0@@QAEXPAXP6AX0@Z@Z=?sub_100500a0@C100500a0@@QAEXPAXP6AX00@Z@Z
+/ALTERNATENAME:?sub_100500a0@Reg100500a0@@QAEXPAXP6AX00@Z@Z=?sub_100500a0@C100500a0@@QAEXPAXP6AX00@Z@Z
+/ALTERNATENAME:?sub_100500a0@C1008ef3c@@QAEXPAVD3DObject@@P6AXPAX@Z@Z=?sub_100500a0@C100500a0@@QAEXPAXP6AX00@Z@Z
+# 0x1002ec30  0x10050560's failure arm calls it (`movl $0x10091df0,(%esp) ; mov %ebx,%ecx ; call 0x1002ec30` at 0x1005063c); was mis-declared at 0x10050710, the middle of an instruction of 0x100506f0
+/ALTERNATENAME:?sub_1002ec30@Arr10050560@@QAEKPAVLAllocR5C@@@Z=?sub_1002ec30@C1002ec30@@QAEIPAX@Z
+# 0x10050d00  0x10050d30 calls it on a fresh node; it returns `this` (`mov %ecx,%eax ; ret`), so it is defined returning the node in w7_1004b5c0_os.cpp
+/ALTERNATENAME:?sub_10050d00@C10050d00@@QAEXXZ=?sub_10050d00@W7Node50d00@@QAEPAU1@XZ
+# 0x10050284  0x1004fbc0 calls it on the queue; wC1_r5c.cpp now defines C100500a0::sub_10050284 itself (no alias)
+# 0x10021f10  w25_10037bf0_qipni.cpp's 0x10037cb0 zero-extends the result of all four calls (`movzwl %ax,%eax` at 0x10037d44/55/66/77), so it declares a WORD return; defined in d3dbatcha.cpp as uint32 (the same body: the count lands in %eax)
+/ALTERNATENAME:?sub_10021f10@@YAGK@Z=?sub_10021f10@@YAKK@Z
+# 0x10023e50  0x1004fbc0 passes only the first of its two slots (`add $-8,%esp ; movl $1,(%esp) ; call 0x10023e50`); defined in d3dbatchc_o2.cpp, the second parameter unused
+/ALTERNATENAME:?sub_10023e50@@YAXK@Z=?sub_10023e50@@YAXKPAX@Z
+
+# ---- the functions written in src/engine/d3d/w4_*.cpp -- each
+# unresolved spelling of a shipped address mapped onto the one definition,
+# with the shipped evidence above each line.
+# 0x1001cab0 (CMoArray<T64>::Insert2; its one caller 0x1001ccb0 calls it at 0x1001ccd2)
+/ALTERNATENAME:?sub_1001cab0@Obj1001ccb0@@QAEXKKPAUIAllocator@@@Z=?sub_1001cab0@Arr1001cab0@@QAEJKABUT1001c8d0@@PAUIAllocator@@@Z
+# 0x1001cd40 (CMoArray<T32>::InternalNiceSetSize; called at 0x1001d293 from 0x1001d270)
+/ALTERNATENAME:?sub_1001cd40@C1001d270@@QAEXKKPAUIAllocator@@@Z=?sub_1001cd40@Arr1001cd40@@QAEJKJPAUIAllocator@@@Z
+# 0x1001d2a0 (CMoArray<T32>::SetSize2; called at 0x1001d35b from 0x1001d340)
+/ALTERNATENAME:?sub_1001d2a0@C1001d2a0@@QAEJPAXPAUC10091df0@@@Z=?sub_1001d2a0@Arr1001d2a0@@QAEJKPAUIAllocator@@@Z
+# 0x1001d2a0 (CMoArray<T32>::SetSize2; called at 0x1001d7fb from 0x1001d7e0)
+/ALTERNATENAME:?sub_1001d2a0@C1001d7e0@@QAEIKPAX@Z=?sub_1001d2a0@Arr1001d2a0@@QAEJKPAUIAllocator@@@Z
+# 0x1001d390 (CMoArray<T32>::Remove2; called at 0x1001d55b from 0x1001d540)
+/ALTERNATENAME:?sub_1001d390@Obj1001d540@@QAEXKPAUIAllocator@@@Z=?sub_1001d390@Arr1001d390@@QAEXKPAUIAllocator@@@Z
+# 0x1001d570 (CMoArray<T32>::Insert2; called at 0x1001d7a2 from 0x1001d780)
+/ALTERNATENAME:?sub_1001d570@Arr1001d780@@QAEKKPBXPAUIAllocator@@@Z=?sub_1001d570@Arr1001d570@@QAEJKABUT1001cd40@@PAUIAllocator@@@Z
+# 0x1001dca0 (CMoArray<WORD>::SetSize2; called at 0x1001dd5b from 0x1001dd40)
+/ALTERNATENAME:?sub_1001dca0@C1001dd40@@QAEXKPAUIAllocator@@@Z=?sub_1001dca0@Arr1001dca0@@QAEJKPAUIAllocator@@@Z
+# 0x1001dca0 (CMoArray<WORD>::SetSize2; called at 0x1001e08b from 0x1001e070)
+/ALTERNATENAME:?sub_1001dca0@C1001e070@@QAEXKK@Z=?sub_1001dca0@Arr1001dca0@@QAEJKPAUIAllocator@@@Z
+# 0x1001dd90 (CMoArray<WORD>::Remove2; called at 0x1001decb from 0x1001deb0)
+/ALTERNATENAME:?sub_1001dd90@Arr1001deb0@@QAEXKPAUIAllocator@@@Z=?sub_1001dd90@Arr1001dd90@@QAEXKPAUIAllocator@@@Z
+# 0x1001dee0 (CMoArray<WORD>::Insert2; called at 0x1001e032)
+/ALTERNATENAME:?sub_1001dee0@C1001dee0@@QAEJPAX0PAUC10091df0@@@Z=?sub_1001dee0@Arr1001dee0@@QAEJKABGPAUIAllocator@@@Z
+# 0x1001e950 (the RVert spelling of big0f6f0.cpp etc.; calls at 0x1000f897, 0x1005a90b, 0x10064fb0)
+/ALTERNATENAME:?sub_1001e950@@YAXPBULTVec@@PAURVert@@PBUSPlane@@PAM3@Z=?sub_1001e950@@YAXPBULTVec@@0PBUSPlane@@PAM2@Z
+# 0x10020ce0 (called at 0x10020cd0 from 0x10020c00)
+/ALTERNATENAME:?sub_10020ce0@@YAXPAXKKMKMMMMPAUMat10020c00@@@Z=?sub_10020ce0@@YAJPAUD3DXForm@@MMMMMMMMPAULTMat@@@Z
+# 0x10020d80 (called at 0x10027c5b and 0x1005f608)
+/ALTERNATENAME:?sub_10020d80@@YAXPAXMKPAUXForm26728@@MMMM@Z=?sub_10020d80@@YAXPAUD3DLens@@MMPAUD3DXForm@@MMMM@Z
+# 0x10021cb0 (C spelling)
+/ALTERNATENAME:_sub_10021cb0=?sub_10021cb0@@YAXPAX@Z
+# 0x10021cb0 (d3dblit.cpp: `d3d_Free ... // 0x10021cb0`; address-proven)
+/ALTERNATENAME:?d3d_Free@@YAXPAX@Z=?sub_10021cb0@@YAXPAX@Z
+# 0x10021d10 (non-variadic spelling)
+/ALTERNATENAME:?sub_10021d10@@YAXPBD@Z=?sub_10021d10@@YAXPBDZZ
+# 0x10021d10 (C spelling)
+/ALTERNATENAME:_sub_10021d10=?sub_10021d10@@YAXPBDZZ
+# 0x10021d10 (d3dr3c.cpp `d3d_Print ... // 0x10021d10`; address-proven)
+/ALTERNATENAME:?d3d_Print@@YAXPBDZZ=?sub_10021d10@@YAXPBDZZ
+# 0x10021d10 (d3d_Warn: "Error: vertex buffer overflow" is printed by `call 0x10021d10` at 0x1000a75b; address-proven)
+/ALTERNATENAME:?d3d_Warn@@YAXPBD@Z=?sub_10021d10@@YAXPBDZZ
+# 0x10021d60 (d3d_Warning, non-variadic spelling; address-proven)
+/ALTERNATENAME:?d3d_Warning@@YAXKPBD@Z=?sub_10021d60@@YAXKPBDZZ
+# 0x10021d60 (d3dr3c.cpp `d3d_Warning ... // 0x10021d60`)
+/ALTERNATENAME:?d3d_Warning@@YAXKPBDZZ=?sub_10021d60@@YAXKPBDZZ
+# 0x10021d60 (d3d_WarnEx: "Warning: unable to create lightmap pages" goes to `call 0x10021d60` at 0x100331b5)
+/ALTERNATENAME:?d3d_WarnEx@@YAXKPBD@Z=?sub_10021d60@@YAXKPBDZZ
+# 0x10021d60 (d3d_WarningA, d3dr3a.cpp 0x1005d9c0: "Set '%s' overflowed" goes to `call 0x10021d60` at 0x1005da9b)
+/ALTERNATENAME:?d3d_WarningA@@YAXKPBD0@Z=?sub_10021d60@@YAXKPBDZZ
+# 0x10021d60 (d3d_WarningR5C, d3dr5c.cpp: every call carrying "Set '%s' overflowed" targets 0x10021d60)
+/ALTERNATENAME:?d3d_WarningR5C@@YAXKPBDZZ=?sub_10021d60@@YAXKPBDZZ
+# 0x10021f40 = 0x10021f44 (the /Qip stack entry `mov 0x4(%esp),%eax` falls straight into 0x10021f44, which never reads %eax; 76 calls, e.g. 0x10009887)
+/ALTERNATENAME:?sub_10021f40@CVar1005db90@@QAEPAU1@PBDMKK@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+# 0x10021f40 = 0x10021f44 (the /Qip stack entry `mov 0x4(%esp),%eax` falls straight into 0x10021f44, which never reads %eax; 76 calls, e.g. 0x10009887)
+/ALTERNATENAME:?sub_10021f40@CVarR5C@@QAEPAU1@PBDMKK@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+# 0x10021f40 = 0x10021f44 (the /Qip stack entry `mov 0x4(%esp),%eax` falls straight into 0x10021f44, which never reads %eax; 76 calls, e.g. 0x10009887)
+/ALTERNATENAME:?sub_10021f40@Bank10021f40@@QAEXPBDMKK@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+# 0x10021f40 = 0x10021f44 (the /Qip stack entry `mov 0x4(%esp),%eax` falls straight into 0x10021f44, which never reads %eax; 76 calls, e.g. 0x10009887)
+/ALTERNATENAME:?sub_10021f40@C10091220@@QAEXPBDMKK@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+# 0x10021f40 = 0x10021f44 (the /Qip stack entry `mov 0x4(%esp),%eax` falls straight into 0x10021f44, which never reads %eax; 76 calls, e.g. 0x10009887)
+/ALTERNATENAME:?sub_10021f40@CConVar@@QAEXPBDMKK@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+# 0x100234d0 (installed at 0x1002b13b, called __fastcall through 0x1008ce8c)
+/ALTERNATENAME:?sub_100234d0@@YAXXZ=?sub_100234d0@@YIXPBULTVec@@PAE@Z
+# 0x100234e0 (installed at 0x1002b198, called __fastcall through 0x1008ce8c)
+/ALTERNATENAME:?sub_100234e0@@YAXXZ=?sub_100234e0@@YIXPBULTVec@@PAE@Z
+# 0x10023570 (installed at 0x1002b0e0, called __fastcall through 0x1008ce88)
+/ALTERNATENAME:?sub_10023570@@YAXXZ=?sub_10023570@@YIXPBULTVec@@PAE@Z
+# 0x10029894 (called at 0x10027d51 and 0x1002d67f) -- the register entry of the /Qip pair
+# whose stack entry 0x10029890 d3dqip2.cpp defines (the second body in w4_10023fb0.cpp is
+# gone; our callers pass the one argument on the stack, which is that symbol's ABI)
+/ALTERNATENAME:?sub_10029894@@YAXPAUSink26728@@@Z=?sub_10029890@@YAXPAUObj10029890@@@Z
+/ALTERNATENAME:?sub_10029894@@YAXPAUSceneDesc@@@Z=?sub_10029890@@YAXPAUObj10029890@@@Z
+# 0x1002cf48 (called at 0x1002d91a) -- likewise, stack entry 0x1002cf40 in d3dqip2.cpp
+/ALTERNATENAME:?sub_1002cf48@@YAXPAXJ@Z=?sub_1002cf40@@YAXPAUObj1002cf40@@K@Z
+# 0x1001c450 (_AllocateTArray: `call 0x1001c450` at 0x1001c992 in 0x1001c8d0)
+/ALTERNATENAME:?_AllocateTArray@Arr1001ca80@@QAEPAUT1001c8d0@@KPAUIAllocator@@@Z=?sub_1001c450@C1001c450@@QAEPAXKPAVSub1000a0e0Alloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001ca4c in 0x1001c8d0)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001ca80@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001ca38 in 0x1001c8d0)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001ca80@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001c450 (_AllocateTArray: `call 0x1001c450` at 0x1001cba3 in 0x1001cab0)
+/ALTERNATENAME:?_AllocateTArray@Arr1001cab0@@QAEPAUT1001c8d0@@KPAUIAllocator@@@Z=?sub_1001c450@C1001c450@@QAEPAXKPAVSub1000a0e0Alloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001cca3 in 0x1001cab0)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001cab0@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001cc8e in 0x1001cab0)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001cab0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001ced0 (_AllocateTArray: `call 0x1001ced0` at 0x1001cd91 in 0x1001cd40)
+/ALTERNATENAME:?_AllocateTArray@Arr1001cd40@@QAEPAUT1001cd40@@KPAUIAllocator@@@Z=?sub_1001ced0@C1001ced0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001ce2c in 0x1001cd40)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001cd40@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001ce17 in 0x1001cd40)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001cd40@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001ced0 (_AllocateTArray: `call 0x1001ced0` at 0x1001d2ed in 0x1001d2a0)
+/ALTERNATENAME:?_AllocateTArray@Arr1001d2a0@@QAEPAUT1001cd40@@KPAUIAllocator@@@Z=?sub_1001ced0@C1001ced0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001d336 in 0x1001d2a0)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001d2a0@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001d325 in 0x1001d2a0)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001d2a0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001ced0 (_AllocateTArray: `call 0x1001ced0` at 0x1001d454 in 0x1001d390)
+/ALTERNATENAME:?_AllocateTArray@Arr1001d390@@QAEPAUT1001cd40@@KPAUIAllocator@@@Z=?sub_1001ced0@C1001ced0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001d510 in 0x1001d390)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001d390@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001d4fc in 0x1001d390)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001d390@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001ced0 (_AllocateTArray: `call 0x1001ced0` at 0x1001d665 in 0x1001d570)
+/ALTERNATENAME:?_AllocateTArray@Arr1001d570@@QAEPAUT1001cd40@@KPAUIAllocator@@@Z=?sub_1001ced0@C1001ced0@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001d765 in 0x1001d570)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001d570@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001d750 in 0x1001d570)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001d570@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001d950 (_AllocateTArray: `call 0x1001d950` at 0x1001dced in 0x1001dca0)
+/ALTERNATENAME:?_AllocateTArray@Arr1001dca0@@QAEPAGKPAUIAllocator@@@Z=?sub_1001d950@C1001d950@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001dd36 in 0x1001dca0)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001dca0@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001dd25 in 0x1001dca0)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001dca0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001d950 (_AllocateTArray: `call 0x1001d950` at 0x1001de22 in 0x1001dd90)
+/ALTERNATENAME:?_AllocateTArray@Arr1001dd90@@QAEPAGKPAUIAllocator@@@Z=?sub_1001d950@C1001d950@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001de78 in 0x1001dd90)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001dd90@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001de64 in 0x1001dd90)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001dd90@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1001d950 (_AllocateTArray: `call 0x1001d950` at 0x1001df7d in 0x1001dee0)
+/ALTERNATENAME:?_AllocateTArray@Arr1001dee0@@QAEPAGKPAUIAllocator@@@Z=?sub_1001d950@C1001d950@@QAEPAXKPAVCD3DAlloc@@@Z
+# 0x1001cf00 (_DeleteAndDestroyArray: `call 0x1001cf00` at 0x1001dffd in 0x1001dee0)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001dee0@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 (GetNumAllocatedElements: `call 0x10021a80` at 0x1001dfe9 in 0x1001dee0)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001dee0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+
+# ---- other spellings of the functions written in w3_*.cpp ----
+# Each pair names the same d3d.ren address (in the comment): the unresolved
+# spelling is the caller's, the target is the one definition.
+# 0x10014580 -- big124a4/d3dr2*/big44ff4 etc. declare the screen projection in C++
+/ALTERNATENAME:?sub_10014580@@YAXPAXPAE@Z=_sub_10014580
+# 0x10014580
+/ALTERNATENAME:?sub_10014580@@YAXPAX0@Z=_sub_10014580
+# 0x10014940 -- MatVMul
+/ALTERNATENAME:?sub_10014940@@YAXPAVLTVecC@@PAULTMatC@@0@Z=_sub_10014940
+# 0x10014a50 -- MatVMul_3x3
+/ALTERNATENAME:?MatVMul_3x3_10014a50@@YAXPAUVec3D@@PAUMat4D@@0@Z=?sub_10014a50@@YAXPAVVec10027eb0@@PAVMat10027eb0@@0@Z
+# 0x10014ab0 -- Mat_InverseTransformation
+/ALTERNATENAME:?sub_10014ab0@@YAXPAXPBX@Z=_sub_10014ab0
+# 0x10015320 -- the texture-stage binder
+/ALTERNATENAME:?sub_10015320@@YAJPAXKK@Z=_sub_10015320
+# 0x10015320
+/ALTERNATENAME:?sub_10015320@@YAXPAXKK@Z=_sub_10015320
+# 0x10015480 -- vector Init(x, y, z)
+/ALTERNATENAME:?sub_10015480@Vec4b720@@QAEAAU1@MMM@Z=?sub_10015480@LTVec@@QAEPAU1@MMM@Z
+# 0x100156e0 -- LTMatrix::Identity
+/ALTERNATENAME:?sub_100156e0@Obj100156e0@@QAEXXZ=?sub_100156e0@LTMat@@QAEXXZ
+# 0x100159d0 -- big17c14.cpp takes the hook's address under a C name; it is __fastcall
+/ALTERNATENAME:_sub_100159d0=@sub_100159d0@12
+# 0x10015aa0 -- likewise
+/ALTERNATENAME:_sub_10015aa0=@sub_10015aa0@12
+# 0x1001c2c0 -- d3dr2c.cpp's spelling of CMoArray<LTMat>::InternalNiceSetSize
+/ALTERNATENAME:?sub_1001c2c0@C1001c2c0@@QAEJPAX0PAUC10091df0@@@Z=?sub_1001c2c0@Arr1001c2c0@@QAEJKJPAUIAllocator@@@Z
+# 0x1001e140 -- LTMatrix::Init, called by 0x100156e0 (call at 0x10015733)
+/ALTERNATENAME:?sub_1001e140@LTMat@@QAEXMMMMMMMMMMMMMMMM@Z=?sub_1001e140@C1001e140@@QAEXKKKKKKKKKKKKKKKK@Z
+# 0x1001c450 -- _AllocateTArray, called by 0x1001c2c0 (call at 0x1001c311)
+/ALTERNATENAME:?_AllocateTArray@Arr1001c2c0@@QAEPAULTMat@@KPAUIAllocator@@@Z=?sub_1001c450@C1001c450@@QAEPAXKPAVSub1000a0e0Alloc@@@Z
+# 0x1001cf00 -- _DeleteAndDestroyArray, called by 0x1001c2c0 (call at 0x1001c3ac)
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001c2c0@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x10021a80 -- GetNumAllocatedElements, called by 0x1001c2c0 (call at 0x1001c397)
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001c2c0@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+# 0x1000a6e0 -- dl_Remove, called by 0x1000a7d0 (call at 0x1000a7fa)
+/ALTERNATENAME:?dl_Remove_1000a6e0@@YAXPAULink0ae20@@@Z=?sub_1000a6e0@@YAXPAUDLink@@@Z
+# ---- end w3_*.cpp ----
+
+# ---- extern "C" / view-class references to functions already defined under their
+# address name. Each definition's name carries the address (match status quoted); the
+# convention letter and the argument bytes agree on both sides (checked per pair).
+# 0x1000a700  defined in d3dbatchd.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1000a700=?sub_1000a700@@YAXPAUSub1000a700Geom@@PAPAXPAK@Z
+# 0x1000a740  defined in d3dbatchd.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1000a740=?sub_1000a740@@YAIJ@Z
+# 0x1000ae20 now a static of its only caller 0x1000b910's TU,
+# w54_1000ae20_osoiqip.obj (register-only /Qip body): no alias.
+# 0x1000da50  defined in d3dr2c.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1000da50=?sub_1000da50@@YAXXZ
+# 0x1000efa0  defined in d3dbatchd.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1000efa0=?sub_1000efa0@@YAIPAUSub1000efa0Texture@@K@Z
+# 0x10011450  defined in d3dr5c.obj (written, 46 byte(s) differ); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10011450=?sub_10011450@@YAXK@Z
+# 0x10011500  defined in d3dr2b.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10011500=?sub_10011500@@YAXXZ
+# 0x10014550  defined in d3dr2c_os.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10014550=?sub_10014550@@YAJPAX00@Z
+# 0x10014720  defined in d3dbatchd.obj (written, 122 byte(s) differ); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10014720=?sub_10014720@@YAXPAVLTMat@@00@Z
+# 0x10015190  defined in d3dbatchd.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10015190=?sub_10015190@@YAJM@Z
+# 0x100151b0  defined in d3dbatchd.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_100151b0=?sub_100151b0@@YAXPAVLTVec@@PAUSub100151b0Rot@@0PAVLTMat@@@Z
+# 0x1001e210  defined in d3dr3d.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1001e210=?sub_1001e210@@YAXPAUC1001e210@@PAV?$_CVector@M@@@Z
+# 0x1001e410  defined in d3dr2b.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1001e410=?sub_1001e410@@YAXPAUObj100156e0@@@Z
+# 0x1001e450  defined in d3dr2d_os.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1001e450=?sub_1001e450@@YAXPAUMat4D@@PAUVec3D@@11@Z
+# 0x1001e660  defined in d3dr3b.obj (written, 209 byte(s) differ); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1001e660=?sub_1001e660@@YAXXZ
+# 0x10021c20  defined in d3dmid.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10021c20=?sub_10021c20@@YAPAXK@Z
+# 0x100232b0  defined in d3dbatchd_o2.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_100232b0=?sub_100232b0@@YAXK@Z
+# 0x10025680  defined in w38_10028030_qip.obj (identical); name-carried address, same convention and argument bytes; one dword argument both
+/ALTERNATENAME:_sub_10025680=?sub_10025680@@YAXPAUObj28030@@@Z
+# 0x10043620  defined in d3dr2d.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10043620=?sub_10043620@@YAXPAX@Z
+# 0x10047cf0  defined in d3dr3a_os.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10047cf0=?sub_10047cf0@@YAIPAPAUSClipVertA@@PAJPAUSPlaneA@@K@Z
+# 0x1005a410  defined in d3dr5d.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1005a410=?sub_1005a410@@YAJPAV?$_CVector@M@@MPAVLTPlane@@PAK@Z
+# 0x1005a490  defined in d3dr3c.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1005a490=?sub_1005a490@@YAXPAUObj1005a490@@PAK111@Z
+# 0x1005f790  defined in d3dr2d.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1005f790=?sub_1005f790@@YAXPAUMat4D@@PAUVec3D@@@Z
+# 0x1005fa80  defined in d3dr2a.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1005fa80=?sub_1005fa80@@YAXPAEK@Z
+# 0x1005fac0  defined in d3dr3c.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1005fac0=?sub_1005fac0@@YAXPAUVert1005fac0@@KPAUMat1005fac0@@@Z
+# 0x10069c90  defined in d3dneutral.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_10069c90=?sub_10069c90@@YAXXZ
+# 0x1006d8e0  defined in d3dr2d_os.obj (identical); name-carried address, same convention and argument bytes; the caller reads an int32 result: the shipped body tail-returns 0x1000a8a0's %eax, which the void definition (identical bytes) leaves in place
+/ALTERNATENAME:_sub_1006d8e0=?sub_1006d8e0@@YAXPAX0@Z
+# 0x1006d910  defined in big6d910.obj (written, 8517 byte(s) differ); name-carried address, same convention and argument bytes; the caller passes 1 argument, the definition declares a 2nd (pCtx) that its body never reads (no 0xc(%ebp) in the shipped 7204 bytes), cdecl so the caller pops
+/ALTERNATENAME:_sub_1006d910=?sub_1006d910@@YAJPAUObj6d910@@PAX@Z
+# 0x10070d10  defined in big70d10.obj (written, 8516 byte(s) differ); name-carried address, same convention and argument bytes; the caller passes 1 argument, the definition declares a 2nd (pCtx) that its body never reads (no 0xc(%ebp) in the shipped 7331 bytes), cdecl so the caller pops
+/ALTERNATENAME:_sub_10070d10=?sub_10070d10@@YAJPAUObj70d10@@PAX@Z
+# 0x1007b8d0  defined in d3dneutral.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:_sub_1007b8d0=?sub_1007b8d0@@YAPAXXZ
+# 0x10009c90  defined in d3dbatchc_o2.obj (identical); name-carried address, same convention and argument bytes
+/ALTERNATENAME:?sub_10009c90@Arr1007f810@@QAEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+# 0x1000eec0  defined in d3dr2a.obj (identical); name-carried address, same convention and argument bytes; thiscall ret $0xc both; the caller discards the declared reference result
+/ALTERNATENAME:?sub_1000eec0@Vec4b720@@QAEAAU1@MMM@Z=?sub_1000eec0@Vec1004b6f0@@QAEXMMM@Z
+# 0x1007dfa4  defined in d3dr5b.obj (written, 106 byte(s) differ); name-carried address, same convention and argument bytes; thiscall, no arguments both; result in %eax either way
+/ALTERNATENAME:?sub_1007dfa4@Batch1007e110@@QAEKXZ=?sub_1007dfa4@CVertBufSet@@QAEPAEXZ
+# ---- CRT-range references mapped onto the runtime library's own functions.
+# 0x10080479  libcmt operator delete: shipped `push 4(%esp); call 0x10080b8e (free); pop %ecx; ret`
+/ALTERNATENAME:?sub_10080479@@YAXPAX@Z=??3@YAXPAX@Z
+# 0x10081222  libcmt operator new: shipped `push $1; push 8(%esp); call 0x10080a0a (_nh_malloc); pop; pop; ret`
+# (the reference's unsigned long and the library's size_t are the same dword)
+/ALTERNATENAME:?sub_10081222@@YAPAXK@Z=??2@YAPAXI@Z
+# ---- StdLith.lib (src/lithshared/out, linked by d3d-link). Each of these
+# library functions is byte-identical at the address the reference is named for; every spelling
+# is cdecl with the same argument dwords as the library function (all pointers/dwords).
+# 0x1007fb20  StdLith.lib sb_Init(StructBank*, structSize, cacheSize), 65 bytes
+/ALTERNATENAME:?sub_1007fb20@@YAXPAUHash1007fba0@@KK@Z=?sb_Init@@YAXPAUStructBank_t@@KK@Z
+# 0x1007fb20  StdLith.lib sb_Init(StructBank*, structSize, cacheSize), 65 bytes
+/ALTERNATENAME:?sub_1007fb20@@YAXPAUMemBank@@KK@Z=?sb_Init@@YAXPAUStructBank_t@@KK@Z
+# 0x1007fb20  StdLith.lib sb_Init(StructBank*, structSize, cacheSize), 65 bytes
+/ALTERNATENAME:?sub_1007fb20@@YAXPAUPool10050de0@@KK@Z=?sb_Init@@YAXPAUStructBank_t@@KK@Z
+# 0x1007fb20  StdLith.lib sb_Init(StructBank*, structSize, cacheSize), 65 bytes
+/ALTERNATENAME:?sub_1007fb20@@YAXPAXKK@Z=?sb_Init@@YAXPAUStructBank_t@@KK@Z
+# 0x1007fb70  StdLith.lib sb_Init2(StructBank*, structSize, cacheSize, nPrealloc), 37 bytes
+/ALTERNATENAME:?sub_1007fb70@@YAHPAUStructBank@@KKK@Z=?sb_Init2@@YAHPAUStructBank_t@@KKK@Z
+# 0x1007fb70  StdLith.lib sb_Init2(StructBank*, structSize, cacheSize, nPrealloc), 37 bytes
+/ALTERNATENAME:?sub_1007fb70@@YAXPAXKKK@Z=?sb_Init2@@YAHPAUStructBank_t@@KKK@Z
+# 0x1007fba0  StdLith.lib sb_Term2(StructBank*, bCheckObjects), 49 bytes
+/ALTERNATENAME:?sub_1007fba0@@YAXPAUHash1007fba0@@K@Z=?sb_Term2@@YAXPAUStructBank_t@@H@Z
+# 0x1007fba0  StdLith.lib sb_Term2(StructBank*, bCheckObjects), 49 bytes
+/ALTERNATENAME:?sub_1007fba0@@YAXPAUMemBank@@K@Z=?sb_Term2@@YAXPAUStructBank_t@@H@Z
+# 0x1007fba0  StdLith.lib sb_Term2(StructBank*, bCheckObjects), 49 bytes
+/ALTERNATENAME:?sub_1007fba0@@YAXPAUPool10050de0@@J@Z=?sb_Term2@@YAXPAUStructBank_t@@H@Z
+# 0x1007fba0  StdLith.lib sb_Term2(StructBank*, bCheckObjects), 49 bytes
+/ALTERNATENAME:?sub_1007fba0@@YAXPAUPool10059ef0@@J@Z=?sb_Term2@@YAXPAUStructBank_t@@H@Z
+# 0x1007fbe0  StdLith.lib sb_Term(StructBank*), 16 bytes
+/ALTERNATENAME:?sub_1007fbe0@@YAXPAX@Z=?sb_Term@@YAXPAUStructBank_t@@@Z
+# 0x1007fbf0  StdLith.lib sb_AllocateNewStructPage(StructBank*, nAllocations), 94 bytes; returns int, the references declare void (cdecl, result ignored)
+/ALTERNATENAME:?sub_1007fbf0@@YAXPAUPool1000a6a0@@K@Z=?sb_AllocateNewStructPage@@YAHPAUStructBank_t@@K@Z
+# 0x1007fbf0  StdLith.lib sb_AllocateNewStructPage(StructBank*, nAllocations), 94 bytes; returns int, the references declare void (cdecl, result ignored)
+/ALTERNATENAME:?sub_1007fbf0@@YAXPAUPool124a4@@K@Z=?sb_AllocateNewStructPage@@YAHPAUStructBank_t@@K@Z
+# 0x1007fbf0  StdLith.lib sb_AllocateNewStructPage(StructBank*, nAllocations), 94 bytes; returns int, the references declare void (cdecl, result ignored)
+/ALTERNATENAME:_sub_1007fbf0=?sb_AllocateNewStructPage@@YAHPAUStructBank_t@@K@Z
+# 0x1007fc50  StdLith.lib MoArray_FindElementMemcmp(pArray, pElem, nElements, elemSize), 55 bytes
+/ALTERNATENAME:?sub_1007fc50@@YAJPBX0KK@Z=?MoArray_FindElementMemcmp@@YAKPBX0KK@Z
+# 0x1007fc50  StdLith.lib MoArray_FindElementMemcmp(pArray, pElem, nElements, elemSize), 55 bytes
+/ALTERNATENAME:_sub_1007fc50=?MoArray_FindElementMemcmp@@YAKPBX0KK@Z
+# struct_bank.obj calls DefStdlithAlloc/DefStdlithFree through g_DefAlloc; in d3d.ren those are the
+# renderer's own 0x10021ce0 and 0x10021cb0 (LAlloc::Alloc at 0x1007fae0 calls 0x10021ce0, LAlloc::Free
+# at 0x1007faf0 calls 0x10021cb0), NOT the malloc/free pair the recovered l_allocator.cpp defines.
+# 0x10021cb0 belongs to w4_10021cb0_os.cpp; this alias resolves once it is defined as sub_10021cb0(void*).
+/ALTERNATENAME:?DefStdlithAlloc@@YAPAXK@Z=?sub_10021ce0@@YAPAXK@Z
+/ALTERNATENAME:?DefStdlithFree@@YAXPAX@Z=?sub_10021cb0@@YAXPAX@Z
+# 0x1001e420  d3dmisc.obj d3d_TransposeRotation (identical, 43 bytes; TransposeRotation
+# is 0x1001e420); cdecl, one matrix pointer both
+/ALTERNATENAME:_sub_1001e420=?d3d_TransposeRotation@@YAXPAVLTMatrix@@@Z
+# 0x1003e624  the /Qip REGISTER entry of big3e620.obj's 0x1003e620 (shipped: 1003e620 `mov 4(%esp),%eax`
+# falling into 1003e624; the only caller, 0x10040878 in d3dr3c_os's sub_10040850, passes pObj in %eax).
+# big3e620.cpp is not built /Qip, so it has no `$` register-entry symbol; our caller (d3dr3c_os.obj,
+# /Os) stores the argument at (%esp) before the call -- and in %eax too -- so the STACK entry
+# sub_1003e620(pObj) receives it correctly. cdecl, one pointer, void both sides.
+/ALTERNATENAME:?sub_1003e624@@YAXPAX@Z=?sub_1003e620@@YAXPAUObj3e620@@@Z
+
+# 0x1000d9b0  d3dlow.obj sub_1000d9b0 (identical, 31 bytes); cdecl (vertex*, xform bytes*) both
+/ALTERNATENAME:_sub_1000d9b0=?sub_1000d9b0@@YAXPAV?$_CVector@M@@PAE@Z
+# ---- the CMoArray helpers of d3dr5d_os.obj's two InternalNiceSetSize instantiations, read out of
+# the SHIPPED callers: 0x1001d810 (T = WORD) calls 0x1001d950 at 0x1001d85c, 0x10021a80 at 0x1001d8b0,
+# 0x1001cf00 at 0x1001d8c4; 0x1007f420 (T = DWORD) calls 0x10009cc0 at 0x1007f46c, 0x10009c90 at
+# 0x1007f4c0, 0x10009cf0 at 0x1007f4d4. All thiscall with the same argument dwords (count, allocator) /
+# (allocator, count) / (); the targets are named for those addresses (identical except 0x10009cf0,
+# written, 69 bytes differ).
+/ALTERNATENAME:?_AllocateTArray@Arr1001d810@@QAEPAGKPAVIAllocator@@@Z=?sub_1001d950@C1001d950@@QAEPAXKPAVCD3DAlloc@@@Z
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1001d810@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1001d810@@QAEXPAVIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+/ALTERNATENAME:?_AllocateTArray@Arr1007f420@@QAEPAKKPAVIAllocator@@@Z=?sub_10009cc0@C10009cc0@@QAEPAXKPAVIAllocator@@@Z
+/ALTERNATENAME:?GetNumAllocatedElements@Arr1007f420@@QAEKXZ=?sub_10009c90@C10009c90@@QAEKXZ
+/ALTERNATENAME:?_DeleteAndDestroyArray@Arr1007f420@@QAEXPAVIAllocator@@K@Z=?sub_10009cf0@Obj10009cf0@@QAEXPAUIAllocator@@K@Z
+# ---- w12_1c7e0_os.cpp (0x1001c7e0, CMoArray::SetSize2, identical) and w12_1d370.cpp (0x1001d370, identical).
+# The two references to 0x1001c7e0 (thiscall, two dwords, ret $8) onto the one definition:
+/ALTERNATENAME:?sub_1001c7e0@Obj1001cd10@@QAEXKK@Z=?sub_1001c7e0@?$Arr1001c7e0@XUDefaultCache@@@@QAEHKPAUIAllocator@@@Z
+/ALTERNATENAME:?sub_1001c7e0@C1001c880@@QAEXKPAUIAllocator@@@Z=?sub_1001c7e0@?$Arr1001c7e0@XUDefaultCache@@@@QAEHKPAUIAllocator@@@Z
+# its callees, read out of the shipped body (0x1000a670 at 0x1001c81a/0x1001c83c, 0x1000a680 at
+# 0x1001c847/0x1001c85a, 0x1001c450 at 0x1001c82d, 0x10021a80 at 0x1001c865, 0x1001cf00 at 0x1001c876):
+/ALTERNATENAME:?sub_1000a670@DefaultCache@@QBEKXZ=?sub_1000a670@Node1000a670@@QBEKXZ
+/ALTERNATENAME:?sub_1000a680@DefaultCache@@QAEXK@Z=?SetCacheSize@DefaultCache@@QAEXK@Z
+/ALTERNATENAME:?sub_1001c450@?$Arr1001c7e0@XUDefaultCache@@@@QAEPAXKPAUIAllocator@@@Z=?sub_1001c450@C1001c450@@QAEPAXKPAVSub1000a0e0Alloc@@@Z
+/ALTERNATENAME:?sub_10021a80@?$Arr1001c7e0@XUDefaultCache@@@@QAEKXZ=?sub_10021a80@C10021a80@@QAEKXZ
+/ALTERNATENAME:?sub_1001cf00@?$Arr1001c7e0@XUDefaultCache@@@@QAEXPAUIAllocator@@K@Z=?sub_1001cf00@C1001cf00@@QAEXPAVCD3DAlloc@@K@Z
+# 0x1001d370's Get: `call 0x10009ef0` at 0x1001d381 (w12_1d370.obj is byte-identical at 0x1001d370)
+/ALTERNATENAME:?sub_10009ef0@Arr32@@QBEAAUT32@@K@Z=?sub_10009ef0@C10009ef0@@QAEPAUElem10009ef0@@K@Z
+# 0x10021c50  d3d_Alloc -> w12_21c50_osoi.obj sub_10021c50 (identical, 89 bytes); cdecl, one dword, returns the
+# pointer. d3dblit.cpp's comment places d3d_Alloc at 0x10021c50; d3dmid.cpp's decode of 0x10021c20 describes it.
+/ALTERNATENAME:?d3d_Alloc@@YAPAXK@Z=?sub_10021c50@@YAPAXK@Z
+# ---- named spellings of functions written under their address names (targets are the
+# names in their files: w4_10021cb0_os.cpp / w4_10023c40_os.cpp, w6_10039730_qip.cpp's sub_10039930). All cdecl; a
+# fixed-argument spelling of a variadic function pushes the same dwords and the caller pops.
+# 0x10021cb0  d3d_Free: d3dblit.cpp comment; DestroyWorld (0x10032c00) calls it at 0x10032c17
+/ALTERNATENAME:?d3d_Free@@YAXPAX@Z=?sub_10021cb0@@YAXPAX@Z
+# 0x10021d10 / 0x10021d60: no aliases -- the references were re-spelled sub_10021d10 / sub_10021d60 in the TUs
+# (icl treats a callee whose NAME contains Warn/Error as cold, so d3d_Warning* spellings moved blocks).
+# Evidence for the addresses: CreateWorld calls 0x10021d10 at 0x100331cd (one string argument) and every push
+# of "Set '%s' overflowed" (0x100a9a10: fifteen sites) and of "Warning: unable to create lightmap pages"
+# (0x100331b1) is followed by `call 0x10021d60`.
+# 0x10023c40  d3d_SetTextureModulate: StartOptimized2D calls 0x10023c40 at 0x100349e6 (d3dopt2d.cpp's comment)
+/ALTERNATENAME:?d3d_SetTextureModulate@@YAXXZ=?sub_10023c40@@YAXXZ
+# 0x10039930  d3d_OnSurfacesRestored: d3ddraw.cpp's comment ("0x10039930 -- run after a lost surface has been
+# restored"); w6_10039730_qip.cpp writes it as sub_10039930()
+/ALTERNATENAME:?d3d_OnSurfacesRestored@@YAXXZ=?sub_10039930@@YAXXZ
+# 0x1006d130  d3d_TermRenderWorld -> w12_6d130_os.obj sub_1006d130 (near); DestroyWorld calls 0x1006d130 at 0x10032c0f;
+# cdecl, one pointer
+/ALTERNATENAME:?d3d_TermRenderWorld@@YAXPAX@Z=?sub_1006d130@@YAXPAURenderWorld6d130@@@Z
+# 0x10014a50  MatVMul_3x3 -> w3_10014580_os.cpp's sub_10014a50 (d3dr2d.cpp's name carries the address); cdecl, three pointers both
+/ALTERNATENAME:?MatVMul_3x3_10014a50@@YAXPAUVec3D@@PAUMat4D@@0@Z=?sub_10014a50@@YAXPAVVec10027eb0@@PAVMat10027eb0@@0@Z
+# 0x100156e0  Mat26728::Identity -> w3_10014580_os.cpp's LTMat::sub_100156e0 (big26728.cpp's comment: "0x100156e0 Identity");
+# thiscall, no arguments
+/ALTERNATENAME:?Identity@Mat26728@@QAEXXZ=?sub_100156e0@LTMat@@QAEXXZ
+# 0x1001e0e0  w12_15950_os.obj's view of d3dlow.obj's C1001e0e0::sub_1001e0e0 (identical): the shipped
+# D3DRenderInfo ctor calls 0x1001e0e0 at 0x1001598c; thiscall, six stack dwords, ret $0x18 both
+/ALTERNATENAME:?sub_1001e0e0@RenderStage15950@@QAEXKKKKKM@Z=?sub_1001e0e0@C1001e0e0@@QAEXKGGGGK@Z
+# (0x100374a0 / C1003abe4::_Slot0: the alias is removed -- d3dbatchd.cpp's C1003abe4 no longer
+# declares a virtual slot; its constructor installs the shipped five-slot vtable g_vtbl_100894f0
+# (d3ddata.cpp) as an explicit vptr store, so icl emits no one-slot stand-in vtable.)
+# 0x10036320  ??0C10036320 is defined by w12_36320_os.obj (identical); 0x10079fd0 / 0x1007a130 by
+# w29_10079fd0_osoiqip.obj (identical) under the names big3a080.cpp uses; 0x10015950 ??0D3DRenderInfo by
+# w12_15950_os.obj (identical).  (0x1007a014: the alias is removed -- IsValid now lives, as the /Qip pair
+# 0x1007a010/0x1007a014, in ConvertPixels' own TU w29_10079fd0_osoiqip.cpp.)
+
+# 0x1003b3d0  d3d_AddDirtyRect -> w12_3b3d0_os.obj sub_1003b3d0 (near); d3dblit.cpp's comment places it at 0x1003b3d0,
+# and d3dmid.cpp's decode of the dirty-rect array reads it there; cdecl, one pointer
+/ALTERNATENAME:?d3d_AddDirtyRect@@YAXPAVLTRect@@@Z=?sub_1003b3d0@@YAXPAVLTRect@@@Z
+
+# 0x10021d10  the other two spellings of w4_10021cb0_os.cpp's sub_10021d10(const char*, ...): big17c14's extern "C" one and
+# big64cc0's one-argument one. cdecl; a fixed-argument call to a variadic function pushes the same dwords.
+/ALTERNATENAME:_sub_10021d10=?sub_10021d10@@YAXPBDZZ
+/ALTERNATENAME:?sub_10021d10@@YAXPBD@Z=?sub_10021d10@@YAXPBDZZ
+
+# 0x1006a630 -- d3dr5b.cpp's 0x10069110 calls it (`call 0x1006a630` at 0x1006914d) with its
+# third parameter spelled `uint32 nFlags`; the callee stores that dword into the query's
+# +0x04 and 0x1006a5f8 copies a vector through it, so w8_1006a5f0_osoiqip.cpp spells it D3DVec3*.
+/ALTERNATENAME:?sub_1006a630@@YAPAXPAXPAUD3DVec3@@K1PAUPlane10069110@@@Z=?sub_1006a630@@YAPAXPAXPAUD3DVec3@@11PAUPlane10069110@@@Z
+# 0x10068910 -- d3dr5d.cpp's 0x10068a50 takes its address (`mov $0x10068910,%esi` at 0x10068c07)
+# as a 0x100500a0 callback spelled `void (*)(void*)`; the body reads two parameters
+# (0x8/0xc(%ebp)) and passes them to 0x10066f00 as (pXForm, pObject): w8_10068910.cpp.
+/ALTERNATENAME:?sub_10068910@@YAXPAX@Z=?sub_10068910@@YAXPAVXForm66f08@@PAVObject66f08@@@Z
+# 0x1006be50 -- d3dlow.cpp's 0x1000ef60 calls it (`call 0x1006be50` at 0x1000ef8e) declared
+# `void`; the body answers 0/1 in %eax on every exit (0x1006bf01, 0x1006bf12, 0x1006c1ce ...),
+# so w8_1006bb30_qip.cpp spells it returning LTBOOL.
+/ALTERNATENAME:?sub_1006be50@@YAXPAX0K@Z=?sub_1006be50@@YAIPAX0K@Z
+
+# Hand-written; each pair is one shipped address:
+# 0x10035ab0 -- d3dr5c*.cpp's Node10036380 and d3dqip3.cpp's Node10036420 are
+# the same node class (both built by 0x10036254, both call 0x10035ab0 with 1).
+/ALTERNATENAME:?sub_10035ab0@Node10036380@@QAEXK@Z=?sub_10035ab0@Node10036420@@QAEXK@Z
+# 0x10039bd0 -- d3dmid.cpp's C++ spelling of the stack entry w6_10039730_qip.cpp defines extern "C".
+/ALTERNATENAME:?sub_10039bd0@@YAKPAUD3DSharedTexture@@KK@Z=_sub_10039bd0
+# 0x10039d70 -- big124a4.cpp/big6d910.cpp reach it extern "C".
+/ALTERNATENAME:_sub_10039d70=?sub_10039d70@@YAJPAXJ@Z
+# (0x1006d3e0: d3dr3a.cpp now defines it C10091950::sub_1006d3e0, the thiscall
+# spelling w6_10039730_qip.cpp references, so the old alias onto a free
+# ?sub_1006d3e0@@YAXXZ -- which no longer exists and left aliases.obj with an
+# unresolved default -- is gone.)
+# 0x1007a180 -- 0x10038893 calls it `mov $0x1008daa0,%ecx ; call 0x1007a180`;
+# d3dr2c_os.cpp defines it as C1007a180Disp's (and 0x1008daa0 is FormatMgr already).
+/ALTERNATENAME:?sub_1007a180@FormatMgr@@QAEJPAVPFormat@@KPAK@Z=?sub_1007a180@C1007a180Disp@@QAEJPAUC1007a180Req@@KPAX@Z
+# 0x1007a180  the same, declared LTRESULT (unsigned) in w6_10039730_qip.cpp
+/ALTERNATENAME:?sub_1007a180@FormatMgr@@QAEKPAVPFormat@@KPAK@Z=?sub_1007a180@C1007a180Disp@@QAEJPAUC1007a180Req@@KPAX@Z
+
+# ---- other spellings of functions already defined. Each
+# caller's rel32 was read back out of the retail d3d.ren at the shipped address of the
+# referencing function; every pair agrees on convention (thiscall/cdecl) and on
+# argument bytes -- only the class name, parameter types or return type differ.
+# 0x10008e10 / 0x10008da0 -- 0x10044f74 (d3dbatcha_o2.cpp) `mov %ebx,%ecx ; call 0x10008e10`
+# at 0x10044faf and `call 0x10008da0` at 0x10044fbd: CD3DModelDraw's members, thiscall.
+/ALTERNATENAME:?sub_10008e10@C10044f74@@QAEXXZ=?sub_10008e10@CD3DModelDraw@@QAEXXZ
+/ALTERNATENAME:?sub_10008da0@C10044f74@@QAEXK@Z=?sub_10008da0@CD3DModelDraw@@QAEXK@Z
+# 0x1000a110 -- 0x1000a1f0 (d3dr2d.cpp) and 0x1000a630 (d3dbatchb.cpp) both `call 0x1000a110`
+# at +0x1b; thiscall, two stack words (`ret $8`); the definition's long result is ignored.
+/ALTERNATENAME:?sub_1000a110@Obj1000a1f0@@QAEXKPAUIAllocator@@@Z=?sub_1000a110@Arr10009f10@@QAEJKPAVIAllocator@@@Z
+/ALTERNATENAME:?sub_1000a110@Obj1000a630@@QAEXKK@Z=?sub_1000a110@Arr10009f10@@QAEJKPAVIAllocator@@@Z
+# 0x1000a220 -- 0x1000a3c0 (d3dr2a.cpp) `call 0x1000a220` at 0x1000a3db; thiscall, two words.
+/ALTERNATENAME:?sub_1000a220@C1000a3c0@@QAEXKPAUIAllocator@@@Z=?sub_1000a220@Arr10009f10@@QAEXKPAVIAllocator@@@Z
+# 0x1000a3f0 -- 0x1000a600 (d3dr2b.cpp) `call 0x1000a3f0` at 0x1000a622; thiscall, three words.
+/ALTERNATENAME:?sub_1000a3f0@Arr1000a600@@QAEKKPBXPAUIAllocator@@@Z=?sub_1000a3f0@Arr10009f10@@QAEJKABUElem10009f10@@PAVIAllocator@@@Z
+# 0x1000a8a0 -- 0x10011420 (d3dbatcha.cpp) and 0x1006d8e0 (d3dr2d_os.cpp) `call 0x1000a8a0` at
+# +0x22; __cdecl, four words (caller pops $0x10).
+/ALTERNATENAME:?sub_1000a8a0@@YAXKKKK@Z=?sub_1000a8a0@@YAIPAPAUTVert1000a8a0@@PAKPAUXForm1000a8a0@@K@Z
+/ALTERNATENAME:?sub_1000a8a0@@YAXPAX0PAEK@Z=?sub_1000a8a0@@YAIPAPAUTVert1000a8a0@@PAKPAUXForm1000a8a0@@K@Z
+# 0x1000f2c0 -- 0x10023300 (d3dr2b.cpp) and 0x10014550 (d3dr2c_os.cpp) `call 0x1000f2c0` at
+# +0x22; __cdecl, four words.
+/ALTERNATENAME:?sub_1000f2c0@@YAKPAX00K@Z=?sub_1000f2c0@@YAIPAPAUTVert1000f2c0@@PAKPAUXForm1000f2c0@@K@Z
+/ALTERNATENAME:?sub_1000f2c0@@YAJPAX000@Z=?sub_1000f2c0@@YAIPAPAUTVert1000f2c0@@PAKPAUXForm1000f2c0@@K@Z
+# 0x1000f4b0 -- 0x1000f2c0 (w2_1000f2c0_os.cpp) `call 0x1000f4b0` at 0x1000f411; __cdecl, three
+# words; d3dr3c_os.cpp defines it.
+/ALTERNATENAME:?sub_1000f4b0@@YAIKPAPAXPAK@Z=?sub_1000f4b0@@YAIKPAPAUClipVert@@PAJ@Z
+# 0x1000d940 -- big6d910/big70d10/bigb910 reach it extern "C" (`call 0x1000d940` at 0x1006f138,
+# 0x10072629, 0x1000d23a); __cdecl, two words, as w2_1000d940_os.cpp defines it.
+/ALTERNATENAME:_sub_1000d940=?sub_1000d940@@YAXPAURVert@@PAE@Z
+# 0x1006cc90 -- d3d_CreateLightmapPages: d3d_CreateWorld calls it at 0x1003319d (`call 0x1006cc90`,
+# one stack argument, the render world); w13_1006c6e0_osoiqip.cpp defines it as sub_1006cc90,
+# __cdecl, one word, answering the same unsigned int.
+/ALTERNATENAME:?d3d_CreateLightmapPages@@YAIPAX@Z=?sub_1006cc90@@YAIPAURenderWorld6d130@@@Z
+# ---- END other spellings of functions already defined ----
+
+# ---- other spellings of the functions written in w14_*.cpp ----
+# 0x10008da0 -- d3dbatcha_o2.cpp's C10044f74 spelling of CD3DModelDraw::sub_10008da0
+# (w14_10008a40_qipni.cpp); d3dbatcha_o2.cpp's 0x10044f74 calls it at 0x10044fbd (`call 0x10008da0`).
+/ALTERNATENAME:?sub_10008da0@C10044f74@@QAEXK@Z=?sub_10008da0@CD3DModelDraw@@QAEXK@Z
+# 0x10047b60 -- w14_10008a40_qipni.cpp calls it as a CD3DModelDraw member
+# (0x10008c26 `call 0x10047b60` with the drawer in %ecx); w7_10040cc0.cpp defines it
+# as C10044f74::sub_10047b60.
+/ALTERNATENAME:?sub_10047b60@CD3DModelDraw@@QAEXPAK@Z=?sub_10047b60@C10044f74@@QAEXPAK@Z
+# 0x1007dec0 -- the /Qip stack entry (`8b 44 24 04`, falling into 0x1007dec4) of
+# d3dr2d_os.cpp's Obj1007dec4::sub_1007dec4; w14_10006840.cpp's clip paths call the
+# stack entry (0x100071b8 / 0x10007f68 `call 0x1007dec0`), the same call.
+/ALTERNATENAME:?sub_1007dec0@I100039d0@@QAEXXZ=?sub_1007dec4@Obj1007dec4@@QAEXXZ
+# ---- end w14_*.cpp ----
+# ---- 0x1000e0e0 ----
+# 0x1000e0e0  w27_10050900_os.cpp's 0x10050900 calls it with ONE argument (`push %edi` is icl's dead
+# slot: 0x10050b3f push %edi ; 0x10050b40 push %ebx ; 0x10050b41 call 0x1000e0e0); bige0e0.cpp defines it
+# with a second, never-read parameter
+/ALTERNATENAME:?sub_1000e0e0@@YAXPAUObje0e0@@@Z=?sub_1000e0e0@@YAXPAUObje0e0@@K@Z
+# ---- end 0x1000e0e0 ----
+# ---- other spellings of the functions written in w15_*.cpp ----
+# 0x10023130 ParseFind: w6_100385e0's spelling (int32 minTokens) onto w15_10022e90_osoiqip's (uint32, ltbasedefs.h's ConParse)
+/ALTERNATENAME:?sub_10023130@C10023130@@QAEIPBDKJ@Z=?sub_10023130@C10023130@@QAEIPBDKK@Z
+# 0x100230d4 = the register entry of 0x100230d0 (the 4-byte /Qip stack entry `mov 0x4(%esp),%eax` falls into it; this is never read), named for the stack entry in w15_10022e90_osoiqip.cpp
+/ALTERNATENAME:?sub_100230d4@C10023130@@QAEIXZ=?sub_100230d0@C10023130@@QAEIXZ
+# 0x1002dd60 (d3dqip2's void* spelling; the only callee of 0x1002cfee / 0x1002d080 / 0x1002e459 register calls, entered at 0x1002dd6c)
+/ALTERNATENAME:?sub_1002dd60@@YAXPAX0K@Z=?sub_1002dd60@@YAXPAM0K@Z
+# 0x100235d0 (d3dr3d's installer takes its address as `void f()`: `movl $0x100235d0,0x1008ce8c` at 0x1002b179)
+/ALTERNATENAME:?sub_100235d0@@YAXXZ=?sub_100235d0@@YIXPBULTVec@@PAE@Z
+# ---- END w15_*.cpp ----
+
+# w18_1001d180_os.cpp / w18_1001dc70_os.cpp: CMoArray<WORD> members reached from the
+# vtable-only GenCopyList 0x1001da90 / GenAppendList 0x1001d9c0 / GenRemoveAt 0x1001d180 under
+# d3dr4a.cpp's class name Arr1001d.  Each target is the function defined at the address
+# the shipped call reaches.
+# 0x1001dd40 (SetSize; call at 0x1001daad from 0x1001da90)
+/ALTERNATENAME:?sub_1001dd40@Arr1001d@@QAEJK@Z=?sub_1001dd40@C1001dd40@@QAEXK@Z
+# 0x1001dd70 (operator[]; calls at 0x1001db18 / 0x1001da4f)
+/ALTERNATENAME:?sub_1001dd70@Arr1001d@@QBEAAGK@Z=?sub_1001dd70@Arr1001dd70@@QBEAAGK@Z
+# 0x1001e070 (Term(pAlloc); calls at 0x1001db42 / 0x1001da79)
+/ALTERNATENAME:?sub_1001e070@Arr1001d@@QAEXPAUIAllocator@@@Z=?sub_1001e070@C1001e070@@QAEXK@Z
+# 0x1001d540 (Remove; call at 0x1001d191 from 0x1001d180)
+/ALTERNATENAME:?sub_1001d540@Arr1001d@@QAEXK@Z=?sub_1001d540@Obj1001d540@@QAEXK@Z
+# 0x1001d810 (InternalNiceSetSize; call at 0x1001dc93 from 0x1001dc70)
+/ALTERNATENAME:?InternalNiceSetSize@Arr1001d@@QAEJKJPAUIAllocator@@@Z=?InternalNiceSetSize@Arr1001d810@@QAEJKJPAVIAllocator@@@Z
+# ---- end w18_*.cpp ----
+# ---- aliases for the functions in w22_*.cpp (each proven by the shipped address) ----
+# 0x1007f7e0  NiceSetSize, called from 0x1007f5c6 (0x1007f5a0, GenAppendList)
+/ALTERNATENAME:?sub_1007f7e0@ArrP@@QAEJK@Z=?sub_1007f7e0@Arr1007f7e0@@QAEKK@Z
+# 0x10009ec0  Insert(index, toAdd), called from 0x1007fa3a (0x1007fa20, Append)
+/ALTERNATENAME:?sub_10009ec0@Arr1007fa20@@QAEJKPBX@Z=?sub_10009ec0@C10009d60@@QAEJPAX0@Z
+# 0x1007c840  SetSize, called from 0x1007c5a2 (0x1007c580, GenCopyList)
+/ALTERNATENAME:?sub_1007c840@Arr1007c480@@QAEKK@Z=?sub_1007c840@Arr1007c840@@QAEXK@Z
+# 0x1007dec4  the wrap (register entry past the 0x1007dec0 shim), called from 0x1007deab (0x1007dde0)
+/ALTERNATENAME:?sub_1007dec4@VBDefault1007dde0@@QAEXXZ=?sub_1007dec4@Obj1007dec4@@QAEXXZ
+# ---- END w22_*.cpp ----
+
+# ---- BEGIN w_IsectObjectCB (0x10069190) ----
+# 0x10069190  w_IsectObjectCB.  w17_10069a10_osoi.cpp's 0x10069a10 hands its ADDRESS to
+# the root's segment walk (`movl $0x10069190,0x8(%esp)` at 0x10069bf1) and declares it `void sub_10069190()`;
+# it is defined in w24_10068c80_osqipni.cpp with its real signature (LTObject* in, LTBOOL out).
+/ALTERNATENAME:?sub_10069190@@YAXXZ=?sub_10069190@@YAIPAVObj69190@@@Z
+# ---- END w_IsectObjectCB ----
+# ---- BEGIN D3DRenderInfo's per-node key evaluation (0x1007da80) ----
+# 0x1007da80  D3DRenderInfo's per-node key evaluation.  w10_1007cab4_os.cpp defines it with
+# the real LTRotation* / LTVector*; big7cc90.cpp's 0x1007cc90 still declares it
+# over its own LTQuat / LTVec and calls it at 0x1007cce1 (`call 0x1007da80`).
+/ALTERNATENAME:?sub_1007da80@D3DRenderInfo@@QAEXKKPAULTQuat@@PAULTVec@@@Z=?sub_1007da80@D3DRenderInfo@@QAEXKKPAVLTRotation@@PAV?$_CVector@M@@@Z
+# ---- END 0x1007da80 ----
+
+# ---- LTMatrix::Inverse (0x1000ac10) is now big0ae20.obj's out-of-line copy of the SDK's
+# inline Inverse (ltmatrix.h, real name). d3dr4b.cpp's MakeInverse 0x10015740 calls 0x1000ac10
+# under its own class spelling (shipped `call 0x1000ac10` from 0x10015740).
+/ALTERNATENAME:?sub_1000ac10@LTMatrix10015740@@QAEJXZ=?Inverse@LTMatrix@@QAEIXZ
+# ---- end LTMatrix::Inverse ----
+
+# ---- BEGIN w57_*: d3d.ren's static initialisers, as icl generates them ----
+# 0x10021f40  the console-variable registrar written as a CONSTRUCTOR: the
+# initialisers 0x10009860 (`mov $0x1008ab90,%ecx ; call 0x10021f40`) and
+# 0x1002db00 (`mov $0x1008d704,%ecx ; call 0x10021f40`) construct their
+# file-scope records through it; w4_10021cb0_os.cpp defines the body as a member.
+/ALTERNATENAME:??0CConVar@@QAE@PBDMPAJPAM@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+/ALTERNATENAME:??0CD3DConVar@@QAE@PBDMPAJPAM@Z=?sub_10021f44@CD3DConVar@@QAEPAV1@PBDMPAJPAM@Z
+# 0x1007dc50  the model vertex-buffer base constructor (w35_1007dc54_os.cpp's member):
+# 0x10009891 `mov $0x1008ad4c,%ecx ; call 0x1007dc50`, 0x1007e0b0 `call 0x1007dc54`.
+/ALTERNATENAME:??0C1007dc54@@QAE@XZ=?sub_1007dc54@C1007dc54@@QAEPAU1@XZ
+# 0x1007dcc0  its destructor (d3dbatchb_os.cpp's Obj1007dcc4): the atexit thunks
+# 0x10009a68 `mov $0x1008ad4c,%ecx ; call 0x1007dcc0` and 0x1007e877 `call 0x1007dcc4`.
+/ALTERNATENAME:??1C1007dc54@@UAE@XZ=?sub_1007dcc4@Obj1007dcc4@@QAEXXZ
+# ---- END w57_* static initialisers ----
+
+# ---- BEGIN other spellings of one d3d.ren global (generated) ----
+# Each line maps a spelling of a d3d.ren global onto the ONE
+# definition src/engine/d3d/d3ddata.cpp gives that address (the comment above
+# it), or a d3dfn_<addr> function reference onto the function defined there.
+# 0x10089390
+/ALTERNATENAME:?g_10089390@@3PAEA=?g_vtbl_10089390@@3PAPAXA
+# 0x100893c8
+/ALTERNATENAME:?g_CV_FogFarZ@@3MA=?g_100893c8@@3MA
+# 0x100893d4
+/ALTERNATENAME:?g_CV_DrawSprites@@3JA=?g_100893d4@@3KA
+# 0x100893d8
+/ALTERNATENAME:?g_CV_DrawPolyGrids@@3JA=?g_100893d8@@3KA
+# 0x100893dc
+/ALTERNATENAME:?g_CV_DynamicLight@@3JA=?g_100893dc@@3KA
+# 0x100893e0
+/ALTERNATENAME:?g_CV_LightModels@@3JA=?g_100893e0@@3KA
+# 0x100893ec
+/ALTERNATENAME:?g_n100893ec@@3JA=?g_CV_MaxModelShadows@@3JA
+# 0x100893f4
+/ALTERNATENAME:?g_CV_DrawParticles@@3JA=?g_100893f4@@3KA
+# 0x100893f8
+/ALTERNATENAME:?g_CV_DrawModels@@3JA=?g_100893f8@@3KA
+# 0x100893fc
+/ALTERNATENAME:?g_CV_DrawLineSystems@@3JA=?g_100893fc@@3KA
+# 0x10089408
+/ALTERNATENAME:?g_n10089408@@3KA=?g_CV_TintModels@@3JA
+# 0x10089470
+/ALTERNATENAME:?g_10089470@@3PAEA=?g_vtbl_10089470@@3PAPAXA
+# 0x100894c0
+/ALTERNATENAME:?g_vtbl_100894c0@@3PBQAXB=?g_vtbl_100894c0@@3PAPAXA
+# 0x10089510
+/ALTERNATENAME:?g_10089510@@3PAEA=?g_vtbl_10089510@@3PAPAXA
+# 0x10089530
+/ALTERNATENAME:?g_10089530@@3PAEA=?g_10089530@@3PAPAXA
+# 0x10089718
+/ALTERNATENAME:?g_10089718@@3PAP8C1008f620@@AEJPAUW7Poly56c60@@K@ZQ1@=?g_10089718@@3PAPAXA
+# 0x10089a20
+/ALTERNATENAME:?g_10089a20@@3PAEA=?g_vtbl_10089a20@@3PAPAXA
+# 0x10089a60
+/ALTERNATENAME:?g_10089a60@@3PAEA=?g_vtbl_10089a60@@3PAPAXA
+# 0x10089a90
+/ALTERNATENAME:?g_10089a90@@3PAEA=?g_vtbl_10089a90@@3PAPAXA
+# 0x1008ac98
+/ALTERNATENAME:?g_1008ac98@@3UI100039d0@@A=?g_1008ac98@@3UCModelVBBank@@A
+# 0x1008acd4
+/ALTERNATENAME:?g_1008acd4@@3UI100039d0@@A=?g_1008acd4@@3UCModelVBBank@@A
+# 0x1008ad10
+/ALTERNATENAME:?g_1008ad10@@3UI100039d0@@A=?g_1008ad10@@3UCModelVBBank@@A
+# 0x1008ad4c
+/ALTERNATENAME:?g_1008ad4c@@3UI100039d0@@A=?g_1008ad4c@@3UCModelVBBank@@A
+# 0x1008ad94
+/ALTERNATENAME:?g_f1008ad94@@3MA=?g_1008ad94@@3MA
+# 0x1008ad98
+/ALTERNATENAME:?g_f1008ad98@@3MA=?g_1008ad98@@3MA
+# 0x1008ad9c
+/ALTERNATENAME:?g_f1008ad9c@@3MA=?g_1008ad9c@@3KA
+# 0x1008ada0
+/ALTERNATENAME:?g_f1008ada0@@3MA=?g_1008ada0@@3KA
+# 0x1008ade0
+/ALTERNATENAME:?g_1008ade0@@3KA=?g_1008ade0@@3UCVarR5C@@A
+# 0x1008ae00
+/ALTERNATENAME:?g_1008ae00@@3KA=?g_1008ae00@@3UCVarR5C@@A
+# 0x1008ae20
+/ALTERNATENAME:?g_1008ae20@@3KA=?g_1008ae20@@3UCVarR5C@@A
+# 0x1008ae40
+/ALTERNATENAME:?g_1008ae40@@3KA=?g_1008ae40@@3UCVarR5C@@A
+# 0x1008ae80
+/ALTERNATENAME:?g_1008ae80@@3KA=?g_1008ae80@@3UCVarR5C@@A
+# 0x1008ae80
+/ALTERNATENAME:?g_1008ae80_flag@@3KA=?g_1008ae80@@3UCVarR5C@@A
+# 0x1008aea0
+/ALTERNATENAME:?g_1008aea0@@3KA=?g_1008aea0@@3UCVarR5C@@A
+# 0x1008aed4
+/ALTERNATENAME:?g_n1008aed4@@3KA=?g_1008aed4@@3UBank10021f40@@A
+# 0x1008aef4
+/ALTERNATENAME:?g_n1008aef4@@3KA=?g_1008aef4@@3UBank10021f40@@A
+# 0x1008af14
+/ALTERNATENAME:?g_n1008af14@@3KA=?g_1008af14@@3UBank10021f40@@A
+# 0x1008af54
+/ALTERNATENAME:?g_n1008af54@@3KA=?g_1008af54@@3UBank10021f40@@A
+# 0x1008af94
+/ALTERNATENAME:?g_n1008af94@@3KA=?g_1008af94@@3UBank10021f40@@A
+# 0x1008bf68
+/ALTERNATENAME:?g_pBackSurface@@3PAUDDSurface@@A=?g_1008bf68@@3KA
+# 0x1008bf68
+/ALTERNATENAME:?g_pOffscreen@@3PAUDDSurface7@@A=?g_1008bf68@@3KA
+# 0x1008bf68
+/ALTERNATENAME:?g_pOffscreen@@3PAUDDSurface@@A=?g_1008bf68@@3KA
+# 0x1008d528
+/ALTERNATENAME:?g_vLightScaleLast@@3UFVec3@@A=?g_1008d528@@3UFVec3@@A
+# 0x1008d534
+/ALTERNATENAME:?g_varRenderToFront@@3VCD3DConVar@@A=?g_1008d534@@3VCD3DConVar@@A
+# 0x1008d554
+/ALTERNATENAME:?g_varShowTexInfo@@3VCD3DConVar@@A=?g_1008d554@@3VCD3DConVar@@A
+# 0x1008d574
+/ALTERNATENAME:?g_1008d574@@3KA=?g_1008d574@@3VCD3DConVar@@A
+# 0x1008d594
+/ALTERNATENAME:?g_1008d594@@3KA=?g_1008d594@@3VCD3DConVar@@A
+# 0x1008d594
+/ALTERNATENAME:?g_varShowPortalBounds@@3VCD3DConVar@@A=?g_1008d594@@3VCD3DConVar@@A
+# 0x1008d5b4
+/ALTERNATENAME:?g_varDrawPortals@@3VCD3DConVar@@A=?g_1008d5b4@@3VCD3DConVar@@A
+# 0x1008d5e4
+/ALTERNATENAME:?g_1008d5e4@@3KA=?g_1008d5e4@@3VCD3DConVar@@A
+# 0x1008d604
+/ALTERNATENAME:?g_varDrawTerrainSections@@3VCD3DConVar@@A=?g_1008d604@@3VCD3DConVar@@A
+# 0x1008d624
+/ALTERNATENAME:?g_varDrawWorldTree@@3VCD3DConVar@@A=?g_1008d624@@3VCD3DConVar@@A
+# 0x1008d644
+/ALTERNATENAME:?g_1008d644@@3KA=?g_1008d644@@3VCD3DConVar@@A
+# 0x1008e734
+/ALTERNATENAME:?g_DirtyRects@@3PAVLTRect@@A=?g_DirtyRects@@3PAUD3DDirtyRect@@A
+# 0x1008fe60
+/ALTERNATENAME:?g_p1008fe60@@3PAUVert5a960@@A=?g_1008fe60@@3KA
+# 0x1008fe64
+/ALTERNATENAME:?g_p1008fe64@@3PAGA=?g_1008fe64@@3KA
+# 0x1008fe9c
+/ALTERNATENAME:?g_n1008fe9c@@3KA=?g_1008fe9c@@3KA
+# 0x1008fea0
+/ALTERNATENAME:?g_n1008fea0@@3KA=?g_1008fea0@@3KA
+# 0x100911b8
+/ALTERNATENAME:?g_100911b8@@3PAUC10035b40@@A=?g_100911b8@@3KA
+# 0x100911b8
+/ALTERNATENAME:?g_100911b8@@3PAVC10036320@@A=?g_100911b8@@3KA
+# 0x100911b8
+/ALTERNATENAME:?g_100911b8@@3PAVCMgr1006a6a0@@A=?g_100911b8@@3KA
+# 0x100911b8
+/ALTERNATENAME:?g_pFactory100911b8@@3PAVC1006a710Factory@@A=?g_100911b8@@3KA
+# 0x10091950
+/ALTERNATENAME:?g_10091950@@3UC10091950@@A=?g_10091950@@3Usub_1006d3a4@@A
+# 0x10091950
+/ALTERNATENAME:?g_10091950@@3VC1006d520@@A=?g_10091950@@3Usub_1006d3a4@@A
+# 0x10091a10
+/ALTERNATENAME:?g_10091a10@@3PAEA=?g_10091a10@@3VC1007b980@@A
+# 0x10091a10
+/ALTERNATENAME:?g_10091a10@@3URoot1007aeb4@@A=?g_10091a10@@3VC1007b980@@A
+# 0x10091d80
+/ALTERNATENAME:?g_10091d80@@3PAEA=?g_10091d80@@3UC1007e0a0@@A
+# 0x10091d80
+/ALTERNATENAME:?g_10091d80@@3UC1007e850@@A=?g_10091d80@@3UC1007e0a0@@A
+# 0x10091d80
+/ALTERNATENAME:?g_10091d80@@3UI100039d0@@A=?g_10091d80@@3UC1007e0a0@@A
+# 0x10091d80
+/ALTERNATENAME:?g_Cache10091d80@@3VD3DModelCache@@A=?g_10091d80@@3UC1007e0a0@@A
+# 0x10091df0
+/ALTERNATENAME:?g_10091df0@@3UC10091df0@@A=?g_DefAlloc@@3VLAlloc@@A
+# 0x10091df0
+/ALTERNATENAME:?g_10091df0@@3UIAllocator@@A=?g_DefAlloc@@3VLAlloc@@A
+# 0x10091df0
+/ALTERNATENAME:?g_10091df0@@3VIAllocator@@A=?g_DefAlloc@@3VLAlloc@@A
+# 0x10091df0
+/ALTERNATENAME:?g_10091df0@@3VLAlloc1007aeb4@@A=?g_DefAlloc@@3VLAlloc@@A
+# 0x10091df0
+/ALTERNATENAME:?g_10091df0@@3VLAllocR5C@@A=?g_DefAlloc@@3VLAlloc@@A
+# 0x10003770
+/ALTERNATENAME:_d3dfn_10003770=??_GCModelVBBank@@UAEPAXI@Z
+# 0x100037b0
+/ALTERNATENAME:_d3dfn_100037b0=?sub_100037b0@C100037b0@@QBEKXZ
+# 0x100037d0
+/ALTERNATENAME:_d3dfn_100037d0=?sub_100037d0@C100037d0@@QAEKXZ
+# 0x100037f0
+/ALTERNATENAME:_d3dfn_100037f0=?sub_100037f0@Batch100038e0@@QAEIPAUD3D7R5C@@@Z
+# 0x100038e0
+/ALTERNATENAME:_d3dfn_100038e0=?sub_100038e0@Batch100038e0@@QAEIPAUD3D7R5C@@@Z
+# 0x100145f0
+/ALTERNATENAME:_d3dfn_100145f0=?sub_100145f0@@YAXXZ
+# 0x10015d30
+/ALTERNATENAME:_d3dfn_10015d30=?sub_10015d30@@YAXXZ
+# 0x10015e20
+/ALTERNATENAME:_d3dfn_10015e20=?sub_10015e20@@YAXXZ
+# 0x1001c1d0
+/ALTERNATENAME:_d3dfn_1001c1d0=?sub_1001c1d0@@YAXXZ
+# 0x1001c480
+/ALTERNATENAME:_d3dfn_1001c480=?sub_1001c480@C1001c480@@QAEIPBXPAJ@Z
+# 0x1001c4c0
+/ALTERNATENAME:_d3dfn_1001c4c0=?sub_1001c4c0@Arr1001c@@QAEKABUGenList1001c@@@Z
+# 0x1001c5a0
+/ALTERNATENAME:_d3dfn_1001c5a0=?sub_1001c5a0@Arr1001c@@QAEKABUGenList1001c@@@Z
+# 0x1001c680
+/ALTERNATENAME:_d3dfn_1001c680=?sub_1001c680@C1001c680@@QAEXXZ
+# 0x1001c6a0
+/ALTERNATENAME:_d3dfn_1001c6a0=?sub_1001c6a0@Arr1001c@@QAEXUGenListPos@@@Z
+# 0x1001c6c0
+/ALTERNATENAME:_d3dfn_1001c6c0=?sub_1001c6c0@Arr1001c6c0@@QAEJPAX@Z
+# 0x1001c6e0
+/ALTERNATENAME:_d3dfn_1001c6e0=?sub_1001c6e0@Arr1001c6e0@@QBE?AUT1001c6e0@@AAUGenListPos@@@Z
+# 0x1001c720
+/ALTERNATENAME:_d3dfn_1001c720=?sub_1001c720@Arr1001c720@@QBE?AUT1001c720@@AAUGenListPos@@@Z
+# 0x1001c760
+/ALTERNATENAME:_d3dfn_1001c760=?sub_1001c760@CGenArray1001c760@@QBEIABUGenListPos1001c760@@@Z
+# 0x1001cf40
+/ALTERNATENAME:_d3dfn_1001cf40=?sub_1001cf40@C1001cf40@@QAEXK@Z
+# 0x1001cf60
+/ALTERNATENAME:_d3dfn_1001cf60=?sub_1001cf60@C1001c480@@QAEIPBXPAJ@Z
+# 0x1001cfa0
+/ALTERNATENAME:_d3dfn_1001cfa0=?sub_1001cfa0@Arr32@@QAEJABUGenList32@@@Z
+# 0x1001d080
+/ALTERNATENAME:_d3dfn_1001d080=?sub_1001d080@Arr32@@QAEJABUGenList32@@@Z
+# 0x1001d160
+/ALTERNATENAME:_d3dfn_1001d160=?sub_1001d160@Arr1001d@@QAEXXZ
+# 0x1001d180
+/ALTERNATENAME:_d3dfn_1001d180=?sub_1001d180@Arr1001d@@QAEXUGenListPos@@@Z
+# 0x1001d1a0
+/ALTERNATENAME:_d3dfn_1001d1a0=?sub_1001d1a0@Arr1001d@@QAEKAAG@Z
+# 0x1001d1c0
+/ALTERNATENAME:_d3dfn_1001d1c0=?sub_1001d1c0@C1001d1c0@@QAE?AUElem10009ef0@@PBUKey1001d1c0@@@Z
+# 0x1001d200
+/ALTERNATENAME:_d3dfn_1001d200=?sub_1001d200@Arr1001d200@@QBE?AUT1001d200@@AAUGenListPos@@@Z
+# 0x1001d240
+/ALTERNATENAME:_d3dfn_1001d240=?GenBegin@?$CMoArray@KVDefaultCache@@@@UBE?AVGenListPos@@XZ
+# 0x1001d980
+/ALTERNATENAME:_d3dfn_1001d980=?sub_1001d980@C1001c480@@QAEIPBXPAJ@Z
+# 0x1001d9c0
+/ALTERNATENAME:_d3dfn_1001d9c0=?sub_1001d9c0@Arr1001d@@QAEJABUGenListW@@@Z
+# 0x1001da90
+/ALTERNATENAME:_d3dfn_1001da90=?sub_1001da90@Arr1001d@@QAEJABUGenListW@@@Z
+# 0x1001db50
+/ALTERNATENAME:_d3dfn_1001db50=?sub_1001db50@Arr1001d@@QBEKXZ
+# 0x1001db70
+/ALTERNATENAME:_d3dfn_1001db70=?sub_1001db70@Arr1001db70@@QAEXXZ
+# 0x1001db90
+/ALTERNATENAME:_d3dfn_1001db90=?sub_1001db90@Arr1001db90@@QAEXUGenListPos@@@Z
+# 0x1001dbb0
+/ALTERNATENAME:_d3dfn_1001dbb0=?sub_1001dbb0@Arr1001dbb0@@QAEJPAX@Z
+# 0x1001dbd0
+/ALTERNATENAME:_d3dfn_1001dbd0=?sub_1001dbd0@Arr1001d@@QBEGAAUGenListPos@@@Z
+# 0x1001dc00
+/ALTERNATENAME:_d3dfn_1001dc00=?sub_1001dc00@Arr1001d@@QBEGAAUGenListPos@@@Z
+# 0x10035a70
+/ALTERNATENAME:_d3dfn_10035a70=?sub_10035a70@C10035a70@@QAEXK@Z
+# 0x10035ae0
+/ALTERNATENAME:_d3dfn_10035ae0=?sub_10035ae0@C10035ae0@@QAEXK@Z
+# 0x10035b10
+/ALTERNATENAME:_d3dfn_10035b10=?sub_10035b10@C10035b10@@QAEXK@Z
+# 0x10035b40
+/ALTERNATENAME:_d3dfn_10035b40=?sub_10035b40@C10035b40@@QAEXK@Z
+# 0x10035bd0
+/ALTERNATENAME:_d3dfn_10035bd0=?sub_10035bd0@C10035a70@@QAEXXZ
+# 0x10035c00
+/ALTERNATENAME:_d3dfn_10035c00=?sub_10035c00@C10035a70@@QAEXPAK0@Z
+# 0x10035c30
+/ALTERNATENAME:_d3dfn_10035c30=?sub_10035c30@C10035c30@@QAEJXZ
+# 0x10035e20
+/ALTERNATENAME:_d3dfn_10035e20=?sub_10035e20@C10035e20@@QAEJKKKE@Z
+# 0x10036130
+/ALTERNATENAME:_d3dfn_10036130=?sub_10036130@CBlit10036130@@QAEJKK@Z
+# 0x100361c0
+/ALTERNATENAME:_d3dfn_100361c0=?sub_100361c0@CBlit10036130@@QAEJKK@Z
+# 0x10036380
+/ALTERNATENAME:_d3dfn_10036380=?sub_10036380@Obj10036380@@QAEPAUPayload10036380@@PAX0@Z
+# 0x10036420
+/ALTERNATENAME:_d3dfn_10036420=?sub_10036420@C10036420@@QAEXPAX@Z
+# 0x10036460
+/ALTERNATENAME:_d3dfn_10036460=?sub_10036460@C10035e20@@QAEJKK@Z
+# 0x10037470
+/ALTERNATENAME:_d3dfn_10037470=?sub_10037470@C10037470@@QAEXK@Z
+# 0x100374a0
+/ALTERNATENAME:_d3dfn_100374a0=?sub_100374a0@C100374a0@@QAEXK@Z
+# 0x100374d0
+/ALTERNATENAME:_d3dfn_100374d0=?sub_100374d0@C100374d0@@QAEXK@Z
+# 0x10037570
+/ALTERNATENAME:_d3dfn_10037570=?sub_10037570@C10037520Bank@@QAEPAUC1003abe4@@XZ
+# 0x10037590
+/ALTERNATENAME:_d3dfn_10037590=?sub_10037590@C10037520Bank@@QAEXPAUC1003abe4@@@Z
+# 0x100375b0
+/ALTERNATENAME:_d3dfn_100375b0=?sub_100375b0@C100375b0@@QAEXXZ
+# 0x1003aba0
+/ALTERNATENAME:_d3dfn_1003aba0=?sub_1003aba0@C1003aba0@@QBEIXZ
+# 0x1003abb0
+/ALTERNATENAME:_d3dfn_1003abb0=?sub_1003abb0@C1003abb0@@QBEKXZ
+# 0x1003abc0
+/ALTERNATENAME:_d3dfn_1003abc0=?sub_1003abc0@C1003abc0@@QAEKXZ
+# 0x1003abd0
+/ALTERNATENAME:_d3dfn_1003abd0=?sub_1003abd0@C1003abd0@@QAEKXZ
+# 0x1003b790
+/ALTERNATENAME:_d3dfn_1003b790=?sub_1003b790@@YAXPAX@Z
+# 0x1003bb10
+/ALTERNATENAME:_d3dfn_1003bb10=?sub_1003bb10@C1003bb10@@QAEJPAUVert3c40@@JK@Z
+# 0x1003d350
+/ALTERNATENAME:_d3dfn_1003d350=?sub_1003d350@C10089530@@QAEKKK@Z
+# 0x1003d5c0
+/ALTERNATENAME:_d3dfn_1003d5c0=?sub_1003d5c0@C10089530@@QAEKKPAK@Z
+# 0x1003d5f0
+/ALTERNATENAME:_d3dfn_1003d5f0=?sub_1003d5f0@C10089530@@QAEKPAX@Z
+# 0x1003d8f0
+/ALTERNATENAME:_d3dfn_1003d8f0=?sub_1003d8f0@C1003d8f0@@QAEJPAK0@Z
+# 0x100408c0
+/ALTERNATENAME:_d3dfn_100408c0=?sub_100408c0@@YAXPAX@Z
+# 0x10042d40
+/ALTERNATENAME:_d3dfn_10042d40=?sub_10042d40@@YAXPAX@Z
+# 0x100437f0
+/ALTERNATENAME:_d3dfn_100437f0=?sub_100437f0@@YAXPAUPoly100437f0@@@Z
+# 0x100503f0
+/ALTERNATENAME:_d3dfn_100503f0=?sub_100503f0@Arr1001d@@QAEXK@Z
+# 0x10050410
+/ALTERNATENAME:_d3dfn_10050410=?GenFindElement@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UBEHABUW7Pending500a0@@AAVGenListPos@@@Z
+# 0x10050450
+/ALTERNATENAME:_d3dfn_10050450=?GenAppendList@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UAEHABV?$GenList@UW7Pending500a0@@@@@Z
+# 0x10050560
+/ALTERNATENAME:_d3dfn_10050560=?GenCopyList@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UAEHABV?$GenList@UW7Pending500a0@@@@@Z
+# 0x10050670
+/ALTERNATENAME:_d3dfn_10050670=?sub_10050670@Arr10050670@@QBEKXZ
+# 0x10050690
+/ALTERNATENAME:_d3dfn_10050690=?sub_10050690@C10050690@@QAEIXZ
+# 0x100506b0
+/ALTERNATENAME:_d3dfn_100506b0=?sub_100506b0@Arr100506b0@@QAEXUGenListPos@@@Z
+# 0x100506d0
+/ALTERNATENAME:_d3dfn_100506d0=?sub_100506d0@C10050800@@QAEXK@Z
+# 0x100506f0
+/ALTERNATENAME:_d3dfn_100506f0=?GenGetAt@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UBE?AUW7Pending500a0@@AAVGenListPos@@@Z
+# 0x10050730
+/ALTERNATENAME:_d3dfn_10050730=?GenGetNext@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UBE?AUW7Pending500a0@@AAVGenListPos@@@Z
+# 0x10050770
+/ALTERNATENAME:_d3dfn_10050770=?GenBegin@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+# 0x10050830
+/ALTERNATENAME:_d3dfn_10050830=?sub_10050830@@YAXXZ
+# 0x100508a0
+/ALTERNATENAME:_d3dfn_100508a0=?sub_100508a0@@YAXPAX@Z
+# 0x10050cc0
+/ALTERNATENAME:_d3dfn_10050cc0=??_G?$ObjectBank@UNode56ab4@@VNullCS@@@@UAEPAXI@Z
+# 0x10050da0
+/ALTERNATENAME:_d3dfn_10050da0=?AllocVoid@?$ObjectBank@UNode56ab4@@VNullCS@@@@UAEPAXXZ
+# 0x10050dc0
+/ALTERNATENAME:_d3dfn_10050dc0=?FreeVoid@?$ObjectBank@UNode56ab4@@VNullCS@@@@UAEXPAX@Z
+# 0x10050de0
+/ALTERNATENAME:_d3dfn_10050de0=?Term@?$ObjectBank@UNode56ab4@@VNullCS@@@@UAEXXZ
+# 0x10050e10
+/ALTERNATENAME:_d3dfn_10050e10=?sub_10050e10@@YAXPAUSub10050e10Object@@PAK1@Z
+# 0x10050e40
+/ALTERNATENAME:_d3dfn_10050e40=?sub_10050e40@@YAXPAUSub10050e40Object@@PAK1@Z
+# 0x10050e60
+/ALTERNATENAME:_d3dfn_10050e60=?sub_10050e60@@YIJKPAPAEPAJ@Z
+# 0x100525b0
+/ALTERNATENAME:_d3dfn_100525b0=?sub_100525b0@@YIJKPAPAEPAJ@Z
+# 0x10056aa0
+/ALTERNATENAME:_d3dfn_10056aa0=?sub_10056aa0@@YIIPAX00@Z
+# 0x100591a0
+/ALTERNATENAME:_d3dfn_100591a0=?sub_100591a0@C100591a0@@QAEXPBUSrc100591a0@@PAUDest100591a0@@K@Z
+# 0x100591e0
+/ALTERNATENAME:_d3dfn_100591e0=?sub_100591e0@C100591e0@@QAEXPBUSrc100591e0@@PAUDest100591e0@@K@Z
+# 0x10059210
+/ALTERNATENAME:_d3dfn_10059210=?sub_10059210@CTexStage@@QAEXPAUTexSrc@@PAUTexPair@@K@Z
+# 0x10059270
+/ALTERNATENAME:_d3dfn_10059270=?sub_10059270@C10059270@@QAEXPBV?$_CVector@M@@PAMK@Z
+# 0x100592a0
+/ALTERNATENAME:_d3dfn_100592a0=?sub_100592a0@C100592a0@@QAEXPAXPAEK@Z
+# 0x10059300
+/ALTERNATENAME:_d3dfn_10059300=?sub_10059300@CTexStage@@QAEXPAXPAUTexPair@@K@Z
+# 0x10059380
+/ALTERNATENAME:_d3dfn_10059380=?sub_10059380@C10059380@@QAEKPAUOwner59380@@KK@Z
+# 0x10059590
+/ALTERNATENAME:_d3dfn_10059590=?sub_10059590@C10059590@@QAEKPAUOwner10059590@@KK@Z
+# 0x10059620
+/ALTERNATENAME:_d3dfn_10059620=?sub_10059620@CTexStage@@QAEKPAUOwner59620@@KK@Z
+# 0x10059870
+/ALTERNATENAME:_d3dfn_10059870=?sub_10059870@C10059870@@QAEKPAUOwner59620@@KK@Z
+# 0x10059880
+/ALTERNATENAME:_d3dfn_10059880=?sub_10059880@C10059880@@QAEXPBXPAUColorDest59880@@@Z
+# 0x100598a0
+/ALTERNATENAME:_d3dfn_100598a0=?sub_100598a0@C100598a0@@QAEXPBUColorSource@@PAUColorDest@@@Z
+# 0x100598f0
+/ALTERNATENAME:_d3dfn_100598f0=?sub_100598f0@CTexStage@@QAEXPBUColor100598f0@@PAUVertex100598f0@@@Z
+# 0x10059980
+/ALTERNATENAME:_d3dfn_10059980=?sub_10059980@C10059980@@QAEXPAUPoly59980@@@Z
+# 0x10059c70
+/ALTERNATENAME:_d3dfn_10059c70=?sub_10059c70@C10059c70@@QAEXK@Z
+# 0x10059f70
+/ALTERNATENAME:_d3dfn_10059f70=?sub_10059f70@C10059f70@@QAEJKK@Z
+# 0x10059fc0
+/ALTERNATENAME:_d3dfn_10059fc0=?sub_10059fc0@CTexStage@@QAEKPAXK@Z
+# 0x1005a040
+/ALTERNATENAME:_d3dfn_1005a040=?sub_1005a040@C1005a040@@QAEJPAX0@Z
+# 0x1005a050
+/ALTERNATENAME:_d3dfn_1005a050=?sub_1005a050@Sub1005a050Owner@@QAEKPAUSub1005a050Arg@@K@Z
+# 0x1005a0b0
+/ALTERNATENAME:_d3dfn_1005a0b0=?GenFindElement@?$CMoArray@USavedVert589c4@@VDefaultCache@@@@UBEHABUSavedVert589c4@@AAVGenListPos@@@Z
+# 0x1005a0f0
+/ALTERNATENAME:_d3dfn_1005a0f0=?sub_1005a0f0@Arr1005a@@QAEKABUGenList1005a@@@Z
+# 0x1005a1d0
+/ALTERNATENAME:_d3dfn_1005a1d0=?sub_1005a1d0@Arr1005a@@QAEKABUGenList1005a@@@Z
+# 0x1005a2b0
+/ALTERNATENAME:_d3dfn_1005a2b0=?sub_1005a2b0@Arr1005a@@QAEXXZ
+# 0x1005a2d0
+/ALTERNATENAME:_d3dfn_1005a2d0=?sub_1005a2d0@Arr1005a2d0@@QAEXUGenListPos@@@Z
+# 0x1005a2f0
+/ALTERNATENAME:_d3dfn_1005a2f0=?sub_1005a2f0@Arr1005a2f0@@QAEJPAX@Z
+# 0x1005a310
+/ALTERNATENAME:_d3dfn_1005a310=?GenGetAt@?$CMoArray@USavedVert589c4@@VDefaultCache@@@@UBE?AUSavedVert589c4@@AAVGenListPos@@@Z
+# 0x1005a350
+/ALTERNATENAME:_d3dfn_1005a350=?GenGetNext@?$CMoArray@USavedVert589c4@@VDefaultCache@@@@UBE?AUSavedVert589c4@@AAVGenListPos@@@Z
+# 0x1005d960
+/ALTERNATENAME:_d3dfn_1005d960=?sub_1005d960@@YAXPAX@Z
+# 0x1005db50
+/ALTERNATENAME:_d3dfn_1005db50=?sub_1005db50@@YAXXZ
+# 0x1005dbc0
+/ALTERNATENAME:_d3dfn_1005dbc0=?sub_1005dbc0@@YAXXZ
+# 0x10064640
+/ALTERNATENAME:_d3dfn_10064640=?sub_10064640@@YAXPAUObj10064640@@@Z
+# 0x10064b70
+/ALTERNATENAME:_d3dfn_10064b70=?sub_10064b70@@YAXPAVD3DObject@@@Z
+# 0x1006c690
+/ALTERNATENAME:_d3dfn_1006c690=?sub_1006c690@C1006c690@@QAEXK@Z
+# 0x1006c6c0
+/ALTERNATENAME:_d3dfn_1006c6c0=?sub_1006c6c0@C1006c6c0@@QBEKXZ
+# 0x1006c6d0
+/ALTERNATENAME:_d3dfn_1006c6d0=?sub_1006c6d0@C1006c6d0@@QAEKXZ
+# 0x10073c00
+/ALTERNATENAME:_d3dfn_10073c00=?sub_10073c00@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10073e00
+/ALTERNATENAME:_d3dfn_10073e00=?sub_10073e00@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x100740a0
+/ALTERNATENAME:_d3dfn_100740a0=?sub_100740a0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10074350
+/ALTERNATENAME:_d3dfn_10074350=?sub_10074350@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x100746b0
+/ALTERNATENAME:_d3dfn_100746b0=?sub_100746b0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10074a50
+/ALTERNATENAME:_d3dfn_10074a50=?sub_10074a50@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10074ea0
+/ALTERNATENAME:_d3dfn_10074ea0=?sub_10074ea0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x100754d0
+/ALTERNATENAME:_d3dfn_100754d0=?sub_100754d0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10075920
+/ALTERNATENAME:_d3dfn_10075920=?sub_10075920@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10075cd0
+/ALTERNATENAME:_d3dfn_10075cd0=?sub_10075cd0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10076300
+/ALTERNATENAME:_d3dfn_10076300=?sub_10076300@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10076870
+/ALTERNATENAME:_d3dfn_10076870=?sub_10076870@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10076df0
+/ALTERNATENAME:_d3dfn_10076df0=?sub_10076df0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10077110
+/ALTERNATENAME:_d3dfn_10077110=?sub_10077110@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x100773e0
+/ALTERNATENAME:_d3dfn_100773e0=?sub_100773e0@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10077680
+/ALTERNATENAME:_d3dfn_10077680=?sub_10077680@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x10078910
+/ALTERNATENAME:_d3dfn_10078910=?sub_10078910@@YAKPAVFormatMgr@@PAUConvertRequest@@@Z
+# 0x100799b0
+/ALTERNATENAME:_d3dfn_100799b0=?sub_100799b0@@YAXPAEPAUPackFmt100799b0@@PAX2@Z
+# 0x10079aa0
+/ALTERNATENAME:_d3dfn_10079aa0=?sub_10079aa0@@YAXPAEPAUPackFmt100799b0@@PAX2@Z
+# 0x10079b90
+/ALTERNATENAME:_d3dfn_10079b90=?sub_10079b90@@YAXPAEPAUFmt10079b90@@PAK2@Z
+# 0x10079c70
+/ALTERNATENAME:_d3dfn_10079c70=?sub_10079c70@@YAXPAUPixelRampTables@@PBUPixelChannelFormat@@PBEPAK@Z
+# 0x10079d70
+/ALTERNATENAME:_d3dfn_10079d70=?sub_10079d70@@YAXPAUPixelRampTables@@PBUPixelChannelFormat@@PBGPAK@Z
+# 0x10079e70
+/ALTERNATENAME:_d3dfn_10079e70=?sub_10079e70@@YAXPAUUnpackTables10079e70@@PBUUnpackFmt10079e70@@PAX2@Z
+# 0x1007a3f0
+/ALTERNATENAME:_d3dfn_1007a3f0=?sub_1007a3f0@PFormat1007a3f0@@QAEXKKKKK@Z
+# 0x1007b8c0
+/ALTERNATENAME:_d3dfn_1007b8c0=?sub_1007b8c0@@YAXXZ
+# 0x1007c440
+/ALTERNATENAME:_d3dfn_1007c440=?sub_1007c440@Table04a@@QAEIPBXPAJ@Z
+# 0x1007c480
+/ALTERNATENAME:_d3dfn_1007c480=?sub_1007c480@Arr1007c480@@QAEKABUGenList1007c480@@@Z
+# 0x1007c580
+/ALTERNATENAME:_d3dfn_1007c580=?sub_1007c580@Arr1007c480@@QAEKABUGenList1007c480@@@Z
+# 0x1007c670
+/ALTERNATENAME:_d3dfn_1007c670=?sub_1007c670@Arr1007c670@@QAEXXZ
+# 0x1007c690
+/ALTERNATENAME:_d3dfn_1007c690=?sub_1007c690@Arr1007c@@QAEXUGenListPos@@@Z
+# 0x1007c6b0
+/ALTERNATENAME:_d3dfn_1007c6b0=?sub_1007c6b0@Arr1007c6b0@@QAEJPAX@Z
+# 0x1007c6d0
+/ALTERNATENAME:_d3dfn_1007c6d0=?sub_1007c6d0@Arr1007c@@QBEKAAUGenListPos@@@Z
+# 0x1007c700
+/ALTERNATENAME:_d3dfn_1007c700=?GenIsValid@?$CMoArray@UW7Pending500a0@@VDefaultCache@@@@UBEHABVGenListPos@@@Z
+# 0x1007dbd0
+/ALTERNATENAME:_d3dfn_1007dbd0=?sub_1007dbd0@Obj1007dcc4@@QAEXK@Z
+# 0x1007dc00
+/ALTERNATENAME:_d3dfn_1007dc00=?sub_1007dc00@C1007dc00@@QAEXK@Z
+# 0x1007dc40
+/ALTERNATENAME:_d3dfn_1007dc40=?sub_1007dc40@C1007dc40@@QAEPAXXZ
+# 0x1007dd20
+/ALTERNATENAME:_d3dfn_1007dd20=?sub_1007dd24@Batch1007dd24@@QAEJPAUD3DDevice7R5C@@KK@Z
+# 0x1007dde0
+/ALTERNATENAME:_d3dfn_1007dde0=?sub_1007dde0@VBDefault1007dde0@@QAEJPAUDev7dde0@@KKPAGK@Z
+# 0x1007def0
+/ALTERNATENAME:_d3dfn_1007def0=?sub_1007def4@Obj1007dcc4@@QAEXXZ
+# 0x1007dfa0
+/ALTERNATENAME:_d3dfn_1007dfa0=?sub_1007dfa4@CVertBufSet@@QAEPAEXZ
+# 0x1007e110
+/ALTERNATENAME:_d3dfn_1007e110=?sub_1007e110@Batch1007e110@@QAEKXZ
+# 0x1007e1c0
+/ALTERNATENAME:_d3dfn_1007e1c0=?sub_1007e1c0@Batch1007e1c0@@QAEJPAUD3DDevice7R5C@@KK@Z
+# 0x1007e270
+/ALTERNATENAME:_d3dfn_1007e270=?sub_1007e270@C1007e270@@QAEXXZ
+# 0x1007e2c0
+/ALTERNATENAME:_d3dfn_1007e2c0=?sub_1007e2c0@Batch1007e2c0@@QAEIPAUD3D7R5C@@@Z
+# 0x1007e8b0
+/ALTERNATENAME:_d3dfn_1007e8b0=?sub_1007e8b0@VBBatch1007e8b0@@QAEIPAUD3D7e8b0@@KKKK@Z
+# 0x1007ec20
+/ALTERNATENAME:_d3dfn_1007ec20=?sub_1007ec20@Arr16@@QAEJABUGenList16@@@Z
+# 0x1007ed00
+/ALTERNATENAME:_d3dfn_1007ed00=?sub_1007ed00@Arr1007e@@QAEKABUGenList1007e@@@Z
+# 0x1007ede0
+/ALTERNATENAME:_d3dfn_1007ede0=?sub_1007ede0@C1007ede0@@QAEIXZ
+# 0x1007ee00
+/ALTERNATENAME:_d3dfn_1007ee00=?sub_1007ee00@C1007ee00@@QAEXKK@Z
+# 0x1007ee20
+/ALTERNATENAME:_d3dfn_1007ee20=?sub_1007ee20@Arr1007e@@QAEKAAUT1007e@@@Z
+# 0x1007f560
+/ALTERNATENAME:_d3dfn_1007f560=?sub_1007f560@Table04b@@QAEIPBXPAJ@Z
+# 0x1007f5a0
+/ALTERNATENAME:_d3dfn_1007f5a0=?GenAppendList@?$CMoArray@KVDefaultCache@@@@UAEHABV?$GenList@K@@@Z
+# 0x1007f670
+/ALTERNATENAME:_d3dfn_1007f670=?GenCopyList@?$CMoArray@KVDefaultCache@@@@UAEHABV?$GenList@K@@@Z
+# 0x1007f730
+/ALTERNATENAME:_d3dfn_1007f730=?sub_1007f730@ArrP@@QAEXXZ
+# 0x1007f750
+/ALTERNATENAME:_d3dfn_1007f750=?sub_1007f750@Arr1007f9f0@@QAEXUGenListPos@@@Z
+# 0x1007f770
+/ALTERNATENAME:_d3dfn_1007f770=?sub_1007f770@Arr1007fa20@@QAEJPAX@Z
+# 0x1007f790
+/ALTERNATENAME:_d3dfn_1007f790=?GenGetAt@?$CMoArray@KVDefaultCache@@@@UBEKAAVGenListPos@@@Z
+# 0x1007f7b0
+/ALTERNATENAME:_d3dfn_1007f7b0=?GenGetNext@?$CMoArray@KVDefaultCache@@@@UBEKAAVGenListPos@@@Z
+# 0x10080905
+/ALTERNATENAME:_d3dfn_10080905=__purecall
+# 0x1008e6d0  defined by a TU; reached from initialised data
+/ALTERNATENAME:_d3dobj_1008e6d0=?g_1008e6d0@@3VC1003b1c0@@A
+# 0x1008e6e8  defined by a TU; reached from initialised data
+/ALTERNATENAME:_d3dobj_1008e6e8=?g_1008e6e8@@3VC1003b1c0@@A
+# ---- END other spellings of one d3d.ren global ----
+# 0x1002e350  DrawTerrainSections, defined in w28_100256d0_qipni.cpp over World2e350 (the world's
+# layout) so the TU's /Qip does not pair it; RenderScene's call names the Ctx1008beac signature
+/ALTERNATENAME:?sub_1002e350@@YAXPAUCtx1008beac@@@Z=?sub_1002e350@@YAXPAUWorld2e350@@@Z

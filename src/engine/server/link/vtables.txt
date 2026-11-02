@@ -1,0 +1,721 @@
+# Full-length vtables for server.dll (tools/mkvtabobj.py; build/build.mk
+# links the object ahead of the compiled ones, so this copy is the one kept).
+#
+# server.dll's own code never ran against the game until NolfServ.exe, the
+# one program that loads it (lithtech.exe has its own copy of the server):
+# its stand-in classes left these tables short or full of _purecall, and the
+# game's Object.lto, calling through ILTServer, stopped the server with
+# "R6025 pure virtual function call". Each table is the shipped one, slot
+# for slot, every slot the function of ours that progress.py places at the
+# shipped target (drafted by `tools/vtabcheck.py server.dll --spec=...`, as
+# lithtech.exe's link/vtables.txt was). No code changes, so nothing
+# byte-identical moves.
+
+vtable ??_7?$CWorldPolyArray@PAVCWorldPolyRec@@@@6B@ 0x1004d3a4  # compiled with 1 slots
+    ?_v00@?$CWorldPolyArray@PAVCWorldPolyRec@@@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@KVDefaultCache@@@@UAEIAAK@Z
+    ?GenRemoveAt@?$CMoArray@KVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@EVDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?SetCacheSize@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@QAEXK@Z
+vtable ??_7?$GenList@PAVCWorldPart@@@@6B@ 0x1004d600  # compiled with 12 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 9: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 10: nothing placed at 0x1003ea24, our own slot kept
+    ?GenSetCacheSize@?$GenList@PAVCWorldPart@@@@UAEXK@Z
+vtable ??_7?$GenList@VCCollElem20A@@@@6B@ 0x1004dc84  # compiled with 12 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 9: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 10: nothing placed at 0x1003ea24, our own slot kept
+    ?GenSetCacheSize@?$GenList@VCCollElem20A@@@@UAEXK@Z
+vtable ??_7?$GenList@VCCollElem20F@@@@6B@ 0x1004dcb4  # compiled with 12 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 9: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 10: nothing placed at 0x1003ea24, our own slot kept
+    ?GenSetCacheSize@?$GenList@VCCollElem20F@@@@UAEXK@Z
+vtable ??_7?$GenList@VCWorldItem18@@@@6B@ 0x1004d5d0  # compiled with 12 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 9: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 10: nothing placed at 0x1003ea24, our own slot kept
+    ?GenSetCacheSize@?$GenList@VCWorldItem18@@@@UAEXK@Z
+vtable ??_7?$TCPQueryArrayT@VTCPQueryResponse@@@@6B@ 0x1004e9bc  # compiled with 2 slots
+    ?_v00@?$TCPQueryArrayT@VTCPQueryResponse@@@@UAEXPAX@Z
+    ?_v04@?$TCPQueryArrayT@VTCPQueryResponse@@@@UAEIPAK@Z
+    ?GenGetNext@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBE?AVTCPQueryResponse_A@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBE?AVTCPQueryResponse_A@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UAEIAAVTCPQueryResponse_A@@@Z
+    ?GenRemoveAt@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UAEXXZ  # shipped 0x10037d44, which calls this array's SetSize2 (0x10037f49); vtabcheck places another array's same-shaped GenRemoveAll there
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponse_A@@@@@Z
+    ?GenAppendList@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponse_A@@@@@Z
+    ?GenFindElement@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBEIABVTCPQueryResponse_A@@AAVGenListPos@@@Z
+    ?SetCacheSize@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@QAEXK@Z
+vtable ??_7CAbstractIO@@6B@ 0x1004dea0  # compiled with 4 slots
+    ??_GCBankBase@@UAEPAXI@Z
+    ?AddRef@CAbstractIO@@UAEXXZ
+    ?Release@CAbstractIO@@UAEXXZ
+    ?Release@CFileStream@@UAEXXZ
+vtable ??_7CBaseMgr@@6B@ 0x1004e314  # compiled with 5 slots
+    ??_GCBaseMgr@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    ?_v10@CBaseMgr@@UAEXHPADH@Z
+vtable ??_7CBaseRezFileRf90@@6B@ 0x1004ea60  # compiled with 9 slots
+    ?VirtualFoo@CBaseRezFileRf90@@UAEXXZ
+    ??_GCBaseRezFileRf90@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CLTServer@@6B@ 0x1004e368  # compiled with 122 slots
+    ?StartHMessageWrite@CLTServerWriteView@@QAEPAVILTMessage@@XZ
+    ?WriteToMessageFloat@ILTCSBase@@UAEKPAVILTMessage@@M@Z
+    ?WriteToMessageByte@ILTCSBase@@UAEKPAVILTMessage@@E@Z
+    ?WriteToMessageWord@ILTCSBase@@UAEKPAVILTMessage@@G@Z
+    ?WriteToMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@K@Z
+    ?WriteToMessageString@ILTCSBase@@UAEKPAVILTMessage@@PAD@Z
+    ?WriteToMessageVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@ILTCSBase@@UAEKPAVILTMessage@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@ILTCSBase@@UAEKPAVILTMessage@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z
+    ?WriteToMessageHMessageRead@ILTCSBase@@UAEKPAVILTMessage@@0@Z
+    ?WriteToMessageFormattedHString@ILTCSBase@@UAAKPAVILTMessage@@HZZ
+    ?WriteToMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+    ?WriteToLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z
+    ?ReadFromLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z
+    ?SetModelAnimation@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?GetModelAnimation@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetModelLooping@CLTServer@@QAEXPAVLTObject@@I@Z
+    ?GetModelLooping@CLTServer@@QAEIPAVLTObject@@@Z
+    ?ResetModelAnimation@CLTServer@@QAEKPAVLTObject@@@Z
+    ?GetModelPlaybackState@CLTServer@@QAEKPAVLTObject@@@Z
+    ?FreeUnusedModels@CLTServer@@QAEKXZ
+    ?CPrint@CLTServer@@QAAXPADZZ  # SOFT slot 39 0x1002ea3c: ?__vsnprintf@+1d=0x1003e4ca(unverifiable)
+    ?GetPointContainers@CLTServer@@QAEKPAV?$_CVector@M@@PAPAVLTObject@@K@Z
+    ?GetContainerCode@CLTServer@@QAEIPAVLTObject@@PAG@Z
+    ?OpenFile@CLTServer@@QAEKPADPAPAVILTStream@@@Z
+    ?CopyFile@CLTServer@@QAEKPBD0@Z
+    ?FormatString@CLTServer@@QAAPAUHSTRING_t@@HZZ
+    ?CopyString@CLTServer@@QAEPAUHSTRING_t@@PAU2@@Z
+    ?CreateString@CLTServer@@QAEPAUHSTRING_t@@PAD@Z
+    ?FreeString@CLTServer@@QAEXPAUHSTRING_t@@@Z
+    ?CompareStringsUpper@CLTServer@@QAEIPAUHSTRING_t@@0@Z
+    ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z
+    ?GetStringData@CLTServer@@QAEPADPAUHSTRING_t@@@Z
+    ?GetVarValueFloat@CLTServer@@QAEMPAUHCONSOLEVAR_t@@@Z
+    ?GetVarValueString@CLTServer@@QAEPADPAUHCONSOLEVAR_t@@@Z
+    ?GetTime@CLTServer@@QAEMXZ
+    ?GetFrameTime@CLTServer@@QAEMXZ
+    ?RemoveObject@CLTServer@@QAEKPAVLTObject@@@Z
+    ?GetRotationVectors@ILTCSBase@@UAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?SetupEuler@ILTCSBase@@UAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@ILTCSBase@@UAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GCLTServer@@UAEPAXI@Z
+    ?GetNumClassProps@CLTServer@@QAEKQAUHCLASS_t@@AAK@Z
+    ?GetClassProp@CLTServer@@QAEKQAUHCLASS_t@@KAAVClassPropInfo@@@Z  # SOFT slot 73 0x1002e0d1: ?_strncpy@+ac=0x1003f050(unverifiable)
+    ?GetClassName@CLTServer@@QAEKQAUHCLASS_t@@PADK@Z  # SOFT slot 74 0x1002e1ac: ?_strncpy@+55=0x1003f050(unverifiable)
+    ?GetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
+    ?SetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
+    ?ThreadLoadFile@CLTServer@@QAEKPADK@Z
+    ?UnloadFile@CLTServer@@QAEKPADK@Z
+    ?GetHPolyObject@CLTServer@@QAEKKAAPAVLTObject@@@Z
+    ?FindNamedObjects@CLTServer@@QAEKPADAAV?$BaseObjArray@PAVLTObject@@@@PAK@Z  # SOFT slot 80 0x1002e403: ?_strlen@+4f=0x1003e2e0(unverifiable)
+    ?FindWorldModelObjectIntersections@CLTServer@@QAEKPAVLTObject@@V?$_CVector@M@@VLTRotation@@AAV?$BaseObjArray@PAVLTObject@@@@@Z
+    ?GetWorldBox@CLTServer@@QAEKAAV?$_CVector@M@@0@Z
+    ?StartSpecialEffectMessage@CLTServer@@QAEPAVILTMessage@@PAVBaseClass@@@Z
+    ?StartInstantSpecialEffectMessage@CLTServer@@QAEPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?StartMessageToObject@CLTServer@@QAEPAVILTMessage@@PAVBaseClass@@PAVLTObject@@K@Z
+    ?StartMessageToServer@CLTServer@@QAEKPAVBaseClass@@KPAPAVILTMessage@@@Z
+    ?StartMessage@CLTServer@@QAEPAVILTMessage@@PAUHCLIENT_t@@E@Z
+    ?EndMessage2@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?EndMessage@CLTServer@@QAEKPAVIMessageWrite@@@Z
+    ?SetObjectSFXMessage@CLTServer@@QAEKPAVLTObject@@AAVIMessageWrite@@@Z
+    ?SendToObject@CLTServer@@QAEKAAVIMessageWrite@@KPAVLTObject@@1K@Z
+    ?SendToServer@CLTServer@@QAEKAAVIMessageWrite@@KPAVLTObject@@K@Z
+    ?SendToClient@CLTServer@@QAEKAAVIMessageWrite@@EPAUHCLIENT_t@@K@Z
+    ?SendSFXMessage@CLTServer@@QAEKAAVIMessageWrite@@AAV?$_CVector@M@@K@Z
+    ?SendTo@CLTServer@@QAEKPBXKPBDK@Z
+    ?GetClientPing@CLTServer@@QAEKPAUHCLIENT_t@@AAM@Z
+    ?GetObjectMass@CLTServer@@QAEMPAVLTObject@@@Z
+    ?SetObjectMass@CLTServer@@QAEXPAVLTObject@@M@Z
+    ?GetForceIgnoreLimit@CLTServer@@QAEMPAVLTObject@@AAM@Z
+    ?SetForceIgnoreLimit@CLTServer@@QAEXPAVLTObject@@M@Z
+    ?GetObjectName@CLTServer@@QAEKPAVLTObject@@PADK@Z  # SOFT slot 101 0x1002f1b3: ?_strncpy@+36=0x1003f050(unverifiable)
+    ?GetObjectName@CLTServer@@QAEPADPAVLTObject@@@Z
+    ?SetFrictionCoefficient@CLTServer@@QAEKPAVLTObject@@M@Z
+    ?MoveObject@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetStandingOn@CLTServer@@QAEKPAVLTObject@@PAVCollisionInfo@@@Z
+    ?GetObjectFlags@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetObjectFlags@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?GetNetFlags@CLTServer@@QAEKPAVLTObject@@AAK@Z
+    ?SetNetFlags@CLTServer@@QAEKPAVLTObject@@K@Z
+    ?GetObjectDims@CLTServer@@QAEXPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims2@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetVelocity@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetVelocity@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetAcceleration@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetAcceleration@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetModelFilenames@CLTServerModelView@@UAEKPAVLTObject@@PAD1@Z
+    ?SetObjectFilenames@CLTServerModelView@@UAEKPAVLTObject@@PAD1@Z  # SOFT slot 118 0x1002ef29: ?_strncpy@+2f=0x1003f050(unverifiable) ?_strncpy@+47=0x1003f050(unverifiable)
+    ?GetModelAnimUserDims@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetPolyTextureFlags@CLTServer@@QAEKKPAK@Z
+    ?GetClientData@CLTServer@@QAEKPAUHCLIENT_t@@AAPAXAAK@Z
+vtable ??_7CLocalDriverBase@@6B@ 0x1004d870  # compiled with 27 slots
+    ??_GCLocalDriverBase@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    ?Connect@CLocalDriverBase@@UAEXPAVCBaseDriver@@@Z
+    ?GetServiceList@CLocalDriverBase@@UAEKPAPAVNetService@@@Z
+    ?SelectService@CLocalDriverBase@@UAEHPAUHNETSERVICE_t@@@Z
+    ?_p1c@CLocalDriverBase@@UAEKPAX0@Z
+    ?_p20@CLocalDriverBase@@UAEKPAX@Z
+    ?_p24@CLocalDriverBase@@UAEKXZ
+    ?_p28@CLocalDriverBase@@UAEKPAX@Z
+    ?_p2c@CLocalDriverBase@@UAEKXZ
+    ?HostSession@CLocalDriverBase@@UAEKPAUNetHost@@@Z
+    ?_p34@CLocalDriverBase@@UAEKPAX@Z
+    ?UpdateSessionName@CLocalDriverBase@@UAEKPBD@Z
+    ?GetSessionName@CLocalDriverBase@@UAEKPADK@Z
+    ?IsLobbyLaunched@CLocalDriverBase@@UAEIXZ
+    ?GetLobbyLaunchInfo@CLocalDriverBase@@UAEIPAPAX@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p4c@CLocalDriverBase@@UAEIXZ
+    ?GetTcpIpAddress@CLocalDriverBase@@UAEIPADKAAG@Z
+    ?_p54@CLocalDriverBase@@UAEIPAX@Z
+    ?SendTo@CLocalDriverBase@@UAEKPBXKPBDK@Z
+    __purecall  # UNVERIFIED slot 23: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 24: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 25: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 26: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CObjContainer@@6B@ 0x1004e1ac  # compiled with 14 slots
+    ??_GCObjContainer@@UAEPAXI@Z
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ
+    ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z
+    ?_v20@CObjContainer@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
+    ?IsInWorld@CObjBase@@UAEIXZ
+    ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
+    ?_v2c@CObjBase@@UAEMXZ
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ
+    ?IsWorldIdle@CObjWorldModel@@QAEIXZ
+vtable ??_7CObjWorldModel@@6B@ 0x1004dfa8  # compiled with 14 slots
+    ??_GCObjWorldModel@@UAEPAXI@Z
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ
+    ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z
+    ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
+    ?IsInWorld@CObjBase@@UAEIXZ
+    ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
+    ?_v2c@CObjBase@@UAEMXZ
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ
+    ?IsWorldIdle@CObjWorldModel@@QAEIXZ
+vtable ??_7CObjectBankBase@@6B@ 0x1004d260  # compiled with 4 slots
+    ??_GCObjectBankBase@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CSaveLoadMessage@@6B@ 0x1004d660  # compiled with 1 slots
+    ?_v00@CSaveLoadMessage@@UAEKXZ
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z  # SOFT slot 6 0x10014683: ?__chkstk@+9=0x1003e740(unverifiable)
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadChecked@CSaveIO@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteChecked@CSaveIO@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z  # SOFT slot 31 0x10014c8c: ?_strlen@+f=0x1003e2e0(unverifiable)
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
+    ?GetNothing@CSaveIO@@QAEKPAK@Z
+    ?IsValid@LCriticalSection@@QAEIXZ
+vtable ??_7CSaveLoadMessageQ4S@@6B@ 0x1004d660  # compiled with 1 slots
+    ?_v00@CSaveLoadMessageQ4S@@UAEKXZ
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z  # SOFT slot 6 0x10014683: ?__chkstk@+9=0x1003e740(unverifiable)
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadChecked@CSaveIO@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteChecked@CSaveIO@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z  # SOFT slot 31 0x10014c8c: ?_strlen@+f=0x1003e2e0(unverifiable)
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
+    ?GetNothing@CSaveIO@@QAEKPAK@Z
+    ?IsValid@LCriticalSection@@QAEIXZ
+vtable ??_7CServerSoundMgr@@6B@ 0x1004e300  # compiled with 5 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CServerWorldFull@@6B@ 0x1004d330  # compiled with 4 slots
+    ?FindLightAnim@CWorldData@@UAEPAVCLARecord@@PADPAK@Z  # SOFT slot 0 0x1000a268: ?_stricmp@+1e=0x10047080(unverifiable)
+    ?FindPoly@CWorldModelList@@QAEPAXPAVCWorldPolyKey@@@Z
+    ?FindFlagged20@CWorldModelList@@QAEPAVCWorldModelData@@XZ
+    ?FindFlagged10@CWorldModelList@@QAEPAVCWorldModelData@@XZ
+vtable ??_7CSharedCommonView@@6B@ 0x1004d700  # compiled with 1 slots
+    ??_GCSharedCommonView@@UAEPAXI@Z
+    __purecall  # the shipped slot is _purecall (0x1003ea24) too
+    ?GetObjectFlags@SharedCommonLT@@UAEKQAVLTObject@@W4ObjFlagType@@AAK@Z
+    ?SetObjectFlags@SharedCommonLT@@UAEKPAVLTObject@@W4ObjFlagType@@K@Z
+    __purecall  # the shipped slot is _purecall (0x1003ea24) too
+    ?GetAttachments@SharedCommonLT@@UAEKPAVLTObject@@PAPAV2@KAAK2@Z
+    ?GetAttachmentTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@AAVLTransform@@I@Z
+    ?GetAttachedModelNodeTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@KAAVLTransform@@@Z
+    ?GetAttachedModelSocketTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@KAAVLTransform@@@Z
+    ?Parse@SharedCommonLT@@UAEKPAVConParse@@@Z
+    ?GetObjectType@SharedCommonLT@@UAEKPAVLTObject@@PAK@Z
+    ?GetModelAnimUserDims@SharedCommonLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetRotationVectors@SharedCommonLT@@UAEKAAVLTRotation@@AAV?$_CVector@M@@11@Z
+    ?SetupEuler@SharedCommonLT@@UAEKAAVLTRotation@@MMM@Z
+    ?CreateMessage@SharedCommonLT@@UAEKAAPAVILTMessage@@@Z
+    __purecall  # the shipped slot is _purecall (0x1003ea24) too
+    __purecall  # the shipped slot is _purecall (0x1003ea24) too
+    __purecall  # the shipped slot is _purecall (0x1003ea24) too
+vtable ??_7CStreamBankBase@@6B@ 0x1004d260  # compiled with 4 slots
+    ??_GCStreamBankBase@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CStreamFields@@6B@ 0x1004d2ac  # compiled with 11 slots
+    ??_GCStreamFields@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    ?ReadString@CBaseStream@@UAEKPADK@Z
+    ?ErrorStatus@CStreamFields@@UAEKXZ
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    ?GetLen@CStreamFields@@UAEKPAK@Z
+    ?WriteStream@CBaseStream@@UAEKAAVILTStream@@KK@Z
+    ?Write@CStreamFields@@UAEKPBXK@Z
+    ?WriteString@CBaseStream@@UAEKPAD@Z  # SOFT slot 10 0x100113ce: ?_strlen@+b=0x1003e2e0(unverifiable)
+vtable ??_7CTCPDriverBase@@6B@ 0x1004d870  # compiled with 27 slots
+    ??_GCTCPDriverBase@@UAEPAXI@Z  # SOFT slot 0 0x10014f24: ??_7CTCPDriverBase@@6B@@+a=0xd87000c7(want 0x1004d870) ??3@YAXPAX@Z@+12=0x11e1d242(want 0x10012d33)
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    ?Connect@CLocalDriverBase@@UAEXPAVCBaseDriver@@@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p1c@CLocalDriverBase@@UAEKPAX0@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p2c@CLocalDriverBase@@UAEKXZ
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p2c@CLocalDriverBase@@UAEKXZ
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p1c@CLocalDriverBase@@UAEKPAX0@Z
+    ?_p4c@CLocalDriverBase@@UAEIXZ
+    ?_p54@CLocalDriverBase@@UAEIPAX@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p4c@CLocalDriverBase@@UAEIXZ
+    ?GetTcpIpAddress@CLocalDriverBase@@UAEIPADKAAG@Z
+    ?_p54@CLocalDriverBase@@UAEIPAX@Z
+    ?SendTo@CLocalDriverBase@@UAEKPBXKPBDK@Z
+    __purecall  # UNVERIFIED slot 23: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 24: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 25: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 26: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CVirtBaseListRf90@@6B@ 0x1004ea5c  # compiled with 1 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CVirtBaseListX720@@6B@ 0x1004ea5c  # compiled with 1 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CWTObj_D@@6B@ 0x1004ea04  # compiled with 8 slots
+    ??_GCWTObj_D@@UAEPAXI@Z
+    ?WantsTree@CWTObj_D@@UAEIPAVCWorldTree_D@@@Z
+    ?RemoveFromLists@CWTObj_D@@UAEXXZ
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    ?WantsExtraLink@CWTObj_D@@UAEIXZ
+    ?MakeExtraLink@CWTObj_D@@UAEPAVCWTLink_D@@K@Z
+    ?NotifyInserted@CWTObj_D@@UAEXPAV1@@Z
+    ?OnFoundInBox@CWTObj_D@@UAEXPAUWTFindInfo_D@@@Z
+vtable ??_7CWorldBspBase@@6B@ 0x1004d404  # compiled with 9 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7CWorldTable@@6B@ 0x1004d5a0  # compiled with 1 slots
+    ?_v00@CWorldTable@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@KVDefaultCache@@@@UAEIAAK@Z
+    ?GenRemoveAt@?$CMoArray@KVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@EVDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?SetCacheSize@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@QAEXK@Z
+vtable ??_7CWorldTree_E@@6B@ 0x1004ea24  # compiled with 7 slots
+    ?FindNodeFromPath@CWorldTree_E@@UAEPAVCWTNode_E@@PAUWTPath_E@@@Z
+    ?IntersectSegment@CWorldTree_E@@UAEKPAV?$_CVector@M@@0PAX1K@Z
+    ?DoSegQuery@CWorldTree_E@@UAEKPAUWTSegQuery_E@@@Z
+    ?FindObjectsOnPoint@CWorldTree_F@@UAEXPAV?$_CVector@M@@P6AXPAVCWTObj_F@@PAX@Z2K@Z
+    ?FindObjectsOnSegment@CWorldTree_F@@UAEKPAV?$_CVector@M@@0P6AKPAVCWTObj_F@@PAX@Z2K@Z
+    ?FindObjectsInSphere@CWorldTree_F@@UAEXPAUWTSphereInfo_F@@@Z
+    ?_v018@CWorldTree_E@@UAEXPAX0@Z
+vtable ??_7ILTCommon@@6B@ 0x1004d748  # compiled with 18 slots
+    ??_GILTCommon@@UAEPAXI@Z
+    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 4: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 5: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 6: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 7: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 8: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 9: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 10: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 11: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 12: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 13: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 14: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 15: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 16: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 17: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7ILTServer@@6B@ 0x1004e684  # compiled with 122 slots
+    __purecall  # UNVERIFIED slot 0: nothing placed at 0x1003ea24, our own slot kept
+    ?WriteToMessageFloat@ILTCSBase@@UAEKPAVILTMessage@@M@Z
+    ?WriteToMessageByte@ILTCSBase@@UAEKPAVILTMessage@@E@Z
+    ?WriteToMessageWord@ILTCSBase@@UAEKPAVILTMessage@@G@Z
+    ?WriteToMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@K@Z
+    ?WriteToMessageString@ILTCSBase@@UAEKPAVILTMessage@@PAD@Z
+    ?WriteToMessageVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@ILTCSBase@@UAEKPAVILTMessage@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@ILTCSBase@@UAEKPAVILTMessage@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z
+    ?WriteToMessageHMessageRead@ILTCSBase@@UAEKPAVILTMessage@@0@Z
+    ?WriteToMessageFormattedHString@ILTCSBase@@UAAKPAVILTMessage@@HZZ
+    ?WriteToMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+    ?WriteToLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z
+    ?ReadFromLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    __purecall  # UNVERIFIED slot 31: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 32: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 33: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 34: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 35: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 36: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 37: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 38: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 39: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 40: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 41: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 42: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 43: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 44: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 45: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 46: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 47: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 48: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 49: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 50: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 51: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 52: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 53: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 54: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 55: nothing placed at 0x1003ea24, our own slot kept
+    ?GetRotationVectors@ILTCSBase@@UAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?SetupEuler@ILTCSBase@@UAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@ILTCSBase@@UAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GILTServer@@MAEPAXI@Z
+    __purecall  # UNVERIFIED slot 72: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 73: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 74: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 75: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 76: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 77: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 78: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 79: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 80: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 81: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 82: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 83: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 84: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 85: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 86: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 87: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 88: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 89: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 90: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 91: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 92: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 93: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 94: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 95: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 96: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 97: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 98: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 99: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 100: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 101: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 102: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 103: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 104: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 105: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 106: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 107: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 108: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 109: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 110: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 111: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 112: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 113: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 114: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 115: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 116: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 117: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 118: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 119: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 120: nothing placed at 0x1003ea24, our own slot kept
+    __purecall  # UNVERIFIED slot 121: nothing placed at 0x1003ea24, our own slot kept
+vtable ??_7LMessageImpl@@6B@ 0x1004de10  # compiled with 1 slots
+    ?_lm00@LMessageImpl@@UAEXXZ
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z  # SOFT slot 6 0x10014683: ?__chkstk@+9=0x1003e740(unverifiable)
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadRawFL@LMessageImpl@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteRaw@LMessageImpl@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z  # SOFT slot 31 0x10014c8c: ?_strlen@+f=0x1003e2e0(unverifiable)
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?ResetPos@LMessageImpl@@QAEKXZ
+    ?GetStatus@LMessageImpl@@QAEKAAK@Z
+    ?_v10@CObjBase@@UAEIXZ
+
+# TCPDriver: tcpdriver.cpp declares the server build's driver with ten of
+# its slots still pure (the bodies are reconstructed only for lithtech.exe,
+# where declaring them does not disturb the server's byte matches), so the
+# compiled table sends them to _purecall: the first call into one -- every
+# dedicated server's SelectService -- stopped NolfServ.exe with "R6025 pure
+# virtual function call". The shipped table, 0x1004e94c, points those slots
+# at bodies the linker folded onto identical ones elsewhere in the image;
+# each slot below names the function of ours with that same body (and
+# where it is placed at the shipped address, that function):
+#   0x0c Update             0x10036d21 `ret`               dsi.cpp's dsi_OnReturnError (folded there)
+#   0x10 _p10               0x10014ebe `ret $4`            CLocalDriverBase::Connect
+#   0x18 SelectService      0x10009897 `xor eax,eax; ret $4` CWorldLightRoot::MakeExtraLink
+#   0x40 IsLobbyLaunched    0x10014ef1 `xor eax,eax; ret`  CLocalDriverBase::_p4c
+#   0x44 GetLobbyLaunchInfo 0x10014f09                     CLocalDriverBase::_p54
+#   0x48 _p48               0x10014ed5                     CLocalDriverBase::_p48
+#   0x4c _p4c               0x10014ef1                     CLocalDriverBase::_p4c
+#   0x54 ConnectTCP         0x10037b7c                     worldtree.cpp's TCPDriver_A::ConnectTCP
+#   0x58 SendTo             0x10037bda                     worldtree.cpp's TCPDriver_A::SendToAddr
+#   0x68 GetRecvSize        0x100360f8 `push $0x1c; pop eax; ret`  CMessageHelperTinyView::_vb4
+# (tools/vtabcheck.py server.dll --sym=TCPDriver reads the shipped table.)
+vtable ??_7TCPDriver@@6B@ 0x1004e94c
+    ??_GTCPDriver@@UAEPAXI@Z
+    ?Init@TCPDriver@@UAEIXZ
+    ?Term@TCPDriver@@UAEXXZ
+    _dsi_OnReturnError
+    ?Connect@CLocalDriverBase@@UAEXPAVCBaseDriver@@@Z
+    ?GetServiceList@TCPDriver@@UAEKPAPAVNetService@@@Z
+    ?MakeExtraLink@CWorldLightRoot@@UAEPAXK@Z
+    ?GetSessionList@TCPDriver@@UAEKPAPAVNetSession@@PAD@Z
+    ?StartQuery@TCPDriver@@UAEKPAD@Z
+    ?UpdateQuery@TCPDriver@@UAEKXZ
+    ?GetQueryResults@TCPDriver@@UAEKPAPAVNetSession@@@Z
+    ?EndQuery@TCPDriver@@UAEKXZ
+    ?HostSession@TCPDriver@@UAEKPAUNetHost@@@Z
+    ?JoinSession@TCPDriver@@UAEKPAVNetSession@@@Z
+    ?UpdateSessionName@TCPDriver@@UAEKPBD@Z
+    ?GetSessionName@TCPDriver@@UAEKPADK@Z
+    ?_p4c@CLocalDriverBase@@UAEIXZ
+    ?_p54@CLocalDriverBase@@UAEIPAX@Z
+    ?_p48@CLocalDriverBase@@UAEKPAX@Z
+    ?_p4c@CLocalDriverBase@@UAEIXZ
+    ?GetTcpIpAddress@TCPDriver@@UAEIPADKAAG@Z
+    ?ConnectTCP@TCPDriver_A@@QAEKPAD@Z
+    ?SendToAddr@TCPDriver_A@@QAEKPAXKPADK@Z
+    ?Disconnect@TCPDriver@@UAEXPAVNetConnection@@KK@Z
+    ?_p60@TCPDriver@@UAEIPAXKKPAVNetConnection@@@Z
+    ?ReceivePacket@TCPDriver@@UAEIPAVServerMessage@@@Z
+    ?_vb4@CMessageHelperTinyView@@UAEHXZ

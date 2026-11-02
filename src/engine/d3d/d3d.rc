@@ -1,0 +1,14 @@
+// d3d.rc -- d3d.ren's resources, reconstructed from the retail d3d.ren: one
+// string, the renderer's name.
+
+#include "winres.h"
+
+#define IDS_RENDERER_NAME       5
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_RENDERER_NAME       "LithTech Direct3D Renderer"
+END

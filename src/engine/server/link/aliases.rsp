@@ -1,0 +1,560 @@
+/ALTERNATENAME:??0CBaseHashRz48@@QAE@I@Z=??0CBaseHash@@QAE@I@Z
+/ALTERNATENAME:??0CBaseHashRz48@@QAE@XZ=??0CBaseHash@@QAE@XZ
+/ALTERNATENAME:??0CBaseHashX720@@QAE@I@Z=??0CBaseHash@@QAE@I@Z
+/ALTERNATENAME:??0CCollElem24@@QAE@XZ=??0CCollElem24Rec@@QAE@XZ
+/ALTERNATENAME:??0CCollElem28@@QAE@PAVCCollElem24Owner@@@Z=??0ModelWeightSetQ444@@QAE@PAVModelQ444@@@Z
+/ALTERNATENAME:??0CCollElem30@@QAE@PAVCCollElem24Owner@@0@Z=??0CUnknownD974@@QAE@PAVCUnknownD9E4@@K@Z
+/ALTERNATENAME:??0CCollElem30@@QAE@XZ=??0CModelSub1D4@Model@@QAE@XZ
+/ALTERNATENAME:??0CCollElem34@@QAE@XZ=??0ModelSocket@@QAE@XZ
+/ALTERNATENAME:??0CCollElem5C@@QAE@PAVCCollElem24Owner@@@Z=??0CUnknownD9E4@@QAE@PAVModel@@@Z
+/ALTERNATENAME:??0CCollElem60@@QAE@XZ=??0CCollElem60C@@QAE@XZ
+/ALTERNATENAME:??0CCollElem6C@@QAE@PAVCCollElem24Owner@@@Z=??0ModelPieceQ444@@QAE@PAVModelQ444@@@Z
+/ALTERNATENAME:??0CCollElemB4@@QAE@PAVCCollElem24Owner@@@Z=??0CModelSub20C@Model@@QAE@PAV1@@Z
+/ALTERNATENAME:??0CFileArchive@@QAE@XZ=??0CRezMgrX720@@QAE@XZ
+/ALTERNATENAME:??0CLocalNetConnection@@QAE@XZ=??0NetConnection@@QAE@XZ
+/ALTERNATENAME:??0CMsgPacketData@@QAE@XZ=??0?$CMoArray@EVDefaultCache@@@@QAE@XZ
+/ALTERNATENAME:??0CObjRoot@@QAE@H@Z=??0CWTObj_D@@QAE@K@Z
+/ALTERNATENAME:??0CPieceDataQ44C@@QAE@XZ=??0CCollElem24Rec@@QAE@XZ
+/ALTERNATENAME:??0CRezDirX720@@AAE@PAVCRezMgrX720@@PAV0@PADKKKII@Z=??0CRezDirRz48@@QAE@PAVCRezMgrRz48@@PAV0@PADKKKII@Z
+/ALTERNATENAME:??0CRezFileDirectoryEmulationX720@@QAE@PAVCRezMgrX720@@H@Z=??0CRezFileDirectoryEmulationRf90@@QAE@PAVCRezMgrRf90@@H@Z
+/ALTERNATENAME:??0CRezFileX720@@QAE@PAVCRezMgrX720@@@Z=??0CRezFileRf90@@QAE@PAVCRezMgrRf90@@@Z
+/ALTERNATENAME:??0CRezTypX720@@AAE@KPAVCRezDirX720@@II@Z=??0CRezTypRz48@@QAE@KPAVCRezDirRz48@@II@Z
+/ALTERNATENAME:??0CRezTypX720@@AAE@KPAVCRezDirX720@@I@Z=??0CRezTypRz48@@QAE@KPAVCRezDirRz48@@I@Z
+/ALTERNATENAME:??0CServerWorld@@QAE@XZ=??0CServerWorldFull@@QAE@XZ
+/ALTERNATENAME:??0CUnknown390@@QAE@XZ=??0CObjMgrView@@QAE@XZ
+/ALTERNATENAME:??0CUnknownA14@@QAE@XZ=??0CStringHolder@@QAE@XZ
+/ALTERNATENAME:??0CWorldAnimRecQ@@QAE@XZ=??0CCollElem60C@@QAE@XZ
+/ALTERNATENAME:??0CWorldLightRoot@@QAE@H@Z=??0CWTObj_D@@QAE@K@Z
+/ALTERNATENAME:??0CWorldSub6C@@QAE@XZ=??0CWorldTree_E@@QAE@XZ
+/ALTERNATENAME:??0CXferBaseView@@QAE@XZ=??0CStringHolder@@QAE@XZ
+/ALTERNATENAME:??0ModelPieceDataQ444@@QAE@XZ=??0CCollElem24Rec@@QAE@XZ
+/ALTERNATENAME:??0ModelPiece@@QAE@PAVModel@@@Z=??0ModelPieceQ444@@QAE@PAVModelQ444@@@Z
+/ALTERNATENAME:??0ModelWeightSet@@QAE@PAVModel@@@Z=??0ModelWeightSetQ444@@QAE@PAVModelQ444@@@Z
+/ALTERNATENAME:??0SharedCommonLT@@QAE@XZ=??0CSharedCommonView@@QAE@XZ
+/ALTERNATENAME:??0TCPDriver_A@@QAE@XZ=??0TCPDriver@@QAE@XZ
+/ALTERNATENAME:??0TCPQueryResponse_A@@QAE@XZ=??0TCPQueryResponse@@QAE@XZ
+/ALTERNATENAME:??1CBaseHashRz48@@QAE@XZ=??1CBaseHash@@QAE@XZ
+/ALTERNATENAME:??1CBaseHashX720@@QAE@XZ=??1CBaseHash@@QAE@XZ
+/ALTERNATENAME:??1CCollElem24@@QAE@XZ=??1CCollElem24Rec@@QAE@XZ
+/ALTERNATENAME:??1CCollElem30@@QAE@XZ=??1CModelSub1D4@Model@@QAE@XZ
+/ALTERNATENAME:??1CCollElem6C@@QAE@XZ=??1ModelPieceQ444@@QAE@XZ
+/ALTERNATENAME:??1CFileArchive@@QAE@XZ=??1CRezMgrX720@@QAE@XZ
+/ALTERNATENAME:??1CModelSub1D4Q444@@QAE@XZ=??1CModelSub1D4@Model@@QAE@XZ
+/ALTERNATENAME:??1CMoMemBlock@@QAE@XZ=??1LAllocSimpleBlock@@UAE@XZ
+/ALTERNATENAME:??1CountAdder@@QAE@XZ=??1CTimedScope@@QAE@XZ
+/ALTERNATENAME:??1CPieceDataQ44C@@QAE@XZ=??1CCollElem24Rec@@QAE@XZ
+/ALTERNATENAME:??1CRezDirX380@@AAE@XZ=??1CRezDirRz48@@QAE@XZ
+/ALTERNATENAME:??1CRezDirX720@@AAE@XZ=??1CRezDirRz48@@QAE@XZ
+/ALTERNATENAME:??1CServerWorld@@QAE@XZ=??1CServerWorldTeardown@@QAE@XZ
+/ALTERNATENAME:??1CUnknown390@@QAE@XZ=??1CObjMgrView@@QAE@XZ
+/ALTERNATENAME:??1CUnknownA14@@QAE@XZ=??1CStringHolder@@QAE@XZ
+/ALTERNATENAME:??1CWorldGeom@@QAE@XZ=??1CWorldBsp@@QAE@XZ
+/ALTERNATENAME:??1CWorldSub6CSub0C@@QAE@XZ=??1CWTNode_D@@QAE@XZ
+/ALTERNATENAME:??1CWorldSurfSub28QT1@@QAE@XZ=??1CModelSub14@Model@@QAE@XZ
+/ALTERNATENAME:??1CWorldTreeSub28@@QAE@XZ=??1CModelSub14@Model@@QAE@XZ
+/ALTERNATENAME:??1CXferBaseView@@QAE@XZ=??1CStringHolder@@QAE@XZ
+/ALTERNATENAME:??1ModelPieceDataQ444@@QAE@XZ=??1CCollElem24Rec@@QAE@XZ
+/ALTERNATENAME:??1ModelPiece@@QAE@XZ=??1ModelPieceQ444@@QAE@XZ
+/ALTERNATENAME:??1NetConnectionD@@QAE@XZ=?Term@NetConnection@@QAEXXZ
+/ALTERNATENAME:?AddConnection@CNetMgr@@QAEIPAVNetConnection@@@Z=?AddConnection@CNetMgrSendView@@QAEIPAVNetConnection@@@Z
+/ALTERNATENAME:?AddObjectLinkQ458@CWTNodeQ458@@QAEXPAVCWTLinkQ458@@K@Z=?AddObjectLink@CWTNode_E@@QAEXPAVCWTLink_E@@K@Z
+/ALTERNATENAME:?AllocateRezItm@CRezMgrX720@@AAEPAVCRezItmX720@@XZ=?AllocateRezItm@CRezMgrX380@@AAEPAVCRezItmX380@@XZ
+/ALTERNATENAME:?AllocChildren@CWTNode_D@@QAEIXZ=?AllocChildren@CWTNode_E@@QAEIXZ
+/ALTERNATENAME:?Alloc@CMoMemBlock@@QAEIPAVIMoAllocator@@K@Z=?Init@LAllocSimpleBlock@@QAEHPAVLAlloc@@K@Z
+/ALTERNATENAME:?am_CreateAttachment@@YAKPAVCUnknown390@@PAVLTObject@@GHPAV?$_CVector@M@@PAVLTRotation@@PAPAVAttachment@@@Z=?am_CreateAttachment@@YAKPAVCObjMgrView@@PAVCObjLinked@@GHPAV?$_CVector@M@@PAVLTRotation@@PAPAVAttachment@@@Z
+/ALTERNATENAME:?ar_GetFileInfoQ468@@YAHPAXPADPAVCFileFindStateQ468@@@Z=?ar_FindFile@@YAHPAVCOpenTree@@PADPAVCFileFindState@@@Z
+/ALTERNATENAME:?ar_OpenFile@@YAPAVILTStream@@PAXPADH@Z=?fs_OpenStreamInTree@@YAPAVILTStream@@PAVCOpenFileTree@@PADH@Z
+/ALTERNATENAME:?at_Init@@YAXPAVLTAnimTracker@@PAVModel@@I@Z=?at_Init@@YAXPAVLTAnimTracker@@PAVModel@@K@Z
+/ALTERNATENAME:?at_ResetAnim@@YAXPAVLTAnimTracker@@@Z=?at_Reset@@YAXPAVLTAnimTracker@@@Z
+/ALTERNATENAME:?at_SetCurAnim@@YAXPAVLTAnimTracker@@KI@Z=?at_SetAnim@@YAIPAVLTAnimTracker@@KI@Z
+/ALTERNATENAME:?AttachWorldModel@CServerWorld@@QAEHPAVLTObject@@PAD@Z=?AttachWorldModel@CWorldModelHost@@QAEHPAVLTObject@@PAD@Z
+/ALTERNATENAME:?bsp_IntersectBox@@YAHPAXPAV?$_CVector@M@@1@Z=?ws_GetBoxStatus@@YAHPAVBSPNode@@PAV?$_CVector@M@@1@Z
+/ALTERNATENAME:?bspq_IntersectLineRec@@YAHPAVBSPNode@@PAVCLineQuery@@V?$_CVector@M@@2@Z=?bspq_IntersectLineRec@@YAHPAVCBspNode@@PAVCBspLineQuery@@V?$_CVector@M@@2@Z
+/ALTERNATENAME:?BumpObject@CUnknown210@@QAEXPAVLTObject@@H@Z=?AddObject@CWorldTree_E@@QAEXPAVCWTObj_E@@K@Z
+/ALTERNATENAME:?CanSeek@CStreamSource@@QAEIK@Z=?Seek@CRezItmRz48@@QAEHK@Z
+/ALTERNATENAME:?cb_FreeClassHash@@YAXPAX@Z=?dhash_Free@@YAXPAX@Z
+/ALTERNATENAME:?cc_FindConsoleVar@@YAPAUHCONSOLEVAR_t@@PAVConsoleState@@PAD@Z=?con_FindVar@@YAPAUHCONSOLEVAR_t@@PAVConsoleState@@PAD@Z
+/ALTERNATENAME:?cc_LoadConfigFile@@YAIPAVConsoleState@@PADII@Z=?con_RunFile@@YAIPAVConsoleState@@PADHH@Z
+/ALTERNATENAME:?c_CommandHandler@@YAKPAVConsoleState@@PAD@Z=?cc_RunConsoleString@@YAHPAVConsoleState@@PAD@Z
+/ALTERNATENAME:?cc_RunCommand@@YAXPAVConsoleState@@PADH@Z=?con_RunString3@@YAXPAVConsoleState@@PADH@Z
+/ALTERNATENAME:?cc_SaveConfigFile@@YAIPAVConsoleState@@PAD@Z=?con_SaveFile@@YAIPAVConsoleState@@PAD@Z
+/ALTERNATENAME:?Clear@CWorldSubFCView@@QAEXXZ=?Clear@CWorldSubFC@@QAEXXZ
+/ALTERNATENAME:?Close@CRezMgrX720@@QAEHH@Z=?Close@CRezMgrX380@@QAEHH@Z
+/ALTERNATENAME:?CloseFile@CRezFileDirectoryEmulationFileRf90@@QAEHXZ=?CloseFile@CRezFileDirectoryEmulationFileRf80@@QAEHXZ
+/ALTERNATENAME:?cls_FindFlagged@@YAPAUSavClassDef@@PAXPAU1@K@Z=?cls_FindFlagged@@YAPAUClassDef@@PAXPAU1@K@Z
+/ALTERNATENAME:?CodeSourceSlot1Q458@CWTCodeHolderQ458@@QAEKXZ=?CodeSourceSlot1@CWorldTree_E@@QAEKXZ
+/ALTERNATENAME:?CreateDir@CRezDirX380@@QAEPAV1@PAD@Z=?CreateDir@CRezDirX720@@QAEPAV1@PAD@Z
+/ALTERNATENAME:?CreateRezInternal@CRezDirX380@@AAEPAVCRezItmX380@@KPADPAVCRezTypX380@@PAVCBaseRezFileX380@@@Z=?CreateRezInternal@CRezDirX720@@AAEPAVCRezItmX720@@KPADPAVCRezTypX720@@PAVCBaseRezFileX720@@@Z
+/ALTERNATENAME:?DeAllocateRezItm@CRezMgrRz48@@QAEXPAVCRezItmRz48@@@Z=?DeAllocateRezItm@CRezMgrX380@@AAEXPAVCRezItmX380@@@Z
+/ALTERNATENAME:?DeAllocateRezItm@CRezMgrX720@@AAEXPAVCRezItmX720@@@Z=?DeAllocateRezItm@CRezMgrX380@@AAEXPAVCRezItmX380@@@Z
+/ALTERNATENAME:?Delete@CBaseHashRz48@@QAEXPAVCBaseHashItemRz48@@@Z=?Delete@CBaseHash@@QAEXPAVCBaseHashItem@@@Z
+/ALTERNATENAME:?Delete@CBaseHashX380@@QAEXPAVCBaseHashItemX380@@@Z=?Delete@CBaseHash@@QAEXPAVCBaseHashItem@@@Z
+/ALTERNATENAME:?Delete@CBaseHashX720@@QAEXPAVCBaseHashItemX720@@@Z=?Delete@CBaseHash@@QAEXPAVCBaseHashItem@@@Z
+/ALTERNATENAME:?Delete@CBaseListX720@@QAEXPAVCBaseListItemX720@@@Z=?Delete@CBaseList@@QAEXPAVCBaseListItem@@@Z
+/ALTERNATENAME:?Delete@CVirtBaseListRf80@@QAEXPAVCVirtBaseListItemRf80@@@Z=?Delete@CVirtBaseList@@QAEXPAVCVirtBaseListItem@@@Z
+/ALTERNATENAME:?Delete@CVirtBaseListX380@@QAEXPAVCVirtBaseListItemX380@@@Z=?Delete@CVirtBaseList@@QAEXPAVCVirtBaseListItem@@@Z
+/ALTERNATENAME:?Delete@CVirtBaseListX720@@QAEXPAVCVirtBaseListItemX720@@@Z=?Delete@CVirtBaseList@@QAEXPAVCVirtBaseListItem@@@Z
+/ALTERNATENAME:?dhash_FindElement@@YAPAXPAX0K@Z=?dhash_FindElement@@YAPAXPAVCHashTable@@PAXK@Z
+/ALTERNATENAME:?dhash_FindNextElement@@YAPAXPAX00K@Z=?dhash_FindNextElement@@YAPAXPAVCHashTable@@PAX1K@Z
+/ALTERNATENAME:?dsi_GetTime@@YAMXZ=?time_GetTime@@YAMXZ
+/ALTERNATENAME:?dsi_LoadMessageModule@@YAHXZ=?dsi_InitMessageModule@@YAHXZ
+/ALTERNATENAME:?dsi_PrintFileName@@YAXPAD0@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_PrintRemoveClient@@YAXPADHH@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_PrintStat@@YAXPADH@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_PrintString@@YAXPAD@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_PrintStr@@YAXPAD0@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_SetErrorHook@@YAXPAX0@Z=?sb_EnumStrings@@YAXP6AXPADPAX@Z1@Z
+/ALTERNATENAME:?Evaluate@ModelWalker@@QAEIK@Z=?SetupTransformsForNode@CTransformMaker_C@@QAEIK@Z
+/ALTERNATENAME:?Find@CommandParserQ468@@QAEIPADIH@Z=?Find@CommandParser@@QAEIPADIH@Z
+/ALTERNATENAME:?Find@CRezTypeHashTableX720@@QAEPAVCRezTypX720@@K@Z=?Find@CRezTypeHashTableQ48C@@QAEPAVCRezTypQ48C@@K@Z
+/ALTERNATENAME:?fs_FindFileInTrees@@YAHPAVCFileMgr@@PADPAPAXPAK@Z=?fs_FindFileInTreesQ468@@YAHPAVCFileMgrQ468@@PADPAPAVCFileTreeRecQ468@@PAK@Z
+/ALTERNATENAME:?fs_GetFileIdentifier@@YAHPAVCFileMgr@@PADHPAPAX@Z=?se_LoadFile@@YAHPAVCFileMgr@@PADGPAPAX@Z
+/ALTERNATENAME:?fs_GetFilename@@YAPADPAVCFileMgr@@PAX@Z=?fs_GetFileName@@YAPADPAVCFileMgr@@PAX@Z
+/ALTERNATENAME:?fs_GetFileName@@YAPADPAVSavFileMgrQ4S@@PAX@Z=?fs_GetFileName@@YAPADPAVCFileMgr@@PAX@Z
+/ALTERNATENAME:?fs_GetSourceInfo@@YAHPAVICacheSource@@PAUCCacheSourceInfo@@@Z=?wav_ParseFile_D@@YAIPAVILTStream@@PAUWaveInfo_D@@@Z
+/ALTERNATENAME:?fs_OpenCacheSource@@YAPAVICacheSource@@PAVCFileMgr@@PAD@Z=?fs_OpenFile@@YAPAVILTStream@@PAVCFileMgr@@PAD@Z
+/ALTERNATENAME:?fs_OpenStreamInTree@@YAPAVILTStream@@PAVCFileTree@@PADH@Z=?fs_OpenStreamInTree@@YAPAVILTStream@@PAVCOpenFileTree@@PADH@Z
+/ALTERNATENAME:?g_AbstractIOVtbl@@3PAXA=??_7CAbstractIO@@6B@
+/ALTERNATENAME:?g_AbstractIOVtblB3@@3PAXA=??_7CAbstractIO@@6B@
+/ALTERNATENAME:?g_AbstractIOVtblQ458@@3PAXA=??_7CAbstractIO@@6B@
+/ALTERNATENAME:?g_EmptyString@@3PADA=??_C@_00A@?$AA@
+/ALTERNATENAME:?GetBounds@CWMBounded@@QAEXPAV?$_CVector@M@@0@Z=?GetDims@CWTNode_D@@QAEXPAV?$_CVector@M@@0@Z
+/ALTERNATENAME:?GetCurTime@CRezMgrX720@@AAEKXZ=?GetCurTime@CRezMgrX380@@AAEKXZ
+/ALTERNATENAME:?GetDir@CRezDirX380@@QAEPAV1@PBD@Z=?GetDir@CRezDirQ48C@@QAEPAV1@PAD@Z
+/ALTERNATENAME:?GetFilename@CObjTrackerCountView@@QAEPADXZ=?GetFilename@CObjModel@@QAEPADXZ
+/ALTERNATENAME:?GetFirst@CBaseHashQ48C@@QAEPAVCBaseHashItemQ48C@@XZ=?GetFirst@CBaseHash@@QAEPAVCBaseHashItem@@XZ
+/ALTERNATENAME:?GetFirst@CBaseHashRz48@@QAEPAVCBaseHashItemRz48@@XZ=?GetFirst@CBaseHash@@QAEPAVCBaseHashItem@@XZ
+/ALTERNATENAME:?GetFirst@CBaseHashX380@@QAEPAVCBaseHashItemX380@@XZ=?GetFirst@CBaseHash@@QAEPAVCBaseHashItem@@XZ
+/ALTERNATENAME:?GetFirstInBin@CBaseHashQ48C@@IAEPAVCBaseHashItemQ48C@@I@Z=?GetFirstInBin@CBaseHash@@IAEPAVCBaseHashItem@@I@Z
+/ALTERNATENAME:?GetFirstInBin@CBaseHashX380@@IAEPAVCBaseHashItemX380@@I@Z=?GetFirstInBin@CBaseHash@@IAEPAVCBaseHashItem@@I@Z
+/ALTERNATENAME:?GetOrMakeTyp@CRezDirX380@@AAEPAVCRezTypX380@@K@Z=?GetOrMakeTyp@CRezDirX720@@AAEPAVCRezTypX720@@K@Z
+/ALTERNATENAME:?GetRez@CRezDirX380@@QAEPAVCRezItmX380@@PADK@Z=?GetRez@CRezDirRz48@@QAEPAVCRezItmRz48@@PADK@Z
+/ALTERNATENAME:?GetRezFromDosName@CRezDirX380@@QAEPAVCRezItmX380@@PAD@Z=?GetRezFromDosName@CRezDirRz48@@QAEPAVCRezItmRz48@@PAD@Z
+/ALTERNATENAME:?GetSoundTrack@CServerMgr@@QAEPAXPAX@Z=?AddCachedFile@CServerMgr@@QAEPAVCCacheRec@@PAX@Z
+/ALTERNATENAME:?GetTrackerCount@CObjTrackerCountView@@QAEKXZ=?GetTrackerCount@CObjModel@@QAEKXZ
+/ALTERNATENAME:?g_NetNameBuf@@3PADA=??_C@_00A@?$AA@
+/ALTERNATENAME:?g_nVisBit_D@@3KA=?g_nVisBit_C@@3KA
+/ALTERNATENAME:?g_pVisBits_D@@3PAEA=?g_VisValue_C@@3KA
+/ALTERNATENAME:?g_pVisLimit_D@@3PAPAVCVisObj_D@@A=?g_pVisLimit_C@@3PAPAVCVisObject_C@@A
+/ALTERNATENAME:?g_pVisQuery_D@@3PAUVisQuery_D@@A=?g_pVisQuery_C@@3PAVCWorldVisQuery_C@@A
+/ALTERNATENAME:?g_pVisQueryState@@3PAVCVisQueryState@@A=?g_pVisQuery_C@@3PAVCWorldVisQuery_C@@A
+/ALTERNATENAME:?g_ShutdownMessage@@3PADA=??_C@_00A@?$AA@
+/ALTERNATENAME:?g_sNoFileName@@3PADA=??_C@_00A@?$AA@
+/ALTERNATENAME:?g_szNoName@@3PADA=??_C@_00A@?$AA@
+/ALTERNATENAME:?g_szStreamWriteMode@@3PADA=??_C@_02NGAF@wb?$AA@
+/ALTERNATENAME:?g_Unknown10056ff4@@3KA=??_C@_00A@?$AA@
+/ALTERNATENAME:?Init@CUnknown210@@QAEXPAVCUnknown390@@@Z=?SetCodeSource@CWorldTree_E@@QAEXPAVIWTCodeSource_E@@@Z
+/ALTERNATENAME:?Init@CUnknownA14@@QAEXH@Z=?SetAllocSize@CStringHolder@@QAEXG@Z
+/ALTERNATENAME:?InitRezItm@CRezItmX720@@AAEXPAVCRezDirX720@@PADKPAVCRezTypX720@@1KKKKPAKPAVCBaseRezFileX720@@@Z=?InitRezItm@CRezItmRz48@@QAEXPAVCRezDirRz48@@PADKPAVCRezTypRz48@@1KKKKPAKPAVCBaseRezFileRz48@@@Z
+/ALTERNATENAME:?Insert2@?$TCPQueryArrayT@VTCPQueryResponse@@@@QAEIKABVTCPQueryResponse@@PAVCMoAllocator@@@Z=?Insert2@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@QAEIKABVTCPQueryResponse_A@@PAVLAlloc@@@Z
+/ALTERNATENAME:?Insert@CBaseHashX380@@QAEXPAVCBaseHashItemX380@@@Z=?Insert@CBaseHash@@QAEXPAVCBaseHashItem@@@Z
+/ALTERNATENAME:?Insert@CBaseHashX720@@QAEXPAVCBaseHashItemX720@@@Z=?Insert@CBaseHash@@QAEXPAVCBaseHashItem@@@Z
+/ALTERNATENAME:?InsertFirst@CBaseListX380@@QAEXPAVCBaseListItemX380@@@Z=?InsertFirst@CBaseList@@QAEXPAVCBaseListItem@@@Z
+/ALTERNATENAME:?InsertFirst@CVirtBaseListRf80@@QAEXPAVCVirtBaseListItemRf80@@@Z=?InsertFirst@CVirtBaseList@@QAEXPAVCVirtBaseListItem@@@Z
+/ALTERNATENAME:?InsertFirst@CVirtBaseListRf90@@QAEXPAVCVirtBaseListItemRf90@@@Z=?InsertFirst@CVirtBaseList@@QAEXPAVCVirtBaseListItem@@@Z
+/ALTERNATENAME:?InsertFirst@CVirtBaseListX720@@QAEXPAVCVirtBaseListItemX720@@@Z=?InsertFirst@CVirtBaseList@@QAEXPAVCVirtBaseListItem@@@Z
+/ALTERNATENAME:?IsDirectory@CRezMgrX720@@AAEHPBD@Z=?IsDirectory@CRezMgrX380@@AAEHPBD@Z
+/ALTERNATENAME:?IsValid@AnimTimeRef@@QAEIXZ=?IsValid@CAnimTimeRefView@@QAEIXZ
+/ALTERNATENAME:?IsWorldBusyQ458@CObjWorldModelQ458@@QAEIXZ=?IsWorldBusy@CObjWorldModel@@QAEIXZ
+/ALTERNATENAME:?JoinSession@TCPDriver_A@@QAEKPAUsockaddr_in@@@Z=?JoinSession@TCPDriver@@QAEKPAUsockaddr_in@@@Z
+/ALTERNATENAME:?lmsg_CompressPosQ291@@YAXPAEPAV?$_CVector@M@@PAVCPosRef@@@Z=?lmsg_CompressPos@@YAXPAEPAV?$_CVector@M@@PAVCPosRef@@@Z
+/ALTERNATENAME:?lmsg_WriteCompPosWordsQ291@@YAXPAVIMessageWrite@@PAE@Z=?lmsg_WriteCompPosWords@@YAXPAVIMessageWrite@@PAE@Z
+/ALTERNATENAME:?lmsg_WriteCompRotationBytesQ291@@YAXPAVIMessageWrite@@PAE@Z=?lmsg_WriteCompRotationBytes@@YAXPAVIMessageWrite@@PAE@Z
+/ALTERNATENAME:?lmsg_WriteCompRotationQ291@@YAXPAVLMessageImpl@@PAVLTRotation@@@Z=?lmsg_WriteCompRotation@@YAXPAVLMessageImpl@@PAVLTRotation@@@Z
+/ALTERNATENAME:?Load@CServerWorld@@QAEHPAVWorldLoadRequest@@@Z=?Load@CServerWorldFull@@QAEHPAVWorldLoadRequest@@@Z
+/ALTERNATENAME:?Load@CWorldSub108@@QAEIPAVILTStream@@@Z=?Load@CSubGrid@@QAEIPAVILTStream@@@Z
+/ALTERNATENAME:?LoadNodes@CWTNode_F@@QAEIPAVILTStream@@PAE1@Z=?LoadNodes@CWTNode_D@@QAEIPAVILTStream@@PAE1@Z
+/ALTERNATENAME:?LoadObjects@CServerWorld@@QAEHPAVILTStream@@@Z=?LoadObjects@CWorldData@@QAEKPAVILTStream@@@Z
+/ALTERNATENAME:?mat_Multiply@@YAXPAVLTMatrix@@00@Z=?MatMul@@YAXPAVLTMatrix@@00@Z
+/ALTERNATENAME:?mat_Mul@@YAXPAVLTMatrix@@00@Z=?MatMul@@YAXPAVLTMatrix@@00@Z
+/ALTERNATENAME:?mat_SetupTransform@@YAXPAV?$_CVector@M@@PAVLTRotation@@PAXPAVLTMatrix@@@Z=?mat_SetupTransform@@YAXPAV?$_CVector@M@@PAVLTRotation@@0PAVLTMatrix@@@Z
+/ALTERNATENAME:?Next@CBaseHashItemQ48C@@QAEPAV1@XZ=?Next@CBaseHashItem@@QAEPAV1@XZ
+/ALTERNATENAME:?Next@CBaseHashItemRz48@@QAEPAV1@XZ=?Next@CBaseHashItem@@QAEPAV1@XZ
+/ALTERNATENAME:?Next@CBaseHashItemX720@@QAEPAV1@XZ=?Next@CBaseHashItem@@QAEPAV1@XZ
+/ALTERNATENAME:?Next@CommandParserQ468@@QAEHXZ=?Next@CommandParser@@QAEHXZ
+/ALTERNATENAME:?NotifyCommandChanges@CServerMgr@@QAEXPAVClient@@PAEK@Z=?NotifyCommandChanges@CServerMgrCmdViewQ474@@QAEXPAVClient@@PAEH@Z
+/ALTERNATENAME:?obj_FreeData@@YAXPAVLTObject@@@Z=?obj_ReleaseMemory@@YAXPAVLTObject@@@Z
+/ALTERNATENAME:?Open@CFileArchive@@QAEIPADHH@Z=?Open@CRezMgrX720@@QAEHPBDHH@Z
+/ALTERNATENAME:?quat_ConvertToMatrix@@YAXPBMQAY03M@Z=?quat_ConvertToMatrix@@YAXPAVLTRotation@@PAVLTMatrix@@@Z
+/ALTERNATENAME:?quat_ToMatrix2@@YAXPAVLTRotation@@PAVLTMatrix@@@Z=?quat_ConvertToMatrix@@YAXPAVLTRotation@@PAVLTMatrix@@@Z
+/ALTERNATENAME:?ReadByte@ServerMessage@@QAEEE@Z=?ReadType@CPacket@@QAEEPAE@Z
+/ALTERNATENAME:?Read@CStreamSource@@QAEKPAXKK@Z=?Read@CRezItmRz48@@QAEKPAEKK@Z
+/ALTERNATENAME:?ReadDWord@ServerMessageTypeView@@QAEKPAK@Z=?ReadType@CPacket@@QAEKPAK@Z
+/ALTERNATENAME:?ReadEmulationDirectory@CRezMgrX720@@AAEHPAVCRezFileDirectoryEmulationX720@@PAVCRezDirX720@@PADH@Z=?ReadEmulationDirectory@CRezMgrX380@@AAEHPAVCRezFileDirectoryEmulationX380@@PAVCRezDirX380@@PADH@Z
+/ALTERNATENAME:?ReadWord@CMsgWriteView@@QAEGPAG@Z=?ReadType@CPacket@@QAEGPAG@Z
+/ALTERNATENAME:?Release@CBankElem54View@@QAEPAXK@Z=?Term@CSObjDataTermView@@QAEPAXH@Z
+/ALTERNATENAME:?RemoveRezInternal@CRezDirX380@@AAEHPAVCRezTypX380@@PAVCRezItmX380@@@Z=?RemoveRezInternal@CRezDirX720@@AAEHPAVCRezTypX720@@PAVCRezItmX720@@@Z
+/ALTERNATENAME:?ResetAll@CServerWorldFull@@QAEXXZ=?ResetAll@CWorldModelList@@QAEXXZ
+/ALTERNATENAME:?sav_RestoreObjects@@YAKPAVCServerMgr@@PAVILTStream@@KK@Z=?sm_RestoreObjects@@YAKPAVSavServerMgr@@PAVILTStream@@KK@Z
+/ALTERNATENAME:?sav_SaveObjects@@YAKPAVCServerMgr@@PAVILTStream@@PAUObjectList@@KK@Z=?sav_SaveObjects@@YAXPAVSavServerMgr@@PAVILTStream@@PAUSavObjectList@@KK@Z
+/ALTERNATENAME:?sav_SaveObject@@YAXPAVSavServerMgr@@PAVSavObject@@PAVILTStream@@K@Z=?sav_SaveObject@@YAXPAVSavServerMgrQ4S@@PAVSavObjectQ4S@@PAVILTStream@@K@Z
+/ALTERNATENAME:?sb_FreeChunks@@YAXPAVStructBank@@H@Z=?sb_Term2@@YAXPAUStructBank_t@@H@Z
+/ALTERNATENAME:?sb_Grow@@YAXPAVStructBank@@K@Z=?sb_AllocateNewStructPage@@YAHPAUStructBank_t@@K@Z
+/ALTERNATENAME:?sb_Init2@@YAXPAVStructBank@@KKK@Z=?sb_Init2@@YAHPAUStructBank_t@@KKK@Z
+/ALTERNATENAME:?sb_Init@@YAXPAVStructBank@@KK@Z=?sb_Init@@YAXPAUStructBank_t@@KK@Z
+/ALTERNATENAME:?sb_Term@@YAXPAVStructBank@@@Z=?sb_Term@@YAXPAUStructBank_t@@@Z
+/ALTERNATENAME:?SendPacket@CNetMgr@@QAEXPAVServerMessage@@PAVNetConnection@@H@Z=?SendPacket@CNetMgrSendView@@QAEIPAVServerMessage@@PAVNetConnection@@E@Z
+/ALTERNATENAME:?SendPacketData@CNetMgr@@QAEXPAXPAVNetConnection@@@Z=?SendPacketData@CNetMgrSendView@@QAEIPAVServerMessage@@PAVNetConnection@@@Z
+/ALTERNATENAME:?SendToConnection@CNetMgrSendView@@QAEHPAVServerMessage@@PAVNetConnection@@K@Z=?SendToConnection@CNetMgrSendView@@QAEIPAVServerMessage@@PAVNetConnection@@H@Z
+/ALTERNATENAME:?SendTo@TCPDriver_A@@QAEIKPAXKPAUsockaddr_in@@@Z=?SendTo@TCPDriver@@QAEIIPAXKPAUsockaddr_in@@@Z
+/ALTERNATENAME:?SetDelimiters@CFileArchive@@QAEXPAD@Z=?SetDirSeparators@CRezMgrX380@@QAEXPBD@Z
+/ALTERNATENAME:?SetDims@CWTNode_E@@QAEXV?$_CVector@M@@0@Z=?SetDims@CWTNode_D@@QAEXV?$_CVector@M@@0@Z
+/ALTERNATENAME:?SetDims@CWTNode_F@@QAEXV?$_CVector@M@@0@Z=?SetDims@CWTNode_D@@QAEXV?$_CVector@M@@0@Z
+/ALTERNATENAME:?SetSizeInit2@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAEIKPAVCWorldPart@@@Z=?SetSizeInit2@CWorldTable@@QAEIKPAVCServerWorldRec@@@Z
+/ALTERNATENAME:?si_AttachClient@@YAKPAUHCLIENT_t@@0@Z=?si_AttachClient@@YAKPAVClient@@0@Z
+/ALTERNATENAME:?si_CreateAttachment@@YAKPAVLTObject@@0PADPAV?$_CVector@M@@PAVLTRotation@@PAPAUHATTACHMENT_t@@@Z=?si_CreateAttachment@@YAKPAVLTObject@@0PADPAV?$_CVector@M@@PAVLTRotation@@PAPAVAttachment@@@Z
+/ALTERNATENAME:?si_DetachClient@@YAKPAUHCLIENT_t@@@Z=?si_DetachClient@@YAKPAVClient@@@Z
+/ALTERNATENAME:?si_FindAttachment@@YAKPAVLTObject@@0PAPAUHATTACHMENT_t@@@Z=?si_FindAttachment@@YAKPAVLTObject@@0PAPAVAttachment@@@Z
+/ALTERNATENAME:?si_GetClientID@@YAKPAUHCLIENT_t@@@Z=?si_GetClientID@@YAKPAVClient@@@Z
+/ALTERNATENAME:?si_GetClientInfoFlags@@YAKPAUHCLIENT_t@@@Z=?si_GetClientInfoFlags@@YAKPAVClient@@@Z
+/ALTERNATENAME:?si_GetClientName@@YAIPAUHCLIENT_t@@PADH@Z=?si_GetClientName@@YAIPAVClient@@PADH@Z
+/ALTERNATENAME:?si_GetClientUserData@@YAPAXPAUHCLIENT_t@@@Z=?si_GetClientUserData@@YAPAXPAVClient@@@Z
+/ALTERNATENAME:?si_GetNextClient@@YAPAUHCLIENT_t@@PAU1@@Z=?si_GetNextClient@@YAPAUHCLIENT_t@@PAVClient@@@Z
+/ALTERNATENAME:?si_IsCommandOn@@YAIPAUHCLIENT_t@@H@Z=?si_IsCommandOn@@YAIPAVClient@@H@Z
+/ALTERNATENAME:?si_KickClient@@YAXPAUHCLIENT_t@@K@Z=?si_KickClient@@YAXPAVClient@@K@Z
+/ALTERNATENAME:?si_RemoveAttachment@@YAKPAUHATTACHMENT_t@@@Z=?si_RemoveAttachment@@YAKPAVAttachment@@@Z
+/ALTERNATENAME:?si_SetClientInfoFlags@@YAXPAUHCLIENT_t@@K@Z=?si_SetClientInfoFlags@@YAXPAVClient@@K@Z
+/ALTERNATENAME:?si_SetClientUserData@@YAXPAUHCLIENT_t@@PAX@Z=?si_SetClientUserData@@YAXPAVClient@@PAX@Z
+/ALTERNATENAME:?si_SetClientViewPos@@YAKPAUHCLIENT_t@@PAV?$_CVector@M@@@Z=?si_SetClientViewPos@@YAKPAVClient@@PAV?$_CVector@M@@@Z
+/ALTERNATENAME:?sm_BreakAttachments@@YAXPAVCServerMgr@@PAVLTObject@@HH@Z=?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVCLinkedObject@@HH@Z
+/ALTERNATENAME:?sm_BreakInterObjectLink@@YAXPAVCServerMgr@@PAVLTObject@@1H@Z=?sm_BreakInterObjectLink@@YAXPAVCLinkMgrView@@PAVCLinkedObject@@1H@Z
+/ALTERNATENAME:?sm_CacheFiles@@YAKPAVCServerMgr@@@Z=?sm_CacheShellFiles@@YAKPAVCServerMgr@@@Z
+/ALTERNATENAME:?sm_CreateInterlink@@YAKPAVSavServerMgr@@PAVSavObject@@1K@Z=?sm_CreateInterObjectLink@@YAKPAVCLinkMgrView@@PAVCLinkedObject@@1H@Z
+/ALTERNATENAME:?sm_CreateInterObjectLink@@YAKPAVCServerMgr@@PAVLTObject@@1H@Z=?sm_CreateInterObjectLink@@YAKPAVCLinkMgrView@@PAVCLinkedObject@@1H@Z
+/ALTERNATENAME:?sm_DetachClientQ468@@YAKPAVCServerMgrQ468@@PAVClientQ468@@@Z=?sm_DetachClient@@YAKPAVCServerMgr@@PAVClient@@@Z
+/ALTERNATENAME:?sm_DetachSound@@YAXPAVCServerMgr@@PAVLTObject@@PAVSoundInstance@@H@Z=?sm_BreakInterObjectLink@@YAXPAVCLinkMgrView@@PAVCLinkedObject@@1H@Z
+/ALTERNATENAME:?sm_FindObjectIDRec@@YAPAXPAVCServerMgr@@G@Z=?sm_FindObjectIDRecQ468@@YAPAXPAVCServerMgrIDListQ468@@G@Z
+/ALTERNATENAME:?sm_FindObject@@YAPAVLTObject@@PAVCServerMgr@@G@Z=?sm_FindObjectByID@@YAPAVLTObject@@PAVCServerMgr@@G@Z
+/ALTERNATENAME:?sm_Free28@@YAXPAVCServerMgr@@PAX@Z=?sm_Free28@@YAXPAVCServerMgr@@PAVLTLink@@@Z
+/ALTERNATENAME:?sm_FreeList44@@YAXPAVCServerMgr@@@Z=?sm_ReturnList44@@YAXPAVCServerMgr@@@Z
+/ALTERNATENAME:?sm_GatherContainersCB@@YAHPAVLTObject@@PAX@Z=?sm_GatherContainers@@YAXPAVLTObject@@PAX@Z
+/ALTERNATENAME:?sm_GetObjectChangeFlags@@YAGPAVCServerMgr@@PAVLTObject@@@Z=?sm_GetObjectChangeFlags2@@YAKPAVCServerMgr@@PAVLTObject@@@Z
+/ALTERNATENAME:?sm_LoadModel@@YAKPAVCServerMgr@@PADPAPAVModel@@PAPAVCFileIdentifier@@HH@Z=?se_LoadModel@@YAKPAVCServerMgr@@PADPAPAVModel@@PAPAXHH@Z
+/ALTERNATENAME:?sm_ModelStringKeyCallback@@YAXPAVLTAnimTracker@@PAVAnimKeyFrame@@@Z=?sm_ModelStringKeyCallbackQ468@@YAXPAVLTAnimTrackerQ468@@PAVAnimKeyFrameQ468@@@Z
+/ALTERNATENAME:?sm_ObjectFromID@@YAPAVSavObject@@PAVSavServerMgr@@G@Z=?sm_FindObjectByID@@YAPAVLTObject@@PAVCServerMgr@@G@Z
+/ALTERNATENAME:?sm_ObjectRemoved@@YAXPAVCServerMgr@@PAVLTObject@@@Z=?sm_ObjectRemoved2@@YAKPAVCServerMgr@@PAVLTObject@@@Z
+/ALTERNATENAME:?sm_QueueMessageToClient@@YAXPAVCServerMgr@@PAVClient@@EPAVServerMessage@@K@Z=?sm_QueueMessageToClient2@@YAKPAVCServerMgr@@PAVClient@@HPAVServerMessage@@K@Z
+/ALTERNATENAME:?sm_ResetClient@@YAXPAVCServerMgr@@PAVClient@@H@Z=?sm_SetClientState@@YAHPAVCServerMgr@@PAVClient@@H@Z
+/ALTERNATENAME:?sm_StartWorldA@@YAXPAVCServerMgr@@H@Z=?sm_StartCachePass@@YAKPAVCServerMgr@@H@Z
+/ALTERNATENAME:?sm_Sub34688@@YAXPAVSavServerMgr@@@Z=?sm_CheckObjectIntegrityQ474@@YAKPAVCServerMgr@@@Z
+/ALTERNATENAME:?sm_WriteObjectFilesQ291@@YAXPAVLTObject@@PAVServerMessage@@@Z=?sm_WriteObjectFiles@@YAXPAVLTObject@@PAVServerMessage@@@Z
+/ALTERNATENAME:?snd_MergeSentState@@YAXPAVCSoundSentState@@0@Z=?snd_MergeSentStateQ468@@YAXPAVCSoundSentStateQ468@@0@Z
+/ALTERNATENAME:?StrToType@CRezMgrRz48@@QAEKPAD@Z=?StrToType@CRezMgrX380@@QAEKPAD@Z
+/ALTERNATENAME:?sub_1001307fQ291@@YAXPAVLTRotation@@PAE@Z=?sub_1001307f@@YAXPAVLTRotation@@PAE@Z
+/ALTERNATENAME:?sub_10015ce2@@YAXPAVLTRotation@@PAVLTMatrix@@@Z=?quat_ConvertFromMatrix@@YAXPAMQAY03$$CBM@Z
+/ALTERNATENAME:?sub_10015e17@@YAXPAVLTRotation@@PAV?$_CVector@M@@11@Z=?quat_GetVectors@@YAXPBMPAM11@Z
+/ALTERNATENAME:?sub_10015e69@@YAXPAVLTRotation@@00M@Z=?quat_Slerp@@YAXPAMPBM1M@Z
+/ALTERNATENAME:?sub_1001638cQ444@CMoDataRefQ444@@QAEPADPAD@Z=?sub_1001638c@CMoDataRef@@QAEPADPAD@Z
+/ALTERNATENAME:?sub_10016501Q444@CModelSub1D4Q444@@QAEXXZ=?sub_10016501@CModelSub1D4@Model@@QAEXXZ
+/ALTERNATENAME:?sub_10016ac3@CModelSub20C@Model@@QAEIPAK@Z=?sub_10016ac3Q444@CModelSub20CQ444@@QAEIPAK@Z
+/ALTERNATENAME:?sub_10016b11@CModelSub20C@Model@@QAEXK@Z=?sub_10016b11Q444@CModelSub20CQ444@@QAEXK@Z
+/ALTERNATENAME:?sub_100173fa@Model@@QAEPADPAD@Z=?sub_100173faQ444@ModelQ444@@QAEPADPAD@Z
+/ALTERNATENAME:?sub_1001761d@Model@@QAEKI@Z=?sub_1001761dQ444@ModelQ444@@QAEKK@Z
+/ALTERNATENAME:?sub_10017660@Model@@QAEKXZ=?sub_10017660Q444@ModelQ444@@QAEKXZ
+/ALTERNATENAME:?sub_100176b7Q44C@CModelQ44C@@QAEKXZ=?CountOwnAnims@CModelAnimOwnerView@@QAEKXZ
+/ALTERNATENAME:?sub_10017b8a@Model@@QAEIKPAVCModelSub1D4@1@PAV1@PAD@Z=?sub_10017b8aQ444@ModelQ444@@QAEIKPAVCModelSub1D4Q444@@PAV1@PAD@Z
+/ALTERNATENAME:?sub_1001c1a5@ModelPiece@@QAEIPAVILTStream@@PAK@Z=?sub_1001c1a5Q44C@ModelPieceQ44C@@QAEIPAVILTStream@@PAK@Z
+/ALTERNATENAME:?sub_1001eae7@@YAXPAVLTObject@@@Z=?obj_RetransformWorldModelDims@@YAXPAVLTObject@@@Z
+/ALTERNATENAME:?sub_10024419@CModelSub14@Model@@QAEXXZ=?sub_10024419@CModelSub14@@QAEXXZ
+/ALTERNATENAME:?sub_1002585f@@YAKPAVCUnknown390@@PAUObjectCreateStruct@@PAPAVLTObject@@@Z=?om_CreateObject@@YAKPAVCUnknown390@@PAUObjectCreateStruct@@PAPAVCObjBase@@@Z
+/ALTERNATENAME:?sub_100272d6@@YAXPAVCServerMgr@@PAVClient@@@Z=?sub_100272d6Q468@@YAKPAVCServerMgrQ468@@PAVClientQ468@@@Z
+/ALTERNATENAME:?sub_10034973@@YAXPAX0@Z=?sm_EnsureQ476770@@YAXPAUSObj476770@@@Z
+/ALTERNATENAME:?sub_100386c6@ModelWalker@@QAEIXZ=?SetupTransforms@CTransformMaker_C@@QAEIXZ
+/ALTERNATENAME:?sub_10039c43@CWorldSub6C@@QAEXPAVCWorldLight@@H@Z=?AddObject@CWorldTree_E@@QAEXPAVCWTObj_E@@K@Z
+/ALTERNATENAME:?sub_1003a473@CWorldSub6C@@QAEHPAVILTStream@@@Z=?LoadLayout@CWorldTree_F@@QAEIPAVILTStream@@@Z
+/ALTERNATENAME:?sub_476660@@YAXPAUSObj476770@@@Z=?sub_100348cc@@YAXPAVLTObject@@@Z
+/ALTERNATENAME:?tcp_BuildSockaddrFromString_A@@YAHPADPAUsockaddr_in@@@Z=?tcp_BuildSockaddrFromString@@YAHPADPAUsockaddr_in@@@Z
+/ALTERNATENAME:?tcp_GetLastErrorString@@YAPADXZ=?tcp_GetErrorText@@YAPADXZ
+/ALTERNATENAME:?Term@CServerWorldFull@@QAEXXZ=?Term@CServerWorld@@QAEXXZ
+/ALTERNATENAME:?Term@CSubGrid@@QAEXXZ=?Term@CWorldSub108@@QAEXXZ
+/ALTERNATENAME:?Term@CWorldArrayEntry@@QAEXXZ=?Clear@CServerWorldRec@@QAEXXZ
+/ALTERNATENAME:?Term@CWorldArrayInner@@QAEXXZ=?FreeTree@CWorldBsp@@QAEXXZ
+/ALTERNATENAME:?Term@CWorldSub6CView@@QAEXXZ=?Term@CWorldTree_E@@QAEXXZ
+/ALTERNATENAME:?Term@CWTNode_E@@QAEXXZ=?Term@CWTNode_D@@QAEXXZ
+/ALTERNATENAME:?TermFinish@CWorldFinishView@@QAEXXZ=?Clear@CServerWorldFull@@QAEXXZ
+/ALTERNATENAME:?TermRezItm@CRezItmX720@@AAEXXZ=?TermRezItm@CRezItmRz48@@QAEXXZ
+/ALTERNATENAME:?tm_FindInList@@YAPAXPAXPBXK@Z=?GLinkedList_FindElementMemcmp@@YAPAVCGLLNode@@PAV1@PBXK@Z
+/ALTERNATENAME:?un390_ClearSaveIndices@@YAXPAX@Z=?un390_ClearSaveIndicesQ458@@YAXPAVCUnknown390SaveViewQ458@@@Z
+/ALTERNATENAME:?un390_CreateAttachment@@YAKPAXPAVSavObject@@GKPAM20@Z=?am_CreateAttachment@@YAKPAVCObjMgrView@@PAVCObjLinked@@GHPAV?$_CVector@M@@PAVLTRotation@@PAPAVAttachment@@@Z
+/ALTERNATENAME:?un390_RemoveObject@@YAKPAVCUnknown390@@PAVLTObject@@@Z=?un390_RemoveObject@@YAKPAVCObjMgrView@@PAVCObjLinked@@@Z
+/ALTERNATENAME:?Unknown33253@CServerMgrIDView@@QAEXK@Z=?GrowClientObjInfos@CServerMgrObjInfoViewQ474@@QAEXK@Z
+/ALTERNATENAME:?Unlink@CObjBase@@QAEXXZ=?RemoveFromLists@CWTObj_D@@UAEXXZ
+/ALTERNATENAME:?UpdateBounds@CObjDimsSetter@@QAEXXZ=?UpdateBounds@LTObject@@QAEXXZ
+/ALTERNATENAME:?w_AddFastLight@@YAXPAV?$_CVector@M@@0MPAVCWorldSubFC@@@Z=?w_AddFastLight@@YAXPAV?$_CVector@M@@0MPAVCWorldSubFCQB2@@@Z
+/ALTERNATENAME:?Walk@CModelSub14@@QAEIPAX0@Z=?WalkQ458@CModelSub14Q458@@QAEIPAX0@Z
+/ALTERNATENAME:?w_GetPointShade@@YAXPAEPAV?$_CVector@M@@0@Z=?w_GetPointShadeQ3S@@YAXPAEPAV?$_CVectorQ3S@M@@0@Z
+/ALTERNATENAME:?w_GetShadeCellSize@@YAMPAD@Z=?w_GetShadeCellSizeQ468@@YAMPAD@Z
+/ALTERNATENAME:?w_IsPointInside@@YAHPAXPAV?$_CVector@M@@@Z=?bsp_PointInside@@YAHPAVBSPNode@@PAV?$_CVector@M@@@Z
+/ALTERNATENAME:?w_LoadWorldModel@@YAHPAVWorldLoadRequest@@PAVCServerWorldFull@@KPAPAVCWorldGeom@@PAK3H@Z=?w_LoadWorldModel@@YAHPAVWorldLoadRequest@@PAVCServerWorldFull@@KPAPAVCWorldBsp@@PAK3H@Z
+/ALTERNATENAME:?w_ReadVectorQT1@@YAXPAVILTStream@@PAV?$_CVector@M@@@Z=?w_ReadVector@@YAXPAVILTStream@@PAV?$_CVector@M@@@Z
+/ALTERNATENAME:?WriteByte@ServerMessage@@QAEXE@Z=?WriteType@CPacket@@QAEXE@Z
+/ALTERNATENAME:?WriteData@CMsgDataView@@QAEXPAXG@Z=?WriteData@ServerMessage@@QAEXPAXK@Z
+/ALTERNATENAME:?WriteData@CMsgStringWriter@@QAEXPAXK@Z=?WriteData@ServerMessage@@QAEXPAXK@Z
+/ALTERNATENAME:?WriteData@ServerMessageTypeView@@QAEXPAXG@Z=?WriteData@ServerMessage@@QAEXPAXK@Z
+/ALTERNATENAME:?WriteDWord@CMsgWriteQ291@@QAEXK@Z=?WriteType@CPacket@@QAEXK@Z
+/ALTERNATENAME:?WriteDWord@CMsgWriteView@@QAEXK@Z=?WriteType@CPacket@@QAEXK@Z
+/ALTERNATENAME:?WriteDWord@ServerMessageWriteView@@QAEXK@Z=?WriteType@CPacket@@QAEXK@Z
+/ALTERNATENAME:?WriteFloat@CMsgFloatWriteView@@QAEXM@Z=?WriteType@CPacket@@QAEXM@Z
+/ALTERNATENAME:?WriteFloat@CMsgWriteQ291@@QAEXM@Z=?WriteType@CPacket@@QAEXM@Z
+/ALTERNATENAME:?WriteString@CMsgStringView@@QAEXPAD@Z=?WriteString@CMsgStringWriter@@QAEXPAD@Z
+/ALTERNATENAME:?WriteString@CMsgWriteQ291@@QAEXPAD@Z=?WriteString@CMsgStringWriter@@QAEXPAD@Z
+/ALTERNATENAME:?WriteString@CMsgWriteView@@QAEXPAD@Z=?WriteString@CMsgStringWriter@@QAEXPAD@Z
+/ALTERNATENAME:?WriteWord@CMsgFloatWriteView@@QAEXK@Z=?WriteType@CPacket@@QAEXG@Z
+/ALTERNATENAME:?WriteWord@ServerMessage@@QAEXG@Z=?WriteType@CPacket@@QAEXG@Z
+/ALTERNATENAME:?wt_FindInBox_F@@YAXPAVCWTNode_F@@PAUWTSphereInfo_F@@H@Z=?wt_FindObjectsInBox_D@@YAXPAVCWTNode_D@@PAUWTFindInfo_D@@K@Z
+/ALTERNATENAME:?wt_SegQueryNode_E@@YAKPAVCWTNode_E@@PAUWTSegQuery_E@@@Z=?wt_FindInRect_F@@YAXPAVCWTNode_F@@PAUWTRectInfo_F@@@Z
+/ALTERNATENAME:?wt_VisibilityTraversalQ458@@YAXPAVCObjWorldQueryQ458@@@Z=?wt_VisibilityTraversal@@YAXPAVCWorldVisQuery@@@Z
+/ALTERNATENAME:?wt_VisitNode_C@@YAXPAXPAPAVCVisObject_C@@K@Z=?vis_WalkNode_D@@YAXPAUVisNode_D@@PAPAVCVisObj_D@@K@Z
+/ALTERNATENAME:?xfer_FindFileByID@@YAPAVCXferFile@@PAVCClientFiles@@G@Z=?xfer_FindFileByID@@YAPAVCXferFileView@@PAVCClientFilesView@@G@Z
+/ALTERNATENAME:?xfer_FinishTransfer@@YAXPAVCClientFilesView@@@Z=?xfer_FinishTransfer@@YAXPAVCClientFiles@@@Z
+/ALTERNATENAME:?xfer_FreeAllFiles@@YAXPAVCClientFilesView@@@Z=?xfer_FreeAllFiles@@YAXPAVCClientFiles@@@Z
+# 0x1000e3f9 (dsi_ServerError) -- TCPDriver::GetTcpIpAddress (0x10037430) calls it at 0x10037519 (the device-count line) and 0x10037543 (the per-device address), the two fixed prototypes tcpdriver.cpp declares
+/ALTERNATENAME:?dsi_PrintCount@@YAXPADH0@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_PrintAddr@@YAXPADKKKK@Z=?dsi_ServerError@@YAXPADZZ
+# 0x10058700 -- lthread.cpp's g_ThreadMessageBank (push/mov $0x10058700 at 0x10015674, 0x100156e7) is svnew.cpp's g_ThreadMsgBank (its initializer group 0x10015508-0x1001555c stores through 0x10058700)
+/ALTERNATENAME:?g_ThreadMessageBank@@3VLThreadMessageBank@@A=?g_ThreadMsgBank@@3VCThreadMsgBank@@A
+# 0x10037c4c -- TCPDriver's response-array constructor is CMoArray<TCPQueryResponse_A>'s (worldtree.cpp explicit instantiation); shipped vtable 0x1004e9bc slots 0/1 are 0x1000ba8f GenBegin and 0x1000b2b7 GenIsValid, which tcpdriver.cpp declares as _v00/_v04
+/ALTERNATENAME:??0?$TCPQueryArrayT@VTCPQueryResponse@@@@QAE@XZ=??0?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@QAE@XZ
+/ALTERNATENAME:?_v00@?$TCPQueryArrayT@VTCPQueryResponse@@@@UAEXPAX@Z=?GenBegin@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+/ALTERNATENAME:?_v04@?$TCPQueryArrayT@VTCPQueryResponse@@@@UAEIPAK@Z=?GenIsValid@?$CMoArray@VTCPQueryResponse_A@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+# ILTCSBase vtable 0x1004e684 (and CLTServer's 0x1004e368): slot 14
+# WriteToMessageObject and slot 15 WriteToLoadSaveMessageObject both hold
+# 0x100063bc, one body (its error string is "ILTCSBase::WriteToMessageObject",
+# 0x10051428). No second body exists in the image to write.
+/ALTERNATENAME:?WriteToLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z=?WriteToMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+# 0x1004d660 slot 0 = 0x1000989c (`xor eax,eax; ret`), which is objtypes.h's
+# inline CObjBase::_v10 by the CObjBase vtables' +0x10 slot (0x1004e184 holds
+# 0x1000989c too); svtiny.cpp's old CObjBaseTinyView::_v10 view was folded into it. saveio.cpp's
+# CSaveLoadMessage and savrest.cpp's CSaveLoadMessageQ4S are stand-ins that
+# plant this vtable (sm_RestoreNextObject 0x10010e13, sav_SaveObject
+# 0x1000fc5d) and declare only its first slot.
+/ALTERNATENAME:?_v00@CSaveLoadMessage@@UAEKXZ=?_v10@CObjBase@@UAEIXZ
+/ALTERNATENAME:?_v00@CSaveLoadMessageQ4S@@UAEKXZ=?_v10@CObjBase@@UAEIXZ
+# 0x10058c7c -- servermsg.h's `uint32 g_PacketDataBank` is collection.h's g_DefAlloc
+# (ServerMessage::Init, placed at 0x10010da9, reads its DIR32 as 0x10058c7c; collection.h,
+# packet.h and msgterm.cpp name that address g_DefAlloc, defined in StdLith.lib)
+/ALTERNATENAME:?g_PacketDataBank@@3KA=?g_DefAlloc@@3VLAlloc@@A
+# 0x1000be24 / 0x1000be59 -- CMsgPacketData is the +0x50 CMoArray<uint8,DefaultCache>
+# (its ctor is already aliased to that template's at 0x1000af9a); ServerMessage::Init
+# (0x10010da9) calls 0x1000be59 then 0x1000be24, and collection.obj's
+# CMoArray<uint8>::SetSize2 / ::Init are byte-identical there (95 and 53 bytes)
+/ALTERNATENAME:?Init@CMsgPacketData@@QAEIKK@Z=?Init@?$CMoArray@EVDefaultCache@@@@QAEIKK@Z
+/ALTERNATENAME:?SetSize@CMsgPacketData@@QAEIKPAK@Z=?SetSize2@?$CMoArray@EVDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+# 0x1000ebd0 / 0x100260d9 -- netmgr.cpp's ServerMessageTypeView stand-ins. The
+# size-exact near CNetMgrSendView::sub_100235e8 (1188/1188 at 0x100235e8) reads its
+# ReadWord calls back as 0x1000ebd0 (+0x4f, +0x246, +0x2fe) and ReadData as 0x100260d9
+# (+0x32c); CPacket::ReadType<uint16> (netmgr.obj) and ServerMessage::ReadData
+# (servermsg.obj) are byte-identical at those addresses. Same pairing as the
+# view's ReadDWord/WriteData lines above.
+/ALTERNATENAME:?ReadWord@ServerMessageTypeView@@QAEGPAG@Z=?ReadType@CPacket@@QAEGPAG@Z
+/ALTERNATENAME:?ReadData@ServerMessageTypeView@@QAEXPAXG@Z=?ReadData@ServerMessage@@QAEXPAXK@Z
+# 0x1004dd2c / 0x1004dcfc -- the vptrs NetConnection::Term's queue views restore.
+# NetConnection's ctor (placed at 0x10021200) stores ??_7LMessageList@@6B@ as 0x1004dd2c
+# and ??_7CNetSentQueue@@6B@ as 0x1004dcfc; Term (0x1002126a) stores the same two.
+/ALTERNATENAME:?g_LMessageListVtblNM@@3PAXA=??_7LMessageList@@6B@
+/ALTERNATENAME:?g_NetSentQueueVtblNM@@3PAXA=??_7CNetSentQueue@@6B@
+# worldmodels.cpp's CWDArray* stand-ins are the world's five light-animation arrays,
+# which commonmodel.cpp types as CMoArray<CWorldAnimRecQ/CWorldAnimLightQ/CWorldAnimFrameQ*/
+# uint8/CWorldAnimFrameQ, DefaultCache> (CWorldSub04..54, same CServerWorld offsets 0x04..0x54).
+# CWorldData::TermArrays (placed at 0x1000a226) calls 0x1000c267, 0x1000c470 (x2), 0x1000be59,
+# 0x1002ccee in that order; each target is one of that template's SetSize2 bodies, and each
+# alias picks the instantiation with the same element size (0x60, 4, 4, 1, 8), so the callees
+# it reaches allocate the right stride (0x1000c470/0x1000be59/0x1002ccee are three copies of
+# one body that differ only in their _AllocateTArray).
+/ALTERNATENAME:?SetSize@CWDArray04@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+/ALTERNATENAME:?SetSize@CWDArray18@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+/ALTERNATENAME:?SetSize@CWDArray2c@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@PAVCWorldAnimFrameQ@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+/ALTERNATENAME:?SetSize@CWDArray40@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@EVDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+/ALTERNATENAME:?SetSize@CWDArray54@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+# commonmodel.cpp's CWorldTable (CServerWorld+0x188) and CWorldPolyArray<CWorldPolyRec*>
+# (+0x19c) are hand-kept copies of CMoArray<T*, DefaultCache>. Their ctors 0x1000bca5 and
+# 0x1000b15c both call Init at 0x1000c38c and store vtables 0x1004d5a0 / 0x1004d3a4, whose slot 0
+# is 0x1000ba8f (GenBegin); 0x1004d3a4 is worldbsp.h's CMoArray<CWorldPart*> vtable, and that
+# instantiation's Init/SetSize2/GenBegin are byte-identical at 0x1000c38c/0x1000c470/0x1000ba8f.
+# The world table's resize: 0x1000c504 (SetSizeInit2, placed) calls 0x1000c470.
+/ALTERNATENAME:?Init@CWorldTable@@QAEIKK@Z=?Init@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAEIKK@Z
+/ALTERNATENAME:?Init@?$CWorldPolyArray@PAVCWorldPolyRec@@@@QAEIKK@Z=?Init@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAEIKK@Z
+/ALTERNATENAME:?SetSize2@CWorldTable@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+/ALTERNATENAME:?_v00@CWorldTable@@UAEXXZ=?GenBegin@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+/ALTERNATENAME:?_v00@?$CWorldPolyArray@PAVCWorldPolyRec@@@@UAEXXZ=?GenBegin@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+# 0x10016b7c -- `mov 4(%esp),%eax; mov %eax,0x20(%ecx); ret 4`. CPieceDataQ44C::
+# sub_1001bf85Q44C (placed at 0x1001bf85) calls it as SetModelQ44C; modelnew.cpp's
+# ModelPieceDataQ444::SetModelQ444 is the same piece-data class's setter, identical there.
+/ALTERNATENAME:?SetModelQ44C@CPieceDataQ44C@@QAEXPAVModel@@@Z=?SetModelQ444@ModelPieceDataQ444@@QAEXPAVModelQ444@@@Z
+# 0x1003d330 -- Model's ctor (0x10016cc5) calls it at +0x79 for its CMoMemBlock member;
+# StdLith's LAllocSimpleBlock::LAllocSimpleBlock is identical there (dtor 0x1003d3a0 and
+# Alloc 0x1003d3f0 are already aliased to the same class above).
+/ALTERNATENAME:??0CMoMemBlock@@QAE@XZ=??0LAllocSimpleBlock@@QAE@XZ
+# 0x10016492 -- the piece-LOD element ctor (dword, word, six fldz/fstps). sub_1001bf85Q44C
+# calls SetSize2 0x100199b7, whose BaseNew 0x1001b84c runs 0x10016492 per 0x20-byte element;
+# collection.cpp's CCollElem20F ctor is identical there.
+/ALTERNATENAME:??0CPieceLodQ44C@@QAE@XZ=??0CCollElem20F@@QAE@XZ
+# 0x10039735 -- CWorldLight's vtable 0x1004d354 (stored by its ctor, placed at 0x10009878)
+# has the scalar deleting dtor 0x10009911 in slot 0, which calls 0x10039735 directly:
+# worldtree.cpp's ~CWTObj_D, the base whose ctor CWorldLightRoot's is already aliased to.
+/ALTERNATENAME:??1CWorldLightRoot@@UAE@XZ=??1CWTObj_D@@UAE@XZ
+# 0x10039740 -- slot 2 of CWorldLight's vtable 0x1004d354 (0x1004d35c): worldtree.cpp's
+# CWTObj_D::RemoveFromLists, the same base.
+/ALTERNATENAME:?RemoveFromLists@CWorldLightRoot@@UAEXXZ=?RemoveFromLists@CWTObj_D@@UAEXXZ
+# 0x1004de00 slot 0 -- ServerMessage's vtable (the one its ctor 0x1002417f stores
+# last into +0x00) opens with 0x100241f4, the scalar deleting teardown that
+# servermsg.obj's ??_GCTermMessage matches byte-identically; servermsg.h models that
+# slot as the placeholder virtual _v00.
+/ALTERNATENAME:?_v00@ServerMessage@@UAEXXZ=??_GCTermMessage@@QAEPAXI@Z
+# 0x1004de10 slot 0 -- LMessageImpl's vtable (stored into ServerMessage+0x08 by
+# 0x1002417f) opens with 0x10014ccd, LMessageImpl::Release (lmessage.obj, identical);
+# servermsg.h models the vptr with the one placeholder virtual _lm00.
+/ALTERNATENAME:?_lm00@LMessageImpl@@UAEXXZ=?Release@LMessageImpl@@QAEKXZ
+# 0x1000ed6f -- packet.cpp's sm_CreateInterObjectLink (0x10013b63, identical) loads
+# the node bank 0x10058bc0 and calls 0x1000ed6f (0x10013b9b); servermessage.obj's
+# CXferFileBank::Allocate is that three-instruction forward (xfer_AddFile 0x1000e650
+# calls it at 0x1000e668). /OPT:ICF folded the banks' identical forwards into one.
+/ALTERNATENAME:?Allocate@CLinkNodeBank@@QAEPAVLTLink@@XZ=?Allocate@CXferFileBank@@QAEPAVCXferFile@@XZ
+# 0x10039735 -- objtypes.h's CObjRoot destructor is worldtree.cpp's CWTObj_D one (same class,
+# vtable 0x1004ea04; CObjRoot's ctor 0x10039707 is already aliased to ??0CWTObj_D above)
+/ALTERNATENAME:??1CObjRoot@@UAE@XZ=??1CWTObj_D@@UAE@XZ
+# 0x10039780 -- worldtree.cpp SECTION E's node constructor is SECTION D's (same 0x5c-byte node;
+# E's Term/SetDims/AllocChildren are already aliased onto D's the same way)
+/ALTERNATENAME:??0CWTNode_E@@QAE@XZ=??0CWTNode_D@@QAE@XZ
+# 0x1003c650 -- worldtree.cpp's CRezItmHashByName_F (a view of rezmgr.lib's by-name hash item,
+# whose vtable the inline CRezItm_F ctor plants) slot HashFunc is RezMgr.lib rezdir.obj's
+# CRezItmHashByNameX380::HashFunc (20/20 bytes identical at 0x1003c650)
+/ALTERNATENAME:?HashFunc@CRezItmHashByName_F@@MAEIXZ=?HashFunc@CRezItmHashByNameX380@@MAEIXZ
+# 0x10007eb9 -- collection.cpp's CCollElem10 is commonmodel.cpp's 16-byte CServerWorldRec:
+# BaseDelete 0x1000d22c (placed) calls 0x10007eb9, `jmp 0x10007ecc` = ~CServerWorldRec (Term)
+/ALTERNATENAME:??1CCollElem10@@QAE@XZ=??1CServerWorldRec@@QAE@XZ
+# 0x10016c69 -- collection.cpp's CCollElem28 is commonmodel.h's ModelWeightSet (its ctor is
+# already aliased the same way); BaseDelete 0x1001b672 calls 0x10016c69 = ~ModelWeightSet
+/ALTERNATENAME:??1CCollElem28@@QAE@XZ=??1ModelWeightSet@@QAE@XZ
+# 0x1000a7de / 0x1000a849 -- collection.cpp's CCollElemC0 is worldbsp.h's CWorldSimple:
+# BaseNew 0x1000d1b5 and BaseDelete 0x1000d181 (both placed) call CWorldSimple's ctor and dtor
+/ALTERNATENAME:??0CCollElemC0@@QAE@XZ=??0CWorldSimple@@QAE@XZ
+/ALTERNATENAME:??1CCollElemC0@@QAE@XZ=??1CWorldSimple@@QAE@XZ
+# rezmgr.lib (src/lithshared/rezmgr) -- each TU there carries its own suffixed copy
+# of the library's classes, so a cross-TU call names a class the callee's TU spells
+# differently. Addresses from the shipped call sites / vtables of placed functions.
+# 0x1003cd60 -- ReadEmulationDirectory (rezdir.obj, placed 0x1003b9b0) calls it at
+# 0x1003bec4; rezemu.obj's CRezFileDirectoryEmulationFileRf80 ctor is placed there (155 b).
+/ALTERNATENAME:??0CRezFileDirectoryEmulationFileX380@@QAE@PAVCRezMgrX380@@PADPAVCRezFileDirectoryEmulationX380@@@Z=??0CRezFileDirectoryEmulationFileRf80@@QAE@PAVCRezMgrRf80@@PADPAVCRezFileDirectoryEmulationRf80@@@Z
+# 0x1003c670 -- the name-table HashFunc(char*): rezdir.obj's Find (placed 0x1003c6a0,
+# call at 0x1003c6b0) and CRezItmHashByName::HashFunc (0x1003c650, call 0x1003c65f) reach
+# it; rezhash.obj's Q48C HashFunc(char*) bodies are placed there (41 b, both tables fold).
+/ALTERNATENAME:?HashFunc@CRezDirHashTableX380@@QAEIPAD@Z=?HashFunc@CRezDirHashTableQ48C@@QAEIPAD@Z
+/ALTERNATENAME:?HashFunc@CRezItmHashTableByNameX380@@QAEIPAD@Z=?HashFunc@CRezItmHashTableByNameQ48C@@QAEIPAD@Z
+# 0x1003c6a0 -- the by-name Find(char*, BOOL), rezdir.obj's X380 Find (177 b, both tables
+# fold there). Called from CRezDir::GetDir (rezhash.obj, 0x1003ac72), CRezDir::CreateDir
+# (rezmgr2.obj, 0x1003ad74), CRezDir::GetRez (rezmgr.obj; 0x1003ab30, call 0x1003ab5e) and
+# CRezDir::ReadDirBlock (rezmgr2.obj; 0x1003afa0, calls 0x1003b06f dir / 0x1003b158 item).
+/ALTERNATENAME:?Find@CRezDirHashTableQ48C@@QAEPAVCRezDirQ48C@@PADH@Z=?Find@CRezDirHashTableX380@@QAEPAVCRezDirX380@@PADH@Z
+/ALTERNATENAME:?Find@CRezDirHashTableX720@@QAEPAVCRezDirX720@@PADH@Z=?Find@CRezDirHashTableX380@@QAEPAVCRezDirX380@@PADH@Z
+/ALTERNATENAME:?Find@CRezItmHashTableByNameRz48@@QAEPAVCRezItmRz48@@PADH@Z=?Find@CRezItmHashTableByNameX380@@QAEPAVCRezItmX380@@PADH@Z
+/ALTERNATENAME:?Find@CRezItmHashTableByNameX720@@QAEPAVCRezItmX720@@PADH@Z=?Find@CRezItmHashTableByNameX380@@QAEPAVCRezItmX380@@PADH@Z
+# 0x1003c780 -- CRezTypeHashTable::Find(REZTYPE) (rezhash.obj, placed, 62 b); CRezDir::GetRez
+# (rezmgr.obj, 0x1003ab30) calls it at 0x1003ab3b.
+/ALTERNATENAME:?Find@CRezTypeHashTableRz48@@QAEPAVCRezTypRz48@@K@Z=?Find@CRezTypeHashTableQ48C@@QAEPAVCRezTypQ48C@@K@Z
+# 0x1003c760 / 0x1003c7c0 -- the element HashFunc overrides, slot 0 of the shipped vtables
+# rezmgr.obj's CRezTypeHash / CRezDirHash constructors store (0x1004ea44 / 0x1004ea48).
+# 0x1003c760 tail-calls the type table's HashFunc(DWORD) 0x1003c770, 0x1003c7c0 the name
+# table's 0x1003c670: rezhash.obj's CRezTypeHashQ48C / CRezDirHashQ48C bodies.
+/ALTERNATENAME:?HashFunc@CRezTypeHashRz48@@MAEIXZ=?HashFunc@CRezTypeHashQ48C@@MAEIXZ
+/ALTERNATENAME:?HashFunc@CRezDirHashRz48@@MAEIXZ=?HashFunc@CRezDirHashQ48C@@MAEIXZ
+# 0x1004bcb0 -- CBaseHash::GetFirst (Lith.lib basehash.obj, placed); CRezDir::ReadAllDirs
+# (rezmgr2.obj; 0x1003aee0) calls it at 0x1003af03 and 0x1003af3a.
+/ALTERNATENAME:?GetFirst@CBaseHashX720@@QAEPAVCBaseHashItemX720@@XZ=?GetFirst@CBaseHash@@QAEPAVCBaseHashItem@@XZ
+# Shipped vtable 0x1004ead0 (stored by the 0x1003cd60 ctor both rezfile.obj and rezemu.obj
+# write): slot 1 0x1003ce00 (-> dtor 0x1003ce20), Read 0x1003ce90, Write 0x1003cf30, Open
+# 0x1003cfd0, Close 0x1003c0d0, Flush 0x1003cfe0, VerifyFileOpen 0x1003c0d0, GetFileName
+# 0x1003d160. rezfile.obj's Rf90 copy of the class declares them; rezemu.obj's Rf80 copy
+# (0x00490740.. in lithtech.exe) defines them, dtor/Read/Write/Flush placed as above.
+/ALTERNATENAME:??1CRezFileDirectoryEmulationFileRf90@@UAE@XZ=??1CRezFileDirectoryEmulationFileRf80@@UAE@XZ
+/ALTERNATENAME:?Read@CRezFileDirectoryEmulationFileRf90@@UAEKKKKPAX@Z=?Read@CRezFileDirectoryEmulationFileRf80@@UAEKKKKPAX@Z
+/ALTERNATENAME:?Write@CRezFileDirectoryEmulationFileRf90@@UAEKKKKPAX@Z=?Write@CRezFileDirectoryEmulationFileRf80@@UAEKKKKPAX@Z
+/ALTERNATENAME:?Open@CRezFileDirectoryEmulationFileRf90@@UAEHPBDHH@Z=?Open@CRezFileDirectoryEmulationFileRf80@@UAEHPBDHH@Z
+/ALTERNATENAME:?Close@CRezFileDirectoryEmulationFileRf90@@UAEHXZ=?Close@CRezFileDirectoryEmulationFileRf80@@UAEHXZ
+/ALTERNATENAME:?Flush@CRezFileDirectoryEmulationFileRf90@@UAEHXZ=?Flush@CRezFileDirectoryEmulationFileRf80@@UAEHXZ
+/ALTERNATENAME:?VerifyFileOpen@CRezFileDirectoryEmulationFileRf90@@UAEHXZ=?VerifyFileOpen@CRezFileDirectoryEmulationFileRf80@@UAEHXZ
+/ALTERNATENAME:?GetFileName@CRezFileDirectoryEmulationFileRf90@@UAEPBDXZ=?GetFileName@CRezFileDirectoryEmulationFileRf80@@UAEPBDXZ
+# filemgr.cpp's / fsstream.cpp's views of RezMgr.lib's archive classes,
+# onto the library's suffixed reconstruction, each pair at one shipped
+# address (src/lithshared/rezmgr's objects matched on server.dll). The
+# two 20-byte CRezMgr forwarders place ambiguously (0x1003c4a0+) and are told
+# apart by their callees: 0x1003c4a0 calls 0x1003c320
+# (CRezDirX380::GetRezFromDosPath, MATCH), 0x1003c4c0 calls 0x1003c150
+# (CRezDirX380::GetDirFromPath, MATCH).
+# 0x1003c4a0 CRezMgr::GetRezFromDosPath
+/ALTERNATENAME:?Find@CFileArchive@@QAEPAVCRezItm@@PAD@Z=?GetRezFromDosPath@CRezMgrX380@@QAEPAVCRezItmX380@@PBD@Z
+/ALTERNATENAME:?Find@CFileListView@@QAEPAVCStreamSource@@PAD@Z=?GetRezFromDosPath@CRezMgrX380@@QAEPAVCRezItmX380@@PBD@Z
+# 0x1003c4c0 CRezMgr::GetDirFromPath
+/ALTERNATENAME:?GetDirFromPath@CFileArchive@@QAEPAVCRezDir@@PBD@Z=?GetDirFromPath@CRezMgrX380@@QAEPAVCRezDirX380@@PBD@Z
+# 0x1003c050 CRezMgr::TypeToStr (MATCH, 110 bytes)
+/ALTERNATENAME:?TypeToStr@CFileArchive@@QAEXKPAD@Z=?TypeToStr@CRezMgrX380@@QAEXKPAD@Z
+# 0x1003a640 CRezItm::GetType: `mov 0x4(%ecx),%eax; mov (%eax),%eax; ret`,
+# m_pType->m_nType -- byte for byte CRezItmRz48::GetType, too small for
+# a byte match to place, and the library's only GetType.
+/ALTERNATENAME:?GetType@CRezItm@@QAEKXZ=?GetType@CRezItmRz48@@QAEKXZ
+# 0x1003ad00 / 0x1003ad20 / 0x1003acc0 / 0x1003ace0 / 0x1003ac80 / 0x1003aca0 (all MATCH)
+/ALTERNATENAME:?GetFirstItem@CRezDir@@QAEPAVCRezItm@@PAVCRezTyp@@@Z=?GetFirstItem@CRezDirQ48C@@QAEPAVCRezItmQ48C@@PAVCRezTypQ48C@@@Z
+/ALTERNATENAME:?GetNextItem@CRezDir@@QAEPAVCRezItm@@PAV2@@Z=?GetNextItem@CRezDirQ48C@@QAEPAVCRezItmQ48C@@PAV2@@Z
+/ALTERNATENAME:?GetFirstType@CRezDir@@QAEPAVCRezTyp@@XZ=?GetFirstType@CRezDirQ48C@@QAEPAVCRezTypQ48C@@XZ
+/ALTERNATENAME:?GetNextType@CRezDir@@QAEPAVCRezTyp@@PAV2@@Z=?GetNextType@CRezDirQ48C@@QAEPAVCRezTypQ48C@@PAV2@@Z
+/ALTERNATENAME:?GetFirstSubDir@CRezDir@@QAEPAV1@XZ=?GetFirstSubDir@CRezDirQ48C@@QAEPAV1@XZ
+/ALTERNATENAME:?GetNextSubDir@CRezDir@@QAEPAV1@PAV1@@Z=?GetNextSubDir@CRezDirQ48C@@QAEPAV1@PAV1@@Z
+# servermgr.h's CBankBase slots 1..3. The shipped base vftable 0x1004d260
+# is { 0x10006dba ??_G, 0x1003ea24, 0x1003ea24, 0x1003ea24 }, and 0x1003ea24
+# is `push $0x19; call _amsg_exit; pop %ecx; ret` -- the CRT's _purecall. The
+# three are pure in the original; they cannot be `= 0` here because CFileBank
+# and others do not declare all three overrides (they would become abstract),
+# so the base vftable's references go where the shipped ones go.
+/ALTERNATENAME:?_v04@CBankBase@@UAEXXZ=__purecall
+/ALTERNATENAME:?_v08@CBankBase@@UAEXPAX@Z=__purecall
+/ALTERNATENAME:?Term@CBankBase@@UAEXXZ=__purecall
+# 0x1000ed6f -- the one shared bank forward, `add $0x4,%ecx; push %ecx;
+# call sb_Allocate (0x10001c86); pop %ecx; ret`. dhash_AddElement calls it
+# for the hash-element bank (`call 0x1000ed6f` at 0x1000dc74, /O1), and
+# /OPT:ICF left one body for all the banks with this forward; servermsg.cpp
+# defines it as CXferFileBank::Allocate (server build).
+/ALTERNATENAME:?Allocate@CHashElementBank@@QAEPAVCHashElement@@XZ=?Allocate@CXferFileBank@@QAEPAVCXferFile@@XZ
+# 0x1000e3f9 (dsi_ServerError) -- CServerMgr::UpdateObjects' class-tick dump pushes
+# "%s| %3d |  %3d  |           %6d | %6d | %6d" (0x10054dd8) and calls 0x1000e3f9 at
+# 0x10032afa, and "  (OBJECTS) Total: %d, Updated: %d,  (TICKS) %d" (0x10054d98) at
+# 0x10032b4b: the two fixed prototypes servermgr.h declares for them
+/ALTERNATENAME:?dsi_PrintClassRow@@YAXPAD0KKKKK@Z=?dsi_ServerError@@YAXPADZZ
+/ALTERNATENAME:?dsi_PrintFrameTotals@@YAXPADHHH@Z=?dsi_ServerError@@YAXPADZZ
+# 0x10058c7c -- g_DefAlloc (StdLith.lib), as the g_PacketDataBank line above: smgr.obj,
+# tcpdriver.obj and worldmodels.obj's placed functions read g_MoAlloc's DIR32 back as
+# 0x10058c7c, and smgr.obj's w_TermWorldData (placed at 0x10007a6a) reads g_WorldAllocator's
+# as the same address
+/ALTERNATENAME:?g_MoAlloc@@3VCMoAllocator@@A=?g_DefAlloc@@3VLAlloc@@A
+/ALTERNATENAME:?g_WorldAllocator@@3KA=?g_DefAlloc@@3VLAlloc@@A
+# 0x10058bc0 -- the link bank svnew.cpp defines as g_LinkNodeBank. sm_RemoveObject
+# loads it into %ecx at 0x1002ac42 and calls 0x1000ed6f; smgr.cpp and smgrnew.cpp name the
+# object g_ObjQueueBank and the forward CObjQueueBank::Allocate. 0x1000ed6f (`add $4,%ecx;
+# push %ecx; call sb_Allocate; pop %ecx; ret`, /OPT:ICF-shared) is defined as
+# CXferFileBank::Allocate in servermessage.cpp
+/ALTERNATENAME:?g_ObjQueueBank@@3VCObjQueueBank@@A=?g_LinkNodeBank@@3VCLinkNodeBank@@A
+/ALTERNATENAME:?Allocate@CObjQueueBank@@QAEPAVLTLink@@XZ=?Allocate@CXferFileBank@@QAEPAVCXferFile@@XZ
+# 0x1004e2f0 -- CMessageBank's vftable (CServerMgr's ctor stores it at +0x9f0,
+# 0x1002c806; its destructor again at 0x1002c981). Slot 2 = 0x1002ccb5, svnew.cpp's
+# CMsgRecordBank::Free (placed there, identical); slot 3 = 0x1002ce31, objbank.cpp's
+# CObjectBank<CBankElem54>::Init (placed there; the 0x54 sb_Init)
+/ALTERNATENAME:?_v08@CMessageBank@@UAEXPAX@Z=?Free@CMsgRecordBank@@UAEXPAX@Z
+/ALTERNATENAME:?Term@CMessageBank@@UAEXXZ=?Init@?$CObjectBank@VCBankElem54@@@@UAEXXZ
+# 0x1004e8c8 -- the object mover's vftable (CServerMgr::Init stores it into the new
+# +0x6a8 object at 0x10031fbe). smgr.cpp constructs it as objmover.cpp's CObjectMoverQ47C;
+# the three slots that file leaves unnamed are spritecontrol.cpp's CObjectMover bodies,
+# placed at the slot addresses: slot 6 = 0x10035541 ObjectBlocks, slot 8 = 0x10035568
+# CheckMaxPos, slot 12 = 0x10032332 GetUnknown928Value
+/ALTERNATENAME:?_v18@CObjectMoverQ47C@@UAEHXZ=?ObjectBlocks@CObjectMover@@UAEHPAVCMoveRequest@@PAXPAVLTObject@@@Z
+/ALTERNATENAME:?_v20@CObjectMoverQ47C@@UAEXXZ=?CheckMaxPos@CObjectMover@@UAEXPAVCMoveRequest@@PAV?$_CVector@M@@@Z
+/ALTERNATENAME:?_v30@CObjectMoverQ47C@@UAEKXZ=?GetUnknown928Value@CObjectMover@@UAEKXZ
+# 0x1004d1d4 -- worldtree.cpp's htons_A is a call through a pointer, spelled that way
+# to get the shipped six-byte `call *0x1004d1d4`; 0x1004d1d4 is the import-table slot
+# for WSOCK32 ordinal 9 (htons), i.e. the linker's __imp__htons@4.
+/ALTERNATENAME:_htons_A=__imp__htons@4
+# 0x10025a1b -- objbank.cpp's am_RemoveAttachment, the one definition
+/ALTERNATENAME:?am_RemoveAttachment@@YAKPAVCUnknown390@@PAVLTObject@@PAVAttachment@@@Z=?am_RemoveAttachment@@YAKPAVCObjMgrView@@PAVCObjLinked@@PAVAttachment@@@Z
+# 0x10023e86 -- smgr.cpp's CMsgCursorView::Init (smgrnew.cpp's view of it)
+/ALTERNATENAME:?Init@CMsgCursorViewQ474@@QAEPAVServerMessage@@PAV2@@Z=?Init@CMsgCursorView@@QAEPAVServerMessage@@PAV2@@Z
+# 0x1000b15c / 0x1000bca5 -- the two world collections' constructors are the template's
+/ALTERNATENAME:??0?$CWorldPolyArray@PAVCWorldPolyRec@@@@QAE@XZ=??0?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAE@XZ
+/ALTERNATENAME:??0CWorldTable@@QAE@XZ=??0?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAE@XZ

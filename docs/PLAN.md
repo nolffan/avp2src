@@ -138,7 +138,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 (WONAPI from the release's source, the rest from nolfsrc's and nolf2src's) and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
 | 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | |
-| 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | |
+| 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | started (below) |
 | 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | |
 | 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | |
 | 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | |
@@ -241,6 +241,30 @@ build the release's sources unchanged with cl 8966 and `PRIMAL_HUNT`:
 with 2,302 and 1,794 more functions "near" (the same function, changed:
 Third Law's edits, or one of the objects still 8168's) and 1,109 and 61
 of ours unplaced (code Primal Hunt dropped or rewrote).
+
+### 7. engine
+
+Started. nolfsrc's engine (`src/engine/lithtech`, `server`, `d3d`, at
+nolfsrc e2a6e25; its `NOLFSRC_MODERN`/`NOLFSRC_DEBUG` blocks renamed to ours,
+its debug headers in `src/avp2src/`) is compiled with Primal Hunt's cl
+12.00.8966 and nolfsrc's flags (`build/build.mk`, "The engine"; the
+renderer's files all `/O2`, as nolfsrc's flag groups are Intel C/C++'s),
+against AvP2's SDK headers. Objects only: the links need nolfsrc's
+lithshared libraries and its link-time tables, which name NOLF's
+addresses, so `make progress` scores the objects (`partial_objs`).
+
+- 382 of 403 objects compile. The 21 that do not fail on the SDK's
+  changes since NOLF: `AnimTimeRef` without `m_iWeightSet`, a key-frame
+  callback with two more arguments, `LTPlane` and `LTBBox` methods made
+  const and by reference, `FLAG2_PLAYERCOLLIDE`, ... (sdkforce, clientdsi,
+  clientinput, commonmodel, modelanim, servermodel, smgr, worldtree, ...).
+- As NOLF's: `lithtech.exe` 19.7 % byte-identical (1,443 functions, 545
+  near), `server.dll` 16.0 % (887, 225 near), `d3d.ren` 3.9 % (138, 70
+  near); 1,114, 649 and 794 of nolfsrc's functions in no form in Primal
+  Hunt's images.
+- Next: the 21 files to AvP2's SDK; the near functions; the flags per
+  binary (Primal Hunt's server.dll need not be /O1 as NOLF's was); the
+  links (lithshared rebuilt, package 4), then the tables.
 
 ### 12. modern
 

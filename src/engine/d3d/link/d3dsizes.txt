@@ -1,0 +1,219 @@
+# sizeof(tag) as the d3d TUs compile it -- written by tools/d3ddata.py --probe.
+# tag  size  TUs.  A size of 0/1 is an empty view class (layout not modelled);
+# a tag the TUs size differently is marked DISAGREE and not used.
+Bank10021f40 0x4 DISAGREE d3dr4c=0x1 d3dr5a=0x1 w16_1004fea4_qip=0x4 w27_10015e80_osoiqip=0x1 w27_10059c80_osoi=0x1 w43_10017c10_osoiqipni=0x0
+Bank1003b920 0x1 d3dr5a
+Box1001e660 0x15c d3dr3b
+Bucket1000eef0 0xc w15_1000d9f0_os w34_1003e620_osoiqipsf
+Bucket123a0 0xc w30_1000f020_osqipni
+Bucket124a4 0xc w30_1000f020_osqipni
+Bucket729c0 0xc big729c0 w14_10011980_osoiqip
+Bucket73140 0xc big73140
+Bucketb910 0xc w54_1000ae20_osoiqip
+C1000da50Data 0x14 DISAGREE d3dr2c=0x14 w28_100256d0_qipni=0x14 w4_1001eb90_os=0x0
+C10035b40 0x8 d3dr5a
+C10036320 0x8 w12_36320_os
+C100500a0 0x18 DISAGREE d3dr3c=0x1 w27_10050900_os=0x1 w27_1005dae0=0x1 w7_100500a0=0x18
+C1006a710Factory 0x4 d3dr3b
+C1006d520 0x1 d3dqip2
+C1007e850 0x50 d3dr5a
+C1008b090 0x1 d3dr4a
+C1008b090_15e84 0x6a4 w27_10015e80_osoiqip
+C1008b880 0x0 d3dr2c w16_10064720
+C1008b880A 0x4d8 d3dr3a
+C1008beb0Thing 0x10 DISAGREE d3dr2c=0x10 w16_10064720=0x10 w28_100256d0_qipni=0x0 w4_1001eb90_os=0x0
+C1008ef3c 0x1 d3dr5d
+C1008f620 0x1 w28_100256d0_qipni
+C10091220 0x20 DISAGREE d3dr4a=0x1 w17_1006ad20_qip=0x20
+C10091950 0x1 w6_10039730_qip
+C10091df0 0x0 d3dr2c d3dr4c
+CBank1008e640 0x20 w6_1003acf0
+CConVar 0x1 d3dr5b
+CD3DConVar 0x20 big21f90 w28_100256d0_qipni w34_1003e620_osoiqipsf w54_1000ae20_osoiqip w8_1006a860_os
+CD3DModelDraw 0x6b4 w43_10017c10_osoiqipni
+CMgr1006a6a0 0x4 d3dr3a_os
+CObj1006a6a0 0x0 d3dr3a_os
+CVar1005db90 0x1 d3dr4b
+CVarR5C 0x8 DISAGREE d3dr5c=0x1 w14_10011980_osoiqip=0x4 w15_100316e0=0x8 w6_10039730_qip=0x4 wC1_r5c=0x1
+CWorld1007b580 0x184 d3dqip4
+ClipVert 0x20 DISAGREE d3dr3c_os=0x20 w23_10050e60_os=0x20 w4_1001eb90_os=0x0 w57_10053e20_os=0x20 w9_1006f540_os=0x20
+Counters10059590 0x10c DISAGREE d3dqip4=0x50 d3dr5b=0x50 w16_1004fea4_qip=0x18 w4_1001eb90_os=0x10c w7_100500a0=0x28
+Ctx1008beac 0x194 w28_100256d0_qipni
+Cur0ae20 0x4 w54_1000ae20_osoiqip
+Cur729c0 0x4 big729c0
+D3D7 0x4 DISAGREE w2_10009ae0=0x0 w31_10032a00_qip=0x4 w38_100322c0_qip=0x4 w5_10033ba0=0x4
+D3DDev440e3 0x4 w35_10043e10_qip
+D3DDev7 0x4 d3dbatchd d3dbatchd_o2 w54_10048180_osoiqipsf
+D3DDevA 0x4 d3dr3a
+D3DDevDesc100322c0 0xec DISAGREE d3dr3b_o2=0x0 w38_100322c0_qip=0xec w6_10039730_qip=0x0
+D3DDevTSSR5C 0x4 w14_10011980_osoiqip w27_10050900_os w27_10056ab0_osqipni w35_10043e10_qip w7_10040cc0
+D3DDeve0e0 0x4 w54_1000daa0_qipsf
+D3DDevice 0x4 DISAGREE big40e10=0x4 big6d910=0x4 d3dbatcha=0x4 d3dbatcha_o2=0x4 d3dblit=0x4 d3ddraw=0x4 d3dr5b=0x4 w14_10006840=0x0 w14_10008a40_qipni=0x4 w14_10011980_osoiqip=0x4 w3_1000a7d0_os=0x4 w40_1005a960_qipni=0x4 w53_10070d10_os=0x4 w54_1000ae20_osoiqip=0x4 w63_10060010_qip=0x4 w9_1006d210_osoi=0x4 w9_1006f540_os=0x4
+D3DDevice1003d350 0x4 big729c0 w19_1003b6f0_osoiqip w24_10059380_os
+D3DDevice3e620 0x4 w34_1003e620_osoiqipsf
+D3DDevice47230 0x4 big47230
+D3DDevice49bb0 0x4 w54_10048180_osoiqipsf
+D3DDevice4e3e4 0x4 big4e3e4
+D3DDevice7 0x4 DISAGREE big2b1b0=0x4 big4b720=0x4 d3dbatchb=0x4 d3dbatchb_os=0x4 d3dbatchc_o2=0x4 d3dopt2d=0x4 d3dr2a=0x4 d3dr2b=0x4 d3dr2d=0x4 d3dr3b_o2=0x4 d3dr3c=0x4 d3dr3d=0x4 w15_100316e0=0x4 w16_10064720=0x4 w18_10035e20_osoi=0x4 w18_1003bb10_os=0x4 w26_100262f0=0x4 w27_10056ab0_osqipni=0x4 w28_100256d0_qipni=0x4 w28_1002ef30_osqipni=0x4 w30_1000f020_osqipni=0x4 w31_10032a00_qip=0x4 w31_10044ff0_qipni=0x4 w31_10066d10_qipni=0x4 w38_10028030_qip=0x4 w38_100322c0_qip=0x4 w4_10023c40_os=0x4 w4_10023fb0=0x4 w4_100265a0_qip=0x4 w55_10016324_os=0x4 w5_10033ba0=0x0 w6_10034f10_osoi=0x4 w6_1003b9c4_os=0x4
+D3DLink 0xc d3dr5d w25_10037bf0_qipni
+D3DModelCache 0x1 w43_10017c10_osoiqipni
+D3DXForm 0x4f8 DISAGREE w17_1005f580=0x0 w28_1002ef30_osqipni=0x4f8
+DDClipper 0x4 d3dbatcha w26_100371e0_osoi w31_10032a00_qip w38_100322c0_qip
+DDPixFmt10033ba0 0x20 w5_10033ba0
+DDSurface 0x4 DISAGREE d3dbatcha=0x4 d3dblit=0x4 d3ddraw=0x4 d3dr3c=0x4 d3dr5b=0x4 w17_1006ad20_qip=0x4 w26_10020fd0_osoiqip=0x0 w26_100262f0=0x4 w26_100371e0_osoi=0x4 w28_100256d0_qipni=0x4 w31_10032a00_qip=0x4 w5_10033ba0=0x4
+DDSurface440e3 0x4 w35_10043e10_qip
+DDSurface7 0x4 w18_10035e20_osoi w38_100322c0_qip
+DDraw 0x4 DISAGREE d3dbatcha=0x4 d3dblit=0x4 d3dr3c=0x4 w26_10020fd0_osoiqip=0x0 w26_10031e10=0x4 w26_100371e0_osoi=0x4 w53_10033f30_osoiqip=0x4
+DDraw10038f50 0x4 d3dqip2
+DDraw13 0x4 w13_1006c6e0_osoiqip
+DDraw7 0x4 DISAGREE d3dqip2=0x4 w18_10035e20_osoi=0x4 w28_100256d0_qipni=0x0 w31_10032a00_qip=0x4 w38_100322c0_qip=0x4 w5_10033ba0=0x4 w6_10039730_qip=0x4
+DLink 0xc d3dr2d_os w26_10020fd0_osoiqip
+DLink1006d460 0xc d3dr3d
+Desc1007a700 0x14 w49_1007a700
+DrawPolyMgr59c80 0x7f4 w27_10059c80_osoi
+DrawPolyMgr59ef0 0x7f8 d3dr5b
+Elem0f6f0 0x18 w14_10011980_osoiqip
+Elem1000eef0 0x18 w34_1003e620_osoiqipsf
+Elem100503c0 0x14 d3dr2a
+Elem124a4 0x18 w30_1000f020_osqipni
+Elem24024 0x18 DISAGREE big24090=0x18 w15_1000d9f0_os=0x0 w38_10028030_qip=0x18 w4_10023fb0=0x18 w54_1000ae20_osoiqip=0x18
+Elem729c0 0x18 big729c0 w14_10011980_osoiqip
+Elemb910 0x18 w54_1000ae20_osoiqip
+FVec3 0xc w28_100256d0_qipni w4_1001eb90_os
+Fmt10038f50 0x2c d3dqip2
+Fmt10039110 0x2c DISAGREE d3dr3c=0x2c d3dr3d=0x0
+FormatMgr 0x1 d3dblit d3dqip2 w17_1006ad20_qip w53_10033f30_osoiqip w6_10039730_qip
+FrustumPlane1007b580 0x10 d3dqip4
+Grid1008beac 0x1a8 big5dca0
+Grid61a30 0x144 w63_10060010_qip
+I100039d0 0x64 DISAGREE d3dr4b=0x4 w14_10008a40_qipni=0x5c w2_10009ae0=0x64
+IAllocator 0x4 d3dbatchb_os d3dr2a d3dr2b d3dr2d d3dr2d_os d3dr4a d3dr4b d3dr5a d3dr5b w10_1007a280_os w18_1001d180_os w18_1001dc70_os w22_1007dbd0_os w57_1007bb20_qipni w57_1007e830_osoiqip
+IDev1003ad30 0x4 d3dqip2
+IUnk10039420 0x4 d3dqip2
+IUnk10059f70 0x4 d3dr5a
+IntersectQuery 0x34 w17_10069a10_osoi w24_10068c80_osqipni
+Item1001eb20 0x4 d3dr3b
+LAlloc 0x4 d3dblit d3dr5b w27_10015e80_osoiqip w27_10056ab0_osqipni w27_10059c80_osoi w35_1007dc54_os w3_10016234_os w43_10017c10_osoiqipni w7_100500a0 wC1_r5c
+LAlloc1007aeb4 0x4 d3dqip4
+LAllocR5C 0x4 d3dr5c d3dr5c_o2 w19_10050450 w22_1007c580 w22_1007dde0_os
+LTLink 0xc d3dr5c w18_1001d180_os w48_1006d3e0_os w6_10039730_qip w9_1006d210_osoi wC1_r5c
+LTList 0x10 wC1_r5c
+LTMat 0x40 w14_10006840 w17_1005f580 w18_1003bb10_os w43_10017c10_osoiqipni w4_100265a0_qip w8_1005f9a0
+LTMat2b1b0 0x40 big2b1b0
+LTMat44ff4 0x40 w31_10044ff0_qipni
+LTMat5dca0 0x40 big5dca0
+LTMatrix 0x40 w34_1003e620_osoiqipsf w54_1000ae20_osoiqip
+LTObject 0x0 w17_10069a10_osoi w24_10068c80_osqipni
+LTPlane 0x10 d3dr5d_os w17_10069a10_osoi w24_10068c80_osqipni
+LTRect 0x10 w12_3b3d0_os w26_100371e0_osoi
+LTVec 0xc w14_10011980_osoiqip w15_100235d0 w17_1005f580 w31_1001e360 w31_10066d10_qipni w40_1005a960_qipni w43_10017c10_osoiqipni w4_1001eb90_os w4_100234d0 w54_10048180_osoiqipsf w55_10016324_os w56_10073700_osoiqipsf w8_1005fb70
+Link0ae20 0xc w14_10011980_osoiqip w24_10059380_os w3_1000a7d0_os w54_1000ae20_osoiqip
+Link10020f80 0xc d3dr2a_os w8_10069ca0_osoiqip
+Link1003d5f0 0xc w19_1003b6f0_osoiqip
+Link1006d520 0xc d3dr2a_os
+Link2ef34 0xc w28_1002ef30_osqipni
+Link3e620 0xc w34_1003e620_osoiqipsf
+Link440e3 0x8 w35_10043e10_qip
+Link47230 0xc big47230
+Link61a30 0xc w63_10060010_qip
+Link6d910 0xc big6d910
+Link70d10 0xc w53_10070d10_os
+Link729c0 0xc big729c0
+LinkPair1003ad30 0x8 d3dqip2
+Linke0e0 0xc w54_1000daa0_qipsf
+List1003ad30 0xc d3dqip2
+Mat40e10 0x40 big40e10
+Mat4b720 0x40 big4b720
+Mat5a960 0x40 w40_1005a960_qipni
+Mate0e0 0x40 w54_1000daa0_qipsf
+Node1001eb20 0x8 d3dqip d3dr3b
+Node10021220 0x214 DISAGREE d3dr5c=0x214 w26_10020fd0_osoiqip=0x0
+Obj1007a0d0 0x1 wC1_r5c
+Obj1008eda0 0x1 d3dr2d_os
+PFormat 0x4 w26_10020fd0_osoiqip
+Plane1008bc50 0x10 d3dr5a_o2 w31_10066d10_qipni
+Plane17c14 0x10 w27_10050900_os w43_10017c10_osoiqipni
+Pool124a4 0x1c big24090 w15_1000d9f0_os w30_1000f020_osqipni
+Pool729c0 0x1c big729c0
+Pool73140 0x1c big73140
+PoolVert 0x20 w4_10023fb0
+Poolb910 0x1c w54_1000ae20_osoiqip
+QueryOwner4b720 0x70 big4b720
+RS1003d5f0 0x4c w19_1003b6f0_osoiqip
+RTexBank 0x1c d3dqip2 w6_10039730_qip
+RTexLink 0xc w6_10039730_qip wC1_r5c
+RVert 0x28 DISAGREE w14_10011980_osoiqip=0x28 w27_10056ab0_osqipni=0x20 w30_1000f020_osqipni=0x20 w31_10066d10_qipni=0x28 w54_1000ae20_osoiqip=0x28 w55_10016324_os=0x20
+RVert24090 0x20 big24090
+RVert28030 0x20 w38_10028030_qip
+RVert299a8 0x20 w28_100256d0_qipni
+RVert5dca0 0x20 big5dca0
+Ramp1001e660 0x9c d3dr3b
+Rec1007a680 0x14 d3dqip4
+Rec100895b4 0x14 d3dr2b_o2
+Rec100895bc 0x14 d3dr2d w28_100256d0_qipni
+Reg100500a0 0x1 d3dr4b
+Releasable 0x4 d3dr5d
+RenderStats 0x54 w6_10039730_qip
+RenderStruct 0x100 DISAGREE w26_10020fd0_osoiqip=0x100 w26_10031e10=0x18
+RenderStruct6d130 0x54 w13_1006c6e0_osoiqip
+RenderStructCB 0x3c w38_100322c0_qip
+RenderStructCallbacks 0x13c DISAGREE big4b720=0x18 d3dbatchc_o2=0x3c d3dmid=0x3c d3dmid_os=0x3c d3dr2a_os=0x18 w12_21c50_osoi=0x3c w15_10021e50_os=0x20 w28_100256d0_qipni=0x13c w31_10032a00_qip=0x3c w34_10021dc0_ossf=0x24 w4_10021cb0_os=0x3c w54_10048180_osoiqipsf=0x18
+RenderWorld6d130 0xc w13_1006c6e0_osoiqip
+Root1007aeb4 0x144 d3dqip4
+S1001e520Root 0x194 DISAGREE big6d910=0xfc d3dr3a_os=0x194 w4_1001eb90_os=0x194 w6_10039730_qip=0x0 w7_10040cc0=0x70 w8_1005fb70=0x0
+SClipVertA 0x28 d3dr3a_os w23_100525b0_os w57_100553d0_os
+Scene10015c70 0xc w43_10017c10_osoiqipni
+Scene1005f580 0xc0 w17_1005f580 w28_1002ef30_osqipni
+SceneDesc 0x160 w28_100256d0_qipni
+SceneWorldNode 0x10 w4_1001eb90_os
+Src10021220 0x108 DISAGREE d3dr5c=0x108 w26_10020fd0_osoiqip=0xec
+Src19d64GlobalLight 0x148 w43_10017c10_osoiqipni
+Src19d64Grid 0x194 w43_10017c10_osoiqipni
+Src19d64Sink 0x28 w43_10017c10_osoiqipni
+Stats0ae20 0x4c w14_10011980_osoiqip w24_10059380_os w3_1000a7d0_os w54_1000ae20_osoiqip
+Stats2ef34 0x4c w28_1002ef30_osqipni
+Stats3e620 0x4c w34_1003e620_osoiqipsf
+Stats440e3 0x108 w35_10043e10_qip
+Stats47230 0x4c big47230
+Stats61a30 0x4c w63_10060010_qip
+Stats6d910 0x4c big6d910
+Stats70d10 0x4c w53_10070d10_os
+Stats729c0 0x4c big729c0
+Statse0e0 0x4c w54_1000daa0_qipsf
+Struct10019a24Sink 0xec d3dlow
+StructBank 0x1c d3dqip d3dr2b w4_1001e4a0_os
+Sub1000efa0Stats 0x50 d3dbatchd
+Sys26728 0x2c w28_100256d0_qipni
+TLVert10035e20 0x20 w18_10035e20_osoi
+TexScale0ae20 0x8 w14_10011980_osoiqip w24_10059380_os w30_1000f020_osqipni w3_1000a7d0_os w54_1000ae20_osoiqip w9_1006d210_osoi
+TexScale1003d5f0 0x8 w19_1003b6f0_osoiqip
+TexScale299a8 0x8 w28_100256d0_qipni
+TexScale2ef34 0x8 w28_1002ef30_osqipni
+TexScale3e620 0x8 w34_1003e620_osoiqipsf
+TexScale440e3 0x8 w35_10043e10_qip
+TexScale47230 0x8 big47230
+TexScale5a960 0x8 w40_1005a960_qipni
+TexScale61a30 0x8 w63_10060010_qip
+TexScale6d910 0x8 big6d910
+TexScale70d10 0x8 w53_10070d10_os
+TexScale729c0 0x8 big729c0
+TexScalee0e0 0x8 w54_1000daa0_qipsf
+Unknown1008e640 0x20 d3dr5d
+Unknown1008e6b0 0x1c d3dr5d
+Var10021dc0 0x20 DISAGREE w15_10021e50_os=0x20 w34_10021dc0_ossf=0x20 w4_10021cb0_os=0x0
+Vec1001e660 0xc d3dr3b
+Vec10069a10 0xc w17_10069a10_osoi w24_10068c80_osqipni
+Vec26728 0xc w28_100256d0_qipni
+Vert051a0 0x28 big051a0
+Vert2ef34 0x20 w28_1002ef30_osqipni
+Vert3c40 0x20 big3c40 w18_1003bb10_os
+Vert3e620 0x20 w34_1003e620_osoiqipsf
+Vert49bb0 0x24 w54_10048180_osoiqipsf
+Vert4e3e4 0x24 big4e3e4
+Vert5a960 0x9014c DISAGREE w19_1005db50=0x9014c w40_1005a960_qipni=0x28
+Vert61a30 0x20 w63_10060010_qip
+Vert6d910 0x28 big6d910
+Vert70d10 0x28 w53_10070d10_os
+W7FrameInfo56c60 0xe w27_10056ab0_osqipni
+XForm26728 0x4f8 w28_100256d0_qipni
+XForm60010 0x400 w63_10060010_qip

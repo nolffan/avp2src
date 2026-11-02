@@ -116,6 +116,9 @@ TARGETS = [
     # All of it is VC6 SP5 (C++ 8966), the renderer included.
     dict(label="lithtech.exe", what="the engine", kind="image",
          shipped=REFERENCE + "/lithtech.exe", stem="lithtech",
+         # nolfsrc's engine compiled for Primal Hunt, objects only until it
+         # links (build/build.mk, "The engine")
+         partial_objs=["src/engine/lithtech/Release/*.obj"],
          built="src/engine/lithtech/Release/lithtech.exe", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib (msvc-6.00-8966's) from ftol.obj's
@@ -125,6 +128,9 @@ TARGETS = [
          app=[(0x00401000, 0x004bf918)]),
     dict(label="server.dll", what="the server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
+         # nolfsrc's engine compiled for Primal Hunt, objects only until it
+         # links (build/build.mk, "The engine")
+         partial_objs=["src/engine/server/Release/*.obj"],
          built="src/engine/server/Release/server.dll", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib from __ftol (0x10061048), 354 members to
@@ -132,6 +138,9 @@ TARGETS = [
          app=[(0x10001000, 0x10061048)]),
     dict(label="d3d.ren", what="the Direct3D renderer", kind="image",
          shipped=REFERENCE + "/d3d.ren", stem="d3d",
+         # nolfsrc's engine compiled for Primal Hunt, objects only until it
+         # links (build/build.mk, "The engine")
+         partial_objs=["src/engine/d3d/Release/*.obj"],
          built="src/engine/d3d/Release/d3d.ren", optional=True,
          cites=True, cited_src=["src/engine"],
          # 2002-06-03. Unlike NOLF's and 1.0.9.6's (Intel C/C++'s shape),

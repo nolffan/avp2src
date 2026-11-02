@@ -1,0 +1,111 @@
+// lithtech.rc -- lithtech.exe's resources, reconstructed from the retail
+// lithtech.exe. The engine's resource script began as an MFC AppWizard
+// application's ("Client"), and kept its version block, its icon and the
+// MFC resources AppWizard includes; to them LithTech added the console's
+// font and the unlock dialog of the engine's licensing days, which nothing
+// in NOLF's engine shows any more.
+// The icon and the font are read out of the retail image into res/ at build
+// time (build/retailextract.py lithtechres); the rest of the binary resources
+// are MFC's, from the toolchain's afxres.rc.
+
+#include "afxres.h"
+
+#define IDR_MAINFRAME           128
+#define IDD_UNLOCK              137
+#define IDR_CONSOLEFONT         140     // clientconsole.cpp: "ConsoleFont"
+#define RT_LTFONT               12345   // FindResource(..., "#12345")
+#define IDC_UNLOCK_KEY          1081
+#define IDC_UNLOCK_USERNAME     1082
+#define IDC_UNLOCK_ACCESSCODE   1083
+#define IDC_UNLOCK_EXPIRATION   1084
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\lithtech.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// The console font (a PCX image of the character cells)
+//
+
+IDR_CONSOLEFONT         RT_LTFONT DISCARDABLE   "res\\confont.pcx"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_UNLOCK DIALOG DISCARDABLE  0, 0, 220, 190
+STYLE 0x80c808c0
+CAPTION "LithTech v1.0 (alpha)"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "",IDC_UNLOCK_KEY,"Edit",0x810080,68,139,120,14
+    CONTROL         "OK",IDOK,"Button",0x10001,52,169,50,14
+    CONTROL         "Cancel",IDCANCEL,"Button",0x10000,118,169,50,14
+    CONTROL         "",IDC_UNLOCK_USERNAME,"Edit",0x810880,68,58,120,12
+    CONTROL         "",IDC_UNLOCK_ACCESSCODE,"Edit",0x810880,68,73,120,12
+    CONTROL         "",IDC_UNLOCK_EXPIRATION,"Edit",0x810880,68,88,120,12
+    CONTROL         "To obtain your unlock key, please visit the LithTech website at http://www.lithtech.com.  The website contains instructions on how to register your demo.",IDC_STATIC,"Static",0x20000,15,19,190,36
+    CONTROL         "Username:",IDC_STATIC,"Static",0x20002,16,60,50,8
+    CONTROL         "Access Code:",IDC_STATIC,"Static",0x20002,16,75,50,8
+    CONTROL         "Key:",IDC_STATIC,"Static",0x20002,16,142,50,8
+    CONTROL         "Unlock",IDC_STATIC,"Button",0x7,7,112,206,48
+    CONTROL         "Enter your key below to unlock LithTech:",IDC_STATIC,"Static",0x20000,15,124,182,8
+    CONTROL         "Info",IDC_STATIC,"Button",0x7,7,7,206,100
+    CONTROL         "Expiration:",IDC_STATIC,"Static",0x20002,16,90,50,8
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "Client MFC Application\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "Client\0"
+            VALUE "LegalCopyright", "Copyright (C) 1997\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "Client.EXE\0"
+            VALUE "ProductName", "Client Application\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// MFC's own resources (the AppWizard application's set)
+//
+
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+LANGUAGE 9, 1
+#include "afxres.rc"

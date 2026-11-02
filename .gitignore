@@ -21,3 +21,4 @@ __pycache__/
 !src/**/*.log
 # agents' worktrees (tools/agentwt.sh)
 /.worktrees/
+src/engine/*/[Rr]elease/

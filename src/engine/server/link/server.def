@@ -1,0 +1,3 @@
+; server.dll names itself "server.DLL" in its export table, as the retail
+; image does (its project linked it under that name).
+LIBRARY server.DLL

@@ -1,0 +1,1192 @@
+vtable ??_7?$CWorldPolyArray@PAVCWorldPolyRec@@@@6B@ 0x004a1c24  # compiled with 1 slots
+    ?_v00@?$CWorldPolyArray@PAVCWorldPolyRec@@@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7?$TCPQueryArrayT@VTCPQueryResponse@@@@6B@ 0x004a3810  # compiled with 2 slots
+    ?_v00@?$TCPQueryArrayT@VTCPQueryResponse@@@@UAEXPAX@Z
+    ?_v04@?$TCPQueryArrayT@VTCPQueryResponse@@@@UAEIPAK@Z
+    ?GenGetNext@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBE?AVTCPQueryResponseC4@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBE?AVTCPQueryResponseC4@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIAAVTCPQueryResponseC4@@@Z
+    ?GenRemoveAt@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponseC4@@@@@Z
+    ?GenAppendList@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponseC4@@@@@Z
+    ?GenFindElement@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEIABVTCPQueryResponseC4@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CAbstractIO@@6B@ 0x004a2b44  # compiled with 4 slots
+    ??_GCBaseMgrView@@UAEPAXI@Z
+    ?AddRef@CAbstractIO@@UAEXXZ
+    ?Release@CAbstractIO@@UAEXXZ
+    ?Release@CFileStream@@UAEXXZ
+vtable ??_7CAbstractIOQ18@@6B@ 0x004a2b44  # compiled with 1 slots
+    ??_GCAbstractIOQ18@@UAEPAXI@Z
+    ?AddRef@CAbstractIO@@UAEXXZ
+    ?Release@CAbstractIO@@UAEXXZ
+    ?Release@CFileStream@@UAEXXZ
+vtable ??_7CArray1a8@@6B@ 0x004a1b34  # compiled with 1 slots
+    ?_g00@CArray1a8@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UBE?AVCWorldAnimRecQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UBE?AVCWorldAnimRecQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEIAAVCWorldAnimRecQ@@@Z
+    ?GenRemoveAt@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimRecQ@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimRecQ@@@@@Z
+    ?GenFindElement@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UBEIABVCWorldAnimRecQ@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CArray1bc@@6B@ 0x004a1b64  # compiled with 1 slots
+    ?_g00@CArray1bc@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UBE?AVCWorldAnimLightQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UBE?AVCWorldAnimLightQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimLightQ@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimLightQ@@@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CArray1d0@@6B@ 0x004a1b94  # compiled with 1 slots
+    ?_g00@CArray1d0@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UBE?AVCWorldAnimLightQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UBE?AVCWorldAnimLightQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimLightQ@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimLightQ@@@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CArray1e4@@6B@ 0x004a1ab8  # compiled with 1 slots
+    ?_g00@CArray1e4@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@EVDefaultCache@@@@UBEEAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@EVDefaultCache@@@@UBEEAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@EVDefaultCache@@@@UAEIAAE@Z
+    ?GenRemoveAt@?$CMoArray@EVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
+    ?GenAppendList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
+    ?GenFindElement@?$CMoArray@EVDefaultCache@@@@UBEIABEAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CArray1f8@@6B@ 0x004a1bc4  # compiled with 1 slots
+    ?_g00@CArray1f8@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UBE?AVCWorldAnimFrameQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UBE?AVCWorldAnimFrameQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UAEIAAVCWorldAnimFrameQ@@@Z
+    ?GenRemoveAt@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VSBank@@VDefaultCache@@@@UAEHABV?$GenList@VSBank@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimFrameQ@@@@@Z
+    ?GenFindElement@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UBEIABVCWorldAnimFrameQ@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CArray32c@@6B@ 0x004a1bf4  # compiled with 1 slots
+    ?_g00@CArray32c@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CArray340@@6B@ 0x004a1c24  # compiled with 1 slots
+    ?_g00@CArray340@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CClass4A38A4@@6B@ 0x004a38a4  # compiled with 10 slots
+    ??_GCClass4A38A4@@UAEPAXI@Z
+    # slot 1 is VideoInst::Release (0x0048b390), shared with the Bink instance table
+    ?Release@BinkVideoInstK@@UAEXXZ
+    ?Restore@SmackVideoInstQ428@@UAEXXZ
+    ?FreeSurfaces@SmackVideoInstQ428@@UAEXXZ
+    ?Slot04@CClass4A38A4@@QAEKXZ
+    ?Update@SmackVideoInst@@QAEKXZ
+    ?GetStatus@SmackVideoInst@@QAEKXZ
+    ?BindToSurface@SmackVideoInst@@UAEKPAVCVideoPolyS@@@Z
+    ?UnbindFromSurface@BinkVideoInstK@@UAEXPAVCVideoPolyK@@@Z
+    ?OnTextureFreed@BinkVideoInstK@@UAEXPAVSharedTextureK@@@Z
+vtable ??_7CClientMsgObjectHelper@@6B@ 0x004a1dcc  # compiled with 2 slots
+    ?ReadObjectID@CClientMsgObjectHelper@@UAEKPAVCClientMsgWriteView@@PAPAVCClientObjIDView@@@Z
+    ?WriteObjectID@CClientMsgObjectHelper@@UAEKPAVCClientMsgWriteView@@PAVCClientObjIDView@@@Z
+    ?WriteFormattedString@CMessageObjectHelperQ414@@QAEKPAVIMessageWriteQ414@@KPAPAD@Z
+    ?GetLen@CStreamFields@@UAEKPAK@Z
+vtable ??_7CCmgArray04@@6B@ 0x004a1b34  # compiled with 1 slots
+    ?_g00@CCmgArray04@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UBE?AVCWorldAnimRecQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UBE?AVCWorldAnimRecQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEIAAVCWorldAnimRecQ@@@Z
+    ?GenRemoveAt@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimRecQ@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimRecQ@@@@@Z
+    ?GenFindElement@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@UBEIABVCWorldAnimRecQ@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CCmgArray18@@6B@ 0x004a1b64  # compiled with 1 slots
+    ?_g00@CCmgArray18@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UBE?AVCWorldAnimLightQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UBE?AVCWorldAnimLightQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimLightQ@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimLightQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimLightQ@@@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CCmgCSBase@@6B@ 0x004a1b00  # compiled with 1 slots
+    ?_v00@CCmgCSBase@@UAEXXZ
+    ?GetCollisionInfo@CClientCSBase@@UAEPAPAVCollisionInfo@@XZ
+    ?TouchNotify@CClientCSBase@@UAEXPAVLTObject@@0PAV?$_CVector@M@@M@Z
+    ?_p00@CClientCSBase@@UAEXPAX0@Z
+    ?GenSetCacheSize@?$CMoArray@PAVModelNode@@VNoCache@@@@UAEXK@Z
+    ?GenSetCacheSize@?$CMoArray@PAVModelNode@@VNoCache@@@@UAEXK@Z
+    ?IsMatch@CClientCSBase@@UAEIPAXK0@Z
+    ?_p00@CClientCSBase@@UAEXPAX0@Z
+    ?_p00@CClientCSBase@@UAEXPAX0@Z
+    ?Last@CConsoleNameList@@UAEIXZ
+    ?_p54@CBaseDriverDefaultsView@@UAEIPAX@Z
+    ?GetSideName@CClientCSBase@@UAEPBDPAX@Z
+    ?GetUnknown4c0_0c@CClientCSBase@@UAEKXZ
+vtable ??_7CCmgMusicMgr@@6B@ 0x004a2500  # compiled with 1 slots
+    ?Init@CCmgMusicMgr@@UAEKXZ
+    ?Term@CLTDirectMusicMgr@@UAEKXZ
+    ?InitLevel@CLTDirectMusicMgr@@UAEKPBD0000@Z  # SOFT slot 2 0x0043fcd0: ?_strchr@+c5=0x00493660(unverifiable) ?_strchr@+d8=0x00493660(unverifiable) ?_strchr@+eb=0x00493660(unverifiable)
+    ?TermLevel@CLTDirectMusicMgr@@UAEKXZ
+    ?Play@CLTDirectMusicMgr@@UAEKXZ
+    ?Stop@CLTDirectMusicMgr@@UAEKW4LTDMEnactTypes@@@Z
+    ?Pause@CLTDirectMusicMgrView@@QAEKH@Z
+    ?UnPause@CLTDirectMusicMgrView@@QAEKXZ
+    ?SetVolume@CLTDirectMusicMgr@@UAEKJ@Z
+    ?ChangeIntensity@CLTDirectMusicMgr@@UAEKHW4LTDMEnactTypes@@@Z  # SUSPECT slot 9 0x00440620: __imp__EnterCriticalSection@4@+8c=0x00a09e3b(want 0x004a104c) __imp__LeaveCriticalSection@4@+9d=0x15ff1824(want 0x004a1048) ?dm_Printf@@YAXHPADZZ@+a9=0xc37f06cd(want 0x0043eef0)
+    ?PlaySecondary@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+    ?StopSecondary@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+    ?PlayMotif@CLTDirectMusicMgr@@UAEKPBD0W4LTDMEnactTypes@@@Z
+    ?StopMotif@CLTDirectMusicMgr@@UAEKPBD0W4LTDMEnactTypes@@@Z
+    ?GetRoot@CWorldBsp@@UAEKXZ
+    ?StringToEnactType@CLTDirectMusicMgr@@UAE?AW4LTDMEnactTypes@@PBD@Z  # SOFT slot 15 0x00442790: ?__stricmp@+16=0x00492f30(unverifiable) ?__stricmp@+2c=0x00492f30(unverifiable) ?__stricmp@+47=0x00492f30(unverifiable)
+    ?EnactTypeToString@CLTDirectMusicMgr@@UAEXW4LTDMEnactTypes@@PAD@Z
+    ?GetNumIntensities@CDMMgrIntensityView@@QAEHXZ
+    ?GetInitialIntensity@CDMMgrIntensityView@@QAEHXZ
+    ?GetInitialVolume@CDMMgrIntensityView@@QAEJXZ
+    ?PlayMotif@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+    ?StopMotif@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+vtable ??_7CCmgSoundMgr@@6B@ 0x004a356c  # compiled with 25 slots
+    ?PlaySound@CCmgSoundMgr@@UAEKPAUPlaySoundInfo@@AAPAUHLTSOUND_t@@@Z  # SOFT slot 0 0x004822f0: ??Play@CCmgSoundMgr@@QAEKPAX0H@Z@+d9=0x004816c0(near body)
+    ?_v04@CCmgSoundMgr@@UAEXXZ
+    ?_v08@CCmgSoundMgr@@UAEXXZ
+    ?_v0c@CCmgSoundMgr@@UAEXXZ
+    ?_v10@CCmgSoundMgr@@UAEXXZ
+    ?_v14@CCmgSoundMgr@@UAEXXZ
+    ?_v18@CCmgSoundMgr@@UAEXXZ
+    ?_v1c@CCmgSoundMgr@@UAEXXZ
+    ?_v20@CCmgSoundMgr@@UAEXXZ
+    ?_v24@CCmgSoundMgr@@UAEXXZ
+    ?_v28@CCmgSoundMgr@@UAEXXZ
+    ?_v2c@CCmgSoundMgr@@UAEXXZ
+    ?_v30@CCmgSoundMgr@@UAEXXZ
+    ?_v34@CCmgSoundMgr@@UAEXXZ
+    ?_v38@CCmgSoundMgr@@UAEXXZ
+    ?_v3c@CCmgSoundMgr@@UAEXXZ
+    ?_v40@CCmgSoundMgr@@UAEXXZ
+    ?_v44@CCmgSoundMgr@@UAEXXZ
+    ?_v48@CCmgSoundMgr@@UAEXXZ
+    ?_v4c@CCmgSoundMgr@@UAEXXZ
+    ?_v50@CCmgSoundMgr@@UAEXXZ
+    ?_v54@CCmgSoundMgr@@UAEXXZ
+    ?_v58@CCmgSoundMgr@@UAEXXZ
+    ?PauseSounds@CCmgSoundMgr@@UAEXXZ
+    ?ResumeSounds@CCmgSoundMgr@@UAEXXZ
+    ?SetListener@CSoundMgrQ480@@UAEKIPAV?$_CVector@M@@PAVLTRotation@@I@Z
+    ?ReleaseSoundHandle@CSoundMgrQ480@@UAEKPAUHLTSOUND_t@@@Z
+    ?GetFilterIndex@CSoundMgr@@QAEKPBDPAK@Z  # SOFT slot 27 0x00482fd0: ?_stricmp@+4c=0x00492f30(unverifiable)
+    ?GetFilterParamIndex@CSoundMgr@@QAEKPBD0PAK@Z  # SOFT slot 28 0x00483260: ?_stricmp@+53=0x00492f30(unverifiable) ?_stricmp@+a5=0x00492f30(unverifiable) ?g_pErrorFormat@@3PADA@+12e=0x4a711015(want 0x004a7110)
+vtable ??_7CConsoleLineList@@6B@ 0x004a1e88  # compiled with 1 slots
+    ?GetFirst@CConsoleLineList@@UAEXXZ
+    ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenGetAt@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
+    ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
+    ?GetArray@?$CMoArray@EVDefaultCache@@@@QAEPAEXZ
+    ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$GenList@VCCmgElem08@@@@UAEXK@Z
+vtable ??_7CDeviceObjectList@@6B@ 0x004a23e4  # compiled with 1 slots
+    ?GetHead@CDeviceObjectList@@UAEXPAX@Z
+    ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenGetAt@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
+    ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
+    ?GetArray@?$CMoArray@EVDefaultCache@@@@QAEPAEXZ
+    ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$GenList@VCCmgElem08@@@@UAEXK@Z
+# The client's file-record bank: slots 1..3 are concrete in lithtech.exe (only
+# server.dll's banks leave them at _purecall, which CBankBase's aliases give).
+# The bodies are the shared bank routines already placed at those addresses.
+vtable ??_7CFileBank@@6B@ 0x004a1dbc
+    ??_GCFileBank@@UAEPAXI@Z
+    ?Allocate@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
+    ?Free@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
+    ?Init@?$CObjectBank@VCBankElem14@@@@UAEXXZ
+vtable ??_7CGlobalBankBaseQ464@@6B@ 0x004a14c8  # compiled with 1 slots
+    ??_GCGlobalBankBaseQ464@@UAEPAXI@Z
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7CLTClientQ404@@6B@ 0x004a14e0  # compiled with 2 slots
+    ?StartHMessageWrite@CLTClientQ404@@UAEPAXXZ
+    ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z
+    ?WriteToMessageByte@CLTServer@@QAEKPAVIMessageWrite@@E@Z
+    ?WriteToMessageWord@CLTServer@@QAEKPAVIMessageWrite@@G@Z
+    ?WriteToMessageDWord@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?WriteToMessageString@CLTServer@@QAEKPAVIMessageWrite@@PAD@Z
+    ?WriteToMessageVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@CLTServer@@QAEKPAVIMessageWrite@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@CLTServer@@QAEKPAVIMessageWrite@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z
+    ?WriteToMessageHMessageRead@ILTCSBase@@UAEKPAVILTMessage@@0@Z  # SDK slot 12 is WriteToMessageHMessageRead (was ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z)
+    ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z  # SDK slot 15 is WriteToLoadSaveMessageObject -- no WriteToLoadSaveMessageObject of ours fits 0x0041f0f0; kept
+    ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z
+    ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z
+    ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z
+    ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z
+    ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z
+    ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z
+    ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z
+    ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # SDK slot 28 is EndHMessageRead (was ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z)
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z
+    ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z
+    ?SetModelAnimation@CLTClient@@QAEXPAVLTObject@@K@Z
+    ?GetModelAnimation@CLTClient@@QAEKPAVLTObject@@@Z
+    ?SetModelLooping@CLTClient@@QAEXPAVLTObject@@I@Z
+    ?GetModelLooping@CLTClient@@QAEIPAVLTObject@@@Z
+    ?ResetModelAnimation@CLTClientView3@@QAEKPAVLTObject@@@Z
+    ?GetModelPlaybackState@CLTClient@@QAEKPAVLTObject@@@Z
+    ?FreeUnusedModels@CLTClient@@QAEKXZ
+    ?CPrint@CLTClient@@QAAXPADZZ  # SOFT slot 39 0x00407890: ?__vsnprintf@+1e=0x0049318e(unverifiable)
+    ?GetPointContainers@CLTClient@@QAEKPAV?$_CVector@M@@PAPAVLTObject@@K@Z
+    ?GetContainerCode@CLTClient@@QAEIPAVLTObject@@PAG@Z
+    ?OpenFile@CLTClient@@QAEKPADPAPAVILTStream@@@Z
+    ?CopyFile@CLTClientFiles@@QAEKPBD0@Z
+    ?FormatString@CLTClient@@QAAPAUHSTRING_t@@HZZ
+    ?CopyString@CLTClientView@@QAEPAUHSTRING_t@@PAU2@@Z
+    ?CreateString@CLTClientView@@QAEPAUHSTRING_t@@PAD@Z
+    ?FreeString@CLTServer@@QAEXPAUHSTRING_t@@@Z
+    ?CompareStrings@CLTClient@@QAEIPAUHSTRING_t@@0@Z
+    ?CompareStringsUpper@CLTClient@@QAEIPAUHSTRING_t@@0@Z
+    ?GetStringData@CLTClient_Strings@@QAEPADPAUHSTRING_t@@@Z
+    ?GetVarValueFloat@CLTClient@@QAEMPAUHCONSOLEVAR_t@@@Z
+    ?GetVarValueString@CLTClient@@QAEPADPAUHCONSOLEVAR_t@@@Z
+    ?GetTime@CLTClient@@QAEMXZ
+    ?GetFrameTime@CLTClient@@QAEMXZ
+    ?RemoveObject@CLTClient@@QAEKPAVLTObject@@@Z
+    ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
+    ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
+    ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z
+    ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z
+    ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z
+    ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
+    ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GCLTClientQ404@@UAEPAXI@Z
+    ?GetPointStatus@CLTClient@@QAEKPAV?$_CVector@M@@@Z
+    ?GetPointShade@CLTClient@@QAEKPAV?$_CVector@M@@0@Z
+    ?GetSConValueFloat@CLTClientConsoleView@@QAEKPADAAM@Z
+    ?GetSConValueString@CLTClientConsoleView@@QAEKPAD0K@Z  # SOFT slot 75 0x00406b60: ?_strncpy@+3d=0x00492b60(unverifiable)
+    ?GetServerConVarValueFloat@CLTClient@@QAEMPAD@Z
+    ?GetServerConVarValueString@CLTClient@@QAEPADPAD@Z
+    ?GetGlobalLightDir@CLTClient@@QAEKAAV?$_CVector@M@@@Z  # SDK slot 78 is GetGlobalLightDir (was ?GetGlobalLightColor@CLTClient@@QAEKAAV?$_CVector@M@@@Z)
+    ?SetGlobalLightDir@CLTClient@@QAEKV?$_CVector@M@@@Z
+    ?GetGlobalLightColor@CLTClient@@QAEKAAV?$_CVector@M@@@Z  # SDK slot 80 is GetGlobalLightColor (was ?GetGlobalLightDir@CLTClient@@QAEKAAV?$_CVector@M@@@Z)
+    ?SetGlobalLightColor@CLTClient@@QAEKV?$_CVector@M@@@Z
+    ?GetAmbientLight@CLTClient@@QAEKAAM@Z
+    ?SetAmbientLight@CLTClient@@QAEKM@Z  # SOFT slot 83 0x00407350: ?__ftol@+37=0x004928c0(unverifiable)
+    ?StartVideo@CLTClientView@@QAEKPADK@Z
+    ?StopVideo@CLTClientConsoleView@@QAEKXZ
+    ?UpdateVideo@CLTClient@@QAEKXZ
+    ?IsVideoPlaying@CLTClient@@QAEKXZ
+    ?StartMessage@CLTClientView3@@QAEPAVILTMessage@@E@Z
+    ?EndMessage@CLTClient@@QAEKPAVILTMessage@@@Z
+    ?EndMessage2@CLTClient@@QAEKPAVIMessageWriteView@@K@Z
+    ?SendToServer@CLTClient@@QAEKAAVIMessageWriteView@@EK@Z
+    ?GetAttachments@CLTClient@@QAEKPAVLTObject@@PAPAV2@KAAK2@Z
+    ?ProcessAttachments@CLTClientView@@QAEKPAVLTObject@@@Z
+    ?SetObjectPos@CLTClient@@QAEKPAVLTObject@@PAV?$_CVector@M@@I@Z
+    ?GetObjectFlags@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetObjectFlags@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?AddParticle@CLTClient@@QAEPAULTParticle@@PAVLTObject@@PAV?$_CVector@M@@11M@Z
+    ?GetSpriteControl@CLTClientView@@QAEKPAVLTObject@@AAPAVILTSpriteControl@@@Z
+    ?GetCanvasFn@CLTClient@@QAEKPAVLTObject@@AAP6AXPAVILTCustomDraw@@0PAX@ZAAPAX@Z
+    ?SetCanvasFn@CLTClient@@QAEKPAVLTObject@@P6AXPAVILTCustomDraw@@0PAX@Z2@Z
+    ?GetCanvasRadius@CLTClient@@QAEKPAVLTObject@@AAM@Z
+    ?SetCanvasRadius@CLTClient@@QAEKPAVLTObject@@M@Z
+    ?ModelNodeControl@CLTClient@@QAEKPAVLTObject@@P6AX0KPAVLTMatrix@@PAX@Z2@Z
+    ?GetModelPlaying@CLTClient@@QAEIPAVLTObject@@@Z
+    ?SetModelPlaying@CLTClient@@QAEXPAVLTObject@@I@Z
+    ?StartQuery@CLTClient@@QAEKPAD@Z
+    ?UpdateQuery@CLTClient@@QAEKXZ
+    ?GetQueryResults@CLTClient@@QAEKAAPAVNetSession@@@Z
+    ?EndQuery@CLTClient@@QAEKXZ
+%ifdef AVP2_MODERN
+    # M-P0-02 / M-P2-04: the modern build's ILTClient additions (iltclient.h),
+    # after the last retail slot; bodies in clientconsole.cpp
+    ?SetConsoleOutputFn@CLTClientModern@@QAEKP6AXPAXKHPBD@Z0@Z
+    ?EnumConsoleCommands@CLTClientModern@@QAEKP6AXPAXPBDK@Z0@Z
+    # M-P5-19: commands whose binding toggles them; body in clientconsole.cpp
+    ?SetCommandToggle@CLTClientModern@@QAEKHI@Z
+%endif
+vtable ??_7CLTServer@@6B@ 0x004a2ef4  # compiled with 122 slots
+    ?StartHMessageWrite@CLTServerWriteView@@QAEPAVILTMessage@@XZ
+    ?WriteToMessageFloat@ILTCSBase@@UAEKPAVILTMessage@@M@Z
+    ?WriteToMessageByte@ILTCSBase@@UAEKPAVILTMessage@@E@Z
+    ?WriteToMessageWord@ILTCSBase@@UAEKPAVILTMessage@@G@Z
+    ?WriteToMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@K@Z
+    ?WriteToMessageString@ILTCSBase@@UAEKPAVILTMessage@@PAD@Z
+    ?WriteToMessageVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@ILTCSBase@@UAEKPAVILTMessage@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@ILTCSBase@@UAEKPAVILTMessage@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z
+    ?WriteToMessageHMessageRead@ILTCSBase@@UAEKPAVILTMessage@@0@Z
+    ?WriteToMessageFormattedHString@ILTCSBase@@UAAKPAVILTMessage@@HZZ
+    ?WriteToMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+    ?WriteToLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z
+    ?ReadFromLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z
+    ?SetModelAnimation@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?GetModelAnimation@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetModelLooping@CLTServer@@QAEXPAVLTObject@@I@Z
+    ?GetModelLooping@CLTServer@@QAEIPAVLTObject@@@Z
+    ?ResetModelAnimation@CLTServer@@QAEKPAVLTObject@@@Z
+    ?GetModelPlaybackState@CLTServer@@QAEKPAVLTObject@@@Z
+    ?FreeUnusedModels@CLTServer@@QAEKXZ
+    ?CPrint@CLTServer@@QAAXPADZZ  # SOFT slot 39 0x0046e820: ?__vsnprintf@+1e=0x0049318e(unverifiable)
+    ?GetPointContainers@CLTServer@@QAEKPAV?$_CVector@M@@PAPAVLTObject@@K@Z
+    ?GetContainerCode@CLTServer@@QAEIPAVLTObject@@PAG@Z
+    ?OpenFile@CLTServer@@QAEKPADPAPAVILTStream@@@Z
+    ?CopyFile@CLTServer@@QAEKPBD0@Z
+    ?FormatString@CLTServer@@QAAPAUHSTRING_t@@HZZ
+    ?CopyString@CLTServer@@QAEPAUHSTRING_t@@PAU2@@Z
+    ?CreateString@CLTServer@@QAEPAUHSTRING_t@@PAD@Z
+    ?FreeString@CLTServer@@QAEXPAUHSTRING_t@@@Z
+    ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z  # SDK slot 48 is CompareStrings (was ?CompareStringsUpper@CLTServer@@QAEIPAUHSTRING_t@@0@Z)
+    ?CompareStringsUpper@CLTServer@@QAEIPAUHSTRING_t@@0@Z  # SDK slot 49 is CompareStringsUpper (was ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z)
+    ?GetStringData@CLTServer@@QAEPADPAUHSTRING_t@@@Z
+    ?GetVarValueFloat@CLTServer@@QAEMPAUHCONSOLEVAR_t@@@Z
+    ?GetVarValueString@CLTServer@@QAEPADPAUHCONSOLEVAR_t@@@Z
+    ?GetTime@CLTServer@@QAEMXZ
+    ?GetFrameTime@CLTServer@@QAEMXZ
+    ?RemoveObject@CLTServer@@QAEKPAVLTObject@@@Z
+    ?GetRotationVectors@ILTCSBase@@UAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?SetupEuler@ILTCSBase@@UAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@ILTCSBase@@UAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GCLTServer@@UAEPAXI@Z
+    ?GetNumClassProps@CLTServer@@QAEKQAUHCLASS_t@@AAK@Z
+    ?GetClassProp@CLTServer@@QAEKQAUHCLASS_t@@KAAVClassPropInfo@@@Z  # SOFT slot 73 0x0046d600: ?_strncpy@+b8=0x00492b60(unverifiable)
+    ?GetClassName@CLTServer@@QAEKQAUHCLASS_t@@PADK@Z  # SOFT slot 74 0x0046d700: ?_strncpy@+5d=0x00492b60(unverifiable)
+    ?GetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
+    ?SetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
+    ?ThreadLoadFile@CLTServer@@QAEKPADK@Z
+    ?UnloadFile@CLTServer@@QAEKPADK@Z
+    ?GetHPolyObject@CLTServer@@QAEKKAAPAVLTObject@@@Z
+    ?FindNamedObjects@CLTServer@@QAEKPADAAV?$BaseObjArray@PAVLTObject@@@@PAK@Z
+    ?FindWorldModelObjectIntersections@CLTServer@@QAEKPAVLTObject@@V?$_CVector@M@@VLTRotation@@AAV?$BaseObjArray@PAVLTObject@@@@@Z  # SOFT slot 81 0x0046daa0: ?SetPos@LTObject@@QAEXV?$_CVector@M@@@Z@+fe=0x0045aaa0(body does not fit) ?SetPos@LTObject@@QAEXV?$_CVector@M@@@Z@+1df=0x0045aaa0(body does not fit)
+    ?GetWorldBox@CLTServer@@QAEKAAV?$_CVector@M@@0@Z
+    ?StartSpecialEffectMessage@CLTServer@@QAEPAVILTMessage@@PAVBaseClass@@@Z
+    ?StartInstantSpecialEffectMessage@CLTServer@@QAEPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?StartMessageToObject@CLTServer@@QAEPAVILTMessage@@PAVBaseClass@@PAVLTObject@@K@Z
+    ?StartMessageToServer@CLTServer@@QAEKPAVBaseClass@@KPAPAVILTMessage@@@Z
+    ?StartMessage@CLTServer@@QAEPAVILTMessage@@PAUHCLIENT_t@@E@Z
+    ?EndMessage2@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?EndMessage@CLTServer@@QAEKPAVIMessageWrite@@@Z
+    ?SetObjectSFXMessage@CLTServer@@QAEKPAVLTObject@@AAVIMessageWrite@@@Z
+    ?SendToObject@CLTServer@@QAEKAAVIMessageWrite@@KPAVLTObject@@1K@Z
+    ?SendToServer@CLTServer@@QAEKAAVIMessageWrite@@KPAVLTObject@@K@Z
+    ?SendToClient@CLTServer@@QAEKAAVIMessageWrite@@EPAUHCLIENT_t@@K@Z
+    ?SendSFXMessage@CLTServer@@QAEKAAVIMessageWrite@@AAV?$_CVector@M@@K@Z
+    ?SendTo@CLTServer@@QAEKPBXKPBDK@Z
+    ?GetClientPing@CLTServer@@QAEKPAUHCLIENT_t@@AAM@Z
+    ?GetObjectMass@CLTServer@@QAEMPAVLTObject@@@Z
+    ?SetObjectMass@CLTServer@@QAEXPAVLTObject@@M@Z
+    ?GetForceIgnoreLimit@CLTServer@@QAEMPAVLTObject@@AAM@Z
+    ?SetForceIgnoreLimit@CLTServer@@QAEXPAVLTObject@@M@Z
+    ?GetObjectName@CLTServer@@QAEKPAVLTObject@@PADK@Z  # SOFT slot 101 0x0046efb0: ?_strncpy@+36=0x00492b60(unverifiable)
+    ?GetObjectName@CLTServer@@QAEPADPAVLTObject@@@Z
+    ?SetFrictionCoefficient@CLTServer@@QAEKPAVLTObject@@M@Z
+    ?MoveObject@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetStandingOn@CLTServer@@QAEKPAVLTObject@@PAVCollisionInfo@@@Z
+    ?GetObjectFlags@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetObjectFlags@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?GetNetFlags@CLTServer@@QAEKPAVLTObject@@AAK@Z
+    ?SetNetFlags@CLTServer@@QAEKPAVLTObject@@K@Z
+    ?GetObjectDims@CLTServer@@QAEXPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims2@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetVelocity@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetVelocity@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetAcceleration@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetAcceleration@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetModelFilenames@CLTServerModelView@@UAEKPAVLTObject@@PAD1@Z
+    ?SetObjectFilenames@CLTServerModelView@@UAEKPAVLTObject@@PAD1@Z  # SOFT slot 118 0x0046eb50: ?_strncpy@+14d=0x00492b60(unverifiable) ?_strncpy@+16b=0x00492b60(unverifiable)
+    ?GetModelAnimUserDims@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetPolyTextureFlags@CLTServer@@QAEKKPAK@Z
+    ?GetClientData@CLTServer@@QAEKPAUHCLIENT_t@@AAPAXAAK@Z
+vtable ??_7CMsgWriteQ18@@6B@ 0x004a2b68  # compiled with 1 slots
+    ?Release@LMessageImpl@@QAEKXZ  # SDK slot 0 is Release (was ?_v00@CMsgWriteQ18@@UAEXXZ)
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadDWordFL@LMessageImpl@@QAEKAAK@Z  # SDK slot 3 is ReadDWordFL (was ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z)
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z  # SOFT slot 6 0x0043d630: ?__chkstk@+6=0x00492c60(unverifiable)
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadRawFL@LMessageImpl@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteDWord@LMessageImpl@@QAEKK@Z  # SDK slot 18 is WriteDWord (was ?WriteFloat@LMessageImpl@@QAEKM@Z)
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z  # SDK slot 22 is WriteCompVector (was ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z)
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteRaw@LMessageImpl@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?ResetPos@LMessageImpl@@QAEKXZ
+    ?GetStatus@LMessageImpl@@QAEKAAK@Z
+    ?Last@CConsoleNameList@@UAEIXZ
+# The net packet bank, likewise concrete in lithtech.exe: Allocate 0x00459c30,
+# the Free forwarder (slot 2, servermgr.h), and 0x0045a000 in slot 3.
+vtable ??_7CNetBank@@6B@ 0x004a2b30
+    ??_GCNetBank@@UAEPAXI@Z
+    ?Allocate@CNetBankQ11@@QAEPAVCNetSentPacketQ11@@XZ
+    ?_v08@CNetBank@@UAEXPAX@Z
+    ?Init@?$CObjectBank@VCBankElem70@@@@UAEXXZ
+vtable ??_7CNetQueueA@@6B@ 0x004a2a70  # compiled with 1 slots
+    ?GenBegin@CMessageQueueBase@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenGetAt@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
+    ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
+    ?GetArray@?$CMoArray@EVDefaultCache@@@@QAEPAEXZ
+    ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$GenList@VCCmgElem08@@@@UAEXK@Z
+vtable ??_7CObjContainer@@6B@ 0x004a2e44  # compiled with 14 slots
+    ??_GCObjContainer@@UAEPAXI@Z
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ
+    ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z  # SOFT slot 7 0x0045aea0: ??wt_VisibilityTraversalQ458@@YAXPAVCObjW@+110=0x0048b8e0(near body)
+    ?_v20@CObjContainer@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
+    ?IsInWorld@CObjBase@@UAEIXZ
+    ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
+    ?_v2c@CObjBase@@UAEMXZ
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ
+    ?IsWorldIdle@CObjWorldModel@@QAEIXZ
+vtable ??_7CObjWorldModel@@6B@ 0x004a2c40  # compiled with 14 slots
+    ??_GCObjWorldModel@@UAEPAXI@Z
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ
+    ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z  # SOFT slot 7 0x0045aea0: ??wt_VisibilityTraversalQ458@@YAXPAVCObjW@+110=0x0048b8e0(near body)
+    ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
+    ?IsInWorld@CObjBase@@UAEIXZ
+    ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
+    ?_v2c@CObjBase@@UAEMXZ
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ
+    ?IsWorldIdle@CObjWorldModel@@QAEIXZ
+vtable ??_7CPacketDataQG9@@6B@ 0x004a1ab8  # compiled with 1 slots
+    ?_v00@CPacketDataQG9@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@EVDefaultCache@@@@UBEEAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@EVDefaultCache@@@@UBEEAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@EVDefaultCache@@@@UAEIAAE@Z
+    ?GenRemoveAt@?$CMoArray@EVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
+    ?GenAppendList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
+    ?GenFindElement@?$CMoArray@EVDefaultCache@@@@UBEIABEAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CPhysicsLTQ404@@6B@ 0x004a1770  # compiled with 2 slots
+    ?GetFrictionCoefficient@CommonPhysicsLT@@UAEKPAVLTObject@@AAM@Z  # SDK slot 0 is GetFrictionCoefficient (was ?_p00@ILTClientPhysicsQ404@@UAEXXZ)
+    ?SetFrictionCoefficient@CommonPhysicsLT@@UAEKPAVLTObject@@M@Z  # SDK slot 1 is SetFrictionCoefficient (was ?_p01@CPhysicsLTQ404@@UAEXXZ)
+    ?GetForceIgnoreLimit@CommonPhysicsLT@@UAEKPAVLTObject@@AAM@Z
+    ?SetForceIgnoreLimit@CommonPhysicsLT@@UAEKPAVLTObject@@M@Z
+    ?GetVelocity@CommonPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetVelocity@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetAcceleration@CommonPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetAcceleration@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetObjectMass@CommonPhysicsLT@@UAEKPAVLTObject@@AAM@Z
+    ?SetObjectMass@CommonPhysicsLT@@UAEKPAVLTObject@@M@Z
+    ?GetObjectDims@CommonPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?MoveObject@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetStandingOn@CommonPhysicsLT@@UAEKPAVLTObject@@PAVCollisionInfo@@@Z
+    ?IsWorldObject@CommonPhysicsLT@@UAEKPAVLTObject@@@Z
+    ?GetGlobalForce@CPhysicsLTView@@QAEKAAV?$_CVector@M@@@Z
+    ?SetGlobalForce@CPhysicsLTView@@QAEKAAV?$_CVector@M@@@Z
+    ?GetStairHeight@SPhysicsLT@@UAEKAAM@Z  # SDK slot 17 is GetStairHeight (was ?GetPos@CMemStream@@UAEKPAK@Z)
+    ?SetStairHeight@SPhysicsLT@@UAEKM@Z
+    ?UpdateMovement@CPhysicsLTView@@QAEKPAVMoveInfoView@@@Z  # SOFT slot 19 0x00404f30: ??pm_UpdateMovement@@YAXPAVCMoveAbstractV@+61=0x004500d0(near body)
+    ?MovePushObjects@CPhysicsLT@@QAEKPAVLTObject@@AAV?$_CVector@M@@PAPAV2@K@Z
+    ?RotatePushObjects@CPhysicsLT@@QAEKPAVLTObject@@AAVLTRotation@@PAPAV2@K@Z
+vtable ??_7CSaveLoadMessage@@6B@ 0x004a22d0  # compiled with 1 slots
+    ?_v00@CSaveLoadMessage@@UAEKXZ  # SDK slot 0 is Release -- no Release of ours fits 0x00432040; kept
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadDWordFL@LMessageImpl@@QAEKAAK@Z  # SDK slot 3 is ReadDWordFL (was ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z)
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z  # SOFT slot 6 0x0043d630: ?__chkstk@+6=0x00492c60(unverifiable)
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadChecked@CSaveIO@@QAEKPAXK@Z  # SDK slot 8 is ReadRawFL -- no ReadRawFL of ours fits 0x00431fa0; kept
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteDWord@LMessageImpl@@QAEKK@Z  # SDK slot 18 is WriteDWord (was ?WriteFloat@LMessageImpl@@QAEKM@Z)
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z  # SDK slot 22 is WriteCompVector (was ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z)
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteChecked@CSaveIO@@QAEKPAXK@Z  # SDK slot 26 is WriteRaw -- no WriteRaw of ours fits 0x00431ff0; kept
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?GetName@CConsoleNameList@@UAEPADXZ  # SDK slot 33 is ResetPos -- no ResetPos of ours fits 0x00432040; kept
+    ?GetNothing@CSaveIO@@QAEKPAK@Z  # SDK slot 34 is GetStatus -- no GetStatus of ours fits 0x00432050; kept
+    _sub_463d20
+vtable ??_7CServerMessageQ18@@6B@ 0x004a2b58  # compiled with 1 slots
+    ??_GCServerMessageQ18@@UAEPAXI@Z
+    ?AddRef@CAbstractIO@@UAEXXZ
+    ?Release@CAbstractIO@@UAEXXZ
+    ?_v0c@ServerMessage@@UAEXXZ
+vtable ??_7CServerMgrView@@6BCBaseMgrView@@@ 0x004a1d54  # compiled with 1 slots
+    ??_GCServerMgrView@@UAEPAXI@Z
+    ?_v04@CServerMgr@@UAEIPAX0@Z  # SOFT slot 1 0x00466ff0: ??sm_AddClientForConnection@@YAPAVClient@@+14=0x00463750(near body)
+    ?_v08@CServerMgr@@UAEXPAVNetConnection@@@Z
+    ?ProcessPacket@CServerMgr@@UAEXPAVCPacket@@PAEG@Z
+    ?OnUnknown10@CShellBase00@@UAEXPAX00@Z
+vtable ??_7CServerMgrView@@6BCServerSoundMgrView@@@ 0x004a1d40  # compiled with 1 slots
+    ?_s00@CServerMgrView@@UAEXXZ
+    ?GetSoundDuration@CServerMgr@@UAEKPAUHLTSOUND_t@@AAM@Z
+    ?IsSoundDone@CServerMgr@@UAEKPAUHLTSOUND_t@@AAI@Z
+    ?KillSound@CServerMgr@@UAEKPAUHLTSOUND_t@@@Z
+    ?KillSoundLoop@CServerMgr@@UAEKPAUHLTSOUND_t@@@Z
+vtable ??_7CServerSoundMgrView@@6B@ 0x004a1d68  # compiled with 1 slots
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7CServerWorldFull@@6B@ 0x004a1fb8  # compiled with 4 slots
+    ?FindLightAnim@CWorldData@@UAEPAVCLARecord@@PADPAK@Z  # SOFT slot 0 0x004254e0: ?_stricmp@+1d=0x00492f30(unverifiable)
+    ?FindPoly@CWorldModelList@@QAEPAXPAVCWorldPolyKey@@@Z
+    ?FindFlagged20@CWorldModelList@@QAEPAVCWorldModelData@@XZ
+    ?FindFlagged10@CWorldModelList@@QAEPAVCWorldModelData@@XZ
+vtable ??_7CSoundDataView@@6B@ 0x004a342c  # compiled with 7 slots
+    ??_GCSoundDataView@@UAEPAXI@Z
+    ?Init@CSoundDataQ47C@@UAEKPAVCSoundFileRefQ47C@@@Z
+    ?InitFromCompressed@CSoundDataQ47C@@UAEKPAV1@@Z
+    ?Free@CSoundDataQ47C@@UAEXXZ
+    ?Unload@CSoundDataQ47C@@UAEKXZ
+    ?sub_47d020@CSoundDataView@@UAEIXZ
+    ?Load@CSoundDataQ47C@@UAEKXZ  # SUSPECT slot 6 0x0047c8c0: ?__ftol@+d6=0x004928c0(unverifiable) __imp__AIL_lock@0@+423=0x8b004a14(want 0x004a140c) __imp__AIL_mem_free_lock@4@+42d=0xff004a14(want 0x004a1410)
+vtable ??_7CSoundInstance1@@6B@ 0x004a34a4  # compiled with 23 slots
+    ??_GCSoundInstance1@@UAEPAXI@Z
+    ?Init@CSndInstanceAmbientJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ  # SOFT slot 3 0x0047db20: ?__ftol@+e6=0x004928c0(unverifiable)
+    ?Update@CSndInstanceAmbientJ@@UAEIK@Z  # SOFT slot 4 0x0047eaa0: ?__ftol@+263=0x004928c0(unverifiable)
+    ?UpdateImportance@CSndInstanceAmbientJ@@UAEKPAVCSndVec3J@@@Z
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstanceAmbientJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z  # SOFT slot 17 0x0047e3c0: ?__stricmp@+4a=0x00492f30(unverifiable)
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ  # SOFT slot 21 0x0047df30: ?__ftol@+b9=0x004928c0(unverifiable) ?__ftol@+11b=0x004928c0(unverifiable) ?__ftol@+2db=0x004928c0(unverifiable)
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstance2@@6B@ 0x004a3508  # compiled with 23 slots
+    ??_GCSoundInstance2@@UAEPAXI@Z
+    ?Init@CSndInstance3DJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ  # SOFT slot 3 0x0047db20: ?__ftol@+e6=0x004928c0(unverifiable)
+    ?Update@CSndInstance3DJ@@UAEIK@Z  # SOFT slot 4 0x0047f020: ?__ftol@+43e=0x004928c0(unverifiable) ?__ftol@+4fb=0x004928c0(unverifiable)
+    ?UpdateImportance@CSndInstanceAmbientJ@@UAEKPAVCSndVec3J@@@Z
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?SetObstruction@CSoundInstance2@@UAEKM@Z
+    ?GetObstruction@CSoundInstance2@@UAEKPAM@Z
+    ?SetOcclusion@CSoundInstance2@@UAEKM@Z
+    ?GetOcclusion@CSoundInstance2@@UAEKPAM@Z
+    ?SetPosition@CSoundInstance2@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstance3DJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z  # SOFT slot 17 0x0047e3c0: ?__stricmp@+4a=0x00492f30(unverifiable)
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ  # SOFT slot 21 0x0047df30: ?__ftol@+b9=0x004928c0(unverifiable) ?__ftol@+11b=0x004928c0(unverifiable) ?__ftol@+2db=0x004928c0(unverifiable)
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstanceLocalL10@@6B@ 0x004a3698  # compiled with 1 slots
+    ??_GCSoundInstanceLocalL10@@UAEPAXI@Z
+    ?Init@CSndInstanceLocalJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ  # SOFT slot 3 0x0047db20: ?__ftol@+e6=0x004928c0(unverifiable)
+    ?Update@CSndInstanceLocalJ@@UAEIK@Z
+    ?GetLobbyLaunchInfo@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstanceLocalJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z  # SOFT slot 17 0x0047e3c0: ?__stricmp@+4a=0x00492f30(unverifiable)
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ  # SOFT slot 21 0x0047df30: ?__ftol@+b9=0x004928c0(unverifiable) ?__ftol@+11b=0x004928c0(unverifiable) ?__ftol@+2db=0x004928c0(unverifiable)
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstanceLocalRef@@6B@ 0x004a3698  # compiled with 10 slots
+    ??_GCSoundInstanceLocalRef@@UAEPAXI@Z
+    ?Init@CSoundInstanceLocalRef@@UAEKPAVCSoundDataRef@@PAUPlaySoundInfo@@K@Z
+    ?Term@CSoundInstanceLocalRef@@UAEXXZ
+    ?_v0c@CSoundInstanceLocalRef@@UAEXXZ
+    ?_v10@CSoundInstanceLocalRef@@UAEXXZ
+    ?_v14@CSoundInstanceLocalRef@@UAEXXZ
+    ?Stop@CSoundInstanceLocalRef@@UAEKH@Z
+    ?_v1c@CSoundInstanceLocalRef@@UAEXH@Z
+    ?Hold@CSoundInstanceLocalRef@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceLocalRef@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstanceLocalJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z  # SOFT slot 17 0x0047e3c0: ?__stricmp@+4a=0x00492f30(unverifiable)
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ  # SOFT slot 21 0x0047df30: ?__ftol@+b9=0x004928c0(unverifiable) ?__ftol@+11b=0x004928c0(unverifiable) ?__ftol@+2db=0x004928c0(unverifiable)
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstanceView@@6B@ 0x004a3448  # compiled with 23 slots
+    ??_GCSoundInstanceView@@UAEPAXI@Z
+    ?Init@CSoundInstanceView@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z  # SOFT slot 1 0x0047d3f0: ?_rand@+60=0x00493f0c(unverifiable) ?__ftol@+168=0x004928c0(unverifiable)
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ  # SOFT slot 3 0x0047db20: ?__ftol@+e6=0x004928c0(unverifiable)
+    __purecall
+    __purecall
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetLobbyLaunchInfo@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z  # SOFT slot 17 0x0047e3c0: ?__stricmp@+4a=0x00492f30(unverifiable)
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ  # SOFT slot 21 0x0047df30: ?__ftol@+b9=0x004928c0(unverifiable) ?__ftol@+11b=0x004928c0(unverifiable) ?__ftol@+2db=0x004928c0(unverifiable)
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSub8fc@@6B@ 0x004a1d7c  # compiled with 1 slots
+    ?_g00@CSub8fc@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UBE?AVCWorldAnimFrameQ@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UBE?AVCWorldAnimFrameQ@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UAEIAAVCWorldAnimFrameQ@@@Z
+    ?GenRemoveAt@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VSBank@@VDefaultCache@@@@UAEHABV?$GenList@VSBank@@@@@Z
+    ?GenAppendList@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UAEIABV?$GenList@VCWorldAnimFrameQ@@@@@Z
+    ?GenFindElement@?$CMoArray@VCWorldAnimFrameQ@@VDefaultCache@@@@UBEIABVCWorldAnimFrameQ@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CTCPDriverBase@@6B@ 0x004a223c  # compiled with 27 slots
+    ??_GCTCPDriverBase@@UAEPAXI@Z
+    __purecall
+    __purecall
+    __purecall
+    ?GenSetCacheSize@?$GenList@VCCmgElem08@@@@UAEXK@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    _sub_463d20
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    _sub_463d20
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
+    ?GetName@CConsoleNameList@@UAEPADXZ
+    ?GetLobbyLaunchInfo@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetName@CConsoleNameList@@UAEPADXZ
+    ?GetTcpIpAddress@CBaseDriverDefaultsView@@UAEIPADKAAG@Z
+    ?GetLobbyLaunchInfo@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SendTo@CBaseDriverDefaultsView@@UAEIPBXKPBDK@Z
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7CLocalDriverBase@@6B@ 0x004a223c  # localdriver.cpp's view of the same base; replaces its /Od copy (and that copy's ??_G)
+    ??_GCTCPDriverBase@@UAEPAXI@Z
+    __purecall
+    __purecall
+    __purecall
+    ?GenSetCacheSize@?$GenList@VCCmgElem08@@@@UAEXK@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    _sub_463d20
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    _sub_463d20
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
+    ?GetName@CConsoleNameList@@UAEPADXZ
+    ?GetLobbyLaunchInfo@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetName@CConsoleNameList@@UAEPADXZ
+    ?GetTcpIpAddress@CBaseDriverDefaultsView@@UAEIPADKAAG@Z
+    ?GetLobbyLaunchInfo@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SendTo@CBaseDriverDefaultsView@@UAEIPBXKPBDK@Z
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7CUnknown3b8Q404@@6B@ 0x004a1698  # compiled with 1 slots
+    ?SetCursorMode@CClientCursorProxy@@QAEKW4CursorMode@@@Z  # SDK slot 0 is SetCursorMode (was ?_v00@CUnknown3b8Q404@@UAEXXZ)
+    ?GetCursorMode@CClientCursorProxy@@QAEKAAW4CursorMode@@@Z
+    ?IsCursorModeAvailable@CClientCursorProxy@@QAEKW4CursorMode@@@Z
+    ?LoadCursorBitmapResource@CClientCursorProxy3@@QAEKPBDAAPAVILTCursorInst@@@Z
+    ?FreeCursor@CClientCursorProxy@@QAEKQAVILTCursorInst@@@Z
+    ?SetCursor@CClientCursorProxy@@QAEKPAVILTCursorInst@@@Z
+    ?IsValidCursor@CClientCursorProxy@@QAEKPAVILTCursorInst@@@Z
+    ?RefreshCursor@CClientCursorProxy@@QAEKXZ
+vtable ??_7CUnknown48CCE0@@6B@ 0x004a38f8  # compiled with 1 slots
+    ?FindNodeFromPath@CWorldTreeN48C@@QAEPAVCWTNodeN48C@@PAUWTPathN48C@@@Z
+    ?FindObjectsInBoxQ@CWorldTreeN48D@@UAEKPAV?$_CVector@M@@0PAX1K@Z
+    ?Slot10@CClass4A38D8Slot10@@QAEXPAX@Z
+    ?Slot11@CClass4A38D8@@UAEKPAX000@Z
+    ?FindObjectsOnSegment@CWorldTreeN48D@@UAEKPAVCWTVecN48D@@0P6AKPAVCWTObjectN48D@@PAX@Z2K@Z
+    ?FindObjectsInBox@CWorldTreeN48D@@UAEXPAVCWTBoxInfoN48D@@@Z
+    ?_p0c@CClientCSBase@@UAEXPAX0@Z
+vtable ??_7CWorldTable@@6B@ 0x004a1bf4  # compiled with 1 slots
+    ?_v00@CWorldTable@@UAEXXZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CXferFileBankQ464@@6B@ 0x004a22bc  # compiled with 1 slots
+    ??_GCXferFileBankQ464@@UAEPAXI@Z
+    ?Allocate@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
+    ?Free@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
+    ?Init@?$CObjectBank@VCBankElem1c@@@@UAEXXZ
+vtable ??_7ClientCommonLTQ404@@6B@ 0x004a17c8  # compiled with 3 slots
+    ??_GClientCommonLTQ404@@UAEPAXI@Z
+    ?SetObjectFilenames@ClientCommonLT@@QAEIPAVCClientObject@@PAVObjectCreateStruct@@@Z  # SDK slot 1 is SetObjectFilenames (was ?_c01@ClientCommonLTQ404@@UAEXXZ)
+    ?GetObjectFlags@SharedCommonLT@@UAEKQAVLTObject@@W4ObjFlagType@@AAK@Z  # SDK slot 2 is GetObjectFlags (was ?_cc0@ClientCommonLTQ404@@UAEXXZ)
+    ?SetObjectFlags@SharedCommonLT@@UAEKPAVLTObject@@W4ObjFlagType@@K@Z
+    ?GetAttachmentObjects@ClientCommonLT@@QAEIPAVAttachmentQ405c@@AAPAVCClientObject@@1@Z
+    ?GetAttachments@SharedCommonLT@@UAEKPAVLTObject@@PAPAV2@KAAK2@Z
+    ?GetAttachmentTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@AAVLTransform@@I@Z
+    ?GetAttachedModelNodeTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@KAAVLTransform@@@Z
+    ?GetAttachedModelSocketTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@KAAVLTransform@@@Z
+    ?Parse@SharedCommonLT@@UAEKPAVConParse@@@Z
+    ?GetObjectType@SharedCommonLT@@UAEKPAVLTObject@@PAK@Z
+    ?GetModelAnimUserDims@SharedCommonLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetRotationVectors@SharedCommonLT@@UAEKAAVLTRotation@@AAV?$_CVector@M@@11@Z
+    ?SetupEuler@SharedCommonLT@@UAEKAAVLTRotation@@MMM@Z
+    ?CreateMessage@SharedCommonLT@@UAEKAAPAVILTMessage@@@Z
+    ?GetPointStatus@ClientCommonLT@@QAEIPAVLTVector@@@Z
+    ?GetPointShade@ClientCommonLT@@QAEIPAVLTVector@@0@Z  # SOFT slot 16 0x004056b0: ??w_GetPointShadeQ404@@YAXPAEPAVLTVector@@+3a=0x00405780(near body)
+    ?GetPolyTextureFlags@ClientCommonLT@@QAEIIPAI@Z
+vtable ??_7ClientLightAnimLTQ404@@6B@ 0x004a16b8  # compiled with 1 slots
+    ?FindLightAnim@CLTLightAnimClient@@QAEKPBDAAK@Z  # SDK slot 0 is FindLightAnim (was ?_v00@ClientLightAnimLTQ404@@UAEXXZ)
+    ?GetNumFrames@CLTLightAnimClient@@QAEKKAAK@Z
+    ?GetLightAnimInfo@CLTLightAnimClient@@QAEKKAAVLAInfo@@@Z
+    ?SetLightAnimInfo@CLTLightAnimClient@@QAEKKAAVLAInfo@@@Z
+vtable ??_7ClientModelLTQ404@@6B@ 0x004a16ec  # compiled with 1 slots
+    ?GetSocket@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z  # SDK slot 0 is GetSocket (was ?_v00@ClientModelLTQ404@@UAEXXZ)
+    ?GetNode@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z  # SDK slot 1 is GetNode (was ?GetSocket@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z)
+    ?GetPiece@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z  # SDK slot 2 is GetPiece (was ?FindWeightSet@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z)
+    ?FindWeightSet@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z  # SDK slot 3 is FindWeightSet (was ?GetPiece@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z)
+    ?GetPieceHideStatus@CommonModelLT@@UAEKPAVLTObject@@KAAI@Z
+    ?SetPieceHideStatus@CommonModelLT@@UAEKPAVLTObject@@KI@Z
+    ?GetNodeTransform@CommonModelLT@@UAEKPAVLTObject@@KAAVLTransform@@I@Z
+    ?GetSocketTransform@CommonModelLT@@UAEKPAVLTObject@@KAAVLTransform@@I@Z
+    ?GetInstanceHookFn@CommonModelLT@@UAEKPAVLTObject@@AAP6AX0PAVModelInstanceHookData@@K@Z@Z
+    ?SetInstanceHookFn@CommonModelLT@@UAEKPAVLTObject@@P6AX0PAVModelInstanceHookData@@K@Z@Z
+    ?GetMainTracker@CommonModelLT@@UAEKPAVLTObject@@AAPAVLTAnimTracker@@@Z
+    ?UpdateMainTracker@CommonModelLT@@UAEKPAVLTObject@@M@Z  # SOFT slot 11 0x00450090: ?__ftol@+1e=0x004928c0(unverifiable)
+    ?GetPlaybackState@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?AddTracker@CommonModelLT@@UAEKPAVLTObject@@PAVLTAnimTracker@@@Z
+    ?RemoveTracker@CommonModelLT@@UAEKPAVLTObject@@PAVLTAnimTracker@@@Z
+    ?GetCurAnim@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?SetCurAnim@ClientModelLTV@@UAEHPAVLTAnimTrackerV@@K@Z
+    ?ResetAnim@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?GetLooping@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?SetLooping@CommonModelLT@@UAEKPAVLTAnimTracker@@I@Z
+    ?GetPlaying@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?SetPlaying@CommonModelLT@@UAEKPAVLTAnimTracker@@I@Z
+    ?GetWeightSet@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?SetWeightSet@CommonModelLT@@UAEKPAVLTAnimTracker@@K@Z
+    ?GetCurAnimLength@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?GetCurAnimTime@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?SetCurAnimTime@CommonModelLT@@UAEKPAVLTAnimTracker@@K@Z
+vtable ??_7ILTCSBaseQ404@@6B@ 0x004a1810  # compiled with 2 slots
+    __purecall
+    ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z
+    ?WriteToMessageByte@CLTServer@@QAEKPAVIMessageWrite@@E@Z
+    ?WriteToMessageWord@CLTServer@@QAEKPAVIMessageWrite@@G@Z
+    ?WriteToMessageDWord@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?WriteToMessageString@CLTServer@@QAEKPAVIMessageWrite@@PAD@Z
+    ?WriteToMessageVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@CLTServer@@QAEKPAVIMessageWrite@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@CLTServer@@QAEKPAVIMessageWrite@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z
+    ?WriteToMessageHMessageRead@ILTCSBase@@UAEKPAVILTMessage@@0@Z  # SDK slot 12 is WriteToMessageHMessageRead (was ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z)
+    ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z  # SDK slot 15 is WriteToLoadSaveMessageObject -- no WriteToLoadSaveMessageObject of ours fits 0x0041f0f0; kept
+    ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z
+    ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z
+    ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z
+    ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z
+    ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
+    ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z
+    ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z
+    ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z
+    ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # SDK slot 28 is EndHMessageRead (was ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z)
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
+    ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
+    ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z
+    ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z
+    ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z
+    ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
+    ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GCConsoleNameList@@UAEPAXI@Z
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7ILTCommonQ404@@6B@ 0x004a1a0c  # compiled with 2 slots
+    ??_GILTCommonQ404@@UAEPAXI@Z
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7ILTMathQ404@@6B@ 0x004a19c8  # compiled with 1 slots
+    ?GetRotationVectors@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@11@Z  # SDK slot 0 is GetRotationVectors (was ?_m00@ILTMathQ404@@UAEXXZ)
+    ?InterpolateRotation@ILTMath@@UAEKAAVLTRotation@@00M@Z
+    ?SetupEuler@ILTMath@@UAEKAAVLTRotation@@MMM@Z
+    ?SetupTransformationMatrix@ILTMath@@UAEKAAVLTMatrix@@AAV?$_CVector@M@@AAVLTRotation@@@Z
+    ?SetupTranslationMatrix@ILTMath@@UAEKAAVLTMatrix@@AAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@ILTMath@@UAEKAAVLTMatrix@@AAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@ILTMath@@UAEKAAV?$_CVector@M@@AAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@ILTMath@@UAEKAAVLTRotation@@AAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@ILTMath@@UAEKAAVLTMatrix@@AAVLTRotation@@AAV?$_CVector@M@@@Z
+    ?AlignRotation@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@1@Z
+    ?EulerRotateX@ILTMath@@UAEKAAVLTRotation@@M@Z
+    ?EulerRotateY@ILTMath@@UAEKAAVLTRotation@@M@Z
+    ?EulerRotateZ@ILTMath@@UAEKAAVLTRotation@@M@Z
+    ?RotateAroundAxis@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@M@Z
+    ?GetRotationVectorsFromMatrix@ILTMath@@UAEKAAVLTMatrix@@AAV?$_CVector@M@@11@Z
+vtable ??_7ILTTransformQ404@@6B@ 0x004a16c8  # compiled with 1 slots
+    ?Get@CLTTransform@@QAEKAAVLTransform@@AAV?$_CVector@M@@AAVLTRotation@@@Z  # SDK slot 0 is Get (was ?_t00@ILTTransformQ404@@UAEXXZ)
+    ?Set@CLTTransform@@QAEKAAVLTransform@@AAV?$_CVector@M@@AAVLTRotation@@@Z
+    ?GetPos@CLTTransform@@QAEKAAVLTransform@@AAV?$_CVector@M@@@Z
+    ?GetRot@CLTTransform@@QAEKAAVLTransform@@AAVLTRotation@@@Z
+    ?ToMatrix@CLTTransform@@QAEKAAVLTransform@@AAVLTMatrix@@@Z
+    ?FromMatrix@CLTTransform@@QAEKAAVLTransform@@AAVLTMatrix@@@Z
+    ?Inverse@CLTTransform@@QAEKAAVLTransform@@0@Z
+    ?Multiply@CLTTransform@@QAEKAAVLTransform@@00@Z
+    ?Difference@CLTTransform@@QAEKAAVLTransform@@00@Z
+vtable ??_7LMessageImpl@@6B@ 0x004a2b68  # compiled with 1 slots
+    ?Release@LMessageImpl@@QAEKXZ  # SDK slot 0 is Release (was ?_lm00@LMessageImpl@@UAEXXZ)
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadDWordFL@LMessageImpl@@QAEKAAK@Z  # SDK slot 3 is ReadDWordFL (was ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z)
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z  # SOFT slot 6 0x0043d630: ?__chkstk@+6=0x00492c60(unverifiable)
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadRawFL@LMessageImpl@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteDWord@LMessageImpl@@QAEKK@Z  # SDK slot 18 is WriteDWord (was ?WriteFloat@LMessageImpl@@QAEKM@Z)
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z  # SDK slot 22 is WriteCompVector (was ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z)
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteRaw@LMessageImpl@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?ResetPos@LMessageImpl@@QAEKXZ
+    ?GetStatus@LMessageImpl@@QAEKAAK@Z
+    ?Last@CConsoleNameList@@UAEIXZ
+vtable ??_7LVideoMgrQ404@@6B@ 0x004a1758  # compiled with 1 slots
+    ?StartOnScreenVideo@LVideoMgrV@@UAEHPADKAAPAVVideoInstV@@@Z  # SDK slot 0 is StartOnScreenVideo (was ?_v00@LVideoMgrQ404@@UAEXXZ)
+    ?StartTextureVideo@LVideoMgrV@@UAEHPADKAAPAVVideoInstV@@@Z
+    ?UpdateVideo@LVideoMgrV@@UAEHPAVVideoInstV@@@Z
+    ?GetVideoStatus@LVideoMgrV@@UAEHPAVVideoInstV@@@Z
+    ?StopVideo@LVideoMgrV@@UAEHPAVVideoInstV@@@Z
+    ?BindTextureVideoToPoly@LVideoMgrV@@UAEHPAVVideoInstV@@K@Z

@@ -245,6 +245,92 @@ $(foreach w,$(WORKSPACES),$(eval $(call workspace,$(firstword $(subst :, ,$(w)))
 all game: $(WANTED)
 
 # ---------------------------------------------------------------------------
+# The engine: lithtech.exe, server.dll, d3d.ren
+#
+# nolfsrc's reconstruction of NOLF's engine (src/engine/, imported from it:
+# docs/PLAN.md, package 7), to be brought to Primal Hunt's. Its file lists
+# and per-file flags are nolfsrc's (build/build.mk there), its compiler
+# Primal Hunt's: cl 12.00.8966 throughout, the renderer included (Primal
+# Hunt's d3d.ren is Microsoft's code, where NOLF's was Intel C/C++ 4.0's;
+# its files build /O2 until their flags are known). Objects only, so far:
+# the links need nolfsrc's lithshared libraries (StdLith, RezMgr, Lith) and
+# its link-time tables (link/vtables.txt, link/aliases.rsp), which name
+# NOLF's addresses. `make progress` scores the objects (progress/targets.py,
+# partial_objs).
+E := src/engine
+ENG_ENV := $(ENV_GAME)
+ENG_CC  := $(V8966)/BIN/cl.exe
+c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
+
+# server.dll: nolfsrc's /O1, no /GX; localdriver.cpp /Os
+SERVER := $(E)/server
+SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/
+SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp commonphysics.cpp commonmodel.cpp \
+    sharedcommon.cpp servermodel.cpp serverlightanim.cpp servercommon.cpp servermessage.cpp packet.cpp \
+    lthread.cpp smgr.cpp counter.cpp dalloc.cpp modelanim.cpp streamsim.cpp fsstream.cpp basestream.cpp \
+    objbank.cpp objtypes.cpp collection.cpp worldbsp.cpp worldmodels.cpp saveio.cpp worldsim.cpp \
+    serverengine.cpp ltobject.cpp lmessage.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
+    genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
+    savrest.cpp shade.cpp smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
+    svtiny.cpp worldtree.cpp
+SERVER_OS_SRC := localdriver.cpp
+server_flags = $(if $(filter $(1),$(SERVER_OS_SRC)),$(subst /O1,/Os /Ob1 /Gf,$(SERVER_CL)),$(SERVER_CL))
+$(foreach s,$(SERVER_SRC) $(SERVER_OS_SRC),$(eval $(call compile,$(SERVER)/Release/$(s:.cpp=.obj),$(SERVER),$(s),$(ENG_ENV),$(ENG_CC),\
+    /nologo $(call server_flags,$(s)),wine-drives)))
+SERVER_OBJ := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC)))
+.PHONY: server-objs
+server-objs: $(SERVER_OBJ)
+
+# lithtech.exe: nolfsrc's /O2; its copy of server's localdriver.cpp /Od with
+# intrinsics, inlining and string pooling; controlfile.cpp with /GX
+LITHTECH := $(E)/lithtech
+LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c /FoRelease/
+LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\server\netobj.cpp \
+    ..\server\smgrnew.cpp ..\server\modelnew.cpp ..\server\objmover.cpp ..\server\smgrmisc.cpp \
+    ..\server\shade.cpp wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \
+    diblit.cpp savobj.cpp conline.cpp nettrace.cpp modchunk.cpp partfm.cpp ccobj.cpp demodtx.cpp \
+    cissurf.cpp cltapi.cpp sndinst2.cpp sndmgr2.cpp predtick.cpp cmgrinit.cpp wgrid.cpp dmgrow.cpp \
+    cmgsurf.cpp warpblit.cpp startload.cpp fntdraw.cpp predobj.cpp fmcvt32.cpp fmconvert.cpp \
+    ccclient.cpp clientshell.cpp ccline.cpp binkvideo.cpp smackvideo.cpp lvideomgr.cpp soundinst2.cpp \
+    tcpqarray.cpp clientmgr3.cpp clientwin.cpp worldtree2.cpp transform.cpp clientinterface.cpp \
+    clientphysics.cpp clientsound.cpp dmloader.cpp clientmgr2.cpp stdlithalloc.cpp clientsoundinst.cpp \
+    clientworld.cpp cltcursor.cpp clientconsole.cpp clientdsi.cpp lttexmod.cpp clienttexmgr.cpp \
+    clientstreams.cpp clientinput.cpp clientsoundmgr.cpp clientworldinfo.cpp clientblit.cpp \
+    clientrender.cpp ltnew1.cpp cltnew.cpp cltrest.cpp lt2new1.cpp lt2new2.cpp lt2new3.cpp lt2new4.cpp \
+    ltnew2.cpp ..\server\csbase.cpp ..\server\servermgr.cpp ..\server\servermsg.cpp \
+    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp \
+    ..\server\sharedcommon.cpp ..\server\servermodel.cpp ..\server\serverlightanim.cpp \
+    ..\server\servercommon.cpp ..\server\servermessage.cpp ..\server\packet.cpp ..\server\lthread.cpp \
+    ..\server\smgr.cpp ..\server\ltobject.cpp ..\server\lmessage.cpp ..\server\spritecontrol.cpp \
+    ..\server\server.cpp ..\server\stringbank.cpp ..\server\dsi.cpp ..\server\genericprop.cpp \
+    ..\server\dhash.cpp ..\server\filemgr.cpp ..\server\console.cpp ..\server\structbank.cpp \
+    ..\server\counter.cpp ..\server\dalloc.cpp ..\server\modelanim.cpp ..\server\basestream.cpp \
+    ..\server\collection.cpp ..\server\fsstream.cpp ..\server\objbank.cpp ..\server\objtypes.cpp \
+    ..\server\saveio.cpp ..\server\serverengine.cpp ..\server\streamsim.cpp ..\server\tcpdriver.cpp \
+    ..\server\worldbsp.cpp ..\server\worldmodels.cpp ..\server\worldsim.cpp worldtree.cpp clientmusic.cpp
+LITHTECH_OD_SRC := ..\server\localdriver.cpp
+LITHTECH_GX_SRC := controlfile.cpp
+lithtech_flags = $(subst /O2,$(strip \
+    $(if $(filter $(1),$(LITHTECH_OD_SRC)),/Od /Oi /Ob1 /Gf,\
+    $(if $(filter $(1),$(LITHTECH_GX_SRC)),/GX /O2,/O2))),$(LITHTECH_CL))
+LITHTECH_ALL := $(LITHTECH_SRC) $(LITHTECH_OD_SRC) $(LITHTECH_GX_SRC)
+$(foreach s,$(LITHTECH_ALL),$(eval $(call compile,$(call c_obj,$(s),$(LITHTECH)/Release),$(LITHTECH),$(s),$(ENG_ENV),$(ENG_CC),\
+    /nologo $(call lithtech_flags,$(s)),wine-drives)))
+LITHTECH_OBJ := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/Release)))
+.PHONY: lithtech-objs
+lithtech-objs: $(LITHTECH_OBJ)
+
+# d3d.ren: every file /O2 for now (nolfsrc's flag groups are Intel C/C++'s)
+D3D := $(E)/d3d
+D3D_SRC := $(notdir $(wildcard $(D3D)/*.cpp))
+$(foreach s,$(D3D_SRC),$(eval $(call compile,$(D3D)/Release/$(s:.cpp=.obj),$(D3D),$(s),$(ENG_ENV),$(ENG_CC),\
+    /nologo /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/,wine-drives)))
+D3D_OBJ := $(sort $(D3D_SRC:%.cpp=$(D3D)/Release/%.obj))
+.PHONY: d3d-objs engine-objs
+d3d-objs: $(D3D_OBJ)
+engine-objs: server-objs lithtech-objs d3d-objs
+
+# ---------------------------------------------------------------------------
 # The rules all compiles and tools share
 
 dups := $(strip $(foreach o,$(sort $(OBJECTS)),$(if $(word 2,$(filter $(o),$(OBJECTS))),$(o))))

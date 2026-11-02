@@ -1,0 +1,806 @@
+// server.dll — the server's ILTModel setter overrides (reconstruction). Build /O1.
+#include "servermodel.h"
+#include "servermgr.h"
+#include "de_error.h"
+#ifdef AVP2_MODERN
+#include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
+#endif
+
+// sm_SetObjectChangeFlag now lives in servermodel.h.  It is not just this
+// TU's helper: the shipped /O2 build expands it into CLTServer::
+// SetModelAnimation / SetModelLooping / ResetModelAnimation (servermessage.cpp,
+// 0x0046e400/0x0046e540/0x0046e680) and into ServerCommonLT::SetObjectFlags
+// (servercommon.cpp, 0x0046c190), so the definition has to be visible to
+// those TUs as well.  It stays above every caller here for the same reason it
+// always did -- VC6's inliner is forward-only.
+
+LTRESULT ServerModelLT::SetLooping(LTAnimTracker* pTracker, LTBOOL bLooping)
+{
+	// The instance is read before the checks, not after: the shipped code
+	// loads it into a callee-saved register in the prologue.
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetLooping", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetLooping(pTracker, bLooping);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::SetPlaying(LTAnimTracker* pTracker, LTBOOL bPlaying)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetPlaying", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetPlaying(pTracker, bPlaying);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetCurAnimTime", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetCurAnimTime(pTracker, curTime);
+	if (dResult == LT_OK)
+	{
+		at_UpdateStringKeys(pTracker, pTracker->m_TimeRef.m_Cur.m_Time);
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+	}
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::SetCurAnim(LTAnimTracker* pTracker, HMODELANIM hAnim)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetCurAnim", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetCurAnim(pTracker, hAnim);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::ResetAnim(LTAnimTracker* pTracker)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::ResetAnim", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::ResetAnim(pTracker);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hSet)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetWeightSet", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetWeightSet(pTracker, hSet);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+
+// The same shape as the six setters above, but taking the object rather than
+// a tracker: there is no instance to look up, so the object the caller named
+// is the one marked.
+LTRESULT ServerModelLT::SetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece,
+                                           LTBOOL bHidden)
+{
+	LTRESULT dResult = CommonModelLT::SetPieceHideStatus(hObj, hPiece, bHidden);
+
+	if (!dResult)
+		sm_SetObjectChangeFlag(m_pServerMgr, hObj, CF_ATTACHMENTS);
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::AddTracker(HOBJECT hObj, LTAnimTracker* pTracker)
+{
+	LTRESULT dResult = CommonModelLT::AddTracker(hObj, pTracker);
+
+	if (!dResult)
+		sm_SetObjectChangeFlag(m_pServerMgr, hObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+LTRESULT ServerModelLT::RemoveTracker(HOBJECT hObj, LTAnimTracker* pTracker)
+{
+	LTRESULT dResult = CommonModelLT::RemoveTracker(hObj, pTracker);
+
+	if (!dResult)
+		sm_SetObjectChangeFlag(m_pServerMgr, hObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+
+
+
+// 0x100011e7 — put the tracker back where it belongs for a given time. The
+// interface's SetCurAnimTime writes the time and then calls this, which winds
+// the tracker back to the start of the animation (at_ResetAnim) and walks the
+// keyframes forward again until it finds the pair the time falls between.
+//
+// Like dl_MakeLink in serverengine.cpp, the shipped address is in the model
+// module's own run (0x10001013 onward) rather than beside the server's ILTModel
+// overrides; it is here because these are the files this reconstruction owns.
+// The `at_UpdateStringKeys` name came from the caller's context before the
+// bytes were read and is ours: nothing here touches m_StringKeyCallback, and
+// what the function actually does is re-derive m_CurKey, the two frame indices,
+// the two times and the percentage between them.
+//
+// Read off the bytes, and three of them are surprising:
+//
+//   * m_CurKey is a uint32 field the found block reads as a *word*
+//     (`mov 0x14(%esi),%cx`), so the source narrows it before storing the two
+//     uint16 frame indices — and `test %cx,%cx; jbe` is an unsigned `> 0`,
+//     not `!= 0`.
+//   * the non-looping clamp of m_Cur.m_Time is DEAD WORK. at_ResetAnim has
+//     just zeroed that field three instructions earlier, so the minimum is
+//     always the zero already there. The block reads exactly like the same
+//     clamp in the ordinary advance path, which is presumably where it was
+//     copied from; the shipped bytes contain it and so does this.
+//   * the divide is `fildll` for the numerator and `fidivl` for the
+//     denominator: VC6 lays down the unsigned-to-float widening (zero the
+//     high dword of the eight-byte temp, store the low) for *both*, and then
+//     divides by the low dword only — so the second `andl $0x0,-0x4(%ebp)` is
+//     dead, and a keyframe span at or above 2^31 would divide as a negative.
+//     Both come out of plain `(float)` casts on uint32 values.
+//
+// One register rotation, and the fix is the predictable one. Written
+// with a `uint32 nRange = nKeyTime - nPrevTime;` local the function came out
+// 205 of 207 with the whole allocation rotated (nTime in edi rather than edx,
+// the animation in ecx rather than edi) and one instruction missing: ours
+// updated nKeyTime's register in place (`sub %eax,%ecx`) where the shipped
+// build copies it and subtracts into the copy (`mov %edi,%eax; sub %ecx,%eax`),
+// keeping nKeyTime alive. Writing the difference out twice — VC6 commons it
+// itself — restores the copy and the rotation goes with it. So an *extra*
+// named local rotates the allocation exactly as a missing one does.
+void at_UpdateStringKeys(LTAnimTracker* pTracker, uint32 nTime)
+{
+	uint32 nPrevTime;
+
+	at_ResetAnim(pTracker);
+
+	ModelAnim* pAnim = pTracker->GetModel()->
+		m_AnimArray.m_pArray[pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
+
+	uint32 nKeys = pAnim->m_nKeyFrames;
+
+	if (nKeys <= 1)
+		return;
+
+	uint32 nLast    = nKeys - 1;
+	uint32 nEndTime = pAnim->m_pKeyFrames[nLast].m_Time;
+
+	if (nTime > nEndTime)
+		nTime = nEndTime;
+
+	if (!(pTracker->m_Flags & AT_LOOPING))
+	{
+		pTracker->m_TimeRef.m_Cur.m_Time =
+			LTMIN(pTracker->m_TimeRef.m_Cur.m_Time, nEndTime + 1);
+	}
+
+	nPrevTime = 0;
+
+	while (pTracker->m_CurKey <= nLast)
+	{
+		uint32 nKeyTime = pAnim->m_pKeyFrames[pTracker->m_CurKey].m_Time;
+
+		if (nTime <= nKeyTime)
+		{
+			uint16 iKey = (uint16)pTracker->m_CurKey;
+
+			pTracker->m_TimeRef.m_Prev.m_iFrame = (iKey > 0) ? iKey - 1 : 0;
+			pTracker->m_TimeRef.m_Cur.m_iFrame  = iKey;
+
+			if (nKeyTime - nPrevTime == 0)
+			{
+				pTracker->m_TimeRef.m_Percent = 0.0f;
+			}
+			else
+			{
+				pTracker->m_TimeRef.m_Cur.m_Time  = nTime;
+				pTracker->m_TimeRef.m_Prev.m_Time = nPrevTime;
+
+				pTracker->m_TimeRef.m_Percent =
+					(float)(nTime - nPrevTime) / (float)(nKeyTime - nPrevTime);
+			}
+
+			return;
+		}
+
+		nPrevTime = nKeyTime;
+
+		pTracker->m_CurKey++;
+	}
+}
+
+
+// ---- one object's update (0x1002a431) ---------------------------------- //
+
+// The game object hung off SObjData+0x20 is the SDK's own BaseClass
+// (ltengineobjects.h), and its declaration order is what puts the one virtual
+// this function reaches at slot 0x4: the destructor is virtual and comes
+// first. The call site pushes three arguments and the callee cleans, which is
+// `EngineMessageFn(uint32, void*, LTFLOAT)` exactly.
+
+// MID_UPDATE, from ltserverobj.h. Nothing in the server sources includes that
+// header, so the value is spelled out rather than pulled in.
+#define MID_UPDATE 2
+
+// 0x1002a83e — the string-key callback the server hangs on every tracker it
+// advances: it walks the animation's string keys and sends each one on to the
+// object's game class as MID_MODELSTRINGKEY. Declared, not reconstructed;
+// only its address is needed here, and that address is a masked relocation
+// (name ours).
+void sm_ModelStringKeyCallback(LTAnimTracker* pTracker, AnimKeyFrame* pFrame);
+
+// 0x1002a7f2 — advance the object's extra animation trackers by the frame
+// time, converted to whole milliseconds and only for a model.
+//
+// Read off the bytes rather than guessed:
+//
+//   * the millisecond count is unsigned. `test %edi,%edi; jbe` is what
+//     `> 0` gives on an unsigned; a signed `> 0` would be `jle` and a plain
+//     `!= 0` would be `je`.
+//   * the three exits all jump to one epilogue, so the two tests nest rather
+//     than being written as early returns.
+//   * the callback slot is stored on every trip round the loop, not once
+//     before it: the store sits between the two argument pushes, inside the
+//     body.
+//   * the main tracker is not touched here — only the list at
+//     ModelInstance+0x1f8. CServerMgr::UpdateObjects does the main one
+//     through UpdateMainTracker.
+//
+// `inline`, and defined above its one caller, because the shipped /O2 client
+// EXPANDS it: lithtech.exe 0x004697e0 opens with this body at 0x004697ef
+// (`cmpb $0x1,0xbc(%esi)` / __ftol / the tracker walk) and emits no standalone
+// copy.  /Os declines it -- server.dll 0x1002a7f2 is called out of line from
+// its single site at 0x1002a43d -- so /O1 is unaffected.  File-private, so
+// nothing outside servermodel.cpp can move either way.
+inline void sm_UpdateObjectTrackers(CServerMgr* pMgr, LTObject* pObject)
+{
+	LTAnimTracker* pTracker;
+	uint32         nMS;
+
+	if (pObject->m_ObjectType == OT_MODEL)
+	{
+#ifdef AVP2_MODERN
+		// M-P1-23: the tick's fraction of a millisecond carried to the
+		// next tick (once per tick, whichever object asks first)
+		static P1TickMs s_P1Ms;
+		nMS = (uint32)P1_TickMs(&s_P1Ms, pMgr->m_FrameTime, pMgr->m_Time);
+#else
+		nMS = (uint32)(pMgr->m_FrameTime * 1000.0f);
+#endif
+
+		if (nMS > 0)
+		{
+			pTracker = ((ModelInstance*)pObject)->m_pTrackerList;
+
+			while (pTracker)
+			{
+				pTracker->m_StringKeyCallback = sm_ModelStringKeyCallback;
+
+				at_UpdateTracker(pTracker, nMS);
+
+				pTracker = pTracker->GetNext();
+			}
+		}
+	}
+}
+
+// 0x1002a6de — how far the object should move this frame, given the frame
+// time: it answers whether there is any movement at all and writes the
+// offset through its fourth argument (name ours).
+//
+// Every constant in it is the SDK's rather than invented. The guard and the
+// tail both use CHANGEFLAG_MOTION (0x40), so the function only computes a
+// move for an object already flagged as moving, and re-flags it when a
+// container touched its acceleration. FLAG_CONTAINER is 1<<29 and
+// ltbasedefs.h documents it as "will get an MID_AFFECTPHYSICS message for
+// each object" -- and MID_AFFECTPHYSICS is 9, which is exactly the message
+// this sends through BaseClass's slot 1. So the two halves are: an object
+// that IS a container integrates its own velocity and acceleration in place,
+// and an object that is not, but is linked into one, integrates COPIES that
+// each containing container gets a chance to modify first.
+//
+// The walk is over the object's inter-object links, which thread through
+// SObjData::m_Links -- so m_pSData doubles as the list head, which is why the
+// emptiness test is `pHead->m_pNext != pHead` on the object's own m_pSData.
+// Only INTERLINK_CONTAINER links whose owner really carries FLAG_CONTAINER
+// are notified, and the cursor advances before the record is used because the
+// message can break the link.
+//
+// THE MESSAGE PAYLOAD IS THE SDK's ContainerPhysics (ltserverobj.h:
+// m_Acceleration, m_Velocity, m_Flags, m_hObject), which is what
+// MID_AFFECTPHYSICS documents as its pData. That one struct is what the
+// earlier NEAR here was missing: the "extra spilled copy of pObject at -0x4
+// that nothing reloads" is cp.m_hObject, nFlags at -0x8 is cp.m_Flags, and
+// the two vectors at -0x20/-0x14 are its first two members -- all stored
+// because &cp escapes into EngineMessageFn. m_Flags is stored into cp only on
+// the walking path (0x1002a748 after the pHead test), so the test reads the
+// member and the store sits in the branch. Now IDENTICAL on server.dll
+// (276 bytes). lithtech.exe agrees independently: 0x004698b0 calls
+// ContainerPhysics's compiler-generated constructor (0x004040e0, the folded
+// `mov %ecx,%eax; ret`) on the 0x20-byte block at 0x34(%esp), which is
+// exactly this struct.
+//
+// RETURN VALUE: phys_ComputeFrameMove's own result, not a shipped bug. The
+// callee (0x1001e088, unwritten) returns 0 after zeroing the velocity and
+// acceleration and clearing CHANGEFLAG_MOTION (`xor %eax,%eax; jmp` at
+// 0x1001e640) and 1 otherwise (`push $1; pop %eax` before its epilogue at
+// 0x1001e6ce). Nothing after the call here touches eax -- the motion-flag OR
+// goes through ecx at 0x1002a7b6 -- and the caller tests it at 0x1002a4d2;
+// lithtech.exe's expansion keeps it in eax across the offset copy and tests
+// it at 0x004699be. Returning it also moved the guard's `xor/leave/ret`
+// ahead of the callee-saved pushes, as shipped has it (8 blocks -> 4).
+//
+// `inline`: lithtech.exe expands it into 0x004697e0 at 0x004698b5..0x004699b8
+// and has no standalone copy.  server.dll 0x1002a6de is called out of line
+// from its one site at 0x1002a4ca, so /Os declines it at this size and /O1 is
+// unaffected -- with the caveat that this body is still a NEAR at /O1 (276 of
+// 276 bytes, see above), so it is the one of the three whose /O1 behaviour is
+// not proven byte-for-byte.  At 276 bytes it is far past anything /Os expands.
+inline int sm_GetFrameMove(CServerMgr* pMgr, LTObject* pObject,
+                           float fFrameTime, LTVector* pOffset)
+{
+	GlobalForceControl* pControl;
+	LTLink*             pHead;
+	LTLink*             pCur;
+	InterObjectLink*    pLink;
+	LTObject*           pContainer;
+	ContainerPhysics    cp;
+	int                 nNotified;
+	int                 nResult;
+
+	if (!(pObject->m_ChangeFlags & CHANGEFLAG_MOTION))
+		return 0;
+
+	pControl = &pMgr->m_ForceControl;
+
+	pControl->m_fFrameTime = fFrameTime;
+	pControl->m_pObj       = pObject;
+
+	// The list head is formed INSIDE the condition, not above it: the shipped
+	// build loads m_pSData only on the path that walks it, which is what a
+	// short-circuit && buys and what hoisting the assignment above the `if`
+	// costs.
+	if (!(pObject->m_Flags & FLAG_CONTAINER) &&
+	    (pHead = &pObject->m_pSData->m_Links, pHead->m_pNext != pHead))
+	{
+		cp.m_Acceleration = pObject->m_Acceleration;
+		cp.m_Velocity     = pObject->m_Velocity;
+		nNotified         = 0;
+		cp.m_Flags        = pObject->m_Flags;
+		cp.m_hObject      = (HOBJECT)pObject;
+
+		pCur = pHead->m_pNext;
+		while (pCur != pHead)
+		{
+			pLink = (InterObjectLink*)pCur->m_pData;
+			pCur  = pCur->m_pNext;
+
+			if (pLink->m_Type != INTERLINK_CONTAINER)
+				continue;
+
+			pContainer = pLink->m_pOwner;
+
+			if (!(pContainer->m_Flags & FLAG_CONTAINER))
+				continue;
+
+			pContainer->m_pSData->m_pBaseClass->EngineMessageFn(
+			    MID_AFFECTPHYSICS, &cp, 0.0f);
+
+			nNotified++;
+		}
+
+		pControl->m_pVelocity     = &cp.m_Velocity;
+		pControl->m_pAcceleration = &cp.m_Acceleration;
+		pControl->m_nObjFlags     = cp.m_Flags;
+
+		nResult = phys_ComputeFrameMove(pControl);
+
+		*pOffset = pControl->m_vFrameMove;
+
+		if (nNotified)
+			pObject->m_ChangeFlags |= CHANGEFLAG_MOTION;
+	}
+	else
+	{
+		pControl->m_pVelocity     = &pObject->m_Velocity;
+		pControl->m_pAcceleration = &pObject->m_Acceleration;
+		pControl->m_nObjFlags     = pObject->m_Flags;
+
+		nResult = phys_ComputeFrameMove(pControl);
+
+		*pOffset = pControl->m_vFrameMove;
+	}
+
+	return nResult;
+}
+
+// 0x1002a49f — the motion half of one object's update: work out the frame's
+// offset, clear the acceleration, move the object through the world
+// simulation, throw it away if it left the world, and tell the clients if it
+// moved far enough to be worth a message (name ours).
+//
+// Read off the bytes rather than guessed:
+//
+//   * the old position is copied into a local as the very first statement,
+//     and the copy's three `movsl` are interleaved with the argument pushes
+//     for the offset call.
+//   * both magnitude tests are calls — `_CVector::MagSqr` at 0x1000552d and
+//     `_CVector::DistSqr` at 0x1000f8f8 — because the SDK's inline
+//     definitions are ones VC6 declines to expand, and both compare against
+//     a `.rdata` 0.001f.
+//   * the new position is one vector `operator+`: it builds the sum into a
+//     temporary and then copies the temporary into the local that gets its
+//     address taken, which is the fourth twelve-byte slot in a 0x30 frame.
+//   * the out-of-world check is one `||` chain of six comparisons with the
+//     removal after it, and the "still inside" path drops into the
+//     change-flag test — an `else if`, not a return.
+//
+// `inline`, AND HOISTED ABOVE sm_UpdateObject -- VC6's inliner is
+// forward-only, so the old forward-declare-here / define-below arrangement
+// made it a candidate nowhere.  The shipped /O2 client expands it: the whole
+// body is the tail of lithtech.exe 0x004697e0, through the
+// FLAG_REMOVEIFOUTSIDE box test to the `push $2 / push %esi / push %ebx /
+// call 0x00469b80` at 0x00469b66, and there is no standalone copy.  /Os
+// declines it -- server.dll 0x1002a49f is called out of line from its single
+// site at 0x1002a495 -- so /O1 is unaffected.
+//
+// Note what 0x004697e0 does NOT expand: sm_SetObjectChangeFlag, which it
+// calls at 0x00469b66 even though the same header-visible body is expanded
+// elsewhere in the client.  /O2 /Ob1 decides per CALL SITE, so that is not a
+// contradiction; it does mean this caller has to end up big enough for VC6 to
+// decline the 346-byte expansion the way the shipped build did.
+//
+// lithtech.exe 0x004697e0 RESIDUAL (956 vs 918 bytes, measured): with
+// ContainerPhysics in sm_GetFrameMove everything up to `m_Pos + vOffset`
+// matches, but /O2 still expands that operator+ (calling the three-float
+// constructor inside it) where shipped CALLS it (0x00469a1f -> 0x004316d0).
+// The budget is short by very little: one extra three-store inline anywhere
+// before the site closes every other block, and `vOldPos.Init(m_Pos.x,
+// m_Pos.y, m_Pos.z)` gives 918 of 918 with only the old-position copy left
+// (x87 loads where shipped copies dwords through a pointer in %eax). Not
+// moved by: vOldPos copy-constructed, an inline returning m_Pos by value /
+// reference / const reference or through an out pointer, Init(0,0,0) or
+// VEC_INIT for the acceleration clear, or Dot for MagSqr.
+inline void sm_MoveObjectForFrame(CServerMgr* pMgr, LTObject* pObject)
+{
+	LTVector vOldPos;
+	LTVector vNewPos;
+	LTVector vOffset;
+
+	vOldPos = pObject->m_Pos;
+
+	if (!sm_GetFrameMove(pMgr, pObject, pMgr->m_FrameTime, &vOffset))
+		return;
+
+	pObject->m_Acceleration.Init();
+
+	if (vOffset.MagSqr() > 0.001f)
+	{
+		vNewPos = pObject->m_Pos + vOffset;
+
+		sm_MoveObject((IWorldSim*)pMgr, pObject, &vNewPos, 5);
+
+		if ((pObject->m_Flags & FLAG_REMOVEIFOUTSIDE) && pMgr->m_pWorldFile &&
+		    (pObject->m_Pos.x < pMgr->m_WorldBoxMin.x ||
+		     pObject->m_Pos.y < pMgr->m_WorldBoxMin.y ||
+		     pObject->m_Pos.z < pMgr->m_WorldBoxMin.z ||
+		     pObject->m_Pos.x > pMgr->m_WorldBoxMax.x ||
+		     pObject->m_Pos.y > pMgr->m_WorldBoxMax.y ||
+		     pObject->m_Pos.z > pMgr->m_WorldBoxMax.z))
+		{
+			sm_RemoveObject(pMgr, pObject);
+		}
+		else if (pObject->m_ChangeFlags & 4)
+		{
+			if (vOldPos.DistSqr(pObject->m_Pos) > 0.001f)
+				sm_SetObjectChangeFlag(pMgr, pObject, 2);
+		}
+	}
+}
+
+// 0x1002a431 — one object's update, which UpdateObjects times.
+//
+// The countdown is the raw field SetNextUpdate writes, and it is only
+// decremented while it is still positive: an object whose timer has already
+// expired and been serviced stays expired until the game sets it again. The
+// MID_UPDATE goes out on the tick the countdown crosses zero, and only then.
+//
+// Read off the bytes rather than guessed:
+//
+//   * the engine data pointer is re-loaded from the object after the store
+//     to the countdown (`mov 0x188(%esi),%ecx` twice) and shared across the
+//     compare and the subtraction before it. That is three separate
+//     `pObject->m_pSData->...` expressions, with the first two commoned
+//     because nothing writes in between; a single local pointer would be
+//     loaded once and kept.
+//   * both float compares are `fcomps` against a .rdata zero rather than an
+//     `ftst`, which is what `> 0.0f` and `<= 0.0f` in the source give.
+//   * the guard after the message is `testb $0x4,0x120(%esi)`, a byte-wide
+//     test of the object's change flags, and the branch skips the tail call
+//     when the bit is clear — so the source returns there rather than
+//     wrapping the tail.
+void sm_UpdateObject(CServerMgr* pMgr, LTObject* pObject)
+{
+	sm_UpdateObjectTrackers(pMgr, pObject);
+
+	if (pObject->m_pSData->m_NextUpdate > 0.0f)
+	{
+		pObject->m_pSData->m_NextUpdate -= pMgr->m_FrameTime;
+
+		if (pObject->m_pSData->m_NextUpdate <= 0.0f)
+		{
+			pObject->m_pSData->m_pBaseClass->EngineMessageFn(MID_UPDATE, LTNULL, 0.0f);
+
+			if (!(pObject->m_ChangeFlags & 0x04))
+				return;
+		}
+	}
+
+	sm_MoveObjectForFrame(pMgr, pObject);
+}
+
+
+// ---- the world file's object list (0x1002a8b6) ------------------------- //
+
+// ltbasedefs.h's ObjectCreateStruct is used here as the header has it — the
+// local redeclaration this file used to carry, with `void Clear();` out of
+// line, is gone.  Its premise was that /Ob1 would otherwise expand the SDK's
+// in-class body into every caller and lose the two calls the shipped code
+// makes.  The shipped bytes say the opposite, in both images and in THIS
+// function:
+//
+//   * server.dll's copy (0x1002a8b6, which we match) calls 0x10001bd7 twice,
+//     at 0x1002a8c8 for the constructor and 0x1002a989 for the explicit
+//     Clear() — so /Os DECLINED the 125-byte body even though it was visible.
+//     Twelve more call sites across five TUs do the same.
+//   * lithtech.exe's copy (0x00469d10..0x0046a27f, 1392 bytes) has that body
+//     EXPANDED at both sites — the constructor's at 0x00469d2f and the
+//     explicit one at 0x00469ea3, each recognisable by the field pattern
+//     (+0x00/+0x02 zero words, `movl $1,+0x04`, 1.0f at +0x1c/+0x20/+0x24,
+//     the MAX_MODEL_TEXTURES=2 loop, the two trailing floats at +0x27c and
+//     +0x280) — and emits no standalone copy.
+//
+// One spelling, both shapes: the /O1-vs-/O2 split exactly.  smgr.cpp made the
+// same correction for PrecacheModels and 0x00475670.
+//
+// lithtech.exe's constructor-side Clear() is not expanded whole, though: it
+// CALLS LTVector::Init for m_Scale (0x00469d55 -> 0x0041ab50) and
+// LTRotation::Init (0x00469d66 -> 0x00402ea0); the explicit one expands
+// everything.  That is /O2's per-function inline budget (spent from the end
+// backwards) running out, and what spends exactly enough of it is in the
+// body below: sm_AllocateObjectInline / sm_FreeObjectInline (servermodel.h)
+// expanded at 0x0046a048 / 0x0046a14c, and ILTStream's inline GetPos() for
+// the record position.  Without GetPos() m_Scale's Init stays inline too;
+// with the two helpers as calls the function is 1210 bytes.
+//
+// The layout is unchanged either way: 0x284 bytes, which is precisely the
+// span this function's frame gives it (-0x2b4 to -0x30), and every field it
+// touches lands on a named one — the type at +0x00, m_Flags at +0x08, m_Pos
+// at +0x10, the class name at +0x3c with its 0x3f-byte strncpy and the
+// terminator at +0x7b, m_Filename[0] at +0x7c and m_SkinName[0] at +0xfc.
+
+// 0x10001741 — the class module's linear name lookup (counter.cpp declares
+// the same address; see its note). 0x10001778 — the first class in a chain
+// carrying any of the given flags (saveio.cpp's cls_FindFlagged; its first
+// parameter is never read).
+struct ClassDef* sub_10001741(void* pModule, char* pName);
+
+// 0x10001778 — cdecl, three arguments, and the first one is never read: the
+// body loads 0x8(%esp) and 0xc(%esp) and nothing else, so whatever the two
+// call sites pass as the class manager is dead weight. saveio.cpp declares
+// the same address the same way. The flags word is re-read out of its
+// argument slot on every trip round the loop, which is what says it was
+// never copied into a local (name ours).
+struct ClassDef* cls_FindFlagged(void* pUnused, struct ClassDef* pClass, uint32 nFlags)
+{
+	while (pClass)
+	{
+		if (pClass->m_ClassFlags & nFlags)
+			return pClass;
+
+		pClass = pClass->m_ParentClass;
+	}
+
+	return NULL;
+}
+
+// 0x1002a8b6 — read the world file's object list and create every object in
+// it. The world's object records are a run at the offset the second dword of
+// the file gives; each is a class name, then a run of properties, and the
+// properties are hung on the manager's m_pCurProps list so that the game's
+// MID_PRECREATE / MID_INITIALUPDATE handlers can read them back through
+// GetPropGeneric. The list is freed and re-emptied after every object.
+//
+// Read off the bytes rather than guessed:
+//
+//   * four of the values the stream gives up are read and never looked at
+//     again — the first dword of the file, the per-record size word, the
+//     position GetPos hands back and the property's flags dword. They are
+//     still locals with their addresses taken, which is why the frame has
+//     room for them.
+//   * a class the file names but the game does not have is a printed warning
+//     and nothing else; a CF_NORUNTIME class is skipped silently; and unless
+//     the caller asked for everything, a class that is not CF_ALWAYSLOAD (nor
+//     descended from one) is skipped too. All three paths converge on a null
+//     pClassDef, and the object is only allocated when that survives.
+//   * pClassDef lives in the dead pStream parameter slot — pStream is cached
+//     in %esi at the top and its slot never read again.
+//   * each property record is allocated to fit: `nLen + 0x5b`, which is the
+//     0x58 bytes in front of the value plus three. Written as the literal
+//     because ObjectProp's declared value union is 0x68 bytes, so no
+//     sizeof spelling reproduces it.
+//   * the two error checks — one inside the loop after the class name and one
+//     after the loop — are two written-out error blocks. lithtech.exe keeps
+//     both (0x0046a1c2 and 0x0046a21b, each with its own epilogue); /O1
+//     cross-jumps them into one in server.dll, which is why that image reads
+//     as a single block with a jump into it.
+//   * the allocate and the free are the inline helpers (servermodel.h):
+//     server.dll calls 0x10001c54 / 0x1002abf8, lithtech.exe expands them.
+//   * m_Pos is re-initialised after the two name terminators, not before:
+//     lithtech.exe's stores come in that order (0x00469f3e..0x00469f5c).
+LTRESULT sm_LoadWorldObjects(CServerMgr* pMgr, ILTStream* pStream,
+                             char* pszWorldName, uint32 bFlag)
+{
+	ObjectCreateStruct ocs;
+	ClassDef*   pClassDef;
+	LPBASECLASS pObject;
+	LTObject*   pNewObject;
+	ObjectProp* pProp;
+	ObjectProp* pNext;
+	uint32      nFileHeader;
+	uint32      nObjectsOffset;
+	uint32      nNumObjects;
+	uint32      nNumProps;
+	uint32      nPropFlags;
+	uint32      nPos;
+	uint32      i;
+	uint32      j;
+	uint16      nRecordSize;
+	uint16      nPropLen;
+	uint8       nPropType;
+	char        sClassName[0x100];
+	char        sPropName[0x100];
+	char        sPropString[0x258];
+
+	pStream->SeekTo(0);
+	pStream->Read(&nFileHeader, 4);
+	pStream->Read(&nObjectsOffset, 4);
+	pStream->SeekTo(nObjectsOffset);
+	pStream->Read(&nNumObjects, 4);
+
+	for (i = 0; i < nNumObjects; i++)
+	{
+		pStream->Read(&nRecordSize, 2);
+		nPos = pStream->GetPos();
+		pStream->ReadString(sClassName, sizeof(sClassName));
+
+		if (pStream->ErrorStatus() != LT_OK)
+		{
+			pMgr->SetupError(LT_INVALIDWORLDFILE, pszWorldName);
+
+			RETURN_ERROR(1, "LoadObjects", LT_INVALIDWORLDFILE);
+		}
+
+		pClassDef = sub_10001741(pMgr->m_ClassMgr.m_pUnknown00, sClassName);
+
+		if (pClassDef)
+		{
+			if (pClassDef->m_ClassFlags & CF_NORUNTIME)
+			{
+				pClassDef = NULL;
+			}
+			else if (bFlag == 0 &&
+			         !cls_FindFlagged(pMgr->m_ClassMgr.m_pUnknown00, pClassDef,
+			                          CF_ALWAYSLOAD))
+			{
+				pClassDef = NULL;
+			}
+		}
+		else
+		{
+			dsi_ServerError("Server is missing class %s", sClassName);
+		}
+
+		if (pClassDef)
+			pObject = sm_AllocateObjectInline(pMgr, pClassDef);
+		else
+			pObject = NULL;
+
+		ocs.Clear();
+		ocs.m_Flags = 0;
+		ocs.m_ObjectType = 0;
+		ocs.m_Filename[0] = 0;
+		ocs.m_SkinNames[0][0] = 0;
+		ocs.m_Pos.Init();
+
+		pStream->Read(&nNumProps, 4);
+
+		for (j = 0; j < nNumProps; j++)
+		{
+			pStream->ReadString(sPropName, sizeof(sPropName));
+			pStream->Read(&nPropType, 1);
+			pStream->Read(&nPropFlags, 4);
+			pStream->Read(&nPropLen, 2);
+
+			pProp = (ObjectProp*)dalloc(nPropLen + 0x5b);
+
+			pProp->m_Type = nPropType;
+			strncpy(pProp->m_Name, sPropName, sizeof(pProp->m_Name) - 1);
+
+			if (nPropType == 0)
+			{
+				pStream->ReadString(sPropString, sizeof(sPropString));
+				strncpy(pProp->m_String, sPropString, nPropLen - 1);
+			}
+			else
+			{
+				pStream->Read(pProp->m_String, nPropLen);
+			}
+
+			pProp->m_pNext = g_pServerMgr->m_pCurProps;
+			g_pServerMgr->m_pCurProps = pProp;
+		}
+
+		if (pClassDef && pObject)
+		{
+			strncpy(ocs.m_ClassName, sClassName, sizeof(ocs.m_ClassName) - 1);
+			ocs.m_ClassName[sizeof(ocs.m_ClassName) - 1] = 0;
+
+			pObject->EngineMessageFn(MID_PRECREATE, &ocs, 1.0f);
+
+			if (sm_CreateObjectInWorld(pMgr, pObject, pClassDef,
+			                           &ocs, 0xffff, 1.0f,
+			                           &pNewObject) != LT_OK)
+			{
+				sm_FreeObjectInline(pMgr, pClassDef, pObject);
+			}
+		}
+
+		pProp = g_pServerMgr->m_pCurProps;
+
+		while (pProp)
+		{
+			pNext = pProp->m_pNext;
+			dfree(pProp);
+			pProp = pNext;
+		}
+
+		g_pServerMgr->m_pCurProps = NULL;
+	}
+
+	if (pStream->ErrorStatus() != LT_OK)
+	{
+		pMgr->SetupError(LT_INVALIDWORLDFILE, pszWorldName);
+
+		RETURN_ERROR(1, "LoadObjects", LT_INVALIDWORLDFILE);
+	}
+
+	return LT_OK;
+}
