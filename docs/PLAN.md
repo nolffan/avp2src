@@ -132,7 +132,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | # | Package | Depends on | Status |
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), both installs in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
-| 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | |
+| 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | done (below) |
 | 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolfsrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | |
 | 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
@@ -173,6 +173,21 @@ Done.
   runtime and matching the release's prebuilt library far less than
   1.0.9.6's does; AvP2 1.0.9.6's `d3d.ren`'s 0x25/8755 and 13.00.8830
   objects (a witness now, not a target).
+
+### 2. import
+
+Done. The release (`../avp2/proj`) is in `src/AVP2` and `src/LT2` as it
+came, every text file with LF line endings (`credits.txt`, embedded in
+`CRes.dll`, keeps CRLF: `.gitattributes`); its readme and Fox's EULA are
+`src/MONOLITH-README.txt` and `src/MONOLITH-EULA.doc`. Left out: the Miles
+and Bink binaries of `LT2/sdk/win/lib`. The prebuilt `lithshared`
+libraries and `AVP2Serv/server.lib` are in `progress/reference/`, with
+their `SHA256SUMS`. What is whose: `docs/LICENSE_NOTES.md`.
+
+`LT2/lithshared` has the libraries' source, not only headers (NOLF's
+release had none): ButeMgr, CryptMgr, RegMgr, RezMgr, RedMgr (the
+`CRedMgr` of `cdaudio.dll`), StdLith, LTGUIMgr, LithFontMgr, GameSpy,
+WONAPI, STLport, zlib, ...
 
 ### 5. ph-game
 

@@ -37,8 +37,9 @@ the legacy build keeps matching the retail one.
 
 Started. Both retail games are installed from their discs (and AvP2's
 patch) by `rez/`, the compilers are in `toolchains/` (`msvc-6.00-8168`,
-`-8966`, `-9044`), and the scoreboard scores every retail binary against
-our build.
+`-8966`, `-9044`), the scoreboard scores every retail binary against our
+build, and Monolith's source release is in `src/` (`src/AVP2`, `src/LT2`;
+`docs/LICENSE_NOTES.md` says what is whose). Nothing is built yet.
 `docs/PLAN.md` is the plan, package by package.
 
 ## Progress
