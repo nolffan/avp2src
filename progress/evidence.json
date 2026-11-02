@@ -53,8 +53,8 @@
  "config": {
   "progress/COMPILERS.md": "696095ecf1a3a2c4a36e9add882b612f3d34e9deedcf4268aec8ba2780ea7264",
   "progress/data-known.txt": "229ea827803c77eae1d5e57406816a959d456c1e32472f20a5cc9400f42b93d0",
-  "progress/reference.sha256": "9fbb367a123ef609b765d72d830da606cc49d9d18e77062435a111f0c4d25cf4",
-  "progress/targets.py": "d226f809d4d2c93ea522aff2bca2a95a514509a94fa44d584d693feb8ba34785",
+  "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
+  "progress/targets.py": "27cf2583950d22c356bf8d229e68407fa28125baa9af278635115b00851828db",
   "progress/vtab-known.txt": "1af89134dd516521cb8791f2766b27dd79c2f0ba021bbb77f0add7a05e6012a8"
  },
  "reference": {
@@ -73,6 +73,10 @@
   "out/reference/PHSRes.dll": "b919adb5a9eaf83c39afca68874736a9bddb7fc30b790fc283d0c9d443996734",
   "out/reference/PrimalHunt.exe": "66bcd4b2d8f8a6a70a56a4a458449ad2696c97a9859cc35dc6cc46c22116edf1",
   "out/reference/SRes.dll": "0283a36c78cd121701a93c7f404ebafc0e75bd2d2e94dcbbb8e6b764264f4ade",
+  "out/reference/avp2/d3d.ren": "108d4e9083cffa97dbe9ae8d7d1c38f1179b9d7d627a11c0cc6483a48349226c",
+  "out/reference/avp2/lithtech.exe": "62c8f98091187909df0edfb062b0ed4abd09c7c4af75991c0a2bae713087b0be",
+  "out/reference/avp2/ltmsg.dll": "8552415b8818018b23561b03fddc3550adea136e621123b9dcdec5bb0c2b6fa6",
+  "out/reference/avp2/server.dll": "ee6b51d6075791c7aa8bd2af3a1f4317052d4899567ecaea6807701c0af7e2d1",
   "out/reference/cdaudio.dll": "f5f374161dee45ed903eda896dae58ba8b7fc1b1f20225aec7f174c04606af83",
   "out/reference/d3d.ren": "43b2397164cdfd49b87c3d4af8c17755e13ba48f58fb6fdec98f9d53616109da",
   "out/reference/lithtech.exe": "042cf0d6f1fa5c4c29b662b43930690dfa34067d315392f7cd76e9bb1b6b2f89",
@@ -80,12 +84,12 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "01d17137843e93aa35e835b4e2a28ea4dbc674a4c21299d0def0e21480a1023c",
-  "out/progress/summary.json": "414c47cc1b15a04bafcd82934327fbafbc12adbd4a8fa65f18b6c1df555467c3"
+  "out/progress/functions.csv": "1ea62a9cf68fe0351feeb251065c3c5669ff50596d26ba94187f2cd130877903",
+  "out/progress/summary.json": "d01a25841ade93f291360adadb952a900da6c0f917e31583a7cccd6fc901eaac"
  },
  "source": {
-  "modified_files": 2,
-  "revision": "ef7afa23622ae6138591b5b78b8e2053bbef21fd",
+  "modified_files": 7,
+  "revision": "5f7ec8b27bf189e3a7693b399c99da687e61ba6e",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "0d83bf85ccf43e922236f9a4cda117e6e50c024b"

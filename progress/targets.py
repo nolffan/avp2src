@@ -96,7 +96,11 @@ SHIPPED_LIB = None
 SHIPPED_AS = {}
 SHIPPED_ENV = None
 
-DRIVER_OBJS = set()
+# Translation units of ours that exist only to make the compiler emit
+# functions for the scoring to compare (the engine's sdkforce.cpp takes the
+# address of every SDK inline, so all of them are out of line, whether or
+# not a shipped image has them so): reported as `driver`, as nolfsrc does.
+DRIVER_OBJS = {"sdkforce.obj"}
 
 # The release's prebuilt lithshared libraries (and the dedicated server's
 # import library for server.dll), which our links take from
@@ -278,4 +282,46 @@ TARGETS = [
     dict(label="SRes.dll", what="AvP2's server resources",
          kind="resources", shipped=REFERENCE + "/SRes.dll", stem="SRes",
          built="src/AVP2/ServerRes/Release/SRes.dll", optional=True),
+    # ---- AvP2 1.0.9.6: the engine ------------------------------------
+    # AvP2's game DLLs need it: Primal Hunt's engine has an ILTCommon slot
+    # more (GetPolyTextureName), which moves GetPolyInfo and
+    # GetPolySurfaceFlags (docs/PLAN.md, package 10). The patch's engine
+    # (2002-04-17), unprotected, from out/reference/avp2/. The same source
+    # as Primal Hunt's, without PRIMAL_HUNT (build/build.mk, "The engine").
+    dict(label="AvP2 lithtech.exe", what="AvP2's engine", kind="image",
+         shipped=REFERENCE + "/avp2/lithtech.exe", stem="AVP2lithtech",
+         built="src/engine/lithtech/AvP2Release/lithtech.exe", optional=True,
+         partial_objs=["src/engine/lithtech/AvP2Release/*.obj"],
+         cites=True, cited_src=["src/engine"],
+         # provisional: libcmt.lib from ftol.obj's __ftol (0x4b4330), 350
+         # of its members placed in one run to initcon.obj (0x4c3675), as
+         # NOLF's engine's CRT begins at _ftol; 80 bytes of packed code
+         # from 0x4b42e0 sit just below it
+         app=[(0x00401000, 0x004b4330)]),
+    dict(label="AvP2 server.dll", what="AvP2's server", kind="image",
+         shipped=REFERENCE + "/avp2/server.dll", stem="AVP2server",
+         built="src/engine/server/AvP2Release/server.dll", optional=True,
+         partial_objs=["src/engine/server/AvP2Release/*.obj"],
+         cites=True, cited_src=["src/engine"],
+         # provisional: libcmt.lib from __ftol (0x10057ba0), 346 members to
+         # initcon.obj; 80 bytes of packed code from 0x10057b50 below it
+         app=[(0x10001000, 0x10057ba0)]),
+    dict(label="AvP2 d3d.ren", what="AvP2's Direct3D renderer", kind="image",
+         shipped=REFERENCE + "/avp2/d3d.ren", stem="AVP2d3d",
+         built="src/engine/d3d/AvP2Release/d3d.ren", optional=True,
+         partial_objs=["src/engine/d3d/AvP2Release/*.obj"],
+         cites=True, cited_src=["src/engine"],
+         # built by Intel C/C++ 4.0, as nolfsrc's: its padding and /Qip names
+         icl=True,
+         # 2002-02-07, older than the patch's engine. Its Rich header is
+         # NOLF's renderer's shape (C 8168 x120, C++ 8168 x73, and three
+         # objects of an unknown tool 0x25/8755): NOLF's was Intel C/C++
+         # 4.0 (nolfsrc), whose objects a Rich header does not record.
+         # Provisional: a packed `push [esp+4]; call; pop; ret` thunk at
+         # 0x1003b710 after padding, then msvc-6.00-8168's libcmt.lib from
+         # onexit.obj (0x1003b76a), 237 members
+         app=[(0x10001000, 0x1003b710)]),
+    dict(label="AvP2 ltmsg.dll", what="AvP2's engine messages", kind="resources",
+         shipped=REFERENCE + "/avp2/ltmsg.dll", stem="AVP2ltmsg",
+         built="src/engine/ltmsg/AvP2Release/ltmsg.dll", optional=True),
 ]

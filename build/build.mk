@@ -248,23 +248,51 @@ all game: $(WANTED)
 # The engine: lithtech.exe, server.dll, d3d.ren
 #
 # nolfsrc's reconstruction of NOLF's engine (src/engine/, imported from it:
-# docs/PLAN.md, package 7), to be brought to Primal Hunt's. Its file lists
-# and per-file flags are nolfsrc's (build/build.mk there), its compiler
-# Primal Hunt's: cl 12.00.8966 throughout, the renderer included (Primal
-# Hunt's d3d.ren is Microsoft's code, where NOLF's was Intel C/C++ 4.0's;
-# its files build /O2 until their flags are known). Objects only, so far:
-# the links need nolfsrc's lithshared libraries (StdLith, RezMgr, Lith) and
-# its link-time tables (link/vtables.txt, link/aliases.rsp), which name
-# NOLF's addresses. `make progress` scores the objects (progress/targets.py,
-# partial_objs).
+# docs/PLAN.md, package 7), brought to AvP2's, built twice from one source:
+#
+#   Primal Hunt's   objects in <binary>/Release/; /D PRIMAL_HUNT; cl
+#                   12.00.8966 throughout, the renderer included (Primal
+#                   Hunt's d3d.ren is Microsoft's code; its files build /O2
+#                   until their flags are known)
+#   AvP2 1.0.9.6's  objects in <binary>/AvP2Release/; the engine and the server cl
+#                   12.00.9044 (the Processor Pack's, as their Rich headers
+#                   say), the renderer Intel C/C++ 4.0 with nolfsrc's
+#                   per-file flag groups (1.0.9.6's d3d.ren is NOLF's
+#                   renderer's shape)
+#
+# Both keep nolfsrc's file lists and per-file flags. Objects only, so far:
+# the links want the lithshared libraries and nolfsrc's link-time tables,
+# which name NOLF's addresses; `make progress` scores the objects
+# (progress/targets.py, partial_objs).
 E := src/engine
-ENG_ENV := $(ENV_GAME)
-ENG_CC  := $(V8966)/BIN/cl.exe
 c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
+V9044 := $(TC)/msvc-6.00-9044
+ENG_PH_CC   := $(V8966)/BIN/cl.exe
+ENG_PH_ENV  := $(ENV_GAME)
+ENG_AVP_CC  := $(V9044)/BIN/cl.exe
+ENG_AVP_ENV := $(call vc_env,$(V9044))
+
+# Intel C/C++ 4.0 runs in a prefix of its own WITHOUT the S: and T: drives:
+# Wine names a working directory by the deepest drive that holds it, and
+# nolfsrc found icl builds a different d3d.ren from S:\engine\d3d than from
+# Z:\...\src\engine\d3d. It uses msvc-6.00-8168's headers beside its own.
+PFX_PLAIN := $(ROOT)/.wine/plain
+$(PFX_PLAIN)/.ready:
+	@echo "   WINE prefix $(@D)"
+	@mkdir -p $(@D) && export WINEPREFIX=$(@D) && { $(WINE) wineboot -i >/dev/null 2>&1; \
+	  for v in TEMP TMP; do $(WINE) reg add 'HKCU\Environment' /v $$v /t REG_SZ /d 'C:\windows\temp' /f >/dev/null 2>&1; done; \
+	  wineserver -w; } && test -f $(@D)/system.reg && touch $@
+.PHONY: wine-plain
+wine-plain: $(PFX_PLAIN)/.ready
+	@rm -f $(PFX_PLAIN)/dosdevices/s: $(PFX_PLAIN)/dosdevices/t:
+ICL     := $(TC)/icl-4.0/BIN/icl.exe
+ICL_ENV := WINEPREFIX=$(PFX_PLAIN) WINEPATH='$(call wz,$(TC)/icl-4.0)\BIN;$(call wz,$(V8168))\BIN' \
+    INCLUDE='$(call wz,$(TC)/icl-4.0)\INCLUDE;$(call wz,$(V8168))\INCLUDE;$(call wz,$(ROOT)/src/avp2src)' \
+    LIB='$(call wz,$(TC)/icl-4.0)\LIB;$(call wz,$(V8168))\LIB'
 
 # server.dll: nolfsrc's /O1, no /GX; localdriver.cpp /Os
 SERVER := $(E)/server
-SERVER_CL := /MT /W3 /O1 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/
+SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c
 SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp commonphysics.cpp commonmodel.cpp \
     sharedcommon.cpp servermodel.cpp serverlightanim.cpp servercommon.cpp servermessage.cpp packet.cpp \
     lthread.cpp smgr.cpp counter.cpp dalloc.cpp modelanim.cpp streamsim.cpp fsstream.cpp basestream.cpp \
@@ -275,16 +303,11 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp c
     svtiny.cpp worldtree.cpp
 SERVER_OS_SRC := localdriver.cpp
 server_flags = $(if $(filter $(1),$(SERVER_OS_SRC)),$(subst /O1,/Os /Ob1 /Gf,$(SERVER_CL)),$(SERVER_CL))
-$(foreach s,$(SERVER_SRC) $(SERVER_OS_SRC),$(eval $(call compile,$(SERVER)/Release/$(s:.cpp=.obj),$(SERVER),$(s),$(ENG_ENV),$(ENG_CC),\
-    /nologo $(call server_flags,$(s)),wine-drives)))
-SERVER_OBJ := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC)))
-.PHONY: server-objs
-server-objs: $(SERVER_OBJ)
 
 # lithtech.exe: nolfsrc's /O2; its copy of server's localdriver.cpp /Od with
 # intrinsics, inlining and string pooling; controlfile.cpp with /GX
 LITHTECH := $(E)/lithtech
-LITHTECH_CL := /MT /W3 /O2 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c /FoRelease/
+LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c
 LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\server\netobj.cpp \
     ..\server\smgrnew.cpp ..\server\modelnew.cpp ..\server\objmover.cpp ..\server\smgrmisc.cpp \
     ..\server\shade.cpp wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \
@@ -314,27 +337,69 @@ lithtech_flags = $(subst /O2,$(strip \
     $(if $(filter $(1),$(LITHTECH_OD_SRC)),/Od /Oi /Ob1 /Gf,\
     $(if $(filter $(1),$(LITHTECH_GX_SRC)),/GX /O2,/O2))),$(LITHTECH_CL))
 LITHTECH_ALL := $(LITHTECH_SRC) $(LITHTECH_OD_SRC) $(LITHTECH_GX_SRC)
-$(foreach s,$(LITHTECH_ALL),$(eval $(call compile,$(call c_obj,$(s),$(LITHTECH)/Release),$(LITHTECH),$(s),$(ENG_ENV),$(ENG_CC),\
-    /nologo $(call lithtech_flags,$(s)),wine-drives)))
-LITHTECH_OBJ := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/Release)))
-.PHONY: lithtech-objs
-lithtech-objs: $(LITHTECH_OBJ)
 
-# d3d.ren: every file /O2 for now (nolfsrc's flag groups are Intel C/C++'s)
+# d3d.ren. Not the renderer's own: StdLith's l_allocator.cpp (LAlloc,
+# g_DefAlloc), library code linked into d3d.ren, built as StdLith is
+# (nolfsrc's w12_7fae0.cpp).
 D3D := $(E)/d3d
 D3D_SRC := $(notdir $(wildcard $(D3D)/*.cpp))
-# Not the renderer's own: StdLith's l_allocator.cpp (LAlloc, g_DefAlloc),
-# library code linked into d3d.ren, built as StdLith is (nolfsrc's
-# w12_7fae0.cpp)
 D3D_CL_SRC := w12_7fae0.cpp
-$(foreach s,$(D3D_CL_SRC),$(eval $(call compile,$(D3D)/Release/$(s:.cpp=.obj),$(D3D),$(s),$(ENG_ENV),$(ENG_CC),\
-    /nologo /MT /W3 /GX /O2 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /c /I ..\..\LT2\lithshared\stdlith /FoRelease/,wine-drives)))
-$(foreach s,$(filter-out $(D3D_CL_SRC),$(D3D_SRC)),$(eval $(call compile,$(D3D)/Release/$(s:.cpp=.obj),$(D3D),$(s),$(ENG_ENV),$(ENG_CC),\
-    /nologo /MT /W3 /O2 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/,wine-drives)))
-D3D_OBJ := $(sort $(D3D_SRC:%.cpp=$(D3D)/Release/%.obj))
-.PHONY: d3d-objs engine-objs
-d3d-objs: $(D3D_OBJ)
-engine-objs: server-objs lithtech-objs d3d-objs
+D3D_CL := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /c /I ..\..\LT2\lithshared\stdlith
+D3D_BASE := /nologo /MT /W3 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c
+# nolfsrc's Intel C/C++ flag groups (AvP2's renderer): files not in any
+# group build /O2; /Qip interprocedural register calling between one
+# file's functions, /Qip_no_inlining the same without inlining, /Os
+# favour size, /Oi- CRT intrinsics called, /Qrcd fast float-to-int,
+# /Qsfalign16 realign the stack only for 16-byte locals, /G5 Pentium
+# scheduling. Files named w<N>_*_<flags>.cpp join a group by their suffix;
+# the first group that names a file gives its flags.
+d3dw = $(filter w%_$(1).cpp,$(D3D_SRC))
+D3D_GROUPS := OS_G5 OS_SF QIP_OS_OI_SF QIP_SF QIP_NI_SF QIP_OS_OI_NI QIP_OS_OI QIP_OS_NI RCD OI OS_OI QIP_NI OS QIP QIP_OS
+D3D_OS_G5        := /Os /G5                              $(call d3dw,osg5)
+D3D_OS_SF        := /Os /Qsfalign16                      $(call d3dw,ossf)
+D3D_QIP_OS_OI_SF := /Os /Oi- /Qip /Qsfalign16            $(call d3dw,osoiqipsf)
+D3D_QIP_SF       := /O2 /Qip /Qsfalign16                 $(call d3dw,qipsf)
+D3D_QIP_NI_SF    := /O2 /Qip /Qip_no_inlining /Qsfalign16 big24090.cpp $(call d3dw,qipnisf)
+D3D_QIP_OS_OI_NI := /Os /Oi- /Qip /Qip_no_inlining       $(call d3dw,osoiqipni)
+D3D_QIP_OS_OI    := /Os /Oi- /Qip                        d3dblit.cpp big1ef30.cpp $(call d3dw,osoiqip)
+D3D_QIP_OS_NI    := /Os /Qip /Qip_no_inlining            $(call d3dw,osqipni) big6d910.cpp
+D3D_RCD          := /O2 /Qrcd                            big8fd0.cpp big2b1b0.cpp big051a0.cpp big5dca0.cpp big40e10.cpp \
+                                                         w4_100234d0.cpp w16_10042e80.cpp
+D3D_OI           := /O2 /Oi-                             big4b720.cpp
+D3D_OS_OI        := /Os /Oi-                             d3dr5c.cpp d3dr2d_os.cpp d3dbatchd.cpp big4e3e4.cpp $(call d3dw,osoi)
+D3D_QIP_NI       := /O2 /Qip /Qip_no_inlining            d3dqip4.cpp $(call d3dw,qipni)
+D3D_OS           := /Os                                  big729c0.cpp d3d.cpp d3dr5a.cpp d3dr5d_os.cpp d3dbatchb_os.cpp \
+    d3dmid.cpp d3dr2a_os.cpp d3dr2c_os.cpp d3dr3a_os.cpp d3ddraw_os.cpp d3dmid_os.cpp d3dneutral.cpp d3dopt2d.cpp d3dlow.cpp \
+    d3dhigh.cpp d3dbatchc.cpp d3dbatcha.cpp d3dr2b.cpp d3dr3b.cpp d3dr3d.cpp d3dr4a.cpp d3dr4c.cpp d3dr4b.cpp d3dr3c_os.cpp \
+    $(call d3dw,os)
+D3D_QIP          := /O2 /Qip                             d3dqip.cpp d3dqip2.cpp $(call d3dw,qip)
+D3D_QIP_OS       := /Os /Qip                             d3dqip3.cpp big7cc90.cpp d3dr5b.cpp
+D3D_GROUPS := OS_G5 OS_SF QIP_OS_OI_SF QIP_SF QIP_NI_SF QIP_OS_OI_NI QIP_OS_OI QIP_OS_NI RCD OI OS_OI QIP_NI OS QIP QIP_OS
+d3d_group = $(firstword $(foreach g,$(D3D_GROUPS),$(if $(filter $(1),$(D3D_$(g))),$(g))))
+d3d_opt = $(if $(call d3d_group,$(1)),$(filter /%,$(D3D_$(call d3d_group,$(1)))),/O2)
+
+# $(call engine_variant,<object dir>,<cl>,<env>,<defines>,<renderer: icl|cl>)
+define engine_variant
+$(foreach s,$(SERVER_SRC) $(SERVER_OS_SRC),$(eval $(call compile,$(SERVER)/$(1)/$(s:.cpp=.obj),$(SERVER),$(s),$(3),$(2),\
+    /nologo $(4) $(call server_flags,$(s)) /Fo$(1)/,wine-drives)))
+$(foreach s,$(LITHTECH_ALL),$(eval $(call compile,$(call c_obj,$(s),$(LITHTECH)/$(1)),$(LITHTECH),$(s),$(3),$(2),\
+    /nologo $(4) $(call lithtech_flags,$(s)) /Fo$(1)/,wine-drives)))
+$(foreach s,$(D3D_CL_SRC),$(eval $(call compile,$(D3D)/$(1)/$(s:.cpp=.obj),$(D3D),$(s),$(3),$(2),\
+    $(D3D_CL) $(4) /Fo$(1)/,wine-drives)))
+$(foreach s,$(filter-out $(D3D_CL_SRC),$(D3D_SRC)),$(eval $(call compile,$(D3D)/$(1)/$(s:.cpp=.obj),$(D3D),$(s),\
+    $(if $(filter icl,$(5)),$(ICL_ENV),$(3)),$(if $(filter icl,$(5)),$(ICL),$(2)),\
+    $(D3D_BASE) $(4) $(if $(filter icl,$(5)),$(call d3d_opt,$(s)),/O2) /Fo$(1)/,$(if $(filter icl,$(5)),wine-plain,wine-drives))))
+endef
+$(eval $(call engine_variant,Release,$(ENG_PH_CC),$(ENG_PH_ENV),/D PRIMAL_HUNT,cl))
+$(eval $(call engine_variant,AvP2Release,$(ENG_AVP_CC),$(ENG_AVP_ENV),,icl))
+
+eng_objs = $(sort $(patsubst %.cpp,$(SERVER)/$(1)/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC))) \
+    $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/$(1)))) \
+    $(sort $(D3D_SRC:%.cpp=$(D3D)/$(1)/%.obj))
+.PHONY: engine-objs ph-engine-objs avp2-engine-objs
+ph-engine-objs: $(call eng_objs,Release)
+avp2-engine-objs: $(call eng_objs,AvP2Release)
+engine-objs: ph-engine-objs avp2-engine-objs
 
 # ---------------------------------------------------------------------------
 # The rules all compiles and tools share

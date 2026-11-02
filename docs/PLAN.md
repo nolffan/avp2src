@@ -288,6 +288,18 @@ addresses, so `make progress` scores the objects (`partial_objs`).
 - Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
   near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
   near).
+- AvP2 1.0.9.6's engine is a target again (`AvP2 lithtech.exe`, `AvP2
+  server.dll`, `AvP2 d3d.ren`, `AvP2 ltmsg.dll`; retail images in
+  `out/reference/avp2/`), built from the same source without
+  `PRIMAL_HUNT` into `<binary>/AvP2Release/`: the engine and server with
+  cl 9044, as their Rich headers say, the renderer with Intel C/C++ 4.0 and
+  nolfsrc's flag groups (its header is NOLF's renderer's shape). It starts
+  closer to nolfsrc than Primal Hunt's does: `lithtech.exe` 28.1 %,
+  `server.dll` 26.9 %. Its renderer is 0.1 %: retail against retail, it
+  shares 142 of NOLF's renderer's ~950 function bodies of 32 bytes or more
+  (`lithtech.exe` shares 1,091 of ~2,900), so AvP2's renderer was largely
+  rewritten after NOLF's, and nolfsrc's renderer source is a guide to it,
+  not a base.
 - Next: the near functions; the provisional calls against retail; the
   flags per binary (Primal Hunt's server.dll need not be /O1 as NOLF's
   was); the links (lithshared rebuilt, package 4), then the tables.

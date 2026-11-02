@@ -48,6 +48,8 @@ for f in lithtech.exe server.dll d3d.ren ltmsg.dll cdaudio.dll Launch.dll \
          PrimalHunt.exe AVP2XUp.dll AVP2XServ.exe PHCShell.dll PHObject.lto \
          PHCRes.dll PHSRes.dll \
          AVP2.exe AVP2Up.dll AVP2Serv.exe CShell.dll Object.lto CRes.dll SRes.dll \
+         avp2/lithtech.exe avp2/server.dll avp2/d3d.ren avp2/ltmsg.dll \
+         AVP2lithtech-functions.csv AVP2server-functions.csv AVP2d3d-functions.csv \
          lithtech-functions.csv server-functions.csv d3d-functions.csv \
          cdaudio-functions.csv Launch-functions.csv PrimalHunt-functions.csv \
          AVP2XServ-functions.csv PHCShell-functions.csv PHObject-functions.csv \

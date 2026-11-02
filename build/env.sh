@@ -22,7 +22,7 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 # never a source), and the project's own header directory tools/mkdeps.py
 # follows
 export RELEASESRC_VARIANTS="AVP2_MODERN AVP2_DEBUG"
-export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final primalhunt libs"
+export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final primalhunt avp2release libs"
 export MKDEPS_PROJECT_INCLUDE=src/avp2src
 # ... and where the drives the compilers see are (build/build.mk: src/ is S:,
 # toolchains/ T:), for the /I directories the project files name on S:
