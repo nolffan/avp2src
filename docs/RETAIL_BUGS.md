@@ -1,7 +1,8 @@
 # Bugs in the retail game
 
-Bugs in *Aliens versus Predator 2* (1.0.9.6) as it shipped, found while rebuilding it. Each
-is a mistake in the code that a source change would fix. This is a living
+Bugs in *Primal Hunt* (1.0.2.2) and *Aliens versus Predator 2* (1.0.9.6)
+as they shipped, found while rebuilding them. Each is a mistake in the code
+that a source change would fix. This is a living
 list: add a bug when it is found, in the format below, whether or not it is
 fixed yet.
 

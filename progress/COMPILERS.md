@@ -1,14 +1,40 @@
 # Which compiler built what
 
 Every retail PE carries a Rich header, the linker's inventory of the tool
-builds that produced its objects (`python3 tools/richhdr.py <image>`). For
-AvP2 1.0.9.6 it is all Visual C++ 6.0, but not one revision: the binaries
-were built at different times, from October 2001 to April 2002, and the
-headers show four back ends (`c2.dll` builds, which decide the codegen):
-**8168** (VC6 RTM), **8447** (SP3), **8966** (SP5) and **9044** (SP5 with
-the Processor Pack), all in `toolchains/`. Where a revision or flag set has
-been *proven* by byte-matching, this file says so; until then the
-attribution is the header's own testimony.
+builds that produced its objects (`python3 tools/richhdr.py <image>`). It is
+all Visual C++ 6.0, but not one revision: the binaries were built at
+different times, from October 2001 (AvP2's launcher) to June 2002 (Primal
+Hunt's game DLLs), and the headers show four back ends (`c2.dll` builds,
+which decide the codegen): **8168** (VC6 RTM), **8447** (SP3), **8966**
+(SP5) and **9044** (SP5 with the Processor Pack), all in `toolchains/`.
+Where a revision or flag set has been *proven* by byte-matching, this file
+says so; until then the attribution is the header's own testimony.
+
+## Primal Hunt 1.0.2.2
+
+Third Law's builds are SP5's (8966) throughout, the engine and the renderer
+included, where 1.0.9.6's were the Processor Pack's and RTM's.
+
+| Binary | Link date | Its own objects (C++ unless said) | Also | Built here with |
+|---|---|---|---|---|
+| `lithtech.exe` | 2002-05-20 | **8966** x165 | `libcmt.lib` (C 8047 x172, C++ 8047 x14, masm 6.13 x39); one C object of **8799**; one C++ and one C object of cl 13.00.9178 and 4 import descriptors of implib 7.00.9210 (a DirectX SDK's libraries); 4 without a `@comp.id` | -- (no build yet) |
+| `server.dll` | 2002-05-07 | **8966** x104 | `libcmt.lib` (C 8047 x166, C++ 8047 x14) | -- |
+| `d3d.ren` | 2002-06-03 | **8966** x69 | `libcmt.lib` (C 8047 x121, C++ 8047 x8); one C++ object of cl 13.00.9178 and 3 import descriptors of implib 7.00.9210 | -- |
+| `cdaudio.dll` | 2002-05-07 | **8966** x4 | MFC statically (`nafxcw.lib`, C++ 8569 x38), `libcmt.lib` (C 8047 x76); 6 without a `@comp.id` | -- |
+| `ltmsg.dll` | 2002-03-26 | 8966 x1 | resources and `libcmt.lib` | -- |
+| `PrimalHunt.exe` | 2002-06-06 | **8966** x19 | MFC statically (`nafxcw.lib`, C++ 8569 x55), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id`; the wrapper's `.cms_t`/`.cms_d`, as `AVP2.exe` | -- |
+| `AVP2XUp.dll` | 2002-05-02 | 8966 x2 | resources and `libcmt.lib` | -- |
+| `AVP2XServ.exe` | 2002-06-21 | C++ **8168** x25, **8966** x17; C 8168 x1, 8447 x1 | MFC statically (C++ 8569 x86), `libcmt.lib` (C 8047 x167); 57 without a `@comp.id`; import libraries of `lib` 5.12.8022 and 8034 | -- |
+| `PHCShell.dll` | 2002-06-21 | **8966** x244, C++ 8168 x21; C 8966 x6, 8168 x1 | `libcmt.lib` (C 8047 x176, C++ 8047 x16) | -- |
+| `PHObject.lto` | 2002-06-21 | **8966** x273, C++ 8168 x24; C 8168 x1 | `libcmt.lib` (C 8047 x153, C++ 8047 x16) | -- |
+| `PHCRes.dll`, `PHSRes.dll` | 2002-06-21, -20 | 8966 x1 | resources and `libcmt.lib` | -- |
+
+`Launch.dll` is the same file as AvP2's (below).
+
+## Aliens versus Predator 2 1.0.9.6
+
+Its engine (`lithtech.exe`, `server.dll`, `d3d.ren`, `ltmsg.dll`) is
+superseded by Primal Hunt's and not a target; its rows stay as a witness.
 
 | Binary | Link date | Monolith's objects (C++ unless said) | Also | Built here with |
 |---|---|---|---|---|
@@ -25,6 +51,19 @@ attribution is the header's own testimony.
 | `CRes.dll`, `SRes.dll` | 2002-04-17 | **9044** x1 | resources and `libcmt.lib` | -- |
 
 ## Notes
+
+* **Primal Hunt's game DLLs mix the same two revisions, in other
+  proportions.** Their 8966 objects are both the `lithshared` libraries (the release's
+  prebuilt ones: `tools/libscan.py` places ButeMgr, CryptMgr, GameSpy,
+  LithFontMgr, LTGUIMgr and StdLith functions in `PHCShell.dll` as in
+  1.0.9.6's `CShell.dll`; WONAPI's far fewer -- about 280 against 978 --
+  and linked above the runtime, not below it) and Third Law's own code; a residue of 21 C++
+  objects of 8168 in the client and 24 in the server objects is still
+  Monolith's compiler. Which files those are is for the scoreboard to show.
+* **Primal Hunt's renderer is Microsoft's.** Its Rich header has none of
+  the shape of NOLF's and 1.0.9.6's Intel C/C++ renderers: 8966 throughout.
+  nolfsrc's renderer, Intel-compiled, is a guide to its source, not to its
+  codegen.
 
 * **The game DLLs mix two revisions.** Their own code is 8168's; their 8966
   objects are the `lithshared` libraries, which the source release ships

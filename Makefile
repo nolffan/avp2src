@@ -1,4 +1,4 @@
-# Aliens versus Predator 2, built from source.
+# Aliens versus Predator 2 and Primal Hunt, built from source.
 #
 #   make          build the game into out/avp2-legacy-release/ (and its -private / -public .tar.gz)
 #   make modern   the game with AVP2_MODERN, in out/avp2-modern-release/
@@ -9,7 +9,8 @@
 # Needs only docker on the host and the three submodules (`git submodule
 # update --init`): the compilers, toolchains/ (toolchains/README.md); rez/,
 # which fetches the redump images of the European discs from archive.org
-# and installs the game from them with the English 1.0.9.6 patch (rez/README.md;
+# and installs Primal Hunt, and AvP2 with its English 1.0.9.6 patch, from
+# them (rez/README.md;
 # `make retail`, which every build runs first, does it once); and tools/, the
 # reconstruction tools. Every step runs in a throwaway container of the image
 # docker/Dockerfile describes, with this checkout mounted at /repo, as you.
@@ -24,9 +25,10 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 	$(if $(AVP2_ARCHIVES),-e AVP2_ARCHIVES="$(AVP2_ARCHIVES)") \
 	-v $(CURDIR):/repo -w /repo $(IMAGE)
 
-# The VC6 revisions AvP2's Rich headers name (progress/COMPILERS.md): the
-# Processor Pack's back end (9044) for the 1.0.9.6 engine, 8168 and SP5's
-# 8966 in the game DLLs.
+# The VC6 revisions the Rich headers name (progress/COMPILERS.md): SP5's
+# 8966 for Primal Hunt's engine and game DLLs (and the lithshared
+# libraries), 8168 for AvP2 1.0.9.6's game DLLs, the Processor Pack's back
+# end (9044) for AvP2's launcher.
 TOOLCHAIN_FILES = toolchains/msvc-6.00-9044/BIN/cl.exe toolchains/msvc-6.00-8966/BIN/cl.exe \
 	toolchains/msvc-6.00-8168/BIN/cl.exe toolchains/msvc-6.00-8168/BIN/link.exe
 
@@ -45,8 +47,8 @@ help:
 	@echo "                function recorded in progress/identical.txt stops matching"
 	@echo "make progress-update  record the score in progress/ and README.md"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
-	@echo "make retail     fetch the two disc images and install the retail game and its"
-	@echo "                1.0.9.6 patch from them (rez/, once; every build runs it); check it"
+	@echo "make retail     fetch the disc images and install Primal Hunt, and AvP2 with its"
+	@echo "                1.0.9.6 patch, from them (rez/, once; every build runs it); check them"
 	@echo "make shell      a shell in the build container (build/*.sh, tools/ work there)"
 	@echo "make image      (re)build the docker image $(IMAGE)"
 	@echo "make clean      remove out/ and every build output in the source tree"

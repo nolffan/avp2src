@@ -1,22 +1,32 @@
 # avp2src
 
-*Aliens versus Predator 2* (Monolith, 2001), built from source.
+*Aliens versus Predator 2* (Monolith, 2001) and its expansion *Primal
+Hunt* (Third Law, 2002), built from source.
+
+The game's last release is Primal Hunt 1.0.2.2: its engine, renderer and
+server are the newest, and its game code is AvP2 1.0.9.6's (the last AvP2
+patch) carried on. Primal Hunt plays only its own campaigns, so the game is
+both: Primal Hunt's engine, launcher, dedicated server and game DLLs, and
+AvP2 1.0.9.6's game DLLs, launcher and dedicated server, which play AvP2's.
 
 Monolith released AvP2's game code in 2002 -- the client and server game
 DLLs, their resource DLLs, the dedicated server, the engine SDK headers and
-the `lithshared` libraries, at version 1.0.9.6, the game's last patch -- but
-never the engine. AvP2 runs on LithTech "Talon", the engine generation of
-*No One Lives Forever* (2000), so the engine is reconstructed from
-[nolfsrc](https://github.com/nolffan/nolfsrc)'s reconstruction of NOLF's,
-brought to what the AvP2 binaries are, function by function. As for
+the `lithshared` libraries, at 1.0.9.6 -- but never the engine, and Primal
+Hunt's code was never released at all. AvP2 runs on LithTech "Talon", the
+engine generation of *No One Lives Forever* (2000), so the engine is
+reconstructed from [nolfsrc](https://github.com/nolffan/nolfsrc)'s
+reconstruction of NOLF's, brought to what Primal Hunt's binaries are,
+function by function; Primal Hunt's game DLLs from Monolith's 1.0.9.6
+source, brought to Third Law's. As for
 nolfsrc, [nolf2src](https://github.com/nolffan/nolf2src),
 [cjacksrc](https://github.com/nolffan/cjacksrc) and
 [tron20src](https://github.com/nolffan/tron20src), the aim is two builds:
 
-- **legacy**: Aliens versus Predator 2 (Europe) at 1.0.9.6, rebuilt so that
-  it compiles back to the retail binaries byte for byte, as far as that can
-  be done -- with the compilers Monolith used, Visual C++ 6.0 in the
-  revisions each binary's Rich header names, under Wine;
+- **legacy**: Primal Hunt (Europe) 1.0.2.2 and Aliens versus Predator 2
+  (Europe) 1.0.9.6, rebuilt so that they compile back to the retail
+  binaries byte for byte, as far as that can be done -- with the compilers
+  Monolith and Third Law used, Visual C++ 6.0 in the revisions each
+  binary's Rich header names, under Wine;
 - **modern**: the same source with fixes and new features (`AVP2_MODERN`).
 
 Compiling back to the retail bytes means compiling the retail game's bugs as
@@ -25,15 +35,17 @@ the legacy build keeps matching the retail one.
 
 ## Where it stands
 
-Started. The retail game is installed from its discs and patch (`rez/`),
-the compilers are in `toolchains/` (`msvc-6.00-8168`, `-8966`, `-9044`),
-and the scoreboard scores every retail binary against our build.
+Started. Both retail games are installed from their discs (and AvP2's
+patch) by `rez/`, the compilers are in `toolchains/` (`msvc-6.00-8168`,
+`-8966`, `-9044`), and the scoreboard scores every retail binary against
+our build.
 `docs/PLAN.md` is the plan, package by package.
 
 ## Progress
 
 How much of each binary compiles to exactly the bytes of the retail game
-(1.0.9.6). A function counts when our compiled code is identical to the
+(Primal Hunt 1.0.2.2; AvP2 1.0.9.6 for AvP2's own game, launcher and
+dedicated server). A function counts when our compiled code is identical to the
 retail function, with only the addresses the linker fills in left out of
 the comparison; the bars measure the share of each binary's code, by size,
 those functions make up.
@@ -43,19 +55,27 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `lithtech.exe` | the engine | 0 / 4,190 | 0 / 705,004 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 4,190 | 0 |
-| `server.dll` | the server | 0 / 2,876 | 0 / 351,924 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 2,876 | 0 |
-| `d3d.ren` | the Direct3D renderer | 0 / 1,281 | 0 / 236,606 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1,281 | 0 |
+| `lithtech.exe` | the engine | 0 / 4,483 | 0 / 750,164 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 4,483 | 0 |
+| `server.dll` | the server | 0 / 3,136 | 0 / 389,446 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 3,136 | 0 |
+| `d3d.ren` | the Direct3D renderer | 0 / 1,301 | 0 / 240,374 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1,301 | 0 |
+| `cdaudio.dll` | the engine's CD-audio music driver | 0 / 90 | 0 / 6,350 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 90 | 0 |
 | `Launch.dll` | the engine's command-line helper | 0 / 43 | 0 / 6,084 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 43 | 0 |
-| `AVP2.exe` | the launcher | 0 / 351 | 0 / 48,760 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 351 | 0 |
-| `AVP2Serv.exe` | the dedicated server | 0 / 355 | 0 / 58,956 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 355 | 0 |
-| `CShell.dll` | the game: client | 0 / 6,852 | 0 / 1,464,293 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 6,852 | 0 |
-| `Object.lto` | the game: server objects | 0 / 11,189 | 0 / 2,237,430 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 11,189 | 0 |
+| `PrimalHunt.exe` | Primal Hunt's launcher | 0 / 357 | 0 / 47,857 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 357 | 0 |
+| `AVP2XServ.exe` | Primal Hunt's dedicated server | 0 / 354 | 0 / 61,498 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 354 | 0 |
+| `PHCShell.dll` | Primal Hunt's game: client | 0 / 6,158 | 0 / 1,354,160 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 6,158 | 0 |
+| `PHObject.lto` | Primal Hunt's game: server objects | 0 / 10,704 | 0 / 2,372,345 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 10,704 | 0 |
+| `AVP2.exe` | AvP2's launcher | 0 / 351 | 0 / 48,760 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 351 | 0 |
+| `AVP2Serv.exe` | AvP2's dedicated server | 0 / 355 | 0 / 58,956 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 355 | 0 |
+| `CShell.dll` | AvP2's game: client | 0 / 6,852 | 0 / 1,464,293 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 6,852 | 0 |
+| `Object.lto` | AvP2's game: server objects | 0 / 11,189 | 0 / 2,237,430 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 11,189 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 0 / 8 resources | 0 / 3,322 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 8 | -- |
-| `AVP2Up.dll` | the Sierra updater's resources, not in the total | 0 / 15 resources | 0 / 207,412 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 15 | -- |
-| `CRes.dll` | the game's client resources, not in the total | 0 / 277 resources | 0 / 387,572 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 277 | -- |
-| `SRes.dll` | the game's server resources, not in the total | 0 / 1 resources | 0 / 156 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1 | -- |
-| **All** | | **0 / 27,137** | **0 / 5,109,057 bytes** | `░░░░░░░░░░░░░░░░░░░░` **0.0%** | **27,137** | **0** |
+| `AVP2XUp.dll` | Primal Hunt's Sierra updater resources, not in the total | 0 / 14 resources | 0 / 585,762 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 14 | -- |
+| `PHCRes.dll` | Primal Hunt's client resources, not in the total | 0 / 295 resources | 0 / 440,287 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 295 | -- |
+| `PHSRes.dll` | Primal Hunt's server resources, not in the total | 0 / 1 resources | 0 / 156 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1 | -- |
+| `AVP2Up.dll` | AvP2's Sierra updater resources, not in the total | 0 / 15 resources | 0 / 207,412 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 15 | -- |
+| `CRes.dll` | AvP2's client resources, not in the total | 0 / 277 resources | 0 / 387,572 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 277 | -- |
+| `SRes.dll` | AvP2's server resources, not in the total | 0 / 1 resources | 0 / 156 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1 | -- |
+| **All** | | **0 / 45,373** | **0 / 9,037,717 bytes** | `░░░░░░░░░░░░░░░░░░░░` **0.0%** | **45,373** | **0** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and
@@ -68,7 +88,8 @@ the evidence, is `progress/COMPILERS.md`.
 
 Needs docker and the three submodules (`git submodule update --init`):
 `toolchains/` (the compilers), `rez/` (which fetches the European discs
-from archive.org and installs the game with the 1.0.9.6 patch) and `tools/`
+from archive.org and installs AvP2 with its 1.0.9.6 patch, and Primal Hunt
+beside it) and `tools/`
 (the reconstruction tools).
 
 ```sh

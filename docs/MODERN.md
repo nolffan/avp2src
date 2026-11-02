@@ -25,12 +25,12 @@ items are AvP2's own.
 * **The original compilers.** The modern build uses the legacy build's
   toolchain (the VC6 revisions of `progress/COMPILERS.md`).
 * **No disc check.** The modern build drops the launcher's protection
-  wrapper and the game's own disc and CD-key checks.
+  wrappers and the games' own disc and CD-key checks.
 
 ## Planned
 
 To bring in once the game runs (each checked against AvP2's code first;
-`docs/PLAN.md`, package 10):
+`docs/PLAN.md`, package 12):
 
 * widescreen: menus, HUD and field of view at any aspect ratio, with an
   option to keep the cinematics at 4:3;
@@ -42,8 +42,9 @@ To bring in once the game runs (each checked against AvP2's code first;
 * OpenMiles in place of Miles (`mss32.dll`), our Bink player on FFmpeg in
   place of RAD's `binkw32.dll`, as nolfsrc's, and an open replacement for
   Smacker's `Smackw32.dll`;
-* the launcher as `AVP2Launcher.exe`, and `AVP2.exe` starting the game
-  directly, as if Launch had been clicked in the launcher;
+* the launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with
+  `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch
+  had been clicked in the launcher;
 * from nolfsrc's modern build, where AvP2 has the same code: windowed modes
   at any size, a frame limiter, Internet play without the dead GameSpy and
   WON master servers.

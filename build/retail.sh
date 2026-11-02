@@ -1,21 +1,30 @@
 # Sourced by build/all.sh, build/reference.sh and the Makefile: the retail
-# game the build takes its data from -- Aliens versus Predator 2 (Europe)
-# with the English 1.0.9.6 patch, its last, installed by the rez/ submodule
-# from the redump images of its two discs and the patch (rez/README.md) --
-# and whether it is the right one. AvP2 had no GOTY edition; the expansion,
-# Primal Hunt, is a game of its own. Its layout, for tools/retailextract.py,
-# is build/retail.py.
+# games the build takes its data from, installed by the rez/ submodule from
+# the redump images of their discs (rez/README.md), and whether they are the
+# right ones:
 #
-# RETAIL_RELEASE  rez/'s name for it
-# retail_dir      prints rez/games/avp2-eu-1.0.9.6, if it is installed
-# retail_install  fetches the two disc images from archive.org and installs
-#                 the release from them and the patch (rez/patches/),
-#                 unless it is installed already
+#   Primal Hunt (Europe) 1.0.2.2, the last release, whose engine, launcher,
+#     dedicated server and game DLLs are the newest (build/retail.py); and
+#   Aliens versus Predator 2 (Europe) with the English 1.0.9.6 patch, its
+#     last, whose game DLLs, launcher and dedicated server play AvP2's own
+#     campaigns, and which Primal Hunt needs installed beside it
+#     (build/retail_avp2.py).
+#
+# AvP2 had no GOTY edition.
+#
+# RETAIL_RELEASE       rez/'s name for Primal Hunt's
+# RETAIL_AVP2_RELEASE  rez/'s name for AvP2's
+# retail_dir           prints rez/games/avp2-ph-eu, if it is installed
+# retail_avp2_dir      prints rez/games/avp2-eu-1.0.9.6, if it is installed
+# retail_install  fetches the disc images from archive.org and installs
+#                 both from them (and AvP2's patch, rez/patches/), unless
+#                 they are installed already
 #                 (rez/fetch-isos.sh, rez/install-games.sh; `make` runs it)
 # retail_verify   checks every installed file against rez/games.sha256 (the
 #                 Makefile runs it before every build;
 #                 AVP2_SKIP_RETAIL_CHECK=1 skips it)
-RETAIL_RELEASE=avp2-eu-1.0.9.6
+RETAIL_RELEASE=avp2-ph-eu
+RETAIL_AVP2_RELEASE=avp2-eu-1.0.9.6
 
 retail_rez() {
     local here
@@ -28,43 +37,52 @@ retail_rez() {
     echo "$here/rez"
 }
 
-retail_dir() {
-    local rez d
+_retail_check() {  # <release> <file>...: prints its directory if installed
+    local rez d rel=$1 f
+    shift
     rez="$(retail_rez)" || return 1
-    d="$rez/games/$RETAIL_RELEASE"
-    if [ -f "$d/MANIFEST.txt" ] && [ -f "$d/lithtech.exe" ] && [ -f "$d/AVP2P1.REZ" ]; then
-        echo "$d"; return 0
+    d="$rez/games/$rel"
+    if [ -f "$d/MANIFEST.txt" ]; then
+        for f in "$@"; do [ -f "$d/$f" ] || d=; done
+        [ -n "$d" ] && { echo "$d"; return 0; }
     fi
-    echo "error: the retail game is not installed in $d" >&2
+    echo "error: the retail game $rel is not installed in $rez/games/$rel" >&2
     echo "       run make retail (or, in make shell, build/retail.sh's retail_install)" >&2
     return 1
 }
 
+retail_dir() { _retail_check "$RETAIL_RELEASE" lithtech.exe PrimalHunt.exe AVP2X.REZ; }
+retail_avp2_dir() { _retail_check "$RETAIL_AVP2_RELEASE" lithtech.exe AVP2.exe AVP2P1.REZ; }
+
 retail_install() {
-    local rez
+    local rez rel
     rez="$(retail_rez)" || return 1
-    [ -f "$rez/games/$RETAIL_RELEASE/MANIFEST.txt" ] && return 0
-    echo "== fetching and installing $RETAIL_RELEASE (rez/: about 0.8 GB from archive.org, once)"
-    "$rez/fetch-isos.sh" "$RETAIL_RELEASE" && "$rez/install-games.sh" "$RETAIL_RELEASE"
+    for rel in "$RETAIL_AVP2_RELEASE" "$RETAIL_RELEASE"; do
+        [ -f "$rez/games/$rel/MANIFEST.txt" ] && continue
+        echo "== fetching and installing $rel (rez/: from archive.org, once)"
+        "$rez/fetch-isos.sh" "$rel" && "$rez/install-games.sh" "$rel" || return 1
+    done
 }
 
 retail_verify() {
-    local rez d
+    local rez d rel
     rez="$(retail_rez)" || return 1
-    d="$(retail_dir)" || return 1
+    retail_dir >/dev/null && retail_avp2_dir >/dev/null || return 1
     [ "${AVP2_SKIP_RETAIL_CHECK:-0}" = 1 ] && return 0
-    # a stamp skips re-hashing 1.2 GB on every build while the files are unchanged
+    # a stamp skips re-hashing 1.7 GB on every build while the files are unchanged
     local stamp key
     stamp="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/out/.retail-verified"
-    key="$(cd "$d" && find . -type f -printf '%p %s %T@\n' | sort | sha256sum | cut -d' ' -f1)"
+    key="$(cd "$rez/games" && find "$RETAIL_RELEASE/" "$RETAIL_AVP2_RELEASE/" -type f -printf '%p %s %T@\n' | sort | sha256sum | cut -d' ' -f1)"
     if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$key" ]; then
         return 0
     fi
-    echo "== checking $d against rez/games.sha256"
-    if ! python3 -I "$rez/tools/install.py" --verify "$rez/games" "$RETAIL_RELEASE"; then
-        echo "error: the installed $RETAIL_RELEASE does not match rez/games.sha256." >&2
-        echo "       Reinstall it: rez/install-games.sh --force $RETAIL_RELEASE" >&2
-        return 1
-    fi
+    for rel in "$RETAIL_AVP2_RELEASE" "$RETAIL_RELEASE"; do
+        echo "== checking $rez/games/$rel against rez/games.sha256"
+        if ! python3 -I "$rez/tools/install.py" --verify "$rez/games" "$rel"; then
+            echo "error: the installed $rel does not match rez/games.sha256." >&2
+            echo "       Reinstall it: rez/install-games.sh --force $rel" >&2
+            return 1
+        fi
+    done
     mkdir -p "$(dirname "$stamp")" && echo "$key" > "$stamp"
 }

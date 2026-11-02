@@ -44,11 +44,14 @@ case "$mode" in
 esac
 
 # the images, and the function tables build/reference.sh derives from them
-for f in lithtech.exe server.dll d3d.ren ltmsg.dll \
-         AVP2.exe Launch.dll AVP2Up.dll AVP2Serv.exe CShell.dll Object.lto \
-         CRes.dll SRes.dll \
+for f in lithtech.exe server.dll d3d.ren ltmsg.dll cdaudio.dll Launch.dll \
+         PrimalHunt.exe AVP2XUp.dll AVP2XServ.exe PHCShell.dll PHObject.lto \
+         PHCRes.dll PHSRes.dll \
+         AVP2.exe AVP2Up.dll AVP2Serv.exe CShell.dll Object.lto CRes.dll SRes.dll \
          lithtech-functions.csv server-functions.csv d3d-functions.csv \
-         AVP2-functions.csv Launch-functions.csv AVP2Serv-functions.csv \
+         cdaudio-functions.csv Launch-functions.csv PrimalHunt-functions.csv \
+         AVP2XServ-functions.csv PHCShell-functions.csv PHObject-functions.csv \
+         AVP2-functions.csv AVP2Serv-functions.csv \
          CShell-functions.csv Object-functions.csv; do
     if [ ! -f "out/reference/$f" ]; then
         need=1

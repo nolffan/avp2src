@@ -1,7 +1,8 @@
 # progress/ -- how much of the build is byte-identical to the retail game
 
 The goal of the legacy build is to compile to exactly the machine code of
-the retail game (*Aliens versus Predator 2*, 1.0.9.6). This directory
+the retail game: *Primal Hunt* 1.0.2.2, the last release, and the parts of
+*Aliens versus Predator 2* 1.0.9.6 it does not replace. This directory
 holds the record of how far that has got, the description of what is
 scored, and the evidence the scoring needs. The table in the top-level
 `README.md` is generated from it.
@@ -21,8 +22,9 @@ added there, with the evidence for its ranges.
 
 | Binary | Compared against | Our side |
 |---|---|---|
-| `lithtech.exe`, `server.dll`, `d3d.ren`, `Launch.dll`, `AVP2.exe`, `AVP2Serv.exe`, `CShell.dll`, `Object.lto` | the retail 1.0.9.6 binaries, extracted from the installed game into `out/reference/` (`build/reference.sh`; the game DLLs from `AVP2DLL.REZ` and `AVP2L.REZ`, which the patch replaced: `build/retail.py`) | the image `make` built (`src/.../built/Final/...`) and every object and library of ours its link read, from the link's response file beside it (`<image>.rsp`). A binary with no build yet scores as all unwritten, and is counted |
-| `CRes.dll`, `SRes.dll`, `ltmsg.dll`, `AVP2Up.dll` | the same | resource by resource: their only code is the C runtime's DLL entry and an empty `DllMain`. Listed after the code, not in the total |
+| `lithtech.exe`, `server.dll`, `d3d.ren`, `cdaudio.dll`, `Launch.dll`, `PrimalHunt.exe`, `AVP2XServ.exe`, `PHCShell.dll`, `PHObject.lto` | Primal Hunt's retail binaries, extracted from the installed game into `out/reference/` (`build/reference.sh`; the game DLLs from its `AVP2DLL.REZ`, under names apart from AvP2's: `build/retail.py`) | the image `make` built (`src/.../built/Final/...`) and every object and library of ours its link read, from the link's response file beside it (`<image>.rsp`). A binary with no build yet scores as all unwritten, and is counted |
+| `AVP2.exe`, `AVP2Serv.exe`, `CShell.dll`, `Object.lto` | AvP2 1.0.9.6's, the same way (the game DLLs from `AVP2DLL.REZ`, which the patch replaced: `build/retail_avp2.py`) | the same |
+| `ltmsg.dll`, `AVP2XUp.dll`, `PHCRes.dll`, `PHSRes.dll`; `AVP2Up.dll`, `CRes.dll`, `SRes.dll` | the same | resource by resource: their only code is the C runtime's DLL entry and an empty `DllMain`. Listed after the code, not in the total |
 
 The retail images have no symbols, so their functions are enumerated from
 the code itself (call targets, vtables, callbacks, exports, ...), and each
@@ -75,9 +77,9 @@ is the whole game's code, the engine's included.
   DLLs and the engine). Their blocks are to be placed (`targets.py`).
   STLport and MS STL templates instantiated in the game's own objects are
   compiled from headers here, like any inline function, and are counted.
-* **Copy protection.** The 1.0.9.6 engine has none, and no code is
-  encrypted. The launcher, the disc's, carries two sections a protection
-  wrapper added (`.cms_t`, which holds its entry point, and `.cms_d`); they
+* **Copy protection.** Primal Hunt's engine has none (nor had AvP2
+  1.0.9.6's), and no code is encrypted. The launchers, `AVP2.exe` and
+  `PrimalHunt.exe`, each carry two sections a protection wrapper added (`.cms_t`, which holds its entry point, and `.cms_d`); they
   are not encrypted, and not counted, being outside `.text`'s `app`. The
   protection is not removed or bypassed.
 
