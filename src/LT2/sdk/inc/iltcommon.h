@@ -122,6 +122,18 @@
 		// or LT_ERROR if no world is loaded or hPoly is invalid.
 		virtual LTRESULT	GetPolyTextureFlags(HPOLY hPoly, uint32 *pFlags)=0;
 
+#ifdef PRIMAL_HUNT
+		// PH: Primal Hunt's engine has a slot here this SDK (AvP2 1.0.9.6's)
+		// lacks, which moves GetPolyInfo and GetPolySurfaceFlags one down:
+		// ServerCommonLT's table, slot 19 (server.dll 0x10075760 + 0x4c,
+		// 0x10039e2d); the client's is named by its error tag
+		// "CommonLT::GetPolyTextureName" (lithtech.exe 0x00481280). The
+		// texture name of a poly into pName, at most nMaxLen bytes; the
+		// server has none to give (an empty name, LT_ERROR). Parameter names
+		// ours.
+		virtual LTRESULT	GetPolyTextureName(HPOLY hPoly, char *pName, uint32 nMaxLen)=0;
+#endif
+
 		// Get basic information on a poly.  If a pointer is null, that information
 		// will be ignored (it is safe).
 		// Inputs :

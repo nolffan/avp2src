@@ -799,7 +799,8 @@ void CClientShell::SetDisconnectCode(uint32 nCode, const char* pMsg,
                                      uint32 nSubReason)
 {
 	if (m_pClientMgr->m_pClientShell)
-		m_pClientMgr->m_pClientShell->SetDisconnectCode(nCode, pMsg, nSubReason);
+		// AVP2: iclientshell.h's SetDisconnectCode takes no sub-reason
+		m_pClientMgr->m_pClientShell->SetDisconnectCode(nCode, pMsg);
 }
 
 // 0x004113a0 — clear the 0x1100 list.
@@ -2270,6 +2271,10 @@ public:
 	CAnimTrackerView* m_pNext;               // 0x04
 	class CKeyObjectView* m_pObject;         // 0x08
 	AnimKeyCallbackFn m_KeyCallback;         // 0x0c
+	// AVP2: LTAnimTracker::m_Index, the tracker's number, after the 0x24-byte
+	// m_TimeRef at +0x28 in AvP2's SDK (ltanimtracker.h)
+	uint8             m_pad_10[0x4c - 0x10];
+	int               m_Index;               // 0x4c
 };
 
 class CKeyObjectView
@@ -2380,7 +2385,10 @@ void cs_ModelKeyCallback(CAnimTrackerView* pTracker, CAnimKeyFrameView* pKey)
 		if (parser.m_nArgs > 0)
 		{
 			args.argc = parser.m_nArgs;
-			pMgr->m_pClientShell->OnModelKey((HLOCALOBJ)pObj, &args);
+			// AVP2: iclientshell.h's OnModelKey takes the tracker's number
+			// too (LTAnimTracker::m_Index); provisional, until the retail
+			// code shows what is passed
+			pMgr->m_pClientShell->OnModelKey((HLOCALOBJ)pObj, &args, pTracker->m_Index);
 		}
 	}
 }

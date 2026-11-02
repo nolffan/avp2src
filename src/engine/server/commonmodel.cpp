@@ -192,7 +192,9 @@ LTRESULT CommonModelLT::GetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET& h
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::GetWeightSet", LT_INVALIDPARAMS);
 
-	hSet = pTracker->m_TimeRef.m_iWeightSet;
+	// AVP2: the weight set is the current key frame's (FrameLocator's), not
+	// the tracker's (retail Primal Hunt server.dll 0x10024f97)
+	hSet = pTracker->m_TimeRef.m_Cur.m_iWeightSet;
 	return LT_OK;
 }
 
@@ -201,7 +203,15 @@ LTRESULT CommonModelLT::SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hS
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::SetWeightSet", LT_INVALIDPARAMS);
 
-	pTracker->m_TimeRef.m_iWeightSet = hSet;
+	// AVP2: the current key frame takes the new set; the previous one keeps
+	// the old current set while interpolating, so that the blend runs from
+	// it, and takes the new one too when not (retail Primal Hunt server.dll
+	// 0x10024fdd)
+	if (pTracker->m_bAllowInterpolation)
+		pTracker->m_TimeRef.m_Prev.m_iWeightSet = pTracker->m_TimeRef.m_Cur.m_iWeightSet;
+	else
+		pTracker->m_TimeRef.m_Prev.m_iWeightSet = hSet;
+	pTracker->m_TimeRef.m_Cur.m_iWeightSet = hSet;
 	return LT_OK;
 }
 

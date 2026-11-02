@@ -56,6 +56,10 @@ public:
 	// engine has no message system to hand out.
 	virtual LTRESULT CreateMessage(class ILTMessage*& pMsg);                // 0x1001236b
 
+	// AVP2: ILTCommon's slot after CreateMessage in AvP2's SDK: the CRC-32 of
+	// a stream's whole contents (Primal Hunt server.dll 0x10016b42).
+	virtual LTRESULT GetCRC(ILTStream* pStream, uint32& dwResult);
+
 	// 0x100124ce — the node and socket transforms are one function with a
 	// flag; a node is 1 and a socket 0 (name ours). The flag picks between
 	// ILTModel slots 0x18 and 0x1c, whose own check literals read

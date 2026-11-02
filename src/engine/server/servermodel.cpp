@@ -254,7 +254,12 @@ void at_UpdateStringKeys(LTAnimTracker* pTracker, uint32 nTime)
 // object's game class as MID_MODELSTRINGKEY. Declared, not reconstructed;
 // only its address is needed here, and that address is a masked relocation
 // (name ours).
-void sm_ModelStringKeyCallback(LTAnimTracker* pTracker, AnimKeyFrame* pFrame);
+// AVP2: ltanimtracker.h's StringKeyCallback, two arguments more than NOLF's
+// (the text to append, whether to replace); the definition is
+// smgrmisc.cpp's view-typed sm_ModelStringKeyCallbackQ468, tied to this
+// name by link/aliases.rsp, which is to follow when the engine links
+void sm_ModelStringKeyCallback(LTAnimTracker* pTracker, AnimKeyFrame* pFrame,
+                               char* szAppend, LTBOOL bForceReplace);
 
 // 0x1002a7f2 — advance the object's extra animation trackers by the frame
 // time, converted to whole milliseconds and only for a model.

@@ -63,6 +63,17 @@ public:
 	virtual LTRESULT GetPointStatus(LTVector* pPoint);              // 0x1002da41
 	virtual LTRESULT GetPointShade(LTVector* pPoint, LTVector* pColor);  // 0x1002da5f
 
+	// AVP2: ILTCommon's poly queries AvP2's SDK adds after
+	// GetPolyTextureFlags (Primal Hunt server.dll, ServerCommonLT's table
+	// 0x10075760, slots 19-21), and Primal Hunt's GetPolyTextureName before
+	// them (iltcommon.h, PRIMAL_HUNT)
+#ifdef PRIMAL_HUNT
+	virtual LTRESULT GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen);  // 0x10039e2d
+#endif
+	virtual LTRESULT GetPolyInfo(HPOLY hPoly, LTPlane** ppPlane, LTVector* pVertexList,
+	                             uint32 nVertexListMaxSize, uint32* pnNumVertices);  // 0x10039e3e
+	virtual LTRESULT GetPolySurfaceFlags(HPOLY hPoly, uint32& dwSurfFlags);   // 0x10039ed4
+
 public:
 	// SharedCommonLT ends at 0x10 — ILTCommon's two pointers at 0x04 and
 	// 0x08, then the math implementation at 0x0c.

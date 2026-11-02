@@ -532,13 +532,16 @@ void at_DoKeyFrame(LTAnimTracker* pTracker, ModelAnim* pAnim, uint32 iKey)
 
 	if (pKey->m_Type == 1)
 	{
+		// AVP2: the key-frame callbacks take two more arguments, the text to
+		// append and whether to replace (ltanimtracker.h's StringKeyCallback);
+		// provisional: none and no, until the retail code shows what is passed
 		if ((pTracker->m_Flags & 4) && pKey->m_pFn)
-			pKey->m_pFn(pTracker, pKey);
+			pKey->m_pFn(pTracker, pKey, LTNULL, LTFALSE);
 	}
 	else if (pKey->m_Type == 0)
 	{
 		if (pKey->m_pString[0] && pTracker->m_StringKeyCallback)
-			pTracker->m_StringKeyCallback(pTracker, pKey);
+			pTracker->m_StringKeyCallback(pTracker, pKey, LTNULL, LTFALSE); // AVP2: provisional, as above
 
 		pNext = at_FindNextStringKey(pTracker, iKey + 1, &iNext);
 

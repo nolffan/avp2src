@@ -62,9 +62,9 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `lithtech.exe` | the engine | 1,443 / 4,443 | 147,840 / 750,064 bytes | `███░░░░░░░░░░░░░░░░░` 19.7% | 2,257 | 1,114 |
-| `server.dll` | the server | 887 / 3,137 | 62,134 / 389,446 bytes | `███░░░░░░░░░░░░░░░░░` 15.9% | 1,860 | 649 |
-| `d3d.ren` | the Direct3D renderer | 138 / 1,302 | 9,271 / 240,344 bytes | `░░░░░░░░░░░░░░░░░░░░` 3.8% | 1,022 | 794 |
+| `lithtech.exe` | the engine | 1,764 / 4,429 | 182,390 / 750,048 bytes | `████░░░░░░░░░░░░░░░░` 24.3% | 1,679 | 1,424 |
+| `server.dll` | the server | 1,222 / 3,138 | 90,225 / 389,446 bytes | `████░░░░░░░░░░░░░░░░` 23.1% | 1,317 | 936 |
+| `d3d.ren` | the Direct3D renderer | 139 / 1,302 | 9,303 / 240,344 bytes | `░░░░░░░░░░░░░░░░░░░░` 3.8% | 1,020 | 806 |
 | `cdaudio.dll` | the engine's CD-audio music driver | 0 / 90 | 0 / 6,350 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 90 | 0 |
 | `Launch.dll` | the engine's command-line helper | 0 / 43 | 0 / 6,084 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 43 | 0 |
 | `PrimalHunt.exe` | Primal Hunt's launcher | 0 / 357 | 0 / 47,857 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 357 | 0 |
@@ -82,7 +82,7 @@ those functions make up.
 | `AVP2Up.dll` | AvP2's Sierra updater resources, not in the total | 0 / 15 resources | 0 / 207,412 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 15 | -- |
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **22,462 / 44,374** | **4,615,236 / 9,033,083 bytes** | `██████████░░░░░░░░░░` **51.0%** | **12,127** | **3,729** |
+| **All** | | **23,119 / 44,361** | **4,677,909 / 9,033,067 bytes** | `██████████░░░░░░░░░░` **51.7%** | **11,004** | **4,338** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

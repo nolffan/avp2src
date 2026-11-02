@@ -1907,7 +1907,9 @@ void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 
 		if (ws_ShiftBox())
 		{
-			if (g_pMoveState->m_pObject->m_Flags2 & FLAG2_PLAYERCOLLIDE)
+			// AVP2: NOLF's FLAG2_PLAYERCOLLIDE is AvP2's FLAG2_CYLINDERPHYSICS, the
+			// same bit (1<<4); AvP2 adds sphere physics and edge-following beside it
+			if (g_pMoveState->m_pObject->m_Flags2 & FLAG2_CYLINDERPHYSICS)
 			{
 				ws_MoveCylinder(g_pPBlock->m_nIndex, pState, nTries > 0);
 				nHits = pState->m_nHits;

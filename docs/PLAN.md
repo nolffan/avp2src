@@ -141,7 +141,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | started (below) |
 | 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | |
 | 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | |
-| 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | |
+| 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | answered: not as shipped (package 7); 1.0.9.6's engine to be targeted |
 | 11 | `match`: byte-matching, module by module, ratcheted by `make progress` | 4-8 | |
 | 12 | `modern`: the modern build (`AVP2_MODERN`, `MODERN.md`) | 9 | |
 | 13 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and patch (`tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 9, 12 | |
@@ -253,18 +253,42 @@ against AvP2's SDK headers. Objects only: the links need nolfsrc's
 lithshared libraries and its link-time tables, which name NOLF's
 addresses, so `make progress` scores the objects (`partial_objs`).
 
-- 382 of 403 objects compile. The 21 that do not fail on the SDK's
-  changes since NOLF: `AnimTimeRef` without `m_iWeightSet`, a key-frame
-  callback with two more arguments, `LTPlane` and `LTBBox` methods made
-  const and by reference, `FLAG2_PLAYERCOLLIDE`, ... (sdkforce, clientdsi,
-  clientinput, commonmodel, modelanim, servermodel, smgr, worldtree, ...).
-- As NOLF's: `lithtech.exe` 19.7 % byte-identical (1,443 functions, 545
-  near), `server.dll` 16.0 % (887, 225 near), `d3d.ren` 3.9 % (138, 70
-  near); 1,114, 649 and 794 of nolfsrc's functions in no form in Primal
-  Hunt's images.
-- Next: the 21 files to AvP2's SDK; the near functions; the flags per
-  binary (Primal Hunt's server.dll need not be /O1 as NOLF's was); the
-  links (lithshared rebuilt, package 4), then the tables.
+- Every object compiles against AvP2's SDK (403). What the SDK changed
+  since NOLF, and how it is met (`AVP2:` comments; `provisional` where the
+  retail code is still to confirm it):
+  - DirectInput 7 under the DirectX 8.1 SDK's `dinput.h`
+    (`DIRECTINPUT_VERSION 0x0700`, as the retail call asks: 0x442c55);
+  - the weight set moved from the tracker's `AnimTimeRef` to each key
+    frame: `GetWeightSet`/`SetWeightSet` from retail (server.dll
+    0x10024f57, 0x10024fa1: the previous key frame keeps the old set while
+    interpolating); the transform, world-tree and anim-message uses take
+    the current key frame's, provisionally;
+  - the key-frame callbacks' two new arguments, and the client shell's
+    `OnModelKey` (the tracker's number) and `SetDisconnectCode` (no
+    sub-reason): provisional;
+  - `FLAG2_PLAYERCOLLIDE` is AvP2's `FLAG2_CYLINDERPHYSICS`, the same bit;
+  - `ILTCommon`'s new `GetCRC` (CRC-32, 0x10016b42), `GetPolyInfo` and
+    `GetPolySurfaceFlags` (0x10039e3e, 0x10039ed4), from retail, with
+    Primal Hunt's world polygon layout (its surface at +0x2c, its vertices
+    its own), which `GetPolyTextureFlags` now reads too;
+  - surface effects' `UpdateEffect` returns nothing: cast, provisionally;
+  - `sdkforce.cpp`'s member pointers take AvP2's const signatures.
+- **Primal Hunt's engine has an `ILTCommon` slot AvP2's SDK lacks**:
+  `GetPolyTextureName` (slot 19; the client's error tag names it,
+  lithtech.exe 0x00481280), which moves `GetPolyInfo` and
+  `GetPolySurfaceFlags` one down. It is in `iltcommon.h` behind
+  `PRIMAL_HUNT`, which the engine is now built with. AvP2 1.0.9.6's
+  engine has no such slot (its `ServerCommonLT` table has 21), and AvP2's
+  game calls both shifted functions (CharacterMovement.cpp, AINode.cpp,
+  ...): so **AvP2's 1.0.9.6 game DLLs cannot run on Primal Hunt's engine
+  as shipped**, and package 10 is answered -- AvP2 1.0.9.6's engine
+  comes back as a target.
+- Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
+  near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
+  near).
+- Next: the near functions; the provisional calls against retail; the
+  flags per binary (Primal Hunt's server.dll need not be /O1 as NOLF's
+  was); the links (lithshared rebuilt, package 4), then the tables.
 
 ### 12. modern
 

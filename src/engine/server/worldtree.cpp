@@ -506,7 +506,10 @@ LTBOOL CTransformMaker_C::IsValid()
 		if ((CModel_C*)m_TimeRefs[i].m_pModel != pModel)
 			return LTFALSE;
 
-		if (i != 0 && m_TimeRefs[i].m_iWeightSet >= pModel->m_nWeightSets)
+		// AVP2: provisional -- the current key frame's weight set, as retail
+		// GetWeightSet returns it (Primal Hunt server.dll 0x10024f97); whether
+		// this uses the previous key frame's too is for the retail code to show
+		if (i != 0 && m_TimeRefs[i].m_Cur.m_iWeightSet >= pModel->m_nWeightSets)
 			return LTFALSE;
 	}
 
@@ -568,7 +571,7 @@ LTBOOL CTransformMaker_C::Prepare()
 	for (i = 0; i < m_nTimeRefs; i++)
 	{
 		if (i > 0)
-			m_pWeightSets[i] = m_pModel->m_pWeightSets[m_TimeRefs[i].m_iWeightSet];
+			m_pWeightSets[i] = m_pModel->m_pWeightSets[m_TimeRefs[i].m_Cur.m_iWeightSet]; // AVP2: provisional, as above
 
 		m_pPrevAnims[i] = m_pModel->m_pAnims[m_TimeRefs[i].m_Prev.m_iAnim].m_pAnim;
 		m_pCurAnims[i]  = m_pModel->m_pAnims[m_TimeRefs[i].m_Cur.m_iAnim].m_pAnim;

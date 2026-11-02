@@ -1833,13 +1833,18 @@ void sub_42f210(void* pData)
 // registration loop below has something with a known extent to walk; the
 // bytes of a data object are not what verification checks, but the array's
 // address and its 0x50-byte length ARE what the loop's two immediates are.
+// AVP2: AvP2's SDK has UpdateEffect return nothing (NOLF's returned whether
+// the surface changed). Provisional: the update functions keep NOLF's int
+// and are cast here, until Primal Hunt's own show whether they still return
+// one.
+#define AVP2_UPDATEFX(fn) ((void (*)(SurfaceData*, void*))(fn))
 static SurfaceEffectDesc g_BuiltInSurfaceEffects[5] =
 {
-	{ "Pan",    sub_42ef50, sub_42f120, sub_42f200 },
-	{ "Rotate", sub_42f220, sub_42f2e0, sub_42f460 },
-	{ "Warble", sub_42f470, sub_42f4d0, sub_42f590 },
-	{ "Portal", sub_42eec0, sub_463d20, sub_404470 },
-	{ "Mirror", sub_42ef00, sub_463d20, sub_404470 },
+	{ "Pan",    sub_42ef50, AVP2_UPDATEFX(sub_42f120), sub_42f200 },
+	{ "Rotate", sub_42f220, AVP2_UPDATEFX(sub_42f2e0), sub_42f460 },
+	{ "Warble", sub_42f470, AVP2_UPDATEFX(sub_42f4d0), sub_42f590 },
+	{ "Portal", sub_42eec0, AVP2_UPDATEFX(sub_463d20), sub_404470 },
+	{ "Mirror", sub_42ef00, AVP2_UPDATEFX(sub_463d20), sub_404470 },
 };
 
 // 0x0041fbe0 -- what a SurfaceEffectDesc gets registered through;

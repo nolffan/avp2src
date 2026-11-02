@@ -143,19 +143,22 @@ void (*g_pSDKPlaneSDKQuat3)(float*, const float*, const float*)    = quat_Mul;
 void (*g_pSDKPlaneSDKQuat4)(float*, const float*)                  = quat_Conjugate;
 
 // ---- ltplane.h ----
-void      (LTPlane::*g_pSDKPlane1)(LTVector, float) = &LTPlane::Init;
-float     (LTPlane::*g_pSDKPlane2)(LTVector)        = &LTPlane::DistTo;
-LTPlane   (LTPlane::*g_pSDKPlane3)()                = &LTPlane::operator-;
-LTVector& (LTPlane::*g_pSDKPlane4)()                = &LTPlane::Normal;
-float&    (LTPlane::*g_pSDKPlane5)()                = &LTPlane::Dist;
+// AVP2: AvP2's SDK passes vectors by const reference and makes the queries
+// const; Init has a second form, from three points (taken here too)
+void            (LTPlane::*g_pSDKPlane1)(const LTVector&, float) = &LTPlane::Init;
+float           (LTPlane::*g_pSDKPlane2)(const LTVector&) const = &LTPlane::DistTo;
+LTPlane         (LTPlane::*g_pSDKPlane3)() const               = &LTPlane::operator-;
+const LTVector& (LTPlane::*g_pSDKPlane4)() const               = &LTPlane::Normal;
+float           (LTPlane::*g_pSDKPlane5)() const               = &LTPlane::Dist;
+void            (LTPlane::*g_pSDKPlane6)(const LTVector&, const LTVector&, const LTVector&) = &LTPlane::Init;
 
 // ---- ltbbox.h ----
-LTBOOL   (LTBBox::*g_pSDKBBox1)(LTVector) = &LTBBox::PtInsideBox;
-LTBOOL   (LTBBox::*g_pSDKBBox2)(LTVector) = &LTBBox::PtTouchingBox;
-LTBOOL   (LTBBox::*g_pSDKBBox3)(LTBBox)   = &LTBBox::IntersectsBox;
-LTBOOL   (LTBBox::*g_pSDKBBox4)(LTBBox)   = &LTBBox::TouchesBox;
-LTVector (LTBBox::*g_pSDKBBox5)()         = &LTBBox::GetCenter;
-LTVector (LTBBox::*g_pSDKBBox6)()         = &LTBBox::GetDims;
+LTBOOL   (LTBBox::*g_pSDKBBox1)(const LTVector&) const = &LTBBox::PtInsideBox;
+LTBOOL   (LTBBox::*g_pSDKBBox2)(const LTVector&) const = &LTBBox::PtTouchingBox;
+LTBOOL   (LTBBox::*g_pSDKBBox3)(const LTBBox&) const   = &LTBBox::IntersectsBox;
+LTBOOL   (LTBBox::*g_pSDKBBox4)(const LTBBox&) const   = &LTBBox::TouchesBox;
+LTVector (LTBBox::*g_pSDKBBox5)() const                = &LTBBox::GetCenter;
+LTVector (LTBBox::*g_pSDKBBox6)() const                = &LTBBox::GetDims;
 
 // ---- ltrotation.h ----
 LTRotation  (LTRotation::*g_pSDKRot1)(const LTRotation&) const = &LTRotation::operator*;

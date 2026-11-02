@@ -9298,8 +9298,11 @@ void sub_100290d7(LTObject* pObject, ServerMessage* pMsg)
 			// AnimTimeRef::m_iWeightSet, a byte load in both images.
 			// out-of-line alternative:
 			//   pMsg->WriteByte((uint8)pTracker->m_TimeRef.m_iWeightSet);
+			// AVP2: provisional -- the current key frame's weight set, as retail
+			// GetWeightSet returns it (Primal Hunt server.dll 0x10024f97); whether
+			// this uses the previous key frame's too is for the retail code to show
 			((CPacket*)pMsg)->WriteType(
-				(uint8)pTracker->m_TimeRef.m_iWeightSet);
+				(uint8)pTracker->m_TimeRef.m_Cur.m_iWeightSet);
 		}
 
 		pTracker = pTracker->GetNext();

@@ -3001,7 +3001,9 @@ L_NextLight:
 	//  nVerts = nIn` epilogue at 0x1003fe53 -- 0x1003e8b5 jumps to
 	//  0x1003fe68, past it.
 	// ------------------------------------------------------------------ //
-	if (!Clip32_1000f4b0(nFlags, &pVerts, &nVerts))
+	// AVP2: nVerts is unsigned; Intel C/C++ passed its address as the int32*
+	// the clipper takes, VC6 needs the cast (the same bits either way)
+	if (!Clip32_1000f4b0(nFlags, &pVerts, (int32*)&nVerts))
 		return;
 
 L_Project:

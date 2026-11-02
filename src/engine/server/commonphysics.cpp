@@ -1910,7 +1910,9 @@ WM_CINLINE int wm_PushObject(WMMoveState* pState, LTObject* pObj)
 		// there) and saves the `jmp` over the else arm.
 		bBlocker = 1;
 
-		if (pState->m_pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE)
+		// AVP2: NOLF's FLAG2_PLAYERCOLLIDE is AvP2's FLAG2_CYLINDERPHYSICS, the
+		// same bit (1<<4); AvP2 adds sphere physics and edge-following beside it
+		if (pState->m_pObj->m_Flags2 & FLAG2_CYLINDERPHYSICS)
 			return wm_PushWorldModel(pState, pObj);
 	}
 	else

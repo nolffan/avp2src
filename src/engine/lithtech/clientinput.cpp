@@ -70,6 +70,11 @@
 // *********************************************************************** //
 
 #include <windows.h>
+// AVP2: built against the DirectX 8.1 SDK's dinput.h, which declares
+// DirectInputCreateA and the DIDEVTYPE_ values only for a DirectInput
+// before 8; Init asks for 0x700, falling back to 0x300 (retail 0x442c55,
+// 0x442c75), as NOLF's did.
+#define DIRECTINPUT_VERSION 0x0700
 #include <dinput.h>
 #include <string.h>
 #include <stdio.h>

@@ -264,7 +264,7 @@ c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
 
 # server.dll: nolfsrc's /O1, no /GX; localdriver.cpp /Os
 SERVER := $(E)/server
-SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/
+SERVER_CL := /MT /W3 /O1 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/
 SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp commonphysics.cpp commonmodel.cpp \
     sharedcommon.cpp servermodel.cpp serverlightanim.cpp servercommon.cpp servermessage.cpp packet.cpp \
     lthread.cpp smgr.cpp counter.cpp dalloc.cpp modelanim.cpp streamsim.cpp fsstream.cpp basestream.cpp \
@@ -284,7 +284,7 @@ server-objs: $(SERVER_OBJ)
 # lithtech.exe: nolfsrc's /O2; its copy of server's localdriver.cpp /Od with
 # intrinsics, inlining and string pooling; controlfile.cpp with /GX
 LITHTECH := $(E)/lithtech
-LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c /FoRelease/
+LITHTECH_CL := /MT /W3 /O2 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c /FoRelease/
 LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\server\netobj.cpp \
     ..\server\smgrnew.cpp ..\server\modelnew.cpp ..\server\objmover.cpp ..\server\smgrmisc.cpp \
     ..\server\shade.cpp wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \
@@ -323,8 +323,14 @@ lithtech-objs: $(LITHTECH_OBJ)
 # d3d.ren: every file /O2 for now (nolfsrc's flag groups are Intel C/C++'s)
 D3D := $(E)/d3d
 D3D_SRC := $(notdir $(wildcard $(D3D)/*.cpp))
-$(foreach s,$(D3D_SRC),$(eval $(call compile,$(D3D)/Release/$(s:.cpp=.obj),$(D3D),$(s),$(ENG_ENV),$(ENG_CC),\
-    /nologo /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/,wine-drives)))
+# Not the renderer's own: StdLith's l_allocator.cpp (LAlloc, g_DefAlloc),
+# library code linked into d3d.ren, built as StdLith is (nolfsrc's
+# w12_7fae0.cpp)
+D3D_CL_SRC := w12_7fae0.cpp
+$(foreach s,$(D3D_CL_SRC),$(eval $(call compile,$(D3D)/Release/$(s:.cpp=.obj),$(D3D),$(s),$(ENG_ENV),$(ENG_CC),\
+    /nologo /MT /W3 /GX /O2 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /c /I ..\..\LT2\lithshared\stdlith /FoRelease/,wine-drives)))
+$(foreach s,$(filter-out $(D3D_CL_SRC),$(D3D_SRC)),$(eval $(call compile,$(D3D)/Release/$(s:.cpp=.obj),$(D3D),$(s),$(ENG_ENV),$(ENG_CC),\
+    /nologo /MT /W3 /O2 /D PRIMAL_HUNT /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c /FoRelease/,wine-drives)))
 D3D_OBJ := $(sort $(D3D_SRC:%.cpp=$(D3D)/Release/%.obj))
 .PHONY: d3d-objs engine-objs
 d3d-objs: $(D3D_OBJ)

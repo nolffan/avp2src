@@ -80,11 +80,37 @@ inline WorldPoly* CServerWorld::FindPoly(HPOLY hPoly)
 	return ((IWorldBsp*)pTree->m_pList)->FindPoly(hPoly);
 }
 
+// AVP2: Primal Hunt's world polygon, as FindPoly hands it back and the poly
+// queries read it (server.dll 0x10039dbc, 0x10039e5d..0x10039e8e,
+// 0x10039eea): its surface has moved four bytes down from NOLF's (+0x28 is
+// now the plane), and its vertices are its own, after the count at +0x54.
+// The surface's flags are at +0x30, its texture flags at +0x34 (NOLF's
+// +0x3c). Names ours, as WorldPoly's.
+class WorldSurfaceAvP2
+{
+public:
+	uint8  m_pad_00[0x30];
+	uint32 m_nFlags;                         // 0x30
+	uint16 m_nTextureFlags;                  // 0x34
+};
+
+class WorldPolyAvP2
+{
+public:
+	uint8             m_pad_00[0x28];
+	LTPlane*          m_pPlane;              // 0x28
+	WorldSurfaceAvP2* m_pSurface;            // 0x2c
+	uint8             m_pad_30[0x54 - 0x30];
+	uint16            m_nVertices;           // 0x54
+	uint8             m_pad_56[0x58 - 0x56];
+	WorldPolyVertex   m_Vertices[1];         // 0x58  as many as m_nVertices
+};
+
 LTRESULT ServerCommonLT::GetPolyTextureFlags(HPOLY hPoly, uint32* pFlags)
 {
 	*pFlags = 0;
 
-	WorldPoly* pPoly = m_pServerMgr->m_World.FindPoly(hPoly);
+	WorldPolyAvP2* pPoly = (WorldPolyAvP2*)m_pServerMgr->m_World.FindPoly(hPoly);
 	if (pPoly)
 	{
 		*pFlags = pPoly->m_pSurface->m_nTextureFlags;
@@ -92,6 +118,64 @@ LTRESULT ServerCommonLT::GetPolyTextureFlags(HPOLY hPoly, uint32* pFlags)
 	}
 
 	RETURN_ERROR(2, "CommonLT::GetPolyTextureFlags", LT_ERROR);
+}
+
+#ifdef PRIMAL_HUNT
+// PH: 0x10039e2d -- the server has no textures: an empty name, LT_ERROR,
+// and no error message.
+LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen)
+{
+	if (pName)
+		pName[0] = 0;
+
+	return LT_ERROR;
+}
+#endif
+
+// AVP2: 0x10039e3e. The vertices are copied while there are both vertices
+// and room for them, the count first; the count comes back whole however
+// many were copied, as iltcommon.h says.
+LTRESULT ServerCommonLT::GetPolyInfo(HPOLY hPoly, LTPlane** ppPlane, LTVector* pVertexList,
+                                     uint32 nVertexListMaxSize, uint32* pnNumVertices)
+{
+	WorldPolyAvP2* pPoly = (WorldPolyAvP2*)m_pServerMgr->m_World.FindPoly(hPoly);
+	if (pPoly)
+	{
+		if (ppPlane)
+			*ppPlane = pPoly->m_pPlane;
+
+		uint32 nVertices = pPoly->m_nVertices;
+		if (pVertexList)
+		{
+			for (uint32 i = 0; i < nVertices; i++)
+			{
+				if (i >= nVertexListMaxSize)
+					break;
+				pVertexList[i] = *pPoly->m_Vertices[i].m_pPos;
+			}
+		}
+
+		if (pnNumVertices)
+			*pnNumVertices = nVertices;
+
+		return LT_OK;
+	}
+
+	RETURN_ERROR(2, "CommonLT::GetPolyInfo", LT_ERROR);
+}
+
+// AVP2: 0x10039ed4 -- the poly's surface's flags; an error without a poly or
+// a surface.
+LTRESULT ServerCommonLT::GetPolySurfaceFlags(HPOLY hPoly, uint32& dwSurfFlags)
+{
+	WorldPolyAvP2* pPoly = (WorldPolyAvP2*)m_pServerMgr->m_World.FindPoly(hPoly);
+	if (pPoly && pPoly->m_pSurface)
+	{
+		dwSurfFlags = pPoly->m_pSurface->m_nFlags;
+		return LT_OK;
+	}
+
+	RETURN_ERROR(2, "CommonLT::GetPolySurfaceFlags", LT_ERROR);
 }
 
 // ONE `return LT_OK`, reached through nested positive tests, not three early
