@@ -1,0 +1,488 @@
+## The text differences from the retail images that are known: tools/datacheck.py.
+## <image><TAB><retail|ours><TAB><string>; `# ...` is the reason for the entries after it.
+
+# UNREVIEWED, recorded when Primal Hunt's game was first built (2026-11-02) from the release's AvP2 1.0.9.6 source unchanged: Third Law's changes are still to be reconstructed (docs/PLAN.md, package 5), and every entry here is one of them until shown otherwise
+PHCShell.dll	ours	Aliens vs. Predator 2
+PHCShell.dll	ours	Avp2Serv.exe
+PHCShell.dll	ours	Avp2Serv.exe -config %s
+PHCShell.dll	ours	Df3M6Z
+PHCShell.dll	ours	FolderMarineMissions
+PHCShell.dll	ours	SierraUp.exe ProductName "AliensVsPredator2" CurrentVersion "%s" ResourceDllFile "AVP2Up.dll"
+PHCShell.dll	ours	worlds\\singleplayer\\outro
+PHCShell.dll	retail	  SVAR <server console variable>
+PHCShell.dll	retail	  SVAR <server console variable> <value>
+PHCShell.dll	retail	#menu_sound
+PHCShell.dll	retail	%s%scorporate\\%s%s
+PHCShell.dll	retail	.?AUBEAMFX@@
+PHCShell.dll	retail	.?AUCMuzzleFX@@
+PHCShell.dll	retail	.?AUCPShowerFX@@
+PHCShell.dll	retail	.?AUCParticleMuzzleFX@@
+PHCShell.dll	retail	.?AUCPolyDebrisFX@@
+PHCShell.dll	retail	.?AUCScaleFX@@
+PHCShell.dll	retail	.?AUDLIGHTFX@@
+PHCShell.dll	retail	.?AUDRIPPEROBJFX@@
+PHCShell.dll	retail	.?AUFIREFX@@
+PHCShell.dll	retail	.?AUFIREOBJFX@@
+PHCShell.dll	retail	.?AUIFXCS@@
+PHCShell.dll	retail	.?AUIMPACTFX@@
+PHCShell.dll	retail	.?AUPARTICLETRAILFX@@
+PHCShell.dll	retail	.?AUPEXPLFX@@
+PHCShell.dll	retail	.?AUPROJBASEFX@@
+PHCShell.dll	retail	.?AUPROJECTILEFX@@
+PHCShell.dll	retail	.?AUPUSHERFX@@
+PHCShell.dll	retail	.?AUPVFX@@
+PHCShell.dll	retail	.?AUSMOKEFX@@
+PHCShell.dll	retail	.?AUSOUNDFX@@
+PHCShell.dll	retail	.?AUSTEAMFX@@
+PHCShell.dll	retail	.?AUTRACERFX@@
+PHCShell.dll	retail	.?AVCCorporateWepChooser@@
+PHCShell.dll	retail	.?AVCMultiFile@@
+PHCShell.dll	retail	.?AVCMultiFile_FILE@@
+PHCShell.dll	retail	.?AVCMultiFile_LITH@@
+PHCShell.dll	retail	.?AVlength_error@std@@
+PHCShell.dll	retail	.?AVlogic_error@std@@
+PHCShell.dll	retail	.?AVout_of_range@std@@
+PHCShell.dll	retail	/Interface/StatusBar/Corporate/turret_gun_ammo2.pcx
+PHCShell.dll	retail	/Interface/StatusBar/Marine/turret_gun_ammo1.pcx
+PHCShell.dll	retail	AStat
+PHCShell.dll	retail	AVP2PH
+PHCShell.dll	retail	AddAction %s %i
+PHCShell.dll	retail	AddServerCtrl(): allowclasses %d
+PHCShell.dll	retail	AdditiveAlpha
+PHCShell.dll	retail	Allowed%i
+PHCShell.dll	retail	Avp2XServ.exe
+PHCShell.dll	retail	Avp2XServ.exe -config %s
+PHCShell.dll	retail	Backhand
+PHCShell.dll	retail	Backhand_Predalien
+PHCShell.dll	retail	Bone_Barrel
+PHCShell.dll	retail	Bone_Horiz
+PHCShell.dll	retail	Bone_Pivot
+PHCShell.dll	retail	Chestburster
+PHCShell.dll	retail	ClassWidth
+PHCShell.dll	retail	Claws_Predalien
+PHCShell.dll	retail	Client attribute initialization took %.2f seconds.
+PHCShell.dll	retail	Client shell initialization took %.2f seconds.
+PHCShell.dll	retail	CorpFontBase
+PHCShell.dll	retail	DIALOGUE\\
+PHCShell.dll	retail	DefaultEnvMap
+PHCShell.dll	retail	DualMuzzle
+PHCShell.dll	retail	DualMuzzlePos
+PHCShell.dll	retail	DualPVMuzzleFXName
+PHCShell.dll	retail	Dual_Pistols
+PHCShell.dll	retail	Dual_Pistols_MP
+PHCShell.dll	retail	Energy Flechette
+PHCShell.dll	retail	EnergyFlechette
+PHCShell.dll	retail	FolderCorporateMissions
+PHCShell.dll	retail	GSCM Max Version: %s
+PHCShell.dll	retail	HStat
+PHCShell.dll	retail	HUDMotionDetector_Corporate
+PHCShell.dll	retail	HeadVelocity
+PHCShell.dll	retail	Interface\\Exp\\Menus\\noentry.pcx
+PHCShell.dll	retail	Interface\\StatusBar\\marine\\ammo_heat_empty.pcx
+PHCShell.dll	retail	Interface\\StatusBar\\marine\\ammobar_full.pcx
+PHCShell.dll	retail	Interface\\StatusBar\\marine\\heatbar_full.pcx
+PHCShell.dll	retail	Interface\\intro_fox.pcx
+PHCShell.dll	retail	Interface\\intro_lithtech.pcx
+PHCShell.dll	retail	Interface\\intro_sierra.pcx
+PHCShell.dll	retail	Interface\\intro_thirdlaw.pcx
+PHCShell.dll	retail	Knife_MP
+PHCShell.dll	retail	MultiSelect
+PHCShell.dll	retail	MultiSelectNext
+PHCShell.dll	retail	Name%i
+PHCShell.dll	retail	OCKLJ
+PHCShell.dll	retail	OCgRIOQMU
+PHCShell.dll	retail	P4fR9w
+PHCShell.dll	retail	PStat
+PHCShell.dll	retail	Pistol
+PHCShell.dll	retail	Pistol_MP
+PHCShell.dll	retail	Predalien_AI
+PHCShell.dll	retail	Predalien_MP
+PHCShell.dll	retail	Primal Hunt
+PHCShell.dll	retail	RangeOffset
+PHCShell.dll	retail	RangeSmallOffset
+PHCShell.dll	retail	Remote Bomb
+PHCShell.dll	retail	RotationY
+PHCShell.dll	retail	ShowerBody
+PHCShell.dll	retail	SierraUp.exe ProductName "avp2primalhunt" CurrentVersion "%s" ResourceDllFile "AVP2XUp.dll"
+PHCShell.dll	retail	SingleSegment
+PHCShell.dll	retail	Skin1
+PHCShell.dll	retail	Skin2
+PHCShell.dll	retail	Skin3
+PHCShell.dll	retail	Sounds\\Ambients\\countdwn.wav
+PHCShell.dll	retail	Sounds\\Characters\\Predator\\PredLaugh1.wav
+PHCShell.dll	retail	Sounds\\Characters\\Predator\\PredLaugh2.wav
+PHCShell.dll	retail	StickyHotBomb
+PHCShell.dll	retail	SuperPredalien_AI
+PHCShell.dll	retail	Test initialization took %.2f seconds.
+PHCShell.dll	retail	USAGE: 
+PHCShell.dll	retail	Using Turret
+PHCShell.dll	retail	WeaponRef
+PHCShell.dll	retail	Wristblades_MP
+PHCShell.dll	retail	allowedclasses
+PHCShell.dll	retail	avp2ph
+PHCShell.dll	retail	avp2primalhunt
+PHCShell.dll	retail	disabled
+PHCShell.dll	retail	import ADVAPI32.dll GetUserNameA
+PHCShell.dll	retail	import WINMM.dll timeGetTime
+PHCShell.dll	retail	interface\\statusbar\\corporate\\inv_frame.pcx
+PHCShell.dll	retail	interface\\statusbar\\corporate\\inv_greenbox.pcx
+PHCShell.dll	retail	interface\\statusbar\\corporate\\inv_redbox.pcx
+PHCShell.dll	retail	invalid string position
+PHCShell.dll	retail	marine
+PHCShell.dll	retail	morph
+PHCShell.dll	retail	mpcanthurtme
+PHCShell.dll	retail	mpdoctordoctor
+PHCShell.dll	retail	mpicu
+PHCShell.dll	retail	mpmorph
+PHCShell.dll	retail	mpschuckit
+PHCShell.dll	retail	mpsixthsense
+PHCShell.dll	retail	nelno
+PHCShell.dll	retail	noclip
+PHCShell.dll	retail	num_classes
+PHCShell.dll	retail	num_weapons
+PHCShell.dll	retail	predalien_bitetarget
+PHCShell.dll	retail	sprites/exp/SFX/MuzzleFX/TurretFlash.spr
+PHCShell.dll	retail	string too long
+PHCShell.dll	retail	worlds\\exp\\exoutro
+
+# UNREVIEWED, recorded when Primal Hunt's game was first built (2026-11-02) from the release's AvP2 1.0.9.6 source unchanged: Third Law's changes are still to be reconstructed (docs/PLAN.md, package 5), and every entry here is one of them until shown otherwise
+PHObject.lto	ours	<default>
+PHObject.lto	ours	<none>
+PHObject.lto	ours	Aliens vs. Predator 2
+PHObject.lto	ours	Df3M6Z
+PHObject.lto	retail	  SVAR <server console var>
+PHObject.lto	retail	  SVAR <server console var> <value>
+PHObject.lto	retail	 Alien 
+PHObject.lto	retail	 AttachToBase 0;
+PHObject.lto	retail	 AttributeName Tripod;
+PHObject.lto	retail	 CanDamage 1;
+PHObject.lto	retail	 CanHeal 0;
+PHObject.lto	retail	 CanRepair 0;
+PHObject.lto	retail	 CanSeeThrough 0;
+PHObject.lto	retail	 CanShootThrough 0;
+PHObject.lto	retail	 CorpExo 
+PHObject.lto	retail	 Corporate 
+PHObject.lto	retail	 CreateExplosion 0;
+PHObject.lto	retail	 DebrisType Metal03;
+PHObject.lto	retail	 DetectInterest 
+PHObject.lto	retail	 DetectTarget 
+PHObject.lto	retail	 Filename 
+PHObject.lto	retail	 HitPoints 100.0;
+PHObject.lto	retail	 IdleTimeOut 
+PHObject.lto	retail	 ImpactFXName SpiderGrenadeImpact;
+PHObject.lto	retail	 MP_DM 1;
+PHObject.lto	retail	 MP_TeamDM 1;
+PHObject.lto	retail	 Marine 
+PHObject.lto	retail	 MarineExo 
+PHObject.lto	retail	 MaxArmor 100.0;
+PHObject.lto	retail	 MaxDamage 25.0;
+PHObject.lto	retail	 MaxHitPoints 100.0;
+PHObject.lto	retail	 MaxIdleTime 300.0;
+PHObject.lto	retail	 MaxPitch 20.0;
+PHObject.lto	retail	 MaxYaw 45.0;
+PHObject.lto	retail	 MinPitch -20.0;
+PHObject.lto	retail	 MinYaw -45.0;
+PHObject.lto	retail	 MoveToFloor 1;
+PHObject.lto	retail	 NeverDestroy 0;
+PHObject.lto	retail	 Predator 
+PHObject.lto	retail	 SP_Story 1;
+PHObject.lto	retail	 Solid 1;
+PHObject.lto	retail	 StartOff 1;
+PHObject.lto	retail	 SurfaceOverride Metal;
+PHObject.lto	retail	 SweepPauseTime 0;
+PHObject.lto	retail	 Synthetic 
+PHObject.lto	retail	 TargetDelay 0.1;
+PHObject.lto	retail	 TargetTimeOut 1.0;
+PHObject.lto	retail	 UseAwakeSound 1;
+PHObject.lto	retail	 UseDetectSound 1;
+PHObject.lto	retail	 VisualRange 2000.0;
+PHObject.lto	retail	%s could not find its leash system!
+PHObject.lto	retail	.?AUBEAMFX@@
+PHObject.lto	retail	.?AUCMuzzleFX@@
+PHObject.lto	retail	.?AUCPShowerFX@@
+PHObject.lto	retail	.?AUCParticleMuzzleFX@@
+PHObject.lto	retail	.?AUCPolyDebrisFX@@
+PHObject.lto	retail	.?AUCScaleFX@@
+PHObject.lto	retail	.?AUDLIGHTFX@@
+PHObject.lto	retail	.?AUDRIPPEROBJFX@@
+PHObject.lto	retail	.?AUFIREFX@@
+PHObject.lto	retail	.?AUFIREOBJFX@@
+PHObject.lto	retail	.?AUIMPACTFX@@
+PHObject.lto	retail	.?AUPARTICLETRAILFX@@
+PHObject.lto	retail	.?AUPEXPLFX@@
+PHObject.lto	retail	.?AUPROJBASEFX@@
+PHObject.lto	retail	.?AUPROJECTILEFX@@
+PHObject.lto	retail	.?AUPUSHERFX@@
+PHObject.lto	retail	.?AUPVFX@@
+PHObject.lto	retail	.?AUSMOKEFX@@
+PHObject.lto	retail	.?AUSOUNDFX@@
+PHObject.lto	retail	.?AUSTEAMFX@@
+PHObject.lto	retail	.?AUTRACERFX@@
+PHObject.lto	retail	.?AV?$CHashIterator@PAVCLeashGroup@@@@
+PHObject.lto	retail	.?AVCAIBase@@
+PHObject.lto	retail	.?AVCAIBull@@
+PHObject.lto	retail	.?AVCAIChameleon@@
+PHObject.lto	retail	.?AVCAITentacle@@
+PHObject.lto	retail	.?AVCArtifactField@@
+PHObject.lto	retail	.?AVCBaseIterator@@
+PHObject.lto	retail	.?AVCLeashNode@@
+PHObject.lto	retail	.?AVCLeashPoint@@
+PHObject.lto	retail	.?AVCLeashVolume@@
+PHObject.lto	retail	.?AVCMarker@@
+PHObject.lto	retail	.?AVCMiniTurret@@
+PHObject.lto	retail	.?AVCMoveMgr@@
+PHObject.lto	retail	.?AVCMultiFile@@
+PHObject.lto	retail	.?AVCMultiFile_FILE@@
+PHObject.lto	retail	.?AVCMultiFile_LITH@@
+PHObject.lto	retail	.?AVCOrientationMgr@@
+PHObject.lto	retail	.?AVCTentHole@@
+PHObject.lto	retail	.?AVCTentacle@@
+PHObject.lto	retail	.?AVCTurretGun@@
+PHObject.lto	retail	.?AVCTurretSpawner@@
+PHObject.lto	retail	.?AVChameleonTest@@
+PHObject.lto	retail	.?AVLeashPoint@@
+PHObject.lto	retail	.?AVLeashVolume@@
+PHObject.lto	retail	.?AVVolumetricFog@@
+PHObject.lto	retail	.?AVlength_error@std@@
+PHObject.lto	retail	.?AVlogic_error@std@@
+PHObject.lto	retail	.?AVout_of_range@std@@
+PHObject.lto	retail	AVP2PH
+PHObject.lto	retail	AdditiveAlpha
+PHObject.lto	retail	Additive_With_Alpha
+PHObject.lto	retail	Alert
+PHObject.lto	retail	AlphaCycleTime
+PHObject.lto	retail	Ammo_Regen
+PHObject.lto	retail	Ammo_Regen_Time
+PHObject.lto	retail	ArcLength
+PHObject.lto	retail	Attack0
+PHObject.lto	retail	Attack1
+PHObject.lto	retail	Backhand
+PHObject.lto	retail	Blocking_Priority
+PHObject.lto	retail	Burrow
+PHObject.lto	retail	Burrow2
+PHObject.lto	retail	CAIBase
+PHObject.lto	retail	CAIBull
+PHObject.lto	retail	CAIChameleon
+PHObject.lto	retail	CAITentacle
+PHObject.lto	retail	CArtifactField
+PHObject.lto	retail	CMarker
+PHObject.lto	retail	CMiniTurret
+PHObject.lto	retail	CTentHole
+PHObject.lto	retail	CTentacle
+PHObject.lto	retail	CTurretGun
+PHObject.lto	retail	CTurretSpawner
+PHObject.lto	retail	ChameleonTest
+PHObject.lto	retail	ChargeHead
+PHObject.lto	retail	CorpExo
+PHObject.lto	retail	DESTROYED
+PHObject.lto	retail	Death0
+PHObject.lto	retail	Death1
+PHObject.lto	retail	DefaultEnvMap
+PHObject.lto	retail	DualMuzzle
+PHObject.lto	retail	DualMuzzlePos
+PHObject.lto	retail	DualPVMuzzleFXName
+PHObject.lto	retail	Dual_Pistols
+PHObject.lto	retail	Dual_Pistols_MP
+PHObject.lto	retail	Erupt
+PHObject.lto	retail	Erupt2
+PHObject.lto	retail	FADEALPHA
+PHObject.lto	retail	First_Erupt_In_Front
+PHObject.lto	retail	Fog_Color
+PHObject.lto	retail	Fog_Density
+PHObject.lto	retail	Footstep_Hearing_Range
+PHObject.lto	retail	Footstep_Sensitivity
+PHObject.lto	retail	Group_Name
+PHObject.lto	retail	HIDDEN 1
+PHObject.lto	retail	HIDEALIENS
+PHObject.lto	retail	HIDECLASS
+PHObject.lto	retail	HIDESENTRIES
+PHObject.lto	retail	HeadNub
+PHObject.lto	retail	HeadVelocity
+PHObject.lto	retail	Health of each tentacle.
+PHObject.lto	retail	Home_Leash_Point
+PHObject.lto	retail	How close an enemy must be before this AI will attack if Wait_To_Attack is TRUE.
+PHObject.lto	retail	How far away this AI can sight an enemy.
+PHObject.lto	retail	How sensitive this AI is to footstep sounds. 1.0 is normal, 0.5 is half of normal, 2.0 is twice normal.
+PHObject.lto	retail	Idle0
+PHObject.lto	retail	If TRUE the first tentacle will always erupt directly in front of the player.
+PHObject.lto	retail	If TRUE, player can push the egg around.  That has clipping issues, however.
+PHObject.lto	retail	If TRUE, this AI will wait until the enemy is within Wait_Attack_Dist units to attack.
+PHObject.lto	retail	KILLALIENS
+PHObject.lto	retail	Knife_MP
+PHObject.lto	retail	LeashVolume
+PHObject.lto	retail	LeashVolume "%s" has more than %i vertices in a face.
+PHObject.lto	retail	LeashVolume "%s" is not convex!
+PHObject.lto	retail	Leash_Group
+PHObject.lto	retail	MarineExo
+PHObject.lto	retail	MaxAlpha
+PHObject.lto	retail	Max_Attacking_Tentacles
+PHObject.lto	retail	Max_Erupt_Time
+PHObject.lto	retail	Maximum amount of damage a tentacle attack can do.
+PHObject.lto	retail	Maximum time between tentacles erupting.
+PHObject.lto	retail	MinAlpha
+PHObject.lto	retail	Min_Erupt_Time
+PHObject.lto	retail	Minigun
+PHObject.lto	retail	Minimum time between tentacles erupting.
+PHObject.lto	retail	MultiSelect
+PHObject.lto	retail	MultiSelectNext
+PHObject.lto	retail	NeckNub
+PHObject.lto	retail	Num_Tentacles
+PHObject.lto	retail	Number of tentacles that can attack at once.
+PHObject.lto	retail	Number of tentacles total.
+PHObject.lto	retail	OldCloak
+PHObject.lto	retail	P4fR9w
+PHObject.lto	retail	PICKED_UP
+PHObject.lto	retail	PREDATOR_ANTIMASK
+PHObject.lto	retail	Pain0
+PHObject.lto	retail	Pain1
+PHObject.lto	retail	Pistol
+PHObject.lto	retail	Pistol_MP
+PHObject.lto	retail	Praetorian
+PHObject.lto	retail	Primal Hunt
+PHObject.lto	retail	Priority of this door.  Higher has more precedence.
+PHObject.lto	retail	Pushable
+PHObject.lto	retail	RotationY
+PHObject.lto	retail	SOUND
+PHObject.lto	retail	STOPTURRET
+PHObject.lto	retail	SVAR <server console var>
+PHObject.lto	retail	SVAR <server console var> <value>
+PHObject.lto	retail	Server attribute initialization took %.2f seconds.
+PHObject.lto	retail	Server shell initialization took %.2f seconds.
+PHObject.lto	retail	Set to TRUE to use the Fog_Color value on this object.  If FALSE, the global fog color from WorldProperties will be used.
+PHObject.lto	retail	Set to TRUE to use the Fog_Density value on this object.  If FALSE, the global VFogDensity from WorldProperties will be used.
+PHObject.lto	retail	Show_Portals
+PHObject.lto	retail	Show_Volume
+PHObject.lto	retail	Sight_Range
+PHObject.lto	retail	SingleSegment
+PHObject.lto	retail	Skin1
+PHObject.lto	retail	Skin3
+PHObject.lto	retail	Skull
+PHObject.lto	retail	Sounds/Exp/Weapons/Marine/Turret/Drop.wav
+PHObject.lto	retail	Sounds/Exp/Weapons/Marine/Turret/Overheat.wav
+PHObject.lto	retail	Sounds/Exp/Weapons/Marine/Turret/Pickup.wav
+PHObject.lto	retail	Spawn_Interval
+PHObject.lto	retail	Specifies the color of the fog volume.  If two fog volumes are in the PVS at once, the color used is that of the last one drawn, so avoid having two differently colored fog volumes in the PVS at once.
+PHObject.lto	retail	Surge
+PHObject.lto	retail	Synthetic
+PHObject.lto	retail	TRUE if you want the doors blocking priority to be set.
+PHObject.lto	retail	Tentacle_Damage
+PHObject.lto	retail	Tentacle_Health
+PHObject.lto	retail	Tentacle_Scale
+PHObject.lto	retail	Test initialization took %.2f seconds.
+PHObject.lto	retail	The relative size of the tentacles.  1.0 = normal size, 2.0 = twice normal size.
+PHObject.lto	retail	The thickness of fog at which a vertex is completely fogged out (to the fog color).  For instance, if the value is 512.0, there must be 512 or more units of fog between the viewer and a vertex for the vertex to be completely fogged out.
+PHObject.lto	retail	This is the max range from this AI at which it can "hear" the player's footsteps.
+PHObject.lto	retail	Time between respawns.  Will only spawn a new turret if the current turret was picked up.
+PHObject.lto	retail	ToCrouch
+PHObject.lto	retail	USAGE:
+PHObject.lto	retail	Use_Blocking_Priority
+PHObject.lto	retail	Use_Fog_Color
+PHObject.lto	retail	Use_Fog_Density
+PHObject.lto	retail	Using Turret
+PHObject.lto	retail	Variable "%s" not found.
+PHObject.lto	retail	VolumetricFog
+PHObject.lto	retail	Wait_Attack_Dist
+PHObject.lto	retail	Wait_To_Attack
+PHObject.lto	retail	WeaponRef
+PHObject.lto	retail	WorldTextures/exp/envmap/plasma1.dtx
+PHObject.lto	retail	Wristblades_MP
+PHObject.lto	retail	Yaw Range
+PHObject.lto	retail	allowedclasses
+PHObject.lto	retail	allowedweapons
+PHObject.lto	retail	avp2ph
+PHObject.lto	retail	damage_melee
+PHObject.lto	retail	death_sound
+PHObject.lto	retail	erupt_Idle
+PHObject.lto	retail	exa3s3
+PHObject.lto	retail	exh3s2
+PHObject.lto	retail	exoutro
+PHObject.lto	retail	exp3s3
+PHObject.lto	retail	import WINMM.dll timeGetTime
+PHObject.lto	retail	invalid string position
+PHObject.lto	retail	models/characters/heavypred.abc
+PHObject.lto	retail	models/exp/characters/buhlagh.abc
+PHObject.lto	retail	models/exp/characters/chameleon.abc
+PHObject.lto	retail	models/exp/characters/tentacle.abc
+PHObject.lto	retail	models/exp/props/tenthole.abc
+PHObject.lto	retail	models/exp/weapons/turret/miniturret.abc
+PHObject.lto	retail	run_sound
+PHObject.lto	retail	skins/characters/predator/heavypred_arms.dtx
+PHObject.lto	retail	skins/characters/predator/heavypred_head.dtx
+PHObject.lto	retail	skins/characters/predator/heavypred_legs.dtx
+PHObject.lto	retail	skins/characters/predator/heavypred_torso.dtx
+PHObject.lto	retail	skins/exp/characters/buhlaghbody.dtx
+PHObject.lto	retail	skins/exp/characters/buhlaghhead.dtx
+PHObject.lto	retail	skins/exp/characters/chameleonhead.dtx
+PHObject.lto	retail	skins/exp/characters/chameleontorso.dtx
+PHObject.lto	retail	skins/exp/characters/chameleonwound.dtx
+PHObject.lto	retail	skins/exp/characters/electrovision/buhlaghbody.dtx
+PHObject.lto	retail	skins/exp/characters/electrovision/buhlaghhead.dtx
+PHObject.lto	retail	skins/exp/characters/electrovision/chameleonbody.dtx
+PHObject.lto	retail	skins/exp/characters/electrovision/chameleonhead.dtx
+PHObject.lto	retail	skins/exp/characters/electrovision/chameleonwound.dtx
+PHObject.lto	retail	skins/exp/characters/electrovision/tentacle.dtx
+PHObject.lto	retail	skins/exp/characters/heatvision/buhlaghbody.spr
+PHObject.lto	retail	skins/exp/characters/heatvision/buhlaghhead.spr
+PHObject.lto	retail	skins/exp/characters/heatvision/chameleonbody.spr
+PHObject.lto	retail	skins/exp/characters/heatvision/chameleonhead.spr
+PHObject.lto	retail	skins/exp/characters/heatvision/chameleonwound.spr
+PHObject.lto	retail	skins/exp/characters/heatvision/tentacle.spr
+PHObject.lto	retail	skins/exp/characters/navvision/buhlaghbody.dtx
+PHObject.lto	retail	skins/exp/characters/navvision/buhlaghhead.dtx
+PHObject.lto	retail	skins/exp/characters/navvision/chameleonbody.spr
+PHObject.lto	retail	skins/exp/characters/navvision/chameleonhead.spr
+PHObject.lto	retail	skins/exp/characters/navvision/chameleonwound.spr
+PHObject.lto	retail	skins/exp/characters/navvision/tentacle.dtx
+PHObject.lto	retail	skins/exp/characters/tentacle.dtx
+PHObject.lto	retail	skins/exp/props/tenthole.dtx
+PHObject.lto	retail	skins/exp/weapons/turret.dtx
+PHObject.lto	retail	sounds/exp/characters/buhlagh/breathing1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/breathing2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/death1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/death2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/idle1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/idle2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/impact1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/pain1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/pain2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/run.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/sight1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/sight2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/snort1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/snort2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/step1.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/step2.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/step3.wav
+PHObject.lto	retail	sounds/exp/characters/buhlagh/step4.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/attack.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/death.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/idle1.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/pain.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/sight.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/step1.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/step2.wav
+PHObject.lto	retail	sounds/exp/characters/chameleon/step3.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/attack1.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/attack2.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/burrow.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/burrow2.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/death.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/erupt.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/erupt2.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/erupt_scream2.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/erupt_scream5.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/final_death1.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/final_death2.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/pain1.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/pain2.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/rumble1.wav
+PHObject.lto	retail	sounds/exp/characters/tentacle/rumble2.wav
+PHObject.lto	retail	sounds/exp/weapons/marine/turret/loopfire.wav
+PHObject.lto	retail	sounds/exp/weapons/marine/turret/spin.wav
+PHObject.lto	retail	sounds/exp/weapons/marine/turret/startfire.wav
+PHObject.lto	retail	sounds/exp/weapons/marine/turret/stopfire.wav
+PHObject.lto	retail	step_sound
+PHObject.lto	retail	string too long
+PHObject.lto	retail	tripod
+PHObject.lto	retail	weapon
+PHObject.lto	retail	worldtextures/exp/Predator/prock5.dtx

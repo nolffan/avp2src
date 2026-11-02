@@ -22,7 +22,7 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 # never a source), and the project's own header directory tools/mkdeps.py
 # follows
 export RELEASESRC_VARIANTS="AVP2_MODERN AVP2_DEBUG"
-export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final libs"
+export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final primalhunt libs"
 export MKDEPS_PROJECT_INCLUDE=src/avp2src
 
 # Extra flags for every compile and every link, for the debug and modern

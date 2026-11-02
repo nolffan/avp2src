@@ -235,6 +235,13 @@ release unchanged, score it against `PHCShell.dll`/`PHObject.lto` (with
 8966 the codegen of unchanged files should match outright), and work
 outward from what does not.
 
+Started. `src/AVP2/AVP2PH.dsw` and the `_PH` projects (`build/phproject.py`)
+build the release's sources unchanged with cl 8966 and `PRIMAL_HUNT`:
+`PHObject.lto` is then 46.7 % byte-identical and `PHCShell.dll` 26.1 %,
+with 2,302 and 1,794 more functions "near" (the same function, changed:
+Third Law's edits, or one of the objects still 8168's) and 1,109 and 61
+of ours unplaced (code Primal Hunt dropped or rewrote).
+
 ### 12. modern
 
 What the modern build is to have, besides the fixes in `RETAIL_BUGS.md`

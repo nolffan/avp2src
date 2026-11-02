@@ -12,6 +12,7 @@ src/**/[Bb]uilt/
 src/AVP2/*/[Rr]elease/
 src/AVP2/*/[Ff]inal/
 src/AVP2/*/*___Win32_*/
+src/AVP2/*/PrimalHunt/
 src/AVP2/AVP2Serv/server.lib
 src/LT2/lithshared/libs/
 

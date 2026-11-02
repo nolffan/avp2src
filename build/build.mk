@@ -65,8 +65,13 @@ AVP2SRC_RCFLAGS ?=
 # optional until its workspace is here.
 #   src/AVP2/AVP2.dsw   AvP2's game DLLs, their resources and the dedicated
 #                       server (the source release's workspace)
+#   src/AVP2/AVP2PH.dsw Primal Hunt's game DLLs: the same sources, through
+#                       project files of their own (<name>_PH.dsp, first
+#                       made by build/phproject.py) whose Final defines
+#                       PRIMAL_HUNT and builds into PrimalHunt/
 WORKSPACES := \
-    src/AVP2/AVP2.dsw:ClientShellDLL,Object,ClientRes,ServerRes,ServerApp
+    src/AVP2/AVP2.dsw:ClientShellDLL,Object,ClientRes,ServerRes,ServerApp \
+    src/AVP2/AVP2PH.dsw:ClientShellDLL_PH,Object_PH
 
 # ---------------------------------------------------------------------------
 # Wine and the toolchains
@@ -104,6 +109,10 @@ vc_env = WINEPREFIX=$(PFX) WINEPATH='$(call ws,$(1))\BIN' \
     INCLUDE='$(call ws,$(DXSDK))\include;$(call ws,$(1))\INCLUDE;$(call ws,$(1))\MFC\INCLUDE;$(call ws,$(ROOT)/src/avp2src)' \
     LIB='$(call ws,$(DXSDK))\lib;$(call ws,$(1))\LIB;$(call ws,$(1))\MFC\LIB'
 ENV_GAME := $(call vc_env,$(V8966))
+# Primal Hunt's game DLLs are SP5's (cl 12.00.8966) for all but a few
+# objects (progress/COMPILERS.md).
+CL_ClientShellDLL_PH := $(V8966)/BIN/cl.exe
+CL_Object_PH         := $(V8966)/BIN/cl.exe
 CL_ServerApp   := $(V8168)/BIN/cl.exe
 LINK_ServerApp := $(V8168)/BIN/link.exe
 ENV_ServerApp  := $(call vc_env,$(V8168))
