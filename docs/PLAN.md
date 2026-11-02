@@ -41,13 +41,14 @@ Hunt's was. What there is, and what it is good for:
 
 | Source | What it is | For |
 |---|---|---|
-| The AvP2 source release (`../avp2/proj`, "Source Code v1.0.9.6", July 2002, with its EULA) | Monolith's own `AVP2` tree at 1.0.9.6 (`IDS_VERSION "1.0.9.6"`): ClientShellDLL, ObjectDLL, ClientRes, ServerRes, the dedicated server (AVP2Serv), Shared, the workspace `AVP2.dsw` with VC6 projects (Debug, Release, Final, Demo); and `LT2`: the engine SDK headers (`sdk/inc`) and the `lithshared` libraries (ButeMgr, StdLith, CryptMgr, RezMgr, LTGuiMgr, GameSpy, WONAPI, zlib, ...) with source and prebuilt (`lithshared/libs`, cl 8966). No Primal Hunt code in it | AvP2's game DLLs, their resources and the dedicated server, as Monolith built them, and the libraries; the base of Primal Hunt's game DLLs, which are this code carried on. As nolfsrc's `src/game/` is NOLF's release, imported as it is |
+| The AvP2 source release (`../avp2/proj`, "Source Code v1.0.9.6", July 2002, with its EULA) | Monolith's own `AVP2` tree at 1.0.9.6 (`IDS_VERSION "1.0.9.6"`): ClientShellDLL, ObjectDLL, ClientRes, ServerRes, the dedicated server (AVP2Serv), Shared, the workspace `AVP2.dsw` with VC6 projects (Debug, Release, Final, Demo); and `LT2`: the engine SDK headers (`sdk/inc`) and the `lithshared` libraries (ButeMgr, StdLith, CryptMgr, RezMgr, LTGuiMgr, GameSpy, WONAPI, zlib, ...): their headers and prebuilt builds (`lithshared/libs`, cl 8966), and the source of WONAPI and STLport only. No Primal Hunt code in it | AvP2's game DLLs, their resources and the dedicated server, as Monolith built them, and the libraries; the base of Primal Hunt's game DLLs, which are this code carried on. As nolfsrc's `src/game/` is NOLF's release, imported as it is |
 | nolfsrc's engine (`../nolfsrc/src/engine`) | NOLF's engine -- `lithtech.exe`, `server.dll`, `d3d.ren` -- reconstructed to compile to NOLF GOTY's retail bytes (every function written; 77 % of `lithtech.exe`'s code identical, 85 % of `server.dll`'s, 28 % of `d3d.ren`'s) | the engine: Primal Hunt's is the same line two years on. The base for `lithtech.exe`, `server.dll` and `d3d.ren`, and its `clientwin.cpp` already calls `Launch.dll`'s `GetLithTechCommandLine` |
 | nolf2src's and cjacksrc's engines (Jupiter) | the next engine generation, reconstructed | where Talon's code survived into Jupiter: later shapes of the same functions (`cdaudio.dll`'s music driver is Jupiter's `musicdriver.cpp`'s ancestor) |
 | AvP2 1.0.9.6's engine (`rez`'s `avp2-eu-1.0.9.6`) and the 1.0 release's (`avp2-eu`) | the engines between NOLF's and Primal Hunt's | what changed on the way; a second and third witness for any engine function |
 | lithtools' Talon tools (`../lithtools`, `legacy/`) | AvP2's DEdit and ModelEdit, rebuilt to their shipped bytes; the AvP2 tool releases (`rez`'s `avp2-tools`, `-update1`, `-update2`, binaries only; Primal Hunt's disc carries three AvP2 tools installers in `Tools/` too) | the engine-side code the tools share (world, model and texture formats, the preprocessor) |
 | The demo disc (`rez`'s `avp2-demo-usa`, image only) | the single- and multiplayer demo installers (`avp2spdemo.exe`, `avp2mpdemo2.exe`) | the demos' engines and game DLLs: the release's Demo configurations say what they were built from |
-| The GameSpy SDK and WON's API (`lithshared/gamespy`, `lithshared/wonapi`) | in the source release | the `middleware` blocks to place in the game DLLs and the engine |
+| The GameSpy SDK and WON's API (`lithshared/gamespy`, `lithshared/wonapi`) | in the source release: GameSpy's headers, WONAPI's source and project files | the `middleware` blocks to place in the game DLLs and the engine |
+| nolfsrc's and nolf2src's `lithshared` (`../nolfsrc/src/lithshared`, `../nolf2src/src/libs`) | the libraries NOLF's release shipped prebuilt, reconstructed (nolfsrc), and NOLF2's release's own source and VC6 projects for most of them (StdLith, ButeMgr, CryptMgr, RegMgr, MFCStub, zlib, LTGUIMgr, RezMgr) | the libraries AvP2's release ships only prebuilt |
 
 There is no AvP2 or Primal Hunt engine source, PDB or map anywhere that
 could be found (2026-11), nor any Primal Hunt game source.
@@ -134,7 +135,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), both installs in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
 | 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | done (below) |
 | 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolfsrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | |
-| 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
+| 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 (WONAPI from the release's source, the rest from nolfsrc's and nolf2src's) and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
 | 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | |
 | 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | |
@@ -184,10 +185,11 @@ and Bink binaries of `LT2/sdk/win/lib`. The prebuilt `lithshared`
 libraries and `AVP2Serv/server.lib` are in `progress/reference/`, with
 their `SHA256SUMS`. What is whose: `docs/LICENSE_NOTES.md`.
 
-`LT2/lithshared` has the libraries' source, not only headers (NOLF's
-release had none): ButeMgr, CryptMgr, RegMgr, RezMgr, RedMgr (the
-`CRedMgr` of `cdaudio.dll`), StdLith, LTGUIMgr, LithFontMgr, GameSpy,
-WONAPI, STLport, zlib, ...
+`LT2/lithshared` is the libraries' headers -- ButeMgr, CryptMgr, RegMgr,
+RezMgr, RedMgr (the `CRedMgr` of `cdaudio.dll`), StdLith, LTGUIMgr,
+LithFontMgr, GameSpy, zlib, ... -- with the source of only two: WONAPI (198
+files, with its own VC6 projects) and STLport. The rest ship prebuilt
+only, as NOLF's did.
 
 ### 5. ph-game
 

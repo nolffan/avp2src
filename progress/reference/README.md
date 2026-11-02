@@ -6,8 +6,9 @@ the shared "lithshared" libraries the game links -- StdLith, CryptMgr,
 RegMgr, RezMgr, RedMgr, MFCStub, ButeMgr, the GUI and font managers
 (`ltguimgr_LT2`, `LithFontMgr_LT2`), the GameSpy managers, WONAPI, zlib,
 ... -- each in its Release and its Debug build (`cl` 8966,
-`progress/COMPILERS.md`). Unlike NOLF's release, AvP2's ships their source
-too (`src/LT2/lithshared/`). `AVP2/AVP2Serv/server.lib` is the dedicated
+`progress/COMPILERS.md`). As NOLF's release, AvP2's ships most of them as
+binaries and headers only; WONAPI and STLport alone come with source
+(`src/LT2/lithshared/`). `AVP2/AVP2Serv/server.lib` is the dedicated
 server's import library for the engine's `server.dll`, which the release
 kept beside the server's project. `SHA256SUMS` lists every file. They are
 under the release's licences, as `src/AVP2/` is (`docs/LICENSE_NOTES.md`).
