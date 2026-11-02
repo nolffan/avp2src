@@ -134,7 +134,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), both installs in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
 | 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | done (below) |
-| 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolfsrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | |
+| 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (cjacksrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | compiling (below); game directories and variants to do |
 | 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 (WONAPI from the release's source, the rest from nolfsrc's and nolf2src's) and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
 | 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | |
@@ -190,6 +190,40 @@ RezMgr, RedMgr (the `CRedMgr` of `cdaudio.dll`), StdLith, LTGUIMgr,
 LithFontMgr, GameSpy, zlib, ... -- with the source of only two: WONAPI (198
 files, with its own VC6 projects) and STLport. The rest ship prebuilt
 only, as NOLF's did.
+
+### 3. build
+
+`build/build.mk` builds the release's own workspace (`src/AVP2/AVP2.dsw`)
+through `tools/dsp2mk.py`, which expands the project files' `$(LT2_DIR)`
+to `S:\LT2` (`--macro`, `--drive`), as Developer Studio would with the
+release's `SetBuildVars.bat`. `build/compile.sh` builds in
+`out/release-tree/` (without the `AVP2_MODERN`/`AVP2_DEBUG` blocks, as
+cjacksrc's). `make` compiles and links; `build/all.sh` does not yet
+assemble a game directory, and `build/variant.sh` (`make debug`, `make
+modern`) does not exist yet.
+
+- Which configuration: **Final** for the game DLLs (`_FINAL`): none of the
+  diagnostics the release keeps under `#ifndef _FINAL` is in either game's
+  retail `Object.lto`. The resource DLLs and the dedicated server have
+  only a Release configuration.
+- Which tools: cl 8168 for the game DLLs, with msvc-6.00-8966's link
+  (6.00.8447), headers and libraries; 8168's throughout for the dedicated
+  server; rc of msvc-6.00-9782 (`progress/COMPILERS.md`).
+- The prebuilt `lithshared` libraries and `server.lib` are copied from
+  `progress/reference/` to where the project files name them, until they
+  are built here, and left out of our side of the score
+  (`progress/targets.py`, `PREBUILT_LIBS`).
+
+### 4. game
+
+Started. The release as it came, built as above, scores `Object.lto` 89 %,
+`CShell.dll` 62 %, `AVP2Serv.exe` 60 % byte-identical, and every resource
+of `CRes.dll` and `SRes.dll`. Most of `CShell.dll`'s unwritten functions are
+the prebuilt libraries' (not counted as ours). Two of our client's
+functions are in no form in retail's (unplaced): `CWeaponFX::CreateBulletTrail`
+and `OverlayMGR::GetRailMode` -- the release's source is dated July 2002,
+retail 1.0.9.6's `CShell.dll` March 2002, so the release may be a little
+newer than what shipped.
 
 ### 5. ph-game
 

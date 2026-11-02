@@ -39,7 +39,11 @@ Started. Both retail games are installed from their discs (and AvP2's
 patch) by `rez/`, the compilers are in `toolchains/` (`msvc-6.00-8168`,
 `-8966`, `-9044`), the scoreboard scores every retail binary against our
 build, and Monolith's source release is in `src/` (`src/AVP2`, `src/LT2`;
-`docs/LICENSE_NOTES.md` says what is whose). Nothing is built yet.
+`docs/LICENSE_NOTES.md` says what is whose). `make` builds AvP2's game
+DLLs, their resources and the dedicated server from the release as it came
+(with its prebuilt libraries, not counted as ours): already 89 % of
+`Object.lto` and 62 % of `CShell.dll` are byte-identical to retail. The
+engine, Primal Hunt's game and the launchers are to come.
 `docs/PLAN.md` is the plan, package by package.
 
 ## Progress
@@ -66,17 +70,17 @@ those functions make up.
 | `PHCShell.dll` | Primal Hunt's game: client | 0 / 6,158 | 0 / 1,354,160 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 6,158 | 0 |
 | `PHObject.lto` | Primal Hunt's game: server objects | 0 / 10,704 | 0 / 2,372,345 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 10,704 | 0 |
 | `AVP2.exe` | AvP2's launcher | 0 / 351 | 0 / 48,760 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 351 | 0 |
-| `AVP2Serv.exe` | AvP2's dedicated server | 0 / 355 | 0 / 58,956 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 355 | 0 |
-| `CShell.dll` | AvP2's game: client | 0 / 6,852 | 0 / 1,464,293 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 6,852 | 0 |
-| `Object.lto` | AvP2's game: server objects | 0 / 11,189 | 0 / 2,237,430 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 11,189 | 0 |
+| `AVP2Serv.exe` | AvP2's dedicated server | 169 / 332 | 35,598 / 58,956 bytes | `████████████░░░░░░░░` 60.3% | 145 | 0 |
+| `CShell.dll` | AvP2's game: client | 4,297 / 6,716 | 910,896 / 1,464,020 bytes | `████████████░░░░░░░░` 62.2% | 1,617 | 2 |
+| `Object.lto` | AvP2's game: server objects | 7,717 / 10,772 | 1,987,857 / 2,237,283 bytes | `█████████████████░░░` 88.8% | 1,038 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 0 / 8 resources | 0 / 3,322 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 8 | -- |
 | `AVP2XUp.dll` | Primal Hunt's Sierra updater resources, not in the total | 0 / 14 resources | 0 / 585,762 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 14 | -- |
 | `PHCRes.dll` | Primal Hunt's client resources, not in the total | 0 / 295 resources | 0 / 440,287 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 295 | -- |
 | `PHSRes.dll` | Primal Hunt's server resources, not in the total | 0 / 1 resources | 0 / 156 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1 | -- |
 | `AVP2Up.dll` | AvP2's Sierra updater resources, not in the total | 0 / 15 resources | 0 / 207,412 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 15 | -- |
-| `CRes.dll` | AvP2's client resources, not in the total | 0 / 277 resources | 0 / 387,572 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 277 | -- |
-| `SRes.dll` | AvP2's server resources, not in the total | 0 / 1 resources | 0 / 156 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1 | -- |
-| **All** | | **0 / 45,373** | **0 / 9,037,717 bytes** | `░░░░░░░░░░░░░░░░░░░░` **0.0%** | **45,373** | **0** |
+| `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
+| `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
+| **All** | | **12,183 / 44,797** | **2,934,351 / 9,037,297 bytes** | `██████░░░░░░░░░░░░░░` **32.4%** | **29,777** | **2** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

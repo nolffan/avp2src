@@ -78,6 +78,8 @@ pinned from our .map (which names the library of every function) once there
 is one, as nolfsrc did.
 """
 
+import os
+
 REFERENCE = "out/reference"     # build/reference.sh writes it
 OUT = "out/progress"            # each run's functions.csv and summary.json
 DATA = "progress"               # the recorded baseline and the evidence
@@ -95,6 +97,15 @@ SHIPPED_AS = {}
 SHIPPED_ENV = None
 
 DRIVER_OBJS = set()
+
+# The release's prebuilt lithshared libraries (and the dedicated server's
+# import library for server.dll), which our links take from
+# progress/reference/ until each is built from source here
+# (build/build.mk, "The prebuilt libraries"): Monolith's code, left out of
+# our side, so that what they put in our images neither matches nor counts
+# as ours. A library comes off this list when we build it.
+PREBUILT_LIBS = sorted(f for f in os.listdir(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "reference/LT2/lithshared/libs/release"))) + ["server.lib"]
 
 TARGETS = [
     # ---- the engine: Primal Hunt's ---------------------------------------
@@ -186,6 +197,7 @@ TARGETS = [
     dict(label="PHCShell.dll", what="Primal Hunt's game: client", kind="image",
          shipped=REFERENCE + "/PHCShell.dll", stem="PHCShell",
          built="src/AVP2/ClientShellDLL/PrimalHunt/CShell.dll", optional=True,
+         third_party=PREBUILT_LIBS,
          # provisional: libcmt.lib from typinfo.obj (0x101568f6), 342
          # members to mbschr.obj (0x10165774); then WONAPI.lib (Monolith's
          # WON client, lithshared) above the runtime to 0x1019bd50, and 25
@@ -200,6 +212,7 @@ TARGETS = [
     dict(label="PHObject.lto", what="Primal Hunt's game: server objects", kind="image",
          shipped=REFERENCE + "/PHObject.lto", stem="PHObject",
          built="src/AVP2/ObjectDLL/PrimalHunt/Object.lto", optional=True,
+         third_party=PREBUILT_LIBS,
          # provisional: libcmt.lib from rand.obj (0x10255d1b), 292 members
          # to gmtime.obj (0x102635f9); 8,907 bytes of packed code (108
          # functions) from 0x10253a50 below it
@@ -229,6 +242,7 @@ TARGETS = [
     dict(label="AVP2Serv.exe", what="AvP2's dedicated server", kind="image",
          shipped=REFERENCE + "/AVP2Serv.exe", stem="AVP2Serv",
          built="src/AVP2/AVP2Serv/Release/AVP2Serv.exe", optional=True,
+         third_party=PREBUILT_LIBS,
          # MFC linked statically (msvc-6.00-8168's nafxcw.lib). Provisional:
          # nafxcw.lib from wincore.obj (0x40ff04) to 0x417f46, libcmt.lib
          # from 0x417f50 to 0x422e3f, nafxcw.lib again from 0x428492
@@ -236,14 +250,16 @@ TARGETS = [
     # ---- AvP2 1.0.9.6: the game ----------------------------------------
     dict(label="CShell.dll", what="AvP2's game: client", kind="image",
          shipped=REFERENCE + "/CShell.dll", stem="CShell",
-         built="src/AVP2/ClientShellDLL/Release/CShell.dll", optional=True,
+         built="src/AVP2/ClientShellDLL/final/CShell.dll", optional=True,
+         third_party=PREBUILT_LIBS,
          # provisional: 14 import thunks from 0x10172ae6, then libcmt.lib
          # from typinfo.obj (0x10172b3a), 364 members to initcon.obj; 4.9
          # KB of packed code from 0x101717a0 below the thunks
          app=[(0x10001000, 0x10172ae6)]),
     dict(label="Object.lto", what="AvP2's game: server objects", kind="image",
          shipped=REFERENCE + "/Object.lto", stem="Object",
-         built="src/AVP2/ObjectDLL/Release/Object.lto", optional=True,
+         built="src/AVP2/ObjectDLL/final/Object.lto", optional=True,
+         third_party=PREBUILT_LIBS,
          # provisional: libcmt.lib from typinfo.obj (0x10235bb9), 285
          # members; 2.8 KB of packed code from 0x102350f0 below it
          app=[(0x10001000, 0x10235bb9)]),

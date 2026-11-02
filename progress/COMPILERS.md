@@ -45,10 +45,10 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
 | `Launch.dll` | 1999-08-16 | C++ 8168 x10 | NOLF's launcher DLL, a Debug build (`libcmtd.lib`: C 8168 x85); one object without a `@comp.id` | -- |
 | `AVP2.exe` | 2001-10-15 | **9044** x18, 8966 x1 | MFC statically (`nafxcw.lib`, C++ 8569 x55, SP5's MFC), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id` | -- |
 | `AVP2Up.dll` | 2001-08-17 | 8966 x2 | resources and `libcmt.lib` | -- |
-| `AVP2Serv.exe` | 2002-02-07 | 8168 x136 | MFC statically (8168's), `libcmt.lib` (C 8168 x169); 57 objects without a `@comp.id`; import libraries of `lib` 5.12.8022 as well as 8034 | -- |
-| `CShell.dll` | 2002-03-01 | **8168** x142, 8966 x114 | `libcmt.lib` (C 8047 x174), C 8168 x7 | -- |
-| `Object.lto` | 2002-02-28 | **8168** x245, 8966 x12 | `libcmt.lib` (C 8047 x151), C 8168 x1 | -- |
-| `CRes.dll`, `SRes.dll` | 2002-04-17 | **9044** x1 | resources and `libcmt.lib` | -- |
+| `AVP2Serv.exe` | 2002-02-07 | 8168 x136 | MFC statically (8168's), `libcmt.lib` (C 8168 x169); 57 objects without a `@comp.id`; import libraries of `lib` 5.12.8022 as well as 8034 | cl, link and MFC 8168, Release (60 % identical as the release has it) |
+| `CShell.dll` | 2002-03-01 | **8168** x142, 8966 x114 | `libcmt.lib` (C 8047 x174), C 8168 x7 | cl 8168; link 6.00.8447, headers and `libcmt.lib` of msvc-6.00-8966; Final (62 % identical as the release has it) |
+| `Object.lto` | 2002-02-28 | **8168** x245, 8966 x12 | `libcmt.lib` (C 8047 x151), C 8168 x1 | as `CShell.dll` (89 % identical as the release has it) |
+| `CRes.dll`, `SRes.dll` | 2002-04-17 | **9044** x1 | resources and `libcmt.lib` | as `CShell.dll`, rc of msvc-6.00-9782 (every resource identical) |
 
 ## Notes
 

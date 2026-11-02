@@ -4,8 +4,16 @@ out/
 # build/build.mk's Wine prefix, generated rules and header dependencies
 /.wine/
 /.build/
-# the project files put every output in a built/ directory
+# the project files put every output in a built/ directory (the engine's,
+# to come), or, AvP2's own, in Release/ and final/ beside the source and
+# <project>___Win32_Final/ for the objects; and the prebuilt libraries
+# build/build.mk copies where the project files name them
 src/**/[Bb]uilt/
+src/AVP2/*/[Rr]elease/
+src/AVP2/*/[Ff]inal/
+src/AVP2/*/*___Win32_*/
+src/AVP2/AVP2Serv/server.lib
+src/LT2/lithshared/libs/
 
 __pycache__/
 *.log

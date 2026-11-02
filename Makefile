@@ -68,7 +68,7 @@ debug modern modern-debug: check-toolchain check-build retail
 # The build itself is docs/PLAN.md's package 2: until it lands, say so
 # rather than fail inside the container.
 check-build:
-	@[ -f build/all.sh ] || { echo "error: there is no build yet (build/all.sh): docs/PLAN.md, package 2. make reference and make progress work already" >&2; exit 1; }
+	@[ -f build/all.sh ] || { echo "error: there is no build yet (build/all.sh): docs/PLAN.md, package 3" >&2; exit 1; }
 
 # IMAGE_BUILD=0: use $(IMAGE) as it is (CI builds it with a layer cache first).
 IMAGE_BUILD ?= 1
