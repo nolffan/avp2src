@@ -282,7 +282,9 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   game calls both shifted functions (CharacterMovement.cpp, AINode.cpp,
   ...): so **AvP2's 1.0.9.6 game DLLs cannot run on Primal Hunt's engine
   as shipped**, and package 10 is answered -- AvP2 1.0.9.6's engine
-  comes back as a target.
+  comes back as a target. Primal Hunt's own game DLLs use the 22-slot
+  interface: PHCShell.dll 0x101050f0 calls `GetPolySurfaceFlags` through
+  `[edx+0x54]`, slot 21, and matches once built with it.
 - Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
   near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
   near).

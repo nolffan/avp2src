@@ -24,6 +24,9 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 export RELEASESRC_VARIANTS="AVP2_MODERN AVP2_DEBUG"
 export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final primalhunt libs"
 export MKDEPS_PROJECT_INCLUDE=src/avp2src
+# ... and where the drives the compilers see are (build/build.mk: src/ is S:,
+# toolchains/ T:), for the /I directories the project files name on S:
+export MKDEPS_DRIVES="s=src t=toolchains"
 
 # Extra flags for every compile and every link, for the debug and modern
 # builds (build/variant.sh sets them). Empty otherwise -- and the release
