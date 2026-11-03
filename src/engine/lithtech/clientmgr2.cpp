@@ -47,7 +47,6 @@
 // *********************************************************************** //
 
 #include <string.h>
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 
 #include "ltbasedefs.h"
 #include "ltlink.h"
@@ -1143,15 +1142,15 @@ struct SceneDescQ5
 class CCameraQ5
 {
 public:
-	uint8        m_pad_00[AVP2_OBJ(0x9c)];
+	uint8        m_pad_00[0x9c];
 	LTRotation   m_Rotation;                       // 0x09c
-	uint8        m_pad_ac[AVP2_OBJ(0x18c) - AVP2_OBJ(0xac)];
-	LTVector     m_Pos;                            // 0x18c
-	uint8        m_pad_198[AVP2_OBJ(0x1a8) - AVP2_OBJ(0x198)];
-	LTRect       m_Rect;                           // 0x1a8
-	float        m_xFov, m_yFov;                   // 0x1b8
-	LTBOOL       m_bFullScreen;                    // 0x1c0
-	LTVector     m_LightAdd;                       // 0x1c4
+	uint8        m_pad_ac[0x194 - 0xac];
+	LTVector     m_Pos;                            // 0x194
+	uint8        m_pad_1a0[0x1b0 - 0x1a0];
+	LTRect       m_Rect;                           // 0x1b0
+	float        m_xFov, m_yFov;                   // 0x1c0
+	LTBOOL       m_bFullScreen;                    // 0x1c8
+	LTVector     m_LightAdd;                       // 0x1cc
 };
 
 // The sub-object at CClientMgr+0x158c (CClientMgrTail's m_Sub158c), whose

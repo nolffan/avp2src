@@ -162,7 +162,7 @@ public:
 	virtual void   SetupModelWalker(class ModelWalker* pOut);   // 0x10024fda
 	virtual void   SetupModelWalkerRefsOnly(class ModelWalker* pOut); // 0x10025035
 	virtual LTBOOL FindTracker(LTAnimTracker* pTracker,
-	                               LTAnimTracker*** pppLink); // 0x10025074
+	                               LTAnimTracker*** pppLink); // 0x100250d0
 	virtual float  GetScaledRadius();                             // 0x10024f4b
 
 	// Not in the vftable: called directly.
@@ -170,29 +170,27 @@ public:
 	char*  GetFilename();                    // 0x100250b7
 
 public:
-	void*             m_pUnknown1a8;         // 0x1a8  not touched here
-	void*             m_pUnknown1ac;         // 0x1ac
-	void*             m_pUnknown1b0;         // 0x1b0
-	void*             m_pHookFn;             // 0x1b4
-	void*             m_pUnknown1b8;         // 0x1b8
-	void*             m_pUnknown1bc;         // 0x1bc
-	// AVP2: twelve bytes more before the tracker in AvP2's engines: m_pHookFn
-	// is NOLF's offset plus eight (LTObject's own growth), the tracker's
-	// fields NOLF's plus 0x14. Provisional: where in 0x1b8..0x1c0 they go
-	// is still to be read.
-	uint32            m_AvP2Unknown1c0[3];
-	LTAnimTracker m_AnimTracker;         // 0x1c0  (AvP2's SDK's tracker, 0x50 bytes)
-	LTAnimTracker* m_pTrackerList;       // 0x1f8
-	// AVP2: 0x30 bytes more after the tracker list: the next member is at
-	// NOLF's offset plus 0x44 in AvP2's engines.
-	uint8             m_AvP2Unknown1fc[0x30];
-	uint32            m_Unknown1fc;          // 0x1fc
-	uint32            m_Unknown200;          // 0x200
-	uint32            m_HiddenPieces;        // 0x204
-	void*             m_pUnknown208;         // 0x208
-	void*             m_pUnknown20c;         // 0x20c
-	uint8             m_pad_210[0x244 - 0x210];
-	float             m_f244;                // 0x244  starts at minus one
+	void*             m_pUnknown1a8;         // 0x1b0  not touched here
+	void*             m_pUnknown1ac;         // 0x1b4
+	void*             m_pUnknown1b0;         // 0x1b8
+	void*             m_pHookFn;             // 0x1bc
+	void*             m_pUnknown1b8;         // 0x1c0
+	void*             m_pUnknown1bc;         // 0x1c4
+	// AVP2: twelve bytes NOLF's engine had not before the tracker (the
+	// tracker's fields are at NOLF's offsets plus 0x14, m_pHookFn's plus
+	// eight). Provisional: where in 0x1c0..0x1d4 they go is still to be read.
+	uint32            m_Unknown1c8[3];       // 0x1c8
+	LTAnimTracker m_AnimTracker;         // 0x1d4  (AvP2's SDK's tracker, 0x50 bytes)
+	LTAnimTracker* m_pTrackerList;       // 0x224
+	// AVP2: 0x30 bytes NOLF's engine had not after the tracker list.
+	uint8             m_Unknown228[0x30];    // 0x228
+	uint32            m_Unknown1fc;          // 0x258
+	uint32            m_Unknown200;          // 0x25c
+	uint32            m_HiddenPieces;        // 0x260
+	void*             m_pUnknown208;         // 0x264
+	void*             m_pUnknown20c;         // 0x268
+	uint8             m_pad_26c[0x2a0 - 0x26c];
+	float             m_f244;                // 0x2a0  starts at minus one
 };
 
 // OT_PARTICLESYSTEM, 0x25c bytes. Two of its pointers start at the address
@@ -213,39 +211,39 @@ public:
 	virtual ~CObjParticleSystem();          // 0x10025349
 
 public:
-	uint8  m_Data1a8[0x1c8 - 0x1a8];         // 0x1a8
-	void*  m_p1c8;                           // 0x1c8  -> m_Data1a8
-	uint8  m_pad_1cc[0x1e0 - 0x1cc];
-	void*  m_p1e0;                           // 0x1e0  -> m_Data1a8
-	void*  m_p1e4;                           // 0x1e4  -> pManager + 0x14
-	uint32 m_u1e8;                           // 0x1e8
-	uint8  m_u1ec;                           // 0x1ec
-	uint8  m_u1ed;                           // 0x1ed
-	uint8  m_u1ee;                           // 0x1ee
-	uint8  m_pad_1ef[0x1f0 - 0x1ef];
-	uint32 m_u1f0;                           // 0x1f0
-	uint8  m_pad_1f4[0x208 - 0x1f4];
-	float  m_f208;                           // 0x208
-	float  m_f20c;                           // 0x20c
-	float  m_f210;                           // 0x210
-	float  m_f214;                           // 0x214  starts at one
-	float  m_f218;                           // 0x218
-	float  m_f21c;                           // 0x21c
-	float  m_f220;                           // 0x220
-	float  m_f224;                           // 0x224  starts at one
-	uint32 m_u228;                           // 0x228
-	uint32 m_u22c;                           // 0x22c
+	uint8  m_Data1a8[0x1c8 - 0x1a8];         // 0x1b0
+	void*  m_p1c8;                           // 0x1d0  -> m_Data1a8
+	uint8  m_pad_1d4[0x1e8 - 0x1d4];
+	void*  m_p1e0;                           // 0x1e8  -> m_Data1a8
+	void*  m_p1e4;                           // 0x1ec  -> pManager + 0x14
+	uint32 m_u1e8;                           // 0x1f0
+	uint8  m_u1ec;                           // 0x1f4
+	uint8  m_u1ed;                           // 0x1f5
+	uint8  m_u1ee;                           // 0x1f6
+	uint8  m_pad_1f7[0x1f8 - 0x1f7];
+	uint32 m_u1f0;                           // 0x1f8
+	uint8  m_pad_1fc[0x210 - 0x1fc];
+	float  m_f208;                           // 0x210
+	float  m_f20c;                           // 0x214
+	float  m_f210;                           // 0x218
+	float  m_f214;                           // 0x21c  starts at one
+	float  m_f218;                           // 0x220
+	float  m_f21c;                           // 0x224
+	float  m_f220;                           // 0x228
+	float  m_f224;                           // 0x22c  starts at one
+	uint32 m_u228;                           // 0x230
+	uint32 m_u22c;                           // 0x234
 	// 0x230 and 0x23c are two LTVectors, not six floats: the destructor
 	// resets them through LTVector::Init, whose inlined `this` is the `lea`
 	// the shipped code forms before the three stores. They are a bounding
 	// box -- reset to +1e37 and -1e37, an empty one.
-	LTVector m_vBoxMin;                      // 0x230
-	LTVector m_vBoxMax;                      // 0x23c
-	float  m_f248;                           // 0x248  starts at -500
-	float  m_f24c;                           // 0x24c  starts at 300
-	int    m_n250;                           // 0x250  starts at -1
-	int    m_n254;                           // 0x254  starts at -1
-	uint32 m_u258;                           // 0x258
+	LTVector m_vBoxMin;                      // 0x238
+	LTVector m_vBoxMax;                      // 0x244
+	float  m_f248;                           // 0x250  starts at -500
+	float  m_f24c;                           // 0x254  starts at 300
+	int    m_n250;                           // 0x258  starts at -1
+	int    m_n254;                           // 0x25c  starts at -1
+	uint32 m_u258;                           // 0x260
 };
 
 // OT_POLYGRID, 0x11f8 bytes — nearly all of which is the grid itself and
@@ -266,21 +264,21 @@ public:
 	virtual float GetBoundingRadius();       // 0x10025461
 
 public:
-	void*  m_pUnknown1a8;                    // 0x1a8
-	void*  m_pUnknown1ac;                    // 0x1ac
-	void*  m_pUnknown1b0;                    // 0x1b0
-	uint8  m_pad_1b4[0x1c8 - 0x1b4];
-	uint32 m_Unknown1c8;                     // 0x1c8
-	float  m_f1cc;                           // 0x1cc
-	float  m_f1d0;                           // 0x1d0
-	float  m_f1d4;                           // 0x1d4  starts at one
-	float  m_f1d8;                           // 0x1d8  starts at one
-	void*  m_pUnknown1dc;                    // 0x1dc
-	void*  m_pUnknown1e0;                    // 0x1e0
-	LTLink m_Link1e4;                        // 0x1e4  a tied-off head
-	uint32 m_Unknown1f0;                     // 0x1f0
-	uint32 m_Unknown1f4;                     // 0x1f4
-	uint8  m_pad_1f8[0x11f8 - 0x1f8];
+	void*  m_pUnknown1a8;                    // 0x1b0
+	void*  m_pUnknown1ac;                    // 0x1b4
+	void*  m_pUnknown1b0;                    // 0x1b8
+	uint8  m_pad_1bc[0x1d0 - 0x1bc];
+	uint32 m_Unknown1c8;                     // 0x1d0
+	float  m_f1cc;                           // 0x1d4
+	float  m_f1d0;                           // 0x1d8
+	float  m_f1d4;                           // 0x1dc  starts at one
+	float  m_f1d8;                           // 0x1e0  starts at one
+	void*  m_pUnknown1dc;                    // 0x1e4
+	void*  m_pUnknown1e0;                    // 0x1e8
+	LTLink m_Link1e4;                        // 0x1ec  a tied-off head
+	uint32 m_Unknown1f0;                     // 0x1f8
+	uint32 m_Unknown1f4;                     // 0x1fc
+	uint8  m_pad_200[0x1200 - 0x200];
 };
 
 class CObjSprite : public CObjBase
@@ -296,9 +294,9 @@ public:
 	virtual ~CObjSprite();
 
 public:
-	uint8              m_Data1a8[0x1bc - 0x1a8];   // 0x1a8
-	int                m_n1bc;                     // 0x1bc  starts at -1
-	SpriteControl      m_Control;                  // 0x1c0
+	uint8              m_Data1a8[0x1bc - 0x1a8];   // 0x1b0
+	int                m_n1bc;                     // 0x1c4  starts at -1
+	SpriteControl      m_Control;                  // 0x1c8
 };
 
 // Two more banks over things that are not object types at all — the same

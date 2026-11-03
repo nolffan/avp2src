@@ -2,7 +2,6 @@
 // every object's data, and the two ends of the block itself (reconstruction).
 // Build /O1.
 #include <string.h>
-#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include "de_error.h"
 #include "saveio.h"
@@ -247,30 +246,30 @@ public:
 class SavServerMgr
 {
 public:
-	uint8            m_pad_000[AVP2_MGR(0x330)];
+	uint8            m_pad_000[0x330];
 	SavFileTreeRec** m_pFileTrees;           // 0x330
 	uint32           m_nFileTrees;           // 0x334
-	uint8            m_pad_338[AVP2_MGR(0x390) - AVP2_MGR(0x338)];
+	uint8            m_pad_338[0x390 - 0x338];
 	uint8            m_Unknown390[4];        // 0x390  the object manager
-	uint8            m_pad_394[AVP2_MGR(0x6b8) - AVP2_MGR(0x394)];
+	uint8            m_pad_394[0xac4 - 0x394];
 	// servermgr.h's types: five of the seven are floats and the arithmetic
 	// at the end of the restore only works out if 0x6b8 and 0x6c0 are.
-	float            m_Unknown6b8;           // 0x6b8
-	float            m_Unknown6bc;           // 0x6bc
-	float            m_Unknown6c0;           // 0x6c0
-	uint32           m_Unknown6c4;           // 0x6c4
-	float            m_Unknown6c8;           // 0x6c8
-	float            m_Time;                 // 0x6cc
-	int              m_Unknown6d0;           // 0x6d0
-	uint8            m_pad_6d4[AVP2_MGR(0x804) - AVP2_MGR(0x6d4)];
+	float            m_Unknown6b8;           // 0xac4
+	float            m_Unknown6bc;           // 0xac8
+	float            m_Unknown6c0;           // 0xacc
+	uint32           m_Unknown6c4;           // 0xad0
+	float            m_Unknown6c8;           // 0xad4
+	float            m_Time;                 // 0xad8
+	int              m_Unknown6d0;           // 0xadc
+	uint8            m_pad_ae0[0xc14 - 0xae0];
 	// What the loader resolves saved class names against; the class-manager
 	// list head two dwords further on is a different thing and the save
 	// filter uses that one (names ours).
-	void*            m_pClassMgr;            // 0x804
+	void*            m_pClassMgr;            // 0xc14
 	uint8            m_pad_808[4];
-	void*            m_ClassMgrFirst;        // 0x80c
-	uint8            m_pad_810[AVP2_MGR(0xa74) - AVP2_MGR(0x810)];
-	SavConsoleState  m_ConsoleState;         // 0xa74
+	void*            m_ClassMgrFirst;        // 0xc1c
+	uint8            m_pad_c20[0xe84 - 0xc20];
+	SavConsoleState  m_ConsoleState;         // 0xe84
 };
 
 // The object table goes through the global allocation operators, not

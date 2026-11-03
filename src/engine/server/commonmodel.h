@@ -1150,12 +1150,12 @@ class ModelInstance : public LTObject
 {
 public:
 	// (LTObject runs to 0x1b4 now that m_pWMIface is named)
-	ModelInstanceHookFn m_HookFn;            // 0x1b4
-	uint8               m_pad_1b8[0x1c0 - 0x1b8];
-	LTAnimTracker       m_AnimTracker;       // 0x1c0
-	LTAnimTracker*      m_pTrackerList;      // 0x1f8  extra trackers, singly linked
-	uint8               m_pad_1fc[0x204 - 0x1fc];
-	uint32              m_HiddenPieces;      // 0x204  one bit per piece
+	ModelInstanceHookFn m_HookFn;            // 0x1bc
+	uint8               m_pad_1c0[0x1c8 - 0x1c0];
+	LTAnimTracker       m_AnimTracker;       // 0x1c8
+	LTAnimTracker*      m_pTrackerList;      // 0x200  extra trackers, singly linked
+	uint8               m_pad_204[0x20c - 0x204];
+	uint32              m_HiddenPieces;      // 0x20c  one bit per piece
 };
 
 // The engine's own ILTModel vtable carries one slot the public SDK header

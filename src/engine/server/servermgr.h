@@ -1741,21 +1741,19 @@ public:
 	// other nine are initialised somewhere else, or the region holds individual
 	// members that 0x10034fcb happens to be able to stride over. Until one of
 	// those is settled the two known links stay as they are.
-	// AVP2: four bytes more before the object lists than NOLF's: AvP2's
-	// engines (1.0.9.6's and Primal Hunt's alike) reach m_Objects at
-	// +0x5c8/+0x5cc where NOLF's reach +0x5c4/+0x5c8, and the lists still end
-	// at m_bWorldLoaded. Every offset below is NOLF's plus four, until
-	// m_hWorldFile.
-	uint8              m_pad_394[0x5c4 - 0x394 + 4];
-	LTLink             m_Objects;             // 0x5c4  data links to LTObject;
+	// AVP2: the object lists run 0x5b4 .. 0x664, four bytes later than
+	// NOLF's: AvP2's engines (1.0.9.6's and Primal Hunt's alike) reach
+	// m_Objects at +0x5c8/+0x5cc.
+	uint8              m_pad_394[0x5c8 - 0x394];
+	LTLink             m_Objects;             // 0x5c8  data links to LTObject;
 	                                          //        array entry 1, if it is one
-	uint8              m_pad_5d0[0x5d4 - 0x5d0];
-	LTLink             m_WorldModelObjects;   // 0x5d4  data links to the world-model
+	uint8              m_pad_5d4[0x5d8 - 0x5d4];
+	LTLink             m_WorldModelObjects;   // 0x5d8  data links to the world-model
 	                                          //        LTObjects; GetHPolyObject walks it
 	                                          //        matching m_pWorldBsp to the 0x330
 	                                          //        record's +0x04 pointer.
 	                                          //        Array entry 2, if it is one
-	uint8              m_pad_5e0[0x660 - 0x5e0];
+	uint8              m_pad_5e4[0x664 - 0x5e4];
 
 	// Kept as accessors so the call sites read the same either way, and so
 	// that settling the array question later touches only these two lines.
@@ -1766,99 +1764,96 @@ public:
 	// LTLists from 0x5b0 -- without declaring the array that would cost the
 	// constructor its byte identity. Cast rather than member so the layout
 	// above is untouched.
-	LTList*            ObjectLists()         { return (LTList*)((uint8*)this + 0x5b0 + 4); }  // AVP2: +4
+	LTList*            ObjectLists()         { return (LTList*)((uint8*)this + 0x5b4); }
 
-	int                m_bWorldLoaded;        // 0x660  set by LoadWorld
-	void*              m_hWorldFile;          // 0x664  identifier of the loaded world file
-	// AVP2: 0x408 bytes AvP2's engines have here and NOLF's had not:
-	// m_ForceControl is at +0xa74 in both of AvP2's server.dlls, where it was
-	// at +0x668 (SPhysicsLT's accessors), and every member from here to
-	// m_NetMgr is NOLF's offset plus 0x40c. What it holds is to be read.
-	uint8              m_AvP2Unknown668[0x408];
-	GlobalForceControl m_ForceControl;       // 0x668  SPhysicsLT's "world" force state:
+	int                m_bWorldLoaded;        // 0x664  set by LoadWorld
+	void*              m_hWorldFile;          // 0x668  identifier of the loaded world file
+	// AVP2: 0x408 bytes NOLF's engine had not: m_ForceControl is at +0xa74
+	// in both of AvP2's server.dlls (SPhysicsLT's accessors). What they hold
+	// is still to be read.
+	uint8              m_Unknown66c[0x408];  // 0x66c
+	GlobalForceControl m_ForceControl;       // 0xa74  SPhysicsLT's "world" force state:
 	                                         //        its m_pWorld points at this manager
 	// The record ends at 0x6a8: GlobalForceControl's frame-move answer at its
 	// own +0x34 is the manager's 0x69c-0x6a7, so nothing is left over.
-	CUnknown6A8Obj*    m_pUnknown6a8;        // 0x6a8  deleted raw by Term
-	CollisionInfo*     m_pCollisionInfo;     // 0x6ac  the last collision; the flat
+	CUnknown6A8Obj*    m_pUnknown6a8;        // 0xab4  deleted raw by Term
+	CollisionInfo*     m_pCollisionInfo;     // 0xab8  the last collision; the flat
 	                                         //        GetLastCollision copies it out
-	float              m_FrameTime;          // 0x6b0
-	float              m_UpdatesPerSec;      // 0x6b4  reset from g_UpdatesPerSec
-	float              m_Unknown6b8;         // 0x6b8
-	float              m_Unknown6bc;         // 0x6bc  world start time
-	float              m_Unknown6c0;         // 0x6c0
-	uint32             m_Unknown6c4;         // 0x6c4  fixed-step updates run
-	float              m_Unknown6c8;         // 0x6c8
-	float              m_Time;               // 0x6cc
-	int                m_Unknown6d0;         // 0x6d0  updates this world
-	float              m_Unknown6d4;         // 0x6d4
-	float              m_Unknown6d8;         // 0x6d8  last update time
-	uint32             m_Unknown6dc;         // 0x6dc
+	float              m_FrameTime;          // 0xabc
+	float              m_UpdatesPerSec;      // 0xac0  reset from g_UpdatesPerSec
+	float              m_Unknown6b8;         // 0xac4
+	float              m_Unknown6bc;         // 0xac8  world start time
+	float              m_Unknown6c0;         // 0xacc
+	uint32             m_Unknown6c4;         // 0xad0  fixed-step updates run
+	float              m_Unknown6c8;         // 0xad4
+	float              m_Time;               // 0xad8
+	int                m_Unknown6d0;         // 0xadc  updates this world
+	float              m_Unknown6d4;         // 0xae0
+	float              m_Unknown6d8;         // 0xae4  last update time
+	uint32             m_Unknown6dc;         // 0xae8
 
 	// 0x6e0-0x7e3: the whole network manager. What used to be carved here as
 	// direct CServerMgr fields (the driver array at 0x720, m_pSelf794, the
 	// bandwidth pair at 0x7c0, the app guid at 0x7d0, the main driver at
 	// 0x7e0) are CNetMgr members reached through it.
-	CNetMgr            m_NetMgr;             // 0x6e0
-	// AVP2: four bytes more after the net manager: its last dword (+0x7e0)
-	// is NOLF's plus 0x40c in AvP2's engines, m_ClientList (+0x7e4) NOLF's
-	// plus 0x410, and so is every member after it, to the end.
-	uint32             m_AvP2Unknown7e4;
-	LTList             m_ClientList;         // 0x7e4  data links to Client
-	uint32             m_Unknown7f4;         // 0x7f4
-	uint32             m_Unknown7f8;         // 0x7f8
-	uint32             m_Unknown7fc;         // 0x7fc  bytes queued this frame;
+	CNetMgr            m_NetMgr;             // 0xaec
+	// AVP2: a dword NOLF's engine had not, after the net manager.
+	uint32             m_Unknownbf0;         // 0xbf0
+	LTList             m_ClientList;         // 0xbf4  data links to Client
+	uint32             m_Unknown7f4;         // 0xc04
+	uint32             m_Unknown7f8;         // 0xc08
+	uint32             m_Unknown7fc;         // 0xc0c  bytes queued this frame;
 	                                         //        zeroed by the ctor and each flush
-	uint32             m_Unknown800;         // 0x800  bytes dropped this frame;
+	uint32             m_Unknown800;         // 0xc10  bytes dropped this frame;
 	                                         //        zeroed by the ctor and each flush
-	CMessageObjectHelper* m_Unknown804;          // 0x804  seeded into every new message; deleted raw by Term
-	CUnknown808Obj*    m_pUnknown808;        // 0x808  Released by Term
+	CMessageObjectHelper* m_Unknown804;          // 0xc14  seeded into every new message; deleted raw by Term
+	CUnknown808Obj*    m_pUnknown808;        // 0xc18  Released by Term
 	// 0x80c-0x83b: the class manager, which owns the shell pointer, the
 	// per-class records, the class hash and this module's slot.
-	CClassMgr          m_ClassMgr;           // 0x80c
-	LTLink             m_Link83c;            // 0x83c  the queued-object list; retied per world
-	StructBank         m_Bank848;            // 0x848
-	StructBank         m_Bank864;            // 0x864
-	StructBank         m_PropBank;          // 0x880  0xc0-byte ObjectProp records
-	StructBank         m_Bank89C;            // 0x89c
-	uint32             m_Unknown8b8;         // 0x8b8  = 200 at Init
-	uint32             m_Unknown8bc;         // 0x8bc  count for the list below
-	void*              m_hHash8c0;           // 0x8c0  freed like the model hash
-	LTLink             m_Link8c4;            // 0x8c4  drained onto g_FreeLinks by Term
-	LTLink             m_Link8d0;            // 0x8d0
-	LTList             m_List8dc;            // 0x8dc  every live object, threaded
+	CClassMgr          m_ClassMgr;           // 0xc1c
+	LTLink             m_Link83c;            // 0xc4c  the queued-object list; retied per world
+	StructBank         m_Bank848;            // 0xc58
+	StructBank         m_Bank864;            // 0xc74
+	StructBank         m_PropBank;          // 0xc90  0xc0-byte ObjectProp records
+	StructBank         m_Bank89C;            // 0xcac
+	uint32             m_Unknown8b8;         // 0xcc8  = 200 at Init
+	uint32             m_Unknown8bc;         // 0xccc  count for the list below
+	void*              m_hHash8c0;           // 0xcd0  freed like the model hash
+	LTLink             m_Link8c4;            // 0xcd4  drained onto g_FreeLinks by Term
+	LTLink             m_Link8d0;            // 0xce0
+	LTList             m_List8dc;            // 0xcec  every live object, threaded
 	                                         //        through SObjData::m_StateLink;
 	                                         //        inactive ones live at the tail
-	LTList             m_List8ec;            // 0x8ec
+	LTList             m_List8ec;            // 0xcfc
 	// 0x8fc-0x90f: the object map, whose grow-by is what Init sets to 100.
-	CUnknown8FC        m_Unknown8fc;         // 0x8fc
-	LTObject*          m_pChangedObjects;    // 0x910  intrusive list through SObjData
-	SoundInstance*     m_pChangedSounds;     // 0x914  linked through m_pNextChanged
-	void*              m_hModelHash;          // 0x918  one entry per model reference
-	void*              m_Unknown91c;         // 0x91c  dfree'd by Term
-	uint32             m_Unknown920;         // 0x920
-	uint32             m_Unknown924;         // 0x924
-	CUnknown928Obj*    m_pUnknown928;        // 0x928  deleted through slot 71
-	SkyDef             m_SkyDef;             // 0x92c  the SDK sky box: Init sets
+	CUnknown8FC        m_Unknown8fc;         // 0xd0c
+	LTObject*          m_pChangedObjects;    // 0xd20  intrusive list through SObjData
+	SoundInstance*     m_pChangedSounds;     // 0xd24  linked through m_pNextChanged
+	void*              m_hModelHash;          // 0xd28  one entry per model reference
+	void*              m_Unknown91c;         // 0xd2c  dfree'd by Term
+	uint32             m_Unknown920;         // 0xd30
+	uint32             m_Unknown924;         // 0xd34
+	CUnknown928Obj*    m_pUnknown928;        // 0xd38  deleted through slot 71
+	SkyDef             m_SkyDef;             // 0xd3c  the SDK sky box: Init sets
 	                                         //        (-10,-10,-10)/(+10,+10,+10),
 	                                         //        view box zeroed
-	uint16             m_SkyObjects[30];     // 0x95c  object ids; 0xffff = free slot
+	uint16             m_SkyObjects[30];     // 0xd6c  object ids; 0xffff = free slot
 	                                         //        (memset to 0xff per world)
-	HOBJECT            m_hGlobalLightObject; // 0x998  Get/SetGlobalLightObject
-	StructBank         m_ObjectListBank;    // 0x99c  8-byte structs: ObjectList
-	StructBank         m_ObjectLinkBank;    // 0x9b8  8-byte structs: ObjectLink
-	StructBank         m_Bank9D4;            // 0x9d4  runs flush against the message bank
-	CMessageBank       m_MessageBank;        // 0x9f0
-	CUnknownA14        m_UnknownA14;         // 0xa14
-	CFileMgr           m_FileMgr;            // 0xa2c
-	class ObjectProp*  m_pCurProps;          // 0xa68  the property list of the
+	HOBJECT            m_hGlobalLightObject; // 0xda8  Get/SetGlobalLightObject
+	StructBank         m_ObjectListBank;    // 0xdac  8-byte structs: ObjectList
+	StructBank         m_ObjectLinkBank;    // 0xdc8  8-byte structs: ObjectLink
+	StructBank         m_Bank9D4;            // 0xde4  runs flush against the message bank
+	CMessageBank       m_MessageBank;        // 0xe00
+	CUnknownA14        m_UnknownA14;         // 0xe24
+	CFileMgr           m_FileMgr;            // 0xe3c
+	class ObjectProp*  m_pCurProps;          // 0xe78  the property list of the
 	                                         //        object being created
-	void*              m_pGameInfo;          // 0xa6c  dalloc'd copy
-	uint32             m_GameInfoLen;        // 0xa70
-	ConsoleState       m_ConsoleState;       // 0xa74
-	ServerAppHandler*  m_pAppHandler;        // 0xac0
-	CServerThread      m_Thread;             // 0xac4
-	class Model*       m_pPlaceholderModel;  // 0xb28  the object's last member;
+	void*              m_pGameInfo;          // 0xe7c  dalloc'd copy
+	uint32             m_GameInfoLen;        // 0xe80
+	ConsoleState       m_ConsoleState;       // 0xe84
+	ServerAppHandler*  m_pAppHandler;        // 0xed0
+	CServerThread      m_Thread;             // 0xed4
+	class Model*       m_pPlaceholderModel;  // 0xf38  the object's last member;
 	                                         //        stands in for a model that
 	                                         //        is still loading
 

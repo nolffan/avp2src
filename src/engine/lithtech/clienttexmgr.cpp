@@ -63,7 +63,6 @@
 // *********************************************************************** //
 
 #include <string.h>
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include <new.h>                     // placement new
 
 #include "ltbasedefs.h"
@@ -939,15 +938,15 @@ public:
 	// 0x0045aaa0 -- LTObject::SetPos, the vector BY VALUE (predobj.cpp).
 	void SetPos(LTVector vPos);                              // 0x0045aaa0
 
-	uint8      m_pad_000[AVP2_OBJ(0x9c)];
+	uint8      m_pad_000[0x9c];
 	LTRotation m_Rotation;                                   // 0x09c
-	uint8      m_pad_0ac[AVP2_OBJ(0xbc) - AVP2_OBJ(0xac)];
+	uint8      m_pad_ac[0xbc - 0xac];
 	char       m_ObjectType;                                 // 0x0bc
 	uint8      m_BlockingPriority;                           // 0x0bd
-	uint8      m_pad_0be[AVP2_OBJ(0x18c) - AVP2_OBJ(0xbe)];
-	LTVector   m_Pos;                                        // 0x18c
-	LTVector   m_Dims;                                       // 0x198
-	float      m_Radius;                                     // 0x1a4
+	uint8      m_pad_be[0x194 - 0xbe];
+	LTVector   m_Pos;                                        // 0x194
+	LTVector   m_Dims;                                       // 0x1a0
+	float      m_Radius;                                     // 0x1ac
 };
 
 // CClientMgr: the world tree at +0x6c and the 0x508 pointer

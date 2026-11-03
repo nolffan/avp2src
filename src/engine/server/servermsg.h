@@ -22,45 +22,44 @@ class IMessageWrite
 {
 public:
 	virtual void     EndWrite()=0;                        // 0x00
-	// AVP2: iltmessage.h's ReadString, which AvP2's SDK adds right after
-	// Release: every slot below is one later than NOLF's (WriteRaw at +0x6c
-	// in AvP2's server.dlls, not +0x68). Offsets in the comments are NOLF's.
-	virtual const char* ReadString()=0;
+	// AVP2: iltmessage.h's ReadString, right after Release in AvP2's SDK
+	// (WriteRaw is at +0x6c in AvP2's server.dlls).
+	virtual const char* ReadString()=0;                   // 0x04
 	virtual LTRESULT _p01()=0;
-	// 0x08 — reads a word into an out parameter, on what is otherwise a write
+	// 0x0c — reads a word into an out parameter, on what is otherwise a write
 	// interface: 0x10034fcb calls it to pull an object id back off the message
 	// before resolving it, so the same vftable serves both directions.
-	virtual LTRESULT ReadWord(uint16* pVal)=0;            // 0x08
+	virtual LTRESULT ReadWord(uint16* pVal)=0;            // 0x0c
 	virtual LTRESULT _p03()=0; virtual LTRESULT _p04()=0; virtual LTRESULT _p05()=0;
 	virtual LTRESULT _p06()=0; virtual LTRESULT _p07()=0; virtual LTRESULT _p08()=0;
 	virtual LTRESULT _p09()=0; virtual LTRESULT _p10()=0; virtual LTRESULT _p11()=0;
 	virtual LTRESULT _p12()=0; virtual LTRESULT _p13()=0; virtual LTRESULT _p14()=0;
 	virtual LTRESULT _p15()=0;
-	virtual LTRESULT WriteByte(uint8 val)=0;              // 0x40
-	virtual LTRESULT WriteWord(uint16 val)=0;             // 0x44
-	virtual LTRESULT WriteDWord(uint32 val)=0;            // 0x48
-	virtual LTRESULT WriteFloat(float val)=0;             // 0x4c
-	virtual LTRESULT WriteString(char* pStr)=0;           // 0x50
-	virtual LTRESULT WriteVector(LTVector* pVal)=0;       // 0x54
-	virtual LTRESULT WriteCompVector(LTVector* pVal)=0;   // 0x58
-	virtual LTRESULT WriteCompPos(LTVector* pVal)=0;      // 0x5c
-	virtual LTRESULT WriteRotation(LTRotation* pVal)=0;   // 0x60
-	virtual LTRESULT _p25()=0;                            // 0x64
-	// 0x68 — iltmessage.h's WriteRaw; every fixed-width writer is this one
+	virtual LTRESULT WriteByte(uint8 val)=0;              // 0x44
+	virtual LTRESULT WriteWord(uint16 val)=0;             // 0x48
+	virtual LTRESULT WriteDWord(uint32 val)=0;            // 0x4c
+	virtual LTRESULT WriteFloat(float val)=0;             // 0x50
+	virtual LTRESULT WriteString(char* pStr)=0;           // 0x54
+	virtual LTRESULT WriteVector(LTVector* pVal)=0;       // 0x58
+	virtual LTRESULT WriteCompVector(LTVector* pVal)=0;   // 0x5c
+	virtual LTRESULT WriteCompPos(LTVector* pVal)=0;      // 0x60
+	virtual LTRESULT WriteRotation(LTRotation* pVal)=0;   // 0x64
+	virtual LTRESULT _p25()=0;                            // 0x68
+	// 0x6c — iltmessage.h's WriteRaw; every fixed-width writer is this one
 	// with a constant length and the argument's own address.
-	virtual LTRESULT WriteRaw(void* pData, uint32 len)=0; // 0x68
-	virtual LTRESULT WriteMessageHandle(void* h)=0;       // 0x6c
-	virtual LTRESULT WriteHString(HSTRING h)=0;           // 0x70
-	virtual LTRESULT _p29()=0;                            // 0x74
+	virtual LTRESULT WriteRaw(void* pData, uint32 len)=0; // 0x6c
+	virtual LTRESULT WriteMessageHandle(void* h)=0;       // 0x70
+	virtual LTRESULT WriteHString(HSTRING h)=0;           // 0x74
+	virtual LTRESULT _p29()=0;                            // 0x78
 	// Takes the format string and a pointer to the caller's va_list.
-	virtual LTRESULT WriteFormattedHString(char* pMsg, va_list* pMarker)=0;  // 0x78
-	virtual LTRESULT _p31()=0;                            // 0x7c
-	virtual LTRESULT WriteObject(HOBJECT hObj)=0;         // 0x80
-	virtual LTRESULT _p33()=0;                            // 0x84
-	virtual LTRESULT _p34()=0;                            // 0x88
-	// 0x8c — nonzero when the handle is not writable; every sender and the
+	virtual LTRESULT WriteFormattedHString(char* pMsg, va_list* pMarker)=0;  // 0x7c
+	virtual LTRESULT _p31()=0;                            // 0x80
+	virtual LTRESULT WriteObject(HOBJECT hObj)=0;         // 0x84
+	virtual LTRESULT _p33()=0;                            // 0x88
+	virtual LTRESULT _p34()=0;                            // 0x8c
+	// 0x90 — nonzero when the handle is not writable; every sender and the
 	// EndMessage pair validate through it (name ours).
-	virtual LTRESULT Verify()=0;                          // 0x8c
+	virtual LTRESULT Verify()=0;                          // 0x90
 };
 
 typedef IMessageWrite* HMESSAGEWRITE_I;
@@ -72,36 +71,35 @@ class IMessageRead
 public:
 	virtual void     EndRead()=0;                         // 0x00
 	// AVP2: iltmessage.h's ReadString, as in IMessageWrite above (ReadRawFL
-	// at +0x24 in AvP2's server.dlls, not +0x20). Offsets in the comments
-	// are NOLF's.
-	virtual const char* ReadString()=0;
-	virtual LTRESULT ReadByte(uint8* pVal)=0;             // 0x04  ReadByteFL
-	virtual LTRESULT ReadWord(uint16* pVal)=0;            // 0x08
-	virtual LTRESULT ReadDWord(uint32* pVal)=0;           // 0x0c
-	virtual LTRESULT ReadFloat(float* pVal)=0;            // 0x10
-	virtual LTRESULT _p05()=0;                            // 0x14
-	virtual LTRESULT ReadHString(HSTRING* pVal)=0;        // 0x18
-	virtual LTRESULT _p07()=0;                            // 0x1c
-	// 0x20 — iltmessage.h's ReadRawFL: every fixed-width reader above is
+	// is at +0x24 in AvP2's server.dlls).
+	virtual const char* ReadString()=0;                   // 0x04
+	virtual LTRESULT ReadByte(uint8* pVal)=0;             // 0x08  ReadByteFL
+	virtual LTRESULT ReadWord(uint16* pVal)=0;            // 0x0c
+	virtual LTRESULT ReadDWord(uint32* pVal)=0;           // 0x10
+	virtual LTRESULT ReadFloat(float* pVal)=0;            // 0x14
+	virtual LTRESULT _p05()=0;                            // 0x18
+	virtual LTRESULT ReadHString(HSTRING* pVal)=0;        // 0x1c
+	virtual LTRESULT _p07()=0;                            // 0x20
+	// 0x24 — iltmessage.h's ReadRawFL: every fixed-width reader above is
 	// this one with a constant length.
 	virtual LTRESULT ReadRawFL(void* pData, uint32 len)=0;
-	virtual LTRESULT ReadVector(LTVector* pVal)=0;        // 0x24
-	virtual LTRESULT ReadCompVector(LTVector* pVal)=0;    // 0x28
-	virtual LTRESULT ReadCompPos(LTVector* pVal)=0;       // 0x2c
-	virtual LTRESULT ReadRotation(LTRotation* pVal)=0;    // 0x30
-	virtual LTRESULT _p13()=0;                            // 0x34
-	virtual LTRESULT ReadMessage(void** pVal)=0;          // 0x38
-	virtual LTRESULT ReadObject(HOBJECT* pVal)=0;         // 0x3c
-	virtual LTRESULT _p16()=0; virtual LTRESULT _p17()=0; // 0x40 0x44
-	virtual LTRESULT _p18()=0; virtual LTRESULT _p19()=0; // 0x48 0x4c
-	virtual LTRESULT _p20()=0; virtual LTRESULT _p21()=0; // 0x50 0x54
-	virtual LTRESULT _p22()=0; virtual LTRESULT _p23()=0; // 0x58 0x5c
-	virtual LTRESULT _p24()=0; virtual LTRESULT _p25()=0; // 0x60 0x64
-	virtual LTRESULT _p26()=0; virtual LTRESULT _p27()=0; // 0x68 0x6c
-	virtual LTRESULT _p28()=0; virtual LTRESULT _p29()=0; // 0x70 0x74
-	virtual LTRESULT _p30()=0; virtual LTRESULT _p31()=0; // 0x78 0x7c
-	virtual LTRESULT _p32()=0;                            // 0x80
-	virtual void     ResetRead()=0;                       // 0x84
+	virtual LTRESULT ReadVector(LTVector* pVal)=0;        // 0x28
+	virtual LTRESULT ReadCompVector(LTVector* pVal)=0;    // 0x2c
+	virtual LTRESULT ReadCompPos(LTVector* pVal)=0;       // 0x30
+	virtual LTRESULT ReadRotation(LTRotation* pVal)=0;    // 0x34
+	virtual LTRESULT _p13()=0;                            // 0x38
+	virtual LTRESULT ReadMessage(void** pVal)=0;          // 0x3c
+	virtual LTRESULT ReadObject(HOBJECT* pVal)=0;         // 0x40
+	virtual LTRESULT _p16()=0; virtual LTRESULT _p17()=0; // 0x44 0x44
+	virtual LTRESULT _p18()=0; virtual LTRESULT _p19()=0; // 0x4c 0x4c
+	virtual LTRESULT _p20()=0; virtual LTRESULT _p21()=0; // 0x54 0x54
+	virtual LTRESULT _p22()=0; virtual LTRESULT _p23()=0; // 0x5c 0x5c
+	virtual LTRESULT _p24()=0; virtual LTRESULT _p25()=0; // 0x64 0x64
+	virtual LTRESULT _p26()=0; virtual LTRESULT _p27()=0; // 0x6c 0x6c
+	virtual LTRESULT _p28()=0; virtual LTRESULT _p29()=0; // 0x74 0x74
+	virtual LTRESULT _p30()=0; virtual LTRESULT _p31()=0; // 0x7c 0x7c
+	virtual LTRESULT _p32()=0;                            // 0x84
+	virtual void     ResetRead()=0;                       // 0x88
 };
 
 typedef IMessageRead* HMESSAGEREAD_I;

@@ -148,8 +148,6 @@
 //  would bind to the wrong one).
 // ======================================================================== //
 #include <string.h>
-#include "avp2obj.h"  // AVP2: an object's layout for the views below
-#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include "de_error.h"
 #include "saveio.h"
@@ -255,7 +253,7 @@ public:
 class SavObjectQ4S
 {
 public:
-	uint8            m_pad_000[AVP2_OBJ(0x088)];
+	uint8            m_pad_000[0x088];
 	uint32           m_Flags;                // 0x088
 	uint32           m_Flags2;               // 0x08c
 	uint32           m_UserFlags;            // 0x090
@@ -270,31 +268,31 @@ public:
 	uint16           m_nSaveIndex;           // 0x0ba
 	char             m_ObjectType;           // 0x0bc  OT_*
 	uint8            m_BlockingPriority;     // 0x0bd
-	uint8            m_pad_0be[AVP2_OBJ(0x0c4) - AVP2_OBJ(0x0be)];
+	uint8            m_pad_0be[0x0c4 - 0x0be];
 	float            m_Velocity[3];          // 0x0c4
 	float            m_Acceleration[3];      // 0x0d0
-	float            m_FrictionCoefficient;  // 0x0dc
-	float            m_Mass;                 // 0x0e0
-	float            m_ForceIgnoreLimitSqr;  // 0x0e4
-	uint8            m_pad_0e8[AVP2_OBJ(0x120) - AVP2_OBJ(0x0e8)];
-	uint32           m_ChangeFlags;          // 0x120
-	uint8            m_pad_124[AVP2_OBJ(0x188) - AVP2_OBJ(0x124)];
-	SavObjDataQ4S*   m_pSData;               // 0x188
-	float            m_Pos[3];               // 0x18c
-	float            m_Dims[3];              // 0x198
-	float            m_Radius;               // 0x1a4
+	float            m_FrictionCoefficient;  // 0x0e0
+	float            m_Mass;                 // 0x0e4
+	float            m_ForceIgnoreLimitSqr;  // 0x0e8
+	uint8            m_pad_0ec[0x124 - 0x0ec];
+	uint32           m_ChangeFlags;          // 0x124
+	uint8            m_pad_128[0x190 - 0x128];
+	SavObjDataQ4S*   m_pSData;               // 0x190
+	float            m_Pos[3];               // 0x194
+	float            m_Dims[3];              // 0x1a0
+	float            m_Radius;               // 0x1ac
 	union {
-		SavWorldBspQ4S* m_pWorldBsp;         // 0x1a8
-		float           m_LightRadius;       // 0x1a8  (OT_LIGHT only)
+		SavWorldBspQ4S* m_pWorldBsp;         // 0x1b0
+		float           m_LightRadius;       // 0x1b0  (OT_LIGHT only)
 	};
-	uint8            m_pad_1ac[AVP2_OBJ(0x1d8) - AVP2_OBJ(0x1ac)];
-	uint16           m_Model1d8;             // 0x1d8  (name ours)
-	uint8            m_pad_1da[AVP2_OBJ(0x1e8) - AVP2_OBJ(0x1da)];
-	uint16           m_Model1e8;             // 0x1e8  (name ours)
-	uint8            m_pad_1ea[AVP2_OBJ(0x1ec) - AVP2_OBJ(0x1ea)];
-	uint32           m_Model1ec;             // 0x1ec  (name ours)
-	uint8            m_pad_1f0[AVP2_OBJ(0x270) - AVP2_OBJ(0x1f0)];
-	uint16           m_Container270;         // 0x270  (name ours)
+	uint8            m_pad_1b4[0x1e0 - 0x1b4];
+	uint16           m_Model1d8;             // 0x1e0  (name ours)
+	uint8            m_pad_1e2[0x1f0 - 0x1e2];
+	uint16           m_Model1e8;             // 0x1f0  (name ours)
+	uint8            m_pad_1f2[0x1f4 - 0x1f2];
+	uint32           m_Model1ec;             // 0x1f4  (name ours)
+	uint8            m_pad_1f8[0x278 - 0x1f8];
+	uint16           m_Container270;         // 0x278  (name ours)
 };
 
 // servermgr.h's CFileMgr, embedded in the manager at 0xa2c (0x1000fd5e
@@ -314,12 +312,12 @@ public:
 class SavServerMgrQ4S
 {
 public:
-	uint8         m_pad_000[AVP2_MGR(0x804)];
-	void*         m_pClassMgr;               // 0x804
-	uint8         m_pad_808[AVP2_MGR(0x95c) - AVP2_MGR(0x808)];
-	uint16        m_SkyObjects[30];          // 0x95c
-	uint8         m_pad_998[AVP2_MGR(0xa2c) - AVP2_MGR(0x998)];
-	SavFileMgrQ4S m_FileMgr;                 // 0xa2c
+	uint8         m_pad_000[0xc14];
+	void*         m_pClassMgr;               // 0xc14
+	uint8         m_pad_c18[0xd6c - 0xc18];
+	uint16        m_SkyObjects[30];          // 0xd6c
+	uint8         m_pad_da8[0xe3c - 0xda8];
+	SavFileMgrQ4S m_FileMgr;                 // 0xe3c
 };
 
 // ltbasedefs.h's object types, as the ladders read them.  0x1000fd37 tests

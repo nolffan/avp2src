@@ -53,7 +53,6 @@
 // *********************************************************************** //
 
 #include <string.h>
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include <stdlib.h>
 
 #include "ltbasedefs.h"
@@ -2072,10 +2071,10 @@ CSoundInstanceRef* CSoundMgrView::GetSoundInstance(HLTSOUND hSound, LTBOOL bIsPo
 // ltobject_internal.h m_Rotation (0x9c) and m_Pos (0x18c).
 struct CSndClientObjectRef
 {
-	uint8      m_pad_00[AVP2_OBJ(0x9c)];
+	uint8      m_pad_00[0x9c];
 	LTRotation m_Rotation;                   // 0x09c
-	uint8      m_pad_ac[AVP2_OBJ(0x18c) - AVP2_OBJ(0xac)];
-	LTVector   m_Pos;                        // 0x18c
+	uint8      m_pad_ac[0x194 - 0xac];
+	LTVector   m_Pos;                        // 0x194
 };
 
 struct CSndClientShellRef

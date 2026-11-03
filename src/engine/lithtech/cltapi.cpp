@@ -120,16 +120,15 @@ class CCmgMusicMgrQ404;
 class ICommonMathQ404;
 
 // clientmgr.h's CClientObject, cut to what this file reads.
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the view below
 
 class CClientObject
 {
 public:
-	uint8    m_pad_00[AVP2_OBJ(0xbc)];
+	uint8    m_pad_00[0xbc];
 	char     m_ObjectType;                   // 0x0bc
 	uint8    m_BlockingPriority;             // 0x0bd
-	uint8    m_pad_be[AVP2_OBJ(0x18c) - AVP2_OBJ(0xbe)];
-	LTVector m_Pos;                          // 0x18c
+	uint8    m_pad_be[0x194 - 0xbe];
+	LTVector m_Pos;                          // 0x194
 };
 typedef CClientObject* HOBJECT;
 typedef CClientObject* HLOCALOBJ;

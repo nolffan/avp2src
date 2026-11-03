@@ -139,7 +139,6 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"        // LTVector, LTRotation, LTBOOL, FLAG_*
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include "ltlink.h"            // LTLink / CheapLTLink::Remove / TieOff
 #include "iltclient.h"         // LTLine, LTLinePt, HLTLINE, HLOCALOBJ
 
@@ -296,28 +295,28 @@ public:
 class LTObjectQ1S
 {
 public:
-	uint8      m_pad_000[AVP2_OBJ(0x88)];
+	uint8      m_pad_000[0x88];
 	uint32     m_Flags;                                      // 0x088
-	uint8      m_pad_08c[AVP2_OBJ(0x9c) - AVP2_OBJ(0x8c)];
+	uint8      m_pad_8c[0x9c - 0x8c];
 	LTRotation m_Rotation;                                   // 0x09c
-	uint8      m_pad_0ac[AVP2_OBJ(0xc4) - AVP2_OBJ(0xac)];
+	uint8      m_pad_ac[0xc4 - 0xac];
 	LTVector   m_Velocity;                                   // 0x0c4
 	LTVector   m_Acceleration;                               // 0x0d0
-	float      m_FrictionCoefficient;                        // 0x0dc
-	uint8      m_pad_0e0[AVP2_OBJ(0x120) - AVP2_OBJ(0xe0)];
-	uint32     m_ChangeFlags;                                // 0x120
-	float      m_fPosPredictTime;                            // 0x124
-	float      m_fPredictStamp;                              // 0x128
-	LTVector   m_vPredictPos;                                // 0x12c
-	LTVector   m_vPredictVel;                                // 0x138
-	LTVector   m_vPredictBase;                               // 0x144
-	LTLink     m_PosPredictLink;                             // 0x150
-	float      m_fRotPredictTime;                            // 0x15c
-	LTRotation m_PredictRot;                                 // 0x160
-	LTLink     m_RotPredictLink;                             // 0x170
-	HLOCALOBJ  m_hPredictLines;                              // 0x17c
-	uint8      m_pad_180[AVP2_OBJ(0x18c) - AVP2_OBJ(0x180)];
-	LTVector   m_Pos;                                        // 0x18c
+	float      m_FrictionCoefficient;                        // 0x0e0
+	uint8      m_pad_e4[0x124 - 0xe4];
+	uint32     m_ChangeFlags;                                // 0x124
+	float      m_fPosPredictTime;                            // 0x128
+	float      m_fPredictStamp;                              // 0x12c
+	LTVector   m_vPredictPos;                                // 0x130
+	LTVector   m_vPredictVel;                                // 0x13c
+	LTVector   m_vPredictBase;                               // 0x148
+	LTLink     m_PosPredictLink;                             // 0x154
+	float      m_fRotPredictTime;                            // 0x160
+	LTRotation m_PredictRot;                                 // 0x168
+	LTLink     m_RotPredictLink;                             // 0x178
+	HLOCALOBJ  m_hPredictLines;                              // 0x184
+	uint8      m_pad_188[0x194 - 0x188];
+	LTVector   m_Pos;                                        // 0x194
 };
 
 

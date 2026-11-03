@@ -22,7 +22,6 @@
 #define __CLIENTMGR_H__
 
 #include "ltbasedefs.h"
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include "iltclient.h"
 #include "iclientshell.h"
 #include "iltsoundmgr.h"
@@ -261,32 +260,32 @@ extern CSurfaceQ40C g_ScreenSurface;         // 0x004b1620
 class CClientObject
 {
 public:
-	uint8    m_pad_00[AVP2_OBJ(0x90)];
+	uint8    m_pad_00[0x90];
 	uint32   m_UserFlags;                    // 0x090
 	uint8    m_ColorR;                       // 0x094  the four colour bytes,
 	uint8    m_ColorG;                       // 0x095  each a 0-255 scaling of
 	uint8    m_ColorB;                       // 0x096  the float the interface
 	uint8    m_ColorA;                       // 0x097  takes
-	uint8    m_pad_98[AVP2_OBJ(0x9c) - AVP2_OBJ(0x98)];
+	uint8    m_pad_98[0x9c - 0x98];
 	LTRotation m_Rotation;                   // 0x09c  four words, copied out whole
 	LTVector m_Scale;                        // 0x0ac
 	// The server object this one mirrors, or 0xffff for a client-side object.
 	// Only a client-side one may have its user flags set.
 	uint16   m_nServerID;                    // 0x0b8
-	uint8    m_pad_ba[AVP2_OBJ(0xbc) - AVP2_OBJ(0xba)];
+	uint8    m_pad_ba[0xbc - 0xba];
 	char     m_ObjectType;                   // 0x0bc  OT_*, as on the server
-	uint8    m_pad_bd[AVP2_OBJ(0xc0) - AVP2_OBJ(0xbd)];
+	uint8    m_pad_bd[0xc0 - 0xbd];
 	void*    m_pUserData;                    // 0x0c0  the game's, untouched
 	LTVector m_Velocity;                     // 0x0c4
 	LTVector m_Acceleration;                 // 0x0d0
-	uint8    m_pad_dc[AVP2_OBJ(0x120) - AVP2_OBJ(0xdc)];
-	uint32   m_ChangeFlags;                  // 0x120  same bits the server uses
-	uint8    m_pad_124[AVP2_OBJ(0x180) - AVP2_OBJ(0x124)];
-	uint16   m_ClientFlags;                  // 0x180
-	uint8    m_pad_182[AVP2_OBJ(0x18c) - AVP2_OBJ(0x182)];
-	LTVector m_Pos;                          // 0x18c
-	uint8    m_pad_198[AVP2_OBJ(0x1bc) - AVP2_OBJ(0x198)];
-	HPOLY    m_hClipPoly;                    // 0x1bc  ClipSprite's only effect
+	uint8    m_pad_e0[0x124 - 0xe0];
+	uint32   m_ChangeFlags;                  // 0x124  same bits the server uses
+	uint8    m_pad_128[0x188 - 0x128];
+	uint16   m_ClientFlags;                  // 0x188
+	uint8    m_pad_18a[0x194 - 0x18a];
+	LTVector m_Pos;                          // 0x194
+	uint8    m_pad_1a0[0x1c4 - 0x1a0];
+	HPOLY    m_hClipPoly;                    // 0x1c4  ClipSprite's only effect
 };
 
 // The camera's own fields start where the sprite's clip poly sits, so they

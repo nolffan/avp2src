@@ -114,8 +114,6 @@
 // *********************************************************************** //
 
 #include <string.h>
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
-#include "../server/avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdarg.h>
 
 #include "ltbasedefs.h"
@@ -1014,17 +1012,17 @@ void cs_UpdateSpritesQ414(CClientMgrQ414* pMgr)
 class CParticleObjQ414
 {
 public:
-	uint8              m_pad_000[AVP2_OBJ(0x88)];
+	uint8              m_pad_000[0x88];
 	uint32             m_Flags;                                // 0x088
-	uint8              m_pad_08c[AVP2_OBJ(0x18c) - AVP2_OBJ(0x8c)];
-	LTVector           m_Pos;                                  // 0x18c
-	uint8              m_pad_198[AVP2_OBJ(0x1e8) - AVP2_OBJ(0x198)];
-	uint32             m_pTexture;                             // 0x1e8
-	uint8              m_pad_1ec[AVP2_OBJ(0x1f0) - AVP2_OBJ(0x1ec)];
-	void*              m_pSprite;                              // 0x1f0
-	CSpriteTrackerQ414 m_SpriteTracker;                        // 0x1f4
-	uint8              m_pad_208[AVP2_OBJ(0x22c) - AVP2_OBJ(0x208)];
-	int                m_nDirtyCount;                          // 0x22c
+	uint8              m_pad_8c[0x194 - 0x8c];
+	LTVector           m_Pos;                                  // 0x194
+	uint8              m_pad_1a0[0x1f0 - 0x1a0];
+	uint32             m_pTexture;                             // 0x1f0
+	uint8              m_pad_1f4[0x1f8 - 0x1f4];
+	void*              m_pSprite;                              // 0x1f8
+	CSpriteTrackerQ414 m_SpriteTracker;                        // 0x1fc
+	uint8              m_pad_210[0x234 - 0x210];
+	int                m_nDirtyCount;                          // 0x234
 };
 
 // partfm.cpp's three particle entries: save the old bounding sphere
@@ -1460,10 +1458,10 @@ extern CObjQueueBankQ414 g_ObjQueueBankQ414;                   // 0x004b17a8
 class CServerMgrQ46A
 {
 public:
-	uint8  m_pad_00[AVP2_MGR(0x1a0)];
+	uint8  m_pad_00[0x1a0];
 	uint32 m_Unknown1a0;                     // 0x1a0  bit 0: sweeping objects
-	uint8  m_pad_1a4[AVP2_MGR(0x83c) - AVP2_MGR(0x1a4)];
-	LTLink m_Link83c;                        // 0x83c  the queued-object list
+	uint8  m_pad_1a4[0xc4c - 0x1a4];
+	LTLink m_Link83c;                        // 0xc4c  the queued-object list
 };
 
 class LTObjectQ46A

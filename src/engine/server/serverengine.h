@@ -235,8 +235,8 @@ int se_LoadFile(class CFileMgr* pFileMgr, char* pFilename, uint16 nFlags,
 class SpriteInstance : public LTObject
 {
 public:
-	uint8  m_pad_1b4[0x1bc - 0x1b4];
-	uint32 m_nCurFrame;                      // 0x1bc
+	uint8  m_pad_1bc[0x1c4 - 0x1bc];
+	uint32 m_nCurFrame;                      // 0x1c4
 };
 
 // What the object data's file slot points at. Every field is pinned by
@@ -277,8 +277,8 @@ public:
 class ModelInstanceObj : public LTObject
 {
 public:
-	uint8  m_pad_1b4[0x1dc - 0x1b4];
-	class Model* m_pModel;                   // 0x1dc
+	uint8  m_pad_1bc[0x1e4 - 0x1bc];
+	class Model* m_pModel;                   // 0x1e4
 };
 
 LTRESULT se_InitWorldModel(CServerMgr* pMgr, LTObject* pObj,

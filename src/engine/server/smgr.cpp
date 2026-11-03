@@ -1,6 +1,5 @@
 // server.dll — CServerMgr's interface-facing half (reconstruction). Build /O1.
 #include <stdarg.h>
-#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -3403,8 +3402,8 @@ int si_Parse(char* pCommand, char** pNewCommandPos, char* argBuffer,
 class SpriteObject : public LTObject
 {
 public:
-	uint8 m_pad_1b4[0x1bc - 0x1b4];
-	HPOLY m_ClipPoly;                        // 0x1bc
+	uint8 m_pad_1bc[0x1c4 - 0x1bc];
+	HPOLY m_ClipPoly;                        // 0x1c4
 };
 
 LTRESULT si_TeleportObject(LTObject* hObj, LTVector* pNewPos)
@@ -7957,8 +7956,8 @@ public:
 class CServerMgrList5E4View
 {
 public:
-	uint8  m_pad_00[AVP2_MGR(0x5e4)];
-	LTLink m_List5E4;                        // +0x5e4
+	uint8  m_pad_00[0x5e8];
+	LTLink m_List5E4;                        // +0x5e8
 };
 
 // 0x100338e1 — walk the world's objects and put every model and skin file

@@ -282,41 +282,38 @@ public:
 	uint8      m_pad_0be[0x0c4 - 0x0be];
 	LTVector   m_Velocity;                   // 0x0c4
 	LTVector   m_Acceleration;               // 0x0d0
-	// AVP2: four bytes more here in AvP2's engines (1.0.9.6's and Primal
-	// Hunt's): ILTPhysics::Get/SetFrictionCoefficient, ILTCommon::Get/
-	// SetObjectMass and ILTPhysics::Get/SetForceIgnoreLimit reach +0xe0,
-	// +0xe4 and +0xe8 (server.dll 0x100177e0, 0x100179c6, 0x10017876) where
-	// NOLF's reach +0xdc, +0xe0 and +0xe4, while m_Velocity and
-	// m_Acceleration are where they were. Every offset below is NOLF's plus
-	// four, to m_pSData.
-	uint32             m_AvP2UnknownDc;
-	float      m_FrictionCoefficient;        // 0x0dc
-	float      m_Mass;                       // 0x0e0
-	float      m_ForceIgnoreLimitSqr;        // 0x0e4
-	LTObject*  m_pStandingOn;                // 0x0e8
-	WorldPoly* m_pStandingOnPoly;            // 0x0ec
-	LTVector   m_BBoxMin;                    // 0x0f0  world-space bounding box
-	LTVector   m_BBoxMax;                    // 0x0fc
-	LTLink     m_StandingOnMe;               // 0x108  head of the list of objects
+	// AVP2: a member NOLF's engine had not (CObjBase::InitFields sets its
+	// first byte to five, objtypes.h): ILTPhysics::Get/SetFrictionCoefficient,
+	// ILTCommon::Get/SetObjectMass and ILTPhysics::Get/SetForceIgnoreLimit
+	// reach +0xe0, +0xe4 and +0xe8 after it (Primal Hunt server.dll
+	// 0x100177e0, 0x100179c6, 0x10017876).
+	uint32             m_Unknowndc;          // 0x0dc
+	float      m_FrictionCoefficient;        // 0x0e0
+	float      m_Mass;                       // 0x0e4
+	float      m_ForceIgnoreLimitSqr;        // 0x0e8
+	LTObject*  m_pStandingOn;                // 0x0ec
+	WorldPoly* m_pStandingOnPoly;            // 0x0f0
+	LTVector   m_BBoxMin;                    // 0x0f4  world-space bounding box
+	LTVector   m_BBoxMax;                    // 0x100
+	LTLink     m_StandingOnMe;               // 0x10c  head of the list of objects
 	                                         //        standing on this one
-	LTLink     m_StandingLink;               // 0x114  this object's place in the
+	LTLink     m_StandingLink;               // 0x118  this object's place in the
 	                                         //        list of whatever it stands on
-	uint32     m_ChangeFlags;                // 0x120  what the client must be told
-	// AVP2: four bytes more in this unmapped stretch: m_ChangeFlags is
-	// NOLF's plus four, m_pSData and everything after it NOLF's plus eight.
-	uint8              m_pad_124[0x188 - 0x124 + 4];
-	class SObjData* m_pSData;                // 0x188  engine-side object data
-	LTVector   m_Pos;                        // 0x18c
-	LTVector   m_Dims;                       // 0x198
-	float      m_Radius;                     // 0x1a4  bounding-sphere radius
+	uint32     m_ChangeFlags;                // 0x124  what the client must be told
+	// AVP2: this unmapped stretch holds CObjBase's m_f164 too (objtypes.h).
+	uint8              m_pad_128[0x190 - 0x128];
+	class SObjData* m_pSData;                // 0x190  engine-side object data
+	LTVector   m_Pos;                        // 0x194
+	LTVector   m_Dims;                       // 0x1a0
+	float      m_Radius;                     // 0x1ac  bounding-sphere radius
 	// A light has no world pointer and keeps its radius in the same slot,
 	// which is why Get/SetLightRadius reach 0x1a8 on an OT_LIGHT.
 	union {
-		IWorldBsp* m_pWorldBsp;              // 0x1a8
-		float      m_LightRadius;            // 0x1a8  (OT_LIGHT only)
+		IWorldBsp* m_pWorldBsp;              // 0x1b0
+		float      m_LightRadius;            // 0x1b0  (OT_LIGHT only)
 	};
-	IWorldBsp* m_pOriginalBsp;               // 0x1ac
-	class IWorldModelIface* m_pWMIface;      // 0x1b0  see IWorldModelIface
+	IWorldBsp* m_pOriginalBsp;               // 0x1b4
+	class IWorldModelIface* m_pWMIface;      // 0x1b8  see IWorldModelIface
 
 	// 0x10024e51 — the object's own world first, then the one it lives in.
 	HPOLY MakeHPoly(WorldPoly* pPoly);
@@ -348,8 +345,8 @@ public:
 class PolyGridObject : public LTObject
 {
 public:
-	uint8  m_pad_1b4[0x1e4 - 0x1b4];
-	LTLink m_Records;                        // 0x1e4
+	uint8  m_pad_1bc[0x1ec - 0x1bc];
+	LTLink m_Records;                        // 0x1ec
 };
 
 // The world-model interface at LTObject+0x1b0 (names ours): only slot 1 is
@@ -373,9 +370,9 @@ void obj_RetransformWorldModel(LTObject* pObj);                     // 0x1001e89
 class WorldModelObject : public LTObject
 {
 public:
-	uint8    m_pad_1b4[0x1f0 - 0x1b4];
-	LTMatrix m_Transform1f0;                 // 0x1f0
-	LTMatrix m_Transform230;                 // 0x230
+	uint8    m_pad_1bc[0x1f8 - 0x1bc];
+	LTMatrix m_Transform1f0;                 // 0x1f8
+	LTMatrix m_Transform230;                 // 0x238
 };
 
 // 0x1000d8e1 and 0x10007ae3 (names ours): refresh the object's own transform,
@@ -401,8 +398,8 @@ int  bsp_IntersectBox(void* pBsp, LTVector* pMin, LTVector* pMax);  // 0x10002ff
 class ContainerInstance : public LTObject
 {
 public:
-	uint8  m_pad_1b4[0x270 - 0x1b4];
-	uint16 m_ContainerCode;                  // 0x270
+	uint8  m_pad_1bc[0x278 - 0x1bc];
+	uint16 m_ContainerCode;                  // 0x278
 };
 
 #endif  // __LTOBJECT_INTERNAL_H__

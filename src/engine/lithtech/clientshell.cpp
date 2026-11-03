@@ -51,7 +51,6 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"       // LTVector, StartGameRequest, LTRESULT
-#include "../server/avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include "ltlink.h"           // LTLink, LTList
 #include "ltcodes.h"          // LT_OK, LT_SERVERERROR, LT_CANTCREATESERVER
 #include "de_error.h"         // REPORT_ERROR / RETURN_ERROR (src/engine/server)
@@ -1063,30 +1062,30 @@ public:
 	LTBOOL Update(LTBOOL bPaused, uint32 nUnknown);            // 0x004742a0
 
 	uint32            m_ClientServerType;                      // 0x008
-	uint8             m_pad_00c[AVP2_MGR(0x44) - AVP2_MGR(0x0c)];
+	uint8             m_pad_0c[0x44 - 0x0c];
 	LTList            m_List44;                                // 0x044
 	LTList            m_List54;                                // 0x054
-	uint8             m_pad_064[AVP2_MGR(0x1a4) - AVP2_MGR(0x64)];
+	uint8             m_pad_64[0x1a4 - 0x64];
 	CWorld1a4         m_World;                                 // 0x1a4
 	CSub390           m_Sub390;                                // 0x390
-	uint8             m_pad_584[AVP2_MGR(0x668) - AVP2_MGR(0x584)];
-	CForceControlView m_ForceControl;                          // 0x668
-	CNetMgrView       m_NetMgr;                                // 0x6e0
-	LTList            m_ClientList;                            // 0x7e4
-	uint32            m_Unknown7f4;                            // 0x7f4
-	uint32            m_Unknown7f8;                            // 0x7f8
-	uint32            m_Unknown7fc;                            // 0x7fc
-	uint32            m_Unknown800;                            // 0x800
-	uint8             m_pad_804[AVP2_MGR(0x80c) - AVP2_MGR(0x804)];
-	CClassMgrView     m_ClassMgr;                              // 0x80c
-	CListCall         m_List8dc;                               // 0x8dc
-	CListCall         m_List8ec;                               // 0x8ec
-	CSub8fc           m_Sub8fc;                                // 0x8fc
-	CSub92c           m_SkyDef;                                // 0x92c
-	CMessageBankView  m_MessageBank;                           // 0x9f0
-	CSubA14           m_SubA14;                                // 0xa14
-	CFileMgrView      m_FileMgr;                               // 0xa2c
-	CThreadView       m_Thread;                                // 0xac4
+	uint8             m_pad_584[0xa74 - 0x584];
+	CForceControlView m_ForceControl;                          // 0xa74
+	CNetMgrView       m_NetMgr;                                // 0xaec
+	LTList            m_ClientList;                            // 0xbf4
+	uint32            m_Unknown7f4;                            // 0xc04
+	uint32            m_Unknown7f8;                            // 0xc08
+	uint32            m_Unknown7fc;                            // 0xc0c
+	uint32            m_Unknown800;                            // 0xc10
+	uint8             m_pad_c14[0xc1c - 0xc14];
+	CClassMgrView     m_ClassMgr;                              // 0xc1c
+	CListCall         m_List8dc;                               // 0xcec
+	CListCall         m_List8ec;                               // 0xcfc
+	CSub8fc           m_Sub8fc;                                // 0xd0c
+	CSub92c           m_SkyDef;                                // 0xd3c
+	CMessageBankView  m_MessageBank;                           // 0xe00
+	CSubA14           m_SubA14;                                // 0xe24
+	CFileMgrView      m_FileMgr;                               // 0xe3c
+	CThreadView       m_Thread;                                // 0xed4
 };
 
 

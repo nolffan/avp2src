@@ -57,7 +57,6 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
-#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include "ltcodes.h"
 #include "ltlink.h"
 #include "iltvideomgr.h"
@@ -300,13 +299,13 @@ public:
 class CPhysObjView
 {
 public:
-	uint8    m_pad_00[AVP2_OBJ(0x88)];
+	uint8    m_pad_00[0x88];
 	uint32   m_Flags;                        // 0x088  FLAG_*
-	uint8    m_pad_8c[AVP2_OBJ(0xc4) - AVP2_OBJ(0x8c)];
+	uint8    m_pad_8c[0xc4 - 0x8c];
 	LTVector m_Velocity;                     // 0x0c4
 	LTVector m_Acceleration;                 // 0x0d0
-	uint8    m_pad_dc[AVP2_OBJ(0x120) - AVP2_OBJ(0xdc)];
-	uint32   m_ChangeFlags;                  // 0x120  CHANGEFLAG_*
+	uint8    m_pad_e0[0x124 - 0xe0];
+	uint32   m_ChangeFlags;                  // 0x124  CHANGEFLAG_*
 };
 
 // The client manager's standing move request, at CClientMgr+0x4c4.

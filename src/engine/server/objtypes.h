@@ -87,7 +87,7 @@ public:
 	void InitFields();                       // 0x10024802
 
 public:
-	uint8    m_pad_04[0x58 - 0x04];
+	uint8    m_pad_004[0x58 - 0x04];
 	// Cleared for every object of every type the first time the manager's
 	// counter comes off -1 (0x1002461c), and touched nowhere else in this
 	// file. A per-object cache stamp of some kind; name ours.
@@ -118,56 +118,53 @@ public:
 	LTRotation m_Rotation;                   // 0x09c
 	LTVector m_Scale;                        // 0x0ac
 	uint16   m_ObjectID;                     // 0x0b8
-	uint8    m_pad_ba[0xbc - 0xba];
+	uint8    m_pad_0ba[0xbc - 0xba];
 	char     m_ObjectType;                   // 0x0bc  OT_*
 	uint8    m_BlockingPriority;             // 0x0bd
-	uint8    m_pad_be[0xc0 - 0xbe];
+	uint8    m_pad_0be[0xc0 - 0xbe];
 	uint32   m_Unknownc0;                    // 0x0c0
 	LTVector m_Velocity;                     // 0x0c4
 	LTVector m_Acceleration;                 // 0x0d0
-	// AVP2: a byte here in AvP2's engines, which InitFields sets to five
+	// AVP2: a byte NOLF's engine had not, which InitFields sets to five
 	// (Primal Hunt server.dll 0x1002e654: `mov byte [ecx+0xdc], 5`, before
-	// the friction's 5.0 at +0xe0); every offset below is NOLF's plus four,
-	// to m_fLink170Key.
-	uint8    m_AvP2Dc;                       // 0x0dc (AvP2's offset)
-	uint8    m_pad_AvP2Dd[3];
-	float    m_FrictionCoefficient;          // 0x0dc  starts at five
-	float    m_Mass;                         // 0x0e0  and at thirty
-	float    m_ForceIgnoreLimitSqr;          // 0x0e4  a million, i.e. 1000 units
-	void*    m_pStandingOn;                  // 0x0e8
-	void*    m_pStandingOnPoly;              // 0x0ec
-	LTVector m_vBoxMin;                      // 0x0f0
-	LTVector m_vBoxMax;                      // 0x0fc
-	LTLink   m_StandingOnMe;                 // 0x108
+	// the friction's 5.0 at +0xe0).
+	uint8    m_Unknowndc;                    // 0x0dc
+	uint8    m_pad_0dd[0xe0 - 0xdd];
+	float    m_FrictionCoefficient;          // 0x0e0  starts at five
+	float    m_Mass;                         // 0x0e4  and at thirty
+	float    m_ForceIgnoreLimitSqr;          // 0x0e8  a million, i.e. 1000 units
+	void*    m_pStandingOn;                  // 0x0ec
+	void*    m_pStandingOnPoly;              // 0x0f0
+	LTVector m_vBoxMin;                      // 0x0f4
+	LTVector m_vBoxMax;                      // 0x100
+	LTLink   m_StandingOnMe;                 // 0x10c
 	// The link the object hangs by in whatever it is standing on. InitFields
 	// gives it its m_pData and does NOT tie it off, which is the one link of
 	// the five that is left that way.
-	LTLink   m_StandingLink;                 // 0x114  m_pData is the object
-	uint32   m_ChangeFlags;                  // 0x120
+	LTLink   m_StandingLink;                 // 0x118  m_pData is the object
+	uint32   m_ChangeFlags;                  // 0x124
 	// Two lists the object is in only while the value beside each is
 	// non-zero; the destructor tests the value rather than the link, which
 	// is what says the value is what puts it there (names ours).
-	float    m_fLink150Key;                  // 0x124
-	float    m_f128;                         // 0x128
-	LTVector m_v12c;                         // 0x12c
-	LTVector m_v138;                         // 0x138
-	uint8    m_pad_144[0x150 - 0x144];
-	LTLink   m_Link150;                      // 0x150  m_pData is the object
-	float    m_fLink170Key;                  // 0x15c
-	// AVP2: a float more here, which InitFields zeroes (AvP2's +0x164, after
-	// m_fLink170Key at +0x160 and before the quaternion at +0x168 that
-	// NOLF's layout leaves as padding); every offset below is NOLF's plus
-	// eight.
-	float    m_AvP2F164;
-	uint8    m_pad_160[0x170 - 0x160];
-	LTLink   m_Link170;                      // 0x170  m_pData is the object
-	void*    m_pUnknown17c;                  // 0x17c
-	uint16   m_n180;                         // 0x180
-	uint8    m_pad_182[0x188 - 0x182];
-	void*    m_pSData;                       // 0x188  null until it is in a world
-	LTVector m_Pos;                          // 0x18c
-	LTVector m_Dims;                         // 0x198  starts at one on each axis
-	float    m_Radius;                       // 0x1a4
+	float    m_fLink150Key;                  // 0x128
+	float    m_f128;                         // 0x12c
+	LTVector m_v12c;                         // 0x130
+	LTVector m_v138;                         // 0x13c
+	uint8    m_pad_148[0x154 - 0x148];
+	LTLink   m_Link150;                      // 0x154  m_pData is the object
+	float    m_fLink170Key;                  // 0x160
+	// AVP2: a float NOLF's engine had not, which InitFields zeroes, between
+	// m_fLink170Key and the quaternion at +0x168.
+	float    m_f164;                         // 0x164
+	uint8    m_pad_168[0x178 - 0x168];
+	LTLink   m_Link170;                      // 0x178  m_pData is the object
+	void*    m_pUnknown17c;                  // 0x184
+	uint16   m_n180;                         // 0x188
+	uint8    m_pad_18a[0x190 - 0x18a];
+	void*    m_pSData;                       // 0x190  null until it is in a world
+	LTVector m_Pos;                          // 0x194
+	LTVector m_Dims;                         // 0x1a0  starts at one on each axis
+	float    m_Radius;                       // 0x1ac
 };
 
 // 0x10024772 — hand an object's attachments back to the manager's spare list
@@ -233,9 +230,9 @@ public:
 	// is the same object seen from the other side: the world the model lives
 	// in, its own BSP, and the world-model interface. Typed as void* here
 	// because objtypes.h comes in ahead of the object header.
-	void*    m_pWorldBsp;                    // 0x1a8  an IWorldBsp*
-	void*    m_pOriginalBsp;                 // 0x1ac  an IWorldBsp*
-	void*    m_pWMIface;                     // 0x1b0
+	void*    m_pWorldBsp;                    // 0x1b0  an IWorldBsp*
+	void*    m_pOriginalBsp;                 // 0x1b4  an IWorldBsp*
+	void*    m_pWMIface;                     // 0x1b8
 	// Five LTLinks, each given the object as its data by InitFields. The
 	// count is the shipped loop's own (push $5 / pop ecx) and five twelves
 	// is exactly the gap to the first matrix. Declared as raw bytes rather
@@ -244,12 +241,12 @@ public:
 	// iterator (`??_H`) COMDAT that the shipped image has no counterpart
 	// for. Every function still matches either way — this only keeps an
 	// unmatchable 34-byte helper out of the object.
-	uint8    m_Links1b4[0x1f0 - 0x1b4];      // 0x1b4
+	uint8    m_Links1b4[0x1f0 - 0x1b4];      // 0x1bc
 	// The transform pair the world-model retransform rebuilds; which of the
 	// two is the inverse is not established here, because the builder at
 	// 0x10011986 is not reconstructed.
-	LTMatrix m_Transform1f0;                 // 0x1f0
-	LTMatrix m_Transform230;                 // 0x230
+	LTMatrix m_Transform1f0;                 // 0x1f8
+	LTMatrix m_Transform230;                 // 0x238
 };
 
 // A container is a world model carrying the code set at its creation; an
@@ -267,8 +264,8 @@ public:
 	                  struct ObjectCreateStruct* pStruct);
 	CObjContainer();                         // 0x10025630
 
-	uint16 m_ContainerCode;                  // 0x270
-	uint8  m_pad_272[0x274 - 0x272];
+	uint16 m_ContainerCode;                  // 0x278
+	uint8  m_pad_27a[0x27c - 0x27a];
 };
 
 // A canvas draws itself, so it carries a callback and the distance it wants
@@ -288,9 +285,9 @@ public:
 	virtual float _v2c();
 	virtual float _v38();
 
-	void*  m_pUnknown1a8;                    // 0x1a8
-	void*  m_pUnknown1ac;                    // 0x1ac
-	float  m_fUnknown1b0;                    // 0x1b0
+	void*  m_pUnknown1a8;                    // 0x1b0
+	void*  m_pUnknown1ac;                    // 0x1b4
+	float  m_fUnknown1b0;                    // 0x1b8
 };
 
 // A camera opens at ninety degrees both ways.
@@ -300,11 +297,11 @@ public:
 	virtual ~CObjCamera();                        // 0x1002521e
 	CObjCamera();                            // 0x100251be
 
-	uint8    m_pad_1a8[0x1b8 - 0x1a8];
-	float    m_fFovY;                        // 0x1b8
-	float    m_fFovX;                        // 0x1bc
-	uint32   m_Unknown1c0;                   // 0x1c0
-	LTVector m_v1c4;                         // 0x1c4
+	uint8    m_pad_1b0[0x1c0 - 0x1b0];
+	float    m_fFovY;                        // 0x1c0
+	float    m_fFovX;                        // 0x1c4
+	uint32   m_Unknown1c0;                   // 0x1c8
+	LTVector m_v1c4;                         // 0x1cc
 };
 
 // A line system keeps two cursors into its own storage, both starting at the
@@ -333,15 +330,15 @@ public:
 	virtual void _v20(class CAttachMgrView* pAttachMgr,
 	                  struct ObjectCreateStruct* pStruct);
 
-	void*    m_pUnknown1a8;                  // 0x1a8
-	void*    m_pUnknown1ac;                  // 0x1ac
-	uint8    m_Storage[0x1ec - 0x1b0];       // 0x1b0
-	void*    m_pCursorA;                     // 0x1ec
-	void*    m_pCursorB;                     // 0x1f0
-	LTVector m_v1f4;                         // 0x1f4
-	LTVector m_v200;                         // 0x200
-	LTVector m_v20c;                         // 0x20c
-	float    m_f218;                         // 0x218
+	void*    m_pUnknown1a8;                  // 0x1b0
+	void*    m_pUnknown1ac;                  // 0x1b4
+	uint8    m_Storage[0x1ec - 0x1b0];       // 0x1b8
+	void*    m_pCursorA;                     // 0x1f4
+	void*    m_pCursorB;                     // 0x1f8
+	LTVector m_v1f4;                         // 0x1fc
+	LTVector m_v200;                         // 0x208
+	LTVector m_v20c;                         // 0x214
+	float    m_f218;                         // 0x220
 };
 
 // A light's radius sits where every other type keeps something else, which
@@ -354,7 +351,7 @@ public:
 
 	virtual float GetLightRadius(void* pUnused);   // 0x1002518e
 
-	float m_fLightRadius;                    // 0x1a8
+	float m_fLightRadius;                    // 0x1b0
 };
 
 #endif  // __OBJTYPES_H__

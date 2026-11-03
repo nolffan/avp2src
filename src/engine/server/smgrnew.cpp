@@ -78,7 +78,6 @@
 // *********************************************************************** //
 
 #include <stdarg.h>
-#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -412,10 +411,10 @@ class CServerMgrObjInfoViewQ474
 public:
 	void GrowClientObjInfos(uint32 nCount);  // 0x00474740 / 0x10033253
 
-	uint8  m_pad_000[AVP2_MGR(0x7e4)];
-	LTList m_ClientList;                     // 0x7e4  (head 0x7e8)
-	uint8  m_pad_7f4[AVP2_MGR(0x8b8) - AVP2_MGR(0x7f4)];
-	uint32 m_Unknown8b8;                     // 0x8b8
+	uint8  m_pad_000[0xbf4];
+	LTList m_ClientList;                     // 0xbf4  (head 0x7e8)
+	uint8  m_pad_c04[0xcc8 - 0xc04];
+	uint32 m_Unknown8b8;                     // 0xcc8
 };
 
 void CServerMgrObjInfoViewQ474::GrowClientObjInfos(uint32 nCount)
@@ -721,8 +720,8 @@ class CServerMgrCmdViewQ474
 public:
 	void NotifyCommandChanges(Client* pClient, uint8* pChanged, int nChanged);
 
-	uint8         m_pad_000[AVP2_MGR(0x820)];
-	IServerShell* m_pServerShell;            // 0x820  (0x00475947)
+	uint8         m_pad_000[0xc30];
+	IServerShell* m_pServerShell;            // 0xc30  (0x00475947)
 };
 
 void CServerMgrCmdViewQ474::NotifyCommandChanges(Client* pClient,
