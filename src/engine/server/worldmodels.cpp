@@ -740,10 +740,10 @@ class CObjBspSetter
 public:
 	void SetWorldBsp(void* pBsp, void* pOriginal);   // 0x10024e2e
 
-	uint8 m_pad_000[0x1a8];
-	void* m_pWorldBsp;                       // 0x1a8
-	void* m_pOriginalBsp;                    // 0x1ac
-	void* m_pWMIface;                        // 0x1b0
+	uint8 m_pad_000[0x1b0];
+	void* m_pWorldBsp;                       // 0x1b0
+	void* m_pOriginalBsp;                    // 0x1b4
+	void* m_pWMIface;                        // 0x1b8
 };
 
 // The third store is a conditional *expression*, not a statement: the value

@@ -813,6 +813,11 @@
 
 		// OBSOLETE: use ILTCommon.
 		virtual LTRESULT GetPolyTextureFlags(HPOLY hPoly, uint32 *pFlags)=0;
+#ifdef PRIMAL_HUNT
+		// PH: ILTCommon's new GetPolyTextureName, forwarded the same way
+		// (slot 126, 0x1003b8e3 -> m_pCommonLT slot 19).
+		virtual LTRESULT GetPolyTextureName(HPOLY hPoly, char *pName, uint32 nMaxLen)=0;
+#endif
 
 
 	// Save game

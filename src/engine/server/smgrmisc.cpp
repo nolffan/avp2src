@@ -1043,7 +1043,10 @@ public:
 	uint32 m_Time;                           // 0x104
 	uint32 m_nSize;                          // 0x108
 	void*  m_pCursor;                        // 0x10c
-};                                           // 0x110
+#ifdef PRIMAL_HUNT
+	char   m_Unknown110[0x104];              // 0x110 (PH)
+#endif
+};                                           // 0x110, PH: 0x214
 
 // src/engine/server/serverengine.h:70.
 class CFileTreeRecQ468
@@ -1062,6 +1065,64 @@ public:
 
 // 0x00420d50 / server 0x10006fb4.
 int ar_GetFileInfoQ468(void* pTree, char* pFilename, CFileFindStateQ468* pState);
+
+int fs_FindFileInTreesQ468(CFileMgrQ468* pFileMgr, char* pFilename,
+                           CFileTreeRecQ468** ppTreeRec, uint32* pUnknown);
+
+#ifdef PRIMAL_HUNT
+// PH: the two file queries behind ILTCSBase's new slots 44 and 45
+// (iltcsbase.h), immediately above fs_FindFileInTrees in server.dll
+// (names ours).
+
+// 0x10037780 -- the first tree that has the file describes it into the
+// caller's LTFileInfo, field by field; LT_NOTFOUND when none does.
+// iltcsbase.h's LTFileInfo (PH).
+class CLTFileInfoQ468
+{
+public:
+	uint32 m_Type;                           // 0x000
+	char   m_Name[0x100];                    // 0x004
+	uint32 m_Time;                           // 0x104
+	uint32 m_nSize;                          // 0x108
+	uint32 m_Unknown10c;                     // 0x10c
+};
+
+LTRESULT fs_GetFileInfoQ468(CFileMgrQ468* pFileMgr, char* pFilename, CLTFileInfoQ468* pInfo)
+{
+	CFileFindStateQ468 state;
+	LTLinkQ468*        pCur;
+
+	for (pCur = pFileMgr->m_Trees.m_pNext;
+	     pCur != (LTLinkQ468*)pFileMgr;
+	     pCur = pCur->m_pNext)
+	{
+		CFileTreeRecQ468* pRec = (CFileTreeRecQ468*)pCur->m_pData;
+
+		if (ar_GetFileInfoQ468(pRec->m_pTree, pFilename, &state))
+		{
+			strncpy(pInfo->m_Name, state.m_Name, sizeof(pInfo->m_Name));
+
+			pInfo->m_Type      = state.m_Type;
+			pInfo->m_Time      = state.m_Time;
+			pInfo->m_nSize     = state.m_nSize;
+			pInfo->m_Unknown10c = (uint32)state.m_pCursor;
+
+			return LT_OK;
+		}
+	}
+
+	return LT_NOTFOUND;
+}
+
+// 0x10037808 -- does any tree have the file?
+LTRESULT fs_FileExistsQ468(CFileMgrQ468* pFileMgr, char* pFilename)
+{
+	uint32            nSize    = 0;
+	CFileTreeRecQ468* pTreeRec = LTNULL;
+
+	return fs_FindFileInTreesQ468(pFileMgr, pFilename, &pTreeRec, &nSize) ? LT_OK : LT_NOTFOUND;
+}
+#endif
 
 int fs_FindFileInTreesQ468(CFileMgrQ468* pFileMgr, char* pFilename,
                            CFileTreeRecQ468** ppTreeRec, uint32* pUnknown)

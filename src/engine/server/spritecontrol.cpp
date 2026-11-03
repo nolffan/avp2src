@@ -28,16 +28,16 @@ public:
 class SpriteInstance
 {
 public:
-	uint8       m_pad_000[0x1a8];
-	Sprite*     m_pSprite;                   // +0x1a8
-	SpriteAnim* m_pCurAnim;                  // +0x1ac
-	uint32*     m_pCurFrame;                 // +0x1b0
-	uint32      m_FrameTime;                 // +0x1b4  ms into the current frame
+	uint8       m_pad_000[0x1b0];
+	Sprite*     m_pSprite;                   // +0x1b0
+	SpriteAnim* m_pCurAnim;                  // +0x1b4
+	uint32*     m_pCurFrame;                 // +0x1b8
+	uint32      m_FrameTime;                 // +0x1bc  ms into the current frame
 	// +0x1b8 — a plain dword the interface both reads and writes and does
 	// nothing else with: the getter copies it out and the setter stores the
 	// argument raw, with no range check and no side effect on the play
 	// position. Name ours; nothing here says what it holds.
-	uint32      m_Unknown1b8;                // +0x1b8
+	uint32      m_Unknown1b8;                // +0x1c0
 };
 
 // Six slots, and its vftable is at 0x1004e06c -- the six pointers between

@@ -317,6 +317,32 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   comes back as a target. Primal Hunt's own game DLLs use the 22-slot
   interface: PHCShell.dll 0x101050f0 calls `GetPolySurfaceFlags` through
   `[edx+0x54]`, slot 21, and matches once built with it.
+- **Primal Hunt's `ILTServer` and `ILTClient` have three virtuals AvP2's
+  SDK lacks** (server 128 slots against 125, client 113 against 110),
+  found by aligning the two tables' targets instruction by instruction:
+  two in `ILTCSBase` after `CopyFile` (slots 44 and 45, both sides),
+  file queries through the file manager (`GetFileInfo` into a new
+  `LTFileInfo`, and `DoesFileExist`: server 0x10037780 and 0x10037808;
+  the names ours), and `GetPolyTextureName` forwarding to `ILTCommon`'s
+  new slot 19 (server slot 126 after `GetPolyTextureFlags`; client slot
+  108, before `StartQuery`). All three are in the SDK headers behind
+  `PRIMAL_HUNT`, so Primal Hunt's game calls through `g_pLTServer` and
+  `g_pLTClient` at slot 44 or later now land eight bytes on.
+  `ILTServerSendView`'s senders move with them (slots 90-96).
+- **Primal Hunt's file-find state is 0x104 bytes (MAX_PATH) bigger**:
+  every frame holding one is 0x214 where AvP2's is 0x110
+  (`fs_FindFileInTrees`, 0x10037836, was a near on displacement widths
+  alone). The new field is not read by anything reconstructed yet.
+- With the three virtuals and the AvP2 model/object layouts in: Primal
+  Hunt's game went from 2,540 to 2,874 identical functions in
+  PHCShell.dll (27.7 % to 36.7 % of bytes) and from 5,497 to 5,918 in
+  PHObject.lto (47.5 % to 53.2 %); 893 functions newly identical across
+  the targets, 52.5 % of all bytes. Ten recorded ones were given up:
+  two `AIBM_*Sense` destructors whose base-vtable store maps to another
+  table than retail's (Primal Hunt's AIButeMgr changes, package 5; they
+  had matched by a coincidence of mapping), and eight small or
+  initialiser functions in PHObject.lto and lithtech.exe whose placement
+  moved once their neighbours matched.
 - Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
   near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
   near).

@@ -188,8 +188,8 @@ public:
 	uint8       m_pad_9c[0xb8 - 0x9c];
 	uint16      m_nObjectID;                 // 0xb8  the runtime id
 	uint16      m_nSaveIndex;                // 0xba
-	uint8       m_pad_bc[0x188 - 0xbc];
-	SavObjData* m_pSData;                    // 0x188
+	uint8       m_pad_bc[0x190 - 0xbc];
+	SavObjData* m_pSData;                    // 0x190
 };
 
 // worldbsp.h's CWorldChunk: 0x24 bytes, and the only thing saved out of one

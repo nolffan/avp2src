@@ -525,8 +525,8 @@ public:
 	// of a class with a constructor, which is objtypes.h's own idiom for
 	// CObjWorldModel::m_Links1b4 and keeps a `??_H` out of the object.
 	uint8          m_Links[0x054 - 0x004];   // 0x004
-	uint8          m_pad_054[0x1a8 - 0x054];
-	IWorldBspQ458* m_pWorldBsp;              // 0x1a8
+	uint8          m_pad_054[0x1b0 - 0x054];
+	IWorldBspQ458* m_pWorldBsp;              // 0x1b0
 };
 
 

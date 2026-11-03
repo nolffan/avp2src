@@ -464,7 +464,7 @@ inline void ServerMessage::Init(uint16 nMaxDataLen, uint16 nGrowSize)
 
 // EndMessage2 and EndMessage dispatch the send through CLTServer's own
 // vtable — the big anchored ILTServer table. Only slots 88-94
-// are reached; this view names them so the vtable-less reconstruction can
+// (PH: 90-96, after ILTCSBase's two new file queries) are reached; this view names them so the vtable-less reconstruction can
 // still emit the calls (`((ILTServerSendView*)this)->...`).
 class ILTServerSendView
 {
@@ -474,22 +474,26 @@ public:
 	virtual void _s16()=0; virtual void _s17()=0; virtual void _s18()=0; virtual void _s19()=0; virtual void _s20()=0; virtual void _s21()=0; virtual void _s22()=0; virtual void _s23()=0;
 	virtual void _s24()=0; virtual void _s25()=0; virtual void _s26()=0; virtual void _s27()=0; virtual void _s28()=0; virtual void _s29()=0; virtual void _s30()=0; virtual void _s31()=0;
 	virtual void _s32()=0; virtual void _s33()=0; virtual void _s34()=0; virtual void _s35()=0; virtual void _s36()=0; virtual void _s37()=0; virtual void _s38()=0; virtual void _s39()=0;
-	virtual void _s40()=0; virtual void _s41()=0; virtual void _s42()=0; virtual void _s43()=0; virtual void _s44()=0; virtual void _s45()=0; virtual void _s46()=0; virtual void _s47()=0;
+	virtual void _s40()=0; virtual void _s41()=0; virtual void _s42()=0; virtual void _s43()=0;
+#ifdef PRIMAL_HUNT
+	virtual void _sPH44()=0; virtual void _sPH45()=0; // PH: GetFileInfo, DoesFileExist (iltcsbase.h)
+#endif
+	virtual void _s44()=0; virtual void _s45()=0; virtual void _s46()=0; virtual void _s47()=0;
 	virtual void _s48()=0; virtual void _s49()=0; virtual void _s50()=0; virtual void _s51()=0; virtual void _s52()=0; virtual void _s53()=0; virtual void _s54()=0; virtual void _s55()=0;
 	virtual void _s56()=0; virtual void _s57()=0; virtual void _s58()=0; virtual void _s59()=0; virtual void _s60()=0; virtual void _s61()=0; virtual void _s62()=0; virtual void _s63()=0;
 	virtual void _s64()=0; virtual void _s65()=0; virtual void _s66()=0; virtual void _s67()=0; virtual void _s68()=0; virtual void _s69()=0; virtual void _s70()=0; virtual void _s71()=0;
 	virtual void _s72()=0; virtual void _s73()=0; virtual void _s74()=0; virtual void _s75()=0; virtual void _s76()=0; virtual void _s77()=0; virtual void _s78()=0; virtual void _s79()=0;
 	virtual void _s80()=0; virtual void _s81()=0; virtual void _s82()=0; virtual void _s83()=0; virtual void _s84()=0; virtual void _s85()=0; virtual void _s86()=0; virtual void _s87()=0;
-	virtual LTRESULT EndMessage2(IMessageWrite &msg, uint32 flags)=0;                    // 0x160
-	virtual LTRESULT EndMessage(IMessageWrite &msg)=0;                                   // 0x164
-	virtual LTRESULT SetObjectSFXMessage(HOBJECT hObject, IMessageWrite &msg)=0;         // 0x168
+	virtual LTRESULT EndMessage2(IMessageWrite &msg, uint32 flags)=0;                    // 0x160, PH 0x168
+	virtual LTRESULT EndMessage(IMessageWrite &msg)=0;                                   // 0x164, PH 0x16c
+	virtual LTRESULT SetObjectSFXMessage(HOBJECT hObject, IMessageWrite &msg)=0;         // 0x168, PH 0x170
 	virtual LTRESULT SendToObject(IMessageWrite &msg, uint32 msgID, HOBJECT hSender,
-	                              HOBJECT hSendTo, uint32 flags)=0;                      // 0x16c
+	                              HOBJECT hSendTo, uint32 flags)=0;                      // 0x16c, PH 0x174
 	virtual LTRESULT SendToServer(IMessageWrite &msg, uint32 msgID, HOBJECT hSender,
-	                              uint32 flags)=0;                                       // 0x170
+	                              uint32 flags)=0;                                       // 0x170, PH 0x178
 	virtual LTRESULT SendToClient(IMessageWrite &msg, uint8 msgID, HCLIENT hSendTo,
-	                              uint32 flags)=0;                                       // 0x174
-	virtual LTRESULT SendSFXMessage(IMessageWrite &msg, LTVector &pos, uint32 flags)=0;  // 0x178
+	                              uint32 flags)=0;                                       // 0x174, PH 0x17c
+	virtual LTRESULT SendSFXMessage(IMessageWrite &msg, LTVector &pos, uint32 flags)=0;  // 0x178, PH 0x180
 };
 
 // A scoped reference to a server message; four bytes, and the destructor's
@@ -683,6 +687,9 @@ public:
 	LTRESULT SetObjectFilenames(HOBJECT hObj, char *pFilename, char *pSkinName);
 	LTRESULT GetObjectName(HOBJECT hObject, char *pName, uint32 nameBufSize);
 	LTRESULT GetPolyTextureFlags(HPOLY hPoly, uint32 *pFlags);
+#ifdef PRIMAL_HUNT
+	LTRESULT GetPolyTextureName(HPOLY hPoly, char *pName, uint32 nMaxLen); // PH: 0x1003b8e3
+#endif
 	LTRESULT GetModelAnimUserDims(HOBJECT hObject, LTVector *pDims, HMODELANIM hAnim);
 
 	// The senders (0x1002f43a-0x1002f8b0): EndMessage2 dispatches on the
@@ -704,6 +711,10 @@ public:
 
 	// The old flat model-state block and friends (0x1002e8a0-0x1002eb36).
 	LTRESULT CopyFile(const char *pszSourceFile, const char *pszDestFile);
+#ifdef PRIMAL_HUNT
+	LTRESULT GetFileInfo(const char *pFilename, LTFileInfo *pInfo);   // PH: 0x1003add6
+	LTRESULT DoesFileExist(const char *pFilename);                    // PH: 0x1003adf5
+#endif
 	void SetModelAnimation(HOBJECT hObj, HMODELANIM hAnim);
 	HMODELANIM GetModelAnimation(HOBJECT hObj);
 	void SetModelLooping(HOBJECT hObj, LTBOOL bLoop);

@@ -965,6 +965,12 @@ public:
 	CMoMemBlock* m_pDataBlock;               // 0x174
 	IMoAllocator* m_pAlloc;                  // 0x178
 	CMoMemBlock m_DataBlock;                 // 0x17c .. 0x190
+	// AVP2: four bytes NOLF's engine had not, after the data block: Model's
+	// constructor stores to every member below at NOLF's offset plus four
+	// (Primal Hunt server.dll 0x1001ca34 against NOLF's 0x10016cc5), and to
+	// none up to the block's start at the same offsets. Provisional: whether
+	// it is the block that grew is still to be read.
+	uint32 m_Unknown190;                     // 0x190
 	// 0x1d4 — the twelfth sub-object, and its size is pinned rather than
 	// bounded: 0x1d4 + 0x30 lands exactly on m_nFileVersion, so it is 0x30
 	// bytes, not the 0x38 the gap to the next sub-object suggested. Its
@@ -1042,11 +1048,11 @@ public:
 	//     one LoadChildModels reaches as `lea 0x1d4(%ebx),%edi` beside the
 	//     literal "SELF". So CModelSub1D4 is a child-model record and the
 	//     one embedded at 0x1d4 is the model itself (names ours).
-	class CModelSub1D4* m_pChildModels[16];  // 0x190 .. 0x1d0
-	uint32     m_nChildModels;               // 0x1d0
-	CModelSub1D4 m_Sub1d4;                   // 0x1d4 .. 0x204
-	uint32     m_nFileVersion;               // 0x204  9, 10, 11 or 12
-	int        m_CacheCount;                 // 0x208  FreeUnusedModels' scratch counter
+	class CModelSub1D4* m_pChildModels[16];  // 0x194 .. 0x1d4
+	uint32     m_nChildModels;               // 0x1d4
+	CModelSub1D4 m_Sub1d4;                   // 0x1d8 .. 0x208
+	uint32     m_nFileVersion;               // 0x208  9, 10, 11 or 12
+	int        m_CacheCount;                 // 0x20c  FreeUnusedModels' scratch counter
 	// The class runs to 0x2c4, which is what both places that build one
 	// allocate; the rest is not reached from the reconstructed set.
 	// 0x20c — the thirteenth, 0xb4 bytes, ending at 0x2c0 where Model stores
@@ -1141,8 +1147,8 @@ public:
 		char*  m_pName;                      // 0xb0  the shared empty string
 	};
 
-	CModelSub20C m_Sub20c;                   // 0x20c .. 0x2c0
-	class CModelSub20C* m_pSub20c;           // 0x2c0
+	CModelSub20C m_Sub20c;                   // 0x210 .. 0x2c4
+	class CModelSub20C* m_pSub20c;           // 0x2c4
 };
 
 // A model object carries its main tracker inline.
@@ -1151,11 +1157,18 @@ class ModelInstance : public LTObject
 public:
 	// (LTObject runs to 0x1b4 now that m_pWMIface is named)
 	ModelInstanceHookFn m_HookFn;            // 0x1bc
-	uint8               m_pad_1c0[0x1c8 - 0x1c0];
-	LTAnimTracker       m_AnimTracker;       // 0x1c8
-	LTAnimTracker*      m_pTrackerList;      // 0x200  extra trackers, singly linked
-	uint8               m_pad_204[0x20c - 0x204];
-	uint32              m_HiddenPieces;      // 0x20c  one bit per piece
+	// AVP2: twelve bytes more before the tracker than NOLF's, as CObjModel's
+	// (objbank.cpp): GetMainTracker and RemoveTracker reach the tracker at
+	// +0x1d4 (Primal Hunt server.dll 0x100258ba, 0x100253f1).
+	uint8               m_pad_1c0[0x1d4 - 0x1c0];
+	LTAnimTracker       m_AnimTracker;       // 0x1d4  (AvP2's SDK's tracker, 0x50 bytes)
+	LTAnimTracker*      m_pTrackerList;      // 0x224  extra trackers, singly linked
+	// AVP2: 0x30 bytes NOLF's engine had not after the tracker list, as
+	// CObjModel's: Get/SetPieceHideStatus reach m_HiddenPieces at +0x260
+	// (0x1002494c, 0x100249b3).
+	uint8               m_Unknown228[0x30];  // 0x228
+	uint8               m_pad_258[0x260 - 0x258];
+	uint32              m_HiddenPieces;      // 0x260  one bit per piece
 };
 
 // The engine's own ILTModel vtable carries one slot the public SDK header

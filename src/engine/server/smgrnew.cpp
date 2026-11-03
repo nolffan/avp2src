@@ -282,8 +282,8 @@ public:
 	virtual void _v00();
 	uint8     m_pad_004[0xb8 - 0x04];
 	uint16    m_ObjectID;                    // 0xb8  (0x004763c2)
-	uint8     m_pad_0ba[0x188 - 0xba];
-	SObjData* m_pSData;                      // 0x188 (0x004763fc)
+	uint8     m_pad_0ba[0x190 - 0xba];
+	SObjData* m_pSData;                      // 0x190 (0x004763fc)
 };
 
 class SObjData
@@ -349,21 +349,23 @@ class CUnknown8FC : public CMoArray<CObjectMapEntry>
 class CServerMgr
 {
 public:
-	uint8        m_pad_000[0x7e4];
-	LTList       m_ClientList;               // 0x7e4  head 0x7e8 (0x00474751)
-	uint8        m_pad_7f4[0x80c - 0x7f4];
-	CClassMgr    m_ClassMgr;                 // 0x80c  shell at 0x820 (0x00475947)
-	uint8        m_pad_83c[0x8b8 - 0x83c];
-	uint32       m_Unknown8b8;               // 0x8b8  (0x0047477b)
-	uint32       m_Unknown8bc;               // 0x8bc
-	class CHashTable* m_hHash8c0;            // 0x8c0  (0x004748d8)
-	LTLink       m_Link8c4;                  // 0x8c4  free id records (0x004761e4)
-	uint8        m_pad_8d0[0x8dc - 0x8d0];
-	LTList       m_List8dc;                  // 0x8dc  head 0x8e0 (0x004748fd)
-	uint8        m_pad_8ec[0x8fc - 0x8ec];
-	CUnknown8FC  m_Unknown8fc;               // 0x8fc  (0x004763b7)
-	uint8        m_pad_910[0x9f0 - 0x910];
-	CMessageBank m_MessageBank;              // 0x9f0  (0x00474751)
+	// The members this file reaches, at AvP2's offsets (servermgr.h has the
+	// whole class).
+	uint8        m_pad_000[0xbf4];
+	LTList       m_ClientList;               // 0xbf4  head 0xbf8 (0x00474751)
+	uint8        m_pad_c04[0xc1c - 0xc04];
+	CClassMgr    m_ClassMgr;                 // 0xc1c  shell at 0xc30 (0x00475947)
+	uint8        m_pad_c4c[0xcc8 - 0xc4c];
+	uint32       m_Unknown8b8;               // 0xcc8  (0x0047477b)
+	uint32       m_Unknown8bc;               // 0xccc
+	class CHashTable* m_hHash8c0;            // 0xcd0  (0x004748d8)
+	LTLink       m_Link8c4;                  // 0xcd4  free id records (0x004761e4)
+	uint8        m_pad_ce0[0xcec - 0xce0];
+	LTList       m_List8dc;                  // 0xcec  head 0xcf0 (0x004748fd)
+	uint8        m_pad_cfc[0xd0c - 0xcfc];
+	CUnknown8FC  m_Unknown8fc;               // 0xd0c  (0x004763b7)
+	uint8        m_pad_d20[0xe00 - 0xd20];
+	CMessageBank m_MessageBank;              // 0xe00  (0x00474751)
 };
 
 #endif  // SMGR_CPP_Q474

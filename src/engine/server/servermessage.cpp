@@ -357,6 +357,19 @@ LTRESULT CLTServer::CopyFile(const char *pszSourceFile, const char *pszDestFile)
 	return fs_CopyFile(&m_pServerMgr->m_FileMgr, pszSourceFile, pszDestFile);
 }
 
+#ifdef PRIMAL_HUNT
+// PH: ILTCSBase slots 44 and 45, the same shape as CopyFile.
+LTRESULT CLTServer::GetFileInfo(const char *pFilename, LTFileInfo *pInfo)
+{
+	return fs_GetFileInfo(&m_pServerMgr->m_FileMgr, pFilename, pInfo);
+}
+
+LTRESULT CLTServer::DoesFileExist(const char *pFilename)
+{
+	return fs_FileExists(&m_pServerMgr->m_FileMgr, pFilename);
+}
+#endif
+
 void CLTServer::SetModelAnimation(HOBJECT hObj, HMODELANIM hAnim)
 {
 	ModelInstance* pInst = (ModelInstance*)hObj;
@@ -616,6 +629,13 @@ LTRESULT CLTServer::GetPolyTextureFlags(HPOLY hPoly, uint32 *pFlags)
 {
 	return m_pCommonLT->GetPolyTextureFlags(hPoly, pFlags);
 }
+
+#ifdef PRIMAL_HUNT
+LTRESULT CLTServer::GetPolyTextureName(HPOLY hPoly, char *pName, uint32 nMaxLen)
+{
+	return m_pCommonLT->GetPolyTextureName(hPoly, pName, nMaxLen);
+}
+#endif
 
 LTRESULT CLTServer::GetModelAnimUserDims(HOBJECT hObject, LTVector *pDims, HMODELANIM hAnim)
 {

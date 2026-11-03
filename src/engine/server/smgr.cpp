@@ -5404,8 +5404,8 @@ void sm_DropConnection(CServerMgr* pMgr, NetConnection* pConn)
 class CModelInstView
 {
 public:
-	uint8        m_pad_00[0x1dc];
-	class Model* m_pModel;                   // +0x1dc
+	uint8        m_pad_00[0x1f0];
+	class Model* m_pModel;                   // +0x1f0
 };
 
 // 0x10027be0 — does this object owe the clients an update at all? Change
@@ -7941,13 +7941,13 @@ void sm_BroadcastCacheFile(CServerMgr* pMgr, uint32 fileType, uint16 nFileID)
 class CObjectModelView
 {
 public:
-	uint8        m_pad_00[0x1dc];
-	class Model* m_pModel;                   // +0x1dc
-	uint8        m_pad_1e0[0x204 - 0x1e0];
+	uint8        m_pad_00[0x1f0];
+	class Model* m_pModel;                   // +0x1f0
+	uint8        m_pad_1f4[0x260 - 0x1f4];
 	// +0x204 — only ever read as "does this container-type object have one";
 	// nonzero makes the change-flag reader set the attachment bit even with
 	// no attachment list (name ours).
-	uint32       m_Unknown204;               // +0x204
+	uint32       m_Unknown204;               // +0x260
 };
 
 // A second object list at CServerMgr+0x5e4, inside the padding servermgr.h
@@ -9183,8 +9183,8 @@ public:
 	uint32 GetTrackerCount();                // 0x100250a4 / 0x0045b430
 	char*  GetFilename();                    // 0x100250b7 / 0x0045b450
 
-	uint8          m_pad_000[0x1f8];
-	LTAnimTracker* m_pTrackerList;           // 0x1f8  (0x004672a3)
+	uint8          m_pad_000[0x224];
+	LTAnimTracker* m_pTrackerList;           // 0x224  (0x004672a3)
 };
 
 // 0x10013585 — the full rotation, written as whatever its four floats decode
@@ -11502,8 +11502,8 @@ public:
 class CObjSpriteQ291
 {
 public:
-	uint8  m_pad_000[0x1bc];
-	uint32 m_Unknown1bc;                     // 0x1bc
+	uint8  m_pad_000[0x1c4];
+	uint32 m_Unknown1bc;                     // 0x1c4
 };
 
 // A model object's field at 0x204, sent at the end of the attachment block
@@ -11511,8 +11511,8 @@ public:
 class CObjModelQ291
 {
 public:
-	uint8  m_pad_000[0x204];
-	uint32 m_Unknown204;                     // 0x204
+	uint8  m_pad_000[0x260];
+	uint32 m_Unknown204;                     // 0x260
 };
 
 // A container's code at 0x270 is objtypes.h's CObjContainer::m_ContainerCode;
@@ -11520,8 +11520,8 @@ public:
 class CObjContainerQ291
 {
 public:
-	uint8  m_pad_000[0x270];
-	uint16 m_ContainerCode;                  // 0x270
+	uint8  m_pad_000[0x278];
+	uint16 m_ContainerCode;                  // 0x278
 };
 
 // SObjData's two fields ltobject_internal.h does not name at these offsets:

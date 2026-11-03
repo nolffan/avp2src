@@ -1467,8 +1467,8 @@ public:
 class LTObjectQ46A
 {
 public:
-	uint8  m_pad_00[0x120];
-	uint32 m_ChangeFlags;                    // 0x120
+	uint8  m_pad_00[0x124];
+	uint32 m_ChangeFlags;                    // 0x124
 };
 
 // 0x00429740 -- obj_FreeData (server 0x1000d8a8).

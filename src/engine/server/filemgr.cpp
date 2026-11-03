@@ -73,6 +73,12 @@ public:
 	                                         //        words for a rez member
 	uint32 m_nSize;                          // 0x108
 	void*  m_pCursor;                        // 0x10c  null starts a new walk
+#ifdef PRIMAL_HUNT
+	// PH: 0x104 more bytes (MAX_PATH), which no walk reconstructed so far
+	// reads: every PH frame holding one is 0x214 where AvP2's is 0x110
+	// (fs_FindFileInTrees, 0x10037836; fs_GetFileInfo, 0x10037780).
+	char   m_Unknown110[0x104];              // 0x110
+#endif
 };
 
 // 0x10013870 — is this name already on the list being built? Compares against

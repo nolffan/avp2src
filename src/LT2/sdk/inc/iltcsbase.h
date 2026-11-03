@@ -16,6 +16,20 @@
 	class ILTLightAnim;
 	class ILTSoundMgr;
 
+#ifdef PRIMAL_HUNT
+	// PH: what ILTCSBase::GetFileInfo fills (server 0x10037780 copies the
+	// find state into it member by member; the layout is from those
+	// stores, the names ours).
+	struct LTFileInfo
+	{
+		uint32	m_Type;			// 0x000  1 = a file
+		char	m_Name[0x100];	// 0x004
+		uint32	m_Time;			// 0x104
+		uint32	m_nSize;		// 0x108
+		uint32	m_Unknown10c;	// 0x10c
+	};
+#endif
+
 	class ILTCSBase
 	{
 	public:
@@ -151,6 +165,15 @@
 		// rez file to a temporary file, so you can do special operations on it like
 		// LoadLibrary.
 		virtual LTRESULT CopyFile( const char *pszSourceFile, const char *pszDestFile ) = 0;
+
+#ifdef PRIMAL_HUNT
+		// PH: two file queries (server 0x1003add6 / 0x1003adf5, slots 44 and
+		// 45; names, and LTFileInfo's, ours). GetFileInfo describes the first
+		// copy of the file the resource trees have; DoesFileExist answers
+		// LT_OK or LT_NOTFOUND.
+		virtual LTRESULT GetFileInfo(const char *pFilename, LTFileInfo *pInfo) = 0;
+		virtual LTRESULT DoesFileExist(const char *pFilename) = 0;
+#endif
 
 	// String functions.  Strings are reference counted objects that cannot
 	// be manipulated.  When you create one with FormatString or CreateString,

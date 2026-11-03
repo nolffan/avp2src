@@ -21,5 +21,5 @@ import sys; sys.path.insert(0, 'tools'); import tgt
 print(tgt.find(sys.argv[1])['shipped'])" "$target")
 IMAGE=${IMAGE:-avp2src-build}
 docker run --rm --init -u "$(id -u):$(id -g)" -e HOME=/tmp/home -v "$PWD:/repo" -w /repo "$IMAGE" bash -c '
-    bash build/compile.sh "$1" | grep -E "error|warning C4|fatal" || true
+    bash build/compile.sh "$1" | grep -E " error |fatal error" || true
     python3 tools/fndiff.py "$2" "$1" "$3" --image="$4"' _ "$obj" "$addr" "$sym" "$image"

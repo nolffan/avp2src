@@ -1605,6 +1605,11 @@ LTRESULT sav_RestoreObjects(CServerMgr* pMgr, ILTStream* pStream,
                             uint32 dwParam, uint32 flags);
 LTRESULT   fs_CopyFile(CFileMgr* pFileMgr, const char* pszSourceFile,
                        const char* pszDestFile);                  // 0x1002bd97
+#ifdef PRIMAL_HUNT
+LTRESULT   fs_GetFileInfo(CFileMgr* pFileMgr, const char* pFilename,
+                          LTFileInfo* pInfo);                     // PH: 0x10037780
+LTRESULT   fs_FileExists(CFileMgr* pFileMgr, const char* pFilename); // PH: 0x10037808
+#endif
 
 // 0x1000d926 — format a line and hand it to the debugger. The interface
 // table's DebugOut entry points straight at it (name ours).

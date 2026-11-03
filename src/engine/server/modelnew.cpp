@@ -534,14 +534,14 @@ public:
 	CMoArray<ModelSocketQ444*, NoCache>   m_Sockets;        // 0x154
 	uint8  m_pad_164[0x174 - 0x164];
 	void*  m_pDataBlock;                                    // 0x174
-	uint8  m_pad_178[0x190 - 0x178];
-	CModelSub1D4Q444* m_pChildModels[16];                   // 0x190
-	uint32 m_nChildModels;                                  // 0x1d0
-	uint8  m_Sub1d4[0x204 - 0x1d4];                         // 0x1d4
-	uint32 m_nFileVersion;                                  // 0x204
-	int32  m_CacheCount;                                    // 0x208
-	uint8  m_pad_20c[0x2c0 - 0x20c];
-	CModelSub20CQ444* m_pSub20c;                            // 0x2c0
+	uint8  m_pad_178[0x194 - 0x178];
+	CModelSub1D4Q444* m_pChildModels[16];                   // 0x194
+	uint32 m_nChildModels;                                  // 0x1d4
+	uint8  m_Sub1d4[0x208 - 0x1d8];                         // 0x1d4
+	uint32 m_nFileVersion;                                  // 0x208
+	int32  m_CacheCount;                                    // 0x20c
+	uint8  m_pad_210[0x2c4 - 0x210];
+	CModelSub20CQ444* m_pSub20c;                            // 0x2c4
 };
 
 

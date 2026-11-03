@@ -1061,6 +1061,13 @@
 		// or LT_ERROR if no world is loaded or hPoly is invalid.
 		LTRESULT	(*GetPolyTextureFlags)(HPOLY hPoly, uint32 *pFlags);
 
+#ifdef PRIMAL_HUNT
+		// PH: ILTCommon's new GetPolyTextureName, as a virtual (client slot
+		// 108, 0x00408800 -> the common interface's slot 19; between
+		// SetModelPlaying and StartQuery in the table).
+		virtual LTRESULT GetPolyTextureName(HPOLY hPoly, char *pName, uint32 nMaxLen)=0;
+#endif
+
 
 	// Render hooks.
 
