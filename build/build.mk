@@ -244,11 +244,16 @@ $(eval $(call lslib,MFCStub,MFCStub,/I $(LT2LS2)\\mfcstub /I $(LT2LS2)\\incs /I 
 # default colour (lithfontdefs.h); both are to be reconstructed from the
 # release's prebuilt builds, which the links take until then.
 
-# Not yet ours either: AvP2's ButeMgr is another version of the parser than
-# NOLF's (its symbol tables are STLport hash_maps, where NOLF's were zTools
-# containers: butemgr.h), to be reconstructed from the prebuilt builds.
-# (nolfsrc's zTools sources stay in src/lithshared/ztools/, with the NOLF
-# release's ztools.h, for whatever of AvP2's still uses them.)
+# ButeMgrNoMFC: NOLF2's released ButeMgr (src/lithshared/ButeMgr/, its .cpp
+# files; nolf2src's src/libs/ButeMgr), against AvP2's headers
+# (src/LT2/lithshared/butemgr/): AvP2's parser is NOLF2's line -- STLport
+# symbol tables -- at an earlier stage (CString accessors, a second tag
+# table). The release's prebuilt builds hold the same four objects (ARange,
+# AVector, ButeMgr, Stdafx). NOLF2's flags but the static runtime (/MT), as
+# AvP2's game DLLs link it: _NOMFC, STLport, StdLith, MFCStub, CryptMgr and
+# Lith on the path.
+$(eval $(call lslib,ButeMgr,ButeMgrNoMFC,/D _NOMFC /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\mfcstub /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs,\
+    arange.cpp avector.cpp butemgr.cpp stdafx.cpp))
 
 .PHONY: libs
 libs: $(LS_OURS:%=$(LOUT)/%.lib)

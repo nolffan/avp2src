@@ -94,7 +94,7 @@ CITED_SRC = []
 # scored object by object against the release's prebuilt build of it
 # (progress/reference/, checked against shipped-libs.sha256), which holds
 # more than any one image takes from it.
-OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub"]
+OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeMgrNoMFC"]
 LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
 SHIPPED_LIB = "LT2/lithshared/libs/release/{}.lib"
 SHIPPED_AS = {}

@@ -486,3 +486,31 @@ PHObject.lto	retail	string too long
 PHObject.lto	retail	tripod
 PHObject.lto	retail	weapon
 PHObject.lto	retail	worldtextures/exp/Predator/prock5.dtx
+
+# ButeMgr: our ButeMgrNoMFC is NOLF2's (src/lithshared/ButeMgr), whose parse errors are reported as 'ButeMgr (%s, %d):  %s'; AvP2's reports them as 'File "%s", line %d :  %s' and 'Line %d :  %s', has a formatting-error message and an EXPANSION keyword -- its error and parse paths are still to be reconstructed from the release's prebuilt build
+CShell.dll	ours	ButeMgr (%s, %d):  %s
+CShell.dll	retail	A formatting error in the attribute file was encountered.
+CShell.dll	retail	EXPANSION
+CShell.dll	retail	File "%s", line %d :  %s
+CShell.dll	retail	Line %d :  %s
+
+# ButeMgr: our ButeMgrNoMFC is NOLF2's (src/lithshared/ButeMgr), whose parse errors are reported as 'ButeMgr (%s, %d):  %s'; AvP2's reports them as 'File "%s", line %d :  %s' and 'Line %d :  %s', has a formatting-error message and an EXPANSION keyword -- its error and parse paths are still to be reconstructed from the release's prebuilt build
+Object.lto	ours	ButeMgr (%s, %d):  %s
+Object.lto	retail	A formatting error in the attribute file was encountered.
+Object.lto	retail	EXPANSION
+Object.lto	retail	File "%s", line %d :  %s
+Object.lto	retail	Line %d :  %s
+
+# ButeMgr: our ButeMgrNoMFC is NOLF2's (src/lithshared/ButeMgr), whose parse errors are reported as 'ButeMgr (%s, %d):  %s'; AvP2's reports them as 'File "%s", line %d :  %s' and 'Line %d :  %s', has a formatting-error message and an EXPANSION keyword -- its error and parse paths are still to be reconstructed from the release's prebuilt build
+PHCShell.dll	ours	ButeMgr (%s, %d):  %s
+PHCShell.dll	retail	A formatting error in the attribute file was encountered.
+PHCShell.dll	retail	EXPANSION
+PHCShell.dll	retail	File "%s", line %d :  %s
+PHCShell.dll	retail	Line %d :  %s
+
+# ButeMgr: our ButeMgrNoMFC is NOLF2's (src/lithshared/ButeMgr), whose parse errors are reported as 'ButeMgr (%s, %d):  %s'; AvP2's reports them as 'File "%s", line %d :  %s' and 'Line %d :  %s', has a formatting-error message and an EXPANSION keyword -- its error and parse paths are still to be reconstructed from the release's prebuilt build
+PHObject.lto	ours	ButeMgr (%s, %d):  %s
+PHObject.lto	retail	A formatting error in the attribute file was encountered.
+PHObject.lto	retail	EXPANSION
+PHObject.lto	retail	File "%s", line %d :  %s
+PHObject.lto	retail	Line %d :  %s

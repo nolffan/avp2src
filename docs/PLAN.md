@@ -235,11 +235,16 @@ libraries, ours"); each is scored against the release's prebuilt build
 MFCStub 96.2 %, lith 43.8 %, RezMgr 0.3 %. With them, `CShell.dll` is 62.7 %,
 `Object.lto` 89.1 %.
 
-AvP2's versions of three more are not NOLF's, and stay prebuilt (left out
-of our score) until reconstructed from the release's builds: ButeMgr (its
-symbol tables are STLport hash_maps, not zTools containers), LTGUIMgr
-(menu fonts with three faces, DrawMenu, GetTextExtents) and LithFontMgr
-(a CString for the previous string, a default colour). RezMgr and lith are
+ButeMgr is NOLF2's (`src/lithshared/ButeMgr`): AvP2's parser is NOLF2's
+line -- STLport symbol tables, the same four objects -- at an earlier stage,
+with CString accessors and a second tag table, which ours takes from
+AvP2's header (the CString `AddString` from the release's prebuilt build).
+ButeMgrNoMFC is 72.5 % byte-identical; its error reporting (`File "%s",
+line %d`, an `EXPANSION` keyword) is still NOLF2's (progress/data-known.txt).
+Two more are not NOLF's and stay prebuilt (left out of our score) until
+reconstructed from the release's builds: LTGUIMgr (menu fonts with three
+faces, DrawMenu, GetTextExtents) and LithFontMgr (a CString for the
+previous string, a default colour). RezMgr and lith are
 different versions too, by their scores. Prebuilt and not ours to build:
 GameSpy's managers (middleware) and LithTrackMgr (headers only); WONAPI's
 source is in the release, to be built from it.

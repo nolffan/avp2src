@@ -1,15 +1,32 @@
-// ButeMgr — LT2-era attribute file manager (ButeMgrNoMFC).
+// disable warning C4786: symbol greater than 255 character,
+// okay to ignore
+#pragma warning(disable: 4786)
+
+#include "Stdafx.h"
+#include "ButeMgr.h"
+
+
+#if defined(_DEBUG)
+	#define new DEBUG_NEW
+#endif
+
+const int nLineBufferSize = 256;  // Increase this to a large value to buffer the input.
+
+/////////////////////////////////////////////////////////////////////
 //
-// Reconstructed for the NOLF preservation project: scanner tables and
-// parser logic from Monolith's NOLF2 source release (the format is
-// unchanged), container plumbing restored to the LT2 zSymTab/zTools
-// design and verified per-function against the shipped ButeMgr.obj.
+//  This is a templet header for a scanner using a scan table
+//  produced by scangen
+//
+/////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
-#include "butemgr.h"
-#include "stdio.h"
-#include "stdarg.h"
 
+////////////////////////////////////
+// Token Defines
+
+const int EofTok		= 1;
+const int TagBegTok     = 2;
+const int TagEndTok     = 3;
+const int IdTok         = 4;
 const int EqualTok		= 5;
 const int PosIntegerTok = 6;
 const int NegIntegerTok = 7;
@@ -28,10 +45,7 @@ const int BoolTok       = 18;
 //
 ////////////////////////////////////
 
-const int EofTok    = 1;
-const int TagBegTok = 2;
-const int TagEndTok = 3;
-const int IdTok     = 4;
+
 
 #define Error        0
 #define MoveAppend   1
@@ -68,6 +82,66 @@ static short ClassMap[] = {
 };
 
 // This table is provided to assist in making a reserved word
+// search routine; it provides no functionality
+//
+// Major    4     Token for which this is an exception
+// Minor    0
+// FirstRSW 1     First index into the table
+// LastRSW  2     Last index into the table
+//
+class CReservedWords
+{
+
+public:
+
+    class CReservedWord
+    {
+    public:
+        CReservedWord() { }
+        CReservedWord( char const* name, int token, int tokenMinor)
+        {
+            m_name = name;
+            m_token = token;
+            m_tokenMinor = tokenMinor;
+        }
+
+        CString m_name;
+        int m_token;
+        int m_tokenMinor;
+    };
+
+	// Used to define map of strings to CSymTabItems.
+	typedef std::hash_map< char const*, CReservedWord, hash_str_nocase, equal_str_nocase > ReservedWordMap;
+
+    CReservedWords()
+    {
+		m_reservedWords["FALSE"] = CReservedWord( "FALSE", 18, 0 );
+		m_reservedWords["TRUE"] = CReservedWord( "TRUE", 18, 1 );
+    }
+
+	~CReservedWords( )
+	{
+	}
+
+    CReservedWord const* Lookup( char const* pszName )
+    {
+		CReservedWord const* pReservedWord = NULL;
+
+		// Find the item in the table of items.
+		ReservedWordMap::iterator iter = m_reservedWords.find( pszName );
+
+		// Check if item was found.
+		if( iter != m_reservedWords.end( ))
+		{
+			pReservedWord = &(*iter).second;
+		}
+
+        return pReservedWord;
+    }
+
+    ReservedWordMap m_reservedWords;
+
+} static s_reservedWords;
 
 struct TranType {
     short ActionType;  // The action to perform for this character.
@@ -178,87 +252,81 @@ static TranType TransTable[NumStates][NumClasses] = {
     {{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{1,99,0},{0,0,0},{0,0,0},{1,15,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{1,92,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}},
     {{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{1,100,0},{0,0,0},{0,0,0},{1,16,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{1,50,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
 };
+//
+/////////////////////////////////////////////////////////////////////
 
 
-class CReservedWords
-{
-public:
 
-	class CReservedWord
-	{
-	public:
-		CReservedWord() { }
-		CReservedWord(char const* name, int token, int tokenMinor)
-		{
-			m_name = name;
-			m_token = token;
-			m_tokenMinor = tokenMinor;
-		}
-
-		const char* m_name;
-		int m_token;
-		int m_tokenMinor;
-	};
-
-	CReservedWords()
-		: m_reservedWords(Compare, 2, RwHashFunc, zPtrColl::active)
-	{
-		m_reservedWords.insert(new CReservedWord("FALSE", 18, 0));
-		m_reservedWords.insert(new CReservedWord("TRUE", 18, 1));
-	}
-
-	CReservedWord* Lookup(char const* pszName)
-	{
-		CReservedWord rw;
-		rw.m_name = pszName;
-		return m_reservedWords.lookup(&rw);
-	}
-
-	static int Compare(CReservedWord* a, CReservedWord* b)
-	{
-		return strcmp(a->m_name, b->m_name);
-	}
-
-	static unsigned RwHashFunc(CReservedWord* p, unsigned m)
-	{
-		return zHashTable::default_hash(p->m_name, m);
-	}
-
-	zGHashTable<CReservedWord> m_reservedWords;
-
-} static s_reservedWords;
-
-
-// The shipped constructor is not Reset() plus a few pointers: it leaves
-// m_checksum, m_pCurrTabOfItems, m_pData and m_bSaving uninitialised, sets
-// m_bSuccess *false* rather than true, and clears the two strings with
-// Empty() (which is ShrinkBuffer(0)) rather than assigning "" (which would be
-// CopyString). Every one of those is visible in the shipped code and none of
-// them is what a reader would guess, so the reconstruction keeps them.
 CButeMgr::CButeMgr()
-{
+{ 
 	m_decryptCode = 0;
-	m_pDisplayFunc = NULL;
+	m_checksum = 0;
 	m_lineNumber = 0;
 	m_bLineCounterFlag = true;
-	m_bPutChar = false;
-	m_bCrypt = false;
+
 	m_bSuccess = false;
 	m_bErrorFlag = false;
-	m_pSaveData = NULL;
-	m_sAttributeFilename.Empty();
+	// m_sErrorString
+
+	m_pDisplayFunc = NULL; 
+
+	// TableOfItems
+	// TableOfTags
+
+	// m_stringHolder
+	// m_tagTab
+	// m_auxTagTab
+	// m_newTagTab
+
+	m_pCurrTabOfItems = 0;
+
+	m_pData = 0;
+	m_pSaveData = 0;
+
+	m_szLineBuffer = 0;
+	m_szLineBufferPtr = 0;
+
+	m_currentChar = 0;
+	m_token = 0;
+	m_tokenMinor =  0;
+
+	m_szTokenString[0] = 0;
+
 	m_sTagName.Empty();
+	m_sAttribute.Empty();
+	m_sAttributeFilename.Empty();
+
+	m_bPutChar = false;
+	m_bCrypt = false;
+	// m_cryptMgr
+
+
+	m_RectBank.Init( 8, 0 );
+	m_PointBank.Init( 8, 0 );
+	m_AVectorBank.Init( 8, 0 );
+	m_ARangeBank.Init( 8, 0 );
+	m_SymTabItemBank.Init( 64, 0 );
 }
 
 
-void CButeMgr::Init()
+bool CButeMgr::TraverseTableOfItemsDeleteSymTab( char const* pszAttName, CSymTabItem& theSymTab, void* pContext )
 {
+	CButeMgr* pButeMgr = ( CButeMgr* )pContext;
+
+	pButeMgr->m_SymTabItemBank.Free( &theSymTab );
+	return true;
 }
 
-
-void CButeMgr::Init(void (*pF)(const char* szMsg))
+bool CButeMgr::TraverseTableOfTagsDeleteSymTab( char const* pszTagName, TableOfItems& theTableOfItems, 
+											   void* pContext )
 {
-	m_pDisplayFunc = pF;
+	TraverseTableOfItems( theTableOfItems, TraverseTableOfItemsDeleteSymTab, pContext );
+	return true;
+}
+
+CButeMgr::~CButeMgr()
+{
+	Term( );
 }
 
 
@@ -270,40 +338,170 @@ void CButeMgr::Reset()
 	m_bErrorFlag = false;
 	m_sTagName = "";
 	m_sAttribute = "";
+
+	if( m_szLineBuffer )
+		*m_szLineBuffer = 0;
+
+	m_szLineBufferPtr = m_szLineBuffer;
 }
 
 
-void CButeMgr::DisplayMessage(const char* szMsg, ...)
-{
-	va_list v;
-	va_start(v, szMsg);
-	CString str;
-	str.FormatV(szMsg, v);
-	m_sErrorString.Format("ButeMgr (%s, %d):  %s", m_sAttributeFilename, m_lineNumber, str);
 
-	TRACE("%s\n", m_sErrorString.GetBuffer(0));
-	if (m_pDisplayFunc)
-		(*m_pDisplayFunc)(m_sErrorString.GetBuffer(0));
+void CButeMgr::Init() 
+{
+	Term( );
+}
+
+
+
+void CButeMgr::Init(void (*pF)(const char* szMsg)) 
+{ 
+	m_pDisplayFunc = pF; 
+}
+
+
+void CButeMgr::Term( )
+{
+	// Traverse the items of the tags and delete them.
+	TraverseTableOfTags( m_tagTab, TraverseTableOfTagsDeleteSymTab, this );
+
+	// Remove all the tableofitems from the tag table
+	{ 
+		TableOfTags::iterator iter = m_tagTab.begin( );
+		while( iter != m_tagTab.end( ) )
+		{
+			// Get the tag data.
+			TableOfItems* pTableOfItems = (*iter).second;
+			if( pTableOfItems )
+			{
+				delete pTableOfItems;
+			}
+
+			iter++;
+		}
+	}
+
+	m_tagTab.clear();
+
+	TraverseTableOfTags( m_auxTagTab, TraverseTableOfTagsDeleteSymTab, this );
+
+	// Remove all the tableofitems from the aux tag table
+	{
+		TableOfTags::iterator iter = m_auxTagTab.begin( );
+		while( iter != m_auxTagTab.end( ) )
+		{
+			// Get the tag data.
+			TableOfItems* pTableOfItems = (*iter).second;
+			if( pTableOfItems )
+			{
+				delete pTableOfItems;
+			}
+
+			iter++;
+		}
+	}
+
+	m_auxTagTab.clear();
+
+	TraverseTableOfTags( m_newTagTab, TraverseTableOfTagsDeleteSymTab, this );
+
+	// Remove all the tableofitems from the new tag table
+	{
+		TableOfTags::iterator iter = m_newTagTab.begin( );
+		while( iter != m_newTagTab.end( ) )
+		{
+			// Get the tag data.
+			TableOfItems* pTableOfItems = (*iter).second;
+			if( pTableOfItems )
+			{
+				delete pTableOfItems;
+			}
+
+			iter++;
+		}
+	}
+
+	m_newTagTab.clear();
+
+	m_RectBank.Init( 8, 0 );
+	m_PointBank.Init( 8, 0 );
+	m_AVectorBank.Init( 8, 0 );
+	m_ARangeBank.Init( 8, 0 );
+	m_SymTabItemBank.Init( 64, 0 );
+
+
+	m_stringHolder.clear();
+
+	delete[] m_szLineBuffer;
+	m_szLineBuffer = 0;
+	m_szLineBufferPtr = 0;
 }
 
 
 void CButeMgr::ConsumeChar()
 {
-	int c = m_pData->get() - m_decryptCode;
+	int c;
 
-	if (m_pData->eof())
+	if( !m_szLineBuffer && nLineBufferSize > 0)
 	{
-		m_currentChar = 0;
-		return;
+		m_szLineBuffer = new char[nLineBufferSize];
+		m_szLineBufferPtr = m_szLineBuffer;
+		memset(m_szLineBuffer, 0, nLineBufferSize);
 	}
 
-	if (m_bLineCounterFlag)
-		m_lineNumber++;
+	if( m_szLineBuffer )
+	{
+		// Do we need to refresh our buffer?
+		if( !m_szLineBufferPtr || !*m_szLineBufferPtr || m_szLineBufferPtr >= m_szLineBuffer + nLineBufferSize )
+		{
+			if (m_pData->eof()) 
+			{
+				m_currentChar = 0;
+				return;
+			}
 
-	m_currentChar = (unsigned char)c;
-	m_bLineCounterFlag = (c == '\n');
+			m_pData->read(m_szLineBuffer,nLineBufferSize-1);  // don't use getline!
+
+			ASSERT( m_pData->gcount() < nLineBufferSize );
+
+			// terminate the string.
+			m_szLineBuffer[ m_pData->gcount() ] = 0;
+
+			m_szLineBufferPtr = m_szLineBuffer;
+		}
+
+		ASSERT( m_szLineBufferPtr );
+
+		// Grab the next character from our buffer.
+		c = *m_szLineBufferPtr++;
+	}
+	else
+	{
+		// We're not using buffers, just get
+		// one character at a time.
+		c = m_pData->get();
+
+		if (m_pData->eof()) 
+		{
+			m_currentChar = 0;
+			return;
+		}
+	}
+	
+	c -= m_decryptCode;
+
+
+	if (m_bLineCounterFlag)
+		++m_lineNumber;
+	if (c == '\n')
+		m_bLineCounterFlag = true;
+	else
+		m_bLineCounterFlag = false;
+
+    m_currentChar = c;
 	m_checksum += c;
 }
+
 
 
 short CButeMgr::CharClass(unsigned char currentChar)
@@ -314,44 +512,52 @@ short CButeMgr::CharClass(unsigned char currentChar)
 }
 
 
+
 short CButeMgr::Action(short State, unsigned char currentChar)
 {
-	return TransTable[State][CharClass(currentChar)].ActionType;
+    return TransTable[State][CharClass(currentChar)].ActionType;
 }
+
 
 
 short CButeMgr::NextState(short State, unsigned char currentChar)
 {
-	return TransTable[State][CharClass(currentChar)].A;
+    return TransTable[State][CharClass(currentChar)].A;
 }
+
+
+
 
 
 void CButeMgr::LookupCodes(short State, unsigned char currentChar)
 {
-	m_token = TransTable[State][CharClass(currentChar)].A;
-	m_tokenMinor = TransTable[State][CharClass(currentChar)].B;
+    m_token = TransTable[State][CharClass(currentChar)].A;
+    m_tokenMinor = TransTable[State][CharClass(currentChar)].B;
 
 	if (m_token == IdTok)
 	{
-		CReservedWords::CReservedWord* p = s_reservedWords.Lookup(m_szTokenString);
+		CReservedWords::CReservedWord const* p = s_reservedWords.Lookup(m_szTokenString);
 		if (p)
 		{
-			m_token = (short)p->m_token;
-			m_tokenMinor = (short)p->m_tokenMinor;
+			m_token = p->m_token;
+			m_tokenMinor = p->m_tokenMinor;
 		}
 	}
 }
 
 
+
+
+
 bool CButeMgr::ScanTok()
 {
-	short State = StartState;
-	static short Pos;
+    short State = StartState;
+    static short Pos;
 
-	Pos = 0;
-	for (;;)
+    Pos = 0;
+    for(;;) 
 	{
-		switch (Action(State, m_currentChar))
+        switch (Action(State, m_currentChar))
 		{
 			case Error:
 				DisplayMessage("Bad symbol encountered.", m_lineNumber);
@@ -394,10 +600,29 @@ bool CButeMgr::ScanTok()
 				if (m_token == 0)
 					ScanTok();
 				return true;
-		}
-	}
+        }
+    }
 	return true;
 }
+
+
+
+
+
+void CButeMgr::DisplayMessage(const char* szMsg, ...)
+{
+	va_list v;
+	va_start(v, szMsg);
+	char aMsgBuffer[2048];
+	_vsnprintf(aMsgBuffer, sizeof(aMsgBuffer), szMsg, v);
+	m_sErrorString.Format("ButeMgr (%s, %d):  %s", m_sAttributeFilename, m_lineNumber, aMsgBuffer);
+
+	TRACE("%s\n", m_sErrorString.GetBuffer(0));
+	if (m_pDisplayFunc)
+		(*m_pDisplayFunc)(m_sErrorString.GetBuffer(0));
+}
+
+
 
 
 bool CButeMgr::Match(int Tok)
@@ -411,6 +636,9 @@ bool CButeMgr::Match(int Tok)
 	}
 	return true;
 }
+
+
+
 
 
 bool CButeMgr::Statement()
@@ -429,7 +657,7 @@ bool CButeMgr::Statement()
 
 	m_sAttribute = m_szTokenString;
 
-	if (!m_pSaveData && m_pCurrTabOfItems->lookup(m_sAttribute))
+	if (!m_pSaveData && FindSymTabItem( *m_pCurrTabOfItems, m_sAttribute ))
 	{
 		DisplayMessage("duplicate symbol encountered - %s", m_sAttribute.GetBuffer(0));
 		bDuplicate = true;
@@ -437,6 +665,7 @@ bool CButeMgr::Statement()
 
 	if (!Match(EqualTok))
 		return false;
+		
 
 	if (m_pSaveData)
 	{
@@ -455,7 +684,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(IntType, intValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, IntType, intValue );
+				}
 			}
 			else
 			{
@@ -470,7 +703,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(DwordType, dwordValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, DwordType, dwordValue );
+				}
 			}
 			else
 			{
@@ -485,7 +722,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(ByteType, byteValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, ByteType, byteValue );
+				}
 			}
 			else
 			{
@@ -498,7 +739,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(BoolType, boolValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, BoolType, boolValue );
+				}
 			}
 			else
 			{
@@ -516,7 +761,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(FloatType, floatValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, FloatType, floatValue );
+				}
 			}
 			else
 			{
@@ -529,7 +778,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(FloatType, floatValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, FloatType, floatValue );
+				}
 			}
 			else
 			{
@@ -542,7 +795,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(DoubleType, doubleValue));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, DoubleType, doubleValue );
+				}
 			}
 			else
 			{
@@ -555,20 +812,29 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(RectType, CRect(left, top, right, bottom)));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, RectType, CRect(left, top, right, bottom) );
+				}
 			}
 			else
 			{
 				CRect rc = GetRect(m_sTagName, m_sAttribute);
 				*m_pSaveData << "(" << rc.left << ", " << rc.top << ", " << rc.right << ", " << rc.bottom << ")";
 			}
+
 			break;
 		case PointTok:
 			sscanf(m_szTokenString, "(%d, %d)", &x, &y);
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(PointType, CPoint(x, y)));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, PointType, CPoint(x, y) );
+				}
 			}
 			else
 			{
@@ -581,7 +847,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(VectorType, CAVector(i, j, k)));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, VectorType, CAVector(i, j, k) );
+				}
 			}
 			else
 			{
@@ -594,7 +864,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(RangeType, CARange(i, j)));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, RangeType, CARange(i, j) );
+				}
 			}
 			else
 			{
@@ -606,7 +880,11 @@ bool CButeMgr::Statement()
 			if (!m_pSaveData)
 			{
 				if (!bDuplicate)
-					m_pCurrTabOfItems->add(m_sAttribute, new CSymTabItem(StringType, CString(m_szTokenString)));
+				{
+					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
+					if( pSymTabItem )
+						pSymTabItem->Init( *this, StringType, m_szTokenString );
+				}
 			}
 			else
 			{
@@ -627,6 +905,7 @@ bool CButeMgr::Statement()
 }
 
 
+
 bool CButeMgr::StatementList()
 {
 	for (;;)
@@ -645,6 +924,7 @@ bool CButeMgr::StatementList()
 }
 
 
+
 bool CButeMgr::Tag()
 {
 	if (!Match(IdTok))
@@ -652,16 +932,13 @@ bool CButeMgr::Tag()
 	m_sTagName = m_szTokenString;
 	if (!m_pSaveData)
 	{
-		if (m_tagTab.lookup(m_szTokenString))
+		if( FindTableOfItems( m_tagTab, m_szTokenString ))
 		{
 			DisplayMessage("Duplicate tag encountered - %s", m_szTokenString);
 			return false;
 		}
 
-		// Assigned first, then passed: shipped stores the new table into
-		// m_pCurrTabOfItems before the add() call and ignores add()'s result.
-		m_pCurrTabOfItems = new TableOfItems;
-		m_tagTab.add(m_szTokenString, m_pCurrTabOfItems);
+		m_pCurrTabOfItems = CreateTableOfItems( m_tagTab, m_szTokenString );
 	}
 	if (!Match(TagEndTok))
 		return false;
@@ -670,71 +947,84 @@ bool CButeMgr::Tag()
 }
 
 
-void CButeMgr::AuxTabItemsSave(const char* sz, CSymTabItem* pItem, void* p)
+
+
+
+
+
+bool CButeMgr::AuxTabItemsSave( char const* pszAttName, CSymTabItem& theItem, void* pContext )
 {
-	ostream* pSaveData = (ostream*)p;
+	ofstream* pSaveData = (ofstream*)pContext;
 
-	*pSaveData << "\r\n" << sz << " = ";
+	*pSaveData << "\r\n" << pszAttName << " = ";
 
-	switch (pItem->SymType)
+	switch (theItem.SymType)
 	{
 	case IntType:
-		*pSaveData << *pItem->data.i;
+		*pSaveData << theItem.data.i;
 		break;
 	case DwordType:
-		*pSaveData << "(DWORD)" << *pItem->data.dw;
+		*pSaveData << "(DWORD)" << theItem.data.dw;
 		break;
 	case ByteType:
-		*pSaveData << "(BYTE)" << (DWORD)*pItem->data.byte;
+		*pSaveData << "(BYTE)" << (DWORD)theItem.data.byte;
 		break;
 	case BoolType:
-		if (*pItem->data.b)
+		if (theItem.data.b)
 			*pSaveData << "TRUE";
 		else
-			*pSaveData << "FALSE";
+			*pSaveData << "FALSE";		
 		break;
 	case FloatType:
-		*pSaveData << *pItem->data.f << 'f';
+		*pSaveData << theItem.data.f << 'f';
 		break;
 	case DoubleType:
-		*pSaveData << *pItem->data.d;
+		*pSaveData << theItem.data.d;
 		break;
 	case StringType:
 		{
-			CString s = *pItem->data.s;
+			CString s = *theItem.data.s;
 			s.Replace("\"", "\"\"");
-			*pSaveData << '"' << (LPCSTR)s << '"';
+			*pSaveData << '"' << s << '"';
 			break;
 		}
 	case RectType:
-		*pSaveData << '(' << pItem->data.r->left << ", " << pItem->data.r->top << ", " << pItem->data.r->right << ", " << pItem->data.r->bottom << ')';
+		*pSaveData << '(' << theItem.data.r->left << ", " << theItem.data.r->top << ", " << theItem.data.r->right << ", " << theItem.data.r->bottom << ')';
 		break;
 	case PointType:
-		*pSaveData << "(" << pItem->data.point->x << ", " << pItem->data.point->y << ")";
+		*pSaveData << "(" << theItem.data.point->x << ", " << theItem.data.point->y << ")";
 		break;
 	case VectorType:
-		*pSaveData << "<" << pItem->data.v->Geti() << ", " << pItem->data.v->Getj() << ", " << pItem->data.v->Getk() << ">";
+		*pSaveData << "<" << theItem.data.v->Geti() << ", " << theItem.data.v->Getj() << ", " << theItem.data.v->Getk() << ">";
 		break;
 	case RangeType:
-		*pSaveData << "[" << pItem->data.range->GetMin() << ", " << pItem->data.range->GetMax() << "]";
+		*pSaveData << "[" << theItem.data.range->GetMin() << ", " << theItem.data.range->GetMax() << "]";
 		break;
 	}
+
+	return true;
 }
 
 
-void CButeMgr::NewTabsSave(const char* sz, TableOfItems* pTabOfItems, void* p)
+
+bool CButeMgr::NewTabsSave( const char* pszTagName, TableOfItems& theTabOfItems, void* pContext )
 {
-	ostream* pSaveData = (ostream*)p;
+	ofstream* pSaveData = (ofstream*)pContext;
 
-	*pSaveData << "\r\n\r\n" << "[" << sz << "]";
+	*pSaveData << "\r\n\r\n" << "[" << pszTagName << "]";
 
-	pTabOfItems->traverse(AuxTabItemsSave, p);
+	TraverseTableOfItems( theTabOfItems, AuxTabItemsSave, pSaveData );
+
+	return true;
 }
+
+
+
 
 
 bool CButeMgr::TagList()
 {
-	ConsumeChar();
+	ConsumeChar(); // Get things rolling
 	if (!ScanTok())
 		return false;
 	if (m_token == EofTok)
@@ -743,15 +1033,15 @@ bool CButeMgr::TagList()
 		return false;
 	while (m_token != EofTok)
 	{
-		if (!Tag())
+		if(!Tag())
 			return false;
-
-		if (m_pSaveData)
+		
+		if (m_pSaveData) // Add new items if saving
 		{
-			TableOfItems* pTableOfItems = m_auxTagTab.lookup(m_sTagName);
-			if (pTableOfItems)
+			TableOfItems* pTableOfItems = FindTableOfItems( m_auxTagTab, m_sTagName );
+			if( pTableOfItems )
 			{
-				pTableOfItems->traverse(AuxTabItemsSave, m_pSaveData);
+				TraverseTableOfItems( *pTableOfItems, AuxTabItemsSave, m_pSaveData );
 			}
 		}
 		if (!ScanTok())
@@ -773,25 +1063,37 @@ bool CButeMgr::TagList()
 }
 
 
+
+
+
 bool CButeMgr::Save(const char* szNewFileName)
 {
 	Reset();
+
 	if (m_sAttributeFilename.IsEmpty() && !szNewFileName)
 		return false;
+
 	m_bPutChar = true;
+
 	char buf[4096];
-	ifstream is(m_sAttributeFilename, ios::nocreate | ios::binary);
-	// No clamp of an empty file's length to 1: shipped passes the 0 straight
-	// to new char[] and the strstream.
-	long nFileLength = 0;
+
+	ifstream is(m_sAttributeFilename, ios::nocreate | ios::binary);	
+
+	long nFileLength=0;
 	if (is.is_open())
 	{
 		is.seekg(0, ios::end);
 		nFileLength = is.tellg();
 	}
+
+	if (nFileLength==0)
+		nFileLength = 1;
+
 	is.clear();
 	is.seekg(0);
+
 	strstream ss(new char[nFileLength], nFileLength, ios::in | ios::out);
+
 	if (m_bCrypt)
 	{
 		m_cryptMgr.Decrypt(is, ss);
@@ -807,25 +1109,38 @@ bool CButeMgr::Save(const char* szNewFileName)
 				ss.write(buf, is.gcount());
 			}
 		}
+
 		is.close();
+
 		if (szNewFileName)
 			m_pSaveData = new fstream(szNewFileName, ios::binary | ios::in | ios::out | ios::trunc);
 		else
 			m_pSaveData = new fstream(m_sAttributeFilename, ios::binary | ios::in | ios::out | ios::trunc);
+
 	}
-	if (m_pSaveData->fail())
+
+	if( m_pSaveData->fail( ))
 	{
 		delete m_pSaveData;
 		m_pSaveData = NULL;
+
 		delete ss.str();
+
 		m_bPutChar = false;
+
 		return false;
 	}
-	m_pSaveData->flags(m_pSaveData->flags() | ios::showpoint | ios::fixed);
+
+    m_pSaveData->flags(m_pSaveData->flags() | ios::showpoint | ios::fixed);
+
 	ss.clear();
 	m_pData = &ss;
+
 	TagList();
-	m_newTagTab.traverse(NewTabsSave, m_pSaveData);
+
+	// add new tag items
+	TraverseTableOfTags( m_newTagTab, NewTabsSave, m_pSaveData );
+
 	m_pSaveData->clear();
 	if (m_bCrypt)
 	{
@@ -834,88 +1149,482 @@ bool CButeMgr::Save(const char* szNewFileName)
 		else
 			m_cryptMgr.Encrypt(*m_pSaveData, ofstream(m_sAttributeFilename, ios::binary));
 	}
+
 	delete ss.str();
 	if (m_bCrypt)
 		delete m_pSaveData->rdbuf();
 	delete m_pSaveData;
 	m_pSaveData = NULL;
+
 	m_bPutChar = false;
+
 	return true;
 }
 
 
-void CButeMgr::TagTraverseFunc(const char* szTag, TableOfItems* pData, void* pExtraData)
+
+bool CButeMgr::Exist(const char* szTagName, const char* szAttName)
 {
-	TagExtraData* pED = (TagExtraData*)pExtraData;
-	pED->m_pCallback(szTag, pED->m_pAux);
+	// Find the table of items in the auxiliary tag table.
+	TableOfItems* pTabOfItems = FindTableOfItems( m_auxTagTab, szTagName );
+
+	// Check if we found the table of items.
+	if( pTabOfItems )
+	{
+		// If no attribute name is provided, then we're just checking the tag.
+		if (!szAttName)
+			return true;
+
+		// Find the symtabitem.
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, szAttName );
+		if (pItem)
+			return true;
+	}
+
+	// Find the table of items in the main tag table.
+	pTabOfItems = FindTableOfItems( m_tagTab, szTagName );
+
+	// Check if we found the table of items.
+	if( pTabOfItems )
+	{
+		// If no attribute name is provided, then we're just checking the tag.
+		if (!szAttName)
+			return true;
+
+		// Find the symtabitem.
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, szAttName );
+		if (pItem)
+			return true;
+	}
+
+	// Find the table of items in the new tag table.
+	pTabOfItems = FindTableOfItems( m_newTagTab, szTagName );
+
+	// Check if we found the table of items.
+	if( pTabOfItems )
+	{
+		// If no attribute name is provided, then we're just checking the tag.
+		if (!szAttName)
+			return true;
+
+		// Find the symtabitem.
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, szAttName );
+		if (pItem)
+			return true;
+	}
+
+	// Tag or Tag+AttName not found.
+	return false;
 }
 
 
-void CButeMgr::GetTags(void (*pCallback)(const char* szTag, void* pAux), void* pAux)
+bool CButeMgr::GetTagsTraverseFunc( char const* pszTagName, TableOfItems& theTableOfItems, void* pContext )
 {
-	TagExtraData ed(pCallback, pAux);
-	m_tagTab.traverse(TagTraverseFunc, &ed);
-	m_auxTagTab.traverse(TagTraverseFunc, &ed);
-	m_newTagTab.traverse(TagTraverseFunc, &ed);
+	GetTagsData* pGetTagsData = ( GetTagsData* )pContext;
+	GetTagsCallback theCallbackFunc = pGetTagsData->m_pCallback;
+	return theCallbackFunc( pszTagName, pGetTagsData->m_pContext );
 }
 
 
-void CButeMgr::KeyTraverseFunc(const char* szKey, CSymTabItem* pData, void* pExtraData)
+
+void CButeMgr::GetTags( GetTagsCallback pCallback, void* pContext )
 {
-	KeyExtraData* pED = (KeyExtraData*)pExtraData;
-	pED->m_pCallback(szKey, pData, pED->m_pAux);
+	GetTagsData data( pCallback, pContext );
+	TraverseTableOfTags( m_tagTab, GetTagsTraverseFunc, &data );
+	TraverseTableOfTags( m_auxTagTab, GetTagsTraverseFunc, &data );
+	TraverseTableOfTags( m_newTagTab, GetTagsTraverseFunc, &data );
 }
 
 
-void CButeMgr::GetKeys(const char* szTag, void (*pCallback)(const char* szKey, CSymTabItem* pData, void* pAux), void* pAux)
+bool CButeMgr::GetKeysTraverseFunc( char const* pszAttName, CSymTabItem& theItem, void* pContext )
 {
-	KeyExtraData ed(pCallback, pAux);
-
-	TableOfItems* pTab = m_tagTab.lookup(szTag);
-	if (pTab)
-		pTab->traverse(KeyTraverseFunc, &ed);
-
-	pTab = m_auxTagTab.lookup(szTag);
-	if (pTab)
-		pTab->traverse(KeyTraverseFunc, &ed);
-
-	pTab = m_newTagTab.lookup(szTag);
-	if (pTab)
-		pTab->traverse(KeyTraverseFunc, &ed);
+	GetKeysData* pGetKeysData = ( GetKeysData* )pContext;
+	GetKeysCallback theCallbackFunc = pGetKeysData->m_pCallback;
+	return theCallbackFunc( pszAttName, &theItem, pGetKeysData->m_pContext );
 }
 
 
-CButeMgr::CSymTabItem* CButeMgr::GetItem(const char* szTagName, const char* szAttName)
+
+void CButeMgr::GetKeys( const char* pszTagName, GetKeysCallback pCallback, void* pContext )
 {
+	TableOfItems* pTableOfItems;
+
+	GetKeysData data( pCallback, pContext );
+
+	pTableOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	if( pTableOfItems )
+		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
+	pTableOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+	if( pTableOfItems )
+		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
+	pTableOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+	if( pTableOfItems )
+		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
+}
+
+
+
+
+CButeMgr::SymTypes CButeMgr::GetType(const char* szTagName, const char* szAttName)
+{
+	m_bSuccess = true;
 	CSymTabItem* pItem;
 
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab && (pItem = pTab->lookup(szAttName)) != NULL)
-		return pItem;
+	pItem = FindSymTabItem( szTagName, szAttName );
+	if( !pItem )
+	{
+		m_bSuccess = false;
+		return NullType;
+	}
 
-	pTab = m_auxTagTab.lookup(szTagName);
-	if (pTab && (pItem = pTab->lookup(szAttName)) != NULL)
-		return pItem;
+	return pItem->SymType;
+}
 
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab && (pItem = pTab->lookup(szAttName)) != NULL)
-		return pItem;
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::AddString
+//
+// Return:		CString const&	- String added to list.
+// Argument:	char const* pszString - String to add to the list.
+//
+// Description:	Adds a string to the string list.  A pointer to the newly
+//				added string is returned.  Use this pointer, because its
+//				lifetime is guaranteed.
+//
+////////////////////////////////////////////////////////////////////////
+// AVP2: AvP2's ButeMgr adds the CString overloads below; AddString's is the
+// worker and the char* one wraps it (the release's prebuilt ButeMgr.obj:
+// ?AddString@CButeMgr@@AAEABVCString@@PBD@Z constructs a CString and calls
+// the other).
+CString const& CButeMgr::AddString( CString const& sString )
+{
+	// Add the string to the string holder.
+	std::pair< StringHolder::const_iterator, bool > pr = m_stringHolder.insert( sString );
+
+	// pr.first is a pointer to a CString.  So, dereferance and return the CString.
+	return *pr.first;
+}
+
+CString const& CButeMgr::AddString( char const* pszString )
+{
+	return AddString( CString( pszString ));
+}
+
+// AVP2: the CString forms AvP2's header declares; provisional, forwarding to
+// NOLF2's char* ones, until compared with the release's prebuilt build.
+CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, CString const& sTagName )
+{
+	return CreateTableOfItems( tableOfTags, ( char const* )sTagName );
+}
+
+CButeMgr::TableOfItems* CButeMgr::FindTableOfItems( TableOfTags& tableOfTags, CString const& sTagName )
+{
+	return FindTableOfItems( tableOfTags, ( char const* )sTagName );
+}
+
+CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, CString const& sAttName )
+{
+	return CreateSymTabItem( tableOfItems, ( char const* )sAttName );
+}
+
+CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( TableOfItems& tableOfItems, CString const& sAttName )
+{
+	return FindSymTabItem( tableOfItems, ( char const* )sAttName );
+}
+
+
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::CreateTableOfItems
+//
+// Return:		CButeMgr::TableOfItems*	- New table of items.
+// Argument:	TableOfTags& tableOfTags	- table of tags to add to.
+// Argument:	const char* szTagName	- Tag name to add.
+//
+// Description:	Adds a new TableOfItems to a TableOfTags.
+//
+////////////////////////////////////////////////////////////////////////
+CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, char const* pszTagName )
+{
+	// Check inputs.
+	if( !pszTagName )
+		return NULL;
+	
+	// Create a new table of items.
+	TableOfItems* pTableOfItems = new TableOfItems;
+	if( !pTableOfItems )
+		return NULL;
+
+	// Add the string to the string list and use it with the tableOfTags map.  This string pointer
+	// will persist for the life of this ButeMgr object.
+	char const* pszTagString = AddString( pszTagName );
+
+	// Add the table of items to the table of tags.
+	tableOfTags[pszTagString] = pTableOfItems;
+
+	// Return the table of items we created.
+	return pTableOfItems;
+}
+
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::FindTableOfItems
+//
+// Return:		CButeMgr::TableOfItems*	- Found TableOfItems
+// Argument:	TableOfTags& tableOfTags - table of tags to look in.
+// Argument:	const char* pszTagName - Tag to search with.
+//
+// Description:	Finds a pre-existing TableOfItems in a TableOfTags
+//
+////////////////////////////////////////////////////////////////////////
+CButeMgr::TableOfItems* CButeMgr::FindTableOfItems( TableOfTags& tableOfTags, char const* pszTagName )
+{
+	// Check inputs.
+	if( !pszTagName )
+		return NULL;
+
+	// Assume table not found.
+	TableOfItems* pTableOfItems = NULL;
+
+	// Find the item in the table of items.
+	TableOfTags::iterator iter = tableOfTags.find( pszTagName );
+
+	// Check if item was found.
+	if( iter != tableOfTags.end( ))
+	{
+		pTableOfItems = (*iter).second;
+	}
+
+	// Return what we found.
+	return pTableOfItems;
+}
+
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::CreateSymTabItem
+//
+// Return:		CButeMgr::CSymTabItem*	- New symtabitem.
+// Argument:	TableOfItems& tableOfItems	- table of items to add to.
+// Argument:	const char* pszAttName - Attribute name to add.
+//
+// Description:	Adds a new CSymTablItem to a TableOfItems.
+//
+////////////////////////////////////////////////////////////////////////
+CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, char const* pszAttName )
+{
+	// Check inputs.
+	if( !pszAttName )
+		return NULL;
+
+	// Create a new symtab.
+	CSymTabItem* pSymTabItem = m_SymTabItemBank.Allocate( );
+	if( !pSymTabItem )
+		return NULL;
+
+	// Add the string to the string list and use it with the tableOfItems map.  This string pointer
+	// will persist for the life of this ButeMgr object.
+	char const* pszItemString = AddString( pszAttName );
+
+	// Add the symtab to the table of tags.
+	tableOfItems[pszItemString] = pSymTabItem;
+
+	// Return the item we created.
+	return pSymTabItem;
+}
+
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::FindSymTabItem
+//
+// Return:		CButeMgr::CSymTabItem*	- Found symtabitem.
+// Argument:	TableOfItems& tableOfItems	- table of items to look in.
+// Argument:	const char* pszAttName - Attribute name to search with.
+//
+// Description:	Finds a pre-existing CSymTabItem in a TableOfItems
+//
+////////////////////////////////////////////////////////////////////////
+CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( TableOfItems& tableOfItems, char const* pszAttName )
+{
+	// Check inputs.
+	if( !pszAttName )
+		return NULL;
+
+	// Assume item not found.
+	CSymTabItem* pItem = NULL;
+
+	// Find the item in the table of items.
+	TableOfItems::iterator iter = tableOfItems.find( pszAttName );
+
+	// Check if item was found.
+	if( iter != tableOfItems.end( ))
+	{
+		pItem = (*iter).second;
+	}
+
+	// Return what we found.
+	return pItem;
+}
+
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::FindSymTabItem
+//
+// Return:		CButeMgr::CSymTabItem*	- Found symtabitem.
+// Argument:	const char* pszTagName	- Tag to find.
+// Argument:	const char* pszAttName - Attribute name to search with.
+//
+// Description:	Finds a pre-existing CSymTabItem in any of the table of tags.
+//
+////////////////////////////////////////////////////////////////////////
+CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( char const* pszTagName, char const* pszAttName )
+{
+	// Check inputs.
+	if( !pszTagName || !pszAttName )
+	{
+		ASSERT( FALSE );
+		return NULL;
+	}
+
+	TableOfItems* pTabOfItems;
+
+	pTabOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	if( pTabOfItems )
+	{
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		if (pItem)
+			return pItem;
+	}
+	pTabOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+	if( pTabOfItems )
+	{
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		if (pItem)
+			return pItem;
+	}
+	pTabOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+	if( pTabOfItems )
+	{
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		if (pItem)
+			return pItem;
+	}
 
 	return NULL;
 }
 
 
 
-int CButeMgr::GetInt(const char* szTagName, const char* szAttName, int defVal)
+////////////////////////////////////////////////////////////////////////
+//
+// CButeMgr::GetSymTabItem
+//
+// Return:		CButeMgr::CSymTabItem* - Item associated with szTagName & szAttName
+// Argument:	const char* szTagName - Tag name to find.
+// Argument:	const char* szAttName - Attribute in szTagName to find.
+//
+// Description:	Looks through the main table of tags.  If tag is found, then
+//				looks for attribute.  If attribute found, then returns CSymTabItem.
+//				If tag found, but attribute isn't found, then it looks in the auxiliary
+//				tagtable.  It will create a new TableOfItems if tag isn't found in the 
+//				auxiliary table.  If neither the tag nor the attribute were found in the
+//				main tagtable, it looks in the new tagtable.  It will create a new TableOfItems
+//				if not found there.
+//
+////////////////////////////////////////////////////////////////////////
+CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const char* pszAttName ) 
 {
-	m_bSuccess = true;
+	// Check inputs.
+	if( !pszTagName || !pszAttName )
+		return NULL;
 
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	// Default to not finding or creating the item.
+	CSymTabItem* pItem = NULL;
+
+	// Find table of items in main tag table.
+	TableOfItems* pTabOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	if( pTabOfItems )
+	{
+		// Find attribute in table of items.
+		pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+
+		// If not found, then create or find it in the auxiliary table.
+		if( !pItem )
+		{
+			// Find table of items in auxiliary table.
+			pTabOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+
+			// Check if we found the table of items.
+			if( pTabOfItems )
+			{
+				// Find the attribute in the table of items.
+				pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+
+				// If we didn't find the attribute, then we need to add it here.
+				if( !pItem )
+				{
+					pItem = CreateSymTabItem( *pTabOfItems, pszAttName );
+				}
+			}
+			// We didn't find the TableOfItems in the auxiliary table.  We need to make
+			// a new TableOfItems and a CSymTabItem.
+			else
+			{
+				// Create the new TableOfItems.
+				TableOfItems* pTableOfItems = CreateTableOfItems( m_auxTagTab, pszTagName );
+				if( !pTableOfItems )
+					return NULL;
+
+				// Create the new CSymTabItem.
+				pItem = CreateSymTabItem( *pTableOfItems, pszAttName );
+			}
+		}
+	}
+	// TableOfItems didn't exist in the main TableOfTags.  Now check the new tag table.
+	else
+	{
+		// Find the TableOfItems in the new tag table.
+		pTabOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+
+		// Check if we found the TableOfItems.
+		if( pTabOfItems )
+		{
+			// Find the CSymTabItem in the TableOfItems.
+			pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+
+			// If we didn't find the item, we need to add it.
+			if( !pItem )
+			{
+				// Create a new CSymTabItem.
+				pItem = CreateSymTabItem( *pTabOfItems, pszAttName );
+			}
+		}
+		// We didn't find the TableOfItems, so we need to add a new one and then add a new CSymTabItem to it.
+		else
+		{
+			TableOfItems* pTableOfItems = CreateTableOfItems( m_newTagTab, pszTagName );
+			if( !pTableOfItems )
+				return NULL;
+
+			// Create the new SymTabItem.
+			pItem = CreateSymTabItem( *pTableOfItems, pszAttName );
+		}
+	}
+
+	// Return the found or newly created item.
+	return pItem;
+}
+
+
+int CButeMgr::GetInt(const char* szTagName, const char* szAttName, int defVal)
+{ 
+	m_bSuccess = true;
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		if (pItem->SymType == IntType)
-			return *pItem->data.i;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
+			return (pItem->data.i);
+		else
+			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 	}
 
 	m_bSuccess = false;
@@ -923,105 +1632,47 @@ int CButeMgr::GetInt(const char* szTagName, const char* szAttName, int defVal)
 }
 
 
-int CButeMgr::GetInt(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
 
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == IntType)
-			return *pItem->data.i;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
+int CButeMgr::GetInt(const char* szTagName, const char* szAttName) 
+{ 
+	int nRet = GetInt( szTagName, szAttName, INT_MIN );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return (int)INT_MIN;
+	return nRet;
 }
 
 
-// The eleven Set* overloads are one shape written eleven times, and the
-// shipped code settles two spellings in it, the same way in every overload:
-//
-//     *pItem = CSymTabItem(IntType, val);        // overwrite: unnamed temporary
-//
-//     pItem = new CSymTabItem(IntType, val);     // add: the new item is named
-//     pTab->add(szAttName, pItem);               // before the call
-//
-// The named form of the first (`CSymTabItem temp(...); *pItem = temp;`) makes
-// VC6 re-address the local instead of pushing the constructor's result, and
-// nesting the `new` inside the add() call moves the null-new select into
-// another register. An earlier reading had the overwrite spelling vary per
-// site and per overload; that fitted ten overloads only because the add
-// sites were nested. With the add sites split, the all-unnamed spelling
-// matches all eleven (Range and Vector included) byte for byte.
-void CButeMgr::SetInt(const char* szTagName, const char* szAttName, int val)
+
+
+void CButeMgr::SetInt(const char* szTagName, const char* szAttName, int val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(IntType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(IntType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(IntType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(IntType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, IntType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(IntType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(IntType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(IntType, val));
 }
+
+
+
 
 
 DWORD CButeMgr::GetDword(const char* szTagName, const char* szAttName, DWORD defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		switch (pItem->SymType)
 		{
 		case DwordType:
-			return *pItem->data.dw;
+			return (pItem->data.dw);
 		default:
 			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 		}
@@ -1030,96 +1681,49 @@ DWORD CButeMgr::GetDword(const char* szTagName, const char* szAttName, DWORD def
 	m_bSuccess = false;
 	return defVal;
 }
+
 
 
 DWORD CButeMgr::GetDword(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		switch (pItem->SymType)
-		{
-		case DwordType:
-			return *pItem->data.dw;
-		default:
-			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-		}
-	}
-	else
+{ 
+	DWORD nRet = GetDword( szTagName, szAttName, 0 );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return 0;
+	return nRet;
 }
 
 
-void CButeMgr::SetDword(const char* szTagName, const char* szAttName, DWORD val)
+
+
+void CButeMgr::SetDword(const char* szTagName, const char* szAttName, DWORD val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(DwordType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(DwordType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(DwordType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(DwordType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, DwordType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(DwordType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(DwordType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(DwordType, val));
 }
+
+
+
 
 
 BYTE CButeMgr::GetByte(const char* szTagName, const char* szAttName, BYTE defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		switch (pItem->SymType)
 		{
 		case ByteType:
-			return *pItem->data.byte;
+			return (pItem->data.byte);
 		default:
 			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 		}
@@ -1128,101 +1732,49 @@ BYTE CButeMgr::GetByte(const char* szTagName, const char* szAttName, BYTE defVal
 	m_bSuccess = false;
 	return defVal;
 }
+
 
 
 BYTE CButeMgr::GetByte(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		switch (pItem->SymType)
-		{
-		case ByteType:
-			return *pItem->data.byte;
-		default:
-			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-		}
-	}
-	else
+{ 
+	BYTE nRet = GetByte( szTagName, szAttName, 0 );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return 0;
+	return nRet;
 }
 
 
-void CButeMgr::SetByte(const char* szTagName, const char* szAttName, BYTE val)
+
+
+void CButeMgr::SetByte(const char* szTagName, const char* szAttName, BYTE val) 
 {
-	// The shipped SetByte does not set m_bSuccess, alone among the eleven
-	// Set* overloads: there is no `movb $0x1,0xd(...)` anywhere in it and
-	// there is one at the head of every sibling. Removing ours brings the
-	// instruction count to exactly the shipped 378 and changes which
-	// registers carry `this` and the tag name — the shipped build materialises
-	// a zero in %esi and compares against it where ours uses `test`, which is
-	// sixteen bytes of allocation downstream of one absent store.
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(ByteType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(ByteType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(ByteType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(ByteType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, ByteType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(ByteType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(ByteType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(ByteType, val));
 }
+
+
+
 
 
 bool CButeMgr::GetBool(const char* szTagName, const char* szAttName, bool defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		switch (pItem->SymType)
 		{
 		case BoolType:
-			return *pItem->data.b;
+			return (pItem->data.b);
 		default:
 			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 		}
@@ -1233,96 +1785,54 @@ bool CButeMgr::GetBool(const char* szTagName, const char* szAttName, bool defVal
 }
 
 
-bool CButeMgr::GetBool(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
 
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		switch (pItem->SymType)
-		{
-		case BoolType:
-			return *pItem->data.b;
-		default:
-			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-		}
-	}
-	else
+
+
+
+bool CButeMgr::GetBool(const char* szTagName, const char* szAttName)
+{ 
+	bool bRet = GetBool( szTagName, szAttName, 0 );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return false;
+	return bRet;
 }
 
 
-void CButeMgr::SetBool(const char* szTagName, const char* szAttName, bool val)
+
+
+void CButeMgr::SetBool(const char* szTagName, const char* szAttName, bool val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(BoolType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(BoolType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(BoolType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(BoolType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, BoolType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(BoolType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(BoolType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(BoolType, val));
 }
+
+
+
+
+
 
 
 float CButeMgr::GetFloat(const char* szTagName, const char* szAttName, float defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		switch (pItem->SymType)
 		{
 		case FloatType:
-			return *pItem->data.f;
-	case IntType:
-		return (float)*pItem->data.i;
+			return (pItem->data.f);
+		case IntType:
+			return (float)((pItem->data.i));
 		default:
 			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 		}
@@ -1334,97 +1844,49 @@ float CButeMgr::GetFloat(const char* szTagName, const char* szAttName, float def
 
 
 float CButeMgr::GetFloat(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		switch (pItem->SymType)
-		{
-		case FloatType:
-			return *pItem->data.f;
-	case IntType:
-		return (float)*pItem->data.i;
-		default:
-			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-		}
-	}
-	else
+{ 
+	float fRet = GetFloat( szTagName, szAttName, FLT_MIN );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return FLT_MIN;
+	return fRet;
 }
 
 
-void CButeMgr::SetFloat(const char* szTagName, const char* szAttName, float val)
+
+
+
+void CButeMgr::SetFloat(const char* szTagName, const char* szAttName, float val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(FloatType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(FloatType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(FloatType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(FloatType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, FloatType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(FloatType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(FloatType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(FloatType, val));
 }
+
+
+
+
 
 
 double CButeMgr::GetDouble(const char* szTagName, const char* szAttName, double defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		switch (pItem->SymType)
 		{
 		case DoubleType:
-			return *pItem->data.d;
-	case IntType:
-		return *pItem->data.i;
+			return (pItem->data.d);
+		case IntType:
+			return (double)((pItem->data.i));
 		default:
 			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 		}
@@ -1436,94 +1898,50 @@ double CButeMgr::GetDouble(const char* szTagName, const char* szAttName, double 
 
 
 double CButeMgr::GetDouble(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
+{ 
+	double fRet = GetDouble( szTagName, szAttName, DBL_MIN );
+	if( !m_bSuccess )
+		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	return fRet;
+}
+
+
+
+
+
+void CButeMgr::SetDouble(const char* szTagName, const char* szAttName, double val) 
+{
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		switch (pItem->SymType)
-		{
-		case DoubleType:
-			return *pItem->data.d;
-	case IntType:
-		return *pItem->data.i;
-		default:
+		m_bSuccess = true;
+		pItem->Init( *this, DoubleType, val);
+	}
+	else
+	{
+		m_bSuccess = false;
+	}
+}
+
+
+
+
+
+// AVP2: AvP2's ButeMgr (its butemgr.h) hands strings back as CStrings where
+// NOLF2's hands back the table's own char pointers; these four are NOLF2's
+// with AvP2's interface, their exact shape still to be matched against the
+// release's prebuilt build.
+CString CButeMgr::GetString(const char* szTagName, const char* szAttName, const CString& defVal)
+{ 
+	m_bSuccess = true;
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
+	{
+		if (pItem->SymType == StringType)
+			return *(pItem->data.s);
+		else
 			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-		}
-	}
-	else
-		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
-
-	m_bSuccess = false;
-	return DBL_MIN;
-}
-
-
-void CButeMgr::SetDouble(const char* szTagName, const char* szAttName, double val)
-{
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
-	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(DoubleType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(DoubleType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(DoubleType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(DoubleType, val));
-		return;
-	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
-	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(DoubleType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(DoubleType, val);
-		pTab->add(szAttName, pItem);
-		return;
-	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(DoubleType, val));
-}
-
-
-CString& CButeMgr::GetString(const char* szTagName, const char* szAttName, CString& defVal)
-{
-	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == StringType)
-			return *pItem->data.s;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 	}
 
 	m_bSuccess = false;
@@ -1531,575 +1949,339 @@ CString& CButeMgr::GetString(const char* szTagName, const char* szAttName, CStri
 }
 
 
-CString& CButeMgr::GetString(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
-	static CString defVal("");
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == StringType)
-			return *pItem->data.s;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
+CString CButeMgr::GetString(const char* szTagName, const char* szAttName)
+{ 
+	CString sRet = GetString( szTagName, szAttName, CString("") );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return defVal;
+	return sRet;
 }
 
-
-void CButeMgr::SetString(const char* szTagName, const char* szAttName, const CString& val)
+void CButeMgr::GetString(const char* szTagName, const char* szAttName, const char* defVal, char *szResult, DWORD maxLen)
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
-	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(StringType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(StringType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(StringType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(StringType, val));
+	if (!szResult || !maxLen)
 		return;
-	}
 
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	CString sRet = GetString( szTagName, szAttName, CString(defVal) );
+	if( !m_bSuccess && !defVal )
+		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
+
+	if( m_bSuccess )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(StringType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(StringType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		DWORD nLength = sRet.GetLength();
+		if ( nLength < maxLen )
+			maxLen = nLength + 1;
+		strncpy(szResult, (const char*)sRet, maxLen);
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(StringType, val));
+	else if (defVal)
+	{
+		strncpy(szResult, defVal, maxLen);
+	}
 }
+
+void CButeMgr::GetString(const char* szTagName, const char* szAttName, char *szResult, DWORD maxLen)
+{
+	if (!szResult || !maxLen)
+		return;
+
+	GetString( szTagName, szAttName, "", szResult, maxLen );
+}
+
+
+void CButeMgr::SetString(const char* szTagName, const char* szAttName, const CString& val) 
+{
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
+	{
+		m_bSuccess = true;
+		pItem->Init( *this, StringType, val);
+	}
+	else
+	{
+		m_bSuccess = false;
+	}
+}
+
+
+
 
 
 CRect& CButeMgr::GetRect(const char* szTagName, const char* szAttName, CRect& defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		if (pItem->SymType == RectType)
-			return *pItem->data.r;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
+			return *(pItem->data.r);
+		else
+			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 	}
-
 	m_bSuccess = false;
 	return defVal;
 }
+
 
 
 CRect& CButeMgr::GetRect(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
+{ 
 	static CRect defVal(0, 0, 0, 0);
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == RectType)
-			return *pItem->data.r;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
+	CRect& rect = GetRect( szTagName, szAttName, defVal );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return defVal;
+	return rect;
 }
 
 
-void CButeMgr::SetRect(const char* szTagName, const char* szAttName, const CRect& val)
+
+
+
+void CButeMgr::SetRect(const char* szTagName, const char* szAttName, const CRect& val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(RectType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(RectType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(RectType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(RectType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, RectType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(RectType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(RectType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(RectType, val));
 }
+
+
+
 
 
 CPoint& CButeMgr::GetPoint(const char* szTagName, const char* szAttName, CPoint& defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		if (pItem->SymType == PointType)
-			return *pItem->data.point;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
+			return *(pItem->data.point);
+		else
+			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 	}
-
 	m_bSuccess = false;
 	return defVal;
 }
+
 
 
 CPoint& CButeMgr::GetPoint(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
+{ 
 	static CPoint defVal(0, 0);
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == PointType)
-			return *pItem->data.point;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
+	CPoint& point = GetPoint( szTagName, szAttName, defVal );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return defVal;
+	return point;
 }
 
 
-void CButeMgr::SetPoint(const char* szTagName, const char* szAttName, const CPoint& val)
+
+
+
+void CButeMgr::SetPoint(const char* szTagName, const char* szAttName, const CPoint& val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(PointType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-			*pItem = CSymTabItem(PointType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(PointType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(PointType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, PointType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(PointType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(PointType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(PointType, val));
 }
+
+
+
 
 
 CAVector& CButeMgr::GetVector(const char* szTagName, const char* szAttName, CAVector& defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		if (pItem->SymType == VectorType)
-			return *pItem->data.v;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
+			return *(pItem->data.v);
+		else
+			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 	}
-
 	m_bSuccess = false;
 	return defVal;
 }
+
 
 
 CAVector& CButeMgr::GetVector(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
-	static CAVector defVal(0.0, 0.0, 0.0);
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == VectorType)
-			return *pItem->data.v;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
+{ 
+	static CAVector defVal(0, 0, 0);
+	CAVector& vect = GetVector( szTagName, szAttName, defVal );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return defVal;
+	return vect;
 }
 
 
-void CButeMgr::SetVector(const char* szTagName, const char* szAttName, const CAVector& val)
+
+
+
+void CButeMgr::SetVector(const char* szTagName, const char* szAttName, const CAVector& val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(VectorType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-				*pItem = CSymTabItem(VectorType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(VectorType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(VectorType, val));
-		return;
+		m_bSuccess = true;
+		pItem->Init( *this, VectorType, val);
 	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
+	else
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(VectorType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(VectorType, val);
-		pTab->add(szAttName, pItem);
-		return;
+		m_bSuccess = false;
 	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(VectorType, val));
 }
+
+
+
+
 
 
 CARange& CButeMgr::GetRange(const char* szTagName, const char* szAttName, CARange& defVal)
-{
+{ 
 	m_bSuccess = true;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
+	CSymTabItem* pItem;
+	if (pItem = FindSymTabItem(szTagName, szAttName))
 	{
 		if (pItem->SymType == RangeType)
-			return *pItem->data.range;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
+			return *(pItem->data.range);
+		else
+			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
 	}
-
 	m_bSuccess = false;
 	return defVal;
 }
+
 
 
 CARange& CButeMgr::GetRange(const char* szTagName, const char* szAttName)
-{
-	m_bSuccess = true;
-
-	static CARange defVal(0.0, 0.0);
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == RangeType)
-			return *pItem->data.range;
-		DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
+{ 
+	static CARange defVal(0, 0);
+	CARange& range = GetRange( szTagName, szAttName, defVal );
+	if( !m_bSuccess )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
-	m_bSuccess = false;
-	return defVal;
+	return range;
 }
 
 
-void CButeMgr::SetRange(const char* szTagName, const char* szAttName, const CARange& val)
+
+
+void CButeMgr::SetRange(const char* szTagName, const char* szAttName, const CARange& val) 
 {
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
+	CSymTabItem* pItem = GetSymTabItem( szTagName, szAttName );
+	if( pItem )
 	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(RangeType, val);
-			return;
-		}
-
-		pTab = m_auxTagTab.lookup(szTagName);
-		if (pTab)
-		{
-			pItem = pTab->lookup(szAttName);
-			if (pItem)
-			{
-				*pItem = CSymTabItem(RangeType, val);
-				return;
-			}
-
-			pItem = new CSymTabItem(RangeType, val);
-			pTab->add(szAttName, pItem);
-			return;
-		}
-
-		pTab = (TableOfItems*)m_auxTagTab.add(szTagName, new TableOfItems);
-		pTab->insert(szAttName, new CSymTabItem(RangeType, val));
-		return;
-	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
-	{
-		CSymTabItem* pItem = pTab->lookup(szAttName);
-		if (pItem)
-		{
-			*pItem = CSymTabItem(RangeType, val);
-			return;
-		}
-
-		pItem = new CSymTabItem(RangeType, val);
-		pTab->add(szAttName, pItem);
-		return;
-	}
-
-	pTab = (TableOfItems*)m_newTagTab.add(szTagName, new TableOfItems);
-	pTab->insert(szAttName, new CSymTabItem(RangeType, val));
-}
-
-
-void CButeMgr::GetString(const char* szTagName, const char* szAttName, const char* defVal, char* szResult, DWORD maxLen)
-{
-	if (!szResult || !maxLen)
-		return;
-
-	m_bSuccess = true;
-	const char* sz = defVal;
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == StringType)
-			sz = *pItem->data.s;
-		else
-			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
-	}
-	else
-		m_bSuccess = false;
-
-	if (!sz)
-		return;
-
-	if (strlen(sz) < maxLen)
-		maxLen = strlen(sz) + 1;
-	strncpy(szResult, sz, maxLen);
-}
-
-
-void CButeMgr::GetString(const char* szTagName, const char* szAttName, char* szResult, DWORD maxLen)
-{
-	if (!szResult || !maxLen)
-		return;
-
-	m_bSuccess = true;
-	const char* sz = "";
-
-	CSymTabItem* pItem = GetItem(szTagName, szAttName);
-	if (pItem)
-	{
-		if (pItem->SymType == StringType)
-			sz = *pItem->data.s;
-		else
-			DisplayMessage("Type mismatch - [%s]:%s", szTagName, szAttName);
+		m_bSuccess = true;
+		pItem->Init( *this, RangeType, val);
 	}
 	else
 	{
-		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 		m_bSuccess = false;
 	}
-
-	if (!sz)
-		return;
-
-	if (strlen(sz) < maxLen)
-		maxLen = strlen(sz) + 1;
-	strncpy(szResult, sz, maxLen);
 }
 
-
-bool CButeMgr::AddTag(const char* szTagName)
+bool CButeMgr::AddTag(const char *szTagName)
 {
+	TableOfItems* pTabOfItems;
+
+	// Default to success.
 	m_bSuccess = true;
 
-	if (m_tagTab.lookup(szTagName))
-		return false;
+	// See if the tag exists in the main tag table.
+	pTabOfItems = FindTableOfItems( m_tagTab, szTagName );
+	if( pTabOfItems )
+	{
+		return true;		
+	}
 
-	if (m_newTagTab.lookup(szTagName))
-		return false;
+	// See if the tag exists in the auxiliary tag table.
+	pTabOfItems = FindTableOfItems( m_auxTagTab, szTagName );
+	if( pTabOfItems )
+	{
+		return true;		
+	}
 
-	m_newTagTab.add(szTagName, new TableOfItems);
+	// See if the tag exists in the new tag table.
+	pTabOfItems = FindTableOfItems( m_newTagTab, szTagName );
+	if( pTabOfItems )
+	{
+		return true;		
+	}
 
-	return true;
-}
-
-
-CButeMgr::SymTypes CButeMgr::GetType(const char* szTagName, const char* szAttName)
-{
-	CSymTabItem* pItem;
-
-	m_bSuccess = true;
-
-	TableOfItems* pTab = m_tagTab.lookup(szTagName);
-	if (pTab && (pItem = pTab->lookup(szAttName)) != NULL)
-		return pItem->SymType;
-
-	pTab = m_auxTagTab.lookup(szTagName);
-	if (pTab && (pItem = pTab->lookup(szAttName)) != NULL)
-		return pItem->SymType;
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab && (pItem = pTab->lookup(szAttName)) != NULL)
-		return pItem->SymType;
+	// Create the tag in the new tag table.
+	pTabOfItems = CreateTableOfItems( m_newTagTab, szTagName );
+	if( pTabOfItems )
+		return true;		
 
 	m_bSuccess = false;
-	return NullType;
-}
-
-
-bool CButeMgr::Exist(const char* szTagName, const char* szAttName)
-{
-	TableOfItems* pTab = m_auxTagTab.lookup(szTagName);
-	if (pTab)
-	{
-		if (!szAttName)
-			return true;
-		if (pTab->lookup(szAttName))
-			return true;
-	}
-
-	pTab = m_tagTab.lookup(szTagName);
-	if (pTab)
-	{
-		if (!szAttName)
-			return true;
-		if (pTab->lookup(szAttName))
-			return true;
-	}
-
-	pTab = m_newTagTab.lookup(szTagName);
-	if (pTab)
-	{
-		if (!szAttName)
-			return true;
-		if (pTab->lookup(szAttName))
-			return true;
-	}
-
 	return false;
+}
+
+void CButeMgr::TraverseTableOfItems( TableOfItems& tableOfItems, TraverseTableOfItemsCallback pCb, void* pContext )
+{
+	// Check inputs.
+	if( !pCb )
+		return;
+
+	// Traverse the items.
+	TableOfItems::iterator iter = tableOfItems.begin( );
+	while( iter != tableOfItems.end( ))
+	{
+		// Get the tag data.
+		CSymTabItem* pSymTabItem = (*iter).second;
+		if( pSymTabItem )
+		{
+			// Call the callback.  If it returns false, then stop iterating.
+			// The iterator's first memeber will be a pointer to a CString.
+			if( !pCb( (*iter).first, *pSymTabItem, pContext ))
+				break;
+		}
+
+		iter++;
+	}
+}
+
+
+void CButeMgr::TraverseTableOfTags( TableOfTags& tableOfTags, TraverseTableOfTagsCallback pCb, void* pContext )
+{
+	// Check inputs.
+	if( !pCb )
+		return;
+
+	// Traverse the tags.
+	TableOfTags::iterator iter = tableOfTags.begin( );
+	while( iter != tableOfTags.end( ))
+	{
+		// Get the tag data.
+		TableOfItems* pTableOfItems = (*iter).second;
+		if( pTableOfItems )
+		{		
+			// Call the callback.  If it returns false, then stop iterating.
+			// The iterator's first memeber will be a pointer to a CString.
+			if( !pCb( (*iter).first, *pTableOfItems, pContext ))
+				break;
+		}
+
+		// Go to next item.
+		iter++;
+	}
 }
