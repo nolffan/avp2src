@@ -22,6 +22,10 @@ class IMessageWrite
 {
 public:
 	virtual void     EndWrite()=0;                        // 0x00
+	// AVP2: iltmessage.h's ReadString, which AvP2's SDK adds right after
+	// Release: every slot below is one later than NOLF's (WriteRaw at +0x6c
+	// in AvP2's server.dlls, not +0x68). Offsets in the comments are NOLF's.
+	virtual const char* ReadString()=0;
 	virtual LTRESULT _p01()=0;
 	// 0x08 — reads a word into an out parameter, on what is otherwise a write
 	// interface: 0x10034fcb calls it to pull an object id back off the message
@@ -67,6 +71,10 @@ class IMessageRead
 {
 public:
 	virtual void     EndRead()=0;                         // 0x00
+	// AVP2: iltmessage.h's ReadString, as in IMessageWrite above (ReadRawFL
+	// at +0x24 in AvP2's server.dlls, not +0x20). Offsets in the comments
+	// are NOLF's.
+	virtual const char* ReadString()=0;
 	virtual LTRESULT ReadByte(uint8* pVal)=0;             // 0x04  ReadByteFL
 	virtual LTRESULT ReadWord(uint16* pVal)=0;            // 0x08
 	virtual LTRESULT ReadDWord(uint32* pVal)=0;           // 0x0c
@@ -774,136 +782,151 @@ public:
 	class ILTLightAnim* m_pLightAnimLT;      // 0x018
 	class ILTSoundMgr*  m_pSoundMgr;         // 0x01c
 
-	LTRESULT (*GetGameInfo)(void **ppData, uint32 *pLen);                                    // 0x020
-	HCLASS (*GetClass)(char *pName);                                                         // 0x024
-	LTRESULT (*GetStaticObject)(HCLASS hClass, HOBJECT *obj);                                // 0x028
-	HCLASS (*GetObjectClass)(HOBJECT hObject);                                               // 0x02c
-	LTBOOL (*IsKindOf)(HCLASS hClass, HCLASS hTest);                                         // 0x030
-	LPBASECLASS (*CreateObject)(HCLASS hClass, ObjectCreateStruct *pStruct);                 // 0x034
-	LPBASECLASS (*CreateObjectProps)(HCLASS hClass, ObjectCreateStruct *pStruct, char *pszProps ); // 0x038
-	uint32 (*GetServerFlags)();                                                              // 0x03c
-	uint32 (*SetServerFlags)(uint32 flags);                                                  // 0x040
-	LTRESULT (*CacheFile)(uint32 fileType, char *pFilename);                                 // 0x044
-	LTRESULT (*GetNextPoly)(HPOLY *hPoly);                                                   // 0x048
-	void (*StartCounter)(LTCounter *pCounter);                                               // 0x04c
-	uint32 (*EndCounter)(LTCounter *pCounter);                                               // 0x050
-	LTFLOAT (*Random)(LTFLOAT min, LTFLOAT max);                                             // 0x054
-	int (*IntRandom)(int min, int max);                                                      // 0x058
-	LTFLOAT (*RandomScale)(LTFLOAT scale);                                                   // 0x05c
-	void (*BPrint)(char *pMsg, ...);                                                         // 0x060
-	void (*DebugOut)( char *pMsg, ... );                                                     // 0x064
-	LTRESULT (*GetSkyDef)(SkyDef *pDef);                                                     // 0x068
-	LTRESULT (*SetSkyDef)(SkyDef *pDef);                                                     // 0x06c
-	LTRESULT (*AddObjectToSky)(HOBJECT hObj, uint32 index);                                  // 0x070
-	LTRESULT (*RemoveObjectFromSky)(HOBJECT hObj);                                           // 0x074
-	LTRESULT (*GetGlobalLightObject)(HOBJECT *hObj);                                         // 0x078
-	LTRESULT (*SetGlobalLightObject)(HOBJECT hObj);                                          // 0x07c
-	LTRESULT (*GetPortalFlags)(char *pPortalName, uint32 *pFlags);                           // 0x080
-	LTRESULT (*SetPortalFlags)(char *pPortalName, uint32 flags);                             // 0x084
-	LTBOOL (*IntersectSegment)(IntersectQuery *pQuery, IntersectInfo *pInfo);                // 0x088
-	LTBOOL (*CastRay)(IntersectQuery *pQuery, IntersectInfo *pInfo);                         // 0x08c
-	ObjectList* (*GetPointAreas)(LTVector *pPoint);                                          // 0x090
-	ObjectList* (*GetBoxIntersecters)(LTVector *pMin, LTVector *pMax);                       // 0x094
-	LTBOOL (*GetPointShade)(LTVector *pPoint, LTVector *pColor);                             // 0x098
-	ObjectList* (*FindObjectsTouchingSphere)(LTVector *pPosition, float radius);             // 0x09c
-	void (*RelinquishList)(ObjectList *pList);                                               // 0x0a0
-	ObjectList* (*CreateObjectList)();                                                       // 0x0a4
-	ObjectLink* (*AddObjectToList)(ObjectList *pList, HOBJECT hObj);                         // 0x0a8
-	void (*RemoveObjectFromList)(ObjectList *pList, HOBJECT hObj);                           // 0x0ac
-	LTRESULT (*AttachClient)(HCLIENT hParent, HCLIENT hChild);                               // 0x0b0
-	LTRESULT (*DetachClient)(HCLIENT hClient);                                               // 0x0b4
-	HCLIENT (*GetNextClient)(HCLIENT hPrev);                                                 // 0x0b8
-	HCLIENTREF (*GetNextClientRef)(HCLIENTREF hRef);                                         // 0x0bc
-	uint32 (*GetClientRefInfoFlags)(HCLIENTREF hClient);                                     // 0x0c0
-	LTBOOL (*GetClientRefName)(HCLIENTREF hClient, char *pName, int maxLen);                 // 0x0c4
-	HOBJECT (*GetClientRefObject)(HCLIENTREF hClient);                                       // 0x0c8
-	uint32 (*GetClientID)(HCLIENT hClient);                                                  // 0x0cc
-	LTBOOL (*GetClientName)(HCLIENT hClient, char *pName, int maxLen);                       // 0x0d0
-	void (*SetClientInfoFlags)(HCLIENT hClient, uint32 dwClientFlags );                      // 0x0d4
-	uint32 (*GetClientInfoFlags)(HCLIENT hClient);                                           // 0x0d8
-	void (*SetClientUserData)(HCLIENT hClient, void *pData);                                 // 0x0dc
-	void* (*GetClientUserData)(HCLIENT hClient);                                             // 0x0e0
-	void (*KickClient)(HCLIENT hClient, uint32 nReasonCode = 0);                             // 0x0e4
-	LTRESULT (*SetClientViewPos)(HCLIENT hClient, LTVector *pPos);                           // 0x0e8
-	void (*RunGameConString)(char *pString);                                                 // 0x0ec
-	void (*SetGameConVar)(char *pName, char *pVal);                                          // 0x0f0
-	HCONVAR (*GetGameConVar)(char *pName);                                                   // 0x0f4
-	LTRESULT (*GetPropString)(char *pPropName, char *pRet, int maxLen);                      // 0x0f8
-	LTRESULT (*GetPropVector)(char *pPropName, LTVector *pRet);                              // 0x0fc
-	LTRESULT (*GetPropColor)(char *pPropName, LTVector *pRet);                               // 0x100
-	LTRESULT (*GetPropReal)(char *pPropName, float *pRet);                                   // 0x104
-	LTRESULT (*GetPropFlags)(char *pPropName, uint32 *pRet);                                 // 0x108
-	LTRESULT (*GetPropBool)(char *pPropName, LTBOOL *pRet);                                  // 0x10c
-	LTRESULT (*GetPropLongInt)(char *pPropName, long *pRet);                                 // 0x110
-	LTRESULT (*GetPropRotation)(char *pPropName, LTRotation *pRet);                          // 0x114
-	LTRESULT (*GetPropRotationEuler)(char *pPropName, LTVector *pAngles);                    // 0x118
-	LTRESULT (*GetPropGeneric)(char *pPropName, GenericProp *pProp);                         // 0x11c
-	LTRESULT (*DoesPropExist)(char *pPropName, int *pPropType);                              // 0x120
-	HOBJECT (*ObjectToHandle)(LPBASECLASS pObject);                                          // 0x124
-	LPBASECLASS (*HandleToObject)(HOBJECT hObject);                                          // 0x128
-	LTBOOL (*IsCommandOn)(HCLIENT hClient, int command);                                     // 0x12c
-	LTBOOL (*UpperStrcmp)(char *pStr1, char *pStr2);                                         // 0x130
-	int (*Parse)(char *pCommand, char **pNewCommandPos, char *argBuffer, char **argPointers, int *nArgs); // 0x134
-	LTRESULT (*PlaySound)( PlaySoundInfo *pPlaySoundInfo );                                  // 0x138
-	LTRESULT (*GetSoundDuration)( HLTSOUND hSound, LTFLOAT *fDuration );                     // 0x13c
-	LTRESULT (*IsSoundDone)( HLTSOUND hSound, LTBOOL *bDone );                               // 0x140
-	LTRESULT (*KillSound)( HLTSOUND hSound );                                                // 0x144
-	LTRESULT (*KillSoundLoop)( HLTSOUND hSound );                                            // 0x148
-	LTRESULT (*CreateInterObjectLink)(HOBJECT hOwner, HOBJECT hLinked);                      // 0x14c
-	void (*BreakInterObjectLink)(HOBJECT hOwner, HOBJECT hLinked);                           // 0x150
-	LTRESULT (*CreateAttachment)(HOBJECT hParent, HOBJECT hChild, char *pSocketName, LTVector *pOffset, LTRotation *pRotationOffset, HATTACHMENT *pAttachment); // 0x154
-	LTRESULT (*RemoveAttachment)(HATTACHMENT hAttachment);                                   // 0x158
-	LTRESULT (*FindAttachment)(HOBJECT hParent, HOBJECT hChild, HATTACHMENT *hAttachment);   // 0x15c
-	LTBOOL (*GetObjectColor)(HOBJECT hObject, float *r, float *g, float *b, float *a);       // 0x160
-	LTBOOL (*SetObjectColor)(HOBJECT hObject, float r, float g, float b, float a);           // 0x164
-	uint32 (*GetObjectUserFlags)(HOBJECT hObj);                                              // 0x168
-	LTRESULT (*SetObjectUserFlags)(HOBJECT hObj, uint32 flags);                              // 0x16c
-	HOBJECT (*GetNextObject)(HOBJECT hObj);                                                  // 0x170
-	HOBJECT (*GetNextInactiveObject)(HOBJECT hObj);                                          // 0x174
-	void (*SetNextUpdate)(HOBJECT hObj, LTFLOAT nextUpdate);                                 // 0x178
-	void (*SetDeactivationTime)(HOBJECT hObj, LTFLOAT fDeactivationTime);                    // 0x17c
-	void (*PingObjects)(HOBJECT hObj);                                                       // 0x180
-	void (*GetObjectPos)(HOBJECT hObj, LTVector *pos);                                       // 0x184
-	void (*SetObjectPos)(HOBJECT hObj, LTVector *pos);                                       // 0x188
-	void (*ScaleObject)(HOBJECT hObj, LTVector *pNewScale);                                  // 0x18c
-	LTRESULT (*GetObjectScale)(HOBJECT hObj, LTVector *pScale);                              // 0x190
-	LTRESULT (*TeleportObject)(HOBJECT hObj, LTVector *pNewPos);                             // 0x194
-	LTRESULT (*GetLastCollision)(CollisionInfo *pInfo);                                      // 0x198
-	LTRESULT (*GetObjectRotation)(HOBJECT hObj, LTRotation *pRotation);                      // 0x19c
-	LTRESULT (*SetObjectRotation)(HOBJECT hObj, LTRotation *pRotation);                      // 0x1a0
-	LTRESULT (*RotateObject)(HOBJECT hObj, LTRotation *pRotation);                           // 0x1a4
-	void (*TiltToPlane)(HOBJECT hObj, LTVector *pNormal);                                    // 0x1a8
-	void (*SetObjectState)(HOBJECT hObj, int state);                                         // 0x1ac
-	int (*GetObjectState)(HOBJECT hObj);                                                     // 0x1b0
-	void (*SetBlockingPriority)(HOBJECT hObj, uint8 pri);                                    // 0x1b4
-	uint8 (*GetBlockingPriority)(HOBJECT hObj);                                              // 0x1b8
-	LTRESULT (*ClipSprite)(HOBJECT hObj, HPOLY hPoly);                                       // 0x1bc
-	void (*GetLightColor)(HOBJECT hObj, float *r, float *g, float *b);                       // 0x1c0
-	void (*SetLightColor)(HOBJECT hObj, float r, float g, float b);                          // 0x1c4
-	float (*GetLightRadius)(HOBJECT hObj);                                                   // 0x1c8
-	void (*SetLightRadius)(HOBJECT hObj, float radius);                                      // 0x1cc
-	LTRESULT (*GetNextModelNode)(HOBJECT hObject, HMODELNODE hNode, HMODELNODE *pNext);      // 0x1d0
-	LTRESULT (*GetModelNodeName)(HOBJECT hObject, HMODELNODE hNode, char *pName, uint32 maxLen); // 0x1d4
-	LTRESULT (*GetModelCommandString)(HOBJECT hObj, char *pStr, uint32 maxLen);              // 0x1d8
-	LTRESULT (*SetModelNodeHideStatus)(HOBJECT hObj, char *pNodeName, LTBOOL bHidden);       // 0x1dc
-	LTRESULT (*GetModelNodeHideStatus)(HOBJECT hObj, char *pNodeName, /* out */LTBOOL *bHidden); // 0x1e0
-	const char *(*GetAnimName)(HOBJECT hObject, HMODELANIM hAnim);                           // 0x1e4
-	void (*SetModelPlaying)(HOBJECT hObj, LTBOOL bPlaying);                                  // 0x1e8
-	LTBOOL (*GetModelPlaying)(HOBJECT hObj);                                                 // 0x1ec
-	LTBOOL (*GetModelFilenames)(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen); // 0x1f0
-	uint32 (*GetObjectContainers)(HOBJECT hObj, HOBJECT *pContainerList, uint32 *pFlagList, uint32 maxListSize); // 0x1f4
-	uint32 (*GetContainedObjects)(HOBJECT hContainer, HOBJECT *pObjectList, uint32 *pFlagList, uint32 maxListSize); // 0x1f8
-	LTRESULT (*SaveObjects)(char *pszSaveFileName, ObjectList *pList, uint32 dwParam, uint32 flags); // 0x1fc
-	LTRESULT (*RestoreObjects)( char *pszRestoreFileName, uint32 dwParam, uint32 flags );    // 0x200
-	LTRESULT (*LoadWorld)(char *pszWorldFileName, uint32 flags);                             // 0x204
-	LTRESULT (*RunWorld)();                                                                  // 0x208
-	LTRESULT (*UpdateSessionName)(const char* sName);                                        // 0x20c
-	LTRESULT (*GetSessionName)(char* sName, uint32 dwBufferSize);                            // 0x210
-	LTRESULT (*SendToServerApp)( char *pMsg, uint32 nLen );                                  // 0x214
-	LTRESULT (*GetTcpIpAddress)(char* sAddress, uint32 dwBufferSize, uint16 &hostPort);      // 0x218
-	FileEntry* (*GetFileList)(char *pDirName);                                               // 0x21c
-	void (*FreeFileList)(FileEntry *pHead);                                                  // 0x220
-	CServerMgr*     m_pServerMgr;            // 0x224
+	// AVP2: the table in AvP2's order (its SDK's iltserver.h, which the
+	// game DLLs are built against): SetCRCString first, then CreateStringCRC
+	// and CreateWorldCRC before GetGameInfo, GetNextWMPoly,
+	// FindPoliesTouchingBox, Get/ReleaseSmartLinkBody and GetModelFilenames2
+	// among the rest -- 137 entries, 0x020 to 0x240, as si_SetupInterface
+	// stores them in both of AvP2's server.dlls. Each entry nolfsrc had keeps
+	// its declaration; the eight new ones are the SDK's. Offsets are AvP2's.
+	LTRESULT	(*SetCRCString)(char *szCRCFiles);                                                        // 0x020  AVP2: new
+	LTRESULT (*CreateStringCRC)();                                                                     // 0x024  AVP2: new
+	LTRESULT (*CreateWorldCRC)();                                                                      // 0x028  AVP2: new
+	LTRESULT (*GetGameInfo)(void **ppData, uint32 *pLen);                                              // 0x02c
+	HCLASS (*GetClass)(char *pName);                                                                   // 0x030
+	LTRESULT (*GetStaticObject)(HCLASS hClass, HOBJECT *obj);                                          // 0x034
+	HCLASS (*GetObjectClass)(HOBJECT hObject);                                                         // 0x038
+	LTBOOL (*IsKindOf)(HCLASS hClass, HCLASS hTest);                                                   // 0x03c
+	LPBASECLASS (*CreateObject)(HCLASS hClass, ObjectCreateStruct *pStruct);                           // 0x040
+	LPBASECLASS (*CreateObjectProps)(HCLASS hClass, ObjectCreateStruct *pStruct, char *pszProps );     // 0x044
+	uint32 (*GetServerFlags)();                                                                        // 0x048
+	uint32 (*SetServerFlags)(uint32 flags);                                                            // 0x04c
+	LTRESULT (*CacheFile)(uint32 fileType, char *pFilename);                                           // 0x050
+	LTRESULT (*GetNextPoly)(HPOLY *hPoly);                                                             // 0x054
+	LTRESULT (*GetNextWMPoly)(HPOLY *hPoly, HOBJECT hWorldModel);                                      // 0x058  AVP2: new
+	void (*StartCounter)(LTCounter *pCounter);                                                         // 0x05c
+	uint32 (*EndCounter)(LTCounter *pCounter);                                                         // 0x060
+	LTFLOAT (*Random)(LTFLOAT min, LTFLOAT max);                                                       // 0x064
+	int (*IntRandom)(int min, int max);                                                                // 0x068
+	LTFLOAT (*RandomScale)(LTFLOAT scale);                                                             // 0x06c
+	void (*BPrint)(char *pMsg, ...);                                                                   // 0x070
+	void (*DebugOut)( char *pMsg, ... );                                                               // 0x074
+	LTRESULT (*GetSkyDef)(SkyDef *pDef);                                                               // 0x078
+	LTRESULT (*SetSkyDef)(SkyDef *pDef);                                                               // 0x07c
+	LTRESULT (*AddObjectToSky)(HOBJECT hObj, uint32 index);                                            // 0x080
+	LTRESULT (*RemoveObjectFromSky)(HOBJECT hObj);                                                     // 0x084
+	LTRESULT (*GetGlobalLightObject)(HOBJECT *hObj);                                                   // 0x088
+	LTRESULT (*SetGlobalLightObject)(HOBJECT hObj);                                                    // 0x08c
+	LTRESULT (*GetPortalFlags)(char *pPortalName, uint32 *pFlags);                                     // 0x090
+	LTRESULT (*SetPortalFlags)(char *pPortalName, uint32 flags);                                       // 0x094
+	LTBOOL (*IntersectSegment)(IntersectQuery *pQuery, IntersectInfo *pInfo);                          // 0x098
+	LTBOOL (*CastRay)(IntersectQuery *pQuery, IntersectInfo *pInfo);                                   // 0x09c
+	ObjectList* (*GetPointAreas)(LTVector *pPoint);                                                    // 0x0a0
+	ObjectList* (*GetBoxIntersecters)(LTVector *pMin, LTVector *pMax);                                 // 0x0a4
+	LTBOOL (*GetPointShade)(LTVector *pPoint, LTVector *pColor);                                       // 0x0a8
+	ObjectList* (*FindObjectsTouchingSphere)(LTVector *pPosition, float radius);                       // 0x0ac
+	void (*FindPoliesTouchingBox)(const LTVector & vBoxMin, const LTVector & vBoxMax, HPOLY * pPolyList, uint32 nPolyListSize, uint32 * pnNumPoliesFound, ObjectFilterFn FilterFn = LTNULL, void * pUserData = LTNULL);// 0x0b0  AVP2: new
+	void (*RelinquishList)(ObjectList *pList);                                                         // 0x0b4
+	ObjectList* (*CreateObjectList)();                                                                 // 0x0b8
+	ObjectLink* (*AddObjectToList)(ObjectList *pList, HOBJECT hObj);                                   // 0x0bc
+	void (*RemoveObjectFromList)(ObjectList *pList, HOBJECT hObj);                                     // 0x0c0
+	LTRESULT (*AttachClient)(HCLIENT hParent, HCLIENT hChild);                                         // 0x0c4
+	LTRESULT (*DetachClient)(HCLIENT hClient);                                                         // 0x0c8
+	HCLIENT (*GetNextClient)(HCLIENT hPrev);                                                           // 0x0cc
+	HCLIENTREF (*GetNextClientRef)(HCLIENTREF hRef);                                                   // 0x0d0
+	uint32 (*GetClientRefInfoFlags)(HCLIENTREF hClient);                                               // 0x0d4
+	LTBOOL (*GetClientRefName)(HCLIENTREF hClient, char *pName, int maxLen);                           // 0x0d8
+	HOBJECT (*GetClientRefObject)(HCLIENTREF hClient);                                                 // 0x0dc
+	uint32 (*GetClientID)(HCLIENT hClient);                                                            // 0x0e0
+	LTBOOL (*GetClientName)(HCLIENT hClient, char *pName, int maxLen);                                 // 0x0e4
+	void (*SetClientInfoFlags)(HCLIENT hClient, uint32 dwClientFlags );                                // 0x0e8
+	uint32 (*GetClientInfoFlags)(HCLIENT hClient);                                                     // 0x0ec
+	void (*SetClientUserData)(HCLIENT hClient, void *pData);                                           // 0x0f0
+	void* (*GetClientUserData)(HCLIENT hClient);                                                       // 0x0f4
+	void (*KickClient)(HCLIENT hClient, uint32 nReasonCode = 0);                                       // 0x0f8
+	LTRESULT (*SetClientViewPos)(HCLIENT hClient, LTVector *pPos);                                     // 0x0fc
+	void (*RunGameConString)(char *pString);                                                           // 0x100
+	void (*SetGameConVar)(char *pName, char *pVal);                                                    // 0x104
+	HCONVAR (*GetGameConVar)(char *pName);                                                             // 0x108
+	LTRESULT (*GetPropString)(char *pPropName, char *pRet, int maxLen);                                // 0x10c
+	LTRESULT (*GetPropVector)(char *pPropName, LTVector *pRet);                                        // 0x110
+	LTRESULT (*GetPropColor)(char *pPropName, LTVector *pRet);                                         // 0x114
+	LTRESULT (*GetPropReal)(char *pPropName, float *pRet);                                             // 0x118
+	LTRESULT (*GetPropFlags)(char *pPropName, uint32 *pRet);                                           // 0x11c
+	LTRESULT (*GetPropBool)(char *pPropName, LTBOOL *pRet);                                            // 0x120
+	LTRESULT (*GetPropLongInt)(char *pPropName, long *pRet);                                           // 0x124
+	LTRESULT (*GetPropRotation)(char *pPropName, LTRotation *pRet);                                    // 0x128
+	LTRESULT (*GetPropRotationEuler)(char *pPropName, LTVector *pAngles);                              // 0x12c
+	LTRESULT (*GetPropGeneric)(char *pPropName, GenericProp *pProp);                                   // 0x130
+	LTRESULT (*DoesPropExist)(char *pPropName, int *pPropType);                                        // 0x134
+	HOBJECT (*ObjectToHandle)(LPBASECLASS pObject);                                                    // 0x138
+	LPBASECLASS (*HandleToObject)(HOBJECT hObject);                                                    // 0x13c
+	LTBOOL (*IsCommandOn)(HCLIENT hClient, int command);                                               // 0x140
+	LTBOOL (*UpperStrcmp)(char *pStr1, char *pStr2);                                                   // 0x144
+	int (*Parse)(char *pCommand, char **pNewCommandPos, char *argBuffer, char **argPointers, int *nArgs);// 0x148
+	LTRESULT (*PlaySound)( PlaySoundInfo *pPlaySoundInfo );                                            // 0x14c
+	LTRESULT (*GetSoundDuration)( HLTSOUND hSound, LTFLOAT *fDuration );                               // 0x150
+	LTRESULT (*IsSoundDone)( HLTSOUND hSound, LTBOOL *bDone );                                         // 0x154
+	LTRESULT (*KillSound)( HLTSOUND hSound );                                                          // 0x158
+	LTRESULT (*KillSoundLoop)( HLTSOUND hSound );                                                      // 0x15c
+	LTRESULT (*CreateInterObjectLink)(HOBJECT hOwner, HOBJECT hLinked);                                // 0x160
+	void (*BreakInterObjectLink)(HOBJECT hOwner, HOBJECT hLinked);                                     // 0x164
+	LTRESULT (*GetSmartLinkBody)(HOBJECT hOwner, LTSmartLink_Body ** pRet);                            // 0x168  AVP2: new
+	LTRESULT (*ReleaseSmartLinkBody)(LTSmartLink_Body * pBody);                                        // 0x16c  AVP2: new
+	LTRESULT (*CreateAttachment)(HOBJECT hParent, HOBJECT hChild, char *pSocketName, LTVector *pOffset, LTRotation *pRotationOffset, HATTACHMENT *pAttachment);// 0x170
+	LTRESULT (*RemoveAttachment)(HATTACHMENT hAttachment);                                             // 0x174
+	LTRESULT (*FindAttachment)(HOBJECT hParent, HOBJECT hChild, HATTACHMENT *hAttachment);             // 0x178
+	LTBOOL (*GetObjectColor)(HOBJECT hObject, float *r, float *g, float *b, float *a);                 // 0x17c
+	LTBOOL (*SetObjectColor)(HOBJECT hObject, float r, float g, float b, float a);                     // 0x180
+	uint32 (*GetObjectUserFlags)(HOBJECT hObj);                                                        // 0x184
+	LTRESULT (*SetObjectUserFlags)(HOBJECT hObj, uint32 flags);                                        // 0x188
+	HOBJECT (*GetNextObject)(HOBJECT hObj);                                                            // 0x18c
+	HOBJECT (*GetNextInactiveObject)(HOBJECT hObj);                                                    // 0x190
+	void (*SetNextUpdate)(HOBJECT hObj, LTFLOAT nextUpdate);                                           // 0x194
+	void (*SetDeactivationTime)(HOBJECT hObj, LTFLOAT fDeactivationTime);                              // 0x198
+	void (*PingObjects)(HOBJECT hObj);                                                                 // 0x19c
+	void (*GetObjectPos)(HOBJECT hObj, LTVector *pos);                                                 // 0x1a0
+	void (*SetObjectPos)(HOBJECT hObj, LTVector *pos);                                                 // 0x1a4
+	void (*ScaleObject)(HOBJECT hObj, LTVector *pNewScale);                                            // 0x1a8
+	LTRESULT (*GetObjectScale)(HOBJECT hObj, LTVector *pScale);                                        // 0x1ac
+	LTRESULT (*TeleportObject)(HOBJECT hObj, LTVector *pNewPos);                                       // 0x1b0
+	LTRESULT (*GetLastCollision)(CollisionInfo *pInfo);                                                // 0x1b4
+	LTRESULT (*GetObjectRotation)(HOBJECT hObj, LTRotation *pRotation);                                // 0x1b8
+	LTRESULT (*SetObjectRotation)(HOBJECT hObj, LTRotation *pRotation);                                // 0x1bc
+	LTRESULT (*RotateObject)(HOBJECT hObj, LTRotation *pRotation);                                     // 0x1c0
+	void (*TiltToPlane)(HOBJECT hObj, LTVector *pNormal);                                              // 0x1c4
+	void (*SetObjectState)(HOBJECT hObj, int state);                                                   // 0x1c8
+	int (*GetObjectState)(HOBJECT hObj);                                                               // 0x1cc
+	void (*SetBlockingPriority)(HOBJECT hObj, uint8 pri);                                              // 0x1d0
+	uint8 (*GetBlockingPriority)(HOBJECT hObj);                                                        // 0x1d4
+	LTRESULT (*ClipSprite)(HOBJECT hObj, HPOLY hPoly);                                                 // 0x1d8
+	void (*GetLightColor)(HOBJECT hObj, float *r, float *g, float *b);                                 // 0x1dc
+	void (*SetLightColor)(HOBJECT hObj, float r, float g, float b);                                    // 0x1e0
+	float (*GetLightRadius)(HOBJECT hObj);                                                             // 0x1e4
+	void (*SetLightRadius)(HOBJECT hObj, float radius);                                                // 0x1e8
+	LTRESULT (*GetNextModelNode)(HOBJECT hObject, HMODELNODE hNode, HMODELNODE *pNext);                // 0x1ec
+	LTRESULT (*GetModelNodeName)(HOBJECT hObject, HMODELNODE hNode, char *pName, uint32 maxLen);       // 0x1f0
+	LTRESULT (*GetModelCommandString)(HOBJECT hObj, char *pStr, uint32 maxLen);                        // 0x1f4
+	LTRESULT (*SetModelNodeHideStatus)(HOBJECT hObj, char *pNodeName, LTBOOL bHidden);                 // 0x1f8
+	LTRESULT (*GetModelNodeHideStatus)(HOBJECT hObj, char *pNodeName, /* out */LTBOOL *bHidden);       // 0x1fc
+	const char *(*GetAnimName)(HOBJECT hObject, HMODELANIM hAnim);                                     // 0x200
+	void (*SetModelPlaying)(HOBJECT hObj, LTBOOL bPlaying);                                            // 0x204
+	LTBOOL (*GetModelPlaying)(HOBJECT hObj);                                                           // 0x208
+	LTBOOL (*GetModelFilenames)(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen);// 0x20c
+	LTBOOL (*GetModelFilenames2)(HOBJECT hObj, ObjectCreateStruct *pStruct);                           // 0x210  AVP2: new
+	uint32 (*GetObjectContainers)(HOBJECT hObj, HOBJECT *pContainerList, uint32 *pFlagList, uint32 maxListSize);// 0x214
+	uint32 (*GetContainedObjects)(HOBJECT hContainer, HOBJECT *pObjectList, uint32 *pFlagList, uint32 maxListSize);// 0x218
+	LTRESULT (*SaveObjects)(char *pszSaveFileName, ObjectList *pList, uint32 dwParam, uint32 flags);   // 0x21c
+	LTRESULT (*RestoreObjects)( char *pszRestoreFileName, uint32 dwParam, uint32 flags );              // 0x220
+	LTRESULT (*LoadWorld)(char *pszWorldFileName, uint32 flags);                                       // 0x224
+	LTRESULT (*RunWorld)();                                                                            // 0x228
+	LTRESULT (*UpdateSessionName)(const char* sName);                                                  // 0x22c
+	LTRESULT (*GetSessionName)(char* sName, uint32 dwBufferSize);                                      // 0x230
+	LTRESULT (*SendToServerApp)( char *pMsg, uint32 nLen );                                            // 0x234
+	LTRESULT (*GetTcpIpAddress)(char* sAddress, uint32 dwBufferSize, uint16 &hostPort);                // 0x238
+	FileEntry* (*GetFileList)(char *pDirName);                                                         // 0x23c
+	void (*FreeFileList)(FileEntry *pHead);                                                            // 0x240
+	CServerMgr*     m_pServerMgr;            // 0x244 (AvP2; NOLF's 0x224)
 };
 
 #endif

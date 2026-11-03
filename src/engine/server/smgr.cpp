@@ -4027,155 +4027,153 @@ LTRESULT si_GetTcpIpAddress(char* sAddress, uint32 dwBufferSize, uint16 &hostPor
 FileEntry* si_GetFileList(char *pDirName);                                                           // 0x21c
 void fs_FreeFileList(FileEntry *pHead);                                                              // 0x220
 
+// AVP2: the ILTServer entries AvP2's SDK adds, not yet reconstructed (names ours)
+LTRESULT si_SetCRCString(char *szCRCFiles);
+LTRESULT si_CreateStringCRC();
+LTRESULT si_CreateWorldCRC();
+LTRESULT si_GetNextWMPoly(HPOLY *hPoly, HOBJECT hWorldModel);
+void si_FindPoliesTouchingBox(const LTVector & vBoxMin, const LTVector & vBoxMax, HPOLY * pPolyList, uint32 nPolyListSize, uint32 * pnNumPoliesFound, ObjectFilterFn FilterFn = LTNULL, void * pUserData = LTNULL);
+LTRESULT si_GetSmartLinkBody(HOBJECT hOwner, LTSmartLink_Body ** pRet);
+LTRESULT si_ReleaseSmartLinkBody(LTSmartLink_Body * pBody);
+LTBOOL si_GetModelFilenames2(HOBJECT hObj, ObjectCreateStruct *pStruct);
+
 void si_SetupInterface(CLTServer* pServer)
 {
-	pServer->GetGameInfo               = si_GetGameInfo;
-	pServer->GetClass                  = si_GetClass;
-	pServer->GetStaticObject           = si_GetStaticObject;
-	pServer->GetObjectClass            = si_GetObjectClass;
-	pServer->IsKindOf                  = si_IsKindOf;
-	pServer->CreateObject              = si_CreateObject;
-	pServer->CreateObjectProps         = si_CreateObjectProps;
-	pServer->GetServerFlags            = si_GetServerFlags;
-	pServer->SetServerFlags            = si_SetServerFlags;
-	pServer->CacheFile                 = si_CacheFile;
-	pServer->GetNextPoly               = si_GetNextPoly;
-	pServer->StartCounter              = ci_StartCounter;
-	pServer->EndCounter                = ci_EndCounter;
-	pServer->Random                    = ci_Random;
-	pServer->IntRandom                 = si_IntRandom;
-	pServer->RandomScale               = si_RandomScale;
-	pServer->BPrint                    = si_BPrint;
-	pServer->DebugOut                  = con_Printf;
-	pServer->GetSkyDef                 = si_GetSkyDef;
-	pServer->SetSkyDef                 = si_SetSkyDef;
-	pServer->AddObjectToSky            = si_AddObjectToSky;
-	pServer->RemoveObjectFromSky       = si_RemoveObjectFromSky;
-	pServer->GetGlobalLightObject      = si_GetGlobalLightObject;
-	pServer->SetGlobalLightObject      = si_SetGlobalLightObject;
-	pServer->GetPortalFlags            = si_GetPortalFlags;
-	pServer->SetPortalFlags            = si_SetPortalFlags;
-	pServer->IntersectSegment          = si_IntersectSegment;
-	pServer->CastRay                   = si_CastRay;
-
-	pServer->GetPointShade             = si_GetPointShade;
-	pServer->FindObjectsTouchingSphere = sm_FindObjectsTouchingSphere;
-	pServer->RelinquishList            = sm_RelinquishList;
-
-	pServer->ObjectToHandle            = si_ObjectToHandle;
-	pServer->HandleToObject            = si_HandleToObject;
-
-	pServer->CreateObjectList          = si_CreateObjectList;
-	pServer->AddObjectToList           = si_AddObjectToList;
-	pServer->RemoveObjectFromList      = si_RemoveObjectFromList;
-
-	pServer->GetPropString             = si_GetPropString;
-	pServer->GetPropVector             = si_GetPropVector;
-	pServer->GetPropColor              = si_GetPropVector;
-	pServer->GetPropReal               = si_GetPropReal;
-	pServer->GetPropFlags              = si_GetPropFlags;
-	pServer->GetPropBool               = si_GetPropBool;
-	pServer->GetPropLongInt            = si_GetPropLongInt;
-	pServer->GetPropRotation           = si_GetPropRotation;
-	pServer->GetPropRotationEuler      = si_GetPropRotationEuler;
-	pServer->GetPropGeneric            = si_GetPropGeneric;
-	pServer->DoesPropExist             = si_DoesPropExist;
-
-	pServer->AttachClient              = si_AttachClient;
-	pServer->DetachClient              = si_DetachClient;
-	pServer->GetNextClient             = si_GetNextClient;
-	pServer->GetNextClientRef          = si_GetNextClientRef;
-	pServer->GetClientRefInfoFlags     = si_GetClientRefInfoFlags;
-	pServer->GetClientRefName          = si_GetClientRefName;
-	pServer->GetClientRefObject        = si_GetClientRefObject;
-	pServer->GetClientID               = si_GetClientID;
-	pServer->GetClientName             = si_GetClientName;
-	pServer->SetClientInfoFlags        = si_SetClientInfoFlags;
-	pServer->GetClientInfoFlags        = si_GetClientInfoFlags;
-	pServer->SetClientUserData         = si_SetClientUserData;
-	pServer->GetClientUserData         = si_GetClientUserData;
-	pServer->KickClient                = si_KickClient;
-	pServer->SetClientViewPos          = si_SetClientViewPos;
-	pServer->RunGameConString          = si_RunGameConString;
-	pServer->SetGameConVar             = si_SetGameConVar;
-	pServer->GetGameConVar             = si_GetGameConVar;
-
-	pServer->IsCommandOn               = si_IsCommandOn;
-	pServer->UpperStrcmp               = ci_UpperStrcmp;
-
-	pServer->GetLastCollision          = si_GetLastCollision;
-
-	pServer->PlaySound                 = si_PlaySound;
-
-	pServer->IsSoundDone               = si_IsSoundDone;
-
-	pServer->GetSoundDuration          = si_GetSoundDuration;
-
-	pServer->KillSound                 = si_KillSound;
-	pServer->KillSoundLoop             = si_KillSoundLoop;
-	pServer->CreateInterObjectLink     = si_CreateInterObjectLink;
-	pServer->BreakInterObjectLink      = si_BreakInterObjectLink;
-	pServer->CreateAttachment          = si_CreateAttachment;
-	pServer->RemoveAttachment          = si_RemoveAttachment;
-	pServer->FindAttachment            = si_FindAttachment;
-	pServer->GetObjectColor            = si_GetObjectColor;
-	pServer->SetObjectColor            = si_SetObjectColor;
-	pServer->GetObjectUserFlags        = si_GetObjectUserFlags;
-	pServer->SetObjectUserFlags        = si_SetObjectUserFlags;
-	pServer->GetNextObject             = si_GetNextObject;
-	pServer->GetNextInactiveObject     = si_GetNextInactiveObject;
-	pServer->SetNextUpdate             = si_SetNextUpdate;
-	pServer->SetDeactivationTime       = si_SetDeactivationTime;
-	pServer->PingObjects               = si_PingObjects;
-	pServer->GetObjectPos              = si_GetObjectPos;
-	pServer->SetObjectPos              = si_SetObjectPos;
-	pServer->ScaleObject               = si_ScaleObject;
-	pServer->GetObjectScale            = si_GetObjectScale;
-	pServer->TeleportObject            = si_TeleportObject;
-
-	pServer->GetObjectRotation         = si_GetObjectRotation;
-	pServer->SetObjectRotation         = si_SetObjectRotation;
-	pServer->RotateObject              = si_RotateObject;
-
-	pServer->GetBlockingPriority       = si_GetBlockingPriority;
-
-	pServer->SetBlockingPriority       = si_SetBlockingPriority;
-
-	pServer->ClipSprite                = si_ClipSprite;
-
-	pServer->TiltToPlane               = si_TiltToPlane;
-
-	pServer->GetObjectState            = si_GetObjectState;
-
-	pServer->SetObjectState            = si_SetObjectState;
-
-	pServer->GetLightColor             = si_GetLightColor;
-	pServer->SetLightColor             = si_SetLightColor;
-	pServer->GetLightRadius            = si_GetLightRadius;
-	pServer->SetLightRadius            = si_SetLightRadius;
-	pServer->GetNextModelNode          = ci_GetNextModelNode;
-	pServer->GetModelNodeName          = ci_GetModelNodeName;
-	pServer->GetModelCommandString     = si_GetModelCommandString;
-
-	pServer->GetAnimName               = ci_GetAnimName;
-	pServer->SetModelPlaying           = si_SetModelPlaying;
-	pServer->GetModelPlaying           = si_GetModelPlaying;
-	pServer->GetModelFilenames         = si_GetModelFilenames;
-
-	pServer->Parse                     = si_Parse;
-
-	pServer->GetObjectContainers       = si_GetObjectContainers;
-	pServer->GetContainedObjects       = si_GetContainedObjects;
-	pServer->SaveObjects               = si_SaveObjects;
-	pServer->RestoreObjects            = si_RestoreObjects;
-	pServer->LoadWorld                 = si_LoadWorld;
-	pServer->RunWorld                  = si_RunWorld;
-	pServer->UpdateSessionName         = si_UpdateSessionName;
-	pServer->GetSessionName            = si_GetSessionName;
-	pServer->SendToServerApp           = si_SendToServerApp;
-	pServer->GetTcpIpAddress           = si_GetTcpIpAddress;
-	pServer->GetFileList               = si_GetFileList;
-	pServer->FreeFileList              = fs_FreeFileList;
+	// AVP2: in the table's order, as both of AvP2's server.dlls store it
+	// (Primal Hunt 0x1003c604: one run of stores from +0x20 to +0x240)
+	pServer->SetCRCString               = si_SetCRCString;   // AVP2: new, to be reconstructed
+	pServer->CreateStringCRC            = si_CreateStringCRC;   // AVP2: new, to be reconstructed
+	pServer->CreateWorldCRC             = si_CreateWorldCRC;   // AVP2: new, to be reconstructed
+	pServer->GetGameInfo                = si_GetGameInfo;
+	pServer->GetClass                   = si_GetClass;
+	pServer->GetStaticObject            = si_GetStaticObject;
+	pServer->GetObjectClass             = si_GetObjectClass;
+	pServer->IsKindOf                   = si_IsKindOf;
+	pServer->CreateObject               = si_CreateObject;
+	pServer->CreateObjectProps          = si_CreateObjectProps;
+	pServer->GetServerFlags             = si_GetServerFlags;
+	pServer->SetServerFlags             = si_SetServerFlags;
+	pServer->CacheFile                  = si_CacheFile;
+	pServer->GetNextPoly                = si_GetNextPoly;
+	pServer->GetNextWMPoly              = si_GetNextWMPoly;   // AVP2: new, to be reconstructed
+	pServer->StartCounter               = ci_StartCounter;
+	pServer->EndCounter                 = ci_EndCounter;
+	pServer->Random                     = ci_Random;
+	pServer->IntRandom                  = si_IntRandom;
+	pServer->RandomScale                = si_RandomScale;
+	pServer->BPrint                     = si_BPrint;
+	pServer->DebugOut                   = con_Printf;
+	pServer->GetSkyDef                  = si_GetSkyDef;
+	pServer->SetSkyDef                  = si_SetSkyDef;
+	pServer->AddObjectToSky             = si_AddObjectToSky;
+	pServer->RemoveObjectFromSky        = si_RemoveObjectFromSky;
+	pServer->GetGlobalLightObject       = si_GetGlobalLightObject;
+	pServer->SetGlobalLightObject       = si_SetGlobalLightObject;
+	pServer->GetPortalFlags             = si_GetPortalFlags;
+	pServer->SetPortalFlags             = si_SetPortalFlags;
+	pServer->IntersectSegment           = si_IntersectSegment;
+	pServer->CastRay                    = si_CastRay;
+	pServer->GetPointShade              = si_GetPointShade;
+	pServer->FindObjectsTouchingSphere  = sm_FindObjectsTouchingSphere;
+	pServer->FindPoliesTouchingBox      = si_FindPoliesTouchingBox;   // AVP2: new, to be reconstructed
+	pServer->RelinquishList             = sm_RelinquishList;
+	pServer->CreateObjectList           = si_CreateObjectList;
+	pServer->AddObjectToList            = si_AddObjectToList;
+	pServer->RemoveObjectFromList       = si_RemoveObjectFromList;
+	pServer->AttachClient               = si_AttachClient;
+	pServer->DetachClient               = si_DetachClient;
+	pServer->GetNextClient              = si_GetNextClient;
+	pServer->GetNextClientRef           = si_GetNextClientRef;
+	pServer->GetClientRefInfoFlags      = si_GetClientRefInfoFlags;
+	pServer->GetClientRefName           = si_GetClientRefName;
+	pServer->GetClientRefObject         = si_GetClientRefObject;
+	pServer->GetClientID                = si_GetClientID;
+	pServer->GetClientName              = si_GetClientName;
+	pServer->SetClientInfoFlags         = si_SetClientInfoFlags;
+	pServer->GetClientInfoFlags         = si_GetClientInfoFlags;
+	pServer->SetClientUserData          = si_SetClientUserData;
+	pServer->GetClientUserData          = si_GetClientUserData;
+	pServer->KickClient                 = si_KickClient;
+	pServer->SetClientViewPos           = si_SetClientViewPos;
+	pServer->RunGameConString           = si_RunGameConString;
+	pServer->SetGameConVar              = si_SetGameConVar;
+	pServer->GetGameConVar              = si_GetGameConVar;
+	pServer->GetPropString              = si_GetPropString;
+	pServer->GetPropVector              = si_GetPropVector;
+	pServer->GetPropColor               = si_GetPropVector;
+	pServer->GetPropReal                = si_GetPropReal;
+	pServer->GetPropFlags               = si_GetPropFlags;
+	pServer->GetPropBool                = si_GetPropBool;
+	pServer->GetPropLongInt             = si_GetPropLongInt;
+	pServer->GetPropRotation            = si_GetPropRotation;
+	pServer->GetPropRotationEuler       = si_GetPropRotationEuler;
+	pServer->GetPropGeneric             = si_GetPropGeneric;
+	pServer->DoesPropExist              = si_DoesPropExist;
+	pServer->ObjectToHandle             = si_ObjectToHandle;
+	pServer->HandleToObject             = si_HandleToObject;
+	pServer->IsCommandOn                = si_IsCommandOn;
+	pServer->UpperStrcmp                = ci_UpperStrcmp;
+	pServer->Parse                      = si_Parse;
+	pServer->PlaySound                  = si_PlaySound;
+	pServer->GetSoundDuration           = si_GetSoundDuration;
+	pServer->IsSoundDone                = si_IsSoundDone;
+	pServer->KillSound                  = si_KillSound;
+	pServer->KillSoundLoop              = si_KillSoundLoop;
+	pServer->CreateInterObjectLink      = si_CreateInterObjectLink;
+	pServer->BreakInterObjectLink       = si_BreakInterObjectLink;
+	pServer->GetSmartLinkBody           = si_GetSmartLinkBody;   // AVP2: new, to be reconstructed
+	pServer->ReleaseSmartLinkBody       = si_ReleaseSmartLinkBody;   // AVP2: new, to be reconstructed
+	pServer->CreateAttachment           = si_CreateAttachment;
+	pServer->RemoveAttachment           = si_RemoveAttachment;
+	pServer->FindAttachment             = si_FindAttachment;
+	pServer->GetObjectColor             = si_GetObjectColor;
+	pServer->SetObjectColor             = si_SetObjectColor;
+	pServer->GetObjectUserFlags         = si_GetObjectUserFlags;
+	pServer->SetObjectUserFlags         = si_SetObjectUserFlags;
+	pServer->GetNextObject              = si_GetNextObject;
+	pServer->GetNextInactiveObject      = si_GetNextInactiveObject;
+	pServer->SetNextUpdate              = si_SetNextUpdate;
+	pServer->SetDeactivationTime        = si_SetDeactivationTime;
+	pServer->PingObjects                = si_PingObjects;
+	pServer->GetObjectPos               = si_GetObjectPos;
+	pServer->SetObjectPos               = si_SetObjectPos;
+	pServer->ScaleObject                = si_ScaleObject;
+	pServer->GetObjectScale             = si_GetObjectScale;
+	pServer->TeleportObject             = si_TeleportObject;
+	pServer->GetLastCollision           = si_GetLastCollision;
+	pServer->GetObjectRotation          = si_GetObjectRotation;
+	pServer->SetObjectRotation          = si_SetObjectRotation;
+	pServer->RotateObject               = si_RotateObject;
+	pServer->TiltToPlane                = si_TiltToPlane;
+	pServer->SetObjectState             = si_SetObjectState;
+	pServer->GetObjectState             = si_GetObjectState;
+	pServer->SetBlockingPriority        = si_SetBlockingPriority;
+	pServer->GetBlockingPriority        = si_GetBlockingPriority;
+	pServer->ClipSprite                 = si_ClipSprite;
+	pServer->GetLightColor              = si_GetLightColor;
+	pServer->SetLightColor              = si_SetLightColor;
+	pServer->GetLightRadius             = si_GetLightRadius;
+	pServer->SetLightRadius             = si_SetLightRadius;
+	pServer->GetNextModelNode           = ci_GetNextModelNode;
+	pServer->GetModelNodeName           = ci_GetModelNodeName;
+	pServer->GetModelCommandString      = si_GetModelCommandString;
+	pServer->GetAnimName                = ci_GetAnimName;
+	pServer->SetModelPlaying            = si_SetModelPlaying;
+	pServer->GetModelPlaying            = si_GetModelPlaying;
+	pServer->GetModelFilenames          = si_GetModelFilenames;
+	pServer->GetModelFilenames2         = si_GetModelFilenames2;   // AVP2: new, to be reconstructed
+	pServer->GetObjectContainers        = si_GetObjectContainers;
+	pServer->GetContainedObjects        = si_GetContainedObjects;
+	pServer->SaveObjects                = si_SaveObjects;
+	pServer->RestoreObjects             = si_RestoreObjects;
+	pServer->LoadWorld                  = si_LoadWorld;
+	pServer->RunWorld                   = si_RunWorld;
+	pServer->UpdateSessionName          = si_UpdateSessionName;
+	pServer->GetSessionName             = si_GetSessionName;
+	pServer->SendToServerApp            = si_SendToServerApp;
+	pServer->GetTcpIpAddress            = si_GetTcpIpAddress;
+	pServer->GetFileList                = si_GetFileList;
+	pServer->FreeFileList               = fs_FreeFileList;
 }
 
 

@@ -332,6 +332,9 @@ class IMessageWriteView
 {
 public:
 	virtual void     EndWrite() = 0;                                          // 0x00
+	// AVP2: iltmessage.h's ReadString, which AvP2's SDK adds after Release:
+	// every slot below is one later than NOLF's (servermsg.h's IMessageWrite)
+	virtual const char* ReadString() = 0;
 	virtual LTRESULT _p01()=0; virtual LTRESULT _p02()=0; virtual LTRESULT _p03()=0;
 	virtual LTRESULT _p04()=0; virtual LTRESULT _p05()=0; virtual LTRESULT _p06()=0;
 	virtual LTRESULT _p07()=0; virtual LTRESULT _p08()=0; virtual LTRESULT _p09()=0;

@@ -697,7 +697,11 @@ void cs_DirtyAllModelsQ414()
 class IMessageWriteQ414
 {
 public:
-	virtual void _v00()=0; virtual void _v04()=0; virtual void _v08()=0;
+	virtual void _v00()=0;
+	// AVP2: iltmessage.h's ReadString, which AvP2's SDK adds after Release:
+	// every slot below is one later than NOLF's (servermsg.h's IMessageWrite)
+	virtual const char* ReadString()=0;
+	virtual void _v04()=0; virtual void _v08()=0;
 	virtual void _v0c()=0; virtual void _v10()=0; virtual void _v14()=0;
 	virtual void _v18()=0; virtual void _v1c()=0; virtual void _v20()=0;
 	virtual void _v24()=0; virtual void _v28()=0; virtual void _v2c()=0;
