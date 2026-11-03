@@ -1246,7 +1246,9 @@ LTRESULT Model::Load(ILTStream* pStream, IMoAllocator* pAlloc)
 
 		m_pDataBlock = pBlock;
 		m_DataRef.Set(pBlock);
-		g_nModelDataBytes += nBytes;
+		// AvP2 counts the block's rounded size, not the size asked for
+		// (lithtech 0x0045c42e reads it back off the block at +0x18c).
+		g_nModelDataBytes += m_DataBlock.m_nSize;
 	}
 
 	return LT_OK;
@@ -4292,18 +4294,21 @@ public:
 	LTVector m_vO;                           // 0x04
 	LTVector m_vP;                           // 0x10
 	LTVector m_vQ;                           // 0x1c
-	uint8  m_pad_28[0x34 - 0x28];
+	uint8  m_pad_28[0x30 - 0x28];
+	// AvP2's flags word is at +0x30 and its polygon's surface at +0x2c,
+	// NOLF's at +0x38 and +0x28: every AvP2 image's collector tests
+	// `testb $0x10,0x30` off a `mov 0x2c(...)` (lithtech 0x0042e3b1).
+	uint32 m_Flags;                          // 0x30  bit 4 selects the run
 	// worldbsp.cpp's CWorldSurface::m_pPlane, the same field: the node
 	// projection pass below is the other reader of it.
 	class LTPlane* m_pPlane;                 // 0x34
-	uint32 m_Flags;                          // 0x38  bit 4 selects the run
 };
 
 class CWorldPolyRec
 {
 public:
-	uint8             m_pad_00[0x28];
-	CWorldSurfaceRec* m_pSurface;            // 0x28
+	uint8             m_pad_00[0x2c];
+	CWorldSurfaceRec* m_pSurface;            // 0x2c
 };
 
 // The collection at CServerWorld+0x19c: the same 0x14-byte shape as the
@@ -4992,6 +4997,8 @@ LTBOOL CWorldTable::SetSizeInit2(uint32 nItems, CServerWorldRec* val)
 // (0x1004d330) has exactly four slots before the .rdata float that follows
 // it — 0x1000a268, 0x1000a2b0, 0x1000a37c and 0x1000a3a6, which worldmodels.h
 // already names FindPoly, FindFlagged20 and FindFlagged10 (names ours).
+// That is NOLF's table; AvP2's has three (lithtech 0x004d50f4: 0x0042ec50,
+// 0x0042edb0, 0x0042ede0), the second of NOLF's four being gone.
 //
 // The sub-object extents come from Load below rather than from the
 // constructor: the one at +0x6c stops at +0x6c+0x8c because +0xf8 is a dword
@@ -5005,12 +5012,12 @@ public:
 	CServerWorldFull();                      // 0x10007f0e
 
 	virtual void _v00() = 0;
-	virtual void _v04() = 0;
 	// 0x1000a37c — worldmodels.h's CWorldModelList::FindFlagged20, which is
-	// slot 2 of this same vtable. Reached through `this` from the resolve
-	// below, so it has to carry its real return type here.
+	// slot 1 of this same vtable in AvP2 (three slots, 0x004d50f4; NOLF's
+	// had four, with this one at slot 2). Reached through `this` from the
+	// resolve below, so it has to carry its real return type here.
 	virtual CWorldGeom* FindFlagged20() = 0;
-	virtual void _v0c() = 0;
+	virtual void _v08() = 0;
 
 	// 0x10007f73 — the last thing the constructor does, and everything it
 	// does: every field of the class the nine sub-object constructors do not
@@ -5212,8 +5219,10 @@ void CServerWorldFull::Clear()
 //       folded every empty function in the image into one body, so which
 //       no-op the source named is unrecoverable (see servermgr.h).
 // 0x100079cb — the world file's fixed header: the version, two dwords the
-// caller keeps, and eight more it does not. A version that is not 66 is a
-// refused file and nothing further is read.
+// caller keeps, and eight more it does not. A version that is not 70 is a
+// refused file and nothing further is read: AvP2's world files are version
+// 70 where NOLF's were 66 (`cmpl $0x46` in every AvP2 image, lithtech
+// 0x0042a914).
 //
 // The eight throwaway reads all go through one local, and that local lives in
 // the dead `pStream` parameter slot — pStream is cached in %esi at the top
@@ -5229,7 +5238,7 @@ int w_ReadWorldHeader(class ILTStream* pStream, uint32* pnVersion, uint32* pn2,
 
 	pStream->Read(pnVersion, 4);
 
-	if (*pnVersion != 66)
+	if (*pnVersion != 70)
 		return 0;
 
 	pStream->Read(pn2, 4);
@@ -6209,7 +6218,7 @@ int CServerWorldFull::CollectFlaggedPolies()
 // 0x1000a2e7 — resolve the key lists. Read off the bytes rather than
 // guessed:
 //
-//   * the model comes back from a virtual call on `this` (slot 2, the
+//   * the model comes back from a virtual call on `this` (slot 1, the
 //     FindFlagged20 worldmodels.cpp already holds) and is spilled to the
 //     frame: three dwords, the model, the outer index and the outer byte
 //     offset, and the outer loop re-reads the base from the model and adds

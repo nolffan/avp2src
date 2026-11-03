@@ -258,28 +258,25 @@ LTRESULT CLTDirectMusicMgr::StopMotif(const char* sMotifName, const LTDMEnactTyp
 }
 
 // Playing a secondary segment: find the definition the control file gave that
-// name, and either hand it to DirectMusic now or queue it behind whatever is
-// playing. The segment flags always carry SECONDARY and CONTROL on top of
-// whatever the enact type asks for.
+// name, and either hand it to DirectMusic now or queue it for the next
+// segment boundary. The segment flags always carry SECONDARY and CONTROL on
+// top of whatever the enact type asks for.
 //
 // Both of this function's dead argument slots get reused — the segment name's
 // for the critical section's address and the enact type's for the
 // performance's vtable — which is why it reserves only one word of its own.
 //
-// A near, size-exact at 412 bytes and 152 instructions, after one change:
-// the PlaySegment argument is now named. Shipped loads m_pDMSegment into ebx
-// before the EnactToSegFlags call (0x004409f5), then re-zeroes ebx afterwards.
-// Nested, the load came after the call and the function was 8 bytes long.
-// What is left is register allocation only: shipped keeps the name and then
-// pSegment in ebp and the zero in ebx, and ours swaps the two. Reordering the
-// locals, declaring pSegment at the FindByName, and dropping nEnact for a
-// non-const nStart gave no change or worse. PlayMotif is the same.
+// AvP2's and Primal Hunt's shape (0x0044cb30): the enact type is resolved in
+// the parameter itself (shipped keeps it in ebx from entry), an immediate
+// start records its segment state through CDMPlayingList::Add (0x0044e460),
+// and a next-segment start goes on m_PendingSecondaryList's tail through
+// `new` rather than behind m_pQueueAfter. NOLF's queued behind
+// m_pQueueAfter and filled the playing node inline.
 LTRESULT CLTDirectMusicMgr::PlaySecondary(const char* sSecondarySegment,
-                                          const LTDMEnactTypes nStart)
+                                          LTDMEnactTypes nStart)
 {
 	IDirectMusicSegmentState* pSegState = LTNULL;
 	CDMSegment*    pSegment;
-	LTDMEnactTypes nEnact = nStart;
 
 	dm_Printf(4, "CLTDirectMusicMgr::PlaySecondary sSecondarySegment=%s nStart=%i\n",
 	          sSecondarySegment, nStart);
@@ -304,44 +301,26 @@ LTRESULT CLTDirectMusicMgr::PlaySecondary(const char* sSecondarySegment,
 	if (!pSegment->m_pDMSegment)
 		return LT_ERROR;
 
-	if (nEnact == LTDMEnactDefault)
-		nEnact = pSegment->m_nStopEnact;
+	if (nStart == LTDMEnactDefault)
+		nStart = pSegment->m_nStopEnact;
 
 	EnterCriticalSection(&m_CriticalSection);
 
-	if (nEnact != LTDMEnactNextSegment)
+	if (nStart != LTDMEnactNextSegment)
 	{
 		void* pDMSegment = pSegment->m_pDMSegment;
 		m_pPerformance->PlaySegment(pDMSegment,
-		                            EnactToSegFlags(nEnact) | 0x280, 0, &pSegState);
+		                            EnactToSegFlags(nStart) | 0x280, 0, &pSegState);
+		m_SecondaryList.Add(pSegState, pSegment);
 	}
 	else
 	{
-		CDMPendingNode* pPending = (CDMPendingNode*)g_PendingBank.Alloc();
+		CDMPendingNode* pPending = new CDMPendingNode(DMPENDING_PLAYSECONDARY);
 
 		if (pPending)
 		{
-			pPending->m_nType = DMPENDING_PLAYSECONDARY;
 			pPending->m_pSegment = pSegment;
-
-			if (!m_pQueueAfter)
-				m_PendingList.AddHead(pPending);
-			else
-				m_PendingList.InsertAfter(m_pQueueAfter, pPending);
-		}
-	}
-
-	if (pSegState)
-	{
-		CDMPlayingNode* pNode = (CDMPlayingNode*)g_PlayingBank.Alloc();
-
-		if (pNode)
-		{
-			pNode->m_pSegState = LTNULL;
-			pNode->m_pSegment = LTNULL;
-			pNode->m_pSegState = pSegState;
-			pNode->m_pSegment = pSegment;
-			m_SecondaryList.AddHead(pNode);
+			m_PendingSecondaryList.AddTail(pPending);
 		}
 	}
 
@@ -354,18 +333,13 @@ LTRESULT CLTDirectMusicMgr::PlaySecondary(const char* sSecondarySegment,
 // CONTROL. The queued record's type code is the one number that says which of
 // the two this was.
 //
-// A near for the same reason PlaySecondary is: the shipped build carries a
-// function-long zero in a fifth callee-saved register and compares memory
-// against it. Nine bytes over four hundred and forty.
-//
-
+// The same AvP2 shape as PlaySecondary (0x0044cdd0), with m_MotifList.
 
 LTRESULT CLTDirectMusicMgr::PlayMotif(const char* sMotifName,
-                                          const LTDMEnactTypes nStart)
+                                          LTDMEnactTypes nStart)
 {
 	IDirectMusicSegmentState* pSegState = LTNULL;
 	CDMSegment*    pSegment;
-	LTDMEnactTypes nEnact = nStart;
 
 	dm_Printf(4, "CLTDirectMusicMgr::PlayMotif sMotifName=%s nStart=%i\n",
 	          sMotifName, nStart);
@@ -390,48 +364,26 @@ LTRESULT CLTDirectMusicMgr::PlayMotif(const char* sMotifName,
 	if (!pSegment->m_pDMSegment)
 		return LT_ERROR;
 
-	if (nEnact == LTDMEnactDefault)
-		nEnact = pSegment->m_nStopEnact;
+	if (nStart == LTDMEnactDefault)
+		nStart = pSegment->m_nStopEnact;
 
 	EnterCriticalSection(&m_CriticalSection);
 
-	if (nEnact != LTDMEnactNextSegment)
+	if (nStart != LTDMEnactNextSegment)
 	{
-		// Named, not nested: shipped loads m_pDMSegment into a callee-saved
-		// register BEFORE the EnactToSegFlags call (0x00440cb7); nested,
-		// it loads after and the function is 4 bytes long.  Size-exact
-		// with this; the residual is a pure ebx/edi/ebp register rotation.
 		void* pDMSegment = pSegment->m_pDMSegment;
 		m_pPerformance->PlaySegment(pDMSegment,
-		                            EnactToSegFlags(nEnact) | 0x80, 0, &pSegState);
+		                            EnactToSegFlags(nStart) | 0x80, 0, &pSegState);
+		m_MotifList.Add(pSegState, pSegment);
 	}
 	else
 	{
-		CDMPendingNode* pPending = (CDMPendingNode*)g_PendingBank.Alloc();
+		CDMPendingNode* pPending = new CDMPendingNode(DMPENDING_PLAYMOTIF);
 
 		if (pPending)
 		{
-			pPending->m_nType = DMPENDING_PLAYMOTIF;
 			pPending->m_pSegment = pSegment;
-
-			if (!m_pQueueAfter)
-				m_PendingList.AddHead(pPending);
-			else
-				m_PendingList.InsertAfter(m_pQueueAfter, pPending);
-		}
-	}
-
-	if (pSegState)
-	{
-		CDMPlayingNode* pNode = (CDMPlayingNode*)g_PlayingBank.Alloc();
-
-		if (pNode)
-		{
-			pNode->m_pSegState = LTNULL;
-			pNode->m_pSegment = LTNULL;
-			pNode->m_pSegState = pSegState;
-			pNode->m_pSegment = pSegment;
-			m_MotifList.AddHead(pNode);
+			m_PendingSecondaryList.AddTail(pPending);
 		}
 	}
 
@@ -886,7 +838,10 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 // it whole. The level test now calls dm_NotLevelInitError (see its
 // declaration at the top of this file).
 //
-// The four allocations are three shapes, and that part now matches:
+// The four allocations were three shapes in NOLF's build (the addresses
+// below are NOLF's).  AvP2's and Primal Hunt's `new CDMPendingNode` has
+// CDMPendingBankQ440::AllocExpanded's shape instead (clientmusic.h), and
+// this function has not been brought to AvP2's yet:
 // * PLAYTRANSITION and PLAYSEGMENT (0x00440755, 0x00440805) are
 //   CDMBank::AllocPop: Pop out of line on both paths, folded into one call.
 // * INTENSITY00 (0x00440847) is CDMBank::Alloc: the fast path written out,

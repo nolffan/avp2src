@@ -68,6 +68,18 @@ inline void* sb_Allocate(StructBank* pBank)
 	return pStruct;
 }
 
+// The free, inline as servermgr.h's is, but AvP2's checks both pointers
+// first: lithtech 0x00433b7d tests the record and 0x00433bb1 the bank's own
+// address before the two stores.
+inline void sb_Free(StructBank* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
 // 0x100583c8 -- the bank the poly-grid records come from: dsi.cpp's
 // memtrack bank, which memtrack_Init sets up for 0x20-byte records.
 extern StructBank g_MemTrackBank;
@@ -131,12 +143,19 @@ void obj_UnlinkTrackersB(LTObject* pObj)
 }
 
 // 0x1001e85d — put an object onto another one, or onto nothing (name ours).
+// AvP2 refuses an object that moves along the BSP's edges (FLAG2_ORIENTMOVEMENT,
+// the wall-walkers) as something to stand on: the object comes off what it was
+// on and is left standing on nothing at all (lithtech 0x00462206,
+// `testb $0x40,0x8c` jumping straight to the return).
 void obj_SetStandingOn(LTObject* pObj, LTObject* pOn, WorldPoly* pPoly)
 {
 	obj_UnlinkTrackersA(pObj);
 
 	if (pOn)
 	{
+		if (pOn->m_Flags2 & FLAG2_ORIENTMOVEMENT)
+			return;
+
 		LTLink* pLink = &pObj->m_StandingLink;
 		LTLink* pHead = &pOn->m_StandingOnMe;
 
@@ -494,14 +513,15 @@ void wt_InsertPoints(CWorldBspView* pWorld, CWorldNodeView* pNode,
 // A poly grid's own fields past the object's: the link the tree hangs it by,
 // and the footprint it covers. objbank.cpp models the whole subclass as
 // CObjPolyGrid; this is the local view, and the two dimensions are its
-// m_Unknown1f0/m_Unknown1f4 (names ours).
+// m_Unknown1f0/m_Unknown1f4 (names ours). Eight bytes further in than NOLF's,
+// as AvP2's LTObject is (lithtech 0x0043397e reads the footprint at 0x1f8).
 class CPolyGridView
 {
 public:
-	uint8  m_pad_000[0x1e4];
-	LTLink m_Link1e4;                        // 0x1e4
-	uint32 m_Width;                          // 0x1f0
-	uint32 m_Height;                         // 0x1f4
+	uint8  m_pad_000[0x1ec];
+	LTLink m_Link1e4;                        // 0x1ec
+	uint32 m_Width;                          // 0x1f8
+	uint32 m_Height;                         // 0x1fc
 };
 
 // 0x1000d631 — a poly grid's extra placement work, reached only from the arm
@@ -509,7 +529,7 @@ public:
 // OT_POLYGRID.
 //
 // It puts the grid in by its eight transformed corners rather than by a
-// sphere. The half-extents come off the footprint at 0x1f0/0x1f4 -- unsigned,
+// sphere. The half-extents come off the footprint at 0x1f8/0x1fc -- unsigned,
 // which the `fildll` with a zeroed high dword proves -- and the middle axis
 // has no field at all: a flat +/-127, so a grid is a fixed height and only
 // its footprint varies. The same 128.0f-and-nothing shape CObjPolyGrid's
@@ -669,8 +689,7 @@ void pg_FreeData(LTObject* pObj)
 		pRec->m_Link.Remove();
 		pRec->m_Link0c.Remove();
 
-		*(void**)pRec = g_MemTrackBank.m_pFreeList;
-		g_MemTrackBank.m_pFreeList = pRec;
+		sb_Free(&g_MemTrackBank, pRec);
 
 		pCur = pNext;
 	}

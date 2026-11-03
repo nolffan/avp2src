@@ -68,7 +68,7 @@
   "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
   "progress/shipped-libs.sha256": "2b477003e712251f29602f971858c459a4aaeb5cf64171c3a898f099c7022046",
   "progress/targets.py": "0dd1fd877d7d8fab2f3759131e11fb51c324b784c451d52c8456dd2f4d3075fa",
-  "progress/vtab-known.txt": "52a60aedd6af7649f97d6b32edac16cf2aac67573f30d4c9c8655a52fb40c312"
+  "progress/vtab-known.txt": "1d6990cb1f4b54fd19a751122020309c9820f7aba47c6bc93f8cccf27181ea6b"
  },
  "reference": {
   "out/reference/AVP2.exe": "516ae2949d609aadc6a4c83160fb7bf380265d488f3b0d5f4f717bf8b36af404",
@@ -97,12 +97,12 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "96d4b14f3ab936d7c8105488cdf16bbcff2d4cb043d6aabbb44174cee890ee51",
-  "out/progress/summary.json": "813898654ca8d53e90e975c2a47ae85bb584544d3e1cc75ea7117cb8941cde06"
+  "out/progress/functions.csv": "537ca78ad32635328624952f1595728b5cd9318aa40ce30cc6b78bd37a596c59",
+  "out/progress/summary.json": "1fc2687be0b1cf6910ee0cd4c0735f94dcdb14e39011d7ae23e6453dd5388347"
  },
  "source": {
-  "modified_files": 19,
-  "revision": "f66c16af22754b4a2552033e1d1afec068256365",
+  "modified_files": 66,
+  "revision": "569aca2f2aff1bce9142f01cb7379c4d00218305",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "8fbf6f01f69ed3532626da1a878e7385cfa0851f"

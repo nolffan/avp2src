@@ -111,6 +111,15 @@ public:
 	                       float fRangeScalePreCenterOffset);            // 0x30
 };
 
+// AVP2: what the connection's getter hands back (Primal Hunt 0x00418990);
+// RebindLightmaps passes its +0x1c8 to the renderer.  (view name ours)
+class CConWorldView
+{
+public:
+	uint8 m_pad_000[0x1c8];
+	void* m_pLightmapData;                                      // 0x1c8
+};
+
 // The object at CClientMgr+0x150c -- clientmgr.h's CClientConnection, the
 // link to the server.  The one method this run needs is 0x00413c60: a
 // thiscall taking one char*, `ret $0x4`, which packets the string up and
@@ -120,6 +129,10 @@ class CConConnection
 {
 public:
 	void RunConsoleString(char* pCommand);                      // 0x00413c60
+	// AVP2: Primal Hunt 0x00418990, `mov 0x78(%ecx),%eax; ret` -- an
+	// out-of-line getter whose answer RebindLightmaps reads +0x1c8 of.
+	// (name ours)
+	CConWorldView* GetWorld();                                   // 0x00418990
 };
 
 // Only the two fields of CClientMgr this run touches, at clientmgr.h's
@@ -130,9 +143,12 @@ public:
 	LTRESULT StartGame(StartGameRequest* pRequest);             // 0x0040fd90
 	void     Sub4105c0();                                       // 0x004105c0
 
-	uint8            m_pad_0000[0x1508];
-	CConClientInput* m_pInput;               // 0x1508
-	CConConnection*  m_pConnection;          // 0x150c
+	// AVP2: 0x1508/0x150c are NOLF's; AvP2's and Primal Hunt's manager is
+	// 0x110 bytes longer ahead of these two, and both images' handlers load
+	// them from +0x1618 / +0x161c (Primal Hunt 0x004254a5, AvP2 0x00422d85).
+	uint8            m_pad_0000[0x1618];
+	CConClientInput* m_pInput;               // 0x1618
+	CConConnection*  m_pConnection;          // 0x161c
 };
 
 // The client's console state and the CClientMgr the console works through;
@@ -427,6 +443,20 @@ void cc_RangeBind(int argc, char** argv)
 }
 
 
+// AVP2: "UnBind <device> <trigger>" (AvP2 0x004229d0, Primal Hunt
+// 0x004250c0): Bind's first half alone, clear the trigger's bindings and
+// bind nothing back.  Both tables carry it between Bind and Scale; NOLF's
+// had no such command.
+void cc_UnBind(int argc, char** argv)
+{
+	if (argc < 2)
+		return;
+
+	g_pClientMgr->m_pInput->ClearBindings(g_pClientMgr->m_pInput,
+	                                      argv[0], argv[1]);
+}
+
+
 // 0x0041dce0 -- "Scale <device> <trigger> <scale>": the trigger's scale,
 // with the three range-scale terms left at zero.
 //
@@ -497,12 +527,22 @@ void cc_AddAction(int argc, char** argv)
 // The renderer's RenderStruct at 0x004b4358 (clientrender.cpp's
 // g_RenderStruct), only down to the slots this file reaches:
 // +0xb4 is 0x004b440c, +0x104 is 0x004b445c.  (view name ours)
+//
+// AVP2: those addresses are NOLF's.  AvP2's and Primal Hunt's struct
+// (Primal Hunt 0x004f5a48) is eight bytes longer by +0xb4: RenderCommand is
+// called through +0xbc (0x004252a3) and the environment map stored to +0x10c
+// (0x0042550d).  It also has a slot at +0x80 that RebindLightmaps calls,
+// after testing the initialised flag at +0x44.
 struct CConRenderStruct
 {
-	uint8 m_pad_000[0xb4];
-	void  (*RenderCommand)(int argc, char** argv);              // 0xb4
-	uint8 m_pad_0b8[0x104 - 0xb8];
-	void* m_pEnvMapTexture;                                     // 0x104
+	uint8 m_pad_000[0x44];
+	int   m_bInited;                                            // 0x44
+	uint8 m_pad_048[0x80 - 0x48];
+	void  (*RebindLightmaps)(void* pLightmapData);              // 0x80
+	uint8 m_pad_084[0xbc - 0x84];
+	void  (*RenderCommand)(int argc, char** argv);              // 0xbc
+	uint8 m_pad_0c0[0x10c - 0xc0];
+	void* m_pEnvMapTexture;                                     // 0x10c
 };
 
 class RenderStruct;
@@ -1047,6 +1087,61 @@ void cc_HeapCompact(int argc, char** argv)
 	dsi_HeapCompact();
 }
 
+// AVP2: "RebindLightmaps" (AvP2 0x00422e40, Primal Hunt 0x00425560): hand
+// the renderer the world's lightmap data when there is a connected world
+// and an initialised renderer, and a null otherwise.  The getter is called twice (once to test,
+// once to use) and the manager reloaded between, so the source did not keep
+// either in a local.  (Sits between RebindTextures and HeapCompact in the
+// shipped images; written here beside the other post-NOLF additions.)
+void cc_RebindLightmaps(int argc, char** argv)
+{
+	if (g_pClientMgr && g_pClientMgr->m_pConnection &&
+	    g_pClientMgr->m_pConnection->GetWorld() && g_ConRenderStruct.m_bInited)
+	{
+		g_ConRenderStruct.RebindLightmaps(
+			g_pClientMgr->m_pConnection->GetWorld()->m_pLightmapData);
+	}
+	else
+	{
+		g_ConRenderStruct.RebindLightmaps(LTNULL);
+	}
+}
+
+// AVP2: Primal Hunt 0x004f4830 -- the world models' ambient light, three
+// floats that "WMAmbient" sets.  (name ours)
+float g_fWMAmbientR;                                            // 0x004f4830
+float g_fWMAmbientG;                                            // 0x004f4834
+float g_fWMAmbientB;                                            // 0x004f4838
+
+// AVP2: "WMAmbient <r> <g> <b>" (AvP2 0x00422480, Primal Hunt 0x00424b20):
+// set the three, each clamped to 0..250.  The shipped function sits in the
+// first half of this source file (between ModelDirAdd and World), written
+// here with the other additions.
+void cc_WMAmbient(int argc, char** argv)
+{
+	if (argc < 3)
+		return;
+
+	g_fWMAmbientR = (float)atof(argv[0]);
+	g_fWMAmbientG = (float)atof(argv[1]);
+	g_fWMAmbientB = (float)atof(argv[2]);
+
+	if (g_fWMAmbientR < 0.0f)
+		g_fWMAmbientR = 0.0f;
+	else if (g_fWMAmbientR > 250.0f)
+		g_fWMAmbientR = 250.0f;
+
+	if (g_fWMAmbientG < 0.0f)
+		g_fWMAmbientG = 0.0f;
+	else if (g_fWMAmbientG > 250.0f)
+		g_fWMAmbientG = 250.0f;
+
+	if (g_fWMAmbientB < 0.0f)
+		g_fWMAmbientB = 0.0f;
+	else if (g_fWMAmbientB > 250.0f)
+		g_fWMAmbientB = 250.0f;
+}
+
 // 0x00438d80, the other config-file writer: the input manager's saver
 // ("AddAction %s %d\n" and the binding lines), defined in clientinput.cpp.
 void cc_SaveInputBindings(FILE* pFile);                     // 0x00438d80
@@ -1061,7 +1156,13 @@ void (*g_ClientConsoleSavers[2])(FILE* pFile) =
 
 // 0x004a8830 -- thirty-three {name, fn, user} triples, the user field zero
 // throughout.  "RenderCommand" and "RCom" share one handler.
-ConsoleCommandDef g_ClientConsoleCommands[33] =
+//
+// AVP2: AvP2's (0x004d09c0) and Primal Hunt's (0x004e1b70) have thirty-six:
+// UnBind after Bind, RebindLightmaps after RebindTextures, and WMAmbient
+// last.
+#define CC_NUM_COMMANDS 36
+
+ConsoleCommandDef g_ClientConsoleCommands[CC_NUM_COMMANDS] =
 {
 	{ "BlastServer",      (void*)cc_BlastServer,      LTNULL },
 	{ "ListInputDevices", (void*)cc_ListInputDevices, LTNULL },
@@ -1074,6 +1175,7 @@ ConsoleCommandDef g_ClientConsoleCommands[33] =
 	{ "EnableDevice",     (void*)cc_EnableDevice,     LTNULL },
 	{ "RangeBind",        (void*)cc_RangeBind,        LTNULL },
 	{ "Bind",             (void*)cc_Bind,             LTNULL },
+	{ "UnBind",           (void*)cc_UnBind,           LTNULL },
 	{ "Scale",            (void*)cc_Scale,            LTNULL },
 	{ "RangeScale",       (void*)cc_RangeScale,       LTNULL },
 	{ "AddAction",        (void*)cc_AddAction,        LTNULL },
@@ -1088,6 +1190,7 @@ ConsoleCommandDef g_ClientConsoleCommands[33] =
 	{ "ResizeScreen",     (void*)cc_ResizeScreen,     LTNULL },
 	{ "EnvMap",           (void*)cc_EnvMap,           LTNULL },
 	{ "RebindTextures",   (void*)cc_Sub41e130,        LTNULL },
+	{ "RebindLightmaps",  (void*)cc_RebindLightmaps,  LTNULL },
 	{ "HeapCompact",      (void*)cc_HeapCompact,      LTNULL },
 	{ "ConsoleHistory",   (void*)cc_ListHistory,      LTNULL },
 	{ "ClearHistory",     (void*)cc_ClearHistory,     LTNULL },
@@ -1096,6 +1199,8 @@ ConsoleCommandDef g_ClientConsoleCommands[33] =
 	{ "Exec",             (void*)cc_Exec,             LTNULL },
 	{ "MoveConsole",      (void*)cc_MoveConsole,      LTNULL },
 	{ "ShowTicks",        (void*)cc_ShowTicks,        LTNULL }
+	,
+	{ "WMAmbient",        (void*)cc_WMAmbient,        LTNULL }
 };
 
 
@@ -1125,7 +1230,7 @@ void cc_InitClientState()
 	g_ClientConsoleState.m_nBindings = dsi_GetNumConsoleBindings();
 
 	g_ClientConsoleState.m_pBuiltins = g_ClientConsoleCommands;
-	g_ClientConsoleState.m_nBuiltins = 33;
+	g_ClientConsoleState.m_nBuiltins = CC_NUM_COMMANDS;
 
 	g_ClientConsoleState.m_pPrint = con_Print;
 	g_ClientConsoleState.m_pAlloc = dalloc;

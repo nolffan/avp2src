@@ -346,17 +346,18 @@ public:
 	virtual LTRESULT _p25()=0; virtual LTRESULT _p26()=0; virtual LTRESULT _p27()=0;
 	virtual LTRESULT _p28()=0; virtual LTRESULT _p29()=0; virtual LTRESULT _p30()=0;
 	virtual LTRESULT _p31()=0; virtual LTRESULT _p32()=0; virtual LTRESULT _p33()=0;
-	virtual LTRESULT _p34()=0;                                                // 0x88
-	virtual LTRESULT Verify() = 0;                                            // 0x8c
+	virtual LTRESULT _p34()=0;                                                // 0x8c
+	virtual LTRESULT Verify() = 0;                                            // 0x90
 };
 
 typedef IMessageWriteView* HMESSAGEWRITE_I;
 
-// CLTClient's own vtable, as far as EndMessage2 reaches it.  0x16c / 4 = 91
-// and slot 91 is iltclient.h index 20 = SendToServer -- the only three
+// CLTClient's own vtable, as far as EndMessage2 reaches it: 0x16c / 4 = 91
+// in NOLF and AvP2 1.0.9.6; Primal Hunt's ILTCSBase has two slots more
+// ahead of it, so it is 0x174 / 4 = 93 there.  It is iltclient.h's SendToServer -- the only three
 // argument sender in the table, and the header's argument list
 // (ILTMessage&, uint8, uint32) is exactly the three pushes.  The call goes
-// through `mov (%edi),%edx; call *0x16c(%edx)`, i.e. through THIS object's
+// through `mov (%edi),%edx; call *0x174(%edx)` (PH), i.e. through THIS object's
 // own vptr, which is why it has to be spelled as a virtual call.
 class ILTClientSendView
 {
@@ -384,7 +385,11 @@ public:
 	virtual void _s80()=0; virtual void _s81()=0; virtual void _s82()=0; virtual void _s83()=0;
 	virtual void _s84()=0; virtual void _s85()=0; virtual void _s86()=0; virtual void _s87()=0;
 	virtual void _s88()=0; virtual void _s89()=0; virtual void _s90()=0;
-	// 0x16c
+#ifdef PRIMAL_HUNT
+	// PH: ILTCSBase's two file queries after CopyFile (iltcsbase.h).
+	virtual void _sPH0()=0; virtual void _sPH1()=0;
+#endif
+	// 0x16c (PH: 0x174)
 	virtual LTRESULT SendToServer(IMessageWriteView& msg, uint8 msgID, uint32 flags)=0;
 };
 
@@ -393,25 +398,26 @@ public:
 class CClientMgrView
 {
 public:
-	uint8              m_pad_0000[0x60c];
-	// 0x60c = m_NetMgr (0x50c, clientmgr.h) + CNetMgr::m_pMainDriver
-	// (0x100, servermgr.h:1263).  The four query slots call 0x20/0x24/
-	// 0x28/0x2c through it, which is CBaseDriver's query block.
-	CBaseDriverView*   m_pMainDriver;        // 0x60c
-	uint8              m_pad_0610[0x1258 - 0x610];
+	uint8              m_pad_0000[0x610];
+	// 0x610 = m_NetMgr (0x510 in AvP2's layout, clientmgr2.cpp) +
+	// CNetMgr::m_pMainDriver (0x100, servermgr.h:1263).  The four query
+	// slots call 0x20/0x24/0x28/0x2c through it, which is CBaseDriver's
+	// query block.
+	CBaseDriverView*   m_pMainDriver;        // 0x610
+	uint8              m_pad_0614[0x1368 - 0x614];
 	// The two clocks, read as floats (`flds`) off the GLOBAL g_pClientMgr.
-	// iltcsbase.h declares GetTime then GetFrameTime, so slot 53 (+0x125c)
-	// is the game clock and slot 54 (+0x1258) the frame delta.
-	float              m_FrameTime;          // 0x1258
-	float              m_Time;               // 0x125c
-	uint8              m_pad_1260[0x1268 - 0x1260];
+	// iltcsbase.h declares GetTime then GetFrameTime, so slot 53 (+0x136c)
+	// is the game clock and slot 54 (+0x1368) the frame delta.
+	float              m_FrameTime;          // 0x1368
+	float              m_Time;               // 0x136c
+	uint8              m_pad_1370[0x1378 - 0x1370];
 	// The SERVER's console variables, mirrored into the client manager.  A
 	// different object from the client's own (0x004b2f00): the shipped code
-	// reaches it with `add $0x1268,%eax`, an ADD on the loaded manager
+	// reaches it with `add $0x1378,%eax`, an ADD on the loaded manager
 	// pointer, which is `&m_pClientMgr->m_ServerConsoleState`.
-	ConsoleStateView   m_ServerConsoleState; // 0x1268
-	uint8              m_pad_12b4[0x1534 - (0x1268 + 0x4c)];
-	CFileMgrView*      m_pFileMgr;           // 0x1534
+	ConsoleStateView   m_ServerConsoleState; // 0x1378
+	uint8              m_pad_13c4[0x1644 - (0x1378 + 0x4c)];
+	CFileMgrView*      m_pFileMgr;           // 0x1644
 
 	// 0x004113e0 -- __thiscall, no arguments, returns the message container
 	// (lt2new3.cpp already reached it from StartMessage at 0x00407560 and
@@ -494,8 +500,8 @@ public:
 public:
 	uint8           m_pad_0000[0x10];
 	ILTModel*       m_pModelLT;              // 0x010
-	uint8           m_pad_0014[0x3c0 - 0x14];
-	CClientMgrView* m_pClientMgr;            // 0x3c0
+	uint8           m_pad_0014[0x3d0 - 0x14];
+	CClientMgrView* m_pClientMgr;            // 0x3d0  (NOLF's 0x3c0)
 };
 
 
@@ -1049,7 +1055,9 @@ HMESSAGEWRITE CLTClient::StartHMessageWrite()
 {
 	CLTMessageEntryView* pMsg = m_pClientMgr->StartMessage();
 
-	pMsg->Init(0x2000, 0x1000);
+	// AVP2: the cache size is 0x44c, not NOLF's 0x1000 (Primal Hunt's
+	// 0x004082a0 and AvP2 1.0.9.6's 0x004077d8 both store it).
+	pMsg->Init(0x2000, 0x44c);
 
 	return (HMESSAGEWRITE)&pMsg->m_Write;
 }

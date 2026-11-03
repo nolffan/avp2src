@@ -533,7 +533,8 @@ public:
 	// 0x048 -- indexed by AnimTimeRef::m_iWeightSet at 0x00489c06.  The
 	// array pointer of commonmodel.h's collection at 0x44.
 	ModelWeightSetK** m_pWeightSets;         // 0x048
-	uint8             m_pad_4c[0x74 - 0x4c];
+	uint32            m_nWeightSets;         // 0x04c
+	uint8             m_pad_50[0x74 - 0x50];
 	// 0x074 -- the destination transform table.  0x00489bae copies it into
 	// the builder's own +0xe8, and 0x0048a2e9 indexes it `shl $6` = 64 bytes
 	// a node, i.e. one LTMatrix each.
@@ -542,10 +543,12 @@ public:
 	// 0x168 -- m_AnimArray's array pointer; every use indexes it `shl $5`,
 	// which is commonmodel.h's 0x20-byte AnimInfo.
 	AnimInfoK*        m_pAnims;              // 0x168
-	uint8             m_pad_16c[0x2c0 - 0x16c];
-	// 0x2c0 -- the root node.  0x00489ad7 reads its +0x10 as a uint16 and
-	// hands that to the walker as the node to start from.
-	ModelNodeK*       m_pRootNode;           // 0x2c0
+	uint8             m_pad_16c[0x2c4 - 0x16c];
+	// 0x2c4 -- the root node.  0x00489ad7 reads its +0x10 as a uint16 and
+	// hands that to the walker as the node to start from.  AvP2's Model has
+	// four bytes after its data block that NOLF's has not (commonmodel.h's
+	// m_Unknown190), so it is NOLF's 0x2c0 plus four (0x004a6a3d).
+	ModelNodeK*       m_pRootNode;           // 0x2c4
 };
 
 
@@ -622,9 +625,13 @@ public:
 	LTVector         m_vBlend;                       // 0x198
 	ModelK*          m_pModel;                       // 0x1a4
 	LTMatrix         m_matIdentity;                  // 0x1a8
-	ModelWeightSetK* m_pWeightSets[MAX_TM_TIMEREFS]; // 0x1e8
-	ModelAnimK*      m_pPrevAnims[MAX_TM_TIMEREFS];  // 0x208
-	ModelAnimK*      m_pCurAnims[MAX_TM_TIMEREFS];   // 0x228
+	// AvP2 keeps a weight set per key frame side: the previous key frame's
+	// at 0x228 and the current one's at 0x248 (Primal Hunt lithtech
+	// 0x004a6ab2/0x004a6acc), which moves the two anim tables up by 0x20.
+	ModelWeightSetK* m_pPrevWeightSets[MAX_TM_TIMEREFS]; // 0x228
+	ModelWeightSetK* m_pWeightSets[MAX_TM_TIMEREFS]; // 0x248
+	ModelAnimK*      m_pPrevAnims[MAX_TM_TIMEREFS];  // 0x268
+	ModelAnimK*      m_pCurAnims[MAX_TM_TIMEREFS];   // 0x288
 };
 
 // 0x004b4d30 -- a file-scope LTMatrix in .data that ProcessNode uses as the
@@ -779,17 +786,17 @@ LTBOOL CTransformMakerK::SetupTransformsForNode(uint32 iNode)
 //    * m_pNodePath is cleared (0x00489be3) BEFORE the loop; %edi stays zero
 //      for the whole function and doubles as the loop's lower bound and as
 //      the 0.0f the identity matrix is filled with.
-//    * the loop caches three pointers per time-ref:
-//        m_pWeightSets[i] = pModel->m_pWeightSets[m_TimeRefs[i].m_iWeightSet]
-//          -- guarded by `if (i > 0)` (0x00489bf6, again the continue case),
-//             so slot 0 is deliberately left alone: the first weight set is
-//             ignored, exactly as ltanimtracker.h says of m_iWeightSet.
+//    * the loop caches four pointers per time-ref (AvP2; NOLF's cached
+//      three and skipped slot 0's weight set):
+//        m_pPrevWeightSets[i] / m_pWeightSets[i] = the model's weight set for
+//          m_Prev / m_Cur.m_iWeightSet, or null when the index is past the
+//          model's count (`cmp 0x4c; jb` over an `xor`: a `?:` whose null
+//          arm is written first);
 //        m_pPrevAnims[i] = pModel->m_pAnims[m_TimeRefs[i].m_Prev.m_iAnim].m_pAnim
 //        m_pCurAnims[i]  = pModel->m_pAnims[m_TimeRefs[i].m_Cur.m_iAnim].m_pAnim
-//      The three destinations are walked off ONE induction pointer (%eax,
-//      started at this+0x208 and bumped by 4) at -0x20/-0x4/+0x1c, which is
-//      what fixes the three arrays at 0x1e8, 0x208 and 0x228 and says they
-//      are adjacent and parallel.
+//      The four destinations are walked off ONE induction pointer (%eax,
+//      started at this+0x248 and bumped by 4) at -0x20/0/+0x1c/+0x3c, which
+//      fixes the four arrays at 0x228, 0x248, 0x268 and 0x288.
 //    * m_pModel is re-loaded from the member three times inside the loop --
 //      the member is read afresh in each statement, not cached in a local.
 //    * 0x00489c63..0x00489c94 writes 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 in
@@ -811,8 +818,14 @@ LTBOOL CTransformMakerK::Prepare()
 
 	for (i = 0; i < m_nTimeRefs; i++)
 	{
-		if (i > 0)
-			m_pWeightSets[i] = m_pModel->m_pWeightSets[m_TimeRefs[i].m_Cur.m_iWeightSet]; // AVP2: provisional, as above
+		// AvP2: both weight sets, for every time-ref, and an index the model
+		// does not have gives no weight set rather than a wild read.
+		m_pPrevWeightSets[i] =
+			(m_TimeRefs[i].m_Prev.m_iWeightSet >= m_pModel->m_nWeightSets) ? LTNULL :
+			m_pModel->m_pWeightSets[m_TimeRefs[i].m_Prev.m_iWeightSet];
+		m_pWeightSets[i] =
+			(m_TimeRefs[i].m_Cur.m_iWeightSet >= m_pModel->m_nWeightSets) ? LTNULL :
+			m_pModel->m_pWeightSets[m_TimeRefs[i].m_Cur.m_iWeightSet];
 
 		m_pPrevAnims[i] = m_pModel->m_pAnims[m_TimeRefs[i].m_Prev.m_iAnim].m_pAnim;
 		m_pCurAnims[i]  = m_pModel->m_pAnims[m_TimeRefs[i].m_Cur.m_iAnim].m_pAnim;

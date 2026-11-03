@@ -34,6 +34,7 @@ extern RenderStruct g_RenderStruct;                          // 0x004b4358
 void ci_SetupInterface(CLTClient* pClient)
 {
 	pClient->StartGame                  = ci_StartGame;
+	pClient->SetGameInfo                = ci_SetGameInfo;
 	pClient->GetGameMode                = ci_GetGameMode;
 	pClient->GetLocalClientID           = ci_GetLocalClientID;
 	pClient->IsConnected                = ci_IsConnected;
@@ -132,6 +133,9 @@ void ci_SetupInterface(CLTClient* pClient)
 	pClient->GetGlobalLightScale        = ci_GetGlobalLightScale;
 	pClient->SetGlobalLightScale        = ci_SetGlobalLightScale;
 	pClient->OffsetGlobalLightScale     = ci_OffsetGlobalLightScale;
+	pClient->GetGlobalVertexTint        = ci_GetGlobalVertexTint;
+	pClient->SetGlobalVertexTint        = ci_SetGlobalVertexTint;
+	pClient->OffsetGlobalVertexTint     = ci_OffsetGlobalVertexTint;
 	pClient->CreateObject               = ci_CreateObject;
 	pClient->GetObjectScale             = ci_GetObjectScale;
 	pClient->SetObjectScale             = ci_SetObjectScale;
@@ -441,6 +445,22 @@ LTRESULT ci_FreeSessionList(NetSession* pListHead)
 LTRESULT ci_StartGame(StartGameRequest* pRequest)
 {
 	return g_pClientMgr->StartGame(pRequest);
+}
+
+
+// Only a local game has a server to hand the game info to.
+LTRESULT ci_SetGameInfo(void* pData, uint32 dataLen)
+{
+	CClientConnection* pConn = g_pClientMgr->m_pConnection;
+
+	if (!pConn)
+		RETURN_ERROR(1, "SetGameInfo", LT_NOTCONNECTED);
+
+	if (!pConn->m_pServerMgr)
+		RETURN_ERROR(1, "SetGameInfo", LT_CANTCREATESERVER);
+
+	pConn->m_pServerMgr->SetGameInfo(pData, dataLen);
+	return LT_OK;
 }
 
 
@@ -868,6 +888,28 @@ HLOCALOBJ ci_GetClientObject()
 }
 
 
+// The vertex tint is the light scale's twin with a [0, 1] clamp where the
+// scale's is [0, 2] (cltapi.cpp has the scale's setters).
+void ci_GetGlobalVertexTint(LTVector* pScale)
+{
+	*pScale = g_pClientMgr->m_vGlobalVertexTint;
+}
+
+
+void ci_SetGlobalVertexTint(LTVector* pScale)
+{
+	g_pClientMgr->m_vGlobalVertexTint = *pScale;
+	VEC_CLAMP(g_pClientMgr->m_vGlobalVertexTint, 0.0f, 1.0f);
+}
+
+
+void ci_OffsetGlobalVertexTint(LTVector* pOffset)
+{
+	g_pClientMgr->m_vGlobalVertexTint = g_pClientMgr->m_vGlobalVertexTint + *pOffset;
+	VEC_CLAMP(g_pClientMgr->m_vGlobalVertexTint, 0.0f, 1.0f);
+}
+
+
 void ci_GetGlobalLightScale(LTVector* pScale)
 {
 	*pScale = g_pClientMgr->m_vGlobalLightScale;
@@ -1210,8 +1252,9 @@ LTRESULT ci_FlipScreen(uint32 flags)
 
 // A null rect means the whole screen. Either way the rect handed to the
 // renderer is a local copy clamped to the screen, so a caller cannot make it
-// clear outside the surface.
-LTRESULT ci_ClearScreen(LTRect* pClearRect, uint32 flags)
+// clear outside the surface.  The colour (AvP2's SDK) goes to the renderer
+// untouched.
+LTRESULT ci_ClearScreen(LTRect* pClearRect, uint32 flags, LTVector* vColor)
 {
 	LTRect rect;
 
@@ -1252,7 +1295,7 @@ LTRESULT ci_ClearScreen(LTRect* pClearRect, uint32 flags)
 	if (g_CV_ForceClear)
 		flags |= CLEARSCREEN_SCREEN;
 
-	g_RenderStruct.ClearScreen(&rect, flags);
+	g_RenderStruct.ClearScreen(&rect, flags, vColor);
 	return LT_OK;
 }
 
@@ -1527,7 +1570,8 @@ void ci_RemoveLine(HLOCALOBJ hObj, HLTLINE hLine)
 		pLine->m_pNext->m_pPrev = pLine->m_pPrev;
 		pLine->m_pPrev->m_pNext = pLine->m_pNext;
 
-		sb_Free(((CClientLineSystem*)hObj)->m_pLineBank, pLine);
+		if (((CClientLineSystem*)hObj)->m_pLineBank)
+			sb_Free(((CClientLineSystem*)hObj)->m_pLineBank, pLine);
 	}
 }
 
@@ -1556,7 +1600,8 @@ void ci_RemoveParticle(HLOCALOBJ hSystem, LTParticle* pParticle)
 		pParticle2->m_pPrev->m_pNext = pParticle2->m_pNext;
 		((CClientParticle*)pParticle2->m_pNext)->m_pPrev = pParticle2->m_pPrev;
 
-		sb_Free(pSystem->m_pParticleBank, pParticle2);
+		if (pSystem->m_pParticleBank)
+			sb_Free(pSystem->m_pParticleBank, pParticle2);
 		--pSystem->m_nParticles;
 	}
 }
@@ -1779,8 +1824,8 @@ void ci_GetLineInfo(HLTLINE hLine, LTLine* pLine)
 // see it: clientmgr.h's CClientLine / CClientLineSystem with the fields
 // between their pads named (views, names ours).  A line is the SDK's LTLine
 // (two 0x1c-byte points) followed by its owner and its links; the system
-// keeps a changed flag at 0x1ac and the bounding box, centre and radius the
-// two functions maintain from 0x1f4.
+// keeps a changed flag at 0x1b4 and the bounding box, centre and radius the
+// two functions maintain from 0x1fc.
 class CLineSystemQ43c;
 
 class CLineQ43c : public LTLine
@@ -1796,14 +1841,14 @@ class CLineSystemQ43c
 public:
 	uint8       m_pad_00[0xbc];
 	uint8       m_ObjectType;                // 0x0bc
-	uint8       m_pad_bd[0x1a8 - 0xbd];
-	StructBank* m_pLineBank;                 // 0x1a8
-	LTBOOL      m_bChanged;                  // 0x1ac
-	CLineQ43c   m_LineHead;                  // 0x1b0
-	LTVector    m_MinPos;                    // 0x1f4
-	LTVector    m_MaxPos;                    // 0x200
-	LTVector    m_SystemCenter;              // 0x20c
-	float       m_SystemRadius;              // 0x218
+	uint8       m_pad_bd[0x1b0 - 0xbd];
+	StructBank* m_pLineBank;                 // 0x1b0
+	LTBOOL      m_bChanged;                  // 0x1b4
+	CLineQ43c   m_LineHead;                  // 0x1b8
+	LTVector    m_MinPos;                    // 0x1fc
+	LTVector    m_MaxPos;                    // 0x208
+	LTVector    m_SystemCenter;              // 0x214
+	float       m_SystemRadius;              // 0x220
 };
 
 // What both functions do per point and then once: SetLineInfo reloads the
@@ -1825,12 +1870,23 @@ inline void ls_ExtendBoxQ43c(CLineSystemQ43c* pSystem, const LTVector& vPos)
 // only; 7 calls every operator.  Mag and AddLine's operator+ each sit one
 // level deeper again.  The original presumably reached the depth through
 // its line-system helpers; this chain is only the depth (names ours).
+// AddLine's operator+ is a statement of its own one level down: the shipped
+// copy into m_SystemCenter reads through the pointer the call returns, which
+// a helper returning the sum by value does not give.  Both functions build
+// vHalf by ASSIGNMENT from the difference (a constructed temporary copied in),
+// not by copy-initialisation.
 inline float ls_MagQ43c(const LTVector& v) { return v.Mag(); }
-inline LTVector ls_AddQ43c(const LTVector& a, const LTVector& b) { return a + b; }
+
+inline void ls_SetCenterQ43c(CLineSystemQ43c* pSystem, const LTVector& vHalf)
+{
+	pSystem->m_SystemCenter = pSystem->m_MinPos + vHalf;
+}
 
 inline void ls_UpdateCenterQ43c(CLineSystemQ43c* pSystem)
 {
-	LTVector vHalf = pSystem->m_MaxPos - pSystem->m_MinPos;
+	LTVector vHalf;
+
+	vHalf = pSystem->m_MaxPos - pSystem->m_MinPos;
 	vHalf *= 0.5f;
 	pSystem->m_SystemCenter = pSystem->m_MinPos + vHalf;
 	pSystem->m_SystemRadius = ls_MagQ43c(vHalf) + 1.0f;
@@ -1839,9 +1895,11 @@ inline void ls_UpdateCenterQ43c(CLineSystemQ43c* pSystem)
 // ci_AddLine's: the same, with operator+ one level down.
 inline void ls_UpdateCenterAddQ43c(CLineSystemQ43c* pSystem)
 {
-	LTVector vHalf = pSystem->m_MaxPos - pSystem->m_MinPos;
+	LTVector vHalf;
+
+	vHalf = pSystem->m_MaxPos - pSystem->m_MinPos;
 	vHalf *= 0.5f;
-	pSystem->m_SystemCenter = ls_AddQ43c(pSystem->m_MinPos, vHalf);
+	ls_SetCenterQ43c(pSystem, vHalf);
 	pSystem->m_SystemRadius = ls_MagQ43c(vHalf) + 1.0f;
 }
 
@@ -2446,8 +2504,9 @@ LTRESULT sub_40e120(HSURFACE hDest, HSURFACE hSrc, LTWarpPt* pCoords,
 	CSurface*     pSrc;
 	int           i;
 	uint32        nMinY, nMaxY;
-	SWarpEdgeQ40E right[1024];
-	SWarpEdgeQ40E left[1024];
+	// One edge per scanline, up to 1600 lines: the shipped frame is 0x9618.
+	SWarpEdgeQ40E right[1600];
+	SWarpEdgeQ40E left[1600];
 
 	pDest = (CSurface*)hDest;
 	pSrc  = (CSurface*)hSrc;
@@ -3228,7 +3287,7 @@ LTRESULT ci_SetPolyGridTexture(HLOCALOBJ hObj, char* pFilename)
 		if (dResult)
 			return dResult;
 
-		sub_483cc0(&pGrid->m_Unknown1b4, pGrid->m_pTexture);
+		sub_483cc0(&pGrid->m_Unknown1bc, pGrid->m_pTexture);
 		return LT_OK;
 	}
 }
@@ -3272,7 +3331,7 @@ LTRESULT ci_GetLobbyLaunchInfo(char* sDriver, void** ppLobbyLaunchData)
 // lock it. The pixel is renderer bits + y * pitch (+0x18) + x *
 // g_nBytesPerPixel (0x004b1794); the colour is converted into it by the
 // blitter sub-object (0x0040c120 -> 0x0045f5e0) against the screen format
-// 0x004b1758. Unlock (render +0xd8), then the surface's bit 4 (+0x1c) says
+// 0x004b1758. Unlock (render +0xe0), then the surface's bit 4 (+0x1c) says
 // it has been written.
 class CSurfaceQ19
 {
@@ -3288,9 +3347,9 @@ public:
 class RenderStructQ19
 {
 public:
-	uint8  m_pad_00[0xd4];
-	void*  (*LockSurface)(void* pRenderData);    // 0x0d4
-	void   (*UnlockSurface)(void* pRenderData);  // 0x0d8
+	uint8  m_pad_00[0xdc];
+	void*  (*LockSurface)(void* pRenderData);    // 0x0dc
+	void   (*UnlockSurface)(void* pRenderData);  // 0x0e0
 };
 
 extern uint32 g_nBytesPerPixel;              // 0x004b1794  (cissurf.cpp)

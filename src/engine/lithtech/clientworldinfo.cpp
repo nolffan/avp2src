@@ -338,42 +338,43 @@ LTRESULT ci_GetWorldInfoString(char* pFilename, char* pInfoString, uint32 maxLen
 //  Blend's, claimed at the first hit -- leaving 0x00409280, Color's real
 //  home, with nothing to claim it.
 
-// RenderStruct +0xa0 (d3d.ren 0x10034c70), the slot section (4) names.  It
+// RenderStruct +0xa8 (d3d.ren 0x10034c70; NOLF's +0xa0), the slot section (4) names.  It
 // is a field of the one render table object, clientrender.cpp's
 // g_RenderStruct (0x004b4358), not a global of its own, so it is reached
 // through that definition (the absolute address is the same `sym+disp`).
 extern RenderStruct g_RenderStruct;                                  // 0x004b4358
 struct RenderStructBlendViewQ41
 {
-	uint8  m_pad_000[0xa0];
-	LTBOOL (*SetOptimized2DBlend)(LTSurfaceBlend blend);             // 0x0a0  0x004b43f8
+	uint8  m_pad_000[0xa8];
+	LTBOOL (*SetOptimized2DBlend)(LTSurfaceBlend blend);             // 0x0a8  0x004b43f8
 };
 #define g_pRenderSetOptimized2DBlend \
 	(((RenderStructBlendViewQ41*)&g_RenderStruct)->SetOptimized2DBlend)
 
 // clientrender.cpp's renderer table (0x004b4358), through clientmgr.h's
-// view: IsIn3D is its +0x90 (0x004b43e8).
+// view: IsIn3D is its +0x98 (0x004b43e8).
 extern RenderStruct g_RenderStruct;                                  // 0x004b4358
 
 // The particle system's bounding box and change counter, which SetParticlePos
-// keeps up to date: a min corner at 0x230 and a max corner at 0x23c, and a
-// count at 0x22c bumped on every move.
+// keeps up to date: a min corner at 0x238 and a max corner at 0x244, and a
+// count at 0x234 bumped on every move (AvP2's offsets, eight past NOLF's
+// like every type-specific field: clientmgr.h's CClientCamera).
 class CClientParticleSystemBox
 {
 public:
-	uint8    m_pad_00[0x22c];
-	uint32   m_nChangedParticles;             // 0x22c
-	LTVector m_MinPos;                        // 0x230
-	LTVector m_MaxPos;                        // 0x23c
+	uint8    m_pad_00[0x234];
+	uint32   m_nChangedParticles;             // 0x234
+	LTVector m_MinPos;                        // 0x238
+	LTVector m_MaxPos;                        // 0x244
 };
 
 // The poly grid's environment map, a texture resolved from a file reference
-// at 0x1c8.
+// at 0x1d0.
 class CClientPolyGridEnv
 {
 public:
-	uint8    m_pad_00[0x1c8];
-	void*    m_pEnvMap;                       // 0x1c8
+	uint8    m_pad_00[0x1d0];
+	void*    m_pEnvMap;                       // 0x1d0
 };
 
 void* sub_41ff90(CClientMgr* pClientMgr, CClientFileRef* pRef);    // 0x0041ff90
@@ -395,7 +396,7 @@ LTRESULT ci_SetOptimized2DBlend(LTSurfaceBlend blend)
 // 0x0040b7a0 (214). The system handle is null-checked but not type-checked.
 // Each corner component moves only when the new position lies outside it
 // (`test $0x1` for the min, `test $0x41` for the max, both skipping the
-// store), and the counter at 0x22c goes up whether or not the box grew.
+// store), and the counter at 0x234 goes up whether or not the box grew.
 void ci_SetParticlePos(HLOCALOBJ hSystem, LTParticle* pParticle, LTVector* pPos)
 {
 	if (hSystem && pParticle && pPos)

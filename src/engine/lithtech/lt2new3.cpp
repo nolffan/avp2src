@@ -113,6 +113,8 @@ class CClientMgrCursorView3
 {
 public:
 	uint8      m_pad_00[0x1614];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x00406a33 reads +0x1724).
+	uint8 m_padExtra[0x110];
 	ILTCursor* m_pCursor;                                  // 0x1614
 };
 
@@ -210,6 +212,8 @@ public:
 	// 0x44, are iltmodel.h's GetMainTracker and ResetAnim.
 	ILTModel*             m_pModelLT;                      // 0x10
 	uint8                  m_pad_14[0x3c0 - 0x14];
+	// AVP2: as Primal Hunt (PH addresses) -- CLTClient is 0x10 longer below here (0x00408170 reads +0x3d0).
+	uint8 m_padExtra[0x10];
 	// A POINTER, not an embedded object: the shipped code is
 	// `mov 0x3c0(%ecx),%ecx`, which loads the member.  An embedded object
 	// would be `lea 0x3c0(%ecx),%ecx`.
@@ -423,6 +427,8 @@ class SUnknown460D80Owner
 {
 public:
 	uint8  m_pad_00[0x125c];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x00473f1e reads +0x136c).
+	uint8 m_padExtra[0x110];
 	uint32 m_Unknown125c;                                  // 0x125c
 };
 

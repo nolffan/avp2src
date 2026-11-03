@@ -107,8 +107,11 @@ public:
 	virtual void _v00()=0; virtual void _v04()=0; virtual void _v08()=0;
 	virtual void _v0c()=0; virtual void _v10()=0; virtual void _v14()=0;
 	virtual void _v18()=0; virtual void _v1c()=0; virtual void _v20()=0;
-	virtual void _v24()=0; virtual void _v28()=0;
-	virtual LTRESULT GetReverbProperties(ReverbProperties* pReverb)=0;  // +0x2c
+	virtual void _v24()=0; virtual void _v28()=0; virtual void _v2c()=0;
+	virtual void _v30()=0; virtual void _v34()=0;
+	// Three slots later than NOLF's +0x2c: AvP2's iltsoundmgr.h adds
+	// KillSoundFade, GetVolumeByType and SetVolumeByType ahead of it.
+	virtual LTRESULT GetReverbProperties(ReverbProperties* pReverb)=0;  // +0x38
 
 public:
 	uint8     m_pad_04[0x728 - 0x04];
@@ -152,8 +155,10 @@ ILTSoundMgrJ* sub_0040f7f0();
 class CClientLocalObjJ
 {
 public:
-	uint8     m_pad_00[0x18c];
-	CSndVec3J m_vPos;                        // 0x18c
+	// 0x194 in AvP2 1.0.9.6 and Primal Hunt (NOLF's 0x18c): UpdateImportance
+	// forms its address with `add $0x194` (0x0049b784).
+	uint8     m_pad_00[0x194];
+	CSndVec3J m_vPos;                        // 0x194
 };
 
 class CClientObjRefJ
@@ -166,9 +171,12 @@ public:
 class CClientMgrJ
 {
 public:
-	uint8            m_pad_00[0x150c];
-	// 0x150c — the client-local object PLAYSOUND_CLIENTLOCAL follows.
-	CClientObjRefJ*  m_pLocalObjRef;         // 0x150c
+	// 0x110 bytes past NOLF's 0x150c: AvP2's and Primal Hunt's client
+	// manager is that much longer ahead of it (lvideomgr.cpp reads the
+	// same pointer at 0x161c).
+	uint8            m_pad_00[0x161c];
+	// 0x161c — the client-local object PLAYSOUND_CLIENTLOCAL follows.
+	CClientObjRefJ*  m_pLocalObjRef;         // 0x161c
 };
 
 extern CClientMgrJ* g_pClientMgrJ;           // 0x004b17e0
@@ -283,36 +291,41 @@ public:
 	uint32     m_nUnknown28;                 // 0x28
 	uint8      m_pad_2c[0x34 - 0x2c];
 	float      m_fPitchShift;                // 0x34
-	uint32     m_nHoldCount;                 // 0x38
-	uint32     m_nSaved3c;                   // 0x3c
-	// 0x40 — the state flags.  Bit 0x02 is "stopping" (both Update bodies
+	// clientsoundinst.cpp's two words that NOLF does not have; from here on
+	// every offset is NOLF's plus eight (the names keep NOLF's numbers).
+	uint32     m_Unknown38;                  // 0x38
+	float      m_fUnknown3c;                 // 0x3c
+	uint32     m_nHoldCount;                 // 0x40
+	uint32     m_nSaved3c;                   // 0x44
+	// 0x48 — the state flags.  Bit 0x02 is "stopping" (both Update bodies
 	// give up on it), bit 0x10 is set by the type-0 Init and maintained by
 	// 0x0047ef10.
-	uint32     m_StateFlags;                 // 0x40
-	// 0x44/0x48/0x4c — the three Miles handles.  Exactly one is live: a 2D
+	uint32     m_StateFlags;                 // 0x48
+	// 0x4c/0x50/0x54 — the three Miles handles.  Exactly one is live: a 2D
 	// sample, a 3D sample, or a stream.  Every body here branches on which.
-	void*      m_hSample;                    // 0x44
-	void*      m_h3DSample;                  // 0x48
-	void*      m_hStream;                    // 0x4c
-	// MISSING PADDING. m_hStream ends at 0x50 and the next named field is
-	// at 0x54, so without this every field from here on sat four bytes low
-	// -- which is why all three Init overrides wrote the radii to 0x70/0x74
-	// instead of 0x74/0x78. A layout error, not a codegen one.
+	void*      m_hSample;                    // 0x4c
+	void*      m_h3DSample;                  // 0x50
+	void*      m_hStream;                    // 0x54
+	// MISSING PADDING. m_hStream ends at 0x58 and the next named field is
+	// at 0x5c, so without this every field from here on sat four bytes low
+	// -- which is why all three Init overrides wrote the radii four bytes
+	// short. A layout error, not a codegen one.
 	uint8      m_pad_50[0x54 - 0x50];
-	uint16     m_nUnknown54;                 // 0x54
+	uint16     m_nUnknown54;                 // 0x5c
 	uint8      m_pad_56[0x58 - 0x56];
-	uint32     m_nUnknown58;                 // 0x58
-	LTLink     m_DataLink;                   // 0x5c
-	// 0x68 — where the sound is in the world.
-	CSndVec3J  m_vPos;                       // 0x68
-	// 0x74/0x78 — the PlaySoundInfo's inner and outer radius.  0x0047e9a0
-	// copies m_fInnerRadius into 0x74 and m_fOuterRadius + 0.01f into 0x78,
-	// and 0x0047eaa0 attenuates between exactly those two.
-	float      m_fInnerRadius;               // 0x74
-	float      m_fOuterRadius;               // 0x78
-	int        m_nUnknown7c;                 // 0x7c
-	int        m_Unknown80[7];               // 0x80
-	uint32     m_Unknown9c[7];               // 0x9c
+	uint32     m_nUnknown58;                 // 0x60
+	LTLink     m_DataLink;                   // 0x64
+	// 0x70 — where the sound is in the world.
+	CSndVec3J  m_vPos;                       // 0x70
+	// 0x7c/0x80 — the PlaySoundInfo's inner and outer radius.  Init
+	// copies m_fInnerRadius into the first and m_fOuterRadius + 0.01f into
+	// the second, and 0x0047eaa0 attenuates between exactly those two.
+	float      m_fInnerRadius;               // 0x7c
+	float      m_fOuterRadius;               // 0x80
+	int        m_nUnknown7c;                 // 0x84
+	int        m_Unknown80[7];               // 0x88
+	uint32     m_Unknown9c[7];               // 0xa4
+	uint8      m_nUserSoundType;             // 0xc0  clientsoundinst.cpp
 };
 
 
@@ -566,16 +579,32 @@ LTRESULT CSndInstanceAmbientJ::Init(CSndDataJ* pData, PlaySoundInfo* pInfo,
 // has it, and the call sequence is what this function is scored on.
 // UNDECODED: the discarded manager access at 0x0047ea6c.
 //
-// THE DISTANCE is ltvector.h's _CVector::Dist, (*this - vec).Mag(), on the
-// sound's position: the listener position is copied into the 0xc-byte
-// by-value temporary operator- takes (x and y straight off `0x72c(%eax)` /
-// `0x730(%eax)`), and the differences are taken x, y, z. VEC_DIST's flat
-// macro loaded z first and had no temporary.
+// THE DISTANCE has ltvector.h's _CVector::Dist shape, (*this - vec) and a
+// magnitude, on the sound's position: the listener position is copied into
+// the 0xc-byte by-value temporary operator- takes (x and y straight off
+// `0x72c(%eax)` / `0x730(%eax)`), and the differences are taken x, y, z.
+// VEC_DIST's flat macro loaded z first and had no temporary.  The squares'
+// order is SndAmbientMagQ's (just below).
+// The ambient distance (0x0049b1e0): the squares come out z, y, x.  Under
+// this build's compiler LTVector::Dist's flat x+y+z gives z, x, y, and a
+// named difference vector reorders the stack cleanup after the fsqrt;
+// `x*x + (z*z + y*y)` through a reference is the spelling that matches.
+// Names ours.
+inline float SndAmbientMagQ(const LTVector& v)
+{
+	return (float)sqrt(v.x * v.x + (v.z * v.z + v.y * v.y));
+}
+
+inline float SndAmbientDistQ(const LTVector& a, const LTVector& b)
+{
+	return SndAmbientMagQ(a - b);
+}
+
 LTRESULT CSndInstanceAmbientJ::GetListenerOffset(CSndVec3J* pOffset)
 {
 	float     fDistance;
 
-	fDistance = ((LTVector*)&m_vPos)->Dist(*(LTVector*)&sub_0040f7f0()->m_vListenerPos);
+	fDistance = SndAmbientDistQ(*(LTVector*)&m_vPos, *(LTVector*)&sub_0040f7f0()->m_vListenerPos);
 
 	*pOffset = sub_0040f7f0()->m_vListenerFront;
 

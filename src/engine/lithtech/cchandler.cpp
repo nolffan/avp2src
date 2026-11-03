@@ -445,12 +445,19 @@ public:
 
 // IClientShell, as far as 0x0047a4d8 reaches it: slot 5 (+0x14) is
 // iclientshell.h's OnMessage(uint8 messageID, HMESSAGEREAD).
+//
+// AVP2: AvP2's and Primal Hunt's IClientShell is the SDK's (iclientshell.h),
+// with GetAuthContext at +0x04 and OnPeerToPeerAuthPacket at +0x18: OnMessage
+// is called through +0x1c (Primal Hunt 0x00496698, AvP2 0x0048d148), and
+// SpecialEffectNotify through +0x30 (0x00496e78).
 class CClientShellIfQ478
 {
 public:
-	virtual void _v00();  virtual void _v04();  virtual void _v08();
-	virtual void _v0c();  virtual void _v10();
-	virtual void OnMessage(uint8 messageID, void* hMessage);   // +0x14
+	virtual void _v00();  virtual void* GetAuthContext();     // +0x04
+	virtual void _v08();  virtual void _v0c();  virtual void _v10();
+	virtual void _v14();
+	virtual void OnPeerToPeerAuthPacket(void* hMessage);       // +0x18
+	virtual void OnMessage(uint8 messageID, void* hMessage);   // +0x1c
 };
 
 class CClientMgrQ478
@@ -464,7 +471,12 @@ public:
 	// count.  (names ours)
 	CWorldNodeQ478** m_pWorldNodes;          // 0x18c
 	uint32      m_nWorldNodes;               // 0x190
-	uint8       m_pad_0194[0x4c0 - 0x194];
+	// AVP2: (the offsets below are NOLF's) AvP2's and Primal Hunt's manager
+	// is four bytes longer from here to the client shell (m_pClientDE at
+	// +0x4c4, 0x00496bb4; the shell at +0x620, 0x0049668b) and 0x110 longer
+	// from there on (the sky ids at +0x1270, 0x00496ae1; the console state at
+	// +0x1378, 0x004969df; the file manager at +0x1644, 0x004978cc).
+	uint8       m_pad_0194[0x4c4 - 0x194];
 	// 0x4c0 -- clientmgr.h's m_pClientDE, the client interface (0x0047a984).
 	ILTClient*  m_pClientDE;                 // 0x4c0
 	uint8       m_pad_04c4[0x508 - 0x4c4];
@@ -475,7 +487,7 @@ public:
 	uint8       m_pad_0510[0x61c - 0x510];
 	// clientmgr2.cpp's m_pClientShell (lt2new1.cpp's 0x0047ac40 too).
 	CClientShellIfQ478* m_pClientShell;      // 0x61c
-	uint8       m_pad_0620[0x1160 - 0x620];
+	uint8       m_pad_0620[0x1270 - 0x624];
 	// Thirty sixteen-bit ids.  The count comes from TWO independent places:
 	// `mov $0xf,%ecx ; rep stos` fills sixty bytes, and the packet is
 	// rejected when its count exceeds 0x1e.  Filled with 0xffff, which is
@@ -737,11 +749,16 @@ void sub_411bf0(CClientMgrQ478* pClientMgr, void* pObject);
 // already in src/engine/lithtech/clientsoundinst.cpp: m_StateFlags at 0x40
 // with bit 0x40, and sub_47d690 a NON-virtual member ("give the client
 // manager's table slot back") reached by direct call.
+//
+// AVP2: (NOLF's were at +0x40, tested for 0x40) AvP2's and Primal Hunt's
+// flags are at +0x48 and the removal test takes 0x80 beside 0x40 (`testb
+// $0xc0,0x48(%ecx)` at 0x0049633d).
+#define SOUNDINST_KEEPFLAGS 0xc0
 class CSoundInstQ478
 {
 public:
-	uint8    m_pad_00[0x40];
-	uint32   m_StateFlags;                   // 0x40
+	uint8    m_pad_00[0x48];
+	uint32   m_StateFlags;                   // 0x48
 	LTRESULT sub_47d690();                   // 0x0047d690
 };
 
@@ -819,7 +836,8 @@ LTRESULT sub_47a0d0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 			{
 				sub_411bf0(pClientMgr, pRec->m_pObject);
 			}
-			else if (((CSoundInstQ478*)pRec->m_pObject)->m_StateFlags & 0x40)
+			else if (((CSoundInstQ478*)pRec->m_pObject)->m_StateFlags & SOUNDINST_KEEPFLAGS)
+
 			{
 				((CSoundInstQ478*)pRec->m_pObject)->sub_47d690();
 			}
@@ -1629,13 +1647,17 @@ public:
 	// 0x18..0x28 read by 0x00478a50: LTAnimTracker's m_Flags (a WORD --
 	// `andw $0xfffd,0x18(%esi)`), m_TimeRef.m_pModel and m_Cur.m_iAnim.
 	uint16       m_Flags;                    // 0x18
-	uint8        m_pad_1a[0x1c - 0x1a];
-	class CAnimModelQ478* m_pModel;          // 0x1c
-	uint16       m_iPrevAnim;                // 0x20  m_TimeRef.m_Prev.m_iAnim
-	uint8        m_pad_22[0x28 - 0x22];
-	uint16       m_iCurAnim;                 // 0x28
-	uint8        m_pad_2a[0x34 - 0x2a];
-	uint32       m_Unknown34;                // 0x34
+	// AVP2: AvP2's and Primal Hunt's tracker has the model at +0x28 and the
+	// current animation at +0x38 (0x00494bfe, 0x00494c49; cmodelload.cpp's
+	// LTAnimTrackerQ474 has the same), and its update walk stores the entry's
+	// dword at +0x40 (0x00494b84).
+	uint8        m_pad_1a[0x28 - 0x1a];
+	class CAnimModelQ478* m_pModel;          // 0x28
+	uint16       m_iPrevAnim;                // 0x2c  m_TimeRef.m_Prev.m_iAnim
+	uint8        m_pad_2e[0x38 - 0x2e];
+	uint16       m_iCurAnim;                 // 0x38
+	uint8        m_pad_3a[0x40 - 0x3a];
+	uint32       m_Unknown34;                // 0x40
 };
 
 // The object-change record, arg3. Every offset is a shipped displacement read
@@ -1702,10 +1724,16 @@ public:
 // CPacket view because packet.h's own m_pad_00 covers that offset, so it is
 // reached by cast. Three of its virtuals are used by slot — +0x24, +0x28 and
 // +0x30 — and all three are read positions returning through a hidden buffer.
+//
+// AVP2: AvP2's and Primal Hunt's message have one more slot than NOLF's ahead
+// of these -- iltmessage.h's ReadString at +0x04 -- so the compressed vector
+// is read through +0x2c (0x00496497).
 class LMessageReadViewQ478
 {
 public:
-	virtual void _v00();  virtual void _v04();  virtual void _v08();
+	virtual void _v00();
+	virtual const char* ReadString();
+	virtual void _v04();  virtual void _v08();
 	virtual void _v0c();  virtual void _v10();  virtual void _v14();
 	virtual void _v18();  virtual void _v1c();  virtual void _v20();
 	virtual void _v24(LTVector* pOut);       // 0x00478d1f
@@ -1968,11 +1996,19 @@ LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
 // ======================================================================= //
 
 
+//
+// AVP2: AvP2's and Primal Hunt's entries are 0x18 bytes (the list's count is
+// at +0x300 and the walk steps `add $0x18` at 0x00494bb6): two dwords, the
+// two words at +0x08 / +0x0a and a byte at +0x0c that picks which dword goes
+// to the tracker's +0x34 (0x00494b6a).  (names ours)
 struct CUpdEntryQ478
 {
-	uint32 m_Unknown0;                       // +0
-	uint16 m_Word4;                          // +4
-	uint16 m_Word6;                          // +6
+	uint32 m_Unknown00;                      // +0x00
+	uint32 m_Unknown0;                       // +0x04
+	uint16 m_Word4;                          // +0x08
+	uint16 m_Word6;                          // +0x0a
+	uint8  m_bUnknown0c;                     // +0x0c
+	uint8  m_pad_0d[0x18 - 0x0d];
 };
 
 struct CUpdListQ478
@@ -2061,7 +2097,9 @@ LTRESULT sub_478a50(void* pShell, CObjChangeInfoQ478* pInfo, CUpdRecQ478* pRec,
 		return LT_OK;
 
 	at_SetAnimQ478(pRec, iAnim, bInterp);
-	sub_420690(((CClientShellQ478*)pShell)->m_pClientMgr, pInfo);
+	// AVP2: no call here in AvP2 or Primal Hunt (Primal Hunt 0x00494c54 goes
+	// straight on to the length); NOLF's called 0x00420690.
+
 
 	uint32 nLength = pAnim ? pAnim->GetLength() : 1;
 	uint32 nTime = (nLength * nWord6) / 255;
@@ -2639,6 +2677,10 @@ LTRESULT sub_478320(CClientShellQ478* pShell, CPacketQ478* pPacket);        // 0
 LTRESULT sub_47a3e0(CClientShellQ478* pShell, CPacketQ478* pPacket);        // 0x0047a3e0
 CObjChangeInfoQ478* sub_420520(CClientMgrQ478* pMgr, uint16 nID);           // 0x00420520
 void     sub_4362c0(CPacketQ478* pPacket, LTRotation* pRot);                // 0x004362c0
+// AVP2: Primal Hunt 0x00495540 -- the tracker-list decoder, with the object.
+void     sub_4792c0Q495(void* pShell, CPacket* pPacket, CUpdListQ478* pList,
+                      CObjChangeInfoQ478* pInfo);                         // 0x00495540
+
 
 LTRESULT sub_47a1f0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 {
@@ -2698,8 +2740,16 @@ LTRESULT sub_47a1f0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 					sub_461120(pShell, pInfo, &rRot, 0, 0);
 			}
 
-			if ((nWord & 0x1000) && pInfo && pInfo->m_Type == 1)
-				sub_479280(pShell, pInfo, pPacket, 1, 0, &list);
+			// AVP2: (unlike NOLF) the tracker list is decoded whether or not
+			// there is an object (0x0049652e, the decoder taking the object
+			// as a fourth argument), and only applied to a model.
+			if (nWord & 0x1000)
+			{
+				sub_4792c0Q495(pShell, pPacket, &list, pInfo);
+
+				if (pInfo && pInfo->m_Type == 1)
+					sub_4789d0(pShell, pInfo, 1, 0, &list);
+			}
 		}
 	}
 
@@ -3074,7 +3124,16 @@ LTRESULT sub_47b700(CClientShellQ478* pShell, CPacketQ478* pPacket)
 		{
 			info.m_iFrames[0] = pPacket->ReadTypeOOL((uint16*)0);
 			info.m_iFrames[1] = pPacket->ReadTypeOOL((uint16*)0);
+
+			// AVP2: (unlike NOLF) a sixteen-bit "no frame" widens to the
+			// 32-bit one (0x00497a15..0x00497a37).
+			if ((uint16)info.m_iFrames[0] == 0xffff)
+				info.m_iFrames[0] = 0xffffffff;
+
+			if ((uint16)info.m_iFrames[1] == 0xffff)
+				info.m_iFrames[1] = 0xffffffff;
 		}
+
 
 		if (nFlags & 2)
 			info.m_fPercentBetween = (float)pPacket->ReadTypeOOL((uint8*)0) * (1.0f / 255.0f);
@@ -3144,7 +3203,8 @@ public:
 };
 
 // IClientShell past OnMessage: slot 10 (+0x28) is iclientshell.h's
-// SpecialEffectNotify(HLOCALOBJ, HMESSAGEREAD).
+// SpecialEffectNotify(HLOCALOBJ, HMESSAGEREAD) (AvP2 and Primal Hunt: slot 12, +0x30).
+
 class CClientShellIfSfxQ478 : public CClientShellIfQ478
 {
 public:
@@ -3420,7 +3480,7 @@ public:
 class CClientMgrModelsQ478
 {
 public:
-	uint8   m_pad_0000[0x10f4];
+	uint8   m_pad_0000[0x1204];              // AVP2: +0x110, as the manager
 	LTLink  m_Models;                        // 0x10f4
 };
 

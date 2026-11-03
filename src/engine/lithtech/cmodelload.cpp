@@ -265,14 +265,16 @@ public:
 	// The node count every tracker's two indices are range-checked against
 	// (0x00477913, 0x0047797a).
 	uint32 m_nNodes;                                           // 0x16c
-	uint8  m_pad_170[0x208 - 0x170];
 	// Bumped at 0x004779db and dropped at 0x004778c6 / 0x00477b6e.
-	uint32 m_nCacheCount;                                      // 0x208
+	// AVP2: +0x20c in AvP2 and Primal Hunt (0x208 is NOLF's; AvP2
+	// 0x0048a132, Primal Hunt 0x004931b4).
+	uint8  m_pad_170[0x20c - 0x170];
+	uint32 m_nCacheCount;                                      // 0x20c
 	// sizeof(Model) is 0x2c4, read straight off the allocation size this
 	// class is built with: `push $0x2c4` at 0x0047744b feeds operator new at
 	// 0x00477480.  Nothing in this run reaches past m_nCacheCount, so the
 	// remaining 0xb8 bytes are unnamed rather than guessed.
-	uint8  m_pad_20c[0x2c4 - 0x20c];
+	uint8  m_pad_210[0x2c4 - 0x210];
 };
 
 // 0x0043c500 / 0x0043c580 -- make a link round a pointer, and put it on a
@@ -395,19 +397,27 @@ public:
 //
 // Only the members this file touches, each at the displacement the shipped
 // code uses.  0x1534 is src/engine/lithtech/clientmgr.h's m_pFileMgr.
+//
+// AVP2: the offsets below are NOLF's.  AvP2's and Primal Hunt's manager is
+// four bytes longer ahead of the object list (its walk reads +0x428 and
+// stops at +0x424, Primal Hunt 0x0049311b) and 0x110 longer
+// ahead of the model and sprite lists (+0x1210 / +0x1214, 0x00492832 /
+// 0x00492817), the file manager (+0x1644), the load queue (+0x16b8 /
+// +0x16bc, 0x004928d4 / 0x00492901) and the placeholder model (+0x171c,
+// 0x0049325d; AvP2 0x0048a1db).
 class CClientMgrQ474
 {
 public:
-	uint8          m_pad_0000[0x0420];
+	uint8          m_pad_0000[0x0424];
 	// The object list walked at 0x004777d0 and 0x0047783b: a head at +0x420
 	// with the cursor starting from +0x424.
 	LTLink         m_ObjectList;                               // 0x0420
-	uint8          m_pad_042c[0x10f4 - 0x042c];
+	uint8          m_pad_042c[0x1204 - 0x0430];
 	// The list a freshly registered model is threaded onto (0x00477790).
 	LTLink         m_ModelList;                                // 0x10f4
 	uint32         m_nSpriteCount;                             // 0x1100  ++ at 0x004776af
 	LTLink         m_SpriteList;                               // 0x1104
-	uint8          m_pad_1110[0x1534 - 0x1110];
+	uint8          m_pad_1110[0x1644 - 0x1220];
 	CFileMgrQ474*  m_pFileMgr;                                 // 0x1534
 	uint8          m_pad_1538[0x15a8 - 0x1538];
 	// The pending-model-load queue: +0x15a8 answers whether this file is
@@ -505,13 +515,23 @@ void cm_OnModelGoneQ474(CClientMgrQ474* pMgr, class CClientObjectQ474* pObject);
 // models further down, restated here only because the object hooks that need
 // the fuller layout are declared after this point; the two agree offset for
 // offset.
+//
+// AVP2: (those are NOLF's) +0x1b4 and +0x1f8 in AvP2 (0x0048a248,
+// 0x0048a25b).
+//
+// PH: Primal Hunt's model is at +0x1fc (0x00493132), behind the extra
+// texture at +0x1d0.
 class CClientObjectQ474
 {
 public:
-	uint8         m_pad_000[0x1ac];
-	CFileRecQ474* m_pPendingFileRec;                           // 0x1ac
-	uint8         m_pad_1b0[0x1dc - 0x1b0];
-	ModelQ474*    m_pModel;                                    // 0x1dc
+	uint8         m_pad_000[0x1b4];
+	CFileRecQ474* m_pPendingFileRec;                           // 0x1b4
+#ifdef PRIMAL_HUNT
+	uint8         m_pad_1b8[0x1fc - 0x1b8];
+#else
+	uint8         m_pad_1b8[0x1f8 - 0x1b8];
+#endif
+	ModelQ474*    m_pModel;                                    // 0x1f8 (PH 0x1fc)
 };
 
 // The keyed-list machinery src/engine/lithtech/ltnew1.cpp already models:
@@ -1183,28 +1203,51 @@ public:
 	uint32 m_ObjectType;                                       // 0x00
 	uint32 m_Flags;                                            // 0x04  bit 0 read
 	                                                           //       at 0x004778bf
-	uint8  m_pad_08[0x7c - 0x08];
-	char   m_Filename[1];                                      // 0x7c  (0x004778a1)
+	// AVP2: the filename is at +0x80 (Primal Hunt 0x00493574), behind the
+	// SDK's m_Flags2; +0x7c was NOLF's.
+	uint8  m_pad_08[0x80 - 0x08];
+	char   m_Filename[1];                                      // 0x80
 };
 
+//
+// AVP2: that was NOLF.  AvP2 and Primal Hunt take the SDK's
+// MAX_MODEL_TEXTURES (4) skins -- the skin loop runs +0x1c0..+0x1d0 (AvP2
+// 0x0048a26d, Primal Hunt 0x004932ee) -- the create struct follows them at
+// +0x3c, and a flag after it gates both tracker walks (AvP2 0x0048a16d,
+// 0x0048a1d8).  (names ours)
+//
+// PH: Primal Hunt has one more file at +0x3c, which 0x00493480 resolves into
+// the instance's +0x1d0 (a lone texture, "dtx" only), so its create struct
+// is at +0x48 and the flag at +0x4c (0x004931ef, 0x0049325a).
+#define CM_NUM_SKINS 4
 class CClientCreateRequestQ474
 {
 public:
 	CFileIdentQ474          m_ObjectFile;                      // 0x00
-	CFileIdentQ474          m_SkinFiles[2];                    // 0x0c
-	ObjectCreateStructQ474* m_pStruct;                         // 0x24
+	CFileIdentQ474          m_SkinFiles[CM_NUM_SKINS];         // 0x0c
+#ifdef PRIMAL_HUNT
+	CFileIdentQ474          m_ExtraFile;                       // 0x3c
+#endif
+	ObjectCreateStructQ474* m_pStruct;                         // 0x3c (PH 0x48)
+	uint32                  m_bInitTrackers;                   // 0x40 (PH 0x4c)
 };
 
 // src/LT2/sdk/inc/ltanimtracker.h, at the offsets the loop below uses: the link
 // at +0x00 (GetNext is m_Link.m_pNext, +0x04), the flags at +0x18, and
 // AnimTimeRef from +0x1c -- m_pModel +0x1c, m_Prev.m_iAnim +0x20,
 // m_Cur.m_iAnim +0x28.
+//
+// AVP2: those are NOLF's.  AvP2's and Primal Hunt's tracker has m_pModel at
+// +0x28, m_Prev at +0x2c and m_Cur at +0x38 (AvP2 0x0048a18e, 0x0048a1a7,
+// 0x0048a19d), so its frame locator is twelve bytes and 0x0c more sits
+// ahead of the time ref.
 class FrameLocatorQ474
 {
 public:
 	uint16 m_iAnim;                                            // 0x00
 	uint16 m_iFrame;                                           // 0x02
 	uint32 m_Time;                                             // 0x04
+	uint32 m_Unknown08;                                        // 0x08
 };
 
 class LTAnimTrackerQ474
@@ -1216,9 +1259,10 @@ public:
 	uint8            m_pad_0c[0x18 - 0x0c];
 	uint16           m_Flags;                                  // 0x18
 	uint16           m_InterpolationMS;                        // 0x1a
-	ModelQ474*       m_pModel;                                 // 0x1c  m_TimeRef.m_pModel
-	FrameLocatorQ474 m_Prev;                                   // 0x20
-	FrameLocatorQ474 m_Cur;                                    // 0x28
+	uint8            m_pad_1c[0x28 - 0x1c];
+	ModelQ474*       m_pModel;                                 // 0x28  m_TimeRef.m_pModel
+	FrameLocatorQ474 m_Prev;                                   // 0x2c
+	FrameLocatorQ474 m_Cur;                                    // 0x38
 };
 
 // 0x00401050 -- modelanim.cpp's at_Init.  What places it: the decoded map
@@ -1271,26 +1315,44 @@ LTRESULT cm_InitSkinQ474(CClientMgrQ474* pMgr, CFileIdentQ474* pIdent,
 // src/engine/server/commonmodel.h's ModelInstance::m_pTrackerList; both land
 // at the same displacement on the client object, which is what says the two
 // headers are describing one layout.
+//
+// AVP2: those are NOLF's.  AvP2's instance has the world model at +0x1b0
+// (as Primal Hunt's, 0x004935c1), the pending file at +0x1b4, four
+// skins from +0x1c0, the model at +0x1f8, the trackers at +0x220
+// (0x0048a17c), four sprites from +0x250 with their records from +0x260
+// (0x0048a2c3, 0x0048a38e), and a flag at +0x2cc the model init sets
+// (0x0048a117).
+//
+// PH: Primal Hunt's has the extra texture at +0x1d0, so the model is at
+// +0x1fc and the trackers at +0x224 (0x004931fe); its sprites are 0x14
+// further on still, from +0x264 with records from +0x274 (0x00493353,
+// 0x0049341e), and the flag is at +0x2e0 (0x00493199).
 class CClientModelInstQ474
 {
 public:
-	uint8              m_pad_000[0x1a8];
-	void*              m_pWorldModel;                          // 0x1a8
-	CFileRecQ474*      m_pPendingFileRec;                      // 0x1ac
-	uint8              m_pad_1b0[0x1b8 - 0x1b0];
-	void*              m_pSkins[2];                            // 0x1b8
-	uint8              m_pad_1c0[0x1dc - 0x1c0];
-	ModelQ474*         m_pModel;                               // 0x1dc
-	uint8              m_pad_1e0[0x1f8 - 0x1e0];
-	LTAnimTrackerQ474* m_pTrackerList;                         // 0x1f8
-	uint8              m_pad_1fc[0x208 - 0x1fc];
-	void*              m_pSprites[2];                          // 0x208
-	// 0x00477af4 forms the index as `iSkin * 20`, and 0x00477b11 reads
-	// +0x218 of the same record, so these are 20-byte records starting at
-	// +0x210 with a pointer at their +0x08.
-	class CSpriteTrackerQ474 m_SpriteRecs[2];                  // 0x210
-	uint8              m_pad_238[0x270 - 0x238];
-	uint16             m_nUnknown270;                          // 0x270
+	uint8              m_pad_000[0x1b0];
+	void*              m_pWorldModel;                          // 0x1b0
+	CFileRecQ474*      m_pPendingFileRec;                      // 0x1b4
+	uint8              m_pad_1b8[0x1c0 - 0x1b8];
+	void*              m_pSkins[CM_NUM_SKINS];                 // 0x1c0
+#ifdef PRIMAL_HUNT
+	void*              m_pExtraTexture;                        // 0x1d0
+	uint8              m_pad_1d4[0x1fc - 0x1d4];
+#else
+	uint8              m_pad_1d0[0x1f8 - 0x1d0];
+#endif
+	ModelQ474*         m_pModel;                               // 0x1f8 (PH 0x1fc)
+	uint8              m_pad_1fc[0x220 - 0x1fc];
+	LTAnimTrackerQ474* m_pTrackerList;                         // 0x220 (PH 0x224)
+#ifdef PRIMAL_HUNT
+	uint8              m_pad_228[0x264 - 0x228];
+#else
+	uint8              m_pad_224[0x250 - 0x224];
+#endif
+	void*              m_pSprites[CM_NUM_SKINS];               // 0x250 (PH 0x264)
+	class CSpriteTrackerQ474 m_SpriteRecs[CM_NUM_SKINS];       // 0x260 (PH 0x274)
+	uint8              m_pad_2b0[0x2cc - 0x2b0];
+	uint32             m_bUnknown2cc;                          // 0x2cc (PH 0x2e0)
 
 	// 0x0045aba0 -- takes the twelve-byte vector BY VALUE (the shipped call
 	// makes room with `sub $0xc,%esp` and writes the three words through
@@ -1341,7 +1403,20 @@ LTBOOL con_ICompare(char* pA, char* pB);
 //  and the placeholder is assigned INTO pModel (0x00477960 stores it to
 //  pModel's frame slot and 0x004779a8 reloads it from there after each
 //  at_Init), not a separate local.
+//
+//  AVP2: that is NOLF's.  AvP2's (0x0048a100, 423 bytes) and Primal Hunt's
+//  (0x00493180) have three more things in it: it sets the instance's flag
+//  first thing, it only drops the old model's use count while it is above
+//  zero, both tracker walks run only when the request's flag says so, and
+//  the skin loop runs four times.
 // ======================================================================= //
+#ifdef PRIMAL_HUNT
+// PH: after the four skins, 0x00493480 resolves the extra file into the
+// instance's lone texture.
+LTRESULT cm_InitExtraTextureQ474(CClientMgrQ474* pMgr, CFileIdentQ474* pIdent,
+                                 CClientModelInstQ474** ppObject);   // 0x00493480
+#endif
+
 LTRESULT cm_InitModelQ474(CClientMgrQ474* pMgr, CClientModelInstQ474* pObj,
                           CClientCreateRequestQ474* pRequest, LTRESULT dResult)
 {
@@ -1353,7 +1428,9 @@ LTRESULT cm_InitModelQ474(CClientMgrQ474* pMgr, CClientModelInstQ474* pObj,
 	uint32             i;
 	uint32             bAutoLoad = pRequest->m_pStruct->m_Flags & 1;
 
-	if (pObject->m_pModel)
+	pObject->m_bUnknown2cc = 1;
+
+	if (pObject->m_pModel && pObject->m_pModel->m_nCacheCount > 0)
 		pObject->m_pModel->m_nCacheCount--;
 
 	if (!dResult)
@@ -1363,34 +1440,39 @@ LTRESULT cm_InitModelQ474(CClientMgrQ474* pMgr, CClientModelInstQ474* pObj,
 
 		if (!dRes)
 		{
-			for (pTracker = pObject->m_pTrackerList; pTracker;
-			     pTracker = pTracker->GetNext())
+			if (pRequest->m_bInitTrackers)
 			{
-				if (!pTracker->m_pModel ||
-				    pTracker->m_Cur.m_iAnim  >= pTracker->m_pModel->m_nNodes ||
-				    pTracker->m_Prev.m_iAnim >= pTracker->m_pModel->m_nNodes ||
-				    pTracker->m_pModel != pModel)
+				for (pTracker = pObject->m_pTrackerList; pTracker;
+				     pTracker = pTracker->GetNext())
 				{
-					at_InitQ474(pTracker, pModel, LTFALSE);
+					if (!pTracker->m_pModel ||
+					    pTracker->m_Cur.m_iAnim  >= pTracker->m_pModel->m_nNodes ||
+					    pTracker->m_Prev.m_iAnim >= pTracker->m_pModel->m_nNodes ||
+					    pTracker->m_pModel != pModel)
+					{
+						at_InitQ474(pTracker, pModel, LTFALSE);
+					}
 				}
 			}
 		}
 		else if (dRes == LT_INPROGRESS)
 		{
-			// 0x00477956 -- the stand-in model every waiting tracker gets.
 			pModel = pMgr->m_pPlaceholderModel;
 
-			for (pTracker = pObject->m_pTrackerList; pTracker;
-			     pTracker = pTracker->GetNext())
+			if (pRequest->m_bInitTrackers)
 			{
-				if (!pTracker->m_pModel ||
-				    pTracker->m_Cur.m_iAnim  >= pTracker->m_pModel->m_nNodes ||
-				    pTracker->m_Prev.m_iAnim >= pTracker->m_pModel->m_nNodes ||
-				    pTracker->m_pModel != pModel)
+				for (pTracker = pObject->m_pTrackerList; pTracker;
+				     pTracker = pTracker->GetNext())
 				{
-					at_InitQ474(pTracker, pModel, LTFALSE);
+					if (!pTracker->m_pModel ||
+					    pTracker->m_Cur.m_iAnim  >= pTracker->m_pModel->m_nNodes ||
+					    pTracker->m_Prev.m_iAnim >= pTracker->m_pModel->m_nNodes ||
+					    pTracker->m_pModel != pModel)
+					{
+						at_InitQ474(pTracker, pModel, LTFALSE);
 
-					pTracker->m_Flags |= 8;
+						pTracker->m_Flags |= 8;
+					}
 				}
 			}
 
@@ -1407,12 +1489,16 @@ LTRESULT cm_InitModelQ474(CClientMgrQ474* pMgr, CClientModelInstQ474* pObj,
 	if (pObject->m_pModel)
 		pObject->m_pModel->m_nCacheCount++;
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < CM_NUM_SKINS; i++)
 	{
 		pObject->m_pSkins[i] = LTNULL;
 
 		cm_InitSkinQ474(pMgr, &pRequest->m_SkinFiles[i], &pObject, i);
 	}
+
+#ifdef PRIMAL_HUNT
+	cm_InitExtraTextureQ474(pMgr, &pRequest->m_ExtraFile, &pObject);
+#endif
 
 	return LT_OK;
 }
@@ -1495,6 +1581,38 @@ LTRESULT cm_InitSkinQ474(CClientMgrQ474* pMgr, CFileIdentQ474* pIdent,
 
 	return LT_ERROR;
 }
+
+#ifdef PRIMAL_HUNT
+// PH: 0x00493480 -- the extra texture: InitSkin's DTX arm alone, into the
+// instance's +0x1d0, with the CRT's _stricmp (0x004ca980) on a lower-case
+// "dtx" where InitSkin uses the console's compare.  (name ours)
+LTRESULT cm_InitExtraTextureQ474(CClientMgrQ474* pMgr, CFileIdentQ474* pIdent,
+                                 CClientModelInstQ474** ppObject)
+{
+	char  szExt[4];
+	char* pName;
+	int   nLen;
+
+	(*ppObject)->m_pExtraTexture = LTNULL;
+
+	pName = cm_GetFileNameQ474(pMgr->m_pFileMgr, pIdent);
+
+	nLen = strlen(pName);
+
+	if (nLen > 3)
+	{
+		szExt[0] = pName[nLen - 3];
+		szExt[1] = pName[nLen - 2];
+		szExt[2] = pName[nLen - 1];
+		szExt[3] = 0;
+
+		if (stricmp(szExt, "dtx") == 0)
+			return cm_LoadTextureQ474(pMgr, pIdent, &(*ppObject)->m_pExtraTexture);
+	}
+
+	return LT_ERROR;
+}
+#endif
 
 // ======================================================================= //
 //  0x00477b60 .. 0x00477b76, 23 bytes -- the MODEL type's remove hook
@@ -1816,6 +1934,8 @@ void sub_47a7d0Q474(); void sub_47a970Q474(); void sub_47ac40Q474();
 void sub_47ac80Q474(); void sub_47ad20Q474(); void sub_47af20Q474();
 void sub_47b2b0Q474(); void sub_47b380Q474(); void sub_47b520Q474();
 void sub_47b700Q474();
+void sub_493bd0Q474();                                         // Primal Hunt 0x00493bd0
+
 
 void cm_InitTable4b48d0Q474()
 {
@@ -1824,6 +1944,9 @@ void cm_InitTable4b48d0Q474()
 	g_Table4b48d0Q474[0x30 / 4] = (void*)sub_4780b0Q474;   // 0x004b4900
 	g_Table4b48d0Q474[0x18 / 4] = (void*)sub_4781d0Q474;   // 0x004b48e8
 	g_Table4b48d0Q474[0x14 / 4] = (void*)sub_478300Q474;   // 0x004b48e4
+	// AVP2: a twentieth handler, at +0x6c, in AvP2 (0x0048a850) and Primal
+	// Hunt (0x004939fd) alike.
+	g_Table4b48d0Q474[0x6c / 4] = (void*)sub_493bd0Q474;   // 0x004f7020
 	g_Table4b48d0Q474[0x20 / 4] = (void*)sub_478510Q474;   // 0x004b48f0
 	g_Table4b48d0Q474[0x28 / 4] = (void*)sub_47a1f0Q474;   // 0x004b48f8
 	g_Table4b48d0Q474[0x34 / 4] = (void*)sub_47a480Q474;   // 0x004b4904

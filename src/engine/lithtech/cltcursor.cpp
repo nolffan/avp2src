@@ -123,6 +123,9 @@ class CLTClientTableView
 {
 public:
 	uint8    m_pad_000[0x330];
+	// AVP2: as Primal Hunt (PH addresses) -- four more entries below here (0x0044b087 calls +0x340; the same
+	// 0x10 that moves CLTClient+0x3c0 to +0x3d0, lt2new3.cpp).
+	uint8 m_padExtra[0x10];
 	LTRESULT (*GetEngineHook)(char* pName, void** pData);   // 0x330
 };
 
@@ -133,6 +136,8 @@ class CClientMgrCursorView
 {
 public:
 	uint8               m_pad_000[0x4c0];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (0x0044b077 reads +0x4c4).
+	uint8 m_padExtra[4];
 	CLTClientTableView* m_pClientDE;                        // 0x4c0
 };
 
@@ -803,6 +808,8 @@ class CClientMgrQ41C
 {
 public:
 	uint8             m_pad_000[0x4c0];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (+0x4c4).
+	uint8 m_padExtra[4];
 	CClientTableQ41C* m_pClientDE;           // 0x4c0
 };
 

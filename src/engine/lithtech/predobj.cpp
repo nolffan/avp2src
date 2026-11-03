@@ -819,6 +819,9 @@ class CPolyGridQ460
 {
 public:
 	uint8   m_pad_000[0x1a8];
+	// AVP2: as Primal Hunt (PH addresses) -- the object is eight bytes longer below here (0x00473e95 reads
+	// +0x1b0).
+	uint8 m_padExtra[8];
 	char*   m_pData;                                         // 0x1a8
 	uint16* m_pIndices;                                      // 0x1ac
 	uint8   m_pad_1b0[0x1dc - 0x1b0];

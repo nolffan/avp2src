@@ -457,11 +457,9 @@ CSoundDataQ480* CSoundMgrQ480::GetSoundData(CSoundFileRecQ480* pFileRec)
 //      so a voice playing the right sample anywhere is taken when no voice
 //      is playing it in the right place -- and 0x00481b3d re-tests it after
 //      the loop, which is the `if (!pFound)` below.
-//    * the position test is VEC_DISTSQR against 0.001f (0x004a1a54), and
-//      every one of the three differences is computed ONCE with no store,
-//      which is the macro after CSE and not `operator-` (that would have to
-//      materialise a temporary).  The sum comes out z, y, x; /O2
-//      canonicalises commutative FP sums, so that is not a source order.
+//    * the position test is a squared distance against 0.001f
+//      (0x004a1a54); every one of the three differences is computed ONCE
+//      with no store, and the sum comes out z, x, y (see the body).
 //
 //  0x00481abb jumps the empty-list case PAST the `if (!pFound)` test and
 //  straight into its body -- pFound is provably still null there.  Same
@@ -505,17 +503,17 @@ void* CSoundMgrQ480::GetFree3DVoice(CSoundInstanceQ480* pSound)
 
 					{
 						// NAMED DIFFERENCES. Shipped computes the three in
-						// SOURCE order at 0x00481af6/afe/b06 and squares them
-						// top-down; VEC_DISTSQR's single expression evaluates
-						// them backwards. The locals never leave the FPU
-						// stack, so no frame slot is spent and the prologue
-						// is unchanged -- which matters, since every other
-						// esp displacement here is already exact.
+						// SOURCE order and keeps them on the FPU stack (no
+						// frame slot), then sums z, x, y -- `fld %st(0)`,
+						// `fld %st(3)`, `fld %st(2)` -- in both images (PH
+						// 0x0049e42e, 1.0.9.6 0x0049490e).  That sum is the
+						// grouping below: /O2 reorders a flat x+y+z (or
+						// VEC_DISTSQR, or a vector MagSqr here) into z, y, x.
 						float dx = vSoundPos.x - vVoicePos.x;
 						float dy = vSoundPos.y - vVoicePos.y;
 						float dz = vSoundPos.z - vVoicePos.z;
 
-						if (dx * dx + dy * dy + dz * dz < 0.001f)  // 0x00481b1e
+						if ((dz * dz + dx * dx) + dy * dy < 0.001f)       // 0x00481b1e
 							break;                                 // 0x00481b2f
 					}
 				}

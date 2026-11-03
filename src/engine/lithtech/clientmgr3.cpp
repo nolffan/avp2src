@@ -294,18 +294,24 @@ void         fm_Destroy(CCmgFileMgr* pMgr);                     // 0x004040f0
 void*        fm_FindFile(CCmgFileMgr* pMgr, char* pName, int nType); // 0x00404680
 char*        fm_GetName(CCmgFileMgr* pMgr, char* pName);        // 0x004045d0
 
-// The 0x2c4-byte object the factory news up with two allocator arguments and
-// keeps at +0x160c.  Its only reached fields are a refcount at +0x208 and a
-// virtual slot 0 that takes the deleting-destructor flag.
+// The 0x2c8-byte object the factory news up with two allocator arguments and
+// keeps at +0x171c (AvP2's: `push $0x2c8`, 0x0041260d).  Its only reached
+// fields are a refcount at +0x20c and a virtual slot 0 that takes the
+// deleting-destructor flag.
 class CCmgRefCounted
 {
 public:
 	CCmgRefCounted(void* pAlloc1, void* pAlloc2);               // 0x00446360
 	virtual ~CCmgRefCounted();                                  // slot 0
 
-	uint8  m_pad_04[0x208 - 0x04];
-	int32  m_nRefCount;                                         // 0x208
-	uint8  m_pad_20c[0x2c4 - 0x20c];
+	// AVP2: every release is guarded -- `test; jbe` around the decrement,
+	// so the count is unsigned and never goes below zero (0x0041316d,
+	// 0x00412db6; AvP2 1.0.9.6 the same).
+	void   Release() { if (m_nRefCount > 0) m_nRefCount--; }
+
+	uint8  m_pad_04[0x20c - 0x04];
+	uint32 m_nRefCount;                                         // 0x20c
+	uint8  m_pad_210[0x2c8 - 0x210];
 };
 
 // The 8-byte object the factory news up at +0x4bc: a constructor that takes
@@ -966,7 +972,7 @@ public:
 	uint32            m_Unknown04;                              // 0x004
 	uint32            m_Unknown08[0x47];                        // 0x008 .. 0x124
 	// The two gates every sound entry tests, in that order.
-	void*             m_pSoundDriver;                           // 0x124 (0x898)
+	void*             m_pSoundDriver;                           // 0x124 (0x8a8)
 	uint32            m_bSoundEnabled;                          // 0x128 (0x89c)
 	void*             m_pProviderList;                          // 0x12c
 	void*             m_hDigDriver;                             // 0x130
@@ -991,7 +997,7 @@ public:
 	// Every live sound, densely packed (clientsoundmgr.cpp's
 	// m_pSoundInstances), and the count after it.
 	void*             m_pSoundInstances[256];                   // 0x324
-	uint32            m_nSoundsPlaying;                         // 0x724 (0xe98)
+	uint32            m_nSoundsPlaying;                         // 0x724 (0xea8)
 	void*             m_h3DListener;                            // 0x728
 	LTVector          m_vListenerPos;                           // 0x72c
 	LTVector          m_vListenerVel;                           // 0x738
@@ -1003,11 +1009,11 @@ public:
 	uint32            m_Unknown770;                             // 0x770
 	uint32            m_Unknown774;                             // 0x774  1
 	float             m_f778;                                   // 0x778  1.0f
-	uint8             m_nSoundsHeard;                           // 0x77c (0xef0)  zero-extended
+	uint8             m_nSoundsHeard;                           // 0x77c (0xf00)  zero-extended
 	uint8             m_pad_77d[0x780 - 0x77d];
 	// 0x00415810 appends its body to the counter report, sends it on its
 	// own (id 8) when it does not fit, and cuts it back to the id byte.
-	CCmgServerMessage m_Packet;                                 // 0x780 (0xef4)
+	CCmgServerMessage m_Packet;                                 // 0x780 (0xf04)
 	uint32            m_Unknown7e4;                             // 0x7e4
 	uint32            m_Unknown7e8;                             // 0x7e8
 	uint32            m_Unknown7ec;                             // 0x7ec
@@ -1019,7 +1025,10 @@ public:
 	uint32            m_Unknown804;                             // 0x804
 	uint32            m_Unknown808;                             // 0x808
 	uint32            m_Unknown80c;                             // 0x80c
-};                                                              // 0x810
+	// AVP2: 0x100 bytes the constructor fills with 0x64 (Primal Hunt's
+	// 0x0049c088: `rep stos` of 0x40 dwords of 0x64646464).  (name ours)
+	uint8             m_Unknown810[0x100];                      // 0x810
+};                                                              // 0x910
 
 // src/engine/lithtech/clientworld.cpp's CDemoMgrView at +0x158c.  Its
 // 0x0042bfa0 is that class's constructor, and this one is linked onto it -- it
@@ -1238,23 +1247,32 @@ public:
 	CCmgMusicList m_Unknown58List;                              // 0x058
 	CCmgMusicList m_Unknown60List;                              // 0x060
 	CCmgMusicList m_PendingList;                                // 0x068
-	void*         m_pQueueAfter;                                // 0x070
-	CCmgMusicList m_SecondaryList;                              // 0x074
-	CCmgMusicList m_MotifList;                                  // 0x07c
-	uint8         m_CriticalSection[24];                        // 0x084
-	int           m_nCurIntensity;                              // 0x09c
-	int           m_nNumIntensities;                            // 0x0a0
-	int           m_nInitialIntensity;                          // 0x0a4
-	int           m_nInitialVolume;                             // 0x0a8
-	int           m_nNumPChannels;                              // 0x0ac
-	int           m_nNumVoices;                                 // 0x0b0
-	int           m_nSynthSampleRate;                           // 0x0b4
-	void*         m_aIntensities;                               // 0x0b8
-	int           m_nNumTransitions;                            // 0x0bc
-	void*         m_aTransitions;                               // 0x0c0
-	char*         m_pUnknownC4;                                 // 0x0c4
-	char*         m_pUnknownC8;                                 // 0x0c8
-	uint8         m_pad_cc[0xfc - 0xcc];
+	// AVP2: a list more on each side of m_pQueueAfter than NOLF's -- the
+	// constructor zeroes seven pairs before it and three after (Primal
+	// Hunt's 0x0044b970), and the factory allocates 0x110, not 0xfc.
+	// Which of the lists is the new one is not known.  (names ours)
+	CCmgMusicList m_Unknown70List;                              // 0x070
+	void*         m_pQueueAfter;                                // 0x078
+	CCmgMusicList m_SecondaryList;                              // 0x07c
+	CCmgMusicList m_MotifList;                                  // 0x084
+	CCmgMusicList m_Unknown8cList;                              // 0x08c
+	uint8         m_CriticalSection[24];                        // 0x094
+	int           m_nCurIntensity;                              // 0x0ac
+	int           m_nNumIntensities;                            // 0x0b0
+	int           m_nInitialIntensity;                          // 0x0b4
+	int           m_nInitialVolume;                             // 0x0b8
+	// AVP2: and a dword more before the synth settings, which the shipped
+	// constructor sets at +0xc0..+0xc8.  (name ours)
+	int           m_nUnknownBc;                                 // 0x0bc
+	int           m_nNumPChannels;                              // 0x0c0
+	int           m_nNumVoices;                                 // 0x0c4
+	int           m_nSynthSampleRate;                           // 0x0c8
+	void*         m_aIntensities;                               // 0x0cc
+	int           m_nNumTransitions;                            // 0x0d0
+	void*         m_aTransitions;                               // 0x0d4
+	char*         m_pUnknownC4;                                 // 0x0d8
+	char*         m_pUnknownC8;                                 // 0x0dc
+	uint8         m_pad_e0[0x110 - 0xe0];
 };
 
 // The manager singleton the constructor publishes (0x0043f915).
@@ -1312,7 +1330,9 @@ public:
 	uint8            m_pad_1b0[0x1cc - 0x1b0];
 	// Tested by 0x0042c603 before the demo clock starts.  (name ours)
 	void*            m_pUnknown1cc;                             // 0x1cc
-	uint8            m_pad_1d0[0x1ec - 0x1d0];
+	// AVP2: 0x1f0 bytes, four more than NOLF's -- Primal Hunt's factory
+	// constructs the next member at +0x1f0 (0x00412373).
+	uint8            m_pad_1d0[0x1f0 - 0x1d0];
 };
 
 // The object at +0x1ec (clientshell.cpp's CSub390, CServerMgr+0x390): one
@@ -1382,124 +1402,132 @@ public:
 public:
 	// ---- the prefix CServerMgr carries at 0x1a4 (see the head of file) ----
 	CCmgWorld        m_World;                                   // 0x0000
-	CCmgSub1EC       m_Sub1ec;                                  // 0x01ec
-	uint8            m_pad_3e0[0x40c - 0x3e0];
+	CCmgSub1EC       m_Sub1ec;                                  // 0x01f0
+	uint8            m_pad_3e4[0x410 - 0x3e4];
 	// clientmgr2.cpp's eleven sixteen-byte records; the destructor's
 	// `mov $0xb,%edi` / `add $0x10,%esi` loop is what proves both numbers.
-	uint8            m_Records40c[0xb0];                        // 0x040c
-	CCmgSub4BC*      m_pSub4bc;                                 // 0x04bc
-	CCmgSub4C0*      m_pSub4c0;                                 // 0x04c0
-	CCmgForceControl m_ForceControl;                            // 0x04c4
+	uint8            m_Records40c[0xb0];                        // 0x0410
+	CCmgSub4BC*      m_pSub4bc;                                 // 0x04c0
+	CCmgSub4C0*      m_pSub4c0;                                 // 0x04c4
+	CCmgForceControl m_ForceControl;                            // 0x04c8
 	// clientmgr2.cpp's m_pCollisionInfo; Init zeroes it (0x0040fbd5).
-	void*            m_pCollisionInfo;                          // 0x0504
+	void*            m_pCollisionInfo;                          // 0x0508
 	// ---- end of the shared prefix ----
 
 	// clientmgr2.cpp's m_pCSBase: the 8-byte "CLIENT-OBJECT" base whose
 	// 133-slot table is at 0x004a1b00.  It is newed here and dfree'd by the
 	// destructor -- raw, not deleted, which is what says its class has no
 	// destructor.
-	CCmgCSBase*      m_pCSBase;                                 // 0x0508
-	CCmgNetMgr       m_NetMgr;                                  // 0x050c
-	void*            m_Unknown610;                              // 0x0610  two loaded modules
-	void*            m_Unknown614;                              // 0x0614
-	void*            m_Unknown618;                              // 0x0618  the shell's module record
-	IClientShell*    m_pClientShell;                            // 0x061c  (clientmgr.h)
-	uint8            m_Flag620;                                 // 0x0620  a BYTE store
-	uint8            m_pad_621[0x750 - 0x621];
-	uint32           m_Unknown750[6];                           // 0x0750  six dwords, zeroed
-	float            m_Scale768;                                // 0x0768  the three
-	float            m_Scale76c;                                // 0x076c  1.0f
-	float            m_Scale770;                                // 0x0770  stores
-	CCmgSoundMgr     m_SoundMgr;                                // 0x0774 .. 0x0f84
-	uint8            m_pad_f84[0xfcc - 0xf84];
+	CCmgCSBase*      m_pCSBase;                                 // 0x050c
+	CCmgNetMgr       m_NetMgr;                                  // 0x0510
+	void*            m_Unknown610;                              // 0x0614  two loaded modules
+	void*            m_Unknown614;                              // 0x0618
+	void*            m_Unknown618;                              // 0x061c  the shell's module record
+	IClientShell*    m_pClientShell;                            // 0x0620  (clientmgr.h)
+	uint8            m_Flag620;                                 // 0x0624  a BYTE store
+	uint8            m_pad_625[0x754 - 0x625];
+	uint32           m_Unknown750[6];                           // 0x0754  six dwords, zeroed
+	float            m_Scale768;                                // 0x076c  the three
+	float            m_Scale76c;                                // 0x0770  1.0f
+	float            m_Scale770;                                // 0x0774  stores
+	// AVP2: three more floats, also set to 1.0f by the factory
+	// (0x00412562..0x0041256e).  (names ours)
+	float            m_Scale778;                                // 0x0778
+	float            m_Scale77c;                                // 0x077c
+	float            m_Scale780;                                // 0x0780
+	CCmgSoundMgr     m_SoundMgr;                                // 0x0784 .. 0x1094
+	uint8            m_pad_1094[0x10dc - 0x1094];
 	// The CD-audio module's two entries.  The pause one takes a flag, the
 	// resume one takes nothing; that is what the two call sites say.
-	void           (*m_pfnCDPause)(int);                        // 0x0fcc
-	void           (*m_pfnCDResume)();                          // 0x0fd0
+	void           (*m_pfnCDPause)(int);                        // 0x10dc
+	void           (*m_pfnCDResume)();                          // 0x10e0
 	uint8            m_pad_fd4[0xfe0 - 0xfd4];
-	uint32           m_bCDAudioReady;                           // 0x0fe0
-	uint32           m_nCDAudioEnabled;                         // 0x0fe4  last seen
+	uint32           m_bCDAudioReady;                           // 0x10f0
+	uint32           m_nCDAudioEnabled;                         // 0x10f4  last seen
 	// CClientMgr::Init fills both from dsi (0x0040fb92 / 0x0040fb9d).
-	void*            m_hMainWnd;                                // 0x0fe8
-	void*            m_hInstance;                               // 0x0fec
+	void*            m_hMainWnd;                                // 0x10f8
+	void*            m_hInstance;                               // 0x10fc
 	uint8            m_pad_ff0[0xff4 - 0xff0];
-	char             m_szCDAudioDLL[0x10f4 - 0xff4];            // 0x0ff4
+	char             m_szCDAudioDLL[0x10f4 - 0xff4];            // 0x1104
 	// A bare LTLink, tied off by hand and drained by 0x00411340: the walk
 	// there follows +0x04 round to the head and keeps NO count.
-	LTLink           m_Link10f4;                                // 0x10f4
-	LTList           m_List1100;                                // 0x1100
-	LTList           m_List1110;                                // 0x1110
-	CCmgStructBank   m_Bank1120;                                // 0x1120
-	CCmgBank113C     m_Bank113c;                                // 0x113c
+	LTLink           m_Link10f4;                                // 0x1204
+	LTList           m_List1100;                                // 0x1210
+	LTList           m_List1110;                                // 0x1220
+	CCmgStructBank   m_Bank1120;                                // 0x1230
+	CCmgBank113C     m_Bank113c;                                // 0x124c
 	// Fifteen dwords set to -1 by the destructor (`rep stos` with ecx=0xf)
 	// and by cm_OnShellTerm, which is what proves the count twice.
-	int32            m_Handles1160[15];                         // 0x1160
-	uint16           m_Unknown119c;                             // 0x119c  a WORD store
+	int32            m_Handles1160[15];                         // 0x1270
+	uint16           m_Unknown119c;                             // 0x12ac  a WORD store
 	uint8            m_pad_119e[0x11a0 - 0x119e];
-	CCmgSkyDef       m_SkyDef;                                  // 0x11a0
-	int32            m_Unknown11d0;                             // 0x11d0  -1 in the init list
-	int32            m_Unknown11d4;                             // 0x11d4  -1 in the init list
-	struct CCmgSurfaceEffect* m_pSurfaceEffects;                // 0x11d8  0x0041fc46
-	void*            m_pUnknown11dc;                            // 0x11dc  freed by 0x00429080
-	uint32           m_Unknown11e0;                             // 0x11e0
-	CCmgRateTracker  m_RateTracker;                             // 0x11e4
-	CCmgSub11F0      m_Sub11f0;                                 // 0x11f0
-	float            m_fPrevTime;                               // 0x1254  (demodtx.cpp)
+	CCmgSkyDef       m_SkyDef;                                  // 0x12b0
+	int32            m_Unknown11d0;                             // 0x12e0  -1 in the init list
+	int32            m_Unknown11d4;                             // 0x12e4  -1 in the init list
+	struct CCmgSurfaceEffect* m_pSurfaceEffects;                // 0x12e8  0x0041fc46
+	void*            m_pUnknown11dc;                            // 0x12ec  freed by 0x00429080
+	uint32           m_Unknown11e0;                             // 0x12f0
+	CCmgRateTracker  m_RateTracker;                             // 0x12f4
+	CCmgSub11F0      m_Sub11f0;                                 // 0x1300
+	float            m_fPrevTime;                               // 0x1364  (demodtx.cpp)
 	// A FLOAT: 0x00415829 `flds 0x1258` / `fadds 0x14f4`.  (name ours)
-	float            m_fFrameTime;                              // 0x1258  handed to UpdateSounds
-	float            m_fCurTime;                                // 0x125c  GetTime's field
-	uint32           m_Unknown1260;                             // 0x1260
-	void*            m_pChain1264;                              // 0x1264  (clientmgr2.cpp)
+	float            m_fFrameTime;                              // 0x1368  handed to UpdateSounds
+	float            m_fCurTime;                                // 0x136c  GetTime's field
+	uint32           m_Unknown1260;                             // 0x1370
+	void*            m_pChain1264;                              // 0x1374  (clientmgr2.cpp)
 	uint8            m_pad_1268[0x12ac - 0x1268];
 	// Two banks of 255 on/off bytes, one per command, indexed first by
 	// m_nCommandBank (0x0041fdff: `shl $8; sub` is the *255 stride).
-	uint8            m_CommandStates[2][255];                   // 0x12ac
+	uint8            m_CommandStates[2][255];                   // 0x13bc
 	uint8            m_pad_14aa[0x14ac - 0x14aa];
-	uint32           m_nCommandBank;                            // 0x14ac
+	uint32           m_nCommandBank;                            // 0x15bc
 	// What 0x00415810 last sent: the first 0x40 bytes of the change list,
 	// how many, the time since, and the rate byte.  (names ours)
-	uint8            m_LastChanges[0x40];                       // 0x14b0
-	uint32           m_Unknown14f0;                             // 0x14f0  the count
-	float            m_Unknown14f4;                             // 0x14f4  time since the send
-	uint8            m_nLastRate;                               // 0x14f8
+	uint8            m_LastChanges[0x40];                       // 0x15c0
+	uint32           m_Unknown14f0;                             // 0x1600  the count
+	float            m_Unknown14f4;                             // 0x1604  time since the send
+	uint8            m_nLastRate;                               // 0x1608
 	uint8            m_pad_14f9[0x14fc - 0x14f9];
 	// Three dwords CClientMgr::Init zeroes.  (names ours)
-	uint32           m_Unknown14fc;                             // 0x14fc
-	uint32           m_Unknown1500;                             // 0x1500
-	uint32           m_Unknown1504;                             // 0x1504
+	uint32           m_Unknown14fc;                             // 0x160c
+	uint32           m_Unknown1500;                             // 0x1610
+	uint32           m_Unknown1504;                             // 0x1614
 	// clientmgr.h: a table of plain function pointers, not an object; the
 	// destructor calls its second entry with the table itself.
-	void**           m_pInput;                                  // 0x1508
-	CCmgClientShell* m_pShell;                                  // 0x150c  (clientmgr.h)
+	void**           m_pInput;                                  // 0x1618
+	CCmgClientShell* m_pShell;                                  // 0x161c  (clientmgr.h)
 	// MISSING FOUR BYTES: m_pShell ends at 0x1510 and the next documented
 	// field is 0x1514. Caught by the offsetof audit.
 	uint8            m_pad_1510[0x1514 - 0x1510];
-	uint32           m_Unknown1514;                             // 0x1514
-	LTBOOL           m_bConsoleReady;                           // 0x1518  (clientmgr2.cpp)
-	uint32           m_Unknown151c;                             // 0x151c
-	uint32           m_Unknown1520;                             // 0x1520
-	uint32           m_Unknown1524;                             // 0x1524
-	uint32           m_Unknown1528;                             // 0x1528
-	uint32           m_Unknown152c;                             // 0x152c
-	uint32           m_Unknown1530;                             // 0x1530  1 in the ctor, 0 in the dtor
-	CCmgFileMgr*     m_pFileMgr;                                // 0x1534
+	uint32           m_Unknown1514;                             // 0x1624
+	LTBOOL           m_bConsoleReady;                           // 0x1628  (clientmgr2.cpp)
+	uint32           m_Unknown151c;                             // 0x162c
+	uint32           m_Unknown1520;                             // 0x1630
+	uint32           m_Unknown1524;                             // 0x1634
+	uint32           m_Unknown1528;                             // 0x1638
+	uint32           m_Unknown152c;                             // 0x163c
+	uint32           m_Unknown1530;                             // 0x1640  1 in the ctor, 0 in the dtor
+	CCmgFileMgr*     m_pFileMgr;                                // 0x1644
 	// The resource trees Init was given: all twenty pointers are copied
 	// (`mov $0x14,%ecx; rep movsl`, 0x0040f98b) and the count kept.
-	char*            m_ResTrees[20];                            // 0x1538
-	uint32           m_Unknown1588;                             // 0x1588  m_nResTrees
-	CCmgDemoMgr      m_DemoMgr;                                 // 0x158c
-	CCmgThread       m_Thread;                                  // 0x15a8
-	CCmgRefCounted*  m_pRefCounted160c;                         // 0x160c
-	CCmgSub1610*     m_pSub1610;                                // 0x1610
+	char*            m_ResTrees[20];                            // 0x1648
+	uint32           m_Unknown1588;                             // 0x1698  m_nResTrees
+	CCmgDemoMgr      m_DemoMgr;                                 // 0x169c
+	CCmgThread       m_Thread;                                  // 0x16b8
+	CCmgRefCounted*  m_pRefCounted160c;                         // 0x171c
+	CCmgSub1610*     m_pSub1610;                                // 0x1720
 	// cursor_Create's CLTCursor (0x0040fbe0, cltcursor.cpp).
-	void*            m_pCursor;                                 // 0x1614
-	CCmgTexMod       m_TexMod;                                  // 0x1618
+	void*            m_pCursor;                                 // 0x1724
+	CCmgTexMod       m_TexMod;                                  // 0x1728
 	uint8            m_pad_162c[0x21ac - 0x162c];
 	// clientmgr2.cpp's m_nFrameCode; Init zeroes it with a WORD store.
-	uint16           m_nFrameCode;                              // 0x21ac
+	uint16           m_nFrameCode;                              // 0x22bc
 	uint8            m_pad_21ae[0x21b0 - 0x21ae];
-	CCmgMusicMgr*    m_pMusicMgr;                               // 0x21b0
-	// sizeof == 0x21b4: the `push $0x21b4` at 0x00410a76.
+	CCmgMusicMgr*    m_pMusicMgr;                               // 0x22c0
+	// AVP2: a dword more at the end, never reached here.  (name ours)
+	uint32           m_Unknown22c4;                             // 0x22c4
+	// sizeof == 0x22c8: Primal Hunt's `push $0x22c8` at 0x0041234b (NOLF's
+	// was 0x21b4).
 };
 
 
@@ -2401,7 +2429,8 @@ void cmg_ReleaseRefList(LTLink* pHead)
 		pObj  = (CCmgRefCounted*)pCur->m_pData;
 		pNext = pCur->m_pNext;
 
-		if (--pObj->m_nRefCount == 0)
+		pObj->Release();
+		if (pObj->m_nRefCount == 0)
 			delete pObj;
 
 		pCur = pNext;
@@ -2827,7 +2856,7 @@ CCmgClientMgr::~CCmgClientMgr()
 
 	if (m_pRefCounted160c)
 	{
-		m_pRefCounted160c->m_nRefCount--;
+		m_pRefCounted160c->Release();
 		delete m_pRefCounted160c;
 		m_pRefCounted160c = LTNULL;
 	}
@@ -3148,9 +3177,11 @@ class CCmgPolyGridView
 public:
 	uint8  m_pad_00[0xbc];
 	uint8  m_ObjectType;                                        // 0xbc
-	uint8  m_pad_bd[0x1f0 - 0xbd];
-	uint32 m_nWidth;                                            // 0x1f0
-	uint32 m_nHeight;                                           // 0x1f4
+	// AVP2: the client object's own fields end eight bytes later than
+	// NOLF's, so the grid's size moves with them.
+	uint8  m_pad_bd[0x1f8 - 0xbd];
+	uint32 m_nWidth;                                            // 0x1f8
+	uint32 m_nHeight;                                           // 0x1fc
 };
 
 LTRESULT ci_FitPolyGrid(HLOCALOBJ hObj, LTVector* pMin, LTVector* pMax,

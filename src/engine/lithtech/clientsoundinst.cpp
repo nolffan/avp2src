@@ -46,7 +46,7 @@
 
 // clientsound.h declares CSoundInstance with the ten slots CSoundMgr
 // forwards to and three fields; the class has twenty-three slots and runs to
-// at least 0xb8 bytes. That header is not this reconstruction's to change, so
+// at least 0xc1 bytes (0xb8 in NOLF). That header is not this reconstruction's to change, so
 // the whole of it is redeclared here on a view (house style: see the
 // IObjInsideTestView comment in src/engine/server/servercommon.cpp). The
 // vptr is at offset 0, which is where every `mov (%esi),%eax` below reads it.
@@ -65,7 +65,8 @@
 // Term() at 0x0047d5c0, or by one of the bodies in this file. Slot +0x3c is
 // what pins the vptr-relative numbering: clientsound.h already calls +0x3c
 // GetPosition, and 0x0047d390 (the body in that slot in all four vtables)
-// copies three floats out of this+0x68 — so m_vPos is at 0x68 and the slot
+// copies three floats out of this+0x68 — so m_vPos is at 0x68 (0x70 in AvP2
+// and Primal Hunt, which add two words at 0x38) and the slot
 // map in clientsound.h is right.
 //
 // Slots +0x10 and +0x14 are __purecall (0x004928e7) in the base's own vtable,
@@ -153,41 +154,54 @@ public:
 	uint32   m_Unknown2c;                    // 0x2c  see Init
 	uint32   m_Unknown30;                    // 0x30
 	float    m_f34;                          // 0x34  constructed to 1.0f
-	uint32   m_nHoldCount;                   // 0x38  (name ours)
-	uint32   m_Saved3c;                      // 0x3c  (name ours)
-	// 0x40 — the state flags this file works in: bit 2 (0x04) is set by
+	// Two words NOLF does not have, which push everything from the hold
+	// count on up by eight in AvP2 1.0.9.6 and Primal Hunt.  The
+	// constructor (0x004998c0) zeroes the first and stores 1.0f into the
+	// second beside m_f34; what they mean is not established (names ours).
+	uint32   m_Unknown38;                    // 0x38
+	float    m_fUnknown3c;                   // 0x3c  constructed to 1.0f
+	uint32   m_nHoldCount;                   // 0x40  (name ours)
+	uint32   m_Saved3c;                      // 0x44  (name ours; NOLF's 0x3c)
+	// From here on every offset is NOLF's plus eight; the names keep
+	// NOLF's numbers.
+	// 0x48 — the state flags this file works in: bit 2 (0x04) is set by
 	// Stop, bit 1 (0x02) is tested by Hold, bit 5 (0x20) marks a live hold.
-	uint32   m_StateFlags;                   // 0x40
-	// 0x44 — the Miles HSAMPLE: the filter slots hand it to
+	uint32   m_StateFlags;                   // 0x48
+	// 0x4c — the Miles HSAMPLE: the filter slots hand it to
 	// AIL_set_sample_processor and friends when it is set.
-	void*    m_hSample;                      // 0x44
-	// 0x48 — the Miles 3D sample handle on the m_Type == 2 class; zero on
-	// the others. Term closes an AIL stream out of 0x4c and a Win32 handle
-	// out of 0x50.
-	void*    m_h3DSample;                    // 0x48
-	void*    m_hStream4c;                    // 0x4c
-	void*    m_hFile50;                      // 0x50
-	uint16   m_nUnknown54;                   // 0x54
+	void*    m_hSample;                      // 0x4c
+	// 0x50 — the Miles 3D sample handle on the m_Type == 2 class; zero on
+	// the others. Term closes an AIL stream out of 0x54 and a Win32 handle
+	// out of 0x58.
+	void*    m_h3DSample;                    // 0x50
+	void*    m_hStream4c;                    // 0x54
+	void*    m_hFile50;                      // 0x58
+	uint16   m_nUnknown54;                   // 0x5c
 	uint8    m_pad_56[0x58 - 0x56];
-	uint32   m_Unknown58;                    // 0x58
-	// 0x5c — this instance's place in its CSoundData's list.
-	LTLink   m_DataLink;                     // 0x5c
-	// 0x68 — the sound's world position. Not initialised by the base
+	uint32   m_Unknown58;                    // 0x60
+	// 0x64 — this instance's place in its CSoundData's list.
+	LTLink   m_DataLink;                     // 0x64
+	// 0x70 — the sound's world position. Not initialised by the base
 	// constructor; each derived constructor zeroes it.
-	LTVector m_vPos;                         // 0x68
-	uint32   m_Unknown74;                    // 0x74
-	uint32   m_Unknown78;                    // 0x78
-	// 0x7c — the index of the Miles filter set on this sound, -1 for none:
+	LTVector m_vPos;                         // 0x70
+	uint32   m_Unknown74;                    // 0x7c
+	uint32   m_Unknown78;                    // 0x80
+	// 0x84 — the index of the Miles filter set on this sound, -1 for none:
 	// SetFilter (0x0047e3c0) stores the enumeration index it found here and
 	// the two parameter slots hand it to the manager's GetFilterName.
-	int      m_nUnknown7c;                   // 0x7c  constructed to -1
+	int      m_nUnknown7c;                   // 0x84  constructed to -1
 	// Two seven-element arrays, and the count is not inferred: the
-	// constructor's tail loop runs seven times writing -1 at 0x80+4k and 0
-	// at 0x9c+4k. Term repeats it exactly. They are the filter parameters
+	// constructor's tail loop runs seven times writing -1 at 0x88+4k and 0
+	// at 0xa4+4k. Term repeats it exactly. They are the filter parameters
 	// set on the sound, index and value (SetFilterParam, 0x0047e480, `fstps
 	// 0x9c(%esi,%eax,4)`), -1 marking a free entry.
-	int      m_Unknown80[7];                 // 0x80
-	float    m_Unknown9c[7];                 // 0x9c
+	int      m_Unknown80[7];                 // 0x88
+	float    m_Unknown9c[7];                 // 0xa4
+	// A byte past the filter values, cleared by the constructor
+	// (0x0049992a) and by Term, and copied from PlaySoundInfo's
+	// m_nUserSoundType by Init (0x00499a0d); CSoundInstance2's own vectors
+	// start at 0xc4.
+	uint8    m_nUserSoundType;               // 0xc0
 };
 
 
@@ -357,11 +371,18 @@ extern "C" int __cdecl _stricmp(const char* a, const char* b);
 // of it are reached here: two slots of its ILTSoundMgr vtable, and the
 // CSoundData object bank at 0x284 (clientsoundmgr.cpp's m_SoundDataBank,
 // whose StructBank free-list head is at bank+0x1c).
+// struct_bank.h's StructBank, as far as its free list.
+struct StructBankSI
+{
+	uint8 m_pad_00[0x18];
+	void* m_FreeListHead;                    // 0x18
+};
+
 class CSoundDataBankSI
 {
 public:
-	uint8 m_pad_00[0x1c];
-	void* m_FreeListHead;                    // 0x1c
+	uint8        m_pad_00[0x04];
+	StructBankSI m_Bank;                     // 0x04  (free list at 0x1c)
 
 	// object_bank.h's Free: the explicit destructor (`push $0; call
 	// *(%eax)`, the deleting thunk with its flag clear) and sb_Free's two
@@ -372,21 +393,26 @@ public:
 class CSoundMgrSI
 {
 public:
+	// AvP2's iltsoundmgr.h has three slots NOLF's lacks -- KillSoundFade
+	// after KillSoundLoop, GetVolumeByType and SetVolumeByType after
+	// SetVolume -- so both of these sit three slots later than NOLF's
+	// (0x0049ac1d `call *0x58`, 0x0049ac43 `call *0x7c`).
 	virtual void _v00(); virtual void _v04(); virtual void _v08();
 	virtual void _v0c(); virtual void _v10(); virtual void _v14();
 	virtual void _v18(); virtual void _v1c(); virtual void _v20();
 	virtual void _v24(); virtual void _v28(); virtual void _v2c();
 	virtual void _v30(); virtual void _v34(); virtual void _v38();
 	virtual void _v3c(); virtual void _v40(); virtual void _v44();
-	virtual void _v48();
+	virtual void _v48(); virtual void _v4c(); virtual void _v50();
+	virtual void _v54();
 	virtual LTRESULT GetFilterName(uint32 nIndex,
-	                               const char** pFilter);          // +0x4c
-	virtual void _v50(); virtual void _v54(); virtual void _v58();
+	                               const char** pFilter);          // +0x58
 	virtual void _v5c(); virtual void _v60(); virtual void _v64();
-	virtual void _v68(); virtual void _v6c();
+	virtual void _v68(); virtual void _v6c(); virtual void _v70();
+	virtual void _v74(); virtual void _v78();
 	virtual LTRESULT GetFilterParamIndex(const char* pFilter,
 	                                     const char* pParam,
-	                                     uint32* pIndex);          // +0x70
+	                                     uint32* pIndex);          // +0x7c
 
 public:
 	uint8            m_pad_04[0x284 - 0x04];
@@ -603,12 +629,23 @@ LTRESULT CSoundDataView::sub_47d240(uint8* pDst, uint16* pSrc, uint32 nCount)
 }
 
 
+// lithshared's sb_Free, release build: AvP2's struct_bank.h refuses a null
+// object or bank before it links the object in, and the shipped bank free
+// tests both (0x00499648, 0x0049964f).
+inline void sb_FreeSI(StructBankSI* pBank, void* pObj)
+{
+	if (!pObj || !pBank)
+		return;
+
+	*(void**)pObj = pBank->m_FreeListHead;
+	pBank->m_FreeListHead = pObj;
+}
+
 inline void CSoundDataBankSI::Free(CSoundDataView* pObj)
 {
 	pObj->~CSoundDataView();
 
-	*(void**)pObj = m_FreeListHead;
-	m_FreeListHead = pObj;
+	sb_FreeSI(&m_Bank, pObj);
 }
 
 
@@ -632,8 +669,10 @@ CSoundInstanceView::CSoundInstanceView()
 	m_Unknown18 = 0;
 	m_nUnknown20 = 100;
 	m_f34 = 1.0f;
+	m_fUnknown3c = 1.0f;
 	m_Unknown28 = 0;
 	m_nPriority = 0;
+	m_Unknown38 = 0;
 	m_Unknown30 = 0;
 	m_nHoldCount = 0;
 	m_Saved3c = 0;
@@ -647,6 +686,7 @@ CSoundInstanceView::CSoundInstanceView()
 	m_Unknown58 = 0;
 	m_DataLink.TieOff();
 	m_nUnknown7c = -1;
+	m_nUserSoundType = 0;
 
 	for (uint32 i = 0; i < 7; i++)
 	{
@@ -670,7 +710,7 @@ CSoundInstanceView::~CSoundInstanceView()
 //
 // The three floats are copied field by field rather than as a vector
 // assignment, and the shipped code reaches them through a pointer it forms
-// once (`add $0x68,%ecx`) rather than at 0x68/0x6c/0x70 off this — which is
+// once (`add $0x70,%ecx`) rather than at 0x70/0x74/0x78 off this — which is
 // what an LTVector copy through a member's address looks like.
 //
 // clientsound.h declares this slot `void`; it returns LTRESULT. `xor %eax,%eax`
@@ -864,6 +904,7 @@ void CSoundInstanceView::Term()
 	m_DataLink.TieOff();
 	m_pUnknown0c = LTNULL;
 	m_Flags10 = 0;
+	m_nUserSoundType = 0;
 	m_Unknown18 = 0;
 	m_nUnknown20 = 100;
 	m_f34 = 1.0f;
@@ -969,9 +1010,11 @@ struct CClientSlotSI
 
 struct CClientSlotTableSI
 {
-	uint8          m_pad_00[0x11dc];
-	CClientSlotSI* m_pSlots;                 // 0x11dc
-	uint32         m_nSlots;                 // 0x11e0
+	// 0x110 bytes later than NOLF's 0x11dc: AvP2's and Primal Hunt's
+	// client manager is that much longer ahead of it (0x00499b0c).
+	uint8          m_pad_00[0x12ec];
+	CClientSlotSI* m_pSlots;                 // 0x12ec
+	uint32         m_nSlots;                 // 0x12f0
 };
 
 // 0x00493f0c — the CRT's rand().
@@ -991,7 +1034,8 @@ inline float snd_Random(float fMin, float fMax)
 // the flags, priority, volume and pitch; the pitch is spread by the
 // sample's own random range and refused back to 1.0 if it came out
 // non-positive. A PLAYSOUND_CLIENT sound has no table slot and hands itself
-// back through m_hSound; any other takes the slot its m_hSound names. The
+// back through m_hSound when PLAYSOUND_GETHANDLE asks for it (a null
+// otherwise); any other takes the slot its m_hSound names. The
 // tail turns the start offset into the time left, wrapping on a loop and
 // stopping outright when a one-shot starts past its end.
 LTRESULT CSoundInstanceView::Init(CSoundDataView* pData, PlaySoundInfo* pInfo,
@@ -1004,12 +1048,18 @@ LTRESULT CSoundInstanceView::Init(CSoundDataView* pData, PlaySoundInfo* pInfo,
 	m_pUnknown0c = pData->m_pUnknown04;
 	m_Flags10 = pInfo->m_dwFlags;
 	m_Unknown18 = pInfo->m_nPriority;
+	m_nUserSoundType = pInfo->m_nUserSoundType;
 
 	if (m_Flags10 & PLAYSOUND_CTRL_VOL)
 		m_nUnknown20 = pInfo->m_nVolume;
 
 	if (m_Flags10 & PLAYSOUND_CTRL_PITCH)
 		m_f34 = pInfo->m_fPitchShift;
+
+	// The type is copied a second time under its own flag (0x00499a2c);
+	// both copies read the same PlaySoundInfo field.
+	if (m_Flags10 & PLAYSOUND_CTRL_TYPE)
+		m_nUserSoundType = pInfo->m_nUserSoundType;
 
 	m_f34 *= snd_Random(-pData->m_fPitchRange, pData->m_fPitchRange) + 1.0f;
 
@@ -1027,7 +1077,11 @@ LTRESULT CSoundInstanceView::Init(CSoundDataView* pData, PlaySoundInfo* pInfo,
 	if (m_Flags10 & PLAYSOUND_CLIENT)
 	{
 		m_nTableSlot = 0xffff;
-		pInfo->m_hSound = (HLTSOUND)this;
+
+		if (m_Flags10 & PLAYSOUND_GETHANDLE)
+			pInfo->m_hSound = (HLTSOUND)this;
+		else
+			pInfo->m_hSound = LTNULL;
 	}
 	else
 	{
@@ -1135,7 +1189,6 @@ LTRESULT CSoundInstanceView::_v0c()
 {
 	LTVector vOffset;
 	LTVector vCur;
-	LTVector vDiff;
 	CSoundDataView* pData;
 	int nRate;
 	float fMix;
@@ -1187,8 +1240,7 @@ LTRESULT CSoundInstanceView::_v0c()
 	AIL_3D_position(m_h3DSample, &vCur.x, &vCur.y, &vCur.z);
 	GetListenerOffset(&vOffset);
 
-	vDiff = vCur - vOffset;
-	if (vDiff.MagSqr() > 0.001f)
+	if (vCur.DistSqr(vOffset) > 0.001f)
 		AIL_set_3D_position(m_h3DSample, vOffset.x, vOffset.y, vOffset.z);
 
 	AIL_set_3D_velocity_vector(m_h3DSample, 0.0f, 0.0f, 0.0f);
@@ -1650,7 +1702,7 @@ CSoundInstance1::CSoundInstance1()
 // It is the only one of the four that overrides the obstruction and occlusion
 // slots — the base leaves all four of them pointing at 0x0042d190, a folded
 // `return 1` shared image-wide — and the handle it works through is the base's
-// m_h3DSample at 0x48 (name ours, from m_Type).
+// m_h3DSample at 0x50 (name ours, from m_Type).
 class CSoundInstance2 : public CSoundInstanceView
 {
 public:
@@ -1661,12 +1713,12 @@ public:
 	LTRESULT SetOcclusion(LTFLOAT fLevel);       // +0x30  0x0047f5c0
 	LTRESULT GetOcclusion(LTFLOAT* pLevel);      // +0x34  0x0047f5f0
 
-	// 0xb8 and 0xc4 — two more vectors, the class's own (the bank at
-	// 0x00483510 allocates 0xd0 bytes). SetPosition with its second
+	// 0xc4 and 0xd0 — two more vectors, the class's own (0xb8 and 0xc4 in
+	// NOLF, where the bank at 0x00483510 allocates 0xd0 bytes). SetPosition with its second
 	// argument set copies the new position into the first and zeroes the
 	// second; names ours.
-	LTVector m_vLastPos;                         // 0xb8
-	LTVector m_vVelocity;                        // 0xc4
+	LTVector m_vLastPos;                         // 0xc4
+	LTVector m_vVelocity;                        // 0xd0
 };
 
 // 0x0047eda0 — construct it. The CSoundInstance1 constructor's shape with
@@ -1685,7 +1737,7 @@ CSoundInstance2::CSoundInstance2()
 }
 
 // 0x0047edf0 — the base's SetPosition (0x0047d3c0) plus a reset: with the
-// second argument non-zero the position is also copied to 0xb8 and 0xc4 is
+// second argument non-zero the position is also copied to 0xc4 and 0xd0 is
 // zeroed (0x0047ee13 `je` over both).
 LTRESULT CSoundInstance2::SetPosition(LTVector* pPos, int bReset)
 {

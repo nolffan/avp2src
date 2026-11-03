@@ -106,6 +106,8 @@ class CClientMgrView
 {
 public:
 	uint8        m_pad_0000[0x1268];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x0040787f adds 0x1378).
+	uint8 m_padExtra[0x110];
 	// The SERVER's console state, mirrored into the client manager -- this
 	// is the copy GetServerConVarValue* reads, and it is a different
 	// object from the client's own (0x004b2f00, a file-scope global).
@@ -143,6 +145,8 @@ public:
 	uint8          m_pad_0000[0x10];
 	ILTModel*      m_pModelLT;                // 0x010
 	uint8          m_pad_0014[0x3c0 - 0x14];
+	// AVP2: as Primal Hunt (PH addresses) -- CLTClient is 0x10 longer below here (0x00407879 reads +0x3d0).
+	uint8 m_padExtra[0x10];
 	CClientMgrView* m_pClientMgr;             // 0x3c0
 };
 

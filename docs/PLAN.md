@@ -343,6 +343,41 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   had matched by a coincidence of mapping), and eight small or
   initialiser functions in PHObject.lto and lithtech.exe whose placement
   moved once their neighbours matched.
+- **The client side's NOLF layouts, moved to AvP2's** (lithtech.exe's
+  near list, six object groups worked in parallel through
+  `build/near.sh`): lithtech.exe 2,007 -> 2,409 identical functions
+  (27.9 % -> 37.6 % of bytes), and AvP2 1.0.9.6's 2,102 -> 2,475 from
+  the same source. Nearly every near was layout, not codegen, and AvP2
+  1.0.9.6 shares the layout in every case checked against both images:
+  - `CClientMgr`: +4 before `m_NetMgr` (0x510); the light scale at 0x76c
+    then a new vertex tint at 0x778; the sound manager at 0x784 and
+    0x910 bytes; +0x110 from the music manager (0x1094) on, so the
+    connection is at 0x161c and the file manager at 0x1644; 0x22c8 in
+    all.
+  - `CLTClient`: the AvP2 SDK's function table (212 entries, with
+    `SetGameInfo` and the three vertex-tint calls), the client manager
+    at 0x3d0; `ClearScreen` takes the colour.
+  - client objects: the change flags at 0x124, each type's own fields
+    from 0x1b0; `RenderStruct` +8 from `ClearScreen` (0x8c);
+    `SharedTexture` 0x40 bytes; the sound instance +8 from 0x38 and 0xc4
+    bytes; `CLTDirectMusicMgr`'s three playing lists and VOLUMEOFFSET;
+    `IClientShell`, `IWorldBsp` and the server shell each two or three
+    slots longer; the message cache 0x44c.
+  - Primal Hunt only (`PRIMAL_HUNT`): the client's default port 27890
+    (its server.dll and both AvP2 images keep 27888); the find record's
+    MAX_PATH; the model's extra texture at +0x1d0 and the +4 it puts on
+    the object after it; `tm_FreeTexture`'s texture null test; the two
+    ILTCSBase slots in every view of CLTClient's own vtable.
+- Header changes found and still to make (each blocks a handful of
+  nears; evidence in the agents' notes beside the views):
+  `servermgr.h`'s `sb_Free` wants AvP2's `if (pStruct && pBank)` guard;
+  `sm_SetObjectChangeFlag`'s first test; SObjData +0xc in Primal Hunt
+  (`m_StateLink` 0x48, NetFlags 0x5e; AvP2's 0x5a); `IWorldBsp`'s
+  `GetWorldFlags` at 0x20 in the engine headers; `CServerMgr`'s
+  `m_Unknown390` at 0x394; `ILTModel` at 38 slots; `ObjectCreateStruct`'s
+  extra 128-byte name at +0x300 and `PlaySoundInfo`'s byte at +0x134
+  (Primal Hunt); the collection templates' out-of-line allocator;
+  `clientsound.h`; `CWorldSurface` 0x40 bytes and `CWorldPart` +4.
 - Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
   near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
   near).

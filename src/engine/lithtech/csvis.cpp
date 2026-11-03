@@ -240,7 +240,15 @@ class CClientMgrQ414
 public:
 	uint8                 m_pad_000[0x188];
 	CWorldRecArrayQ414    m_WorldRecs;                         // 0x188
-	uint8                 m_pad_194[0x41c - 0x194];
+	// AVP2: (the field offsets below are NOLF's) AvP2's and Primal Hunt's
+	// manager is four bytes longer from here to the string module (the
+	// object list's head at +0x424, 0x00418890; the string module at
+	// +0x61c, 0x004193c2) and 0x110 longer from there to
+
+	// the frame time (+0x1368, 0x0041a317), the sprite chain (+0x1374,
+	// 0x00419f64), the connection (+0x161c) and the file manager (+0x1644,
+	// 0x004187e9).
+	uint8                 m_pad_194[0x420 - 0x194];
 	// The client's object list, walked by cs_DirtyAllModelsQ414 below.
 	// 0x00414a10 takes the ADDRESS of +0x420 as the walk's end marker and
 	// 0x00414a0a reads +0x424 as its first element: that is the list's
@@ -268,7 +276,7 @@ public:
 	// on).  The only reader in this file is the message helper's
 	// WriteFormattedString (0x00415602).  (name ours)
 	void*                 m_pStringModule618;                  // 0x618
-	uint8                 m_pad_61c[0x1258 - 0x61c];
+	uint8                 m_pad_61c[0x1368 - 0x620];
 	// The frame time the per-frame walks scale by 1000.0f (0x00415bf6,
 	// 0x00415e47, 0x00415f1c), and 0x00415ca8 pushes it whole as the float
 	// argument of the particle update 0x0045ca70.  (name ours)
@@ -641,13 +649,23 @@ public:
 // The client object, as far as this walk reaches it.  +0x1dc is
 // clientmgr.h's CClientModel::m_pModel and cmodelload.cpp's
 // CClientObjectQ474::m_pModel, at the same offset in both.
+//
+// AVP2: (those are NOLF's) AvP2's object has them at +0x190 and +0x1f8
+// (0x00416844).
+//
+// PH: Primal Hunt's model is four bytes further on, +0x1fc (0x004188a4),
+// behind the extra texture at +0x1d0 (cmodelload.cpp).
 class CClientObjectQ414
 {
 public:
-	uint8      m_pad_000[0x188];
-	uint32     m_Unknown188;                                   // 0x188
-	uint8      m_pad_18c[0x1dc - 0x18c];
-	ModelQ414* m_pModel;                                       // 0x1dc
+	uint8      m_pad_000[0x190];
+	uint32     m_Unknown188;                                   // 0x190
+#ifdef PRIMAL_HUNT
+	uint8      m_pad_194[0x1fc - 0x194];
+#else
+	uint8      m_pad_194[0x1f8 - 0x194];
+#endif
+	ModelQ414* m_pModel;                                       // 0x1f8 (PH 0x1fc)
 };
 
 void cs_DirtyAllModelsQ414()
@@ -908,11 +926,13 @@ public:
 
 // What a sprite instance draws with; +0x30 takes the current frame's
 // texture (0x00415b96).
+//
+// AVP2: (+0x30 is NOLF's) +0x2c in AvP2 and Primal Hunt (0x00419f86).
 class CSpriteObjQ414
 {
 public:
-	uint8  m_pad_00[0x30];
-	uint32 m_pCurTexture;                                      // 0x30
+	uint8  m_pad_00[0x2c];
+	uint32 m_pCurTexture;                                      // 0x2c
 };
 
 // One animation of a loaded sprite, at the offsets 0x00483d00 reads:
@@ -1099,14 +1119,18 @@ void cs_UpdateParticleSystemsQ414(CClientMgrQ414* pMgr)
 
 // A client sprite object: its sprite at +0x1b0 and tracker at +0x1b4
 // (0x00415e99 / 0x00415ea3).
+//
+// AVP2: (those are NOLF's) +0x1b8 / +0x1bc in AvP2 and Primal Hunt
+// (0x0041a369, 0x0041a373).
+
 class CSpriteObjectQ414
 {
 public:
 	uint8              m_pad_000[0x88];
 	uint32             m_Flags;                                // 0x088
-	uint8              m_pad_08c[0x1b0 - 0x8c];
-	void*              m_pSprite;                              // 0x1b0
-	CSpriteTrackerQ414 m_SpriteTracker;                        // 0x1b4
+	uint8              m_pad_08c[0x1b8 - 0x8c];
+	void*              m_pSprite;                              // 0x1b8
+	CSpriteTrackerQ414 m_SpriteTracker;                        // 0x1bc
 };
 
 // 0x00415e40 -- the fourth walk: advance every sprite object on the list
@@ -1149,13 +1173,16 @@ void cs_UpdateSpriteObjectsQ414(CClientMgrQ414* pMgr)
 
 // An object on the move list: a pending position at +0x18c and its flag
 // at +0x1ac (0x00415edb / 0x00415ee5 / 0x00415ef8).
+//
+// AVP2: (NOLF had +0x18c / +0x1ac) +0x194 / +0x1b4 in AvP2 and Primal
+// Hunt (0x0041a3b5, 0x0041a3ab).
 class CMoveObjQ414
 {
 public:
-	uint8    m_pad_000[0x18c];
-	LTVector m_vPendingPos;                                    // 0x18c
-	uint8    m_pad_198[0x1ac - 0x198];
-	uint32   m_bPendingMove;                                   // 0x1ac
+	uint8    m_pad_000[0x194];
+	LTVector m_vPendingPos;                                    // 0x194
+	uint8    m_pad_1a0[0x1b4 - 0x1a0];
+	uint32   m_bPendingMove;                                   // 0x1b4
 };
 
 // clientmgr.h's sub_4207a0: set an object's position, the last argument
@@ -1512,11 +1539,13 @@ void sm_RemoveObjectQ414(CServerMgrQ46A* pServerMgr, LTObjectQ46A* hObj)
 
 // g_pClientMgrQ414 again, viewed at the bank (CClientMgrQ414 is declared
 // above StructBankQ414 and pads over +0x1120).
+//
+// AVP2: +0x1230 in AvP2 and Primal Hunt (0x0041890c).
 class CClientMgrBankQ414
 {
 public:
-	uint8          m_pad_0000[0x1120];
-	StructBankQ414 m_Bank1120;                              // 0x1120
+	uint8          m_pad_0000[0x1230];
+	StructBankQ414 m_Bank1120;                              // 0x1230
 };
 
 class CClientShellObjMapQ414

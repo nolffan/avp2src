@@ -1187,6 +1187,8 @@ public:
 	uint32 EnactToSegFlagsQ440(const LTDMEnactTypesQ440 nEnact);         // 0x004422e0
 
 	uint8  m_pad_000[0x0e8];
+	// AVP2: as Primal Hunt (PH addresses) -- 0x14 more bytes below here (0x0044e869 stores m_bReverbOn at +0xfc).
+	uint8 m_padExtra[0x14];
 	LTBOOL m_bReverbOn;                      // 0x0e8
 	DMUS_WAVES_REVERB_PARAMS_Q440 m_ReverbParams;  // 0x0ec .. 0x0fb
 };
@@ -1264,7 +1266,10 @@ uint32 CLTDirectMusicMgrQ440::EnactToSegFlagsQ440(const LTDMEnactTypesQ440 nEnac
 		case LTDMEnactNextBeat:    return DMUS_SEGF_BEAT_Q440;        // 0x004422f9
 		case LTDMEnactNextMeasure: return DMUS_SEGF_MEASURE_Q440;     // 0x00442301
 		case LTDMEnactNextGrid:    return DMUS_SEGF_GRID_Q440;        // 0x00442309
-		case LTDMEnactNextSegment: return DMUS_SEGF_SEGMENTEND_Q440;  // 0x00442311
+		// AVP2: as Primal Hunt (PH addresses) -- the next-segment case answers the MEASURE flag too -- its table
+		// entry (0x0044e5cc) is the NextMeasure arm's 0x0044e5a9, and the
+		// image has no 0x100 return here.
+		case LTDMEnactNextSegment: return DMUS_SEGF_MEASURE_Q440;
 	}
 
 	return 0;

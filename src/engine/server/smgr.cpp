@@ -1199,7 +1199,7 @@ LTBOOL CServerMgr::Init()
 		sb_Init2(&m_ObjectListBank, 8, 0x10, 4);
 		sb_Init2(&m_ObjectLinkBank, 8, 0x80, 0x40);
 		sb_Init2(&m_Bank848, 0x14, 0x20, 0x20);
-		sb_Init2(&m_Bank9D4, 0x160, 0x30, 0x20);
+		sb_Init2(&m_Bank9D4, 0x164, 0x30, 0x20);
 		sb_Init2(&m_Bank864, 0x18, 0x20, 0x10);
 		sb_Init2(&m_Bank0C, 0x1c, 0x10, 0x10);
 		sb_Init2(&m_Bank28, 0x60, 0x10, 0x10);
@@ -2589,7 +2589,7 @@ LTRESULT sm_RemoveObjectFromWorld(CServerMgr* pMgr, BaseClass* pClass)
 	}
 
 	sm_RemoveFromWorldTree(pMgr, pObject);
-	g_Unknown58bec -= 0x1fc;
+	g_Unknown58bec -= 0x210;
 
 	return un390_RemoveObject(&pMgr->m_Unknown390, pObject);
 }
@@ -5404,8 +5404,10 @@ void sm_DropConnection(CServerMgr* pMgr, NetConnection* pConn)
 class CModelInstView
 {
 public:
-	uint8        m_pad_00[0x1f0];
-	class Model* m_pModel;                   // +0x1f0
+	// AvP2's tracker sits twelve bytes further in (commonmodel.h's
+	// ModelInstance), so its model is at +0x1fc (lithtech 0x004793b0).
+	uint8        m_pad_00[0x1fc];
+	class Model* m_pModel;                   // +0x1fc
 };
 
 // 0x10027be0 — does this object owe the clients an update at all? Change
@@ -5424,7 +5426,9 @@ inline int sub_10027be0(CServerMgr* pMgr, LTObject* pObject)
 
 	if (!(nFlags & FLAG_FORCECLIENTUPDATE))
 	{
-		if (!(nFlags & FLAG_VISIBLE) && !(nFlags & (FLAG_RAYHIT | FLAG_SOLID)))
+		// One mask in AvP2 (lithtech 0x0047937f `test $0x3001`); NOLF's
+		// tested the visible bit apart from the other two.
+		if (!(nFlags & (FLAG_VISIBLE | FLAG_RAYHIT | FLAG_SOLID)))
 			return 0;
 
 		if (pObject->m_ObjectType == OT_NORMAL &&
@@ -6084,15 +6088,18 @@ void sm_RemoveObject(CServerMgr* pServerMgr, HOBJECT hObj)
 
 
 // The queued message with the members servermgr.h does not model: a list at
-// +0x140 whose nodes' payloads go back to the manager's bank at 0x864, and
-// the reference count at +0x150 the release counts down. The record itself
-// comes out of the bank at 0x9d4.
+// +0x144 whose nodes' payloads go back to the manager's bank at 0x864, and
+// the reference count at +0x154 the release counts down. The record itself
+// comes out of the bank at 0x9d4. AvP2's record is 0x164 bytes, four more
+// than NOLF's, and both members sit four further in (lithtech 0x0047c21c
+// `lea 0x148(%esi)`, 0x0047c2cc `mov 0x154(%esi)`).
 class CQueuedMsgView
 {
 public:
-	uint8  m_pad_00[0x140];
-	LTList m_List140;                        // +0x140
-	uint32 m_RefCount;                       // +0x150
+	uint8  m_pad_00[0x144];
+	LTList m_List140;                        // +0x144
+	uint32 m_RefCount;                       // +0x154
+	uint8  m_pad_158[0x164 - 0x158];
 };
 
 // 0x10031d47 — the last reference to a queued message empties it and returns
@@ -8332,7 +8339,9 @@ LTRESULT sm_CreateObjectInWorld(CServerMgr* pMgr, LPBASECLASS pObject,
 	sm_SetObjectChangeFlag(pMgr, pLTObject,
 		sm_GetObjectChangeFlags2(pMgr, pLTObject));
 
-	g_Unknown58bec += 0x1fc;
+	// AvP2 counts 0x210 a world object where NOLF counted 0x1fc
+	// (lithtech 0x0048c626 `sub $0x210` in the removal).
+	g_Unknown58bec += 0x210;
 
 	*ppObject = pLTObject;
 
@@ -8551,7 +8560,7 @@ public:
 };
 
 // 0x1002980d — make one queued message and hand it to every client that is
-// in the world. The record is 0x160 bytes out of the bank at 0x9d4, cleared
+// in the world. The record is 0x164 bytes out of the bank at 0x9d4, cleared
 // whole, and its reference count ends up as the number of clients that took
 // a copy — which is what CQueuedMsg::Release (0x10031d47) counts back down.
 //
@@ -8565,7 +8574,7 @@ void* sm_AddSoundRecord(CServerMgr* pMgr, int n)
 	LTLink*         pCur;
 	LTLink*         pHead;
 
-	memset(pRec, 0, 0x160);
+	memset(pRec, 0, sizeof(CQueuedMsgView));
 
 	dl_InitList(&pRec->m_List140);
 
@@ -10111,16 +10120,11 @@ inline float GetBoxDiagonalSqrInline(IWorldBsp* pBsp)
 // distance is parked in the dead pObj argument slot, the object being in a
 // register by then.
 //
-// lithtech 0x0046fd00 (/O2): with the box diagonal inline (above) it is a
-// 464/464 size-exact near. The named pMat local is what puts rows 1..3 of
-// the expanded MatVMul_H in shipped's x-before-z product order (without it
-// all rows come out z-first, 12 instructions off); only row 0's m[0][0]*x
-// operand order is left (`flds 0x230(%esi); fmuls 0xc(%edi)` at 0x0046fe39
-// against ours x-first) -- VC6's tie-break between equal-weight operands.
-// Measured no better: pPos local (with or without pMat), pMat at function
-// or block top, LTMatrix&, &WorldModelObject::m_Transform230 bare, the
-// distance inline in the compare, `(a - b).MagSqr()` for DistSqr. The box
-// compare must be written `fDistSqr > box` (shipped fcompp order, jne).
+// lithtech 0x00485430 (/O2): with the box diagonal inline (above) it is
+// byte-identical. The named pMat local is what puts rows 1..3 of the
+// expanded MatVMul_H in shipped's x-before-z product order (without it all
+// rows come out z-first, 12 instructions off). The box compare must be
+// written `fDistSqr > box` (shipped fcompp order, jne).
 void sm_GatherContainers(LTObject* pObj, void* pUser)
 {
 	PointContainerGather* pGather = (PointContainerGather*)pUser;
@@ -10153,7 +10157,10 @@ void sm_GatherContainers(LTObject* pObj, void* pUser)
 				return;
 #endif
 
-			LTMatrix* pMat = (class LTMatrix*)((uint8*)pObj + 0x230);
+			// The container's inverse transform: NOLF's +0x230, eight
+			// further in with AvP2's LTObject (lithtech 0x00485555 reads
+			// its first row at 0x238).
+			LTMatrix* pMat = (class LTMatrix*)((uint8*)pObj + 0x238);
 			MatVMul_H(&vLocal, pMat, &pGather->m_Position);
 
 			if (bsp_PointInside((BSPNode*)pBsp->m_pGeometry, &vLocal) != 0)

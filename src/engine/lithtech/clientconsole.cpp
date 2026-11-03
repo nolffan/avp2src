@@ -104,6 +104,8 @@ public:
 	LTRESULT StartGame(StartGameRequest* pRequest);    // 0x0040fd90
 
 	uint8                  m_pad_0000[0x1508];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x00424f55 reads +0x1618).
+	uint8 m_padExtra[0x110];
 	CClientInput*          m_pInput;         // 0x1508
 	CClientConnectionView* m_pConnection;    // 0x150c
 	uint8                  m_pad_1510[0x1534 - 0x1510];

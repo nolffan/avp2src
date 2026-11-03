@@ -45,7 +45,14 @@
 #define SO_BROADCAST   0x0020
 
 // The port the driver falls back to when the caller asks for none.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's lithtech.exe defaults to 27890 at all three sites
+// (0x004a1777, 0x004a1e4e, 0x004a2cdd); its server.dll keeps 27888, and
+// AvP2 1.0.9.6's lithtech.exe and server.dll have 27888 (0x6cf0) too.
+#define TCP_DEFAULTPORT 27890
+#else
 #define TCP_DEFAULTPORT 27888
+#endif
 
 // Set from the console: every "IP: ..." trace in the driver is gated on it
 // (0x10058494, name ours).
@@ -566,7 +573,10 @@ public:
 #endif
 
 	// Not in the vtable: reached by direct call from Term and Disconnect.
-	void     SendDisconnect(NetConnection* pConn, uint32 nReason); // 0x1003629d
+	// AVP2: no reason argument (`ret $4`; PH lithtech.exe 0x004a1c40 and
+	// server.dll 0x10046175, 1.0.9.6's lithtech.exe 0x00497c10 and
+	// server.dll 0x100416e4 alike).
+	void     SendDisconnect(NetConnection* pConn);
 	// 0x100362f5 — the live connection whose remote end matches, if any.
 	class TCPConnection* FindConnection(struct sockaddr_in* pAddr);
 	// 0x10036ee5 — a datagram that arrived with a zero first byte is a
@@ -1240,7 +1250,7 @@ int tcp_BuildSockaddrFromString(char* pString, struct sockaddr_in* pAddr)
 		strncpy(szAddr, pString, sizeof(szAddr) - 1);
 		szAddr[sizeof(szAddr) - 1] = 0;
 
-		nPort = 27888;
+		nPort = TCP_DEFAULTPORT;
 	}
 
 	if (szAddr[0] >= '0' && szAddr[0] <= '9')
@@ -1370,6 +1380,11 @@ WSAErrorText g_WSAErrors[47] =
 };
 #undef WSA_ERR
 
+// RETAIL BUG: no return after the loop.  An error code missing from the
+// table falls off the end with the code itself still in %eax, so the
+// caller gets the number back as a char* (bare `ret` after the loop in all
+// three images: lithtech.exe 0x004a22cd, server.dll 0x10046579, 1.0.9.6's
+// lithtech.exe 0x00498237).  C4715, a warning.
 char* tcp_GetErrorText()
 {
 	int    nErr = WSAGetLastError();
@@ -1380,8 +1395,10 @@ char* tcp_GetErrorText()
 		if (g_WSAErrors[i].m_nCode == nErr)
 			return g_WSAErrors[i].m_pText;
 	}
-
+#ifdef AVP2_MODERN
+	// fixed: an unlisted code gets a string, not its own value.
 	return "<unknown>";
+#endif
 }
 
 
@@ -1431,29 +1448,33 @@ void TCPDriver::Term()
 		void* pConn = pCur->m_pData;
 		pCur = (pCur->m_pPrev == m_ConnTable.m_pTail) ? LTNULL : pCur->m_pPrev;
 
-		SendDisconnect((NetConnection*)pConn, 0);
+		SendDisconnect((NetConnection*)pConn);
 	}
 
 	CloseSockets(1);
 }
 
 
-// 0x1003629d — the disconnect notice: a two-byte header of zeros and the
-// reason as four separate bytes, sent four times because nothing
-// acknowledges it. The header bytes are written one at a time (two `andb`s,
-// not a single `movw`), and the reason likewise, so the six bytes are a
-// uint8 array in the source rather than a struct.
-void TCPDriver::SendDisconnect(NetConnection* pConn, uint32 nReason)
+// 0x1003629d (NOLF) — the disconnect notice, sent four times because
+// nothing acknowledges it. The header bytes are written one at a time (two
+// `andb`s, not a single `movw`), so the packet is a uint8 array in the
+// source rather than a struct.
+// AVP2: the notice is three bytes (both games, both images) and carries
+// no reason -- the two zero header bytes are written and the third is sent
+// as whatever the stack held (RETAIL BUG: `push %ecx` reserves it, nothing stores it, and the
+// SendTo size is 3; lithtech.exe 0x004a1c44..0x004a1c6a, server.dll
+// 0x1004617c..0x10046196).
+void TCPDriver::SendDisconnect(NetConnection* pConn)
 {
-	uint8  packet[6];
+	uint8  packet[3];
 	uint32 i;
 
 	packet[0] = 0;
 	packet[1] = 0;
-	packet[2] = (uint8)nReason;
-	packet[3] = (uint8)(nReason >> 8);
-	packet[4] = (uint8)(nReason >> 16);
-	packet[5] = (uint8)(nReason >> 24);
+#ifdef AVP2_MODERN
+	// fixed: the third byte is defined.
+	packet[2] = 0;
+#endif
 
 	for (i = 0; i < 4; i++)
 		SendTo(m_Socket, packet, sizeof(packet), &((TCPConnection*)pConn)->m_Addr);
@@ -1614,9 +1635,7 @@ void TCPDriver::Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags)
 		}
 
 		m_pNetMgr->CloseConnection(pConn);
-		// The notice carries `flags`, not the `nReason` the trace above
-		// printed: the shipped push is the third parameter's slot.
-		SendDisconnect(pConn, flags);
+		SendDisconnect(pConn);
 
 		m_ConnTable.Remove((TCPConnNode*)&((TCPConnection*)pConn)->m_TableNode);
 		((TCPConnection*)pConn)->Destroy(1);

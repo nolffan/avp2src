@@ -355,15 +355,17 @@ public:
 class CSurfaceQ4055
 {
 public:
-	uint8  m_pad_00[0x3c];
-	uint16 m_nTextureFlags;                  // 0x3c
+	// AVP2: 0x34 (NOLF's was 0x3c; Primal Hunt's 0x00405e4c).
+	uint8  m_pad_00[0x34];
+	uint16 m_nTextureFlags;                  // 0x34
 };
 
 class WorldPolyQ4055
 {
 public:
-	uint8          m_pad_00[0x28];
-	CSurfaceQ4055* m_pSurface;               // 0x28
+	// AVP2: 0x2c (NOLF's was 0x28; Primal Hunt's 0x00405e45).
+	uint8          m_pad_00[0x2c];
+	CSurfaceQ4055* m_pSurface;               // 0x2c
 };
 
 class CClientMgrPolyViewQ4055
@@ -372,8 +374,8 @@ public:
 	uint8            m_pad_00[0x18c];
 	CFileTreeQ4055** m_pFileTrees;           // 0x18c
 	uint32           m_nFileTrees;           // 0x190
-	uint8            m_pad_194[0x150c - 0x194];
-	void*            m_pCurShell;            // 0x150c
+	uint8            m_pad_194[0x161c - 0x194];
+	void*            m_pCurShell;            // 0x161c  (NOLF's 0x150c)
 
 	inline WorldPolyQ4055* FindPoly(uint32 hPoly);
 };
@@ -457,8 +459,8 @@ class CClientMgrShadeViewQ404
 {
 public:
 	uint8  m_pad_00[0xfc];
-	uint8  m_ShadeState[0x150c - 0xfc];      // 0x0fc
-	void*  m_pCurShell;                      // 0x150c
+	uint8  m_ShadeState[0x161c - 0xfc];      // 0x0fc
+	void*  m_pCurShell;                      // 0x161c  (NOLF's 0x150c)
 };
 
 // 0x00405780 -- the client's w_GetPointShade (BLOCK E; the server twin is
@@ -919,8 +921,8 @@ CLTClientQ404* clt_CreateClientQ404(CClientMgr* pClientMgr)
 class CClientMgrLightViewQ404
 {
 public:
-	uint8    m_pad_00[0x768];
-	LTVector m_vGlobalLightScale;            // 0x768
+	uint8    m_pad_00[0x76c];
+	LTVector m_vGlobalLightScale;            // 0x76c  (NOLF's 0x768)
 };
 extern CClientMgrLightViewQ404* g_pClientMgrLightQ404;   // == g_pClientMgr, 0x004b17e0
 

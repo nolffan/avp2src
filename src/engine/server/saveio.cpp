@@ -249,9 +249,12 @@ public:
 	uint8            m_pad_000[0x330];
 	SavFileTreeRec** m_pFileTrees;           // 0x330
 	uint32           m_nFileTrees;           // 0x334
-	uint8            m_pad_338[0x390 - 0x338];
-	uint8            m_Unknown390[4];        // 0x390  the object manager
-	uint8            m_pad_394[0xac4 - 0x394];
+	// AVP2: the object manager is four bytes further in than NOLF's 0x390
+	// (servermgr.h's m_Unknown390): every AvP2 image passes 0x394 (lithtech
+	// 0x0043cb4b `lea 0x394(%edi)`).
+	uint8            m_pad_338[0x394 - 0x338];
+	uint8            m_Unknown390[4];        // 0x394  the object manager
+	uint8            m_pad_398[0xac4 - 0x398];
 	// servermgr.h's types: five of the seven are floats and the arithmetic
 	// at the end of the restore only works out if 0x6b8 and 0x6c0 are.
 	float            m_Unknown6b8;           // 0xac4

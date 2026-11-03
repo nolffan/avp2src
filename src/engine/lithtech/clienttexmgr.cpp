@@ -237,14 +237,21 @@ class CClientMgrTexBankView
 public:
 	// The fields below 0x1110 are read only by tm_MarkUsedTextures
 	// (0x004200f0); see there.
+	//
+	// AVP2: the per-field offsets below are NOLF's. AvP2's and Primal
+	// Hunt's manager is four bytes longer between 0x190 and 0x41c and 0x110
+	// longer between 0x47c and 0x10f0: tm_MarkUsedTextures (Primal Hunt
+	// 0x00428970, AvP2 0x004261d0) walks the lists at 0x420, 0x470, 0x1200,
+	// 0x1210 and 0x1220, the slot table is at 0x12ec/0x12f0 (0x00428df0),
+	// the connection at 0x161c and the file manager at 0x1644 (0x004287d7).
 	uint8              m_pad_00[0x18c];
 	class CWorldBspPairView** m_pWorldBsps;  // 0x18c
 	uint32             m_nWorldBsps;         // 0x190
-	uint8              m_pad_194[0x41c - 0x194];
+	uint8              m_pad_194[0x420 - 0x194];
 	LTList             m_List41c;            // 0x41c  +0x1b8 of each: two textures
 	uint8              m_pad_42c[0x46c - 0x42c];
 	LTList             m_List46c;            // 0x46c  +0x1e8 of each: one texture
-	uint8              m_pad_47c[0x10f0 - 0x47c];
+	uint8              m_pad_47c[0x1200 - 0x480];
 	LTList             m_List10f0;           // 0x10f0 +0xc0 of each: one texture
 	LTList             m_List1100;           // 0x1100 texture groups
 	// Every live SharedTexture, as an LTList: count at 0x1110, head at
@@ -294,12 +301,17 @@ public:
 // +0x30. The same record and the same +0x78/+0x7c pair turn up again at
 // 0x00423c30, which stamps 0xffff into its +0x40, so the stride is confirmed
 // from two independent functions.
+//
+// AVP2: (those were NOLF's numbers) AvP2's and Primal Hunt's record is 0x40
+// bytes with the texture at +0x2c (Primal Hunt 0x00428b25 / 0x00428b36,
+// AvP2 0x00426363 / 0x00426374).
+
 class CSkinView
 {
 public:
-	uint8              m_pad_00[0x30];
-	SharedTextureView* m_pTexture;           // 0x30
-	uint8              m_pad_34[0x48 - 0x34];
+	uint8              m_pad_00[0x2c];
+	SharedTextureView* m_pTexture;           // 0x2c
+	uint8              m_pad_30[0x40 - 0x30];
 };
 
 class CSkinOwnerView
@@ -448,6 +460,18 @@ void tm_MarkTexture(SharedTextureView* pTexture)
 // shipped one exactly: &m_Head hoisted into a register once, m_pNext loaded
 // from 0x1118 before the loop, and `andw $0x7fff,0x32(%ecx)` for the store,
 // which is the same one-bit field cleared instead of set.
+//
+// NEAR (37 of 37 bytes) in BOTH images: the store is `movw $0x0,0x32(%edx)`
+// -- the WHOLE word, reference count included -- in Primal Hunt (0x00428957)
+// and AvP2 (0x004261b7) alike, where ours is the one-bit `andw $0x7fff`, and
+// the extra temp that costs moves the head from %ecx to %edx. Both images'
+// mark (`orb $0x80,0x33`), sweep (`testb $0x80,0x33`) and reference test
+// (`test $0x7fff`) are the bitfield's, so it is only this store that
+// differs; clearing m_nRefCount and m_bMarked as two statements does not
+// merge into one word store (two `andw`s, 46 bytes). The source must write
+// a 16-bit lvalue overlaying the pair, which SharedTexture's view here does
+// not have -- and doing so zeroes every live texture's reference count each
+// sweep (a probable retail bug).
 void tm_UnmarkTextures(CClientMgrTexBankView* pClientMgr)
 {
 	LTLink* pCur;
@@ -486,8 +510,20 @@ void tm_FreeTexture(CClientMgrTexBankView* pClientMgr, SharedTextureView* pTextu
 
 	pTexture->~SharedTextureView();
 
-	pTexture->m_BankLink.m_pNextFree = pClientMgr->m_TextureBank.m_pFreeList;
-	pClientMgr->m_TextureBank.m_pFreeList = pTexture;
+	// AVP2: the push is guarded -- AvP2 null-tests the bank's address
+	// (0x004260d2).
+	CTextureBankView* pBank = &pClientMgr->m_TextureBank;
+
+#ifdef PRIMAL_HUNT
+	// PH: Primal Hunt tests the texture first as well (0x0042887c).
+	if (pTexture && pBank)
+#else
+	if (pBank)
+#endif
+	{
+		pTexture->m_BankLink.m_pNextFree = pBank->m_pFreeList;
+		pBank->m_pFreeList = pTexture;
+	}
 }
 
 // 0x00420020 -- the whole cache away. The next link is taken before the
@@ -650,18 +686,28 @@ public:
 	CSkinOwnerView* m_pWorldBsp;             // 0x08  may be null
 };
 
+//
+// AVP2: (the names are NOLF's offsets) in AvP2 and Primal Hunt the first
+// owner has four textures at +0x1c0 -- a counted loop, `mov $0x4` at AvP2
+// 0x004262a4 and Primal Hunt 0x00428a49 -- and the second its texture at
+// +0x1f0 (AvP2 0x00426300).
 class CTexOwner1b8View
 {
 public:
-	uint8              m_pad_00[0x1b8];
-	SharedTextureView* m_pTextures[2];       // 0x1b8
+	uint8              m_pad_00[0x1c0];
+	SharedTextureView* m_pTextures[4];       // 0x1c0
+#ifdef PRIMAL_HUNT
+	// PH: and a fifth at +0x1d0, marked after the four (0x00428a65); AvP2's
+	// walk has no such load.
+	SharedTextureView* m_pTexture1d0;        // 0x1d0
+#endif
 };
 
 class CTexOwner1e8View
 {
 public:
-	uint8              m_pad_00[0x1e8];
-	SharedTextureView* m_pTexture;           // 0x1e8
+	uint8              m_pad_00[0x1f0];
+	SharedTextureView* m_pTexture;           // 0x1f0
 };
 
 class CTexOwnerC0View
@@ -686,9 +732,12 @@ class RenderStruct
 public:
 	uint8              m_pad_00[0x44];
 	int                m_bInited;                        // 0x044  0x004b439c
-	uint8              m_pad_48[0x104 - 0x48];
-	SharedTextureView* m_pEnvMapTexture;                 // 0x104  0x004b445c
-	CPanInfoT          m_GlobalPanInfo[2];               // 0x108  0x004b4460
+	// AVP2: (the addresses are NOLF's) AvP2's and Primal Hunt's struct is
+	// eight bytes longer ahead of the environment map (+0x10c: Primal Hunt
+	// 0x004f5b54, AvP2 0x004e4994) and the pan info (+0x110).
+	uint8              m_pad_48[0x10c - 0x48];
+	SharedTextureView* m_pEnvMapTexture;                 // 0x10c
+	CPanInfoT          m_GlobalPanInfo[2];               // 0x110
 };
 extern RenderStruct g_RenderStruct;                         // 0x004b4358
 
@@ -742,8 +791,12 @@ void tm_MarkUsedTextures(CClientMgrTexBankView* pClientMgr)
 	{
 		pOwner = (CTexOwner1b8View*)pCur->m_pData;
 
-		for (j = 0; j < 2; j++)
+		for (j = 0; j < 4; j++)
 			tm_MarkTexture(pOwner->m_pTextures[j]);
+
+#ifdef PRIMAL_HUNT
+		tm_MarkTexture(pOwner->m_pTexture1d0);
+#endif
 	}
 
 	pHead = &pClientMgr->m_List1100.m_Head;
@@ -882,13 +935,23 @@ public:
 // The object, as far as the warning reads it: the type byte at +0xbc -- a
 // SIGNED char, the second arm widens it with `movsbl` for the %d -- and
 // CClientModel::m_pModel at +0x1dc (clientmgr.h).
+//
+// AVP2: (0x1dc is NOLF's) AvP2's object has the model at +0x1f8 (0x004266e7)
+// -- its four skins run to +0x1d0.
+//
+// PH: Primal Hunt's is four bytes further on, +0x1fc (0x00428ec7), behind
+// the extra texture at +0x1d0.
 class CDimsObjectView
 {
 public:
 	uint8           m_pad_000[0xbc];
 	char            m_Type;                  // 0x0bc
-	uint8           m_pad_0bd[0x1dc - 0xbd];
-	CDimsModelView* m_pModel;                // 0x1dc
+#ifdef PRIMAL_HUNT
+	uint8           m_pad_0bd[0x1fc - 0xbd];
+#else
+	uint8           m_pad_0bd[0x1f8 - 0xbd];
+#endif
+	CDimsModelView* m_pModel;                // 0x1f8 (PH 0x1fc)
 };
 
 extern int g_DebugLevel;                                   // 0x004b0ab0
@@ -987,12 +1050,15 @@ void wm_RotateWorldModelT(WMMoveStateT* pState, LTRotation* pRotation,
 void cm_SetObjectPos(CClientMgrObjView* pClientMgr, CObjSetView* pObj,
                      LTVector* pPos, int bForce)
 {
-	// The difference written out, not ltvector.h's DistSqr: DistSqr's
-	// (*this - vec) reorders the three squares (zz+xx+yy against shipped's
-	// zz+yy+xx).
+	// The difference named and its square written out, not ltvector.h's
+	// DistSqr or (a - b).MagSqr(): both emit the three squares as zz, xx, yy
+	// where the shipped code has zz, yy, xx -- which is what the flat sum on
+	// a named difference gives.
 	if (!bForce)
 	{
-		if ((pObj->m_Pos - *pPos).MagSqr() < 0.001f)
+		LTVector vDiff = pObj->m_Pos - *pPos;
+
+		if (vDiff.x * vDiff.x + vDiff.y * vDiff.y + vDiff.z * vDiff.z < 0.001f)
 			return;
 	}
 

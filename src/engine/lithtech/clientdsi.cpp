@@ -266,14 +266,20 @@ struct CPolyVertQ407
 	uint8     m_pad_04[0x18 - 0x04];
 };
 
+//
+// AVP2: (those offsets are NOLF's) AvP2's and Primal Hunt's poly is four
+// bytes longer ahead of all three -- the next poly at +0x44, the count at
+// +0x54 and the vertices from +0x58 (Primal Hunt 0x00408ba8, 0x00408af7,
+// 0x00408b0d) -- and its surface's first poly is at +0x38, not +0x40
+// (0x00408ad7).
 struct CPolyQ407
 {
-	uint8         m_pad_00[0x40];
-	uint16        m_iNextPoly;               // 0x40  0xffff ends the chain
-	uint8         m_pad_42[0x50 - 0x42];
-	uint16        m_nVerts;                  // 0x50
-	uint8         m_pad_52[0x54 - 0x52];
-	CPolyVertQ407 m_Verts[1];                // 0x54
+	uint8         m_pad_00[0x44];
+	uint16        m_iNextPoly;               // 0x44  0xffff ends the chain
+	uint8         m_pad_46[0x54 - 0x46];
+	uint16        m_nVerts;                  // 0x54
+	uint8         m_pad_56[0x58 - 0x56];
+	CPolyVertQ407 m_Verts[1];                // 0x58
 };
 
 struct CWorldBspQ407
@@ -284,8 +290,8 @@ struct CWorldBspQ407
 
 struct CSurfaceQ407
 {
-	uint8  m_pad_00[0x40];
-	uint16 m_iFirstPoly;                     // 0x40  0xffff: no polies
+	uint8  m_pad_00[0x38];
+	uint16 m_iFirstPoly;                     // 0x38  0xffff: no polies
 };
 
 // g_pClientMgr, as far as this function reads it.
@@ -294,8 +300,9 @@ class CClientMgrQ407
 public:
 	uint8 m_pad_0000[0x1cc];
 	void* m_pUnknown1cc;                     // 0x1cc  (tested only)
-	uint8 m_pad_01d0[0x150c - 0x1d0];
-	void* m_pConnection;                     // 0x150c (clientmgr.h's name)
+	// AVP2: the connection is at +0x161c in both (Primal Hunt 0x00408a76).
+	uint8 m_pad_01d0[0x161c - 0x1d0];
+	void* m_pConnection;                     // 0x161c (clientmgr.h's name)
 };
 
 extern CClientMgrQ407* g_pClientMgrQ407;     // 0x004b17e0
@@ -354,8 +361,9 @@ class CClientMgrQ42D;
 class CClientMgrQ42D
 {
 public:
-	uint8 m_pad_0000[0x1534];
-	void* m_pFileMgr;                        // 0x1534
+	// AVP2: +0x1644 in both (0x1534 is NOLF's; Primal Hunt 0x004384de).
+	uint8 m_pad_0000[0x1644];
+	void* m_pFileMgr;                        // 0x1644
 };
 
 extern CClientMgrQ42D* g_pClientMgrQ42D;     // 0x004b17e0
@@ -505,8 +513,11 @@ public:
 	// why `this` is pushed LAST.
 	LTRESULT SetupError(LTRESULT dResult, ...);         // 0x0041fc60
 
-	uint8  m_pad_0000[0x4c0];
-	void*  m_p4c0;                           // 0x4c0
+	// AVP2: in both images everything here is four bytes further on than
+	// NOLF -- +0x4c4 and +0x614..+0x620 (Primal Hunt 0x00438764,
+	// 0x004385f8..0x00438772).
+	uint8  m_pad_0000[0x4c4];
+	void*  m_p4c0;                           // 0x4c4 (NOLF's 0x4c0; so on below)
 	uint8  m_pad_04c4[0x610 - 0x4c4];
 	void*  m_hResModule;                     // 0x610
 	void*  m_hLocResModule;                  // 0x614
@@ -1433,11 +1444,13 @@ SurfaceEffectData* sub_42efa0(SurfaceData* pSurfaceData, int nParseOrigin,
 // The engine-side Surface behind SurfaceData::m_pInternalSurface.  Only the
 // word at +0x42 is reached from this block: Portal writes an id into it and
 // Mirror writes 0x7ffe and then sets the top bit.
+//
+// AVP2: AvP2's and Primal Hunt's word is at +0x3a (0x004392d4, 0x004392f6).
 class SurfaceView
 {
 public:
-	uint8  m_pad_00[0x42];
-	uint16 m_nUnknown42;                     // 0x42
+	uint8  m_pad_00[0x3a];
+	uint16 m_nUnknown42;                     // 0x3a
 };
 
 // 0x00422180 -- 104 bytes.  The world's name lookup Portal resolves argv[0]
@@ -1508,17 +1521,18 @@ void ci_DeleteColor(uint32 hColor);                                  // 0x004044
 #define sub_404470 ((void (*)(void*))ci_DeleteColor)
 
 // The three animated Update slots, all written below.
-extern "C" int  sub_42f120(SurfaceData* pSurfaceData, void* pData);  // 0x0042f120
-extern "C" int  sub_42f2e0(SurfaceData* pSurfaceData, void* pData);  // 0x0042f2e0
-extern "C" int  sub_42f4d0(SurfaceData* pSurfaceData, void* pData);  // 0x0042f4d0
+extern "C" void sub_42f120(SurfaceData* pSurfaceData, void* pData);  // 0x0042f120
+extern "C" void sub_42f2e0(SurfaceData* pSurfaceData, void* pData);  // 0x0042f2e0
+extern "C" void sub_42f4d0(SurfaceData* pSurfaceData, void* pData);  // 0x0042f4d0
 
 // g_pClientMgr (0x004b17e0; clientmgr.h names it) -- only the frame time at
 // +0x1258 is read here, with `flds`, so it is a float.
 class CClientMgrFrameView
 {
 public:
-	uint8  m_pad_00[0x1258];
-	float  m_FrameTime;                      // 0x1258
+	// AVP2: +0x1368 in both (0x1258 is NOLF's; 0x004398be).
+	uint8  m_pad_00[0x1368];
+	float  m_FrameTime;                      // 0x1368
 };
 
 extern CClientMgrFrameView* g_pClientMgr;    // 0x004b17e0
@@ -1736,12 +1750,12 @@ void* sub_42f470(SurfaceData* pSurfaceData, int argc, char** argv)
 }
 
 
-// 0x0042f120 -- 217 bytes.  "Pan" UpdateEffect.  Both accumulators advance
+// 0x0042f120 -- 212 bytes.  "Pan" UpdateEffect.  Both accumulators advance
 // by frame time times their rate (g_pClientMgr is re-read for the second:
 // the first float store could alias it), then the surface origin is rebuilt
 // from the two axes and the original origin -- three separate stores to O,
 // so three statements.
-extern "C" int sub_42f120(SurfaceData* pSurfaceData, void* pVoid)
+extern "C" void sub_42f120(SurfaceData* pSurfaceData, void* pVoid)
 {
 	SurfaceEffectData* pData = (SurfaceEffectData*)pVoid;
 
@@ -1751,18 +1765,16 @@ extern "C" int sub_42f120(SurfaceData* pSurfaceData, void* pVoid)
 	pSurfaceData->O  = pSurfaceData->P * pData->m_fUnknown38;
 	pSurfaceData->O += pSurfaceData->Q * pData->m_fUnknown3c;
 	pSurfaceData->O += pData->m_O;
-
-	return 1;
 }
 
-// 0x0042f2e0 -- 383 bytes.  "Rotate" UpdateEffect.  The accumulator at
+// 0x0042f2e0 -- 378 bytes.  "Rotate" UpdateEffect.  The accumulator at
 // +0x34 advances by frame time times the rate, then ltmatrix.h's
 // Mat_SetupRot builds the rotation about m_vAxis (its nine stores land in a
 // 0x40-byte LTMatrix at 0x10(%esp) in the SDK's column-by-column order;
 // the identity fill is dead and dropped) and MatVMul_3x3 rotates the
 // original P and Q into the SURFACE's P and Q (%ecx is pSurfaceData, not
 // g_pClientMgr as the older note below had it).
-extern "C" int sub_42f2e0(SurfaceData* pSurfaceData, void* pVoid)
+extern "C" void sub_42f2e0(SurfaceData* pSurfaceData, void* pVoid)
 {
 	SurfaceEffectData* pData = (SurfaceEffectData*)pVoid;
 	LTMatrix           mat;
@@ -1772,15 +1784,13 @@ extern "C" int sub_42f2e0(SurfaceData* pSurfaceData, void* pVoid)
 	Mat_SetupRot(&mat, &pData->m_vAxis, pData->m_fUnknown34);
 	MatVMul_3x3(&pSurfaceData->P, &mat, &pData->m_P);
 	MatVMul_3x3(&pSurfaceData->Q, &mat, &pData->m_Q);
-
-	return 1;
 }
 
-// 0x0042f4d0 -- 191 bytes.  "Warble" UpdateEffect.  Same two accumulators;
+// 0x0042f4d0 -- 186 bytes.  "Warble" UpdateEffect.  Same two accumulators;
 // then P is the original P scaled by cos(+0x38) + 1.2f (0x004a22b8) and Q
 // the original Q scaled by sin(+0x3c) + 1.3f (0x004a22b4).  `fadds` against
 // a 4-byte constant says the sum is float.
-extern "C" int sub_42f4d0(SurfaceData* pSurfaceData, void* pVoid)
+extern "C" void sub_42f4d0(SurfaceData* pSurfaceData, void* pVoid)
 {
 	SurfaceEffectData* pData = (SurfaceEffectData*)pVoid;
 	float              fScaleP;
@@ -1794,8 +1804,6 @@ extern "C" int sub_42f4d0(SurfaceData* pSurfaceData, void* pVoid)
 
 	pSurfaceData->P = pData->m_P * fScaleP;
 	pSurfaceData->Q = pData->m_Q * fScaleQ;
-
-	return 1;
 }
 
 
@@ -1834,15 +1842,16 @@ void sub_42f210(void* pData)
 // bytes of a data object are not what verification checks, but the array's
 // address and its 0x50-byte length ARE what the loop's two immediates are.
 // AVP2: AvP2's SDK has UpdateEffect return nothing (NOLF's returned whether
-// the surface changed). Provisional: the update functions keep NOLF's int
-// and are cast here, until Primal Hunt's own show whether they still return
-// one.
+// the surface changed), and so do the three update functions here: both
+// AvP2's Warble and Primal Hunt's (0x004398b0) end without NOLF's `mov
+// $0x1,%eax`. Only the shared Portal/Mirror slot, lt2new3.cpp's int, still
+// needs the cast.
 #define AVP2_UPDATEFX(fn) ((void (*)(SurfaceData*, void*))(fn))
 static SurfaceEffectDesc g_BuiltInSurfaceEffects[5] =
 {
-	{ "Pan",    sub_42ef50, AVP2_UPDATEFX(sub_42f120), sub_42f200 },
-	{ "Rotate", sub_42f220, AVP2_UPDATEFX(sub_42f2e0), sub_42f460 },
-	{ "Warble", sub_42f470, AVP2_UPDATEFX(sub_42f4d0), sub_42f590 },
+	{ "Pan",    sub_42ef50, sub_42f120,               sub_42f200 },
+	{ "Rotate", sub_42f220, sub_42f2e0,               sub_42f460 },
+	{ "Warble", sub_42f470, sub_42f4d0,               sub_42f590 },
 	{ "Portal", sub_42eec0, AVP2_UPDATEFX(sub_463d20), sub_404470 },
 	{ "Mirror", sub_42ef00, AVP2_UPDATEFX(sub_463d20), sub_404470 },
 };
@@ -1974,11 +1983,12 @@ public:
 	CList11d8Node* m_pNext;                  // 0x0c
 };
 
+// AVP2: the list is at +0x12e8 in both (0x11d8 is NOLF's; 0x004399b4).
 class CClientMgrView
 {
 public:
-	uint8          m_pad_00[0x11d8];
-	CList11d8Node* m_pList11d8;              // 0x11d8
+	uint8          m_pad_00[0x12e8];
+	CList11d8Node* m_pList11d8;              // 0x12e8
 };
 
 void sub_42f5d0(CClientMgrView* pClientMgr)

@@ -256,6 +256,9 @@ class CClientParticleSystemQ45C
 {
 public:
 	uint8               m_pad_00[0x18c];     // 0x000
+	// AVP2: as Primal Hunt (PH addresses) -- the object is eight bytes longer below here (fntdraw.cpp: m_Pos
+	// at +0x194; 0x0047007b reads the centre at +0x220).
+	uint8 m_padExtra[8];
 	LTVector            m_Pos;               // 0x18c
 	uint8               m_pad_198[0x1a8 - 0x198];
 	CClientParticleQ45C m_ParticleTail;      // 0x1a8  (m_pNext at 0x1c8)

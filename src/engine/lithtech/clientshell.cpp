@@ -430,6 +430,8 @@ public:
 	virtual void PostUpdate()=0;                                // 0x38
 	virtual void _p3c()=0; virtual void _p40()=0; virtual void _p44()=0;
 	virtual void _p48()=0;
+	// AVP2: as Primal Hunt (PH addresses) -- two more slots before this one (0x00493992 calls +0x54).
+	virtual void _pX4c()=0; virtual void _pX50()=0;
 	// (1, 0) from CClientShell's disconnect notification.
 	virtual void OnEvent(uint32 nEvent, uint32 nParam)=0;       // 0x4c
 };
@@ -548,12 +550,18 @@ public:
 	// The chain 0x00413b40 walks; it follows +0x10 to null.
 	CRecF4*          m_pChainF4;                  // 0x0000f4
 	uint8            m_pad_00f8[0x50c - 0x0f8];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (the net manager is at
+	// +0x510, the shell at +0x620: 0x00493981).
+	uint8 m_padExtra0f8[4];
 	CNetMgrView      m_NetMgr;                    // 0x00050c  (clientmgr2.cpp)
 	uint8            m_pad_0610[0x61c - 0x610];
 	IClientShellView* m_pClientShell;             // 0x00061c  (clientmgr.h)
 	// clientrender.cpp: the 0x12c-byte string SetupError formats into.
 	char             m_ErrorString[0x12c];        // 0x000620
 	uint8            m_pad_074c[0x1120 - 0x74c];
+	// AVP2: as Primal Hunt (PH addresses) -- and the sound manager is 0x10c longer, so all of what follows sits
+	// 0x110 further in.
+	uint8 m_padExtra74c[0x10c];
 	// Reached only by sb_Free's inline expansion in CClientShell::Term:
 	// `add $0x1120,%ecx` and then the bank's +0x18 free list.
 	StructBankView   m_Bank1120;                  // 0x001120

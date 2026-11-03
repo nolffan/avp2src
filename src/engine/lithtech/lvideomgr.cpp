@@ -314,8 +314,10 @@ class CVideoPolyV;
 class WorldPolyV
 {
 public:
-	unsigned char m_pad_00[0x28];
-	CVideoPolyV*  m_pSurface;                // 0x28
+	// +0x2c in AvP2 1.0.9.6 and Primal Hunt (NOLF's +0x28): 0x00406f9c,
+	// 0x00408c4e, 0x00408d0a.
+	unsigned char m_pad_00[0x2c];
+	CVideoPolyV*  m_pSurface;                // 0x2c
 };
 
 // The thing hanging off world-model +0x04 that turns an HPOLY into a poly
@@ -384,10 +386,14 @@ public:
 	unsigned char  m_pad_000[0x18c];
 	CWorldModelV** m_pWorldModels;           // 0x018c
 	uint32         m_nWorldModels;           // 0x0190
-	unsigned char  m_pad_194[0x150c - 0x194];
-	void*          m_pConnection;            // 0x150c
-	unsigned char  m_pad_1510[0x1610 - 0x1510];
-	VideoMgrBaseV* m_pVideoMgr;              // 0x1610
+	// AvP2 1.0.9.6's and Primal Hunt's client manager is 0x110 bytes
+	// longer than NOLF's ahead of these two: the connection is read at
+	// 0x161c (0x00406f69, 0x00408c15) and the driver at 0x1720 by all four
+	// forwarders.
+	unsigned char  m_pad_194[0x161c - 0x194];
+	void*          m_pConnection;            // 0x161c
+	unsigned char  m_pad_1620[0x1720 - 0x1620];
+	VideoMgrBaseV* m_pVideoMgr;              // 0x1720
 };
 
 
@@ -778,9 +784,10 @@ LTRESULT LVideoMgrV::BindTextureVideoToPoly(HVIDEOV hVideo, HPOLY hPoly)
 
 struct CPolySurfaceV
 {
-	unsigned char m_pad_00[0x38];
-	uint32        m_Flags;                   // 0x38
-	unsigned short m_TextureFlags;           // 0x3c (ci_GetPolyTextureFlags)
+	// Eight bytes earlier than NOLF's (0x00408c53, 0x00408d11).
+	unsigned char m_pad_00[0x30];
+	uint32        m_Flags;                   // 0x30
+	unsigned short m_TextureFlags;           // 0x34 (ci_GetPolyTextureFlags)
 };
 
 extern CClientMgrVideoViewV* g_pClientMgrV;  // 0x004b17e0 (clientmgr.h's g_pClientMgr)

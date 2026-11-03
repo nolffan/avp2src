@@ -1145,8 +1145,10 @@ long __stdcall dm_SetSearchDirectory(IDirectMusicLoader8* pLoader, const DMGUID&
 
 
 // --------------------------------------------------------------------- //
-// CLTDirectMusicMgr, exactly clientmusic.h's layout.  Only the members and
-// methods this file touches are spelled out; the rest keeps its offsets.
+// CLTDirectMusicMgr, clientmusic.h's layout as far as 0x68 and then the
+// longer one Primal Hunt and AvP2 1.0.9.6 both ship (see below).  Only the
+// members and methods this file touches are spelled out; the rest keeps its
+// offsets.
 // --------------------------------------------------------------------- //
 
 class CLTDirectMusicMgr : public ILTDirectMusicMgr
@@ -1213,36 +1215,41 @@ public:
 	CDMBandList       m_BandList;            // 0x050
 	CDMStyleDefListQ440 m_StyleDefs;         // 0x058  (clientmusic.h: m_Unknown58List)
 	CDMUnknown60List  m_DLSBankList;         // 0x060  (clientmusic.h: m_Unknown60List)
-	uint8  m_pad_068[0x84 - 0x68];           // 0x068
-	// 0x0043fafb `lea ebp,[ebx+0x84]`, the argument to every
-	// Enter/Leave/DeleteCriticalSection in Term.  clientmusic.h agrees.
-	uint8  m_CriticalSection[0x9c - 0x84];   // 0x084
-	int    m_nCurIntensity;                  // 0x09c
-	int    m_nNumIntensities;                // 0x0a0
-	int    m_nInitialIntensity;              // 0x0a4
-	int    m_nInitialVolume;                 // 0x0a8
-	int    m_nNumPChannels;                  // 0x0ac
-	int    m_nNumVoices;                     // 0x0b0
-	int    m_nSynthSampleRate;               // 0x0b4
+	// Sixteen bytes more of lists ahead of the lock than clientmusic.h
+	// has: TermLevel (0x0044c3a0) stops three playing lists, at 0x7c, 0x84
+	// and 0x8c, and takes the lock at 0x94, as AvP2 1.0.9.6's does.  Every
+	// offset from here on is 0x10 past clientmusic.h's, until VOLUMEOFFSET's
+	// word adds four more.
+	uint8  m_pad_068[0x94 - 0x68];           // 0x068
+	uint8  m_CriticalSection[0xac - 0x94];   // 0x094
+	int    m_nCurIntensity;                  // 0x0ac
+	int    m_nNumIntensities;                // 0x0b0
+	int    m_nInitialIntensity;              // 0x0b4
+	int    m_nInitialVolume;                 // 0x0b8
+	// The control file's VOLUMEOFFSET key, which InitLevel (0x0044c07a)
+	// reads straight after INITIALVOLUME, into 0xbc (name ours).
+	int    m_nVolumeOffset;                  // 0x0bc
+	int    m_nNumPChannels;                  // 0x0c0
+	int    m_nNumVoices;                     // 0x0c4
+	int    m_nSynthSampleRate;               // 0x0c8
 	// clientmusic.h's level arrays and the two directory strings.
-	CDMIntensity*  m_aIntensities;           // 0x0b8
-	int            m_nNumTransitions;        // 0x0bc
-	CDMTransition* m_aTransitions;           // 0x0c0
-	char*  m_pUnknownC4;                     // 0x0c4
-	char*  m_pUnknownC8;                     // 0x0c8
+	CDMIntensity*  m_aIntensities;           // 0x0cc
+	int            m_nNumTransitions;        // 0x0d0
+	CDMTransition* m_aTransitions;           // 0x0d4
+	char*  m_pUnknownC4;                     // 0x0d8  (clientmusic.h: 0xc4)
+	char*  m_pUnknownC8;                     // 0x0dc  (clientmusic.h: 0xc8)
 	// Init copies GUID_NOTIFICATION_SEGMENT here and registers it, then
 	// hands the performance a fresh event (0x0043f9a7, 0x0043f9e9).
-	DMGUID m_guidNotifyTypeQ440;             // 0x0cc
-	void*  m_hNotifyEventQ440;               // 0x0dc
-	// Past 0xcc, which is where clientmusic.h's declaration stops -- these
-	// two are new here and named from what Init and Term do with them.
-	// 0x0043f9fd clears the flag, 0x0043fb0a sets it under the lock, and
-	// 0x0043faaa stores the thread starter's answer (names ours).
-	int    m_bQuitQ440;                      // 0x0e0
-	void*  m_hThreadQ440;                    // 0x0e4
+	DMGUID m_guidNotifyTypeQ440;             // 0x0e0
+	void*  m_hNotifyEventQ440;               // 0x0f0
+	// Named from what Init and Term do with them.  0x0043f9fd clears the
+	// flag, 0x0043fb0a sets it under the lock, and 0x0043faaa stores the
+	// thread starter's answer (names ours).
+	int    m_bQuitQ440;                      // 0x0f4
+	void*  m_hThreadQ440;                    // 0x0f8
 	// ReadReverbParameters' REVERB key: cleared at 0x004425d9, set to 1 at
 	// 0x0044261f when the key says ON, tested at 0x00442693 (name ours).
-	LTBOOL m_bReverbOnQ440;                  // 0x0e8
+	LTBOOL m_bReverbOnQ440;                  // 0x0fc
 
 	// 0x004426c0: clientmusic.h's Unknown4426c0 (TermLevel calls it at
 	// clientmusic.cpp's TermLevel); the name is kept so the two views agree.
@@ -2574,7 +2581,7 @@ void CLTDirectMusicMgr::EnactTypeToString(LTDMEnactTypes nType, char* sName)
 }
 
 // 0x00442790: the other direction, a chain of case-insensitive compares in
-// the order the shipped bytes make them.  Both spellings of the immediate
+// the order the shipped bytes make them.  All three spellings of the immediate
 // type are accepted, and the four short spellings come after the four long
 // ones.  The last one is the `neg/sbb/and $0xfa/add $6` at 0x004428d1 - the
 // final `if` and the final `return LTDMEnactInvalid` folded into arithmetic.
@@ -2590,6 +2597,9 @@ LTDMEnactTypes CLTDirectMusicMgr::StringToEnactType(const char* sName)
 		return LTDMEnactDefault;
 
 	if (_stricmp(sName, "Immediatly") == 0)
+		return LTDMEnactImmediatly;
+
+	if (_stricmp(sName, "Immediately") == 0)
 		return LTDMEnactImmediatly;
 
 	if (_stricmp(sName, "Immediate") == 0)

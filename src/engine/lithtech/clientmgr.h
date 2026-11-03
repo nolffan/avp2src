@@ -38,7 +38,7 @@
 #define MIN_FOV (MATH_PI / 100.0f)
 #define MAX_FOV ((MATH_PI * 2.0f) - MIN_FOV)
 
-// The object at CClientMgr+0x150c. Only the fields the interface functions
+// The object at CClientMgr+0x161c. Only the fields the interface functions
 // have needed so far are known.
 class CClientConnection
 {
@@ -52,7 +52,11 @@ public:
 	float  m_fFrameTime;                     // 0x01c  GetGameFrameTime
 	uint8  m_pad_20[0x38 - 0x20];
 	uint16 m_nLocalID;                       // 0x038  GetLocalClientID
-	uint8  m_pad_3a[0x84 - 0x3a];
+	uint8  m_pad_3a[0x40 - 0x3a];
+	// The local server, null on a remote connection: SetGameInfo refuses
+	// with LT_CANTCREATESERVER without one (PH 0x00409827).
+	class CServerMgr* m_pServerMgr;          // 0x040
+	uint8  m_pad_44[0x84 - 0x44];
 	int    m_nGameMode;                      // 0x084  GetGameMode
 };
 
@@ -148,50 +152,59 @@ public:
 	// What the physics mover wants beside the world; the server manager keeps
 	// the same thing at 0x6a8.
 	class CUnknown6A8Obj* m_pUnknown508;      // 0x508
+	// AVP2: four bytes NOLF's manager had not before the net manager: both
+	// retail exes' service-list calls are a thiscall on g_pClientMgr+0x510.
+	uint8              m_pad_50c[0x510 - 0x50c];
 	// The same CNetMgr the server has, as a sub-object rather than behind a
-	// pointer: the service-list calls are a thiscall on g_pClientMgr+0x50c.
-	CNetMgr            m_NetMgr;              // 0x50c
-	uint8              m_pad_610[0x61c - (0x50c + 0x104)];
+	// pointer.
+	CNetMgr            m_NetMgr;              // 0x510
+	uint8              m_pad_614[0x620 - (0x510 + 0x104)];
 	// The game DLL's own interface, called back into from the middle of the
 	// engine's work: ci_PlaySound reports every sound it starts.
-	IClientShell*      m_pClientShell;        // 0x61c
-	uint8              m_pad_620[0x768 - 0x620];
-	LTVector           m_vGlobalLightScale;   // 0x768
+	IClientShell*      m_pClientShell;        // 0x620
+	uint8              m_pad_624[0x76c - 0x624];
+	LTVector           m_vGlobalLightScale;   // 0x76c  PH 0x0040b8f0 reads it
+	// AVP2: the SDK's global vertex tint, which NOLF's manager has not; the
+	// three ILTClient calls at slots 0x254..0x25c (PH 0x0040b680..) read and
+	// clamp it to [0, 1].
+	LTVector           m_vGlobalVertexTint;   // 0x778
 	// The client's ILTSoundMgr lives inside the manager, not behind a
-	// pointer: ci_GetSoundMgr is `g_pClientMgr + 0x774`, and the two calls
+	// pointer: ci_GetSoundMgr is `g_pClientMgr + 0x784`, and the two calls
 	// through it land on vtable slots 0x5c and 0x60, which are ILTSoundMgr's
 	// PauseSounds and ResumeSounds — counted across iltsoundmgr.h, whose
 	// ILTClientSoundMgr continues ILTSoundMgr's vtable. Its own layout is not
 	// known yet, so only the vptr is modelled.
-	uint8              m_SoundMgr[4];         // 0x774
-	uint8              m_pad_778[0xf84 - 0x778];
+	uint8              m_SoundMgr[4];         // 0x784
+	// AVP2: 0x100 bytes more between the two managers than NOLF's: both
+	// retail ci_GetMusicMgr return g_pClientMgr+0x1094 (PH 0x00410990).
+	uint8              m_pad_788[0x1094 - 0x788];
 	// The music manager is another sub-object. NOLF1's ILTDirectMusicMgr does
 	// not share the NOLF2-era iltdirectmusic.h's vtable order, so only the
 	// vptr is modelled here too.
-	uint8              m_MusicMgr[4];         // 0xf84  see CClientMusicMgr
-	uint8              m_pad_f88[0x11a0 - 0xf88];
-	SkyDef             m_SkyDef;              // 0x11a0  forty-eight bytes, copied
+	uint8              m_MusicMgr[4];         // 0x1094  see CClientMusicMgr
+	uint8              m_pad_1098[0x12b0 - 0x1098];
+	SkyDef             m_SkyDef;              // 0x12b0  forty-eight bytes, copied
 	                                          //         out whole by GetSkyDef
-	uint8              m_pad_11d0[0x12ac - (0x11a0 + 48)];
+	uint8              m_pad_12e0[0x13bc - (0x12b0 + 48)];
 	// Two rows of command state - the index that follows leaves room for
 	// exactly two - with the live row selected by that index.
-	char               m_CommandOn[2][MAX_COMMANDS];  // 0x12ac
-	uint8              m_pad_14aa[0x14ac - (0x12ac + 2 * MAX_COMMANDS)];
-	int                m_nCurCommandSet;      // 0x14ac
-	uint8              m_pad_14b0[0x14fc - 0x14b0];
-	LTFLOAT            m_fAxisOffsets[3];     // 0x14fc
-	CClientInput*      m_pInput;              // 0x1508
-	CClientConnection* m_pConnection;         // 0x150c
-	uint8              m_pad_1510[0x151c - 0x1510];
-	LTBOOL             m_bInputEnabled;       // 0x151c  SetInputState
-	LTBOOL             m_bTrackingDevices;    // 0x1520  set by StartDeviceTrack,
+	char               m_CommandOn[2][MAX_COMMANDS];  // 0x13bc
+	uint8              m_pad_15ba[0x15bc - (0x13bc + 2 * MAX_COMMANDS)];
+	int                m_nCurCommandSet;      // 0x15bc
+	uint8              m_pad_15c0[0x160c - 0x15c0];
+	LTFLOAT            m_fAxisOffsets[3];     // 0x160c
+	CClientInput*      m_pInput;              // 0x1618
+	CClientConnection* m_pConnection;         // 0x161c
+	uint8              m_pad_1620[0x162c - 0x1620];
+	LTBOOL             m_bInputEnabled;       // 0x162c  SetInputState
+	LTBOOL             m_bTrackingDevices;    // 0x1630  set by StartDeviceTrack,
 	                                          //         cleared by EndDeviceTrack,
 	                                          //         and required by TrackDevice
-	ModelHookFn        m_ModelHookFn;         // 0x1524
-	void*              m_pModelHookUser;      // 0x1528
-	uint8              m_pad_152c[0x1534 - 0x152c];
+	ModelHookFn        m_ModelHookFn;         // 0x1634
+	void*              m_pModelHookUser;      // 0x1638
+	uint8              m_pad_163c[0x1644 - 0x163c];
 	// A pointer, where the server holds its file manager inline.
-	CFileMgr*          m_pFileMgr;            // 0x1534
+	CFileMgr*          m_pFileMgr;            // 0x1644
 
 	LTRESULT ClearInput();                    // 0x00410900
 	LTRESULT StartGame(StartGameRequest* pRequest);   // 0x0040fd90
@@ -210,7 +223,7 @@ extern CClientMgr* g_pClientMgr;             // 0x004b17e0
 // The renderer entry points the interface calls (0x004b43dc ClearScreen ..
 // 0x004b4400 SetOptimized2DColor, 0x004b4444 BlitToScreen) and the pan info
 // (0x004b4460) are not globals of their own: they are members of
-// clientrender.cpp's g_RenderStruct (0x004b4358), +0x84.. -- see the
+// clientrender.cpp's g_RenderStruct (0x004b4358), +0x8c.. -- see the
 // RenderStruct view below, which carries them at those offsets.
 
 // Set by a console variable; forces the visual clear on every ClearScreen.
@@ -278,7 +291,9 @@ public:
 	void*    m_pUserData;                    // 0x0c0  the game's, untouched
 	LTVector m_Velocity;                     // 0x0c4
 	LTVector m_Acceleration;                 // 0x0d0
-	uint8    m_pad_e0[0x124 - 0xe0];
+	// Starts where the acceleration ends: CPhysicsLT::SetVelocity sets the
+	// change flags at +0x124 (PH 0x0040542d), and m_ClientFlags is +0x188.
+	uint8    m_pad_dc[0x124 - 0xdc];
 	uint32   m_ChangeFlags;                  // 0x124  same bits the server uses
 	uint8    m_pad_128[0x188 - 0x128];
 	uint16   m_ClientFlags;                  // 0x188
@@ -290,15 +305,18 @@ public:
 
 // The camera's own fields start where the sprite's clip poly sits, so they
 // only make sense once the object type byte has been checked.
+// AVP2: every object type's own fields start at 0x1b0, eight bytes later
+// than NOLF's 0x1a8 (both retail exes: the camera rect, light radius, line
+// and particle banks and poly-grid bytes are all read from +0x1b0).
 class CClientCamera
 {
 public:
-	uint8    m_pad_00[0x1a8];
-	LTRect   m_Rect;                         // 0x1a8
-	LTFLOAT  m_fFovX;                        // 0x1b8
-	LTFLOAT  m_fFovY;                        // 0x1bc
-	LTBOOL   m_bFullScreen;                  // 0x1c0
-	LTVector m_LightAdd;                     // 0x1c4
+	uint8    m_pad_00[0x1b0];
+	LTRect   m_Rect;                         // 0x1b0
+	LTFLOAT  m_fFovX;                        // 0x1c0
+	LTFLOAT  m_fFovY;                        // 0x1c4
+	LTBOOL   m_bFullScreen;                  // 0x1c8
+	LTVector m_LightAdd;                     // 0x1cc
 };
 
 
@@ -315,13 +333,13 @@ public:
 	CClientParticle* m_pPrev;                // 0x038
 };
 
-// Each object type lays its own fields out from 0x1a8; a light keeps one
+// Each object type lays its own fields out from 0x1b0; a light keeps one
 // float there, a camera a rect, a particle system its list.
 class CClientLight
 {
 public:
-	uint8   m_pad_00[0x1a8];
-	LTFLOAT m_fLightRadius;                  // 0x1a8
+	uint8   m_pad_00[0x1b0];
+	LTFLOAT m_fLightRadius;                  // 0x1b0
 };
 
 // A line in a line system, linked into the live list through the pair at 0x3c.
@@ -338,13 +356,13 @@ public:
 class CClientLineSystem
 {
 public:
-	uint8        m_pad_00[0x1a8];
-	StructBank*  m_pLineBank;                // 0x1a8
-	uint8        m_pad_1ac[0x1b0 - 0x1ac];
+	uint8        m_pad_00[0x1b0];
+	StructBank*  m_pLineBank;                // 0x1b0
+	uint8        m_pad_1b4[0x1b8 - 0x1b4];
 	// The end marker is a node inside the system, so a walk stops when the
 	// next pointer reaches this address rather than when it reaches null -
-	// and the list's head is this node's own m_pNext, at 0x1f0.
-	CClientLine  m_LineTail;                 // 0x1b0
+	// and the list's head is this node's own m_pNext, at 0x1f8.
+	CClientLine  m_LineTail;                 // 0x1b8
 };
 
 // The client's model object keeps the loaded Model behind a pointer at 0x1dc,
@@ -383,49 +401,49 @@ public:
 class CClientPolyGrid
 {
 public:
-	uint8   m_pad_00[0x1a8];
-	char*   m_pBytes;                        // 0x1a8
-	uint8   m_pad_1ac[0x1b0 - 0x1ac];
-	void*   m_pTexture;                      // 0x1b0
-	uint32  m_Unknown1b4;                    // 0x1b4  address taken, contents
+	uint8   m_pad_00[0x1b0];
+	char*   m_pBytes;                        // 0x1b0
+	uint8   m_pad_1b4[0x1b8 - 0x1b4];
+	void*   m_pTexture;                      // 0x1b8
+	uint32  m_Unknown1bc;                    // 0x1bc  address taken, contents
 	                                         //        not reached from here
-	uint8   m_pad_1b8[0x1cc - 0x1b8];
-	LTFLOAT m_fXPan;                         // 0x1cc
-	LTFLOAT m_fYPan;                         // 0x1d0
-	LTFLOAT m_fXScale;                       // 0x1d4
-	LTFLOAT m_fYScale;                       // 0x1d8
-	uint8   m_pad_1dc[0x1f0 - 0x1dc];
-	uint32  m_nWidth;                        // 0x1f0
-	uint32  m_nHeight;                       // 0x1f4
+	uint8   m_pad_1c0[0x1d4 - 0x1c0];
+	LTFLOAT m_fXPan;                         // 0x1d4
+	LTFLOAT m_fYPan;                         // 0x1d8
+	LTFLOAT m_fXScale;                       // 0x1dc
+	LTFLOAT m_fYScale;                       // 0x1e0
+	uint8   m_pad_1e4[0x1f8 - 0x1e4];
+	uint32  m_nWidth;                        // 0x1f8
+	uint32  m_nHeight;                       // 0x1fc
 	// Embedded in the grid, not allocated: GetPolyGridInfo hands out this
 	// address. How many entries there are is not visible from here.
-	PGColor m_ColorTable[1];                 // 0x1f8
+	PGColor m_ColorTable[1];                 // 0x200
 };
 
 class CClientParticleSystem
 {
 public:
-	uint8       m_pad_00[0x1a8];
+	uint8       m_pad_00[0x1b0];
 	// A node embedded in the system itself, handed out as the list's end
 	// marker rather than as a particle of its own. Its own m_pNext, at
-	// 0x1c8, is the head of the list - and the bank pointer that follows it
-	// lands at 0x1e4 exactly, which is what fixes CClientParticle at 0x3c
+	// 0x1d0, is the head of the list - and the bank pointer that follows it
+	// lands at 0x1ec exactly, which is what fixes CClientParticle at 0x3c
 	// bytes.
-	CClientParticle m_ParticleTail;             // 0x1a8
-	StructBank* m_pParticleBank;                // 0x1e4
-	uint8       m_pad_1e8[0x1ec - 0x1e8];
+	CClientParticle m_ParticleTail;             // 0x1b0
+	StructBank* m_pParticleBank;                // 0x1ec
+	uint8       m_pad_1f0[0x1f4 - 0x1f0];
 	// The colour the software renderer draws the system with, three bytes
 	// where the interface takes three floats.
-	uint8       m_SoftwareR;                    // 0x1ec
-	uint8       m_SoftwareG;                    // 0x1ed
-	uint8       m_SoftwareB;                    // 0x1ee
-	uint8       m_pad_1ef[0x228 - 0x1ef];
-	uint32      m_nParticles;                   // 0x228
-	uint8       m_pad_22c[0x248 - 0x22c];
-	LTFLOAT     m_fGravityAccel;                // 0x248
-	LTFLOAT     m_fParticleRadius;              // 0x24c
-	uint8       m_pad_250[0x258 - 0x250];
-	uint32      m_nPSFlags;                     // 0x258
+	uint8       m_SoftwareR;                    // 0x1f4
+	uint8       m_SoftwareG;                    // 0x1f5
+	uint8       m_SoftwareB;                    // 0x1f6
+	uint8       m_pad_1f7[0x230 - 0x1f7];
+	uint32      m_nParticles;                   // 0x230
+	uint8       m_pad_234[0x250 - 0x234];
+	LTFLOAT     m_fGravityAccel;                // 0x250
+	LTFLOAT     m_fParticleRadius;              // 0x254
+	uint8       m_pad_258[0x260 - 0x258];
+	uint32      m_nPSFlags;                     // 0x260
 };
 
 
@@ -433,7 +451,7 @@ public:
 // surface class is not in the SDK; all these two functions know is that the
 // game's pointer sits at +0x24 and that a null handle is tolerated.
 // Two of these, indexed by the interface's own index; the first word is not
-// touched by SetGlobalPanInfo.  RenderStruct+0x108 (0x004b4460).
+// touched by SetGlobalPanInfo.  RenderStruct+0x110 (0x004b4460).
 class PanInfo
 {
 public:
@@ -462,25 +480,28 @@ public:
 	uint32 m_nCanOptimizeSurfaces;           // 0x044
 	int    m_bInited;                        // 0x044  0x004b439c, clientrender.cpp's name
 	};
-	uint8  m_pad_48[0x84 - 0x48];
-	void   (*ClearScreen)(LTRect* pRect, uint32 dwFlags);                // 0x084  0x004b43dc
-	void   (*Start3D)();                                                 // 0x088  0x004b43e0
-	void   (*End3D)();                                                   // 0x08c  0x004b43e4
-	LTBOOL (*IsIn3D)();                                                  // 0x090  0x004b43e8
-	void   (*StartOptimized2D)();                                        // 0x094  0x004b43ec
-	void   (*EndOptimized2D)();                                          // 0x098  0x004b43f0
-	uint8  m_pad_9c[0xa0 - 0x9c];
-	LTBOOL (*SetOptimized2DBlend)(LTSurfaceBlend blend);                 // 0x0a0  0x004b43f8
+	// AVP2: two more entries than NOLF's before ClearScreen: both retail
+	// exes call it through g_RenderStruct+0x8c, and every entry after it is
+	// eight on from NOLF's (OptimizeSurface +0xe4, the pan info +0x110).
+	uint8  m_pad_48[0x8c - 0x48];
+	void   (*ClearScreen)(LTRect* pRect, uint32 dwFlags, LTVector* pColor); // 0x08c  0x004b43dc
+	void   (*Start3D)();                                                 // 0x090  0x004b43e0
+	void   (*End3D)();                                                   // 0x094  0x004b43e4
+	LTBOOL (*IsIn3D)();                                                  // 0x098  0x004b43e8
+	void   (*StartOptimized2D)();                                        // 0x09c  0x004b43ec
+	void   (*EndOptimized2D)();                                          // 0x0a0  0x004b43f0
 	uint8  m_pad_a4[0xa8 - 0xa4];
-	LTBOOL (*SetOptimized2DColor)(HLTCOLOR hColor);                      // 0x0a8  0x004b4400
-	uint8  m_pad_ac[0xdc - 0xac];
-	LTBOOL (*OptimizeSurface)(void* pRenderData, HLTCOLOR hTransColor);  // 0x0dc
-	void   (*UnoptimizeSurface)(void* pRenderData);                      // 0x0e0
-	uint8  m_pad_e4[0xec - 0xe4];
-	void   (*BlitToScreen)(CIBlitRequest* pRequest);                     // 0x0ec  0x004b4444
-	LTBOOL (*WarpToScreen)(CIBlitRequest* pRequest);                     // 0x0f0  0x004b4448
-	uint8  m_pad_f4[0x108 - 0xf4];
-	PanInfo m_GlobalPanInfo[2];                                          // 0x108  0x004b4460
+	LTBOOL (*SetOptimized2DBlend)(LTSurfaceBlend blend);                 // 0x0a8  0x004b43f8
+	uint8  m_pad_ac[0xb0 - 0xac];
+	LTBOOL (*SetOptimized2DColor)(HLTCOLOR hColor);                      // 0x0b0  0x004b4400
+	uint8  m_pad_b4[0xe4 - 0xb4];
+	LTBOOL (*OptimizeSurface)(void* pRenderData, HLTCOLOR hTransColor);  // 0x0e4
+	void   (*UnoptimizeSurface)(void* pRenderData);                      // 0x0e8
+	uint8  m_pad_ec[0xf4 - 0xec];
+	void   (*BlitToScreen)(CIBlitRequest* pRequest);                     // 0x0f4  0x004b4444
+	LTBOOL (*WarpToScreen)(CIBlitRequest* pRequest);                     // 0x0f8  0x004b4448
+	uint8  m_pad_fc[0x110 - 0xfc];
+	PanInfo m_GlobalPanInfo[2];                                          // 0x110  0x004b4460
 };
 
 class RenderStructQ40C : public RenderStruct

@@ -376,31 +376,36 @@ public:
 	uint32   m_Unknown2c;                    // 0x2c
 	uint32   m_Unknown30;                    // 0x30
 	float    m_f34;                          // 0x34  constructed to 1.0f
-	uint32   m_nHoldCount;                   // 0x38
-	uint32   m_Saved3c;                      // 0x3c
-	uint32   m_StateFlags;                   // 0x40
-	void*    m_hSample44;                    // 0x44  clientsoundinst.cpp's
-	                                         //       m_Unknown44
-	void*    m_h3DSample;                    // 0x48
-	void*    m_hStream4c;                    // 0x4c
-	void*    m_hFile50;                      // 0x50
-	uint16   m_nUnknown54;                   // 0x54
+	// clientsoundinst.cpp's two words that NOLF does not have; from here
+	// on every offset is NOLF's plus eight (the names keep NOLF's numbers).
+	uint32   m_Unknown38;                    // 0x38
+	float    m_fUnknown3c;                   // 0x3c
+	uint32   m_nHoldCount;                   // 0x40
+	uint32   m_Saved3c;                      // 0x44
+	uint32   m_StateFlags;                   // 0x48
+	void*    m_hSample44;                    // 0x4c  clientsoundinst.cpp's
+	                                         //       m_hSample
+	void*    m_h3DSample;                    // 0x50
+	void*    m_hStream4c;                    // 0x54
+	void*    m_hFile50;                      // 0x58
+	uint16   m_nUnknown54;                   // 0x5c
 	uint8    m_pad_56[0x58 - 0x56];
-	uint32   m_Unknown58;                    // 0x58
-	LTLink   m_DataLink;                     // 0x5c  clientsoundinst.cpp
-	LTVector m_vPos;                         // 0x68  clientsoundinst.cpp
-	uint32   m_Unknown74;                    // 0x74
-	uint32   m_Unknown78;                    // 0x78
-	// 0x7c/0x80/0x9c — clientsoundinst.cpp's m_nUnknown7c, m_Unknown80[7]
+	uint32   m_Unknown58;                    // 0x60
+	LTLink   m_DataLink;                     // 0x64  clientsoundinst.cpp
+	LTVector m_vPos;                         // 0x70  clientsoundinst.cpp
+	uint32   m_Unknown74;                    // 0x7c
+	uint32   m_Unknown78;                    // 0x80
+	// 0x84/0x88/0xa4 — clientsoundinst.cpp's m_nUnknown7c, m_Unknown80[7]
 	// and m_Unknown9c[7].  ApplyFilter (0x0047e610) says what they are:
 	// the index of a Miles filter provider in AIL_enumerate_filters order
 	// (-1 = none), up to seven attribute indices in
 	// AIL_enumerate_filter_sample_attributes order (-1 ends the list), and
 	// the value for each, whose ADDRESS goes to
 	// AIL_set_filter_sample_preference (names ours).
-	int      m_nFilter;                      // 0x7c
-	int      m_FilterParams[7];              // 0x80
-	float    m_FilterValues[7];              // 0x9c
+	int      m_nFilter;                      // 0x84
+	int      m_FilterParams[7];              // 0x88
+	float    m_FilterValues[7];              // 0xa4
+	uint8    m_nUserSoundType;               // 0xc0  clientsoundinst.cpp
 
 	LTRESULT sub_47d860(uint32 nElapsedMS);                // 0x0047d860
 	LTRESULT sub_47d9a0();                                 // 0x0047d9a0
@@ -454,14 +459,27 @@ __declspec(dllimport) void   __stdcall AIL_set_filter_sample_preference(void* hS
 // which externs it as g_nMoveCounter4B4064) is in this file.
 uint32 g_nSoundMemoryQ47C;
 
+// struct_bank.h's sb_Free, release build (also Load's shadow release and
+// sub_47cec0's).  AvP2's lithshared refuses a null
+// object or bank before linking the object in, and the shipped frees test
+// both (a `test; je` pair after the destructor call); NOLF's shipped code
+// had only the two stores.
+inline void sb_FreeQ47C(StructBankQ47C* pBank, void* pObj)
+{
+	if (!pObj || !pBank)
+		return;
+
+	*(void**)pObj = pBank->m_FreeListHead;
+	pBank->m_FreeListHead = pObj;
+}
+
 // object_bank.h's ObjectBank<T>::Free, expanded: the explicit destructor
 // (`push $0; call *(%edx)` — the deleting thunk with the flag clear) and
-// struct_bank.h's two-store sb_Free.
+// struct_bank.h's sb_Free.
 inline void ob_FreeQ47C(ObjectBankQ47C* pBank, CSoundDataQ47C* pObj)
 {
 	pObj->~CSoundDataQ47C();
-	*(void**)pObj = pBank->m_Bank.m_FreeListHead;
-	pBank->m_Bank.m_FreeListHead = pObj;
+	sb_FreeQ47C(&pBank->m_Bank, pObj);
 }
 
 
@@ -589,27 +607,21 @@ void CSoundDataQ47C::Free()
 
 
 
-// struct_bank.h's sb_Free (Load's shadow release and sub_47cec0's).
-inline void sb_FreeQ47C(StructBankQ47C* pBank, void* pObj)
-{
-	*(void**)pObj = pBank->m_FreeListHead;
-	pBank->m_FreeListHead = pObj;
-}
-
 // The rest of what Load reaches.
 extern "C" {
 __declspec(dllimport) void*  __stdcall AIL_mem_alloc_lock(uint32 nBytes);
 }
 
 // 0x004b17e0 — the client manager; Load reads only its file manager, the
-// pointer clientconsole.cpp and cchandler.cpp also name at +0x1534 (view
-// names ours).
+// pointer clientconsole.cpp and cchandler.cpp name at NOLF's +0x1534; AvP2's
+// and Primal Hunt's client manager is 0x110 bytes longer ahead of it, so it
+// is read at +0x1644 (0x00498de2; view names ours).
 class CFileMgrQ47C;
 class CClientMgrQ47C
 {
 public:
-	uint8         m_pad_0000[0x1534];
-	CFileMgrQ47C* m_pFileMgr;                // 0x1534
+	uint8         m_pad_0000[0x1644];
+	CFileMgrQ47C* m_pFileMgr;                // 0x1644
 };
 extern CClientMgrQ47C* g_pClientMgrQ47C;     // 0x004b17e0
 
@@ -636,6 +648,13 @@ void dsi_ServerError(char* pFormat, ...);    // 0x0042e6f0
 //  for it (bit 1) and adopt its shadow's buffer, or halve 16-bit PCM when
 //  the manager was set up to convert.  Finally the Miles sample type, as
 //  sub_47cd90 computes it.
+//
+//  NEAR (1240 against Primal Hunt's 1239 at 0x00498dd0, 3 blocks): the
+//  tail memcpy's source.  The shipped build forms it as (2n + m_pSampleData)
+//  + nHeader, loading m_pSampleData before the subtraction; ours CSEs
+//  2n + nHeader first and adds the pointer last.  Tried: the three terms in
+//  every order, an explicit subscript, and m_pDataStart + 2n (shorter,
+//  wrong shape).
 // ======================================================================= //
 LTRESULT CSoundDataQ47C::Load()
 {
@@ -1672,7 +1691,7 @@ void dsi_ServerError(char* pFormat, ...);    // 0x0042e6f0
 	}
 
 // The client's sound manager as the interface layer sees it: the
-// ILTClientSoundMgr vtable (SetListener is slot +0x64) and the listener
+// ILTClientSoundMgr vtable (SetListener is slot +0x70) and the listener
 // state after it.  Offsets 0x124, 0x72c and 0x750 are clientsound.h's and
 // soundinst2.cpp's; 0x738, 0x75c and 0x774 are read off the bodies below.
 class CClientSoundMgrQ8
@@ -1685,11 +1704,14 @@ public:
 	virtual void _v30()=0; virtual void _v34()=0; virtual void _v38()=0;
 	virtual void _v3c()=0; virtual void _v40()=0; virtual void _v44()=0;
 	virtual void _v48()=0; virtual void _v4c()=0; virtual void _v50()=0;
-	virtual void _v54()=0; virtual void _v58()=0;
-	virtual LTRESULT PauseSounds()=0;                      // +0x5c
-	virtual LTRESULT ResumeSounds()=0;                     // +0x60
+	virtual void _v54()=0; virtual void _v58()=0; virtual void _v5c()=0;
+	virtual void _v60()=0; virtual void _v64()=0;
+	// Three slots later than NOLF's: AvP2's iltsoundmgr.h adds
+	// KillSoundFade, GetVolumeByType and SetVolumeByType ahead of these.
+	virtual LTRESULT PauseSounds()=0;                      // +0x68
+	virtual LTRESULT ResumeSounds()=0;                     // +0x6c
 	virtual LTRESULT SetListener(LTBOOL bListenerInClient, LTVector* pPos,
-	                             LTRotation* pRot, LTBOOL bTeleport)=0; // +0x64
+	                             LTRotation* pRot, LTBOOL bTeleport)=0; // +0x70
 
 	// 0x00480ce0 — clientsound.h's GetSoundInstance.
 	CSoundInstanceQ47C* GetSoundInstance(HLTSOUND hSound, LTBOOL bUnknown);

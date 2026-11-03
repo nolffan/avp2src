@@ -104,6 +104,9 @@ class RenderStructQ40C
 {
 public:
 	uint8   m_pad_00[0xc8];
+	// AVP2: as Primal Hunt (PH addresses) -- the renderer half of the RenderStruct is two entries longer below
+	// here (FlipScreen, +0xbc here, is called at +0xc4: 0x00412209).
+	uint8 m_padExtra[8];
 	void*  (*CreateSurface)(uint32 nWidth, uint32 nHeight);         // 0x0c8
 	void   (*DestroySurface)(void* pRenderData);                    // 0x0cc
 	void   (*GetSurfaceInfo)(void* pRenderData, uint32* pWidth,
@@ -259,6 +262,8 @@ class CClientMgrQ40C
 {
 public:
 	uint8            m_pad_00[0x1534];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x0040dfc0 reads +0x1644).
+	uint8 m_padExtra[0x110];
 	class CFileMgrQ40C* m_pFileMgr;          // 0x1534  0x0040cf50
 	uint8            m_pad_1538[0x1618 - 0x1538];
 	CBlitterQ40C     m_Blitter;              // 0x1618  0x0040c125
@@ -1208,6 +1213,9 @@ class CisRenderSlotsQ40C
 {
 public:
 	uint8  m_pad_00[0xec];
+	// AVP2: as Primal Hunt (PH addresses) -- the renderer half of the RenderStruct is two entries longer below
+	// here (FlipScreen, +0xbc here, is called at +0xc4: 0x00412209).
+	uint8 m_padExtra[8];
 	void (*m_pfnBlitToScreen)(CisBlitRequestQ40C* pRequest);               // 0x0ec
 	uint8  m_pad_f0[0xfc - 0xf0];
 	void (*m_pfnBlitFromScreen)(CisBlitRequestQ40C* pRequest);             // 0x0fc

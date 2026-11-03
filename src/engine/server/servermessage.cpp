@@ -909,8 +909,10 @@ HMESSAGEWRITE CLTServer::StartSpecialEffectMessage(LPBASECLASS pObject)
 // not cover: it sits immediately after them and immediately before
 // EndMessage2. It is the SDK's `virtual HMESSAGEWRITE StartHMessageWrite()`
 // (iltcsbase.h), and it is the only starter that sizes the packet itself —
-// 0x2000 bytes with a 0x1000 grow step, where the five above take whatever
-// CServerMgr::StartMessage hands them.
+// 0x2000 bytes with its own grow step, where the five above take whatever
+// CServerMgr::StartMessage hands them. AvP2 grows it by MAX_PACKET_LEN
+// (0x44c) where NOLF grew it by 0x1000 (lithtech 0x004846d0, server.dll
+// `push $0x44c` ahead of `push $0x2000`, both games).
 //
 // Read off the bytes: no null check on the manager's message (the shipped
 // code goes straight from the call into `Init`), and the return is
@@ -919,8 +921,9 @@ HMESSAGEWRITE CLTServer::StartSpecialEffectMessage(LPBASECLASS pObject)
 //
 // servermsg.h's CLTServer does not declare this method and that header is
 // not this reconstruction's to change, so it is written against a view of
-// the same layout; the padding to 0x224 is servermsg.h's own offset for
-// m_pServerMgr. WHAT SHOULD REPLACE THIS: one line in servermsg.h's
+// the same layout; the padding is to AvP2's 0x244 for m_pServerMgr (every
+// AvP2 image's `mov 0x244(%ecx),%ecx`), where servermsg.h still has NOLF's
+// 0x224. WHAT SHOULD REPLACE THIS: one line in servermsg.h's
 // CLTServer, `HMESSAGEWRITE StartHMessageWrite();`, next to the other
 // starters, and this view can go.
 class CLTServerWriteView
@@ -928,8 +931,8 @@ class CLTServerWriteView
 public:
 	HMESSAGEWRITE StartHMessageWrite();
 
-	uint8       m_pad_000[0x224];
-	CServerMgr* m_pServerMgr;                // 0x224
+	uint8       m_pad_000[0x244];
+	CServerMgr* m_pServerMgr;                // 0x244
 };
 
 #ifndef LT_SERVER_BUILD
@@ -1031,13 +1034,13 @@ HMESSAGEWRITE CLTServerWriteView::StartHMessageWrite()
 #ifdef LT_SERVER_BUILD
 	ServerMessage* pMsg = m_pServerMgr->StartMessage();
 
-	pMsg->Init(0x2000, 0x1000);
+	pMsg->Init(0x2000, MAX_PACKET_LEN);
 
 	return (HMESSAGEWRITE)&pMsg->m_Write;
 #else
 	CServerMessageQ12* pMsg = (CServerMessageQ12*)m_pServerMgr->StartMessage();
 
-	pMsg->Init(0x2000, 0x1000);
+	pMsg->Init(0x2000, MAX_PACKET_LEN);
 
 	return (HMESSAGEWRITE)&pMsg->m_Write;
 #endif
@@ -2238,12 +2241,12 @@ LTRESULT CMessageObjectHelper::GetServerWorld(CServerWorld** ppWorld)
 // to be exactly 1. The m_ObjectID2 path has no map: it sweeps ELEVEN object
 // lists off the manager (see CServerMgr::ObjectLists) comparing every live
 // object's m_ObjectID2, and it reaches them through the g_pServerMgr global
-// rather than through its own m_pServerMgr -- reloading the global on every
-// iteration, which is why the loop cannot be written against a hoisted local.
+// rather than through its own m_pServerMgr.
 //
-// The inner `break` is deliberate and matches the shipped control flow: a hit
-// stores the object and leaves the inner loop only, so the sweep runs all
-// eleven lists to the end and the LAST match wins.
+// A hit stores the object and returns at once, so the FIRST match wins
+// (lithtech 0x00498117 jumps straight to the store-and-return). NOLF's engine
+// left only the inner loop there and let the last match win; with nothing
+// stored until the end, AvP2's sweep also reads the global just once.
 LTRESULT CMessageObjectHelper::ReadObjectID(IMessageWrite* pMsg, LTObject** ppObject)
 {
 	uint16 nID;
@@ -2269,7 +2272,7 @@ LTRESULT CMessageObjectHelper::ReadObjectID(IMessageWrite* pMsg, LTObject** ppOb
 				if (pObject->m_ObjectID2 == nID)
 				{
 					*ppObject = pObject;
-					break;
+					return LT_OK;
 				}
 			}
 		}

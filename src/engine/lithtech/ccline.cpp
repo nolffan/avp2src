@@ -94,13 +94,18 @@ void  dfree(void* pMem);                                    // 0x004290c0
 // The flat client-interface table, as src/engine/lithtech/clientinterface.h
 // lays it out.  Only the two entries this run calls are declared; both are
 // cdecl (the caller does the `add $8,%esp`) and neither is virtual.
+//
+// AVP2: (+0x160 / +0x1d4 / +0x4c0 are NOLF's) AvP2's and Primal Hunt's table
+// is four bytes longer ahead of both (+0x164 and +0x1d8: AvP2 0x00421bb0 /
+// 0x00421bd6, Primal Hunt 0x00424140 / 0x00424166), and the manager's
+// pointer to it is at +0x4c4 (AvP2 0x00421baa, Primal Hunt 0x0042413a).
 class CcnClientTable
 {
 public:
-	uint8    m_pad_000[0x160];
-	LTRESULT (*OptimizeSurface)(void* hSurface, uint32 hTransparentColor);   // 0x160
-	uint8    m_pad_164[0x1d4 - 0x164];
-	LTRESULT (*SetSurfaceAlpha)(void* hSurface, float fAlpha);               // 0x1d4
+	uint8    m_pad_000[0x164];
+	LTRESULT (*OptimizeSurface)(void* hSurface, uint32 hTransparentColor);   // 0x164
+	uint8    m_pad_168[0x1d8 - 0x168];
+	LTRESULT (*SetSurfaceAlpha)(void* hSurface, float fAlpha);               // 0x1d8
 };
 
 // The manager the console reaches that table through.  The global is
@@ -113,8 +118,8 @@ public:
 class CcnClientMgr
 {
 public:
-	uint8           m_pad_000[0x4c0];
-	CcnClientTable* m_pClientDE;             // 0x4c0  (cltcursor.cpp's name)
+	uint8           m_pad_000[0x4c4];
+	CcnClientTable* m_pClientDE;             // 0x4c4  (cltcursor.cpp's name)
 };
 
 // 0x004b0b14 is cluglob.h's g_CluClientGlob.m_pClientMgr (+0x054): a FIELD of

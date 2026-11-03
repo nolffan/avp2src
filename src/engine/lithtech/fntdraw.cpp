@@ -129,6 +129,9 @@ class RenderStructQ488
 {
 public:
 	uint8   m_pad_00[0xd4];
+	// AVP2: as Primal Hunt (PH addresses) -- the renderer half of the RenderStruct is two entries longer below
+	// here (cissurf.cpp, clientblit.cpp).
+	uint8 m_padExtra[8];
 	void*  (*LockSurface)(void* pRenderData);                       // 0x0d4
 	void   (*UnlockSurface)(void* pRenderData);                     // 0x0d8
 	uint8   m_pad_dc[0xe4 - 0xdc];
@@ -145,6 +148,8 @@ class CLTClientQ488
 {
 public:
 	uint8 m_pad_000[0x13c];
+	// AVP2: as Primal Hunt (PH addresses) -- one more entry below here (0x004a58b9 stores CreateFont at +0x140).
+	uint8 m_padExtra[4];
 	CFontQ488* (*CreateFont)(char* pFontName, int width, int height,
 	                         LTBOOL bItalic, LTBOOL bUnderline,
 	                         LTBOOL bBold);                            // 0x13c
@@ -1346,6 +1351,9 @@ public:
 	uint8              m_pad_20[0x64 - 0x20];
 	void*              m_pTextureData;                      // 0x64
 	uint8              m_pad_68[0x9c - 0x68];               // 0x68 SharedTexture
+	// AVP2: as Primal Hunt (PH addresses) -- the SharedTexture is 0x40 bytes, not 0x34 (cmgrinit.cpp), so the
+	// two flags words are stored at +0xac/+0xa8 (0x004a7e18).
+	uint8              m_padExtra9c[0xc];
 	uint32             m_nFlags;                            // 0x9c
 	uint32             m_nMode;                             // 0xa0
 };
@@ -1560,8 +1568,9 @@ struct SharedTextureQ488;
 
 struct CVideoPolyQ488
 {
-	uint8               m_pad_00[0x30];
-	SharedTextureQ488*  m_pTexture;          // 0x30
+	// AVP2: as Primal Hunt (PH addresses) -- the poly's texture pointer is at +0x2c (0x004a7d54).
+	uint8               m_pad_00[0x2c];
+	SharedTextureQ488*  m_pTexture;          // 0x2c
 };
 
 // binkvideo.cpp's CVideoBindingK, cut to the two fields read here.
@@ -1752,6 +1761,9 @@ public:
 	uint8    m_pad_00[0x58];
 	uint32   m_Unknown58;                    // 0x058
 	uint8    m_pad_5c[0x18c - 0x5c];
+	// AVP2: as Primal Hunt (PH addresses) -- the object is eight bytes longer below here (0x004a8e0b reads
+	// m_Pos at +0x194, 0x004a8e3e the radius at +0x1ac).
+	uint8 m_padExtra[8];
 	LTVector m_Pos;                          // 0x18c
 	uint8    m_pad_198[0x1a4 - 0x198];
 	float    m_Radius;                       // 0x1a4

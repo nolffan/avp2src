@@ -574,6 +574,9 @@ public:
 	char   m_Pad00[0x18];    // 0x00
 	void*  m_pUnknown18;     // 0x18
 	char   m_Pad1c[0xa0 - 0x1c];
+	// AVP2: as Primal Hunt (PH addresses) -- the SmackVideoInst's embedded SharedTexture is 0x40 bytes, not
+	// 0x34 (cmgrinit.cpp), so this is read at +0xac (0x004a8287).
+	char   m_PadExtraa0[0xc];
 	uint32 m_UnknownA0;      // 0xa0
 };
 

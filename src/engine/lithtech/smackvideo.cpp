@@ -221,6 +221,9 @@ public:
 	uint16     m_nFrameCode;                 // 0x30
 	uint16     m_nRefCount : 15;             // 0x32
 	uint16     m_bMarked   : 1;              // 0x32 bit 15
+	// AVP2: as Primal Hunt (PH addresses) -- 0x40 bytes, not 0x34 (cmgrinit.cpp's bank Term, sb_Init size at
+	// 0x00415fee); its out-of-line constructor 0x004304f0 zeroes +0x34/+0x38.
+	uint32     m_Unknown34[3];             // 0x34
 };
 
 // Expanded at 0x0048abc4..0x0048abed exactly as 0x00401b90 expands it:
@@ -518,8 +521,8 @@ public:
 	IDirectDrawSurfaceS*  m_pSurface2;       // 0x28
 	PFormatS              m_Format;          // 0x2c .. 0x63
 	TextureDataS*         m_pTextureData;    // 0x64
-	SharedTextureS        m_Texture;         // 0x68 .. 0x9b
-	uint32                m_nFlags;          // 0x9c  bit 0: stretch to screen
+	SharedTextureS        m_Texture;         // 0x68 .. 0xa7 (AVP2: SharedTexture is 0x40)
+	uint32                m_nFlags;          // 0xa8  bit 0: stretch to screen
 	uint8                 m_pad_a0[0xa4 - 0xa0];
 };
 

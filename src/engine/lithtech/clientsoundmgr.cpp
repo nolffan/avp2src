@@ -263,16 +263,18 @@ public:
 	// 0x2c — read only beside m_nPriority, as a signed difference
 	// (0x0048159a's `sub` is followed by `jns`).  Name by address.
 	int32  m_nUnknown2c;                     // 0x2c
-	uint8  m_pad_30[0x40 - 0x30];
-	// 0x40 — bit 2 (0x04) is "stopped", which is what IsSoundDone reports on;
+	// From 0x38 on AvP2 and Primal Hunt have two words NOLF does not
+	// (clientsoundinst.cpp), so everything below sits eight bytes later.
+	uint8  m_pad_30[0x48 - 0x30];
+	// 0x48 — bit 2 (0x04) is "stopped", which is what IsSoundDone reports on;
 	// bit 1 (0x02) is tested by the sort and by CSoundInstance::Hold.
-	uint32 m_StateFlags;                     // 0x40
-	uint8  m_pad_44[0x58 - 0x44];
-	// 0x58 — this sound's own index in the manager's table at 0x324.
+	uint32 m_StateFlags;                     // 0x48
+	uint8  m_pad_4c[0x60 - 0x4c];
+	// 0x60 — this sound's own index in the manager's table at 0x324.
 	// ReleaseSound reads it at 0x00480bdc to know which slot to fill in with
 	// the last one, then writes the moved sound's new index back at
 	// 0x00480bff.
-	uint32 m_nMgrIndex;                      // 0x58
+	uint32 m_nMgrIndex;                      // 0x60
 };
 
 // The three concrete sounds, told apart by m_Type (0 in-head, 1 ambient,
@@ -371,8 +373,14 @@ inline void operator delete(void* pDataPtr, DummyThingForConstructorRef* pThing,
 {
 }
 
+// struct_bank.h's sb_Free, release build: AvP2's lithshared refuses a null
+// object or bank before linking the object in (the `test; je` pair after
+// each explicit destructor call); NOLF's had only the two stores.
 inline void sb_FreeRef(StructBankView* pBank, void* pObj)
 {
+	if (!pObj || !pBank)
+		return;
+
 	*(void**)pObj = pBank->m_pFreeListHead;
 	pBank->m_pFreeListHead = pObj;
 }
@@ -463,41 +471,47 @@ public:
 
 // ---- CSoundMgr, from this file's side ------------------------------------ //
 //
-// Vptr at 0x00 (`mov (%esi),%edx; call *0x5c(%edx)` at 0x00481eda reads it),
+// Vptr at 0x00 (`mov (%esi),%edx; call *0x5c(%edx)` at 0x00481eda in NOLF, +0x68 here reads it),
 // so the pad below starts at 0x04.  Everything from 0x124 down tiles exactly:
 // each list, bank and array ends where the next field begins, which is the
 // check that no field is missing.
 class CSoundMgrView
 {
 public:
-	// Slots 0..22, in iltsoundmgr.h's declaration order; the ones this file
-	// writes are the only ones declared with a body.
+	// Slots 0..25, in AvP2's iltsoundmgr.h declaration order -- three more
+	// than NOLF's: KillSoundFade after KillSoundLoop, and GetVolumeByType
+	// and SetVolumeByType after SetVolume (Primal Hunt's table at
+	// 0x004d6844 and AvP2 1.0.9.6's at 0x004c87f8 are both 32 slots).  The
+	// ones this file writes are the only ones declared with a body.
 	virtual LTRESULT _v00(void* pPlaySoundInfo, HLTSOUND& hResult)=0;   // PlaySound
 	virtual LTRESULT _v04(HLTSOUND hSound, LTFLOAT& fDuration)=0;       // GetSoundDuration
 	virtual LTRESULT IsSoundDone(HLTSOUND hSound, LTBOOL& bDone);       // +0x08
 	virtual LTRESULT KillSound(HLTSOUND hSound);                        // +0x0c
 	virtual LTRESULT KillSoundLoop(HLTSOUND hSound);                    // +0x10
+	virtual LTRESULT _v14(HLTSOUND h, LTFLOAT fFadeOutTime)=0;          // KillSoundFade
 	virtual LTRESULT GetSound3DProviderLists(Sound3DProvider*& pList,
-	                                         LTBOOL bVerify);           // +0x14
-	virtual LTRESULT ReleaseSound3DProviderList(Sound3DProvider* pList);// +0x18
-	virtual LTRESULT _v1c(InitSoundInfo* pSoundInfo)=0;                 // InitSound
-	virtual LTRESULT GetVolume(uint16& nVolume);                        // +0x20
-	virtual LTRESULT SetVolume(uint16 nVolume);                         // +0x24
-	virtual LTRESULT _v28(ReverbProperties* p)=0;                       // SetReverbProperties
-	virtual LTRESULT _v2c(ReverbProperties* p)=0;                       // GetReverbProperties
-	virtual LTRESULT _v30(HLTSOUND h, LTFLOAT f)=0;                     // SetSoundOcclusion
-	virtual LTRESULT _v34(HLTSOUND h, LTFLOAT* p)=0;                    // GetSoundOcclusion
-	virtual LTRESULT _v38(HLTSOUND h, LTFLOAT f)=0;                     // SetSoundObstruction
-	virtual LTRESULT _v3c(HLTSOUND h, LTFLOAT* p)=0;                    // GetSoundObstruction
-	virtual LTRESULT _v40(HLTSOUND h, const char* p)=0;                 // SetSoundFilter
-	virtual LTRESULT _v44(HLTSOUND h, const char* p, float f)=0;        // SetSoundFilterParam
-	virtual LTRESULT _v48(HLTSOUND h, const char* p, float* f)=0;       // GetSoundFilterParam
-	virtual LTRESULT _v4c(uint32 n, const char** p)=0;                  // GetFilterName
-	virtual LTRESULT _v50(uint32 n, const char* f, const char** p)=0;   // GetFilterParamName
-	virtual LTRESULT _v54(HLTSOUND h, LTVector* p)=0;                   // SetSoundPosition
-	virtual LTRESULT _v58(HLTSOUND h, LTVector* p)=0;                   // GetSoundPosition
-	virtual LTRESULT PauseSounds();                                     // +0x5c
-	virtual LTRESULT ResumeSounds();                                    // +0x60
+	                                         LTBOOL bVerify);           // +0x18
+	virtual LTRESULT ReleaseSound3DProviderList(Sound3DProvider* pList);// +0x1c
+	virtual LTRESULT _v20(InitSoundInfo* pSoundInfo)=0;                 // InitSound
+	virtual LTRESULT GetVolume(uint16& nVolume);                        // +0x24
+	virtual LTRESULT SetVolume(uint16 nVolume);                         // +0x28
+	virtual LTRESULT _v2c(uint16& nVolume, uint8 nType)=0;              // GetVolumeByType
+	virtual LTRESULT _v30(uint16 nVolume, uint8 nType)=0;               // SetVolumeByType
+	virtual LTRESULT _v34(ReverbProperties* p)=0;                       // SetReverbProperties
+	virtual LTRESULT _v38(ReverbProperties* p)=0;                       // GetReverbProperties
+	virtual LTRESULT _v3c(HLTSOUND h, LTFLOAT f)=0;                     // SetSoundOcclusion
+	virtual LTRESULT _v40(HLTSOUND h, LTFLOAT* p)=0;                    // GetSoundOcclusion
+	virtual LTRESULT _v44(HLTSOUND h, LTFLOAT f)=0;                     // SetSoundObstruction
+	virtual LTRESULT _v48(HLTSOUND h, LTFLOAT* p)=0;                    // GetSoundObstruction
+	virtual LTRESULT _v4c(HLTSOUND h, const char* p)=0;                 // SetSoundFilter
+	virtual LTRESULT _v50(HLTSOUND h, const char* p, float f)=0;        // SetSoundFilterParam
+	virtual LTRESULT _v54(HLTSOUND h, const char* p, float* f)=0;       // GetSoundFilterParam
+	virtual LTRESULT _v58(uint32 n, const char** p)=0;                  // GetFilterName
+	virtual LTRESULT _v5c(uint32 n, const char* f, const char** p)=0;   // GetFilterParamName
+	virtual LTRESULT _v60(HLTSOUND h, LTVector* p)=0;                   // SetSoundPosition
+	virtual LTRESULT _v64(HLTSOUND h, LTVector* p)=0;                   // GetSoundPosition
+	virtual LTRESULT PauseSounds();                                     // +0x68
+	virtual LTRESULT ResumeSounds();                                    // +0x6c
 
 	// ---- the non-virtual members this file writes -----------------------
 	void      Term(LTBOOL bFull);                                // 0x00480090
@@ -1235,7 +1249,7 @@ LTRESULT CSoundMgrView::Init(InitSoundInfo* pSoundInfo)
 		reverb.m_fReflectTime = 0.0f;
 		reverb.m_fDecayTime   = 0.1f;
 		reverb.m_fDamping     = 0.99f;
-		_v28(&reverb);
+		_v34(&reverb);
 	}
 
 	m_Packet.Init(0x1000, 0x1000);
@@ -2085,8 +2099,9 @@ struct CSndClientShellRef
 
 struct CSndClientMgrRef
 {
-	uint8               m_pad_000[0x150c];
-	CSndClientShellRef* m_pConnection;       // 0x150c
+	// 0x110 bytes past NOLF's 0x150c, as lvideomgr.cpp reads it.
+	uint8               m_pad_000[0x161c];
+	CSndClientShellRef* m_pConnection;       // 0x161c
 };
 
 class CClientMgr;
@@ -2130,13 +2145,13 @@ public:
 	uint32         m_nPriority;              // 0x24
 	uint8          m_pad_28[0x2c - 0x28];
 	uint32         m_nUnknown2c;             // 0x2c
-	uint8          m_pad_30[0x40 - 0x30];
-	uint32         m_StateFlags;             // 0x40
-	void*          m_hSample;                // 0x44
-	void*          m_h3DSample;              // 0x48
-	void*          m_hStream;                // 0x4c
-	uint8          m_pad_50[0x58 - 0x50];
-	uint32         m_nMgrIndex;              // 0x58
+	uint8          m_pad_30[0x48 - 0x30];    // (two more words than NOLF)
+	uint32         m_StateFlags;             // 0x48
+	void*          m_hSample;                // 0x4c
+	void*          m_h3DSample;              // 0x50
+	void*          m_hStream;                // 0x54
+	uint8          m_pad_58[0x60 - 0x58];
+	uint32         m_nMgrIndex;              // 0x60
 };
 
 int __cdecl SortSoundInstances(const void* pElem1, const void* pElem2);  // 0x00481500
@@ -2395,7 +2410,7 @@ LTRESULT CSoundMgrView::Update()
 // The bank free is object_bank.h's `ObjectBank<T>::Free` inlined: an explicit
 // destructor call — which for a virtual destructor is a call through slot
 // +0x00 with the deleting flag 0, exactly `push $0; call *(%edx)` — followed
-// by struct_bank.h's two-store sb_Free.  It is written out by hand here
+// by struct_bank.h's sb_Free.  It is written out by hand here
 // because object_bank.h is not on this target's include path.
 LTRESULT CSoundMgrView::ReleaseSound(CSoundInstanceRef* pSound)
 {
@@ -2422,20 +2437,17 @@ LTRESULT CSoundMgrView::ReleaseSound(CSoundInstanceRef* pSound)
 	if (nType == 0)
 	{
 		pSound->~CSoundInstanceRef();
-		*(void**)pSound = m_SoundBank0.m_Bank.m_pFreeListHead;
-		m_SoundBank0.m_Bank.m_pFreeListHead = pSound;
+		sb_FreeRef(&m_SoundBank0.m_Bank, pSound);
 	}
 	else if (nType == 1)
 	{
 		pSound->~CSoundInstanceRef();
-		*(void**)pSound = m_SoundBank1.m_Bank.m_pFreeListHead;
-		m_SoundBank1.m_Bank.m_pFreeListHead = pSound;
+		sb_FreeRef(&m_SoundBank1.m_Bank, pSound);
 	}
 	else if (nType == 2)
 	{
 		pSound->~CSoundInstanceRef();
-		*(void**)pSound = m_SoundBank2.m_Bank.m_pFreeListHead;
-		m_SoundBank2.m_Bank.m_pFreeListHead = pSound;
+		sb_FreeRef(&m_SoundBank2.m_Bank, pSound);
 	}
 
 	return LT_OK;
@@ -2472,8 +2484,7 @@ LTRESULT CSoundMgrView::FreeSoundData(CSoundDataRef* pData)
 	}
 
 	pData->~CSoundDataRef();
-	*(void**)pData = m_SoundDataBank.m_Bank.m_pFreeListHead;
-	m_SoundDataBank.m_Bank.m_pFreeListHead = pData;
+	sb_FreeRef(&m_SoundDataBank.m_Bank, pData);
 
 	return LT_OK;
 }

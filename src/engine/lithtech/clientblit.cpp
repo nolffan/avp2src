@@ -172,6 +172,10 @@ public:
 	// +0x7c and given back through +0x80.
 	void*            m_pRenderWorld;              // 0x0001c8
 	uint8            m_pad_1cc[0x11f0 - 0x1cc];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 bytes longer below this point -- four in the
+	// world before the net manager (+0x50c is at +0x510) and 0x10c in the
+	// sound manager (+0xf84 is at +0x1094) -- so this is +0x1300 (0x004121f0).
+	uint8            m_padExtra[0x110];
 	CSub11F0         m_Sub11f0;                   // 0x0011f0
 
 	// 0x00410930  (clientmgr.h declares it on CClientMgr)
@@ -208,6 +212,9 @@ public:
 	uint8  m_pad_00[0x44];
 	int    m_bInited;                                            // 0x044  0x004b439c
 	uint8  m_pad_48[0xbc - 0x48];
+	// AVP2: as Primal Hunt (PH addresses) -- the renderer half of the RenderStruct is two entries longer below
+	// here (FlipScreen, +0xbc here, is called at +0xc4: 0x00412209).
+	uint8 m_padExtra[8];
 	void   (*FlipScreen)(uint32 dwFlags);                        // 0x0bc  0x004b4414
 };
 extern RenderStruct g_RenderStruct;                                  // 0x004b4358
@@ -228,6 +235,9 @@ class RenderStructView
 {
 public:
 	uint8  m_pad_00[0xdc];
+	// AVP2: as Primal Hunt (PH addresses) -- the renderer half of the RenderStruct is two entries longer below
+	// here (FlipScreen, +0xbc here, is called at +0xc4: 0x00412209).
+	uint8 m_padExtra[8];
 	LTBOOL (*OptimizeSurface)(void* pRenderData, HLTCOLOR hTransColor);  // 0x0dc
 };
 // The pointer itself is cissurf.cpp's RenderStructQ40C* (declared, not

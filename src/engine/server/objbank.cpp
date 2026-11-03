@@ -29,34 +29,18 @@
 #include "de_error.h"
 #include <string.h>
 
-// This file's two memsets want OPPOSITE expansions in the server's /O1
-// build and the same one in the client's /O2 build, and that is what the
-// pragma placement below is for.
-//
-//   * The model constructor clears two eight-byte members with inline
-//     `stosd` runs (`xor eax,eax; lea &m, %edi; stosd; stosd`, the zero
-//     re-materialised for each) in BOTH images, which is what `memset`
-//     compiles to only when it is intrinsic — a probe of every other
-//     eight-byte zeroing form in this file (a value-initialised member, an
-//     assignment from a default-constructed temporary, element-by-element
-//     stores, a call) reproduces none of it. So it needs
-//     `#pragma intrinsic(memset)`.
-//   * The sprite constructor's twenty-byte clear is a CALL in server.dll
-//     (0x100250cc pushes three arguments to 0x1003e280) and five inline
-//     `mov`s through a base register in lithtech.exe (0x45b470). That is
-//     exactly what plain `memset` gives with NO pragma at all: /O1 is
-//     /Og /Os /Oy /Ob1 /Gs /GF /Gy and carries no /Oi, so the server's
-//     build calls the library; /O2 carries /Oi, so the client's inlines.
-//
-// A pragma reaches forward from where it stands and there is no "restore
-// the default", so the sprite's constructor is placed BEFORE the pragma and
-// the model's after it — which is why the two constructors are not in
-// declaration order below. `#pragma function(memset)` around the sprite
-// instead costs lithtech.exe that constructor (85 bytes against 88), and
-// dropping the pragma outright costs the model its size-exact 151.
+// The model constructor clears two eight-byte members with inline `stosd`
+// runs (`xor eax,eax; lea &m, %edi; stosd; stosd`, the zero re-materialised
+// for each) in BOTH images, which is what `memset` compiles to only when it
+// is intrinsic — a probe of every other eight-byte zeroing form in this file
+// (a value-initialised member, an assignment from a default-constructed
+// temporary, element-by-element stores, a call) reproduces none of it. So it
+// needs `#pragma intrinsic(memset)`, which stands just above it. (NOLF's
+// sprite constructor had a plain twenty-byte memset that wanted the pragma
+// NOT in force, which is why the sprite's constructor still sits above it;
+// AvP2's clears those twenty bytes field by field.)
 
-// 0x1003e280 — and this is NOT that memset, which is why the sprite's
-// twenty-byte clear is a call while the model's are inline. It returns its
+// 0x1003e280 — and this is NOT the CRT's memset. It returns its
 // *fill value* (`mov 0x8(%esp),%eax` on the way out) where the CRT's returns
 // its destination, and it early-outs on a zero length; it is the engine's own
 // fill (name ours).
@@ -294,15 +278,21 @@ public:
 	virtual ~CObjSprite();
 
 public:
-	uint8              m_Data1a8[0x1bc - 0x1a8];   // 0x1b0
+	uint32             m_n1a8;                     // 0x1b0
+	uint32             m_n1ac;                     // 0x1b4
+	uint32             m_n1b0;                     // 0x1b8
+	uint32             m_n1b4;                     // 0x1bc
+	uint32             m_n1b8;                     // 0x1c0
 	int                m_n1bc;                     // 0x1c4  starts at -1
 	SpriteControl      m_Control;                  // 0x1c8
 };
 
 // Two more banks over things that are not object types at all — the same
 // template, reached through vtables of its own at 0x1004e2f0 and 0x1004e358.
-// The larger is 0x54 bytes, which is sizeof(ServerMessage); what the smaller
-// holds is not recoverable from the bank alone (names ours).
+// The larger was 0x54 bytes in NOLF, which is sizeof(ServerMessage); Primal
+// Hunt's Init passes 0x60 (0x00418d9e `push $0x60`, server.dll 0x10038c81),
+// and the name keeps NOLF's size. What the smaller holds is not recoverable
+// from the bank alone (names ours).
 // Neither is polymorphic — which the release says, not the bank: the eleven
 // object types are destructed through their vtables, the 0x54 element by a
 // direct call, and the 0x14 element not at all.
@@ -310,7 +300,7 @@ class CBankElem54
 {
 public:
 	virtual ~CBankElem54();
-	uint8 m_pad[0x54 - 4];
+	uint8 m_pad[0x60 - 4];
 };
 
 class CBankElem14
@@ -566,17 +556,21 @@ CObjSprite::~CObjSprite() {}
 // exactly as CObjWorldModel::InitFields repeats them), the play state
 // cleared, and the control object pointed back at its owner.
 //
-// The twenty-byte clear is a CALL here and five inline stores in
-// lithtech.exe's copy, which is plain `memset` with no pragma in force —
-// see the note at the head of this file for why that puts this constructor
-// ahead of the model's.
+// The twenty bytes after the colours are five dwords cleared one by one in
+// AvP2: both Primal Hunt images store them by displacement off the object
+// (server.dll 0x1002f3d6.., lithtech 0x0046d69a..), where NOLF's engine
+// cleared them with one memset (a call in its server.dll).
 CObjSprite::CObjSprite() : CObjBase(OT_SPRITE)
 {
 	m_ColorB = 255;
 	m_ColorG = 255;
 	m_ColorR = 255;
 
-	memset(m_Data1a8, 0, sizeof(m_Data1a8));
+	m_n1a8 = 0;
+	m_n1ac = 0;
+	m_n1b0 = 0;
+	m_n1b4 = 0;
+	m_n1b8 = 0;
 
 	m_n1bc = -1;
 

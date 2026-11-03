@@ -921,6 +921,10 @@ public:
 	virtual LTRESULT _p09()=0; virtual LTRESULT _p10()=0; virtual LTRESULT _p11()=0;
 	virtual LTRESULT _p12()=0; virtual LTRESULT _p13()=0; virtual LTRESULT _p14()=0;
 	virtual LTRESULT _p15()=0;
+	// AVP2: as Primal Hunt (PH addresses) -- three more slots before it, in both images (lithtech.exe
+	// 0x0048b550 and server.dll 0x100403b0 call +0x4c).
+	virtual LTRESULT _pX16()=0; virtual LTRESULT _pX17()=0;
+	virtual LTRESULT _pX18()=0;
 	// 0x40 — the file, and how it went.
 	virtual LTRESULT FileLoadNotify(char* pFilename, LTRESULT status)=0;
 };

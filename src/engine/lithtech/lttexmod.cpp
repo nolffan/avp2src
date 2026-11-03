@@ -296,6 +296,8 @@ class CClientMgrTexView
 {
 public:
 	uint8  m_pad_00[0x21ac];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x004a558c reads +0x22bc).
+	uint8 m_padExtra[0x110];
 	// Bumped once per Render; a texture's own copy equalling this is what
 	// WasTextureDrawnLastFrame answers LT_YES to.
 	uint16 m_nFrameCode;                     // 0x21ac

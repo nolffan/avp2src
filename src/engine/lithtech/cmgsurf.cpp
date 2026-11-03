@@ -137,6 +137,9 @@ public:
 	TextureDataQ428* m_pEngineData;          // 0x08
 	void*          m_pRenderData;            // 0x0c
 	uint8          m_pad_10[0x34 - 0x10];
+	// AVP2: as Primal Hunt (PH addresses) -- SharedTexture is 0x40 bytes (cmgrinit.cpp's bank Term, the sb_Init
+	// size at 0x00415fee), which moves m_nMode to +0xac (0x004a81b3).
+	uint8          m_padExtra34[0x40 - 0x34];
 };
 
 // 0x00462900 -- clientmgr2.cpp / clientrender.cpp name it and WARN it is

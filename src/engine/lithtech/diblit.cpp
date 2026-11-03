@@ -1147,16 +1147,21 @@ public:
 // The four render slots this cluster uses, with clientblit.cpp's names and
 // prototypes.  All four are plain function pointers reached through the
 // 0x004b17a4 pointer, never virtuals.
+//
+// AVP2: (those offsets are NOLF's) AvP2's and Primal Hunt's render struct is
+// eight bytes longer ahead of all four (+0xdc / +0xe0 / +0xec / +0xf0:
+// Primal Hunt 0x00446cf4, 0x00446fc0, 0x00446cd1, 0x00446fb0), as
+// ccclient.cpp's view records for +0xb4 on.
 class RenderStructWarpQ438
 {
 public:
-	uint8   m_pad_00[0xd4];
-	void*  (*LockSurface)(void* pRenderData);                       // 0x0d4
-	void   (*UnlockSurface)(void* pRenderData);                     // 0x0d8
-	uint8   m_pad_dc[0xe4 - 0xdc];
+	uint8   m_pad_00[0xdc];
+	void*  (*LockSurface)(void* pRenderData);                       // 0x0dc
+	void   (*UnlockSurface)(void* pRenderData);                     // 0x0e0
+	uint8   m_pad_e4[0xec - 0xe4];
 	LTBOOL (*LockScreen)(int nLeft, int nTop, int nRight, int nBottom,
-	                     void** ppPixels, uint32* pPitch);          // 0x0e4
-	void   (*UnlockScreen)();                                       // 0x0e8
+	                     void** ppPixels, uint32* pPitch);          // 0x0ec
+	void   (*UnlockScreen)();                                       // 0x0f0
 };
 
 extern RenderStructWarpQ438* g_pRenderQ438;            // 0x004b17a4

@@ -241,6 +241,17 @@ public:
 
 	void* PopOutOfLineQ440();                // 0x00442920
 
+	// The same pop, written out for CDMPendingBankQ440::AllocExpanded.
+	void* Pop()
+	{
+		void* pRecord = m_pFree;
+
+		if (pRecord)
+			m_pFree = *(void**)pRecord;
+
+		return pRecord;
+	}
+
 	// The fast path run backwards, and inline at every site too. The null test
 	// is part of it: each site tests the node again right after the list
 	// Remove that cannot have changed it, except the one (0x004421b0) where
@@ -312,6 +323,27 @@ public:
 
 		return PopOutOfLineQ440();
 	}
+
+	// The third shape, Alloc with the pop after the Grow expanded as well.
+	// It is what `new CDMPendingNode` gives in AvP2 and Primal Hunt
+	// (operator new below): PlaySecondary and PlayMotif
+	// (0x0044cc39..0x0044cc6f, 0x0044ced6..0x0044cf0c) are byte-identical
+	// with it, the type store guarded by the allocation's own null test.
+	void* AllocExpanded()
+	{
+		void* pRecord = m_pFree;
+
+		if (pRecord)
+		{
+			m_pFree = *(void**)pRecord;
+			return pRecord;
+		}
+
+		if (!Grow())
+			return LTNULL;
+
+		return Pop();
+	}
 };
 
 class CDMPlayingBankQ440 : public CDMBank
@@ -342,11 +374,12 @@ public:
 extern CDMPendingBankQ440 g_PendingBank;     // 0x004b3fc8 (free list at +0x10)
 extern CDMPlayingBankQ440 g_PlayingBank;     // 0x004b3f98
 
-// ChangeIntensity is the only function in the class that reaches the bank
-// through `new`, and the shape it gets is AllocPop's, not Alloc's.
+// NOLF's ChangeIntensity reached the bank through `new` with AllocPop's
+// shape; in AvP2 and Primal Hunt PlaySecondary and PlayMotif use `new` too,
+// and all of them get AllocExpanded's (see there).
 inline void* CDMPendingNode::operator new(unsigned int nSize)
 {
-	return g_PendingBank.AllocPop();
+	return g_PendingBank.AllocExpanded();
 }
 
 
@@ -396,6 +429,12 @@ public:
 	CDMPlayingNode* m_pTail;                 // 0x004
 
 	void AddHead(CDMPlayingNode* pNode);                            // 0x0048de30
+
+	// 0x0044e460 (Primal Hunt): take a node from g_PlayingBank for a
+	// segment state just started and AddTail it; nothing for a null state.
+	// AvP2's and Primal Hunt's PlaySecondary and PlayMotif call it where
+	// NOLF's expanded the same work inline (name ours).
+	void Add(IDirectMusicSegmentState* pSegState, CDMSegment* pSegment);
 
 	// 0x00442080: the node playing this segment state (name ours).
 	CDMPlayingNode* FindBySegState(IDirectMusicSegmentState* pSegState);
@@ -687,7 +726,7 @@ public:
 
 	// The three TermLevel calls on this class that are not interface slots
 	// (names ours). 0x00442100 empties the pending list onto its bank;
-	// 0x004426c0 tests the word at 0xe8 and jumps into 0x00442490 when it is
+	// 0x004426c0 tests the word at 0xfc (NOLF's 0xe8) and jumps into 0x00442490 when it is
 	// set, answering 1 otherwise.
 	// 0x00442130: the row of the transition table for going from one
 	// intensity to another, or its first word when either is out of range
@@ -710,48 +749,67 @@ public:
 	CDMBandList       m_BandList;            // 0x050
 	CDMUnknown58List  m_Unknown58List;       // 0x058
 	CDMUnknown60List  m_Unknown60List;       // 0x060
+	// AvP2 1.0.9.6 and Primal Hunt lay the rest out 0x10 bytes longer than
+	// NOLF's up to the lock, plus a VOLUMEOFFSET word after the volume.
+	// Read off Primal Hunt's ClearPendingList (0x0044e2f0: two pending
+	// lists, 0x68 and 0x70), Stop and TermLevel (0x0044c6ce..0x0044c6ed,
+	// 0x0044c424..0x0044c441: three playing lists, 0x7c/0x84/0x8c, and
+	// the lock at 0x94), PlaySecondary/PlayMotif (0x0044cc19 and
+	// 0x0044ceb6 add to 0x84 and 0x8c; both queue to 0x70) and InitLevel
+	// (0x0044bfff..0x0044c0c6).  AvP2's TermLevel (0x00448590) and Play
+	// (0x00448780) read the same offsets.
+	//
 	// Requests waiting for the segment now playing to end, and the node to
 	// queue the next one behind.
 	CDMPendingList m_PendingList;            // 0x068
-	CDMPendingNode* m_pQueueAfter;           // 0x070
-	CDMPlayingList m_SecondaryList;          // 0x074
-	CDMPlayingList m_MotifList;              // 0x07c
-	DMCRITICAL_SECTION m_CriticalSection;    // 0x084
+	// Secondaries and motifs asked to start on the next segment boundary
+	// (`movl $5` / AddTail at 0x0044cf0c; name ours).
+	CDMPendingList m_PendingSecondaryList;   // 0x070
+	CDMPendingNode* m_pQueueAfter;           // 0x078
+	// A third playing list, ahead of the secondaries: Stop and TermLevel
+	// stop it with the other two and ChangeIntensity adds to it
+	// (0x0044c983; name ours).
+	CDMPlayingList m_PrimaryList;            // 0x07c
+	CDMPlayingList m_SecondaryList;          // 0x084
+	CDMPlayingList m_MotifList;              // 0x08c
+	DMCRITICAL_SECTION m_CriticalSection;    // 0x094
 	// The intensity now playing: ChangeIntensity compares its argument with
 	// this and reports "new intensity same as old" when they agree, and
 	// InitLevel starts it at zero.
-	int    m_nCurIntensity;                  // 0x09c
+	int    m_nCurIntensity;                  // 0x0ac
 	// The level's numbers, from the control file's top-level keys in this
-	// order: NUMINTENSITIES, INITIALINTENSITY, INITIALVOLUME, PCHANNELS,
-	// VOICES, SYNTHSAMPLERATE. The first three default to zero, the channels
-	// and voices to 64, the sample rate to 44100.
-	int    m_nNumIntensities;                // 0x0a0
+	// order: NUMINTENSITIES, INITIALINTENSITY, INITIALVOLUME, VOLUMEOFFSET,
+	// PCHANNELS, VOICES, SYNTHSAMPLERATE. The first four default to zero,
+	// the channels and voices to 64, the sample rate to 44100.
+	int    m_nNumIntensities;                // 0x0b0
 	// What Play asks ChangeIntensity for, so it is the level's starting
-	// intensity — the number GetInitialIntensity hands out.
-	// What Play asks ChangeIntensity for, so it is the level's starting
-	// intensity — the number GetInitialIntensity hands out.
-	int    m_nInitialIntensity;              // 0x0a4
-	int    m_nInitialVolume;                 // 0x0a8
-	int    m_nNumPChannels;                  // 0x0ac
-	int    m_nNumVoices;                     // 0x0b0
-	int    m_nSynthSampleRate;               // 0x0b4
+	// intensity — the number GetInitialIntensity hands out (0x0044c5d8).
+	int    m_nInitialIntensity;              // 0x0b4
+	int    m_nInitialVolume;                 // 0x0b8
+	int    m_nVolumeOffset;                  // 0x0bc  (0x0044c07a; name ours)
+	int    m_nNumPChannels;                  // 0x0c0
+	int    m_nNumVoices;                     // 0x0c4
+	int    m_nSynthSampleRate;               // 0x0c8
 	// The arrays the level is built on: N+1 intensities (a counted array, its
 	// element count in the dword before the first element) and (N+1)*(N+1)
 	// transitions, both allocated by InitLevel and freed by TermLevel.
-	CDMIntensity*  m_aIntensities;           // 0x0b8
-	int            m_nNumTransitions;        // 0x0bc
-	CDMTransition* m_aTransitions;           // 0x0c0
+	CDMIntensity*  m_aIntensities;           // 0x0cc
+	int            m_nNumTransitions;        // 0x0d0
+	CDMTransition* m_aTransitions;           // 0x0d4
 	// The two directory strings SetWorkingDirectory replaces, type 1 and 2.
-	char*  m_pUnknownC4;                     // 0x0c4
-	char*  m_pUnknownC8;                     // 0x0c8
+	char*  m_pUnknownC4;                     // 0x0d8  (NOLF's 0xc4)
+	char*  m_pUnknownC8;                     // 0x0dc  (NOLF's 0xc8)
 	// Init copies GUID_NOTIFICATION_SEGMENT here and registers it
 	// (0x0043f9a7); the event it hands the performance (0x0043f9e9), the
 	// quit flag the thread polls (0x0043f543) and the thread (0x0043faaa)
 	// follow.  Names ours.
-	DMGUID m_guidNotifyType;                 // 0x0cc
-	void*  m_hNotifyEvent;                   // 0x0dc
-	int    m_bQuitThread;                    // 0x0e0
-	void*  m_hThread;                        // 0x0e4
+	DMGUID m_guidNotifyType;                 // 0x0e0
+	void*  m_hNotifyEvent;                   // 0x0f0
+	int    m_bQuitThread;                    // 0x0f4
+	void*  m_hThread;                        // 0x0f8
+	// ReadReverbParameters' REVERB flag, which Unknown4426c0 tests
+	// (dmextra.cpp's m_bReverbOnQ440; name ours).
+	LTBOOL m_bReverbOn;                      // 0x0fc
 };
 
 // 0x004b3fe0: the manager the constructor publishes (0x0043f915), which the

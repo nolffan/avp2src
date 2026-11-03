@@ -133,6 +133,8 @@ class CDemoClientMgrQ42C
 {
 public:
 	uint8  m_pad_0000[0x1254];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x00436cb1 reads +0x136c).
+	uint8 m_padExtra[0x110];
 	float  m_fPrevTime;                      // +0x1254
 	uint32 m_n1258;                          // +0x1258
 	float  m_fCurTime;                       // +0x125c
@@ -871,6 +873,8 @@ class CFileMgrHolderQ42C
 {
 public:
 	uint8  m_pad_0000[0x1534];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x004377b9 reads +0x1644).
+	uint8 m_padExtra[0x110];
 	void*  m_pFileMgr;                       // +0x1534
 };
 

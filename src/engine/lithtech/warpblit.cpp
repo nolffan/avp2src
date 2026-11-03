@@ -801,6 +801,9 @@ struct CSurfaceQ40E
 struct RenderStructQ40E
 {
 	uint8   m_pad_00[0xd4];
+	// AVP2: as Primal Hunt (PH addresses) -- the renderer half of the RenderStruct is two entries longer below
+	// here (FlipScreen, +0xbc here, is called at +0xc4: 0x00412209).
+	uint8 m_padExtra[8];
 	void*  (*LockSurface)(void* pRenderData);                       // 0x0d4
 	void   (*UnlockSurface)(void* pRenderData);                     // 0x0d8
 	LTBOOL (*OptimizeSurface)(void* pRenderData, HLTCOLORQ40E h);   // 0x0dc
@@ -845,6 +848,8 @@ public:
 struct CClientMgrQ40E
 {
 	uint8        m_pad_00[0x1618];
+	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x0040fd18 adds 0x1728).
+	uint8 m_padExtra[0x110];
 	CBlitterQ40E m_Blitter;                  // 0x1618
 };
 

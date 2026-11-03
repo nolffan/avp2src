@@ -915,6 +915,9 @@ public:
 	virtual ~CSoundInstanceL10();
 
 	uint8 m_pad_04[0xb8 - 0x04];
+	// AVP2: as Primal Hunt (PH addresses) -- 0xc4 bytes, not 0xb8 (0x004a0010, the Term the in-head and ambient
+	// banks share there; the 3D one, 0x004a0100, is 0xdc).
+	uint8 m_padExtra[0xc];
 };
 
 // m_Type == 0, the in-head sound (vtable 0x004a3698). Its constructor is

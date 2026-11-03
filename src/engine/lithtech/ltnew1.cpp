@@ -106,8 +106,9 @@ public:
 	class CClientAttachment* m_pAttachments;
 	uint8  m_pad_9c[0xbc - 0x9c];
 	char   m_ObjectType;                     // 0x0bc  OT_*, clientmgr.h's
-	uint8  m_pad_bd[0x1c0 - 0xbd];
-	// 0x1c0 — for an OT_SPRITE object the sprite's own control block starts
+	uint8  m_pad_bd[0x1c8 - 0xbd];
+	// 0x1c8 (NOLF's 0x1c0; AvP2's client object is eight bytes longer) —
+	// for an OT_SPRITE object the sprite's own control block starts
 	// here; GetSpriteControl hands its address out as the interface pointer
 	// and does nothing else, so the interface IS the sub-object.
 	uint8  m_SpriteControl[4];
@@ -142,13 +143,14 @@ HSTRING sb_CreateString(char* pString);
 class CLTClientView
 {
 public:
-	uint8 m_pad_00[0x360];
-	// 0x360 — the concrete ILTVideoMgr.  StartVideo calls its slot 0 with
+	// AVP2: the two fields below are sixteen bytes past NOLF's.
+	uint8 m_pad_00[0x370];
+	// 0x370 — the concrete ILTVideoMgr.  StartVideo calls its slot 0 with
 	// three arguments and its slot 4 with one, which is StartOnScreenVideo
 	// and StopVideo in iltvideomgr.h's declaration order exactly.
 	ILTVideoMgr* m_pVideoMgr;
-	uint8 m_pad_364[0x3c4 - 0x364];
-	// 0x3c4 — the one video the client has playing.  Its address is taken
+	uint8 m_pad_374[0x3d4 - 0x374];
+	// 0x3d4 — the one video the client has playing.  Its address is taken
 	// (the reference argument) and it is also stored through, which is why
 	// the `lea` is hoisted above the null test in the shipped code.
 	HVIDEO m_hVideo;
@@ -316,8 +318,8 @@ HSTRING CLTClientView::CreateString(char* pString)
 class CClientMgrCursorView
 {
 public:
-	uint8      m_pad_00[0x1614];
-	ILTCursor* m_pCursor;                    // 0x1614
+	uint8      m_pad_00[0x1724];
+	ILTCursor* m_pCursor;                    // 0x1724  (NOLF's 0x1614)
 };
 
 class CClientCursorProxy
@@ -1279,11 +1281,13 @@ public:
 	IDMPerformanceQ7* m_pPerformance;        // 0x014
 	uint8 m_pad_18[0x68 - 0x18];
 	CDMPendingListQ7 m_PendingList;          // 0x068
-	uint8 m_pad_70[0xa0 - 0x70];
-	int   m_nNumIntensities;                 // 0x0a0
-	uint8 m_pad_a4[0xbc - 0xa4];
-	int   m_nNumTransitions;                 // 0x0bc
-	CDMTransitionQ7* m_aTransitions;         // 0x0c0
+	// AVP2: the fields below are 0x10..0x14 bytes past NOLF's (clientmgr3.cpp's
+	// CCmgMusicMgr has the layout).
+	uint8 m_pad_70[0xb0 - 0x70];
+	int   m_nNumIntensities;                 // 0x0b0
+	uint8 m_pad_b4[0xd0 - 0xb4];
+	int   m_nNumTransitions;                 // 0x0d0
+	CDMTransitionQ7* m_aTransitions;         // 0x0d4
 
 	void ClearPendingList();                                        // 0x00442100
 	CDMTransitionQ7* GetTransition(int nFrom, int nTo);             // 0x00442130

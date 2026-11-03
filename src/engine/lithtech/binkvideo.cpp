@@ -190,9 +190,10 @@ TextureDataK* tex_CreateTextureDataK(uint32 nBitDepth, uint32 nWidth, uint32 nHe
                                      uint32 nUnknown6, uint32 bBumpmap);
 void          tex_FreeTextureDataK(TextureDataK* pData);
 
-// clienttexmgr.cpp's SharedTextureView, field for field: 0x34 bytes, which
-// is exactly what 0x00401b90 initialises and what makes BinkVideoInstK
-// 0x68 bytes -- the size 0x00401a50 passes to operator new.
+// clienttexmgr.cpp's SharedTextureView, field for field: 0x34 bytes in
+// NOLF, which is exactly what 0x00401b90 initialises and what makes NOLF's
+// BinkVideoInstK 0x68 bytes -- the size 0x00401a50 passes to operator new.
+// AvP2 and Primal Hunt add three words at the end (below).
 //
 // +0x00 is an eight-byte sub-object with its own constructor (0x0045a350,
 // "push $0; call 0x45a370") and a one-argument method (0x0045a370,
@@ -236,6 +237,11 @@ public:
 	uint16        m_nFrameCode;              // 0x30
 	uint16        m_nRefCount : 15;          // 0x32
 	uint16        m_bMarked   : 1;           // 0x32 bit 15
+	// 0x40 bytes in AvP2 1.0.9.6 and Primal Hunt, not NOLF's 0x34: the
+	// constructor is out of line there (0x004304f0) and clears two more
+	// words at 0x34 and 0x38, and BinkVideoInstK's own fields all sit 0xc
+	// later to match.
+	uint32        m_Unknown34[3];            // 0x34 .. 0x3f
 };
 
 // 0x00401b90 / 0x0048aba0 expand this inline, identically but for the
@@ -575,15 +581,18 @@ inline void k_RemoveFromList(LTListK* pList, LTLinkK* pLink)
 
 class BinkVideoInstK;
 
-// The thing BindToSurface binds a video to: only its +0x30, a
+// The thing BindToSurface binds a video to: only its +0x2c (NOLF's +0x30), a
 // SharedTexture*, is reached.  0x00401c70's first walk puts the saved one
 // back, which is iltvideomgr.h's "for a texture video, this restores the
 // original textures on any polies it's bound to".
 class CVideoPolyK
 {
 public:
-	uint8           m_pad_00[0x30];
-	SharedTextureK* m_pTexture;              // 0x30
+	// +0x2c, not +0x30: Term's restore walk stores through it (0x00401e72)
+	// and BindToSurface reads and writes it there (0x0040246f, 0x00402480),
+	// in AvP2 1.0.9.6 as in Primal Hunt.
+	uint8           m_pad_00[0x2c];
+	SharedTextureK* m_pTexture;              // 0x2c
 };
 
 // The twelve-byte notifier each hooked pointer carries at its +0x04: a
@@ -698,10 +707,10 @@ public:
 	BinkVideoMgrK*        m_pMgr;            // 0x1c
 	IDirectDrawSurfaceK*  m_pSurface;        // 0x20
 	TextureDataK*         m_pTextureData;    // 0x24
-	SharedTextureK        m_Texture;         // 0x28 .. 0x5b
-	uint32                m_nFlags;          // 0x5c
-	uint32                m_nMode;           // 0x60
-	uint32                m_nSurfaceType;    // 0x64
+	SharedTextureK        m_Texture;         // 0x28 .. 0x67
+	uint32                m_nFlags;          // 0x68
+	uint32                m_nMode;           // 0x6c
+	uint32                m_nSurfaceType;    // 0x70
 };
 
 // Vtable 0x004a1440, five slots: StartOnScreenVideo (0x00401b50),

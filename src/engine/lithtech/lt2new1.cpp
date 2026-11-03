@@ -127,24 +127,25 @@ LTCommandVarView* cc_FindConsoleVar(ConsoleStateView* pState, char* pName);
 class CClientMgrConsoleView
 {
 public:
-	uint8            m_pad_00[0x1268];
-	ConsoleStateView m_ServerConsoleState;   // 0x1268
+	uint8            m_pad_00[0x1378];
+	ConsoleStateView m_ServerConsoleState;   // 0x1378  (NOLF's 0x1268)
 };
 
 class CLTClientConsoleView
 {
 public:
-	uint8 m_pad_00[0x360];
-	// 0x360 — the concrete ILTVideoMgr (ltnew1.cpp block A established it
+	// AVP2: every field below is sixteen bytes past NOLF's.
+	uint8 m_pad_00[0x370];
+	// 0x370 — the concrete ILTVideoMgr (ltnew1.cpp block A established it
 	// off StartVideo, which calls its slot 0 with three arguments).
 	ILTVideoMgr* m_pVideoMgr;
-	uint8 m_pad_364[0x3c0 - 0x364];
-	// 0x3c0 — the client manager.  Twenty-eight distinct ILTClient slot
-	// bodies in 0x00405000..0x00407900 open with `mov 0x3c0(%ecx),%e??`,
-	// and the two readers below then add 0x1268 to it, which is the offset
-	// clientmgr2.cpp already has as a sub-object passed by address.
+	uint8 m_pad_374[0x3d0 - 0x374];
+	// 0x3d0 — the client manager.  Twenty-eight distinct ILTClient slot
+	// bodies open with `mov 0x3c0(%ecx),%e??` in NOLF (0x3d0 here), and the
+	// two readers below then add 0x1268 (0x1378 here) to it, which is the
+	// offset clientmgr2.cpp already has as a sub-object passed by address.
 	CClientMgrConsoleView* m_pClientMgr;
-	// 0x3c4 — the one video the client has playing (ltnew1.cpp block A).
+	// 0x3d4 — the one video the client has playing (ltnew1.cpp block A).
 	HVIDEO m_hVideo;
 
 	LTRESULT GetSConValueFloat(char* pName, float& val);              // 0x00406ab0
@@ -304,7 +305,7 @@ public:
 	uint8    m_pad_8c[0xc4 - 0x8c];
 	LTVector m_Velocity;                     // 0x0c4
 	LTVector m_Acceleration;                 // 0x0d0
-	uint8    m_pad_e0[0x124 - 0xe0];
+	uint8    m_pad_dc[0x124 - 0xdc];
 	uint32   m_ChangeFlags;                  // 0x124  CHANGEFLAG_*
 };
 
@@ -354,8 +355,9 @@ public:
 class CClientMgrPhysicsView
 {
 public:
-	uint8             m_pad_00[0x4c4];
-	CMoveAbstractView m_MoveAbstract;        // 0x4c4
+	// AVP2: 0x4c8, four bytes past NOLF's 0x4c4 (clientmgr2.cpp's layout).
+	uint8             m_pad_00[0x4c8];
+	CMoveAbstractView m_MoveAbstract;        // 0x4c8
 };
 
 // 0x004500d0 (name ours) — the integrator.  cdecl, one argument, and it
@@ -878,8 +880,10 @@ public:
 class CListNodeOwnerView
 {
 public:
-	uint8           m_pad_00[0x28];
-	CSimpleListView m_List28;                // 0x28
+	// AVP2: the list is at +0x24, four bytes earlier than NOLF's +0x28
+	// (Primal Hunt's 0x004a759d `lea 0x24(%eax)`).
+	uint8           m_pad_00[0x24];
+	CSimpleListView m_List28;                // 0x24
 };
 
 class CListMemberView
@@ -1049,7 +1053,7 @@ LTRESULT CCrushHostView::sub_47c180(CCrushObjView* pObj, void* pData)
 //    `mov 0x4bc(%ecx),%eax; mov 0x4(%esp),%ecx; mov %eax,0xc(%ecx);
 //    ret $0x4`), so the manager is reached once and used twice.
 //  * `mov (%esi),%edx; push %edi; push $0x0; mov %esi,%ecx;
-//    call *0x28(%edx)` — slot 10 of IClientShell, which iclientshell.h
+//    call *0x30(%edx)` — slot 12 of IClientShell (10 in NOLF), which iclientshell.h
 //    declares as SpecialEffectNotify(HLOCALOBJ, HMESSAGEREAD): a null
 //    object and the message.  The message argument is the second parameter
 //    PLUS EIGHT (`add $0x8,%edi`), so the parameter is the container and
@@ -1060,11 +1064,16 @@ LTRESULT CCrushHostView::sub_47c180(CCrushObjView* pObj, void* pData)
 class CClientShellView
 {
 public:
+	// AVP2's iclientshell.h order: GetAuthContext and OnPeerToPeerAuthPacket
+	// are the two slots NOLF's lacks, which puts SpecialEffectNotify at
+	// 0x30 (Primal Hunt's 0x00496e97).
 	virtual ~CClientShellView();
+	virtual void* GetAuthContext();
 	virtual void OnCommandOn(int command);
 	virtual void OnCommandOff(int command);
 	virtual void OnKeyDown(int key, int rep);
 	virtual void OnKeyUp(int key);
+	virtual void OnPeerToPeerAuthPacket(void* hMessage);
 	virtual void OnMessage(uint8 messageID, void* hMessage);
 	virtual void OnModelKey(HLOCALOBJ hObj, void* pArgs);
 	virtual void PreLoadWorld(char* pWorldName);
@@ -1076,8 +1085,8 @@ public:
 class CClientMgrShellView
 {
 public:
-	uint8             m_pad_00[0x61c];
-	CClientShellView* m_pClientShell;        // 0x61c
+	uint8             m_pad_00[0x620];
+	CClientShellView* m_pClientShell;        // 0x620  (NOLF's 0x61c)
 
 	void sub_411440(class CMessageView* pMsg);
 };

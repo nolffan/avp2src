@@ -315,9 +315,10 @@ public:
 	virtual void _v00();  virtual void _v04();  virtual void _v08();
 	virtual void _v0c();  virtual void _v10();  virtual void _v14();
 	virtual void _v18();  virtual void _v1c();  virtual void _v20();
-	virtual void _v24();
-	virtual void OnCommandOn(void* hClient, int command);    // slot 0x28
-	virtual void OnCommandOff(void* hClient, int command);   // slot 0x2c
+	virtual void _v24();  virtual void _v28();  virtual void _v2c();
+	virtual void _v30();
+	virtual void OnCommandOn(void* hClient, int command);    // slot 0x34
+	virtual void OnCommandOff(void* hClient, int command);   // slot 0x38
 };
 
 class CClassMgr
@@ -711,9 +712,9 @@ LTRESULT sub_100332e8(CServerMgr* pMgr, ObjectCreateStruct* pStruct,
 //
 //  IT IS AN if/else, not two statements: the shell pointer and its vptr are
 //  loaded ONCE, above the branch (0x00475947/0x0047594d), and each arm is a
-//  single indirect call (slots 0x28 and 0x2c = IServerShell::OnCommandOn and
-//  OnCommandOff, counted off src/LT2/sdk/inc/iservershell.h with the virtual
-//  destructor at slot 0).  The shell is re-loaded EVERY iteration, so the
+//  single indirect call (slots 0x34 and 0x38 in every AvP2 image =
+//  IServerShell::OnCommandOn and OnCommandOff, counted off AvP2's
+//  src/LT2/sdk/inc/iservershell.h with the virtual destructor at slot 0).  The shell is re-loaded EVERY iteration, so the
 //  source reaches it through m_ClassMgr.m_pServerShell inside the loop.
 // ======================================================================= //
 
@@ -950,8 +951,13 @@ class CClientCreateRequestQ474
 {
 public:
 	CFileIdentQ474          m_ObjectFile;                      // 0x00
-	CFileIdentQ474          m_SkinFiles[2];                    // 0x0c
-	ObjectCreateStructQ474* m_pStruct;                         // 0x24
+	CFileIdentQ474          m_SkinFiles[MAX_MODEL_TEXTURES];   // 0x0c
+#ifdef PRIMAL_HUNT
+	// PH: one more file reference ahead of the create struct -- Primal
+	// Hunt's container hook reads it at 0x48 (0x00493717), AvP2's at 0x3c.
+	CFileIdentQ474          m_ExtraFile;                       // 0x3c
+#endif
+	ObjectCreateStructQ474* m_pStruct;                         // 0x3c (PH 0x48)
 };
 
 class CSpriteQ474;
@@ -971,10 +977,10 @@ void sub_483cc0Q474(CSpriteTrackerQ474* pRec, void* pSprite);
 class CClientModelInstQ474
 {
 public:
-	uint8              m_pad_000[0x1a8];
-	CSpriteTrackerQ474 m_SpriteTracker;                        // 0x1a8
-	uint8              m_pad_1bc[0x270 - 0x1bc];
-	uint16             m_nUnknown270;                          // 0x270
+	uint8              m_pad_000[0x1b0];
+	CSpriteTrackerQ474 m_SpriteTracker;                        // 0x1b0
+	uint8              m_pad_1c4[0x278 - 0x1c4];
+	uint16             m_nUnknown270;                          // 0x278
 };
 
 // 0x00477b80 -- cmodelload.cpp's cm_WorldModelExtraInitQ474.

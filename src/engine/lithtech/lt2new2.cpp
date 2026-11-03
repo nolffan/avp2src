@@ -104,8 +104,8 @@
 class CClientMgrCursorView
 {
 public:
-	uint8      m_pad_00[0x1614];
-	ILTCursor* m_pCursor;                    // 0x1614
+	uint8      m_pad_00[0x1724];
+	ILTCursor* m_pCursor;                    // 0x1724  (NOLF's 0x1614)
 };
 
 class CClientCursorProxy
@@ -214,8 +214,8 @@ LTRESULT CClientCursorProxy::IsValidCursor(HLTCURSOR hCursor)
 class CClientMgrFileView
 {
 public:
-	uint8  m_pad_00[0x1534];
-	class CFileMgrView* m_pFileMgr;          // 0x1534
+	uint8  m_pad_00[0x1644];
+	class CFileMgrView* m_pFileMgr;          // 0x1644  (NOLF's 0x1534)
 };
 
 // 0x00404950 -- walk the file manager's tree list for the source name and
@@ -229,8 +229,8 @@ extern LTRESULT sub_00404950(class CFileMgrView* pFileMgr,
 class CLTClientFiles
 {
 public:
-	uint8               m_pad_00[0x3c0];
-	CClientMgrFileView* m_pClientMgr;        // 0x3c0
+	uint8               m_pad_00[0x3d0];
+	CClientMgrFileView* m_pClientMgr;        // 0x3d0  (NOLF's 0x3c0)
 
 	LTRESULT CopyFile(const char* pszSourceFile, const char* pszDestFile);
 };
@@ -483,10 +483,11 @@ public:
 class CClientMgrRateView
 {
 public:
-	uint8            m_pad_0000[0x11e4];
-	CRateTrackerView m_FrameRate;            // 0x11e4
-	uint8            m_pad_11f0[0x1258 - 0x11f0];
-	float            m_FrameTime;            // 0x1258
+	// AVP2: 0x110 bytes past NOLF's (clientmgr3.cpp's CCmgClientMgr).
+	uint8            m_pad_0000[0x12f4];
+	CRateTrackerView m_FrameRate;            // 0x12f4
+	uint8            m_pad_1300[0x1368 - 0x1300];
+	float            m_FrameTime;            // 0x1368
 
 	void CountFrame();                       // 0x0041fe30 (name ours)
 };
@@ -543,8 +544,9 @@ void CClientMgrRateView::CountFrame()
 class CRenderStructFreeView
 {
 public:
-	uint8 m_pad_00[0xcc];
-	void  (*FreeSurfaceData)(void* pRenderData);   // 0x0cc
+	// AVP2's RenderStruct has two more dwords ahead of this than NOLF's.
+	uint8 m_pad_00[0xd4];
+	void  (*FreeSurfaceData)(void* pRenderData);   // 0x0d4
 };
 
 class CSurfaceRenderView
@@ -635,7 +637,7 @@ public:
 	// `movl $0x0` in Free, which is the whole difference from the surface
 	// release at 0x0040c5a0 above.
 	//
-	// The constructor's two trailing zeros are an ARRAY cleared in a loop:
+	// The constructor's trailing zeros are an ARRAY cleared in a loop:
 	// VC6 unrolls it and keeps the zero in a register (`xor %edx,%edx; mov
 	// %edx,0x34(%eax); mov %edx,0x38(%eax)`), where two named fields -- as
 	// separate stores, chained, member-initialised, floats, a struct pair or
@@ -645,7 +647,7 @@ public:
 	{
 		m_pMessage = LTNULL;
 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 5; i++)
 			m_n34[i] = 0;
 	}
 
@@ -658,8 +660,9 @@ public:
 	uint8            m_pad_00[0x2c];
 	IReleasableView* m_pMessage;             // 0x2c
 	uint32           m_n30;                  // 0x30
-	uint32           m_n34[2];               // 0x34
-	uint8            m_pad_3c[0x54 - 0x3c];
+	// AVP2: five, not NOLF's two (Primal Hunt's 0x00418d73..0x00418d7f).
+	uint32           m_n34[5];               // 0x34
+	uint8            m_pad_48[0x54 - 0x48];
 };
 
 // servermgr.h's StructBank, the fields Allocate/Free reach.
@@ -1368,8 +1371,8 @@ public:
 class CClientMgrQ442
 {
 public:
-	uint8 m_pad_0000[0x1534];
-	void* m_pFileMgr;                        // 0x1534
+	uint8 m_pad_0000[0x1644];
+	void* m_pFileMgr;                        // 0x1644  (NOLF's 0x1534)
 };
 
 extern CClientMgrQ442* g_pClientMgrQ442;     // 0x004b17e0
@@ -1507,9 +1510,10 @@ public:
 class RenderStructQ40CA
 {
 public:
-	uint8  m_pad_00[0xd4];
-	void*  (*LockSurface)(void* pRenderData);                       // 0x0d4
-	void   (*UnlockSurface)(void* pRenderData);                     // 0x0d8
+	// AVP2's RenderStruct has two more dwords ahead of these than NOLF's.
+	uint8  m_pad_00[0xdc];
+	void*  (*LockSurface)(void* pRenderData);                       // 0x0dc
+	void   (*UnlockSurface)(void* pRenderData);                     // 0x0e0
 };
 
 class CBlitterQ40CA

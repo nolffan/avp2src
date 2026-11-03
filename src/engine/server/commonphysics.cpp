@@ -330,9 +330,12 @@ LTRESULT SPhysicsLT::MoveObject(HOBJECT hObj, LTVector* pPos, uint32 flags)
 // see servermessage.cpp. Same names, two interfaces, and the parameter type
 // alone dictates both shapes.)
 
+// The force is the server manager's own (+0xa74 in AvP2's managers, lithtech
+// 0x00480b77 `add $0xa88` for its m_Force), not IWorldSim's NOLF-era 0x668,
+// so it is reached the way SetObjectDims reaches the manager below.
 LTRESULT SPhysicsLT::GetGlobalForce(LTVector& vec)
 {
-	vec = m_pWorld->m_ForceControl.m_Force;
+	vec = ((CServerMgr*)m_pWorld)->m_ForceControl.m_Force;
 	return LT_OK;
 }
 
@@ -371,7 +374,7 @@ inline void GlobalForceControl::Set(LTVector* pVec)
 
 LTRESULT SPhysicsLT::SetGlobalForce(LTVector& vec)
 {
-	m_pWorld->m_ForceControl.Set(&vec);
+	((CServerMgr*)m_pWorld)->m_ForceControl.Set(&vec);
 	return LT_OK;
 }
 
@@ -1043,6 +1046,8 @@ int wm_BoxesOverlap(LTVector* pMin1, LTVector* pMax1,
 //     expression: the else arm zeroes all three and the test that follows is
 //     on the pointer, so a null model is how "neither of them is one" is
 //     carried out of the chain.
+//   * the flag is optional in AvP2: both stores are guarded by a null test
+//     on the pointer (lithtech 0x00463a6b, 0x00463a9c), which NOLF's were not.
 //   * the mask is materialised in a register (`test %edx,0x88(%eax)` twice)
 //     because both arms want it; that is VC6's, not the source's.
 //   * the BSP call's value is normalised to 0/1 (`neg`/`sbb`/`neg`), and by
@@ -1090,7 +1095,8 @@ WM_CINLINE int wm_ObjectsIntersect(LTObject* pObj1, LTObject* pObj2,
 
 	if (pWorldModel)
 	{
-		*pbUsedGeometry = 1;
+		if (pbUsedGeometry)
+			*pbUsedGeometry = 1;
 
 		if (bsp_IntersectBox(pWorldModel->m_pWMIface->GetTransformedBsp(),
 		                     pMin, pMax))
@@ -1099,7 +1105,8 @@ WM_CINLINE int wm_ObjectsIntersect(LTObject* pObj1, LTObject* pObj2,
 		return 0;
 	}
 
-	*pbUsedGeometry = 0;
+	if (pbUsedGeometry)
+		*pbUsedGeometry = 0;
 
 	return 1;
 }

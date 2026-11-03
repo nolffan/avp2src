@@ -763,6 +763,8 @@ class CFnTable178View
 {
 public:
 	uint8 m_pad_000[0x178];
+	// AVP2: as Primal Hunt (PH addresses) -- one more entry below here (0x00433d91 calls +0x17c).
+	uint8 m_padExtra[4];
 	void  (*m_pfnFree0178)(void* hHandle);   // +0x178
 };
 
@@ -868,7 +870,11 @@ public:
 	virtual void _v24()=0; virtual void _v28()=0; virtual void _v2c()=0;
 	virtual void _v30()=0; virtual void _v34()=0; virtual void _v38()=0;
 	virtual void _v3c()=0; virtual void _v40()=0; virtual void _v44()=0;
-	virtual void _v48()=0; virtual void _v4c()=0; virtual void _v50()=0;
+	virtual void _v48()=0;
+	// AVP2: as Primal Hunt (PH addresses) -- two more slots here (clientshell.cpp's OnEvent moves from +0x4c
+	// to +0x54), so these two are called at +0x5c / +0x60 (0x004362c3).
+	virtual void _vX4c()=0; virtual void _vX50()=0;
+	virtual void _v4c()=0; virtual void _v50()=0;
 	virtual void _v54()=0;                                    // 0x54
 	virtual void _v58(void* pA, void* pB)=0;                  // 0x58
 };
@@ -877,6 +883,8 @@ class CClientMgr61cView
 {
 public:
 	uint8               m_pad_000[0x61c];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (0x004362b5 reads +0x620).
+	uint8 m_padExtra[4];
 	CClientHost61cView* m_p61c;              // +0x61c
 };
 

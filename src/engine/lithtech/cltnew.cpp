@@ -81,11 +81,12 @@ public:
 	uint16 m_nServerID;                      // 0x0b8
 	uint8  m_pad_ba[0xbc - 0xba];
 	char   m_ObjectType;                     // 0x0bc  OT_*
-	uint8  m_pad_bd[0x1fc - 0xbd];
-	// 0x1fc/0x200 -- the model node hook and its user pointer.  Written
-	// only by ModelNodeControl, and only for OT_MODEL.
-	NodeControlFn m_NodeControlFn;           // 0x1fc
-	void*         m_pNodeControlUser;        // 0x200
+	uint8  m_pad_bd[0x258 - 0xbd];
+	// 0x258/0x25c -- the model node hook and its user pointer.  Written
+	// only by ModelNodeControl, and only for OT_MODEL.  (NOLF's were at
+	// 0x1fc/0x200; AvP2's model object is longer.)
+	NodeControlFn m_NodeControlFn;           // 0x258
+	void*         m_pNodeControlUser;        // 0x25c
 };
 
 // A container's code is a uint16 at 0x270 -- the same displacement
@@ -97,16 +98,17 @@ public:
 	uint16 m_ContainerCode;                  // 0x270
 };
 
-// A canvas lays its own fields out from 0x1a8, like every other object type
+// A canvas lays its own fields out from 0x1b0, like every other object type
 // (clientmgr.h: the camera's rect, the light's radius, the particle
-// system's list all start there).
+// system's list all start there -- at NOLF's 0x1a8; AvP2's client object
+// is eight bytes longer).
 class CClientCanvasView
 {
 public:
-	uint8       m_pad_00[0x1a8];
-	CanvasDrawFn m_DrawFn;                   // 0x1a8
-	void*        m_pUserData;                // 0x1ac
-	LTFLOAT      m_fRadius;                  // 0x1b0
+	uint8       m_pad_00[0x1b0];
+	CanvasDrawFn m_DrawFn;                   // 0x1b0
+	void*        m_pUserData;                // 0x1b4
+	LTFLOAT      m_fRadius;                  // 0x1b8
 };
 
 // clientmgr.h's CClientParticle: LTParticle plus the four fields the engine
@@ -168,19 +170,21 @@ inline void* sb_Allocate(StructBankView* pBank)
 class CClientParticleSystemView
 {
 public:
-	uint8               m_pad_00[0x1a8];
+	// AVP2: the per-type fields start at 0x1b0, eight bytes later than
+	// NOLF's 0x1a8, and everything below moves with them.
+	uint8               m_pad_00[0x1b0];
 	// A node embedded in the system, used as the list's end marker: its own
-	// m_pPrev is at 0x1e0 and the bank pointer that follows the node lands
-	// at 0x1e4, which is what proves the node is 0x3c bytes.
-	CClientParticleView m_ParticleTail;      // 0x1a8
-	StructBankView*     m_pParticleBank;     // 0x1e4
-	uint8               m_pad_1e8[0x228 - 0x1e8];
-	uint32              m_nParticles;        // 0x228
-	uint32              m_Unknown22c;        // 0x22c  incremented with it
-	LTVector            m_MinPos;            // 0x230
-	LTVector            m_MaxPos;            // 0x23c
-	uint8               m_pad_248[0x24c - 0x248];
-	LTFLOAT             m_fParticleRadius;   // 0x24c  -> the particle's m_Size
+	// m_pPrev is at 0x1e8 and the bank pointer that follows the node lands
+	// at 0x1ec, which is what proves the node is 0x3c bytes.
+	CClientParticleView m_ParticleTail;      // 0x1b0
+	StructBankView*     m_pParticleBank;     // 0x1ec
+	uint8               m_pad_1f0[0x230 - 0x1f0];
+	uint32              m_nParticles;        // 0x230
+	uint32              m_Unknown22c;        // 0x234  incremented with it
+	LTVector            m_MinPos;            // 0x238
+	LTVector            m_MaxPos;            // 0x244
+	uint8               m_pad_250[0x254 - 0x250];
+	LTFLOAT             m_fParticleRadius;   // 0x254  -> the particle's m_Size
 };
 
 
@@ -207,7 +211,9 @@ public:
 	virtual LTRESULT _p24()=0; virtual LTRESULT _p25()=0; virtual LTRESULT _p26()=0; virtual LTRESULT _p27()=0;
 	virtual LTRESULT _p28()=0; virtual LTRESULT _p29()=0; virtual LTRESULT _p30()=0; virtual LTRESULT _p31()=0;
 	virtual LTRESULT _p32()=0; virtual LTRESULT _p33()=0; virtual LTRESULT _p34()=0;
-	virtual LTRESULT Verify()=0;                          // 0x8c
+	// AVP2: a slot more than NOLF's ahead of it (servermsg.h's ReadString).
+	virtual LTRESULT _p35()=0;
+	virtual LTRESULT Verify()=0;                          // 0x90
 };
 
 // packet.h's CPacket itself.  server.dll (/O1) leaves the grow as a call
@@ -324,18 +330,19 @@ public:
 	// 0x06c -- the world, passed whole to the intersector and to the
 	// physics mover elsewhere; here its vptr answers the point query.
 	uint8                  m_World[0x508 - 0x6c];
-	uint8                  m_pad_508[0x50c - 0x508];
-	CClientNetMgrView      m_NetMgr;         // 0x50c .. 0x60b
-	CBaseDriverQueryView*  m_pMainDriver;    // 0x60c  (CNetMgr's own +0x100)
+	// AVP2: four bytes more than NOLF's ahead of here (clientmgr2.cpp).
+	uint8                  m_pad_508[0x510 - 0x508];
+	CClientNetMgrView      m_NetMgr;         // 0x510 .. 0x60f
+	CBaseDriverQueryView*  m_pMainDriver;    // 0x610  (CNetMgr's own +0x100)
 	// 0x610/0x614 -- two string-resource module records, tried in that
 	// order by FormatString (0x614 first).  Each is a POINTER to a record
 	// whose first dword is the HINSTANCE: 0x00484780 dereferences it
 	// (clientstreams.cpp).  Named by address; nothing says which module is
 	// which.
-	void*                  m_pStringModule610;   // 0x610
-	void*                  m_pStringModule614;   // 0x614
-	uint8                  m_pad_618[0x150c - 0x618];
-	CClientConnectionView* m_pConnection;    // 0x150c
+	void*                  m_pStringModule610;   // 0x614
+	void*                  m_pStringModule614;   // 0x618
+	uint8                  m_pad_61c[0x161c - 0x61c];
+	CClientConnectionView* m_pConnection;    // 0x161c
 };
 
 extern CClientMgrView* g_pClientMgr;         // 0x004b17e0
@@ -434,9 +441,14 @@ public:
 	virtual void _v76()=0; virtual void _v77()=0; virtual void _v78()=0; virtual void _v79()=0;
 	virtual void _v80()=0; virtual void _v81()=0; virtual void _v82()=0; virtual void _v83()=0;
 	virtual void _v84()=0;
-	virtual LTRESULT StopVideo()=0;                                          // 0x154, slot 85
+#ifdef PRIMAL_HUNT
+	// PH: ILTCSBase's two file queries after CopyFile (iltcsbase.h) put
+	// two slots ahead of StopVideo (AvP2 1.0.9.6 calls 0x154 and 0x168).
+	virtual void _vPH0()=0; virtual void _vPH1()=0;
+#endif
+	virtual LTRESULT StopVideo()=0;                                          // 0x154, slot 85 (PH: 0x15c)
 	virtual void _v86()=0; virtual void _v87()=0; virtual void _v88()=0; virtual void _v89()=0;
-	virtual LTRESULT EndMessage2(HMESSAGEWRITE hMessage, uint32 flags)=0;    // 0x168, slot 90
+	virtual LTRESULT EndMessage2(HMESSAGEWRITE hMessage, uint32 flags)=0;    // 0x168, slot 90 (PH: 0x170)
 };
 
 class CLTClient
@@ -473,11 +485,12 @@ public:
 public:
 	uint8            m_pad_0000[0x08];
 	ILTCommon*       m_pCommonLT;            // 0x008
-	uint8            m_pad_000c[0x360 - 0x0c];
-	ILTVideoMgr*     m_pVideoMgr;            // 0x360
-	uint8            m_pad_0364[0x3c0 - 0x364];
-	CClientMgrView*  m_pClientMgr;           // 0x3c0
-	HVIDEO           m_hVideo;               // 0x3c4
+	// AVP2: sixteen bytes more than NOLF's ahead of the video manager.
+	uint8            m_pad_000c[0x370 - 0x0c];
+	ILTVideoMgr*     m_pVideoMgr;            // 0x370
+	uint8            m_pad_0374[0x3d0 - 0x374];
+	CClientMgrView*  m_pClientMgr;           // 0x3d0
+	HVIDEO           m_hVideo;               // 0x3d4
 };
 
 // ======================================================================= //

@@ -57,14 +57,16 @@ CObjBase::CObjBase(char nType) : CObjRoot(0)
 
 // 0x100247a1 -- vtable slot 8. The whole of an ObjectCreateStruct that
 // survives creation, in the order the shipped code writes it, which is the
-// source's: the two flag words, then the position, then the rotation, then
-// the scale, then the type, then the manager. LTVector copies as a
+// source's: the two flag words and the user flags (AvP2's addition; NOLF's
+// engine left them to the caller), then the position, then the rotation,
+// then the scale, then the type, then the manager. LTVector copies as a
 // three-word block move (no user operator=) and LTRotation as four
 // register moves, which is ltrotation.h's own operator= expanded.
 void CObjBase::_v20(CAttachMgrView* pAttachMgr, ObjectCreateStruct* pStruct)
 {
 	m_Flags = pStruct->m_Flags;
 	m_Flags2 = pStruct->m_Flags2;
+	m_UserFlags = pStruct->m_UserFlags;
 	m_Pos = pStruct->m_Pos;
 	m_Rotation = pStruct->m_Rotation;
 	m_Scale = pStruct->m_Scale;
@@ -417,22 +419,26 @@ CObjCamera::CObjCamera() : CObjBase(OT_CAMERA)
 	m_v1c4.Init();
 }
 
-// Store order is lithtech.exe's (0x0045b940): cursors, 1a8, 218, 1ac. The
-// server's /O1 copy (0x10025530) hoists its two `andl $0` stores to the top
-// whatever the source order, so it matches either way; lithtech.exe's /O2
-// copy follows the source and was a near with the zeros written first.
+// Store order is Primal Hunt's lithtech.exe (0x0046dc00): 1a8, 1ac, the
+// cursors, then the three vectors and 218 in offset order -- NOLF's engine
+// had the cursors first and the vectors out of order. The server's /O1 copy
+// hoists its two `andl $0` stores to the top whatever the source order
+// (identical). NEAR on lithtech.exe (112 of 112 bytes): only the `lea` of
+// m_Storage and the `xor` of the shared zero are swapped ahead of the vptr
+// store; cursors-first, a chained `B = A = m_Storage` and member
+// initialisers were tried (the last moves the vptr store, worse).
 CObjLineSystem::CObjLineSystem() : CObjBase(OT_LINESYSTEM)
 {
+	m_pUnknown1a8 = LTNULL;
+	m_pUnknown1ac = LTNULL;
+
 	m_pCursorA = m_Storage;
 	m_pCursorB = m_Storage;
 
-	m_pUnknown1a8 = LTNULL;
-	m_f218 = 0.0f;
-	m_pUnknown1ac = LTNULL;
-
-	m_v20c.Init();
 	m_v1f4.Init();
 	m_v200.Init();
+	m_v20c.Init();
+	m_f218 = 0.0f;
 }
 
 
@@ -774,10 +780,33 @@ void CObjLineSystem::_v20(CAttachMgrView* pAttachMgr, ObjectCreateStruct* pStruc
 // links at 0x1b4, so they all belong to this layout; CObjContainer inherits
 // it unchanged and some of these may be reached on a container.
 //
-// The object at 0x1a8 is ltobject_internal.h's IWorldBsp -- IsBusy at slot
-// 0x00, MakeHPoly at 0x08, GetWorldFlags at 0x18 -- which is why the two
-// state questions below are `IsBusy() == 1` and `IsBusy() == 0`, and why the
-// flag wanted at 0x1e1f is bit 2, the one that marks the main world.
+// The object at 0x1b0 is ltobject_internal.h's IWorldBsp -- IsBusy at slot
+// 0x00, MakeHPoly at 0x08 -- which is why the two state questions below are
+// `IsBusy() == 1` and `IsBusy() == 0`. Its flags (bit 2 marks the main world)
+// and the forward sit two slots higher than that header has them; see the
+// view below.
+
+// AvP2's world interface has two more slots than ltobject_internal.h's
+// IWorldBsp (which is NOLF's): every image -- AvP2's and Primal Hunt's,
+// lithtech.exe and server.dll alike -- calls the flags at slot 0x20 (0x0046c938
+// `call *0x20(%eax)`, and the two flag tests at 0x0046c853 and 0x0046c87d)
+// and tail-jumps the forward at 0x24 (0x0046c688). Where the two new slots
+// sit below 0x18 is not known from here, so this view names only the two
+// slots that moved, by their AvP2 offsets.
+class IWorldBspFlagsView
+{
+public:
+	virtual void   _v00() = 0;
+	virtual void   _v04() = 0;
+	virtual void   _v08() = 0;
+	virtual void   _v0c() = 0;
+	virtual void   _v10() = 0;
+	virtual void   _v14() = 0;
+	virtual void   _v18() = 0;
+	virtual void   _v1c() = 0;
+	virtual uint32 GetWorldFlags() = 0;      // 0x20
+	virtual void   Forward() = 0;            // 0x24
+};
 
 // 0x10024c0d — hand the object to the world tree the data object owns. The
 // node that comes back is discarded here; obj_LinkIntoWorldTree has already
@@ -790,7 +819,7 @@ void CObjWorldModel::LinkIntoTree(LTObject* pObject)
 // 0x10024bf1 — forwarded unchanged, which is why it is a tail jump.
 void CObjWorldModel::ForwardToWorldBsp()
 {
-	((IWorldBsp*)m_pWorldBsp)->_v1c();
+	((IWorldBspFlagsView*)m_pWorldBsp)->Forward();
 }
 
 // 0x10024bfc — one of the five links by index. The shipped `lea (%eax,%eax,2)`
@@ -813,7 +842,7 @@ LTBOOL CObjWorldModel::HasOriginalBsp()
 // thing before the return, with no normalisation after it.
 uint32 CObjWorldModel::GetWorldFlag4()
 {
-	return ((IWorldBsp*)m_pWorldBsp)->GetWorldFlags() & WORLDFLAG_MAINWORLD;
+	return ((IWorldBspFlagsView*)m_pWorldBsp)->GetWorldFlags() & WORLDFLAG_MAINWORLD;
 }
 
 // 0x10024e7f — the data object's state is exactly 1. Guarded, unlike its
@@ -845,6 +874,18 @@ struct CSegmentBankView
 	void* m_pFreeList;                       // +0x18
 };
 
+// servermgr.h's sb_Free as AvP2 has it: both pointers are tested before the
+// two stores, the record first (lithtech 0x0046dcb2 `test %eax`, then
+// 0x0046dcb6 the bank).
+inline void sb_Free(CSegmentBankView* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
 // 0x100255c4 — every segment goes back to the bank it came from, and the
 // list is left empty.
 //
@@ -862,17 +903,7 @@ CObjLineSystem::~CObjLineSystem()
 	{
 		CLineSegment* pNext = pCur->m_pNext;
 
-		// servermgr.h's sb_Free, expanded because this file cannot include
-		// that header yet (see the note at the top). The local matters: it is
-		// what the real inline's PARAMETER would be, and it is what makes VC6
-		// load the field once into a register and use a 0x18 displacement
-		// twice. Naming the field in both statements instead costs two
-		// instructions -- VC6 keeps the field's ADDRESS in a register and
-		// reads through it, the address-versus-displacement near class.
-		CSegmentBankView* pBank = (CSegmentBankView*)m_pUnknown1a8;
-
-		pCur->m_pNextFree = pBank->m_pFreeList;
-		pBank->m_pFreeList = pCur;
+		sb_Free((CSegmentBankView*)m_pUnknown1a8, pCur);
 
 		pCur = pNext;
 	}

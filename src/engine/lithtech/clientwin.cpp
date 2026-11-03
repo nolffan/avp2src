@@ -185,7 +185,16 @@ void  clu_sub_42f7d0(void* pQueue, void* pUser);             // 0x0042f7d0
 // 0x00420cd0 closes one; 0x00420d30 answers the type word a tree opens with
 // (1 for a plain directory) or 1 when there is no tree; 0x00420d50 fills a
 // 0x110-byte find record for one name inside one tree.
-struct CluFileInfo { uint8 m_Data[0x110]; };
+struct CluFileInfo
+{
+	uint8 m_Data[0x110];
+#ifdef PRIMAL_HUNT
+	// PH: 0x104 more (MAX_PATH), as src/engine/server/filemgr.cpp's
+	// CFileFindState: the frame below is 0x214 there (0x00404810).  AvP2
+	// 1.0.9.6 keeps the 0x110 record (unguarded, its copy stops matching).
+	uint8 m_DataPH[0x104];
+#endif
+};
 
 int  clu_fs_OpenTree(char* pName, void** ppTree);            // 0x00420b70
 void clu_fs_CloseTree(void* pTree);                          // 0x00420cd0
@@ -431,12 +440,21 @@ public:
 	void     UpdateCounters(LTBOOL bForce);                  // 0x00410860
 
 	uint8            m_pad_000[0x50c];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes before the net manager (0x0040469b adds 0x510).
+	uint8            m_padExtra50c[4];
 	uint8            m_NetMgr[0x61c - 0x50c];        // 0x50c
 	CluClientShell*  m_pClientShell;                 // 0x61c
 	uint8            m_pad_620[0x774 - 0x620];
 	uint8            m_SoundMgr[0x898 - 0x774];      // 0x774
+	// AVP2: as Primal Hunt (PH addresses) -- the sound manager is 0x10c longer (the music manager, 0xf84 here,
+	// is at 0x1094 there): 0xc of it before this field (0x0040398a reads
+	// +0x8a8), the rest after.
+	uint8            m_padExtraSoundMgr[0xc];
 	void*            m_pUnknown898;                  // 0x898
 	uint8            m_pad_89c[0x11d0 - 0x89c];
+	// AVP2: as Primal Hunt (PH addresses) -- so everything from here sits 0x110 further in (0x004121c3 reads
+	// the input table at 0x1618).
+	uint8            m_padExtra89c[0x100];
 	uint8            m_Version[0x1508 - 0x11d0];     // 0x11d0
 	// clientmgr.h's m_pInput: a table of plain cdecl function pointers.
 	CluInputView*    m_pInput;                       // 0x1508

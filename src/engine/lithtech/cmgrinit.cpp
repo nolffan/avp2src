@@ -168,6 +168,11 @@ class CClientMgrQ46C
 {
 public:
 	uint8            m_pad_0000[0x1268];
+	// AVP2: as Primal Hunt (PH addresses) -- everything from the console state on sits 0x110 further in
+	// (0x004136c6 reads the file manager at 0x1644, the shell at 0x161c;
+	// the clear is at 0x1378).  Where below 0x1268 the extra bytes go is
+	// not pinned by this run.
+	uint8            m_padExtra[0x110];
 	ConsoleStateQ46C m_ConsoleState;         // 0x1268
 	uint8            m_pad_12ac[0x14f0 - 0x12ac];
 	// 0x0041155a's last store.  Nothing else in this run reads it; the
@@ -372,6 +377,9 @@ public:
 	uint16            m_nFrameCode;          // 0x30
 	uint16            m_nRefCount : 15;      // 0x32
 	uint16            m_bMarked   : 1;       // 0x32 bit 15
+	// AVP2: as Primal Hunt (PH addresses) -- three more dwords -- Term's sb_Init size is 0x40 (0x00415fee), and
+	// the out-of-line constructor (0x004304f0) zeroes +0x34 and +0x38.
+	uint32            m_Unknown34[3];      // 0x34
 };
 
 // VERBATIM from binkvideo.cpp:241.  Do not diverge from that copy: it is
@@ -464,7 +472,8 @@ void CCmgBank113CQ46C::Free(void* pRec)
 
 // 0x00412bd0, 27 bytes -- vftable 0x004a1cf4 slot 3, object_bank.h's Term:
 // sb_Term2(&m_Bank, 1), then sb_Init(&m_Bank, sizeof(T), 32) with
-// sizeof(SharedTexture) == 0x34 (the immediate at 0x00412bde).  The same
+// sizeof(SharedTexture), 0x40 in both AvP2 1.0.9.6 and PH (PH's immediate
+// at 0x00415fee; the 0x34 at 0x00412bde is the older layout).  The same
 // body as the identical 0x00412bf0 (0x0c) and the 0x00412910.. run.
 void CCmgBank113CQ46C::Term()
 {
@@ -481,4 +490,4 @@ void CCmgBank113CQ46C::Term()
 // ======================================================================= //
 
 typedef int SizeCheckConsoleStateQ46C[(sizeof(ConsoleStateQ46C)  == 0x44) ? 1 : -1];
-typedef int SizeCheckSharedTextureQ46C[(sizeof(SharedTextureQ46C) == 0x34) ? 1 : -1];
+typedef int SizeCheckSharedTextureQ46C[(sizeof(SharedTextureQ46C) == 0x40) ? 1 : -1];

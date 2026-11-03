@@ -246,6 +246,10 @@ public:
 	virtual void   _v0c() = 0;
 	virtual void   _v10() = 0;
 	virtual void   _v14() = 0;
+	// AVP2: as Primal Hunt (PH addresses) -- two more slots before this one, in both images (lithtech.exe
+	// 0x0046c853 and server.dll 0x1002ebc7 call +0x20).
+	virtual void   _vX18() = 0;
+	virtual void   _vX1c() = 0;
 	virtual uint32 GetWorldFlags() = 0;      // 0x18
 
 	// The section's name, which the error message below prints, and the

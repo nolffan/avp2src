@@ -44,6 +44,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "ltbasedefs.h"
 #include "ltlink.h"
@@ -322,6 +323,11 @@ public:
 	void     (*BindTexture)(SharedTexture* pTexture, LTBOOL bChanged);// 0x074
 	void     (*UnbindTexture)(SharedTexture* pTexture);         // 0x078
 	uint8    m_pad_07c[0xc4 - 0x7c];                            // 0x07c
+	// AVP2: as Primal Hunt (PH addresses) -- two more entries before GetScreenFormat (cissurf.cpp and
+	// warpblit.cpp call every renderer slot from here 8 further in), so the
+	// partial clear below runs to +0x108 (0x00475030) and the whole one is
+	// 0x158 bytes (0x00475029).
+	uint8 m_padExtra[8];
 	// Handed the screen PFormat to fill in; 0x0040eeb0 is its one caller.
 	void     (*GetScreenFormat)(void* pFormat);                 // 0x0c4
 	uint8    m_pad_0c8[0x100 - 0xc8];                           // 0x0c8
@@ -378,11 +384,15 @@ class CClientMgrView
 {
 public:
 	uint8         m_pad_000[0x61c];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (0x004756f2 reads +0x620).
+	uint8 m_padExtra[4];
 	IClientShell* m_pClientShell;                               // 0x0061c
 	// The 0x12c-byte error string SetupError formats into (0x0041fc60 adds
 	// 0x620 to the manager and passes 0x12c as the length).
 	char          m_ErrorString[0x12c];                         // 0x00620
 	uint8         m_pad_74c[0x1610 - 0x74c];
+	// AVP2: as Primal Hunt (PH addresses) -- and the sound manager is 0x10c longer (0x00475705 reads +0x1720).
+	uint8 m_padExtra74c[0x10c];
 	CSub1610*     m_pSub1610;                                   // 0x01610
 
 	// A varargs member is __cdecl, which is why the shipped call pushes
@@ -485,10 +495,14 @@ public:
 	uint8              m_pad_000[0x1ec];
 	CRenderCallbackSub m_Sub1ec;                                // 0x1ec
 	uint8              m_pad_1f0[0x4c0 - 0x1f0];
+	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (0x00474fa1 reads +0x4c4).
+	uint8 m_padExtra[4];
 	// ccline.cpp's m_pClientDE; rs_ProcessAttachment (0x00462091) reads
 	// its +0x08, the ILTCommon.
 	class CRenderClientDEView* m_pClientDE;                     // 0x4c0
 	uint8              m_pad_4c4[0x1534 - 0x4c4];
+	// AVP2: as Primal Hunt (PH addresses) -- and the sound manager is 0x10c longer.
+	uint8 m_padExtra4c4[0x10c];
 	// clientmgr.h's m_pFileMgr (0x00461e8e).
 	class CRenderFileMgr* m_pFileMgr;                           // 0x1534
 };
@@ -791,7 +805,8 @@ RenderStruct g_RenderStruct;                                    // 0x004b4358
 // THE CLEAR.  `mov $0x54,%ecx ; jne ; mov $0x40,%ecx` in front of ONE
 // `rep stos` is two memsets of different constant sizes with their common
 // tail merged -- an if/else, not a ternary (a ternary of two constants is
-// branchless).
+// branchless).  The partial clear is everything before part 4 (0x100;
+// 0x108 in AvP2 and PH alike, whose renderer half is two entries longer).
 //
 // THE LIGHT.  LTVector::Init(0,-2,-1) then Norm(), both inline: VC6 folds
 // Mag()'s x*x+y*y+z*z to the double literal 5.0 and takes fsqrt of it before
@@ -803,7 +818,7 @@ void r_InitRenderStruct(int bFullClear)
 	if (bFullClear)
 		memset(&g_RenderStruct, 0, sizeof(g_RenderStruct));
 	else
-		memset(&g_RenderStruct, 0, 0x100);
+		memset(&g_RenderStruct, 0, offsetof(RenderStruct, m_pad_100));
 
 	g_RenderStruct.m_pfnCreateClientObject_00 = rs_ProcessAttachment;
 	g_RenderStruct.m_pfnLoadTexture_04        = rs_GetSharedTexture;

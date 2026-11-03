@@ -96,73 +96,73 @@ public:
 	// 0x004b43d4 and given back through 0x004b43d8; null while there is no
 	// render DLL, which is the whole of what CreateRenderWorld tests.
 	void*            m_pRenderWorld;              // 0x0001c8
-	uint8            m_pad_1cc[0x1ec - 0x1cc];
+	uint8            m_pad_1cc[0x1f0 - 0x1cc];
 	// Passed by address to 0x0045bde0 (identical, the shared object
 	// manager's unlink-and-free) as sub_411bf0's last act.
-	uint8            m_ObjectMgr1ec[0x40c - 0x1ec]; // 0x0001ec
+	uint8            m_ObjectMgr1ec[0x410 - 0x1f0]; // 0x0001f0
 	// Eleven sixteen-byte records.  Nothing here reads inside one — the
 	// bound is the shipped `cmp $0xb0,%esi` against a `add $0x10` stride,
 	// so the count and the width are proven and the contents are not.
-	uint8            m_Records40c[0xb0];          // 0x00040c
+	uint8            m_Records40c[0xb0];          // 0x000410
 	// The message object helper clientmgr3.cpp news up for this field
 	// (0x00415560 is its constructor); 0x00411440 hands it to a packet.
-	class CClientMsgObjectHelper* m_pObjectHelper; // 0x0004bc
+	class CClientMsgObjectHelper* m_pObjectHelper; // 0x0004c0
 	// Reached only as `m_pUnknown4c0->m_Unknown0c` by one vtable slot.
-	class CUnknown4C0* m_pUnknown4c0;             // 0x0004c0
-	uint8            m_pad_4c4[0x504 - 0x4c4];
+	class CUnknown4C0* m_pUnknown4c0;             // 0x0004c4
+	uint8            m_pad_4c8[0x508 - 0x4c8];
 	// CClientMgr::Init zeroes this and slot 1 of the 0x508 object hands out
 	// its ADDRESS; slot 2 (0x00415760) dereferences it and writes +0x18 and
 	// +0x10 through it, so it is a POINTER to ltbasedefs.h's CollisionInfo
 	// -- the client twin of servermgr.h's CServerMgr::m_pCollisionInfo
 	// (0x6ac), whose address the server table's slot 1 returns the same way.
-	CollisionInfo*   m_pCollisionInfo;            // 0x000504
+	CollisionInfo*   m_pCollisionInfo;            // 0x000508
 	// clientmgr.h: the client's CNetMgr as a sub-object.  Only its send
 	// entry (0x00456360) and the back pointer at +0xb4 are used here.
 	// 0x000508 -- the client's half of the base whose 133-slot table is at
 	// 0x004a1b00; constructed at 0x00410d70 and stored here.  Its absence is
 	// what put every field below this point four bytes low, and restoring it
 	// took this TU from 13 matched to 19.
-	class CClientCSBase* m_pCSBase;               // 0x000508
-	CNetMgrQ2C       m_NetMgr;                    // 0x00050c
-	uint8            m_pad_610[0x61c - 0x610];
-	IClientShell*    m_pClientShell;              // 0x00061c  (clientmgr.h)
-	uint8            m_pad_620[0xf84 - 0x620];
+	class CClientCSBase* m_pCSBase;               // 0x00050c
+	CNetMgrQ2C       m_NetMgr;                    // 0x000510
+	uint8            m_pad_614[0x620 - 0x614];
+	IClientShell*    m_pClientShell;              // 0x000620  (clientmgr.h)
+	uint8            m_pad_624[0x1094 - 0x624];
 	// The music DLL's interface struct and the DLL name, both filled by
 	// InitMusic (0x00410380) and handed to music_Init (wmrotate.cpp).
-	uint8            m_MusicStruct[0xff4 - 0xf84]; // 0x000f84
-	char             m_szMusicDLL[0x100];         // 0x000ff4
+	uint8            m_MusicStruct[0x1104 - 0x1094]; // 0x001094
+	char             m_szMusicDLL[0x100];         // 0x001104
 	// The loaded models: a bare LTLink head, each Model on it by the link
 	// at its own +0x08 (FreeUnusedModels, 0x004114a0).
-	LTLink           m_Models;                    // 0x0010f4
+	LTLink           m_Models;                    // 0x001204
 	// Two LTLists, side by side.  Both are ltlink.h's LTList exactly: the
 	// constructor at 0x00410ab0 calls 0x00410e00 on the first and has the
 	// same three stores inlined for the second, and 0x00410e00 IS
 	// LTList::LTList() (see the note at the foot of this file).
-	LTList           m_List1100;                  // 0x001100
-	LTList           m_List1110;                  // 0x001110
-	uint8            m_pad_1120[0x1160 - 0x1120];
+	LTList           m_List1100;                  // 0x001210
+	LTList           m_List1110;                  // 0x001220
+	uint8            m_pad_1230[0x1270 - 0x1230];
 	// Fifteen dwords set to -1 both by CClientMgr::Term (0x00410f42) and by
 	// the connection teardown below, with the same `rep stos` count.
-	int32            m_Handles1160[15];           // 0x001160
-	uint8            m_pad_119c[0x11d8 - 0x119c];
-	uint32           m_Unknown11d8;               // 0x0011d8  zeroed by the ctor
+	int32            m_Handles1160[15];           // 0x001270
+	uint8            m_pad_12ac[0x12e8 - 0x12ac];
+	uint32           m_Unknown11d8;               // 0x0012e8  zeroed by the ctor
 	// The server-id -> object table sub_411a70 fills: eight-byte records,
 	// a used byte at +0 and the object at +4 (0x00411b10 / 0x00411b27).
-	class CObjMapEntryQ5* m_pObjMap11dc;          // 0x0011dc
-	uint8            m_pad_11e0[0x1258 - 0x11e0];
+	class CObjMapEntryQ5* m_pObjMap11dc;          // 0x0012ec
+	uint8            m_pad_12f0[0x1368 - 0x12f0];
 	// The frame's elapsed time in seconds; csvis.cpp's walks turn it into
 	// milliseconds with `* 1000.0f` (0x004a1afc) and __ftol.
-	float            m_fFrameTime;                // 0x001258
-	uint8            m_pad_125c[0x1264 - 0x125c];
+	float            m_fFrameTime;                // 0x001368
+	uint8            m_pad_136c[0x1374 - 0x136c];
 	// A plain chain, not an LTList: the walk below follows +0x04 to null.
-	class CChain1264* m_pChain1264;               // 0x001264
-	uint8            m_Sub1268[0x1518 - 0x1268];  // 0x001268  passed by address
+	class CChain1264* m_pChain1264;               // 0x001374
+	uint8            m_Sub1268[0x1628 - 0x1378];  // 0x001378  passed by address
 	// Set to 1 at the end of CClientMgr::Init and the only gate on the
 	// console file being run.
-	LTBOOL           m_bConsoleReady;             // 0x001518
-	uint8            m_pad_151c[0x21ac - 0x151c];
+	LTBOOL           m_bConsoleReady;             // 0x001628
+	uint8            m_pad_162c[0x22bc - 0x162c];
 	// A 16-bit counter that skips 0xffff: see NextFrameCode (0x00411450).
-	uint16           m_nFrameCode;                // 0x0021ac
+	uint16           m_nFrameCode;                // 0x0022bc
 
 	// 0x0040fd50 / 0x0040fd70
 	void   OnEnterWorld(class CClientShell* pShell);
@@ -211,21 +211,21 @@ class CDemoMgrQ2C
 public:
 	void     Stop();                                                     // 0x0042c2a0
 
-	uint8 m_pad_00[0x1610 - 0x158c];
+	uint8 m_pad_00[0x1720 - 0x169c];
 };
 
 class CClientMgrTail
 {
 public:
-	uint8            m_pad_00[0x150c];
-	class CClientShell* m_pClientShell2;          // 0x00150c  (clientmgr.h:
+	uint8            m_pad_00[0x161c];
+	class CClientShell* m_pClientShell2;          // 0x00161c  (clientmgr.h:
 	                                              //           m_pConnection)
-	uint8            m_pad_1510[0x1534 - 0x1510];
-	class CFileMgrView* m_pFileMgr;               // 0x001534  (clientmgr.h)
-	uint8            m_pad_1538[0x158c - 0x1538];
-	CDemoMgrQ2C      m_Sub158c;                   // 0x00158c  constructed by
+	uint8            m_pad_1620[0x1644 - 0x1620];
+	class CFileMgrView* m_pFileMgr;               // 0x001644  (clientmgr.h)
+	uint8            m_pad_1648[0x169c - 0x1648];
+	CDemoMgrQ2C      m_Sub158c;                   // 0x00169c  constructed by
 	                                              //           0x0042bfa0
-	uint32           m_Unknown1610;               // 0x001610
+	uint32           m_Unknown1610;               // 0x001720
 };
 
 
@@ -355,9 +355,10 @@ public:
 	// ltbasedefs.h's OT_ type; movsbl at 0x0045bdea, so signed.  Read only
 	// by sub_411bf0 below (OT_MODEL == 1).
 	char    m_ObjectType;                         // 0x0bc
-	uint8   m_pad_bd[0x180 - 0xbd];
+	uint8   m_pad_bd[0x188 - 0xbd];
 	// Bit 0 gates IClientShell::OnObjectRemove in sub_411bf0 (0x00411c15).
-	uint32  m_ClientFlags180;                     // 0x180
+	// clientmgr.h's m_ClientFlags.
+	uint32  m_ClientFlags180;                     // 0x188
 };
 
 // The elements of CClientMgr's two LTLists, as far as the walks below go.
@@ -481,12 +482,12 @@ void  tex_FreeTextureData(void* pTexture);                          // 0x0046290
 void  sub_483c60(void* pItem);                                      // 0x00483c60
 void  sub_429080(void* pItem);                                      // 0x00429080
 // 0x00490200 is the image's one bare `ret`: /OPT:ICF folded every empty
-// function onto it.  startload.cpp defines the one body, as a varargs
-// function taking the manager first; both sites here are reached through it
-// (one argument pushed, one `add $0x4`, the same bytes either way).
-class CClientMgrQ2B;
-void  sub_490200VaQ2B(CClientMgrQ2B* pClientMgr, ...);              // 0x00490200
-#define sub_490200(pClientMgr) sub_490200VaQ2B((CClientMgrQ2B*)(pClientMgr))
+// function onto it.  clienttexmgr.cpp defines it with one fixed argument,
+// the manager, and both sites here are reached through that.  It has to be
+// the fixed-argument spelling: with startload.cpp's varargs one VC6 cleans
+// up after each call instead of sharing BindAllTextures' one `add $0xc`.
+class CClientMgrTexBankView;
+void  sub_490200(CClientMgrTexBankView* pClientMgr);             // 0x00490200
 void  sub_404480(class CFileMgrView* pFileMgr);                     // 0x00404480
 void  sub_41b200(void* pSub1268);                                   // 0x0041b200
 void* sub_42cb20(int n1, int n2);                                   // 0x0042cb20
@@ -682,7 +683,7 @@ void CClientMgrView::BindAllTextures()
 	for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
 	{
 		rif_BindTextureQ411(pCur->m_pData, LTFALSE);
-		sub_490200(this);
+		sub_490200((CClientMgrTexBankView*)this);
 	}
 }
 
@@ -1002,8 +1003,13 @@ public:
 	LTLink  m_Link;                                 // 0x008
 	uint8   m_pad_14[0x20 - 0x14];
 	uint32  m_Flags;                                // 0x020
-	uint8   m_pad_24[0x208 - 0x24];
-	uint32  m_RefCount;                             // 0x208
+	uint8   m_pad_24[0x20c - 0x24];
+	// AVP2: 0x20c, and every release is guarded against going below zero
+	// (`test; jbe` round the decrement, 0x00413371) -- clientmgr3.cpp's
+	// CCmgRefCounted::Release on the same object.
+	uint32  m_RefCount;                             // 0x20c
+
+	void    Release() { if (m_RefCount > 0) m_RefCount--; }
 };
 
 class CModelObjQ411
@@ -1011,8 +1017,9 @@ class CModelObjQ411
 public:
 	uint8       m_pad_000[0xb8];
 	uint16      m_nServerID;                        // 0x0b8
-	uint8       m_pad_0ba[0x1dc - 0xba];
-	CModelQ411* m_pModel;                           // 0x1dc
+	// AVP2: 0x1fc (NOLF's was 0x1dc).
+	uint8       m_pad_0ba[0x1fc - 0xba];
+	CModelQ411* m_pModel;                           // 0x1fc
 };
 
 LTRESULT CClientMgrView::FreeUnusedModels()
@@ -1044,7 +1051,7 @@ LTRESULT CClientMgrView::FreeUnusedModels()
 		pModel = (CModelQ411*)pCur->m_pData;
 		pNext = pCur->m_pNext;
 
-		pModel->m_RefCount--;
+		pModel->Release();
 		if (pModel->m_RefCount == 0 && !(pModel->m_Flags & 1))
 		{
 			pModel->m_Link.Remove();
@@ -1120,9 +1127,9 @@ struct SceneDescQ5
 	LTVector     m_ModelAdd;                       // 0x1c  g_ModelAdd
 	LTVector     m_ModelDirAdd;                    // 0x28  g_ModelDirAdd
 	void*        m_pRenderWorld;                   // 0x34
-	LTVector     m_GlobalLightDir;                 // 0x38  mgr+0x75c
-	LTVector     m_GlobalLightColor;               // 0x44  mgr+0x750
-	LTVector     m_GlobalLightScale;               // 0x50  mgr+0x768
+	LTVector     m_GlobalLightDir;                 // 0x38  mgr+0x760
+	LTVector     m_GlobalLightColor;               // 0x44  mgr+0x754
+	LTVector     m_GlobalLightScale;               // 0x50  mgr+0x76c
 	LTVector     m_GlobalLightAdd;                 // 0x5c  camera+0x1c4
 	float        m_FrameTime;                      // 0x68
 	SkyDef       m_SkyDef;                         // 0x6c
@@ -1167,24 +1174,24 @@ public:
 class CRenderMgrQ5
 {
 public:
-	uint8        m_pad_00[0x750];
-	LTVector     m_GlobalLightColor;               // 0x750
-	LTVector     m_GlobalLightDir;                 // 0x75c
-	LTVector     m_GlobalLightScale;               // 0x768
-	uint8        m_pad_774[0x1160 - 0x774];
-	uint16       m_ObjectIDs[30];                  // 0x1160
-	uint8        m_pad_119c[0x11a0 - 0x119c];
-	SkyDef       m_SkyDef;                         // 0x11a0
-	uint8        m_pad_11d0[0x1258 - 0x11d0];
-	float        m_FrameTime;                      // 0x1258
-	uint8        m_pad_125c[0x150c - 0x125c];
-	CClientShell* m_pClientShell;                  // 0x150c
-	uint8        m_pad_1510[0x1524 - 0x1510];
-	ModelHookFn  m_ModelHookFn;                    // 0x1524
-	void*        m_ModelHookUser;                  // 0x1528
-	LTBOOL       m_bRendering;                     // 0x152c
-	uint8        m_pad_1530[0x158c - 0x1530];
-	CFrameCounterQ5 m_RenderFrame;                 // 0x158c
+	uint8        m_pad_00[0x754];
+	LTVector     m_GlobalLightColor;               // 0x754
+	LTVector     m_GlobalLightDir;                 // 0x760
+	LTVector     m_GlobalLightScale;               // 0x76c
+	uint8        m_pad_778[0x1270 - 0x778];
+	uint16       m_ObjectIDs[30];                  // 0x1270
+	uint8        m_pad_12ac[0x12b0 - 0x12ac];
+	SkyDef       m_SkyDef;                         // 0x12b0
+	uint8        m_pad_12e0[0x1368 - 0x12e0];
+	float        m_FrameTime;                      // 0x1368
+	uint8        m_pad_136c[0x161c - 0x136c];
+	CClientShell* m_pClientShell;                  // 0x161c
+	uint8        m_pad_1620[0x1634 - 0x1620];
+	ModelHookFn  m_ModelHookFn;                    // 0x1634
+	void*        m_ModelHookUser;                  // 0x1638
+	LTBOOL       m_bRendering;                     // 0x163c
+	uint8        m_pad_1640[0x169c - 0x1640];
+	CFrameCounterQ5 m_RenderFrame;                 // 0x169c
 };
 
 // clientrender.cpp's RenderStruct at 0x004b4358, as much of it as this
@@ -1369,8 +1376,10 @@ public:
 class CClientCreateRequestQ5
 {
 public:
-	uint8               m_pad_00[0x24];            // the three file refs
-	ObjectCreateStruct* m_pStruct;                 // 0x24
+	// The file refs; AvP2's take 0x48 bytes (every shipped read of the
+	// create struct is `mov 0x48(%reg)`).
+	uint8               m_pad_00[0x48];
+	ObjectCreateStruct* m_pStruct;                 // 0x48
 };
 
 LTRESULT om_AllocObjectQ5(void* pObjectMgr, ObjectCreateStruct* pStruct,
@@ -1807,7 +1816,7 @@ void CClientShell::sub_4143f0()
 
 	DestroyRenderWorld();
 	cm_ClearChain1264(m_pClientMgr);
-	((CSoundMgrQ4143f0*)((uint8*)m_pClientMgr + 0x774))->StopAllSounds();
+	((CSoundMgrQ4143f0*)((uint8*)m_pClientMgr + 0x784))->StopAllSounds();
 	((CWorldQ4143f0*)m_pClientMgr)->Term();
 }
 
@@ -2011,7 +2020,7 @@ void cs_InvalidateAndTerm()
 void cs_Sub4149e0()
 {
 	if (g_pClientShell)
-		sub_490200(g_pClientShell->m_pClientMgr);
+		sub_490200((CClientMgrTexBankView*)g_pClientShell->m_pClientMgr);
 }
 
 
@@ -2132,8 +2141,12 @@ LTBOOL CClientCSBase::IsMatch(void* pRec, uint32 nKey, void* pTest)
 class CClientMsgWriteView
 {
 public:
-	virtual LTRESULT _p00()=0; virtual LTRESULT _p01()=0;
-	virtual LTRESULT ReadWord(uint16* pVal)=0;                       // 0x08
+	virtual LTRESULT _p00()=0;
+	// AVP2: iltmessage.h's ReadString, after Release (servermsg.h's
+	// IMessageWrite has the same extra slot).
+	virtual const char* ReadString()=0;                              // 0x04
+	virtual LTRESULT _p01()=0;
+	virtual LTRESULT ReadWord(uint16* pVal)=0;                       // 0x0c
 	virtual LTRESULT _p03()=0;
 	virtual LTRESULT _p04()=0; virtual LTRESULT _p05()=0;
 	virtual LTRESULT _p06()=0; virtual LTRESULT _p07()=0;
@@ -2141,8 +2154,8 @@ public:
 	virtual LTRESULT _p10()=0; virtual LTRESULT _p11()=0;
 	virtual LTRESULT _p12()=0; virtual LTRESULT _p13()=0;
 	virtual LTRESULT _p14()=0; virtual LTRESULT _p15()=0;
-	virtual LTRESULT WriteByte(uint8 val)=0;                         // 0x40
-	virtual LTRESULT WriteWord(uint16 val)=0;                        // 0x44
+	virtual LTRESULT WriteByte(uint8 val)=0;                         // 0x44
+	virtual LTRESULT WriteWord(uint16 val)=0;                        // 0x48
 };
 
 
@@ -2509,21 +2522,22 @@ LTBOOL surface_RestoreAll()
 //
 //   0x0040f155  width * g_nBytesPerPixel * height -> 0x00428fd0 (dalloc),
 //               the answer stored in m_pSysMem with NO null test;
-//   0x0040f176  g_pRender+0xd4 LockSurface(m_pRenderData), refusal on null;
+//   0x0040f176  g_pRender+0xdc LockSurface(m_pRenderData), refusal on null;
 //   0x0040f191  one row per iteration, the row length recomputed each time
 //               (`rep movsl` then `rep movsb` is VC6's inline memcpy), the
 //               source stepping by the pitch at +0x18 and the destination by
 //               the packed row;
-//   0x0040f1ce  g_pRender+0xd8 UnlockSurface, then 0x0040c5a0 releases the
+//   0x0040f1ce  g_pRender+0xe0 UnlockSurface, then 0x0040c5a0 releases the
 //               render data (cissurf.cpp's cis_FreeRenderDataQ40C).  The two
 //               cdecl pushes share one `add $0x8`, as the dalloc and lock
 //               pushes do above.
 class CSurfaceRenderView
 {
 public:
-	uint8   m_pad_00[0xd4];
-	void*  (*LockSurface)(void* pRenderData);                       // 0x0d4
-	void   (*UnlockSurface)(void* pRenderData);                     // 0x0d8
+	// AvP2's RenderStruct has two more dwords ahead of these than NOLF's.
+	uint8   m_pad_00[0xdc];
+	void*  (*LockSurface)(void* pRenderData);                       // 0x0dc
+	void   (*UnlockSurface)(void* pRenderData);                     // 0x0e0
 };
 
 // The pointer itself is cissurf.cpp's, under that file's type; this file
