@@ -24,3 +24,6 @@ __pycache__/
 src/engine/*/[Rr]elease/
 src/engine/*/AvP2Release/
 src/lithshared/**/[Rr]elease/
+src/launcher/Release/
+src/launcher/PrimalHunt/
+src/engine/ltmsg/AvP2Release/

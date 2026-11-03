@@ -7,6 +7,12 @@
    "map": "9e525896dfb09ce37a6da0e9e569a6e0649e6928e0d7b865ea40b7ff38f5a7d5",
    "rsp": "1a4e3020a1a205cd715796cbe4d10b48616edbbbafc90a2cb5cfd7d78e4139c4"
   },
+  "AvP2 ltmsg.dll": {
+   "cmd": "b6984a1e666ba8943b8fdb9cdec7b3c6c99f1c2c3924295c31af91a1fe579e2b",
+   "image": "8f4b78bfd5f4a128f30d2c3256d3fc9c8b10a4b6f2304619b278460ca86158e9",
+   "link_command": "cd src/engine/ltmsg && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe  /nologo /subsystem:windows /dll /machine:I386 /out:AvP2Release/ltmsg.dll /map:AvP2Release/ltmsg.map AvP2Release/ltmsg.obj AvP2Release/ltmsg.res kernel32.lib",
+   "map": "0408bb46e14b6e204590232ca1f4ce0f1310ae06ecbc195c347eccd7ecf0adff"
+  },
   "CRes.dll": {
    "cmd": "be84b10cdcc9840f6c13f88cfc9c67b00102ff7e6a628961944e0ce4965e0b08",
    "image": "1d6e88491df604f3c41bb795179d1de0c62da5f77dddd53d77dc5f03dee9b949",
@@ -48,6 +54,12 @@
    "link_command": "cd src/AVP2/ServerRes && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:release\\SRes.dll' '/map:s:\\AVP2\\ServerRes\\Release\\SRes.map' 'Release\\Main.obj' 'Release\\ServerRes.res' > /repo/out/release-tree/src/AVP2/ServerRes/Release/SRes.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\AVP2\\ServerRes\\Release\\SRes.dll.rsp'",
    "map": "5bbab46813cd6a5743feb3ffb94e57f9d22af505f3fd343f4f5e69bb326d977f",
    "rsp": "44e856df34dd13569df51025c8c84d168ffd6f10d57a9bf833a9190ccd88c89e"
+  },
+  "ltmsg.dll": {
+   "cmd": "aba67ad49d075f41ccad08690b2a2872287c9c6ee11021fbbcda73cedf8821d1",
+   "image": "aba451d8cd74a91ff7fbb217b2e7d9ef463222486aee5736310be130af71738b",
+   "link_command": "cd src/engine/ltmsg && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe  /nologo /subsystem:windows /dll /machine:I386 /out:Release/ltmsg.dll /map:Release/ltmsg.map Release/ltmsg.obj Release/ltmsg.res kernel32.lib",
+   "map": "afe0dc5adb4e7c7a402ecb00d973bf74d48669041e439347e42d26765faa55a4"
   }
  },
  "config": {
@@ -55,8 +67,8 @@
   "progress/data-known.txt": "9091ff2a8f3eefe0993d212e6f18ad7b15ddceaf7af26d63e27fc9aea5e0b681",
   "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
   "progress/shipped-libs.sha256": "2b477003e712251f29602f971858c459a4aaeb5cf64171c3a898f099c7022046",
-  "progress/targets.py": "9cbd1d4b5ba054238424b0c7f9b1f0dfbd3783053c967136524bd3adbf019f16",
-  "progress/vtab-known.txt": "1af89134dd516521cb8791f2766b27dd79c2f0ba021bbb77f0add7a05e6012a8"
+  "progress/targets.py": "0dd1fd877d7d8fab2f3759131e11fb51c324b784c451d52c8456dd2f4d3075fa",
+  "progress/vtab-known.txt": "52a60aedd6af7649f97d6b32edac16cf2aac67573f30d4c9c8655a52fb40c312"
  },
  "reference": {
   "out/reference/AVP2.exe": "516ae2949d609aadc6a4c83160fb7bf380265d488f3b0d5f4f717bf8b36af404",
@@ -85,12 +97,12 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "6b0b8dfd1a05db09684bac3bbfd827f5afdc9241523c5cad602e4dace9ec36c1",
-  "out/progress/summary.json": "83245f4646bdd86ea52e77affce7daadfcd731183c729cfa0a23a3eced6aff3a"
+  "out/progress/functions.csv": "d43224c5fdde2cbd601520d64cbe0372710bdaace2068f53d17aac47c5499768",
+  "out/progress/summary.json": "175b71a44b26b81b80ab320c3ea103c95c43477a0643154700d5a27e1aca8f48"
  },
  "source": {
-  "modified_files": 36,
-  "revision": "2d557e6df0b325561e26701ab53f26e4565b21d5",
+  "modified_files": 5,
+  "revision": "e3eaba7afc838c11b85817d23b841be25a575870",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "8fbf6f01f69ed3532626da1a878e7385cfa0851f"

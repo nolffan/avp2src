@@ -183,7 +183,10 @@ TARGETS = [
     # ---- Primal Hunt: the launcher and the dedicated server ------------
     dict(label="PrimalHunt.exe", what="Primal Hunt's launcher", kind="image",
          shipped=REFERENCE + "/PrimalHunt.exe", stem="PrimalHunt",
-         built="src/AVP2/Launcher/PrimalHunt/PrimalHunt.exe", optional=True,
+         built="src/launcher/PrimalHunt/PrimalHunt.exe", optional=True,
+         # nolfsrc's NOLF launcher compiled for Primal Hunt, objects only
+         # until it links (build/build.mk, "The launchers")
+         partial_objs=["src/launcher/PrimalHunt/*.obj"],
          # 2002-06-06, the shape of AVP2.exe: MFC linked statically
          # (nafxcw.lib, C++ 8569 x55) and the same wrapper's .cms_t and
          # .cms_d sections. Provisional: libcmt.lib from frame.obj
@@ -240,7 +243,10 @@ TARGETS = [
     # ---- AvP2 1.0.9.6: the launcher and the dedicated server ----------
     dict(label="AVP2.exe", what="AvP2's launcher", kind="image",
          shipped=REFERENCE + "/AVP2.exe", stem="AVP2",
-         built="src/AVP2/Launcher/Release/AVP2.exe", optional=True,
+         built="src/launcher/Release/AVP2.exe", optional=True,
+         # nolfsrc's NOLF launcher compiled for AvP2, objects only until it
+         # links (build/build.mk, "The launchers")
+         partial_objs=["src/launcher/Release/*.obj"],
          # the disc's (2001-10-15; the patch does not replace it), MFC
          # linked statically (nafxcw.lib, C++ 8569 x55). Its entry point
          # (0x43f8c7) is in .cms_t (0x433000..0x448000), a section a

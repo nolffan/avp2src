@@ -1,0 +1,108 @@
+// Microsoft Visual C++ generated resource script.
+//
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+130 DIALOG 0, 0, 268, 212
+STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_SETFONT | DS_MODALFRAME
+CAPTION "Service Provider"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 211, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 211, 24, 50, 14
+    LISTBOX         1000, 7, 17, 160, 55, WS_VSCROLL | WS_TABSTOP | LBS_SORT | LBS_NOINTEGRALHEIGHT
+    LTEXT           "Please choose a network type", IDC_STATIC, 7, 7, 160, 10
+    GROUPBOX        "Gradwohl's Mom", IDC_STATIC, 75, 80, 65, 60
+    AUTORADIOBUTTON "Radio1", 1001, 15, 95, 39, 10
+    AUTORADIOBUTTON "Radio2", 1003, 15, 110, 39, 10
+    AUTORADIOBUTTON "Radio3", 1004, 15, 125, 39, 10
+    GROUPBOX        "Frame Control", IDC_STATIC, 10, 80, 53, 60
+    AUTOCHECKBOX    "Check2", 1005, 80, 95, 41, 10, WS_GROUP
+    AUTOCHECKBOX    "Check2", 1006, 80, 110, 41, 10, WS_GROUP
+    EDITTEXT        1007, 75, 145, 90, 15, ES_AUTOHSCROLL
+    RTEXT           "Edit Control:", IDC_STATIC, 10, 150, 60, 10
+    LTEXT           "Static Text", IDC_STATIC, 10, 170, 85, 10
+END
+
+131 DIALOG 0, 0, 240, 202
+STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_SETFONT | DS_MODALFRAME
+CAPTION "Connect"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 183, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 183, 24, 50, 14
+    LISTBOX         1001, 10, 15, 160, 50, WS_VSCROLL | WS_TABSTOP | LBS_SORT | LBS_NOINTEGRALHEIGHT
+    GROUPBOX        "Choose a network type", IDC_STATIC, 5, 5, 170, 90
+    PUSHBUTTON      "&Select", 1002, 50, 70, 70, 20
+    GROUPBOX        "Choose a game to join", 1006, 5, 105, 170, 90, WS_DISABLED
+    LISTBOX         1003, 10, 115, 160, 75, WS_DISABLED | WS_VSCROLL | WS_TABSTOP | LBS_SORT | LBS_NOINTEGRALHEIGHT
+END
+
+139 DIALOG 0, 0, 272, 95
+STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_SETFONT | DS_MODALFRAME
+CAPTION ""
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        1009, 30, 35, 210, 15, ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK", IDOK, 7, 74, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 215, 74, 50, 14
+    LTEXT           "", 1010, 30, 20, 210, 10
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    1                               "Internal DirectEngine error: %1!d!."
+    2                               "Missing WorldModel: %1!s!."
+    3                               "Can't load game resources in %1!s!."
+    4                               "Can't initialize DirectInput."
+    5                               "Unable to restore video mode."
+    6                               "User canceled."
+    7                               "%1!s! is an invalid world file."
+    8                               "Missing model file %1!s!."
+    9                               "%1!s! is an invalid model file."
+    10                              "Missing sprite file %1!s!."
+    11                              "%1!s! is an invalid sprite file."
+    12                              "No game resources specified."
+    13                              "Missing world file %1!s!."
+    14                              "Unable to restore object (class %1!s!)."
+    15                              "Server error: %1!s!."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    16                              "Error loading render DLL %1!s!."
+    17                              "Error copying file %1!s!."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    42                              "Unable to create server shell."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    66                              "Object DLL %1!s! is an invalid version (%2!d!).  Current version is %3!d!."
+    76                              "Invalid shell DLL %1!s!."
+    77                              "Invalid shell DLL version for %1!s!.  DLL version is %2!d!, current version is %3!d!."
+    78                              "Missing shell DLL %1!s!."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    82                              "Can't create client shell."
+    89                              "Unable to initialize sound system."
+    92                              "Got an invalid server packet."
+    93                              "Missing class: %1!s!."
+    94                              "Unable to initialize network driver %1!s!."
+    95                              "Network protocol version mismatch - your version: %1!d!, server's version: %2!d!."
+END
+
+#endif

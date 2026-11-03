@@ -137,9 +137,9 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (cjacksrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | compiling (below); game directories and variants to do |
 | 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 (WONAPI from the release's source, the rest from nolfsrc's and nolf2src's) and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
-| 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | |
+| 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | `ltmsg.dll` done (below) |
 | 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | started (below) |
-| 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | |
+| 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | started (below) |
 | 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | |
 | 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | answered: not as shipped (package 7); 1.0.9.6's engine to be targeted |
 | 11 | `match`: byte-matching, module by module, ratcheted by `make progress` | 4-8 | |
@@ -266,6 +266,14 @@ with 2,302 and 1,794 more functions "near" (the same function, changed:
 Third Law's edits, or one of the objects still 8168's) and 1,109 and 61
 of ours unplaced (code Primal Hunt dropped or rewrote).
 
+### 6. small
+
+`ltmsg.dll`, both releases': `src/engine/ltmsg/ltmsg.rc` is read out of the
+retail DLLs by `tools/rsrc2rc.py` (Primal Hunt's and 1.0.9.6's carry the
+same resources), around nolfsrc's `ltmsg.cpp`; Primal Hunt's built with
+SP5's tools into `Release/`, 1.0.9.6's with RTM's into `AvP2Release/`.
+Every resource byte-identical in both.
+
 ### 7. engine
 
 Started. nolfsrc's engine (`src/engine/lithtech`, `server`, `d3d`, at
@@ -327,6 +335,16 @@ addresses, so `make progress` scores the objects (`partial_objs`).
 - Next: the near functions; the provisional calls against retail; the
   flags per binary (Primal Hunt's server.dll need not be /O1 as NOLF's
   was); the links (lithshared rebuilt, package 4), then the tables.
+
+### 8. launcher
+
+Started. nolfsrc's NOLF launcher (`src/launcher/`, at nolfsrc's HEAD) is
+compiled as AvP2's (cl 9044, `Release/`) and Primal Hunt's (cl 8966,
+`PRIMAL_HUNT`, `PrimalHunt/`), against SP5's MFC, objects only
+(`partial_objs`): 38 functions of each are byte-identical already
+(`AVP2.exe` 11.3 %, `PrimalHunt.exe` 12.4 %); about 110 of nolfsrc's are in
+no form in either. To come: AvP2's dialogs and art (its resources), the
+rez stacks each builds, the links.
 
 ### 12. modern
 

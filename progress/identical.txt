@@ -1,6 +1,44 @@
 # Every function the scoreboard has verified byte-identical to the retail binaries
 # (target<TAB>function). Written by tools/ratchet.py update; `make progress`
 # fails if one of them stops matching.
+AVP2.exe	sub_402a20
+AVP2.exe	sub_402a60
+AVP2.exe	sub_402a80
+AVP2.exe	sub_402aa0
+AVP2.exe	sub_402ad0
+AVP2.exe	sub_402b20
+AVP2.exe	sub_402b40
+AVP2.exe	sub_402c10
+AVP2.exe	sub_402c50
+AVP2.exe	sub_402cd0
+AVP2.exe	sub_402d10
+AVP2.exe	sub_402d40
+AVP2.exe	sub_402dc0
+AVP2.exe	sub_402e70
+AVP2.exe	sub_402ff0
+AVP2.exe	sub_403040
+AVP2.exe	sub_4030b0
+AVP2.exe	sub_403190
+AVP2.exe	sub_4031b0
+AVP2.exe	sub_4031d0
+AVP2.exe	sub_4032f0
+AVP2.exe	sub_403320
+AVP2.exe	sub_4033a0
+AVP2.exe	sub_4033c0
+AVP2.exe	sub_4033f0
+AVP2.exe	sub_403470
+AVP2.exe	sub_403540
+AVP2.exe	sub_4035f0
+AVP2.exe	sub_403630
+AVP2.exe	sub_4036a0
+AVP2.exe	sub_4037d0
+AVP2.exe	sub_403850
+AVP2.exe	sub_403900
+AVP2.exe	sub_403980
+AVP2.exe	sub_403a50
+AVP2.exe	sub_403ed0
+AVP2.exe	sub_403ff0
+AVP2.exe	sub_4069e0
 AVP2Serv.exe	sub_401000
 AVP2Serv.exe	sub_401020
 AVP2Serv.exe	sub_4010b0
@@ -2263,6 +2301,14 @@ AvP2 lithtech.exe	sub_4b4260
 AvP2 lithtech.exe	sub_4b42a0
 AvP2 lithtech.exe	sub_4b42b0
 AvP2 lithtech.exe	sub_4b42c0
+AvP2 ltmsg.dll	rsrc:5/130/1033
+AvP2 ltmsg.dll	rsrc:5/131/1033
+AvP2 ltmsg.dll	rsrc:5/139/1033
+AvP2 ltmsg.dll	rsrc:6/1/1033
+AvP2 ltmsg.dll	rsrc:6/2/1033
+AvP2 ltmsg.dll	rsrc:6/3/1033
+AvP2 ltmsg.dll	rsrc:6/5/1033
+AvP2 ltmsg.dll	rsrc:6/6/1033
 AvP2 server.dll	sub_10001000
 AvP2 server.dll	sub_10001112
 AvP2 server.dll	sub_10001136
@@ -24579,6 +24625,44 @@ PHObject.lto	sub_1024bf60
 PHObject.lto	sub_1024bf80
 PHObject.lto	sub_1024c2d0
 PHObject.lto	sub_1024d2f0
+PrimalHunt.exe	sub_402b90
+PrimalHunt.exe	sub_402bd0
+PrimalHunt.exe	sub_402bf0
+PrimalHunt.exe	sub_402c10
+PrimalHunt.exe	sub_402c40
+PrimalHunt.exe	sub_402c90
+PrimalHunt.exe	sub_402cb0
+PrimalHunt.exe	sub_402d80
+PrimalHunt.exe	sub_402da0
+PrimalHunt.exe	sub_402dc0
+PrimalHunt.exe	sub_402e00
+PrimalHunt.exe	sub_402e80
+PrimalHunt.exe	sub_402ec0
+PrimalHunt.exe	sub_402ef0
+PrimalHunt.exe	sub_402f70
+PrimalHunt.exe	sub_403020
+PrimalHunt.exe	sub_4031a0
+PrimalHunt.exe	sub_4031f0
+PrimalHunt.exe	sub_403260
+PrimalHunt.exe	sub_403340
+PrimalHunt.exe	sub_403460
+PrimalHunt.exe	sub_403490
+PrimalHunt.exe	sub_403510
+PrimalHunt.exe	sub_403530
+PrimalHunt.exe	sub_403560
+PrimalHunt.exe	sub_4035e0
+PrimalHunt.exe	sub_4036b0
+PrimalHunt.exe	sub_403760
+PrimalHunt.exe	sub_4037a0
+PrimalHunt.exe	sub_403810
+PrimalHunt.exe	sub_403940
+PrimalHunt.exe	sub_4039c0
+PrimalHunt.exe	sub_403a70
+PrimalHunt.exe	sub_403af0
+PrimalHunt.exe	sub_403bd0
+PrimalHunt.exe	sub_404100
+PrimalHunt.exe	sub_404220
+PrimalHunt.exe	sub_4044c0
 RegMgr	?CreateKey@CRegMgr@@AAEHPAUHKEY__@@PBDAAPAU2@@Z
 RegMgr	?Delete@CRegMgr@@QAEHPBD@Z
 RegMgr	?DeleteApp@CRegMgr@@QAEHXZ
@@ -26876,6 +26960,14 @@ lithtech.exe	sub_4bf3e0
 lithtech.exe	sub_4bf420
 lithtech.exe	sub_4bf430
 lithtech.exe	sub_4bf470
+ltmsg.dll	rsrc:5/130/1033
+ltmsg.dll	rsrc:5/131/1033
+ltmsg.dll	rsrc:5/139/1033
+ltmsg.dll	rsrc:6/1/1033
+ltmsg.dll	rsrc:6/2/1033
+ltmsg.dll	rsrc:6/3/1033
+ltmsg.dll	rsrc:6/5/1033
+ltmsg.dll	rsrc:6/6/1033
 server.dll	sub_10001000
 server.dll	sub_10001022
 server.dll	sub_10001134

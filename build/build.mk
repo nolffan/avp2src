@@ -305,7 +305,7 @@ endef
 $(foreach w,$(WORKSPACES),$(eval $(call workspace,$(firstword $(subst :, ,$(w))),$(lastword $(subst :, ,$(w))))))
 
 .PHONY: all game
-all game: $(WANTED)
+all game: $(WANTED) ltmsg
 
 # ---------------------------------------------------------------------------
 # The engine: lithtech.exe, server.dll, d3d.ren
@@ -458,6 +458,49 @@ $(eval $(call engine_variant,AvP2Release,$(ENG_AVP_CC),$(ENG_AVP_ENV),,icl))
 eng_objs = $(sort $(patsubst %.cpp,$(SERVER)/$(1)/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC))) \
     $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/$(1)))) \
     $(sort $(D3D_SRC:%.cpp=$(D3D)/$(1)/%.obj))
+# ltmsg.dll: the engine's message strings (ltmsg.rc, read out of the retail
+# DLLs by tools/rsrc2rc.py: Primal Hunt's and 1.0.9.6's are the same
+# resources) around the C runtime's DLL startup (ltmsg.cpp, nolfsrc's).
+# Primal Hunt's is SP5's tools' (its Rich header: C++ 8966), 1.0.9.6's RTM's
+# (C++ 8168, its runtime 8168's).
+LTMSG := $(E)/ltmsg
+LTMSG_CL := /nologo /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /c
+# $(call ltmsg_variant,<object dir>,<VC6 tree>)
+define ltmsg_variant
+$(eval $(call compile,$(LTMSG)/$(1)/ltmsg.obj,$(LTMSG),ltmsg.cpp,$(call vc_env,$(2)),$(2)/BIN/cl.exe,$(LTMSG_CL) /Fo$(1)/,wine-drives))
+$(eval $(call tool,$(LTMSG)/$(1)/ltmsg.res,$(LTMSG)/ltmsg.rc | wine-drives,\
+    cd $(LTMSG) && $(call vc_env,$(2)) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /fo$(1)/ltmsg.res ltmsg.rc))
+$(eval $(call tool,$(LTMSG)/$(1)/ltmsg.dll,$(LTMSG)/$(1)/ltmsg.obj $(LTMSG)/$(1)/ltmsg.res | wine-drives,\
+    cd $(LTMSG) && $(call vc_env,$(2)) $(WINE) $(2)/BIN/link.exe $(AVP2SRC_LDFLAGS) /nologo /subsystem:windows /dll /machine:I386 \
+    /out:$(1)/ltmsg.dll /map:$(1)/ltmsg.map $(1)/ltmsg.obj $(1)/ltmsg.res kernel32.lib))
+endef
+$(eval $(call ltmsg_variant,Release,$(V8966)))
+$(eval $(call ltmsg_variant,AvP2Release,$(V8168)))
+.PHONY: ltmsg
+ltmsg: $(LTMSG)/Release/ltmsg.dll $(LTMSG)/AvP2Release/ltmsg.dll
+
+# The launchers, AVP2.exe and PrimalHunt.exe: nolfsrc's reconstruction of
+# NOLF's launcher (src/launcher/, from nolfsrc's src/engine/launcher), to be
+# brought to AvP2's, built twice from one source: AvP2's into Release/ with
+# cl 12.00.9044 (its Rich header: 9044 x18), Primal Hunt's into PrimalHunt/
+# with cl 12.00.8966 and PRIMAL_HUNT; both against SP5's MFC (nafxcw.lib,
+# C++ 8569 in both headers). nolfsrc's flags. Objects only, so far
+# (progress/targets.py, partial_objs): the links want the launchers'
+# resources and art, and their protection wrapper's sections are not ours.
+LAUNCHER := src/launcher
+LAUNCHER_SRC := stdafx.cpp launcher.cpp gamedlg.cpp gamehelp.cpp dlgconfig.cpp dlgcustom.cpp dlghelp.cpp dlgsound.cpp \
+    dlgdisplay.cpp preview.cpp cdcheck.cpp dib.cpp dibmgr.cpp dibpal.cpp RezFind.cpp Utils.cpp globals.cpp
+LAUNCHER_CL := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\LT2\lithshared\incs /c
+# $(call launcher_variant,<object dir>,<cl>,<defines>)
+define launcher_variant
+$(foreach s,$(LAUNCHER_SRC),$(eval $(call compile,$(LAUNCHER)/$(1)/$(s:.cpp=.obj),$(LAUNCHER),$(s),$(ENV_GAME),$(2),\
+    $(LAUNCHER_CL) $(3) /Fo$(1)/,wine-drives)))
+endef
+$(eval $(call launcher_variant,Release,$(V9044)/BIN/cl.exe,))
+$(eval $(call launcher_variant,PrimalHunt,$(V8966)/BIN/cl.exe,/D PRIMAL_HUNT))
+.PHONY: launcher-objs
+launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/PrimalHunt/%.obj)
+
 .PHONY: engine-objs ph-engine-objs avp2-engine-objs
 ph-engine-objs: $(call eng_objs,Release)
 avp2-engine-objs: $(call eng_objs,AvP2Release)
