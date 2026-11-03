@@ -40,6 +40,7 @@
 // is inlining: /O2 expands sav_WriteVector and the CPacket templates, /O1
 // calls them.
 #include <string.h>
+#include "../server/avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include "de_error.h"
 #include "saveio.h"
@@ -201,15 +202,15 @@ public:
 class SavServerMgr
 {
 public:
-	uint8            m_pad_000[0x390];
+	uint8            m_pad_000[AVP2_MGR(0x390)];
 	uint8            m_Unknown390[4];        // 0x390  the object manager
-	uint8            m_pad_394[0x804 - 0x394];
+	uint8            m_pad_394[AVP2_MGR(0x804) - AVP2_MGR(0x394)];
 	void*            m_pClassMgr;            // 0x804
 	uint8            m_pad_808[4];
 	void*            m_ClassMgrFirst;        // 0x80c
-	uint8            m_pad_810[0x95c - 0x810];
+	uint8            m_pad_810[AVP2_MGR(0x95c) - AVP2_MGR(0x810)];
 	uint16           m_SkyObjects[30];       // 0x95c
-	uint8            m_pad_998[0xa2c - 0x998];
+	uint8            m_pad_998[AVP2_MGR(0xa2c) - AVP2_MGR(0x998)];
 	SavFileMgr       m_FileMgr;              // 0xa2c
 	SavConsoleState  m_ConsoleState;         // 0xa74
 };

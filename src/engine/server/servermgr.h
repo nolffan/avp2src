@@ -1741,7 +1741,12 @@ public:
 	// other nine are initialised somewhere else, or the region holds individual
 	// members that 0x10034fcb happens to be able to stride over. Until one of
 	// those is settled the two known links stay as they are.
-	uint8              m_pad_394[0x5c4 - 0x394];
+	// AVP2: four bytes more before the object lists than NOLF's: AvP2's
+	// engines (1.0.9.6's and Primal Hunt's alike) reach m_Objects at
+	// +0x5c8/+0x5cc where NOLF's reach +0x5c4/+0x5c8, and the lists still end
+	// at m_bWorldLoaded. Every offset below is NOLF's plus four, until
+	// m_hWorldFile.
+	uint8              m_pad_394[0x5c4 - 0x394 + 4];
 	LTLink             m_Objects;             // 0x5c4  data links to LTObject;
 	                                          //        array entry 1, if it is one
 	uint8              m_pad_5d0[0x5d4 - 0x5d0];
@@ -1761,10 +1766,15 @@ public:
 	// LTLists from 0x5b0 -- without declaring the array that would cost the
 	// constructor its byte identity. Cast rather than member so the layout
 	// above is untouched.
-	LTList*            ObjectLists()         { return (LTList*)((uint8*)this + 0x5b0); }
+	LTList*            ObjectLists()         { return (LTList*)((uint8*)this + 0x5b0 + 4); }  // AVP2: +4
 
 	int                m_bWorldLoaded;        // 0x660  set by LoadWorld
 	void*              m_hWorldFile;          // 0x664  identifier of the loaded world file
+	// AVP2: 0x408 bytes AvP2's engines have here and NOLF's had not:
+	// m_ForceControl is at +0xa74 in both of AvP2's server.dlls, where it was
+	// at +0x668 (SPhysicsLT's accessors), and every member from here to
+	// m_NetMgr is NOLF's offset plus 0x40c. What it holds is to be read.
+	uint8              m_AvP2Unknown668[0x408];
 	GlobalForceControl m_ForceControl;       // 0x668  SPhysicsLT's "world" force state:
 	                                         //        its m_pWorld points at this manager
 	// The record ends at 0x6a8: GlobalForceControl's frame-move answer at its
@@ -1790,6 +1800,10 @@ public:
 	// bandwidth pair at 0x7c0, the app guid at 0x7d0, the main driver at
 	// 0x7e0) are CNetMgr members reached through it.
 	CNetMgr            m_NetMgr;             // 0x6e0
+	// AVP2: four bytes more after the net manager: its last dword (+0x7e0)
+	// is NOLF's plus 0x40c in AvP2's engines, m_ClientList (+0x7e4) NOLF's
+	// plus 0x410, and so is every member after it, to the end.
+	uint32             m_AvP2Unknown7e4;
 	LTList             m_ClientList;         // 0x7e4  data links to Client
 	uint32             m_Unknown7f4;         // 0x7f4
 	uint32             m_Unknown7f8;         // 0x7f8

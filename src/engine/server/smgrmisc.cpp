@@ -64,6 +64,7 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 
 
 // ======================================================================= //
@@ -855,7 +856,7 @@ public:
 class CServerMgrIDListQ468
 {
 public:
-	uint8      m_pad_000[0x8c4];
+	uint8      m_pad_000[AVP2_MGR(0x8c4)];
 	LTLinkQ468 m_Link8c4;                    // 0x8c4
 };
 

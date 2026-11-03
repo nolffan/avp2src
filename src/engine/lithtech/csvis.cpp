@@ -114,6 +114,7 @@
 // *********************************************************************** //
 
 #include <string.h>
+#include "../server/avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdarg.h>
 
 #include "ltbasedefs.h"
@@ -1454,9 +1455,9 @@ extern CObjQueueBankQ414 g_ObjQueueBankQ414;                   // 0x004b17a8
 class CServerMgrQ46A
 {
 public:
-	uint8  m_pad_00[0x1a0];
+	uint8  m_pad_00[AVP2_MGR(0x1a0)];
 	uint32 m_Unknown1a0;                     // 0x1a0  bit 0: sweeping objects
-	uint8  m_pad_1a4[0x83c - 0x1a4];
+	uint8  m_pad_1a4[AVP2_MGR(0x83c) - AVP2_MGR(0x1a4)];
 	LTLink m_Link83c;                        // 0x83c  the queued-object list
 };
 

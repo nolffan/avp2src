@@ -2,6 +2,7 @@
 // every object's data, and the two ends of the block itself (reconstruction).
 // Build /O1.
 #include <string.h>
+#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include "de_error.h"
 #include "saveio.h"
@@ -246,12 +247,12 @@ public:
 class SavServerMgr
 {
 public:
-	uint8            m_pad_000[0x330];
+	uint8            m_pad_000[AVP2_MGR(0x330)];
 	SavFileTreeRec** m_pFileTrees;           // 0x330
 	uint32           m_nFileTrees;           // 0x334
-	uint8            m_pad_338[0x390 - 0x338];
+	uint8            m_pad_338[AVP2_MGR(0x390) - AVP2_MGR(0x338)];
 	uint8            m_Unknown390[4];        // 0x390  the object manager
-	uint8            m_pad_394[0x6b8 - 0x394];
+	uint8            m_pad_394[AVP2_MGR(0x6b8) - AVP2_MGR(0x394)];
 	// servermgr.h's types: five of the seven are floats and the arithmetic
 	// at the end of the restore only works out if 0x6b8 and 0x6c0 are.
 	float            m_Unknown6b8;           // 0x6b8
@@ -261,14 +262,14 @@ public:
 	float            m_Unknown6c8;           // 0x6c8
 	float            m_Time;                 // 0x6cc
 	int              m_Unknown6d0;           // 0x6d0
-	uint8            m_pad_6d4[0x804 - 0x6d4];
+	uint8            m_pad_6d4[AVP2_MGR(0x804) - AVP2_MGR(0x6d4)];
 	// What the loader resolves saved class names against; the class-manager
 	// list head two dwords further on is a different thing and the save
 	// filter uses that one (names ours).
 	void*            m_pClassMgr;            // 0x804
 	uint8            m_pad_808[4];
 	void*            m_ClassMgrFirst;        // 0x80c
-	uint8            m_pad_810[0xa74 - 0x810];
+	uint8            m_pad_810[AVP2_MGR(0xa74) - AVP2_MGR(0x810)];
 	SavConsoleState  m_ConsoleState;         // 0xa74
 };
 

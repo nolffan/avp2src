@@ -148,6 +148,7 @@
 //  would bind to the wrong one).
 // ======================================================================== //
 #include <string.h>
+#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include "de_error.h"
 #include "saveio.h"
@@ -312,11 +313,11 @@ public:
 class SavServerMgrQ4S
 {
 public:
-	uint8         m_pad_000[0x804];
+	uint8         m_pad_000[AVP2_MGR(0x804)];
 	void*         m_pClassMgr;               // 0x804
-	uint8         m_pad_808[0x95c - 0x808];
+	uint8         m_pad_808[AVP2_MGR(0x95c) - AVP2_MGR(0x808)];
 	uint16        m_SkyObjects[30];          // 0x95c
-	uint8         m_pad_998[0xa2c - 0x998];
+	uint8         m_pad_998[AVP2_MGR(0xa2c) - AVP2_MGR(0x998)];
 	SavFileMgrQ4S m_FileMgr;                 // 0xa2c
 };
 

@@ -51,6 +51,7 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"       // LTVector, StartGameRequest, LTRESULT
+#include "../server/avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include "ltlink.h"           // LTLink, LTList
 #include "ltcodes.h"          // LT_OK, LT_SERVERERROR, LT_CANTCREATESERVER
 #include "de_error.h"         // REPORT_ERROR / RETURN_ERROR (src/engine/server)
@@ -1062,13 +1063,13 @@ public:
 	LTBOOL Update(LTBOOL bPaused, uint32 nUnknown);            // 0x004742a0
 
 	uint32            m_ClientServerType;                      // 0x008
-	uint8             m_pad_00c[0x44 - 0x0c];
+	uint8             m_pad_00c[AVP2_MGR(0x44) - AVP2_MGR(0x0c)];
 	LTList            m_List44;                                // 0x044
 	LTList            m_List54;                                // 0x054
-	uint8             m_pad_064[0x1a4 - 0x64];
+	uint8             m_pad_064[AVP2_MGR(0x1a4) - AVP2_MGR(0x64)];
 	CWorld1a4         m_World;                                 // 0x1a4
 	CSub390           m_Sub390;                                // 0x390
-	uint8             m_pad_584[0x668 - 0x584];
+	uint8             m_pad_584[AVP2_MGR(0x668) - AVP2_MGR(0x584)];
 	CForceControlView m_ForceControl;                          // 0x668
 	CNetMgrView       m_NetMgr;                                // 0x6e0
 	LTList            m_ClientList;                            // 0x7e4
@@ -1076,7 +1077,7 @@ public:
 	uint32            m_Unknown7f8;                            // 0x7f8
 	uint32            m_Unknown7fc;                            // 0x7fc
 	uint32            m_Unknown800;                            // 0x800
-	uint8             m_pad_804[0x80c - 0x804];
+	uint8             m_pad_804[AVP2_MGR(0x80c) - AVP2_MGR(0x804)];
 	CClassMgrView     m_ClassMgr;                              // 0x80c
 	CListCall         m_List8dc;                               // 0x8dc
 	CListCall         m_List8ec;                               // 0x8ec

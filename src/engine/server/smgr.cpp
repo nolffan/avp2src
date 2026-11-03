@@ -1,5 +1,6 @@
 // server.dll — CServerMgr's interface-facing half (reconstruction). Build /O1.
 #include <stdarg.h>
+#include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -7958,7 +7959,7 @@ public:
 class CServerMgrList5E4View
 {
 public:
-	uint8  m_pad_00[0x5e4];
+	uint8  m_pad_00[AVP2_MGR(0x5e4)];
 	LTLink m_List5E4;                        // +0x5e4
 };
 
