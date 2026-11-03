@@ -134,6 +134,7 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"        // LTVector, LTRotation, ObjectCreateStruct,
+#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
                                // LTDIFF, OT_LINESYSTEM, FLAG_VISIBLE
 #include "ltlink.h"            // LTLink / CheapLTLink::Remove / AddAfter
 
@@ -334,16 +335,16 @@ public:
 class LTObjectQ460
 {
 public:
-	uint8      m_pad_000[0x88];
+	uint8      m_pad_000[AVP2_OBJ(0x88)];
 	uint32     m_Flags;                                      // 0x088
-	uint8      m_pad_08c[0xc4 - 0x8c];
+	uint8      m_pad_08c[AVP2_OBJ(0xc4) - AVP2_OBJ(0x8c)];
 	LTVector   m_Velocity;                                   // 0x0c4
 	LTVector   m_Acceleration;                               // 0x0d0
 	float      m_FrictionCoefficient;                        // 0x0dc
-	uint8      m_pad_0e0[0xf0 - 0xe0];
+	uint8      m_pad_0e0[AVP2_OBJ(0xf0) - AVP2_OBJ(0xe0)];
 	LTVector   m_BBoxMin;                                    // 0x0f0
 	LTVector   m_BBoxMax;                                    // 0x0fc
-	uint8      m_pad_108[0x120 - 0x108];
+	uint8      m_pad_108[AVP2_OBJ(0x120) - AVP2_OBJ(0x108)];
 	uint32     m_ChangeFlags;                                // 0x120
 	float      m_fPosPredictTime;                            // 0x124
 	float      m_fPredictStamp;                              // 0x128
@@ -355,7 +356,7 @@ public:
 	LTRotation m_PredictRot;                                 // 0x160
 	LTLink     m_RotPredictLink;                             // 0x170
 	HLOCALOBJ  m_hPredictLines;                              // 0x17c
-	uint8      m_pad_180[0x18c - 0x180];
+	uint8      m_pad_180[AVP2_OBJ(0x18c) - AVP2_OBJ(0x180)];
 	LTVector   m_Pos;                                        // 0x18c
 	LTVector   m_Dims;                                       // 0x198
 	float      m_Radius;                                     // 0x1a4

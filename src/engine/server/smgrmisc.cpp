@@ -64,6 +64,7 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#include "avp2obj.h"  // AVP2: an object's layout for the views below
 #include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 
 
@@ -771,9 +772,9 @@ public:
 class ModelInstanceQ468
 {
 public:
-	uint8         m_pad_00[0x88];
+	uint8         m_pad_00[AVP2_OBJ(0x88)];
 	uint32        m_Flags;                   // 0x088
-	uint8         m_pad_8c[0x188 - 0x8c];
+	uint8         m_pad_8c[AVP2_OBJ(0x188) - AVP2_OBJ(0x8c)];
 	SObjDataQ468* m_pSData;                  // 0x188
 };
 

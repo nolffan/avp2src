@@ -114,6 +114,7 @@
 // *********************************************************************** //
 
 #include <string.h>
+#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include "../server/avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdarg.h>
 
@@ -1009,16 +1010,16 @@ void cs_UpdateSpritesQ414(CClientMgrQ414* pMgr)
 class CParticleObjQ414
 {
 public:
-	uint8              m_pad_000[0x88];
+	uint8              m_pad_000[AVP2_OBJ(0x88)];
 	uint32             m_Flags;                                // 0x088
-	uint8              m_pad_08c[0x18c - 0x8c];
+	uint8              m_pad_08c[AVP2_OBJ(0x18c) - AVP2_OBJ(0x8c)];
 	LTVector           m_Pos;                                  // 0x18c
-	uint8              m_pad_198[0x1e8 - 0x198];
+	uint8              m_pad_198[AVP2_OBJ(0x1e8) - AVP2_OBJ(0x198)];
 	uint32             m_pTexture;                             // 0x1e8
-	uint8              m_pad_1ec[0x1f0 - 0x1ec];
+	uint8              m_pad_1ec[AVP2_OBJ(0x1f0) - AVP2_OBJ(0x1ec)];
 	void*              m_pSprite;                              // 0x1f0
 	CSpriteTrackerQ414 m_SpriteTracker;                        // 0x1f4
-	uint8              m_pad_208[0x22c - 0x208];
+	uint8              m_pad_208[AVP2_OBJ(0x22c) - AVP2_OBJ(0x208)];
 	int                m_nDirtyCount;                          // 0x22c
 };
 

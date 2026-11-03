@@ -148,6 +148,7 @@
 //  would bind to the wrong one).
 // ======================================================================== //
 #include <string.h>
+#include "avp2obj.h"  // AVP2: an object's layout for the views below
 #include "avp2mgr.h"  // AVP2: CServerMgr's layout for the views below
 #include <stdio.h>
 #include "de_error.h"
@@ -254,7 +255,7 @@ public:
 class SavObjectQ4S
 {
 public:
-	uint8            m_pad_000[0x088];
+	uint8            m_pad_000[AVP2_OBJ(0x088)];
 	uint32           m_Flags;                // 0x088
 	uint32           m_Flags2;               // 0x08c
 	uint32           m_UserFlags;            // 0x090
@@ -269,15 +270,15 @@ public:
 	uint16           m_nSaveIndex;           // 0x0ba
 	char             m_ObjectType;           // 0x0bc  OT_*
 	uint8            m_BlockingPriority;     // 0x0bd
-	uint8            m_pad_0be[0x0c4 - 0x0be];
+	uint8            m_pad_0be[AVP2_OBJ(0x0c4) - AVP2_OBJ(0x0be)];
 	float            m_Velocity[3];          // 0x0c4
 	float            m_Acceleration[3];      // 0x0d0
 	float            m_FrictionCoefficient;  // 0x0dc
 	float            m_Mass;                 // 0x0e0
 	float            m_ForceIgnoreLimitSqr;  // 0x0e4
-	uint8            m_pad_0e8[0x120 - 0x0e8];
+	uint8            m_pad_0e8[AVP2_OBJ(0x120) - AVP2_OBJ(0x0e8)];
 	uint32           m_ChangeFlags;          // 0x120
-	uint8            m_pad_124[0x188 - 0x124];
+	uint8            m_pad_124[AVP2_OBJ(0x188) - AVP2_OBJ(0x124)];
 	SavObjDataQ4S*   m_pSData;               // 0x188
 	float            m_Pos[3];               // 0x18c
 	float            m_Dims[3];              // 0x198
@@ -286,13 +287,13 @@ public:
 		SavWorldBspQ4S* m_pWorldBsp;         // 0x1a8
 		float           m_LightRadius;       // 0x1a8  (OT_LIGHT only)
 	};
-	uint8            m_pad_1ac[0x1d8 - 0x1ac];
+	uint8            m_pad_1ac[AVP2_OBJ(0x1d8) - AVP2_OBJ(0x1ac)];
 	uint16           m_Model1d8;             // 0x1d8  (name ours)
-	uint8            m_pad_1da[0x1e8 - 0x1da];
+	uint8            m_pad_1da[AVP2_OBJ(0x1e8) - AVP2_OBJ(0x1da)];
 	uint16           m_Model1e8;             // 0x1e8  (name ours)
-	uint8            m_pad_1ea[0x1ec - 0x1ea];
+	uint8            m_pad_1ea[AVP2_OBJ(0x1ec) - AVP2_OBJ(0x1ea)];
 	uint32           m_Model1ec;             // 0x1ec  (name ours)
-	uint8            m_pad_1f0[0x270 - 0x1f0];
+	uint8            m_pad_1f0[AVP2_OBJ(0x270) - AVP2_OBJ(0x1f0)];
 	uint16           m_Container270;         // 0x270  (name ours)
 };
 

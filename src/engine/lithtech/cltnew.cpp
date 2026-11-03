@@ -48,6 +48,7 @@
 // *********************************************************************** //
 
 #include <stdio.h>            // _vsnprintf
+#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 #include <stdarg.h>           // va_list / va_start / va_end
 
 #include "ltbasedefs.h"
@@ -1279,15 +1280,15 @@ public:
 class CClientWorldModelView
 {
 public:
-	uint8                m_pad_00[0x54];
+	uint8                m_pad_00[AVP2_OBJ(0x54)];
 	void*                m_p54;              // 0x054 -- non-null: skip it
-	uint8                m_pad_58[0xbc - 0x58];
+	uint8                m_pad_58[AVP2_OBJ(0xbc) - AVP2_OBJ(0x58)];
 	char                 m_ObjectType;       // 0x0bc
-	uint8                m_pad_bd[0x18c - 0xbd];
+	uint8                m_pad_bd[AVP2_OBJ(0x18c) - AVP2_OBJ(0xbd)];
 	LTVector             m_Pos;              // 0x18c
-	uint8                m_pad_198[0x1a8 - 0x198];
+	uint8                m_pad_198[AVP2_OBJ(0x1a8) - AVP2_OBJ(0x198)];
 	CClientWorldBspView* m_pWorldBsp;        // 0x1a8
-	uint8                m_pad_1ac[0x230 - 0x1ac];
+	uint8                m_pad_1ac[AVP2_OBJ(0x230) - AVP2_OBJ(0x1ac)];
 	LTMatrix             m_Transform230;     // 0x230
 };
 

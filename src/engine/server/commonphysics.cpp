@@ -1,5 +1,6 @@
 // server.dll — the shared ILTPhysics implementation (reconstruction). Build /O1.
 #include <math.h>
+#include "avp2obj.h"  // AVP2: an object's layout for the views below
 #include "commonphysics.h"
 #include "servermgr.h"
 #include "worldsim.h"
@@ -762,10 +763,10 @@ public:
 		m_Radius = m_Dims.Mag() + 0.1f;
 	}
 
-	uint8    m_pad_000[0xf0];
+	uint8    m_pad_000[AVP2_OBJ(0xf0)];
 	LTVector m_BBoxMin;                                     // 0x0f0
 	LTVector m_BBoxMax;                                     // 0x0fc
-	uint8    m_pad_108[0x18c - 0x108];
+	uint8    m_pad_108[AVP2_OBJ(0x18c) - AVP2_OBJ(0x108)];
 	LTVector m_Pos;                                         // 0x18c
 	LTVector m_Dims;                                        // 0x198
 	float    m_Radius;                                      // 0x1a4

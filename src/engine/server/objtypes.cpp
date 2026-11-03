@@ -124,6 +124,7 @@ void CObjBase::InitFields()
 	m_ObjectID = 0xffff;
 	m_ObjectType = 0;
 	m_Unknownc0 = 0;
+	m_AvP2Dc = 5;	// AVP2: Primal Hunt server.dll 0x1002e654
 
 	m_Velocity.Init();
 	m_Acceleration.Init();
@@ -157,6 +158,7 @@ void CObjBase::InitFields()
 	m_Link150.TieOff();
 
 	m_fLink170Key = 0.0f;
+	m_AvP2F164 = 0.0f;	// AVP2: retail zeroes it beside m_fLink170Key
 
 	m_Link170.m_pData = this;
 	m_Link170.TieOff();

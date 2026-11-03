@@ -282,6 +282,14 @@ public:
 	uint8      m_pad_0be[0x0c4 - 0x0be];
 	LTVector   m_Velocity;                   // 0x0c4
 	LTVector   m_Acceleration;               // 0x0d0
+	// AVP2: four bytes more here in AvP2's engines (1.0.9.6's and Primal
+	// Hunt's): ILTPhysics::Get/SetFrictionCoefficient, ILTCommon::Get/
+	// SetObjectMass and ILTPhysics::Get/SetForceIgnoreLimit reach +0xe0,
+	// +0xe4 and +0xe8 (server.dll 0x100177e0, 0x100179c6, 0x10017876) where
+	// NOLF's reach +0xdc, +0xe0 and +0xe4, while m_Velocity and
+	// m_Acceleration are where they were. Every offset below is NOLF's plus
+	// four, to m_pSData.
+	uint32             m_AvP2UnknownDc;
 	float      m_FrictionCoefficient;        // 0x0dc
 	float      m_Mass;                       // 0x0e0
 	float      m_ForceIgnoreLimitSqr;        // 0x0e4
@@ -294,7 +302,9 @@ public:
 	LTLink     m_StandingLink;               // 0x114  this object's place in the
 	                                         //        list of whatever it stands on
 	uint32     m_ChangeFlags;                // 0x120  what the client must be told
-	uint8      m_pad_124[0x188 - 0x124];
+	// AVP2: four bytes more in this unmapped stretch: m_ChangeFlags is
+	// NOLF's plus four, m_pSData and everything after it NOLF's plus eight.
+	uint8              m_pad_124[0x188 - 0x124 + 4];
 	class SObjData* m_pSData;                // 0x188  engine-side object data
 	LTVector   m_Pos;                        // 0x18c
 	LTVector   m_Dims;                       // 0x198

@@ -73,6 +73,7 @@
 // *********************************************************************** //
 
 #include <string.h>
+#include "../server/avp2obj.h"  // AVP2: an object's layout for the views below
 
 #include "ltbasedefs.h"
 #include "ltcodes.h"
@@ -1643,7 +1644,7 @@ public:
 class CObjChangeInfoQ478
 {
 public:
-	uint8   m_pad_0000[0x88];
+	uint8   m_pad_0000[AVP2_OBJ(0x88)];
 	// 0x00478bbf replaces only the LOW WORD, masking with 0xffff0000 — and
 	// 0x00478ce8 then tests bit 0x100 of it to pick the position encoding.
 	uint32  m_Unknown88;                     // 0x088
@@ -1655,21 +1656,21 @@ public:
 	LTVector m_Scale;                        // 0x0ac  (0x00420580)
 	// 0x0b8 -- the object id, a WORD (`mov 0xb8(%eax),%dx` at 0x0047918b).
 	uint16  m_ObjectID;                      // 0x0b8
-	uint8   m_pad_00ba[0xbc - 0xba];
+	uint8   m_pad_00ba[AVP2_OBJ(0xbc) - AVP2_OBJ(0xba)];
 	// 0x0bc — a BYTE, not a dword: the shipped tests are `mov al,0xbc(%ebp)`
 	// / `cmp $1,%al`, so the load is eight bits wide. 1, 3 and 4 all branch.
 	uint8   m_Type;                          // 0x0bc
 	uint8   m_BlockingPriority;              // 0x0bd  (0x00420726)
-	uint8   m_pad_00be[0x180 - 0xbe];
+	uint8   m_pad_00be[AVP2_OBJ(0x180) - AVP2_OBJ(0xbe)];
 	// 0x180 -- the flag word 0x0042069a tests bit 4 of.
 	uint32  m_Flags180;                      // 0x180
-	uint8   m_pad_0184[0x1a8 - 0x184];
+	uint8   m_pad_0184[AVP2_OBJ(0x1a8) - AVP2_OBJ(0x184)];
 	float   m_Float1A8;                      // 0x1a8
-	uint8   m_pad_01ac[0x1bc - 0x1ac];
+	uint8   m_pad_01ac[AVP2_OBJ(0x1bc) - AVP2_OBJ(0x1ac)];
 	uint32  m_Unknown1BC;                    // 0x1bc
 	CUpdRecQ478 m_AnimTracker;               // 0x1c0  (the first of m_pUpdRecs)
 	class CUpdRecQ478* m_pUpdRecs;           // 0x1f8  (0x004789dc)
-	uint8   m_pad_01fc[0x204 - 0x1fc];
+	uint8   m_pad_01fc[AVP2_OBJ(0x204) - AVP2_OBJ(0x1fc)];
 	uint32  m_Unknown204;                    // 0x204  type 1 only
 
 	// predobj.cpp's LTObject::SetPos: __thiscall, the vector BY VALUE

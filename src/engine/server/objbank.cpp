@@ -176,8 +176,16 @@ public:
 	void*             m_pHookFn;             // 0x1b4
 	void*             m_pUnknown1b8;         // 0x1b8
 	void*             m_pUnknown1bc;         // 0x1bc
-	LTAnimTracker m_AnimTracker;         // 0x1c0
+	// AVP2: twelve bytes more before the tracker in AvP2's engines: m_pHookFn
+	// is NOLF's offset plus eight (LTObject's own growth), the tracker's
+	// fields NOLF's plus 0x14. Provisional: where in 0x1b8..0x1c0 they go
+	// is still to be read.
+	uint32            m_AvP2Unknown1c0[3];
+	LTAnimTracker m_AnimTracker;         // 0x1c0  (AvP2's SDK's tracker, 0x50 bytes)
 	LTAnimTracker* m_pTrackerList;       // 0x1f8
+	// AVP2: 0x30 bytes more after the tracker list: the next member is at
+	// NOLF's offset plus 0x44 in AvP2's engines.
+	uint8             m_AvP2Unknown1fc[0x30];
 	uint32            m_Unknown1fc;          // 0x1fc
 	uint32            m_Unknown200;          // 0x200
 	uint32            m_HiddenPieces;        // 0x204

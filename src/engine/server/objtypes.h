@@ -125,6 +125,12 @@ public:
 	uint32   m_Unknownc0;                    // 0x0c0
 	LTVector m_Velocity;                     // 0x0c4
 	LTVector m_Acceleration;                 // 0x0d0
+	// AVP2: a byte here in AvP2's engines, which InitFields sets to five
+	// (Primal Hunt server.dll 0x1002e654: `mov byte [ecx+0xdc], 5`, before
+	// the friction's 5.0 at +0xe0); every offset below is NOLF's plus four,
+	// to m_fLink170Key.
+	uint8    m_AvP2Dc;                       // 0x0dc (AvP2's offset)
+	uint8    m_pad_AvP2Dd[3];
 	float    m_FrictionCoefficient;          // 0x0dc  starts at five
 	float    m_Mass;                         // 0x0e0  and at thirty
 	float    m_ForceIgnoreLimitSqr;          // 0x0e4  a million, i.e. 1000 units
@@ -148,6 +154,11 @@ public:
 	uint8    m_pad_144[0x150 - 0x144];
 	LTLink   m_Link150;                      // 0x150  m_pData is the object
 	float    m_fLink170Key;                  // 0x15c
+	// AVP2: a float more here, which InitFields zeroes (AvP2's +0x164, after
+	// m_fLink170Key at +0x160 and before the quaternion at +0x168 that
+	// NOLF's layout leaves as padding); every offset below is NOLF's plus
+	// eight.
+	float    m_AvP2F164;
 	uint8    m_pad_160[0x170 - 0x160];
 	LTLink   m_Link170;                      // 0x170  m_pData is the object
 	void*    m_pUnknown17c;                  // 0x17c
