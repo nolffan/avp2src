@@ -263,10 +263,16 @@ public:
 // The free is inline in the header the engine used — the freed struct's first
 // dword becomes the next-free link — which is why si_RemoveObjectFromList
 // carries it rather than calling anything.
+// AVP2: both pointers are tested before the two stores, the record first
+// (lithtech.exe 0x00433b7d then 0x00433bb1, 0x0046dcb2; server.dll
+// 0x1001160d); NOLF's had only the stores.
 inline void sb_Free(StructBank* pBank, void* pStruct)
 {
-	*(void**)pStruct = pBank->m_pFreeList;
-	pBank->m_pFreeList = pStruct;
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
 }
 
 // 0x1003e1e0 -- grows the bank by one chunk. Declared here only so the inline

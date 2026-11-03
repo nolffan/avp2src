@@ -68,9 +68,9 @@ inline void* sb_Allocate(StructBank* pBank)
 	return pStruct;
 }
 
-// The free, inline as servermgr.h's is, but AvP2's checks both pointers
-// first: lithtech 0x00433b7d tests the record and 0x00433bb1 the bank's own
-// address before the two stores.
+// The free, as servermgr.h's: AvP2's checks both pointers first
+// (lithtech 0x00433b7d tests the record and 0x00433bb1 the bank's own
+// address before the two stores).
 inline void sb_Free(StructBank* pBank, void* pStruct)
 {
 	if (pStruct && pBank)
