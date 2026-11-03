@@ -89,17 +89,17 @@ DATA = "progress"               # the recorded baseline and the evidence
 # been written for), unless the target names its own `cited_src`.
 CITED_SRC = []
 
-# No prebuilt static library ships with AvP2: every library is built
-# from source and scored inside the binaries that link it.
-LIBS = []
-SHIPPED_LIB = None
+# The lithshared libraries we build (build/build.mk, "The lithshared
+# libraries, ours"), into the paths the project files link them from: each
+# scored object by object against the release's prebuilt build of it
+# (progress/reference/, checked against shipped-libs.sha256), which holds
+# more than any one image takes from it.
+OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub"]
+LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
+SHIPPED_LIB = "LT2/lithshared/libs/release/{}.lib"
 SHIPPED_AS = {}
-SHIPPED_ENV = None
+SHIPPED_ENV = "AVP2_SOURCE"     # build/progress.sh: progress/reference
 
-# Translation units of ours that exist only to make the compiler emit
-# functions for the scoring to compare (the engine's sdkforce.cpp takes the
-# address of every SDK inline, so all of them are out of line, whether or
-# not a shipped image has them so): reported as `driver`, as nolfsrc does.
 DRIVER_OBJS = {"sdkforce.obj"}
 
 # The release's prebuilt lithshared libraries (and the dedicated server's
@@ -109,7 +109,8 @@ DRIVER_OBJS = {"sdkforce.obj"}
 # our side, so that what they put in our images neither matches nor counts
 # as ours. A library comes off this list when we build it.
 PREBUILT_LIBS = sorted(f for f in os.listdir(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "reference/LT2/lithshared/libs/release"))) + ["server.lib"]
+    os.path.dirname(os.path.abspath(__file__)), "reference/LT2/lithshared/libs/release"))
+    if f[:-4] not in OUR_LIBS) + ["server.lib"]
 
 TARGETS = [
     # ---- the engine: Primal Hunt's ---------------------------------------

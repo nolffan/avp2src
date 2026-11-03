@@ -198,6 +198,62 @@ $(1) &: $(2) | wine-drives
 endef
 
 # ---------------------------------------------------------------------------
+# The lithshared libraries, ours
+#
+# AvP2's release ships them as headers (src/LT2/lithshared/) and prebuilt
+# builds only (cl 8966: progress/COMPILERS.md), as NOLF's did; these are
+# nolfsrc's reconstructions (src/lithshared/, from nolfsrc's), compiled with
+# 8966 and nolfsrc's flags, into the very paths the project files link them
+# from ($(LT2_DIR)\lithshared\libs\Release\), so the game DLLs link ours.
+# progress/targets.py scores each against the release's prebuilt one
+# (LIBS), object by object. Each library is lib.exe over its objects, in
+# the order its sources are listed here.
+LIB_CFLAGS := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /c
+LT2LS  := ..\..\LT2\lithshared
+LT2LS2 := ..\\..\\LT2\\lithshared
+LOUT   := src/LT2/lithshared/libs/Release
+LS_OURS :=
+# $(call lsobjs,<dir>,<incs>,<sources>) -> compile each into <dir>/Release
+define lsobjs
+$(foreach s,$(3),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/Release),src/lithshared/$(1),$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(2) /FoRelease/,wine-drives)))
+LSOBJ_$(1) := $(foreach s,$(3),$(call c_obj,$(s),src/lithshared/$(1)/Release))
+endef
+# $(call lslib,<dir>,<library>,<incs>,<sources>)
+define lslib
+$(call lsobjs,$(1),$(3),$(4))
+$(call tool,$(LOUT)/$(2).lib,$$(LSOBJ_$(1)) | wine-drives,cd src/lithshared/$(1) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\$(2).lib' $$(call q,$$(subst /,\,$$(patsubst src/lithshared/$(1)/%,%,$$(LSOBJ_$(1))))))
+LS_OURS += $(2)
+endef
+c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
+
+$(eval $(call lslib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib,\
+    abstractio.cpp dynarray.cpp fileio.cpp goodlinklist.cpp helpers.cpp l_allocator.cpp \
+    linklist.cpp lithexception.cpp memory.cpp memoryio.cpp stringholder.cpp struct_bank.cpp \
+    sys\win\compressedio.cpp))
+$(eval $(call lslib,CryptMgr,CryptMgr,/I $(LT2LS2)\\cryptmgr /I $(LT2LS2)\\incs /I .,cryptmgr.cpp blowfish.cpp))
+# (lith.lib: the release names it in lower case, and so does Windows when
+# ours replaces a copy of it)
+$(eval $(call lslib,lith,lith,/I .,basehash.cpp baselist.cpp virtlist.cpp))
+$(eval $(call lslib,rezmgr,RezMgr,/I $(LT2LS2)\\incs /I .,rezmgr.cpp rezmgr2.cpp rezfile.cpp rezemu.cpp rezdir.cpp rezhash.cpp))
+$(eval $(call lslib,RegMgr,RegMgr,/I $(LT2LS2)\\incs /I .,regmgr.cpp))
+$(eval $(call lslib,MFCStub,MFCStub,/I $(LT2LS2)\\mfcstub /I $(LT2LS2)\\incs /I $(LT2LS2)\\lith /I .,mfcs_string.cpp mfcs_rect.cpp mfcs_point.cpp))
+# Not yet ours: AvP2's LTGUIMgr is another version of the library than
+# NOLF's (menu fonts with normal, selected and disabled faces, DrawMenu,
+# GetTextExtents, three fonts where NOLF's had sixteen), and its
+# LithFontMgr keeps the previous string as a CString and draws with a
+# default colour (lithfontdefs.h); both are to be reconstructed from the
+# release's prebuilt builds, which the links take until then.
+
+# Not yet ours either: AvP2's ButeMgr is another version of the parser than
+# NOLF's (its symbol tables are STLport hash_maps, where NOLF's were zTools
+# containers: butemgr.h), to be reconstructed from the prebuilt builds.
+# (nolfsrc's zTools sources stay in src/lithshared/ztools/, with the NOLF
+# release's ztools.h, for whatever of AvP2's still uses them.)
+
+.PHONY: libs
+libs: $(LS_OURS:%=$(LOUT)/%.lib)
+
+# ---------------------------------------------------------------------------
 # The prebuilt libraries
 #
 # The release ships most of the lithshared libraries as binaries only
@@ -209,9 +265,11 @@ endef
 # scoreboard leaves them out of our side (progress/targets.py,
 # third_party): their code in our images is Monolith's, not ours.
 PREBUILT_DIR := progress/reference/LT2/lithshared/libs/release
-PREBUILT := $(patsubst $(PREBUILT_DIR)/%,src/LT2/lithshared/libs/Release/%,$(wildcard $(PREBUILT_DIR)/*.lib)) \
+# (every one we do not build ourselves, above)
+PREBUILT := $(filter-out $(LS_OURS:%=$(LOUT)/%.lib),\
+    $(patsubst $(PREBUILT_DIR)/%,src/LT2/lithshared/libs/Release/%,$(wildcard $(PREBUILT_DIR)/*.lib))) \
     src/AVP2/AVP2Serv/server.lib
-src/LT2/lithshared/libs/Release/%.lib: $(PREBUILT_DIR)/%.lib
+$(filter-out $(LS_OURS:%=$(LOUT)/%.lib),$(patsubst $(PREBUILT_DIR)/%,src/LT2/lithshared/libs/Release/%,$(wildcard $(PREBUILT_DIR)/*.lib))): src/LT2/lithshared/libs/Release/%.lib: $(PREBUILT_DIR)/%.lib
 	@mkdir -p $(@D) && cp $< $@
 src/AVP2/AVP2Serv/server.lib: progress/reference/AVP2/AVP2Serv/server.lib
 	@cp $< $@
@@ -265,7 +323,6 @@ all game: $(WANTED)
 # which name NOLF's addresses; `make progress` scores the objects
 # (progress/targets.py, partial_objs).
 E := src/engine
-c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
 V9044 := $(TC)/msvc-6.00-9044
 ENG_PH_CC   := $(V8966)/BIN/cl.exe
 ENG_PH_ENV  := $(ENV_GAME)

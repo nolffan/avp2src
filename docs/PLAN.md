@@ -225,6 +225,25 @@ and `OverlayMGR::GetRailMode` -- the release's source is dated July 2002,
 retail 1.0.9.6's `CShell.dll` March 2002, so the release may be a little
 newer than what shipped.
 
+### 4. game: the lithshared libraries
+
+Six of the libraries are built from nolfsrc's sources (`src/lithshared/`),
+with cl 8966 and nolfsrc's flags, into the paths the project files link
+them from, so the game DLLs link ours (`build/build.mk`, "The lithshared
+libraries, ours"); each is scored against the release's prebuilt build
+(`progress/targets.py`, `LIBS`): CryptMgr and RegMgr 100 %, StdLith 99.2 %,
+MFCStub 96.2 %, lith 43.8 %, RezMgr 0.3 %. With them, `CShell.dll` is 62.7 %,
+`Object.lto` 89.1 %.
+
+AvP2's versions of three more are not NOLF's, and stay prebuilt (left out
+of our score) until reconstructed from the release's builds: ButeMgr (its
+symbol tables are STLport hash_maps, not zTools containers), LTGUIMgr
+(menu fonts with three faces, DrawMenu, GetTextExtents) and LithFontMgr
+(a CString for the previous string, a default colour). RezMgr and lith are
+different versions too, by their scores. Prebuilt and not ours to build:
+GameSpy's managers (middleware) and LithTrackMgr (headers only); WONAPI's
+source is in the release, to be built from it.
+
 ### 5. ph-game
 
 Third Law's game code is AvP2 1.0.9.6's carried on. Of the distinct

@@ -36,6 +36,9 @@
 # scored as if it were retail.
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+# The release's prebuilt lithshared libraries, which our builds of them are
+# scored against (progress/targets.py, LIBS), as it came: progress/reference/.
+export AVP2_SOURCE="${AVP2_SOURCE:-progress/reference}"
 
 mode="${1:-check}"
 case "$mode" in
