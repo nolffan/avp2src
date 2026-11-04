@@ -19,6 +19,13 @@
 // which also sidesteps the thing packet.h's header note describes: VC6 cannot
 // parse explicit template arguments on a member, so `&CPacket::ReadType<T>`
 // is not available and deduction from the target type is the only route.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x419f10).
+#include <string>
+#endif
 #include "packet.h"
 #include "ltlink.h"
 

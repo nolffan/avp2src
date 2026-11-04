@@ -20,6 +20,14 @@ typedef int            int32;
 typedef int            LTBOOL;
 typedef unsigned long  LTRESULT;
 
+#if defined(PRIMAL_HUNT)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x44f2b0).
+#include <string>
+#endif
+
 #define LTNULL  0
 #define LTTRUE  1
 #define LTFALSE 0

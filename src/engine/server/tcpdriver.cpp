@@ -18,6 +18,13 @@
 // in by itself — declares the same functions without dllimport and gives a
 // five-byte direct call to a linker thunk instead. Including winsock2.h
 // first also stops windows.h reaching for winsock.h and colliding with it.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x402920).
+#include <string>
+#endif
 #include <winsock2.h>
 #include <windows.h>
 #include <mmsystem.h>

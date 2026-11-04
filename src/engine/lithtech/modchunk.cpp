@@ -43,6 +43,13 @@
 // functions that are members of classes commonmodel.h already declares are
 // defined under their real names, because commonmodel.cpp does not define
 // them and a second definition would not link otherwise.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x45dee0).
+#include <string>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>

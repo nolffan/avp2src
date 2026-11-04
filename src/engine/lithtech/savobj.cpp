@@ -39,6 +39,13 @@
 // and both listings were read for every decision below. Where they differ it
 // is inlining: /O2 expands sav_WriteVector and the CPacket templates, /O1
 // calls them.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x418e50).
+#include <string>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include "de_error.h"

@@ -337,6 +337,13 @@
 //
 // None of those files is changed here; the point of the
 // modelling was to make them reachable.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x45e030).
+#include <string>
+#endif
 #include <string.h>
 #include "collection.h"
 

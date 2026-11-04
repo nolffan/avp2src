@@ -11,6 +11,13 @@
 // built by 0x0041c2a0 and torn down by 0x0041c390, plus the client's
 // ConsoleState at 0x004b2f00 (clientmgr2.cpp already names that one) and the
 // CClientMgr the console works through at 0x004b2f44.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x405040, 0x425fc0).
+#include <string>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

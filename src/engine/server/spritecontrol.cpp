@@ -3,6 +3,13 @@
 // offsets (names ours). A sprite instance hangs its resource at +0x1a8 and
 // its play position — anim pointer, frame pointer, milliseconds into the
 // frame — at +0x1ac/+0x1b0/+0x1b4.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x4a0570).
+#include <string>
+#endif
 #include "servermgr.h"
 #include "de_error.h"
 
