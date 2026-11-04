@@ -92,7 +92,10 @@ inline LTRESULT sm_SetObjectChangeFlag(CServerMgr* pServerMgr, LTObject* pObj,
 {
 	// Bit 2 of the object's flag word is "in the world"; smgr.cpp's update
 	// sweep tests the same bit the same way.
-	if (!(pObj->m_ChangeFlags & 4))
+	// AVP2: and bit 0 refuses the change too (lithtech.exe 0x0048c386 /
+	// 0x0048c38f, `test $4,%dl; je` then `test %bl,%dl; jne` with %ebx the
+	// error level, 1; the same pair in AvP2 1.0.9.6's).
+	if (!(pObj->m_ChangeFlags & 4) || (pObj->m_ChangeFlags & 1))
 		RETURN_ERROR_INFO(1, "SetObjectChangeFlags", LT_OBJECTNOTINWORLD,
 		                  pObj->m_pSData->m_pClass->m_pClassName);
 
