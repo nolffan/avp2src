@@ -14,8 +14,11 @@
 #include "servermgr.h"
 #include "servermodel.h"
 #include "de_error.h"
-#ifndef LT_SERVER_BUILD
+#if !defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 #include "packet.h"
+#endif
+#ifdef PRIMAL_HUNT
+#include "commonmodel.h"
 #endif
 
 LTRESULT ServerCommonLT::GetAttachmentObjects(HATTACHMENT hAttachment, HOBJECT& hParent, HOBJECT& hChild)
@@ -305,7 +308,43 @@ LTRESULT ServerCommonLT::SetObjectFlags(HOBJECT hObj, const ObjFlagType flagType
 	return LT_OK;
 }
 
-#ifndef LT_SERVER_BUILD
+#if !defined(LT_SERVER_BUILD) && defined(PRIMAL_HUNT)
+// PH: lithtech.exe 0x00480f10 CALLS the time reference's constructor
+// (0x00480f43 -> 0x004543d0, `ecx = &state+0x28`), where AvP2's /O2 build
+// expanded it: Primal Hunt's AnimTimeRef constructor is out of line, the
+// SDK body (both weight sets -1, m_bNormalize clear, then Init(NULL...)
+// expanded) in a COMDAT of its own that the model walker's eight records
+// call too (objbank.cpp, 0x0046d3d8). ltanimtracker.h's constructor is
+// in-class, so a type of ours with an out-of-line constructor stands for
+// it here (name ours). The record is server.dll's PH one: the time
+// reference at +0x28.
+//
+// SetObjectFilenames stays NEAR there (642 of 648): the attachment loop's
+// two `m_iNode` stores are cross-jumped into one in ours (the socket arm
+// jumps to the node arm's `mov %eax,0x20(%esi)`), where shipped keeps the
+// socket arm's own store through %edx and jumps to the loop tail
+// (0x004810ed..0x004810f1); and the WriteWord argument and the client-loop
+// index take the other scratch register. A second found-index local for
+// the socket arm did not separate the stores.
+class CAnimTimeRefPHQ542 : public AnimTimeRef
+{
+public:
+	CAnimTimeRefPHQ542();                    // 0x004543d0
+};
+
+CAnimTimeRefPHQ542::CAnimTimeRefPHQ542()
+{
+}
+
+struct CSavedFileStateLT
+{
+	uint8              m_pad_00[0x28];
+	CAnimTimeRefPHQ542 m_TimeRef;            // 0x28
+	uint8              m_pad_4c[0x50 - 0x4c];
+	void*              m_pModelFile;         // 0x50
+	void*              m_pSkinFile;          // 0x54
+};
+#elif !defined(LT_SERVER_BUILD)
 // lithtech.exe 0x0046c440: the /O2 build EXPANDS the time reference's
 // constructor and Clear() into SetObjectFilenames -- `movl $-1` into
 // m_iWeightSet and six zero pushes onto a CALL of AnimTimeRef::Init
@@ -713,6 +752,8 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
 		*pnSize += 2;
 }
 #endif
+
+
 
 
 // 0x1000f878 is `MatVMul_H` — and that is not a name of ours, it is

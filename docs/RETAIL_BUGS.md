@@ -198,6 +198,37 @@ side of the box.
 
 Fixed in the modern build: worldisect.cpp, the maximum.
 
+### DirectMusic notifications leak on a segment that is not the newest
+
+`dm_NotificationThread` (lithtech.exe 0x0044b550, AvP2 1.0.9.6
+0x004477c0; src/engine/lithtech/clientmusic.cpp). A segment-almost-ended
+notification for a secondary, a motif, or a primary that is not the newest
+leaves the loop with `continue` and never frees the notification message.
+A queue entry of an unknown type also never advances the walk.
+
+Fixed in the modern build: clientmusic.cpp, the message is freed (the
+unknown-type walk is not changed yet).
+
+### A second peer-authentication message uses a freed client
+
+lithtech.exe 0x00411000 (Primal Hunt's peer-auth handler, message 13;
+src/engine/lithtech/clientmgr3.cpp). The handler deletes
+`g_pPeerAuthClient` and never clears it, so a second message 13 calls
+`HandleRecvMsg` on freed memory.
+
+Fixed in the modern build: clientmgr3.cpp, a null test and the pointer
+cleared after the delete.
+
+### A trailing +command reads past the argument list
+
+lithtech.exe 0x00413760 (`cm_RunPlusCommands`, AvP2 1.0.9.6 0x00412110;
+src/engine/lithtech/clientmgr2.cpp). Given an argument list, the
+`+command` loop runs up to the count itself, where the process command
+line's form stops one short, so a trailing `+name` reads one entry past
+the end.
+
+Fixed in the modern build: clientmgr2.cpp, the bound.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

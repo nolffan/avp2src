@@ -55,7 +55,7 @@
 /ALTERNATENAME:??1CXferBaseView@@QAE@XZ=??1CStringHolder@@QAE@XZ
 /ALTERNATENAME:??1ModelPieceDataQ444@@QAE@XZ=??1CCollElem24Rec@@QAE@XZ
 /ALTERNATENAME:??1ModelPiece@@QAE@XZ=??1ModelPieceQ444@@QAE@XZ
-/ALTERNATENAME:??1NetConnectionD@@QAE@XZ=?Term@NetConnection@@QAEXXZ
+/ALTERNATENAME:??1NetConnectionD@@QAE@XZ=??1NetConnection@@QAE@XZ
 /ALTERNATENAME:?AddConnection@CNetMgr@@QAEIPAVNetConnection@@@Z=?AddConnection@CNetMgrSendView@@QAEIPAVNetConnection@@@Z
 /ALTERNATENAME:?AddObjectLinkQ458@CWTNodeQ458@@QAEXPAVCWTLinkQ458@@K@Z=?AddObjectLink@CWTNode_E@@QAEXPAVCWTLink_E@@K@Z
 /ALTERNATENAME:?AllocateRezItm@CRezMgrX720@@AAEPAVCRezItmX720@@XZ=?AllocateRezItm@CRezMgrX380@@AAEPAVCRezItmX380@@XZ

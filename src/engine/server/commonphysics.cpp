@@ -749,47 +749,20 @@ int wm_CompareSortRecsQ528(const void* p1, const void* p2)
 //     (the stores at 0x14(%ebp)); lithtech.exe /O2 homes it in pState's
 //     (`movl $0x1,0x2c(%esp)`, 0x00454180). Reusing bUnknown itself gave
 //     the server bytes but pinned lithtech's stores to 0x38(%esp).
-//   * the three-float construction at the top is a CALL (0x1001e6d7, which
-//     stores its arguments at this+0/4/8 and returns `this`), and the vector
-//     operator at the bottom is not. So the engine's own ltvector.h declared
-//     the three-float constructor out of line — /Ob1 expands the SDK copy's
-//     in-class one, and the call disappears — while its operator- built its
-//     result member-wise rather than through that constructor. Both halves are
-//     reproduced: CVectorInit for the call, the SDK's operator- for the rest.
-//     The unnamed-temporary form (`*(LTVector*)&CVectorInit(...)`) is what
-//     makes the assignment copy out of the constructor's returned pointer;
-//     a named temporary re-addresses the local instead.
+//   * AVP2 (both 1.0.9.6 and Primal Hunt) reshaped it from NOLF's: the
+//     first miss is the SDK's inline operator- (no call to NOLF's
+//     out-of-line CVectorInit, 0x1001e6d7), and the grow pass first takes
+//     every shrinking axis in ONE SetDims of the per-axis LTMIN, then
+//     resizes the growing axes y, x, z.
 //
-// Byte-identical on both images. The facts that closed it, each read off
-// the frame:
-//
-//   * the two thresholds are retail's .rdata floats, which the masked
-//     byte match cannot see: the early-out compares against 0.0001f
-//     (0x1004dcf8, 0x004a2a38) and the final miss against 0.001f
-//     (0x1004d1f0, 0x004a1a54); tools/fpconst.py checks them.
-//   * the wanted dims the miss is measured against are a BLOCK-SCOPED copy
-//     (vNew), not vDims: lithtech.exe's 0x18 frame then folds the
-//     MagSqr temporary onto it (0x10(%esp), 0x00453ff7); with vDims at
-//     function scope the temporary took a slot of its own (0x24 frame).
-//     server.dll lays the two out the same either way.
-//   * the retransform at the end is WM_RETRANSFORM: lithtech.exe expands
-//     it here (the `cmp $2 / cmp $9` at 0x00454217 around the call to
-//     0x00450c30), server.dll calls 0x1001eb0c.
-//
-//   * the object's dims are read through a POINTER LOCAL for the three
-//     subtractions below. The shipped code folds the first indexed use back
-//     to absolute addressing (`flds 0x1a0(%ebx)`, the z term, evaluated
-//     first because arguments go right to left) and only then materialises
-//     the `lea 0x198(%ebx),%eax` the other two use.
-//   * the first miss is not a variable: the CVectorInit result is
-//     copied into an unnamed LTVector temporary (0x1002064e: -0x18 -> -0x24)
-//     and MagSqr'd there. A named vDiff kept a slot of its own all function.
-//   * vMiss IS a variable, at function scope (-0x30); vWanted is block-scoped
-//     and shares -0x18 with the CVectorInit temp. Block-scoping vMiss, or
-//     leaving it an unnamed temporary, lets VC6 hand -0x30 to that temp.
-//   * the per-axis sets are `Init()`, not VEC_SET: the x set at 0x10020708
-//     goes `flds (%esi); fstps -0xc(%ebp)` because Init's float parameters
-//     pass through the FPU; VEC_SET's plain copy became `mov (%esi),%eax`.
+// Byte-identical on both Primal Hunt images (server.dll 0x10029bd2, 494
+// bytes; lithtech.exe 0x004664f0, 607). The per-axis minimum is LTMIN with
+// the wanted value first, one statement per axis: the x term's mixed
+// integer/x87 arms (0x10029c6c / 0x10029c73) and the x87 arms of y and z
+// come out of exactly that; a hand-written `>` ternary copies every arm as
+// integers, and Init(LTMIN, ...) evaluates z first. The two thresholds are
+// retail's .rdata floats (0.0001f and 0.001f); bResult homes in the dead
+// fourth parameter's slot (0x14(%ebp)).
 int wm_SetObjectDims(WMMoveState* pState, LTVector* pDims, int bFlag, int bUnknown)
 {
 	LTVector vDims;
@@ -801,17 +774,12 @@ int wm_SetObjectDims(WMMoveState* pState, LTVector* pDims, int bFlag, int bUnkno
 
 	LTObject* pObj = pState->m_pObj;
 
-	{
-		LTVector vNew;
+	// AVP2: the miss is the SDK's inline operator-, not NOLF's out-of-line
+	// three-float constructor (no call between the Setup and the MagSqr at
+	// Primal Hunt server.dll 0x10029be0..0x10029c18).
+	LTVector vNew = *pDims;
 
-		vNew = *pDims;
-
-		LTVector* pObjDims = &pObj->m_Dims;
-
-		fDiffSqr = LTVector(*(LTVector*)&CVectorInit(pObjDims->x - vNew.x,
-		                                 pObjDims->y - vNew.y,
-		                                 pObjDims->z - vNew.z)).MagSqr();
-	}
+	fDiffSqr = (pObj->m_Dims - vNew).MagSqr();
 
 	if (bUnknown && fDiffSqr < 0.0001f)
 		return 1;
@@ -820,35 +788,22 @@ int wm_SetObjectDims(WMMoveState* pState, LTVector* pDims, int bFlag, int bUnkno
 	{
 		LTVector vWanted = *pDims;
 
-		if (pObj->m_Dims.y >= pDims->y)
-		{
-			vDims.Init(pObj->m_Dims.x, pDims->y, pObj->m_Dims.z);
-			((CObjDimsSetter*)pObj)->SetDims(vDims);
-		}
-		else
-		{
+		// AVP2: every shrinking axis is taken in one SetDims first (the
+		// three min compares at 0x10029c60..0x10029cad), then each growing
+		// axis goes through wm_ResizeAxis, y, x, z (0x10029cc8..0x10029d26).
+		vDims.x = LTMIN(pDims->x, pObj->m_Dims.x);
+		vDims.y = LTMIN(pDims->y, pObj->m_Dims.y);
+		vDims.z = LTMIN(pDims->z, pObj->m_Dims.z);
+		((CObjDimsSetter*)pObj)->SetDims(vDims);
+
+		if (pObj->m_Dims.y < pDims->y)
 			wm_ResizeAxis(pState, 1, &pDims->y);
-		}
 
-		if (pObj->m_Dims.x >= pDims->x)
-		{
-			vDims.Init(pDims->x, pObj->m_Dims.y, pObj->m_Dims.z);
-			((CObjDimsSetter*)pObj)->SetDims(vDims);
-		}
-		else
-		{
+		if (pObj->m_Dims.x < pDims->x)
 			wm_ResizeAxis(pState, 0, &pDims->x);
-		}
 
-		if (pObj->m_Dims.z >= pDims->z)
-		{
-			vDims.Init(pObj->m_Dims.x, pObj->m_Dims.y, pDims->z);
-			((CObjDimsSetter*)pObj)->SetDims(vDims);
-		}
-		else
-		{
+		if (pObj->m_Dims.z < pDims->z)
 			wm_ResizeAxis(pState, 2, &pDims->z);
-		}
 
 		vMiss = vWanted - pObj->m_Dims;
 
@@ -1052,6 +1007,13 @@ void obj_MaybeRetransformWorldModel(LTObject* pObj, int bFlag)
 // the `>=` spelling let /O2 merge the two else arms whole (710 bytes against
 // 731). Now 731/731 there; server.dll is unchanged by it (7 blocks). The
 // lithtech residual is the same two integer-vs-FPU float copies.
+//
+// AVP2 (1.0.9.6 and Primal Hunt): the probe state takes the caller's
+// priority and push list rather than the object's priority. Primal Hunt
+// server.dll 0x10029dc0 (532 bytes) is byte-identical; Primal Hunt
+// lithtech.exe 0x00466750 is 749/749 with zero mnemonic blocks and the same
+// esp-slot swap as NOLF's (fDelta 0x2c against shipped 0x1c, fPosB 0x1c
+// against 0x2c, and the zeroed vector 0x24 against 0x34).
 void wm_ResizeAxis(WMMoveState* pState, int nAxis, float* pfWanted)
 {
 	WMMoveState state;
@@ -1072,8 +1034,13 @@ void wm_ResizeAxis(WMMoveState* pState, int nAxis, float* pfWanted)
 
 	vMove[nAxis] -= fDelta;
 
+	// AVP2: the priority and the push list come from the caller's state, not
+	// the object (Primal Hunt server.dll 0x10029e23 `push 0xc(%eax)`, and the
+	// 0x10/0x14 copies at 0x10029e47..0x10029e5a).
 	((CWMStateInit*)&state)->Init(pState->m_pContainer, pState->m_pUnknown04,
-	                              pObj, pObj->m_BlockingPriority);
+	                              pObj, pState->m_nUnknown0C);
+	state.m_pPushList  = pState->m_pPushList;
+	state.m_nPushCount = pState->m_nPushCount;
 
 	wm_MoveObject(&state, vMove, 1);
 
@@ -1576,7 +1543,19 @@ void wm_PushIntersectingObjects(WMMoveState* pState, LTVector* pOrigPos,
 //     the `add esp,0x10` after the recursive call leaves the float argument's
 //     four bytes in place for `fstps (%esp)`.
 //
-// NEAR MATCH: 1196 bytes against 1195, 411 instructions against 410, 14
+// AVP2 / PRIMAL HUNT: the move was extended (the sphere-physics early-out,
+// the 0x20 teleport flag, the start position kept for a moved-at-all test
+// on the notifications, a conditional second retransform, the carried
+// object's own priority, the in-move flag cleared after the end call).
+// Primal Hunt server.dll 0x100277cb..0x10027d42 (the enumerator's
+// "0x10027af3" is the `je` at 0x10027af3 read as a start; one function,
+// 1400 bytes): NEAR, 1398 against 1400, 21 blocks -- the bUseArg/nFound
+// slot swap below, which now also costs the carry loop's cursor reload.
+// Primal Hunt lithtech.exe 0x00462610: NEAR, 1925 against 1953, 5 blocks
+// -- the same vStart copy and record-pointer bias as NOLF's. if/else for
+// vStart: lithtech 1966 (18 blocks), server unchanged.
+//
+// NOLF: NEAR MATCH: 1196 bytes against 1195, 411 instructions against 410, 14
 // mnemonic blocks (17 before the carry loop's vDest was named; that took the
 // size from 1192 to 1196). Two faults are left. The loop's record pointer is
 // biased onto the record (ours) rather than onto m_vOffset (shipped
@@ -1635,6 +1614,12 @@ void wm_PushIntersectingObjects(WMMoveState* pState, LTVector* pOrigPos,
 // into vStart in its own arm, ours selects an address and shares one copy
 // (written as if/else both arms copy, but registers reshuffle to 19 blocks)
 // -- plus the carry loop's record pointer biased by a different constant.
+// AVP2: the no-move threshold is 0.01f, not commonphysics.h's NOLF
+// 0.0001f (Primal Hunt server.dll 0x1007423c, AvP2 1.0.9.6 0x1006923c),
+// and the per-axis clamp compares against 0.001f widened to double
+// (0x10074e18 holds (double)0.001f, not 0.001).
+#define WM_MOVE_EPSILON_SQR_Q545 0.01f
+
 void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 {
 	CWMStandRec   found[WM_MAX_STANDING];
@@ -1648,6 +1633,8 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 	LTVector      vDelta;
 	uint32        bWalk;
 	int           nFound;
+	LTVector      vOrigPos;
+	float         fDistSqr;
 
 	((CWMMoveSetup*)pState)->Setup();
 
@@ -1657,17 +1644,35 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 	if (!pState->m_pObj->_p30())
 		return;
 
+	// AVP2: where the object started, for the moved-at-all test that now
+	// gates the touch notifications at the end (Primal Hunt server.dll
+	// 0x1002781a, read back at 0x10027c85).
+	vOrigPos = pState->m_pObj->m_Pos;
+
 	vDelta = vPos - pState->m_pObj->m_Pos;
 
-	if (vDelta.MagSqr() < WM_MOVE_EPSILON_SQR)
+	// AVP2: a sphere-physics object standing on nothing moves however small
+	// the step (0x1002785e..0x10027884).
+	fDistSqr = vDelta.MagSqr();
+
+	if ((!(pState->m_pObj->m_Flags2 & FLAG2_SPHEREPHYSICS) || pState->m_pObj->m_pStandingOn) &&
+	    fDistSqr < WM_MOVE_EPSILON_SQR_Q545)
 		return;
 
-	if (((IWMSetupSource*)pState->m_pUnknown04)->_v28(pState->m_pObj))
+	// AVP2: flag 0x20 takes the teleport path too, and then retransforms
+	// and re-bumps the object (0x10027897, 0x10027d20..0x10027d39).
+	if (((IWMSetupSource*)pState->m_pUnknown04)->_v28(pState->m_pObj) || (flags & 0x20))
 	{
 		if (flags & 2)
 			((IWMSetupSource*)pState->m_pUnknown04)->_v00(pState->m_pObj, 2);
 
 		pState->m_pObj->SetPos(vPos);
+
+		if (flags & 0x20)
+		{
+			WM_RETRANSFORM(pState->m_pObj, 1);
+			pState->m_pContainer->BumpObject(pState->m_pObj, 0);
+		}
 		return;
 	}
 
@@ -1752,9 +1757,9 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 	{
 		if (!bUseArg)
 		{
-			if (fabs(vDelta.x) < 0.001) vDelta.x = 0.0f;
-			if (fabs(vDelta.y) < 0.001) vDelta.y = 0.0f;
-			if (fabs(vDelta.z) < 0.001) vDelta.z = 0.0f;
+			if (fabs(vDelta.x) < 0.001f) vDelta.x = 0.0f;
+			if (fabs(vDelta.y) < 0.001f) vDelta.y = 0.0f;
+			if (fabs(vDelta.z) < 0.001f) vDelta.z = 0.0f;
 
 			vPos = vStart + vDelta;
 		}
@@ -1767,13 +1772,17 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 		WM_RETRANSFORM(pState->m_pObj, 1);
 
 		wm_PushIntersectingObjects(pState, &vStart, &pState->m_pObj->m_Pos);
+
+		// AVP2: retransformed again only if the push moved it off vPos
+		// (0x10027ac5..0x10027af8).
+		if (pState->m_pObj->m_Pos != vPos)
+			WM_RETRANSFORM(pState->m_pObj, 1);
 	}
 	else
 	{
 		pState->m_pObj->SetPos(vPos);
+		WM_RETRANSFORM(pState->m_pObj, 1);
 	}
-
-	WM_RETRANSFORM(pState->m_pObj, 1);
 
 	pState->m_pContainer->BumpObject(pState->m_pObj, 0);
 
@@ -1797,6 +1806,10 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 			LTVector vDest = pState->m_pObj->m_Pos + found[i].m_vOffset;
 
 			((CWMStateInit*)&state)->InitFrom(pState, found[i].m_pObj);
+
+			// AVP2: the carried object moves at its own priority
+			// (0x10027b97..0x10027bae).
+			state.m_nUnknown0C = found[i].m_pObj->m_BlockingPriority;
 
 			wm_MoveObject(&state, vDest, nSubFlags);
 
@@ -1825,9 +1838,12 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 			obj_SetStandingOn(pState->m_pObj, pStanding, LTNULL);
 	}
 
-	pState->m_pObj->m_ChangeFlags &= ~2;
+	// AVP2: the notifications only for an object that actually moved, and
+	// the in-move flag dropped after the end-of-move call
+	// (0x10027c74..0x10027cf7).
+	vDelta = pState->m_pObj->m_Pos - vOrigPos;
 
-	if (flags & 2)
+	if (vDelta.MagSqr() > WM_MOVE_EPSILON_SQR_Q545 && (flags & 2))
 	{
 		((IWMSetupSource*)pState->m_pUnknown04)->_v00(pState->m_pObj, 2);
 
@@ -1836,6 +1852,8 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 	}
 
 	((IWMSetupSource*)pState->m_pUnknown04)->_v14(pState);
+
+	pState->m_pObj->m_ChangeFlags &= ~2;
 
 	*((IWMSetupSource*)pState->m_pUnknown04)->_v04() = pSavedRequest;
 }
@@ -2463,16 +2481,27 @@ void wm_SmallestSeparation(LTVector* pMin1, LTVector* pMax1,
 //     written before that `if` and not inside it.
 //   * the stopping momentum's squared length stays in `st` across the limit
 //     comparison and the `sqrt`, so it is one float local, not two reads.
+// AVP2: worldsim.h's CMoveState with the field after m_n44 that the move
+// fills with the address of the request's +0x68 float (Primal Hunt
+// server.dll 0x10028c13 clears it, 0x10028c85 sets it; the frame is
+// 0x84). A view until that header grows the member (name ours).
+class CMoveStateQ545 : public CMoveState
+{
+public:
+	float* m_p48;                            // 0x48
+};
+
 int wm_MoveThroughSim(WMMoveState* pState, IWorldBsp* pWorldBsp,
                       HOBJECT hObject, LTObject* pObj,
                       LTVector* pStart, LTVector* pEnd,
                       int bPushOut, int bStandOn)
 {
-	CMoveState   move;
-	CBounceState result;
-	int          bStanding;
+	CMoveStateQ545 move;
+	CBounceState   result;
+	int            bStanding;
 
 	move.m_n44 = 0;
+	move.m_p48 = LTNULL;
 
 	if (pObj->m_Flags & FLAG_GOTHRUWORLD)
 		return 0;
@@ -2491,6 +2520,7 @@ int wm_MoveThroughSim(WMMoveState* pState, IWorldBsp* pWorldBsp,
 	move.m_pObject    = pObj;
 	move.m_bPushOut   = bPushOut;
 	move.m_n44        = pState->m_nUnknown64;
+	move.m_p48        = &pState->m_fUnknown68;
 
 	ws_MoveObject(&move, &result);
 
@@ -2521,11 +2551,22 @@ int wm_MoveThroughSim(WMMoveState* pState, IWorldBsp* pWorldBsp,
 			float fMagSqr = result.m_vMomentum.MagSqr();
 
 			if (fMagSqr >= pObj->m_ForceIgnoreLimitSqr)
+			{
+				// AVP2: the object is put at the end of the move for the
+				// notification and back afterwards (Primal Hunt server.dll
+				// 0x10028d19..0x10028d83).
+				LTVector vSavePos = pObj->m_Pos;
+
+				pObj->SetPos(*pEnd);
+
 				((IWMSetupSource*)pState->m_pUnknown04)->_v08(
 					pObj,
 					((CollisionInfo*)*((IWMSetupSource*)pState->m_pUnknown04)->_v04())->m_hObject,
 					&result.m_vVelocityAdd,
 					(float)sqrt(fMagSqr));
+
+				pObj->SetPos(vSavePos);
+			}
 
 			if (bStanding)
 			{
@@ -2928,7 +2969,14 @@ public:
 //     %ax and one leaves a void call's %eax, so the shipped function is
 //     void and the `ret` is bare.
 //
-// STATUS: size-exact near, 811/811 and 276/276 with ZERO mnemonic blocks.
+// AVP2 / PRIMAL HUNT: the entry test is wm_NeedsGeometryQ528, the overlap
+// tolerance -0.001f, and the recursive move is InitFrom plus the object's
+// own priority. Primal Hunt server.dll 0x1002a4bd: size-exact, 787/787 and
+// 274/274, the same slot residual as NOLF's below. Primal Hunt lithtech.exe
+// 0x004670b0 (1253 against our 1428) expands wm_NeedsGeometryQ528 and calls
+// CWMStateInit::Init (0x00464210) where ours calls both out of line.
+//
+// NOLF STATUS: size-exact near, 811/811 and 276/276 with ZERO mnemonic blocks.
 // What is left is frame-slot assignment only: pMoving is homed in the dead
 // pObj parameter slot 0xc(%ebp) and nSteps gets a stack slot, where shipped
 // has nSteps at 0xc(%ebp) (0x10020f82 `movl $0xc7,0xc(%ebp)`) and pMoving at
@@ -2966,13 +3014,16 @@ void wm_RotatePushObject(WMMoveState* pState, LTObject* pObj)
 	int         nSteps;
 	int         bMoved;
 
-	if (((IObjPushTestView*)pObj)->TakesPartInPush())
+	// AVP2: the geometry test, not LTObject's vtable slot 0x34 (Primal
+	// Hunt server.dll 0x1002a4e9 `call 0x100283cc`).
+	if (wm_NeedsGeometryQ528(pObj))
 		return;
 
 	pMoving = pState->m_pObj;
 
+	// AVP2: -0.001f (Primal Hunt server.dll 0x1002a500 loads 0x10074210).
 	if (!wm_BoxesOverlap(&pMoving->m_BBoxMin, &pMoving->m_BBoxMax,
-	                     &pObj->m_BBoxMin, &pObj->m_BBoxMax, 0.01f))
+	                     &pObj->m_BBoxMin, &pObj->m_BBoxMax, -0.001f))
 		return;
 
 	if (!bsp_IntersectBox(pState->m_pObj->m_pWMIface->GetTransformedBsp(),
@@ -3043,12 +3094,10 @@ void wm_RotatePushObject(WMMoveState* pState, LTObject* pObj)
 	if (!bMoved)
 		return;
 
-	move.m_pContainer = pState->m_pContainer;
-	move.m_pUnknown04 = pState->m_pUnknown04;
-	move.m_pObj       = pObj;
+	// AVP2: the recursive fill, then the object's own priority
+	// (0x1002a756 `call 0x10027d53`, 0x1002a75b).
+	((CWMStateInit*)&move)->InitFrom(pState, pObj);
 	move.m_nUnknown0C = pObj->m_BlockingPriority;
-	move.m_pPushList  = LTNULL;
-	move.m_nPushCount = 0;
 
 	wm_MoveObject(&move, vObjPos, 7);
 
@@ -3247,7 +3296,14 @@ static inline LTBOOL wm_IsWorldModelType(LTObject* pObj)
 	       pObj->m_ObjectType == OT_CONTAINER;
 }
 
-// lithtech.exe status (cl 8447 /O2): the 17 calls now agree in target and
+// AVP2 / PRIMAL HUNT: both recursive moves take the pushed object's own
+// priority after InitFrom, and the post-move overlap test's tolerance is
+// 0.001f (the 0.1f stays the box shrink). Primal Hunt server.dll
+// 0x100287f7 (1036 bytes) is byte-identical; Primal Hunt lithtech.exe
+// 0x00463b50 is NEAR, 1636 against 1718 (the inline Norm and the second
+// arm's Init call are still NOLF's shape).
+//
+// NOLF lithtech.exe status (cl 8447 /O2): the 17 calls now agree in target and
 // order with the shipped 0x00451e10 (the two wm_ObjectsIntersect and first
 // InitFrom expanded, the second arm's operator- and operator+= called). What
 // is left is allocation: 1688 bytes against 1691, a 0xb8 frame against 0xbc
@@ -3291,6 +3347,10 @@ WM_CINLINE int wm_PushWithGeometry(WMMoveState* pState, LTObject* pObj, LTVector
 			{
 				((CWMStateInit*)&state)->InitFrom(pState, pObj);
 
+				// AVP2: the pushed object moves at its own priority
+				// (Primal Hunt server.dll 0x1002894c / 0x10028af5).
+				state.m_nUnknown0C = pObj->m_BlockingPriority;
+
 				wm_MoveObject(&state, vDest, 7);
 
 				vMin = pObj->m_BBoxMin;
@@ -3307,7 +3367,7 @@ WM_CINLINE int wm_PushWithGeometry(WMMoveState* pState, LTObject* pObj, LTVector
 				if (!wm_ObjectsIntersect(pState->m_pObj, pObj,
 				                         &pState->m_pObj->m_BBoxMin,
 				                         &pState->m_pObj->m_BBoxMax,
-				                         &vMin, &vMax, 0.1f, &bUsedGeometry))
+				                         &vMin, &vMax, 0.001f, &bUsedGeometry))
 					return 0;
 
 				((IWMSetupSource*)pState->m_pUnknown04)->_v1c(pObj,
@@ -3356,6 +3416,10 @@ WM_CINLINE int wm_PushWithGeometry(WMMoveState* pState, LTObject* pObj, LTVector
 				// calls InitFrom (0x1001f8ae).
 				((CWMStateInit*)&state)->InitFrom(pState, pObj);
 
+				// AVP2: the pushed object moves at its own priority
+				// (Primal Hunt server.dll 0x1002894c / 0x10028af5).
+				state.m_nUnknown0C = pObj->m_BlockingPriority;
+
 				wm_MoveObject(&state, vTo, 7);
 
 				vMin = pObj->m_BBoxMin;
@@ -3372,7 +3436,7 @@ WM_CINLINE int wm_PushWithGeometry(WMMoveState* pState, LTObject* pObj, LTVector
 				if (!wm_ObjectsIntersect(pState->m_pObj, pObj,
 				                         &pState->m_pObj->m_BBoxMin,
 				                         &pState->m_pObj->m_BBoxMax,
-				                         &vMin, &vMax, 0.1f, &bUsedGeometry))
+				                         &vMin, &vMax, 0.001f, &bUsedGeometry))
 					return 0;
 
 				((IWMSetupSource*)pState->m_pUnknown04)->_v1c(pObj,

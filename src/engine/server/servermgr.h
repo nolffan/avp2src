@@ -831,6 +831,12 @@ public:
 	// Zeroes after the vptr store, as LMessageList() does (0x1002123a).
 	CNetSentQueue() { m_nMessages = 0; m_pTail = LTNULL; }
 
+	// PH: server.dll 0x1002db44, the out-of-line copy the exception unwinds
+	// of ~NetConnection and ~CNetMgr jump to (0x10071228, 0x10071260):
+	// m_pTail, then the count, under this class's own vptr (0x10074e24).
+	// ~NetConnection expands it (0x1002ab42..0x1002ab4e).
+	~CNetSentQueue() { m_pTail = LTNULL; m_nMessages = 0; }
+
 	// 0x10023f72 — byte-for-byte LMessageList's, and a separate function
 	// because it is a separate class's member. /OPT:ICF is off, so the
 	// linker kept both.
@@ -856,8 +862,12 @@ public:
 class NetConnection
 {
 public:
-	NetConnection();                         // 0x10021200
-	void Term();                             // 0x1002126a (name ours)
+	NetConnection();                         // 0x10021200, PH server 0x1002aa0b
+	// 0x1002126a, PH server.dll 0x1002aa95 / lithtech.exe 0x004679f0. A
+	// destructor, not a Term: Primal Hunt's /GX server.dll enters it at EH
+	// state 3 (the four queues, constructed in states 0..3 by 0x1002aa0b)
+	// and ~TCPConnection (0x10046d0a) reaches it as the base destructor.
+	~NetConnection();
 
 	// 0x1002132a — has the far end gone quiet for too long? Silent while
 	// the connection is still coming up (name ours).
@@ -2442,7 +2452,11 @@ void  net_Free(void* pMem);
 // The third argument is a BYTE. 0x10021cef and 0x10021d16 are both
 // `cmpb $0x0,0x10(%ebp)`, which an `int` parameter cannot produce -- and
 // LTBOOL will not do either, since the engine typedefs it 32 bits wide.
-void  net_LogPacket(class ServerMessage* pMsg, uint32 nLen, uint8 bOut);  // 0x10021cbe
+// AVP2: two more arguments, the caller's line buffer and the direction byte
+// (PH server.dll 0x1002b584; GetPacket's call at 0x1002c280 pushes five and
+// pops 0x14). server.dll only -- neither lithtech.exe carries the trace.
+void  net_LogPacket(class ServerMessage* pMsg, uint32 nLen, uint8 bOut,
+                    char* pStr, uint8 nDir);
 float dsi_GetTime();                         // 0x100383b6
 
 
@@ -2622,10 +2636,15 @@ void* dhash_Create(int nSlots, int n);                      // 0x1000d9b4
 // tcpdriver.cpp's HandleConnPacket (a header symbol-count
 // threshold); a declared-only constructor, paid for by dropping the old
 // g_pFreeHashElements extern, does not.
+//
+// The constructor takes the StructBank's cache size and preallocation: the
+// global's initialiser is `push 0x40 ; push 0x20 ; mov $g, %ecx ; call
+// 0x10011ce0` (PH server.dll 0x100117be), and 0x10011ce0 stores the vptr and
+// calls sb_Init2(&m_Bank, 0x18, nCacheSize, nPreAllocate).
 class CHashElementBank : public CBankBase
 {
 public:
-	CHashElementBank();
+	CHashElementBank(uint32 nCacheSize, uint32 nPreAllocate);
 	virtual ~CHashElementBank();
 
 	CHashElement* Allocate();                // 0x1000ed6f
@@ -2777,6 +2796,10 @@ public:
 	LTBOOL HostGame(NetHost &hostInfo);
 	LTBOOL GetTcpIpAddress(char* sAddress, uint32 dwBufferSize, unsigned short &hostPort);
 	LTRESULT SendTo(const void *pData, uint32 len, const char *sAddr, uint32 port);
+#ifdef PRIMAL_HUNT
+	LTRESULT GetFileInfo(const char *pFilename, LTFileInfo *pInfo);   // PH: 0x100380df
+	LTRESULT DoesFileExist(const char *pFilename);                    // PH: 0x100380fb
+#endif
 
 public:
 	CServerMgr* m_pServerMgr;                // 0x04 (0x00 is the vtable)

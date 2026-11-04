@@ -441,7 +441,8 @@ LTRESULT CLTCursor::LoadCursorBitmapResource(const char* pName,
 // 0x0043eca0 — slot 4, twenty-eight bytes.  `delete` and nothing else; the
 // `movl $0x4a24e8,(%eax)` between the push and the free is ILTCursorInst's
 // own inline destructor, which iltcursor.h declares and which restores the
-// base vptr because the class is polymorphic.
+// base vptr because the class is polymorphic.  PH (0x0044b020, 31 bytes):
+// the destructor is out of line and called (below).
 LTRESULT CLTCursor::FreeCursor(const HLTCURSOR hCursor)
 {
 	if (hCursor)
@@ -449,6 +450,15 @@ LTRESULT CLTCursor::FreeCursor(const HLTCURSOR hCursor)
 
 	return LT_OK;
 }
+
+#ifdef PRIMAL_HUNT
+// PH 0x0044b040 -- ten bytes, `movl $0x4d568c,(%ecx); ret`: the abstract
+// base's vptr restored, and nothing else. Primal Hunt's iltcursor.h declares
+// it out of line, so FreeCursor (0x0044b020) calls it before the free.
+ILTCursorInst::~ILTCursorInst()
+{
+}
+#endif
 
 
 // 0x0043ec60 — slot 5, forty-four bytes.  No null check on the handle: the

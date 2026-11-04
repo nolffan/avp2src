@@ -1,0 +1,32 @@
+addr,reason
+0x0040b024,NOT A FUNCTION: interior block of ci_FindObjectsInSphere (0x0040af40); the function is 407 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x0049b895,NOT A FUNCTION: interior block of CSndInstance3DJ::Update (0x0049b870); the function is 1548 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x0045e16b,NOT A FUNCTION: interior block of CModelLoadState::sub_1001cec1 (0x0045e160); the function is 355 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00488c6a,NOT A FUNCTION: interior block of si_GetModelFilenames (0x00488c50); the function is 241 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00477cb0,NOT A FUNCTION: interior block of sm_FinishUpdatePacket (0x00477c80); the function is 451 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00439eb3,"NOT A FUNCTION: interior block of RecordExceptionInfo (0x00439b80); the function is 1311 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x00439eb9,"NOT A FUNCTION: interior block of RecordExceptionInfo (0x00439b80); the function is 1311 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x0043a058,"NOT A FUNCTION: interior block of RecordExceptionInfo (0x00439b80); the function is 1311 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x0043a05e,"NOT A FUNCTION: interior block of RecordExceptionInfo (0x00439b80); the function is 1311 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x0043a2ef,"NOT A FUNCTION: interior block of ShowModuleInfo (0x0043a190); the function is 384 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x0043a2f5,"NOT A FUNCTION: interior block of ShowModuleInfo (0x0043a190); the function is 384 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x004042c0,"NOT A FUNCTION: interior block of WinMain (0x00404270): the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x004042d2,"NOT A FUNCTION: interior block of WinMain (0x00404270): the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x0040eace,NOT A FUNCTION: interior block of cis_MaskedDraw (0x0040e9d0): nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00473f5d,NOT A FUNCTION: interior block of sub_460db0 (prediction) (0x00473f40); the function is 756 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x0043dc05,"NOT A FUNCTION: interior block of sav_RestoreObject (0x0043dac0); the function is 3181 bytes: the 'call' that enumerated it is an e8 operand byte at 0x0043dbfe, not a call instruction"
+0x00429816,NOT A FUNCTION: interior block of sub_100070b6 (0x00429800); the function is 106 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x0046c095,"NOT A FUNCTION: interior block of CObjBase::InitFields (0x0046bfa0): the 'call' that enumerated it is an e8 operand byte at 0x0046c090, not a call instruction"
+0x0047f571,NOT A FUNCTION: interior block of sm_UnloadModel (0x0047f540): nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00450b0b,NOT A FUNCTION: interior block of LThreadQueue::PostMessage (0x00450ac0); the function is 265 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00450cb4,NOT A FUNCTION: interior block of LThreadQueue::TakeMessage (0x00450c70): nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00432d6c,"NOT A FUNCTION: interior block of CMoArray<CWorldAnimFrame>::Init (0x00432d60); the function is 182 bytes: the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x0041676e,"NOT A FUNCTION: interior block of CClientShell::Term (0x00416750): the only reference is the function's own SEH scope table (an __except filter or handler block, which VC6 emits inside the function)"
+0x004aa76c,NOT A FUNCTION: interior block of wt_TestNodeSeg (0x004aa4a0); the function is 732 bytes: nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x0048ae70,NOT A FUNCTION: interior block of one smgr function (0x0048ae60): nothing in lithtech.exe references this address (enumerated from the gap after an earlier return)
+0x00443374,NOT A FUNCTION: interior block of input_ReadActions (0x00443260): the only reference is a pointer inside that function's own tables (a jump table or SEH scope entry)
+0x00443424,"NOT A FUNCTION: interior block of input_ReadActions (0x00443260): the 'call' that enumerated it is an e8 operand byte at 0x0043ba37 (an ebp-0x18 displacement), not a call instruction"
+0x00444553,NOT A FUNCTION: interior block of the DirectInput object lookup by ##name (0x00444460): the only reference is a pointer inside that function's own tables (a jump table or SEH scope entry)
+0x00444554,NOT A FUNCTION: interior block of the DirectInput object lookup by ##name (0x00444460): the only reference is a pointer inside that function's own tables (a jump table or SEH scope entry)
+0x00417367,"NOT A FUNCTION: interior block of CClientShell::Update (0x00416f90), ~1,260 bytes: the only reference is a pointer inside that function's own tables"
+0x00464441,"NOT A FUNCTION: interior block of wm_MoveThroughSim (0x00464240), 649 bytes, mid-instruction: the only reference is a pointer inside that function's own tables"

@@ -683,7 +683,7 @@ inline void* TCPConnection::Destroy(uint32 nFlags)
 	if (m_Socket)
 		closesocket(m_Socket);
 
-	Term();
+	NetConnection::~NetConnection();
 
 	// `::operator delete(this)`, not `delete this`: the shipped code has the
 	// bare deallocator call (push this / call 0x10028ace / pop ecx) with no
@@ -1131,14 +1131,13 @@ void TCPDriver::CloseSockets(int bTerm)
 
 #ifdef PRIMAL_HUNT
 // PH 0x004a1bb0 (server.dll 0x10046d0a) -- NOLF's TCPConnection::Destroy
-// without the free: the socket closed if there is one, then the base's
-// Term (0x004679f0).
+// without the free: the socket closed if there is one, then the base
+// destructor, ~NetConnection (0x004679f0, server.dll 0x1002aa95), which
+// the compiler runs after the body.
 TCPConnection::~TCPConnection()
 {
 	if (m_Socket)
 		closesocket(m_Socket);
-
-	Term();
 }
 #endif
 

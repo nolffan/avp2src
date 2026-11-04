@@ -142,6 +142,13 @@ LTRESULT w_ApplyObjectFilenames(class CServerMgr* pMgr, class LTObject* pObj,
                                 ObjectCreateStruct* pStruct);                    // 0x1002ba90
 LTRESULT w_RestoreObjectFileState(class LTObject* pObj, CSavedFileState* pState);// 0x1002bb52
 void     sm_WriteObjectFiles(class LTObject* pObj, class ServerMessage* pMsg);   // 0x10029087
+#ifdef PRIMAL_HUNT
+// PH: the files writer takes an optional message and an optional size to
+// add to (servercommon.cpp, server.dll 0x1003448c, lithtech.exe 0x0047a7e0);
+// the animation state's writer is smgr.cpp's sub_100290d7 (0x10034528).
+void     sm_WriteObjectFiles(class LTObject* pObj, class ServerMessage* pMsg,
+                             uint32* pnSize);                                   // PH: 0x1003448c
+#endif
 
 // SObjData's three file identifiers, which sm_WriteObjectFiles indexes as one
 // array: ltobject_internal.h names the first two (m_pModelFile 0x30,

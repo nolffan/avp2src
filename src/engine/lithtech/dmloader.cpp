@@ -377,7 +377,20 @@ public:
 	uint16        m_wzPath[0x104];           // 0x018
 };
 
-class CDMSearchDirList
+// AVP2: what the two lists derive from (name ours). Primal Hunt's engine is
+// /GX, and its ~CDMLoader (0x00450060) CALLS both list destructors
+// (0x004500f0, 0x00450140) instead of expanding them, each with an EH frame
+// at state 0 round RemoveAll/DeleteAll and the lock: the shape of a
+// destructor with a base subobject still to destroy, which VC6 will not
+// inline. The base's own destructor is empty. Without /GX (AvP2 1.0.9.6)
+// the same source expands both, as before.
+class CDMListBaseQ542
+{
+public:
+	~CDMListBaseQ542() {}
+};
+
+class CDMSearchDirList : public CDMListBaseQ542
 {
 public:
 	CDMSearchDir*      m_pHead;              // 0x000
@@ -395,7 +408,7 @@ public:
 	}
 
 	// In-class too: ~CDMLoader (0x004439f5) expands it inside the delete's
-	// null test - empty the list, then the lock.
+	// null test - empty the list, then the lock. PH: out of line, 0x004500f0.
 	~CDMSearchDirList()
 	{
 		RemoveAll();
@@ -426,7 +439,7 @@ public:
 	CDMFileStream* m_pStream;                // 0x008
 };
 
-class CDMStreamList
+class CDMStreamList : public CDMListBaseQ542
 {
 public:
 	CDMStreamNode*     m_pHead;              // 0x000
@@ -441,7 +454,8 @@ public:
 		InitializeCriticalSection(&m_CriticalSection);
 	}
 
-	// Expanded at 0x00443a19, the same shape as ~CDMSearchDirList.
+	// Expanded at 0x00443a19, the same shape as ~CDMSearchDirList. PH: out
+	// of line, 0x00450140.
 	~CDMStreamList()
 	{
 		DeleteAll();
@@ -958,7 +972,9 @@ CDMLoader::CDMLoader()
 
 // 0x004439b0: release and free every cached object, delete the two lists
 // (each destructor expanded inside the delete's null test), take the file
-// manager down and then the lock.
+// manager down and then the lock. PH: 0x00450060, 134 bytes, the two list
+// destructors called (see CDMListBaseQ542); the image's function table cuts
+// it at 0x00450065 (rows 0x00450060/5 and 0x00450065/129 are one function).
 CDMLoader::~CDMLoader()
 {
 	CDMCachedObject* pObject = m_pCachedObjects;

@@ -67,6 +67,7 @@
 
 #include "ltbasedefs.h"
 #include "ltlink.h"
+#include "iclientshell.h"
 
 // PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
 // lithtech.exe's do (AvP2 1.0.9.6's none). Its trace is
@@ -125,21 +126,10 @@ public:
 class SharedTextureView
 {
 public:
-	// cmgrinit.cpp's SharedTextureQ46C() verbatim (0x0041feb0..0x0041fee0
-	// expands it inside 0x0041fe60's inlined ObjectBank::Allocate).
-	SharedTextureView()
-	{
-		m_pEngineData  = LTNULL;
-		m_pRenderData  = LTNULL;
-		m_Link.m_pData = this;
-		memset(&m_Unknown1c, 0, sizeof(m_Unknown1c));
-		m_pFileRef     = LTNULL;
-		m_BankLink.Init(this);
-		m_Unknown28    = 0;
-		m_nRefCount    = 0;
-		m_bMarked      = 0;
-		m_nFrameCode   = 0;
-	}
+	// AVP2: out of line (wgrid.cpp's SharedTextureQ517(), PH 0x004304f0,
+	// AvP2 0x0042d450): both images CALL it from the texture bank's
+	// Allocate, where NOLF expanded cmgrinit.cpp's SharedTextureQ46C().
+	SharedTextureView();
 
 	// Declared, never defined here: 0x0041ffc0 calls it as a thiscall with
 	// no arguments (`mov %esi,%ecx; call 0x0045a360`) immediately before
@@ -161,6 +151,13 @@ public:
 	// The sweep's mark. Set by tm_MarkTexture, cleared by
 	// tm_UnmarkTextures, and read by tm_FreeUnmarkedTextures.
 	uint16             m_bMarked    : 1;     // 0x32 bit 15
+	// AVP2: the texture is 0x40 bytes (the `rep stos` of 0x10 dwords at PH
+	// 0x00428738, AvP2 0x00425f8f). +0x34 and +0x38 are what the new
+	// texture hands IClientShell::OnTextureLoad (PH 0x0042879a..0x004287ac);
+	// wgrid.cpp's SharedTextureQ517 names +0x38 the command string.
+	struct StateChange* m_pStateChange;      // 0x34
+	char*              m_pCommandString;     // 0x38
+	uint32             m_Unknown3c;          // 0x3c
 };
 
 // The file identifier a texture was resolved from. Only its first dword is
@@ -216,13 +213,22 @@ struct CTextureBankView
 		m_pFreeList = pRet->m_BankLink.m_pNextFree;
 		return pRet;
 	}
+};
 
-	// object_bank.h's inline ObjectBank::Allocate (NullCS).
+// AVP2: object_bank.h's ObjectBank<SharedTexture>, its vptr at +0x00 and
+// the StructBank at +0x04 (the client manager's 0x124c/0x1250). The
+// in-class Allocate (NullCS) is what both images reach: AvP2 1.0.9.6
+// expands it into 0x00425f30 (bank 0x1250, sb_Grow 0x004b2780, then the
+// out-of-line constructor 0x0042d450); Primal Hunt, built /GX, keeps it
+// out of line because of the placement new's unwind state and calls it
+// with %ecx = manager + 0x124c (0x0042872b; the body is 0x00415f60).
+struct CTextureObjBankQ544
+{
 	SharedTextureView* Allocate()
 	{
 		SharedTextureView* pRet;
 
-		pRet = sb_Allocate();
+		pRet = m_Bank.sb_Allocate();
 		if (pRet)
 		{
 			::new(pRet) SharedTextureView;
@@ -230,6 +236,9 @@ struct CTextureBankView
 
 		return pRet;
 	}
+
+	void*              m_pVTable;            // 0x00
+	CTextureBankView   m_Bank;               // 0x04
 };
 
 // CClientMgr, from the four fields this file uses. clientmgr2.cpp's
@@ -259,19 +268,23 @@ public:
 	LTList             m_List41c;            // 0x41c  +0x1b8 of each: two textures
 	uint8              m_pad_42c[0x46c - 0x42c];
 	LTList             m_List46c;            // 0x46c  +0x1e8 of each: one texture
-	uint8              m_pad_47c[0x1200 - 0x480];
+	uint8              m_pad_47c[0x620 - 0x480];
+	// AVP2: the game's client shell (lt2new1.cpp's +0x620; NOLF 0x61c),
+	// told about every texture the cache creates (0x0042879c).
+	IClientShell*      m_pClientShell;       // 0x620
+	uint8              m_pad_624[0x1200 - 0x624];
 	LTList             m_List10f0;           // 0x10f0 +0xc0 of each: one texture
 	LTList             m_List1100;           // 0x1100 texture groups
 	// Every live SharedTexture, as an LTList: count at 0x1110, head at
 	// 0x1114 (so m_Head.m_pNext is 0x1118, which is what every walk here
 	// loads first) and each element's link inside the texture at +0x10.
 	LTList             m_TextureList;        // 0x1110
-	uint8              m_pad_1120[0x1140 - 0x1120];
+	uint8              m_pad_1120[0x113c - 0x1120];
 	// The object bank the textures come out of: its StructBank at 0x1140
 	// (the ObjectBank's vptr is 0x113c -- cmgrinit.cpp). 0x0041fe60 grows it
 	// with `0x00490c20(&bank, bank+0x08)` and re-reads the free head at
 	// bank+0x18 = 0x1158 afterwards.
-	CTextureBankView   m_TextureBank;        // 0x1140
+	CTextureObjBankQ544 m_TextureBank;       // 0x113c (PH 0x124c)
 	uint8              m_pad_115c[0x11dc - 0x115c];
 	CClientSlot*       m_pSlots;             // 0x11dc
 	uint32             m_nSlots;             // 0x11e0
@@ -385,19 +398,33 @@ CFileIdentifierView* fm_GetFileRec(CClientFileMgrView* pMgr, CClientFileRefView*
 // allocate, zeroed, onto the head of the list, both back pointers) when the
 // identifier does not cache one yet; either way a texture without a render
 // copy is handed to the render DLL (the tm_ReloadTextures pair). The
-// `rep stos` of 0xd dwords AFTER the inlined constructor is a memset of the
-// whole object over the freshly constructed texture, and *ppTexture is
-// stored before it and re-read after, so every use goes through the out
-// pointer. (names ours)
+// `rep stos` AFTER the bank's Allocate is a memset of the whole object over
+// the freshly constructed texture, and *ppTexture is stored before it and
+// re-read after, so every use goes through the out pointer. (names ours)
+//
+// AVP2: PH 0x00428700, AvP2 0x00425f30. A texture made here is also handed
+// to the game shell's OnTextureLoad, with its state-change slot and command
+// string (0x0042879a..0x004287ac); a cached one is not. The flag lives in
+// the dead pTexture parameter slot (`movl $0x1,0x1c(%esp)`, 0x00428710):
+// it is declared after the first statement, and that is what puts it there
+// -- at the top of the function VC6 gives it a frame slot of its own (a
+// `push %ecx`/`pop %ecx` pair). IDENTICAL on PH (182 of 182).
+// NEAR on AvP2 1.0.9.6 (215 of 221): without /GX VC6 drops the call to
+// sub_490200, whose empty body is defined in this file; the shipped one is
+// 0x00473ac0, in another translation unit (PH's is 0x00429410, also past
+// this TU's end at 0x004292cb), so the definition belongs elsewhere.
 LTRESULT cm_AddSharedTextureIdent(CClientMgrTexBankView* pClientMgr,
                                   CFileIdentifierView* pIdent,
                                   SharedTextureView*& pTexture)
 {
 	pTexture = LTNULL;
 
+	LTBOOL bNew = LTTRUE;
+
 	if (pIdent->m_pTexture)
 	{
 		pTexture = pIdent->m_pTexture;
+		bNew = LTFALSE;
 	}
 	else
 	{
@@ -412,6 +439,12 @@ LTRESULT cm_AddSharedTextureIdent(CClientMgrTexBankView* pClientMgr,
 	{
 		sub_4628e0(pTexture, 0);
 		sub_490200(pClientMgr);
+	}
+
+	if (bNew)
+	{
+		pClientMgr->m_pClientShell->OnTextureLoad(&pTexture->m_pStateChange,
+		                                          pTexture->m_pCommandString);
 	}
 
 	return LT_OK;
@@ -512,7 +545,7 @@ void tm_FreeTexture(CClientMgrTexBankView* pClientMgr, SharedTextureView* pTextu
 
 	// AVP2: the push is guarded -- AvP2 null-tests the bank's address
 	// (0x004260d2).
-	CTextureBankView* pBank = &pClientMgr->m_TextureBank;
+	CTextureBankView* pBank = &pClientMgr->m_TextureBank.m_Bank;
 
 #ifdef PRIMAL_HUNT
 	// PH: Primal Hunt tests the texture first as well (0x0042887c).

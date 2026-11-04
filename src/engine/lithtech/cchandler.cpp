@@ -87,6 +87,7 @@
 #include "de_error.h"
 #include "packet.h"
 #include "iltclient.h"
+#include "servermgr.h"
 
 
 // ---- what the handlers reach outside this run --------------------------- //
@@ -1628,6 +1629,16 @@ LTRESULT sub_47ad20(CClientShellQ478* pShell, CPacketQ478* pPacket)
 //  CLIENT-SIDE ONLY: there is no /O1 twin, so nothing arbitrates a spelling
 //  here the way server.dll does elsewhere.
 //
+//  AVP2: Primal Hunt's 0x00494cb0 (1818 bytes; AvP2 1.0.9.6 0x0048b3f0) is
+//  BYTE-IDENTICAL with what AvP2 added: a new object's blocking-priority
+//  byte, model info on 0x2000 as well, the flag word read whole with its
+//  0x8000 "this is the client's object" bit, the attachment header's 0x400
+//  byte, attachment offsets uncompressed under +0x88's 0x100, the records
+//  freed through sb_Free, and the model's dword at +0x260. The enumeration
+//  splits it the same way (0x00494cb0/10 and 0x00494cba/1808; the second
+//  is `push %ebp` ten bytes in, the operand of `mov %ebx,%eax` at
+//  0x00494cb8 read as a `ret`).
+//
 //  BYTE-IDENTICAL, 1557 bytes. From the 1484-byte near, four things
 //  closed it, each read off the shipped frame (sub esp,0x5c):
 //    * every aggregate local at FUNCTION scope, in the order below -- nested
@@ -1722,11 +1733,17 @@ public:
 	// AVP2: AvP2's and Primal Hunt's tracker has the model at +0x28 and the
 	// current animation at +0x38 (0x00494bfe, 0x00494c49; cmodelload.cpp's
 	// LTAnimTrackerQ474 has the same), and its update walk stores the entry's
-	// dword at +0x40 (0x00494b84).
-	uint8        m_pad_1a[0x28 - 0x1a];
+	// dword at +0x40 (0x00494b84), and three more of the entry's fields at
+	// +0x1c, +0x20 and +0x24 and one of its two first dwords at +0x34
+	// (0x00494b45..0x00494b7a).  (names ours)
+	uint8        m_pad_1a[0x1c - 0x1a];
+	uint32       m_Unknown1c;                // 0x1c
+	uint32       m_Unknown20;                // 0x20
+	uint32       m_Unknown24;                // 0x24
 	class CAnimModelQ478* m_pModel;          // 0x28
 	uint16       m_iPrevAnim;                // 0x2c  m_TimeRef.m_Prev.m_iAnim
-	uint8        m_pad_2e[0x38 - 0x2e];
+	uint8        m_pad_2e[0x34 - 0x2e];
+	uint32       m_Unknown34b;               // 0x34
 	uint16       m_iCurAnim;                 // 0x38
 	uint8        m_pad_3a[0x40 - 0x3a];
 	uint32       m_Unknown34;                // 0x40
@@ -1754,17 +1771,28 @@ public:
 	// / `cmp $1,%al`, so the load is eight bits wide. 1, 3 and 4 all branch.
 	uint8   m_Type;                          // 0x0bc
 	uint8   m_BlockingPriority;              // 0x0bd  (0x00420726)
-	uint8   m_pad_be[0x188 - 0xbe];
+	uint8   m_pad_be[0x124 - 0xbe];
+	// AVP2: the client object's change flags (Primal Hunt 0x00495014, AvP2
+	// 1.0.9.6 0x0048b744); the attachment header's byte sets or clears 0x400.
+	uint32  m_ChangeFlags124;                // 0x124
+	uint8   m_pad_128[0x188 - 0x128];
 	// 0x180 -- the flag word 0x0042069a tests bit 4 of.
 	uint32  m_Flags180;                      // 0x188
 	uint8   m_pad_18c[0x1b0 - 0x18c];
 	float   m_Float1A8;                      // 0x1b0
 	uint8   m_pad_1b4[0x1c4 - 0x1b4];
 	uint32  m_Unknown1BC;                    // 0x1c4
-	CUpdRecQ478 m_AnimTracker;               // 0x1c8  (the first of m_pUpdRecs)
-	class CUpdRecQ478* m_pUpdRecs;           // 0x200  (0x004789dc)
-	uint8   m_pad_204[0x20c - 0x204];
-	uint32  m_Unknown204;                    // 0x20c  type 1 only
+	// AVP2: the main tracker is at +0x1d4 (Primal Hunt 0x00428f65 reads its
+	// model at +0x1fc, 0x00428f7b/0x00428f8c its two animations at +0x20c
+	// and +0x200), the tracker list at +0x224 (0x00494b17).
+	uint8   m_pad_1c8[0x1d4 - 0x1c8];
+	CUpdRecQ478 m_AnimTracker;               // 0x1d4  (the first of m_pUpdRecs)
+	uint8   m_pad_218[0x224 - 0x218];
+	class CUpdRecQ478* m_pUpdRecs;           // 0x224  (NOLF 0x004789dc: 0x200)
+	// AVP2: a model's trailing dword is at +0x260 (Primal Hunt 0x00495369,
+	// AvP2 1.0.9.6 the same), behind the model's per-type fields.
+	uint8   m_pad_228[0x260 - 0x228];
+	uint32  m_Unknown204;                    // 0x260  type 1 only
 
 	// predobj.cpp's LTObject::SetPos: __thiscall, the vector BY VALUE
 	// (0x00420930 builds the twelve-byte copy with `mov %esp,%ecx`).
@@ -1783,13 +1811,16 @@ public:
 	CAttachRecQ478* m_pNext24;               // 0x24
 };
 
-// The attachment pool at CClientMgr+0x1ec. Reached by offset rather than as a
-// member so CClientMgrQ478's layout above does not move.
+// The attachment pool at CClientMgr+0x1ec (AVP2: +0x1f0, Primal Hunt
+// 0x00495033 / AvP2 0x0048b763). Reached by offset rather than as a member so
+// CClientMgrQ478's layout above does not move. Its record bank is at +0x4c
+// (`lea 0x4c(%ecx)`), whose free list is NOLF's +0x64: AvP2's records go back
+// through servermgr.h's sb_Free, with its two null tests.
 class CAttachListQ478
 {
 public:
-	uint8           m_pad_00[0x64];
-	CAttachRecQ478* m_pFree64;               // 0x64
+	uint8           m_pad_00[0x4c];
+	StructBank      m_Bank;                  // 0x4c
 };
 
 // The packet's embedded message, at CPacket+0x08. It cannot be a member of the
@@ -1845,7 +1876,7 @@ void    lmsg_ReadCompRotation(LMessageReadViewQ478* pMsg, LTRotation* pRot);
 // banner: holding either in a local moves the prologue or the frame.
 #define PWRITE_Q478 ((LMessageReadViewQ478*)((uint8*)pPacket + 8))
 #define ATTACHLIST_Q478(pShell) ((CAttachListQ478*) \
-	((uint8*)((CClientShellQ478*)(pShell))->m_pClientMgr + 0x1ec))
+	((uint8*)((CClientShellQ478*)(pShell))->m_pClientMgr + 0x1f0))
 
 LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
                                 CObjChangeInfoQ478* pInfo, CPacket* pPacket,
@@ -1867,10 +1898,16 @@ LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
 
 	// 0x00478b5f `test bl,1` / 0x00478b64 `or bh,2` -- a new object always
 	// forces the position path below.
+	// AVP2: a new object's blocking priority comes first (Primal Hunt
+	// 0x00494cdb, AvP2 1.0.9.6 0x0048b41b).
 	if (nChangeFlags & CF_NEWOBJECT)
+	{
 		nChangeFlags |= CF_POSITION_FORCE_Q478;
+		pInfo->m_BlockingPriority = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint8*)0);
+	}
 
-	if (nChangeFlags & CF_MODELINFO)                     // 0x00478b6b, 0x20
+	// AVP2: 0x2000 reads the model info too (PH 0x00494ced `test $0x2020`).
+	if (nChangeFlags & (CF_MODELINFO | 0x2000))          // 0x00478b6b, 0x20
 	{
 		if (pInfo->m_Type == 1)                          // 0x00478b70, +0xbc
 		{
@@ -1896,11 +1933,18 @@ LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
 	{
 		// 0x00478bbf -- only the LOW WORD of +0x88 is replaced; the shipped
 		// code masks the member with 0xffff0000 and ors the read in.
-		pInfo->m_Unknown88 = (pInfo->m_Unknown88 & 0xffff0000) |
-			((CPacketQ478*)pPacket)->ReadTypeOOL((uint16*)0);
+		//
+		// AVP2: a whole dword over the low eighteen bits but 0x40000
+		// (`and $0xfffb0000`, PH 0x00494d52), +0x8c a word; and the client's
+		// own object (its id the shell's +0x6c) gets 0x8000 (0x00494d8c).
+		pInfo->m_Unknown88 = (pInfo->m_Unknown88 & 0xfffb0000) |
+			((CPacketQ478*)pPacket)->ReadTypeOOL((uint32*)0);
 
-		pInfo->m_Unknown8C = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint8*)0);    // 0x00478be1
-		pInfo->m_Unknown90 = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint32*)0);   // 0x00478bf5
+		pInfo->m_Unknown8C = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint16*)0);   // 0x00494d62
+		pInfo->m_Unknown90 = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint32*)0);   // 0x00494d76
+
+		if (pInfo->m_ObjectID == ((CClientShellQ478*)pShell)->m_Unknown6c)
+			pInfo->m_Unknown88 |= 0x8000;
 	}
 
 	if (nChangeFlags & CF_COLORINFO)                     // 0x00478c00, 0x40
@@ -1990,6 +2034,13 @@ LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
 	// it; 0x00478dfd jumps straight to the shared epilogue when it is clear.
 	if (nChangeFlags & CF_ATTACHMENTS)
 	{
+		// AVP2: a byte first, setting or clearing 0x400 of the object's
+		// change flags (PH 0x00494fa3..0x00495024).
+		if (pPacket->ReadType((uint8*)0))
+			pInfo->m_ChangeFlags124 |= 0x400;
+		else
+			pInfo->m_ChangeFlags124 &= ~0x400;
+
 		// 0x00478e0c — the attachment pool at CClientMgr+0x1ec. Reached by
 		// offset rather than declared as a member, so CClientMgrQ478's
 		// layout above does not move for this one function.
@@ -2006,8 +2057,7 @@ LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
 			{
 				CAttachRecQ478* pNext = pCur->m_pNext24;
 
-				pCur->m_pNext00 = pList->m_pFree64;
-				pList->m_pFree64 = pCur;
+				sb_Free(&pList->m_Bank, pCur);
 
 				pCur = pNext;
 			}
@@ -2034,11 +2084,23 @@ LTRESULT cc_ReadObjectPacketQ478(void* pShell, uint16 nChangeFlags,
 				break;
 
 			nData      = pPacket->ReadType((uint32*)0);  // 0x00478ea9
-			vOffset.x  = pPacket->ReadType((float*)0);   // 0x00478f19
-			vOffset.y  = pPacket->ReadType((float*)0);   // 0x00478f85
-			vOffset.z  = pPacket->ReadType((float*)0);   // 0x00478ff9
 
-			lmsg_ReadCompRotation(PWRITE_Q478, &rOffset);   // 0x0047907e
+			// AVP2: the offset is uncompressed only when +0x88 has 0x100, as
+			// the position above (PH 0x0049514b..0x004952f9).
+			if (pInfo->m_Unknown88 & 0x100)
+			{
+				vOffset.x  = pPacket->ReadType((float*)0);   // 0x00478f19
+				vOffset.y  = pPacket->ReadType((float*)0);   // 0x00478f85
+				vOffset.z  = pPacket->ReadType((float*)0);   // 0x00478ff9
+
+				PWRITE_Q478->_v30(&rOffset);
+			}
+			else
+			{
+				vOffset = PWRITE_Q478->ReadV28();
+
+				lmsg_ReadCompRotation(PWRITE_Q478, &rOffset);   // 0x0047907e
+			}
 
 			sub_45be40(ATTACHLIST_Q478(pShell), pInfo, nID, (void*)nData,
 				&vOffset, &rOffset, 0);                  // 0x004790aa
@@ -2080,7 +2142,9 @@ struct CUpdEntryQ478
 	uint16 m_Word4;                          // +0x08
 	uint16 m_Word6;                          // +0x0a
 	uint8  m_bUnknown0c;                     // +0x0c
-	uint8  m_pad_0d[0x18 - 0x0d];
+	uint8  m_pad_0d[0x10 - 0x0d];
+	uint32 m_Unknown10;                      // +0x10  (0x0049589a)
+	uint32 m_Unknown14;                      // +0x14  (0x0049589d)
 };
 
 struct CUpdListQ478
@@ -2091,7 +2155,6 @@ struct CUpdListQ478
 
 LTRESULT sub_478a50(void* pShell, CObjChangeInfoQ478* pInfo, CUpdRecQ478* pRec,
                     uint32 nWord4, uint32 nWord6, int bNotNew, int nOne); // 0x00478a50
-void     sub_4792c0(void* pShell, CPacket* pPacket, CUpdListQ478* pList); // 0x004792c0
 
 LTRESULT sub_4789d0(void* pShell, CObjChangeInfoQ478* pInfo, int bNotNew,
                     int nOne, CUpdListQ478* pList)
@@ -2104,13 +2167,41 @@ LTRESULT sub_4789d0(void* pShell, CObjChangeInfoQ478* pInfo, int bNotNew,
 		if (!pRec)
 			break;
 
+		// AVP2: the entry's other fields go onto the tracker first, the two
+		// dwords defaulting to 1 when zero, and with nOne the byte picks
+		// which of the first two dwords lands at +0x34; the second always
+		// goes to +0x40 (Primal Hunt 0x00494b41..0x00494b84). Primal Hunt's
+		// 0x00494b10 (188 bytes) is BYTE-IDENTICAL: the two dwords in locals
+		// read after the byte's store, with their if-form defaults.
+		pRec->m_Unknown24 = pList->m_Entries[i].m_bUnknown0c;
+
+		uint32 n20 = pList->m_Entries[i].m_Unknown10;
+		uint32 n1c = pList->m_Entries[i].m_Unknown14;
+
+		if (!n20)
+			n20 = 1;
+		pRec->m_Unknown20 = n20;
+
+		if (!n1c)
+			n1c = 1;
+		pRec->m_Unknown1c = n1c;
+
+		if (nOne)
+		{
+			if (pList->m_Entries[i].m_bUnknown0c == 0)
+				pRec->m_Unknown34b = pList->m_Entries[i].m_Unknown0;
+			else
+				pRec->m_Unknown34b = pList->m_Entries[i].m_Unknown00;
+		}
+
+		pRec->m_Unknown34 = pList->m_Entries[i].m_Unknown0;
+
 		LTRESULT dResult = sub_478a50(pShell, pInfo, pRec,
 			pList->m_Entries[i].m_Word4, pList->m_Entries[i].m_Word6,
 			bNotNew, nOne);
 		if (dResult != LT_OK)
 			return dResult;
 
-		pRec->m_Unknown34 = pList->m_Entries[i].m_Unknown0;
 		pRec = pRec->m_pNext;
 	}
 
@@ -2261,32 +2352,67 @@ LTRESULT sub_479280(void* pShell, CObjChangeInfoQ478* pInfo, CPacket* pPacket,
 //  has fewer than 32 entries (the count is re-read after the stores).
 // ======================================================================= //
 
-void sub_4792c0(void* pShell, CPacket* pPacket, CUpdListQ478* pList)
+// AVP2: Primal Hunt's 0x00495540 (AvP2 1.0.9.6's twin takes the same four
+// arguments): the decoder now opens by reading the object's dims (the
+// message's slot +0x2c, by value) and, when there is an object, resizing it
+// through the simulation (wm_SetObjectDims, 0x004664f0, with a WMMoveState
+// filled as sub_420690's below); then each entry is a word, two bytes, two dwords and
+// two bytes, all seven kept (the entry is 0x18 bytes). BYTE-IDENTICAL, 896
+// bytes; the last two bytes are widened into dword locals at the read.
+// (name ours)
+int wm_SetObjectDims(struct WMMoveState* pState, LTVector* pDims, int bFlag,
+                     int bUnknown);                                  // PH 0x004664f0
+
+void sub_4792c0Q495(void* pShell, CPacket* pPacket, CUpdListQ478* pList,
+                    CObjChangeInfoQ478* pInfo)
 {
-	uint32 nCount;
-	uint32 i;
+	WMMoveState state;
+	LTVector    vDims;
+	uint32      nCount;
+	uint32      i;
+
+	vDims = PWRITE_Q478->ReadV28();
+
+	CClientMgrQ478* pMgr = ((CClientShellQ478*)pShell)->m_pClientMgr;
+	if (pMgr && pInfo)
+	{
+		// In this order: the shipped stores are +0x04, +0x00, +0x08 and
+		// +0x0c (0x004955b4..0x004955d5); field order, and the two orders
+		// tried before this one, schedule them otherwise.
+		state.m_pUnknown04 = (CUnknown6A8Obj*)pMgr->m_pUnknown508;
+		state.m_pObj       = (LTObject*)pInfo;
+		state.m_nUnknown0C = pInfo->m_BlockingPriority;
+		state.m_pContainer = (CUnknown210*)&pMgr->m_WorldTree;
+		state.m_pPushList  = 0;
+		state.m_nPushCount = 0;
+
+		wm_SetObjectDims(&state, &vDims, 0, 1);
+	}
 
 	pList->m_nEntries = 0;
 
-	nCount = pPacket->ReadType((uint8*)0);
+	nCount = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint8*)0);
 	for (i = 0; i < nCount; i++)
 	{
-		uint16 nWord4 = pPacket->ReadType((uint16*)0);
-		uint8  nWord6 = pPacket->ReadType((uint8*)0);
-		uint32 nVal;
-
-		if (i == 0)
-			nVal = (uint32)-1;
-		else
-			nVal = pPacket->ReadType((uint8*)0);
+		uint16 nWord4 = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint16*)0);
+		uint8  nWord6 = ((CPacketQ478*)pPacket)->ReadTypeOOL((uint8*)0);
+		uint8  nByte0c = pPacket->ReadType((uint8*)0);
+		uint32 nVal10 = pPacket->ReadType((uint32*)0);
+		uint32 nVal14 = pPacket->ReadType((uint32*)0);
+		uint32 nVal00 = pPacket->ReadType((uint8*)0);
+		uint32 nVal04 = pPacket->ReadType((uint8*)0);
 
 		if (pList->m_nEntries < 32)
 		{
 			CUpdEntryQ478* pEntry = &pList->m_Entries[pList->m_nEntries];
 
-			pEntry->m_Unknown0 = nVal;
-			pEntry->m_Word4    = nWord4;
-			pEntry->m_Word6    = nWord6;
+			pEntry->m_Unknown00   = nVal00;
+			pEntry->m_Unknown0    = nVal04;
+			pEntry->m_Word4       = nWord4;
+			pEntry->m_Word6       = nWord6;
+			pEntry->m_bUnknown0c  = nByte0c;
+			pEntry->m_Unknown10   = nVal10;
+			pEntry->m_Unknown14   = nVal14;
 			pList->m_nEntries++;
 		}
 	}
@@ -2321,6 +2447,9 @@ void sub_4792c0(void* pShell, CPacket* pPacket, CUpdListQ478* pList)
 //     skin loop indexes m_SkinNames[i] directly: through a `pRef` local,
 //     VC6 bases the walk at the record (+0x0c) instead of shipped's
 //     m_nLocalID (+0x14, `movl $2,-0x8(%edi)`).
+//  PH: Primal Hunt's 0x004958c0 (941 bytes) is BYTE-IDENTICAL: four skins,
+//  then the extra texture's id (the setup record's m_pStruct moves to +0x48,
+//  0x004958da), and the one-byte data length read out of line.
 // ======================================================================= //
 
 struct CObjSetupRefQ479
@@ -2333,8 +2462,14 @@ struct CObjSetupRefQ479
 struct CObjSetupQ479
 {
 	CObjSetupRefQ479     m_Filename;                         // 0x00
-	CObjSetupRefQ479     m_SkinNames[MAX_MODEL_TEXTURES];    // 0x0c, 0x18
-	ObjectCreateStruct*  m_pStruct;                          // 0x24
+	CObjSetupRefQ479     m_SkinNames[MAX_MODEL_TEXTURES];    // 0x0c..0x30
+#ifdef PRIMAL_HUNT
+	// PH: the model's extra texture (ObjectCreateStruct's
+	// m_ExtraTextureName), read after the skins (0x00495b4f..0x00495bd3:
+	// type 2 at +0x3c, the id at +0x44).
+	CObjSetupRefQ479     m_ExtraFile;                        // 0x3c
+#endif
+	ObjectCreateStruct*  m_pStruct;                          // 0x3c, PH 0x48
 };
 
 LTRESULT sub_479500(CPacketQ478* pPacket, CObjSetupQ479* pSetup,
@@ -2361,7 +2496,15 @@ LTRESULT sub_479500(CPacketQ478* pPacket, CObjSetupQ479* pSetup,
 		if (bBigData)
 			pData->m_DataLen = pPacket->ReadTypeOOL((uint16*)0);
 		else
+#ifdef PRIMAL_HUNT
+			// PH: the byte read is the out-of-line one here (0x0049591e
+			// calls 0x0046b4f0), where AvP2 1.0.9.6 expands it (0x0048c046)
+			// -- most likely the inline budget the extra-texture read below
+			// spends.
+			pData->m_DataLen = pPacket->ReadTypeOOL((uint8*)0);
+#else
 			pData->m_DataLen = pPacket->ReadType((uint8*)0);
+#endif
 	}
 	else
 	{
@@ -2396,6 +2539,10 @@ LTRESULT sub_479500(CPacketQ478* pPacket, CObjSetupQ479* pSetup,
 			pSetup->m_SkinNames[i].m_nFileType = CFILEREF_BYID;
 			pSetup->m_SkinNames[i].m_nLocalID  = pPacket->ReadType((uint16*)0);
 		}
+#ifdef PRIMAL_HUNT
+		pSetup->m_ExtraFile.m_nFileType = CFILEREF_BYID;
+		pSetup->m_ExtraFile.m_nLocalID  = pPacket->ReadType((uint16*)0);
+#endif
 	}
 	else if (nType == OT_SPRITE)
 	{
@@ -2425,6 +2572,8 @@ LTRESULT sub_479500(CPacketQ478* pPacket, CObjSetupQ479* pSetup,
 //  0x00410960.  Otherwise the record must be a type-2 sound, which the
 //  position (CF_POSITION: 0x004359c0 then SetPosition, vtable +0x38) and
 //  flag 0x20 (KillLoop, 0x0047e2c0) are applied to.  (name ours)
+//  AVP2: Primal Hunt's 0x00495c70 (498 bytes) is BYTE-IDENTICAL with flag
+//  0x20's fade byte (below).
 // ======================================================================= //
 
 class CSoundInstPosQ478
@@ -2446,7 +2595,16 @@ public:
 	virtual void     _v34();
 	virtual LTRESULT SetPosition(LTVector* pPos, int nUnknown);      // +0x38
 
-	LTRESULT KillLoop();                                             // 0x0047e2c0
+	LTRESULT KillLoop();                                             // 0x0047e2c0, PH 0x0049a930
+};
+
+// AVP2: clientsoundinst.cpp's sound-instance view, by its own name, for the
+// one member reached here (KillFade, PH 0x0049a9d0), so that both files
+// reference one symbol.
+class CSoundInstanceView
+{
+public:
+	LTRESULT KillFade(float fFadeOutTime);                           // 0x0049a9d0
 };
 
 class CClientMgrSndQ478
@@ -2504,8 +2662,22 @@ LTRESULT sub_479bf0(CClientShellQ478* pShell, CPacketQ478* pPacket,
 			pSound->SetPosition(&psi.m_vPosition, 0);
 	}
 
-	if ((nChangeFlags & 0x20) && pSound)
-		pSound->KillLoop();
+	// AVP2: flag 0x20 carries a byte, the fade-out time in tenths of a
+	// second, read whether or not the sound was found: zero kills the loop,
+	// anything else fades it (PH 0x00495d82..0x00495e2e, AvP2 1.0.9.6
+	// 0x0048c750).
+	if (nChangeFlags & 0x20)
+	{
+		uint8 nFade = pPacket->ReadType((uint8*)0);
+
+		if (pSound)
+		{
+			if (nFade)
+				((CSoundInstanceView*)pSound)->KillFade((float)nFade * 0.1f);
+			else
+				pSound->KillLoop();
+		}
+	}
 
 	if (nChangeFlags & CF_NEWOBJECT)
 		g_pClientMgr->PlaySound(&psi, &fileRef, fOffset);
@@ -2674,6 +2846,8 @@ LTRESULT sub_479d50(CClientShellQ478* pShell, CPacketQ478* pPacket,
 //     is killed by the type-2 store), and the record key is re-read from it.
 //   * the zero position is stored z, y, x (0x00479b24..0x00479b3a): the
 //     chained `x = y = z = 0.0f`, where 0x00479d50's Init() stores x first.
+//  AVP2: Primal Hunt's 0x00494370 (967 bytes) is BYTE-IDENTICAL, the user sound
+//  type and user data read under their own PLAYSOUND_ flags.
 // ======================================================================= //
 LTRESULT sub_4798a0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 {
@@ -2742,7 +2916,14 @@ LTRESULT sub_4798a0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 		}
 	}
 
-	psi.m_UserData = pPacket->ReadType((uint32*)0);
+	// AVP2: the user sound type and the user data are each sent only when
+	// their flag is (Primal Hunt 0x00494613 PLAYSOUND_CTRL_TYPE, 0x00494690
+	// PLAYSOUND_USER_DATA); NOLF read the data unconditionally.
+	if (psi.m_dwFlags & PLAYSOUND_CTRL_TYPE)
+		psi.m_nUserSoundType = pPacket->ReadType((uint8*)0);
+
+	if (psi.m_dwFlags & PLAYSOUND_USER_DATA)
+		psi.m_UserData = pPacket->ReadType((uint32*)0);
 
 	((CClientMgrSndQ478*)pShell->m_pClientMgr)->PlaySound(&psi, &fileRef, 0.0f);
 
@@ -2861,12 +3042,23 @@ LTRESULT sub_47a1f0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 //  result returned, or LT_OK when there is no such object.  (name ours)
 // ======================================================================= //
 
+// AVP2: cltapi.cpp's CClientCreateRequest: four skins, the reset flag
+// behind the struct pointer and a constructor setting both (Primal Hunt
+// 0x0049670a/0x004966fc). PH: the extra texture's ref at +0x3c (0x004966eb,
+// inline, where the skin array's constructor is the out-of-line 0x004186c0
+// in a loop).
 class CClientCreateRequestQ478
 {
 public:
+	CClientCreateRequestQ478() { m_pStruct = LTNULL; m_bResetAnimations = LTTRUE; }
+
 	CClientFileRefQ478  m_ObjectFile;                        // 0x00
 	CClientFileRefQ478  m_SkinFiles[MAX_MODEL_TEXTURES];     // 0x0c
-	ObjectCreateStruct* m_pStruct;                           // 0x24
+#ifdef PRIMAL_HUNT
+	CClientFileRefQ478  m_ExtraFile;                         // 0x3c
+#endif
+	ObjectCreateStruct* m_pStruct;                           // 0x3c (PH 0x48)
+	uint32              m_bResetAnimations;                  // 0x40 (PH 0x4c)
 };
 
 LTRESULT sub_477d60(CClientMgrQ478* pMgr, CObjChangeInfoQ478* pInfo,
@@ -2880,10 +3072,14 @@ LTRESULT sub_47a4e0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 	uint16                   nObjectID;
 	uint32                   i;
 
-	req.m_pStruct = LTNULL;
 	ocs.Clear();
 	req.m_pStruct = &ocs;
 
+	// NEAR (PH 0x004966a0, 778 of 789): Primal Hunt calls the id's read out
+	// of line (0x004967d0 -> 0x0043a920) and expands the extra texture's;
+	// ours expands the first and calls the second. Writing the id's read
+	// out of line instead puts the skin array's constructor back inline
+	// (699 bytes): the inline budget, not yet reproduced.
 	nObjectID = pPacket->ReadType((uint16*)0);
 
 	req.m_ObjectFile.m_nLocalID  = pPacket->ReadType((uint16*)0);
@@ -2894,6 +3090,11 @@ LTRESULT sub_47a4e0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 		req.m_SkinFiles[i].m_nLocalID  = pPacket->ReadType((uint16*)0);
 		req.m_SkinFiles[i].m_nFileType = 2;
 	}
+
+#ifdef PRIMAL_HUNT
+	req.m_ExtraFile.m_nLocalID  = pPacket->ReadType((uint16*)0);
+	req.m_ExtraFile.m_nFileType = 2;
+#endif
 
 	pInfo = sub_420520(pShell->m_pClientMgr, nObjectID);
 	if (pInfo)
@@ -2950,30 +3151,17 @@ void sub_420580(CClientMgrQ478* pMgr, CObjChangeInfoQ478* pInfo,
 //  (E-0x68, its +0x64 cleared on entry), the dims below it (E-0x74).
 // ======================================================================= //
 
-struct WMMoveStateQ478
-{
-	void*  m_pContainer;                     // +0x00
-	void*  m_pUnknown04;                     // +0x04
-	void*  m_pObj;                           // +0x08
-	uint32 m_nUnknown0C;                     // +0x0c
-	uint32 m_pPushList;                      // +0x10
-	uint32 m_nPushCount;                     // +0x14
-	uint8  m_pad_18[0x64 - 0x18];
-	uint32 m_nUnknown64;                     // +0x64
-};
-
-int wm_SetObjectDims(WMMoveStateQ478* pState, LTVector* pDims, int bFlag,
-                     int bUnknown);                                  // 0x00453f90
+//
+// AVP2: Primal Hunt's 0x00428f30 (271 bytes, BYTE-IDENTICAL): servermgr.h's WMMoveState
+// itself, its inline constructor clearing +0x68 as well (0x00428f58), and
+// wm_SetObjectDims at 0x004664f0. (commonphysics.h's declaration, restated.)
+int wm_SetObjectDims(struct WMMoveState* pState, LTVector* pDims, int bFlag,
+                     int bUnknown);                                  // 0x00453f90, PH 0x004664f0
 
 void sub_420690(CClientMgrQ478* pMgr, CObjChangeInfoQ478* pInfo)
 {
-	WMMoveStateQ478 state;
-	LTVector        vDims;
-
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
+	WMMoveState state;
+	LTVector    vDims;
 
 	// Four separate refusals, not one guard: the tests are the inlined
 	// LTAnimTracker::IsValid's, but with the model and the current index
@@ -2995,9 +3183,9 @@ void sub_420690(CClientMgrQ478* pMgr, CObjChangeInfoQ478* pInfo)
 
 	AnimInfoQ478* pAnimInfo = &pModel->m_pAnims[iCur];
 
-	state.m_pContainer = &pMgr->m_WorldTree;
-	state.m_pUnknown04 = pMgr->m_pUnknown508;
-	state.m_pObj = pInfo;
+	state.m_pContainer = (CUnknown210*)&pMgr->m_WorldTree;
+	state.m_pUnknown04 = (CUnknown6A8Obj*)pMgr->m_pUnknown508;
+	state.m_pObj = (LTObject*)pInfo;
 	state.m_nUnknown0C = pInfo->m_BlockingPriority;
 	state.m_pPushList = 0;
 	state.m_nPushCount = 0;
@@ -3308,18 +3496,45 @@ public:
 // The write message's holder as 0x00478510 keeps it: an empty pointer at
 // birth, assigned through the out-of-line 0x0047bc20 and released through
 // the out-of-line 0x004666f0 (server/smgr.cpp's CRefHolder4666F0).
+//
+// PH: Primal Hunt's ReadObjectSubPacket (0x00494740) expands both: the
+// AddRef at 0x004947d8 and every release at the function's exits
+// (0x004949a2, 0x00494ae7). AvP2 1.0.9.6 still calls its out-of-line
+// assignment (0x0048e8d0), so only Primal Hunt has the bodies inline.
 class CMsgHolderQ478
 {
 public:
 	CMsgHolderQ478() { m_pMsg = LTNULL; }
+#ifdef PRIMAL_HUNT
+	~CMsgHolderQ478()                                           // 0x004666f0
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+	}
+
+	CMsgQ478* operator=(const CMsgRefQ478& other)               // 0x0047bc20
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			m_pMsg->AddRef();
+
+		return m_pMsg;
+	}
+#else
 	~CMsgHolderQ478();                                          // 0x004666f0
 	CMsgQ478* operator=(const CMsgRefQ478& other);              // 0x0047bc20
+#endif
 
 	CMsgQ478* m_pMsg;
 };
 
+#ifndef PRIMAL_HUNT
 // 0x0047bc20 -- 37 bytes, __thiscall, `ret $0x4`: drop the held message,
-// take the other's, AddRef it and hand it back.
+// take the other's, AddRef it and hand it back (AvP2 1.0.9.6 0x0048e8d0).
 CMsgQ478* CMsgHolderQ478::operator=(const CMsgRefQ478& other)
 {
 	if (m_pMsg)
@@ -3332,6 +3547,7 @@ CMsgQ478* CMsgHolderQ478::operator=(const CMsgRefQ478& other)
 
 	return m_pMsg;
 }
+#endif
 
 // The setup record 0x00479500 fills (lt2new4.cpp's CUnknown4789A0, whose
 // constructor 0x004789a0 this reaches under its own name).
@@ -3390,18 +3606,27 @@ LTRESULT sub_411a70Q478(CClientMgrQ478* pClientMgr, uint16 nServerID,
 // of its own ("ReadObjectSubPacket", 0x004ae514); it is expanded inline
 // into its one caller, which is why its constant error result travels
 // through the caller's dResult register (0x004788b8).
-inline LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell,
-                                    CPacketQ478* pPacket, uint16 nFlags)
+//
+// AVP2: no longer expanded: Primal Hunt CALLS it (0x00494154 -> 0x00494740,
+// AvP2 1.0.9.6 the same), and its caller reads the id and passes it.
+// NEAR (PH 0x00494740, 980 of 965): every call and branch agrees; the
+// shipped code expands less of the setup -- the skin array through the
+// vector constructor iterator (0x00494790 -> 0x00401000) and the struct's
+// m_Scale.Init(1,1,1) as a call (0x004948c7) -- where ours writes the loop
+// and the three stores out: the inline budget again (see sub_47a4e0).
+LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell, CPacketQ478* pPacket,
+                             uint16 nID, uint16 nFlags)
 {
 	LTRESULT dResult;
-	uint16   nID;
 
-	nID = pPacket->ReadType((uint16*)0);
-
-	CMsgHolderQ478          cMsg;
-	CObjectCreateStructQ478 ocs;
-	CUnknown4789A0          setup;
-	CUpdListQ478            list;
+	// AVP2: the struct is the SDK's own (its constructor's Clear stays a
+	// call, 0x00494770, the one below is expanded) and the setup is the
+	// create request with its constructor, as sub_47a4e0's (0x00494775..
+	// 0x004947b6: the skins through the vector constructor iterator).
+	CMsgHolderQ478           cMsg;
+	ObjectCreateStruct       ocs;
+	CClientCreateRequestQ478 setup;
+	CUpdListQ478             list;
 	CObjChangeInfoQ478*     pInfo;
 	CObjRecQ478*            pRec;
 
@@ -3428,10 +3653,11 @@ inline LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell,
 			}
 		}
 
-		ocs.ClearQ478();
+		ocs.Clear();
 		sub_479500(pPacket, (CObjSetupQ479*)&setup, (CPacketQ478*)cMsg.m_pMsg);
 
-		dResult = sub_411a70Q478(pShell->m_pClientMgr, nID, &setup, &pInfo,
+		dResult = sub_411a70Q478(pShell->m_pClientMgr, nID,
+		                         (CUnknown4789A0*)&setup, &pInfo,
 		                         !(nFlags & CF_POSITION),
 		                         !(nFlags & CF_ROTATION));
 		if (dResult != LT_OK)
@@ -3495,19 +3721,24 @@ LTRESULT sub_478510(CClientShellQ478* pShell, CPacketQ478* pPacket)
 
 	while (pPacket->m_DataLen - pPacket->m_Pos > 0)
 	{
+		// AVP2: only the first read is the out-of-line one (Primal Hunt
+		// 0x00494036); the rest are expanded, and the object's id is read
+		// here for ReadObjectSubPacket (0x004940e0..0x00494154).
 		nFlags = pPacket->ReadTypeOOL((uint8*)0);
 		if (nFlags & 0x80)
-			nFlags |= (uint16)pPacket->ReadTypeOOL((uint8*)0) << 8;
+			nFlags |= (uint16)pPacket->ReadType((uint8*)0) << 8;
 
 		if (nFlags)
 		{
-			dResult = ReadObjectSubPacket(pShell, pPacket, nFlags);
+			uint16 nID = pPacket->ReadType((uint16*)0);
+
+			dResult = ReadObjectSubPacket(pShell, pPacket, nID, nFlags);
 			if (dResult != LT_OK)
 				return dResult;
 		}
 		else
 		{
-			nType = pPacket->ReadTypeOOL((uint8*)0);
+			nType = pPacket->ReadType((uint8*)0);
 
 			if (nType == 0)
 			{
@@ -3517,8 +3748,8 @@ LTRESULT sub_478510(CClientShellQ478* pShell, CPacketQ478* pPacket)
 			}
 			else if (nType == 1)
 			{
-				uint16 nChange = pPacket->ReadTypeOOL((uint8*)0);
-				uint16 nObject = pPacket->ReadTypeOOL((uint16*)0);
+				uint16 nChange = pPacket->ReadType((uint8*)0);
+				uint16 nObject = pPacket->ReadType((uint16*)0);
 
 				dResult = sub_479bf0(pShell, pPacket, nObject, nChange);
 				if (dResult != LT_OK)

@@ -156,9 +156,11 @@ TARGETS = [
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib (msvc-6.00-8966's) from ftol.obj's
          # __ftol (0x4bf918), 353 members to initcon.obj (0x4ceaeb), as
-         # NOLF's engine's CRT begins at _ftol; 1,112 bytes of packed code
-         # (25 functions) from 0x4bf4c0 sit just below it
-         app=[(0x00401000, 0x004bf918)]),
+         # NOLF's engine's CRT begins at _ftol; and the 1,112 bytes of packed
+         # code below it from 0x4bf4c0 are the C++ library's: libcp.lib's
+         # string.obj (std::_Xlen/_Xran and the logic_error family, 17 of its
+         # functions matched by exematch) and xlock.cpp's std::_Lockit
+         app=[(0x00401000, 0x004bf4c0)]),
     dict(label="server.dll", what="the server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
          # nolfsrc's engine compiled for Primal Hunt, objects only until it

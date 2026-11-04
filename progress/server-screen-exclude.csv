@@ -1,0 +1,8 @@
+addr,reason
+0x1002c10c,"NOT A FUNCTION: interior block of net_LogPacket (0x1002b584); the function is 3074 bytes: the 'call' that enumerated it is an e8 operand byte at 0x10067384, not a call instruction"
+0x10047ef5,"NOT A FUNCTION: interior block of GenAppendList (0x10047e80): the 'call' that enumerated it is an e8 operand byte at 0x10047e4c, not a call instruction"
+0x100467bd,"NOT A FUNCTION: interior block of TCPDriver::UpdateQuery (0x10046582): the 'call' that enumerated it is an e8 operand byte at 0x10046714 (an ebp-0x18 displacement), not a call instruction"
+0x10001ee4,"NOT A FUNCTION: interior block of w_IsPolyBlocking (0x10001db0): the 'call' that enumerated it is an e8 operand byte at 0x10001ede (an ebp-0x18 displacement), not a call instruction"
+0x10020600,"NOT A FUNCTION: interior block of CMoArray<0x1c-byte element>::Insert2 (0x1002054b), a 338-byte function running to 0x1002069d: the only reference is a pointer inside that function's own tables"
+0x10027af3,"NOT A FUNCTION: interior block of wm_MoveObject (0x100277cb), ~1,400 bytes: the 'call' that enumerated it is an e8 operand byte at 0x10062d6b (mov -0x18(%ebp),%esp), not a call instruction"
+0x100293ac,"NOT A FUNCTION: interior block of wm_PushWorldModel (0x10029376): the 'call' that enumerated it is an e8 operand byte at 0x100293a6 (an ebp-0x18 displacement), not a call instruction"

@@ -2205,6 +2205,10 @@ LTBOOL CUnknownD974::sub_1001bb37(ILTStream* pStream)
 	// `xor %ebx,%ebx` (pNull's zero, and the child loop's i = 0 after the
 	// call) and the two frame stores where 0x0044ce1f..0x0044ce2d have them.
 	// Neutral on server.dll.
+	//
+	// Primal Hunt's lithtech.exe (0x0045a470, 438 bytes) IDENTICAL as well:
+	// there SetSizeInit3 is expanded (its definition below is visible to
+	// the PH client build) and the SetSize2 inside it called (0x0045a50e).
 	LAlloc* pAlloc = sub_1001671c()->GetAlloc();
 	uint32 nChildren = m_pSub20c04->m_Array18.GetSize();
 	pNull = LTNULL;
@@ -2691,6 +2695,14 @@ LTBOOL ModelPieceQ44C::sub_1001c1a5Q44C(ILTStream* pStream, uint32* pnBase)
 // without effect: `*pStream >>` for any read, `m_Array18[i]`, GetAlloc()
 // vs the cast at either failure-arm site, MakeInverseTransform(), and in
 // commonmodel.h FreeArrayElements marked inline / Term(pAlloc) / accessors.
+//
+// Primal Hunt's lithtech.exe (0x0045a770, 506 bytes): NEAR at 513, from
+// 572, once SetSizeInit4 forwards to an expanded SetSizeInit3 there (see
+// SetSizeInit4 at the foot of this file): SetSize2 is now called
+// (0x0045a855) and the zero fill expanded, as shipped. Left: the failure
+// arm's FreeArrayElements -- shipped calls BaseDelete for the array
+// (0x0045a94d), ours expands it into the allocator's Free. Inline budget;
+// GetAlloc() in place of the cast there is neutral.
 LTBOOL Model::CModelSub20C::sub_1001bd54(ILTStream* pStream)
 {
 	uint32 i, j;
@@ -7888,7 +7900,12 @@ LTBOOL CServerWorldFull::InheritWorld(CServerWorldFull* pSrc)
 // from the client build, the caller calls it and is identical, and
 // src/engine/lithtech/modchunk.cpp (a client-only TU) supplies the
 // out-of-line body that matches 0x0044e5f0.
-#ifdef LT_SERVER_BUILD
+//
+// PH: Primal Hunt's lithtech.exe EXPANDS it, as server.dll does: the
+// SetSize2 call at 0x0045a50e, then the fill loop storing a literal zero
+// (0x0045a51b..0x0045a535). AvP2 1.0.9.6's lithtech.exe calls it out of
+// line (0x00455421), so the body stays hidden from the AvP2 client build.
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 DYNA_TEMPLATE
 LTBOOL CMoArray<T, C>::SetSizeInit3( uint32 newSize, T &val, LAlloc *pAlloc )
 {
@@ -7916,6 +7933,13 @@ LTBOOL CMoArray<T, C>::SetSizeInit3( uint32 newSize, T &val, LAlloc *pAlloc )
 DYNA_TEMPLATE
 LTBOOL CMoArray<T, C>::SetSizeInit4( uint32 newSize, T val, LAlloc *pAlloc )
 {
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+	// PH: dynarray's own body. SetSizeInit3 is visible to Primal Hunt's
+	// client build (above), and this one level more is what leaves
+	// SetSize2 called inside the expansion in CModelSub20C::sub_1001bd54
+	// (0x0045a855); LoadSockets and sub_1001c560 are unchanged by it.
+	return SetSizeInit3(newSize, val, pAlloc);
+#else
 	uint32 i;
 
 	if(!SetSize2(newSize, pAlloc))
@@ -7927,4 +7951,5 @@ LTBOOL CMoArray<T, C>::SetSizeInit4( uint32 newSize, T val, LAlloc *pAlloc )
 	}
 
 	return LTTRUE;
+#endif
 }

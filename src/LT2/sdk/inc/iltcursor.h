@@ -16,7 +16,15 @@
 
 		public:
 			ILTCursorInst() {};
+#ifdef PRIMAL_HUNT
+			// PH: out of line. lithtech.exe's CLTCursor::FreeCursor
+			// (0x0044b020) calls it (0x0044b040, `movl $0x4d568c,(%ecx);
+			// ret`) where AvP2 1.0.9.6 inlines the vptr store; the engine
+			// defines it (src/engine/lithtech/cltcursor.cpp).
+			~ILTCursorInst();
+#else
 			~ILTCursorInst() {};
+#endif
 
 		virtual LTRESULT IsValid() = 0;
 		virtual void	SetData(const void *pData) = 0;

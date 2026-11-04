@@ -145,16 +145,16 @@ class CClientMgr
 {
 public:
 	uint8              m_pad_00[0x6c];
-	uint8              m_World[0x508 - 0x6c];  // 0x06c  the client's world,
+	uint8              m_World[0x50c - 0x6c];  // 0x06c  the client's world,
 	                                           //        passed whole to the
 	                                           //        intersector and to the
 	                                           //        physics mover
 	// What the physics mover wants beside the world; the server manager keeps
-	// the same thing at 0x6a8.
-	class CUnknown6A8Obj* m_pUnknown508;      // 0x508
-	// AVP2: four bytes NOLF's manager had not before the net manager: both
-	// retail exes' service-list calls are a thiscall on g_pClientMgr+0x510.
-	uint8              m_pad_50c[0x510 - 0x50c];
+	// the same thing at 0x6a8.  AVP2: at 0x50c, four bytes on from NOLF's
+	// 0x508 -- the world runs to 0x50c (PH 0x00405606 and AvP2 0x00404e4a
+	// both read [mgr+0x50c]; NOLF's name kept), and that is what leaves the
+	// net manager at 0x510.
+	class CUnknown6A8Obj* m_pUnknown508;      // 0x50c
 	// The same CNetMgr the server has, as a sub-object rather than behind a
 	// pointer.
 	CNetMgr            m_NetMgr;              // 0x510

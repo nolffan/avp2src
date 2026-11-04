@@ -352,6 +352,18 @@ public:
 	// The zeroing lives here, not in the base: see CMessageQueueBase().
 	LMessageList() { m_nMessages = 0; m_pTail = LTNULL; }
 
+#ifdef PRIMAL_HUNT
+	// PH: a destructor of its own. Primal Hunt's server.dll keeps an
+	// out-of-line copy (0x1002daa3: this vtable, 0x10074e54, then the two
+	// zero stores) reached only from unwind funclets (0x10071212, 0x1007121d,
+	// 0x10071233), and NetConnection's constructor and destructor unwind
+	// through it (server.dll 0x1002aa0b / 0x1002aa95, lithtech.exe
+	// 0x00467950).
+	// AvP2 1.0.9.6 has none: with it, its ~LThreadQueue (server.dll
+	// 0x10019f35) and NetConnection's teardown (0x10029279) stop matching.
+	~LMessageList() { m_pTail = LTNULL; m_nMessages = 0; }
+#endif
+
 	// 0x10023ec9 — Prepend, not Append, and the answer is always LTTRUE.
 	virtual LTBOOL GenAppend(LThreadMessage*& toAppend)
 	{

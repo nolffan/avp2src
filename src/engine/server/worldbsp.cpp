@@ -366,6 +366,25 @@ CWorldSimple::CWorldSimple()
 	m_p7c = LTNULL;
 }
 
+#ifdef LT_SERVER_BUILD
+// PH server.dll 0x1000dc47 -- worldbsp.h's in-class body, out of line here
+// (see the note there).
+void CWorldSub108::Clear()
+{
+	m_vCell.Init();
+	m_vOrigin.Init();
+
+	m_nCountZ = 0;
+	m_nCountY = 0;
+	m_nCountX = 0;
+
+	m_nSliceStride = 0;
+
+	m_nRecords = 0;
+	m_pRecords = LTNULL;
+}
+#endif
+
 CWorldSimple::~CWorldSimple()
 {
 	Reset();
@@ -1954,6 +1973,55 @@ int fs_GetTableName(void* pTable, uint32 iEntry, char* pName, uint32 nMaxLen)
 	sprintf(pName, "%s%d %s", "#$#", iEntry, (char*)pTable);
 	return 1;
 }
+
+#ifndef LT_SERVER_BUILD
+// lithtech.exe 0x0042af40 (63 bytes) -- the 0x60 record's constructor, right
+// after fs_GetTableName as server.dll's twin (0x1000abcf) is, and the one
+// the /GX array new 0x00416510 runs over each slot (0x00416570). server.dll
+// takes its copy from collection.cpp's CCollElem60, the same fields; this is
+// the client's, whose /O2 keeps the source order: the two vectors and the
+// float as integer zeroes, the byte, three dwords, the byte, a dword, the
+// word, the two -1s, a zero and 1.0f (names ours).
+class CWorldRec60Q546
+{
+public:
+	CWorldRec60Q546();
+
+	uint8    m_flag;                         // +0x00
+	uint8    m_pad01[0x1f];
+	uint32   m_a;                            // +0x20
+	uint32   m_b;                            // +0x24
+	uint8    m_c;                            // +0x28
+	uint8    m_pad29[3];
+	uint32   m_d;                            // +0x2c
+	uint16   m_e;                            // +0x30
+	uint16   m_pad32;
+	int32    m_f;                            // +0x34
+	int32    m_g;                            // +0x38
+	uint32   m_h;                            // +0x3c
+	float    m_i;                            // +0x40
+	LTVector m_v1;                           // +0x44
+	LTVector m_v2;                           // +0x50
+	float    m_k;                            // +0x5c
+};
+
+CWorldRec60Q546::CWorldRec60Q546()
+{
+	m_v1.Init();
+	m_v2.Init();
+	m_k = 0.0f;
+	m_flag = 0;
+	m_a = 0;
+	m_b = 0;
+	m_c = 0;
+	m_d = 0;
+	m_e = 0;
+	m_g = -1;
+	m_f = -1;
+	m_h = 0;
+	m_i = 1.0f;
+}
+#endif
 
 // The console/error printer (0x1000e3f9).  de_error.h names it; this file
 // does not include that header, so the prototype is repeated.

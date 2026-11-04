@@ -440,7 +440,7 @@
 # 0x446240
 /ALTERNATENAME:??0ModelWeightSet@@QAE@PAVModel@@@Z=??0ModelWeightSetQ444@@QAE@PAVModelQ444@@@Z
 # 0x4551c0
-/ALTERNATENAME:??1NetConnectionD@@QAE@XZ=?Term@NetConnection@@QAEXXZ
+/ALTERNATENAME:??1NetConnectionD@@QAE@XZ=??1NetConnection@@QAE@XZ
 # 0x45a360
 /ALTERNATENAME:??1SharedTextureView@@QAE@XZ=??1CModelSub14@Model@@QAE@XZ
 # 0x48aba0

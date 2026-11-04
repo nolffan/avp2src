@@ -1,0 +1,2 @@
+image,addr,reason
+lithtech.exe,0x00426170,"a function start the enumeration merged into 0x00426160: cnt_EndCounter (0x00426160) is 9 bytes, mov 0x4(%esp),%ecx; jmp 0x00426110, then nop padding to 0x00426170, where a separate 23-byte clear routine begins (xor %eax,%eax; mov %eax,(%ecx); mov %eax,0x4(%ecx); ...)"

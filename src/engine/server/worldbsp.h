@@ -129,6 +129,15 @@ public:
 	// statement, and the six integer stores stay where the source put them,
 	// after all six of the floats. That is also what says the six floats are
 	// two vectors rather than six named scalars.
+	//
+	// PH: Primal Hunt's /GX server.dll has the standalone right after
+	// CWorldSimple's constructor (0x1000dc47), and that constructor stores
+	// EH state 1 ahead of its call (0x1000dc1d), which VC6 only does for a
+	// callee whose body it has not compiled yet -- so in the server build
+	// the body is out of line in worldbsp.cpp, below that constructor.
+#ifdef LT_SERVER_BUILD
+	void Clear();                            // 0x1000a817, PH 0x1000dc47
+#else
 	void Clear()                             // 0x1000a817
 	{
 		m_vCell.Init();
@@ -143,6 +152,7 @@ public:
 		m_nRecords = 0;
 		m_pRecords = LTNULL;
 	}
+#endif
 
 	void Term();                             // 0x1000a63a
 	// 0x1000a747 — where a point falls. The world's own slot does no more

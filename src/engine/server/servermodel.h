@@ -140,6 +140,12 @@ public:
 	LTRESULT SetCurAnim(LTAnimTracker* pTracker, HMODELANIM hAnim);
 	LTRESULT ResetAnim(LTAnimTracker* pTracker);
 	LTRESULT SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hSet);
+	// AVP2: two more of the tracker setters, slots 28 and 30 of the
+	// vtable (server.dll 0x1003a32f / 0x1003a39d, lithtech.exe 0x00482200 /
+	// 0x00482370), the error tags "ServerModelLT::SetAllowTransition" and
+	// "ServerModelLT::SetTimeScale".
+	LTRESULT SetAllowTransition(LTAnimTracker* pTracker, LTBOOL bAllowTransition);
+	LTRESULT SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeScale);
 
 	// Three more of the same shape, reached through the interface rather
 	// than through a tracker: these take the object directly, so they mark

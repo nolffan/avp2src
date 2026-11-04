@@ -151,6 +151,17 @@
 
 		// Send a packet thru tcp/ip if we're using tcp/ip.
 		virtual LTRESULT	SendTo(const void *pData, uint32 len, const char *sAddr, uint32 port)=0;
+
+#ifdef PRIMAL_HUNT
+		// PH: two more entries after SendTo (server.dll's MyServerInterface
+		// vtable 0x10075450: SendTo 0x10037fe8, then 0x100380df and
+		// 0x100380fb), wrapping fs_GetFileInfo (0x10037780) and the one-
+		// argument file test (0x10037808) on the server's file manager.
+		// ILTCSBase's GetFileInfo/DoesFileExist pair (iltcsbase.h) over
+		// again; names from there.
+		virtual LTRESULT	GetFileInfo(const char *pFilename, struct LTFileInfo *pInfo)=0;
+		virtual LTRESULT	DoesFileExist(const char *pFilename)=0;
+#endif
 	};
 
 #ifdef __cplusplus

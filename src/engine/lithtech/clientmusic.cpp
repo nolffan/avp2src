@@ -1113,6 +1113,22 @@ inline void* dmPlayingAllocInlineQ440()
 // SEGEND drop the playing node the finished state belongs to.  pSegState is
 // set only when a message carries one and never cleared (0x0043f532 zeroes
 // %ebp once, outside both loops), which is the shipped behaviour.
+//
+// AVP2: Primal Hunt's lithtech.exe 0x0044b550 (1054 bytes) and AvP2 1.0.9.6's
+// 0x004477c0 (1043) are the newer shape this body now has: the queue runs
+// only for the primary segment's SEGALMOSTEND, types 3 and 0xb start at once
+// onto the primary list (CDMPlayingList::Add, 0x0044e460), the waiting
+// secondaries and motifs on m_PendingSecondaryList start after it, and
+// SEGEND looks in the primary list first, stopping a primary with enact 0
+// and the other two with LTDMEnactImmediatly.
+//
+// NEAR (1035 of 1054; AvP2 1020 of 1043): ours cross-jumps the type-3 arm
+// into the type-0xb arm's primary-list Add (both end `push <state>; mov
+// g_pDirectMusicMgr; lea 0x7c; call`), where shipped schedules the 0xb
+// arm's manager load ahead of its pushes (`add $0x7c,%ecx`,
+// 0x0044b79c..0x0044b7a8) so only the Remove is shared; the secondary loop
+// then takes the other scratch registers. One function-scope state local
+// for every arm instead of four block ones: 1031, worse.
 
 // The singleton itself: zero-initialised, in .bss (0x004b3fe0).
 CLTDirectMusicMgr* g_pDirectMusicMgr;
@@ -1146,6 +1162,37 @@ void __cdecl dm_NotificationThread(void* pParam)
 
 				if (pMsg->dwNotificationOption == DMUS_NOTIFICATION_SEGALMOSTEND)
 				{
+					// AVP2: only the primary segment's end runs the queue: a
+					// secondary's or a motif's, or any segment state but the
+					// newest primary one, is passed over -- and its message
+					// is never freed (0x0044b62f..0x0044b66a jump past the
+					// FreePMsg at 0x0044b901 straight to the next fetch).
+					// RETAIL BUG: those notifications leak.
+					if (g_pDirectMusicMgr->m_SecondaryList.FindBySegState(pSegState))
+					{
+#ifdef AVP2_MODERN
+						g_pDirectMusicMgr->m_pPerformance->FreePMsg(pMsg);
+#endif
+						continue;
+					}
+
+					if (g_pDirectMusicMgr->m_MotifList.FindBySegState(pSegState))
+					{
+#ifdef AVP2_MODERN
+						g_pDirectMusicMgr->m_pPerformance->FreePMsg(pMsg);
+#endif
+						continue;
+					}
+
+					if (g_pDirectMusicMgr->m_PrimaryList.m_pHead &&
+					    g_pDirectMusicMgr->m_PrimaryList.m_pHead->m_pSegState != pSegState)
+					{
+#ifdef AVP2_MODERN
+						g_pDirectMusicMgr->m_pPerformance->FreePMsg(pMsg);
+#endif
+						continue;
+					}
+
 					if (g_pDirectMusicMgr->m_pQueueAfter)
 						pNode = g_pDirectMusicMgr->m_pQueueAfter->m_pNext;
 					else
@@ -1154,8 +1201,10 @@ void __cdecl dm_NotificationThread(void* pParam)
 					while (pNode)
 					{
 						if (pNode->m_nType == 0 || pNode->m_nType == 1 ||
-						    pNode->m_nType == 2 || pNode->m_nType == 5 ||
-						    pNode->m_nType == 6 || pNode->m_nType == 7)
+						    pNode->m_nType == 2 || pNode->m_nType == 6 ||
+						    pNode->m_nType == DMPENDING_PLAYSECONDARY ||
+						    pNode->m_nType == DMPENDING_PLAYMOTIF ||
+						    pNode->m_nType == 7)
 						{
 							pNode = pNode->m_pNext;
 						}
@@ -1181,71 +1230,100 @@ void __cdecl dm_NotificationThread(void* pParam)
 						}
 						else if (pNode->m_nType == DMPENDING_PLAYSEGMENT)
 						{
+							// AVP2: played at once (0x2000) and recorded on
+							// the primary list, with its segment.
+							IDirectMusicSegmentState* pNewState = LTNULL;
+
 							g_pDirectMusicMgr->m_pPerformance->PlaySegment(
-								pNode->m_pSegment->m_pDMSegment, 0x100, 0, LTNULL);
-							break;
-						}
-						else if (pNode->m_nType == DMPENDING_PLAYTRANSITION)
-						{
-							g_pDirectMusicMgr->m_pPerformance->PlaySegment(
-								pNode->m_pSegment->m_pDMSegment, 0x100, 0, LTNULL);
+								pNode->m_pSegment->m_pDMSegment, 0x2000, 0, &pNewState);
+							g_pDirectMusicMgr->m_PrimaryList.Add(pNewState, pNode->m_pSegment);
 							g_pDirectMusicMgr->m_PendingList.Remove(pNode);
 							pNode = LTNULL;
 							break;
 						}
-						else
+						else if (pNode->m_nType == DMPENDING_PLAYTRANSITION)
 						{
-							if (pNode->m_nType == DMPENDING_PLAYSECONDARY)
-							{
-								IDirectMusicSegmentState* pNewState = LTNULL;
+							// AVP2: the same, with no segment to record.
+							IDirectMusicSegmentState* pNewState = LTNULL;
 
-								g_pDirectMusicMgr->m_pPerformance->PlaySegment(
-									pNode->m_pSegment->m_pDMSegment, 0x2080, 0, &pNewState);
-
-								if (pNewState)
-								{
-									CDMPlayingNode* pPlaying = (CDMPlayingNode*)dmPlayingAllocInlineQ440();
-
-									if (pPlaying)
-									{
-										pPlaying->m_pSegState = LTNULL;
-										pPlaying->m_pSegment = LTNULL;
-										pPlaying->m_pSegState = pNewState;
-										pPlaying->m_pSegment = pNode->m_pSegment;
-										g_pDirectMusicMgr->m_SecondaryList.AddHead(pPlaying);
-									}
-								}
-							}
-
-							if (pNode->m_nType == 0xa)
-							{
-								g_pDirectMusicMgr->m_pPerformance->Stop(
-									pNode->m_pSegment->m_pDMSegment, LTNULL, 0, 0x2000);
-							}
+							g_pDirectMusicMgr->m_pPerformance->PlaySegment(
+								pNode->m_pSegment->m_pDMSegment, 0x2000, 0, &pNewState);
+							g_pDirectMusicMgr->m_PrimaryList.Add(pNewState, LTNULL);
+							g_pDirectMusicMgr->m_PendingList.Remove(pNode);
+							pNode = LTNULL;
+							break;
+						}
+						else if (pNode->m_nType == 0xa)
+						{
+							g_pDirectMusicMgr->m_pPerformance->Stop(
+								pNode->m_pSegment->m_pDMSegment, LTNULL, 0, 0x2000);
+							pNode = pNode->m_pNext;
 						}
 					}
 
 					g_pDirectMusicMgr->m_pQueueAfter = pNode;
+
+					// AVP2: then every secondary and motif that was waiting
+					// for this boundary starts (0x0044b7bc..0x0044b869) and
+					// leaves the list.
+					pNode = g_pDirectMusicMgr->m_PendingSecondaryList.m_pHead;
+
+					while (pNode)
+					{
+						CDMPendingNode* pNext;
+
+						if (pNode->m_nType == DMPENDING_PLAYSECONDARY)
+						{
+							IDirectMusicSegmentState* pNewState = LTNULL;
+
+							g_pDirectMusicMgr->m_pPerformance->PlaySegment(
+								pNode->m_pSegment->m_pDMSegment, 0x2280, 0, &pNewState);
+							g_pDirectMusicMgr->m_SecondaryList.Add(pNewState, pNode->m_pSegment);
+						}
+
+						if (pNode->m_nType == DMPENDING_PLAYMOTIF)
+						{
+							IDirectMusicSegmentState* pNewState = LTNULL;
+
+							g_pDirectMusicMgr->m_pPerformance->PlaySegment(
+								pNode->m_pSegment->m_pDMSegment, 0x2080, 0, &pNewState);
+							g_pDirectMusicMgr->m_MotifList.Add(pNewState, pNode->m_pSegment);
+						}
+
+						pNext = pNode->m_pNext;
+						g_pDirectMusicMgr->m_PendingSecondaryList.Remove(pNode);
+						pNode = pNext;
+					}
 				}
 
 				if (pMsg->dwNotificationOption == DMUS_NOTIFICATION_SEGEND && pSegState)
 				{
 					CDMPlayingNode* pPlaying =
-						g_pDirectMusicMgr->m_SecondaryList.FindBySegState(pSegState);
+						g_pDirectMusicMgr->m_PrimaryList.FindBySegState(pSegState);
 
 					if (pPlaying)
 					{
-						g_pDirectMusicMgr->m_SecondaryList.StopNode(g_pDirectMusicMgr,
-							pPlaying, LTDMEnactImmediatly, 0);
+						g_pDirectMusicMgr->m_PrimaryList.StopNode(g_pDirectMusicMgr,
+							pPlaying, LTDMEnactInvalid, 0);
 					}
 					else
 					{
-						pPlaying = g_pDirectMusicMgr->m_MotifList.FindBySegState(pSegState);
+						pPlaying = g_pDirectMusicMgr->m_SecondaryList.FindBySegState(pSegState);
 
 						if (pPlaying)
 						{
-							g_pDirectMusicMgr->m_MotifList.StopNode(g_pDirectMusicMgr,
+							g_pDirectMusicMgr->m_SecondaryList.StopNode(g_pDirectMusicMgr,
 								pPlaying, LTDMEnactImmediatly, 0);
+						}
+						else
+						{
+							pPlaying = g_pDirectMusicMgr->m_MotifList.FindBySegState(pSegState);
+
+							if (pPlaying)
+							{
+								g_pDirectMusicMgr->m_MotifList.StopNode(g_pDirectMusicMgr,
+									pPlaying, LTDMEnactImmediatly, 0);
+							}
 						}
 					}
 				}

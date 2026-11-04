@@ -2677,7 +2677,8 @@ inline int sm_SkipClientUpdate(Client* pClient)
 
 	if (pConn)
 	{
-		if (pConn->m_GuaranteedQueue.m_nMessages > g_MaxQueueSize)
+		uint32 nMessages = pConn->m_GuaranteedQueue.m_nMessages;
+		if (nMessages > g_MaxQueueSize)
 			return 1;
 
 		if (pConn->m_SendQueue.m_nMessages > g_MaxQueueSize)
@@ -2751,15 +2752,14 @@ inline CVisQuery::CVisQuery()
 // then 0x00464840, 0x00467540, 0x00464da0 and the 0x1000 store), where
 // server.dll calls sm_WriteObjectUpdate (0x100279d9).
 int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
-                  CObjInfo* pInfo, class ServerMessage* pMsg);      // 0x100291c7
+                  CObjInfo* pInfo, class ServerMessage* pMsg, uint32* pSize);      // 0x100291c7
 void sub_10027ad0(CUpdateContext* pCtx, LTObject* pObject,
                   CObjInfo* pInfo);                                 // 0x10027ad0
 
 inline void sm_WriteObjectUpdateInline(CUpdateContext* pCtx, LTObject* pObject,
                                        CObjInfo* pInfo)
 {
-	uint16 nSize;
-	uint16 nFlags;
+	uint32 nSize;
 
 	if (pInfo->m_ChangeFlags & 0x1000)
 		return;
@@ -2781,36 +2781,24 @@ inline void sm_WriteObjectUpdateInline(CUpdateContext* pCtx, LTObject* pObject,
 	g_pFillIDList->m_pIDs[g_pFillIDList->m_nIDs] = pObject->m_ObjectID;
 	g_pFillIDList->m_nIDs++;
 
-	nSize = 100;
+	// AVP2: no estimate any more -- the writer measures itself first, with
+	// no message and the size (server.dll 0x10032d14..0x10032d25, the size
+	// homed in pInfo's slot; AvP2 1.0.9.6 alike), then writes; and bit
+	// 0x4000 of the flags (the velocity was sent) survives the reset
+	// (`and $0x4000; or $0x10,%ah`, 0x10032d5a).
+	nSize = 0;
 
-	nFlags = pInfo->m_ChangeFlags;
-
-	if ((nFlags & 1) && pObject->m_pSData->m_pSFXMessage)
-	{
-		nSize = pObject->m_pSData->m_pSFXMessage->m_Unknown34
-			+ 100;
-	}
-
-	if (nFlags & 0x100)
-	{
-		Attachment* pAttach = pObject->m_pAttachments;
-
-		while (pAttach)
-		{
-			pAttach = pAttach->m_pNext;
-
-			nSize += 25;
-		}
-	}
+	sub_100291c7(pCtx->m_pMgr, pCtx->m_pClient, pObject, pInfo,
+		LTNULL, &nSize);
 
 	sm_FinishUpdatePacket(pCtx, pCtx->m_Msg1.m_pMsg, 8, nSize);
 
 	sub_100291c7(pCtx->m_pMgr, pCtx->m_pClient, pObject, pInfo,
-		pCtx->m_Msg1.m_pMsg);
+		pCtx->m_Msg1.m_pMsg, LTNULL);
 
 	sub_10027ad0(pCtx, pObject, pInfo);
 
-	pInfo->m_ChangeFlags = 0x1000;
+	pInfo->m_ChangeFlags = (uint16)((pInfo->m_ChangeFlags & 0x4000) | 0x1000);
 }
 #endif // !LT_SERVER_BUILD
 
@@ -2828,19 +2816,25 @@ inline void sm_WriteObjectUpdateInline(CUpdateContext* pCtx, LTObject* pObject,
 // cursor releases into calls (measured, 2,056 bytes), so the original spent
 // more budget below them than this source does. What it spent it on is not
 // visible, and invented wrappers are not kept.
+//
+// Primal Hunt: byte-identical in lithtech.exe (0x00478a50, 2,277 bytes).
+// NEAR in server.dll (0x1003313a, 1,393 vs 1,390): shipped puts the SECOND
+// msg_AllocPacket temporary in pClient's dead slot as well as the first
+// (`lea 0xc(%ebp)` at 0x10033319 and 0x10033353); ours gives the second a
+// frame slot of its own (-0x48), which moves every frame offset below it.
+void sm_Unknown27c71(CServerMgr* pMgr, Client* pClient, ServerMessage* pMsg,
+                     uint32* pSize);                               // 0x10032f0f
+
 void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 {
 	CUpdateContext ctx;
-#ifdef LT_SERVER_BUILD
-	CBaseCounter counter1(0);
-	CBaseCounter counter2(0);
-#endif
 	CVisQuery query;
 	LTObject* pObjects[MAX_FORCEUPDATE_OBJECTS];
 	ForceUpdate forceUpdate;
 	LTObject* pViewed;
 	LTLink* pCur;
 	uint32 i;
+	uint32 nTrailerSize;
 
 	if (sm_SkipClientUpdate(pClient))
 		return;
@@ -2871,8 +2865,9 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 		if (g_NetBandwidth > 0)
 		{
 			float* pBandwidth = &pMgr->m_NetMgr.m_RateE0.m_Value;
+			float fRatio = pBandwidth[0] / pBandwidth[1];
 			float fBandwidth = (float)g_NetBandwidth;
-			float fUsage = pBandwidth[0] / pBandwidth[1] / fBandwidth;
+			float fUsage = fRatio / fBandwidth;
 			if (fUsage > 0.75f)
 			{
 				fUsage += 0.25f;
@@ -2884,21 +2879,24 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 			}
 		}
 
-		fRate *= pClient->m_Unknown128;
-		if (2.0f > fRate)
-			fRate = 2.0f;
+		// The scaled rate is its own local: lithtech.exe gives it a frame
+		// slot of its own (0x14(%esp), 0x00478cc9) and puts fNew in the
+		// first rate's (0x10(%esp), 0x00478d08).
+		float fTarget = fRate * pClient->m_Unknown128;
+		if (2.0f > fTarget)
+			fTarget = 2.0f;
 
 		// Ease the governor toward the new rate.
 		float fCur = pClient->m_RateControl.GetRate();
 		float fNew;
-		if (fRate > fCur)
-			fNew = fCur + (fRate - fCur) * 0.01f;
+		if (fTarget > fCur)
+			fNew = fCur + (fTarget - fCur) * 0.01f;
 		else
-			fNew = (fCur + fRate) * 0.5f;
+			fNew = (fCur + fTarget) * 0.5f;
 
 		if (g_DebugLevel > 0)
 		{
-			if ((float)fabs(fNew - fRate) > 0.1f)
+			if ((float)fabs(fNew - fTarget) > 0.1f)
 				dsi_ServerError("Connection %d: choked update rate %0.0f", pClient->m_ClientID, fNew);
 		}
 
@@ -2917,9 +2915,9 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 	ctx.m_bLocal = (pClient->m_ClientFlags >> 9) & 1;
 
 	sm_WriteUpdateHeader(pMgr, &ctx, pClient);
-#ifdef LT_SERVER_BUILD
-	cnt_StartCounter(&counter1);
-#endif
+	// AVP2: NOLF's first counter (around the whole update) is gone, and the
+	// second is constructed where it starts (server.dll 0x100333fb, after
+	// the id-list swap; AvP2 1.0.9.6 0x10030b7d alike).
 	sm_Unknown26755(pMgr, pClient);
 
 	// Swap the sent-id lists: clear last frame's sent bits, refill the other.
@@ -2931,6 +2929,7 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 	pNewList->m_nIDs = 0;
 
 #ifdef LT_SERVER_BUILD
+	CBaseCounter counter2(0);
 	cnt_StartCounter(&counter2);
 #endif
 
@@ -2995,25 +2994,33 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 	}
 
 	// Flush the client's queued messages into the guaranteed stream.
-	pCur = pClient->m_List3CC.m_Head.m_pNext;
-	while (pCur != &pClient->m_List3CC.m_Head)
+	LTLink* pNext;
+	for (pCur = pClient->m_List3CC.m_Head.m_pNext;
+	     pCur != &pClient->m_List3CC.m_Head;
+	     pCur = pNext)
 	{
-		LTLink* pNext = pCur->m_pNext;
-		CQueuedMsg* pRec = (CQueuedMsg*)pCur->m_pData;
+		CQueuedMsg* pRec;
+		pNext = pCur->m_pNext;
+		pRec = (CQueuedMsg*)pCur->m_pData;
 
 		sm_FinishUpdatePacket(&ctx, ctx.m_Msg1.m_pMsg, 8, 0x23);
 		sm_WriteQueuedMessage(pMgr, pRec, pClient, ctx.m_Msg1.m_pMsg);
 
 		dl_RemoveAt(&pClient->m_List3CC, pCur);
 		pRec->Release();
-
-		pCur = pNext;
 	}
 
+	// AVP2: no 0x10-byte close-off between the removed objects and the id
+	// list (server.dll 0x100335c4 -> 0x100335d0).
 	sm_WriteRemovedObjects(&ctx, ctx.m_Msg1.m_pMsg);
-	sm_FinishUpdatePacket(&ctx, ctx.m_Msg1.m_pMsg, 8, 0x10);
 	sm_WriteIDList(&ctx, pOldList);
-	sm_Unknown27c71(pMgr, pClient, ctx.m_Msg2.m_pMsg);
+
+	// AVP2: the trailer is measured, the packet closed to fit, then written
+	// (0x100335d5..0x100335fd), the size homed at -0x44(%ebp).
+	nTrailerSize = 0;
+	sm_Unknown27c71(pMgr, pClient, LTNULL, &nTrailerSize);
+	sm_FinishUpdatePacket(&ctx, ctx.m_Msg2.m_pMsg, 0xa, nTrailerSize);
+	sm_Unknown27c71(pMgr, pClient, ctx.m_Msg2.m_pMsg, LTNULL);
 
 	ctx.m_Msg1.m_pMsg->m_MsgFlags |= 8;
 	ctx.m_Msg2.m_pMsg->m_MsgFlags |= 0x10;
@@ -6964,12 +6971,26 @@ void CServerWorld::TermObjects()
 // id and the server's current time. The client parameter is accepted and
 // never read (the manager supplies the time and the message is the third
 // argument), which is why the declared signature keeps it.
-void sm_Unknown27c71(CServerMgr* pMgr, Client* pClient, ServerMessage* pMsg)
+//
+// AVP2: and, like the object writer, it measures as well as writes (Primal
+// Hunt server.dll 0x10032f0f, 55 bytes): sm_WriteClientUpdate calls it once
+// with no message and a size, closes the packet off to that size, then
+// calls it again to write (0x100335d5..0x100335fd). servermgr.h's
+// three-argument declaration is NOLF's; this is a new overload.
+void sm_Unknown27c71(CServerMgr* pMgr, Client* pClient, ServerMessage* pMsg,
+                     uint32* pSize)
 {
-	// Both are CPacket::WriteType: lithtech.exe expands both (0x00464f67,
-	// 0x0046501c) with Insert2 left a call; server.dll calls both.
-	((CPacket*)pMsg)->WriteType((uint16)0xffff);
-	((CPacket*)pMsg)->WriteType(pMgr->m_Time);
+	if (pMsg)
+	{
+		// Both are CPacket::WriteType: NOLF's lithtech.exe expands both
+		// (0x00464f67, 0x0046501c) with Insert2 left a call; server.dll
+		// calls both.
+		((CPacket*)pMsg)->WriteType((uint16)0xffff);
+		((CPacket*)pMsg)->WriteType(pMgr->m_Time);
+	}
+
+	if (pSize)
+		*pSize += 6;
 }
 
 
@@ -8021,6 +8042,33 @@ class CServerWorldQ2B;
 extern CServerWorldQ2B* g_pServerWorldQ2B;  // 0x004b17e8 (client only)
 #endif
 
+// The writer calls these sites reach (sm_ClientEnterWorld2, sub_100291c7, sub_100290d7).
+class CMsgWriteQ291
+{
+public:
+	void WriteDWord(uint32 nValue);          // 0x1000ecd6 / 0x004192e0-class
+	void WriteFloat(float fValue);           // 0x10028a35
+	void WriteString(char* pStr);            // 0x10026137
+	int  GetSpaceLeft();                     // 0x1000e845
+};
+
+// AVP2: what servermgr.h leaves as m_Unknown66c[0x408]: a 0x400-byte name
+// sm_ClientEnterWorld2 sends as a string, then two dwords (names ours).
+class CServerMgrWorldInfoQ541
+{
+public:
+	uint8  m_pad_000[0x66c];
+	char   m_Name[0x400];                    // 0x66c
+	uint32 m_Unknowna6c;                     // 0xa6c
+	uint32 m_Unknowna70;                     // 0xa70
+};
+
+// Byte-identical in server.dll (0x100327b4, 449 bytes). NEAR in lithtech.exe
+// (0x004776f0..0x00477a3f, 840 vs 848; the function table splits it at
+// 0x0047798b): the time goes to the out-of-line WriteType<float> (0x00479d40)
+// through a dead copy in a stack slot (`mov %eax,0x2c(%esp)` at 0x004777b2),
+// which a plain call does not make; CPacket::WriteType expands it (998), and
+// a by-value inline wrapper costs the register shape below it (847, 7 blocks).
 LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, Client* pClient)
 {
 	CMessageRef msg;
@@ -8071,6 +8119,16 @@ LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, Client* pClient)
 			}
 		}
 
+		// AVP2: the shell vets the client first (IServerShell::VerifyClient,
+		// slot 4 of m_ClassMgr.m_pServerShell, with the client data at +0x110
+		// and a code starting at zero homed in pMgr's slot; Primal Hunt
+		// server.dll 0x10032897..0x100328a6), and the code goes out after
+		// the world file, followed by the manager's name at +0x66c and the
+		// two dwords after it (0x100328d9..0x100328f8).
+		uint32 nVerifyCode = 0;
+		pMgr->m_ClassMgr.m_pServerShell->VerifyClient((HCLIENT)pClient,
+			pClient->m_pClientData, nVerifyCode);
+
 		{
 			ServerMessage* pMsg = msg.m_pMsg;
 
@@ -8078,12 +8136,19 @@ LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, Client* pClient)
 			pMsg->m_Unknown34 = 1;
 		}
 
-		((CPacket*)msg.m_pMsg)->WriteType(pMgr->m_Time);
+		// NOLF's lithtech.exe expanded both of these (0x004644ed,
+		// 0x004645a6); Primal Hunt's calls both (0x004777b7, 0x004777c6)
+		// and expands only the last two dwords.
+		((CMsgWriteQ291*)msg.m_pMsg)->WriteFloat(pMgr->m_Time);
+		msg.m_pMsg->WriteWord(((CFileIdentifier*)pMgr->m_hWorldFile)->m_FileID);
 
-		// WriteType<uint16>: lithtech.exe expands both writes here, the
-		// float one at 0x004644ed and this one at 0x004645a6.
+		((CMsgWriteQ291*)msg.m_pMsg)->WriteDWord(nVerifyCode);
+		((CMsgStringView*)msg.m_pMsg)->WriteString(
+			((CServerMgrWorldInfoQ541*)pMgr)->m_Name);
 		((CPacket*)msg.m_pMsg)->WriteType(
-			((CFileIdentifier*)pMgr->m_hWorldFile)->m_FileID);
+			((CServerMgrWorldInfoQ541*)pMgr)->m_Unknowna6c);
+		((CPacket*)msg.m_pMsg)->WriteType(
+			((CServerMgrWorldInfoQ541*)pMgr)->m_Unknowna70);
 
 		sm_SendToClient(pMgr, pClient, 6, msg.m_pMsg, 0, 0x80);
 
@@ -10319,7 +10384,7 @@ void CServerThread::ProcessMessage(LThreadMessage* pMsg)
 // %eax`, so the answer is 1. The caller ignores it, which is why the
 // declaration could sit here as void for so long without anyone noticing.
 int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
-                  CObjInfo* pInfo, class ServerMessage* pMsg);
+                  CObjInfo* pInfo, class ServerMessage* pMsg, uint32* pSize);
 // 0x100250a4 — how many animation trackers the object has: the list at
 // LTObject+0x1f8 walked through +0x04, counted. A thiscall with no
 // arguments, which ltobject_internal.h does not declare (name ours).
@@ -10338,49 +10403,43 @@ public:
 // the object's animation state, which reports by name when an object carries
 // more than 0x100 trackers. Both cdecl; names by address.
 void sub_10013585(class ServerMessage* pMsg, LTRotation* pRot);
-void sub_100290d7(LTObject* pObject, class ServerMessage* pMsg);
+void sub_100290d7(LTObject* pObject, class ServerMessage* pMsg, uint32* pSize);
 
-// 0x100290d7 / 0x00467250 — the object's animation state into a client
-// update: the tracker count, then per tracker the current animation index
-// with two AT_ flag bits folded into the top of the word, the elapsed time as
-// a 0..255 byte, and (for every tracker but the first) the weight set.
+// 0x100290d7 / 0x00467250 (NOLF) — the object's animation state into a
+// client update. NOLF's shape (count, then per tracker the animation word,
+// the elapsed byte and, past the first tracker, the weight set) is gone:
 //
-// Found by the productive lead rather than by an address scan: a prototype
-// declared above and never defined. The 0x00467250 row spent this project's
-// whole life on the unexamined list because the /O2 image gives it 740 bytes
-// against the /O1 image's 240, and 480 of that 500-byte difference is
-// CPacket::WriteType expanded inline at three of its five call sites.
+// AVP2: the walk both writes and MEASURES (Primal Hunt server.dll
+// 0x10034528, 326 bytes; AvP2 1.0.9.6 0x10031b19): either half is optional,
+// as in sm_WriteObjectFiles -- with no message nothing is written, with a
+// size every field adds its width. sub_10027ad0 calls it with no message
+// and a size to estimate (0x10032dd3), and again with the message and no
+// size to write (0x10032e75); sub_100291c7 passes both of its own through
+// (0x1003491a). New in AvP2: the object's dimensions go first, as a
+// compressed vector (slot 0x5c on the message's writer, LTObject+0x1a0, nine
+// bytes), and every tracker now sends seven fields, fourteen bytes:
 //
-// Read off the bytes:
+//   WriteWord   the current animation with AT_ bits 1 and 0 at 0x8000/0x4000
+//   WriteByte   the elapsed time as 0..255 of the animation's length
+//   WriteByte   m_bAllowInterpolation (+0x24)
+//   WriteDWord  m_TimeScaleNum (+0x20), then m_TimeScaleDenom (+0x1c)
+//   WriteByte   the previous and current frame's weight sets (+0x34, +0x40)
 //
-//   * the count is SIXTEEN bits (`cmp $0x100,%ax` at 0x00467261) and so is
-//     the loop index (`cmpw $0x0,0x10(%esp)` at 0x0046746f); both get dword
-//     homes, the narrow read is what names the type.
-//   * the >256 arm is a real early return with its own epilogue -- /O2
-//     preserves it, and it carries no `pop %ebx` -- not a jump to the
-//     common exit.
-//   * 0x00467267 tests g_DebugLevel straight with no dsi_OnReturnError above
-//     it, so the complaint is a bare guard, not a de_error.h macro.
-//   * the two guards at 0x00467300 and 0x0046730b land on ONE continuation,
-//     so it is a short-circuit `&&`; GetLength is written out twice
-//     (0x00467306, 0x00467311) because VC6 does not CSE across the call.
-//
-// THE COIN-FLIP, stated plainly: which of the five packet writes is a call to
-// ServerMessage::WriteByte and which is CPacket::WriteType expanded. The
-// shipped /O2 image calls at two sites and expands at three, and those three
-// expansions ARE most of the function, so this one decision dominates its
-// byte count. Written the way matched la_WriteChange spells the same mixture,
-// with the alternative spelling in a comment at every site. At /O1 the two
-// spellings are identical, so server.dll cannot arbitrate; only a lithtech
-// build can. Confidence: /O1 high, /O2 low-to-medium.
-void sub_100290d7(LTObject* pObject, ServerMessage* pMsg)
+// so NOLF's "every tracker but the first sends its weight set" index is gone.
+// The trackers are walked through the link's own next pointer (+0x04).
+void sub_100290d7(LTObject* pObject, ServerMessage* pMsg, uint32* pSize)
 {
 	LTAnimTracker* pTracker;
 	ModelAnim*     pAnim;
 	uint16         nCount;
 	uint16         nValue;
-	uint16         nIndex;
 	uint32         nPercent;
+
+	if (pMsg)
+		((IMessageWrite*)&pMsg->m_Write)->WriteCompVector(&pObject->m_Dims);
+
+	if (pSize)
+		*pSize += 9;
 
 	nCount = (uint16)((CObjTrackerCountView*)pObject)->GetTrackerCount();
 
@@ -10393,64 +10452,60 @@ void sub_100290d7(LTObject* pObject, ServerMessage* pMsg)
 				((CObjTrackerCountView*)pObject)->GetFilename());
 		}
 
-		// 0x0046728b -- OUT OF LINE in lithtech.exe.
-		// expanded alternative: ((CPacket*)pMsg)->WriteType((uint8)0);
-		pMsg->WriteByte(0);
+		if (pMsg)
+			pMsg->WriteByte(0);
+
+		if (pSize)
+			(*pSize)++;
+
 		return;
 	}
 
-	// 0x0046729e -- OUT OF LINE in lithtech.exe.
-	// expanded alternative: ((CPacket*)pMsg)->WriteType((uint8)nCount);
-	pMsg->WriteByte((uint8)nCount);
+	if (pMsg)
+		pMsg->WriteByte((uint8)nCount);
 
-	nIndex = 0;
+	if (pSize)
+		(*pSize)++;
 
-	pTracker = ((CObjTrackerCountView*)pObject)->m_pTrackerList;
-
-	while (pTracker)
+	for (pTracker = ((CObjTrackerCountView*)pObject)->m_pTrackerList;
+	     pTracker;
+	     pTracker = pTracker->GetNext())
 	{
-		nValue = pTracker->m_TimeRef.m_Cur.m_iAnim;
-
-		if (pTracker->m_Flags & 2)
-			nValue |= 0x8000;               // 0x004672cd `or $0x80,%dh`
-
-		if (pTracker->m_Flags & 1)
-			nValue |= 0x4000;               // 0x004672dd `or $0x40,%ch`
-
-		nPercent = 0;
-
-		pAnim = pTracker->m_TimeRef.m_pModel->m_AnimArray.m_pArray
-		            [pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
-
-		if (pAnim && pAnim->GetLength())
+		if (pMsg)
 		{
-			nPercent = pTracker->m_TimeRef.m_Cur.m_Time * 255
-			           / pAnim->GetLength();
+			nValue = pTracker->m_TimeRef.m_Cur.m_iAnim;
+
+			if (pTracker->m_Flags & 2)
+				nValue |= 0x8000;
+
+			if (pTracker->m_Flags & 1)
+				nValue |= 0x4000;
+
+			nPercent = 0;
+
+			pAnim = pTracker->m_TimeRef.m_pModel->m_AnimArray.m_pArray
+			            [pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
+
+			if (pAnim && pAnim->GetLength())
+			{
+				nPercent = pTracker->m_TimeRef.m_Cur.m_Time * 255
+				           / pAnim->GetLength();
+			}
+
+			// The first two are calls in both images; the last five are
+			// CPacket::WriteType, expanded at /O2 (lithtech.exe 0x0047ab92..
+			// 0x0047aeb8, five overrun reports) and calls at /O1.
+			pMsg->WriteWord(nValue);
+			pMsg->WriteByte((uint8)nPercent);
+			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_bAllowInterpolation);
+			((CPacket*)pMsg)->WriteType((uint32)pTracker->m_TimeScaleNum);
+			((CPacket*)pMsg)->WriteType((uint32)pTracker->m_TimeScaleDenom);
+			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_TimeRef.m_Prev.m_iWeightSet);
+			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_TimeRef.m_Cur.m_iWeightSet);
 		}
 
-		// 0x0046732a -- EXPANDED, sizeof(T) == 2 (`mov $0x2,%ebx`).
-		// out-of-line alternative: pMsg->WriteWord(nValue);
-		((CPacket*)pMsg)->WriteType(nValue);
-
-		// 0x004673d1 -- EXPANDED, sizeof(T) == 1 (`inc`, byte store).
-		// out-of-line alternative: pMsg->WriteByte((uint8)nPercent);
-		((CPacket*)pMsg)->WriteType((uint8)nPercent);
-
-		if (nIndex)
-		{
-			// 0x0046747b -- EXPANDED, sizeof(T) == 1. +0x34 is
-			// AnimTimeRef::m_iWeightSet, a byte load in both images.
-			// out-of-line alternative:
-			//   pMsg->WriteByte((uint8)pTracker->m_TimeRef.m_iWeightSet);
-			// AVP2: provisional -- the current key frame's weight set, as retail
-			// GetWeightSet returns it (Primal Hunt server.dll 0x10024f97); whether
-			// this uses the previous key frame's too is for the retail code to show
-			((CPacket*)pMsg)->WriteType(
-				(uint8)pTracker->m_TimeRef.m_Cur.m_iWeightSet);
-		}
-
-		pTracker = pTracker->GetNext();
-		nIndex++;
+		if (pSize)
+			*pSize += 14;
 	}
 }
 
@@ -10515,12 +10570,26 @@ void sub_100290d7(LTObject* pObject, ServerMessage* pMsg)
 // at the original, which also keeps the lithtech.exe twin byte-identical.
 // Also negative (278, 13-15 blocks): nested `if`s for the pObject test,
 // `!= 0` spellings, nSize as uint32, `nSendFlags | m_ObjectID` order.
+// AVP2: the estimate is 25 plus what the animation walk measures itself,
+// through its size argument with no message (server.dll 0x10032db7 `movl
+// $0x19,-0x4(%ebp)`, 0x10032dd3; AvP2 1.0.9.6 0x1003055f, 0x10030577), where
+// NOLF had 14 + 4 per tracker + 1; the write at the end passes no size.
+//
+// Byte-identical in lithtech.exe (0x004781d0, 299 bytes). NEAR in server.dll
+// (0x10032d69, 286 vs 280): the old ebx tie-break above, nAnimFlag winning
+// ebx where shipped gives it nSendFlags and homes nAnimFlag in pObject's
+// slot. With nSize declared first and `= 25` at its declaration server.dll
+// gets ebx and the slots right (279 vs 280: nAnimFlag computed in %ecx and
+// stored, the 25 stored at entry) but lithtech.exe loses its match (a frame
+// slot for nSize, 301 vs 299), so the lithtech-identical order is kept.
+// Also tried: `nAnimFlag = nSendFlags; nSize = 25; nAnimFlag &= 0x1000;`
+// (286), nAnimFlag declared before nSendFlags (286).
 void sub_10027ad0(CUpdateContext* pCtx, LTObject* pObject, CObjInfo* pInfo)
 {
 	uint16 nNetFlags = pObject->m_pSData->m_NetFlags;
 	uint32 nSendFlags;
 	uint16 nAnimFlag;
-	uint16 nSize;
+	uint32 nSize;                            // AVP2: its address is passed
 
 	if (!(nNetFlags & (NETFLAG_ANIMUNGUARANTEED | NETFLAG_POSUNGUARANTEED |
 	                   NETFLAG_ROTUNGUARANTEED)))
@@ -10542,15 +10611,18 @@ void sub_10027ad0(CUpdateContext* pCtx, LTObject* pObject, CObjInfo* pInfo)
 	if (nNetFlags & NETFLAG_ANIMUNGUARANTEED)
 		nSendFlags |= 0x1000;
 
-	nSize = 14;
+	nSize = 25;
 
 	nAnimFlag = (uint16)(nSendFlags & 0x1000);
 
+#ifdef PRIMAL_HUNT
+	// PH: and the object is tested first (`test %edi,%edi` at 0x10032dc8,
+	// which AvP2 1.0.9.6 does not have).
 	if (nAnimFlag && pObject)
-	{
-		nSize = (uint16)(((CObjTrackerCountView*)pObject)->GetTrackerCount() * 4
-			+ 15);
-	}
+#else
+	if (nAnimFlag)
+#endif
+		sub_100290d7(pObject, LTNULL, &nSize);
 
 	sm_FinishUpdatePacket(pCtx, pCtx->m_Msg2.m_pMsg, 10, nSize);
 
@@ -10576,14 +10648,13 @@ void sub_10027ad0(CUpdateContext* pCtx, LTObject* pObject, CObjInfo* pInfo)
 	}
 
 	if (nAnimFlag)
-		sub_100290d7(pObject, pCtx->m_Msg2.m_pMsg);
+		sub_100290d7(pObject, pCtx->m_Msg2.m_pMsg, LTNULL);
 }
 
-// 0x100279d9 — write one object into this client's update, first making sure
-// the packet has room for it. The size estimate is a hundred bytes plus the
-// object's stowed SFX message if it has one, plus twenty-five per
-// attachment; it is a uint16, which is why the SFX case's addition is
-// sixteen-bit where the per-attachment one is not.
+// 0x100279d9 (NOLF) / Primal Hunt 0x10032c86 — write one object into this
+// client's update, first making sure the packet has room for it. NOLF
+// estimated the size (a hundred bytes, the SFX message, twenty-five per
+// attachment); AvP2 measures it exactly with the writer itself (below).
 //
 // The object's id also goes on the list of ids the client is being told
 // about this frame, which is grown two hundred entries at a time — allocate,
@@ -10591,8 +10662,7 @@ void sub_10027ad0(CUpdateContext* pCtx, LTObject* pObject, CObjInfo* pInfo)
 void sm_WriteObjectUpdate(CUpdateContext* pCtx, LTObject* pObject,
                           CObjInfo* pInfo)
 {
-	uint16 nSize;
-	uint16 nFlags;
+	uint32 nSize;
 
 	if (pInfo->m_ChangeFlags & 0x1000)
 		return;
@@ -10614,36 +10684,24 @@ void sm_WriteObjectUpdate(CUpdateContext* pCtx, LTObject* pObject,
 	g_pFillIDList->m_pIDs[g_pFillIDList->m_nIDs] = pObject->m_ObjectID;
 	g_pFillIDList->m_nIDs++;
 
-	nSize = 100;
+	// AVP2: no estimate any more -- the writer measures itself first, with
+	// no message and the size (server.dll 0x10032d14..0x10032d25, the size
+	// homed in pInfo's slot; AvP2 1.0.9.6 alike), then writes; and bit
+	// 0x4000 of the flags (the velocity was sent) survives the reset
+	// (`and $0x4000; or $0x10,%ah`, 0x10032d5a).
+	nSize = 0;
 
-	nFlags = pInfo->m_ChangeFlags;
-
-	if ((nFlags & 1) && pObject->m_pSData->m_pSFXMessage)
-	{
-		nSize = pObject->m_pSData->m_pSFXMessage->m_Unknown34
-			+ 100;
-	}
-
-	if (nFlags & 0x100)
-	{
-		Attachment* pAttach = pObject->m_pAttachments;
-
-		while (pAttach)
-		{
-			pAttach = pAttach->m_pNext;
-
-			nSize += 25;
-		}
-	}
+	sub_100291c7(pCtx->m_pMgr, pCtx->m_pClient, pObject, pInfo,
+		LTNULL, &nSize);
 
 	sm_FinishUpdatePacket(pCtx, pCtx->m_Msg1.m_pMsg, 8, nSize);
 
 	sub_100291c7(pCtx->m_pMgr, pCtx->m_pClient, pObject, pInfo,
-		pCtx->m_Msg1.m_pMsg);
+		pCtx->m_Msg1.m_pMsg, LTNULL);
 
 	sub_10027ad0(pCtx, pObject, pInfo);
 
-	pInfo->m_ChangeFlags = 0x1000;
+	pInfo->m_ChangeFlags = (uint16)((pInfo->m_ChangeFlags & 0x4000) | 0x1000);
 }
 
 #ifndef LT_SERVER_BUILD
@@ -12666,6 +12724,9 @@ void sm_WriteQueuedMessageBody(SoundRecord* pRec, Client* pClient,
 // 0x00435960, 0x00435ad0, 0x00435d00, 0x00435d60 (the call sequence over
 // 0x00467540..0x00467eec).
 void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg);      // 0x10029087
+#ifdef PRIMAL_HUNT
+void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize);  // PH: 0x1003448c (servercommon.cpp)
+#endif
 void lmsg_CompressPos(uint8* pOut, LTVector* pVec, CPosRef* pRef);  // 0x10012ec5
 void lmsg_WriteCompPosWords(IMessageWrite* pMsg, uint8* pData);     // 0x10012f49
 void sub_1001307f(LTRotation* pRot, uint8* pOut);                   // 0x1001307f
@@ -12678,14 +12739,6 @@ void lmsg_WriteCompRotation(LMessageImpl* pMsg, LTRotation* pRot);  // 0x100132d
 // CMsgFloatWriteView (WriteFloat 0x10028a35) and CMsgLenView (GetSpaceLeft
 // 0x1000e845) -- and they are gathered on one view here only because this
 // file cannot reach three different .cpp-local classes.
-class CMsgWriteQ291
-{
-public:
-	void WriteDWord(uint32 nValue);          // 0x1000ecd6 / 0x004192e0-class
-	void WriteFloat(float fValue);           // 0x10028a35
-	void WriteString(char* pStr);            // 0x10026137
-	int  GetSpaceLeft();                     // 0x1000e845
-};
 
 // A sprite object's own field, the one CF_MODELINFO sends for OT_SPRITE.
 // objtypes.h has no sprite class yet; this is the single dword both images
@@ -12805,17 +12858,55 @@ inline void sm_WritePacketDWordQ291(CPacket* p, uint32 val)
 // keeps the loaded value on the x87 stack across the compare (`fcoms`, then
 // `fstp %st(0)` on the `< 0` arm, 0x10029438..0x10029443), where reading the
 // member twice gives `fcomps` + a `lea` + a reload.
+// AVP2: the whole writer takes a running SIZE as well as the message
+// (Primal Hunt server.dll 0x1003466e, 1,673 bytes; AvP2 1.0.9.6 0x10031c6b,
+// 1,665, the same source at another revision): every field is written only
+// with a message and counted only with a size, `if (pMsg) ...; if (pSize)
+// *pSize += width;` at every site, which is how sm_WriteObjectUpdate measures
+// an object before it writes it. Beyond that, read off the PH bytes:
+//
+//   * flag 0x4000 (the velocity was last sent unzeroed) forces CF_POSITION
+//     (0x1003469f `testb $0x40,-0x3(%ebp); orl $2`), and the wide header
+//     takes 0x2700, not 0x700 (0x10034717 `test $0x27,%ah`).
+//   * the narrow header, with a message, refuses a flag word whose low byte
+//     is empty (0x10034747 `test %al,%al`, landing on the same `return 0` as
+//     the empty-word test).
+//   * the new-object byte is kept as a uint16 in pClient's dead slot
+//     (0xc(%ebp)) and tested twice: once for the header, once more after it
+//     for the blocking priority (+0xbd).
+//   * the flags go out as a dword masked to 0x4ffff, the second flag word as
+//     a word, then the user flags (0x1003494f..0x1003497c).
+//   * the position block sends a COPY of the velocity (`movsl` x3 into
+//     -0x20(%ebp)), zeroed when CF_POSITION itself is not set, and records
+//     in the info's flags whether it went out live (0x4000).
+//   * attachments lose the space check, and a full-resolution object sends
+//     each offset as three floats and a rotation (28 bytes) rather than a
+//     compressed vector and rotation (15). The count byte in front is bit
+//     10 of LTObject::m_ChangeFlags.
+//
+// lithtech.exe's copy is 0x0047aee0..0x0047bec8 (4,073 bytes; the function
+// table splits it at the second `ret`, 0x0047afe8). Which writes it expands
+// is read off it: every write up to the scale's z is a call; the scale's z,
+// the position's three floats, the attachment count byte and each
+// attachment's word, dword and three floats are CPacket::WriteType expanded
+// with Insert2 CALLED (0x004162f0); the 0xffff and the model dword expand
+// Insert2 too. NOT MATCHED in lithtech.exe: written with the attachment
+// floats as CPacket::WriteType, ours also expands Insert2 at their y and z
+// (4,528 vs 4,073) -- the /O2 inline budget again (see
+// sm_WritePacketDWordQ291); wrapped in sm_FloatArgQ291 only z is over
+// (4,373) but they load through the x87 where shipped copies the dword
+// (0x0047b97f). The attachment floats are therefore spelled as server.dll
+// wants them (WriteFloat through sm_FloatArgQ291: CPacket::WriteType swaps
+// the `fstps`/`mov %edi,%ecx` pair at the first, 0x10034c41).
 int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
-                     CObjInfo* pInfo, ServerMessage* pMsg)
+                     CObjInfo* pInfo, ServerMessage* pMsg, uint32* pSize)
 {
-	uint16 nFlags;
-	uint8  nInfo;
-	// TWO buffers, not one: server.dll gives the position seven bytes at
-	// -0x10(%ebp) and the rotation six at -0x8(%ebp), and both images size
-	// the frame at 0x10 for exactly that pair.  The spellings are
-	// servermsg.cpp's own (lmsg_WriteCompPos / lmsg_WriteCompRotation).
-	uint8  posData[7];
-	uint8  rotData[6];
+	uint16   nFlags;
+	uint16   nNewObject;
+	uint8    nInfo;
+	LTVector vVelocity;
+	uint8    posData[7];
+	uint8    rotData[6];
 
 	nFlags = pInfo->m_ChangeFlags;
 
@@ -12824,6 +12915,9 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 	{
 		nFlags &= 0xfbfb;                    // ~(CF_ROTATION | 0x400)
 	}
+
+	if (nFlags & 0x4000)
+		nFlags |= CF_POSITION;
 
 	if (pObject->m_pSData->m_NetFlags & NETFLAG_POSUNGUARANTEED)
 		nFlags &= 0xfffd;                    // ~CF_POSITION
@@ -12851,17 +12945,38 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 	if (nFlags == 0)
 		return 0;
 
-	if (nFlags & 0x700)
+	if (nFlags & 0x2700)
 	{
-		pMsg->WriteByte((uint8)(nFlags | 0x80));
-		pMsg->WriteByte((uint8)(nFlags >> 8));
+		if (pMsg)
+		{
+			pMsg->WriteByte((uint8)(nFlags | 0x80));
+			pMsg->WriteByte((uint8)(nFlags >> 8));
+		}
+
+		if (pSize)
+			*pSize += 2;
 	}
 	else
 	{
-		pMsg->WriteByte((uint8)nFlags);
+		if (pMsg)
+		{
+			if (!(uint8)nFlags)
+				return 0;
+
+			pMsg->WriteByte((uint8)nFlags);
+		}
+
+		if (pSize)
+			(*pSize)++;
 	}
 
-	pMsg->WriteWord(pObject->m_ObjectID);
+	if (pMsg)
+		pMsg->WriteWord(pObject->m_ObjectID);
+
+	if (pSize)
+		*pSize += 2;
+
+	nNewObject = (uint16)(nFlags & CF_NEWOBJECT);
 
 	if (nFlags & CF_NEWOBJECT)
 	{
@@ -12871,127 +12986,225 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 		{
 			nInfo |= 0x40;
 
-			if (pObject->m_pSData->m_pSFXMessage->m_Unknown34
-				>= 0x100)
-			{
+			if (pObject->m_pSData->m_pSFXMessage->m_Unknown34 >= 0x100)
 				nInfo |= 0x80;
-			}
 		}
 
 		if (pObject->m_pSData->m_bAutoLoad & 1)
 			nInfo |= 0x20;
 
-		pMsg->WriteByte(nInfo);
+		if (pMsg)
+			pMsg->WriteByte(nInfo);
+
+		if (pSize)
+			(*pSize)++;
 
 		if (pObject->m_pSData->m_pSFXMessage)
 		{
-			if (nInfo & 0x80)
+			if (pMsg)
 			{
-				pMsg->WriteWord(pObject->m_pSData->m_pSFXMessage->m_Unknown34);
-			}
-			else
-			{
-				pMsg->WriteByte((uint8)pObject->m_pSData->m_pSFXMessage->m_Unknown34);
+				if (nInfo & 0x80)
+					pMsg->WriteWord(pObject->m_pSData->m_pSFXMessage->m_Unknown34);
+				else
+					pMsg->WriteByte((uint8)pObject->m_pSData->m_pSFXMessage->m_Unknown34);
+
+				// THROUGH CMsgDataView, whose length parameter is uint16
+				// (`mov 0x34(%eax),%cx`, 0x10034813).
+				((CMsgDataView*)pMsg)->WriteData(
+					pObject->m_pSData->m_pSFXMessage->m_pData,
+					pObject->m_pSData->m_pSFXMessage->m_Unknown34);
 			}
 
-			// THROUGH CMsgDataView, whose length parameter is uint16.
-			// servermsg.h's WriteData takes uint32, which makes our build
-			// zero-extend (`movzwl 0x34(%eax),%ecx`); the shipped call at
-			// 0x10029320 is `mov cx,WORD PTR [eax+0x34]` and pushes the dword
-			// with a stale top half, which is what a uint16 argument does.
-			// That view already exists in this file for the same reason.
-			((CMsgDataView*)pMsg)->WriteData(
-				pObject->m_pSData->m_pSFXMessage->m_pData,
-				pObject->m_pSData->m_pSFXMessage->m_Unknown34);
+			if (pSize)
+			{
+				*pSize += (nInfo & 0x80) ? 2 : 1;
+				*pSize += pObject->m_pSData->m_pSFXMessage->m_Unknown34;
+			}
 		}
 
 		if (pObject->m_ObjectType == OT_WORLDMODEL)
 		{
-			((CMsgWriteQ291*)pMsg)->WriteString(pObject->m_pWorldBsp->m_Name);
+			if (pMsg)
+				((CMsgWriteQ291*)pMsg)->WriteString(pObject->m_pWorldBsp->m_Name);
+
+			if (pSize)
+				*pSize += 65;
 		}
 		else if (pObject->m_ObjectType == OT_CONTAINER)
 		{
-			((CMsgWriteQ291*)pMsg)->WriteString(pObject->m_pWorldBsp->m_Name);
+			if (pMsg)
+			{
+				((CMsgWriteQ291*)pMsg)->WriteString(pObject->m_pWorldBsp->m_Name);
 
-			pMsg->WriteWord(((CObjContainerQ291*)pObject)->m_ContainerCode);
+				pMsg->WriteWord(((CObjContainerQ291*)pObject)->m_ContainerCode);
+			}
+
+			if (pSize)
+				*pSize += 67;
 		}
 		else if (pObject->m_ObjectType == OT_MODEL)
 		{
-			sm_WriteObjectFiles(pObject, pMsg);
+#ifdef PRIMAL_HUNT
+			sm_WriteObjectFiles(pObject, pMsg, pSize);
+#else
+			// AVP2: 1.0.9.6 passes the size too (0x10031eb0); servercommon.cpp
+			// has the three-argument writer under PRIMAL_HUNT only, so this
+			// build measures by hand: three identifiers.
+			if (pMsg)
+				sm_WriteObjectFiles(pObject, pMsg);
+
+			if (pSize)
+				*pSize += 6;
+#endif
 		}
 		else if (pObject->m_ObjectType == OT_SPRITE)
 		{
-			pMsg->WriteWord(((CFileIDRecQ291*)
-				pObject->m_pSData->m_pModelFile)->m_nID);
+			if (pMsg)
+				pMsg->WriteWord(((CFileIDRecQ291*)
+					pObject->m_pSData->m_pModelFile)->m_nID);
+
+			if (pSize)
+				*pSize += 2;
 		}
 	}
 
-	if (nFlags & CF_MODELINFO)
+	if (nNewObject)
+	{
+		if (pMsg)
+			pMsg->WriteByte(pObject->m_BlockingPriority);
+
+		if (pSize)
+			(*pSize)++;
+	}
+
+	if (nFlags & (CF_MODELINFO | 0x2000))
 	{
 		if (pObject->m_ObjectType == OT_MODEL)
 		{
-			sub_100290d7(pObject, pMsg);
+			sub_100290d7(pObject, pMsg, pSize);
 		}
 		else if (pObject->m_ObjectType == OT_SPRITE)
 		{
-			((CMsgWriteQ291*)pMsg)->WriteDWord(
-				((CObjSpriteQ291*)pObject)->m_Unknown1bc);
+			if (pMsg)
+				((CMsgWriteQ291*)pMsg)->WriteDWord(
+					((CObjSpriteQ291*)pObject)->m_Unknown1bc);
+
+			if (pSize)
+				*pSize += 4;
 		}
 	}
 
 	if (nFlags & CF_FLAGS)
 	{
-		pMsg->WriteWord((uint16)pObject->m_Flags);
-		pMsg->WriteByte((uint8)pObject->m_Flags2);
-		((CMsgWriteQ291*)pMsg)->WriteDWord(pObject->m_UserFlags);
+		if (pMsg)
+		{
+			((CMsgWriteQ291*)pMsg)->WriteDWord(pObject->m_Flags & 0x4ffff);
+			pMsg->WriteWord((uint16)pObject->m_Flags2);
+			((CMsgWriteQ291*)pMsg)->WriteDWord(pObject->m_UserFlags);
+		}
+
+		if (pSize)
+			*pSize += 10;
 	}
 
 	if (nFlags & CF_COLORINFO)
 	{
-		pMsg->WriteByte(pObject->m_ColorR);
-		pMsg->WriteByte(pObject->m_ColorG);
-		pMsg->WriteByte(pObject->m_ColorB);
-		pMsg->WriteByte(pObject->m_ColorA);
+		if (pMsg)
+		{
+			pMsg->WriteByte(pObject->m_ColorR);
+			pMsg->WriteByte(pObject->m_ColorG);
+			pMsg->WriteByte(pObject->m_ColorB);
+			pMsg->WriteByte(pObject->m_ColorA);
+		}
+
+		if (pSize)
+			*pSize += 4;
 
 		if (pObject->m_ObjectType == OT_LIGHT)
 		{
-			float fRadius = pObject->m_LightRadius;
-			if (fRadius < 0.0f)
-				pMsg->WriteWord(0);
-			else
-				pMsg->WriteWord((uint16)fRadius);
+			if (pMsg)
+			{
+				float fRadius = pObject->m_LightRadius;
+				if (fRadius < 0.0f)
+					pMsg->WriteWord(0);
+				else
+					pMsg->WriteWord((uint16)fRadius);
+			}
+
+			if (pSize)
+				*pSize += 2;
 		}
 	}
 
 	if (nFlags & CF_SCALE)
 	{
-		((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Scale.x));
-		((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Scale.y));
+		if (pMsg)
+		{
+			((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Scale.x));
+			((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Scale.y));
+		}
+
+		if (pSize)
+			*pSize += 8;
 
 		if (pObject->m_ObjectType != OT_SPRITE)
-			((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Scale.z));
+		{
+			if (pMsg)
+				((CPacket*)pMsg)->WriteType(pObject->m_Scale.z);
+
+			if (pSize)
+				*pSize += 4;
+		}
 	}
 
 	if (nFlags & (CF_POSITION | 0x200))
 	{
+		vVelocity = pObject->m_Velocity;
+
+		if (pMsg)
+		{
+			if (!(pInfo->m_ChangeFlags & CF_POSITION))
+			{
+				pInfo->m_ChangeFlags &= 0xbfff;
+				vVelocity.x = 0.0f;
+				vVelocity.y = 0.0f;
+				vVelocity.z = 0.0f;
+			}
+			else
+			{
+				pInfo->m_ChangeFlags |= 0x4000;
+			}
+		}
+
 		if (pObject->m_Flags & FLAG_FULLPOSITIONRES)
 		{
-			((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Pos.x));
-			((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Pos.y));
-			((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pObject->m_Pos.z));
+			if (pMsg)
+			{
+				((CPacket*)pMsg)->WriteType(pObject->m_Pos.x);
+				((CPacket*)pMsg)->WriteType(pObject->m_Pos.y);
+				((CPacket*)pMsg)->WriteType(pObject->m_Pos.z);
 
-			((IMessageWrite*)&pMsg->m_Write)->WriteVector(&pObject->m_Velocity);
+				((IMessageWrite*)&pMsg->m_Write)->WriteVector(&vVelocity);
+			}
+
+			if (pSize)
+				*pSize += 24;
 		}
 		else
 		{
-			lmsg_CompressPos(posData, &pObject->m_Pos,
-				(CPosRef*)&pMgr->m_World);
+			if (pMsg)
+			{
+				lmsg_CompressPos(posData, &pObject->m_Pos,
+					(CPosRef*)&pMgr->m_World);
 
-			lmsg_WriteCompPosWords((IMessageWrite*)&pMsg->m_Write,
-				posData);
+				lmsg_WriteCompPosWords((IMessageWrite*)&pMsg->m_Write,
+					posData);
 
-			((IMessageWrite*)&pMsg->m_Write)->WriteCompVector(
-				&pObject->m_Velocity);
+				((IMessageWrite*)&pMsg->m_Write)->WriteCompVector(&vVelocity);
+			}
+
+			if (pSize)
+				*pSize += 16;
 		}
 	}
 
@@ -12999,52 +13212,101 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 	{
 		if (pObject->m_Flags & FLAG_FULLPOSITIONRES)
 		{
-			((IMessageWrite*)&pMsg->m_Write)->WriteRotation(
-				&pObject->m_Rotation);
+			if (pMsg)
+				((IMessageWrite*)&pMsg->m_Write)->WriteRotation(
+					&pObject->m_Rotation);
+
+			if (pSize)
+				*pSize += 16;
 		}
 		else
 		{
-			sub_1001307f(&pObject->m_Rotation, rotData);
+			if (pMsg)
+			{
+				sub_1001307f(&pObject->m_Rotation, rotData);
 
-			lmsg_WriteCompRotationBytes((IMessageWrite*)&pMsg->m_Write,
-				rotData);
+				lmsg_WriteCompRotationBytes((IMessageWrite*)&pMsg->m_Write,
+					rotData);
+			}
+
+			if (pSize)
+				*pSize += 6;
 		}
 	}
 
 	if (nFlags & CF_ATTACHMENTS)
 	{
-		Attachment* pAttach = pObject->m_pAttachments;
+		Attachment* pAttach;
 
-		while (pAttach)
+		if (pMsg)
+			((CPacket*)pMsg)->WriteType((uint8)((pObject->m_ChangeFlags >> 10) & 1));
+
+		if (pSize)
+			(*pSize)++;
+
+		for (pAttach = pObject->m_pAttachments; pAttach; pAttach = pAttach->m_pNext)
 		{
-			if (((CMsgLenView*)pMsg)->GetSpaceLeft() >= 30)
+			if (pMsg)
 			{
-				((CPacket*)pMsg)->WriteType((uint16)(pAttach->m_nChildID));
-
-				((CPacket*)pMsg)->WriteType((uint32)(pAttach->m_iNode));
-
-				((CPacket*)pMsg)->WriteType(pAttach->m_Offset.m_Pos.x);
-				((CPacket*)pMsg)->WriteType(pAttach->m_Offset.m_Pos.y);
-				((CPacket*)pMsg)->WriteType(pAttach->m_Offset.m_Pos.z);
-
-				lmsg_WriteCompRotation(&pMsg->m_Write,
-					&pAttach->m_Offset.m_Rot);
+				((CPacket*)pMsg)->WriteType((uint16)pAttach->m_nChildID);
+				((CPacket*)pMsg)->WriteType((uint32)pAttach->m_iNode);
 			}
 
-			pAttach = pAttach->m_pNext;
+			if (pSize)
+				*pSize += 6;
+
+			if (pObject->m_Flags & FLAG_FULLPOSITIONRES)
+			{
+				if (pMsg)
+				{
+					((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pAttach->m_Offset.m_Pos.x));
+					((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pAttach->m_Offset.m_Pos.y));
+					((CMsgWriteQ291*)pMsg)->WriteFloat(sm_FloatArgQ291(pAttach->m_Offset.m_Pos.z));
+
+					((IMessageWrite*)&pMsg->m_Write)->WriteRotation(
+						&pAttach->m_Offset.m_Rot);
+				}
+
+				if (pSize)
+					*pSize += 28;
+			}
+			else
+			{
+				if (pMsg)
+				{
+					((IMessageWrite*)&pMsg->m_Write)->WriteCompVector(
+						&pAttach->m_Offset.m_Pos);
+
+					lmsg_WriteCompRotation(&pMsg->m_Write,
+						&pAttach->m_Offset.m_Rot);
+				}
+
+				if (pSize)
+					*pSize += 15;
+			}
 		}
 
-		((CPacket*)pMsg)->WriteType((uint16)0xffff);
+		if (pMsg)
+			((CPacket*)pMsg)->WriteType((uint16)0xffff);
+
+		if (pSize)
+			*pSize += 2;
 
 		if (pObject->m_ObjectType == OT_MODEL)
 		{
+			if (pMsg)
+			{
 #ifndef LT_SERVER_BUILD
-			sm_WritePacketDWordQ291((CPacket*)pMsg,
-				((CObjModelQ291*)pObject)->m_Unknown204);
+				sm_WritePacketDWordQ291((CPacket*)pMsg,
+					((CObjModelQ291*)pObject)->m_Unknown204);
 #else
-			((CPacket*)pMsg)->WriteType((uint32)
-				((CObjModelQ291*)pObject)->m_Unknown204);
+				((CPacket*)pMsg)->WriteType((uint32)
+					((CObjModelQ291*)pObject)->m_Unknown204);
 #endif
+			}
+
+			if (pSize)
+				*pSize += 4;
 		}
 	}
 

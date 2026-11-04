@@ -1,5 +1,6 @@
 // server.dll — the physics module (reconstruction). Build /O1.
 #include <math.h>
+#include <float.h>
 #include "worldsim.h"
 
 // PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
@@ -1247,12 +1248,47 @@ WSProjectFn g_BoxProjectFns[7] = {
 // its own; server.dll's /Os declines it and ws_MoveBox calls 0x10004167.
 inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTest* pTest)
 {
-	LTPlane* pPlane = pPoly->GetPlane();
+	// AVP2 (PH server.dll 0x10005a58, 500 bytes): the impact is reported
+	// against a copy of the plane's normal, which a push-out move with
+	// m_n38 set flattens onto the horizontal when the surface is a slope
+	// steeper than 45 degrees (0.0 < y < 0.7071, then Norm(1.0)); the
+	// contact is always ws_AddContact's, and what moves is the end of the
+	// move, by ws_NudgeQ516, before the box is shifted: back along the
+	// normal by the end projection's distance for a push-out, otherwise
+	// back along the move by the fraction that distance is of the move's
+	// approach to the plane (nothing for an approach within FLT_EPSILON).
+	//
+	// NEAR on server.dll (500 of 500, 2 mnemonic blocks): the dot product's
+	// first two terms. Shipped multiplies the spilled y difference first
+	// (`flds -0x18(%ebp); fmuls 4(%ebx)`, 0x10005ba6) and then z from the
+	// stack; ours takes z first. Every term order and grouping of a written-
+	// out sum and both Dot spellings were tried: /O1 canonicalises the sum
+	// (all orders give the same code), and vDelta.Dot(N) copies the normal.
+	// What is settled: bPushOut is read before the normal is copied (that
+	// puts it in the frame, -0x4, rather than %edi), the difference is one
+	// Init (three assignments schedule the else arm's multiplies
+	// differently), and the plane lookups are the inline owner test, not
+	// WorldPoly::GetPlane (which /O1 calls).
+	LTPlane* pPlane;
+	LTVector vNormal;
+	LTBOOL   bPushOut;
+	LTVector vPush;
 
-	if (pPlane->m_Normal.y > WS_FLOOR_NORMAL_Y)
+	pPlane   = ws_GetPlaneQ506(pPoly->m_pOwner);
+	bPushOut = g_pMoveState->m_bPushOut;
+	vNormal  = pPlane->m_Normal;
+
+	if (bPushOut && vNormal.y > 0.0f && vNormal.y < 0.7071f &&
+	    g_pMoveState->m_n38)
+	{
+		vNormal.y = 0.0f;
+		vNormal.Norm(1.0f);
+	}
+
+	if (vNormal.y > WS_FLOOR_NORMAL_Y)
 	{
 		if (!g_pMoveResult->m_pStandingPoly ||
-		    g_pMoveResult->m_pStandingPoly->GetPlane()->m_Normal.y <
+		    ws_GetPlaneQ506(g_pMoveResult->m_pStandingPoly->m_pOwner)->m_Normal.y <
 		        pPlane->m_Normal.y)
 		{
 			g_pMoveResult->m_pStandingPoly = pPoly;
@@ -1261,17 +1297,38 @@ inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTest* pTest)
 
 	ws_HandleImpact(g_pMoveState->m_pInfo, pState, g_pMoveState->m_pObject,
 	                g_pMoveState->m_hObject, g_pMoveState->m_pWorldBsp,
-	                pPoly, &g_pMoveState->m_pInfo->m_Plane.m_Normal);
+	                pPoly, &vNormal);
 
 	pState->m_nHits++;
 
-	if (*pTest->m_Start.m_pProjected == 0)
+	if (*pTest->m_End.m_pProjected == 0)
 		ws_ProjectBox(&pTest->m_End);
 
-	if (g_pMoveState->m_bPushOut)
-		ws_AddContact(pPlane, pPlane);
+	if (bPushOut)
+	{
+		vPush = -pPlane->m_Normal * pTest->m_End.m_fMin;
+	}
 	else
-		ws_AddClippedContact(pPlane, pPlane, pTest->m_End.m_fMin);
+	{
+		LTVector vDelta;
+		float    fDenom;
+
+		vDelta.Init(g_vMoveEnd.x - g_vMoveStart.x,
+		            g_vMoveEnd.y - g_vMoveStart.y,
+		            g_vMoveEnd.z - g_vMoveStart.z);
+
+		fDenom = (pTest->m_End.m_fMin - pPlane->m_Normal.Dot(vDelta)) -
+		         pTest->m_End.m_fMin;
+
+		if (fDenom < FLT_EPSILON && fDenom > -FLT_EPSILON)
+			vPush.Init(0.0f, 0.0f, 0.0f);
+		else
+			vPush = vDelta * (pTest->m_End.m_fMin / fDenom);
+	}
+
+	ws_NudgeQ516(&g_vMoveEnd, g_vMoveEnd, vPush);
+
+	ws_AddContact(pPlane, pPlane);
 
 	return ws_ShiftBox();
 }
@@ -1285,13 +1342,22 @@ inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTest* pTest)
 // take them by value, and the query travels on beside them. Nothing else
 // happens here — the answer is the recursion's, unexamined.
 //
-// The two twelve-byte copies are the by-value arguments, and the order they
-// are written in is the push order: the end vector goes to the higher slot
-// first, then the start.
+// (NOLF: the two twelve-byte copies were the by-value arguments, the end
+// vector written to the higher slot first, then the start.)
+//
+// AVP2: the ends are no longer copied. PH server.dll 0x10019435 (23 bytes)
+// pushes m_pEnd, m_pStart, the query and the node as they are and calls
+// 0x100190e2, which copies the start into a frame local of its own
+// (0x100190ea..0x100190f6). That recursion is packet.cpp's
+// bspq_IntersectLineRec, still written with NOLF's by-value ends; the
+// pointer form is declared here (name ours) until it is brought over.
+int bspq_IntersectLineRecQ544(BSPNode* pNode, CLineQuery* pQuery,
+                              LTVector* pStart, LTVector* pEnd);  // 0x100190e2
+
 int bspq_IntersectLine(BSPNode* pRoot, CLineQuery* pQuery)
 {
-	return bspq_IntersectLineRec(pRoot, pQuery, *pQuery->m_pStart,
-	                             *pQuery->m_pEnd);
+	return bspq_IntersectLineRecQ544(pRoot, pQuery, pQuery->m_pStart,
+	                                 pQuery->m_pEnd);
 }
 
 // The constructor is `inline`, defined here beside its only user in this
@@ -2973,6 +3039,35 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 	}
 
 	return nResult;
+}
+
+// AVP2: the box move in two passes (PH server.dll 0x10004f9e, 78 bytes;
+// lithtech.exe 0x0041e6f0, 95; AvP2 server.dll 0x10004fcd). Both images
+// sweep through the four-argument box move that follows this in the image
+// (server.dll 0x10004fec, lithtech.exe 0x0041e750), whose fourth argument,
+// a flag cleared here first (`andl $0x0,-0x4(%ebp)`, 0x10004fa5), says the
+// first pass wants another; only then is the box shifted (ws_ShiftBox,
+// 0x100024f1 / 0x0041aa60) and swept again with the third argument set.
+// That four-argument move is not written yet: this file's ws_MoveBox below
+// is NOLF's three-argument one, and ws_MoveObject still calls it directly.
+// (names ours)
+int ws_MoveBoxQ544(uint16 nBlock, CBounceState* pState, int bRetry,
+                   int* pbAgain);                     // 0x10004fec / 0x0041e750
+
+int ws_MoveBoxPassesQ544(uint16 nBlock, CBounceState* pState)
+{
+	int bAgain = 0;
+
+	if (!ws_MoveBoxQ544(nBlock, pState, 0, &bAgain))
+		return 0;
+
+	if (!bAgain)
+		return 1;
+
+	if (!ws_ShiftBox())
+		return 0;
+
+	return ws_MoveBoxQ544(nBlock, pState, 1, &bAgain);
 }
 
 // The box sweep. Unlike the cylinder there is no marching: the box at each

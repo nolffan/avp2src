@@ -219,6 +219,21 @@ LTRESULT MyServerInterface::CopyFile(const char *pszSourceFile, const char *pszD
 	return fs_CopyFile(&m_pServerMgr->m_FileMgr, pszSourceFile, pszDestFile);
 }
 
+#ifdef PRIMAL_HUNT
+// PH: 0x100380df and 0x100380fb, the server interface's two new entries
+// after SendTo (vtable 0x10075454/0x10075458), defined here between
+// CopyFile (0x100380c3) and SetGameInfo (0x10038112).
+LTRESULT MyServerInterface::GetFileInfo(const char *pFilename, LTFileInfo *pInfo)
+{
+	return fs_GetFileInfo(&m_pServerMgr->m_FileMgr, pFilename, pInfo);
+}
+
+LTRESULT MyServerInterface::DoesFileExist(const char *pFilename)
+{
+	return fs_FileExists(&m_pServerMgr->m_FileMgr, pFilename);
+}
+#endif
+
 LTBOOL MyServerInterface::SetGameInfo(void *pGameInfo, uint32 nGameInfoLen)
 {
 	m_pServerMgr->SetGameInfo(pGameInfo, nGameInfoLen);

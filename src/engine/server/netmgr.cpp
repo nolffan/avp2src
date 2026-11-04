@@ -329,14 +329,10 @@ void CNetMgr::EndGettingPackets()
 //   Taking the field's address stops VC6 hoisting the m_pData load above the
 //   m_Unknown34 store. /O1 does not care, but /O2 (lithtech 0x004579d6) keeps
 //   the store first and loads src, then dest. Same fix as WriteAckPacket below.
-#ifdef LT_SERVER_BUILD
 // AVP2: the trace writes into its caller's buffer and is handed the
 // direction byte GetPacket was given (server.dll 0x1002c280: push the second
-// argument, &szTrace, 1, the length, pMsg; `add $0x14,%esp`). servermgr.h
-// still declares the three-argument form, which nothing defines.
-void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut, char* pStr,
-                   uint8 nDir);
-#endif
+// argument, &szTrace, 1, the length, pMsg; `add $0x14,%esp`); servermgr.h
+// declares the five-argument form.
 
 LTBOOL CNetMgr::GetPacket(ServerMessage* pMsg, uint32 nUnused)
 {
@@ -901,56 +897,16 @@ public:
 	virtual LTBOOL OnNewConnection(NetConnection* pConn, uint32 nFlags);
 };
 
-// And the queues' destructors are not empty: each stores its vptr (as any
-// polymorphic destructor does) and then clears m_pTail and m_nMessages, in
-// that order — the same order CNetMgr::TermQueue and 0x1002425d empty a list
-// in. lthread.h and servermgr.h model both destructors as `{}` because
-// nothing else reconstructed expands one, so the bodies live here on views
-// with the same layout. Three of Term's four queues are LMessageList and the
-// fourth is CNetSentQueue, which is exactly why the shipped code loads one
-// vtable address into a register and stores it three times while the fourth
-// is its own immediate.
-//
-// The vptr the views restore is the REAL class's: NetConnection's
-// constructor (0x10021200, byte-identical) stores ??_7LMessageList@@6B@ as
-// 0x1004dd2c and ??_7CNetSentQueue@@6B@ as 0x1004dcfc, and Term's two
-// stores read back exactly those addresses. A polymorphic view would store
-// a vtable of its own (and leave a never-defined slot for the link to
-// trip over), so the vptr is a plain member and the store names the table
-// by address, as CTermAbstractIOB3 above does; link/aliases.rsp binds the
-// two names to the real vtables (names ours).
-extern void* g_LMessageListVtblNM;           // 0x1004dd2c ??_7LMessageList@@6B@
-extern void* g_NetSentQueueVtblNM;           // 0x1004dcfc ??_7CNetSentQueue@@6B@
-
-class LMessageListTermView
-{
-public:
-	~LMessageListTermView()
-	{
-		m_pVtbl = &g_LMessageListVtblNM;
-		m_pTail = LTNULL;
-		m_nMessages = 0;
-	}
-
-	void*           m_pVtbl;                 // +0x00
-	uint32          m_nMessages;             // +0x04
-	LThreadMessage* m_pTail;                 // +0x08
-};
-
-class CNetSentQueueTermView
-{
-public:
-	~CNetSentQueueTermView()
-	{
-		m_pVtbl = &g_NetSentQueueVtblNM;
-		m_pTail = LTNULL;
-		m_nMessages = 0;
-	}
-
-	void*           m_pVtbl;                 // +0x00
-	uint32          m_nMessages;             // +0x04
-	LThreadMessage* m_pTail;                 // +0x08
-};
+// And the queues' destructors are not empty: each stores its vptr and then
+// clears m_pTail and m_nMessages, in that order -- the same order
+// CNetMgr::TermQueue and 0x1002425d empty a list in. They are the members'
+// own destructors, run after the body (Primal Hunt server.dll 0x1002ab32..
+// 0x1002ab63, in reverse declaration order), with their out-of-line copies
+// at 0x1002daa3 (~LMessageList) and 0x1002db44 (~CNetSentQueue) that the
+// exception unwinds jump to. servermgr.h gives CNetSentQueue its
+// destructor; LMessageList's belongs in lthread.h
+// (`~LMessageList() { m_pTail = LTNULL; m_nMessages = 0; }`), which is what
+// also gives NetConnection's constructor (0x1002aa0b) its four EH states.
 
 // g_NetDebugLevel is 0x100584ec, and the console name it is registered
 // under is "TransportDebug" — the variable table at 0x10051f94 pairs that
@@ -958,8 +914,8 @@ public:
 // statistics here and as CNetMgr::DebugPrint's threshold.
 
 
-// 0x1002126a — tear a connection's four queues down and put them back to
-// empty. Three are message lists the manager knows how to drain; the fourth,
+// 0x1002126a (PH server.dll 0x1002aa95, lithtech.exe 0x004679f0) — the
+// connection's destructor: tear its four queues down. Three are message lists the manager knows how to drain; the fourth,
 // the awaiting-ack list, holds bank records instead and goes back to the
 // manager's packet bank.
 //
@@ -982,7 +938,7 @@ public:
 // scheduling — a new fingerprint: **a dead zero store into the high half of
 // an x87 conversion temp, followed by `fidivl` on the low half, is a float
 // divide by an unsigned**.
-void NetConnection::Term()
+NetConnection::~NetConnection()
 {
 	LMessageList*  pGuaranteed;
 	LMessageList*  pSend;
@@ -1011,10 +967,6 @@ void NetConnection::Term()
 			(float)((NetConnectionResetView*)this)->m_nSent);
 	}
 
-	((LMessageListTermView*)pRecv)->~LMessageListTermView();
-	((CNetSentQueueTermView*)pSent)->~CNetSentQueueTermView();
-	((LMessageListTermView*)pGuaranteed)->~LMessageListTermView();
-	((LMessageListTermView*)pSend)->~LMessageListTermView();
 }
 
 
@@ -1609,7 +1561,7 @@ CNetSentPacketView* CNetBankAllocView::Allocate()
 	CNetSentPacketView* pRec = (CNetSentPacketView*)sb_Allocate(&m_Bank);
 
 	if (pRec)
-		pRec->m_Packet.ServerMessage::ServerMessage();
+		new (pRec) CNetSentPacketView;
 
 	return pRec;
 }

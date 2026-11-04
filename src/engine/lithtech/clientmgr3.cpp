@@ -108,6 +108,13 @@
 #include "iclientshell.h"      // the game DLL's shell -- slots 0x30/0x34/0x38/
                                // 0x48/0x5c are reached below
 
+#ifdef PRIMAL_HUNT
+// PH: the WON peer-auth client's two Blowfish keys hold <string>'s
+// basic_string<unsigned char> (WONCommon/WONTypes.h's RawBuffer), whose
+// _Tidy the client's implicit destructor expands (0x00411190, 0x004112f0).
+#include <string>
+#endif
+
 
 // ======================================================================= //
 //  1.  THINGS THIS RUN CALLS BUT DOES NOT DEFINE
@@ -849,6 +856,10 @@ public:
 	// pushes an unmasked `dec %edx` (0x0045c261).
 	void WriteData(void* pData, uint16 nBytes);
 
+	// Primal Hunt 0x0046f3d0 -- CPacket::ReadData, the received packet's
+	// side (the callee masks the count, 0x0046f3ec).
+	void ReadData(void* pData, uint16 nBytes);
+
 	// servermessage.cpp's GetSpaceLeft, expanded at 0x0045c232.
 	int GetSpaceLeft()
 	{
@@ -1013,6 +1024,10 @@ public:
 	// The two gates every sound entry tests, in that order.
 	void*             m_pSoundDriver;                           // 0x124 (0x8a8)
 	uint32            m_bSoundEnabled;                          // 0x128 (0x89c)
+	// PH: read through an accessor by CClientMgr::Update's latch: the
+	// member is loaded ahead of the console variable there (0x00411ebb),
+	// which the CD-audio latch beside it does not do.  (name ours)
+	uint32 IsEnabledQ548() const { return m_bSoundEnabled; }
 	void*             m_pProviderList;                          // 0x12c
 	void*             m_hDigDriver;                             // 0x130
 	uint32            m_bHandleReleased;                        // 0x134
@@ -1456,6 +1471,10 @@ public:
 	              struct CCmdArgsQ503* pArgs);
 	// 0x0040fc80
 	void     TermClientShell();
+#ifdef PRIMAL_HUNT
+	void     StartPeerAuthQ548();                               // PH 0x00410e40
+	void     OnPeerAuthPacketQ548(CCmgMsg* pPacket);            // PH 0x00411000
+#endif
 	// 0x0041fd30
 	void     ProcessKeyEvents();
 	// 0x00410670
@@ -1662,8 +1681,8 @@ extern int g_CV_DebugNumSounds;                                 // 0x004b32e4  "
 // are registered by the _$E pair at 0x004108c0/0x004108e0, in this TU's
 // run.  TermClientShell (0x00411370) and Init (0x00410dff) both drop it
 // with `= NULL`, which expands ConstSmartPtr::operator= and RefCount::
-// Release in place.  AvP2 1.0.9.6 has the same at 0x004103d6.  What T is
-// is not pinned here, so the view carries RefCount's shape only.
+// Release in place.  AvP2 1.0.9.6 has the same at 0x004103d6.  T
+// is the game shell's AuthContext (see CWonAuthContextQ548 below).
 extern "C" {
 __declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
 __declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
@@ -1701,6 +1720,10 @@ public:
 	CWonConstSmartPtrQ503() : mObject(LTNULL) {}
 	~CWonConstSmartPtrQ503() { if (mObject != LTNULL) mObject->Release(); }
 
+	const T* operator->() const { return mObject; }
+	operator const T*() const { return mObject; }
+	const T* get() const { return mObject; }
+
 	const T* operator=(const T* thePtr)
 	{
 		if (mObject != thePtr)
@@ -1709,6 +1732,12 @@ public:
 			mObject = (T*)(thePtr ? thePtr->CreateRef() : LTNULL);
 		}
 		return thePtr;
+	}
+
+	const CWonConstSmartPtrQ503& operator=(const CWonConstSmartPtrQ503& theCopy)
+	{
+		operator=(theCopy.get());
+		return *this;
 	}
 };
 
@@ -1723,13 +1752,31 @@ public:
 		CWonConstSmartPtrQ503<T>::operator=(thePtr);
 		return thePtr;
 	}
+
+	T* operator->() const { return mObject; }
+	operator T*() const { return mObject; }
+	T* get() const { return mObject; }
+};
+
+// AVP2: what the pointer holds -- the game shell's GetAuthContext (slot 1,
+// `call *0x4(%eax)` at Primal Hunt 0x00410e65) hands back a
+// WONAuth/AuthContext.h AuthContext, and the peer-auth start asks it for
+// its peer data (GetPeerData, 0x004abe40, an AuthPeerDataPtr by value).
+class CWonAuthPeerDataQ548 : public CWonRefCountQ503      // WONAPI::AuthPeerData
+{
+};
+
+class CWonAuthContextQ548 : public CWonRefCountQ503       // WONAPI::AuthContext
+{
+public:
+	CWonConstSmartPtrQ503<CWonAuthPeerDataQ548> GetPeerData();  // PH 0x004abe40
 };
 
 // Its definition belongs to this TU (the dynamic initialiser pair at
 // 0x004108c0 / 0x004108e0 jumps to an OUT-OF-LINE constructor and
 // destructor); defined here, VC6 expands the constructor into the _$E
 // instead, so it is left declared until that is understood.
-extern CWonSmartPtrQ503<CWonRefCountQ503> g_WonPtrQ503;  // 0x004f0118
+extern CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;  // 0x004f0118
 
 // What Init reaches outside this run.  (names ours where not cited)
 void r_InitRenderStruct(int bFullClear);                        // 0x00462110
@@ -1895,6 +1942,185 @@ LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands
 }
 
 
+#ifdef PRIMAL_HUNT
+// ======================================================================= //
+//  3a. Primal Hunt 0x00410e40 / 0x00411000 -- the client's half of WON's
+//      peer-to-peer authentication, and the two destructors it brings
+//      with it (0x00411190, 0x004112f0).  (method names ours)
+//
+//  WHAT NAMES IT.  0x00410e40 news a 0x2180-byte object (0x00410e80),
+//  runs its out-of-line constructor (0x004ac3c0, inside the WON range
+//  0x004aab40..0x004ba2a0), sets the byte at +0x2171 and calls 0x004aceb0
+//  on it with (hidden return, the context's peer data, 2, 4).  That is
+//  WONAuth/PeerAuthClient.h field for field: mPeerData +0x0000, mAuthType
+//  +0x0004, mSecretA +0x0008 and mSecretB +0x10bc (two 0x10b4-byte
+//  Blowfish), mLengthFieldSize +0x2170, mUseAuth2 +0x2171 (SetUseAuth2),
+//  mServerCertificate +0x2174, mSession +0x2178, mState +0x217c -- 0x2180;
+//  and Start(theData, AUTH_TYPE_PERSISTENT, 4).  0x00411000 hands the
+//  received bytes past their first four to 0x004ad040 (`lea 0x20(%esp)`
+//  at 0x0041105a is the buffer plus four) with an out ByteBufferPtr:
+//  HandleRecvMsg.  Both send what WON hands back as message 13.
+//
+//  AVP2: 1.0.9.6 has both (0x00410050, the start, news 0x2170 bytes and
+//  sets +0x2161: its WON is older and its PeerAuthClient sixteen bytes
+//  shorter), built without /GX; so the views below are Primal Hunt's WON
+//  and stay behind PRIMAL_HUNT until AvP2's layout is written.
+// ======================================================================= //
+
+// VC6's <string>: WONCommon/WONTypes.h's RawBuffer.
+typedef std::basic_string<unsigned char> CWonRawBufferQ548;
+
+class CWonByteBufferQ548 : public CWonRefCountQ503       // WONAPI::ByteBuffer
+{
+public:
+	const char*   data() const   { return this ? mData : LTNULL; }
+	unsigned long length() const { return this ? mDataLen : 0; }
+
+private:
+	char*         mData;                     // +0x08
+	unsigned long mDataLen;                  // +0x0c
+};
+
+class CWonAuthCertificateBaseQ548 : public CWonRefCountQ503
+{
+};
+
+class CWonAuthSessionQ548 : public CWonRefCountQ503
+{
+};
+
+// WONCrypt/Blowfish.h, members only (0x10b4 bytes).  Its implicit
+// destructor is 0x004112f0: mRawKey's _Tidy, then XOR_MASK's.
+class CWonBlowfishQ548
+{
+private:
+	int S0[256];
+	int S1[256];
+	int S2[256];
+	int S3[256];
+	int P[18];
+
+	mutable CWonRawBufferQ548 XOR_MASK;      // +0x1048
+	CWonRawBufferQ548 mRawKey;               // +0x1058
+
+	int P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15,
+	    P16, P17;                            // +0x1068
+
+	bool mIsValid;                           // +0x10b0
+};
+
+// WONAuth/PeerAuthClient.h.  Its implicit destructor is 0x00411190.
+class CWonPeerAuthClientQ548
+{
+private:
+	CWonConstSmartPtrQ503<CWonAuthPeerDataQ548> mPeerData;    // +0x0000
+	int              mAuthType;                               // +0x0004
+	CWonBlowfishQ548 mSecretA;                                // +0x0008
+	CWonBlowfishQ548 mSecretB;                                // +0x10bc
+	unsigned char    mLengthFieldSize;                        // +0x2170
+
+	bool mUseAuth2;                                           // +0x2171
+	CWonSmartPtrQ503<CWonAuthCertificateBaseQ548> mServerCertificate;  // +0x2174
+	CWonSmartPtrQ503<CWonAuthSessionQ548> mSession;           // +0x2178
+
+public:
+	int mState;                                               // +0x217c
+
+	CWonPeerAuthClientQ548();                                 // 0x004ac3c0
+	CWonConstSmartPtrQ503<CWonByteBufferQ548> Start(
+		const CWonAuthPeerDataQ548* theData, int theType,
+		unsigned char theLengthFieldSize);                    // 0x004aceb0
+	int HandleRecvMsg(const void* inMsg, unsigned long inMsgLen,
+	                  CWonConstSmartPtrQ503<CWonByteBufferQ548>& outMsg);  // 0x004ad040
+
+	void SetUseAuth2(bool useAuth2) { mUseAuth2 = useAuth2; }
+};
+
+// 0x004f0144 -- the one peer-auth client.
+CWonPeerAuthClientQ548* g_pPeerAuthClientQ548 = LTNULL;
+
+// 0x00410e40 -- start: when the game shell has an auth context, make the
+// client, start it on the context's peer data, and send its first message
+// to the server as message 13.
+//
+// NEAR (436 against 447): the shipped build CALLS ConstSmartPtr<T>::
+// operator=(const T*) (0x00414030) for the assignment from Start's result
+// (0x00410eff) as it does for the context (0x00410e6e); ours expands that
+// second one, and with aBuf known to be null just before it, drops its
+// self-test and Release (11 bytes, and %ebp for `this` where shipped has
+// %edi).  Unchanged by: an inline send wrapper (startload.cpp's lever; it also
+// expands ~PeerAuthClient into 0x00411000, which shipped calls),
+// assigning `.get()` directly, the copy-assignment out of the picture.
+void CCmgClientMgr::StartPeerAuthQ548()
+{
+	g_WonPtrQ503 = (CWonAuthContextQ548*)m_pClientShell->GetAuthContext();
+
+	if (g_WonPtrQ503.get())
+	{
+		g_pPeerAuthClientQ548 = new CWonPeerAuthClientQ548;
+
+		CWonConstSmartPtrQ503<CWonByteBufferQ548> aBuf;
+
+		g_pPeerAuthClientQ548->SetUseAuth2(true);
+		aBuf = g_pPeerAuthClientQ548->Start(g_WonPtrQ503->GetPeerData(), 2, 4);
+
+		CCmgMsgRef cMsg = cmg_StartWrite(0x44c, 0x44c);
+
+		cMsg.m_pMsg->m_Data.m_pArray[0] = 13;
+		cMsg.m_pMsg->WriteData((void*)aBuf->data(), (uint16)aBuf->length());
+
+		m_NetMgr.SendTo(cMsg.m_pMsg, m_pShell->m_nConnID, 0x80);
+	}
+}
+
+// 0x00411000 -- message 13 from the server: hand it to the client, which
+// is then done with; send its answer back, or drop the context when there
+// is none.
+//
+// RETAIL BUG: the client is deleted but g_pPeerAuthClientQ548 is not
+// cleared (0x00411072..0x00411089), so a second message 13 calls
+// HandleRecvMsg on freed memory.
+void CCmgClientMgr::OnPeerAuthPacketQ548(CCmgMsg* pPacket)
+{
+	uint8 aData[512];
+	int   nLen;
+
+	memset(aData, 0, sizeof(aData));
+
+	nLen = pPacket->m_DataLen - pPacket->m_Pos;
+	pPacket->ReadData(aData, nLen);
+
+	CWonConstSmartPtrQ503<CWonByteBufferQ548> aOut;
+
+#ifdef AVP2_MODERN
+	if (!g_pPeerAuthClientQ548)
+		return;
+#endif
+
+	g_pPeerAuthClientQ548->HandleRecvMsg(aData + 4, nLen - 4, aOut);
+
+	delete g_pPeerAuthClientQ548;
+#ifdef AVP2_MODERN
+	g_pPeerAuthClientQ548 = LTNULL;
+#endif
+
+	if (aOut->length())
+	{
+		CCmgMsgRef cMsg = cmg_StartWrite(0x44c, 0x44c);
+
+		cMsg.m_pMsg->m_Data.m_pArray[0] = 13;
+		cMsg.m_pMsg->WriteData((void*)aOut->data(), (uint16)aOut->length());
+
+		m_NetMgr.SendTo(cMsg.m_pMsg, m_pShell->m_nConnID, 0x80);
+	}
+	else
+	{
+		g_WonPtrQ503 = LTNULL;
+	}
+}
+#endif  // PRIMAL_HUNT
+
+
 // ======================================================================= //
 //  3b. 0x0040fc80 — CClientMgr::TermClientShell, 196 bytes (PH 0x00411370,
 //      234: the WON pointer release up front, IDENTICAL).  __thiscall,
@@ -2039,11 +2265,12 @@ void CCmgClientMgr::ProcessThreadMessages()
 //  UpdateSounds in two ("Sound", then a private total).  The shell error
 //  return runs the adder's destructor after 0x0041fc90 answers.
 //
-//  NEAR (PH 891 of 892 bytes, one block): the sound latch's compare loads
-//  the member first into %eax and the console variable into %ecx (the
-//  six-byte `mov` form) where ours loads the variable into %eax; AvP2's
-//  build loads them the way ours does.  Neither operand order nor the
-//  member's type (uint32 / LTBOOL / int) moves it.
+//  PH: the sound latch's compare loads the member first into %eax and the
+//  console variable into %ecx (0x00411ebb, the six-byte `mov` form); AvP2
+//  1.0.9.6's build loads the variable first, as the CD-audio latch does in
+//  both.  Neither operand order nor the member's type moves it; reading the
+//  member through an inline accessor does (identical, 892 bytes), so
+//  Primal Hunt's latch is written that way.
 // ======================================================================= //
 
 LTRESULT CCmgClientMgr::Update()
@@ -2094,7 +2321,11 @@ LTRESULT CCmgClientMgr::Update()
 	{
 		CCmgCountAdderQ513 cntAdder(&g_nCntSoundQ428);
 
+#ifdef PRIMAL_HUNT
+		if (g_CV_SoundEnable != m_SoundMgr.IsEnabledQ548())
+#else
 		if (g_CV_SoundEnable != m_SoundMgr.m_bSoundEnabled)
+#endif
 		{
 			m_SoundMgr.m_bSoundEnabled = g_CV_SoundEnable;
 

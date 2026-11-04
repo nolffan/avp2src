@@ -1575,6 +1575,68 @@ void cm_OnShellTerm(CClientMgrView* pClientMgr, CClientShell* pShell)
 	sub_41b200(pClientMgr->m_Sub1268);
 }
 
+// AVP2: Primal Hunt lithtech.exe 0x00413760 (210 bytes; AvP2 1.0.9.6's is
+// 0x00412110) -- cmgrinit.cpp's cm_RunPlusCommandsQ46C grown a third
+// argument: a command line of its own to run the `+command`s of, the
+// process's (0x004f7c60 / 0x004f7c64, clientwin.cpp's pair) only when it is
+// null. Called twice from CClientMgr::Init (0x00410d18, 0x00410d5e); the
+// first argument is still never read. The list is two words, the vector
+// and then its count (`mov 0x4(%edi),%eax` is the bound, `mov (%edi),%eax`
+// the vector); names ours.
+//
+// RETAIL BUG: the list form runs `i` up to the count itself, where the
+// process form stops one short (`dec %eax` at 0x004137d4), so a `+name`
+// as its LAST word reads the vector one past its end for the value
+// (0x00413792).
+class CCmdLineArgsQ546
+{
+public:
+	char** m_ppArgs;                         // +0x00
+	int    m_nArgs;                          // +0x04
+};
+
+extern char** g_pCluArgList;                 // PH 0x004f7c64
+extern int    g_nCluArgCount;                // PH 0x004f7c60
+void con_RunString3(ConsoleStateRef* pState, char* pString, int nSource);  // PH 0x00421c00
+
+void cm_RunPlusCommandsQ546(CClientMgrView* /*pClientMgr*/, int nSource,
+                            CCmdLineArgsQ546* pArgs)
+{
+	char buf[512];
+	int  i;
+
+	if (pArgs)
+	{
+#ifdef AVP2_MODERN
+		for (i = 0; i < pArgs->m_nArgs - 1; i++)
+#else
+		for (i = 0; i < pArgs->m_nArgs; i++)
+#endif
+		{
+			if (pArgs->m_ppArgs[i][0] == '+')
+			{
+				sprintf(buf, "(%s) (%s)", pArgs->m_ppArgs[i] + 1,
+				        pArgs->m_ppArgs[i + 1]);
+
+				con_RunString3(&g_ClientConsoleStateRef, buf, nSource);
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < g_nCluArgCount - 1; i++)
+		{
+			if (g_pCluArgList[i][0] == '+')
+			{
+				sprintf(buf, "(%s) (%s)", g_pCluArgList[i] + 1,
+				        g_pCluArgList[i + 1]);
+
+				con_RunString3(&g_ClientConsoleStateRef, buf, nSource);
+			}
+		}
+	}
+}
+
 // 0x00410610 — the console side of something, with the stage fixed at 0.
 //
 // It is a MEMBER that ignores `this`, not a free function: the call site at

@@ -127,6 +127,35 @@ LTRESULT ServerModelLT::SetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece,
 	return dResult;
 }
 
+// 0x1003a32f — the same shape as SetLooping, CF_MODELINFO.
+LTRESULT ServerModelLT::SetAllowTransition(LTAnimTracker* pTracker,
+                                           LTBOOL bAllowTransition)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetAllowTransition", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetAllowTransition(pTracker, bAllowTransition);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
+// 0x1003a39d — and again, the float passed on (flds/fstps at 0x1003a3b0).
+LTRESULT ServerModelLT::SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeScale)
+{
+	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
+	if (!pTracker || !pObj)
+		RETURN_ERROR_NAMED(2, "ServerModelLT::SetTimeScale", LT_INVALIDPARAMS);
+
+	LTRESULT dResult = CommonModelLT::SetTimeScale(pTracker, fTimeScale);
+	if (dResult == LT_OK)
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+
+	return dResult;
+}
+
 LTRESULT ServerModelLT::AddTracker(HOBJECT hObj, LTAnimTracker* pTracker)
 {
 	LTRESULT dResult = CommonModelLT::AddTracker(hObj, pTracker);
@@ -380,9 +409,8 @@ inline void sm_UpdateObjectTrackers(CServerMgr* pMgr, LTObject* pObject)
 // `inline`: lithtech.exe expands it into 0x004697e0 at 0x004698b5..0x004699b8
 // and has no standalone copy.  server.dll 0x1002a6de is called out of line
 // from its one site at 0x1002a4ca, so /Os declines it at this size and /O1 is
-// unaffected -- with the caveat that this body is still a NEAR at /O1 (276 of
-// 276 bytes, see above), so it is the one of the three whose /O1 behaviour is
-// not proven byte-for-byte.  At 276 bytes it is far past anything /Os expands.
+// unaffected.  Primal Hunt's /O1 copy (server.dll 0x10035e3d, 347 bytes,
+// with the two AVP2 messages) is byte-identical.
 inline int sm_GetFrameMove(CServerMgr* pMgr, LTObject* pObject,
                            float fFrameTime, LTVector* pOffset)
 {
@@ -442,6 +470,13 @@ inline int sm_GetFrameMove(CServerMgr* pMgr, LTObject* pObject,
 
 		nResult = phys_ComputeFrameMove(pControl);
 
+		// AVP2: the object itself is then shown the frame's move, as
+		// MID_AFFECTPHYSICS with the vector (Primal Hunt server.dll
+		// 0x10035f12..0x10035f28; AvP2 1.0.9.6 alike), before it is copied
+		// out -- so the object can change it.
+		pObject->m_pSData->m_pBaseClass->EngineMessageFn(
+		    MID_AFFECTPHYSICS, &pControl->m_vFrameMove, 0.0f);
+
 		*pOffset = pControl->m_vFrameMove;
 
 		if (nNotified)
@@ -454,6 +489,12 @@ inline int sm_GetFrameMove(CServerMgr* pMgr, LTObject* pObject,
 		pControl->m_nObjFlags     = pObject->m_Flags;
 
 		nResult = phys_ComputeFrameMove(pControl);
+
+		// AVP2: likewise, unless the object is a container
+		// (0x10035f61..0x10035f84).
+		if (!(pObject->m_Flags & FLAG_CONTAINER))
+			pObject->m_pSData->m_pBaseClass->EngineMessageFn(
+			    MID_AFFECTPHYSICS, &pControl->m_vFrameMove, 0.0f);
 
 		*pOffset = pControl->m_vFrameMove;
 	}
@@ -508,18 +549,25 @@ inline int sm_GetFrameMove(CServerMgr* pMgr, LTObject* pObject,
 // moved by: vOldPos copy-constructed, an inline returning m_Pos by value /
 // reference / const reference or through an out pointer, Init(0,0,0) or
 // VEC_INIT for the acceleration clear, or Dot for MagSqr.
+//
+// AVP2: the acceleration is no longer cleared here. It is saved before the
+// move and put back after it (Primal Hunt server.dll 0x10035cf2..0x10035d13,
+// the copy to -0x3c(%ebp) with its address kept in pObject's slot, and
+// 0x10035e2f..0x10035e37) -- except on the early return and when the object
+// was removed, which leave by the bare exit -- and sm_UpdateObject clears it
+// only on the tick that sends MID_UPDATE.
 inline void sm_MoveObjectForFrame(CServerMgr* pMgr, LTObject* pObject)
 {
 	LTVector vOldPos;
+	LTVector vOldAccel;
 	LTVector vNewPos;
 	LTVector vOffset;
 
 	vOldPos = pObject->m_Pos;
+	vOldAccel = pObject->m_Acceleration;
 
 	if (!sm_GetFrameMove(pMgr, pObject, pMgr->m_FrameTime, &vOffset))
 		return;
-
-	pObject->m_Acceleration.Init();
 
 	if (vOffset.MagSqr() > 0.001f)
 	{
@@ -536,13 +584,17 @@ inline void sm_MoveObjectForFrame(CServerMgr* pMgr, LTObject* pObject)
 		     pObject->m_Pos.z > pMgr->m_WorldBoxMax.z))
 		{
 			sm_RemoveObject(pMgr, pObject);
+			return;
 		}
-		else if (pObject->m_ChangeFlags & 4)
+
+		if (pObject->m_ChangeFlags & 4)
 		{
 			if (vOldPos.DistSqr(pObject->m_Pos) > 0.001f)
 				sm_SetObjectChangeFlag(pMgr, pObject, 2);
 		}
 	}
+
+	pObject->m_Acceleration = vOldAccel;
 }
 
 // 0x1002a431 — one object's update, which UpdateObjects times.
@@ -576,6 +628,10 @@ void sm_UpdateObject(CServerMgr* pMgr, LTObject* pObject)
 
 		if (pObject->m_pSData->m_NextUpdate <= 0.0f)
 		{
+			// AVP2: the acceleration is cleared for the object's own update
+			// (Primal Hunt server.dll 0x10035c99..0x10035cab).
+			pObject->m_Acceleration.Init();
+
 			pObject->m_pSData->m_pBaseClass->EngineMessageFn(MID_UPDATE, LTNULL, 0.0f);
 
 			if (!(pObject->m_ChangeFlags & 0x04))
