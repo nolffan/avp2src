@@ -398,18 +398,28 @@ public:
 	CMsgQ17* m_pMsg;
 };
 
-// clientshell.cpp's CMsgHold: built from the pointer the temporary
-// carries, so the local is AddRef'd BEFORE the temporary's Release
-// (0x0042f822 then 0x0042f833) -- an elided copy has neither.
+// clientshell.cpp's CMsgHold: declared empty and then assigned from the
+// returned temporary, so the local is AddRef'd BEFORE the temporary's
+// Release (Primal Hunt 0x0043a7d3 then 0x0043a7e5).
 class CMsgHoldQ17
 {
 public:
-	CMsgHoldQ17(CMsgQ17* pMsg)
+	CMsgHoldQ17()
 	{
-		m_pMsg = pMsg;
+		m_pMsg = 0;
+	}
+
+	CMsgHoldQ17& operator=(const CMsgRefQ17& other)
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
 
 		if (m_pMsg)
 			m_pMsg->AddRef();
+
+		return *this;
 	}
 
 	~CMsgHoldQ17()
@@ -447,12 +457,21 @@ struct CHookRecordQ17
 	void*        m_pUser;                    // 0x24
 };
 
+// The holder is at function scope: Primal Hunt zeroes it and enters its EH
+// state at the top (0x0043a77f / 0x0043a787), before the record test.
 void sub_0042f7e0(CHookRecordQ17 *pRecord, CMsgQ17 *pPacket)
 {
-	if (pRecord && (pPacket->m_pData[0] & 0x3f) == 50)
+	CMsgHoldQ17 cMsg;
+
+	if (!pRecord)
+		return;
+
+	if ((pPacket->m_pData[0] & 0x3f) == 50)
 	{
-		CMsgHoldQ17 cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
 		uint32     i;
+
+		// AVP2: 0x44c (Primal Hunt 0x0043a7a9).
+		cMsg = msg_StartWrite(0x44c, 0x44c);
 
 		for (i = 0; i < 5000; i++)
 		{

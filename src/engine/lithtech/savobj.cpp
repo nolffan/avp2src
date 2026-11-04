@@ -898,17 +898,7 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	{
 		pStream->Read(&nDataLen, 2);
 
-		{
-			// Scoped to the alloc/release pair, as savrest.cpp measured for
-			// server.dll: the shipped frame keeps pTempIO in a dead slot
-			// rather than a dword of its own (0x824, not 0x828).
-			CAbstractIO*   pTempIO;
-
-			SAV_SAVEDATA(pNewObject).Init(msg_AllocPacket(&pTempIO, 0x1000, 0x1000));
-
-			if (pTempIO)
-				pTempIO->Release();
-		}
+		SAV_SAVEDATA(pNewObject).Init(msg_AllocPacket(0x44c, 0x44c));
 
 		SAV_SAVEDATA(pNewObject).m_pMsg->Init(nDataLen, 0x1000);
 

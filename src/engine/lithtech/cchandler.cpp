@@ -3400,7 +3400,7 @@ inline LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell,
 	CObjChangeInfoQ478*     pInfo;
 	CObjRecQ478*            pRec;
 
-	cMsg = msg_StartWrite(0x1000, 0x1000);
+	cMsg = msg_StartWrite(0x44c, 0x44c);
 
 	setup.m_pStruct = &ocs;
 	pInfo = LTNULL;
@@ -3624,7 +3624,7 @@ LTRESULT sub_47af20(CClientShellQ478* pShell, CPacketQ478* pPacket)
 			((CSoundMgrPreloadQ478*)ci_GetSoundMgr())->sub_481ca0();
 			((CClientMgrPreloadQ478*)pShell->m_pClientMgr)->FreeUnusedModels();
 
-			CMsgHoldQ478 cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
+			CMsgHoldQ478 cMsg(msg_StartWrite(0x44c, 0x44c).m_pMsg);
 
 			cMsg.m_pMsg->m_Data.m_pArray[0] = 9;
 			((CMsgWriteQ478*)cMsg.m_pMsg)->WriteTypeOOL(1);

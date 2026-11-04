@@ -226,24 +226,17 @@ inline void CLTServer::BroadcastFileMessage(uint32 nFileType, uint32 nMsgID, uin
 		if (!bToAll && (pClient->m_ClientFlags & 2))
 			continue;
 
-		{
-			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
-			if (pIO)
-				pIO->Release();
-		}
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 
 #if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
 		// PH: out of line (0x00483cb0: /GX keeps a function with an
 		// unwindable CMessageRef out of its callers), and with the two
 		// writes expanded, CPacket::WriteType's grow-and-report included
-		// (0x00483d69..0x00483eac).
-		// NEAR (597 against 606): the shipped body has one more EH state,
-		// 1 from msg_AllocPacket's return to the end of the Init and 0 again
-		// before pIO's release (0x00483d39, 0x00483d5c) -- what a call that
-		// RETURNS a packet reference by value (the &pIO argument being its
-		// hidden return slot) and a temporary destroyed after the Init give.
-		// xfer_FinishTransfer (0x0043b12c/0x0043b144) has the same window.
+		// (0x00483d69..0x00483eac). IDENTICAL: the EH state that is 1 from
+		// msg_AllocPacket's return to the end of the Init and 0 again
+		// before the returned temporary's release (0x00483d39, 0x00483d5c)
+		// is that temporary's own; xfer_FinishTransfer (0x0043b12c/
+		// 0x0043b144) has the same window.
 		((CPacket*)msg.m_pMsg)->WriteType((uint8)nFileType);
 		((CPacket*)msg.m_pMsg)->WriteType((uint16)nFileID);
 #else
@@ -1938,12 +1931,7 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
 
 	if (!(nFlags & XFERFILE_PENDING))
 	{
-		{
-			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
-			if (pIO)
-				pIO->Release();
-		}
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 
 		// The message is a NAMED local here, where every other site in
 		// this block reaches through `msg.m_pMsg`: the shipped code puts it
@@ -1998,12 +1986,7 @@ void xfer_SendPendingFiles(CClientFiles* pState)
 	if (!pState)
 		return;
 
-	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
-		if (pIO)
-			pIO->Release();
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 
 	LTLink* pCur = pState->m_ListHead.m_pNext;
 
@@ -2046,36 +2029,29 @@ void xfer_SendPendingFiles(CClientFiles* pState)
 
 // 0x1000e8ba — the transfer's end from the outside: send the empty packet id
 // 0x34, run the completion hook, and clear everything the transfer was
-// holding. Both guards return without running the reference's destructor,
-// the reference still being null at that point.
+// holding. One guard around the body: both tests jump to the reference's
+// destructor (Primal Hunt server.dll 0x1001286d / 0x10012873 -> 0x100128db),
+// which early returns would have skipped.
 void xfer_FinishTransfer(CClientFiles* pState)
 {
 	CMessageRef msg;
 
-	if (!pState)
-		return;
-
-	if (pState->m_State != 1)
-		return;
-
+	if (pState && pState->m_State == 1)
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
-		if (pIO)
-			pIO->Release();
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
+
+		msg.m_pMsg->m_pData[0] = 0x34;
+
+		pState->m_pNetMgr->SendToConnection(msg.m_pMsg, pState->m_pConnection, 0x80);
+
+		pState->m_pfnDone(pState, pState->m_pStream);
+
+		pState->m_pCurFile->m_Flags &= ~XFERFILE_SENDING;
+
+		pState->m_pCurFile = LTNULL;
+		pState->m_pStream = LTNULL;
+		pState->m_State = 0;
 	}
-
-	msg.m_pMsg->m_pData[0] = 0x34;
-
-	pState->m_pNetMgr->SendToConnection(msg.m_pMsg, pState->m_pConnection, 0x80);
-
-	pState->m_pfnDone(pState, pState->m_pStream);
-
-	pState->m_pCurFile->m_Flags &= ~XFERFILE_SENDING;
-
-	pState->m_pCurFile = LTNULL;
-	pState->m_pStream = LTNULL;
-	pState->m_State = 0;
 }
 
 // 0x1000eac1 — send the next chunk of the file in progress, if this frame's
@@ -2115,12 +2091,7 @@ void xfer_SendNextChunk(CClientFiles* pState)
 	if (pState->m_nChunks == 6)
 		return;
 
-	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
-		if (pIO)
-			pIO->Release();
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 
 	if (4056.0f / pState->m_fRate <= pState->m_fBudget)
 	{

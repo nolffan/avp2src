@@ -489,51 +489,10 @@ inline ServerMessage::ServerMessage()
 }
 
 
-// 0x10026020. Take a spare entry off the free list if there is one, else
-// make a new one (0x64 bytes) and count it. The entry is Init'd, handed back
-// through the out-parameter and AddRef'd, and the function returns the
-// ADDRESS of the out-parameter — which is what CMessageRef::Init (0x1000ebab)
-// wants, because that one dereferences its argument.
-//
-// Three separate `if (pMsg)` tests, not one: the count bump is inside the
-// allocating arm (the reuse arm jumps past it), and the Init and the AddRef
-// each guard on their own. The allocation itself is a plain `new`: the null
-// arm materialises zero into the same register the constructor's return
-// goes to, which is what VC6 emits for `new` on a class with a constructor.
-#ifdef LT_SERVER_BUILD
-void* msg_AllocPacket(CAbstractIO** ppIO, uint32 blockSize, uint32 growSize)
-{
-	ServerMessage* pMsg;
-
-	if (g_NetBankList.m_nCount > 0)
-	{
-		pMsg = (ServerMessage*)g_NetBankList.m_pHead->m_pData;
-
-		g_NetBankList.Remove(&pMsg->m_BankLink);
-	}
-	else
-	{
-		pMsg = new ServerMessage;
-
-		if (pMsg)
-			g_nUnknown79c++;
-	}
-
-	if (pMsg)
-		pMsg->Init(blockSize, growSize);
-
-	*ppIO = (CAbstractIO*)pMsg;
-
-	if (pMsg)
-		pMsg->AddRef();
-
-	return ppIO;
-}
-#else
-// lithtech.exe 0x0045c080 (336 bytes) -- the /O2 copy, IDENTICAL. Three
-// facts from the shipped bytes, each a STAND-IN view below (names ours):
-//  * it returns clientshell.cpp's CMsgRef holder BY VALUE (hidden pointer at
-//    0x14(%esp), `mov %edi,%eax`); the void*/ppIO spelling is 357 bytes.
+#ifndef LT_SERVER_BUILD
+// lithtech.exe's /O2 copy (AvP2 0x00469120, IDENTICAL; Primal Hunt
+// 0x0046f030) wants the message itself as a STAND-IN view, for two facts in
+// the shipped bytes (names ours):
 //  * the constructor is expanded (CAbstractIO vptr+refcount, LMessageImpl
 //    vptr, the packet array's vptr 0x004a1ab8 and Clear(), derived vptr,
 //    +0x3a/+0x40) but the array's Init(0, 0) (0x004283b0) and the message's
@@ -542,7 +501,7 @@ void* msg_AllocPacket(CAbstractIO** ppIO, uint32 blockSize, uint32 growSize)
 //    CMoArray<uint8> Term()/Init() down to SetSize2 (0x0040bfe0) calls. With
 //    collection.h's template at +0x50 and an inline Init /O2 expands every
 //    ctor-level call too (448 bytes); the ctor-side Init out of line alone
-//    gives 383. Hence the out-of-line Init plus the InitInline twin, and the
+//    gives 383. Hence the out-of-line InitCall plus the inline Init twin, and the
 //    array as a view whose Init is out of line.
 //  * the array view's Clear() must be the in-class helper (collection.h's
 //    shape): four direct stores schedule the two `push %ebx` of Init(0, 0)
@@ -554,6 +513,13 @@ public:
 	{
 		Clear();
 		Init();
+	}
+
+	// collection.h's ~CMoArray, Term: the member's EH state in the expanded
+	// constructor (Primal Hunt 0x0046f0fb) is what it buys.
+	~CPacketDataQG9()
+	{
+		((CMoArray<uint8>*)this)->Term();
 	}
 
 	virtual void _v00();
@@ -582,20 +548,19 @@ public:
 		m_MsgFlags  = 0;
 
 		// AVP2: 0x44c (Primal Hunt lithtech.exe 0x0046f0ef).
-		Init(0x44c, 0x44c);
+		InitCall(0x44c, 0x44c);
 	}
 
 	// AddRef and Release (slots 1 and 2, 0x00455c00 / 0x00455c10) are
 	// CAbstractIO's own, inherited, as in the shipped table 0x004a2b58.
-	virtual void _v00();
 	virtual void _v0c();
 
 	// The constructor's call: the out-of-line copy, 0x00459cc0
 	// (CServerMessageInitQ12::Init below).
-	void Init(uint16 nMaxDataLen, uint16 nGrowSize);
+	void InitCall(uint16 nMaxDataLen, uint16 nGrowSize);
 
 	// msg_AllocPacket's own call site, which /O2 expands.
-	void InitInline(uint16 nMaxDataLen, uint16 nGrowSize)
+	void Init(uint16 nMaxDataLen, uint16 nGrowSize)
 	{
 		m_DataLen    = 1;
 		m_MaxDataLen = nMaxDataLen;
@@ -627,53 +592,53 @@ public:
 	CPacketDataQG9  m_Data;                                 // 0x50 .. 0x63
 };
 
-// The four-byte holder the /O2 copy returns BY VALUE through the hidden
-// pointer (0x0045c1b8 `mov 0x14(%esp),%edi ; mov %esi,(%edi)`, then the
-// AddRef and `mov %edi,%eax`): clientshell.cpp's CMsgRef. (names ours)
-class CMsgRefQG9
+#endif
+
+
+// Take a spare entry off the free list if there is one, else make a new one
+// (0x64 bytes) and count it. The entry is Init'd and handed back BY VALUE as
+// a counted reference, built straight in the caller's return slot: the
+// hidden pointer is the first argument, the store through it and the AddRef
+// are the reference's constructor, and the slot's address comes back in eax
+// (Primal Hunt server.dll 0x10030f68: 0x10030fff..0x10031012).
+//
+// Three separate `if (pMsg)` tests, not one: the count bump is inside the
+// allocating arm (the reuse arm jumps past it), and the Init and the AddRef
+// each guard on their own. The allocation itself is a plain `new`: the null
+// arm materialises zero into the same register the constructor's return
+// goes to, which is what VC6 emits for `new` on a class with a constructor.
+//
+// server.dll builds it on servermsg.h's ServerMessage; lithtech.exe on the
+// stand-in above.
+#ifdef LT_SERVER_BUILD
+typedef ServerMessage CBankMessage;
+#else
+typedef ServerMessageQG9 CBankMessage;
+#endif
+
+CMessageRef msg_AllocPacket(uint32 blockSize, uint32 growSize)
 {
-public:
-	CMsgRefQG9(ServerMessageQG9* pMsg)
-	{
-		m_pMsg = pMsg;
-
-		if (m_pMsg)
-			m_pMsg->AddRef();
-	}
-
-	~CMsgRefQG9()
-	{
-		if (m_pMsg)
-			m_pMsg->Release();
-	}
-
-	ServerMessageQG9* m_pMsg;                               // 0x00
-};
-
-CMsgRefQG9 msg_AllocPacket(uint32 blockSize, uint32 growSize)
-{
-	ServerMessageQG9* pMsg;
+	CBankMessage* pMsg;
 
 	if (g_NetBankList.m_nCount > 0)
 	{
-		pMsg = (ServerMessageQG9*)g_NetBankList.m_pHead->m_pData;
+		pMsg = (CBankMessage*)g_NetBankList.m_pHead->m_pData;
 
 		g_NetBankList.Remove(&pMsg->m_BankLink);
 	}
 	else
 	{
-		pMsg = new ServerMessageQG9;
+		pMsg = new CBankMessage;
 
 		if (pMsg)
 			g_nUnknown79c++;
 	}
 
 	if (pMsg)
-		pMsg->InitInline(blockSize, growSize);
+		pMsg->Init(blockSize, growSize);
 
-	return CMsgRefQG9(pMsg);
+	return CMessageRef((ServerMessage*)pMsg);
 }
-#endif
 
 
 // CNetBankList::Remove (0x10026234) is now defined in-class above and

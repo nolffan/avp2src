@@ -135,7 +135,7 @@
 //      ebp-0x10 nDataLen    ebp-0x0c nChangeFlags
 //      ebp-0x06 bHasSaveData ebp-0x05 bHasClient ebp-0x04 pNewObject
 //    and ebp+0x0c (the pStream parameter slot) is reused twice, for the skin
-//    loop's countdown and for pTempIO.
+//    loop's countdown and for msg_AllocPacket's returned temporary.
 //
 // ------------------------------------------------------------------------ //
 //  Build /O1 (/Og /Os /Oy /Ob1).  Symbols introduced here carry a Q4S
@@ -1031,27 +1031,12 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	{
 		pStream->Read(&nDataLen, 2);                          // 0x100109e2
 
-		{
-			// SCOPED TO THE ALLOC/RELEASE PAIR, and the width of this
-			// scope is measured, not decorative.  The shipped frame puts
-			// pTempIO in the DEAD pStream parameter home (`lea 0xc(%ebp),
-			// %eax` at 0x100109ea, `mov 0xc(%ebp),%ecx` at 0x10010a0a) --
-			// the same slot the skin countdown at 0x100108a9 already
-			// borrows.  At FUNCTION scope it takes a dword of its own and
-			// every slot below it moves four, which promotes two `lea`/`mov`
-			// at 0x10010906 and 0x10010914 from disp8 to disp32: +6 bytes.
-			// Scoped to the whole `if (bHasSaveData)` body it lands in the
-			// right slot but BREAKS the tail merge of the LT_INVALIDFILE
-			// exit (+20 bytes, 1799 against 1779).  Only this narrow scope
-			// gives both.
-			CAbstractIO*   pTempIO;
-
-			SAV_SAVEDATA(pNewObject).Init(msg_AllocPacket(&pTempIO, 0x1000, 0x1000));
-			                                     // 0x100109f0, 0x10010a05
-
-			if (pTempIO)                                          // 0x10010a0d
-				pTempIO->Release();                               // 0x10010a13
-		}
+		// msg_AllocPacket's returned temporary takes the DEAD pStream
+		// parameter home (`lea 0xc(%ebp),%eax` at 0x100109ea, its release
+		// through `mov 0xc(%ebp),%ecx` at 0x10010a0a) -- the same slot the
+		// skin countdown at 0x100108a9 already borrows.
+		SAV_SAVEDATA(pNewObject).Init(msg_AllocPacket(0x44c, 0x44c));
+		                                                      // 0x100109f0, 0x10010a05
 
 		SAV_SAVEDATA(pNewObject).m_pMsg->Init(nDataLen, 0x1000);   // 0x10010a26
 

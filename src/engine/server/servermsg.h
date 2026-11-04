@@ -256,12 +256,17 @@ public:
 // first store puts m_nRefCount on this class rather than on ServerMessage.
 // Exactly two vtable stores also means exactly two vptr-carrying levels, so
 // there is nothing between them.
+//
+// Slot 0 is the virtual destructor: Primal Hunt server.dll's tables put the
+// scalar deleting destructors there (0x1002de71 for this class, the vptr
+// restore and the conditional free; 0x1002de8e for ServerMessage, which
+// calls ~ServerMessage 0x1002deaa first), and under /GX the constructors
+// give the constructed base its own EH state (0x1002de17).
 class CAbstractIO
 {
 public:
 	CAbstractIO() { m_nRefCount = 0; }
-
-	virtual void _v00() = 0;                 // +0x00  0x100241d7
+	virtual ~CAbstractIO() {}                // +0x00  0x100241d7
 	virtual void AddRef();                   // +0x04  0x100241bd (streamsim.cpp)
 	virtual void Release();                  // +0x08  0x100241c1 (streamsim.cpp)
 	virtual void _v0c() = 0;                 // +0x0c  0x100241cc
@@ -279,21 +284,27 @@ public:
 // because six other translation units already read m_pData and m_DataSize by
 // those names — so this member is the vptr alone and the fields follow it
 // (name ours).
+// 0x10058c7c — the bank the packet buffer grows out of. packet.h owns the
+// declaration; it is repeated here so ServerMessage::Init's body and the
+// packet data's destructor can live in this header without dragging
+// packet.h in behind them.
+extern uint32 g_PacketDataBank;
+
+// The destructor is the array's Term, expanded into ~ServerMessage (Primal
+// Hunt server.dll 0x1002debf..0x1002decf: the vptr store and SetSize(0,
+// &g_PacketDataBank)); that it exists is what gives the member its own EH
+// state in ServerMessage's constructor (0x1002de37).
 class CMsgPacketData
 {
 public:
 	CMsgPacketData();                                    // 0x1000af9a
+	~CMsgPacketData() { SetSize(0, &g_PacketDataBank); }
 
 	LTBOOL SetSize(uint32 nItems, uint32* pBank);        // 0x1000be59
 	LTBOOL Init(uint32 nItems, uint32 nGrowBy);          // 0x1000be24
 
 	uint8 m_vptr[4];
 };
-
-// 0x10058c7c — the bank the packet buffer grows out of. packet.h owns the
-// declaration; it is repeated here so ServerMessage::Init's body can live in
-// this header (see below) without dragging packet.h in behind it.
-extern uint32 g_PacketDataBank;
 
 
 // One entry in the server's outgoing queue. Polymorphic and refcounted:
@@ -320,7 +331,7 @@ class ServerMessage : public CAbstractIO
 {
 public:
 	ServerMessage();                         // 0x1002417f
-	virtual void _v00();                     // 0x100241f4
+	// Slot 0 is the implicit virtual destructor (0x100241f4).
 	// Slots 1 and 2 are the base's own AddRef and Release (0x100241bd,
 	// 0x100241c1, streamsim.cpp): both vtables point at them, so they are
 	// not redeclared here.
@@ -496,15 +507,30 @@ public:
 	virtual LTRESULT SendSFXMessage(IMessageWrite &msg, LTVector &pos, uint32 flags)=0;  // 0x178, PH 0x180
 };
 
-// A scoped reference to a server message; four bytes, and the destructor's
-// release is what balances StartMessage's AddRef on the pointer it returns.
+// A counted reference to a server message; four bytes. It is what
+// msg_AllocPacket hands back BY VALUE, and the scoped holder its callers
+// keep: built from a pointer it takes a reference, assigned from another it
+// swaps references (Init), and the destructor's release is what balances
+// the reference it holds.
 class CMessageRef
 {
 public:
 	CMessageRef() { m_pMsg = 0; }
+
+	// msg_AllocPacket's return value, built in the caller's slot (Primal
+	// Hunt lithtech.exe 0x0046f1a8..0x0046f1b6: the store through the
+	// hidden pointer, then the AddRef).
+	CMessageRef(ServerMessage* pMsg)
+	{
+		m_pMsg = pMsg;
+
+		if (m_pMsg)
+			m_pMsg->AddRef();
+	}
+
 	~CMessageRef() { if (m_pMsg) m_pMsg->Release(); }
 
-	ServerMessage* Init(void* pPacket);      // 0x1000ebab — returns m_pMsg
+	ServerMessage* Init(const CMessageRef& other);   // 0x1000ebab — returns m_pMsg
 
 	ServerMessage* m_pMsg;
 };
@@ -529,15 +555,15 @@ public:
 // VC6's inliner is forward-only, so the definition has to precede its
 // callers — here, above every including translation unit.
 //
-// Takes the packet the message rides on and reads the message out of it;
-// takes a reference on what arrives and drops the one it was holding, in
-// that order, so assigning a reference to itself is safe.
-inline ServerMessage* CMessageRef::Init(void* pPacket)
+// Drops the reference it was holding, then takes one on what the other
+// holds (in practice msg_AllocPacket's returned temporary, which releases
+// its own reference at the end of the full expression).
+inline ServerMessage* CMessageRef::Init(const CMessageRef& other)
 {
 	if (m_pMsg)
 		m_pMsg->Release();
 
-	m_pMsg = *(ServerMessage**)pPacket;
+	m_pMsg = other.m_pMsg;
 
 	if (m_pMsg)
 		m_pMsg->AddRef();
@@ -598,14 +624,17 @@ inline CUpdateContext::~CUpdateContext()
 }
 #endif
 
-// 0x10026020 — take a spare ServerMessage off the free list at 0x10058790 or
-// make a new one, Init it, hand it back through the out-parameter and AddRef
-// it. The return value is the ADDRESS of that out-parameter, not the object:
-// CMessageRef::Init (0x1000ebab) dereferences its argument, which is what
-// makes `msg.Init(msg_AllocPacket(&pIO, ...))` work. The out-parameter is
-// typed CAbstractIO** because that is the only thing every caller does with
-// it (checks it and Releases it); the object behind it is a ServerMessage.
-void* msg_AllocPacket(class CAbstractIO** ppIO, uint32 blockSize, uint32 growSize);
+// Take a spare ServerMessage off the free list or make a new one, Init it
+// to the given sizes and hand it back BY VALUE as a counted reference. Every
+// caller in all four images pushes the two sizes and then the hidden return
+// slot (`lea`), and under /GX gives the temporary its own EH state for the
+// rest of the full expression: Primal Hunt server.dll's
+// CServerMgr::StartMessage (0x10042d5f) pushes 0x44c twice and
+// `lea -0x14(%ebp)`, calls 0x10030f68, sets the state at 0x10042d8d, hands
+// the result to CMessageRef::Init and releases the temporary
+// (0x10042d96..). Primal Hunt lithtech.exe 0x0046f030, AvP2 lithtech.exe
+// 0x00469120 and AvP2 server.dll 0x1002e963 are the other three copies.
+CMessageRef msg_AllocPacket(uint32 blockSize, uint32 growSize);
 
 #define MT_TOOBJECT   0
 #define MT_TOCLIENT   1

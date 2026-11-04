@@ -97,12 +97,12 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "384cafeec7ff6696e2a78685965f4040507a040baa422565dbbc23d2e9489f11",
-  "out/progress/summary.json": "bc14b4045f0e4452f069154a310d5c3af8d2b1c1c5cdaa06a0fc7953a6ac2913"
+  "out/progress/functions.csv": "e1cf612b8b7f0cc80cf6742f2a7773a766a7bc5510d5f1e3a0fa47c2c3e1a389",
+  "out/progress/summary.json": "9014227916121e1ae4084ff291700314edc72cdd4da14df7a4a14c6a7c32a342"
  },
  "source": {
-  "modified_files": 55,
-  "revision": "0777380998298a3ec480ba2be9cb3c762c79ae3b",
+  "modified_files": 14,
+  "revision": "56bb52bf99443c2535468a64f06d21e0c8ac19a7",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "8fbf6f01f69ed3532626da1a878e7385cfa0851f"

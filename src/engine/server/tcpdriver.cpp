@@ -902,24 +902,14 @@ LTRESULT TCPDriver::JoinSession(struct sockaddr_in* pHostAddr)
 	if (g_ShowNetInfo)
 		dsi_ServerError("Joining on port %d", ntohs(bindAddr.sin_port));
 
-	{
-		CAbstractIO* pIO;
-		msgOut.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
-	}
+	msgOut.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	msgOut.m_pMsg->m_pData[0] = 0;
 	msgOut.m_pMsg->WriteByte(3);
 	msgOut.m_pMsg->WriteByte(0);
 	msgOut.m_pMsg->WriteData(&m_pNetMgr->m_Guid, sizeof(LTGUID));
 
-	{
-		CAbstractIO* pIO;
-		msgIn.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
-	}
+	msgIn.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	startTime = timeGetTime();
 	lastSend = startTime - 300;
@@ -2238,9 +2228,10 @@ public:
 //      -0x10   uint8              nSlot
 //      -0x0c   CMessageRef        msgOut
 //      -0x08   CMessageRef        msgIn
-//      -0x04   CAbstractIO* pIO / uint32 i / char* pName  (three scopes, one
-//              slot; the /O2 twin splits them across 0x0c/0x18/0x20(esp), so
-//              the sharing is /O1's packing and not a source fact)
+//      -0x04   msg_AllocPacket's returned temporary / uint32 i / char* pName
+//              (three scopes, one slot; the /O2 twin splits them across
+//              0x0c/0x18/0x20(esp), so the sharing is /O1's packing and not
+//              a source fact)
 //
 //  DECLARATION ORDER is fixed at the top by CONSTRUCTION order, which is
 //  visible: 0x100366b2/b5 zero -0xc and -0x8 (the two CMessageRef ctors) and
@@ -2311,13 +2302,8 @@ LTRESULT TCPDriver::UpdateQuery()
 	// `dsi_GetTime() - 2.0f`, so the first turn always re-sends.
 	if (dsi_GetTime() - m_QueryEndTime >= 1.0f)
 	{
-		// The same scoped-pIO shape JoinSession already matches.
-		{
-			CAbstractIO* pIO;
-			msgOut.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-			if (pIO)
-				pIO->Release();
-		}
+		// The same allocation JoinSession already matches.
+		msgOut.Init(msg_AllocPacket(0x44c, 0x44c));
 
 		// `andb $0x0,(%eax)` at 0x10036767 -- /O1's zero store; the /O2 twin
 		// has the plain `movb $0x0,(%ecx)` at 0x00485680.
@@ -2383,12 +2369,7 @@ LTRESULT TCPDriver::UpdateQuery()
 		m_QueryEndTime = dsi_GetTime();
 	}
 
-	{
-		CAbstractIO* pIO;
-		msgIn.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
-	}
+	msgIn.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	// The receive is in the CONDITION, which is what puts one copy of the
 	// call in the prologue (0x1003684a) and one at the bottom (0x100369b0)
@@ -2561,12 +2542,13 @@ LTRESULT TCPDriver::UpdateQuery()
 //      -0x08   CMessageRef     msgOut
 //      -0x01   uint8           nType
 //      +0x08   the pMsg parameter slot, dead from the first instruction and
-//              reused for nSub (0x10036fad) and for one pIO (0x10037134)
-//      +0x0c   the pFrom parameter slot, likewise, reused for two pIOs
+//              reused for nSub (0x10036fad) and for one of msg_AllocPacket's
+//              returned temporaries (0x10037134)
+//      +0x0c   the pFrom parameter slot, likewise, reused for two more
 //              (0x10036fb0, 0x100371bb)
 //      Both reuses are the register allocator's, not the source's; the /O2
-//      twin keeps nSub in 0x28(%esp) (its own dead pMsg slot) and the pIOs
-//      in real frame.
+//      twin keeps nSub in 0x28(%esp) (its own dead pMsg slot) and the
+//      temporaries in real frame.
 // ===========================================================================
 void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 {
@@ -2619,12 +2601,7 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 			// The ping cookie, echoed back untouched below.
 			nSub = pMsg->ReadByte(0);
 
-			{
-				CAbstractIO* pIO;
-				msgOut.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-				if (pIO)
-					pIO->Release();
-			}
+			msgOut.Init(msg_AllocPacket(0x44c, 0x44c));
 
 			// m_Unknown34 / m_Unknown38 are NOT set here the way
 			// UpdateQuery's loop sets them: this packet is fresh, and
@@ -2693,12 +2670,7 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 				{
 					m_ConnTable.Add(pConn, (TCPConnNode*)&pConn->m_TableNode);
 
-					{
-						CAbstractIO* pIO;
-						msgOut.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-						if (pIO)
-							pIO->Release();
-					}
+					msgOut.Init(msg_AllocPacket(0x44c, 0x44c));
 
 					msgOut.m_pMsg->m_pData[0] = 0;
 					msgOut.m_pMsg->WriteByte(CONNMSG_ACCEPTED);
@@ -2732,12 +2704,7 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 			// The reject, shared by all three failures.  Reached by fallthrough
 			// from the AddConnection failure and by `jmp` from the guid and
 			// capacity checks (0x100370b5, 0x100370c6).
-			{
-				CAbstractIO* pIO;
-				msgOut.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-				if (pIO)
-					pIO->Release();
-			}
+			msgOut.Init(msg_AllocPacket(0x44c, 0x44c));
 
 			msgOut.m_pMsg->m_pData[0] = 0;
 			// One call with a merged push in /O1 (`push $7 / jmp / push $6`

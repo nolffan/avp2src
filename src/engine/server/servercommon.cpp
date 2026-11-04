@@ -360,12 +360,7 @@ LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 	if (nType == OT_MODEL)
 		pOldModel = ((ModelInstance*)pObj)->m_AnimTracker.m_TimeRef.m_pModel;
 
-	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	w_SaveObjectFileState(pObj, (CSavedFileState*)&state);
 	sm_RemoveFromWorldTree(m_pServerMgr, pObj);

@@ -191,12 +191,7 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 	m_LastTime = fCurTime;
 	m_FrameTime = fDelta;
 
-	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	for (i = 0; i < m_Connections.m_nElements; i++)
 	{
@@ -257,12 +252,7 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 				DebugPrint(pConn, 2, "Sending ack  local: %d remote: %d.",
 					pConn->m_PacketID - 1, pConn->m_RemoteAckID);
 
-				{
-					CAbstractIO* pIO;
-					msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-					if (pIO)
-						pIO->Release();
-				}
+				msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 				WriteAckPacket(pConn, msg.m_pMsg);
 				SendPacket(msg.m_pMsg, pConn, 0);
@@ -1712,7 +1702,7 @@ public:
 
 	// The clear is servermsg.h's CMsgCursor::Init (0x10023e86), reached
 	// through a cast in CNetFragRec::Clear.
-	class ServerMessage* Init(void* pPacket);              // 0x1000ebab
+	class ServerMessage* Init(const class CMessageRef& other);   // 0x1000ebab
 
 #ifndef LT_SERVER_BUILD
 	// STAND-IN (lithtech.exe only): Set's body, inline, for CNetFragRec::Clear
@@ -1880,11 +1870,8 @@ int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
 		if (pMsg->ReadByte(0))
 		{
 			uint16       nPingSeq = ((ServerMessageTypeView*)pMsg)->ReadWord(0);
-			CAbstractIO* pIO;
 
-			ref.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-			if (pIO)
-				pIO->Release();
+			ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
 			ServerMessage* pNew = ref.m_pMsg;
 
@@ -2699,8 +2686,10 @@ void CNetMgr::WriteAckPacket(NetConnection* pConn, ServerMessage* pMsg)
 // is later reused for the return value. And the record's pending flag and the
 // `return LTTRUE` beside it share one materialised `1`.
 // 0x10022c2f — the local-connection send, and the fragmenter behind it.
-// Anything under 0x555 bytes goes straight out through the driver's slot 0x60
-// and this function is a forward. Anything larger is split into at most four
+// Anything that fits one packet (AVP2: 0x44c bytes, `cmp $0x44d; jae` at
+// Primal Hunt server.dll 0x1002c740 and lithtech.exe 0x0046952d, AvP2
+// server.dll 0x1002ac9f; NOLF's bound was 0x555) goes straight out through
+// the driver's slot 0x60 and this function is a forward. Anything larger is split into at most four
 // pieces and each piece sent as its own packet (name ours).
 //
 // Read off the bytes, and two of these are the reason the function is worth
@@ -2748,7 +2737,6 @@ void CNetMgr::WriteAckPacket(NetConnection* pConn, ServerMessage* pMsg)
 LTBOOL CNetMgrSendView::sub_10022c2f(void* pData, uint32 nLen, uint32 nSpare,
                                      NetConnection* pConn)
 {
-	ServerMessage* pMsg;
 	uint8*         pBytes;
 	uint32         nPacketID;
 	uint32         nOffset;
@@ -2759,7 +2747,7 @@ LTBOOL CNetMgrSendView::sub_10022c2f(void* pData, uint32 nLen, uint32 nSpare,
 	uint8*         pOut;
 	uint32         nRoom;
 
-	if (nLen < 0x555)
+	if (nLen < 0x44d)
 	{
 		return ((CBaseDriverSendView*)pConn->m_pDriver)->SendData(
 			pData, nLen, nSpare, pConn);
@@ -2771,9 +2759,9 @@ LTBOOL CNetMgrSendView::sub_10022c2f(void* pData, uint32 nLen, uint32 nSpare,
 
 	CNetMgr::DebugPrint(pConn, 2, "Fragmenting packet %d", nPacketID);
 
-	msg_AllocPacket((CAbstractIO**)&pMsg, 0x1000, 0x1000);
+	CMessageRef msg = msg_AllocPacket(0x44c, 0x44c);
 
-	pMsg->m_pData[0] = 1;
+	msg.m_pMsg->m_pData[0] = 1;
 
 	nOffset = 0;
 	nPiece  = (nLen >> 2) + 1;
@@ -2792,28 +2780,28 @@ LTBOOL CNetMgrSendView::sub_10022c2f(void* pData, uint32 nLen, uint32 nSpare,
 		{
 			// A block-local copy, and it is worth three bytes and one
 			// residual block: the shipped code has `mov 0x8(%ebp),%eax`
-			// once and both stores off it, where writing pMsg-> twice
+			// once and both stores off it, where writing msg.m_pMsg-> twice
 			// reloads between them -- the slot is address-exposed
-			// (&pMsg went to msg_AllocPacket), so a member expression
-			// cannot be kept. Scoped to these two statements only,
+			// (msg went to msg_AllocPacket as its return slot), so a
+			// member expression cannot be kept. Scoped to these two statements only,
 			// because the shipped code reloads again immediately after
 			// for WriteByte's `this`.
-			ServerMessage* pM = pMsg;
+			ServerMessage* pM = msg.m_pMsg;
 
 			pM->m_Unknown38 = 1;
 			pM->m_Unknown34 = 1;
 		}
 
-		pMsg->WriteByte(4);
-		pMsg->WriteByte((uint8)(nFrag | 0x30));
-		((ServerMessageWriteView*)pMsg)->WriteDWord(nPacketID);
-		pMsg->WriteData(pBytes + nOffset, nEnd - nOffset);
+		msg.m_pMsg->WriteByte(4);
+		msg.m_pMsg->WriteByte((uint8)(nFrag | 0x30));
+		((ServerMessageWriteView*)msg.m_pMsg)->WriteDWord(nPacketID);
+		msg.m_pMsg->WriteData(pBytes + nOffset, nEnd - nOffset);
 
-		nRoom = pMsg->m_DataSize;
-		pOut  = pMsg->m_pData;
+		nRoom = msg.m_pMsg->m_DataSize;
+		pOut  = msg.m_pMsg->m_pData;
 
 		if (!((CBaseDriverSendView*)pConn->m_pDriver)->SendData(
-			pOut, pMsg->m_Unknown34, nRoom - pMsg->m_Unknown34, pConn))
+			pOut, msg.m_pMsg->m_Unknown34, nRoom - msg.m_pMsg->m_Unknown34, pConn))
 		{
 			bResult = LTFALSE;
 			break;
@@ -2821,9 +2809,6 @@ LTBOOL CNetMgrSendView::sub_10022c2f(void* pData, uint32 nLen, uint32 nSpare,
 
 		nOffset = nEnd;
 	}
-
-	if (pMsg)
-		pMsg->Release();
 
 	return bResult;
 }
@@ -2849,11 +2834,12 @@ LTBOOL CNetMgrSendView::sub_10022c2f(void* pData, uint32 nLen, uint32 nSpare,
 // where ours expands both -- the /O2 budget again, see lthread.h's
 // Append. server.dll 0x10022d6c: 787 of 787, 277 instructions, ONE
 // residual: shipped homes pOut in the dead pMsg slot (+0x8, which pCur and
-// pIO also share) and ours in pConn's (+0xc, nLen's); 0x10023037 and
+// the returned packet reference also share) and ours in pConn's (+0xc, nLen's); 0x10023037 and
 // 0x10023042. Not moved by the declaration order of any of the locals
 // (pOut first, last, beside pCur, nLen at function scope), by pOut/nRoom
-// block-scoped in either arm, by assigning pOut before nRoom, or by pIO at
-// function scope (worse: 14 instructions).
+// block-scoped in either arm, by assigning pOut before nRoom, or by the
+// packet out-parameter at function scope (worse: 14 instructions; measured
+// under the old out-parameter spelling of msg_AllocPacket).
 LTBOOL CNetMgrSendView::SendPacketData(ServerMessage* pMsg, NetConnection* pConn)
 {
 	CMessageRef             refSpill;
@@ -2958,15 +2944,10 @@ LTBOOL CNetMgrSendView::SendPacketData(ServerMessage* pMsg, NetConnection* pConn
 		    !(pConn->m_Flags & 1) &&
 		    ((ServerMessageWriteView*)pMsg)->GetSpaceLeft() >= 0x2c)
 		{
-			CAbstractIO* pIO;
-
 			CNetMgr::DebugPrint(pConn, 2, "Piggybacking ack local: %d, remote: %d.",
 				((NetConnectionResetView*)pConn)->m_nSent, pConn->m_PacketID);
 
-			refAck.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-
-			if (pIO)
-				pIO->Release();
+			refAck.Init(msg_AllocPacket(0x44c, 0x44c));
 
 			WriteAckPacket(pConn, refAck.m_pMsg);
 
@@ -3549,11 +3530,7 @@ inline void NetStartPacket(CMessageRef* pRef, uint8 nID, uint8 nSubType)
 // appendable sub-packet stream).
 void CNetMgrSendView::sub_10023d16(CMessageRef* pRef)
 {
-	CAbstractIO* pIO;
-
-	pRef->Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-	if (pIO)
-		pIO->Release();
+	pRef->Init(msg_AllocPacket(0x44c, 0x44c));
 
 #ifdef LT_SERVER_BUILD
 	pRef->m_pMsg->m_pData[0] = 1;
@@ -3768,8 +3745,9 @@ CNetFragRec* CNetMgrSendView::sub_10023495()
 // the arriving message — everything from its read position to its write
 // position — is then appended to the fragment.
 //
-// The now-dead record parameter's slot holds the allocator's out-parameter,
-// which is why the frame has no locals of its own.
+// The now-dead record parameter's slot holds the allocator's returned
+// temporary (`lea 0x10(%ebp)`, Primal Hunt server.dll 0x1002cf82), which is
+// why the frame has no locals of its own.
 //
 // Two facts the bytes had to give up. The first fragment's message is read
 // into a local *before* the byte is read off the wire — written as one
@@ -3793,14 +3771,11 @@ LTBOOL CNetMgrSendView::sub_100233e3(ServerMessage* pMsg, uint8 nIndex,
 {
 	CNetFragSlot*  pSlot = &pRec->m_pFrags[nIndex];
 	ServerMessage* pDst;
-	CAbstractIO*   pIO;
 
 	if (pSlot->m_pMsg)
 		return LTFALSE;
 
-	((CMessageRef*)pSlot)->Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-	if (pIO)
-		pIO->Release();
+	((CMessageRef*)pSlot)->Init(msg_AllocPacket(0x44c, 0x44c));
 
 	if (nIndex == 0)
 	{
@@ -3848,12 +3823,10 @@ LTBOOL CNetMgrSendView::sub_100233e3(ServerMessage* pMsg, uint8 nIndex,
 //  0x2000 + 0x100 + 0x10 = 0x2110 exactly, so there are FOUR dword slots
 //  above temp and no more.  They are:
 //      -0x04  nSubLen   (shared by the GRP, UPD and UUP blocks)
-//      -0x08  UPD's  pIO
-//      -0x0c  UUP's  pIO
-//      -0x10  GRP's  pIO
-//  Three separate pIO slots is why the three blocks each declare their own
-//  `CAbstractIO* pIO` below rather than sharing one at function scope --
-//  a single function-scope pointer would have had ONE slot.
+//      -0x08  UPD's  returned packet reference
+//      -0x0c  UUP's  returned packet reference
+//      -0x10  GRP's  returned packet reference
+//  Three separate slots for msg_AllocPacket's three temporaries.
 //
 //  Everything else lives in registers or in the incoming parameter home
 //  slots, which /O1 reuses once the parameters are dead:
@@ -3899,14 +3872,6 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 	uint8        nFlagByte;
 	uint32       nFlagLong;
 	uint8        nMsgClass;
-	// -0x08 / -0x0c / -0x10.  THREE SEPARATE SLOTS: the frame is 0x2110
-	// and 0x2000 + 0x100 + nSubLen's dword leaves exactly three more.
-	// Declaring one `CAbstractIO*` per block instead gives ONE slot --
-	// VC6 /O1 merges the stack slots of disjoint lexical scopes, measured,
-	// and the frame comes out 0x2108.
-	CAbstractIO* pIOUpd;
-	CAbstractIO* pIOUup;
-	CAbstractIO* pIOGrp;
 
 	// 0x10021cce: push 0x2000 / push 0 / push str -> 0x1003e280.
 	memset(str, 0, sizeof(str));
@@ -4084,14 +4049,10 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 								// 0x10021e36  andl $0x0,0x10(%ebp) -- the
 								// CMessageRef constructor, expanded.
-								// 0x10021e40  msg_AllocPacket(&pIOGrp, 0x1000, 0x1000)
+								// 0x10021e40  msg_AllocPacket(0x44c, 0x44c)
 								// 0x10021e4c  ref.Init(...)   (0x1000ebab,
 								//   out of line: /Os declines its 37 bytes)
-								ref.Init(msg_AllocPacket(&pIOGrp, 0x1000, 0x1000));
-
-								// 0x10021e51  if (pIOGrp) pIOGrp->Release()
-								if (pIOGrp)
-									pIOGrp->Release();
+								ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
 								// 0x10021e64 -> 0x10010da9.  Note the raw
 								// `push 0xc(%ebp)` -- a uint16 argument is
@@ -4191,9 +4152,7 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 				{
 					CMessageRef  ref;
 
-					ref.Init(msg_AllocPacket(&pIOUpd, 0x1000, 0x1000));   // 0x1002203c
-					if (pIOUpd)
-						pIOUpd->Release();                                // 0x10022057
+					ref.Init(msg_AllocPacket(0x44c, 0x44c));   // 0x1002203c
 
 					// 0x10022063  movzbw 0x13(%ebp),%ax ; mov %ax,0x8(%ebp)
 					// -- the uint8 is widened to uint16 ONCE and the
@@ -4464,9 +4423,7 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 				{
 					CMessageRef  ref;
 
-					ref.Init(msg_AllocPacket(&pIOUup, 0x1000, 0x1000));   // 0x100223c3
-					if (pIOUup)
-						pIOUup->Release();                                // 0x100223de
+					ref.Init(msg_AllocPacket(0x44c, 0x44c));   // 0x100223c3
 
 					ref.m_pMsg->Init(nSubByte, 0x1000);                // 0x100223f8
 

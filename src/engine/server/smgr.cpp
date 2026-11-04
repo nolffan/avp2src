@@ -33,29 +33,6 @@
 LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, class Client* pClient);   // 0x1002759a
 LTRESULT sm_SendObjectInfo2(CServerMgr* pMgr, class Client* pClient);     // 0x10026b4d
 
-// msg_AllocPacket as the shipped callers see it: it RETURNS the packet
-// reference BY VALUE, a one-pointer object built in the caller's frame (the
-// `lea` pushed ahead of the two sizes is its hidden return slot, Primal Hunt
-// 0x0048f47e/0x00477081) and destroyed with a Release after the full
-// expression, under its own EH state (`movb $1` after the call, `movb $0`
-// before the Release: 0x0048f4b2/0x0048f4cd, 0x00477095/0x004770ad). The
-// buffer is 0x44c bytes in both games (AVP2: 0x0047d082 and the other 53
-// `push $0x44c; lea; push $0x44c; push` sites in 1.0.9.6's lithtech.exe).
-// servermsg.h still declares NOLF's out-parameter form, and servermsg.h is
-// not this file's to change, so the reference and the call are declared here
-// under local names, with a forwarding body below that the header fix
-// retires (CPacketRefQ512 -> the header's reference type, and
-// msg_AllocPacketQ512 -> msg_AllocPacket).
-class CPacketRefQ512
-{
-public:
-	~CPacketRefQ512() { if (m_pIO) m_pIO->Release(); }
-
-	CAbstractIO* m_pIO;
-};
-
-CPacketRefQ512 msg_AllocPacketQ512(uint32 blockSize, uint32 growSize);
-
 // struct_bank.h's allocate, inline as the header had it. servermgr.h declares
 // it extern because server.dll calls 0x10001c86 at every site -- but the same
 // source compiled /O2 into lithtech.exe carries the body expanded at those
@@ -123,7 +100,8 @@ inline void* sm_sb_AllocateCleared(StructBank* pBank)
 // 0x10023e86 — servermsg.h's write cursor takes the message directly. Same
 // story as the reference above: lithtech.exe's sm_WriteClientUpdate opens
 // each of its two packet allocations with NO calls between msg_AllocPacket
-// and the pIO test -- both the reference's Init and this one expanded, the
+// and the returned reference's test -- both the reference's Init and this
+// one expanded, the
 // freshly-constructed nulls folding both Release guards away -- where
 // server.dll calls 0x1000ebab and 0x10023e86. servermessage.cpp owns the
 // out-of-line definition and keeps it, so the body is reached through a view
@@ -617,7 +595,7 @@ ServerMessage* CServerMgr::StartMessage()
 {
 	CMessageRef msg;
 
-	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	msg.m_pMsg->m_Write.m_pObjectIO = (CMsgObjectIO*)m_Unknown804;
 
@@ -2133,8 +2111,8 @@ public:
 	LTBOOL GetPacket(ServerMessage* pMsg, int nArg);
 };
 
-// The packet comes back BY VALUE (msg_AllocPacketQ512, see the top of this
-// file): a frame temporary (`lea 0x18(%esp),%eax; push %eax` before the two
+// The packet comes back BY VALUE (msg_AllocPacket, servermsg.h): a frame
+// temporary (`lea 0x18(%esp),%eax; push %eax` before the two
 // sizes, 0x0047d087), copied into msg with an AddRef (0x0047d0b0) and
 // destroyed with a Release (0x0047d0c2) under its own EH state. Identical on
 // server.dll with that; for Primal Hunt's lithtech.exe see the NEAR note
@@ -2146,7 +2124,7 @@ int sm_ProcessPackets(CServerMgr* pMgr)
 
 	// AVP2: the packet buffer is 0x44c bytes, not 0x1000 (Primal Hunt
 	// 0x0047d082).
-	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	pMgr->m_NetMgr.StartGettingPackets();
 
@@ -2500,8 +2478,8 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 	ctx.m_pMgr = pMgr;
 	ctx.m_pClient = pClient;
 
-	((CMsgCursorView*)&ctx.m_Cursors[1])->Init(ctx.m_Msg1.Init(&msg_AllocPacketQ512(0x44c, 0x44c)));
-	((CMsgCursorView*)&ctx.m_Cursors[0])->Init(ctx.m_Msg2.Init(&msg_AllocPacketQ512(0x44c, 0x44c)));
+	((CMsgCursorView*)&ctx.m_Cursors[1])->Init(ctx.m_Msg1.Init(msg_AllocPacket(0x44c, 0x44c)));
+	((CMsgCursorView*)&ctx.m_Cursors[0])->Init(ctx.m_Msg2.Init(msg_AllocPacket(0x44c, 0x44c)));
 
 	ctx.m_Unknown18 = 0;
 	ctx.m_bLocal = (pClient->m_ClientFlags >> 9) & 1;
@@ -2748,9 +2726,7 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 	{
 		uint32 i, j;
 
-		{
-			msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-		}
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 		for (i = 0; i < pMgr->m_nFileTrees; i++)
 		{
@@ -2783,9 +2759,7 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 	// Stage two: put the client's object into the world.
 	if (pClient->m_Unknown3BC == 3 || (pClient->m_ClientFlags & 2))
 	{
-		{
-			msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-		}
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 		BaseClass* pClass = pMgr->m_ClassMgr.m_pServerShell->OnClientEnterWorld(
 			(HCLIENT)pClient, pClient->m_pClientData, pClient->m_ClientDataLen);
@@ -5291,9 +5265,7 @@ LTRESULT sm_SetPortalFlags(CServerMgr* pMgr, char* pPortalName, uint32 flags)
 	flags &= 1;
 	if ((uint16)flags != pPortal->m_Flags)
 	{
-		{
-			msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-		}
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 		msg.m_pMsg->WriteWord((uint16)nWorld);
 		msg.m_pMsg->WriteWord((uint16)nPortal);
@@ -7284,9 +7256,7 @@ LTRESULT sm_SendObjectInfo2(CServerMgr* pMgr, Client* pClient)
 	void*       hIter;
 	LTLink*     pCur;
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	msg.m_pMsg->WriteByte(0);
 
@@ -7408,9 +7378,7 @@ LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, Client* pClient)
 	CMessageRef msg;
 	void*       hIter;
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	if (pMgr->m_Unknown198 == 0)
 	{
@@ -7494,9 +7462,7 @@ void sm_ClientExitWorld(CServerMgr* pMgr, Client* pClient)
 {
 	CMessageRef msg;
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	pMgr->m_ClassMgr.m_pServerShell->OnClientExitWorld((HCLIENT)pClient);
 
@@ -7541,9 +7507,7 @@ void sm_SendSkyInfo(CServerMgr* pMgr, Client* pClient)
 	uint16*     pID;
 	int         nObjects;
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	msg.m_pMsg->WriteData(&pMgr->m_SkyDef, sizeof(SkyDef));
 
@@ -7608,9 +7572,7 @@ void sm_BroadcastPrintf(char* pMsg, ...)
 	va_start(marker, pMsg);
 	_vsnprintf(sBuffer, sizeof(sBuffer) - 1, pMsg, marker);
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	// WriteType<uint8> -- 0x1001393e is that instantiation, the same body as
 	// the word one a byte wide; lithtech.exe expands it at 0x00476074.
@@ -7630,8 +7592,9 @@ void sm_BroadcastPrintf(char* pMsg, ...)
 // object the inactive sweep has to leave alone.
 //
 // The payload is copied minus its first byte (the packet id), and the stored
-// message's length is set to match. The pIO out-parameter lands in the dead
-// pObj argument slot, the object itself having been cached in a register.
+// message's length is set to match. msg_AllocPacket's returned temporary
+// lands in the dead pObj argument slot, the object itself having been cached
+// in a register.
 #ifndef LT_SERVER_BUILD
 // lithtech.exe only. The /O2 copy (0x0046a47c..0x0046a4f3) resets the stowed
 // message with the store order m_Unknown34, m_MaxDataLen, m_Unknown38,
@@ -7688,7 +7651,7 @@ void sm_SetObjectSFXMessage(CServerMgr* pMgr, LTObject* pObj, ServerMessage* pMs
 	if (pObj->m_pSData->m_Unknown2c == 0)
 	{
 		((CMessageRef*)&pObj->m_pSData->m_Unknown2c)->Init(
-			&msg_AllocPacketQ512(0x44c, 0x44c));
+			msg_AllocPacket(0x44c, 0x44c));
 	}
 
 #ifdef LT_SERVER_BUILD
@@ -7777,8 +7740,8 @@ void sm_WriteUpdateHeader(CServerMgr* pMgr, CUpdateContext* pCtx, Client* pClien
 // and the two printer calls in between could alias it — which is exactly why
 // sm_BroadcastPrintf's early return, taken before any call, does fold.
 //
-// The pIO out-parameter goes into the dead pParent argument slot, the parent
-// having been cached in esi.
+// msg_AllocPacket's returned temporary goes into the dead pParent argument
+// slot, the parent having been cached in esi.
 LTRESULT sm_AttachClient(CServerMgr* pMgr, Client* pParent, Client* pChild)
 {
 	CMessageRef msg;
@@ -7786,9 +7749,7 @@ LTRESULT sm_AttachClient(CServerMgr* pMgr, Client* pParent, Client* pChild)
 	if (pParent == pChild)
 		RETURN_ERROR(1, "sm_AttachClient", LT_INVALIDPARAMS);
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	sm_DetachClient(pMgr, pChild);
 
@@ -8125,33 +8086,26 @@ void sm_WriteIDList(CUpdateContext* pCtx, ClientIDList* pList)
 
 
 // 0x100264a5 — write every entry of one file type out of the cache list into
-// the client's message, opening the message lazily through the out-parameter
-// it shares with its caller. The fifth argument is the byte that introduces
+// the client's message, the reference its caller holds. The fifth argument is the byte that introduces
 // the run and the sixth the entry type it matches (name ours).
 LTRESULT sub_100264a5(CServerMgr* pMgr, Client* pClient, uint32 iEntry,
-                      CAbstractIO** ppIO, int nLeadByte, uint16 nType);
+                      CMessageRef* pRef, int nLeadByte, uint16 nType);
 
 // 0x1002642c — tell one client about one entry of the cache list (name ours;
 // the index is the entry just added). Four passes, one per file type, in the
 // order 0,1,2,3 with lead bytes 2,4,3,5.
 //
 // LTRESULT, not the void first declared here: the single exit ends
-// `xor %eax,%eax`. The message pointer msg_AllocPacket answers is discarded
-// — only the CAbstractIO out-parameter is used, and it is what gets
-// released at the end, so there is no CMessageRef in this one.
+// `xor %eax,%eax`. msg_AllocPacket's reference is initialised straight
+// into the local the four passes share, and released on the way out.
 LTRESULT sm_SendCacheEntry(CServerMgr* pMgr, Client* pClient, uint32 iEntry)
 {
-	CAbstractIO* pIO;
+	CMessageRef ref = msg_AllocPacket(0x44c, 0x44c);
 
-	msg_AllocPacket(&pIO, 0x1000, 0x1000);
-
-	sub_100264a5(pMgr, pClient, iEntry, &pIO, 2, 0);
-	sub_100264a5(pMgr, pClient, iEntry, &pIO, 4, 1);
-	sub_100264a5(pMgr, pClient, iEntry, &pIO, 3, 2);
-	sub_100264a5(pMgr, pClient, iEntry, &pIO, 5, 3);
-
-	if (pIO)
-		pIO->Release();
+	sub_100264a5(pMgr, pClient, iEntry, &ref, 2, 0);
+	sub_100264a5(pMgr, pClient, iEntry, &ref, 4, 1);
+	sub_100264a5(pMgr, pClient, iEntry, &ref, 3, 2);
+	sub_100264a5(pMgr, pClient, iEntry, &ref, 5, 3);
 
 	return LT_OK;
 }
@@ -8202,14 +8156,14 @@ public:
 // helper, expanded twice, spends it -- the helper is ours, but it is also
 // the only spelling measured that leaves Insert2 a call. server.dll is
 // unchanged (223, identical): /O1 calls 0x1001393e for either spelling.
-inline void sm_FlushCacheMsg(CServerMgr* pMgr, Client* pClient, CAbstractIO** ppIO)
+inline void sm_FlushCacheMsg(CServerMgr* pMgr, Client* pClient, CMessageRef* pRef)
 {
-	sm_SendToClient(pMgr, pClient, 0x15, (ServerMessage*)*ppIO, 0, 0x80);
+	sm_SendToClient(pMgr, pClient, 0x15, pRef->m_pMsg, 0, 0x80);
 
 	{
 		// 0x10026531 then 0x10026537 — 0x38 BEFORE 0x34, in both
 		// images (0x00462a80 / 0x00462a84).
-		ServerMessage* pMsg = (ServerMessage*)*ppIO;
+		ServerMessage* pMsg = pRef->m_pMsg;
 
 		pMsg->m_Unknown38 = 1;
 		pMsg->m_Unknown34 = 1;
@@ -8217,7 +8171,7 @@ inline void sm_FlushCacheMsg(CServerMgr* pMgr, Client* pClient, CAbstractIO** pp
 }
 
 LTRESULT sub_100264a5(CServerMgr* pMgr, Client* pClient, uint32 iEntry,
-                      CAbstractIO** ppIO, int nLeadByte, uint16 nType)
+                      CMessageRef* pRef, int nLeadByte, uint16 nType)
 {
 	// 0x100264b2 / 0x004629ee — a DWORD, set to 1 and cleared with `and $0x0`
 	// at /O1. "Nothing written yet", so the closing send is skipped when the
@@ -8236,24 +8190,24 @@ LTRESULT sub_100264a5(CServerMgr* pMgr, Client* pClient, uint32 iEntry,
 		{
 			if (bFirst)
 			{
-				((ServerMessage*)*ppIO)->WriteByte((uint8)nLeadByte);
+				pRef->m_pMsg->WriteByte((uint8)nLeadByte);
 
 				bFirst = LTFALSE;
 			}
 
-			((ServerMessage*)*ppIO)->WriteWord(
+			pRef->m_pMsg->WriteWord(
 				((CCacheListEntry*)pMgr->m_Unknown91c)[i].m_FileID);
 
 			// 0x1002650f call / 0x00462a44 expanded. 0x32 is the same
 			// threshold smgr.cpp already uses for the model hash and the
 			// cache-record list.
-			if (((CMsgLenView*)*ppIO)->GetSpaceLeft() < 0x32)
+			if (((CMsgLenView*)pRef->m_pMsg)->GetSpaceLeft() < 0x32)
 			{
-				sm_FlushCacheMsg(pMgr, pClient, ppIO);
+				sm_FlushCacheMsg(pMgr, pClient, pRef);
 
 				// 0x1002653d — the run is re-opened, and bFirst is NOT put
 				// back: the closing send still has to happen.
-				((CPacket*)*ppIO)->WriteType((uint8)nLeadByte);
+				((CPacket*)pRef->m_pMsg)->WriteType((uint8)nLeadByte);
 			}
 		}
 	}
@@ -8261,7 +8215,7 @@ LTRESULT sub_100264a5(CServerMgr* pMgr, Client* pClient, uint32 iEntry,
 	// 0x10026556 / 0x00462b40
 	if (!bFirst)
 	{
-		sm_FlushCacheMsg(pMgr, pClient, ppIO);
+		sm_FlushCacheMsg(pMgr, pClient, pRef);
 	}
 
 	return LT_OK;                                    // 0x1002657f / 0x00462b6f
@@ -8828,11 +8782,13 @@ void la_WriteChange(CServerMgr* pMgr, LightAnim* pAnim, uint32 hLightAnim,
 // out at the end.
 //
 // The animation index lives in the dead pMgr argument slot and the byte
-// offset VC6 strength-reduces the subscript into lives in pIO's, both
+// offset VC6 strength-reduces the subscript into lives in the returned
+// packet reference's, both
 // because edi and esi are already holding the manager and the send flags.
 //
 // NEAR: 233 of 233 bytes, 82 of 82 instructions, and every differing byte is
-// one of those two frame displacements — ours puts the index in pIO's slot
+// one of those two frame displacements — ours puts the index in the
+// temporary's slot
 // and the strength-reduction offset in the parameter slot, the shipped build
 // the other way round. Writing the byte offset out as a second local of my
 // own makes it worse (three slots and a real 0xc frame), and the two stores
@@ -8841,8 +8797,9 @@ void la_WriteChange(CServerMgr* pMgr, LightAnim* pAnim, uint32 hLightAnim,
 // `while` loop; `i` initialised at its declaration; `i` in its own block; a
 // named element pointer at function scope; a `pServerMgr` copy; an extra
 // `if (m_nLightAnims)` wrapper (238 B); an inline element accessor; the
-// callee's index as uint16; pIO at function scope in all six declaration
-// orders (234 B each); the allocation as an inline helper (not inlined).
+// callee's index as uint16; (under NOLF's out-parameter spelling) the
+// out-parameter at function scope in all six declaration orders (234 B
+// each); the allocation as an inline helper (not inlined).
 //
 // lithtech.exe (0x00462ee0, 239 bytes) is IDENTICAL, and the pServerMgr copy
 // is what does it: walking the array through a local copy of the manager
@@ -8856,9 +8813,7 @@ void sm_SendWorldInfo(CServerMgr* pMgr, Client* pClient)
 	CMessageRef msg;
 	uint32      i;
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	CServerMgr* pServerMgr = pMgr;
 
@@ -10738,7 +10693,8 @@ public:
 // without effect: the whole body flat at function scope; the send inside the
 // inner block; the body in `do { } while (0)`. Also tried without effect: a
 // trailing `return;`; `goto done; done: ;`; the body as `for (;;) { ...
-// break; }`; pIO at function scope; msg in its own inner scope; a local copy
+// break; }`; the out-parameter (when there was one) at function scope; msg
+// in its own inner scope; a local copy
 // of pMgr used for the body and the send; a second local with an empty
 // inline destructor declared after msg. Read from the bytes: ours puts the
 // pops between `test` and `je`, so the destructor's test shares the send's
@@ -10778,9 +10734,7 @@ void sm_Unknown2873d(CServerMgr* pMgr, Client* pClient)
 	LTRotation  rRot;
 	LTMatrix    mRot;
 
-	{
-		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
-	}
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	{
 		HOBJECT           hLight = pMgr->m_hGlobalLightObject;
@@ -11330,7 +11284,7 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 	// idiom, identical to netmgr.cpp:176 and lmessage.cpp:452. m_pMsg is
 	// still the constructor's null here, so Init's release folds away and
 	// only the AddRef at 0x0046377a survives.
-	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));   // 0x00463787
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));   // 0x00463787
 
 	// 0x0046378a `cmp DWORD PTR ds:0x4b329c,edi` with edi zero, and the store
 	// at 0x00463792 goes into the bLocal PARAMETER slot. S:0x10026d61
@@ -11388,7 +11342,7 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 			CClientPacketSetView* pSet =
 				(CClientPacketSetView*)&pClient->m_PacketSets[i][j];
 
-			pSet->m_Ref.Init(&msg_AllocPacketQ512(0x44c, 0x44c));   // 0x004638f0
+			pSet->m_Ref.Init(msg_AllocPacket(0x44c, 0x44c));   // 0x004638f0
 
 			// 0x0046388e `dec ; neg ; sbb ; and 0x80 ; add 0x80` — VC6's
 			// branchless select, hoisted out of the inner loop by /Og in BOTH
@@ -11462,7 +11416,7 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 	// empty `inline void f() {}` placed right after this line make VC6 call
 	// AddAfter and nothing else: 925/288 -> 923/285 SIZE-EXACT, +1 matched
 	// (the AddAfter COMDAT itself claims 0x100270be), leaving only a
-	// pIO/pSet frame-slot swap and a 2-insn xor/lea order at 0x10026f38.
+	// temporary/pSet frame-slot swap and a 2-insn xor/lea order at 0x10026f38.
 	// (14 is not enough, 15..34 all give the same.) In lithtech.exe the
 	// same probe (13+) also makes LTList::LTList() inside the expanded
 	// Client constructor a call, exactly as shipped 0x004637d9, and claims
@@ -12534,33 +12488,35 @@ public:
 //     into %ecx; read in place, the base is added straight into %eax as
 //     shipped (0x100267c1), and lithtech.exe's twin (0x00462fd0) went from
 //     six mnemonic blocks to three.
-//   * pIO is at function scope: in a block of its own its slot is freed and
-//     reused for `i`, which the shipped frame (8 bytes: the reference and
-//     pIO) does not do.
+//   * the shipped frame is 8 bytes: the reference and msg_AllocPacket's
+//     returned temporary, which does not share its slot with `i`.
 //
 // NEAR, size-exact on server.dll (260 of 260 bytes, 94 instructions), and
 // lithtech.exe 290 vs 286 with three mnemonic blocks. The whole residual on
 // both images is where `i` is homed: the shipped builds put it in the dead
 // pMgr parameter slot (0x8(%ebp) here; 0x14(%esp) at 0x00463013), ours gives
 // it a frame slot of its own. On server.dll that also lets VC6 park a zero
-// in %ebx for the reference's constructor, the pIO test, `i = 0` and the
-// loop guard (shipped: `andl $0x0` and `cmpl $0x0` each time), which moves
-// the three callee-saved pushes from after the pIO release to the prologue.
+// in %ebx for the reference's constructor, the temporary's test, `i = 0` and
+// the loop guard (shipped: `andl $0x0` and `cmpl $0x0` each time), which
+// moves the three callee-saved pushes from after the temporary's release to
+// the prologue.
 // Dead-parameter-slot homing has no known source lever in this tree.
 //
 // Falsified against it: cl 8168, 8447 and 8966 (all three identical here);
-// pIO in an inner block; `i` at function scope, first among the locals,
+// (with NOLF's out-parameter spelling) the out-parameter in an inner block;
+// `i` at function scope, first among the locals,
 // after pLAClient, in the for-init, as an `int`, as a while loop, and
 // initialized before the allocation; the queue walked by index, by a hoisted
 // cursor, and by a body-local element pointer; the index as a uint32 or
 // uint16 local; pLAClient dropped for casts at each use; the reset pairs
-// written through msg.m_pMsg directly (265 bytes); `pIO != LTNULL`.
+// written through msg.m_pMsg directly (265 bytes); `pIO != LTNULL`
+// (likewise under the out-parameter spelling).
 void sm_Unknown26755(CServerMgr* pMgr, Client* pClient)
 {
 	CMessageRef msg;
 	CLAClient*   pLAClient = (CLAClient*)pClient;
 
-	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	for (uint32 i = 0; i < pLAClient->m_nChanges; i++)
 	{
@@ -12599,15 +12555,4 @@ void sm_Unknown26755(CServerMgr* pMgr, Client* pClient)
 	}
 
 	pLAClient->m_nChanges = 0;
-}
-
-// The forwarding body of the by-value msg_AllocPacket declared at the top
-// (see there): the packet comes back through NOLF's out-parameter and is
-// handed on as the reference the callers destroy.
-CPacketRefQ512 msg_AllocPacketQ512(uint32 blockSize, uint32 growSize)
-{
-	CAbstractIO* pIO;
-
-	msg_AllocPacket(&pIO, blockSize, growSize);
-	return *(CPacketRefQ512*)&pIO;
 }

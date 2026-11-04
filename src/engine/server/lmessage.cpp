@@ -483,14 +483,10 @@ LTRESULT LMessageImpl::ReadCompVectorFL(LTVector& vec)
 LTRESULT LMessageImpl::ReadMessageFL(LMessageImpl*& pMsg)
 {
 	CMessageRef  msg;
-	CAbstractIO* pIO;
 	uint16       i;
 	uint16       nCount;
 
-	msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-
-	if (pIO)
-		pIO->Release();
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
 	pMsg = &msg.m_pMsg->m_Write;
 

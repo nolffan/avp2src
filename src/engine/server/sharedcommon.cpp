@@ -549,12 +549,16 @@ void sm_ResetDeactivationTimers(CServerMgr* pMgr)
 //
 // Three things read off the bytes:
 //
-//   * the packet is allocated and then *released* immediately — the scoped
-//     reference keeps the only count. That is the same pair of statements
-//     ServerCommonLT::SetObjectFilenames opens with.
-//   * `pIO` lives in the dead first parameter's stack slot: the console
-//     state is cached in edi before the allocation, so `lea 0x8(%ebp)` is
-//     the local's address and not an argument's.
+//   * the packet comes back as a temporary reference that is released as
+//     soon as the scoped one has taken its own count -- the same statement
+//     ServerCommonLT::SetObjectFilenames opens with. The temporary lives in
+//     the dead first parameter's stack slot: the console state is cached in
+//     edi before the allocation, so `lea 0x8(%ebp)` is the temporary's
+//     address and not an argument's.
+//   * the missing manager is an early return past the reference: the
+//     shipped `je` (0x10034254) goes straight to the epilogue, with the
+//     still-empty reference's release folded away, where an enclosing `if`
+//     joins the destructor's test.
 //   * the deactivation sweep is reached through the second global manager
 //     pointer, not through the state's own — `push 0x10058bf0` is a memory
 //     push, so what it hands over is g_pServerMgr's value.
@@ -562,29 +566,25 @@ void cc_OnVarCreated(ConsoleState* pState, LTCommandVar* pVar)
 {
 	CMessageRef msg;
 
-	if (pState->m_pServerMgr)
+	if (!pState->m_pServerMgr)
+		return;
+
+	msg.Init(msg_AllocPacket(0x44c, 0x44c));
+
+	if (stricmp(pVar->m_pName, "AutoDeactivate") == 0)
+		sm_ResetDeactivationTimers(g_pServerMgr);
+
 	{
-		CAbstractIO* pIO;
+		ServerMessage* pMsg = msg.m_pMsg;
 
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
-
-		if (stricmp(pVar->m_pName, "AutoDeactivate") == 0)
-			sm_ResetDeactivationTimers(g_pServerMgr);
-
-		{
-			ServerMessage* pMsg = msg.m_pMsg;
-
-			pMsg->m_Unknown38 = 1;
-			pMsg->m_Unknown34 = 1;
-		}
-
-		((CMsgStringWriter*)msg.m_pMsg)->WriteString(pVar->m_pName);
-		((CMsgStringWriter*)msg.m_pMsg)->WriteString(pVar->m_pStringVal);
-
-		sm_BroadcastToClientsEx(pState->m_pServerMgr, 0x10, msg.m_pMsg, 0x80);
+		pMsg->m_Unknown38 = 1;
+		pMsg->m_Unknown34 = 1;
 	}
+
+	((CMsgStringWriter*)msg.m_pMsg)->WriteString(pVar->m_pName);
+	((CMsgStringWriter*)msg.m_pMsg)->WriteString(pVar->m_pStringVal);
+
+	sm_BroadcastToClientsEx(pState->m_pServerMgr, 0x10, msg.m_pMsg, 0x80);
 }
 
 // 0x10028f42 / 0x0046ef0 — a console variable changed: exactly the same

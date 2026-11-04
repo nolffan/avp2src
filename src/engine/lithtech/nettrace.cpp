@@ -268,11 +268,8 @@ void net_TracePacketQ454(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 							{
 								CMessageRef  ref;
-								CAbstractIO* pIO;
 
-								ref.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-								if (pIO)
-									pIO->Release();
+								ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
 								ref.m_pMsg->Init(nSubWord, 0x1000);
 
@@ -349,11 +346,8 @@ void net_TracePacketQ454(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 				{
 					CMessageRef  ref;
-					CAbstractIO* pIO;
 
-					ref.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-					if (pIO)
-						pIO->Release();
+					ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
 					ref.m_pMsg->Init(nSubByte, 0x1000);
 
@@ -550,11 +544,8 @@ void net_TracePacketQ454(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 				{
 					CMessageRef  ref;
-					CAbstractIO* pIO;
 
-					ref.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-					if (pIO)
-						pIO->Release();
+					ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
 					ref.m_pMsg->Init(nSubByte, 0x1000);
 
