@@ -1,5 +1,13 @@
 // server.dll — IWorldBsp, the world geometry (reconstruction). Build /O1.
 #include "worldbsp.h"
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine sees the STL's <string> here, through a header
+// AvP2's does not have: the translation unit carries <string>'s 44-byte
+// guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
+// atexit of the empty 0x00401790; this one's near 0x004330c0). server.dll has it
+// in collection/objbank only.
+#include <string>
+#endif
 #include "commonmodel.h"   // Model::CModelSub14, the member at CWorldSurface+0x28
 #include "servermgr.h"   // WorldLoadRequest
 #include <stdio.h>      // sprintf, for fs_GetTableName
@@ -9,6 +17,77 @@
 // (Term); commonmodel.cpp's w_SetupPointShade adds to it too, through an
 // extern of this one definition.
 uint32 g_WorldBytes;
+
+// The 0x48-byte record at CWorldBsp+0x78 — worldbsp.h's CWorldTree, and
+// ltobject_internal.h's WorldBspData and WorldSurface, which are the same
+// object seen from the physics side.  Every offset below is either written
+// by this loader, zeroed by the constructor at 0x10009275, or already in
+// ltobject_internal.h.
+//
+// The constructor (0x10009275, and EXPANDED in the client at 0x00422da2 so
+// both readings agree): build the member at +0x28 (0x100243f6), store the
+// vtable 0x1004d344 at +0x00, call 0x10024409 on that member with `this`
+// as its argument, then m_n30/m_n34/m_n38 = 0, m_n3c/m_n3e/m_n40 = 0,
+// m_nLink42 = 0x7fff, m_n44 = 0.
+// 0x28 -- commonmodel.h's Model::CModelSub14, the two-dword chain the bigger
+// engine records carry: a head and an owner.  Its constructor (0x100243f6),
+// destructor (0x10024404) and initialiser (0x10024409) are commonmodel.cpp's;
+// the constructor below calls Init on it with its own `this` as the owner.
+typedef Model::CModelSub14 CWorldSurfSub28QT1;
+
+// AVP2: AvP2's and Primal Hunt's surface is 0x40 bytes and has NO vptr.
+// Its constructor (Primal Hunt 0x0042ca70, server.dll 0x1000c130; reached
+// through the eh vector constructor at 0x0042bb99 with 0x40 and the
+// compiler-generated destructor 0x0042a8f0, `add $0x24,%ecx ; jmp`)
+// builds the chain at +0x24, calls its Init with `this`, and stores no
+// vtable; then +0x2c and +0x30 (dwords), +0x34, +0x36, +0x38 (words), +0x3c
+// (byte) and +0x3a = 0x7fff.  NOLF's m_n30 is gone.  The loader (Primal
+// Hunt 0x0042c033..0x0042c24e, stride 0x40) reads +0x36 (2 bytes), merges
+// the flag word into +0x30 with the 0x1fffffff bit-field store, reads +0x3c
+// (1 byte) and, last, +0x34 (2 bytes); w_LinkSurfacePolies threads the
+// chain head at +0x38 (0x0042cb2a, 0x0042cb55).  Neither image has a
+// `shr $0x1d` anywhere, so nothing reads the axis code back: NOLF's
+// one-slot GetBasisVectors virtual (0x1000af3b) is not in AvP2's source.
+class CWorldSurface
+{
+public:
+	CWorldSurface();                         // PH 0x0042ca70
+
+	LTVector  m_vO;                          // 0x00  texture origin
+	LTVector  m_vP;                          // 0x0c  texture U vector
+	LTVector  m_vQ;                          // 0x18  texture V vector
+	// 0x24 -- worldbsp.h's CWorldTreeSub28, the member with the ctor
+	// (0x100243f6) and the dtor (0x10024404).  Spelling it as a member
+	// with a DESTRUCTOR rather than as padding is what puts the array
+	// cookie on the `new[]` below: Primal Hunt's 0x0042bb60 asks the
+	// allocator for `n*0x40 + 4` and stores the count at [p].
+	CWorldSurfSub28QT1 m_Sub28;              // 0x24
+	class LTPlane* m_pPlane;                 // 0x2c  ltobject_internal.h
+	// ltobject_internal.h's WorldBspData::m_nFlags.  TWO BIT-FIELDS: the
+	// loader writes the bottom twenty-nine with the XOR-merge at
+	// 0x0042c083..0x0042c09f (`x ^= ((x ^ v) & 0x1fffffff)`), which is
+	// MSVC 6's bit-field store.  WBSP_NOSTEP (0x400000) lives in the low
+	// field.
+	uint32    m_nFlags : 29;                 // 0x30
+	uint32    m_nAxis  : 3;
+	uint16    m_nTextureFlags;               // 0x34  ltobject_internal.h
+	uint16    m_n36;                         // 0x36
+	uint16    m_nFirstPoly;                  // 0x38  head of the per-surface
+	                                         //       polygon chain, by index
+	uint16    m_nLink3a;                     // 0x3a  constructor sets 0x7fff
+	uint8     m_n3c;                         // 0x3c
+	uint8     m_pad_3d[0x40 - 0x3d];
+};
+
+
+// AVP2: the dword at CWorldBsp+0x150 that Init resets (see there), past
+// where worldbsp.h's class stops (name ours).
+class CWorldBspTailQ517
+{
+public:
+	uint8  m_pad_000[0x150];
+	uint32 m_n150;                           // 0x150
+};
 
 // CServerWorldFull is a class local to commonmodel.cpp, not a header type, and
 // this function touches exactly one of its fields -- the world-object list head
@@ -71,6 +150,14 @@ void CWorldBsp::Init()
 	m_p104 = LTNULL;
 
 	m_nUnknown48 = 0;
+
+	// AVP2: a dword past NOLF's end of the class, reset to -1 (Primal Hunt
+	// server.dll 0x1000e19a `orl $-1,0x150(%ecx)`, which /O1 schedules
+	// between the vector and +0xf4; lithtech.exe 0x0042fcaa, last; AvP2's
+	// lithtech.exe has it too; written last, both images are identical). The client allocates the world 0x154 bytes
+	// (0x0042b773, 0x0042df75), so worldbsp.h's CWorldBsp is one member
+	// short; reached through a view until that header carries it.
+	((CWorldBspTailQ517*)this)->m_n150 = 0xffffffff;
 }
 
 // Giving the world back. A world whose flags carry bit zero owns nothing —
@@ -126,7 +213,11 @@ void CWorldBsp::Term()
 		// and the three the shipped code pushes is its flag word: array plus
 		// free. So this is one `delete []`, and the null test the shipped code
 		// has around it is the compiler's own, not a guard in the source.
-		delete [] m_pTree;
+		// AVP2: the elements are the 0x40-byte surfaces the loader made
+		// (Primal Hunt 0x0042fe0c pushes 0x40 and the surface's destructor
+		// 0x0042a8f0 to the eh vector destructor; AvP2 0x0042cd5d steps
+		// 0x40), so the release names that class.
+		delete [] (CWorldSurface*)m_pTree;
 
 		if (m_pbc)
 			dfree(m_pbc);
@@ -784,67 +875,6 @@ struct WorldObjectRecQT1
 };
 
 
-// The 0x48-byte record at CWorldBsp+0x78 — worldbsp.h's CWorldTree, and
-// ltobject_internal.h's WorldBspData and WorldSurface, which are the same
-// object seen from the physics side.  Every offset below is either written
-// by this loader, zeroed by the constructor at 0x10009275, or already in
-// ltobject_internal.h.
-//
-// The constructor (0x10009275, and EXPANDED in the client at 0x00422da2 so
-// both readings agree): build the member at +0x28 (0x100243f6), store the
-// vtable 0x1004d344 at +0x00, call 0x10024409 on that member with `this`
-// as its argument, then m_n30/m_n34/m_n38 = 0, m_n3c/m_n3e/m_n40 = 0,
-// m_nLink42 = 0x7fff, m_n44 = 0.
-// 0x28 -- commonmodel.h's Model::CModelSub14, the two-dword chain the bigger
-// engine records carry: a head and an owner.  Its constructor (0x100243f6),
-// destructor (0x10024404) and initialiser (0x10024409) are commonmodel.cpp's;
-// the constructor below calls Init on it with its own `this` as the owner.
-typedef Model::CModelSub14 CWorldSurfSub28QT1;
-
-// AVP2: AvP2's and Primal Hunt's surface is 0x40 bytes and has NO vptr.
-// Its constructor (Primal Hunt 0x0042ca70, server.dll 0x1000c130; reached
-// through the eh vector constructor at 0x0042bb99 with 0x40 and the
-// compiler-generated destructor 0x0042a8f0, `add $0x24,%ecx ; jmp`)
-// builds the chain at +0x24, calls its Init with `this`, and stores no
-// vtable; then +0x2c and +0x30 (dwords), +0x34, +0x36, +0x38 (words), +0x3c
-// (byte) and +0x3a = 0x7fff.  NOLF's m_n30 is gone.  The loader (Primal
-// Hunt 0x0042c033..0x0042c24e, stride 0x40) reads +0x36 (2 bytes), merges
-// the flag word into +0x30 with the 0x1fffffff bit-field store, reads +0x3c
-// (1 byte) and, last, +0x34 (2 bytes); w_LinkSurfacePolies threads the
-// chain head at +0x38 (0x0042cb2a, 0x0042cb55).  Neither image has a
-// `shr $0x1d` anywhere, so nothing reads the axis code back: NOLF's
-// one-slot GetBasisVectors virtual (0x1000af3b) is not in AvP2's source.
-class CWorldSurface
-{
-public:
-	CWorldSurface();                         // PH 0x0042ca70
-
-	LTVector  m_vO;                          // 0x00  texture origin
-	LTVector  m_vP;                          // 0x0c  texture U vector
-	LTVector  m_vQ;                          // 0x18  texture V vector
-	// 0x24 -- worldbsp.h's CWorldTreeSub28, the member with the ctor
-	// (0x100243f6) and the dtor (0x10024404).  Spelling it as a member
-	// with a DESTRUCTOR rather than as padding is what puts the array
-	// cookie on the `new[]` below: Primal Hunt's 0x0042bb60 asks the
-	// allocator for `n*0x40 + 4` and stores the count at [p].
-	CWorldSurfSub28QT1 m_Sub28;              // 0x24
-	class LTPlane* m_pPlane;                 // 0x2c  ltobject_internal.h
-	// ltobject_internal.h's WorldBspData::m_nFlags.  TWO BIT-FIELDS: the
-	// loader writes the bottom twenty-nine with the XOR-merge at
-	// 0x0042c083..0x0042c09f (`x ^= ((x ^ v) & 0x1fffffff)`), which is
-	// MSVC 6's bit-field store.  WBSP_NOSTEP (0x400000) lives in the low
-	// field.
-	uint32    m_nFlags : 29;                 // 0x30
-	uint32    m_nAxis  : 3;
-	uint16    m_nTextureFlags;               // 0x34  ltobject_internal.h
-	uint16    m_n36;                         // 0x36
-	uint16    m_nFirstPoly;                  // 0x38  head of the per-surface
-	                                         //       polygon chain, by index
-	uint16    m_nLink3a;                     // 0x3a  constructor sets 0x7fff
-	uint8     m_n3c;                         // 0x3c
-	uint8     m_pad_3d[0x40 - 0x3d];
-};
-
 // PH 0x0042ca70 (NOLF 0x10009275).  NOT `inline`: NOLF's /O2 client
 // expanded it into the `new CWorldSurface[n]` loop (NOLF 0x00422da2), and
 // Primal Hunt's instead hands its address to the eh vector constructor
@@ -860,8 +890,8 @@ CWorldSurface::CWorldSurface()
 	m_nTextureFlags = 0;
 	m_n36 = 0;
 	m_nFirstPoly = 0;
-	m_nLink3a = 0x7fff;
 	m_n3c = 0;
+	m_nLink3a = 0x7fff;
 }
 
 

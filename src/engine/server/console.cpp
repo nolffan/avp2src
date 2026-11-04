@@ -11,6 +11,14 @@
 #include "servermgr.h"
 #include "de_error.h"
 
+// PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
+// lithtech.exe's do (AvP2 1.0.9.6's and PH's server.dll engine TUs none).
+// Its trace is std::ctype<unsigned short>::id's guarded initializer at the
+// end of the TU (0x0047a6a0: guard 0x004f8014 bit 0, atexit of the empty 0x00401790).
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#include <string>
+#endif
+
 // 0x10005bf8 — a console variable by name.
 HCONVAR con_FindVar(ConsoleState* pState, char* pName)
 {
@@ -1312,15 +1320,20 @@ void cc_DisableWMPhysics(int argc, char** argv)
 // The two CLTServer entries SpawnObject reaches. servermsg.h lays the whole
 // table out; this is the local two-field view, because console.cpp does not
 // include that header (names servermsg.h's).
+//
+// AVP2: both entries are three slots on from NOLF's 0x24 and 0x38, in every
+// AvP2 image (PH lithtech 0x0047a352 `call *0x30(%ecx)`, 0x0047a476
+// `call *0x44(%ecx)`; 1.0.9.6 lithtech 0x00473bcb / 0x00473ce8; PH server.dll
+// 0x100341a6 / 0x10034209).
 class CConServerView
 {
 public:
-	uint8  m_pad_00[0x24];
-	HCLASS (*GetClass)(char* pName);                                  // 0x24
-	uint8  m_pad_28[0x38 - 0x28];
+	uint8  m_pad_00[0x30];
+	HCLASS (*GetClass)(char* pName);                                  // 0x30
+	uint8  m_pad_34[0x44 - 0x34];
 	void*  (*CreateObjectProps)(HCLASS hClass,
 	                            ObjectCreateStruct* pStruct,
-	                            char* pszProps);                      // 0x38
+	                            char* pszProps);                      // 0x44
 };
 
 // 0x10028da3 — "SpawnObject <class name> \"spawn args\"": make one object of a

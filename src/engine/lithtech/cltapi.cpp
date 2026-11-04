@@ -55,7 +55,8 @@ typedef void*          HMESSAGEWRITE;
 #define OT_WORLDMODEL 2
 #define OT_SPRITE 3
 #define OT_CONTAINER 9
-#define MAX_MODEL_TEXTURES 2
+// AVP2: the SDK's four skins (NOLF had two).
+#define MAX_MODEL_TEXTURES 4
 
 class LTVector
 {
@@ -171,20 +172,43 @@ public:
 	uint16 m_nLocalID;                       // 0x08
 };
 
+// AVP2: the SDK's layout (src/LT2/sdk/inc/ltbasedefs.h): the filename at
+// +0x80 behind m_Flags2 and four skins from +0x100 (Primal Hunt 0x00405cf0,
+// 0x00405d06; AvP2 1.0.9.6 0x004054ef, 0x00405505), then m_bResetAnimations
+// at +0x388 (AvP2 0x00405524). PH: the extra texture name sits at +0x300 and
+// pushes the flag to +0x408 (0x00405d28, 0x00405d22).
 class ObjectCreateStruct
 {
 public:
-	uint8 m_pad_00[0x7c];
-	char  m_Filename[0x80];                                    // 0x7c
-	char  m_SkinNames[MAX_MODEL_TEXTURES][0x80];               // 0xfc
+	uint8  m_pad_00[0x80];
+	char   m_Filename[0x80];                                   // 0x80
+	char   m_SkinNames[MAX_MODEL_TEXTURES][0x80];              // 0x100
+#ifdef PRIMAL_HUNT
+	char   m_ExtraTextureName[0x80];                           // 0x300
+	uint8  m_pad_380[0x408 - 0x380];
+#else
+	uint8  m_pad_300[0x388 - 0x300];
+#endif
+	uint32 m_bResetAnimations;                                 // 0x388 (PH 0x408)
 };
 
+// AVP2: four skins, and a flag after the create struct that the request's
+// constructor sets (`movl $0x1,0x50(%esp)`, AvP2 0x004054ba; Primal Hunt
+// 0x00405cb7). PH: one more file ahead of the struct -- the model's extra
+// texture -- so the struct is at +0x48 and the flag at +0x4c (the same
+// record src/engine/lithtech/cmodelload.cpp's CClientCreateRequestQ474 reads).
 class CClientCreateRequest
 {
 public:
+	CClientCreateRequest() { m_pStruct = LTNULL; m_bResetAnimations = LTTRUE; }
+
 	CClientFileRef      m_ObjectFile;                        // 0x00
 	CClientFileRef      m_SkinFiles[MAX_MODEL_TEXTURES];     // 0x0c
-	ObjectCreateStruct* m_pStruct;                           // 0x24
+#ifdef PRIMAL_HUNT
+	CClientFileRef      m_ExtraFile;                         // 0x3c
+#endif
+	ObjectCreateStruct* m_pStruct;                           // 0x3c (PH 0x48)
+	uint32              m_bResetAnimations;                  // 0x40 (PH 0x4c)
 };
 
 
@@ -239,6 +263,11 @@ public:
 	LTRESULT GetPointStatus(LTVector* pPoint);                    // slot 15
 	LTRESULT GetPointShade(LTVector* pPoint, LTVector* pColor);   // slot 16
 	LTRESULT GetPolyTextureFlags(uint32 hPoly, uint32* pFlags);    // slot 17
+	LTRESULT CreateMessage(class ILTMessage*& pMsg);              // slot 14 (AVP2)
+	LTRESULT GetPolyTextureName(uint32 hPoly, char* pName, uint32 nMaxLen);   // PH slot 19
+	LTRESULT GetPolyInfo(uint32 hPoly, struct LTPlaneQ512** ppPlane, LTVector* pVertexList,
+	                     uint32 nVertexListMaxSize, uint32* pnNumVertices); // slot 19 (PH 20)
+	LTRESULT GetPolySurfaceFlags(uint32 hPoly, uint32& dwSurfFlags);  // slot 20 (PH 21)
 	uint8       m_pad_00[0x10];
 	CClientMgr* m_pClientMgr;                // 0x10
 };
@@ -296,8 +325,6 @@ LTRESULT ClientCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 
 	static char* pErrFnName = "ClientCommonLT::SetObjectFilenames";
 
-	req.m_pStruct = LTNULL;
-
 	if (!pStruct || !pObj ||
 	    (((CClientObject*)pObj)->m_ObjectType != OT_MODEL &&
 	     ((CClientObject*)pObj)->m_ObjectType != OT_SPRITE))
@@ -316,7 +343,47 @@ LTRESULT ClientCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 		req.m_SkinFiles[i].m_nFileType = 0;
 	}
 
+#ifdef PRIMAL_HUNT
+	// PH: the extra texture's name, and its +0x08 word cleared (0x00405d32,
+	// 0x00405d3d); its +0x00 keeps the constructor's zero.
+	req.m_ExtraFile.m_pFilename = pStruct->m_ExtraTextureName;
+	req.m_ExtraFile.m_nLocalID = 0;
+#endif
+	req.m_bResetAnimations = pStruct->m_bResetAnimations;
+
 	return cm_RunCreateHookQ404(m_pClientMgr, pObj, &req, LT_OK);
+}
+
+
+// ----------------------------------------------------------------------- //
+// AVP2: 0x00405da0, 22 bytes -- ClientCommonLT::CreateMessage, slot 14 of
+// Primal Hunt's ClientCommonLT table 0x004d4848 (NOLF's slot 14 was the
+// shared stub 0x00434a10).  The client twin of servercommon.cpp's
+// ServerCommonLT::CreateMessage: the manager's StartMessage (0x004131e0,
+// clientmgr2.cpp's CClientMgrView::StartMessage) and the writer eight bytes
+// into the message handed back -- an address, so no null test.
+class CClientMsgQ411;
+
+class CClientMgrView
+{
+public:
+	CClientMsgQ411* StartMessage();          // 0x004131e0
+};
+
+class CClientMsgWriteViewQ512
+{
+public:
+	uint8 m_pad_00[0x08];
+	uint8 m_Write[4];                        // 0x08  the ILTMessage writer
+};
+
+LTRESULT ClientCommonLT::CreateMessage(ILTMessage*& pMsg)
+{
+	CClientMsgQ411* pNew = ((CClientMgrView*)m_pClientMgr)->StartMessage();
+
+	pMsg = (ILTMessage*)((CClientMsgWriteViewQ512*)pNew)->m_Write;
+
+	return LT_OK;
 }
 
 
@@ -352,20 +419,67 @@ public:
 	IWorldBspQ4055* m_pList;                 // 0x04
 };
 
+// AVP2: the texture a surface draws with, as far as GetPolyTextureName
+// reads it: a record at +0x24 whose +0x1c is the name (Primal Hunt
+// 0x00405f35, 0x00405f52; names ours).
+class CTextureNameRecQ512
+{
+public:
+	uint8 m_pad_00[0x1c];
+	char* m_pName;                           // 0x1c
+};
+
+class CTextureQ512
+{
+public:
+	uint8                m_pad_00[0x24];
+	CTextureNameRecQ512* m_pNameRec;         // 0x24
+};
+
 class CSurfaceQ4055
 {
 public:
+	uint8         m_pad_00[0x2c];
+	CTextureQ512* m_pTexture;                // 0x2c  (Primal Hunt 0x00405eec)
+	uint32        m_Flags;                   // 0x30  (0x00406160)
 	// AVP2: 0x34 (NOLF's was 0x3c; Primal Hunt's 0x00405e4c).
-	uint8  m_pad_00[0x34];
-	uint16 m_nTextureFlags;                  // 0x34
+	uint16        m_nTextureFlags;           // 0x34
+};
+
+struct LTPlaneQ512;
+
+// One vertex record of a poly: the position is a pointer (Primal Hunt
+// 0x00406071), twenty-four bytes apiece (0x0040607b).
+class CPolyVertexQ512
+{
+public:
+	LTVector* m_pPos;                        // 0x00
+	uint8     m_pad_04[0x18 - 0x04];
 };
 
 class WorldPolyQ4055
 {
 public:
+	uint8          m_pad_00[0x28];
+	LTPlaneQ512*   m_pPlane;                 // 0x28  (Primal Hunt 0x00406035)
 	// AVP2: 0x2c (NOLF's was 0x28; Primal Hunt's 0x00405e45).
-	uint8          m_pad_00[0x2c];
 	CSurfaceQ4055* m_pSurface;               // 0x2c
+	uint8          m_pad_30[0x50 - 0x30];
+	// The vertex count is the first word alone while the vertices are the
+	// ones inline at +0x58, and both words together once they live
+	// elsewhere (0x0040603a..0x00406056; names ours).
+	CPolyVertexQ512* m_pVertices;            // 0x50
+	uint16         m_nVertices;              // 0x54
+	uint16         m_nExtraVertices;         // 0x56
+	CPolyVertexQ512 m_Vertices[1];           // 0x58
+
+	uint32 GetNumVertices()
+	{
+		if (m_pVertices != m_Vertices)
+			return m_nVertices + m_nExtraVertices;
+
+		return m_nVertices;
+	}
 };
 
 class CClientMgrPolyViewQ4055
@@ -408,6 +522,110 @@ LTRESULT ClientCommonLT::GetPolyTextureFlags(uint32 hPoly, uint32* pFlags)
 	}
 
 	RETURN_ERROR(2, "CommonLT::GetPolyTextureFlags", LT_ERROR);
+}
+
+#ifdef PRIMAL_HUNT
+extern "C" int _snprintf(char* pBuffer, unsigned int nCount, const char* pFormat, ...);
+
+// PH: 0x00405e90, 278 bytes -- ClientCommonLT::GetPolyTextureName, slot 19
+// of 0x004d4848, named by its error tag (0x004e0ad8).  No shell test: the
+// poly, then the name buffer and its size, then the surface's texture and
+// the texture's name record; every miss is a level-2 LT_ERROR, and the name
+// goes out through _snprintf (0x004c09a0) with "%s".
+//
+// NEAR (235 of 278 bytes): the shipped body loads the texture into %esi for
+// its null test and reads it again from the surface for the name record
+// (0x00405eec, 0x00405f32), so %esi stays pushed to the end and the three
+// error blocks stay apart (the surface/name-record one runs to the level
+// test and jumps into the last one's tail, 0x00405f3c..0x00405f50); ours
+// CSEs the texture into %eax and merges two blocks whole.  A named texture
+// local, the flat `||` spelling and the nested one all CSE the same way.
+LTRESULT ClientCommonLT::GetPolyTextureName(uint32 hPoly, char* pName, uint32 nMaxLen)
+{
+	WorldPolyQ4055* pPoly = ((CClientMgrPolyViewQ4055*)m_pClientMgr)->FindPoly(hPoly);
+
+	if (pPoly && pName && nMaxLen)
+	{
+		CSurfaceQ4055* pSurface = pPoly->m_pSurface;
+
+		if (pSurface)
+		{
+			if (!pSurface->m_pTexture)
+				RETURN_ERROR(2, "CommonLT::GetPolyTextureName", LT_ERROR);
+
+			if (pSurface->m_pTexture->m_pNameRec)
+			{
+				_snprintf(pName, nMaxLen, "%s", pSurface->m_pTexture->m_pNameRec->m_pName);
+				return LT_OK;
+			}
+		}
+
+		RETURN_ERROR(2, "CommonLT::GetPolyTextureName", LT_ERROR);
+	}
+
+	RETURN_ERROR(2, "CommonLT::GetPolyTextureName", LT_ERROR);
+}
+#endif
+
+// AVP2: 0x00405fb0, 301 bytes (Primal Hunt) -- ClientCommonLT::GetPolyInfo,
+// slot 20 of 0x004d4848 (19 in AvP2's SDK), error tag 0x004e0af8.  The shell
+// test of GetPolyTextureFlags, then the poly; the plane pointer, as many
+// vertex positions as both the poly and the caller's array have room for
+// (copied out of the inline records at +0x58), and the full count.
+//
+// NEAR (301 of 301 bytes, size-exact; AvP2 299): the vertex count and the
+// list pointer trade %edx and %esi (shipped: count in %edx, 0x00406044..
+// 0x00406056).  Unmoved by the sum's operand order, `?:` for the count, the
+// count and index at function scope, an output-pointer walk (302 bytes) and
+// a named vertex record.  Allocation.
+LTRESULT ClientCommonLT::GetPolyInfo(uint32 hPoly, LTPlaneQ512** ppPlane,
+                                     LTVector* pVertexList,
+                                     uint32 nVertexListMaxSize,
+                                     uint32* pnNumVertices)
+{
+	if (!((CClientMgrPolyViewQ4055*)m_pClientMgr)->m_pCurShell)
+		RETURN_ERROR(2, "CommonLT::GetPolyInfo", LT_NOTINITIALIZED);
+
+	WorldPolyQ4055* pPoly = ((CClientMgrPolyViewQ4055*)m_pClientMgr)->FindPoly(hPoly);
+	if (pPoly)
+	{
+		if (ppPlane)
+			*ppPlane = pPoly->m_pPlane;
+
+		uint32 nVertices = pPoly->GetNumVertices();
+
+		if (pVertexList)
+		{
+			for (uint32 i = 0; i < nVertices && i < nVertexListMaxSize; i++)
+				pVertexList[i] = *pPoly->m_Vertices[i].m_pPos;
+		}
+
+		if (pnNumVertices)
+			*pnNumVertices = nVertices;
+
+		return LT_OK;
+	}
+
+	RETURN_ERROR(2, "CommonLT::GetPolyInfo", LT_ERROR);
+}
+
+// AVP2: 0x004060e0, 196 bytes (Primal Hunt; the enumeration splits it at the
+// shell test's success target 0x00406126) -- ClientCommonLT::
+// GetPolySurfaceFlags, slot 21 of 0x004d4848, error tag 0x004e0b10.  The
+// surface's +0x30 flags.
+LTRESULT ClientCommonLT::GetPolySurfaceFlags(uint32 hPoly, uint32& dwSurfFlags)
+{
+	if (!((CClientMgrPolyViewQ4055*)m_pClientMgr)->m_pCurShell)
+		RETURN_ERROR(2, "CommonLT::GetPolySurfaceFlags", LT_NOTINITIALIZED);
+
+	WorldPolyQ4055* pPoly = ((CClientMgrPolyViewQ4055*)m_pClientMgr)->FindPoly(hPoly);
+	if (pPoly && pPoly->m_pSurface)
+	{
+		dwSurfFlags = pPoly->m_pSurface->m_Flags;
+		return LT_OK;
+	}
+
+	RETURN_ERROR(2, "CommonLT::GetPolySurfaceFlags", LT_ERROR);
 }
 
 

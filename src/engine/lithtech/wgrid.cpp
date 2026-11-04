@@ -25,6 +25,15 @@
 // ======================================================================= //
 #include <windows.h>
 #include <string.h>
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's engine sees the STL's <string> here, through a header
+// AvP2's does not have: this translation unit carries the 44-byte guarded
+// initialiser of std::ctype<unsigned short>::id that <string> emits
+// (0x00448a90, guard 0x004f8014, `atexit` of the empty 0x00401790), and
+// its <new> declares operator delete throw(), which is what leaves the
+// shared texture's destructor below without an exception frame.
+#include <string>
+#endif
 
 #include "ltbasedefs.h"
 #include "collection.h"
@@ -891,6 +900,100 @@ CWorldItem18Q43C* CWorldBspQ43C::RemapItem(CWorldBspQ43C* pSrc,
 		return &m_pItems70[pItem - pSrc->m_pItems70];          // 0x00426c5a
 
 	return LTNULL;                                             // 0x00426c82
+}
+
+
+// ======================================================================= //
+//  AVP2: the shared texture's three out-of-line members, which Primal Hunt
+//  places straight after RemapItem (0x004304f0, 0x00430560, 0x00430580) --
+//  this translation unit's run. NOLF expanded the constructor where the
+//  texture bank allocates (cmgrinit.cpp's SharedTextureQ46C); AvP2's and
+//  Primal Hunt's texture is 0x40 bytes and has a command string of its own
+//  at +0x38 (clientrender.cpp's SharedTexture::SetCommandString is the
+//  caller at 0x00474e2b, clienttexmgr.cpp's ~SharedTextureView the one at
+//  0x00428877). Names as clienttexmgr.cpp's view; the class name is ours.
+// ======================================================================= //
+
+// The eight-byte link at +0x00, the model's CModelSub14: constructor
+// 0x0046b980, destructor 0x0046b990, Init 0x0046b9a0 -- all three called.
+class CBankLinkQ517
+{
+public:
+	CBankLinkQ517();                         // 0x0046b980
+	~CBankLinkQ517();                        // 0x0046b990
+	LTBOOL Init(void* pOwner);               // 0x0046b9a0
+
+	void* m_pNextFree;                       // 0x00
+	void* m_pOwner;                          // 0x04
+};
+
+class SharedTextureQ517
+{
+public:
+	SharedTextureQ517();                     // 0x004304f0
+	~SharedTextureQ517();                    // 0x00430560
+	void SetCommandString(char* pString);    // 0x00430580
+
+	CBankLinkQ517 m_BankLink;                // 0x00
+	void*         m_pEngineData;             // 0x08
+	void*         m_pRenderData;             // 0x0c
+	LTLink        m_Link;                    // 0x10
+	uint32        m_Unknown1c[2];            // 0x1c, 0x20
+	void*         m_pFileRef;                // 0x24
+	void*         m_pLinkedTexture;          // 0x28
+	uint32        m_nLinkType;               // 0x2c
+	uint16        m_nFrameCode;              // 0x30
+	uint16        m_nRefCount;               // 0x32
+	uint32        m_Unknown34;               // 0x34
+	char*         m_pCommandString;          // 0x38
+	uint32        m_Unknown3c;               // 0x3c
+};
+
+// 0x004304f0. Every field but +0x3c cleared, the link pointed back at the
+// texture, and the bank link's Init last, with the texture as its owner.
+SharedTextureQ517::SharedTextureQ517()
+{
+	m_pEngineData    = LTNULL;
+	m_pRenderData    = LTNULL;
+	m_pFileRef       = LTNULL;
+	m_pLinkedTexture = LTNULL;
+	m_nLinkType      = 0;
+	m_nFrameCode     = 0;
+	m_nRefCount      = 0;
+	m_Unknown34      = 0;
+	m_pCommandString = LTNULL;
+	m_Link.m_pData   = this;
+	memset(m_Unknown1c, 0, sizeof(m_Unknown1c));
+	m_BankLink.Init(this);
+}
+
+// 0x00430560. The string goes back unconditionally (`delete []` tests
+// nothing itself), then the bank link's destructor.
+// No exception frame round the member's destructor: operator delete is
+// throw() here (see the <string> include at the top); without it this is
+// 80 bytes against the shipped 24.
+SharedTextureQ517::~SharedTextureQ517()
+{
+	delete [] m_pCommandString;
+}
+
+// 0x00430580. An empty string leaves the old one in place; otherwise the
+// old one is released and a copy of the new one taken.
+void SharedTextureQ517::SetCommandString(char* pString)
+{
+	uint32 nLen = strlen(pString);
+
+	if (nLen)
+	{
+		if (m_pCommandString)
+		{
+			delete [] m_pCommandString;
+			m_pCommandString = LTNULL;
+		}
+
+		m_pCommandString = new char[nLen + 1];
+		strcpy(m_pCommandString, pString);
+	}
 }
 
 

@@ -1069,6 +1069,22 @@ void fs_FreeFileList(FileEntry* pList)
 char*  g_pEmptyFilename = "";               // 0x10052edc
 uint32 g_nModelDataBytes;                   // 0x10058724 (uninitialised)
 
+// 0x10016352 — fifteen bytes: keep the pointer, clear the claim flag.
+// The store order is lithtech.exe's (0x00445220: `mov %ecx,0x4(%eax)` then
+// `movl $0x0,(%eax)`), which follows source order; /O1 hoists its
+// `andl $0x0` to the top whichever way the source reads.
+//
+// Defined ABOVE Model::Model, as Primal Hunt's lithtech.exe has it
+// (0x00452070, the model constructor at 0x004535a0): under /GX VC6 then
+// knows the call cannot throw and the model constructor stores no EH state
+// in front of it (0x00453661).
+CMoDataRef::CMoDataRef(void* pData)
+{
+	m_pAlloc = (LAlloc*)pData;
+	m_pLinks = 0;
+}
+
+
 // 0x10016cc5 — build a model. Fourteen sub-objects run first (thirteen
 // constructors and one float initialiser), then the vptr, then a body that is
 // almost entirely constants.
@@ -3943,17 +3959,6 @@ LTBOOL CUnknownD9E4::sub_1001bc69(ILTStream* pStream)
 }
 
 
-// 0x10016352 — fifteen bytes: keep the pointer, clear the claim flag.
-// The store order is lithtech.exe's (0x00445220: `mov %ecx,0x4(%eax)` then
-// `movl $0x0,(%eax)`), which follows source order; /O1 hoists its
-// `andl $0x0` to the top whichever way the source reads.
-CMoDataRef::CMoDataRef(void* pData)
-{
-	m_pAlloc = (LAlloc*)pData;
-	m_pLinks = 0;
-}
-
-
 // 0x10016361 — five bytes: a tail `jmp` into the release below, which is what
 // VC6 emits for a destructor whose whole body is one call and which has no
 // sub-objects of its own to tear down.
@@ -4637,11 +4642,16 @@ public:
 	uint16 m_n02;
 };
 
+// AVP2: twenty-four bytes, not NOLF's eight: the +0x54 array's Init strides
+// `lea (%eax,%eax,2); shl $3` (Primal Hunt lithtech.exe 0x00432ddb, its
+// server.dll's BaseNew 0x10010d5e, AvP2 1.0.9.6's server.dll 0x100103ea).
+// What the extra sixteen bytes hold is not read anywhere here.
 class CWorldAnimFrameQ
 {
 public:
 	void*  m_pData;
 	uint32 m_nSize;
+	uint8  m_pad_08[0x18 - 0x08];
 };
 
 typedef CMoArray<CWorldAnimRecQ>     CWorldSub04;   // ctor 0x1000b7e6, SetSize2 0x1000c267
@@ -4938,12 +4948,6 @@ void CWorldSubFC::Clear()
 	m_v3cz = 0.0f;
 }
 
-// 0x10014179 — the constructor, and the clear is all of it.
-CWorldSubFC::CWorldSubFC()
-{
-	Clear();
-}
-
 // 0x10014295 — the teardown the release below tail-jumps to: `dfree(m_pData);
 // Clear();`. smgr.cpp, the file that calls it directly, carries the body as
 // CWorldSubFCView::Term, so this reaches that one definition rather than
@@ -5101,10 +5105,15 @@ public:
 	virtual void _v08() = 0;
 	virtual void _v0c() = 0;
 	virtual void _v10() = 0;
+	// AVP2: worldbsp.h's two new slots, GetCellSize and GetCellOrigin, so
+	// the question below is slot 0x24, not NOLF's 0x1c (`call *0x24(%edx)`,
+	// Primal Hunt lithtech.exe 0x0042b5c7).
 	virtual void _v14() = 0;
 	virtual void _v18() = 0;
-	// 0x1c — asked once per world model right after it loads; a nonzero
-	// answer sets bit 1 of the world's own flags word.
+	virtual void _v1cQ513() = 0;
+	virtual void _v20Q513() = 0;
+	// 0x24 (NOLF 0x1c) — asked once per world model right after it loads; a
+	// nonzero answer sets bit 1 of the world's own flags word.
 	virtual int  _v1c() = 0;
 
 	// NOT virtual, and CServerWorldRec::Term is what says so: its two
@@ -5480,6 +5489,9 @@ public:
 	LTLink       m_Link1d0;                  // 0x1d0
 	LTLink       m_Link1dc;                  // 0x1dc
 	uint32       m_n1e8;                     // 0x1e8
+	// AVP2: the header's first count, kept (Load's `mov %eax,0x1ec(%edi)`:
+	// Primal Hunt lithtech.exe 0x0042b2a8, AvP2 1.0.9.6's 0x0042862d).
+	uint32       m_n1ec;                     // 0x1ec
 };
 
 // The world's teardown, seen from a class WITHOUT the four virtuals.
@@ -5538,6 +5550,18 @@ CServerWorldTeardown::~CServerWorldTeardown()
 // the collection constructors; identical since the five arrays became real
 // CMoArray instantiations (see the comment above CWorldAnimRecQ).
 CServerWorldFull::CServerWorldFull()
+{
+	Clear();
+}
+
+// 0x10014179 — the constructor, and the clear is all of it.
+//
+// Defined AFTER CServerWorldFull's constructor, and that is load-bearing in
+// Primal Hunt's /GX lithtech.exe: with this body already compiled, VC6 knows
+// the call cannot throw and drops the EH state store in front of it
+// (`movb $0x5,0x18(%esp)` at 0x0042b0e0).  It lives in another module there
+// (0x00448920, beside Setup and Clear), where the caller cannot see it.
+CWorldSubFC::CWorldSubFC()
 {
 	Clear();
 }
@@ -6333,6 +6357,8 @@ int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 
 	if (!w_ReadWorldHeader(pStream, &nHeader24, &nHeader20, &m_n068))
 		return 1;
+
+	m_n1ec = nHeader24;
 
 	nLoadTicks = 0;
 	nPrecalcTicks = 0;
@@ -7863,6 +7889,7 @@ LTBOOL CServerWorldFull::InheritWorld(CServerWorldFull* pSrc)
 	m_n1b4 = pSrc->m_n1b4;
 	m_pWorldName = pSrc->m_pWorldName;
 	m_n184 = pSrc->m_n184;
+	m_n1ec = pSrc->m_n1ec;                   // AVP2 (PH 0x0042e108)
 
 	AddLights(&pSrc->m_LightHead);
 

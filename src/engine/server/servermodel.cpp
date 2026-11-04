@@ -2,6 +2,7 @@
 #include "servermodel.h"
 #include "servermgr.h"
 #include "de_error.h"
+#include <stdio.h>
 #ifdef AVP2_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
 #endif
@@ -13,6 +14,13 @@
 // (servercommon.cpp, 0x0046c190), so the definition has to be visible to
 // those TUs as well.  It stays above every caller here for the same reason it
 // always did -- VC6's inliner is forward-only.
+
+// AVP2: SetCurAnimTime and ResetAnim mark the object with change flag 0x2000,
+// not CF_MODELINFO (the six other setters keep 0x20): server.dll pushes
+// 0x2000 at 0x1003a194/0x1003a271 (AvP2's 0x100371d3/0x100372a8), and the
+// /O2 expansions OR bit 5 of the flags' high byte (lithtech.exe 0x00481bc8
+// and 0x00481ea4, AvP2's 0x0047ac72 and 0x0047af2c). Name ours.
+#define CF_ANIMTIMEQ511 0x2000
 
 LTRESULT ServerModelLT::SetLooping(LTAnimTracker* pTracker, LTBOOL bLooping)
 {
@@ -52,7 +60,7 @@ LTRESULT ServerModelLT::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime)
 	if (dResult == LT_OK)
 	{
 		at_UpdateStringKeys(pTracker, pTracker->m_TimeRef.m_Cur.m_Time);
-		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_ANIMTIMEQ511);
 	}
 
 	return dResult;
@@ -79,7 +87,7 @@ LTRESULT ServerModelLT::ResetAnim(LTAnimTracker* pTracker)
 
 	LTRESULT dResult = CommonModelLT::ResetAnim(pTracker);
 	if (dResult == LT_OK)
-		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_MODELINFO);
+		sm_SetObjectChangeFlag(m_pServerMgr, pObj, CF_ANIMTIMEQ511);
 
 	return dResult;
 }
@@ -634,6 +642,63 @@ struct ClassDef* cls_FindFlagged(void* pUnused, struct ClassDef* pClass, uint32 
 	}
 
 	return NULL;
+}
+
+// MID_MODELSTRINGKEY, from ltserverobj.h, spelled out as MID_UPDATE is.
+#define MID_MODELSTRINGKEY 5
+
+// AVP2: the string-key callback (declared above), ltanimtracker.h's four-
+// argument form. lithtech.exe 0x0047e020 (AvP2 1.0.9.6 0x00477640), server.dll
+// 0x10035fe4 (AvP2's 0x10035ff4 run).
+//   * with text to append, the key is rebuilt in a 0x80-byte buffer: "%s; %s"
+//     (key, text) when the key has text of its own and the caller does not
+//     force a replace, otherwise "%s" of the text alone (0x0047e064..
+//     0x0047e0b6); without, the key's own text is parsed.
+//   * the float handed to EngineMessageFn is the tracker's m_Index (`fildl
+//     0x4c(%edi)`, 0x0047e0f6), so the game hears which tracker it was.
+//   * the frame is the 8-byte ArgList, the buffer, then the 0x1508-byte
+//     parser: 0x1590.
+void sm_ModelStringKeyCallback(LTAnimTracker* pTracker, AnimKeyFrame* pFrame,
+                               char* szAppend, LTBOOL bForceReplace)
+{
+	ArgList       args;
+	char          szKey[0x80];
+	CommandParser parser;
+	LTObject*     pObject;
+
+	parser.m_pPos = LTNULL;
+
+	pObject = (LTObject*)pTracker->GetModelInstance();
+
+	if (pObject && (pObject->m_Flags & FLAG_MODELKEYS))
+	{
+		if (szAppend)
+		{
+			if (pFrame->m_pString[0] && !bForceReplace)
+				sprintf(szKey, "%s; %s", pFrame->m_pString, szAppend);
+			else
+				sprintf(szKey, "%s", szAppend);
+
+			parser.m_pPos = szKey;
+		}
+		else
+		{
+			parser.m_pPos = pFrame->m_pString;
+		}
+
+		args.argv = parser.m_ArgPointers;
+
+		while (parser.Next())
+		{
+			if (parser.m_nArgs > 0)
+			{
+				args.argc = parser.m_nArgs;
+
+				pObject->m_pSData->m_pBaseClass->EngineMessageFn(
+					MID_MODELSTRINGKEY, &args, (float)pTracker->m_Index);
+			}
+		}
+	}
 }
 
 // 0x1002a8b6 — read the world file's object list and create every object in

@@ -355,12 +355,13 @@ LTBOOL ci_CastRayQ440(ClientIntersectQueryQ440* pQuery, ClientIntersectInfoQ440*
 	return ci_IntersectSegmentQ440(pQuery, pInfo);
 }
 
-// clientmgr.h's CClientObject, the position only.
+// clientmgr.h's CClientObject, the position only.  AVP2: +0x194 (NOLF's
+// was +0x18c; Primal Hunt 0x0040b053).
 class CClientObjSphereQ440
 {
 public:
-	uint8        m_pad_000[0x18c];
-	LTVectorQ440 m_Pos;                      // 0x18c
+	uint8        m_pad_000[0x194];
+	LTVectorQ440 m_Pos;                      // 0x194
 };
 
 class LTLinkQ440
@@ -396,13 +397,23 @@ class CClientMgrSphereQ440
 public:
 	uint8          m_pad_00[0x6c];
 	CWorldTreeQ440 m_WorldTree;              // 0x06c
-	LTListQ440     m_ObjectLists[11];        // 0x40c
+	// AVP2: four more bytes ahead of the lists, +0x410 (NOLF's +0x40c;
+	// Primal Hunt 0x0040b04a `0x418(%ebx,%ecx)`).
+	uint8          m_pad_40c[0x410 - 0x40c];
+	LTListQ440     m_ObjectLists[11];        // 0x410
 };
 
 extern CClientMgrSphereQ440* g_pClientMgrQ440;  // 0x004b17e0
 
 #define LT_OK_Q440 0
 
+// NEAR on Primal Hunt (0x0040af40, 407 of 410 bytes; the enumeration splits
+// it at the fallback walk, 0x0040b024): with the AvP2 offsets in, what is
+// left is allocation -- the found-count pointer rides in %edx into the
+// record and %edi is the copy temporary (shipped pushes %edi up front), and
+// the list walk's induction variable starts at 0 with +0x414/+0x418
+// displacements where ours folds +0x410 into it and keeps the count pointer
+// in %ebx.  A list pointer instead of the head pointer changes nothing.
 LTRESULT ci_FindObjectsInSphereQ440(LTVectorQ440* pCenter, float radius,
                                     HLOCALOBJ* inObjects, uint32 nInObjects,
                                     uint32* nOutObjects, uint32* nFound)

@@ -378,6 +378,33 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   extra 128-byte name at +0x300 and `PlaySoundInfo`'s byte at +0x134
   (Primal Hunt); the collection templates' out-of-line allocator;
   `clientsound.h`; `CWorldSurface` 0x40 bytes and `CWorldPart` +4.
+- **Primal Hunt's engine is built with `/GX` and against VC6's own STL**
+  (progress/COMPILERS.md); AvP2 1.0.9.6's has neither (no exception
+  frames, STLport first on the include path). Three consequences:
+  - every Primal Hunt function with a destructible local has an exception
+    frame, and VC6 drops a state store before a call whose callee's body
+    it has already compiled, so definition order inside a file matters;
+  - lithtech.exe's WON API is built from `LT2/lithshared/wonapi` against
+    VC6's STL (its `basic_string` is 16 bytes, STLport's 12): built that
+    way it covers 0x004aab40..0x004ba2a0, and the `WONAPI` row (the
+    STLport build, as the game DLLs link it) is 2,261 of 2,263;
+  - each Primal Hunt translation unit that includes VC6's `<string>` ends
+    in a 44-byte guarded initializer of `std::ctype<unsigned short>::id`
+    (guard 0x004f8014, `atexit(0x00401790)`), ~95 of them in lithtech.exe,
+    and `<new>`'s `throw()` `operator delete` drops the frames of
+    destructors that only delete. Which header carried `<string>` into
+    them is not known; until it is, the reconstructed TUs that end in one
+    include `<string>` themselves behind `PRIMAL_HUNT` (a stand-in).
+- Open headers from the third round (evidence beside the local views
+  that stand in for them): `msg_AllocPacket` returns its reference by
+  value (smgr.cpp's `msg_AllocPacketQ512` bridges it) and packets are
+  0x44c; `CAbstractIO` has a virtual destructor; `CNetMgr::Disconnect`
+  and `GetPacket` take a second argument; `WMMoveState` is 0x6c;
+  `CModelLoadRequest` 0x24; the poly owner's AvP2 layout; `CWorldBsp`
+  0x154; `CMessageBank`'s record 0x5c (Primal Hunt 0x60); `CountAdder`'s
+  destructor inline; `CommonModelLT`'s 37-slot order and
+  `SetCurAnimTime`'s third argument; `CSoundInstance::m_pFilter` at
+  +0x4c; `worldsim.h`'s three changed signatures.
 - Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
   near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
   near).

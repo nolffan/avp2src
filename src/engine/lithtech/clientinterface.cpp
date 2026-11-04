@@ -3157,15 +3157,36 @@ LTRESULT ci_GetModelNodeName(HLOCALOBJ hObject, HMODELNODE hNode, char* pName, u
 // The creator wants one file reference per file the object might need - its
 // own, and one per skin - and hands back the object through an out-parameter,
 // so a failure has to be turned into a null handle here.
+//
+// AVP2: the request is clientmgr.h's CClientCreateRequest with one more
+// dword after the create struct, set to 1 (AvP2 1.0.9.6 0x0040b036, frame
+// 0x48; Primal Hunt 0x0040bb8c, frame 0x54); PH also carries a sixth file
+// reference before the create struct, for the struct's extra texture name
+// at +0x300 (0x0040bbe1/0x0040bbf1), which is what puts the create struct
+// at +0x48 where clientmgr2.cpp reads it. Restated here rather than in the
+// shared header (names ours).
+class CClientCreateRequestQ511
+{
+public:
+	CClientFileRef      m_ObjectFile;                        // 0x00
+	CClientFileRef      m_SkinFiles[MAX_MODEL_TEXTURES];     // 0x0c
+#ifdef PRIMAL_HUNT
+	CClientFileRef      m_ExtraFile;                         // 0x3c
+#endif
+	ObjectCreateStruct* m_pStruct;                           // 0x3c (PH 0x48)
+	uint32              m_Unknown40;                         // 0x40 (PH 0x4c)
+};
+
 HLOCALOBJ ci_CreateObject(ObjectCreateStruct* pStruct)
 {
-	CClientCreateRequest req;
-	HLOCALOBJ            hObject;
-	LTRESULT             dResult;
-	uint32               i;
+	CClientCreateRequestQ511 req;
+	HLOCALOBJ                hObject;
+	LTRESULT                 dResult;
+	uint32                   i;
 
-	req.m_ObjectFile.m_nFileType = 1;
+	req.m_Unknown40 = 1;
 	req.m_pStruct = pStruct;
+	req.m_ObjectFile.m_nFileType = 1;
 	req.m_ObjectFile.m_pFilename = pStruct->m_Filename;
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
@@ -3174,7 +3195,12 @@ HLOCALOBJ ci_CreateObject(ObjectCreateStruct* pStruct)
 		req.m_SkinFiles[i].m_nFileType = 1;
 	}
 
-	dResult = sub_411a70(g_pClientMgr, 0xffff, &req, &hObject, 1, 1);
+#ifdef PRIMAL_HUNT
+	req.m_ExtraFile.m_pFilename = pStruct->m_ExtraTextureName;
+	req.m_ExtraFile.m_nFileType = 1;
+#endif
+
+	dResult = sub_411a70(g_pClientMgr, 0xffff, (CClientCreateRequest*)&req, &hObject, 1, 1);
 	return dResult ? LTNULL : hObject;
 }
 

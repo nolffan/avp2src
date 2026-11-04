@@ -2656,11 +2656,12 @@ LTDMEnactTypes CLTDirectMusicMgr::StringToEnactType(const char* sName)
 // the shared epilogue with the HRESULT still in eax, 0x00443d4d), and the
 // out-of-memory case as an `else` that only sets hr -- it shares the final
 // "failed, so release the object" test (0x00443e85 jumps back to 0x00443e67).
+// PH (0x00450460, IDENTICAL): the interface pointer is block-scoped, as in
+// the memory case below, so `new` shares its slot.
 long CDMLoader::GetObjectFromFileQ440(DMUS_OBJECTDESC* pDesc,
                                       IDirectMusicObject** ppObject)
 {
 	uint16 wzPath[DM_MAX_PATH];
-	IPersistStream* pPersistStream;
 	CDMFileStream* pStream;
 	long hr;
 
@@ -2699,6 +2700,8 @@ long CDMLoader::GetObjectFromFileQ440(DMUS_OBJECTDESC* pDesc,
 
 			if (SUCCEEDEDQ440(hr))
 			{
+				IPersistStream* pPersistStream;
+
 				hr = (*ppObject)->QueryInterface(IID_IPersistStream, (void**)&pPersistStream);
 
 				if (SUCCEEDEDQ440(hr))
@@ -2733,10 +2736,14 @@ long CDMLoader::GetObjectFromFileQ440(DMUS_OBJECTDESC* pDesc,
 // both. VC6 threads the known-negative hr straight to the Release, and that
 // is the block shipped has at the end (0x00443f3f). Written as an early
 // refusal, the block lands inline after the test and is 2 bytes short.
+//
+// PH (0x00450610, /GX): the interface pointer is scoped to the block that
+// queries it. Its slot is then free while `new` runs, and the shipped
+// build parks the new'd pointer there (0x00450658 and 0x004506a6 both
+// [esp+0x20]); declared at the top it took a slot of its own.
 long CDMLoader::GetObjectFromMemoryQ440(DMUS_OBJECTDESC* pDesc,
                                         IDirectMusicObject** ppObject)
 {
-	IPersistStream* pPersistStream;
 	CDMMemStream* pStream;
 	long hr;
 
@@ -2755,6 +2762,8 @@ long CDMLoader::GetObjectFromMemoryQ440(DMUS_OBJECTDESC* pDesc,
 
 		if (SUCCEEDEDQ440(hr))
 		{
+			IPersistStream* pPersistStream;
+
 			hr = (*ppObject)->QueryInterface(IID_IPersistStream, (void**)&pPersistStream);
 
 			if (SUCCEEDEDQ440(hr))

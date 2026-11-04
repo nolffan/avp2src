@@ -2,6 +2,14 @@
 #include <math.h>
 #include "worldsim.h"
 
+// PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
+// lithtech.exe's do (AvP2 1.0.9.6's and PH's server.dll engine TUs none).
+// Its trace is std::ctype<unsigned short>::id's guarded initializer at the
+// end of the TU (0x00421bb0: guard 0x004f8014 bit 0, atexit of the empty 0x00401790).
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#include <string>
+#endif
+
 // 0x10056ff8 (.bss) -- bspq_TestSphere's node stack, declared in worldsim.h.
 // 1000 entries: the next global the image references, g_nPhysMoves at
 // 0x10057f98, is exactly 0xfa0 bytes on.
@@ -147,11 +155,11 @@ inline int ws_Bounce(LTObject* pObj, LTVector* pVel, LTVector* pNormal,
 
 	// The grouping is not decoration. VC6 emits an FP add's operands in
 	// reverse, so a flat `x*nx + y*ny + z*nz` can only ever put the x term
-	// last -- and the shipped code puts the z term last. Only a sum whose
-	// right operand is itself an add reaches this order; all twelve flat and
-	// parenthesised spellings were compiled to check, under all four held
-	// compiler revisions.
-	fDot = v.z * pNormal->z + (v.x * pNormal->x + v.y * pNormal->y);
+	// last -- and the shipped code puts the z term last (PH server.dll
+	// 0x1000338c: y, x, z). Only a sum whose right operand is itself an add
+	// reaches this order. The normal is the left operand of each product in
+	// AvP2; the vector first gives the same server.dll bytes.
+	fDot = pNormal->z * v.z + (pNormal->x * v.x + pNormal->y * v.y);
 
 	if (fDot < 0.0f)
 	{
@@ -161,7 +169,9 @@ inline int ws_Bounce(LTObject* pObj, LTVector* pVel, LTVector* pNormal,
 
 		*pMomentum = (*pImpulse * WS_IMPULSE) * pObj->m_Mass;
 
-		*pImpulse += *pNormal * WS_SEPARATION;
+		// AVP2: only off a floor-like surface (PH server.dll 0x1000341d).
+		if (pNormal->y > 0.7071f)
+			*pImpulse += *pNormal * WS_SEPARATION;
 
 		return 1;
 	}
@@ -683,6 +693,98 @@ uint32 g_nPhysMoveTime;
 // Nothing is this far away, so the first corner always wins the comparison.
 #define WS_FAR 1.0e37f
 
+// AVP2: add a displacement to a position so that it always moves it: when
+// the sum comes out equal to where it started -- the step is below the
+// position's float precision -- the step is scaled up to FLT_EPSILON of the
+// position's own length first (PH lithtech 0x0041f960, server.dll's twin
+// beside it). A step shorter than FLT_EPSILON is not taken at all. The one
+// caller is the box move, which passes the move base as both the result
+// and the start (0x0041f597..0x0041f5b9). Names ours.
+//
+// IDENTICAL on PH lithtech. The magnitude is assigned inside the test
+// (`fsts`, 0x0041f99b) and reused for the scale (`flds x; fmul %st(1)`,
+// 0x0041fa35); a separate scale local gives `fld %st(0); fmuls x`.
+// NEAR on PH server.dll (0x100059a4, 180 of 180): the magnitude and the
+// y-sum temporary swap frame slots (shipped -0x8 and the dead pOut slot,
+// ours the other way round); with a separate scale server.dll keeps that
+// swap too, so it is slot assignment, not the scale.
+void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
+{
+	float fMag;
+
+	*pOut = vStart;
+
+	if ((fMag = vStep.Mag()) >= 1.192092896e-07f)
+	{
+		*pOut += vStep;
+
+		if (*pOut == vStart)
+		{
+			fMag = vStart.Mag() * 1.192092896e-07f / fMag;
+
+			vStep *= fMag;
+
+			*pOut = vStart + vStep;
+		}
+	}
+}
+
+// servermgr.h's CountAdder as the client compiles it: AvP2's lithtech.exe
+// times the same blocks server.dll does (PH lithtech 0x0041fab0 CBaseCounter(0),
+// 0x0041fac2 cnt_StartCounter, the total at 0x0041fb46..0x0041fb58), with the
+// destructor expanded where server.dll calls CountAdder's out-of-line one
+// (PH 0x10005cd1 -> 0x100020e8).
+#ifdef LT_SERVER_TIMERS
+typedef CountAdder CWsCountAdderQ516;
+#else
+class CWsCountAdderQ516
+{
+public:
+	CWsCountAdderQ516(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+	~CWsCountAdderQ516() { *m_pTotal += cnt_EndCounter(&m_Counter); }
+
+	CBaseCounter m_Counter;                  // 0x00
+	uint32*      m_pTotal;                   // 0x08
+};
+#endif
+
+// Remember a plane the box has hit; the moment there are two, the solver
+// has to be run. Above the solver, as shipped (PH 0x0041fa90 / 0x0041fb80):
+// /GX keeps the counter's unwind state around a callee VC6 has not yet seen
+// (0x0041facf), and has none to keep around one it has already compiled.
+//
+// AVP2: no depth and no shove -- the contact is only recorded (PH lithtech
+// 0x0041fa90, server.dll 0x10005c4c: two arguments, nothing touches
+// g_vMoveEnd), and the client times it too.
+void ws_AddContact(LTPlane* pPlane, void* pObject)
+{
+	CWsCountAdderQ516 cntAdder(&g_nPhysContactTime);
+	int               i;
+
+	if (g_nContacts < WS_MAX_CONTACTS)
+	{
+		if (pObject)
+		{
+			for (i = 0; i < g_nContacts; i++)
+			{
+				if (g_Contacts[i].m_pObject == pObject)
+					return;
+			}
+		}
+
+		g_Contacts[g_nContacts].m_Plane = *pPlane;
+		g_Contacts[g_nContacts].m_pObject = pObject;
+		g_nContacts++;
+
+		if (g_nContacts > 1)
+			ws_PushBoxOutOfContacts();
+	}
+}
+
 // Byte-identical on both images. `vTest.Init(...)` rather than three
 // component stores is what lets the prologue's pushes interleave with the FP
 // adds as shipped; `vPush = normal * (BIAS - fMin)` through the operator is
@@ -793,48 +895,6 @@ void ws_PushBoxOutOfContacts()
 	}
 }
 
-// Remember a plane the box has hit and shove the box out along its normal.
-// One contact is easy — the shove is the whole answer — but the moment there
-// are two the pushes fight each other, so the solver has to be run.
-void ws_AddContact(LTPlane* pPlane, void* pObject, float fDepth)
-{
-#ifdef LT_SERVER_TIMERS
-	CountAdder cntAdder(&g_nPhysContactTime);
-#endif
-	LTVector   vPush;
-	float      fPush;
-	int        i;
-
-	fPush = fDepth + WS_PUSH_BIAS;
-
-	vPush.x = fPush * pPlane->m_Normal.x;
-	vPush.y = fPush * pPlane->m_Normal.y;
-	vPush.z = fPush * pPlane->m_Normal.z;
-
-	g_vMoveEnd.x += vPush.x;
-	g_vMoveEnd.y += vPush.y;
-	g_vMoveEnd.z += vPush.z;
-
-	if (g_nContacts >= WS_MAX_CONTACTS)
-		return;
-
-	if (pObject)
-	{
-		for (i = 0; i < g_nContacts; i++)
-		{
-			if (g_Contacts[i].m_pObject == pObject)
-				return;
-		}
-	}
-
-	g_Contacts[g_nContacts].m_Plane = *pPlane;
-	g_Contacts[g_nContacts].m_pObject = pObject;
-	g_nContacts++;
-
-	if (g_nContacts > 1)
-		ws_PushBoxOutOfContacts();
-}
-
 // Is the swept box clear of this polygon? Every edge of the polygon carries a
 // plane that stands on it at right angles to the polygon's own, and the box
 // misses the polygon if all sixteen of its points fall outside any one of
@@ -892,33 +952,31 @@ NextEdge:
 }
 
 // One surface has been hit: describe it for whoever asked, work out what the
-// hit does to the object, and add that to the running total. The plane only
-// comes from the polygon when the thing hit was the world -- an object has no
-// polygon to name, and its own blocking plane has already been filled in.
+// hit does to the object, and add that to the running total.
 //
-// lithtech.exe (0x0041a680, /O2) expands ws_Bounce here but runs out of
-// inline budget inside it: the three `_CVector(x,y,z)` constructors under the
-// first three `operator*`s, the fourth `operator*` and ws_Bounce's `+=` are
-// calls (0x411d40, 0x41ab70, 0x41abc0). The two `+=` in the tail are what
-// spend that budget -- written as component adds, nothing is refused and the
-// function came out 308/469 bytes with no calls. As written it is 546 against
-// 528: everything matches except that ws_Bounce's `+=` is still expanded.
-// Tried without closing it (all measured): the tail as any mix of component
-// adds, `+=` and `a = a + b`, through pointer locals or not; vTotal through
-// the pAdd local, direct, as components or `= ; +=`; the nested
-// m_pOwner->GetPlane(); the m_hPoly ternary; ws_Bounce without its `v` copy.
-// The refusal set is not monotone in the number of expansions, so this is
-// left here.
+// AVP2: the plane is always the polygon's (no bWorld), the bounce is taken
+// against a normal the caller passes as the last argument (CSimContext::
+// DeflectOffHit, PH 0x0041bdb8, hands it its own normalised push), and
+// ws_Bounce only nudges the impulse back along a floor-like normal (y above
+// 0.7071, PH server.dll 0x10003420). IDENTICAL on both server.dlls
+// (PH 0x1000328d, ws_Bounce 0x10003378).
+//
+// NEAR on lithtech.exe (PH 0x0041bdd0, 565 of 537): /O2 expands ws_Bounce
+// here and the inline budget runs out in a different place -- shipped calls
+// `operator*(float)` for the mass and for the nudge and `+=` for the nudge
+// (0x0041bf2b, 0x0041bf60, 0x0041bf7e) where ours expands the mass multiply;
+// and shipped multiplies the dot product's terms y, z, x (0x0041be74..
+// 0x0041be80) where every spelling that keeps server.dll's y, x, z gives
+// y, x, z here too.
 void ws_HandleImpact(CollisionInfo* pInfo, CBounceState* pState,
                      LTObject* pObj, HOBJECT hObject, IWorldBsp* pWorldBsp,
-                     WorldPoly* pPoly, int bWorld)
+                     WorldPoly* pPoly, LTVector* pNormal)
 {
 	LTVector vTotal;
 	LTVector vImpulse;
 	LTVector vMomentum;
 
-	if (bWorld)
-		pInfo->m_Plane = *pPoly->GetPlane();
+	pInfo->m_Plane = *ws_GetPlaneQ506(pPoly->m_pOwner);
 
 	pInfo->m_hObject = hObject;
 
@@ -929,8 +987,7 @@ void ws_HandleImpact(CollisionInfo* pInfo, CBounceState* pState,
 
 	vTotal = pObj->m_Velocity + pState->m_vVelocityAdd;
 
-	if (ws_Bounce(pObj, &vTotal, &pInfo->m_Plane.m_Normal,
-	              &vImpulse, &vMomentum))
+	if (ws_Bounce(pObj, &vTotal, pNormal, &vImpulse, &vMomentum))
 	{
 		if (pObj->m_Flags & FLAG_TOUCH_NOTIFY)
 		{
@@ -1007,24 +1064,24 @@ void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 	g_vMoveEnd.z += g_vMoveStart.z;
 #endif
 
-	if (g_nContacts >= WS_MAX_CONTACTS)
-		return;
-
-	if (pObject)
+	if (g_nContacts < WS_MAX_CONTACTS)
 	{
-		for (i = 0; i < g_nContacts; i++)
+		if (pObject)
 		{
-			if (g_Contacts[i].m_pObject == pObject)
-				return;
+			for (i = 0; i < g_nContacts; i++)
+			{
+				if (g_Contacts[i].m_pObject == pObject)
+					return;
+			}
 		}
+
+		g_Contacts[g_nContacts].m_Plane = *pPlane;
+		g_Contacts[g_nContacts].m_pObject = pObject;
+		g_nContacts++;
+
+		if (g_nContacts > 1)
+			ws_PushBoxOutOfContacts();
 	}
-
-	g_Contacts[g_nContacts].m_Plane = *pPlane;
-	g_Contacts[g_nContacts].m_pObject = pObject;
-	g_nContacts++;
-
-	if (g_nContacts > 1)
-		ws_PushBoxOutOfContacts();
 }
 
 // Project all eight corners of the swept box onto a plane and keep the
@@ -1281,7 +1338,7 @@ inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTestQ506* pTe
 
 	ws_HandleImpact(g_pMoveState->m_pInfo, pState, g_pMoveState->m_pObject,
 	                g_pMoveState->m_hObject, g_pMoveState->m_pWorldBsp,
-	                pPoly, 1);
+	                pPoly, &g_pMoveState->m_pInfo->m_Plane.m_Normal);
 
 	pState->m_nHits++;
 
@@ -1289,7 +1346,7 @@ inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTestQ506* pTe
 		ws_ProjectBox(&pTest->m_End);
 
 	if (g_pMoveState->m_bPushOut)
-		ws_AddContact(pPlane, pPlane, -pTest->m_End.m_fMin);
+		ws_AddContact(pPlane, pPlane);
 	else
 		ws_AddClippedContact(pPlane, pPlane, pTest->m_End.m_fMin);
 
@@ -1359,11 +1416,14 @@ int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint)
 // one and the straddle path jumps backward into it, which is what shipped.
 // Same instructions either way, twenty bytes of different placement. This is
 // the "shared-exit host" near class and the arm shape moves it.
-int bsp_SphereInside(BSPNode* pRoot, LTVector* pPoint, float fRadius)
+// AVP2: the root comes by address (PH lithtech 0x00441570 `mov 0x4(%esp),
+// %edx; mov (%edx),%ecx`; ws_GetBoxStatus passes its own parameter's,
+// 0x0041d29c `lea 0x24(%esp),%eax`). Shipped, this lives in another TU.
+int bsp_SphereInside(BSPNode** ppRoot, LTVector* pPoint, float fRadius)
 {
 	BSPNode*  pStack[BSP_SPHERE_STACK];
 	BSPNode** ppTop = pStack;
-	BSPNode*  pNode = pRoot;
+	BSPNode*  pNode = *ppRoot;
 	LTVector  v;
 	float     fDist;
 
@@ -1486,38 +1546,42 @@ WorldPoly* bsp_IntersectLine(BSPNode* pRoot, LTVector* pStart, LTVector* pEnd,
 
 // Move a point rather than a box. There are no contacts and no box geometry
 // to rebuild: the segment is handed to the world, and whatever it hits first
-// bounces it and becomes the new end of the segment. Forty of those is as
-// much as any point should ever need.
+// bounces it and becomes the new end of the segment.
+//
+// AVP2: one test, not a loop of forty (PH lithtech 0x0041d600): a hit that
+// moves the point by more than 0.001 bounces off the polygon's own normal,
+// and a floor-like polygon (y above 0.01) becomes what the move stands on
+// unless what it already stands on is flatter.
 void ws_MovePoint(CMoveState* pMove, CBounceState* pState)
 {
 	LTVector   vHit;
 	LTPlane    planeHit;
 	WorldPoly* pPoly;
-	int        i;
 
 	pState->m_vPoint = pMove->m_vEnd;
 
-	for (i = 0; i < WS_MAX_POINT_STEPS; i++)
+	pPoly = bsp_IntersectLine(pMove->m_pWorldBsp->GetRoot(),
+	                          &pMove->m_vStart, &pState->m_vPoint,
+	                          &vHit, &planeHit);
+
+	if (pPoly && pState->m_vPoint.DistSqr(vHit) > 0.001f)
 	{
-		pPoly = bsp_IntersectLine(pMove->m_pWorldBsp->GetRoot(),
-		                          &pMove->m_vStart, &pState->m_vPoint,
-		                          &vHit, &planeHit);
-
-		if (!pPoly)
-			return;
-
 		ws_HandleImpact(g_pMoveState->m_pInfo, pState, pMove->m_pObject,
 		                g_pMoveState->m_hObject, g_pMoveState->m_pWorldBsp,
-		                pPoly, 1);
+		                pPoly, &ws_GetPlaneQ506(pPoly->m_pOwner)->m_Normal);
 
 		pState->m_vPoint = vHit;
 		pState->m_nHits++;
-	}
 
-	if (g_DebugLevel > 0)
-	{
-		dsi_ServerError("Error: (point) physics recursed infinitely on a %s",
-		                pMove->m_pHost->GetObjectName(pMove->m_pObject));
+		if (ws_GetPlaneQ506(pPoly->m_pOwner)->m_Normal.y > WS_FLOOR_NORMAL_Y)
+		{
+			if (!pState->m_pStandingPoly ||
+			    ws_GetPlaneQ506(pState->m_pStandingPoly->m_pOwner)->m_Normal.y <
+			    ws_GetPlaneQ506(pPoly->m_pOwner)->m_Normal.y)
+			{
+				g_pMoveResult->m_pStandingPoly = pPoly;
+			}
+		}
 	}
 }
 
@@ -1541,7 +1605,7 @@ int ws_GetBoxStatus(BSPNode* pRoot, LTVector* pMin, LTVector* pMax)
 	    bsp_PointInside(pRoot, pMin) &&
 	    bsp_PointInside(pRoot, pMax))
 	{
-		nStatus = bsp_SphereInside(pRoot, &g_BoxSphere.m_vPoint,
+		nStatus = bsp_SphereInside(&pRoot, &g_BoxSphere.m_vPoint,
 		                           g_BoxSphere.m_fRadius);
 
 		if (nStatus == 1)
@@ -1573,27 +1637,36 @@ int ws_GetBoxStatus(BSPNode* pRoot, LTVector* pMin, LTVector* pMax)
 // game; a floor is not, because walking up a slope is not a collision.
 void CSimContext::DeflectOffHit(WorldPoly* pPoly, CBounceState* pState)
 {
-	LTVector vOffset;
-	LTVector vSide;
-
-	vOffset = m_vHitNormal * -(m_fHitDepth * WS_PUSHOUT_SCALE);
+	// AVP2: initialised, not assigned -- the product is built straight into
+	// the offset (PH 0x0041bc0c..0x0041bc22), with no temporary copied over.
+	LTVector vOffset = m_vHitNormal * -(m_fHitDepth * WS_PUSHOUT_SCALE);
 
 	if (m_vHitNormal.y == 0.0f)
 	{
-		vSide = m_vDir.Cross(LTVector(0.0f, 1.0f, 0.0f));
+		// Initialised too: server.dll's Cross writes it in place (PH
+		// 0x10003190, its result pointer is the side vector's own slot).
+		LTVector vSide = m_vDir.Cross(LTVector(0.0f, 1.0f, 0.0f));
 
 		vOffset += vSide * (vSide.Dot(m_vHitNormal) * -2.0f);
 	}
 
 	m_vEnd += vOffset;
 
+	// AVP2: the standing-poly report and the impact are separate: any hit
+	// polygon is reported to the impact, against the push direction itself
+	// normalised (PH 0x0041bd5f..0x0041bdb8).
 	if (m_bReport && m_vHitNormal.y < WS_SLOPE_LIMIT)
-	{
 		g_pMoveResult->m_pStandingPoly = m_pHitPoly;
+
+	if (pPoly)
+	{
+		LTVector vNormal = vOffset;
+
+		vNormal.Norm();
 
 		ws_HandleImpact(g_pMoveState->m_pInfo, pState,
 		                g_pMoveState->m_pObject, g_pMoveState->m_hObject,
-		                g_pMoveState->m_pWorldBsp, pPoly, 1);
+		                g_pMoveState->m_pWorldBsp, pPoly, &vNormal);
 	}
 
 	Setup();
@@ -3044,7 +3117,8 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 
 						ws_HandleImpact(g_pMoveState->m_pInfo, pState,
 						                g_pMoveState->m_pObject, g_pMoveState->m_hObject,
-						                g_pMoveState->m_pWorldBsp, (WorldPoly*)pRec, 1);
+						                g_pMoveState->m_pWorldBsp, (WorldPoly*)pRec,
+						                &g_pMoveState->m_pInfo->m_Plane.m_Normal);
 
 						pState->m_vVelocityAdd = vSave;
 
@@ -3254,7 +3328,8 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 
 						ws_HandleImpact(g_pMoveState->m_pInfo, pState,
 						                g_pMoveState->m_pObject, g_pMoveState->m_hObject,
-						                g_pMoveState->m_pWorldBsp, (WorldPoly*)pRec, 1);
+						                g_pMoveState->m_pWorldBsp, (WorldPoly*)pRec,
+						                &g_pMoveState->m_pInfo->m_Plane.m_Normal);
 
 						pState->m_nHits++;
 

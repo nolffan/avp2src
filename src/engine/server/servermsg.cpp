@@ -476,7 +476,9 @@ inline ServerMessage::ServerMessage()
 	m_MsgFlags  = 0;
 	m_Unknown3a = 1;
 
-	Init(0x1000, 0x1000);
+	// AVP2: 0x44c, the packet size (`mov $0x44c,%eax; push; push`: Primal
+	// Hunt server.dll 0x1002de2e, AvP2 1.0.9.6's 0x1002c124).
+	Init(0x44c, 0x44c);
 }
 
 
@@ -572,7 +574,8 @@ public:
 		m_Unknown3a = 1;
 		m_MsgFlags  = 0;
 
-		Init(0x1000, 0x1000);
+		// AVP2: 0x44c (Primal Hunt lithtech.exe 0x0046f0ef).
+		Init(0x44c, 0x44c);
 	}
 
 	// AddRef and Release (slots 1 and 2, 0x00455c00 / 0x00455c10) are

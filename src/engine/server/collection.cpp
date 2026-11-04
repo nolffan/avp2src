@@ -920,6 +920,14 @@ template class CMoArray<CCollElem04F, DefaultCache>;
 template class CMoArray<CCollElem08, DefaultCache>;
 template class CMoArray<CCollElem14, NoCache>;
 template class CMoArray<CCollElem18, DefaultCache>;
+// A second 0x18 element, plain data: lithtech.exe's vtable 0x004d4c74
+// (the one ~CServerMgr stores into the server world's array at +0x54,
+// 0x00416e56) shares every element-blind slot with CCollElem18's but has
+// its own GenAppend (0x00414a00) and GenRemoveAt (0x00414b60), which copy
+// the element as six dwords (`mov $6,%ecx; rep movsl`) and allocate with
+// no constructor loop; its SetSize2 (0x00415c00) is `lea (%edi,%edi,2);
+// shl $3` with the same bare Alloc.  (name ours)
+DECLARE_COLLPOD (CCollElem18PQ514, 0x18);
 // The 0x1c element is CCollElem1CS, not the opaque stand-in: see the note on
 // the class. Only the /O2 image can tell, because the difference is whether
 // the element's copy constructor and assignment are expansion candidates at
@@ -969,6 +977,56 @@ template class CMoArray<CCollElem20C, NoCache>;
 // CMoArray<CCollElem24Rec, NoCache> — instantiated at the foot of the file,
 // where the element class is complete.
 template class CMoArray<CCollElem40, NoCache>;
+// Three more lithtech.exe arrays, each pinned by its own vtable (names
+// ours):
+//   * 0x004d5bfc: a 0x24-byte plain-data element, DefaultCache --
+//     GenGetNext (0x004608c0) is `lea (%eax,%eax,8); lea (%ecx,%esi,4)`
+//     and a nine-dword `rep movsl` into the caller's buffer;
+//   * 0x004d5bcc: a 0x0c-byte element, DefaultCache -- GenGetNext
+//     (0x0046e2f0) is `lea (%eax,%eax,2)` and three dword copies, and
+//     GenAppend (0x00460e00) CALLS its BaseNew (0x00461630), as only an
+//     element with a constructor's does: LTVector;
+//   * 0x004d5ed0: a 16-bit element, NoCache -- GenGetNext (0x0046e810)
+//     comes back in %ax, and GenAppend (0x0046e840) allocates exactly
+//     `2*n + 2` bytes with no spare.
+// The 0x24 element is three vectors: its BaseNew (0x00461600) keeps the
+// bare `add $0x24,%ecx; dec %esi; jne` walk that the members' empty
+// constructors leave behind, and its GenAppend calls that BaseNew.
+class CCollElem24PQ514
+{
+public:
+	LTVector m_v[3];
+};
+// And a 0x0c-byte element in a NoCache array: Init (0x0046ebd0) and
+// SetSize2 (0x0046ec30) allocate `lea (%n,%n,2); shl $2` with no spare.
+// (name ours)
+DECLARE_COLLPOD (CCollElem0CNQ514, 0x0c);
+
+// These five are NOT explicit class instantiations: `template class` emits
+// every member, and most of them exist in neither image.  Nor can single
+// members be named -- VC6 emits nothing for an explicit instantiation of a
+// class template's member function (measured: only the free-function form,
+// as BaseNew's below, produces a body).  So the arrays are simply used: one
+// of each is constructed and destroyed here, which emits the vtable (every
+// Gen* slot) and whatever members those reach out of line, exactly the set
+// a real user of the array produces.  This function itself has no shipped
+// counterpart.  (name ours)
+void coll_UseArraysQ514()
+{
+	CMoArray<CCollElem18PQ514, DefaultCache> a18;
+	CMoArray<CCollElem24PQ514, DefaultCache> a24;
+	CMoArray<LTVector, DefaultCache>         aVec;
+	CMoArray<uint16, NoCache>                aWord;
+	CMoArray<CCollElem0CNQ514, NoCache>      a0C;
+
+	// The 0x18 array's SetSize2 is called out of line in lithtech.exe
+	// (0x00415c00, from ~CServerMgr at 0x00416e5c); reached through its
+	// address so that it is emitted rather than expanded here.
+	LTBOOL (CMoArray<CCollElem18PQ514, DefaultCache>::*pSetSize2)(uint32, LAlloc*) =
+		&CMoArray<CCollElem18PQ514, DefaultCache>::SetSize2;
+
+	(a18.*pSetSize2)(0, &g_DefAlloc);
+}
 template class CMoArray<CCollElem60, DefaultCache>;
 template class CMoArray<CCollElemA4, DefaultCache>;
 // CMoArray<CCollElemC0Rec, DefaultCache> — instantiated at the foot of the

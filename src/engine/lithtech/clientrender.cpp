@@ -1022,6 +1022,189 @@ LTBOOL r_PublishRenderStruct(RenderStruct* pStruct)
 }
 
 
+// AVP2: r_InitRender stands ahead of the texture list and r_TermRender, as
+// in the shipped address order (0x004752c0, then 0x004756c0 and
+// 0x004756e0) -- which is why it calls both instead of expanding them.
+void     rif_InitTextureDataList(TextureDataList* pList, uint32 nMaxBytes);
+LTRESULT r_TermRender(CClientMgrView* pClientMgr, LTBOOL bReportFailure);
+
+// ======================================================================= //
+//  Bringing the renderer up
+// ======================================================================= //
+
+// 0x004623d0 -- 977 bytes (NOLF); AvP2/PH 0x004752c0, 1012.  LTRESULT r_InitRender(CClientMgr*, RMode*).
+//
+// The signature is pinned by three call sites, all cdecl with two pushes:
+// 0x004035c1 (regaining focus, with &g_CurRenderMode), 0x004116ec and
+// 0x0042dffb/0x0042e01c (SetRenderMode, which tries the requested mode and
+// then falls back).
+//
+// FRAME.  `sub $0x2e4` plus four pushes; two aggregates and nothing else:
+//   esp+0x010  char buf[200]         the sprintf target, 0xc8 bytes
+//   esp+0x0d8  RenderStructInit init 0x21c bytes, ending exactly at the top
+// 0xc8 + 0x21c == 0x2e4, so there is no third local and no spilled scalar --
+// the window handle lives in %ebp for the whole function and the constant 0
+// lives in %edi.  `init` is declared first because it takes the HIGH end.
+//
+// THE THREE IDENTICAL ERROR ARMS.  The load failure, the missing export and
+// the refused Init all run the same four statements and the compiler
+// cross-jumped them into one tail at 0x00462741/0x00462771/0x0046278b.  They
+// are written out in full below, three times, because that is what the
+// source did -- aiming two of them at the third is not the same source.
+//
+// THE FLAG CLEAR.  NOLF cleared g_CluClientGlob.m_bInInitRender by hand at
+// the end of every arm; AvP2 leaves it to CSetOnExitQ514 below, whose
+// expanded destructor is the one store each arm still ends with.  The
+// three identical error arms are still written out in full.
+// AVP2: the in-progress flag is cleared by a scoped object, not by hand:
+// set to 1 first (0x004752ef), then the object takes its address and the
+// value to leave behind (0x004752f9, 0x00475301), and its destructor
+// (0x00475850, the unwind funclet: `*m_pValue = m_nValue`) stores that on
+// every exit, under an exception frame.  (name ours)
+class CSetOnExitQ514
+{
+public:
+	CSetOnExitQ514(int* pValue, int nValue)
+	{
+		m_pValue = pValue;
+		m_nValue = nValue;
+	}
+
+	~CSetOnExitQ514()
+	{
+		*m_pValue = m_nValue;
+	}
+
+	int* m_pValue;
+	int  m_nValue;
+};
+
+LTRESULT r_InitRender(CClientMgrView* pClientMgr, RMode* pMode)
+{
+	RenderStructInit init;
+	char             buf[200];
+	HWND             hWnd;
+	RenderDLLSetupFn pSetupFn;
+
+	if (g_CluClientGlob.m_bInInitRender)
+		return LT_OK;
+
+	g_CluClientGlob.m_bInInitRender = 1;
+	CSetOnExitQ514 cClearInInit(&g_CluClientGlob.m_bInInitRender, 0);
+
+	r_TermRender(pClientMgr, LTFALSE);
+
+	hWnd = dsi_GetMainWindow();
+	::ShowWindow(hWnd, SW_RESTORE);
+
+	rif_InitTextureDataList(&g_TextureDataList, 10000000);
+
+	memset(&init, 0, sizeof(init));
+	// m_hWnd before the mode copy: 0x00462453 stores %ebp ahead of the
+	// `rep movsl`.
+	init.m_hWnd = hWnd;
+	init.m_Mode = *pMode;
+
+	g_hRenderDLL = ::LoadLibrary(pMode->m_RenderDLL);
+	if (!g_hRenderDLL)
+	{
+		pClientMgr->SetupError(LT_ERRORLOADINGRENDERDLL, pMode->m_RenderDLL);
+		sub_0042d760(LT_ERRORLOADINGRENDERDLL);
+		if (g_DebugLevel >= 1)
+			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender",
+			                 "LT_ERRORLOADINGRENDERDLL", pMode->m_RenderDLL);
+		return LT_ERRORLOADINGRENDERDLL;
+	}
+
+	pSetupFn = (RenderDLLSetupFn)::GetProcAddress(g_hRenderDLL, "RenderDLLSetup");
+	if (!pSetupFn)
+	{
+		::FreeLibrary(g_hRenderDLL);
+		g_hRenderDLL = LTNULL;
+		pClientMgr->SetupError(LT_ERRORLOADINGRENDERDLL, pMode->m_RenderDLL);
+		sub_0042d760(LT_ERRORLOADINGRENDERDLL);
+		if (g_DebugLevel >= 1)
+			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender",
+			                 "LT_ERRORLOADINGRENDERDLL", pMode->m_RenderDLL);
+		return LT_ERRORLOADINGRENDERDLL;
+	}
+
+	pSetupFn(&g_RenderStruct);
+
+	g_RenderStruct.m_Width  = pMode->m_Width;
+	g_RenderStruct.m_Height = pMode->m_Height;
+
+	if (g_RenderStruct.Init(&init) != 0 || init.m_nVersion != RENDERSTRUCT_VERSION)
+	{
+		::FreeLibrary(g_hRenderDLL);
+		g_hRenderDLL = LTNULL;
+		pClientMgr->SetupError(LT_ERRORLOADINGRENDERDLL, pMode->m_RenderDLL);
+		sub_0042d760(LT_ERRORLOADINGRENDERDLL);
+		if (g_DebugLevel >= 1)
+			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender",
+			                 "LT_ERRORLOADINGRENDERDLL", pMode->m_RenderDLL);
+		return LT_ERRORLOADINGRENDERDLL;
+	}
+
+	pClientMgr->Sub4105c0();
+
+	if (!r_PublishRenderStruct(&g_RenderStruct))
+	{
+		::FreeLibrary(g_hRenderDLL);
+		g_hRenderDLL = LTNULL;
+		// No filename on this one -- the shipped call pushes two arguments.
+		pClientMgr->SetupError(LT_UNABLETORESTOREVIDEO);
+		sub_0042d760(LT_UNABLETORESTOREVIDEO);
+		if (g_DebugLevel >= 1)
+			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender", "48", " ");
+		return LT_UNABLETORESTOREVIDEO;
+	}
+
+	g_RenderStruct.m_bInited = 1;
+
+	if (pClientMgr->m_pClientShell)
+		pClientMgr->m_pClientShell->OnEvent(LTEVENT_RENDERALMOSTINITTED, 0);
+
+	if (!pClientMgr->CreateRenderWorld())
+	{
+		g_RenderStruct.m_bInited = 0;
+		::FreeLibrary(g_hRenderDLL);
+		g_hRenderDLL = LTNULL;
+		// and no SetupError on this one either.
+		sub_0042d760(LT_ERRORBINDINGWORLD);
+		if (g_DebugLevel >= 1)
+			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender", "43", " ");
+		return LT_ERRORBINDINGWORLD;
+	}
+
+	::SetFocus(hWnd);
+	pClientMgr->SetGlobals();
+
+	g_CurRenderMode = init.m_Mode;
+
+	// "CardDesc" prints m_InternalName (RMode +0x104), not m_Description
+	// (+0x184).  The shipped `lea 0x1e0(%esp)` is +0x104 into the copy and
+	// nothing in this function ever touches +0x184.
+	sprintf(buf, "CardDesc %s", init.m_Mode.m_InternalName);
+	con_PrintString(buf);
+	sprintf(buf, "RenderDLL %s", init.m_Mode.m_RenderDLL);
+	con_PrintString(buf);
+	sprintf(buf, "ScreenWidth %d", init.m_Mode.m_Width);
+	con_PrintString(buf);
+	sprintf(buf, "ScreenHeight %d", init.m_Mode.m_Height);
+	con_PrintString(buf);
+	sprintf(buf, "BitDepth %d", init.m_Mode.m_BitDepth);
+	con_PrintString(buf);
+
+	con_Sub41b840();
+
+	if (pClientMgr->m_pClientShell)
+		pClientMgr->m_pClientShell->OnEvent(LTEVENT_RENDERINIT, 0);
+
+	return LT_OK;
+}
+
+
 // ======================================================================= //
 //  The list the renderer's texture memory lives on
 // ======================================================================= //
@@ -1156,163 +1339,6 @@ LTRESULT r_TermRender(CClientMgrView* pClientMgr, LTBOOL bReportFailure)
 }
 
 
-// ======================================================================= //
-//  Bringing the renderer up
-// ======================================================================= //
-
-// 0x004623d0 -- 977 bytes.  LTRESULT r_InitRender(CClientMgr*, RMode*).
-//
-// The signature is pinned by three call sites, all cdecl with two pushes:
-// 0x004035c1 (regaining focus, with &g_CurRenderMode), 0x004116ec and
-// 0x0042dffb/0x0042e01c (SetRenderMode, which tries the requested mode and
-// then falls back).
-//
-// FRAME.  `sub $0x2e4` plus four pushes; two aggregates and nothing else:
-//   esp+0x010  char buf[200]         the sprintf target, 0xc8 bytes
-//   esp+0x0d8  RenderStructInit init 0x21c bytes, ending exactly at the top
-// 0xc8 + 0x21c == 0x2e4, so there is no third local and no spilled scalar --
-// the window handle lives in %ebp for the whole function and the constant 0
-// lives in %edi.  `init` is declared first because it takes the HIGH end.
-//
-// THE THREE IDENTICAL ERROR ARMS.  The load failure, the missing export and
-// the refused Init all run the same four statements and the compiler
-// cross-jumped them into one tail at 0x00462741/0x00462771/0x0046278b.  They
-// are written out in full below, three times, because that is what the
-// source did -- aiming two of them at the third is not the same source.
-//
-// WHY THE FLAG CLEAR IS LAST.  `g_CluClientGlob.m_bInInitRender = 0` is emitted AFTER the
-// console print on every arm.  A store to a global cannot be moved across a
-// call, so that is source order, not scheduling: the clear belongs to the
-// arm and follows the whole error report.
-LTRESULT r_InitRender(CClientMgrView* pClientMgr, RMode* pMode)
-{
-	RenderStructInit init;
-	char             buf[200];
-	HWND             hWnd;
-	RenderDLLSetupFn pSetupFn;
-
-	if (g_CluClientGlob.m_bInInitRender)
-		return LT_OK;
-
-	g_CluClientGlob.m_bInInitRender = 1;
-
-	r_TermRender(pClientMgr, LTFALSE);
-
-	hWnd = dsi_GetMainWindow();
-	::ShowWindow(hWnd, SW_RESTORE);
-
-	rif_InitTextureDataList(&g_TextureDataList, 10000000);
-
-	memset(&init, 0, sizeof(init));
-	// m_hWnd before the mode copy: 0x00462453 stores %ebp ahead of the
-	// `rep movsl`.
-	init.m_hWnd = hWnd;
-	init.m_Mode = *pMode;
-
-	g_hRenderDLL = ::LoadLibrary(pMode->m_RenderDLL);
-	if (!g_hRenderDLL)
-	{
-		pClientMgr->SetupError(LT_ERRORLOADINGRENDERDLL, pMode->m_RenderDLL);
-		sub_0042d760(LT_ERRORLOADINGRENDERDLL);
-		if (g_DebugLevel >= 1)
-			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender",
-			                 "LT_ERRORLOADINGRENDERDLL", pMode->m_RenderDLL);
-		g_CluClientGlob.m_bInInitRender = 0;
-		return LT_ERRORLOADINGRENDERDLL;
-	}
-
-	pSetupFn = (RenderDLLSetupFn)::GetProcAddress(g_hRenderDLL, "RenderDLLSetup");
-	if (!pSetupFn)
-	{
-		::FreeLibrary(g_hRenderDLL);
-		g_hRenderDLL = LTNULL;
-		pClientMgr->SetupError(LT_ERRORLOADINGRENDERDLL, pMode->m_RenderDLL);
-		sub_0042d760(LT_ERRORLOADINGRENDERDLL);
-		if (g_DebugLevel >= 1)
-			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender",
-			                 "LT_ERRORLOADINGRENDERDLL", pMode->m_RenderDLL);
-		g_CluClientGlob.m_bInInitRender = 0;
-		return LT_ERRORLOADINGRENDERDLL;
-	}
-
-	pSetupFn(&g_RenderStruct);
-
-	g_RenderStruct.m_Width  = pMode->m_Width;
-	g_RenderStruct.m_Height = pMode->m_Height;
-
-	if (g_RenderStruct.Init(&init) != 0 || init.m_nVersion != RENDERSTRUCT_VERSION)
-	{
-		::FreeLibrary(g_hRenderDLL);
-		g_hRenderDLL = LTNULL;
-		pClientMgr->SetupError(LT_ERRORLOADINGRENDERDLL, pMode->m_RenderDLL);
-		sub_0042d760(LT_ERRORLOADINGRENDERDLL);
-		if (g_DebugLevel >= 1)
-			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender",
-			                 "LT_ERRORLOADINGRENDERDLL", pMode->m_RenderDLL);
-		g_CluClientGlob.m_bInInitRender = 0;
-		return LT_ERRORLOADINGRENDERDLL;
-	}
-
-	pClientMgr->Sub4105c0();
-
-	if (!r_PublishRenderStruct(&g_RenderStruct))
-	{
-		::FreeLibrary(g_hRenderDLL);
-		g_hRenderDLL = LTNULL;
-		// No filename on this one -- the shipped call pushes two arguments.
-		pClientMgr->SetupError(LT_UNABLETORESTOREVIDEO);
-		sub_0042d760(LT_UNABLETORESTOREVIDEO);
-		if (g_DebugLevel >= 1)
-			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender", "48", " ");
-		g_CluClientGlob.m_bInInitRender = 0;
-		return LT_UNABLETORESTOREVIDEO;
-	}
-
-	g_RenderStruct.m_bInited = 1;
-
-	if (pClientMgr->m_pClientShell)
-		pClientMgr->m_pClientShell->OnEvent(LTEVENT_RENDERALMOSTINITTED, 0);
-
-	if (!pClientMgr->CreateRenderWorld())
-	{
-		g_RenderStruct.m_bInited = 0;
-		::FreeLibrary(g_hRenderDLL);
-		g_hRenderDLL = LTNULL;
-		// and no SetupError on this one either.
-		sub_0042d760(LT_ERRORBINDINGWORLD);
-		if (g_DebugLevel >= 1)
-			con_ConsolePrint(g_pReturnErrorFormat, "r_InitRender", "43", " ");
-		g_CluClientGlob.m_bInInitRender = 0;
-		return LT_ERRORBINDINGWORLD;
-	}
-
-	::SetFocus(hWnd);
-	pClientMgr->SetGlobals();
-
-	g_CurRenderMode = init.m_Mode;
-
-	// "CardDesc" prints m_InternalName (RMode +0x104), not m_Description
-	// (+0x184).  The shipped `lea 0x1e0(%esp)` is +0x104 into the copy and
-	// nothing in this function ever touches +0x184.
-	sprintf(buf, "CardDesc %s", init.m_Mode.m_InternalName);
-	con_PrintString(buf);
-	sprintf(buf, "RenderDLL %s", init.m_Mode.m_RenderDLL);
-	con_PrintString(buf);
-	sprintf(buf, "ScreenWidth %d", init.m_Mode.m_Width);
-	con_PrintString(buf);
-	sprintf(buf, "ScreenHeight %d", init.m_Mode.m_Height);
-	con_PrintString(buf);
-	sprintf(buf, "BitDepth %d", init.m_Mode.m_BitDepth);
-	con_PrintString(buf);
-
-	con_Sub41b840();
-
-	if (pClientMgr->m_pClientShell)
-		pClientMgr->m_pClientShell->OnEvent(LTEVENT_RENDERINIT, 0);
-
-	g_CluClientGlob.m_bInInitRender = 0;
-	return LT_OK;
-}
 
 
 // ======================================================================= //

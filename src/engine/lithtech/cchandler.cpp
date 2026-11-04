@@ -73,6 +73,13 @@
 // *********************************************************************** //
 
 #include <string.h>
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's engine sees the STL's <string> here, through a header
+// AvP2's does not have: the translation unit carries <string>'s 44-byte
+// guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
+// atexit of the empty 0x00401790; this one's near 0x004b90b0).
+#include <string>
+#endif
 
 #include "ltbasedefs.h"
 #include "ltcodes.h"
@@ -517,6 +524,10 @@ public:
 	// mov %eax,0xc(%ecx) ; ret $0x4` (lt2new1.cpp's sub_411440).
 	void sub_411440(CPacketQ478* pPacket);                   // 0x00411440
 
+	// AVP2: Primal Hunt 0x00411000 (AvP2 1.0.9.6 has its twin), __thiscall
+	// with the packet: id 27's whole body (name ours).
+	void sub_411000Q517(CPacketQ478* pPacket);               // 0x00411000
+
 	// __cdecl varargs member (clientrender.cpp / clientshell.cpp): the
 	// shipped sites push `this` LAST and clean up themselves, and
 	// 0x0041fc60 formats into `this + 0x620` with a 0x12c cap.
@@ -565,18 +576,70 @@ void cs_TermWorld(CClientShellQ478* pShell);
 //   * the send is three pushes plus %ecx = m_pClientMgr + 0x50c with no
 //     caller cleanup: CNetMgr::SendTo(pMsg, m_nConnID, 0x80).
 //   * the trailing `if (p) p->Release()` at 0x004782e8 is cMsg leaving
-//     scope; the guard's exit skips it, which is why cMsg has to be scoped
-//     INSIDE the if and not declared at the top.
+//     scope; NOLF's guard exit skips it (cMsg inside the if). Primal Hunt
+//     declares the holder at the top instead (see below).
 //
-//  BYTE-IDENTICAL, 298 bytes.  The message is HELD, not kept as the
-//  returned CMsgRef: 0x0047820e..0x0047822a takes m_pMsg out of the
+//  BYTE-IDENTICAL on NOLF, 298 bytes, and on Primal Hunt (0x00493bf0, 364
+//  bytes, below).  The message is HELD, not kept as the returned CMsgRef: 0x0047820e..0x0047822a takes m_pMsg out of the
 //  temporary (AddRef), then releases the temporary, which lives in the
 //  dead packet-argument slot -- sub_478320's CMsgHoldQ478 exactly.  Kept as
 //  the CMsgRef it was 489 bytes with a 0x14 frame.
 // ======================================================================= //
 
+// ======================================================================= //
+//  AVP2: Primal Hunt 0x00493bd0 -- message id 27, 20 bytes (AvP2 1.0.9.6
+//  0x0048aa50). A handler NOLF's table does not have: Primal Hunt's
+//  dispatch setup stores it at 0x004f7020 (id 27), between ids 12 and 6 in
+//  address order. The packet goes to CClientMgr's 0x00411000 and the
+//  answer is LT_OK (name ours).
+// ======================================================================= //
+
+LTRESULT sub_493bd0Q517(CClientShellQ478* pShell, CPacketQ478* pPacket)
+{
+	pShell->m_pClientMgr->sub_411000Q517(pPacket);
+
+	return LT_OK;
+}
+
+
+// AVP2: the message's holder as Primal Hunt's handlers keep it: empty at
+// birth, assigned from msg_StartWrite's CMsgRef, released on the way out,
+// and every one of the three INLINE (0x00493c09..0x00493c65 and
+// 0x00493d34; NOLF called 0x0047bc20 and 0x004666f0). Name ours.
+class CMsgHolderQ517
+{
+public:
+	CMsgHolderQ517() { m_pMsg = LTNULL; }
+
+	~CMsgHolderQ517()
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+	}
+
+	CMsgQ478* operator=(const CMsgRefQ478& other)
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			m_pMsg->AddRef();
+
+		return m_pMsg;
+	}
+
+	CMsgQ478* m_pMsg;
+};
+
+// AVP2: Primal Hunt 0x00493bf0. The holder is declared at the top -- the
+// refusal path runs its (null) release too, 0x00493c35 -> 0x00493d34 --
+// and the message is 0x44c bytes, not 0x1000 (0x00493c3b; AvP2 1.0.9.6
+// 0x0048aa9a).
 LTRESULT sub_4781d0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 {
+	CMsgHolderQ517 cMsg;
 	LTRESULT dResult;
 
 	pShell->m_Unknown6c = 0xffff;
@@ -585,7 +648,7 @@ LTRESULT sub_4781d0(CClientShellQ478* pShell, CPacketQ478* pPacket)
 
 	if (dResult == LT_OK)
 	{
-		CMsgHoldQ478 cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
+		cMsg = msg_StartWrite(0x44c, 0x44c);
 
 		cMsg.m_pMsg->m_Data.m_pArray[0] = 9;
 		cMsg.m_pMsg->WriteType((uint8)0);
@@ -665,14 +728,23 @@ class ILTMessageView;
 typedef LTRESULT (*ClientPacketHandlerFn)(CClientShell* pShell, ILTMessageView* pMsg);
 extern void* g_Table4b48d0Q474[0x100];                         // 0x004b48d0
 
+// AVP2: Primal Hunt 0x00493d80 (592 bytes, id 14): the holder at the top
+// and assigned, 0x44c-byte messages (0x00493da2, 0x00493e78). NEAR there,
+// 592/592 and 183/183: register allocation only -- shipped keeps the packet
+// in %ebp and the length (and later the handler's answer) in %edi, ours the
+// other way round. Unmoved by the holder declared last and by cMsg.m_pMsg
+// written out in place of pSub.
 LTRESULT sub_478320(CClientShellQ478* pShell, CPacketQ478* pPacket)
 {
-	CMsgHoldQ478          cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
-	CMsgQ478*             pSub = cMsg.m_pMsg;
+	CMsgHolderQ517        cMsg;
+	CMsgQ478*             pSub;
 	uint16                nLen;
 	uint8                 nID;
 	ClientPacketHandlerFn pHandler;
 	LTRESULT              dResult;
+
+	cMsg = msg_StartWrite(0x44c, 0x44c);
+	pSub = cMsg.m_pMsg;
 
 	while (pPacket->m_DataLen - pPacket->m_Pos > 0)
 	{
@@ -689,7 +761,7 @@ LTRESULT sub_478320(CClientShellQ478* pShell, CPacketQ478* pPacket)
 		if (nLen == 0)
 			return LT_OK;
 
-		pSub->Init(nLen, 0x1000);
+		pSub->Init(nLen, 0x44c);             // AVP2: 0x00493e78
 
 		pPacket->ReadData(pSub->m_Data.m_pArray, nLen);
 		pSub->m_DataLen = nLen;

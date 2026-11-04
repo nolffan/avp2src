@@ -141,7 +141,12 @@ LTRESULT SharedCommonLT::GetAttachmentTransform(HATTACHMENT hAttachment, LTransf
 	// everything else uses the object transform (or identity in local space).
 	if (hParent->m_ObjectType == OT_MODEL && pAttachment->m_iNode != -1)
 	{
-		dResult = ((ILTModelI*)pModelLT)->GetNodeTransform(hParent, pAttachment->m_iNode, tParent, bWorldSpace);
+		// AVP2: slot 0x20 (0x00440b9f; AvP2 1.0.9.6 and both server.dlls
+		// agree), which is the AvP2 SDK's GetSocketTransform -- the SDK
+		// grew GetModelLighting at 0x10, so the socket accessor is the slot
+		// NOLF's ILTModelI view reached at 0x1c. An attachment hangs off a
+		// socket.
+		dResult = pModelLT->GetSocketTransform(hParent, pAttachment->m_iNode, tParent, bWorldSpace);
 		if (dResult != LT_OK)
 			return dResult;
 	}
@@ -289,11 +294,9 @@ void SharedCommonLT::SetMath(ICommonMath* pMath)
 //     name themselves "ILTModel::GetNodeTransform" (0x1001d478) and
 //     "ILTModel::GetSocketTransform" (0x1001d77f) in their own parameter
 //     checks. Slot numbering here is iltmodel.h's — ILTModel has no virtual
-//     destructor, so GetSocket is slot 0. (commonmodel.h's ILTModelI carries
-//     an extra leading slot, which shifts every transform accessor by one;
-//     that is why the neighbouring GetAttachmentTransform, which reaches
-//     0x1c through it, is calling GetSocketTransform under the name
-//     GetNodeTransform.)
+//     destructor, so GetSocket is slot 0. (AVP2: the SDK's GetModelLighting
+//     at 0x10 moves the pair to 0x1c/0x20, 0x00440d29/0x00440d2e; the
+//     neighbouring GetAttachmentTransform calls GetSocketTransform, 0x20.)
 //
 //   * Multiply's return value is discarded. The three earlier results are
 //     each tested and returned; the last is not, and the function ends

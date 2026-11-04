@@ -40,6 +40,14 @@
 #include "cltdib.h"
 #include "cluglob.h"                // g_CluClientGlob, 0x004b0ac0
 
+// PH: Primal Hunt's engine TUs see the C++ library's <string> (some header
+// common to ~95 of them includes it; AvP2 1.0.9.6's have none). Its trace is
+// the guarded initializer of std::ctype<unsigned short>::id at the end of
+// the TU (0x0044b140: guard 0x004f8014 bit 0, atexit of the empty 0x00401790).
+#ifdef PRIMAL_HUNT
+#include <string>
+#endif
+
 // windows.h renames engine methods out from under us otherwise.
 #undef PostMessage
 #undef GetMessage
@@ -797,11 +805,13 @@ class ILTStream;
 ILTStream* sub_483f50Q41C(char* pFilename, char* pMode);          // 0x00483f50
 LTBOOL     dib_LoadQ41C(ILTStream* pStream, CObj4a1ab4View* pDib);  // 0x0043df40
 
+// AVP2: OptimizeSurface is one slot on in AvP2's client table (PH
+// 0x00424083 `call *0x164(%ecx)`, 1.0.9.6 0x00421b1d).
 class CClientTableQ41C
 {
 public:
-	uint8    m_pad_000[0x160];
-	LTRESULT (*OptimizeSurface)(HSURFACE hSurface, uint32 hTransparentColor);  // 0x160
+	uint8    m_pad_000[0x164];
+	LTRESULT (*OptimizeSurface)(HSURFACE hSurface, uint32 hTransparentColor);  // 0x164
 };
 
 class CClientMgrQ41C

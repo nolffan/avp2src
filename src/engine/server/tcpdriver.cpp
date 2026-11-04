@@ -509,8 +509,10 @@ public:
 	virtual void     _p54() = 0;                                 // 0x54
 	virtual LTRESULT SendTo(const void* pData, uint32 len,
 	                        const char* sAddr, uint32 port) = 0; // 0x58
-	virtual void     Disconnect(NetConnection* pConn, uint32 nReason,
-	                            uint32 flags) = 0;               // 0x5c
+	// AVP2: two arguments, not NOLF's three: every image's body returns
+	// with `ret $0x8` (lithtech.exe 0x004a2cae, AvP2's 0x00498b4f, server.dll
+	// 0x10046d07, AvP2's 0x100421bf).
+	virtual void     Disconnect(NetConnection* pConn, uint32 nReason) = 0; // 0x5c
 	virtual LTBOOL   _p60(void* pData, uint32 nLen, uint32 nUnused,
 	                      NetConnection* pConn) = 0;             // 0x60
 	virtual LTBOOL   ReceivePacket(class ServerMessage* pMsg) = 0;  // 0x64
@@ -555,7 +557,7 @@ public:
 	virtual LTRESULT JoinSession(NetSession* pSession);           // 0x34
 	virtual LTRESULT UpdateSessionName(const char* pName);        // 0x38
 	virtual LTRESULT GetSessionName(char* pName, uint32 nLen);    // 0x3c
-	virtual void     Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags); // 0x5c
+	virtual void     Disconnect(NetConnection* pConn, uint32 nReason); // 0x5c
 	virtual LTBOOL   _p60(void* pData, uint32 nLen, uint32 nUnused,
 	                      NetConnection* pConn);                  // 0x60
 	virtual LTBOOL   ReceivePacket(class ServerMessage* pMsg);    // 0x64
@@ -1667,7 +1669,7 @@ LTRESULT TCPDriver::JoinSession(NetSession* pSession)
 
 // 0x10036d22 — slot 0x5c. The manager hears about it first, then the remote
 // end, then the connection comes out of the driver's table and is destroyed.
-void TCPDriver::Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags)
+void TCPDriver::Disconnect(NetConnection* pConn, uint32 nReason)
 {
 	if (pConn)
 	{

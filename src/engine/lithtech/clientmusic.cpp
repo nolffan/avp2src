@@ -731,6 +731,9 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 	m_nNumIntensities = 0;
 	m_nInitialIntensity = 0;
 	m_nInitialVolume = 0;
+	// AVP2: zeroed here (AvP2 1.0.9.6's 0x00448214); only Primal Hunt reads
+	// it from the control file below.
+	m_nVolumeOffset = 0;
 	m_nNumPChannels = 64;
 	m_nNumVoices = 64;
 	m_nSynthSampleRate = 44100;
@@ -738,6 +741,10 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 	controlFile.GetKeyVal(LTNULL, "NUMINTENSITIES", m_nNumIntensities);
 	controlFile.GetKeyVal(LTNULL, "INITIALINTENSITY", m_nInitialIntensity);
 	controlFile.GetKeyVal(LTNULL, "INITIALVOLUME", m_nInitialVolume);
+#ifdef PRIMAL_HUNT
+	// PH: 0x0044c047..0x0044c07a; AvP2 1.0.9.6 has no "VOLUMEOFFSET".
+	controlFile.GetKeyVal(LTNULL, "VOLUMEOFFSET", m_nVolumeOffset);
+#endif
 	controlFile.GetKeyVal(LTNULL, "PCHANNELS", m_nNumPChannels);
 	controlFile.GetKeyVal(LTNULL, "VOICES", m_nNumVoices);
 	controlFile.GetKeyVal(LTNULL, "SYNTHSAMPLERATE", m_nSynthSampleRate);
@@ -773,6 +780,10 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 
 	m_aIntensities = new CDMIntensity[m_nNumIntensities + 1];
 
+	// NEAR (1445 of 1460 bytes, AvP2 shape): everything else agrees.  In
+	// this loop and the transitions' below, shipped forms each element's
+	// address in a register (`mov %ecx,%eax; add %esi,%eax; mov %ebx,(%eax)`,
+	// 0x0044c1b9..) where ours folds it into a scale-1 SIB store.
 	for (i = 0; i <= m_nNumIntensities; i++)
 	{
 		m_aIntensities[i].m_nUnknown00 = 0;
@@ -821,6 +832,10 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 
 	controlFile.Term();
 
+	// AVP2: the level's initial volume is applied here, through the
+	// interface (`call *0x20(%eax)` at 0x0044c2d9; AvP2 1.0.9.6's 0x004484d5).
+	SetVolume(m_nInitialVolume);
+
 	m_pQueueAfter = LTNULL;
 	m_nCurIntensity = 0;
 
@@ -833,8 +848,8 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 // the intensity's two numbers as requests of their own. Only one thing is
 // handed to DirectMusic straight away - the transition segment, or failing
 // that the intensity's first segment - and only when the enact type is not
-// "next segment", which EnactToSegFlags reports as the QUEUE flag and this
-// function tests as the flag rather than as the enact type.
+// "next segment" (NOLF tested EnactToSegFlags' QUEUE flag; AvP2 tests the
+// enact type itself).
 //
 // Intensity zero is a stop, and reported as an error afterwards; so is a
 // change with no performance to play on. The queue cursor is left on the first
@@ -849,16 +864,17 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 // arm materialises the zero with `xor %eax,%eax` and then stores through it -
 // which is what says `new` and not a written-out allocate-and-test.
 //
-// Byte-identical (798). It was 777 while both not-initialised blocks called
+// NOLF: byte-identical (798). It was 777 while both not-initialised blocks called
 // one symbol: VC6 found the two tails identical and cross-jumped the second
 // block into the first from the call onwards, where the shipped build emits
 // it whole. The level test now calls dm_NotLevelInitError (see its
 // declaration at the top of this file).
 //
-// The four allocations were three shapes in NOLF's build (the addresses
-// below are NOLF's).  AvP2's and Primal Hunt's `new CDMPendingNode` has
-// CDMPendingBankQ440::AllocExpanded's shape instead (clientmusic.h), and
-// this function has not been brought to AvP2's yet:
+// AvP2 / Primal Hunt (0x0044c7e0, byte-identical, 847): the same three
+// shapes at the same four sites -- AllocPop for PLAYTRANSITION (through
+// CDMPendingAllocPopQ514), Alloc for PLAYSEGMENT and INTENSITY00, and
+// AllocExpanded (now plain `new CDMPendingNode`) for INTENSITY04.  The
+// notes that follow are NOLF's build (its addresses):
 // * PLAYTRANSITION and PLAYSEGMENT (0x00440755, 0x00440805) are
 //   CDMBank::AllocPop: Pop out of line on both paths, folded into one call.
 // * INTENSITY00 (0x00440847) is CDMBank::Alloc: the fast path written out,
@@ -911,6 +927,14 @@ public:
 	}
 };
 
+// The first allocation's shape: Pop out of line on both paths (AllocPop).
+class CDMPendingAllocPopQ514 : public CDMPendingNode
+{
+public:
+	CDMPendingAllocPopQ514(uint32 nType) : CDMPendingNode(nType) {}
+	void* operator new(unsigned int nSize) { return g_PendingBank.AllocPop(); }
+};
+
 LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity,
                                             const LTDMEnactTypes nStart)
 {
@@ -919,6 +943,7 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity,
 	CDMPendingNode* pPending;
 	LTDMEnactTypes  nEnact;
 	uint32          dwFlags;
+	IDirectMusicSegmentState* pSegState = LTNULL;
 
 	dm_Printf(4, "CLTDirectMusicMgr::ChangeIntensity nNewIntensity=%i nStart=%i\n",
 	          nNewIntensity, nStart);
@@ -974,27 +999,31 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity,
 
 	dwFlags = EnactToSegFlags(nEnact);
 
+	// AVP2: a next-segment start is tested on the enact type itself, and an
+	// immediate one records its segment state on the primary list
+	// (CDMPlayingList::Add, 0x0044e460), as PlaySecondary does.
 	if (pTransition->m_pDMSegment)
 	{
-		if (dwFlags == 0x100)
+		if (nEnact == LTDMEnactNextSegment)
 		{
-			pPending = new CDMPendingNode(DMPENDING_PLAYTRANSITION);
+			pPending = new CDMPendingAllocPopQ514(DMPENDING_PLAYTRANSITION);
 			pPending->m_pSegment = (CDMSegment*)pTransition;
 			m_PendingList.AddTail(pPending);
 		}
 		else
 		{
-			m_pPerformance->PlaySegment(pTransition->m_pDMSegment, dwFlags, 0, LTNULL);
+			m_pPerformance->PlaySegment(pTransition->m_pDMSegment, dwFlags, 0, &pSegState);
+			m_PrimaryList.Add(pSegState, LTNULL);
 		}
 	}
-	else
+	else if (nEnact != LTDMEnactNextSegment)
 	{
-		if (dwFlags != 0x100)
-		{
-			pSegment = m_aIntensities[nNewIntensity].m_Segments.m_pHead;
+		pSegment = m_aIntensities[nNewIntensity].m_Segments.m_pHead;
 
-			if (pSegment && pSegment->m_pDMSegment)
-				m_pPerformance->PlaySegment(pSegment->m_pDMSegment, dwFlags, 0, LTNULL);
+		if (pSegment && pSegment->m_pDMSegment)
+		{
+			m_pPerformance->PlaySegment(pSegment->m_pDMSegment, dwFlags, 0, &pSegState);
+			m_PrimaryList.Add(pSegState, pSegment);
 		}
 	}
 
@@ -1004,7 +1033,7 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity,
 	{
 		if (pSegment->m_pDMSegment)
 		{
-			pPending = new CDMPendingNode(DMPENDING_PLAYSEGMENT);
+			pPending = new CDMPendingAllocQ440(DMPENDING_PLAYSEGMENT);
 			pPending->m_pSegment = pSegment;
 			m_PendingList.AddTail(pPending);
 		}
@@ -1018,12 +1047,12 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity,
 
 	if (m_aIntensities[nNewIntensity].m_nUnknown04 > 0)
 	{
-		pPending = new CDMPendingAllocInlineQ440(DMPENDING_INTENSITY04);
+		pPending = new CDMPendingNode(DMPENDING_INTENSITY04);
 		pPending->m_nValue = m_aIntensities[nNewIntensity].m_nUnknown04;
 		m_PendingList.AddTail(pPending);
 	}
 
-	if (!pTransition->m_pDMSegment && dwFlags != 0x100)
+	if (!pTransition->m_pDMSegment && nEnact != LTDMEnactNextSegment)
 		m_pQueueAfter = m_PendingList.m_pHead;
 	else
 		m_pQueueAfter = LTNULL;

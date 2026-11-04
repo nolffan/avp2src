@@ -1206,12 +1206,14 @@ LTRESULT CSoundMgrView::Init(InitSoundInfo* pSoundInfo)
 
 		dl_InitList(&m_SoundDataList);
 
+		// AVP2: the instances are 0xc bytes longer than NOLF's 0xb8/0xd0
+		// (0xc4/0xdc: 0x0049c87b here, AvP2 1.0.9.6's 0x00492d50).
 		sb_Term2((StructBank_t*)&m_SoundBank0.m_Bank, 1);
-		sb_Init2((StructBank_t*)&m_SoundBank0.m_Bank, 0xb8, 16, 16);
+		sb_Init2((StructBank_t*)&m_SoundBank0.m_Bank, 0xc4, 16, 16);
 		sb_Term2((StructBank_t*)&m_SoundBank1.m_Bank, 1);
-		sb_Init2((StructBank_t*)&m_SoundBank1.m_Bank, 0xb8, 16, 16);
+		sb_Init2((StructBank_t*)&m_SoundBank1.m_Bank, 0xc4, 16, 16);
 		sb_Term2((StructBank_t*)&m_SoundBank2.m_Bank, 1);
-		sb_Init2((StructBank_t*)&m_SoundBank2.m_Bank, 0xd0, 32, 32);
+		sb_Init2((StructBank_t*)&m_SoundBank2.m_Bank, 0xdc, 32, 32);
 
 		memset(m_pSoundInstances, 0, sizeof(m_pSoundInstances));
 		m_nSoundInstances = 0;
@@ -1258,7 +1260,17 @@ LTRESULT CSoundMgrView::Init(InitSoundInfo* pSoundInfo)
 		_v34(&reverb);
 	}
 
-	m_Packet.Init(0x1000, 0x1000);
+	// AVP2: the packet size is 0x44c, as everywhere in AvP2's engine.
+	m_Packet.Init(0x44c, 0x44c);
+
+	// AVP2: 0x0049ca27 (AvP2 1.0.9.6's 0x00492f6d).
+	// NEAR (1711 of 1678 bytes): everything else agrees; the packet Init
+	// above is the residual.  Shipped (0x0049c98d..0x0049ca24) expands the
+	// first Term's SetSize2 but CALLS BaseDelete (0x00433210), CALLS the
+	// SetSize2 (0x0040cfa0) under Init's own Term, and calls BaseDelete and
+	// BaseNew (0x0040d080) under SetSize; ours expands all of it -- VC6's
+	// per-function inline budget, as packet.h describes for WriteType.
+	m_TypeVolumes[0] = 100;
 
 	AIL_lock();
 	m_dwLastUpdateTime = AIL_ms_count();
@@ -1869,27 +1881,31 @@ LTRESULT CSoundMgrView::PlaySoundFromFile(PlaySoundInfo* pInfo, void* pFileRec,
 				if (pOther)
 					ReleaseSound(pOther);
 			}
+
+			// The success path returns from here (0x0049e1aa); the
+			// failure block below has no test of its own.
+			// NEAR (408 of 408 bytes): shipped returns this through %ebp
+			// (`mov %ebp,%eax`), ours folds the known zero (`xor
+			// %eax,%eax`), and the m_nSoundInstances increment takes %eax
+			// where ours takes %ecx.  Tried: `!dResult`, a trailing
+			// `if (dResult == LT_OK) return` (416 bytes).
+			return dResult;
 		}
-		else
-		{
-			dResult = LT_ERROR;
-		}
+
+		dResult = LT_ERROR;
 	}
 
-	if (dResult != LT_OK)
-	{
-		nType = pSound->m_Type;
-		pSound->Term();
+	nType = pSound->m_Type;
+	pSound->Term();
 
-		if (nType == 0)
-			m_SoundBank0.Free((CSoundInstanceLocalRef*)pSound);
-		else if (nType == 1)
-			m_SoundBank1.Free((CSoundInstanceAmbientRef*)pSound);
-		else if (nType == 2)
-			m_SoundBank2.Free((CSoundInstance3DRef*)pSound);
+	if (nType == 0)
+		m_SoundBank0.Free((CSoundInstanceLocalRef*)pSound);
+	else if (nType == 1)
+		m_SoundBank1.Free((CSoundInstanceAmbientRef*)pSound);
+	else if (nType == 2)
+		m_SoundBank2.Free((CSoundInstance3DRef*)pSound);
 
-		pInfo->m_hSound = LTNULL;
-	}
+	pInfo->m_hSound = LTNULL;
 
 	return dResult;
 }
@@ -2406,7 +2422,9 @@ LTRESULT CSoundMgrView::Update()
 
 		pSound->Stop(0);                                     // 0x0048136b
 
-		if ((pSound->m_StateFlags & 0x40) || !(pSound->m_Flags10 & 0x438))
+		// AVP2: bit 7 as well as bit 6 (`testb $0xc0` at 0x0049dc1c;
+		// AvP2 1.0.9.6's 0x00494157).
+		if ((pSound->m_StateFlags & 0xc0) || !(pSound->m_Flags10 & 0x438))
 		{
 			ReleaseSound((CSoundInstanceRef*)pSound);        // 0x00481499
 			i--;

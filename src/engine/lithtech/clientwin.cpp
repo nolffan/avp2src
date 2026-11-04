@@ -329,10 +329,12 @@ void* CluFileRecBank::Allocate()
 	return clu_sb_Allocate(&m_Bank);
 }
 
+// AVP2: sb_Free's null tests, on the object and on the bank (&m_Bank, so
+// `lea 0x4(%ecx)` then `test`): lithtech.exe 0x00416070, which both banks'
+// vtables (0x004d44f4, 0x004d4504) share.
 void CluFileRecBank::Free(void* pObj)
 {
-	*(void**)pObj = m_Bank.m_pFreeList;
-	m_Bank.m_pFreeList = pObj;
+	clu_sb_FreeQ501(&m_Bank, pObj);
 }
 
 void CluFileRecBank::Init()
@@ -346,10 +348,12 @@ void* CluNetFileRecBank::Allocate()
 	return clu_sb_Allocate(&m_Bank);
 }
 
+// AVP2: sb_Free's null tests, on the object and on the bank (&m_Bank, so
+// `lea 0x4(%ecx)` then `test`): lithtech.exe 0x00416070, which both banks'
+// vtables (0x004d44f4, 0x004d4504) share.
 void CluNetFileRecBank::Free(void* pObj)
 {
-	*(void**)pObj = m_Bank.m_pFreeList;
-	m_Bank.m_pFreeList = pObj;
+	clu_sb_FreeQ501(&m_Bank, pObj);
 }
 
 void CluNetFileRecBank::Init()
@@ -1752,8 +1756,8 @@ CluFileMgr* clu_fm_Create(CluClientMgrView* pClientMgr)
 	for (i = 0; i < 100; i++)
 		dl_TieOff(&pMgr->m_ByID[i]);
 
-	dl_TieOff(pMgr->m_TreeList.AsLTLink());
 	pMgr->m_pClientMgr = pClientMgr;
+	dl_TieOff(pMgr->m_TreeList.AsLTLink());
 
 	for (i = 0; i < 200; i++)
 		dl_TieOff(&pMgr->m_ByName[i]);
@@ -2309,6 +2313,20 @@ LTRESULT clu_fm_CopyFile(CluFileMgr* pMgr, char* pszSourceFile, char* pszDestFil
 
 	return LT_NOTFOUND;
 }
+
+#ifdef PRIMAL_HUNT
+// PH: 0x00404ed0 -- 28 bytes.  Does any tree have the file?  The client half
+// of ILTCSBase's new slot 45: CLTClient::DoesFileExist (0x00407320) hands it
+// the client manager's file manager (+0x1644) and the name.  One call to the
+// tree search (0x00404810), then `neg; sbb; and $0xc3; add $0x3d` -> LT_OK
+// or LT_NOTFOUND.  (Name ours; lt2new2.cpp calls it sub_00404ed0Q502.)
+// 0x00404e30 between CopyFile and this is the slot-44 GetFileInfo, which
+// smgrmisc.cpp's fs_GetFileInfoQ468 already reproduces byte for byte.
+LTRESULT clu_fm_FileExistsQ511(CluFileMgr* pMgr, char* pszFilename)
+{
+	return clu_fm_FindTreeWithFile(&pMgr->m_TreeList, pszFilename) ? LT_OK : LT_NOTFOUND;
+}
+#endif
 
 
 // ======================================================================= //

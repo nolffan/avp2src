@@ -1219,6 +1219,11 @@ public:
 	CDMSegmentQ7* m_pHead;                   // 0x000
 	CDMSegmentQ7* m_pTail;                   // 0x004
 
+	// The list has a destructor of its own, and it does nothing: Primal
+	// Hunt's /GX ~CDMIntensity (0x0044e270) opens an EH frame and sets state
+	// 0 round its body for this member, and calls nothing after it.
+	~CDMSegmentListQ7() {}
+
 	void Remove(CDMSegmentQ7* pNode);                               // 0x0048dee0
 };
 
@@ -1328,7 +1333,7 @@ public:
 #define g_pPendingBankFreeQ7 (CDMBanks::s_PendingBank.m_pFree)   // 0x004b3fd8
 #define g_pPlayingBankFreeQ7 (CDMBanks::s_PlayingBank.m_pFree)   // 0x004b3fa8
 
-// 0x004420b0, 71 bytes.  Clear each segment's name (SetName(0) at
+// 0x004420b0, 71 bytes (PH 0x0044e270, 119 with its EH frame).  Clear each segment's name (SetName(0) at
 // 0x00441f20), unlink it, delete the allocated name if one is still set,
 // and push it back onto the segment bank.
 CDMIntensityQ7::~CDMIntensityQ7()
@@ -1463,6 +1468,115 @@ void CDMPlayingListQ7::StopAll(CLTDirectMusicMgrQ7* pMgr, int bOnlyIfStopped)
 		StopNode(pMgr, pNode, 1, bOnlyIfStopped);
 
 		pNode = pNext;
+	}
+}
+
+// ---- 0x0044e460 (Primal Hunt) — CDMPlayingList::Add ------------------ //
+//
+// AVP2: new in AvP2 (1.0.9.6's 0x0044a570, the same bytes) and Primal Hunt,
+// between StopSegment and StopNode.  clientmusic.cpp's PlaySecondary and
+// PlayMotif call it with the segment state DirectMusic just handed back.
+// clientmusic.h's classes under their own names (this TU does not include
+// that header), so the definition is the one clientmusic.cpp calls.
+//
+// Nothing for a null state.  The node comes from the playing bank (0x004f55d0
+// in Primal Hunt; free list at +0x10) through `new`: the free list's head
+// if there is one, else Grow (0x0044f030) and the head after it, written out
+// both times -- clientmusic.cpp's dmPlayingAllocInlineQ440 shape.  `new`'s
+// null test is the second `test %eax,%eax` (0x0044e49e), and the node's
+// constructor zeroes the state and the segment (+0x08, +0x0c) before they
+// are filled in.  It goes on the HEAD of the list (0x004bd300 is AddHead:
+// `mov (%ecx),%edx; mov %edx,(%eax)`).
+//
+// The fast path tests the bank's free list itself and re-reads it into the
+// record (that is what keeps `new`'s null test on that path, 0x0044e47d
+// `jmp 0x44e49e`; testing the record instead lets VC6 skip it, 99 bytes).
+//
+// NEAR, size- and mnemonic-exact (103/103): shipped keeps the state in %ebx
+// and `this` in %edi, ours in %edi and %esi.  Positive or negative guard and
+// either store order leave it.
+struct IDirectMusicSegmentState;
+class CDMSegment;
+
+class CDMBank
+{
+public:
+	uint8  m_pad_00[0x10];
+	void*  m_pFree;                          // 0x010
+};
+
+class CDMPlayingBankQ440 : public CDMBank
+{
+public:
+	int Grow();                              // PH 0x0044f030
+};
+
+extern CDMPlayingBankQ440 g_PlayingBank;     // PH 0x004f55d0
+
+class CDMPlayingNode
+{
+public:
+	CDMPlayingNode* m_pNext;                 // 0x000
+	uint8  m_pad_04[0x08 - 0x04];
+	IDirectMusicSegmentState* m_pSegState;   // 0x008
+	CDMSegment* m_pSegment;                  // 0x00c
+};
+
+class CDMPlayingList
+{
+public:
+	CDMPlayingNode* m_pHead;                 // 0x000
+	CDMPlayingNode* m_pTail;                 // 0x004
+
+	void AddHead(CDMPlayingNode* pNode);                            // PH 0x004bd300
+	void Add(IDirectMusicSegmentState* pSegState, CDMSegment* pSegment);
+};
+
+class CDMPlayingNodeNewQ513 : public CDMPlayingNode
+{
+public:
+	CDMPlayingNodeNewQ513()
+	{
+		m_pSegState = 0;
+		m_pSegment  = 0;
+	}
+
+	void* operator new(unsigned int nSize)
+	{
+		void* pRecord;
+
+		if (g_PlayingBank.m_pFree)
+		{
+			pRecord = g_PlayingBank.m_pFree;
+			g_PlayingBank.m_pFree = *(void**)pRecord;
+			return pRecord;
+		}
+
+		if (!g_PlayingBank.Grow())
+			return LTNULL;
+
+		pRecord = g_PlayingBank.m_pFree;
+
+		if (pRecord)
+			g_PlayingBank.m_pFree = *(void**)pRecord;
+
+		return pRecord;
+	}
+};
+
+void CDMPlayingList::Add(IDirectMusicSegmentState* pSegState, CDMSegment* pSegment)
+{
+	if (pSegState)
+	{
+		CDMPlayingNode* pNode = new CDMPlayingNodeNewQ513;
+
+		if (pNode)
+		{
+			pNode->m_pSegState = pSegState;
+			pNode->m_pSegment  = pSegment;
+
+			AddHead(pNode);
+		}
 	}
 }
 

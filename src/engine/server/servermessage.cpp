@@ -327,6 +327,67 @@ inline LTRESULT CLTServer::UnloadTexture(char *pFilename)
 // nothing to it (name ours). The two images encode the three pushes
 // differently from this one source: `push 0xc(%esp)` at /O1, `mov
 // 0xc(%esp),%edx; push %edx` at /O2.
+#ifdef PRIMAL_HUNT
+// PH: both take a FOURTH name, the model's extra texture, after the skin:
+// SetModelFilenames (0x00483f10) forwards four arguments to slot 123
+// (`call *0x1ec(%eax)`, `ret $0x10`) and SetObjectFilenames (0x00483f30)
+// copies the fourth into the create struct's m_ExtraTextureName (+0x300,
+// 0x00484048). iltserver.h (the SDK, shared) declares the three-name pair,
+// so this view lays the table out itself: ILTServer's slots up to 121 as
+// placeholders (Primal Hunt's, ILTCSBase's two extra slots included), the
+// pair at 122 and 123, and ILTCSBase's m_pCommonLT at +8 for Common().
+class CLTServerModelView
+{
+public:
+	virtual void _v000() = 0; virtual void _v004() = 0; virtual void _v008() = 0; virtual void _v00c() = 0;
+	virtual void _v010() = 0; virtual void _v014() = 0; virtual void _v018() = 0; virtual void _v01c() = 0;
+	virtual void _v020() = 0; virtual void _v024() = 0; virtual void _v028() = 0; virtual void _v02c() = 0;
+	virtual void _v030() = 0; virtual void _v034() = 0; virtual void _v038() = 0; virtual void _v03c() = 0;
+	virtual void _v040() = 0; virtual void _v044() = 0; virtual void _v048() = 0; virtual void _v04c() = 0;
+	virtual void _v050() = 0; virtual void _v054() = 0; virtual void _v058() = 0; virtual void _v05c() = 0;
+	virtual void _v060() = 0; virtual void _v064() = 0; virtual void _v068() = 0; virtual void _v06c() = 0;
+	virtual void _v070() = 0; virtual void _v074() = 0; virtual void _v078() = 0; virtual void _v07c() = 0;
+	virtual void _v080() = 0; virtual void _v084() = 0; virtual void _v088() = 0; virtual void _v08c() = 0;
+	virtual void _v090() = 0; virtual void _v094() = 0; virtual void _v098() = 0; virtual void _v09c() = 0;
+	virtual void _v0a0() = 0; virtual void _v0a4() = 0; virtual void _v0a8() = 0; virtual void _v0ac() = 0;
+	virtual void _v0b0() = 0; virtual void _v0b4() = 0; virtual void _v0b8() = 0; virtual void _v0bc() = 0;
+	virtual void _v0c0() = 0; virtual void _v0c4() = 0; virtual void _v0c8() = 0; virtual void _v0cc() = 0;
+	virtual void _v0d0() = 0; virtual void _v0d4() = 0; virtual void _v0d8() = 0; virtual void _v0dc() = 0;
+	virtual void _v0e0() = 0; virtual void _v0e4() = 0; virtual void _v0e8() = 0; virtual void _v0ec() = 0;
+	virtual void _v0f0() = 0; virtual void _v0f4() = 0; virtual void _v0f8() = 0; virtual void _v0fc() = 0;
+	virtual void _v100() = 0; virtual void _v104() = 0; virtual void _v108() = 0; virtual void _v10c() = 0;
+	virtual void _v110() = 0; virtual void _v114() = 0; virtual void _v118() = 0; virtual void _v11c() = 0;
+	virtual void _v120() = 0; virtual void _v124() = 0; virtual void _v128() = 0; virtual void _v12c() = 0;
+	virtual void _v130() = 0; virtual void _v134() = 0; virtual void _v138() = 0; virtual void _v13c() = 0;
+	virtual void _v140() = 0; virtual void _v144() = 0; virtual void _v148() = 0; virtual void _v14c() = 0;
+	virtual void _v150() = 0; virtual void _v154() = 0; virtual void _v158() = 0; virtual void _v15c() = 0;
+	virtual void _v160() = 0; virtual void _v164() = 0; virtual void _v168() = 0; virtual void _v16c() = 0;
+	virtual void _v170() = 0; virtual void _v174() = 0; virtual void _v178() = 0; virtual void _v17c() = 0;
+	virtual void _v180() = 0; virtual void _v184() = 0; virtual void _v188() = 0; virtual void _v18c() = 0;
+	virtual void _v190() = 0; virtual void _v194() = 0; virtual void _v198() = 0; virtual void _v19c() = 0;
+	virtual void _v1a0() = 0; virtual void _v1a4() = 0; virtual void _v1a8() = 0; virtual void _v1ac() = 0;
+	virtual void _v1b0() = 0; virtual void _v1b4() = 0; virtual void _v1b8() = 0; virtual void _v1bc() = 0;
+	virtual void _v1c0() = 0; virtual void _v1c4() = 0; virtual void _v1c8() = 0; virtual void _v1cc() = 0;
+	virtual void _v1d0() = 0; virtual void _v1d4() = 0; virtual void _v1d8() = 0; virtual void _v1dc() = 0;
+	virtual void _v1e0() = 0; virtual void _v1e4() = 0;
+
+	virtual LTRESULT SetModelFilenames(HOBJECT hObj, char *pFilename,
+	                                   char *pSkinName, char *pExtraName);   // 0x1e8
+	virtual LTRESULT SetObjectFilenames(HOBJECT hObj, char *pFilename,
+	                                    char *pSkinName, char *pExtraName);  // 0x1ec
+
+	inline ILTCommon* Common() { return m_pCommonLT; }
+
+	void*      m_pMathLT;                    // +0x04  ILTCSBase's m_MathLT
+	ILTCommon* m_pCommonLT;                  // +0x08
+};
+
+LTRESULT CLTServerModelView::SetModelFilenames(HOBJECT hObj, char *pFilename,
+                                               char *pSkinName, char *pExtraName)
+{
+	return SetObjectFilenames(hObj, pFilename, pSkinName, pExtraName);
+}
+#else
 class CLTServerModelView : public ILTServer
 {
 public:
@@ -338,6 +399,7 @@ LTRESULT CLTServerModelView::SetModelFilenames(HOBJECT hObj, char *pFilename, ch
 {
 	return SetObjectFilenames(hObj, pFilename, pSkinName);
 }
+#endif
 
 // The obsolete flat form (lithtech 0x0046eb50): build a create struct around
 // the two names and hand it to ILTCommon. (The declaration's ctor already
@@ -355,6 +417,37 @@ LTRESULT CLTServerModelView::SetModelFilenames(HOBJECT hObj, char *pFilename, ch
 // expands everything (301 bytes), LTStrCpy alone runs one unit short (380);
 // with Common() it is 409, identical. (servermsg.h still declares a
 // CLTServer::SetObjectFilenames; this is its one definition.)
+#ifdef PRIMAL_HUNT
+// PH: each copy refuses a null source and leaves the buffer empty instead
+// (0x00483fcb `cmp %ebx,%eax; je` to a single `mov %bl,0x88(%esp)`, and
+// likewise for the other two), which the SDK's LTStrCpy does not do. The
+// shape is LTStrCpy's with that test in front (name ours).
+inline void LTStrCpyQ518(char *pDest, const char *pSrc, unsigned long destBytes)
+{
+	if (pSrc)
+	{
+		strncpy(pDest, pSrc, destBytes - 1);
+		pDest[destBytes - 1] = 0;
+	}
+	else
+	{
+		pDest[0] = 0;
+	}
+}
+
+LTRESULT CLTServerModelView::SetObjectFilenames(HOBJECT hObj, char *pFilename,
+                                                char *pSkinName, char *pExtraName)
+{
+	ObjectCreateStruct ocs;
+
+	ocs.Clear();
+	LTStrCpyQ518(ocs.m_Filename, pFilename, sizeof(ocs.m_Filename));
+	LTStrCpyQ518(ocs.m_SkinName, pSkinName, sizeof(ocs.m_SkinName));
+	LTStrCpyQ518(ocs.m_ExtraTextureName, pExtraName, sizeof(ocs.m_ExtraTextureName));
+
+	return Common()->SetObjectFilenames(hObj, &ocs);
+}
+#else
 LTRESULT CLTServerModelView::SetObjectFilenames(HOBJECT hObj, char *pFilename, char *pSkinName)
 {
 	ObjectCreateStruct ocs;
@@ -365,6 +458,7 @@ LTRESULT CLTServerModelView::SetObjectFilenames(HOBJECT hObj, char *pFilename, c
 
 	return Common()->SetObjectFilenames(hObj, &ocs);
 }
+#endif
 
 // ---- the old flat model-state block and friends (0x1002e8a0-0x1002eb36) -- //
 

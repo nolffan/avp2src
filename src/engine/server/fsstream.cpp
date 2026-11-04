@@ -100,7 +100,14 @@ public:
 	// of it) leaves VC6 calling an out-of-line copy, and /Ob2 does not
 	// expand it either — it merges the two initializer thunks into one
 	// 22-byte function, which the shipped build does not have.
-	__forceinline CStreamBank() { sb_Init2(&m_Bank, 0x24, 8, 8); }
+	// AVP2: the counts are the constructor's arguments, as ObjectBank's
+	// (cache size, pre-allocate) constructor has them: PH's out-of-line
+	// copies (lithtech 0x0042a3a0, server.dll 0x1000a237) push their two
+	// arguments to sb_Init2, `ret $8`, and the initializers pass 8, 8
+	// (lithtech 0x00429310). AvP2 1.0.9.6, without /GX, expands it as
+	// before.
+	__forceinline CStreamBank(uint32 nCacheSize, uint32 nPreAllocate)
+		{ sb_Init2(&m_Bank, 0x24, nCacheSize, nPreAllocate); }
 	~CStreamBank();                          // 0x100075cb
 	// 0x100075b5 and 0x100075ba — the vtable's two forwarders.
 	virtual void* AllocVoid()               { return Allocate(); }
@@ -134,7 +141,9 @@ class CMemStreamBank : public CStreamBankBase
 {
 public:
 	// 0x10006df7 — the same, with sizeof(CMemStream) (also 0x24).
-	__forceinline CMemStreamBank() { sb_Init2(&m_Bank, 0x24, 8, 8); }
+	// (lithtech 0x0042a540, server.dll 0x1000a52a; initializer 0x00429350)
+	__forceinline CMemStreamBank(uint32 nCacheSize, uint32 nPreAllocate)
+		{ sb_Init2(&m_Bank, 0x24, nCacheSize, nPreAllocate); }
 	~CMemStreamBank();                       // 0x100077b1
 	// 0x100075c6, and 0x100075ba folded with the tree bank's.
 	virtual void* AllocVoid()               { return Allocate(); }
@@ -572,8 +581,8 @@ LTRESULT CMemStream::SeekTo(unsigned long offset)
 // address rather than through a `this` register and end without returning
 // one, so the constructor bodies are expanded into them and no out-of-line
 // copy exists.
-CStreamBank    g_TreeStreamBank;             // 0x100582e8
-CMemStreamBank g_MemStreamBank;              // 0x10058320
+CStreamBank    g_TreeStreamBank(8, 8);       // 0x100582e8
+CMemStreamBank g_MemStreamBank(8, 8);        // 0x10058320
 
 
 // 0x100078e9 — start the bank over: whatever it was holding goes back and the
@@ -651,6 +660,23 @@ inline ILTStream* CMemStreamBank::Allocate()
 uint32 g_Unknown5835c;
 
 
+// servermgr.h's CountAdder with its destructor in the class: the /O2 client
+// expands it at its one use here (PH lithtech 0x0042991e..0x00429930), where
+// server.dll calls CountAdder's out-of-line one (PH 0x10009db4).
+class CCountAdderQ516
+{
+public:
+	CCountAdderQ516(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+	~CCountAdderQ516() { *m_pTotal += cnt_EndCounter(&m_Counter); }
+
+	CBaseCounter m_Counter;                  // 0x00
+	uint32*      m_pTotal;                   // 0x08
+};
+
 // 0x100070e3 — open a stream on one named file inside one mounted tree
 // (serverengine.h's name).
 //
@@ -670,11 +696,15 @@ uint32 g_Unknown5835c;
 // lookup's only one -- so there is nothing in the source to match it.
 //
 // Field stores are in lithtech.exe's order (0x00420fb7: +0xc, +0x10, +0x4,
-// +0x8 -- the offset zeroed last); /O1 emits the same bytes either way. The
-// /O2 copy is still a near (507 vs 501): shipped gives ebp to nLen and
-// re-reads pTree from its argument slot, ours keeps pTree in ebp and spills
-// nLen (frame 0x1f8 vs 0x1f4). Declaring nLen first, or block-scoping it,
-// does not move that; register allocation.
+// +0x8 -- the offset zeroed last); /O1 emits the same bytes either way.
+//
+// NEAR on both AvP2 lithtech.exes (PH 0x00429870, 590 of 639; 1.0.9.6
+// 0x00427020, 584 of 544): in the directory arm only, both CALL ILTStream's
+// implicit constructor out of line (PH 0x004299a9 -> 0x00429b10, 1.0.9.6
+// 0x00427139 -> 0x00427290) where ours expands it, and in PH that call is
+// what brings in the new-expression's exception frame (state 0 around it,
+// 0x004299a2). The .rez arm expands the same constructor in both images.
+// Not yet reproduced.
 ILTStream* fs_OpenStreamInTree(COpenFileTree* pTree, char* pFilename, int nFlag)
 {
 	char   szPath[500];
@@ -688,11 +718,21 @@ ILTStream* fs_OpenStreamInTree(COpenFileTree* pTree, char* pFilename, int nFlag)
 	{
 		CTreeStream* pStream;
 
-		sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
+		// AVP2: joined with a forward slash when the name has one (PH
+		// 0x004298b9 strstr, 0x004298ce "%s/%s"), as fs_GetRawFileInfo.
+		if (strstr(pFilename, "/"))
+			sprintf(szPath, "%s/%s", pTree->m_szDir, pFilename);
+		else
+			sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
 
 		{
 #ifdef LT_SERVER_TIMERS
 			CountAdder counter(&g_Unknown5835c);
+#else
+			// AVP2: the client times the fopen as well (PH 0x004298f1
+			// CBaseCounter(0), 0x00429903 cnt_StartCounter, 0x0042991e
+			// cnt_EndCounter added to the total, AvP2 0x0042708e..0x004270c9).
+			CCountAdderQ516 counter(&g_Unknown5835c);
 #endif
 
 			pFile = fopen(szPath, "rb");
@@ -900,7 +940,12 @@ int fs_GetRawFileInfo(COpenFileTree* pTree, char* pFilename, char* pOutName,
 
 	if (pTree->m_nKind == 1)
 	{
-		sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
+		// AVP2: a name that already uses forward slashes is joined with one
+		// (PH 0x0042a234 strstr(pFilename, "/"), "%s/%s" at 0x0042a249).
+		if (strstr(pFilename, "/"))
+			sprintf(szPath, "%s/%s", pTree->m_szDir, pFilename);
+		else
+			sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
 
 		pFile = fopen(szPath, "rb");
 		if (!pFile)

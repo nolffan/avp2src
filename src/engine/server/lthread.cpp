@@ -1,5 +1,13 @@
 // server.dll — LThread / LThreadQueue (reconstruction). Build /O1.
 #include <string.h>
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine sees the STL's <string> here, through a header
+// AvP2's does not have: the translation unit carries <string>'s 44-byte
+// guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
+// atexit of the empty 0x00401790; this one's near 0x004997c0). server.dll has it
+// in collection/objbank only.
+#include <string>
+#endif
 #include "servermgr.h"
 #include "lthread.h"
 #include "de_error.h"

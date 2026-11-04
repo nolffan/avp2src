@@ -1721,7 +1721,8 @@ void cis_FreeAllSurfacesQ40C()
 
 
 // ======================================================================= //
-//  0x0040ed50 -- 190 bytes.  ILTClient::GetEngineHook.
+//  0x0040ed50 -- 190 bytes.  ILTClient::GetEngineHook.  (Primal Hunt
+//  0x0040fe80, 136 bytes: no cshell_hinstance, see below.)
 // ======================================================================= //
 //
 //  clientinterface.h slot 0x330.  It sits between ci_SetSurfaceAlpha
@@ -1743,10 +1744,12 @@ void cis_FreeAllSurfacesQ40C()
 class CEngineHookMgrQ40C
 {
 public:
-	uint8  m_pad_000[0x610];
-	void*  m_pClientResModule;               // 0x610  0x0040ed93
-	void*  m_pClientResLModule;              // 0x614  0x0040edc0
-	void*  m_pShellRecord;                   // 0x618  0x0040eded
+	// AVP2: the client manager's +4 before m_NetMgr moves both modules
+	// to 0x614/0x618 (Primal Hunt 0x0040fec3/0x0040fef0, AvP2 1.0.9.6
+	// 0x0040f08f/0x0040f0b6).
+	uint8  m_pad_000[0x614];
+	void*  m_pClientResModule;               // 0x614
+	void*  m_pClientResLModule;              // 0x618
 };
 
 LTRESULT bm_GetInstanceHandleQ40C(void* pModule, void** phInst); // 0x00401770
@@ -1769,14 +1772,10 @@ LTRESULT ci_GetEngineHookQ40C(char* pName, void** pData)
 		return bm_GetInstanceHandleQ40C(
 			((CEngineHookMgrQ40C*)g_CluClientGlob.m_pClientMgr)->m_pClientResLModule, pData);  // 0x0040edc7
 	}
-	else if (_stricmp(pName, "cshell_hinstance") == 0)    // 0x0040edd7
-	{
-		return bm_GetInstanceHandleQ40C(
-			clm_GetRecordModuleQ40C(((CEngineHookMgrQ40C*)g_CluClientGlob.m_pClientMgr)->m_pShellRecord),
-			pData);                                       // 0x0040edfd
-	}
+	// AVP2: no "cshell_hinstance" -- the chain ends after "cresl_hinstance"
+	// in both images (Primal Hunt 0x0040ff01, AvP2 1.0.9.6 0x0040f0c5).
 
-	return 1;                                             // 0x0040ee07 LT_ERROR
+	return 1;                                             // LT_ERROR
 }
 
 

@@ -255,8 +255,41 @@ $(eval $(call lslib,MFCStub,MFCStub,/I $(LT2LS2)\\mfcstub /I $(LT2LS2)\\incs /I 
 $(eval $(call lslib,ButeMgr,ButeMgrNoMFC,/D _NOMFC /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\mfcstub /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs,\
     arange.cpp avector.cpp butemgr.cpp stdafx.cpp))
 
+# WONAPI.lib: Monolith's WON client, which the release ships as source
+# (src/LT2/lithshared/wonapi/, "wonapi052201") as well as prebuilt, so built
+# from that source itself: WONAPI.dsp's "Win32 Release" flags (less /YX
+# /FD), its __WON_MASTER_CPP_BUILD__ objects -- one master .cpp per
+# directory, the twelve members of the prebuilt build -- in two builds:
+#  - the release's prebuilt one (progress/targets.py, LIBS, scores it
+#    against it), with STLport 4.0 (lithshared/stl) ahead of VC6's headers,
+#    as its _STL names say; into $(LOUT)/wonapi/, beside the prebuilt
+#    WONAPI.lib the game DLLs still link;
+#  - Primal Hunt's engine's (src/engine/lithtech/Release/wonapi/), with
+#    VC6's own STL: lithtech.exe's WON code (0x004aab40..0x004ba2a0) has
+#    VC6's 16-byte basic_string where STLport's is 12 bytes (MD5Digest's
+#    RawBuffer `out` comes first: MD5Digest::transform at 0x004b7df0 reads
+#    its fields 4 bytes further on than the STLport build does).
+#    Primal Hunt's game DLLs' WON code is this build too (PHCShell.dll).
+# $(call wonlib,<object dir>,<it, as /Fo from WON_DIR>,<includes>)
+WON_DIR    := src/LT2/lithshared/wonapi
+WON_CFLAGS := /nologo /MT /W3 /GR /GX /O2 /D NDEBUG /D WIN32 /D _MBCS /D _LIB /D __WON_MASTER_CPP_BUILD__ /c
+WON_SRCS   := WONAuth\Auth.cpp WONCommon\Common.cpp WONCrypt\Crypt.cpp WONDB\DB.cpp WONDir\Dir.cpp \
+    WONMisc\Misc.cpp WONServer\Server.cpp WONSocket\Socket.cpp WONAPI.cpp WONStatus.cpp \
+    WONMisc\gqueryreporting.c WONMisc\nonport.c
+define wonlib
+$(foreach s,$(WON_SRCS),$(eval $(call compile,$(call c_obj,$(s),$(1)),$(WON_DIR),$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,/Fo$(2) $(WON_CFLAGS) $(3),wine-drives)))
+$(1)/.dir:
+	@mkdir -p $$(@D) && touch $$@
+$(foreach s,$(WON_SRCS),$(call c_obj,$(s),$(1))): | $(1)/.dir
+$(call tool,$(1)/WONAPI.lib,$(foreach s,$(WON_SRCS),$(call c_obj,$(s),$(1))) | wine-drives,cd $(1) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo /out:WONAPI.lib $(foreach s,$(WON_SRCS),$(notdir $(call c_obj,$(s),$(1)))))
+endef
+$(eval $(call wonlib,$(LOUT)/wonapi,..\libs\Release\wonapi\,/I ..\stl /I .))
+$(eval $(call wonlib,src/engine/lithtech/Release/wonapi,..\..\..\engine\lithtech\Release\wonapi\,/I .))
+.PHONY: wonapi
+wonapi: $(LOUT)/wonapi/WONAPI.lib src/engine/lithtech/Release/wonapi/WONAPI.lib
+
 .PHONY: libs
-libs: $(LS_OURS:%=$(LOUT)/%.lib)
+libs: $(LS_OURS:%=$(LOUT)/%.lib) $(LOUT)/wonapi/WONAPI.lib
 
 # ---------------------------------------------------------------------------
 # The prebuilt libraries
@@ -305,7 +338,7 @@ endef
 $(foreach w,$(WORKSPACES),$(eval $(call workspace,$(firstword $(subst :, ,$(w))),$(lastword $(subst :, ,$(w))))))
 
 .PHONY: all game
-all game: $(WANTED) ltmsg
+all game: $(WANTED) ltmsg wonapi
 
 # ---------------------------------------------------------------------------
 # The engine: lithtech.exe, server.dll, d3d.ren
@@ -399,9 +432,10 @@ lithtech_flags = $(subst /O2,$(strip \
     $(if $(filter $(1),$(LITHTECH_OD_SRC)),/Od /Oi /Ob1 /Gf,\
     $(if $(filter $(1),$(LITHTECH_GX_SRC)),/GX /O2,/O2))),$(LITHTECH_CL))
 LITHTECH_ALL := $(LITHTECH_SRC) $(LITHTECH_OD_SRC) $(LITHTECH_GX_SRC)
-# ... and never with /GX, even in Primal Hunt: StdLith's allocator code
-# (LAllocSimpleBlock's constructor, 0x004b4e30, has no exception frame)
-LITHTECH_NOGX_SRC := stdlithalloc.cpp
+# ... and never with /GX, even in Primal Hunt (none so far: stdlithalloc.cpp
+# was listed on a mispairing -- 0x004b4e30 is MFCStub's CString constructor,
+# and ~LAllocSimpleBlock at 0x004bf320 has an exception frame)
+LITHTECH_NOGX_SRC :=
 
 # d3d.ren. Not the renderer's own: StdLith's l_allocator.cpp (LAlloc,
 # g_DefAlloc), library code linked into d3d.ren, built as StdLith is
@@ -510,7 +544,7 @@ $(eval $(call launcher_variant,PrimalHunt,$(V8966)/BIN/cl.exe,/D PRIMAL_HUNT))
 launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/PrimalHunt/%.obj)
 
 .PHONY: engine-objs ph-engine-objs avp2-engine-objs
-ph-engine-objs: $(call eng_objs,Release)
+ph-engine-objs: $(call eng_objs,Release) src/engine/lithtech/Release/wonapi/WONAPI.lib
 avp2-engine-objs: $(call eng_objs,AvP2Release)
 engine-objs: ph-engine-objs avp2-engine-objs
 

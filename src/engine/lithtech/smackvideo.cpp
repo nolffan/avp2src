@@ -267,8 +267,11 @@ public:
 class CVideoPolyS
 {
 public:
-	uint8           m_pad_00[0x30];
-	SharedTextureS* m_pTexture;              // 0x30
+	// AVP2: +0x2c, not +0x30, as binkvideo.cpp's CVideoPolyK: BindToSurface
+	// reads and writes it there (0x004a833f, 0x004a8350; AvP2 1.0.9.6
+	// 0x0049dd5d).
+	uint8           m_pad_00[0x2c];
+	SharedTextureS* m_pTexture;              // 0x2c
 };
 
 // binkvideo.cpp's CVideoBindingK, 0x2c bytes; the three members called

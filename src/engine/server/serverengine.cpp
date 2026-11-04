@@ -147,10 +147,19 @@ public:
 	// Twelve-byte records, thirty-two cached and thirty-two added at a time;
 	// sb_Init2 and not sb_Init because the initialiser pushes four arguments
 	// and cleans up sixteen bytes.
+#ifdef PRIMAL_HUNT
+	// PH: the cache and grow counts are the constructor's arguments, and
+	// constructor and destructor are both out of line: the initialiser at
+	// 0x00448610 is `push $0x20; push $0x20; mov $g_DepLinkBank,%ecx; call
+	// 0x00448740`, and the atexit thunk 0x00448630 jumps to the destructor
+	// at 0x00448800. AvP2 1.0.9.6 has NOLF's expanded shape.
+	CDepLinkBank(uint32 nCacheSize, uint32 nGrowSize);   // 0x00448740
+#else
 	__forceinline CDepLinkBank()             // 0x10013fab (as _$E)
 	{
 		sb_Init2(&m_Bank, 0xc, 0x20, 0x20);
 	}
+#endif
 	virtual ~CDepLinkBank();                 // 0x100140ad
 	// ---- end of the separable addition's first half ----
 
@@ -290,12 +299,27 @@ public:
 // (0x0043c440) carries the whole teardown at the global's own addresses --
 // the vptr store, sb_FreeChunks, the lock's destructor, the base vptr --
 // with no `this` register and no destructor of its own.
+#ifdef PRIMAL_HUNT
+CDepLinkBank::CDepLinkBank(uint32 nCacheSize, uint32 nGrowSize)
+{
+	sb_Init2(&m_Bank, 0xc, nCacheSize, nGrowSize);
+}
+
+// PH: 0x00448800, out of line.
+CDepLinkBank::~CDepLinkBank()
+{
+	sb_FreeChunks(&m_Bank, 1);
+}
+
+CDepLinkBank    g_DepLinkBank(0x20, 0x20);   // 0x004f5460
+#else
 inline CDepLinkBank::~CDepLinkBank()
 {
 	sb_FreeChunks(&m_Bank, 1);
 }
 
 CDepLinkBank    g_DepLinkBank;               // 0x100585d8
+#endif
 LCriticalSection g_DepLinkCS;                // 0x100585c0
 
 // ---- end of the separable addition ----
@@ -334,7 +358,13 @@ void CDepList::RemoveLink(void* pLink)
 // function is compiled into.
 void* dl_MakeLink(void* pRecord, void* pData)
 {
+#ifdef PRIMAL_HUNT
+	// PH: through the bank's slot-1 entry, called directly on the global
+	// (0x004486e0 `mov $0x4f5460,%ecx; call 0x00448860`), not expanded.
+	CDepLink* pLink = (CDepLink*)g_DepLinkBank._v04();
+#else
 	CDepLink* pLink = g_DepLinkBank.Allocate();
+#endif
 
 	if (pLink)
 	{
@@ -685,8 +715,13 @@ inline LTBOOL LTAnimTracker::IsValid()
 	return LTTRUE;
 }
 
-// NEAR (460 bytes against 460, and the same hundred and fifty instructions):
-// four instructions, one disagreement -- the shipped build loads the skin
+// AVP2 (lithtech 0x0047f600, server 0x10036fb1): four skins, Primal Hunt's
+// environment map after them, and a word set past the trackers -- see the
+// AVP2/PH notes in the body. NEAR (server 544 of 544, lithtech 629 of 633)
+// on the one residual below, which is unchanged.
+//
+// NEAR (NOLF: 460 bytes against 460, and the same hundred and fifty
+// instructions): four instructions, one disagreement -- the shipped build loads the skin
 // slot's offset and adds the object data to it, ours loads the object data
 // and adds the offset. Both spellings of the sum, a byte-pointer sum, an
 // `int` offset (worse: 5 blocks), a `for` loop, and an index loop over
@@ -778,7 +813,26 @@ LTRESULT se_InitModel(CServerMgr* pMgr, LTObject* pObj,
 		nOff      += 4;
 		pSkinName += 0x80;
 	}
-	while (nOff < 0x3c);
+	while (nOff < 0x44);	// AVP2: four skins, 0x34..0x40 (0x0047f70e; AvP2 0x00478be6)
+
+#ifdef PRIMAL_HUNT
+	// PH: the extra texture after the skins is the model's environment map,
+	// into the object data's +0x44, with the default skin for a missing one
+	// (0x0047f713..0x0047f763; the string is in no AvP2 1.0.9.6 image).
+	pSkinName = pStruct->m_ExtraTextureName;
+
+	if (*pSkinName)
+	{
+		if (!se_LoadFile(pFileMgr, pSkinName, 0,
+		                 (void**)((uint8*)pObj->m_pSData + 0x44)))
+		{
+			dsi_ServerError("Couldn't find model environment map %s.", pSkinName);
+
+			se_LoadFile(pFileMgr, "skins\\default.dtx", 0,
+			            (void**)((uint8*)pObj->m_pSData + 0x44));
+		}
+	}
+#endif
 
 	dResult = se_LoadModel(pMgr, pFilename, &pModel, &pFile,
 	                       pStruct->m_CreateFlags & OCS_AUTOLOAD,
@@ -816,6 +870,13 @@ LTRESULT se_InitModel(CServerMgr* pMgr, LTObject* pObj,
 	pModel->m_CacheCount++;
 
 	pInst->m_AnimTracker.m_Flags  |= 4;
+	// AVP2: a word past the instance's trackers set to one (PH +0x2e0,
+	// 0x0047f85f; AvP2 1.0.9.6 +0x2cc, 0x00478cd5; name ours).
+#ifdef PRIMAL_HUNT
+	*(uint32*)((uint8*)pInst + 0x2e0) = 1;
+#else
+	*(uint32*)((uint8*)pInst + 0x2cc) = 1;
+#endif
 	pInst->m_AnimTracker.m_pUser1  = pInst;
 
 	return LT_OK;
@@ -1126,7 +1187,12 @@ LTRESULT se_ModelHashCleanup(void* pArg1, CDepLink* pLink, int nArg3)
 			                                    strlen(pFilename));
 
 			if (hElement)
+			{
+				if (g_DebugLevel >= 3)
+					dsi_ServerError("Removing model from resource list:  %s\n", pFilename);
+
 				dhash_Remove(pMgr->m_hModelHash, hElement);
+			}
 		}
 
 		delete pRec;
@@ -1151,7 +1217,14 @@ LTRESULT se_ModelHashCleanup(void* pArg1, CDepLink* pLink, int nArg3)
 			                             strlen(pFilename));
 
 			if (hElement)
+			{
+				// AVP2: a report at level 3 (lithtech 0x0047ebff; the
+				// two-space string is in every AvP2 image).
+				if (g_DebugLevel >= 3)
+					dsi_ServerError("Removing model from resource list:  %s\n", pFilename);
+
 				dhash_Remove(pMgr->m_hModelHash, hElement);
+			}
 		}
 	}
 #endif
@@ -1190,10 +1263,8 @@ public:
 	                        char* pFilename, char* pFiletitle, char* pExt);
 };
 
-// NEAR on server.dll (568 bytes against 575, the same 196 instructions,
-// four mnemonic blocks); SIZE-EXACT on lithtech.exe (762 against 0x0046a790's
-// 762, two blocks). What closed the gap from the old 14-block near, each
-// from the shipped bytes:
+// What closed the gap from the old 14-block near, each from the shipped
+// bytes:
 //
 //  * `new Model(...)`, not dalloc plus placement new: both shipped calls go
 //    to the `operator new` forwarder 0x1000d25d (0x1002b0d2, 0x1002b19a),
@@ -1212,18 +1283,12 @@ public:
 //    copy at the very end (0x0046aa41) — which is what makes that last one
 //    the `if (!dResult) {...}` body's fall-out rather than a guard.
 //
-// The residual is the same on both images and it is one thing: where VC6
-// hosts a tail it merges. Shipped keeps the merged copy at the FIRST site
-// and has the later one jump back (server: the `xor %eax,%eax` at the hash
-// hit 0x1002b06e, reached from the success tail; the missing-file block at
-// 0x1002b095, reached from the stream test; lithtech: the stream copy's
-// `jl 0x46a89f` into the se_LoadFile copy's epilogue). Ours always keeps the
-// LATER copy. Measured negatives: a backward `goto` into the first
-// missing-file copy (VC6 moves the block to the stream test anyway, 568 and
-// five blocks), `goto` into the hash hit's `return LT_OK` (no change), the
-// hash hit made the textually last `return` by inverting the test (the xor
-// is then hosted there but the whole hit block moves to the end: 577, three
-// blocks), and `return dResult` for the success tail (no change).
+// IDENTICAL on both images now (lithtech 0x0047ec30, server 0x10036839). The
+// last residual was where VC6 hosts the missing-file tail it merges: shipped
+// keeps it at the FIRST site (the se_LoadFile test) and has the stream test
+// jump back. Guarded early returns host it at the last site, and so did a
+// backward `goto`; one if/else chain in which every arm, inner tests
+// included, ends in its own return hosts it at the first.
 //
 // One child model, named by its parent's file. The name in the file is bare,
 // so it is resolved against the parent's own directory — which is why a model
@@ -1264,64 +1329,76 @@ LTRESULT se_LoadChildModel(CModelLoadRequest* pRequest, Model** ppModel)
 
 		return LT_OK;
 	}
-
-	if (!se_LoadFile(&pCtx->m_pServerMgr->m_FileMgr, szPath, 0, &pFile))
-		RETURN_ERROR_SYM_DESC(1, "se_LoadChildModel", LT_MISSINGMODELFILE, szPath);
-
-	pModel = new Model((uint32*)&g_DefAlloc, (uint32*)&g_DefAlloc);
-
-	if (!pModel)
-		RETURN_ERROR(1, "se_LoadChildModel", LT_OUTOFMEMORY);
-
-	pReq->m_pStream = se_OpenStream(&pCtx->m_pServerMgr->m_FileMgr, pFile);
-
-	if (!pReq->m_pStream)
-		RETURN_ERROR_SYM_DESC(1, "se_LoadChildModel", LT_MISSINGMODELFILE, szPath);
-
-	dResult = pModel->Load(pReq->m_pStream, (IMoAllocator*)&g_DefAlloc);
-
-	if (!dResult)
+	else if (!se_LoadFile(&pCtx->m_pServerMgr->m_FileMgr, szPath, 0, &pFile))
 	{
-		// AVP2: the report se_LoadModelData makes, for the child (0x0047ee49).
-		if (g_DebugLevel >= 3)
-			dsi_ServerError("Calling Model::Load():  %s\n", pReq->m_pChildName);
+		RETURN_ERROR_SYM_DESC(1, "se_LoadChildModel", LT_MISSINGMODELFILE, szPath);
+	}
+	else
+	{
+		pModel = new Model((uint32*)&g_DefAlloc, (uint32*)&g_DefAlloc);
 
-		dResult = pModel->LoadChildModels(pRequest);
+		if (!pModel)
+		{
+			RETURN_ERROR(1, "se_LoadChildModel", LT_OUTOFMEMORY);
+		}
+		else
+		{
+			pReq->m_pStream = se_OpenStream(&pCtx->m_pServerMgr->m_FileMgr, pFile);
+
+			if (!pReq->m_pStream)
+			{
+				RETURN_ERROR_SYM_DESC(1, "se_LoadChildModel", LT_MISSINGMODELFILE, szPath);
+			}
+			else
+			{
+				dResult = pModel->Load(pReq->m_pStream, (IMoAllocator*)&g_DefAlloc);
+
+				if (!dResult)
+				{
+					// AVP2: the report se_LoadModelData makes, for the child (0x0047ee49).
+					if (g_DebugLevel >= 3)
+						dsi_ServerError("Calling Model::Load():  %s\n", pReq->m_pChildName);
+
+					dResult = pModel->LoadChildModels(pRequest);
+				}
+
+				pReq->m_pStream->Release();
+
+				if (!dResult)
+				{
+					if (!pModel->SetFilename(szPath))
+					{
+						delete pModel;
+
+						RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
+					}
+
+					pModel->m_FileFlags = ((CFileRef*)pFile)->m_nFileID;
+
+					if (se_RegisterModel(pCtx->m_pServerMgr, pModel, pFile, dResult))
+					{
+						delete pModel;
+
+						RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
+					}
+
+					// AVP2: the cleanup record is se_RegisterModel's now, for every
+					// model. NOLF's was made here, at the model's +0x14: commonmodel.h
+					// (not ours) names the run from +0x08 to +0x13 m_Cleanups and the
+					// word at +0x14 m_pad_014, so that address is computed rather than
+					// taken from a field whose name would be misleading.
+					*ppModel = pModel;
+
+					return LT_OK;
+				}
+
+				delete pModel;
+
+				RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
+			}
+		}
 	}
 
-	pReq->m_pStream->Release();
-
-	if (!dResult)
-	{
-		if (!pModel->SetFilename(szPath))
-		{
-			delete pModel;
-
-			RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
-		}
-
-		pModel->m_FileFlags = ((CFileRef*)pFile)->m_nFileID;
-
-		if (se_RegisterModel(pCtx->m_pServerMgr, pModel, pFile, dResult))
-		{
-			delete pModel;
-
-			RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
-		}
-
-		// AVP2: the cleanup record is se_RegisterModel's now, for every
-		// model. NOLF's was made here, at the model's +0x14: commonmodel.h
-		// (not ours) names the run from +0x08 to +0x13 m_Cleanups and the
-		// word at +0x14 m_pad_014, so that address is computed rather than
-		// taken from a field whose name would be misleading.
-		*ppModel = pModel;
-
-		return LT_OK;
-	}
-
-	delete pModel;
-
-	RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
 }
 
 // THE SHARED SERVER SOURCE HAS A CLIENT-ONLY STATEMENT, and se_RegisterModel
@@ -1652,7 +1729,8 @@ LTRESULT fs_CopyFile(CFileMgr* pFileMgr, const char* pszSourceFile,
 // of the vtable called with a one — VC6's scalar deleting destructor — and no
 // test written in the source.
 //
-// The count of switched objects lives in the dead pFilename parameter slot
+// IDENTICAL on lithtech.exe (0x0047f540) and server.dll. In NOLF's server
+// the count of switched objects lived in the dead pFilename parameter slot
 // (`andl $0x0,0xc(%ebp)` and `incl 0xc(%ebp)`); with the manager, the list
 // head, the cursor, the object, its tracker's model address and the model
 // itself all live at once there is no register left for it.
@@ -1672,9 +1750,14 @@ LTRESULT sm_UnloadModel(CServerMgr* pMgr, char* pFilename, CFileIdentifier* pFil
 
 	pModel = (Model*)dhash_GetData(hElement);
 
-	delete pModel;
+	// AVP2: a report at level 3, and no dhash_Remove -- the cleanup record
+	// se_RegisterModel hangs on every model takes it out of the hash as it
+	// goes (lithtech 0x0047f571..0x0047f5a7; AvP2 1.0.9.6 and both
+	// server.dlls carry the string).
+	if (g_DebugLevel >= 3)
+		dsi_ServerError("Removing model from resource list: %s\n", pModel->GetFilename());
 
-	dhash_Remove(pMgr->m_hModelHash, hElement);
+	delete pModel;
 
 	nSwitched = 0;
 

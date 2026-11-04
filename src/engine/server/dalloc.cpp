@@ -73,7 +73,16 @@ public:
 		cnt_StartCounter(&m_Counter);
 	}
 
-	~CTimedScope();                          // 0x10001ed7
+	// 0x10001ed7 -- the measured block closes: whatever the counter says
+	// went by is added to the total the scope was given. Inline: lithtech.exe
+	// expands it into dalloc and dfree (0x00433483, 0x00433567); server.dll's
+	// /O1 keeps it out of line.
+	~CTimedScope()
+	{
+		uint32 nElapsed = cnt_EndCounter(&m_Counter);
+
+		*m_pTotal += nElapsed;
+	}
 
 	CBaseCounter m_Counter;                  // +0x00
 	uint32*      m_pTotal;                   // +0x08
@@ -101,16 +110,13 @@ void* dalloc(uint32 nSize)
 	if (!nSize)
 		return LTNULL;
 
-	// lithtech.exe 0x00428fd0 has no timing: LT_SERVER_TIMERS is server-only.
-#ifdef LT_SERVER_TIMERS
+	// AVP2: timed in lithtech.exe too (0x00433440; AvP2's 0x0042fed0), where
+	// NOLF's engine's was not.
 	{
 		CTimedScope timer(&g_AllocTime);
 
 		pRet = malloc(nSize);
 	}
-#else
-	pRet = malloc(nSize);
-#endif
 
 	if (!pRet)
 	{
@@ -153,16 +159,12 @@ void dfree(void* pMem)
 		g_nOutstanding--;
 		g_nTotalFrees++;
 
-		// lithtech.exe 0x00429080: the bare free, as above.
-#ifdef LT_SERVER_TIMERS
+		// AVP2: timed in lithtech.exe too (0x00433520), as above.
 		{
 			CTimedScope timer(&g_FreeTime);
 
 			free(pMem);
 		}
-#else
-		free(pMem);
-#endif
 	}
 }
 
@@ -202,15 +204,20 @@ static CWorldItem18 g_WorldTreeBackTerm(2);
 void* g_pWorldTreeFrontTerm = &g_WorldTreeFrontTerm;
 void* g_pWorldTreeBackTerm  = &g_WorldTreeBackTerm;
 
-
-// 0x10001ed7 — the measured block closes: whatever the counter says went by
-// is added to the total the scope was given.
-CTimedScope::~CTimedScope()
+// PH: lithtech.exe 0x004056b0 -- servermgr.h's CountAdder closing out of
+// line, the same body as the scope above (cnt_EndCounter 0x00426160, then
+// the add into the total). It sits among clientphysics.cpp's functions, and
+// AvP2's engine (not /GX) has no such copy, so it is most likely the
+// unwinding copy a /GX function there needs; defined here, the one
+// definition the header's declaration has, until that function is written.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+CountAdder::~CountAdder()
 {
 	uint32 nElapsed = cnt_EndCounter(&m_Counter);
 
 	*m_pTotal += nElapsed;
 }
+#endif
 
 // The application is told first, so it can put something on the screen that
 // belongs to the game rather than to the engine; the engine then says so

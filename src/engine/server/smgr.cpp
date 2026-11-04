@@ -26,6 +26,29 @@
 LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, class Client* pClient);   // 0x1002759a
 LTRESULT sm_SendObjectInfo2(CServerMgr* pMgr, class Client* pClient);     // 0x10026b4d
 
+// msg_AllocPacket as the shipped callers see it: it RETURNS the packet
+// reference BY VALUE, a one-pointer object built in the caller's frame (the
+// `lea` pushed ahead of the two sizes is its hidden return slot, Primal Hunt
+// 0x0048f47e/0x00477081) and destroyed with a Release after the full
+// expression, under its own EH state (`movb $1` after the call, `movb $0`
+// before the Release: 0x0048f4b2/0x0048f4cd, 0x00477095/0x004770ad). The
+// buffer is 0x44c bytes in both games (AVP2: 0x0047d082 and the other 53
+// `push $0x44c; lea; push $0x44c; push` sites in 1.0.9.6's lithtech.exe).
+// servermsg.h still declares NOLF's out-parameter form, and servermsg.h is
+// not this file's to change, so the reference and the call are declared here
+// under local names, with a forwarding body below that the header fix
+// retires (CPacketRefQ512 -> the header's reference type, and
+// msg_AllocPacketQ512 -> msg_AllocPacket).
+class CPacketRefQ512
+{
+public:
+	~CPacketRefQ512() { if (m_pIO) m_pIO->Release(); }
+
+	CAbstractIO* m_pIO;
+};
+
+CPacketRefQ512 msg_AllocPacketQ512(uint32 blockSize, uint32 growSize);
+
 // struct_bank.h's allocate, inline as the header had it. servermgr.h declares
 // it extern because server.dll calls 0x10001c86 at every site -- but the same
 // source compiled /O2 into lithtech.exe carries the body expanded at those
@@ -586,11 +609,8 @@ CServerMgr::CServerMgr()
 ServerMessage* CServerMgr::StartMessage()
 {
 	CMessageRef msg;
-	CAbstractIO* pIO;
 
-	msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-	if (pIO)
-		pIO->Release();
+	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 
 	msg.m_pMsg->m_Write.m_pObjectIO = (CMsgObjectIO*)m_Unknown804;
 
@@ -2106,24 +2126,20 @@ public:
 	LTBOOL GetPacket(ServerMessage* pMsg, int nArg);
 };
 
-// NEAR on Primal Hunt (0x0047d060, 339 of 346 bytes): what is left is the
-// allocation. There the packet comes back BY VALUE, as a one-pointer
-// reference object built in a frame temporary (`lea 0x18(%esp),%eax; push
-// %eax` before the two sizes, 0x0047d087), copied into msg with an AddRef
-// (0x0047d0b0) and destroyed with a Release (0x0047d0c2) under its own EH
-// state (`movb $1,0x20(%esp)` / `movb $0`); no CAbstractIO out-parameter.
-// msg_AllocPacket's declaration here is still NOLF's.
+// The packet comes back BY VALUE (msg_AllocPacketQ512, see the top of this
+// file): a frame temporary (`lea 0x18(%esp),%eax; push %eax` before the two
+// sizes, 0x0047d087), copied into msg with an AddRef (0x0047d0b0) and
+// destroyed with a Release (0x0047d0c2) under its own EH state. Identical on
+// server.dll with that; for Primal Hunt's lithtech.exe see the NEAR note
+// inside the loop.
 int sm_ProcessPackets(CServerMgr* pMgr)
 {
 	CMessageRef msg;
-	CAbstractIO* pIO;
 	int nResult;
 
 	// AVP2: the packet buffer is 0x44c bytes, not 0x1000 (Primal Hunt
 	// 0x0047d082).
-	msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));
-	if (pIO)
-		pIO->Release();
+	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 
 	pMgr->m_NetMgr.StartGettingPackets();
 
@@ -2144,6 +2160,13 @@ int sm_ProcessPackets(CServerMgr* pMgr)
 		// slot leaves only one candidate.
 		PacketHandlerFn* ppHandler = &g_PacketHandlers[nPacketID];
 
+		// NEAR on Primal Hunt (0x0047d060, 346 vs 349 bytes): shipped reads
+		// the connection ONCE, between the handler test and its `je`
+		// (0x0047d109), and both arms push that %eax.  A connection local
+		// above the test gets lithtech.exe to 346/346 with 3 blocks (the
+		// handler in %ecx, the connection loaded first) but costs
+		// server.dll this function, which matches as written; inside the
+		// first arm or above nPacketID is no better.
 		if (*ppHandler)
 		{
 			Client* pClient;
@@ -2470,18 +2493,8 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 	ctx.m_pMgr = pMgr;
 	ctx.m_pClient = pClient;
 
-	{
-		CAbstractIO* pIO;
-		((CMsgCursorView*)&ctx.m_Cursors[1])->Init(ctx.m_Msg1.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000)));
-		if (pIO)
-			pIO->Release();
-	}
-	{
-		CAbstractIO* pIO;
-		((CMsgCursorView*)&ctx.m_Cursors[0])->Init(ctx.m_Msg2.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000)));
-		if (pIO)
-			pIO->Release();
-	}
+	((CMsgCursorView*)&ctx.m_Cursors[1])->Init(ctx.m_Msg1.Init(&msg_AllocPacketQ512(0x44c, 0x44c)));
+	((CMsgCursorView*)&ctx.m_Cursors[0])->Init(ctx.m_Msg2.Init(&msg_AllocPacketQ512(0x44c, 0x44c)));
 
 	ctx.m_Unknown18 = 0;
 	ctx.m_bLocal = (pClient->m_ClientFlags >> 9) & 1;
@@ -2729,10 +2742,7 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 		uint32 i, j;
 
 		{
-			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-			if (pIO)
-				pIO->Release();
+			msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 		}
 
 		for (i = 0; i < pMgr->m_nFileTrees; i++)
@@ -2767,10 +2777,7 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 	if (pClient->m_Unknown3BC == 3 || (pClient->m_ClientFlags & 2))
 	{
 		{
-			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-			if (pIO)
-				pIO->Release();
+			msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 		}
 
 		BaseClass* pClass = pMgr->m_ClassMgr.m_pServerShell->OnClientEnterWorld(
@@ -5278,10 +5285,7 @@ LTRESULT sm_SetPortalFlags(CServerMgr* pMgr, char* pPortalName, uint32 flags)
 	if ((uint16)flags != pPortal->m_Flags)
 	{
 		{
-			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-			if (pIO)
-				pIO->Release();
+			msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 		}
 
 		msg.m_pMsg->WriteWord((uint16)nWorld);
@@ -7274,10 +7278,7 @@ LTRESULT sm_SendObjectInfo2(CServerMgr* pMgr, Client* pClient)
 	LTLink*     pCur;
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	msg.m_pMsg->WriteByte(0);
@@ -7401,10 +7402,7 @@ LTRESULT sm_ClientEnterWorld2(CServerMgr* pMgr, Client* pClient)
 	void*       hIter;
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	if (pMgr->m_Unknown198 == 0)
@@ -7490,10 +7488,7 @@ void sm_ClientExitWorld(CServerMgr* pMgr, Client* pClient)
 	CMessageRef msg;
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	pMgr->m_ClassMgr.m_pServerShell->OnClientExitWorld((HCLIENT)pClient);
@@ -7540,10 +7535,7 @@ void sm_SendSkyInfo(CServerMgr* pMgr, Client* pClient)
 	int         nObjects;
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	msg.m_pMsg->WriteData(&pMgr->m_SkyDef, sizeof(SkyDef));
@@ -7610,10 +7602,7 @@ void sm_BroadcastPrintf(char* pMsg, ...)
 	_vsnprintf(sBuffer, sizeof(sBuffer) - 1, pMsg, marker);
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	// WriteType<uint8> -- 0x1001393e is that instantiation, the same body as
@@ -7691,13 +7680,8 @@ void sm_SetObjectSFXMessage(CServerMgr* pMgr, LTObject* pObj, ServerMessage* pMs
 {
 	if (pObj->m_pSData->m_Unknown2c == 0)
 	{
-		CAbstractIO* pIO;
-
 		((CMessageRef*)&pObj->m_pSData->m_Unknown2c)->Init(
-			msg_AllocPacket(&pIO, 0x1000, 0x1000));
-
-		if (pIO)
-			pIO->Release();
+			&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 #ifdef LT_SERVER_BUILD
@@ -7796,10 +7780,7 @@ LTRESULT sm_AttachClient(CServerMgr* pMgr, Client* pParent, Client* pChild)
 		RETURN_ERROR(1, "sm_AttachClient", LT_INVALIDPARAMS);
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	sm_DetachClient(pMgr, pChild);
@@ -8869,10 +8850,7 @@ void sm_SendWorldInfo(CServerMgr* pMgr, Client* pClient)
 	uint32      i;
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	CServerMgr* pServerMgr = pMgr;
@@ -10794,10 +10772,7 @@ void sm_Unknown2873d(CServerMgr* pMgr, Client* pClient)
 	LTMatrix    mRot;
 
 	{
-		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-		if (pIO)
-			pIO->Release();
+		msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 	}
 
 	{
@@ -11336,7 +11311,6 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 	// which is a separate source mention of msg.m_pMsg. Worth 2 instructions
 	// and 6 bytes across the two sites.
 	ServerMessage* pMsg;
-	CAbstractIO* pIO;
 	Client*      pClient;
 	LTLink*      pHead;
 	LTLink*      pCur;
@@ -11349,10 +11323,7 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 	// idiom, identical to netmgr.cpp:176 and lmessage.cpp:452. m_pMsg is
 	// still the constructor's null here, so Init's release folds away and
 	// only the AddRef at 0x0046377a survives.
-	msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-
-	if (pIO)
-		pIO->Release();                                  // 0x00463787
+	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));   // 0x00463787
 
 	// 0x0046378a `cmp DWORD PTR ds:0x4b329c,edi` with edi zero, and the store
 	// at 0x00463792 goes into the bLocal PARAMETER slot. S:0x10026d61
@@ -11410,10 +11381,7 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 			CClientPacketSetView* pSet =
 				(CClientPacketSetView*)&pClient->m_PacketSets[i][j];
 
-			pSet->m_Ref.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-
-			if (pIO)
-				pIO->Release();                          // 0x004638f0
+			pSet->m_Ref.Init(&msg_AllocPacketQ512(0x44c, 0x44c));   // 0x004638f0
 
 			// 0x0046388e `dec ; neg ; sbb ; and 0x80 ; add 0x80` — VC6's
 			// branchless select, hoisted out of the inner loop by /Og in BOTH
@@ -12584,11 +12552,8 @@ void sm_Unknown26755(CServerMgr* pMgr, Client* pClient)
 {
 	CMessageRef msg;
 	CLAClient*   pLAClient = (CLAClient*)pClient;
-	CAbstractIO* pIO;
 
-	msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
-	if (pIO)
-		pIO->Release();
+	msg.Init(&msg_AllocPacketQ512(0x44c, 0x44c));
 
 	for (uint32 i = 0; i < pLAClient->m_nChanges; i++)
 	{
@@ -12627,4 +12592,15 @@ void sm_Unknown26755(CServerMgr* pMgr, Client* pClient)
 	}
 
 	pLAClient->m_nChanges = 0;
+}
+
+// The forwarding body of the by-value msg_AllocPacket declared at the top
+// (see there): the packet comes back through NOLF's out-parameter and is
+// handed on as the reference the callers destroy.
+CPacketRefQ512 msg_AllocPacketQ512(uint32 blockSize, uint32 growSize)
+{
+	CAbstractIO* pIO;
+
+	msg_AllocPacket(&pIO, blockSize, growSize);
+	return *(CPacketRefQ512*)&pIO;
 }

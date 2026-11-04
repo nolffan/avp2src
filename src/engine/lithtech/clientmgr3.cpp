@@ -371,7 +371,12 @@ public:
 	virtual void _v0fc()=0;  virtual void _v100()=0;  virtual void _v104()=0;
 	virtual void _v108()=0;  virtual void _v10c()=0;  virtual void _v110()=0;
 	virtual void _v114()=0;  virtual void _v118()=0;
-	virtual void Shutdown(int nFlag)=0;                         // 0x11c
+#ifdef PRIMAL_HUNT
+	// PH: ILTCSBase's two extra slots after CopyFile push this one to 0x124
+	// (`call *0x124(%edx)` at 0x00412d5a; AvP2 1.0.9.6 has 0x11c).
+	virtual void _v11c()=0;  virtual void _v120()=0;
+#endif
+	virtual void Shutdown(int nFlag)=0;                         // 0x11c (PH 0x124)
 };
 
 
@@ -635,9 +640,11 @@ public:
 // at 0x00410afc.
 void sb_Init(CCmgStructBank* pBank, uint32 nStructSize, uint32 nCacheSize); // 0x00490b50
 
+// AVP2: the element is the 0x40-byte SharedTexture (`push $0x40`, Primal
+// Hunt 0x00415ee2, AvP2 1.0.9.6 0x00414e9b).
 CCmgBank113C::CCmgBank113C()
 {
-	sb_Init(&m_Bank, 0x34, 32);
+	sb_Init(&m_Bank, 0x40, 32);
 }
 
 // The twelve-byte vector of the force control's local (LTVector's shape).
@@ -747,7 +754,9 @@ public:
 		m_Unknown3a = 1;
 		m_MsgFlags  = 0;
 
-		Init(0x1000, 0x1000);
+		// AVP2: 0x44c, the packet size (Primal Hunt 0x0049c077, AvP2
+		// 1.0.9.6 0x00492646).
+		Init(0x44c, 0x44c);
 	}
 
 	// 0x00459cc0 -- ServerMessage::Init.
@@ -799,9 +808,12 @@ void sb_Init(CCmgStructBank* pBank, uint32 nStructSize, uint32 nCacheSize); // 0
 	}
 
 DECLARE_CMG_SNDBANK(CCmgSndBank284, 0xa4);
-DECLARE_CMG_SNDBANK(CCmgSndBank2B8, 0xb8);
-DECLARE_CMG_SNDBANK(CCmgSndBank2DC, 0xb8);
-DECLARE_CMG_SNDBANK(CCmgSndBank300, 0xd0);
+// AVP2: the sound instance is twelve bytes longer than NOLF's, so the three
+// instance banks are 0xc4/0xc4/0xdc (Primal Hunt 0x0049bfdf/0x0049c004/
+// 0x0049c029, AvP2 1.0.9.6 0x004925cb/0x004925f3/0x00492610).
+DECLARE_CMG_SNDBANK(CCmgSndBank2B8, 0xc4);
+DECLARE_CMG_SNDBANK(CCmgSndBank2DC, 0xc4);
+DECLARE_CMG_SNDBANK(CCmgSndBank300, 0xdc);
 
 // The refcounted write message msg_StartWrite hands out: cltnew.cpp's
 // CPacketView (a CPacket whose storage is a real CMoArray<uint8>, so the
@@ -874,6 +886,21 @@ LTBOOL CCmgMsg::AppendBody(CCmgServerMessage* pMsg)
 class CCmgMsgRef
 {
 public:
+	CCmgMsgRef() { m_pMsg = LTNULL; }
+
+	CCmgMsgRef& operator=(const CCmgMsgRef& other)
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			m_pMsg->AddRef();
+
+		return *this;
+	}
+
 	CCmgMsgRef(CCmgMsg* pMsg)
 	{
 		m_pMsg = pMsg;
@@ -909,7 +936,7 @@ extern int g_CV_UpdateRate;
 // src/engine/lithtech/clientsoundmgr.cpp's CSoundMgr, embedded at +0x774.
 // Its vtable is 0x004a356c and that file numbers the two slots this run
 // reaches off iltsoundmgr.h's declaration order: +0x5c PauseSounds,
-// +0x60 ResumeSounds.
+// +0x60 ResumeSounds (AvP2 and Primal Hunt: +0x68 and +0x6c).
 //
 // SIZE.  Only 0x124 bytes are claimed here, up to the first field past it
 // that this run reads (0x898).  Everything from 0x898 to 0x10f0 is almost
@@ -932,8 +959,19 @@ public:
 	virtual void _v3c()=0;  virtual void _v40()=0;  virtual void _v44()=0;
 	virtual void _v48()=0;  virtual void _v4c()=0;  virtual void _v50()=0;
 	virtual void _v54()=0;  virtual void _v58()=0;
+	// AVP2: three more slots before the pair (`call *0x68` / `*0x6c`, Primal
+	// Hunt 0x00411eea, AvP2 1.0.9.6 0x00410ecc).
+	virtual void _v5c()=0;  virtual void _v60()=0;  virtual void _v64()=0;
 	virtual void PauseSounds()=0;
 	virtual void ResumeSounds()=0;
+};
+
+class CCmgFill810Q513
+{
+public:
+	CCmgFill810Q513() { memset(m_Bytes, 0x64, sizeof(m_Bytes)); }
+
+	uint8 m_Bytes[0x100];
 };
 
 class CCmgSoundMgr : public CCmgSoundMgrBase
@@ -961,8 +999,9 @@ public:
 	virtual void _v3c();  virtual void _v40();  virtual void _v44();
 	virtual void _v48();  virtual void _v4c();  virtual void _v50();
 	virtual void _v54();  virtual void _v58();
-	virtual void PauseSounds();                                 // 0x5c
-	virtual void ResumeSounds();                                // 0x60
+	virtual void _v5c();  virtual void _v60();  virtual void _v64();
+	virtual void PauseSounds();                                 // 0x68 (NOLF 0x5c)
+	virtual void ResumeSounds();                                // 0x6c (NOLF 0x60)
 
 	// 0x00480220 -- clientsoundmgr.cpp's FreeProviderList.
 	void FreeProviderList(void* pList);
@@ -1025,9 +1064,11 @@ public:
 	uint32            m_Unknown804;                             // 0x804
 	uint32            m_Unknown808;                             // 0x808
 	uint32            m_Unknown80c;                             // 0x80c
-	// AVP2: 0x100 bytes the constructor fills with 0x64 (Primal Hunt's
-	// 0x0049c088: `rep stos` of 0x40 dwords of 0x64646464).  (name ours)
-	uint8             m_Unknown810[0x100];                      // 0x810
+	// AVP2: 0x100 bytes filled with 0x64 (Primal Hunt's 0x0049c088,
+	// AvP2 1.0.9.6 0x00492666: `rep stos` of 0x40 dwords of 0x64646464).
+	// It is a MEMBER's constructor: the fill runs after m_Packet's and
+	// before CSoundMgr's own vptr store.  (names ours)
+	CCmgFill810Q513   m_Unknown810;                             // 0x810
 };                                                              // 0x910
 
 // src/engine/lithtech/clientworld.cpp's CDemoMgrView at +0x158c.  Its
@@ -1080,6 +1121,50 @@ public:
 typedef CCounterEntryQ428 CCmgCounterRec;
 extern CCounterEntryQ428 g_CounterTableQ428[17];               // 0x004b3098
 #define g_CmgCounters g_CounterTableQ428
+
+// AVP2: four of that table's totals, which Update times its blocks into
+// (Primal Hunt's table fill 0x00436092..0x004360f5 names them).
+extern uint32 g_nCntMusicQ428;                                  // PH 0x004f0148
+extern uint32 g_nCntSoundQ428;                                  // PH 0x004f014c
+extern uint32 g_nCntInputQ428;                                  // PH 0x004f0150
+extern uint32 g_nCntClientShellQ428;                            // PH 0x004f0154
+
+// AVP2: a fifth total, timed round UpdateSounds inside the "Sound" one and
+// referenced nowhere else in the image (PH 0x004efe20).  (name ours)
+uint32 g_nCntUpdateSoundsQ513;
+
+// servermgr.h's CBaseCounter and CountAdder (server/counter.cpp), as the
+// client's Update expands them: the counter's constructor and the two C
+// wrappers are calls (PH 0x00426060 / 0x00426150 / 0x00426160), and the
+// adder's destructor is INLINE here (`push; call 0x426160; mov 8(..),%ecx;
+// add %eax,(%ecx)`), where the server calls its out-of-line copy.
+class CBaseCounter
+{
+public:
+	CBaseCounter(int nMode);
+
+	uint32 m_Data[2];
+};
+void   cnt_StartCounter(CBaseCounter* pCounter);
+uint32 cnt_EndCounter(CBaseCounter* pCounter);
+
+class CCmgCountAdderQ513
+{
+public:
+	CCmgCountAdderQ513(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+
+	~CCmgCountAdderQ513()
+	{
+		*m_pTotal += cnt_EndCounter(&m_Counter);
+	}
+
+	CBaseCounter m_Counter;                                     // 0x00
+	uint32*      m_pTotal;                                      // 0x08
+};
 
 // The client's worker thread at +0x15a8.  src/engine/server/lthread.h's
 // LThread laid out field for field: the OUTGOING queue at +0x2c is exactly
@@ -1946,6 +2031,19 @@ void CCmgClientMgr::ProcessThreadMessages()
 //  bound is in the condition and not hoisted; the counter is masked with
 //  `and $0xffff` on the way into 0x0042e5b0 and compared with `cmp %ax,%si`,
 //  so it is a uint16 against clientdsi.cpp's uint16 count at 0x004b11e4.
+//
+//  AVP2: the blocks are TIMED.  Primal Hunt's Update (0x00411da0, 892
+//  bytes) and AvP2 1.0.9.6's (0x00410db0) wrap the CD-audio latch, the sound
+//  latch, UpdateCounters and the game shell's Update each in a scoped
+//  CountAdder ("Music" / "Sound" / "Input" / "ClientShell"), and
+//  UpdateSounds in two ("Sound", then a private total).  The shell error
+//  return runs the adder's destructor after 0x0041fc90 answers.
+//
+//  NEAR (PH 891 of 892 bytes, one block): the sound latch's compare loads
+//  the member first into %eax and the console variable into %ecx (the
+//  six-byte `mov` form) where ours loads the variable into %eax; AvP2's
+//  build loads them the way ours does.  Neither operand order nor the
+//  member's type (uint32 / LTBOOL / int) moves it.
 // ======================================================================= //
 
 LTRESULT CCmgClientMgr::Update()
@@ -1973,6 +2071,8 @@ LTRESULT CCmgClientMgr::Update()
 	// The CD-audio module, latched against its console variable.
 	if (m_bCDAudioReady)
 	{
+		CCmgCountAdderQ513 cntAdder(&g_nCntMusicQ428);
+
 		if (g_CV_MusicEnable != m_nCDAudioEnabled)
 		{
 			m_nCDAudioEnabled = g_CV_MusicEnable;
@@ -1988,10 +2088,12 @@ LTRESULT CCmgClientMgr::Update()
 		}
 	}
 
-	// The sound manager, the same way.  Slots 0x5c and 0x60 of CSoundMgr are
+	// The sound manager, the same way.  Slots 0x68 and 0x6c (NOLF 0x5c and 0x60) of CSoundMgr are
 	// clientsoundmgr.cpp's PauseSounds and ResumeSounds.
 	if (m_SoundMgr.m_pSoundDriver)
 	{
+		CCmgCountAdderQ513 cntAdder(&g_nCntSoundQ428);
+
 		if (g_CV_SoundEnable != m_SoundMgr.m_bSoundEnabled)
 		{
 			m_SoundMgr.m_bSoundEnabled = g_CV_SoundEnable;
@@ -2009,10 +2111,16 @@ LTRESULT CCmgClientMgr::Update()
 		ProcessKeyEvents();
 
 	if (dsi_IsClientActive())
+	{
+		CCmgCountAdderQ513 cntAdder(&g_nCntInputQ428);
+
 		UpdateCounters(LTFALSE);
+	}
 
 	if (m_pShell)
 	{
+		CCmgCountAdderQ513 cntAdder(&g_nCntClientShellQ428);
+
 		dResult = m_pShell->Update();
 
 		if (dResult != LT_OK)
@@ -2026,7 +2134,12 @@ LTRESULT CCmgClientMgr::Update()
 		m_pClientShell->PostUpdate();
 	}
 
-	UpdateSounds(m_fFrameTime);
+	{
+		CCmgCountAdderQ513 cntSound(&g_nCntSoundQ428);
+		CCmgCountAdderQ513 cntUpdate(&g_nCntUpdateSoundsQ513);
+
+		UpdateSounds(m_fFrameTime);
+	}
 
 	if (m_DemoMgr.IsRunning())
 	{
@@ -2111,8 +2224,12 @@ void CCmgClientMgr::UpdateCounters(LTBOOL bForce)
 //  THE HOLDER.  Shipped copies the returned holder into a register-held one
 //  (`mov (%eax),%ebx ; AddRef`) and then releases the temporary
 //  (0x00415840..0x0041585a).  `CCmgMsgRef cMsg = cmg_StartWrite(...)` is
-//  constructed in place by VC6 (no AddRef/Release at all, 445 bytes); going
-//  through the pointer constructor is what keeps both.  The embedded
+//  constructed in place by VC6 (no AddRef/Release at all, 445 bytes).
+//  Primal Hunt (0x00419b80, byte-identical) shows the real spelling: the
+//  holder is declared EMPTY first -- its null store and EH state 0 come
+//  before the frame-time add -- and then ASSIGNED the 0x44c-byte message
+//  (states 1 then 0 around the temporary).  The loop's byte goes through a
+//  named uint8 (`mov %al,0x10(%esp)` then the dword push).  The embedded
 //  message's cut-back is an inline member (Reset) -- written as two stores
 //  off m_SoundMgr.m_Packet it swapped esi/edi and addressed off ebp.
 // ======================================================================= //
@@ -2122,12 +2239,15 @@ void CCmgClientMgr::Sub415810(CCmgNetMgr* pNetMgr, uint32 nConnID,
 {
 	uint8  nRate;
 	LTBOOL bRateChanged;
+	uint8  nChange;
 	uint8  aChanges[256];
 	int    i, nCopy;
 
+	CCmgMsgRef cMsg;
+
 	m_Unknown14f4 += m_fFrameTime;
 
-	CCmgMsgRef cMsg = cmg_StartWrite(0x1000, 0x1000).m_pMsg;
+	cMsg = cmg_StartWrite(0x44c, 0x44c);
 
 	nRate = LTCLAMP((uint8)g_CV_UpdateRate, 2, 60);
 	cMsg.m_pMsg->WriteType(nRate);
@@ -2139,7 +2259,8 @@ void CCmgClientMgr::Sub415810(CCmgNetMgr* pNetMgr, uint32 nConnID,
 
 	for (i = 0; i < nChanges; i++)
 	{
-		cMsg.m_pMsg->WriteType((uint8)pChanges[i]);
+		nChange = (uint8)pChanges[i];
+		cMsg.m_pMsg->WriteType(nChange);
 		aChanges[i] = (uint8)pChanges[i];
 	}
 
@@ -2242,7 +2363,9 @@ LTRESULT CCmgDemoMgr::Sub42c5f0()
 //  (0x004a356c), then the body: every field cleared, the lists re-tied, the
 //  four banks Term'd, and the listener/volume defaults.
 //
-//  NEAR, 711 bytes against 695.  The whole residual is inline budget:
+//  NEAR (Primal Hunt 0x0049bf40: 830 bytes against 814, once the AvP2
+//  bank sizes, the 0x44c packet and the 0x810 fill are in).  The whole
+//  residual is inline budget:
 //  shipped CALLS the message's CMoArray<uint8> constructor (0x004833c0);
 //  here the constructor expands one level (its vptr, then Clear and Init
 //  called), and three stores schedule one slot apart as a result.  Padding

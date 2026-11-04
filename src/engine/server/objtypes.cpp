@@ -83,9 +83,8 @@ void CObjBase::_v20(CAttachMgrView* pAttachMgr, ObjectCreateStruct* pStruct)
 //   * the link at 0x060 is tied off twice, with the 0x06c link's setup in
 //     between. The second tie-off is dead: nothing between the two touches
 //     0x060. It is reproduced because it is what shipped.
-//   * m_StandingLink gets its m_pData and is NOT tied off, alone among the
-//     five links here. An object that has never stood on anything therefore
-//     has a link whose prev/next are whatever the bank's memory held.
+//   * (NOLF) m_StandingLink got its m_pData and was NOT tied off, alone
+//     among the links here; AvP2's ties it off (below).
 //
 // Two things about the links are source, not codegen, and the function is
 // six bytes short or size-exact-but-wrong without them. The m_pData store is
@@ -98,79 +97,112 @@ void CObjBase::_v20(CAttachMgrView* pAttachMgr, ObjectCreateStruct* pStruct)
 // The two magic numbers are the physics defaults: five for friction, thirty
 // for mass, and the force-ignore limit is stored squared, so 1000000 is a
 // limit of a thousand.
+// AVP2: the fields objtypes.h still leaves as padding (the header is shared
+// with files that are not this one's), as InitFields writes them: a second
+// 0xffff word beside the object ID, a vector after m_v138 and a rotation
+// after m_f164 (names ours).
+struct CObjBaseFieldsQ518
+{
+	uint8      m_pad_000[0xba];
+	uint16     m_Unknownba;                  // 0x0ba
+	uint8      m_pad_0bc[0x148 - 0x0bc];
+	LTVector   m_v148;                       // 0x148
+	uint8      m_pad_154[0x168 - 0x154];
+	LTRotation m_r168;                       // 0x168
+};
+
+// AVP2 (lithtech 0x0046bfa0, 523 bytes; AvP2 1.0.9.6 0x00466a20 is the same
+// bytes): the stores run in layout order, the position and dimensions last,
+// and four things NOLF's had not are in it -- the attachment manager is
+// cleared first (0x0046bfa9), the type-list link at 0x07c is tied off, the
+// standing link IS tied off now (0x0046c0d3), and the three new fields above
+// are set. m_pUnknown17c (0x184) is no longer touched (but see below).
 void CObjBase::InitFields()
 {
+	CObjBaseFieldsQ518* pFields = (CObjBaseFieldsQ518*)this;
+
+	m_pAttachMgr = LTNULL;
+
 	m_Link60.TieOff();
 
 	m_Link6c.TieOff();
-	m_Link6c.m_pData = this;
 	m_bLinked6c = 0;
+	m_Link6c.m_pData = this;
 
 	m_Link60.TieOff();
+
+	m_Link7c.TieOff();
+
+	m_Flags = 0;
+	m_Flags2 = 0;
+	m_UserFlags = 0;
 
 	m_ColorB = 255;
 	m_ColorG = 255;
 	m_ColorR = 255;
 	m_ColorA = 255;
 
-	m_Flags = 0;
-	m_Flags2 = 0;
-	m_UserFlags = 0;
 	m_pAttachments = LTNULL;
 
-	m_Pos.Init();
 	m_Rotation.Init();
 	m_Scale.Init(1.0f, 1.0f, 1.0f);
 
-	m_Radius = 0.0f;
 	m_ObjectID = 0xffff;
+	pFields->m_Unknownba = 0xffff;
 	m_ObjectType = 0;
+	m_BlockingPriority = 0;
 	m_Unknownc0 = 0;
-	m_Unknowndc = 5;	// AVP2: Primal Hunt server.dll 0x1002e654
 
 	m_Velocity.Init();
 	m_Acceleration.Init();
 
+	m_Unknowndc = 5;	// AVP2: Primal Hunt server.dll 0x1002e654
+
 	m_FrictionCoefficient = 5.0f;
 	m_Mass = 30.0f;
+	m_ForceIgnoreLimitSqr = 1000000.0f;
 
 	m_pStandingOn = LTNULL;
 	m_pStandingOnPoly = LTNULL;
 
 	m_vBoxMin.Init();
 	m_vBoxMax.Init();
-	m_Dims.Init(1.0f, 1.0f, 1.0f);
 
 	m_StandingOnMe.TieOff();
 
 	m_StandingLink.m_pData = this;
-#ifdef AVP2_MODERN
-	m_StandingLink.TieOff();	// fixed: not left holding the bank's old pointers (RETAIL_BUGS.md)
-#endif
+	m_StandingLink.TieOff();
 
-	m_pSData = LTNULL;
-	m_BlockingPriority = 0;
-	m_ForceIgnoreLimitSqr = 1000000.0f;
 	m_ChangeFlags = 0;
 	m_n180 = 0;
 
 	m_fLink150Key = 0.0f;
+	m_f128 = 0.0f;
+	m_v12c.Init();
+	m_v138.Init();
+	pFields->m_v148.Init();
 
 	m_Link150.m_pData = this;
 	m_Link150.TieOff();
 
 	m_fLink170Key = 0.0f;
-	m_f164 = 0.0f;	// AVP2: retail zeroes it beside m_fLink170Key
+	m_f164 = 0.0f;
+	pFields->m_r168.Init();
 
 	m_Link170.m_pData = this;
 	m_Link170.TieOff();
 
-	m_f128 = 0.0f;
-
-	m_v12c.Init();
-	m_v138.Init();
-
+#ifdef LT_SERVER_BUILD
+	// The server still clears it (server.dll 0x1002e766); lithtech.exe's
+	// copy has no store to +0x184 at all.
 	m_pUnknown17c = LTNULL;
+#endif
+
+	m_pSData = LTNULL;
+
+	m_Pos.Init();
+	m_Dims.Init(1.0f, 1.0f, 1.0f);
+	m_Radius = 0.0f;
 }
 
 // Objects carrying the flag hand themselves to the visitor; the rest say so
@@ -267,6 +299,37 @@ void mat_SetupTransform(LTVector* pPos, LTRotation* pRot, LTVector* pScale,
 }
 
 
+// The bank a released segment goes back to, as much of it as this file
+// needs: servermgr.h's StructBank, whose intrusive free list is at +0x18.
+// Declared locally because this file cannot include that header yet.
+struct CSegmentBankView
+{
+	uint8 m_pad_00[0x18];
+	void* m_pFreeList;                       // +0x18
+};
+
+// servermgr.h's sb_Free as AvP2 has it: both pointers are tested before the
+// two stores, the record first (lithtech 0x0046dcb2 `test %eax`, then
+// 0x0046dcb6 the bank).
+inline void sb_Free(CSegmentBankView* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
+// AVP2: the attachments go back to the manager's third struct bank, at its
+// +0x4c (`lea 0x4c(%ecx),%edx`, lithtech 0x0046be6d; AvP2 1.0.9.6
+// 0x00466905), through sb_Free -- the free list servermgr.h's
+// CAttachMgrView names at +0x64 is that bank's own, +0x18 into it.
+struct CAttachBankMgrViewQ518
+{
+	uint8            m_pad_00[0x4c];
+	CSegmentBankView m_AttachBank;           // +0x4c
+};
+
 // 0x10024772. The attachments do not go back one at a time: the whole chain
 // is pushed onto the manager's spare list, each record's first dword taken
 // over as the free link (its LTransform offset, which nothing will read
@@ -281,10 +344,10 @@ void mat_SetupTransform(LTVector* pPos, LTRotation* pRot, LTVector* pScale,
 // destructor, `static inline` and `__inline` change nothing. So the inline
 // is the client build's only, on the same stand-in discriminator
 // serverengine.cpp and smgr.cpp use.
-#ifndef LT_SERVER_BUILD
-inline
-#endif
-void obj_DetachAll(CAttachMgrView* pMgr, CObjBase* pObj)
+//
+// AVP2: Primal Hunt's server.dll expands it too (0x1002e45c..0x1002e479,
+// sb_Free's two tests and all), so the seam above is NOLF's only.
+inline void obj_DetachAll(CAttachMgrView* pMgr, CObjBase* pObj)
 {
 	Attachment* pCur = pObj->m_pAttachments;
 
@@ -292,8 +355,7 @@ void obj_DetachAll(CAttachMgrView* pMgr, CObjBase* pObj)
 	{
 		Attachment* pNext = pCur->m_pNext;
 
-		*(Attachment**)pCur = pMgr->m_pFreeList;
-		pMgr->m_pFreeList = pCur;
+		sb_Free(&((CAttachBankMgrViewQ518*)pMgr)->m_AttachBank, pCur);
 
 		pCur = pNext;
 	}
@@ -303,6 +365,14 @@ void obj_DetachAll(CAttachMgrView* pMgr, CObjBase* pObj)
 
 
 CObjWorldModel::CObjWorldModel() : CObjBase(OT_WORLDMODEL)
+{
+	InitFields();
+}
+
+// Above InitFields' body, as the default constructor is: below it, VC6
+// knows the call cannot throw and drops the /GX frame Primal Hunt's copy
+// has (lithtech 0x0046c4b0).
+CObjWorldModel::CObjWorldModel(char nType) : CObjBase(nType)
 {
 	InitFields();
 }
@@ -328,11 +398,6 @@ void CObjWorldModel::InitFields()
 
 	for (i = 0; i < 5; i++)
 		((LTLink*)m_Links1b4)[i].Init2(this);
-}
-
-CObjWorldModel::CObjWorldModel(char nType) : CObjBase(nType)
-{
-	InitFields();
 }
 
 CObjContainer::CObjContainer() : CObjWorldModel(OT_CONTAINER)
@@ -362,7 +427,8 @@ CObjBase::~CObjBase()
 	if (m_pAttachMgr)
 		obj_DetachAll(m_pAttachMgr, this);
 
-	if (m_fLink150Key != 0.0f)
+	// AVP2: the first list is left unconditionally (0x0046be94); only the
+	// second is still keyed on its value.
 	{
 		LTLink* pLink = &m_Link150;
 
@@ -384,8 +450,12 @@ CObjBase::~CObjBase()
 		pLink->m_pPrev = pLink;
 	}
 
+#ifdef LT_SERVER_BUILD
+	// The server still clears it (server.dll 0x1002e4d4); lithtech.exe's
+	// destructor never reads +0x184 (0x0046bee9 goes straight to _v08).
 	if (m_pUnknown17c)
 		m_pUnknown17c = LTNULL;
+#endif
 
 	CObjBase::_v08();
 }
@@ -410,11 +480,30 @@ float CObjCanvas::_v38()
 }
 
 
+// AVP2: the four words objtypes.h leaves as padding ahead of the field of
+// view are cleared first (lithtech 0x0046d7b7..0x0046d7c9), and the flag is
+// set before the two angles (names ours).
+struct CObjCameraFieldsQ518
+{
+	uint8  m_pad_000[0x1b0];
+	uint32 m_Unknown1b0;                     // 0x1b0
+	uint32 m_Unknown1b4;                     // 0x1b4
+	uint32 m_Unknown1b8;                     // 0x1b8
+	uint32 m_Unknown1bc;                     // 0x1bc
+};
+
 CObjCamera::CObjCamera() : CObjBase(OT_CAMERA)
 {
-	m_fFovY = m_fFovX = 1.5707964f;
+	CObjCameraFieldsQ518* pFields = (CObjCameraFieldsQ518*)this;
+
+	pFields->m_Unknown1b0 = 0;
+	pFields->m_Unknown1b4 = 0;
+	pFields->m_Unknown1b8 = 0;
+	pFields->m_Unknown1bc = 0;
 
 	m_Unknown1c0 = 1;
+
+	m_fFovY = m_fFovX = 1.5707964f;
 
 	m_v1c4.Init();
 }
@@ -423,17 +512,29 @@ CObjCamera::CObjCamera() : CObjBase(OT_CAMERA)
 // cursors, then the three vectors and 218 in offset order -- NOLF's engine
 // had the cursors first and the vectors out of order. The server's /O1 copy
 // hoists its two `andl $0` stores to the top whatever the source order
-// (identical). NEAR on lithtech.exe (112 of 112 bytes): only the `lea` of
-// m_Storage and the `xor` of the shared zero are swapped ahead of the vptr
-// store; cursors-first, a chained `B = A = m_Storage` and member
-// initialisers were tried (the last moves the vptr store, worse).
+// (identical). PH: IDENTICAL on lithtech.exe too with the storage address
+// taken into a local first: under cl 8966 that is what puts its `lea` ahead
+// of the shared zero's `xor` (0x0046dc0a); cursors-first, a chained `B = A =
+// m_Storage` and member initialisers all left the two swapped. AvP2 1.0.9.6's
+// cl 9044 build matches with the plain stores and loses it with the local, so
+// the local is Primal Hunt's build only.
 CObjLineSystem::CObjLineSystem() : CObjBase(OT_LINESYSTEM)
 {
+#ifdef PRIMAL_HUNT
+	uint8* pStorage = m_Storage;
+
+	m_pUnknown1a8 = LTNULL;
+	m_pUnknown1ac = LTNULL;
+
+	m_pCursorA = pStorage;
+	m_pCursorB = pStorage;
+#else
 	m_pUnknown1a8 = LTNULL;
 	m_pUnknown1ac = LTNULL;
 
 	m_pCursorA = m_Storage;
 	m_pCursorB = m_Storage;
+#endif
 
 	m_v1f4.Init();
 	m_v200.Init();
@@ -863,27 +964,6 @@ LTBOOL CObjWorldModel::IsWorldBusy()
 LTBOOL CObjWorldModel::IsWorldIdle()
 {
 	return ((IWorldBsp*)m_pWorldBsp)->IsBusy() == 0;
-}
-
-// The bank a released segment goes back to, as much of it as this file
-// needs: servermgr.h's StructBank, whose intrusive free list is at +0x18.
-// Declared locally because this file cannot include that header yet.
-struct CSegmentBankView
-{
-	uint8 m_pad_00[0x18];
-	void* m_pFreeList;                       // +0x18
-};
-
-// servermgr.h's sb_Free as AvP2 has it: both pointers are tested before the
-// two stores, the record first (lithtech 0x0046dcb2 `test %eax`, then
-// 0x0046dcb6 the bank).
-inline void sb_Free(CSegmentBankView* pBank, void* pStruct)
-{
-	if (pStruct && pBank)
-	{
-		*(void**)pStruct = pBank->m_pFreeList;
-		pBank->m_pFreeList = pStruct;
-	}
 }
 
 // 0x100255c4 — every segment goes back to the bank it came from, and the

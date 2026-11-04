@@ -161,7 +161,8 @@ LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMa
 // eax), and tests the texture through a copy (`mov 0x2c(%eax),%edx`) so the
 // surface stays live; ours cross-jumps the first body into the third's
 // print and tests in place. A nested `if (pSurface) { if (!tex) error; if
-// (file) success }` form and this flat one compile the same.
+// (file) success }` form, this flat one, and one if/else-if/else chain with
+// a return in every arm all compile the same.
 LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen)
 {
 	if (!pName)
@@ -189,7 +190,9 @@ LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMa
 
 // AVP2: 0x10039e3e. The vertices are copied while there are both vertices
 // and room for them, the count first; the count comes back whole however
-// many were copied, as iltcommon.h says.
+// many were copied, as iltcommon.h says. The destination is walked by its
+// own post-increment (`mov %esi,%ebx; add $0xc,%esi`, 0x00481435); indexed
+// by i, the register roles came out swapped.
 LTRESULT ServerCommonLT::GetPolyInfo(HPOLY hPoly, LTPlane** ppPlane, LTVector* pVertexList,
                                      uint32 nVertexListMaxSize, uint32* pnNumVertices)
 {
@@ -206,7 +209,7 @@ LTRESULT ServerCommonLT::GetPolyInfo(HPOLY hPoly, LTPlane** ppPlane, LTVector* p
 			{
 				if (i >= nVertexListMaxSize)
 					break;
-				pVertexList[i] = *pPoly->m_Vertices[i].m_pPos;
+				*pVertexList++ = *pPoly->m_Vertices[i].m_pPos;
 			}
 		}
 
@@ -266,7 +269,10 @@ LTRESULT ServerCommonLT::SetObjectFlags(HOBJECT hObj, const ObjFlagType flagType
 			if ((nOld & FLAG_SOLID) && !(dwFlags & FLAG_SOLID))
 				obj_UnlinkTrackersA(hObj);
 
-			if ((hObj->m_Flags ^ dwFlags) & 0xffff)
+			// AVP2: the client-visible flags are the low word and bit 18
+			// (`test $0x4ffff`, 0x00480cd5; AvP2 1.0.9.6 and both
+			// server.dlls agree).
+			if ((hObj->m_Flags ^ dwFlags) & 0x4ffff)
 				sm_SetObjectChangeFlag(m_pServerMgr, hObj, 8);
 
 			char nType = hObj->m_ObjectType;

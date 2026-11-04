@@ -274,7 +274,9 @@ public:
 	// class is built with: `push $0x2c4` at 0x0047744b feeds operator new at
 	// 0x00477480.  Nothing in this run reaches past m_nCacheCount, so the
 	// remaining 0xb8 bytes are unnamed rather than guessed.
-	uint8  m_pad_210[0x2c4 - 0x210];
+	// AVP2: 0x2c8 in AvP2 1.0.9.6 and Primal Hunt (`push $0x2c8` at
+	// 0x00492cd3 and 0x00492b19; AvP2 0x004892d7), four bytes more.
+	uint8  m_pad_210[0x2c8 - 0x210];
 };
 
 // 0x0043c500 / 0x0043c580 -- make a link round a pointer, and put it on a
@@ -297,7 +299,9 @@ void    dl_AddLinkQ474(LTLink* pHead, LTLink* pLink);          // 0x0043c580
 //   +0x0c the child's name      (0x00477450, read 0x004771ce/0x004771e6)
 //   +0x10..+0x1c four flags, all set to 1 (0x00477470..0x0047747c); +0x14
 //                is read at 0x004775bc and +0x1c at 0x0047762d.
-// Identical to src/engine/server/serverengine.h's CModelLoadRequest.
+// Identical to src/engine/server/serverengine.h's CModelLoadRequest. (NOLF's
+// layout; AvP2's has a word at +0x0c and everything after it four bytes on,
+// see the class.)
 class CModelLoadContextQ474;
 
 // 0x004451b0 -- `mov $0x46,%eax; ret`: LT_NOCHANGE and nothing else, the
@@ -326,17 +330,24 @@ public:
 		m_bTreesValid    = LTTRUE;
 		m_bUnknown18     = LTTRUE;
 		m_bChildrenFound = LTTRUE;
+		// AVP2: the request is 0x24 bytes, as the server's (serverengine.cpp's
+		// CModelLoadRequestQ507): a word at +0x0c, zeroed last
+		// (0x00492cfc, after the four flags at 0x00492cec..0x00492cf8),
+		// pushes the child name to +0x10 (read at 0x00492a63) and the
+		// flags to +0x14..+0x20.
+		m_Unknown0C      = 0;
 	}
 
 	ILTStreamQ474* m_pStream;                                  // 0x00
 	LTRESULT (*m_pfnLoadChild)(CModelLoadRequestQ474* pReq,
 	                           ModelQ474** ppModel);           // 0x04
 	CModelLoadContextQ474* m_pContext;                         // 0x08
-	char*  m_pChildName;                                       // 0x0c
-	LTBOOL m_bUnknown10;                                       // 0x10
-	LTBOOL m_bTreesValid;                                      // 0x14
-	LTBOOL m_bUnknown18;                                       // 0x18
-	LTBOOL m_bChildrenFound;                                   // 0x1c
+	uint32 m_Unknown0C;                                        // 0x0c
+	char*  m_pChildName;                                       // 0x10
+	LTBOOL m_bUnknown10;                                       // 0x14
+	LTBOOL m_bTreesValid;                                      // 0x18
+	LTBOOL m_bUnknown18;                                       // 0x1c
+	LTBOOL m_bChildrenFound;                                   // 0x20
 };
 
 class CClientMgrQ474;
@@ -857,74 +868,83 @@ LTRESULT cm_LoadChildModelQ474(CModelLoadRequestQ474* pReq, ModelQ474** ppModel)
 
 	pFileRec = cm_FindFileQ474(pCtx->m_pClientMgr->m_pFileMgr, &ident, 1);
 
+	// One if/else chain in which every arm ends in its own return: that is
+	// what makes VC6 host the shared missing-file tail at its FIRST site, as
+	// shipped does (0x00492bcf jumps back to 0x00492ad8). Written as guarded
+	// early returns it hosted the tail at the stream test instead.
+	//
+	// The `new` is VC6's usual `push $0x2c8; call; test; je; <ctor>`;
+	// 0x004f7c20 is the allocator, pushed twice exactly as serverengine.cpp's
+	// calls do.
 	if (!pFileRec)
 	{
 		RETURN_ERROR_SYM_DESC_Q474(1, "cm_LoadChildModel", LT_MISSINGMODELFILE,
 		                           szPath);
 	}
-
-	if (pFileRec->m_pData)
+	else if (pFileRec->m_pData)
 	{
 		*ppModel = (ModelQ474*)pFileRec->m_pData;
 		return LT_OK;
 	}
-
-	// 0x00477289..0x004772af -- `push $0x2c4; call 0x004290b0; test; je;
-	// <ctor>; mov %eax,%esi` is VC6's `new`, with the null arm folded
-	// straight into the out-of-memory block below instead of the usual
-	// `xor`-and-join (0x00477440 below has the unfolded form of the same
-	// source).  0x004b4e88 is the allocator, pushed twice exactly as
-	// serverengine.cpp's calls do.
-	pModel = new ModelQ474(g_MoAllocBankQ474, g_MoAllocBankQ474);
-
-	if (!pModel)
-		RETURN_ERROR_Q474(1, "cm_LoadChildModel", LT_OUTOFMEMORY)
-
-	pReq->m_pStream = cm_OpenStreamQ474(pCtx->m_pClientMgr->m_pFileMgr, pFileRec);
-
-	if (!pReq->m_pStream)
+	else
 	{
-		delete pModel;
+		pModel = new ModelQ474(g_MoAllocBankQ474, g_MoAllocBankQ474);
 
-		RETURN_ERROR_SYM_DESC_Q474(1, "cm_LoadChildModel", LT_MISSINGMODELFILE,
-		                           szPath);
-	}
-
-	dResult = pModel->Load(pReq->m_pStream, g_MoAllocBankQ474);
-
-	if (!dResult)
-		dResult = pModel->LoadChildModels(pReq);
-
-	pReq->m_pStream->Release();
-
-	// 0x00477392 and 0x004773b0 reach the SAME teardown, and the image keeps
-	// the second copy inline and jumps the first into it (0x004773ce `jl
-	// 0x477421` / 0x004773d0 `jmp 0x477404`).  The load test is a POSITIVE
-	// guard with its failure LAST: 0x00477394 `jne 0x4773e8` jumps forward
-	// to the final block, so the registration is the fall-through and the
-	// load failure is the trailing statement.  The registration only
-	// happens when the load worked.
-	if (!dResult)
-	{
-		// The result is DISCARDED here, where 0x00477440's copy of the same
-		// call gates on it -- 0x0047739d's return value is never tested.
-		pModel->SetFilename(szPath);
-
-		if (cm_RegisterModelQ474(pCtx->m_pClientMgr, pModel, pFileRec, LTFALSE))
+		if (!pModel)
 		{
-			delete pModel;
-
-			RETURN_ERROR_Q474(1, "cm_LoadChildModel", LT_ERROR)
+			RETURN_ERROR_Q474(1, "cm_LoadChildModel", LT_OUTOFMEMORY)
 		}
+		else
+		{
+			pReq->m_pStream = cm_OpenStreamQ474(pCtx->m_pClientMgr->m_pFileMgr, pFileRec);
 
-		*ppModel = pModel;
+			if (!pReq->m_pStream)
+			{
+				delete pModel;
 
-		return LT_OK;
+				RETURN_ERROR_SYM_DESC_Q474(1, "cm_LoadChildModel", LT_MISSINGMODELFILE,
+				                           szPath);
+			}
+			else
+			{
+				dResult = pModel->Load(pReq->m_pStream, g_MoAllocBankQ474);
+
+				if (!dResult)
+					dResult = pModel->LoadChildModels(pReq);
+
+				pReq->m_pStream->Release();
+
+				// 0x00477392 and 0x004773b0 reach the SAME teardown, and the image keeps
+				// the second copy inline and jumps the first into it (0x004773ce `jl
+				// 0x477421` / 0x004773d0 `jmp 0x477404`).  The load test is a POSITIVE
+				// guard with its failure LAST: 0x00477394 `jne 0x4773e8` jumps forward
+				// to the final block, so the registration is the fall-through and the
+				// load failure is the trailing statement.  The registration only
+				// happens when the load worked.
+				if (!dResult)
+				{
+					// The result is DISCARDED here, where 0x00477440's copy of the same
+					// call gates on it -- 0x0047739d's return value is never tested.
+					pModel->SetFilename(szPath);
+
+					if (cm_RegisterModelQ474(pCtx->m_pClientMgr, pModel, pFileRec, LTFALSE))
+					{
+						delete pModel;
+
+						RETURN_ERROR_Q474(1, "cm_LoadChildModel", LT_ERROR)
+					}
+
+					*ppModel = pModel;
+
+					return LT_OK;
+				}
+
+				delete pModel;
+
+				RETURN_ERROR_Q474(1, "cm_LoadChildModel", LT_ERROR)
+			}
+		}
 	}
-
-	delete pModel;
-
-	RETURN_ERROR_Q474(1, "cm_LoadChildModel", LT_ERROR)
 }
 
 

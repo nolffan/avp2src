@@ -162,8 +162,10 @@ public:
 	virtual LTRESULT SendTo(const void* pData, uint32 len,
 	                        const char* sAddr, uint32 port)
 	                                                      LDB_RETURN(LT_ERROR)
-	virtual void     Disconnect(NetConnection* pConn, uint32 nReason,
-	                            uint32 flags) = 0;               // 0x5c
+	// AVP2: two arguments (`ret $8` at 0x0044ab31; AvP2 1.0.9.6 0x00446ac4),
+	// NOLF's third flags word gone, as CNetMgr::Disconnect's.
+	virtual void     Disconnect(NetConnection* pConn,
+	                            uint32 nReason) = 0;             // 0x5c
 	virtual LTBOOL   SendPacket(void* pData, uint32 nLen, uint32 nUnused,
 	                            NetConnection* pConn) = 0;       // 0x60
 	virtual LTBOOL   ReceivePacket(class ServerMessage* pMsg) = 0;  // 0x64
@@ -192,8 +194,8 @@ public:
 	virtual void     Term();                 // 0x08  0x10014fcf
 	virtual void     Update();               // 0x0c  0x10015101
 	virtual void     Connect(CBaseDriver* pDriver);  // 0x10  0x10015193
-	virtual void     Disconnect(NetConnection* pConn, uint32 nReason,
-	                            uint32 flags);       // 0x5c  0x100151c1
+	virtual void     Disconnect(NetConnection* pConn,
+	                            uint32 nReason);     // 0x5c  0x100151c1
 	virtual LTBOOL   SendPacket(void* pData, uint32 nLen, uint32 nUnused,
 	                            NetConnection* pConn);  // 0x60  0x100151f0
 
@@ -368,7 +370,7 @@ void CLocalDriver::Connect(CBaseDriver* pDriver)
 }
 
 // 0x100151c1 — slot 0x5c.
-void CLocalDriver::Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags)
+void CLocalDriver::Disconnect(NetConnection* pConn, uint32 nReason)
 {
 	con_Printf("CLocalDriver::Disconnect\n");
 
@@ -443,7 +445,7 @@ void CLocalDriver::_p6c(CLocalDriver* pPeer)
 void CLocalDriver::_p70()
 {
 	if (m_pConn)
-		Disconnect(m_pConn, 1, 0);
+		Disconnect(m_pConn, 1);   // AVP2: 0x0044ac80 pushes the reason only
 }
 
 // 0x10015316 — slot 0x74. Take the peer and build the connection that rides

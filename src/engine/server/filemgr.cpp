@@ -8,6 +8,14 @@
 //
 // The file name is ours.
 #include <string.h>
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine sees the STL's <string> here, through a header
+// AvP2's does not have: the translation unit carries <string>'s 44-byte
+// guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
+// atexit of the empty 0x00401790; this one's near 0x00480250). server.dll has it
+// in collection/objbank only.
+#include <string>
+#endif
 #include <stdio.h>
 #include <io.h>
 #include "servermgr.h"
@@ -72,13 +80,16 @@ public:
 	                                         //        of the archive record's own
 	                                         //        words for a rez member
 	uint32 m_nSize;                          // 0x108
-	void*  m_pCursor;                        // 0x10c  null starts a new walk
 #ifdef PRIMAL_HUNT
 	// PH: 0x104 more bytes (MAX_PATH), which no walk reconstructed so far
 	// reads: every PH frame holding one is 0x214 where AvP2's is 0x110
-	// (fs_FindFileInTrees, 0x10037836; fs_GetFileInfo, 0x10037780).
-	char   m_Unknown110[0x104];              // 0x110
+	// (fs_FindFileInTrees, 0x10037836; fs_GetFileInfo, 0x10037780). They
+	// sit BEFORE the cursor: PH's ar_FindNext reads and clears it at +0x210
+	// (lithtech.exe 0x00429d7b, 0x00429e27).
+	char   m_Unknown10c[0x104];              // 0x10c
 #endif
+	void*  m_pCursor;                        // 0x10c (PH 0x210)  null starts
+	                                         //        a new walk
 };
 
 // 0x10013870 — is this name already on the list being built? Compares against
@@ -331,7 +342,12 @@ LTBOOL ar_FindNext(void* pTree, char* pDirName, CFileFindState* pState)
 
 			if (!pWalk)
 			{
-				sprintf(szPath, "%s\\%s\\*.*", pRec->m_szDir, pDirName);
+				// AVP2: a directory written with forward slashes keeps them,
+				// as fs_BuildFileList's does (lithtech.exe 0x00429d8c).
+				if (strstr(pDirName, "/"))
+					sprintf(szPath, "%s/%s/*.*", pRec->m_szDir, pDirName);
+				else
+					sprintf(szPath, "%s\\%s\\*.*", pRec->m_szDir, pDirName);
 
 				pWalk = (CFileWalk*)dalloc(sizeof(CFileWalk));
 
@@ -411,10 +427,10 @@ LTBOOL ar_FindNext(void* pTree, char* pDirName, CFileFindState* pState)
 
 				pState->m_pCursor = pWalk;
 
+				pWalk->m_pTree = pRec;
 				pWalk->m_pDir = pDir;
 				pWalk->m_pTyp = pTyp;
 				pWalk->m_pItm = pItm;
-				pWalk->m_pTree = pRec;
 				pWalk->m_pSubDir = pSubDir;
 			}
 			else

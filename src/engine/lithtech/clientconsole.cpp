@@ -758,6 +758,12 @@ class CConsoleLine
 {
 public:
 	CConsoleLine();                                    // 0x0041bb30
+	// An empty destructor, declared: it generates no code, but under Primal
+	// Hunt's /GX it is one more unwind state in CConsoleView's constructor
+	// and destructor (states 0..3 at lithtech.exe 0x0042346e/0x004234dc and
+	// 0x0042357f/0x00423598/0x004235c6, the critical section destroyed at
+	// state 0 with this line still live).
+	~CConsoleLine() {}
 	void Clear();                                      // 0x0041bb90
 	void SetText(char* pText);                         // 0x0041bba0
 	void MoveCursor(int nDelta);                       // 0x0041bd30
@@ -1848,12 +1854,21 @@ void cc_ShowGameVars(int argc, char** argv)
 // The float arguments are promoted to double for the variadic call (`flds`
 // then `fstpl`), and the two vectors are at 0x004b3228 and 0x004b3218 -- the
 // second one printed is the LOWER address.
+//
+// AVP2: a third line, the world-model ambient ccclient.cpp's "WMAmbient"
+// sets (Primal Hunt 0x00425ca7, AvP2 1.0.9.6 0x0042354b).
+extern float g_fWMAmbientR;                                   // 0x004f4830
+extern float g_fWMAmbientG;                                   // 0x004f4834
+extern float g_fWMAmbientB;                                   // 0x004f4838
+
 void cc_SaveModelVars(FILE* pFile)
 {
 	fprintf(pFile, "ModelAdd %f %f %f\n",
 	        g_ModelAdd.x, g_ModelAdd.y, g_ModelAdd.z);
 	fprintf(pFile, "ModelDirAdd %f %f %f\n",
 	        g_ModelDirAdd.x, g_ModelDirAdd.y, g_ModelDirAdd.z);
+	fprintf(pFile, "WMAmbient %f %f %f\n",
+	        g_fWMAmbientR, g_fWMAmbientG, g_fWMAmbientB);
 }
 
 

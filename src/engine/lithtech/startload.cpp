@@ -1204,7 +1204,13 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 
 	if (m_pClientShell2)                                            // 0x0041006a
 	{
-		CMsgHoldQ2B cMsg(msg_StartWriteQ2B(0x1000, 0x1000).m_pMsg); // 0x00410081
+		// AVP2: 0x44c (Primal Hunt 0x004118ad).  Primal Hunt also declares
+		// the holder empty at the top of the function (0x004114c9 nulls it
+		// and sets EH state 0 before Disconnect) and assigns it here, with
+		// the holder kept in %edi so that the early error returns skip its
+		// Release; written that way here the holder stays in memory and
+		// every RETURN_ERROR grows a Release (1661 bytes against 1419).
+		CMsgHoldQ2B cMsg(msg_StartWriteQ2B(0x44c, 0x44c).m_pMsg);   // 0x00410081
 
 		cMsg.m_pMsg->WriteType((uint16)pRequest->m_ClientDataLen);  // 0x004100a3
 		((IPacketRefQ2B*)cMsg.m_pMsg)->WriteData(pRequest->m_pClientData,

@@ -94,31 +94,64 @@ LTRESULT CommonPhysicsLT::SetObjectMass(HOBJECT hObj, float mass)
 	return LT_OK;
 }
 
+// AVP2: the polygon's plane is reached through its owner record, which
+// carries the plane pointer itself at +0x28 and a gating dword at +0x2c: a
+// null owner, a zero +0x2c or a null plane all mean "no plane" (server.dll
+// 0x10017aa0..0x10017ab1 is the inline answering null; Primal Hunt
+// 0x004411a4..0x004411b4 and AvP2 1.0.9.6 0x0043d454..0x0043d464 fold it into
+// the caller's test). ltobject_internal.h still has NOLF's owner layout (the
+// BSP data at +0x28, the plane behind it), so this file reads the AvP2 one
+// through a view (names ours).
+class CPolyOwnerViewQ512
+{
+public:
+	uint8    m_pad_00[0x28];
+	LTPlane* m_pPlane;                       // +0x28
+	uint32   m_Unknown2c;                    // +0x2c
+};
+
+inline LTPlane* poly_GetPlaneQ512(WorldPoly* pPoly)
+{
+	CPolyOwnerViewQ512* pOwner = (CPolyOwnerViewQ512*)pPoly->m_pOwner;
+
+	if (pOwner && pOwner->m_Unknown2c)
+		return pOwner->m_pPlane;
+
+	return LTNULL;
+}
+
 // The engine keeps the standing-on contact as an object plus, for world
 // geometry, the polygon underfoot. For anything else the contact plane is
 // synthesized as the flat top of the object's bounding box.
+//
+// AVP2: the contact object and polygon are cleared up front (Primal Hunt
+// 0x00441185/0x00441188), and a polygon without a plane leaves them so.
 LTRESULT CommonPhysicsLT::GetStandingOn(HOBJECT hObj, CollisionInfo* pInfo)
 {
 	if (!hObj || !pInfo)
 		RETURN_ERROR(2, "ILTPhysics::GetStandingOn", LT_INVALIDPARAMS);
 
-	pInfo->m_vStopVel.x = 0.0f;
-	pInfo->m_vStopVel.y = 0.0f;
-	pInfo->m_vStopVel.z = 0.0f;
+	pInfo->m_vStopVel.Init();
+	pInfo->m_hObject = LTNULL;
+	pInfo->m_hPoly = INVALID_HPOLY;
 
 	LTObject* pStanding = hObj->m_pStandingOn;
 	if (pStanding)
 	{
 		if (hObj->m_pStandingOnPoly)
 		{
-			pInfo->m_Plane = *hObj->m_pStandingOnPoly->GetPlane();
-			pInfo->m_hObject = pStanding;
+			LTPlane* pPlane = poly_GetPlaneQ512(hObj->m_pStandingOnPoly);
 
-			if (pStanding->m_ObjectType == OT_WORLDMODEL ||
-			    pStanding->m_ObjectType == OT_CONTAINER)
+			if (pPlane)
 			{
-				pInfo->m_hPoly = pStanding->MakeHPoly(hObj->m_pStandingOnPoly);
-				return LT_OK;
+				pInfo->m_Plane = *pPlane;
+				pInfo->m_hObject = pStanding;
+
+				if (pStanding->m_ObjectType == OT_WORLDMODEL ||
+				    pStanding->m_ObjectType == OT_CONTAINER)
+				{
+					pInfo->m_hPoly = pStanding->MakeHPoly(hObj->m_pStandingOnPoly);
+				}
 			}
 		}
 		else
@@ -129,15 +162,6 @@ LTRESULT CommonPhysicsLT::GetStandingOn(HOBJECT hObj, CollisionInfo* pInfo)
 			pInfo->m_Plane.m_Dist = pStanding->m_Dims.y + pStanding->m_Pos.y;
 			pInfo->m_hObject = pStanding;
 		}
-
-		pInfo->m_hPoly = INVALID_HPOLY;
-	}
-	else
-	{
-		// The null case is the `else` of a positive test, not an early
-		// return: reached by a taken branch, VC6 no longer knows a zero
-		// register is live and clears the field with `and [mem],0`.
-		pInfo->m_hObject = LTNULL;
 	}
 
 	return LT_OK;
@@ -152,10 +176,14 @@ LTRESULT CommonPhysicsLT::GetObjectDims(HOBJECT hObj, LTVector* pDims)
 	return LT_OK;
 }
 
+// AVP2: world flag 8 counts as well as the main-world flag, each tested
+// through its own GetWorldFlags call (Primal Hunt 0x00441260, AvP2 1.0.9.6
+// 0x0043d510: `test $0x4,%al; jne` then the second call and `test $0x8`).
 LTRESULT CommonPhysicsLT::IsWorldObject(HOBJECT hObj)
 {
 	if (hObj && hObj->m_ObjectType == OT_WORLDMODEL &&
-	    (hObj->m_pWorldBsp->GetWorldFlags() & WORLDFLAG_MAINWORLD))
+	    ((hObj->m_pWorldBsp->GetWorldFlags() & WORLDFLAG_MAINWORLD) ||
+	     (hObj->m_pWorldBsp->GetWorldFlags() & 8)))
 	{
 		return LT_YES;
 	}
@@ -313,14 +341,22 @@ LTRESULT SPhysicsLT::SetAcceleration(HOBJECT hObj, LTVector* pAccel)
 	return LT_OK;
 }
 
-// The flags argument is accepted and ignored; the simulation is always asked
-// for the same 7.
+// AVP2: the flags argument is translated, where NOLF always asked the
+// simulation for 7: bit 0 widens it to 0xf and bit 1 adds 0x20 (Primal Hunt
+// 0x00480997..0x004809ab, AvP2 1.0.9.6 0x00479c17..0x00479c2b, AvP2
+// server.dll 0x10036914..0x10036926).
 LTRESULT SPhysicsLT::MoveObject(HOBJECT hObj, LTVector* pPos, uint32 flags)
 {
 	if (!hObj)
 		RETURN_ERROR(1, "ILTPhysics::MoveObject", LT_INVALIDPARAMS);
 
-	sm_MoveObject(m_pWorld, hObj, pPos, 7);
+	uint32 nMoveFlags = 7;
+	if (flags & 1)
+		nMoveFlags = 0xf;
+	if (flags & 2)
+		nMoveFlags |= 0x20;
+
+	sm_MoveObject(m_pWorld, hObj, pPos, nMoveFlags);
 	return LT_OK;
 }
 
@@ -517,14 +553,15 @@ void sm_MoveObject(IWorldSim* pWorld, HOBJECT hObj, LTVector* pPos, uint32 flags
 {
 	g_Unknown58728++;
 
-	// PROBE: the shipped client's copy of this function (lithtech 0x0047c5b0)
-	// has no CountAdder at all -- no ctor, no cnt_StartCounter, no dtor, and a
-	// frame exactly 12 bytes smaller (the counter's 8 plus m_pTotal). The
-	// server's (0x1001fb22) has all three. Same shared TU, so a build-level
-	// selector, not a sibling file.
-#ifdef LT_SERVER_TIMERS
+	// AVP2: the client's copy keeps the CountAdder too (ctor, cnt_StartCounter
+	// and the add-back at Primal Hunt 0x004989c5/0x004989d1/0x00498a84, AvP2
+	// 1.0.9.6 0x0048f144/0x0048f156), where NOLF's lithtech.exe (0x0047c5b0)
+	// had none and a frame 12 bytes smaller.
+	//
+	// NEAR on Primal Hunt (0x004989b0, 250 bytes): the shipped record is
+	// 0x6c bytes, not servermgr.h's 0x68 -- a dword at +0x68 cleared with
+	// +0x64 (0x00498a42/0x00498a49) -- so the frame is 0x78 against ours.
 	CountAdder  cntAdder((uint32*)&g_Unknown5872c);
-#endif
 	WMMoveState state;
 	CServerMgr* pMgr = (CServerMgr*)pWorld;
 

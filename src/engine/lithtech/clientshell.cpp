@@ -103,10 +103,14 @@ public:
 void sb_Init(StructBankView* pBank, uint32 nStructSize, uint32 nCacheSize);
 void sb_FreeChunks(StructBankView* pBank, int bAll);           // 0x00490bd0
 
+// AVP2: with servermgr.h's null tests, record first (0x00416803).
 inline void sb_Free(StructBankView* pBank, void* pStruct)
 {
-	*(void**)pStruct = pBank->m_pFreeList;
-	pBank->m_pFreeList = pStruct;
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
 }
 
 // src/engine/lithtech/clientconsole.cpp names all three (src/engine/server/
@@ -365,15 +369,19 @@ public:
 	void  Update(char* pPrefix, uint32 nUnknown, int nFlag);    // 0x00455790
 	// ("local") -> the connection object the shell keeps at +0x30.
 	class CConnObj* Connect(char* pDriverName);                 // 0x00456010
-	// (m_nConnID, 0, 0) from Term.
-	void  Disconnect(uint32 nConnID, uint32 n2, uint32 n3);     // 0x00456320
+	// (m_nConnID, 0) from Term.
+	// AVP2: two arguments, not NOLF's three (`push 0; push id` at
+	// 0x0041677c here, AvP2 1.0.9.6's 0x00414a56).
+	void  Disconnect(uint32 nConnID, uint32 n2);                // 0x00468ca0
 	// (&pClientMgr->m_NetMgr.m_Unknownf0) from CreateServerMgr — the server
 	// manager's net manager is handed something out of the client's.
 	void  Sub459ac0(void* p);                                   // 0x00459ac0
 	// servermgr.h's CNetMgr packet pump, at the client's addresses.
 	void   StartGettingPackets();                               // 0x004563e0
 	void   EndGettingPackets();                                 // 0x004563f0
-	LTBOOL GetPacket(class ILTMessageView* pMsg);               // 0x00457840
+	// AVP2: a second argument NOLF's had not -- every caller pushes 1
+	// (0x00497ddd here; AvP2 1.0.9.6's 0x0048e7b7).  (name ours)
+	LTBOOL GetPacket(class ILTMessageView* pMsg, LTBOOL bUnknown); // 0x00468d80
 	// (msg, connection id, 0x80) from CClientShell::Sub47bbb0.
 	LTBOOL SendToConnection(class ILTMessageView* pMsg, uint32 nConnID,
 	                        uint32 nFlags);                     // 0x00456360
@@ -425,15 +433,18 @@ public:
 	virtual void _p0c()=0; virtual void _p10()=0; virtual void _p14()=0;
 	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
 	virtual void _p24()=0; virtual void _p28()=0; virtual void _p2c()=0;
-	virtual void PreUpdate()=0;                                 // 0x30
-	virtual void Update()=0;                                    // 0x34
-	virtual void PostUpdate()=0;                                // 0x38
+	// AVP2: as Primal Hunt -- two more slots than NOLF's, and they come
+	// before the update trio: Update calls +0x38, +0x3c and +0x40
+	// (0x0041730c, 0x00417313, 0x00417408; AvP2 1.0.9.6's 0x004153c1),
+	// and the disconnect notification +0x54 (0x00493992).
+	virtual void _pX30()=0; virtual void _pX34()=0;
+	virtual void PreUpdate()=0;                                 // 0x38
+	virtual void Update()=0;                                    // 0x3c
+	virtual void PostUpdate()=0;                                // 0x40
 	virtual void _p3c()=0; virtual void _p40()=0; virtual void _p44()=0;
 	virtual void _p48()=0;
-	// AVP2: as Primal Hunt (PH addresses) -- two more slots before this one (0x00493992 calls +0x54).
-	virtual void _pX4c()=0; virtual void _pX50()=0;
 	// (1, 0) from CClientShell's disconnect notification.
-	virtual void OnEvent(uint32 nEvent, uint32 nParam)=0;       // 0x4c
+	virtual void OnEvent(uint32 nEvent, uint32 nParam)=0;       // 0x54
 };
 
 // The record 0x00413b40 walks.  Every field is a shipped displacement.
@@ -896,7 +907,9 @@ public:
 	CSub2a0    m_Sub2a0;                                       // 0x2a0
 	CArray32c  m_Array32c;                                     // 0x32c
 	CArray340  m_Array340;                                     // 0x340
-	uint8      m_pad_354[0x390 - 0x354];
+	// AVP2: the object manager follows at 0x394, not NOLF's 0x390
+	// (servermgr.h; lea 0x394 at 0x00416a12 in CreateServerMgr).
+	uint8      m_pad_354[0x394 - 0x354];
 };
 
 // 0x390: one object with its own out-of-line constructor (0x0045a470, which
@@ -954,17 +967,25 @@ DECLARE_OPAQUE_BOTH(CClassMgrView, 0x8dc - 0x80c);             // 0x00402810 / 0
 DECLARE_OPAQUE_BOTH(CSubA14, 0xa2c - 0xa14);                   // 0x00490f60 / 0x00490fe0
 DECLARE_OPAQUE_BOTH(CThreadView, 0xb2c - 0xac4);               // 0x0047bec0 / 0x004445a0
 
-// 0x8fc: constructed out of line, torn down inline like a collection.
-class CSub8fc
+// 0x8fc: servermgr.h's object map, CUnknown8FC -- collection.h's
+// CMoArray over an eight-byte record, 0x14 bytes, and not a look-alike of
+// it.  Its constructor is the template's, called out of line (0x004189a0:
+// vptr 0x004d4e44, Clear's four zero stores, Init), and the destructor
+// below expands ~CMoArray -> Term -> SetSize2(0, &g_DefAlloc) inline: the
+// m_pArray test, the _DeleteAndDestroyArray call (0x0040d020) and the
+// m_nElements store at 0x00416c8a.
+class CObjectMapEntryQ514
 {
 public:
-	CSub8fc();                                                 // 0x00414b20
-	~CSub8fc() { Term(); }                                     // 0x00415050
+	uint8  m_nFlags;                                           // +0x00
+	uint8  m_pad_01[0x04 - 0x01];
+	void*  m_pRecord;                                          // +0x04
+};
 
-	void  Term() { SetSize2(0, &g_DefAlloc); }
-	int   SetSize2(uint32 nNewSize, LAlloc* pAlloc);
-	virtual void _g00();
-	uint8 m_pad_04[0x30 - 0x04];
+class CObjectMapQ514 : public CMoArray<CObjectMapEntryQ514>
+{
+public:
+	CObjectMapQ514();                                          // 0x004189a0
 };
 
 // 0xa2c: servermgr.h's CFileMgr.  Its constructor is out of line and its
@@ -1075,10 +1096,13 @@ public:
 	LTList            m_List54;                                // 0x054
 	uint8             m_pad_64[0x1a4 - 0x64];
 	CWorld1a4         m_World;                                 // 0x1a4
-	CSub390           m_Sub390;                                // 0x390
-	uint8             m_pad_584[0xa74 - 0x584];
+	CSub390           m_Sub390;                                // 0x394
+	uint8             m_pad_588[0xa74 - 0x588];
 	CForceControlView m_ForceControl;                          // 0xa74
 	CNetMgrView       m_NetMgr;                                // 0xaec
+	// AVP2: servermgr.h's dword after the net manager (m_Unknownbf0); the
+	// client list's head is `lea 0xbf8` at 0x00416a5b.
+	uint32            m_Unknownbf0;                            // 0xbf0
 	LTList            m_ClientList;                            // 0xbf4
 	uint32            m_Unknown7f4;                            // 0xc04
 	uint32            m_Unknown7f8;                            // 0xc08
@@ -1088,7 +1112,8 @@ public:
 	CClassMgrView     m_ClassMgr;                              // 0xc1c
 	CListCall         m_List8dc;                               // 0xcec
 	CListCall         m_List8ec;                               // 0xcfc
-	CSub8fc           m_Sub8fc;                                // 0xd0c
+	CObjectMapQ514    m_ObjectMap;                             // 0xd0c
+	uint8             m_pad_d20[0xd3c - 0xd20];
 	CSub92c           m_SkyDef;                                // 0xd3c
 	CMessageBankView  m_MessageBank;                           // 0xe00
 	CSubA14           m_SubA14;                                // 0xe24
@@ -1210,7 +1235,7 @@ void CClientShell::Term()
 	if (m_pClientMgr->m_NetMgr.m_Unknown30 > 0)
 		Sub47bbb0();
 
-	m_pClientMgr->m_NetMgr.Disconnect(m_nConnID, 0, 0);
+	m_pClientMgr->m_NetMgr.Disconnect(m_nConnID, 0);
 
 	m_nConnID = 0;
 	m_pClientMgr->m_NetMgr.m_pShell = LTNULL;
@@ -1475,6 +1500,64 @@ void cs_UpdateAttachPositions(CClientShell* pShell);                // 0x00413b4
 //  CONFIDENCE: MEDIUM -- everything but that one compare is off the bytes.
 // ======================================================================= //
 
+// AVP2: the update is timed.  Each stage runs inside one or two scoped
+// counters -- servermgr.h's CountAdder, whose destructor this TU expands
+// (`push &counter; call cnt_EndCounter; add %eax,(*m_pTotal)` at
+// 0x00417014, and at every exit): CBaseCounter(0) called (0x00426060),
+// the total stored, cnt_StartCounter (0x00426150).  The inner totals are
+// the counter table's "  Net", "  Server", "  ProcessPackets" and
+// "  GameClientShell" (0x0043610e..0x0043616b); the outer ones are three
+// zero-initialised .data dwords nothing else in the image references
+// (0x004efe80, 0x004efd54, 0x004efeec).  AvP2 1.0.9.6 has the same
+// (0x004150e0, without exception frames).  (names ours)
+class CBaseCounter
+{
+public:
+	CBaseCounter(int nMode);                 // 0x00426060
+
+	void   Start();
+	uint32 Read();
+	uint32 ReadRaw();
+
+	uint32 m_Data[2];
+};
+void   cnt_StartCounter(CBaseCounter* pCounter);               // 0x00426150
+uint32 cnt_EndCounter(CBaseCounter* pCounter);                 // 0x00426160
+
+class CountAdderQ514
+{
+public:
+	CountAdderQ514(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+
+	~CountAdderQ514()
+	{
+		*m_pTotal += cnt_EndCounter(&m_Counter);
+	}
+
+	CBaseCounter m_Counter;                  // 0x00
+	uint32*      m_pTotal;                   // 0x08
+};
+
+// collelem.cpp's counter table entries.
+extern uint32 g_nCntNetQ428, g_nCntServerQ428, g_nCntProcessPacketsQ428;
+extern uint32 g_nCntGameClientShellQ428;
+
+uint32 g_nTicks4efd54Q514 = 0;                                 // 0x004efd54
+uint32 g_nTicks4efe80Q514 = 0;                                 // 0x004efe80
+uint32 g_nTicks4efeecQ514 = 0;                                 // 0x004efeec
+
+// NEAR (1265 of 1256 bytes, 0x00416f90..0x00417477; the enumeration's
+// 983 stops at a phantom start, 0x00417367): every call, push and frame
+// slot agrees.  What is left is scheduling: the two arguments of the
+// CNetMgr and server updates are pushed before `this` is formed in
+// shipped and after it in ours, and on the three early exits shipped
+// adds the first counter's ticks straight into memory (`add %eax,(%ecx)`)
+// where ours loads, adds and stores.  Tried: the destructor's sum through
+// a named local.
 LTRESULT CClientShell::Update()
 {
 	char               errorString[256];
@@ -1486,36 +1569,50 @@ LTRESULT CClientShell::Update()
 
 	pClientShell = m_pClientMgr->m_pClientShell;
 
-	m_pClientMgr->m_NetMgr.Update("Client: ", m_pClientMgr->m_Unknown125c, 1);
-
-	if (m_pServerMgr && g_nUnknown4a9efc)
 	{
-		bPaused = LTFALSE;
+		CountAdderQ514 cNet(&g_nCntNetQ428);
 
-		if (!dsi_IsClientActive())
+		m_pClientMgr->m_NetMgr.Update("Client: ", m_pClientMgr->m_Unknown125c, 1);
+	}
+
+	{
+		CountAdderQ514 cTicks(&g_nTicks4efe80Q514);
+		CountAdderQ514 cServer(&g_nCntServerQ428);
+
+		if (m_pServerMgr && g_nUnknown4a9efc)
 		{
-			pVar = con_FindVar(&g_ClientConsoleState, "alwaysfocused");
+			bPaused = LTFALSE;
 
-			if (!pVar || pVar->m_FloatVal != 1.0f)
-				bPaused = LTTRUE;
-		}
+			if (!dsi_IsClientActive())
+			{
+				pVar = con_FindVar(&g_ClientConsoleState, "alwaysfocused");
 
-		if (!m_pServerMgr->Update(bPaused, m_pClientMgr->m_Unknown125c))
-		{
-			m_pServerMgr->GetErrorString(errorString, 256);
-			m_pClientMgr->SetupError(LT_SERVERERROR, errorString);
+				if (!pVar || pVar->m_FloatVal != 1.0f)
+					bPaused = LTTRUE;
+			}
 
-			RETURN_ERROR_SYM_DESC(1, "CClientShell::Update",
-			                      LT_SERVERERROR|ERROR_DISCONNECT, errorString)
+			if (!m_pServerMgr->Update(bPaused, m_pClientMgr->m_Unknown125c))
+			{
+				m_pServerMgr->GetErrorString(errorString, 256);
+				m_pClientMgr->SetupError(LT_SERVERERROR, errorString);
+
+				RETURN_ERROR_SYM_DESC(1, "CClientShell::Update",
+				                      LT_SERVERERROR|ERROR_DISCONNECT, errorString)
+			}
 		}
 	}
 
 	m_Unknown1c = 0.0f;
 
-	dResult = Sub47bab0();
+	{
+		CountAdderQ514 cTicks(&g_nTicks4efd54Q514);
+		CountAdderQ514 cPackets(&g_nCntProcessPacketsQ428);
 
-	if (dResult)
-		return dResult | ERROR_DISCONNECT;
+		dResult = Sub47bab0();
+
+		if (dResult)
+			return dResult | ERROR_DISCONNECT;
+	}
 
 	m_Unknown1c = m_Unknown18 - m_Unknown14;
 	m_Unknown14 = m_Unknown18;
@@ -1523,25 +1620,37 @@ LTRESULT CClientShell::Update()
 	if (dsi_IsClientActive())
 		sub_461270(this);
 
-	pClientShell->PreUpdate();
-	pClientShell->Update();
-
-	if (this == g_pClientMgr->m_pClientShell2 ||
-	    this == (CClientShell*)g_pClientMgr->m_pClientShell)
 	{
-		if (dsi_IsClientActive())
-		{
-			m_pClientMgr->Sub415bb0();
-			cs_UpdateAttachPositions(this);
-		}
+		CountAdderQ514 cTicks(&g_nTicks4efeecQ514);
+		CountAdderQ514 cGame(&g_nCntGameClientShellQ428);
+
+		pClientShell->PreUpdate();
+		pClientShell->Update();
+
+		// Tested while the counters are still live: both counters'
+		// destructors are expanded into each arm (0x0041732b, 0x00417361).
+		if (this != g_pClientMgr->m_pClientShell2 &&
+		    this != (CClientShell*)g_pClientMgr->m_pClientShell)
+			return LT_OK;
+	}
+
+	if (dsi_IsClientActive())
+	{
+		m_pClientMgr->Sub415bb0();
+		cs_UpdateAttachPositions(this);
+	}
+
+	{
+		CountAdderQ514 cTicks(&g_nTicks4efeecQ514);
+		CountAdderQ514 cGame(&g_nCntGameClientShellQ428);
 
 		pClientShell->PostUpdate();
-
-		hObject = Sub47bcd0();
-
-		if (hObject && m_Unknown88 != hObject)
-			m_Unknown88 = hObject;
 	}
+
+	hObject = Sub47bcd0();
+
+	if (hObject && m_Unknown88 != hObject)
+		m_Unknown88 = hObject;
 
 	return LT_OK;
 }
@@ -1576,14 +1685,61 @@ LTRESULT CClientShell::Update()
 //  CONFIDENCE: MEDIUM.
 // ======================================================================= //
 
+// AVP2: the walk was rewritten.  The record's three vectors are at 0x00,
+// 0x0c and 0x18 and its first node at 0x38; the callback's answer is no
+// longer tested; and each node is a poly whose texture coordinates are
+// recomputed in place from the moved P and Q (0x00417558..0x00417656 here,
+// AvP2 1.0.9.6's 0x004155xx), where NOLF called sub_421fc0 per node.
+// (names ours)
+class CUVVertex
+{
+public:
+	LTVector* m_pVec;                                           // 0x00
+	float     m_U;                                              // 0x04
+	float     m_V;                                              // 0x08
+	uint8     m_pad_0c[0x18 - 0x0c];
+};
+
+class CUVPolyQ514
+{
+public:
+	uint32 GetNumVertices()
+	{
+		if (m_pVertices != m_Vertices)
+			return m_nVertices + m_nExtraVertices;
+		return m_nVertices;
+	}
+
+	uint8       m_pad_00[0x44];
+	uint16      m_nNextNode;                                    // 0x44
+	uint8       m_pad_46[0x50 - 0x46];
+	CUVVertex*  m_pVertices;                                    // 0x50
+	uint16      m_nVertices;                                    // 0x54
+	uint16      m_nExtraVertices;                               // 0x56
+	CUVVertex   m_Vertices[1];                                  // 0x58
+};
+
+class CPosRecQ514
+{
+public:
+	LTVector m_O;                                               // 0x00
+	LTVector m_P;                                               // 0x0c
+	LTVector m_Q;                                               // 0x18
+	uint8    m_pad_24[0x38 - 0x24];
+	uint16   m_nFirstNode;                                      // 0x38
+};
+
 void cs_UpdateAttachPositions(CClientShell* pShell)
 {
 	CClientMgrView* pClientMgr;
 	CRecF4*         pCur;
-	CPosRec*        pRec;
+	CPosRecQ514*    pRec;
 	CNodeOwner*     pOwner;
-	CPosRec*        pNode;
+	CUVPolyQ514*    pPoly;
+	CUVVertex*      pVert;
+	CUVVertex*      pEnd;
 	CPosRequest     request;
+	float           fP, fQ;
 	uint16          nNode;
 
 	pClientMgr = pShell->m_pClientMgr;
@@ -1591,32 +1747,42 @@ void cs_UpdateAttachPositions(CClientShell* pShell)
 
 	while (pCur)
 	{
-		pRec   = pCur->m_pRec;
+		pRec   = (CPosRecQ514*)pCur->m_pRec;
 		pOwner = pCur->m_pOwner;
 
-		request.m_Vec00      = pRec->m_Vec04;
-		request.m_Vec0c      = pRec->m_Vec10;
-		request.m_Vec18      = pRec->m_Vec1c;
+		request.m_Vec00      = pRec->m_O;
+		request.m_Vec0c      = pRec->m_P;
+		request.m_Vec18      = pRec->m_Q;
 		request.m_pClientMgr = pClientMgr;
 		request.m_pOwner     = pOwner;
-		request.m_pRec       = pRec;
+		request.m_pRec       = (CPosRec*)pRec;
 
-		if (pCur->m_pCallbacks->m_pGetPos(&request, pCur->m_Unknown08) == 1)
+		pCur->m_pCallbacks->m_pGetPos(&request, pCur->m_Unknown08);
+
+		pRec = (CPosRecQ514*)pCur->m_pRec;
+
+		pRec->m_O = request.m_Vec00;
+		pRec->m_P = request.m_Vec0c;
+		pRec->m_Q = request.m_Vec18;
+
+		fP = request.m_Vec00.Dot(request.m_Vec0c);
+		fQ = request.m_Vec18.Dot(request.m_Vec00);
+
+		nNode = pRec->m_nFirstNode;
+
+		while (nNode != 0xffff)
 		{
-			pCur->m_pRec->m_Vec04 = request.m_Vec00;
-			pCur->m_pRec->m_Vec10 = request.m_Vec0c;
-			pCur->m_pRec->m_Vec1c = request.m_Vec18;
+			pPoly = (CUVPolyQ514*)pCur->m_pOwner->m_pNodes[nNode];
 
-			nNode = pCur->m_pRec->m_nNextNode;
-
-			while (nNode != 0xffff)
+			pVert = pPoly->m_Vertices;
+			pEnd  = pVert + pPoly->GetNumVertices();
+			for (; pVert != pEnd; pVert++)
 			{
-				pNode = pCur->m_pOwner->m_pNodes[nNode];
-
-				sub_421fc0(pNode);
-
-				nNode = pNode->m_nNextNode;
+				pVert->m_U = pVert->m_pVec->Dot(pRec->m_P) - fP;
+				pVert->m_V = pVert->m_pVec->Dot(pRec->m_Q) - fQ;
 			}
+
+			nNode = pPoly->m_nNextNode;
 		}
 
 		pCur = pCur->m_pNext;
@@ -1658,12 +1824,25 @@ void cs_UpdateAttachPositions(CClientShell* pShell)
 class CMsgHold
 {
 public:
-	CMsgHold(ILTMessageView* pMsg)
+	// AVP2: the holder is default-constructed (its slot zeroed and its EH
+	// state entered BEFORE the call, 0x00497d7d / 0x00497ecc) and then
+	// assigned from the returned temporary.
+	CMsgHold()
 	{
-		m_pMsg = pMsg;
+		m_pMsg = 0;
+	}
+
+	CMsgHold& operator=(const CMsgRef& other)
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
 
 		if (m_pMsg)
 			m_pMsg->AddRef();
+
+		return *this;
 	}
 
 	~CMsgHold()
@@ -1677,7 +1856,8 @@ public:
 
 void CClientShell::SendMessage0A(uint32 nData)
 {
-	CMsgHold cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
+	CMsgHold cMsg;
+	cMsg = msg_StartWrite(0x44c, 0x44c);
 
 	cMsg.m_pMsg->m_pData[0] = 10;
 	cMsg.m_pMsg->WriteDWord(nData);
@@ -1868,14 +2048,16 @@ void sub_004041d0(void* pFileMgr, ILTMessageView* pMsg);       // 0x004041d0
 
 LTRESULT CClientShell::Sub47bab0()
 {
-	CMsgHold              cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
+	CMsgHold              cMsg;
 	LTRESULT              dResult;
 	uint8                 nPacketID;
 	ClientPacketHandlerFn pHandler;
 
+	cMsg = msg_StartWrite(0x44c, 0x44c);
+
 	m_pClientMgr->m_NetMgr.StartGettingPackets();
 
-	while (m_pClientMgr->m_NetMgr.GetPacket(cMsg.m_pMsg))
+	while (m_pClientMgr->m_NetMgr.GetPacket(cMsg.m_pMsg, LTTRUE))
 	{
 		{
 			uint8* pID = &nPacketID;
@@ -1905,7 +2087,8 @@ LTRESULT CClientShell::Sub47bab0()
 
 void CClientShell::Sub47bbb0()
 {
-	CMsgHold cMsg(msg_StartWrite(0x1000, 0x1000).m_pMsg);
+	CMsgHold cMsg;
+	cMsg = msg_StartWrite(0x44c, 0x44c);
 
 	if (m_nConnID)
 	{
@@ -1943,15 +2126,6 @@ public:
 	LTVector m_O;                                               // 0x04
 	LTVector m_P;                                               // 0x10
 	LTVector m_Q;                                               // 0x1c
-};
-
-class CUVVertex
-{
-public:
-	LTVector* m_pVec;                                           // 0x00
-	float     m_U;                                              // 0x04
-	float     m_V;                                              // 0x08
-	uint8     m_pad_0c[0x18 - 0x0c];
 };
 
 class CUVPoly
@@ -2027,7 +2201,14 @@ void sub_421fc0(void* pNode)
 // StructBank of 0x54-byte records, 0x20 to a block.  The vptr store sits
 // between the argument pushes (0x004a1dac, the table whose Init is
 // 0x00415210 and whose deleting destructor is 0x00415270).
+// The bank's record is the message object, which grew twice after NOLF's
+// 0x54: AVP2: 0x5c (AvP2 1.0.9.6's lithtech.exe 0x00416e10 and server.dll
+// 0x100355bb push 0x5c); PH: 0x60 (0x00418cc2 here, server.dll 0x10038c7f).
 CMessageBankView::CMessageBankView()
 {
-	sb_Init(&m_Bank, 0x54, 0x20);
+#ifdef PRIMAL_HUNT
+	sb_Init(&m_Bank, 0x60, 0x20);
+#else
+	sb_Init(&m_Bank, 0x5c, 0x20);
+#endif
 }

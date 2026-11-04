@@ -872,6 +872,21 @@ public:
 class CMsgRefQ411
 {
 public:
+	CMsgRefQ411() { m_pMsg = LTNULL; }
+
+	CMsgRefQ411& operator=(const CMsgRefQ411& other)
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			m_pMsg->AddRef();
+
+		return *this;
+	}
+
 	CMsgRefQ411(const CMsgRefQ411& other)
 	{
 		m_pMsg = other.m_pMsg;
@@ -889,31 +904,21 @@ public:
 	CClientMsgQ411* m_pMsg;                                         // 0x00
 };
 
-class CMsgHoldQ411
-{
-public:
-	CMsgHoldQ411(CClientMsgQ411* pMsg)
-	{
-		m_pMsg = pMsg;
-
-		if (m_pMsg)
-			m_pMsg->AddRef();
-	}
-
-	~CMsgHoldQ411()
-	{
-		if (m_pMsg)
-			m_pMsg->Release();
-	}
-
-	CClientMsgQ411* m_pMsg;                                         // 0x00
-};
-
 CMsgRefQ411 msg_StartWriteQ411(uint32 nMaxSize, uint32 nSize);      // 0x0045c080
 
 CClientMsgQ411* CClientMgrView::StartMessage()
 {
-	CMsgHoldQ411 cMsg(msg_StartWriteQ411(0x1000, 0x1000).m_pMsg);
+	// AVP2: the holder is declared empty and then assigned the 0x44c-byte
+	// message (Primal Hunt 0x004131e0: the null store at 0x004131f0 ahead of
+	// the call, EH states 1 then 0 round the temporary), clientmgr3.cpp's
+	// Sub415810 shape.
+	//
+	// NEAR (PH 170/170, one register): the local's closing Release loads
+	// the vtable into %edx, ours into %eax.  The same with a separate holder
+	// class or a named return local.
+	CMsgRefQ411 cMsg;
+
+	cMsg = msg_StartWriteQ411(0x44c, 0x44c);
 
 	cMsg.m_pMsg->AddRef();
 	cMsg.m_pMsg->m_Message.SetObjectHelper(m_pObjectHelper);

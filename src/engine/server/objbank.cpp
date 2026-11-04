@@ -173,8 +173,19 @@ public:
 	uint32            m_HiddenPieces;        // 0x260
 	void*             m_pUnknown208;         // 0x264
 	void*             m_pUnknown20c;         // 0x268
-	uint8             m_pad_26c[0x2a0 - 0x26c];
-	float             m_f244;                // 0x2a0  starts at minus one
+	// AVP2: the object is 0x2d0 bytes (CObjectBank<CObjModel>::Init's
+	// element size: AvP2's lithtech.exe 0x00413eb0, server.dll 0x1002e30e),
+	// the minus one at +0x2bc (the constructor, 0x0046761a). PH: 0x14 more
+	// -- 0x2e4 bytes (lithtech.exe 0x004152a0, server.dll 0x10030578), the
+	// minus one at +0x2d0 (0x0046cc4c). After it, in both, a vector the
+	// constructor sets to minus one and a dword it sets to one.
+#ifdef PRIMAL_HUNT
+	uint8             m_pad_26c[0x2d0 - 0x26c];
+#else
+	uint8             m_pad_26c[0x2bc - 0x26c];
+#endif
+	float             m_f244;                // PH 0x2d0 (AvP2 0x2bc)  starts at minus one
+	uint8             m_pad_after_f244[0x10];
 };
 
 // OT_PARTICLESYSTEM, 0x25c bytes. Two of its pointers start at the address

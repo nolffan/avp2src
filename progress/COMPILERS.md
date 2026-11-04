@@ -85,7 +85,7 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
   Measured: `/GX` on Primal Hunt's objects took `lithtech.exe` from 2,456
   to 2,724 identical functions and `server.dll` from 1,566 to 1,714; on
   AvP2's it loses matches. StdLith's allocator code (`stdlithalloc.cpp`)
-  is the exception: no frame (0x004b4e30).
+  is built with it too (~LAllocSimpleBlock at 0x004bf320 has a frame).
 * **Older binaries ship beside the patch's.** `ltmsg.dll` (February 2001,
   but not NOLF's file), `Launch.dll` (NOLF's, 1999; Blood II ships an
   older one, Primal Hunt this one), `AVP2Up.dll` and the launcher are the

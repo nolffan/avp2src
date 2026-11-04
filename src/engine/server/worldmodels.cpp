@@ -171,11 +171,23 @@ public:
 // One light's baked data for one frame: where it is in the byte pool and how
 // much of it there is. The pointer is handed out by the loader and only the
 // size comes off the stream (names ours).
+//
+// AVP2: 0x18 bytes, not NOLF's eight (lithtech.exe 0x0042e8aa..0x0042e8b1
+// scales the cursor by 0x18): the size is sixteen bits (0x0042e8ec reads
+// two), and a world of version 70 carries three more runs per light per
+// frame, each m_n14 bytes long and each a slice of the same byte pool
+// (0x0042e97b..0x0042ea83); any other version leaves the three null.
 class CLAFrameEntry
 {
 public:
 	void*  m_pData;                          // 0x00
-	uint32 m_nSize;                          // 0x04
+	uint16 m_nSize;                          // 0x04
+	uint8  m_pad_06[0x08 - 0x06];
+	uint8* m_p08;                            // 0x08
+	uint8* m_p0c;                            // 0x0c
+	uint8* m_p10;                            // 0x10
+	uint8  m_n14;                            // 0x14  the length of all three
+	uint8  m_pad_15[0x18 - 0x15];
 };
 
 // The light-animation record as the loader fills it in. servermgr.h's
@@ -189,10 +201,63 @@ public:
 	char            m_Name[0x20];            // 0x00
 	uint32          m_bShadowMap;            // 0x20
 	CLAFrameEntry** m_ppFrames;              // 0x24  m_nFrames of them
-	uint32          m_nFrames;               // 0x28
+	// AVP2: eight bits (0x0042e7e8 reads one byte into it); NOLF's was a
+	// dword.
+	uint8           m_nFrames;               // 0x28
+	uint8           m_pad_29[0x2c - 0x29];
 	CLALight*       m_pLights;               // 0x2c  m_nLights of them
-	uint32          m_nLights;               // 0x30
-	uint8           m_pad_34[0x60 - 0x34];
+	// AVP2: sixteen bits (lithtech.exe 0x0042e7f6 reads two bytes into it,
+	// 0x0042ecaa loads it as a word); NOLF's was a dword.
+	uint16          m_nLights;               // 0x30
+	uint8           m_pad_32[0x60 - 0x32];
+};
+
+// AVP2: the polygon as the sphere rebuild reads it. AvP2 1.0.9.6 and Primal
+// Hunt both keep the vertex count at +0x54 and the vertices at +0x58 (PH
+// 0x0042eeba `cmp %bp,0x54(%esi)`, 0x0042eec0 `lea 0x58(%esi),%edx`; the
+// same pair in AvP2's lithtech.exe), four bytes past NOLF's WorldPolyOwner in
+// ltobject_internal.h, which other modules still read at NOLF's offsets.
+class WorldPolyOwnerQ517
+{
+public:
+	uint8           m_pad_000[0x15];
+	// Two bits a light animation sets on every polygon it touches
+	// (0x0042ecd9 `orb $0xc0,0x15(%edx)`), name ours.
+	uint8           m_Flags15;               // 0x15
+	uint8           m_pad_016[0x18 - 0x16];
+	LTVector        m_vCentre;               // 0x18
+	float           m_fRadius;               // 0x24
+	uint8           m_pad_028[0x54 - 0x28];
+	uint16          m_nVertices;             // 0x54
+	uint8           m_pad_056[0x58 - 0x56];
+	WorldPolyVertex m_Vertices[1];           // 0x58  as many as m_nVertices
+};
+
+// One record of the run at +0x88: a bounding sphere and the polygons it
+// covers. 0x30 bytes, from the stride the rebuild's loop advances by (names
+// ours).
+class CWMBlock
+{
+public:
+	LTVector         m_vCentre;              // 0x00
+	float            m_fRadius;              // 0x0c
+	uint8            m_pad_10[0x20 - 0x10];
+	WorldPolyOwnerQ517** m_ppPolies;             // 0x20
+	uint32           m_nPolies;              // 0x24
+	uint8            m_pad_28[0x30 - 0x28];
+};
+
+// The two runs the sphere rebuild walks, past where worldmodels.h's view of
+// CWorldModelData stops (names ours).
+class CWMGeom
+{
+public:
+	uint8            m_pad_00[0x88];
+	CWMBlock*        m_pBlocks;              // 0x88
+	uint32           m_nBlocks;              // 0x8c
+	uint8            m_pad_90[0xa0 - 0x90];
+	WorldPolyOwnerQ517** m_ppPolies;             // 0xa0
+	uint32           m_nPolies;              // 0xa4
 };
 
 // The same object CWorldModelList above is a view of, from the side its
@@ -209,6 +274,11 @@ public:
 
 	void     TermArrays();                   // 0x1000a226
 	LTRESULT LoadObjects(class ILTStream* pStream);   // 0x10009f82
+#ifndef LT_SERVER_BUILD
+	// AVP2: lithtech.exe 0x0042eca0, defined below FindLightAnim (name
+	// ours). The client's only: server.dll has no `orb $0xc0,0x15(...)`.
+	void     sub_42eca0Q517(class CLARecord* pAnim);
+#endif
 
 	CWDArray04 m_Anims;                      // 0x04
 	CWDArray18 m_Lights;                     // 0x18
@@ -219,6 +289,14 @@ public:
 	uint32     m_nObjectsOffset;             // 0x68
 	uint8      m_pad_6c[0x180 - 0x6c];
 	uint32     m_Flags180;                   // 0x180
+	uint8      m_pad_184[0x18c - 0x184];
+	// The world-model list, as CWorldModelHost below sees it.
+	CWorldModelEntry** m_ppEntries;          // 0x18c
+	uint8      m_pad_190[0x1ec - 0x190];
+	// AVP2: the world file's version, which decides whether the light
+	// animations carry their extra runs (`cmpl $0x46,0x1ec(%ebx)`,
+	// lithtech.exe 0x0042e94c; server.dll and AvP2 1.0.9.6 too). Name ours.
+	uint32     m_nVersion;                   // 0x1ec
 };
 
 // Bit 2 of that word: the level has a "LightAnim_BASE" animation, which is
@@ -371,6 +449,30 @@ CLARecord* CWorldData::FindLightAnim(char* pName, uint32* piAnim)
 	return LTNULL;
 }
 
+#ifndef LT_SERVER_BUILD
+// AVP2: lithtech.exe 0x0042eca0, thiscall, its one caller 0x004051bb (after
+// an animation's frame has been worked out). Every light of the animation
+// names a world model and one of its polygons -- the pair the loader reads
+// as two words -- and that polygon gets 0xc0 set in its flags byte at +0x15.
+// The walk is by pointer to one past the end (`lea (%eax,%esi,4),%esi`,
+// `cmp %esi,%eax`). Not in server.dll (name ours).
+//
+// NEAR, 70/70 bytes and 25/25 instructions: the list base is %edi here and
+// %ebx in the shipped code, nothing else. Unmoved by initialising the cursor
+// at its declaration and by the geometry as a named local.
+void CWorldData::sub_42eca0Q517(CLARecord* pAnim)
+{
+	CLALight* pLight;
+	CLALight* pEnd = &pAnim->m_pLights[pAnim->m_nLights];
+
+	for (pLight = pAnim->m_pLights; pLight != pEnd; pLight++)
+	{
+		((CWMGeom*)m_ppEntries[pLight->m_n00]->m_pData)->
+		    m_ppPolies[pLight->m_n02]->m_Flags15 |= 0xc0;
+	}
+}
+#endif
+
 
 // The regular grid both world objects keep, and its cells. worldbsp.h models
 // the same object as CWorldSub108 with the same offsets; the cell's count is
@@ -462,33 +564,6 @@ LTBOOL CSubGrid::Load(ILTStream* pStream)
 }
 
 
-// One record of the run at +0x88: a bounding sphere and the polygons it
-// covers. 0x30 bytes, from the stride the rebuild's loop advances by (names
-// ours).
-class CWMBlock
-{
-public:
-	LTVector         m_vCentre;              // 0x00
-	float            m_fRadius;              // 0x0c
-	uint8            m_pad_10[0x20 - 0x10];
-	WorldPolyOwner** m_ppPolies;             // 0x20
-	uint32           m_nPolies;              // 0x24
-	uint8            m_pad_28[0x30 - 0x28];
-};
-
-// The two runs the sphere rebuild walks, past where worldmodels.h's view of
-// CWorldModelData stops (names ours).
-class CWMGeom
-{
-public:
-	uint8            m_pad_00[0x88];
-	CWMBlock*        m_pBlocks;              // 0x88
-	uint32           m_nBlocks;              // 0x8c
-	uint8            m_pad_90[0xa0 - 0x90];
-	WorldPolyOwner** m_ppPolies;             // 0xa0
-	uint32           m_nPolies;              // 0xa4
-};
-
 // 0x1000a411. Not a "reset" in the sense of restoring anything: it rebuilds
 // every bounding sphere in one world model's geometry from the vertex
 // positions, first for the blocks at +0x88 and then for the polygons at
@@ -535,7 +610,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 
 		for (j = 0; j < pBlock->m_nPolies; j++)
 		{
-			WorldPolyOwner* pPoly = pBlock->m_ppPolies[j];
+			WorldPolyOwnerQ517* pPoly = pBlock->m_ppPolies[j];
 
 			if (pPoly)
 			{
@@ -571,7 +646,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 
 		for (j = 0; j < pBlock->m_nPolies; j++)
 		{
-			WorldPolyOwner* pPoly = pBlock->m_ppPolies[j];
+			WorldPolyOwnerQ517* pPoly = pBlock->m_ppPolies[j];
 
 			if (pPoly)
 			{
@@ -592,7 +667,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 
 	for (i = 0; i < ((CWMGeom*)pData)->m_nPolies; i++)
 	{
-		WorldPolyOwner* pPoly = ((CWMGeom*)pData)->m_ppPolies[i];
+		WorldPolyOwnerQ517* pPoly = ((CWMGeom*)pData)->m_ppPolies[i];
 #ifdef AVP2_MODERN
 		LTVector*       pCentre;
 		float           fCount;
@@ -847,11 +922,24 @@ int CWorldModelHost::AttachWorldModel(LTObject* pObj, char* pName)
 // m_nFrames * m_nLights times per animation and reads a size and then that
 // many bytes.
 //
-// Two things the shipped bytes decide. The light pair is read as two
+// Two things NOLF's shipped bytes decide. The light pair is read as two
 // two-byte reads rather than one four-byte read, so it is two sixteen-bit
 // fields. And the base animation's frame pair and blend percentage are
 // cleared here rather than by whatever made the record, which is what the
 // flag at +0x180 is set to say.
+//
+// AVP2: lithtech.exe 0x0042e690 (1274 bytes) is byte-identical: a frame
+// count of one byte, a light count and a span size of two, the version-70
+// runs, and the base animation's blend cleared as a dword (`mov %edi,
+// 0x3c(%eax)`, 0x0042eb65 -- server.dll 0x1000d4f7 stores the same register,
+// so it is not a float there either). Two shapes are load-bearing on the
+// client: the record's address goes through `pWorld`, a copy of `this`
+// (with plain m_Anims, 0x0042e7a5 loads the array before the strength-
+// reduced offset; the same trick as worldbsp.cpp's CWorldSimple::Load), and
+// each k-loop declares its own pEntry. NEAR on server.dll 0x1000d248, 1046
+// of 1046 bytes: two frame slots swapped (-0x10 and -0xc, the cached
+// &m_nLights and the first loop's pEntry). One pEntry for the whole frame
+// fixes the slots and loses the client's add order, in both images.
 LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 {
 	uint32 iFrameEntry;
@@ -860,6 +948,7 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 	uint32 iFrame;
 	uint32 i;
 	uint32 nAnims, nLights, nFrames, nData, nFrameEntries;
+	CWorldData* pWorld = this;              // see the note above
 
 	m_Flags180 &= ~WD_HAS_BASEANIM;
 
@@ -893,8 +982,9 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 
 	for (i = 0; i < nAnims; i++)
 	{
-		CLARecord* pAnim = &m_Anims.m_pItems[i];
-		uint32     j, k;
+		CLARecord* pAnim = &pWorld->m_Anims.m_pItems[i];
+		uint32     j, k, n;
+
 
 		pStream->ReadString(pAnim->m_Name, sizeof(pAnim->m_Name));
 
@@ -902,8 +992,8 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 		pAnim->m_pLights  = &m_Lights.m_pItems[iLight];
 
 		pStream->Read(&pAnim->m_bShadowMap, 4);
-		pStream->Read(&pAnim->m_nFrames, 4);
-		pStream->Read(&pAnim->m_nLights, 4);
+		pStream->Read(&pAnim->m_nFrames, 1);
+		pStream->Read(&pAnim->m_nLights, 2);
 
 		iFrame += pAnim->m_nFrames;
 		iLight += pAnim->m_nLights;
@@ -949,7 +1039,7 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 
 				pEntry->m_pData = m_Data.m_pItems + iData;
 
-				pStream->Read(&pEntry->m_nSize, 4);
+				pStream->Read(&pEntry->m_nSize, 2);
 
 				iData += pEntry->m_nSize;
 
@@ -961,6 +1051,71 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 				}
 
 				pStream->Read(pEntry->m_pData, pEntry->m_nSize);
+			}
+
+			// AVP2: version 70's three extra runs, read a byte at a time.
+			if (m_nVersion == 0x46)
+			{
+				for (k = 0; k < pAnim->m_nLights; k++)
+				{
+					CLAFrameEntry* pEntry = &(*ppFrame)[k];
+
+					pStream->Read(&pEntry->m_n14, 1);
+
+					pEntry->m_p08 = m_Data.m_pItems + iData;
+
+					iData += pEntry->m_n14;
+
+					if (iData > m_Data.m_nItems)
+					{
+						TermArrays();
+
+						return LT_ERROR;
+					}
+
+					for (n = 0; n < pEntry->m_n14; n++)
+						pStream->Read(&pEntry->m_p08[n], 1);
+
+					pEntry->m_p0c = m_Data.m_pItems + iData;
+
+					iData += pEntry->m_n14;
+
+					if (iData > m_Data.m_nItems)
+					{
+						TermArrays();
+
+						return LT_ERROR;
+					}
+
+					for (n = 0; n < pEntry->m_n14; n++)
+						pStream->Read(&pEntry->m_p0c[n], 1);
+
+					pEntry->m_p10 = m_Data.m_pItems + iData;
+
+					iData += pEntry->m_n14;
+
+					if (iData > m_Data.m_nItems)
+					{
+						TermArrays();
+
+						return LT_ERROR;
+					}
+
+					for (n = 0; n < pEntry->m_n14; n++)
+						pStream->Read(&pEntry->m_p10[n], 1);
+				}
+			}
+			else
+			{
+				for (k = 0; k < pAnim->m_nLights; k++)
+				{
+					CLAFrameEntry* pEntry = &(*ppFrame)[k];
+
+					pEntry->m_p08 = LTNULL;
+					pEntry->m_p0c = LTNULL;
+					pEntry->m_p10 = LTNULL;
+					pEntry->m_n14 = 0;
+				}
 			}
 		}
 	}
@@ -981,7 +1136,7 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 
 			((uint32*)pBase)[0x38 / 4] = 0;
 			((uint32*)pBase)[0x34 / 4] = 0;
-			*(float*)((uint8*)pBase + 0x3c) = 0.0f;
+			((uint32*)pBase)[0x3c / 4] = 0;
 		}
 	}
 

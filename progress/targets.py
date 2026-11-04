@@ -96,6 +96,13 @@ CITED_SRC = []
 # more than any one image takes from it.
 OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeMgrNoMFC"]
 LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
+# WONAPI.lib, built from the release's own source (build/build.mk,
+# "WONAPI.lib"): the release's prebuilt build of it, scored against that,
+# beside the copy the game DLLs still link (so it stays in PREBUILT_LIBS
+# below). Being a LIBS label also makes Primal Hunt's engine's build of it
+# (VC6's STL, not STLport: lithtech.exe's partial_objs) library code there,
+# placed where it is linked and never unplaced where it is not.
+LIBS.append(("WONAPI", "src/LT2/lithshared/libs/Release/wonapi/WONAPI.lib"))
 SHIPPED_LIB = "LT2/lithshared/libs/release/{}.lib"
 SHIPPED_AS = {}
 SHIPPED_ENV = "AVP2_SOURCE"     # build/progress.sh: progress/reference
@@ -123,7 +130,14 @@ TARGETS = [
          shipped=REFERENCE + "/lithtech.exe", stem="lithtech",
          # nolfsrc's engine compiled for Primal Hunt, objects only until it
          # links (build/build.mk, "The engine")
-         partial_objs=["src/engine/lithtech/Release/*.obj"],
+         # and its WON client (0x004aab40..0x004ba2a0, the WON templates
+         # the engine's own objects instantiate elsewhere): WONAPI.lib from
+         # the release's source, with VC6's STL (build/build.mk, "WONAPI.lib")
+         partial_objs=["src/engine/lithtech/Release/*.obj",
+                       "src/engine/lithtech/Release/wonapi/WONAPI.lib"],
+         # WONAPI.lib's block: its generic shapes (deleting destructors,
+         # std::string's members) recur all over the engine and are not it
+         lib_range={"WONAPI": (0x004aab40, 0x004ba2a0)},
          built="src/engine/lithtech/Release/lithtech.exe", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib (msvc-6.00-8966's) from ftol.obj's

@@ -341,6 +341,14 @@ LTRESULT CSoundMgr::SetSoundFilterParam(HLTSOUND hSound, const char* pParam, flo
 	return LT_OK;
 }
 
+// The sound instance as AvP2 lays it out, for the one field this file reads
+// directly (clientsound.h still carries NOLF's offset; other files include it).
+struct CSoundInstanceViewQ518
+{
+	uint8  m_pad_00[0x4c];
+	void*  m_pFilter;                        // 0x04c
+};
+
 // Reading looks the sound up only one way, and refuses a sound that has no
 // filter on it at all.
 LTRESULT CSoundMgr::GetSoundFilterParam(HLTSOUND hSound, const char* pParam, float* pValue)
@@ -358,7 +366,10 @@ LTRESULT CSoundMgr::GetSoundFilterParam(HLTSOUND hSound, const char* pParam, flo
 	if (!pSound)
 		RETURN_ERROR(1, "CSoundMgr::GetSoundFilterParam", LT_INVALIDPARAMS);
 
-	if (!pSound->m_pFilter)
+	// AVP2: the filter is at +0x4c (0x0049f754; AvP2 1.0.9.6 agrees,
+	// 0x00495c0b), eight bytes past clientsound.h's NOLF +0x44 -- the
+	// sound instance's +8 from 0x38 on.
+	if (!((CSoundInstanceViewQ518*)pSound)->m_pFilter)
 		RETURN_ERROR(1, "CSoundMgr::GetSoundFilterParam", LT_INVALIDPARAMS);
 
 	if (!pSound->GetFilterParam(pParam, pValue))

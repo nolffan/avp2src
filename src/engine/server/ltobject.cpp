@@ -1,5 +1,13 @@
 // server.dll — LTObject's own engine-internal methods (reconstruction). Build /O1.
 #include "ltobject_internal.h"
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's engine sees the STL's <string> here, through a header
+// AvP2's does not have: the translation unit carries <string>'s 44-byte
+// guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
+// atexit of the empty 0x00401790; this one's near 0x00433d00). server.dll has it
+// in collection/objbank only.
+#include <string>
+#endif
 
 // The world geometry from the inside, as far as the world-model transform
 // reaches into it. worldbsp.h models the same object as CWorldBsp with the
@@ -325,6 +333,29 @@ public:
 	CWorldNodePlanesView* m_pSub28;          // 0x28
 };
 
+// AVP2: what a node's first field really points at in every AvP2 image: the
+// node's polygon, whose +0x28 is the plane itself and whose +0x2c is the
+// surface, and a polygon without a surface has no plane -- the descent
+// tests the polygon and then its surface before it reads the plane
+// (lithtech.exe 0x00433779..0x0043378d, `mov (%esi),%eax; test; mov
+// 0x2c(%eax),%ecx; test; mov 0x28(%eax),%eax`; worldsim.cpp's
+// CWorldPolyQ506 is the same polygon). NOLF's three indirections above are
+// gone (names ours).
+class CWorldNodePolyQ517
+{
+public:
+	uint8    m_pad_00[0x28];
+	LTPlane* m_pPlane;                       // 0x28
+	void*    m_pSurface;                     // 0x2c
+
+	LTPlane* GetPlane() { return m_pSurface ? m_pPlane : LTNULL; }
+};
+
+inline LTPlane* wt_GetNodePlaneQ517(void* pPoly)
+{
+	return pPoly ? ((CWorldNodePolyQ517*)pPoly)->GetPlane() : LTNULL;
+}
+
 // A node of the world tree as the descent reads it: the tree it belongs to,
 // then the back child and the front child. 0x1000d4a9 adds the two fields
 // that end a descent -- the leaf index, which is 0xffff on every node that
@@ -366,7 +397,7 @@ void* wt_FindNodeForSphere(CWorldNodeView* pNode, LTVector* pPos, float radius)
 	// shared-exit hosting rule again.
 	for (;;)
 	{
-		float dist = pNode->m_pTree->m_pSub28->m_pPlane->DistTo(*pPos);
+		float dist = wt_GetNodePlaneQ517(pNode->m_pTree)->DistTo(*pPos);
 
 		if (dist > radius)
 		{
@@ -476,14 +507,14 @@ void wt_InsertPoints(CWorldBspView* pWorld, CWorldNodeView* pNode,
 			return;
 		}
 
-		if (pNode->m_pTree->m_pSub28->m_pPlane->DistTo(pPoints[0]) > 0.0f)
+		if (wt_GetNodePlaneQ517(pNode->m_pTree)->DistTo(pPoints[0]) > 0.0f)
 			nSide = 1;
 		else
 			nSide = 0;
 
 		for (g_nPointIndex = 1; g_nPointIndex < nPoints; g_nPointIndex++)
 		{
-			if (pNode->m_pTree->m_pSub28->m_pPlane->DistTo(
+			if (wt_GetNodePlaneQ517(pNode->m_pTree)->DistTo(
 			        pPoints[g_nPointIndex]) > 0.0f)
 				g_nPointSide = 1;
 			else
