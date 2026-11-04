@@ -78,10 +78,51 @@ which holds the reference count (15 bits) as well as the mark bit (bit
 15). `tm_MarkUsedTextures` then keeps textures whose count is above zero
 (`test $0x7fff`), and every count has just been zeroed, so a texture
 referenced only through that count can be freed by the following sweep.
-Not yet shown to happen in the game. The retail shape is not yet
-reproduced either (ours clears only the mark; a NEAR).
+Not yet shown to happen in the game; the bytes alone do not say whether
+it is deliberate. Reproduced: the retail build clears the mark and the
+count as two statements, which VC6 merges into the one word store.
 
-Not fixed yet: the retail build has to reproduce the store first.
+Not fixed in the modern build yet.
+
+### A command line of more than 150 arguments overruns the argument table
+
+lithtech.exe 0x00403d80 (`clu_dsi_BuildCommandLine`,
+src/engine/lithtech/clientwin.cpp). The argument count is checked after
+the increment with `cmp $0x96; jg`, so the 151st argument is copied into
+`szArgs[150]`, one past the end of the frame's array, both from the real
+command line and from a `-cmdfile`. A `-cmdfile` whose read fails also
+leaks the buffer allocated for it.
+
+Not fixed yet.
+
+### A socket naming the node one past the end is accepted
+
+lithtech.exe 0x0045eb20, server.dll 0x10024cb0 (`GetSocketTransform`,
+src/engine/server/commonmodel.cpp). The socket's node index is tested
+with `>` against the node count instead of `>=` (0x0045ebd8, server.dll
+0x10024d43), so a socket on node N, where N is the count, reads one
+matrix past the object's cache.
+
+Fixed in the modern build: commonmodel.cpp, `>=`.
+
+### GetNextWMPoly crashes on a world model without a BSP
+
+lithtech.exe 0x00486920 (`si_GetNextWMPoly`, src/engine/server/smgr.cpp).
+The BSP's `IsBusy` is called before the BSP pointer is tested
+(0x004869a5), so a world model with no BSP crashes instead of returning
+LT_INVALIDDATA.
+
+Fixed in the modern build: smgr.cpp, the pointer is tested first.
+
+### Four model-interface errors report the wrong function
+
+lithtech.exe 0x0045f100/0x0045f180 (`GetTimeScale`/`SetTimeScale`) report
+under "GetAllowTransition"/"SetAllowTransition", and 0x0045fb90/0x0045fbe0
+(`GetNormalize`/`SetNormalize`) under "GetLooping"/"SetLooping" (strings
+at 0x004e5b54..58 and 0x004e5b9c..a0): copied error blocks never renamed.
+Only the debug output is wrong.
+
+Not fixed: harmless, kept for byte identity.
 
 ## NOLF's bugs AvP2 does not have
 

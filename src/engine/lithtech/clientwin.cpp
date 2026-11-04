@@ -243,6 +243,17 @@ inline void* clu_sb_Allocate(CluStructBank* pBank)
 	return pStruct;
 }
 
+// stdlith's sb_Free as servermgr.h expands it: AVP2: the record and then
+// the bank are tested before the two stores.
+inline void clu_sb_FreeQ501(CluStructBank* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
 // The 0x18-byte string holder the file manager keeps at +0x0c: a vptr
 // (0x004a3c24) over four dwords and a uint16 chunk size at +0x14.
 // It is stdlith's CStringHolder (StdLith.lib), so this is that class under
@@ -350,10 +361,15 @@ void CluNetFileRecBank::Init()
 // The game DLL's interface, reached ONLY through its vtable and only from
 // two slots.  Both call sites are `mov <shell>,%ecx; mov (%ecx),%edx; push
 // ...; call *0xNN(%edx)` with NO caller cleanup, so these are __thiscall
-// virtuals and the arguments below are exactly what each site pushes --
-// 0x4c takes two, 0x60 takes three.  The slots in between are declared only
-// to put those two at the right index (0x4c/4 = 19, 0x60/4 = 24); nothing
-// here claims to know what they are.
+// virtuals and the arguments below are exactly what each site pushes.
+// The slots in between are declared only to put those two at the right
+// index; nothing here claims to know what they are.
+//
+// AVP2: both slots sit eight bytes later than NOLF's 0x4c / 0x60, and the
+// second takes two arguments, not three -- OnEvent at 0x54 (0x00403924
+// `push $0; push $7; call *0x54(%edx)`) and OnMessage at 0x68 (0x00404741
+// `push %esi; push $1; call *0x68(%edx)`), the same in AvP2 1.0.9.6's image
+// (0x004035b4, 0x00404235 file offsets).
 class CluClientShell
 {
 public:
@@ -366,11 +382,12 @@ public:
 	virtual void Slot12() = 0;  virtual void Slot13() = 0;
 	virtual void Slot14() = 0;  virtual void Slot15() = 0;
 	virtual void Slot16() = 0;  virtual void Slot17() = 0;
-	virtual void Slot18() = 0;
-	virtual void OnEvent(int nEventCode, int nParam) = 0;    // +0x4c
-	virtual void Slot20() = 0;  virtual void Slot21() = 0;
+	virtual void Slot18() = 0;  virtual void Slot19() = 0;
+	virtual void Slot20() = 0;
+	virtual void OnEvent(int nEventCode, int nParam) = 0;    // +0x54
 	virtual void Slot22() = 0;  virtual void Slot23() = 0;
-	virtual void OnMessage(int nCode, char* pName, int nParam) = 0;   // +0x60
+	virtual void Slot24() = 0;  virtual void Slot25() = 0;
+	virtual void OnMessage(int nCode, char* pName) = 0;      // +0x68
 };
 
 // The object CClientMgr keeps at +0x1614: one virtual is reached, slot
@@ -432,7 +449,11 @@ struct CluInputView
 class CluClientMgrView
 {
 public:
-	LTRESULT Init(char** pRezFiles, uint32 nRezFiles, char* pConfigFile);
+	// AVP2: a fourth argument, the command line itself -- clu_dsi_InitGame
+	// pushes pArgs before the config file (0x004037c0 `push %esi`), and
+	// AvP2 1.0.9.6's image does the same.
+	LTRESULT Init(char** pRezFiles, uint32 nRezFiles, char* pConfigFile,
+	              struct CluCommandLineArgs* pArgs);
 	LTRESULT Update();                                       // 0x004106c0
 	void     Term();                                         // 0x00410ec0
 	LTRESULT ClearInput();                                   // 0x00410900
@@ -570,12 +591,16 @@ void clu_fm_Empty10() {}                                     // 0x00404470 (ICF)
 
 CluClientGlob g_CluClientGlob;               // 0x004b0ac0
 
-// The command-line vector 0x00403bc0 builds and 0x00403d60 releases.  Both
-// are loaded as values, so argv is a `char**` variable and not an array;
-// ltnew2.cpp reads the same two globals the same way.
-// Defined here (ltnew2.cpp's g_pLTArgList / g_nLTArgCount are these).
-char** g_pCluArgList;                        // 0x004b0ab8
-int    g_nCluArgCount;                       // 0x004b13e8
+// The command-line vector.  AVP2: it is the CRT's own __argv / __argc
+// (0x004f7c64 / 0x004f7c60 in Primal Hunt's image) -- nothing in the engine
+// parses the command line any more (see clu_dsi_BuildCommandLine), and
+// every reader in the image (0x00403300, cmgrinit.cpp's 0x004137cd) loads
+// the CRT's pair.  cmgrinit.cpp and ltnew2.cpp still read them under these
+// two names, so until they say __argv / __argc themselves these are the
+// CRT's values, taken once at start-up (the CRT fills its pair before it
+// runs the C++ initialisers).
+char** g_pCluArgList = __argv;
+int    g_nCluArgCount = __argc;
 
 // 0x004b13e4 -- timeGetTime() at the moment WinMain finished parsing.  The
 // "Running for %.1f seconds" line subtracts it.
@@ -681,10 +706,25 @@ typedef int (*CluGetLithTechCommandLineFn)(int argc, char** argv, int* pnArgs,
 
 LTBOOL clu_dsi_InitGame(CluClientGlob* pGlob, CluCommandLineArgs* pArgs);   // 0x00403330
 LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs);                 // 0x004039f0
-void   clu_dsi_ParseCommandLine(char* pCmdLine);                            // 0x00403bc0
-void   clu_dsi_FreeCommandLine();                                           // 0x00403d60
-bool   clu_dsi_ParseCommandFile(char* pFilename);                           // 0x00403da0
+LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs);                 // 0x00403d80 (PH)
+int WINAPI clu_WinMainQ501(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                           LPSTR lpCmdLine, int nCmdShow);                  // 0x00404180 (PH)
+
+// stdlith's helper class (StdLith.lib, helpers.cpp), cut to the one member
+// the command line uses: a case-insensitive compare answering TRUE when the
+// two strings are equal (0x004be5d0 in Primal Hunt's image; sharedcommon.cpp
+// declares the same member).
+class CHelpers
+{
+public:
+	static int UpperStrcmp(const char* pStr1, const char* pStr2);
+};
+
+// The crash reporter WinMain's exception filter calls (0x00439b80 in Primal
+// Hunt's image, 0x00436270 in AvP2 1.0.9.6's): it is handed the exception
+// record and the thread's name, writes its report, and answers the filter's
+// verdict.  That module has no source yet; see the definition below.
+int clu_ReportExceptionQ501(EXCEPTION_POINTERS* pInfo, char* pThreadName);
 
 
 // ----------------------------------------------------------------------- //
@@ -960,7 +1000,7 @@ LTBOOL clu_dsi_InitGame(CluClientGlob* pGlob, CluCommandLineArgs* pArgs)
 
 	nStartTime = timeGetTime();
 
-	if (pGlob->m_pClientMgr->Init(pRezFiles, nRezFiles, pConfigFile))
+	if (pGlob->m_pClientMgr->Init(pRezFiles, nRezFiles, pConfigFile, pArgs))
 		return LTFALSE;
 
 	((CluVersionView*)pGlob->m_pClientMgr->m_Version)->GetString(szVersion, 32);
@@ -1232,53 +1272,74 @@ LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 
 // ----------------------------------------------------------------------- //
-//  0x004039f0 -- 454 bytes, 10 calls.  Turn the global command-line vector
+//  0x00403d80 -- 1022 bytes (Primal Hunt).  Turn the CRT's argument vector
 //  into the compact block WinMain hands around, giving launch.dll first
-//  refusal on the whole thing.
+//  refusal on the whole thing and expanding any -cmdfile on the way.
 //
-//  WHAT PINS THE FRAME.  `mov $0x778c,%eax; call 0x00492c60` is __chkstk on
-//  a 30604-byte frame, and the frame is exactly three things: one dword at
-//  +0x0000, 150 pointers at +0x0004 (0x258 bytes) and 150 by 200 bytes of
-//  text at +0x025c (0x7530).  0x0004 + 0x258 = 0x025c and 0x025c + 0x7530 =
-//  0x778c, flush.  The set-up loop at 0x00403a12 walks both at once --
-//  `add $0x4,%ecx` against `add $0xc8,%eax`, 0x96 = 150 times -- which is
-//  what fixes the two bounds.
+//  AVP2: this replaces NOLF's pair of passes.  There is no command-line
+//  parser of the engine's own any more: the arguments are the CRT's __argc
+//  / __argv (0x004f7c60 / 0x004f7c64, written by the startup code at
+//  0x004cabea / 0x004cabf2), and -cmdfile is handled HERE, by splicing the
+//  first line of the named file into the vector in place of the switch and
+//  its operand.
+//
+//  WHAT PINS THE FRAME.  `mov $0x785c,%eax; call __chkstk`: the count at
+//  +0x14, the quote flag (a byte) at +0x13, the outer index at +0x18, a
+//  200-byte scratch token at +0x1c, then the same 150 pointers (+0xe4) and
+//  150 by 200 bytes of text (+0x33c) NOLF's had.  0x33c + 0x7530 = 0x786c,
+//  the frame plus the four saved registers.
 //
 //  WHAT PINS THE REST
-//    * launch.dll's export is called with SIX arguments and cleaned with
-//      `add $0x18,%esp`, pushed count-first: (argc, argv, &nArgs, pArgs,
-//      150, 200).
-//    * the plain path copies each global argument with strncpy (a CALL to
-//      the CRT's 0x00492b60 at 0x00403ad6, reloading g_nCluArgCount after
-//      it) and then writes a hard zero at [199] -- `movb $0x0,(%edi)`
-//      where %edi is the buffer base plus 0xc7.
-//    * the two `repnz scasb` blocks are VC6's strlen and strcpy
-//      intrinsics; the second copies len+1 bytes, the NUL included.
-//    * both allocations answer through the 0x00428fd0 pair, and BOTH are
-//      tested before the copy loop, jumping to the same `xor %eax,%eax`
-//      tail the launch.dll failure uses -- which is why the failure path
-//      shows no message box.  One `&&` guard around the copy with a single
-//      `return LTFALSE` after it gives that shared tail; two early
-//      refusals each get their own epilogue.
+//    * launch.dll's export is called exactly as before, six arguments, and
+//      either failure falls into the one message box (0x00403e29).
+//    * the switch test is stdlith's CHelpers::UpperStrcmp (0x004be5d0,
+//      TRUE when equal), and a NON-match is the copy path (0x00404051).
+//    * the file is sized with fseek(SEEK_END) / ftell / rewind and read with
+//      ONE fgets into a buffer of the length plus one; a failed read closes
+//      the file and refuses, leaving the buffer allocated.
+//    * the line is cut with strtok on " ".  A token opening with '"' is
+//      copied without it into the scratch token; if it also closes there the
+//      closing quote is cut and the argument stored straight away (and the
+//      next token fetched, skipping the bound below), otherwise the flag is
+//      raised and the SAME token goes round again: strtok on '"' fetches the
+//      rest of the quoted text, which is appended after a space.
+//    * every stored argument is cut at [199] and counted, and the count is
+//      checked AFTER the increment with `cmp $0x96; jg` -- so 150 is allowed
+//      through and the next store lands one past the array (RETAIL BUG
+//      below).
+//    * the tail is NOLF's: sum the lengths, allocate both blocks through the
+//      0x00433440 pair, refuse unless both came back, copy.
+//
+//  RETAIL BUG: the bound is `> 150`, not `>= 150`, here and in the copy
+//  path; the 151st argument is copied into szArgs[150], past the end of the
+//  frame's array.
 // ----------------------------------------------------------------------- //
 LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 {
 	int    nArgs;
+	bool   bInQuote;
+	int    i;
+	char   szToken[200];
 	char*  pArgPtrs[150];
 	char   szArgs[150][200];
 	HINSTANCE hLaunch;
 	CluGetLithTechCommandLineFn pfnGetCommandLine;
 	int    bGotArgs;
-	int    i;
+	FILE*  pFile;
+	int    nLen;
+	char*  pBuffer;
+	char*  pToken;
 	uint32 nTotal;
 	char*  pDest;
+	int    k;
 
 	nArgs = 0;
+	bInQuote = false;
 
-	for (i = 0; i < 150; i++)
+	for (k = 0; k < 150; k++)
 	{
-		pArgPtrs[i] = szArgs[i];
-		szArgs[i][0] = 0;
+		pArgPtrs[k] = szArgs[k];
+		szArgs[k][0] = 0;
 	}
 
 	if (clu_sub_402f70("launch"))
@@ -1293,7 +1354,7 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 
 			if (pfnGetCommandLine)
 			{
-				bGotArgs = pfnGetCommandLine(g_nCluArgCount, g_pCluArgList,
+				bGotArgs = pfnGetCommandLine(__argc, __argv,
 				                             &nArgs, pArgPtrs, 150, 200);
 			}
 
@@ -1308,18 +1369,95 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 	}
 	else
 	{
-		for (i = 0; i < g_nCluArgCount; i++)
+		for (i = 0; i < __argc; i++)
 		{
-			strncpy(szArgs[i], g_pCluArgList[i], 200);
-			szArgs[i][199] = 0;
-		}
+			if (CHelpers::UpperStrcmp(__argv[i], "-cmdfile"))
+			{
+				i++;
 
-		nArgs = g_nCluArgCount;
+				if (__argv[i])
+				{
+					pFile = fopen(__argv[i], "r");
+					if (pFile)
+					{
+						fseek(pFile, 0, SEEK_END);
+						nLen = ftell(pFile);
+						rewind(pFile);
+						nLen++;
+
+						pBuffer = (char*)clu_sub_428fd0(nLen);
+
+						if (!fgets(pBuffer, nLen, pFile))
+						{
+							fclose(pFile);
+							return LTFALSE;
+						}
+
+						fclose(pFile);
+
+						pToken = strtok(pBuffer, " ");
+						while (pToken)
+						{
+							if (!bInQuote)
+							{
+								if (*pToken == '"')
+								{
+									nLen = strlen(pToken);
+									strncpy(szToken, pToken + 1, nLen - 1);
+									szToken[nLen - 1] = 0;
+
+									if (nLen - 2 >= 0 && szToken[nLen - 2] == '"')
+									{
+										szToken[nLen - 2] = 0;
+										strncpy(szArgs[nArgs], szToken, 200);
+										pToken = strtok(NULL, " ");
+										nArgs++;
+									}
+									else
+									{
+										bInQuote = true;
+									}
+
+									continue;
+								}
+
+								strncpy(szArgs[nArgs], pToken, 200);
+							}
+							else
+							{
+								pToken = strtok(NULL, "\"");
+								strncat(szToken, " ", 1);
+								strncat(szToken, pToken, strlen(pToken));
+								bInQuote = false;
+								strncpy(szArgs[nArgs], szToken, 200);
+							}
+
+							szArgs[nArgs][199] = 0;
+							nArgs++;
+							if (nArgs > 150)
+								break;
+
+							pToken = strtok(NULL, " ");
+						}
+
+						clu_sub_429080(pBuffer);
+					}
+				}
+			}
+			else
+			{
+				strncpy(szArgs[nArgs], __argv[i], 200);
+				szArgs[nArgs][199] = 0;
+				nArgs++;
+				if (nArgs > 150)
+					break;
+			}
+		}
 	}
 
 	nTotal = 0;
-	for (i = 0; i < nArgs; i++)
-		nTotal += strlen(pArgPtrs[i]) + 1;
+	for (k = 0; k < nArgs; k++)
+		nTotal += strlen(pArgPtrs[k]) + 1;
 
 	pArgs->m_pArgBuffer = (char*)clu_sub_428fd0(nTotal);
 	pArgs->m_pArgs = (char**)clu_sub_428fd0(nArgs * sizeof(char*));
@@ -1328,11 +1466,11 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 	{
 		pDest = pArgs->m_pArgBuffer;
 
-		for (i = 0; i < nArgs; i++)
+		for (k = 0; k < nArgs; k++)
 		{
-			strcpy(pDest, pArgPtrs[i]);
-			pArgs->m_pArgs[i] = pDest;
-			pDest += strlen(pArgPtrs[i]) + 1;
+			strcpy(pDest, pArgPtrs[k]);
+			pArgs->m_pArgs[k] = pDest;
+			pDest += strlen(pArgPtrs[k]) + 1;
 		}
 
 		pArgs->m_nArgs = nArgs;
@@ -1344,241 +1482,28 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 
 
 // ----------------------------------------------------------------------- //
-//  0x00403bc0 -- 414 bytes, 3 calls.  Split a raw command line into the
-//  global vector.  Two passes over the same text: count the tokens, size
-//  the vector, then copy each one.
+//  0x00404180 -- 232 bytes (Primal Hunt).  The body of WinMain, called from
+//  the guarded entry below with the same four arguments (`ret $0x10`).
 //
-//  WHAT PINS IT
-//    * one parameter, and the second pass restarts from it (%ebx is never
-//      reloaded from anywhere else).
-//    * the scan's three terminators are ' ', '"' and NUL, tested in that
-//      order, with the first character preloaded -- VC6's rotation of
-//      `while (*p != ' ' && *p != '"' && *p) p++;`.
-//    * the quoted branch is the FALL-THROUGH of `cmpb $0x22,(%edx)` and
-//      the plain branch is the jumped-to arm, so the source guards on the
-//      quote.  In the second pass the quoted branch moves the token start
-//      PAST the opening quote (`mov %ebx,%esi` at 0x00403c76), and both
-//      branches write a hard NUL at the delimiter before measuring.
-//    * `sete %cl` at 0x00403cea saves "was the delimiter the end of the
-//      string" BEFORE the NUL is stored, which is the only way the plain
-//      branch can still tell; the quoted branch tests the byte after the
-//      closing quote instead.
-//    * the vector and every string come from dalloc, and dsi_FreeCommandLine
-//      below frees them with the matching dfree.
-//    * the count is bumped INSIDE the strcpy's argument (`[g_nCluArgCount++]`):
-//      shipped reloads the count, increments it, indexes -4 and stores the
-//      new count after the load (0x00403caa..0x00403cbd).
+//  AVP2: NOLF's parse of lpCmdLine, its -cmdfile scan and the
+//  FreeCommandLine at the end are gone -- BuildCommandLine reads the CRT's
+//  vector itself -- so lpCmdLine is not read at all.  What is left is
+//  NOLF's: the three-dword argument block zeroed field by field, the start
+//  time, the build, the run, the repeat-run loop (the guard's increment and
+//  the body's, `jle` signed against the limit and `jb` unsigned against the
+//  counter), and the two frees through 0x00433520 on both exits.
 // ----------------------------------------------------------------------- //
-void clu_dsi_ParseCommandLine(char* pCmdLine)
-{
-	char* pCur;
-	char* pStart;
-	int   bAtEnd;
-
-	pCur = pCmdLine;
-
-	while (*pCur)
-	{
-		pStart = pCur;
-
-		while (*pCur != ' ' && *pCur != '"' && *pCur != 0)
-			pCur++;
-
-		if (*pStart == '"')
-		{
-			pCur++;
-
-			while (*pCur != '"')
-				pCur++;
-
-			g_nCluArgCount++;
-			pCur++;
-
-			if (*pCur == 0)
-				break;
-		}
-		else
-		{
-			g_nCluArgCount++;
-		}
-
-		pCur++;
-	}
-
-	g_pCluArgList = (char**)clu_dalloc(g_nCluArgCount * sizeof(char*));
-	g_nCluArgCount = 0;
-
-	pCur = pCmdLine;
-
-	while (*pCur)
-	{
-		pStart = pCur;
-
-		while (*pCur != ' ' && *pCur != '"' && *pCur != 0)
-			pCur++;
-
-		if (*pStart == '"')
-		{
-			pCur++;
-			pStart = pCur;
-
-			while (*pCur != '"')
-				pCur++;
-
-			*pCur = 0;
-			g_pCluArgList[g_nCluArgCount] = (char*)clu_dalloc(strlen(pStart) + 1);
-			strcpy(g_pCluArgList[g_nCluArgCount++], pStart);
-
-			pCur++;
-
-			if (*pCur == 0)
-				break;
-		}
-		else
-		{
-			bAtEnd = (*pCur == 0);
-
-			*pCur = 0;
-			g_pCluArgList[g_nCluArgCount] = (char*)clu_dalloc(strlen(pStart) + 1);
-			strcpy(g_pCluArgList[g_nCluArgCount++], pStart);
-
-			if (bAtEnd)
-				break;
-		}
-
-		pCur++;
-	}
-}
-
-
-// ----------------------------------------------------------------------- //
-//  0x00403d60 -- 56 bytes, 2 calls.  Release what the parser allocated.
-//  NOT in this cluster (it is enumerated separately at
-//  0x00403d60/56); it is here because it is the other half of the pair and
-//  costs five lines.  The loop bound is reloaded from the global on every
-//  iteration because dfree could touch it, and the vector itself goes back
-//  after the elements.
-// ----------------------------------------------------------------------- //
-void clu_dsi_FreeCommandLine()
-{
-	int i;
-
-	for (i = 0; i < g_nCluArgCount; i++)
-		clu_dfree(g_pCluArgList[i]);
-
-	clu_dfree(g_pCluArgList);
-}
-
-
-// ----------------------------------------------------------------------- //
-//  0x00403da0 -- 143 bytes, 9 calls.  Read -cmdfile's file and feed its
-//  first line to the parser.
-//
-//  THIS IS THE FUNCTION THE ENUMERATOR SPLIT.  0x00403dcf is the target of
-//  the `jne` at 0x00403db7 -- the SUCCESS arm -- and it begins with
-//  `push %ebx; push %edi`, which reads like a prologue because the failure
-//  arm immediately above it ends in `ret` at 0x00403dce.  Shape (a).
-//
-//  WHAT PINS IT
-//    * one parameter, handed straight to fopen with "r"; `xor %al,%al` and
-//      `mov $0x1,%al` at the two exits make the return a BYTE -- a C++
-//      bool, which is also why WinMain tests it with `test %al,%al`.
-//    * fourteen dwords of arguments are pushed across eight calls and
-//      cleaned by ONE `add $0x38,%esp` at 0x00403e25 -- /O2's deferred
-//      pop, which is why the body reads as a single expression run.
-//    * the read is 0x00492c8f, a three-argument CRT entry that locks the
-//      stream, decrements the count and steps _cnt: fgets, not fread.  So
-//      only the first line of the file is used, and the size it is given
-//      is the file length plus 0x3ff (the buffer is length plus 0x400).
-//    * the buffer comes from dalloc and goes back through dfree, the same
-//      pair the parser uses for the vector.
-// ----------------------------------------------------------------------- //
-bool clu_dsi_ParseCommandFile(char* pFilename)
-{
-	FILE* pFile;
-	long  nLen;
-	char* pBuffer;
-
-	pFile = fopen(pFilename, "r");
-	if (!pFile)
-	{
-		MessageBoxA(NULL, "Could not parse cmdfile.", "Error", 0);
-		return false;
-	}
-
-	g_nCluArgCount = 0;
-
-	fseek(pFile, 0, SEEK_END);
-	nLen = ftell(pFile);
-	fseek(pFile, 0, SEEK_SET);
-
-	pBuffer = (char*)clu_dalloc(nLen + 0x400);
-
-	fgets(pBuffer, nLen + 0x3ff, pFile);
-	fclose(pFile);
-
-	clu_dsi_ParseCommandLine(pBuffer);
-	clu_dfree(pBuffer);
-
-	return true;
-}
-
-
-// ----------------------------------------------------------------------- //
-//  0x00403e30 -- 338 bytes, 13 calls.  WinMain.
-//
-//  WHAT PINS IT
-//    * `ret $0x10` with four stack parameters, and the THIRD is the one fed
-//      to _strdup and then to the parser: lpCmdLine.  hInstance (the first)
-//      goes to RunClientApp.
-//    * the three-dword argument block is zeroed field by field at entry and
-//      +0x00 / +0x08 are freed -- with 0x00429080, the pair BuildCommandLine
-//      allocated them from -- on every one of the three exits.  +0x04 is
-//      never freed, which is what says it is the count and not a pointer.
-//    * the -cmdfile scan BREAKS on the first hit: the success arm jumps to
-//      0x00403e8f, past the loop, rather than back to the bump.
-//    * the repeat-run loop increments g_nCluCurRun ONCE in its guard and
-//      ONCE per body, and reloads the counter after every RunClientApp --
-//      an increment written as a statement before the loop and again as the
-//      first statement inside it, not a side-effecting condition.  A
-//      side-effecting `while (++n < limit)` would have put the bump after
-//      the call, and the loop's back edge lands ON the bump.
-//    * `cmp $0x1,%eax; jle` is signed (the limit is an int) while
-//      `cmp %eax,%edx; jb` is unsigned (the counter is a uint32).
-// ----------------------------------------------------------------------- //
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI clu_WinMainQ501(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                           LPSTR lpCmdLine, int nCmdShow)
 {
 	CluCommandLineArgs args;
 	int                nRet;
-	int                i;
 
 	AVP2SRC_INSTALL_CRASH_HANDLER();   // debug build only
 
 	args.m_pArgs = NULL;
 	args.m_nArgs = 0;
 	args.m_pArgBuffer = NULL;
-
-	clu_dsi_ParseCommandLine(clu_strdup(lpCmdLine));
-
-	for (i = 0; i < g_nCluArgCount; i++)
-	{
-		if (stricmp(g_pCluArgList[i], "-cmdfile") == 0)
-		{
-			if (!clu_dsi_ParseCommandFile(g_pCluArgList[i + 1]))
-			{
-				if (args.m_pArgs)
-					clu_sub_429080(args.m_pArgs);
-
-				if (args.m_pArgBuffer)
-					clu_sub_429080(args.m_pArgBuffer);
-
-				return -1;
-			}
-
-			break;
-		}
-	}
 
 	g_nCluStartTime = timeGetTime();
 
@@ -1606,8 +1531,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		}
 	}
 
-	clu_dsi_FreeCommandLine();
-
 	if (args.m_pArgs)
 		clu_sub_429080(args.m_pArgs);
 
@@ -1615,6 +1538,44 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		clu_sub_429080(args.m_pArgBuffer);
 
 	return nRet;
+}
+
+
+// ----------------------------------------------------------------------- //
+//  0x00404270 -- WinMain (Primal Hunt; 0x004042c0 and 0x004042d2 are its
+//  filter expression and handler, enumerated as rows of their own).
+//
+//  AVP2: the whole client runs inside a structured-exception frame: the
+//  `push $-1; push $0x4d44e8; push $0x4c08c8` prologue is VC6's __try with
+//  _except_handler3, the answer starts at -1 (`or $-1,%esi`), and the
+//  filter hands GetExceptionInformation() and the thread's name ("main
+//  thread", 0x004e092c) to the crash reporter at 0x00439b80.  The handler
+//  does nothing: the answer stays -1.
+// ----------------------------------------------------------------------- //
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nCmdShow)
+{
+	int nRet = -1;
+
+	__try
+	{
+		nRet = clu_WinMainQ501(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+	}
+	__except (clu_ReportExceptionQ501(GetExceptionInformation(), "main thread"))
+	{
+	}
+
+	return nRet;
+}
+
+// Not the shipped reporter: 0x00439b80 is a module of its own (a 0xb44-byte
+// frame, its own __try, the module file name, a report written to disk),
+// not yet written.  Its common exit answers zero (0x0043a08c), which is
+// EXCEPTION_CONTINUE_SEARCH, so the exception carries on to the system's
+// own handling; this stands in for it with only that answer.
+int clu_ReportExceptionQ501(EXCEPTION_POINTERS* pInfo, char* pThreadName)
+{
+	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 
@@ -1854,9 +1815,10 @@ void clu_fm_Destroy(CluFileMgr* pMgr)
 		{
 			pNext = pCur->m_pNext;
 
+			// AVP2: stdlith's sb_Free with its two null tests, the record
+			// and then the bank (0x00404568 / 0x0040456c).
 			pRec = pCur->m_pData;
-			*(void**)pRec = pMgr->m_FileRecBank.m_Bank.m_pFreeList;
-			pMgr->m_FileRecBank.m_Bank.m_pFreeList = pRec;
+			clu_sb_FreeQ501(&pMgr->m_FileRecBank.m_Bank, pRec);
 
 			pCur = pNext;
 		}
@@ -1972,7 +1934,7 @@ int clu_fm_OnServerFile(void* pQueue, char* pName, uint32 nUnused, uint32 nID)
 		clu_ConPrintf("Unable to find server file: %s", pName);
 
 		if (pMgr->m_pClientMgr->m_pClientShell)
-			pMgr->m_pClientMgr->m_pClientShell->OnMessage(1, pName, 0);
+			pMgr->m_pClientMgr->m_pClientShell->OnMessage(1, pName);
 
 		return 0;
 	}
@@ -1982,7 +1944,13 @@ int clu_fm_OnServerFile(void* pQueue, char* pName, uint32 nUnused, uint32 nID)
 	if (clu_sub_404410(pMgr, nID))
 		return 0;
 
+	// PH: the bank's own Allocate, called (0x00404788 `lea 0x48(%ebx),%ecx ;
+	// call 0x00404fb0`); AvP2 1.0.9.6 expands the struct-bank pop in place.
+#ifdef PRIMAL_HUNT
+	pRec = (CluNetFileRec*)pMgr->m_NetFileRecBank.CluNetFileRecBank::Allocate();
+#else
 	pRec = (CluNetFileRec*)clu_sb_Allocate(&pMgr->m_NetFileRecBank.m_Bank);
+#endif
 	memset(pRec, 0, sizeof(CluNetFileRec));
 
 	pRec->m_pName18 = pRec->m_pName = pRec->m_pName24 =
@@ -2230,7 +2198,13 @@ CluFileRec* clu_fm_GetFileRec(CluFileMgr* pMgr, CluFileIdent* pIdent, uint8 nFla
 	if (!pNode)
 		return LTNULL;
 
+	// PH: the bank's own Allocate, called, as in clu_fm_OnServerFile; AvP2
+	// 1.0.9.6 expands the struct-bank pop in place.
+#ifdef PRIMAL_HUNT
+	pRec = (CluFileRec*)pMgr->m_FileRecBank.CluFileRecBank::Allocate();
+#else
 	pRec = (CluFileRec*)clu_sb_Allocate(&pMgr->m_FileRecBank.m_Bank);
+#endif
 	memset(pRec, 0, sizeof(CluFileRec));
 
 	pRec->m_pTree = pNode->m_pTree;
@@ -2345,10 +2319,17 @@ LTRESULT clu_fm_CopyFile(CluFileMgr* pMgr, char* pszSourceFile, char* pszDestFil
 //    0x00403330  372 b  12 c  clu_dsi_InitGame
 //    0x004034b0 1335 b  35 c  clu_WndProc
 //    0x004039f0  454 b  10 c  clu_dsi_BuildCommandLine
-//    0x00403bc0  414 b   3 c  clu_dsi_ParseCommandLine
-//    0x00403d60   56 b   2 c  clu_dsi_FreeCommandLine      (bonus, not on the list)
-//    0x00403da0  142 b  10 c  clu_dsi_ParseCommandFile     (csv row merged with 0x00403dcf)
+//    0x00403bc0  414 b   3 c  (NOLF's clu_dsi_ParseCommandLine)
+//    0x00403d60   56 b   2 c  (NOLF's clu_dsi_FreeCommandLine)
+//    0x00403da0  142 b  10 c  (NOLF's clu_dsi_ParseCommandFile)
 //    0x00403e30  338 b  13 c  WinMain
+//
+//  AVP2: the three NOLF command-line helpers are gone from both AvP2 images
+//  -- the CRT's own vector is used and -cmdfile is expanded inside
+//  BuildCommandLine -- and WinMain is a guarded entry around its old body.
+//  Primal Hunt's addresses: BuildCommandLine 0x00403d80 (1022 b),
+//  clu_WinMainQ501 0x00404180, WinMain 0x00404270; AvP2 1.0.9.6's
+//  0x00403a00, 0x00403d90, 0x00403e80.
 //    0x00403fd0  261 b  11 c  clu_fm_Create
 //    0x004040f0  179 b   7 c  clu_fm_Destroy
 //    0x004041f0  140 b   3 c  clu_fm_Init

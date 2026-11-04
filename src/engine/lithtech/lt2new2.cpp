@@ -233,6 +233,10 @@ public:
 	CClientMgrFileView* m_pClientMgr;        // 0x3d0  (NOLF's 0x3c0)
 
 	LTRESULT CopyFile(const char* pszSourceFile, const char* pszDestFile);
+#ifdef PRIMAL_HUNT
+	LTRESULT GetFileInfo(const char* pszFilename, struct LTFileInfo* pInfo);
+	LTRESULT DoesFileExist(const char* pszFilename);
+#endif
 };
 
 // WHAT PINS IT
@@ -251,6 +255,35 @@ LTRESULT CLTClientFiles::CopyFile(const char* pszSourceFile,
 {
 	return sub_00404950(m_pClientMgr->m_pFileMgr, pszSourceFile, pszDestFile);
 }
+
+#ifdef PRIMAL_HUNT
+// PH: ILTCSBase slots 44 and 45 (vtable 0x004d452c +0xb0/+0xb4), the two
+// file queries Primal Hunt added after CopyFile -- the client twins of
+// servermessage.cpp's CLTServer::GetFileInfo / DoesFileExist.  Both have
+// CopyFile's shape: m_pClientMgr (+0x3d0) -> m_pFileMgr (+0x1644) handed
+// first to a cdecl helper, the arguments behind it.
+//   0x00404e30  walks the tree list (`mov 0x4(%edi)`, `cmp %edi`) and fills
+//               the caller's record, LT_NOTFOUND (0x3d) when no tree has it
+//   0x00404ed0  `neg; sbb; and $0xc3; add $0x3d` -> LT_OK / LT_NOTFOUND
+extern LTRESULT sub_00404e30Q502(class CFileMgrView* pFileMgr,
+                             const char* pszFilename,
+                             struct LTFileInfo* pInfo);
+extern LTRESULT sub_00404ed0Q502(class CFileMgrView* pFileMgr,
+                             const char* pszFilename);
+
+// 0x004072f0, 34 bytes: ret $0x8, pushes arg2, arg1, m_pFileMgr.
+LTRESULT CLTClientFiles::GetFileInfo(const char* pszFilename,
+                                     struct LTFileInfo* pInfo)
+{
+	return sub_00404e30Q502(m_pClientMgr->m_pFileMgr, pszFilename, pInfo);
+}
+
+// 0x00407320, 29 bytes: ret $0x4, pushes arg1, m_pFileMgr.
+LTRESULT CLTClientFiles::DoesFileExist(const char* pszFilename)
+{
+	return sub_00404ed0Q502(m_pClientMgr->m_pFileMgr, pszFilename);
+}
+#endif
 
 
 // ======================================================================= //

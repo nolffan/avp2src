@@ -746,9 +746,15 @@ public:
 	CMessageRef   m_SaveData;                // 0x2c
 	void*         m_hFile0;                  // 0x30
 	SavFileSlotQ4S m_hFiles12[2];            // 0x34  ctor zeroes both
-	uint8         m_pad_3c[0x50 - 0x3c];
-	uint16        m_ClientChangeFlags;       // 0x50
-	uint16        m_NetFlags;                // 0x52
+	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
+	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
+#ifdef PRIMAL_HUNT
+	uint8       m_pad_3c[0x5c - 0x3c];
+#else
+	uint8       m_pad_3c[0x58 - 0x3c];
+#endif
+	uint16        m_ClientChangeFlags;       // 0x58 (PH 0x5c)
+	uint16        m_NetFlags;                // 0x5a (PH 0x5e)
 };
 
 // 0x10010e03.  Out of class ON PURPOSE: /Ob1 never expands a definition

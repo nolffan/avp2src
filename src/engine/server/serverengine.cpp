@@ -445,6 +445,21 @@ LTRESULT se_InitSprite(CServerMgr* pMgr, LTObject* pObj,
 	return LT_OK;
 }
 
+// The model instance's model pointer where the shipped objects keep it:
+// Primal Hunt +0x1fc (0x0047f88e; server.dll 0x1003e76b), AvP2 1.0.9.6
+// +0x1f8 (0x00478cfe; server.dll 0x1003b5b3). serverengine.h's
+// ModelInstanceObj still has NOLF's 0x1e4.
+class ModelInstanceViewQ507
+{
+public:
+#ifdef PRIMAL_HUNT
+	uint8  m_pad_000[0x1fc];
+#else
+	uint8  m_pad_000[0x1f8];
+#endif
+	Model* m_pModel;                         // PH 0x1fc, AVP2 0x1f8
+};
+
 // Letting go of a model is only a count: the model itself outlives every
 // instance of it, and something else decides when it goes.
 LTRESULT se_TermModel(CServerMgr* pMgr, LTObject* pObj)
@@ -452,7 +467,13 @@ LTRESULT se_TermModel(CServerMgr* pMgr, LTObject* pObj)
 	if (!pObj)
 		return LT_ERROR;
 
-	((ModelInstanceObj*)pObj)->m_pModel->m_CacheCount--;
+	// AVP2: the count is not taken below zero, and the test is unsigned
+	// (`test ecx,ecx ; jbe`, 0x0047f89a; AvP2 1.0.9.6 0x00478d0a): the
+	// shipped field is a uint32 where commonmodel.h declares an int.
+	Model* pModel = ((ModelInstanceViewQ507*)pObj)->m_pModel;
+
+	if ((uint32)pModel->m_CacheCount > 0)
+		pModel->m_CacheCount--;
 
 	return LT_OK;
 }
@@ -497,17 +518,33 @@ char* se_FixSlashes(char* pPath)
 // it is — the BSP's centre — and sized to half the span of its box, which is
 // what a half-extent is. A world model whose BSP reports itself busy is left
 // alone rather than re-placed.
+// AVP2: the move state is 0x6c bytes, not servermgr.h's 0x68: both images
+// zero one more dword after +0x64 (lithtech.exe 0x0047f9a7..0x0047f9ae, AvP2
+// 1.0.9.6 0x00478e19..0x00478e20; the frame is 0x90, not 0x8c). Until the
+// header has the field, a view adds it here.
+//
+// NEAR (402/402, lithtech.exe 0x0047f970): ebx and edi swap -- shipped keeps
+// the zero in ebx and pMgr in edi. The field in servermgr.h itself, the
+// stores in either order, and the locals declared in either order all
+// leave it.
+struct WMMoveStateQ507
+{
+	WMMoveState m_State;                     // +0x00
+	uint32      m_nUnknown68;                // +0x68
+};
+
 LTRESULT se_InitWorldModel(CServerMgr* pMgr, LTObject* pObj,
                            ObjectCreateStruct* pStruct)
 {
-	WMMoveState state;
-	LTVector    vHalfDims;
-	CWorldBsp*  pBsp;
+	LTVector        vHalfDims;
+	CWorldBsp*      pBsp;
+	WMMoveStateQ507 state;
 
-	state.m_pContainer  = LTNULL;
-	state.m_pUnknown04  = LTNULL;
-	state.m_pObj        = LTNULL;
-	state.m_nUnknown64  = 0;
+	state.m_State.m_pContainer  = LTNULL;
+	state.m_State.m_pUnknown04  = LTNULL;
+	state.m_State.m_pObj        = LTNULL;
+	state.m_State.m_nUnknown64  = 0;
+	state.m_nUnknown68  = 0;
 
 	if (pMgr->m_World.AttachWorldModel(pObj, pStruct->m_Filename))
 	{
@@ -525,14 +562,14 @@ LTRESULT se_InitWorldModel(CServerMgr* pMgr, LTObject* pObj,
 
 		pObj->SetPos(pBsp->m_ve8);
 
-		state.m_pContainer = &pMgr->m_Unknown210;
-		state.m_pUnknown04 = pMgr->m_pUnknown6a8;
-		state.m_pObj       = pObj;
-		state.m_nUnknown0C = pObj->m_BlockingPriority;
-		state.m_pPushList  = LTNULL;
-		state.m_nPushCount = 0;
+		state.m_State.m_pContainer = &pMgr->m_Unknown210;
+		state.m_State.m_pUnknown04 = pMgr->m_pUnknown6a8;
+		state.m_State.m_pObj       = pObj;
+		state.m_State.m_nUnknown0C = pObj->m_BlockingPriority;
+		state.m_State.m_pPushList  = LTNULL;
+		state.m_State.m_nPushCount = 0;
 
-		wm_SetObjectDims(&state, &vHalfDims, 0, 1);
+		wm_SetObjectDims(&state.m_State, &vHalfDims, 0, 1);
 		}
 
 		return LT_OK;
@@ -565,11 +602,15 @@ LTRESULT se_InitWorldModel(CServerMgr* pMgr, LTObject* pObj,
 // thread, or — if the caller did not ask for either — nothing, and the answer
 // is that it is on its way. Asking twice while it is on its way does not
 // queue it twice: the queue itself is searched.
+//
+// AVP2: no message is built at the top (NOLF's `msg` was constructed and
+// never used), and a model loaded here registers itself directly rather
+// than through OnModelLoaded (lithtech.exe 0x0047f505..0x0047f523, AvP2
+// 1.0.9.6 0x004789ff).
 LTRESULT se_LoadModel(CServerMgr* pMgr, char* pFilename, Model** ppModel,
                       void** ppFile, int bWantLoad, int bLoadHere)
 {
-	LThreadMessage msg;
-	void*          hElement;
+	void* hElement;
 
 	*ppModel = LTNULL;
 	*ppFile  = LTNULL;
@@ -616,23 +657,10 @@ LTRESULT se_LoadModel(CServerMgr* pMgr, char* pFilename, Model** ppModel,
 	{
 		LTRESULT dResult = se_LoadModelData(pMgr, pFilename, *ppFile, ppModel);
 
-		if (dResult)
-		{
-			return dResult;
-		}
-		else
-		{
-			LThreadMessage done;
+		if (dResult == LT_OK)
+			se_RegisterModel(pMgr, *ppModel, *ppFile, 1);
 
-			done.m_Data[0] = 0;
-			done.m_Data[2] = 0;
-			done.m_Data[3] = (uint32)*ppFile;
-			done.m_Data[4] = (uint32)*ppModel;
-
-			pMgr->OnModelLoaded(&done);
-
-			return LT_OK;
-		}
+		return dResult;
 	}
 }
 
@@ -793,6 +821,83 @@ LTRESULT se_InitModel(CServerMgr* pMgr, LTObject* pObj,
 	return LT_OK;
 }
 
+// AVP2: the load request is 0x24 bytes, not serverengine.h's 0x20. A dword
+// the manager's server interface answers comes in at +0x0c and pushes the
+// child name to +0x10 and the four flags to +0x14..+0x20: se_LoadModelData
+// stores them at 0x0047ef8c..0x0047efb0 (child name first and the new word
+// last, after the flags), fills +0x0c at 0x0047f107 and tests +0x18 and +0x20
+// (0x0047f156, 0x0047f1cb); se_LoadChildModel reads the name at +0x10
+// (0x0047ec8b). AvP2 1.0.9.6 has the same stores (0x004784d7). serverengine.h
+// is shared with commonmodel.cpp and cmodelload.cpp, so the shape is a view
+// here until the header moves (names ours).
+class CModelLoadRequestQ507
+{
+public:
+	CModelLoadRequestQ507()
+	{
+		m_pChildName     = LTNULL;
+		m_pStream        = LTNULL;
+		m_pfnLoadChild   = se_NoChildModel;
+		m_pContext       = LTNULL;
+		m_bUnknown14     = LTTRUE;
+		m_bTreesValid    = LTTRUE;
+		m_bUnknown1C     = LTTRUE;
+		m_bChildrenFound = LTTRUE;
+		m_Unknown0C      = 0;
+	}
+
+	ILTStream* m_pStream;                    // 0x00
+	LTRESULT (*m_pfnLoadChild)(CModelLoadRequest* pReq,
+	                          Model** ppModel); // 0x04
+	CModelLoadContext* m_pContext;           // 0x08
+	uint32 m_Unknown0C;                      // 0x0c  from the server interface
+	char*  m_pChildName;                     // 0x10
+	LTBOOL m_bUnknown14;                     // 0x14
+	LTBOOL m_bTreesValid;                    // 0x18
+	LTBOOL m_bUnknown1C;                     // 0x1c
+	LTBOOL m_bChildrenFound;                 // 0x20
+};
+
+// What the manager keeps at +0xd38 (servermgr.h's CUnknown928Obj), reached
+// at the one slot se_LoadModelData calls with nothing pushed: +0x194 in
+// Primal Hunt (0x0047f101), +0x18c in AvP2 1.0.9.6 (0x00478618) -- the PH
+// server interface's two extra slots, as everywhere past slot 44 (names
+// ours).
+class CServerInterfaceViewQ507
+{
+public:
+	virtual void _v000()=0; virtual void _v004()=0; virtual void _v008()=0; virtual void _v00c()=0;
+	virtual void _v010()=0; virtual void _v014()=0; virtual void _v018()=0; virtual void _v01c()=0;
+	virtual void _v020()=0; virtual void _v024()=0; virtual void _v028()=0; virtual void _v02c()=0;
+	virtual void _v030()=0; virtual void _v034()=0; virtual void _v038()=0; virtual void _v03c()=0;
+	virtual void _v040()=0; virtual void _v044()=0; virtual void _v048()=0; virtual void _v04c()=0;
+	virtual void _v050()=0; virtual void _v054()=0; virtual void _v058()=0; virtual void _v05c()=0;
+	virtual void _v060()=0; virtual void _v064()=0; virtual void _v068()=0; virtual void _v06c()=0;
+	virtual void _v070()=0; virtual void _v074()=0; virtual void _v078()=0; virtual void _v07c()=0;
+	virtual void _v080()=0; virtual void _v084()=0; virtual void _v088()=0; virtual void _v08c()=0;
+	virtual void _v090()=0; virtual void _v094()=0; virtual void _v098()=0; virtual void _v09c()=0;
+	virtual void _v0a0()=0; virtual void _v0a4()=0; virtual void _v0a8()=0; virtual void _v0ac()=0;
+	virtual void _v0b0()=0; virtual void _v0b4()=0; virtual void _v0b8()=0; virtual void _v0bc()=0;
+	virtual void _v0c0()=0; virtual void _v0c4()=0; virtual void _v0c8()=0; virtual void _v0cc()=0;
+	virtual void _v0d0()=0; virtual void _v0d4()=0; virtual void _v0d8()=0; virtual void _v0dc()=0;
+	virtual void _v0e0()=0; virtual void _v0e4()=0; virtual void _v0e8()=0; virtual void _v0ec()=0;
+	virtual void _v0f0()=0; virtual void _v0f4()=0; virtual void _v0f8()=0; virtual void _v0fc()=0;
+	virtual void _v100()=0; virtual void _v104()=0; virtual void _v108()=0; virtual void _v10c()=0;
+	virtual void _v110()=0; virtual void _v114()=0; virtual void _v118()=0; virtual void _v11c()=0;
+	virtual void _v120()=0; virtual void _v124()=0; virtual void _v128()=0; virtual void _v12c()=0;
+	virtual void _v130()=0; virtual void _v134()=0; virtual void _v138()=0; virtual void _v13c()=0;
+	virtual void _v140()=0; virtual void _v144()=0; virtual void _v148()=0; virtual void _v14c()=0;
+	virtual void _v150()=0; virtual void _v154()=0; virtual void _v158()=0; virtual void _v15c()=0;
+	virtual void _v160()=0; virtual void _v164()=0; virtual void _v168()=0; virtual void _v16c()=0;
+	virtual void _v170()=0; virtual void _v174()=0; virtual void _v178()=0; virtual void _v17c()=0;
+	virtual void _v180()=0; virtual void _v184()=0; virtual void _v188()=0;
+#ifdef PRIMAL_HUNT
+	// PH: the two extra slots.
+	virtual void _vX1()=0; virtual void _vX2()=0;
+#endif
+	virtual uint32 GetLoadWordQ507()=0;      // PH +0x194, AVP2 +0x18c
+};
+
 // Reading a model file into a Model. The model is built before the file is
 // read, so a failure anywhere below has one thing to undo, and it undoes it
 // the same way every time.
@@ -805,8 +910,8 @@ LTRESULT se_InitModel(CServerMgr* pMgr, LTObject* pObj,
 LTRESULT se_LoadModelData(CServerMgr* pMgr, char* pFilename, void* pFile,
                           Model** ppModel)
 {
-	CModelLoadRequest request;
-	CModelLoadContext context;
+	CModelLoadRequestQ507 request;
+	CModelLoadContext     context;
 	Model*            pModel;
 	ILTStream*        pStream;
 	LTRESULT          dResult;
@@ -850,7 +955,14 @@ LTRESULT se_LoadModelData(CServerMgr* pMgr, char* pFilename, void* pFile,
 		request.m_pfnLoadChild = se_LoadChildModel;
 		request.m_pContext     = &context;
 
-		dResult = pModel->LoadChildModels(&request);
+		// AVP2: 0x0047f0e1..0x0047f107, and the report at 0x0047f10b.
+		request.m_Unknown0C =
+			((CServerInterfaceViewQ507*)pMgr->m_pUnknown928)->GetLoadWordQ507();
+
+		if (g_DebugLevel >= 3)
+			dsi_ServerError("Calling Model::Load():  %s\n", pFilename);
+
+		dResult = pModel->LoadChildModels((CModelLoadRequest*)&request);
 	}
 
 	request.m_pStream->Release();
@@ -1121,7 +1233,7 @@ public:
 // with children of its own comes back through here. What is different is the
 // end, where the model is given a callback that takes it out of the manager's
 // hash again when it goes, so that nothing is left pointing at it.
-LTRESULT se_LoadChildModel(CModelLoadRequest* pReq, Model** ppModel)
+LTRESULT se_LoadChildModel(CModelLoadRequest* pRequest, Model** ppModel)
 {
 	char   szDir[0x200];
 	char   szPath[0x200];
@@ -1129,8 +1241,8 @@ LTRESULT se_LoadChildModel(CModelLoadRequest* pReq, Model** ppModel)
 	CModelLoadContext* pCtx;
 	Model* pModel = LTNULL;
 	void*  hElement;
-	CModelCleanupRec* pEntry;
 	LTRESULT dResult;
+	CModelLoadRequestQ507* pReq = (CModelLoadRequestQ507*)pRequest;
 
 	*ppModel = LTNULL;
 
@@ -1169,7 +1281,13 @@ LTRESULT se_LoadChildModel(CModelLoadRequest* pReq, Model** ppModel)
 	dResult = pModel->Load(pReq->m_pStream, (IMoAllocator*)&g_DefAlloc);
 
 	if (!dResult)
-		dResult = pModel->LoadChildModels(pReq);
+	{
+		// AVP2: the report se_LoadModelData makes, for the child (0x0047ee49).
+		if (g_DebugLevel >= 3)
+			dsi_ServerError("Calling Model::Load():  %s\n", pReq->m_pChildName);
+
+		dResult = pModel->LoadChildModels(pRequest);
+	}
 
 	pReq->m_pStream->Release();
 
@@ -1191,16 +1309,11 @@ LTRESULT se_LoadChildModel(CModelLoadRequest* pReq, Model** ppModel)
 			RETURN_ERROR(1, "se_LoadChildModel", LT_ERROR);
 		}
 
-		pEntry = new CModelCleanupRec(pCtx->m_pServerMgr, pModel);
-
-		// The list head is at the model's +0x14, and the shipped
-		// `lea 0x14(%esi)` says so. commonmodel.h (not ours) names the run
-		// from +0x08 to +0x13 m_Cleanups and the word at +0x14 m_pad_014,
-		// so the address is computed here rather than taken from a field
-		// whose name would be misleading.
-		dl_AddLink((uint8*)pModel + 0x14,
-		           dl_MakeLink(&g_ModelHashCleanup, pEntry));
-
+		// AVP2: the cleanup record is se_RegisterModel's now, for every
+		// model. NOLF's was made here, at the model's +0x14: commonmodel.h
+		// (not ours) names the run from +0x08 to +0x13 m_Cleanups and the
+		// word at +0x14 m_pad_014, so that address is computed rather than
+		// taken from a field whose name would be misleading.
 		*ppModel = pModel;
 
 		return LT_OK;
@@ -1274,6 +1387,13 @@ void cs_InheritFileFromServer(Model* pModel);      // 0x00414930 (client only)
 // it puts the manager in edi and the head in a fresh ebx exactly as shipped.
 // A rotation is a symptom, and probing one lever at a time can hide the
 // second.
+//
+// NEAR on Primal Hunt (316 of 312, lithtech.exe 0x0047f2a0) since the
+// cleanup record moved in: the bit-0 clear goes through %al and the manager
+// is reloaded before it, where shipped keeps `andb $0xfe,0xc(%ebp)` and
+// reloads after. Through the uint16 field it is `andw` (314); `&= 0xfe`, a
+// test through the uint16 field, the record built in a named local, and
+// /GX all leave it.
 LTRESULT se_RegisterModel(CServerMgr* pMgr, Model* pModel, void* pFile,
                           int nFlag)
 {
@@ -1284,6 +1404,10 @@ LTRESULT se_RegisterModel(CServerMgr* pMgr, Model* pModel, void* pFile,
 
 	if (g_DebugLevel >= 2)
 		dsi_ServerError("(Server) loaded model: %s", pModel->GetFilename());
+
+	// AVP2: a second report one level up (0x0047f2c7).
+	if (g_DebugLevel >= 3)
+		dsi_ServerError("Adding model to resource list: %s\n", pModel->GetFilename());
 
 	hElement = dhash_AddElement((CHashTable*)pMgr->m_hModelHash,
 	                            pModel->GetFilename(),
@@ -1303,7 +1427,10 @@ LTRESULT se_RegisterModel(CServerMgr* pMgr, Model* pModel, void* pFile,
 
 				if (pInst->m_pSData->m_pModelFile == pFile)
 				{
-					pInst->m_AnimTracker.GetModel()->m_CacheCount--;
+					// AVP2: not below zero, unsigned (0x0047f35d), as
+					// se_TermModel.
+					if ((uint32)pInst->m_AnimTracker.GetModel()->m_CacheCount > 0)
+						pInst->m_AnimTracker.GetModel()->m_CacheCount--;
 
 					pInst->m_AnimTracker.SetModel(pModel);
 
@@ -1316,6 +1443,16 @@ LTRESULT se_RegisterModel(CServerMgr* pMgr, Model* pModel, void* pFile,
 			((CFileRefFlagView*)pFile)->m_Flags &= ~1;
 		}
 	}
+
+	// AVP2: every registered model gets the record that takes it back out of
+	// the hash when it goes -- NOLF made it in se_LoadChildModel, for child
+	// models only (0x0047f397..0x0047f3be; AvP2 1.0.9.6 likewise).
+	//
+	// The list head is the model's +0x14 (`lea 0x14(%esi)`, 0x0047f3b9); see
+	// se_LoadChildModel's note on commonmodel.h's names for that word.
+	dl_AddLink((uint8*)pModel + 0x14,
+	           dl_MakeLink(&g_ModelHashCleanup,
+	                       new CModelCleanupRec(pMgr, pModel)));
 
 	// Unconditional — 0x0046add2 is the merge point both `je`s above reach.
 #ifndef LT_SERVER_BUILD

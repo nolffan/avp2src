@@ -77,6 +77,15 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
   DEdit and ModelEdit (`toolchains/COMPILERS.md`). The stray C object of
   8799 in `lithtech.exe` is the one NOLF's engine has too, for which no
   compiler is held. The 8966 objects are likely `lithshared` again.
+* **Primal Hunt's engine is built with `/GX`; AvP2 1.0.9.6's is not.**
+  Primal Hunt's `lithtech.exe` and `server.dll` carry exception frames on
+  functions with destructible locals where AvP2's same functions have none
+  (lithtech.exe 0x00452310, `~CModelSub1D4`; server.dll 0x1000c130, the
+  `CWorldSurface` constructor, against AvP2's frameless 0x1000be60).
+  Measured: `/GX` on Primal Hunt's objects took `lithtech.exe` from 2,456
+  to 2,724 identical functions and `server.dll` from 1,566 to 1,714; on
+  AvP2's it loses matches. StdLith's allocator code (`stdlithalloc.cpp`)
+  is the exception: no frame (0x004b4e30).
 * **Older binaries ship beside the patch's.** `ltmsg.dll` (February 2001,
   but not NOLF's file), `Launch.dll` (NOLF's, 1999; Blood II ships an
   older one, Primal Hunt this one), `AVP2Up.dll` and the launcher are the

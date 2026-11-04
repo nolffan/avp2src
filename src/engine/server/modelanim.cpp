@@ -99,9 +99,11 @@ uint32 ModelAnim::GetLength()
 // nothing to bound the animation index against, so the index is dropped on
 // the floor and only the clear happens (name ours).
 //
-// NEAR (122 of 122 bytes, 39 of 39 instructions), and what is left is
-// register allocation only (the best register renaming leaves nothing structural;
-// lithtech 0x00401050 shows the same esi/edx/bx vs edi/esi/cx rotation).
+// NEAR (122 of 122 bytes, 39 of 39 instructions; Primal Hunt's lithtech.exe
+// 0x00401050 157 of 157, 49 of 49, once the three time-scale stores below
+// are in), and what is left is register allocation only (the best register
+// renaming leaves nothing structural; lithtech shows the same esi/edx/bx vs
+// edi/esi/cx rotation).
 //  - the time-ref clear is written field by field with m_pModel stored third,
 //    NOT as one inlined AnimTimeRef::Init: that is what puts shipped's
 //    `mov %esi,0x1c(%eax)` between m_pUser1 and m_CurKey and the fldz after
@@ -126,6 +128,12 @@ void at_Init(LTAnimTracker* pTracker, Model* pModel, uint32 iAnim)
 	pTracker->m_CurKey = 0;
 	pTracker->m_Flags = 0;
 	pTracker->m_InterpolationMS = 0;
+	// AVP2: the SDK tracker's time scale (one over one) and interpolation
+	// switch, absent from NOLF's: lithtech.exe 0x0040106f..0x0040107d, the
+	// same bytes in AvP2 1.0.9.6's image.
+	pTracker->m_TimeScaleNum = 1;
+	pTracker->m_TimeScaleDenom = 1;
+	pTracker->m_bAllowInterpolation = LTTRUE;
 
 	pTracker->m_TimeRef.m_Prev.Clear();
 	pTracker->m_TimeRef.m_Cur.Clear();
@@ -157,29 +165,54 @@ void at_Init(LTAnimTracker* pTracker, Model* pModel, uint32 iAnim)
 // at_SetTime's, which is the only evidence for what it means: this is the
 // step that is allowed to fire string keys and wrap a looping animation,
 // the seek is not.
+//
+// AVP2: the step is scaled by the tracker's time scale first, a zero
+// denominator being mended to one (lithtech.exe 0x004010f0, the same bytes
+// in AvP2 1.0.9.6's image).
 void at_UpdateTracker(LTAnimTracker* pTracker, uint32 nMS)
 {
+	uint32 nScaled;
+
 	if (pTracker->m_Flags & AT_PLAYING)
-		at_Advance(pTracker, nMS, 1);
+	{
+		nScaled = pTracker->m_TimeScaleNum * nMS;
+
+		if (!pTracker->m_TimeScaleDenom)
+			pTracker->m_TimeScaleDenom = 1;
+
+		at_Advance(pTracker, nScaled / pTracker->m_TimeScaleDenom, 1);
+	}
 }
 
 // 0x100010a7 — has the current animation run out? A tracker that is still
 // playing has not, whatever its time says; the end is one past the last
 // keyframe's time (name ours).
+//
+// AVP2: an animation of one keyframe (or none) is done as soon as the tracker
+// is not playing: lithtech.exe 0x00401174 (Primal Hunt) and the same test in
+// AvP2 1.0.9.6's image, `cmp $1,%edx ; ja` on the count read ONCE into a
+// register, which is why the count is taken into a local here.
 LTBOOL at_IsDone(LTAnimTracker* pTracker)
 {
 	ModelAnim* pAnim;
+	uint32 nKeyFrames;
 
 	if (pTracker->IsValid())
 	{
 		pAnim = pTracker->m_TimeRef.m_pModel->
 		            m_AnimArray.m_pArray[pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
 
-		if (!(pTracker->m_Flags & 2) &&
-		    pTracker->m_TimeRef.m_Cur.m_Time ==
-		        pAnim->m_pKeyFrames[pAnim->m_nKeyFrames - 1].m_Time + 1)
+		if (!(pTracker->m_Flags & 2))
 		{
-			return LTTRUE;
+			nKeyFrames = pAnim->m_nKeyFrames;
+			if (nKeyFrames <= 1)
+				return LTTRUE;
+
+			if (pTracker->m_TimeRef.m_Cur.m_Time ==
+			        pAnim->m_pKeyFrames[nKeyFrames - 1].m_Time + 1)
+			{
+				return LTTRUE;
+			}
 		}
 	}
 
@@ -212,24 +245,42 @@ void at_SetTime(LTAnimTracker* pTracker, uint32 nTime, LTBOOL bInterpolate)
 // the old locator to blend from; not interpolating throws it away and says
 // so with the counter's sentinel (name ours).
 //
-// Two store orders come from lithtech's /O2 copy (0x004011c0), server.dll's
-// /O1 copy being identical either way: the percentage is zeroed before the
-// animation index is stored, and the non-interpolating arm sets the sentinel
-// before the locator copy (shipped writes 0x1a between the two dword stores).
+// The store order is lithtech.exe's /O2 copy's (Primal Hunt 0x00401200,
+// byte-identical, and the same bytes in AvP2 1.0.9.6's): the animation index
+// goes in during the locator copy, the percentage after it, and the
+// non-interpolating arm sets the sentinel before the locator copy (shipped
+// writes 0x1a between the two dword stores).
 LTBOOL at_SetAnim(LTAnimTracker* pTracker, uint32 iAnim, LTBOOL bInterpolate)
 {
 	if (!(pTracker->m_Flags & 8) && iAnim >= pTracker->m_TimeRef.m_pModel->m_AnimArray.m_nElements)
 		return LTFALSE;
 
+	ModelAnim* pAnim;
+	uint32     iWeightSet;
+
+	// AVP2: the old locator keeps its own weight set across the copy
+	// (lithtech.exe 0x0040121e / 0x0040124d).
+	iWeightSet = pTracker->m_TimeRef.m_Prev.m_iWeightSet;
 	pTracker->m_TimeRef.m_Prev = pTracker->m_TimeRef.m_Cur;
+	pTracker->m_TimeRef.m_Cur.m_iAnim = (uint16)iAnim;
+	pTracker->m_TimeRef.m_Prev.m_iWeightSet = iWeightSet;
 
 	pTracker->m_TimeRef.m_Percent = 0.0f;
-	pTracker->m_TimeRef.m_Cur.m_iAnim = (uint16)iAnim;
 	pTracker->m_CurKey = 0;
 	pTracker->m_TimeRef.m_Cur.m_iFrame = 0;
 	pTracker->m_TimeRef.m_Cur.m_Time = 0;
 
-	if (bInterpolate && pTracker->IsValid())
+	// AVP2: an animation with no blend time of its own is not blended into,
+	// and the tracker's own switch can refuse the blend (0x00401263..
+	// 0x004012ad, the same bytes in AvP2 1.0.9.6's image).
+	if (bInterpolate)
+	{
+		pAnim = pTracker->m_TimeRef.m_pModel->m_AnimArray.m_pArray[iAnim].m_pAnim;
+		if (pAnim)
+			bInterpolate = pAnim->m_nInterpolationTime > 0;
+	}
+
+	if (bInterpolate && pTracker->IsValid() && pTracker->m_bAllowInterpolation)
 	{
 		pTracker->m_InterpolationMS = 0;
 	}
@@ -331,11 +382,29 @@ inline void at_UpdatePercent(LTAnimTracker* pTracker)
 	AnimKeyFrame* pPrev;
 	AnimKeyFrame* pCur;
 
+#ifdef LT_SERVER_BUILD
 	if (pTracker->m_TimeRef.m_Prev.m_iFrame != pTracker->m_TimeRef.m_Cur.m_iFrame &&
 	    pTracker->IsValid())
 	{
 		pPrev = ((CTrackerKeyView*)pTracker)->GetPrevKeyFrame();
 		pCur  = ((CTrackerKeyView*)pTracker)->GetCurKeyFrame();
+#else
+	// lithtech.exe's copy, expanded into at_Advance (0x00401562..0x004015c6
+	// in Primal Hunt, the same bytes in AvP2 1.0.9.6), reads the two frame
+	// indices ONCE, into %dx and %di, compares them and indexes both
+	// keyframe tables with those same registers. The accessors re-read them
+	// (and server.dll's out-of-line copy does call them), so here the
+	// indices are locals and the two walks are spelled out.
+	uint16 iPrevFrame = pTracker->m_TimeRef.m_Prev.m_iFrame;
+	uint16 iCurFrame = pTracker->m_TimeRef.m_Cur.m_iFrame;
+
+	if (iPrevFrame != iCurFrame && pTracker->IsValid())
+	{
+		pPrev = &pTracker->m_TimeRef.m_pModel->m_AnimArray
+		             .m_pArray[pTracker->m_TimeRef.m_Prev.m_iAnim].m_pAnim->m_pKeyFrames[iPrevFrame];
+		pCur  = &pTracker->m_TimeRef.m_pModel->m_AnimArray
+		             .m_pArray[pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim->m_pKeyFrames[iCurFrame];
+#endif
 
 		pTracker->m_TimeRef.m_Percent =
 		    (float)(pTracker->m_TimeRef.m_Cur.m_Time - pPrev->m_Time) /
@@ -494,6 +563,9 @@ void at_Advance(LTAnimTracker* pTracker, uint32 nTime, int nFlags)
 void at_Reset(LTAnimTracker* pTracker)
 {
 	pTracker->m_TimeRef.m_Prev.m_iAnim = pTracker->m_TimeRef.m_Cur.m_iAnim;
+	// AVP2: the weight set goes back with the animation (lithtech.exe
+	// 0x004012e8 / 0x004012f1, the same bytes in AvP2 1.0.9.6's image).
+	pTracker->m_TimeRef.m_Prev.m_iWeightSet = pTracker->m_TimeRef.m_Cur.m_iWeightSet;
 	pTracker->m_CurKey = 0;
 	pTracker->m_TimeRef.m_Cur.m_iFrame = 0;
 	pTracker->m_TimeRef.m_Prev.m_iFrame = 0;
@@ -524,6 +596,19 @@ void at_Reset(LTAnimTracker* pTracker)
 //     survives, and the `ja` takes the other arm), and the two arms differ
 //     in which locator gets the old index: the `<=` arm leaves the previous
 //     locator on this keyframe, the `>` arm moves both.
+//
+// AVP2 (lithtech.exe 0x00401600, the same bytes in AvP2 1.0.9.6's image):
+//   * a type-1 keyframe's function is called with the tracker and the
+//     keyframe only (`push %edi; push %ecx; call *%eax; add $0x8,%esp`),
+//     while the tracker's string-key callback takes the SDK's four, the
+//     text to append and whether to replace -- none and no for an ordinary
+//     string key;
+//   * the LAST keyframe of an animation, when its time is past 1 ms, also
+//     reports "LTAnim_End" through the string-key callback with the replace
+//     flag set (0x00401668..0x00401685), the key CharacterAnimation.cpp
+//     waits for.
+typedef void (*AtKeyFrameFnQ501)(LTAnimTracker* pTracker, AnimKeyFrame* pKey);
+
 void at_DoKeyFrame(LTAnimTracker* pTracker, ModelAnim* pAnim, uint32 iKey)
 {
 	AnimKeyFrame* pKey = &pAnim->m_pKeyFrames[iKey];
@@ -532,16 +617,19 @@ void at_DoKeyFrame(LTAnimTracker* pTracker, ModelAnim* pAnim, uint32 iKey)
 
 	if (pKey->m_Type == 1)
 	{
-		// AVP2: the key-frame callbacks take two more arguments, the text to
-		// append and whether to replace (ltanimtracker.h's StringKeyCallback);
-		// provisional: none and no, until the retail code shows what is passed
 		if ((pTracker->m_Flags & 4) && pKey->m_pFn)
-			pKey->m_pFn(pTracker, pKey, LTNULL, LTFALSE);
+			((AtKeyFrameFnQ501)pKey->m_pFn)(pTracker, pKey);
 	}
 	else if (pKey->m_Type == 0)
 	{
 		if (pKey->m_pString[0] && pTracker->m_StringKeyCallback)
-			pTracker->m_StringKeyCallback(pTracker, pKey, LTNULL, LTFALSE); // AVP2: provisional, as above
+			pTracker->m_StringKeyCallback(pTracker, pKey, LTNULL, LTFALSE);
+
+		if (iKey == pAnim->m_nKeyFrames - 1 && pTracker->m_StringKeyCallback &&
+		    pKey->m_Time > 1)
+		{
+			pTracker->m_StringKeyCallback(pTracker, pKey, "LTAnim_End", LTTRUE);
+		}
 
 		pNext = at_FindNextStringKey(pTracker, iKey + 1, &iNext);
 

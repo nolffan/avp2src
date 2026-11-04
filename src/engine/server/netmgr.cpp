@@ -16,9 +16,9 @@
 // is no atexit piece. server.dll only: lithtech.exe has no such
 // initialiser anywhere (no `push 1; mov ecx,imm; call; ret` in its .text)
 // and its trace lines push a literal 0 instead (see NET_TRACE_TIME).
-#ifdef LT_SERVER_BUILD
+// AVP2: lithtech.exe has it too -- PH's initialiser is 0x004678a0 (jmp
+// head) / 0x004678b0 (push 1; mov $0x4f5770,%ecx; call 0x00426060).
 CBaseCounter g_NetCounter(1);
-#endif
 
 // 0x1002136b / 0x00455310. The two scalar stores are in *this* order and not
 // the other way round because lithtech.exe (size-exact, 242 of 242 bytes, and
@@ -1208,11 +1208,9 @@ public:
 // counter call, no counter reference at all -- so the executable's build
 // passes a constant zero. The guard is the stand-in for however the original
 // configured that out.
-#ifdef LT_SERVER_BUILD
+// AVP2: lithtech.exe reads the counter as server.dll does (PH 0x0046b0c9,
+// `mov $0x4f5770,%ecx; call 0x004260f0`, the forwarder's jmp).
 #define NET_TRACE_TIME() (((CBaseCounterReadView*)&g_NetCounter)->sub_10005fab())
-#else
-#define NET_TRACE_TIME() 0
-#endif
 
 // The trace line carries the elapsed counter and whatever name the update is
 // running under, so a client and a server log interleave readably. Quiet

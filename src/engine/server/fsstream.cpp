@@ -488,6 +488,12 @@ extern void* g_pUnknown582e0;
 // SHIPPED BUG: the debug line's format asks for two values and is given one.
 // `size` is never pushed, so the "%u" prints whatever follows `this` on the
 // stack. The sibling read in CTreeStream::Read passes both.
+//
+// NEAR on Primal Hunt's lithtech.exe (0x00429c80, 204 of 195): shipped loads
+// m_nOffset once before the first test's branch and keeps a single call.
+// `if (A && B) Read(-1) else Read(nOffset)` with nOffset read first comes to
+// 196 (only the global's register differs) but loses server.dll's match
+// (0x1000a641), which this nested form has.
 LTRESULT CMemStream::Read(void* pData, unsigned long size)
 {
 	unsigned long nRead;

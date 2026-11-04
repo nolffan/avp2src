@@ -229,7 +229,11 @@ class TextureData
 public:
 	uint8  m_pad_00[0x18];
 	uint32 m_Flags;                                             // 0x18
-	uint8  m_pad_1c[0x2c - 0x1c];
+	uint8  m_pad_1c[0x24 - 0x1c];
+	// AVP2: a byte of the DTX header sub_461e30 copies to the texture's
+	// +0x3c (`movb 0x24(%eax),%cl`, 0x00474e34).  (name ours)
+	uint8  m_Unknown24;                                         // 0x24
+	uint8  m_pad_25[0x2c - 0x25];
 	// The DTX header's command string, which 0x00461e30 parses for
 	// "DetailTex" / "EnvMap" / "EnvMapAlpha".
 	char   m_CommandString[0xac - 0x2c];                        // 0x2c
@@ -260,6 +264,14 @@ public:
 	CRenderFileIdent* m_pFile;                                  // 0x24
 	SharedTexture*    m_pLinkedTexture;                         // 0x28
 	uint32            m_nLinkType;                              // 0x2c
+	// AVP2: a copy of the command string (0x00430580 replaces +0x38 with
+	// a new[] copy of its argument; thiscall, `ret $4`) and the header
+	// byte above.  (names ours)
+	uint8             m_pad_30[0x38 - 0x30];
+	char*             m_pCommandString;                         // 0x38
+	uint32            m_Unknown3c;                              // 0x3c
+
+	void SetCommandString(char* pString);                       // 0x00430580
 };
 
 
@@ -489,17 +501,18 @@ public:
 	virtual void Slot1();                                       // +0x04
 };
 
+// AVP2: the world is four bytes longer, so everything from the embedded
+// object on is four higher than NOLF's: `lea 0x1f0` in the two stubs
+// (0x0047525b / 0x0047527b; AvP2 1.0.9.6 agrees) and +0x4c4 at 0x00474fa1.
 class CRenderCallbackMgr
 {
 public:
-	uint8              m_pad_000[0x1ec];
-	CRenderCallbackSub m_Sub1ec;                                // 0x1ec
-	uint8              m_pad_1f0[0x4c0 - 0x1f0];
-	// AVP2: as Primal Hunt (PH addresses) -- four more bytes in the world below here (0x00474fa1 reads +0x4c4).
-	uint8 m_padExtra[4];
+	uint8              m_pad_000[0x1f0];
+	CRenderCallbackSub m_Sub1ec;                                // 0x1f0
+	uint8              m_pad_1f4[0x4c4 - 0x1f4];
 	// ccline.cpp's m_pClientDE; rs_ProcessAttachment (0x00462091) reads
 	// its +0x08, the ILTCommon.
-	class CRenderClientDEView* m_pClientDE;                     // 0x4c0
+	class CRenderClientDEView* m_pClientDE;                     // 0x4c4
 	uint8              m_pad_4c4[0x1534 - 0x4c4];
 	// AVP2: as Primal Hunt (PH addresses) -- and the sound manager is 0x10c longer.
 	uint8 m_padExtra4c4[0x10c];
@@ -661,6 +674,11 @@ LTRESULT sub_461e30(SharedTexture* pTexture, TextureData** ppData, LTBOOL bBind)
 		g_TextureDataList.m_nCurBytes += (*ppData)->m_AllocSize;
 
 		pTexture->m_pEngineData = *ppData;
+		// AVP2: the texture keeps its own copy of the command string and
+		// the header byte (0x00474e23..0x00474e3e; AvP2 1.0.9.6's
+		// 0x0046ecc3).
+		pTexture->SetCommandString((*ppData)->m_CommandString);
+		pTexture->m_Unknown3c = (*ppData)->m_Unknown24;
 		(*ppData)->m_pSharedTexture = pTexture;
 
 		if (bBind)

@@ -295,12 +295,17 @@ public:
 class CClientMgrTexView
 {
 public:
-	uint8  m_pad_00[0x21ac];
-	// AVP2: as Primal Hunt (PH addresses) -- CClientMgr is 0x110 longer below here (0x004a558c reads +0x22bc).
-	uint8 m_padExtra[0x110];
+	uint8  m_pad_00[0x1728];
+	// AVP2: the client manager's own pixel-format converter (NOLF's +0x1618,
+	// moved by the music manager's +0x110), which GetTextureHandle converts
+	// through (`mov 0x4(%edi),%ecx; add $0x1728,%ecx`, 0x004a52c4 and
+	// 0x004a5348) where NOLF's built one on its stack. It runs exactly up
+	// to the frame code: 0x1728 + 0xb94 = 0x22bc.
+	FMConvertMgr m_ConvertMgr;               // 0x1728
+	// AVP2: as Primal Hunt (PH addresses) -- 0x004a558c reads +0x22bc.
 	// Bumped once per Render; a texture's own copy equalling this is what
 	// WasTextureDrawnLastFrame answers LT_YES to.
-	uint16 m_nFrameCode;                     // 0x21ac
+	uint16 m_nFrameCode;                     // 0x22bc
 };
 
 
@@ -428,7 +433,8 @@ static LTBOOL tm_IsValidTextureHandle(const HTEXTURE hTexture)
 // 61 is LT_NOTFOUND and 67 is LT_OUTOFMEMORY. de_error.h's note about one
 // name variable serving several sites is this function.
 //
-// THE FRAME: `sub $0xc3c` and the four locals sit at esp0-0xb94 (0xb94
+// THE FRAME (NOLF's; AvP2's and Primal Hunt's is `sub $0xa8`, with no
+// converter of its own - see CClientMgrTexView): `sub $0xc3c` and the four locals sit at esp0-0xb94 (0xb94
 // bytes), esp0-0xc2c (0x98), esp0-0xc38 (0xc) and esp0-0xc3c (4). The two
 // constructor CALLS fix the converter before the request (0x0045f390 runs
 // before 0x0045f240). The frame order does NOT follow the reference's
@@ -447,10 +453,12 @@ static LTBOOL tm_IsValidTextureHandle(const HTEXTURE hTexture)
 // first Convert failure, 0x004884e5 out of memory, 0x00488530 not found),
 // which is how VC6 lays out the else-sides of nested ifs.
 //
-// STILL NEAR, one block, 758 bytes both: the final refcount increment.
-// Shipped re-reads the word for the insert (`xor 0x32(%ecx),%ax`) after an
-// `and $0x7fff; inc %eax` extraction; SetRefCount(GetRefCount() + 1) here
-// gives a 16-bit `inc %dx` with the word kept in ecx. Measured: `++`, `+= 1`,
+// STILL NEAR, 750 against 755 (Primal Hunt's 0x004a5180, converting
+// through the client manager's FMConvertMgr), two blocks: the final
+// refcount increment. Shipped re-reads the word for the insert (`xor
+// %dx,0x32(%eax)`) after an `and $0x7fff; inc %ecx` extraction;
+// SetRefCount(GetRefCount() + 1) here gives a 16-bit `inc %dx` with the
+// word kept in ecx. Measured: `++` (4 blocks, 749 bytes), `+= 1`,
 // `= x + 1` (3 blocks), `= GetRefCount() + 1` (and+inc, but register copy,
 // 762 bytes), uint32/int getters or setter, const getter, IncRefCount /
 // AddRef members, a pTex local, a uint16 local, casts (1-3 blocks, none
@@ -468,7 +476,6 @@ LTRESULT LTTexMod::GetTextureHandle(char* pFilename, HTEXTURE& hTexture,
 	static char* pErrFnName = "LTTexMod::GetTextureHandle";
 
 	CClientFileRef   ref;
-	FMConvertMgr     cvtMgr;
 	FMConvertRequest request;
 	TextureData*     pOrigData;
 
@@ -512,7 +519,7 @@ LTRESULT LTTexMod::GetTextureHandle(char* pFilename, HTEXTURE& hTexture,
 			request.m_nWidth  = pOrigData->m_nWidth;
 			request.m_nHeight = pOrigData->m_nHeight;
 
-			dResult = cvtMgr.Convert(&request);
+			dResult = m_pClientMgr->m_ConvertMgr.Convert(&request);
 			if (dResult == LT_OK)
 			{
 				if (bBumpmap)
@@ -531,7 +538,7 @@ LTRESULT LTTexMod::GetTextureHandle(char* pFilename, HTEXTURE& hTexture,
 					request.m_nWidth  = pOrigData->m_nWidth;
 					request.m_nHeight = pOrigData->m_nHeight;
 
-					dBumpResult = cvtMgr.Convert(&request);
+					dBumpResult = m_pClientMgr->m_ConvertMgr.Convert(&request);
 				}
 				else
 				{

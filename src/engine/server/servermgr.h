@@ -1733,9 +1733,13 @@ public:
 	uint32             m_nFileTrees;         // 0x334
 	uint8              m_pad_338[0x370 - 0x338];
 	void*              m_pWorldFile;          // 0x370  null until a world is started
-	uint8              m_pad_374[0x390 - 0x374];
-	CUnknown390        m_Unknown390;         // 0x390
-	// 0x394 .. 0x660 — the object lists. Two links here are walked by the
+	// AVP2: four bytes later than NOLF's 0x390. Every image takes its
+	// address at +0x394 and none at +0x390 (`lea 0x394(%reg)` / `add
+	// $0x394`: lithtech.exe 15 sites, server.dll 12, AvP2 1.0.9.6's 13
+	// and 9), e.g. sm_CreateObjectInWorld 0x0048c180.
+	uint8              m_pad_374[0x394 - 0x374];
+	CUnknown390        m_Unknown390;         // 0x394
+	// 0x398 .. 0x660 — the object lists. Two links here are walked by the
 	// reconstruction and the rest of the region is unaccounted for.
 	//
 	// 0x10034fcb reads this region as an ARRAY: it sweeps
@@ -1755,7 +1759,7 @@ public:
 	// AVP2: the object lists run 0x5b4 .. 0x664, four bytes later than
 	// NOLF's: AvP2's engines (1.0.9.6's and Primal Hunt's alike) reach
 	// m_Objects at +0x5c8/+0x5cc.
-	uint8              m_pad_394[0x5c8 - 0x394];
+	uint8              m_pad_398[0x5c8 - 0x398];
 	LTLink             m_Objects;             // 0x5c8  data links to LTObject;
 	                                          //        array entry 1, if it is one
 	uint8              m_pad_5d4[0x5d8 - 0x5d4];

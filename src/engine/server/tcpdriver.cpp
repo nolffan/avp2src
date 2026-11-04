@@ -436,10 +436,18 @@ class TCPConnection : public NetConnection
 public:
 	TCPConnection() { m_Socket = 0; }
 
+#ifdef PRIMAL_HUNT
+	// PH: a destructor, out of line below CloseSockets (lithtech.exe
+	// 0x004a1bb0, server.dll 0x10046d0a): every site is `delete pConn`,
+	// the destructor called and then operator delete (0x004a1b2e/0x004a1b34
+	// in CloseSockets, 0x004a2c9e/0x004a2ca4 in Disconnect).
+	~TCPConnection();                        // PH 0x004a1bb0
+#else
 	// 0x10036daf — an ordinary member, not a compiler-generated delete;
 	// defined `inline` further down, above every one of its callers (name
 	// ours).
 	void* Destroy(uint32 nFlags);            // 0x10036daf
+#endif
 
 	uint8              m_pad_b8[0xbc - 0xb8];
 	struct sockaddr_in m_Addr;               // 0xbc  who is on the other end
@@ -660,6 +668,7 @@ public:
 // JoinSession (0x00486dca), inside CloseSockets' copy of tcp_FreeQueryList
 // (0x00484e0c) and inside Disconnect (0x00485ec1) -- and called at all three
 // of the /O1 server's (0x100380b8, 0x10036da5 and JoinSession's).
+#ifndef PRIMAL_HUNT
 inline void* TCPConnection::Destroy(uint32 nFlags)
 {
 	if (m_Socket)
@@ -678,6 +687,7 @@ inline void* TCPConnection::Destroy(uint32 nFlags)
 
 	return this;
 }
+#endif
 
 // 0x10038094 — drop whatever the last query collected (name ours). The walk
 // is TCPDriver::Term's, with the connection destroyed instead of told to go
@@ -698,7 +708,11 @@ inline void tcp_FreeQueryList(TCPConnTable* pTable)
 		pCur = (pCur->m_pPrev == pTable->m_pTail) ? LTNULL : pCur->m_pPrev;
 
 		if (pConn)
+#ifdef PRIMAL_HUNT
+			delete pConn;
+#else
 			pConn->Destroy(1);
+#endif
 	}
 
 	pTable->m_pTail = LTNULL;
@@ -995,7 +1009,11 @@ LTRESULT TCPDriver::JoinSession(struct sockaddr_in* pHostAddr)
 									return LT_OK;
 								}
 
+#ifdef PRIMAL_HUNT
+								delete pConn;
+#else
 								pConn->Destroy(1);
+#endif
 							}
 						}
 					}
@@ -1112,6 +1130,19 @@ void TCPDriver::CloseSockets(int bTerm)
 	}
 }
 
+#ifdef PRIMAL_HUNT
+// PH 0x004a1bb0 (server.dll 0x10046d0a) -- NOLF's TCPConnection::Destroy
+// without the free: the socket closed if there is one, then the base's
+// Term (0x004679f0).
+TCPConnection::~TCPConnection()
+{
+	if (m_Socket)
+		closesocket(m_Socket);
+
+	Term();
+}
+#endif
+
 
 // A bound, non-blocking datagram socket. The caller can ask what address it
 // actually got; passing the same address in and out is how the query sweep
@@ -1201,7 +1232,13 @@ SOCKET tcp_OpenSocket(TCPDriver* pDriver, struct sockaddr_in* pBindAddr,
 //
 //  WSOCK32 is imported by ordinal: #10 inet_addr, #14 ntohl, #52
 //  gethostbyname, #8 htonl, #9 htons.
-//  NEAR against server.dll: 255 of 263 bytes, 92 instructions against 93,
+//  NEAR, now with GetTcpIpAddress's two-counter loop and the default port
+//  stored first: against Primal Hunt's server.dll (0x10045d88) 263 of 263
+//  bytes, one residual, the byte load's SIB base and index swapped
+//  (`(%edx,%eax,1)` shipped, ours `(%eax,%edx,1)`; no subscript spelling
+//  probed moves it); against lithtech.exe (0x004a1720) 284 of 282, pHost
+//  copied to %ecx before its null test and the same SIB swap.
+//  The history: NEAR against server.dll: 255 of 263 bytes, 92 instructions against 93,
 //  and the first 0x43 bytes are byte-identical.  ONE residual, and every
 //  other difference follows from it: the shipped build gives nPort a MEMORY
 //  home in the dead first-parameter slot (`mov %eax,0x8(%ebp)` and
@@ -1247,10 +1284,10 @@ int tcp_BuildSockaddrFromString(char* pString, struct sockaddr_in* pAddr)
 	}
 	else
 	{
+		nPort = TCP_DEFAULTPORT;
+
 		strncpy(szAddr, pString, sizeof(szAddr) - 1);
 		szAddr[sizeof(szAddr) - 1] = 0;
-
-		nPort = TCP_DEFAULTPORT;
 	}
 
 	if (szAddr[0] >= '0' && szAddr[0] <= '9')
@@ -1268,11 +1305,12 @@ int tcp_BuildSockaddrFromString(char* pString, struct sockaddr_in* pAddr)
 			return 0;
 		}
 
+		// The two-counter loop GetTcpIpAddress has (see the note there),
+		// with the shift counter unsigned here: `jb` (0x10045e59).
 		nAddr = 0;
-
-		for (i = 0, nShift = 0; nShift < 32; i++, nShift += 8)
-			nAddr |= ((uint32)(unsigned char)pHost->h_addr_list[0][i])
-			         << (24 - nShift);
+		i = 0;
+		for (nShift = 0; nShift < 4; nShift++)
+			nAddr |= ((uint32)(unsigned char)pHost->h_addr_list[0][i++]) << (24 - nShift * 8);
 	}
 
 	memset(pAddr, 0, sizeof(*pAddr));
@@ -1421,9 +1459,19 @@ LTBOOL TCPDriver::Init()
 
 		if (g_ShowNetInfo)
 		{
+#ifdef PRIMAL_HUNT
+			// PH: the three lines are cleaned up one call at a time
+			// (lithtech.exe 0x004a1aaa, 0x004a1abc, 0x004a1ad1), so all
+			// three sites see the printer's own varargs prototype; AvP2's
+			// batch one `add $0x14` (AvP2 0x00497aab).
+			dsi_ServerError("TCP/IP initialized");
+			dsi_ServerError("Description: %s", wsaData.szDescription);
+			dsi_ServerError("Status: %s", wsaData.szSystemStatus);
+#else
 			dsi_PrintString("TCP/IP initialized");
 			dsi_PrintStr("Description: %s", wsaData.szDescription);
 			dsi_PrintStr("Status: %s", wsaData.szSystemStatus);
+#endif
 		}
 
 		return LTTRUE;
@@ -1638,7 +1686,11 @@ void TCPDriver::Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags)
 		SendDisconnect(pConn);
 
 		m_ConnTable.Remove((TCPConnNode*)&((TCPConnection*)pConn)->m_TableNode);
+#ifdef PRIMAL_HUNT
+		delete (TCPConnection*)pConn;
+#else
 		((TCPConnection*)pConn)->Destroy(1);
+#endif
 	}
 }
 
@@ -1687,9 +1739,15 @@ TCPConnection* tcp_FindConnection(TCPDriver* pDriver, struct sockaddr_in* pAddr)
 // 0x10058494's g_ShowNetInfo again (name ours).
 extern char* g_pLocalAddress;
 
-// NEAR (430 of 434 bytes, 148 of 150 instructions, 3 mnemonic blocks, all
-// in the address-assembly loop; the frame, the prologue, every call and the
-// whole tail now agree).
+// IDENTICAL in both lithtech.exe images (Primal Hunt 0x004a35b0, AvP2
+// 0x004993d0).  NEAR against Primal Hunt's server.dll (0x100473e5): 434 of
+// 434 bytes, 150 of 150 instructions, and the only residual is %esi/%edi
+// swapped between nAddr and the shift counter in the loop (callee-saved
+// rotation; declaring nAddr before nShift does not move it).  What follows
+// is the history up to the two-counter loop below, which closed the rest.
+//
+// Was NEAR (430 of 434 bytes, 148 of 150 instructions, 3 mnemonic blocks,
+// all in the address-assembly loop).
 //
 // What closed the rest: the four address bytes and the port live in a LOCAL
 // `struct sockaddr_in` -- the trace string even calls this
@@ -1792,13 +1850,17 @@ LTBOOL TCPDriver::GetTcpIpAddress(char* sAddress, uint32 dwBufferSize,
 		}
 	}
 
+	// AVP2: two counters, a SIGNED one for the shift and an unsigned
+	// running byte index, and the byte widened to uint32 before the shift:
+	// the loop counts nShift*8 up and tests it `jl` against 0x20 while %edx
+	// indexes the bytes, and the shift count is worked out as 24 minus it
+	// each time round (0x004a3720..0x004a373b; AvP2 0x00499540..0x0049955b).
+	// Without the cast VC6 counts the shift down on its own, and with one
+	// counter it walks a pointer (probed: both).
 	nAddr = 0;
-	nShift = 24;
-	for (i = 0; i < 4; i++)
-	{
-		nAddr |= ((uint8*)pHost->h_addr_list[0])[i] << nShift;
-		nShift -= 8;
-	}
+	i = 0;
+	for (nShift = 0; nShift < 4; nShift++)
+		nAddr |= ((uint32)((uint8*)pHost->h_addr_list[0])[i++]) << (24 - nShift * 8);
 
 	localAddr.sin_addr.s_addr = ntohl(nAddr);
 	localAddr.sin_port = m_HostAddr.sin_port;
@@ -2651,7 +2713,11 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 				}
 
 				if (pConn)
+#ifdef PRIMAL_HUNT
+					delete pConn;
+#else
 					pConn->Destroy(1);
+#endif
 			}
 
 			// The reject, shared by all three failures.  Reached by fallthrough
@@ -2731,7 +2797,11 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 
 			m_pNetMgr->CloseConnection(pConn);
 			m_ConnTable.Remove((TCPConnNode*)&pConn->m_TableNode);
+#ifdef PRIMAL_HUNT
+			delete pConn;
+#else
 			pConn->Destroy(1);
+#endif
 		}
 	}
 }

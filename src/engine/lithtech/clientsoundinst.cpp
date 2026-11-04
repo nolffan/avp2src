@@ -122,6 +122,7 @@ public:
 	LTRESULT sub_47e360();                                 // 0x0047e360
 	LTBOOL   sub_47e390();                                 // 0x0047e390
 	LTRESULT KillLoop();                                   // 0x0047e2c0 (cchandler.cpp's name)
+	LTRESULT KillFade(float fFadeOutTime);                 // 0x0049a9d0 (name ours)
 	// inline stand-in; see sub_47e390
 	inline LTBOOL AttachTo(class CSoundDataView* p);
 
@@ -1467,6 +1468,21 @@ LTRESULT CSoundInstanceView::KillLoop()
 	AIL_unlock();
 
 	m_StateFlags |= 0x40;
+
+	return LT_OK;
+}
+
+
+// AVP2: 0x0049a9d0 -- ILTSoundMgr::KillSoundFade's half on the sound
+// (clientsoundmgr.cpp's caller, 0x0049eedf): the fade time goes into the
+// first of AvP2's two new words in milliseconds, rounded (`* 1000.0f +
+// 0.5f`), the second goes back to 1.0f and the state takes 0x80. What
+// the update does with them is not established here.
+LTRESULT CSoundInstanceView::KillFade(float fFadeOutTime)
+{
+	m_Unknown38 = (uint32)(fFadeOutTime * 1000.0f + 0.5f);
+	m_fUnknown3c = 1.0f;
+	m_StateFlags |= 0x80;
 
 	return LT_OK;
 }

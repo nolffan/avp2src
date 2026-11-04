@@ -47,6 +47,7 @@
 // *********************************************************************** //
 
 #include <string.h>
+#include <stdio.h>             // sprintf -- cs_ModelKeyCallback
 
 #include "ltbasedefs.h"
 #include "ltlink.h"
@@ -273,7 +274,7 @@ public:
 	// 0x004143f0
 	void   sub_4143f0();
 	// 0x00477fb0 -- slot 4 of 0x004a1d18
-	void   SetDisconnectCode(uint32 nCode, const char* pMsg, uint32 nSubReason);
+	void   SetDisconnectCode(uint32 nCode, const char* pMsg);
 };
 
 
@@ -796,11 +797,13 @@ void CLoaderThreadView::ProcessMessage(CThreadMessageView* pMsg)
 // 0x004a1d18 (0x00477f40..0x00477fb0); written here with the view the
 // field chain needs.  Declared non-virtual on the view, which spells its
 // vptrs out as fields.
-void CClientShell::SetDisconnectCode(uint32 nCode, const char* pMsg,
-                                     uint32 nSubReason)
+//
+// AVP2: two arguments, not three (`ret $0x8`, PH 0x004939cc; AvP2 1.0.9.6's
+// 0x0048a842 too) -- iclientshell.h's SetDisconnectCode takes no sub-reason,
+// and neither does this override.
+void CClientShell::SetDisconnectCode(uint32 nCode, const char* pMsg)
 {
 	if (m_pClientMgr->m_pClientShell)
-		// AVP2: iclientshell.h's SetDisconnectCode takes no sub-reason
 		m_pClientMgr->m_pClientShell->SetDisconnectCode(nCode, pMsg);
 }
 
@@ -1849,9 +1852,9 @@ void cs_ReleaseArrayItems(CClientMgrView* pClientMgr, CArray18C* pArray)
 
 // 0x00414240 -- bind every surface of one world to its texture.  (Name ours.)
 //
-// cdecl, (manager, world).  For each 0x48-byte surface of the world
+// cdecl, (manager, world).  For each 0x40-byte surface of the world
 // (+0x78 array, +0x7c count, re-read every pass): name its texture out of
-// the world's name table (+0xbc, indexed by the surface's uint16 at +0x3e)
+// the world's name table (+0xbc, indexed by the surface's uint16 at +0x36)
 // through one CClientFileRef built before the loop.  A surface flagged
 // 0x4000 is animated: load the sprite (0x00476e80), and on LT_OK chain a
 // 0x20-byte record onto the manager's +0x1264 list (0x00429050, no null
@@ -1869,16 +1872,18 @@ public:
 	uint16 m_nLocalID;                       // 0x08
 };
 
+// AVP2: the surface is 0x40 bytes, 8 fewer than NOLF's, and its fields sit
+// 4 lower (texture 0x2c, flags 0x30, texture index 0x36: `add $0x40,%edi`
+// at 0x004180ba, AvP2 1.0.9.6's 0x00416036/0x00416045 agree).
 class CWtSurfaceView
 {
 public:
-	uint8  m_pad_00[0x30];
-	void*  m_pTexture;                       // 0x30
-	uint8  m_pad_34[0x38 - 0x34];
-	uint32 m_Flags;                          // 0x38
-	uint8  m_pad_3c[0x3e - 0x3c];
-	uint16 m_iTexture;                       // 0x3e
-	uint8  m_pad_40[0x48 - 0x40];
+	uint8  m_pad_00[0x2c];
+	void*  m_pTexture;                       // 0x2c
+	uint32 m_Flags;                          // 0x30
+	uint8  m_pad_34[0x36 - 0x34];
+	uint16 m_iTexture;                       // 0x36
+	uint8  m_pad_38[0x40 - 0x38];
 };
 
 class CWtWorldView
@@ -1936,6 +1941,11 @@ SharedTextureView* cm_AddSharedTexture(CClientMgrTexBankView* pMgr,
 #define sub_41ff90(pMgr, pRef) \
 	((void*)cm_AddSharedTexture((CClientMgrTexBankView*)(pMgr), (CClientFileRefView*)(pRef)))
 
+// NEAR (0x00418000, size-exact): the layout is now AvP2's; what is left
+// is volatile-register choice at the loop head (shipped loads m_Surfaces
+// and m_TextureNames both through %ecx with the `xor %eax` between them).
+// Assigning m_nFileType after the name, or indexing through pSurface (303
+// bytes), does not move it.
 void sub_414240(CClientMgrView* pClientMgr, CWtWorldView* pWorld)
 {
 	CWtFileRef ref;
@@ -2263,8 +2273,8 @@ void CClientMgrView::RunFrameUpdates()
 // (`jle`).  The two lists are CClientMgr's per-type object lists -- the
 // eleven 16-byte LTLists at +0x40c are indexed by object type, so +0x41c
 // is OT_MODEL's and +0x43c is OT_SPRITE's.  Every model's tracker chain
-// (+0x1f8, linked through +0x04) gets the key callback 0x00415da0 at +0x0c
-// and is advanced by 0x004010e0; every sprite's tracker at +0x1a8 goes to
+// (+0x220, PH +0x224; linked through +0x04) gets the key callback 0x00415da0 at +0x0c
+// and is advanced by 0x004010e0; every sprite's tracker at +0x1b0 goes to
 // 0x00483d00.  Shipped re-derives the model list's end marker from the
 // manager each pass (`mov 0x14(%esp),%ecx; lea 0x420(%ecx)`), so that walk
 // has no named head; the sprite walk keeps its head in %ebx.
@@ -2275,7 +2285,10 @@ struct CAnimKeyFrameView
 };
 
 class CAnimTrackerView;
-typedef void (*AnimKeyCallbackFn)(CAnimTrackerView* pTracker, CAnimKeyFrameView* pKey);
+// AVP2: ltanimtracker.h's StringKeyCallback, with the append string and
+// the force-replace flag.
+typedef void (*AnimKeyCallbackFn)(CAnimTrackerView* pTracker, CAnimKeyFrameView* pKey,
+                                  char* szAppend, LTBOOL bForceReplace);
 
 class CAnimTrackerView
 {
@@ -2293,28 +2306,38 @@ public:
 class CKeyObjectView
 {
 public:
-	uint8  m_pad_000[0x180];
-	uint8  m_Flags;                          // 0x180  bit 1: FLAG_MODELKEYS
+	// AVP2: the flags are 8 higher than NOLF's (`testb $2,0x188(%esi)`,
+	// 0x0041a21a; AvP2 1.0.9.6's 0x0041802a too).
+	uint8  m_pad_000[0x188];
+	uint8  m_Flags;                          // 0x188  bit 1: FLAG_MODELKEYS
 };
 
+// AVP2: the model's tracker chain is at +0x220 (AvP2 1.0.9.6's 0x00417f97);
+// PH: +0x224, behind the model's extra texture (0x0041a187).  The sprite's
+// tracker is +0x1b0 in both (0x0041a1cd, AvP2 0x00417fdd).
 class CAnimModelView
 {
 public:
-	uint8             m_pad_000[0x1f8];
-	CAnimTrackerView* m_pTrackers;           // 0x1f8
+#ifdef PRIMAL_HUNT
+	uint8             m_pad_000[0x224];
+#else
+	uint8             m_pad_000[0x220];
+#endif
+	CAnimTrackerView* m_pTrackers;           // PH 0x224, AvP2 0x220
 };
 
 class CAnimSpriteView
 {
 public:
-	uint8  m_pad_000[0x1a8];
-	uint8  m_SpriteTracker[0x14];            // 0x1a8
+	uint8  m_pad_000[0x1b0];
+	uint8  m_SpriteTracker[0x14];            // 0x1b0
 };
 
 void trk_Update(CAnimTrackerView* pTracker, int msDelta);           // 0x004010e0
 void spr_UpdateTrackerQ14(void* pTracker, int msDelta);             // 0x00483d00
 void cs_ModelKeyCallback(CAnimTrackerView* pTracker,
-                         CAnimKeyFrameView* pKey);                  // 0x00415da0
+                         CAnimKeyFrameView* pKey, char* szAppend,
+                         LTBOOL bForceReplace);                     // 0x00415da0
 
 void cs_UpdateAnimations(CClientMgrView* pMgr)
 {
@@ -2373,9 +2396,17 @@ public:
 
 extern CClientMgrView* g_pClientMgrQ14;                             // 0x004b17e0
 
-void cs_ModelKeyCallback(CAnimTrackerView* pTracker, CAnimKeyFrameView* pKey)
+//
+// AVP2 (PH 0x0041a1f0, 0x11b bytes; AvP2 1.0.9.6's 0x00418000): the SDK
+// callback's two extra arguments.  With an append string the parser runs
+// over a 128-byte copy -- "%s; %s" of the key's string and the append when
+// the key has one and replacing is not forced, else "%s" of the append
+// alone (0x0041a23b..0x0041a2ab).
+void cs_ModelKeyCallback(CAnimTrackerView* pTracker, CAnimKeyFrameView* pKey,
+                         char* szAppend, LTBOOL bForceReplace)
 {
 	ArgList        args;
+	char           szBuffer[128];
 	CKeyParserView parser;
 	CKeyObjectView* pObj;
 	CClientMgrView* pMgr;
@@ -2390,7 +2421,20 @@ void cs_ModelKeyCallback(CAnimTrackerView* pTracker, CAnimKeyFrameView* pKey)
 	if (!pMgr->m_pClientShell)
 		return;
 
-	parser.m_pPos = pKey->m_pString;
+	if (szAppend)
+	{
+		if (pKey->m_pString[0] && !bForceReplace)
+			sprintf(szBuffer, "%s; %s", pKey->m_pString, szAppend);
+		else
+			sprintf(szBuffer, "%s", szAppend);
+
+		parser.m_pPos = szBuffer;
+	}
+	else
+	{
+		parser.m_pPos = pKey->m_pString;
+	}
+
 	args.argv = parser.m_ArgPointers;
 
 	while (parser.Next())

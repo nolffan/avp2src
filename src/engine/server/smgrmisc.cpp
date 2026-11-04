@@ -1100,7 +1100,15 @@ LTRESULT fs_GetFileInfoQ468(CFileMgrQ468* pFileMgr, char* pFilename, CLTFileInfo
 
 		if (ar_GetFileInfoQ468(pRec->m_pTree, pFilename, &state))
 		{
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+			// PH: lithtech.exe's copy takes the name as a straight
+			// 0x100-byte copy, `rep movsl` of 0x40 dwords (0x00404e8b..
+			// 0x00404ea4); Primal Hunt's server.dll and both AvP2 1.0.9.6
+			// images strncpy it.
+			memcpy(pInfo->m_Name, state.m_Name, sizeof(pInfo->m_Name));
+#else
 			strncpy(pInfo->m_Name, state.m_Name, sizeof(pInfo->m_Name));
+#endif
 
 			pInfo->m_Type      = state.m_Type;
 			pInfo->m_Time      = state.m_Time;

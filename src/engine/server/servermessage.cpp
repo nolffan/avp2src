@@ -10,6 +10,7 @@
 #include "servermgr.h"
 #include "de_error.h"
 #include "packet.h"
+#include "packet.h"
 
 // FormatString's callees (names ours): format a message-table string from
 // the class module, wrap the result in a string handle, release the raw.
@@ -220,13 +221,28 @@ inline void CLTServer::BroadcastFileMessage(uint32 nFileType, uint32 nMsgID, uin
 
 		{
 			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
+			msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 			if (pIO)
 				pIO->Release();
 		}
 
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+		// PH: out of line (0x00483cb0: /GX keeps a function with an
+		// unwindable CMessageRef out of its callers), and with the two
+		// writes expanded, CPacket::WriteType's grow-and-report included
+		// (0x00483d69..0x00483eac).
+		// NEAR (597 against 606): the shipped body has one more EH state,
+		// 1 from msg_AllocPacket's return to the end of the Init and 0 again
+		// before pIO's release (0x00483d39, 0x00483d5c) -- what a call that
+		// RETURNS a packet reference by value (the &pIO argument being its
+		// hidden return slot) and a temporary destroyed after the Init give.
+		// xfer_FinishTransfer (0x0043b12c/0x0043b144) has the same window.
+		((CPacket*)msg.m_pMsg)->WriteType((uint8)nFileType);
+		((CPacket*)msg.m_pMsg)->WriteType((uint16)nFileID);
+#else
 		msg.m_pMsg->WriteByte((uint8)nFileType);
 		msg.m_pMsg->WriteWord((uint16)nFileID);
+#endif
 
 		sm_SendToClient(m_pServerMgr, pClient, nMsgID, msg.m_pMsg, 0, 0x80);
 	}
@@ -427,12 +443,17 @@ LTBOOL CLTServer::GetModelLooping(HOBJECT hObj)
 	return LTFALSE;
 }
 
+#define CF_RESETANIMQ508	0x2000	// name ours
+
 LTRESULT CLTServer::ResetModelAnimation(HOBJECT hObj)
 {
 	if (hObj && hObj->m_ObjectType == OT_MODEL)
 	{
 		at_ResetAnim(&((ModelInstance*)hObj)->m_AnimTracker);
-		sm_SetObjectChangeFlag(g_pServerMgr, hObj, CF_MODELINFO);
+		// AVP2: a reset is its own change flag, 0x2000, not CF_MODELINFO
+		// (`orb $0x20,0x5d(...)` at 0x004835f3 where SetModelAnimation has
+		// `orb $0x20,0x5c(...)`; AvP2's lithtech.exe the same, 0x0047c8e3).
+		sm_SetObjectChangeFlag(g_pServerMgr, hObj, CF_RESETANIMQ508);
 		return LT_OK;
 	}
 
@@ -1818,7 +1839,7 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
 	{
 		{
 			CAbstractIO* pIO;
-			msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
+			msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 			if (pIO)
 				pIO->Release();
 		}
@@ -1878,7 +1899,7 @@ void xfer_SendPendingFiles(CClientFiles* pState)
 
 	{
 		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
+		msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 		if (pIO)
 			pIO->Release();
 	}
@@ -1938,7 +1959,7 @@ void xfer_FinishTransfer(CClientFiles* pState)
 
 	{
 		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
+		msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 		if (pIO)
 			pIO->Release();
 	}
@@ -1995,7 +2016,7 @@ void xfer_SendNextChunk(CClientFiles* pState)
 
 	{
 		CAbstractIO* pIO;
-		msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
+		msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 		if (pIO)
 			pIO->Release();
 	}

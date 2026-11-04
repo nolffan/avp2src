@@ -103,8 +103,10 @@ class LightAnim
 {
 public:
 	uint8    m_pad_00[0x28];
-	uint32   m_nFrames;                      // 0x28
-	uint8    m_pad_2c[0x60 - 0x2c];
+	// AVP2: a byte (`xor %ebx,%ebx; mov 0x28(%eax,%ecx,1),%bl`, PH
+	// 0x0040713c, server twin 0x00482582).
+	uint8    m_nFrames;                      // 0x28
+	uint8    m_pad_29[0x60 - 0x29];
 };
 
 // 0x00435230 -- serverlightanim.cpp's la_GetInfo, __cdecl (pAnim, pInfo).

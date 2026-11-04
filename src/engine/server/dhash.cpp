@@ -361,8 +361,8 @@ void dhash_Remove(void* hTable, void* hElement)
 
 	if (pTable->m_nKeyType == DHASHKEY_WORD)
 	{
-		pElement->m_Link.m_pPrev = (LTLink*)g_HashElementBank.m_Bank.m_pFreeList;
-		g_HashElementBank.m_Bank.m_pFreeList = pElement;
+		// AVP2: the header's sb_Free, its null tests and all (0x004371e6).
+		sb_Free(&g_HashElementBank.m_Bank, pElement);
 	}
 	else
 	{
@@ -443,8 +443,8 @@ void dhash_Free(void* hTable)
 
 			if (pTable->m_nKeyType == DHASHKEY_WORD)
 			{
-				pElement->m_Link.m_pPrev = (LTLink*)g_HashElementBank.m_Bank.m_pFreeList;
-				g_HashElementBank.m_Bank.m_pFreeList = pElement;
+				// AVP2: sb_Free, null tests included (0x0043709b).
+				sb_Free(&g_HashElementBank.m_Bank, pElement);
 			}
 			else
 			{
@@ -461,7 +461,7 @@ void dhash_Free(void* hTable)
 
 // ---- adding ------------------------------------------------------------- //
 
-#ifndef LT_SERVER_BUILD
+#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
 // lithtech.exe only (0x0042ce61..0x0042ce8f): /O2 expands the bank's
 // Allocate -- the forward onto sb_Allocate and sb_Allocate itself (free-list
 // head, the sb_Grow call 0x00490c20, the unlink) -- where server.dll /O1
@@ -489,8 +489,11 @@ void* dhash_AddElement(CHashTable* pTable, void* pKey, uint32 nKeyLen)
 
 	pSlot = &pTable->m_Slots[dhash_GetSlot(pTable, pKey, nKeyLen)];
 
+	// PH: Primal Hunt's lithtech.exe calls the out-of-line Allocate as
+	// server.dll does (0x00437111 -> 0x00404fb0); AvP2 1.0.9.6's expands
+	// it (0x00433991).
 	if (pTable->m_nKeyType == DHASHKEY_WORD)
-#ifdef LT_SERVER_BUILD
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 		pElement = g_HashElementBank.Allocate();
 #else
 		pElement = dhash_BankAllocate(&g_HashElementBank);

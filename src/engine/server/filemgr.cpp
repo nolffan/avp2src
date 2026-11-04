@@ -873,8 +873,12 @@ FileEntry* fs_BuildFileList(void** pTrees, int nTrees, char* pDirName)
 			if (fs_FindFileEntry(pHead, state.m_Name))
 				continue;
 
+			// AVP2: a directory written with forward slashes keeps them
+			// (lithtech.exe 0x004426cd, AvP2 1.0.9.6 0x0043e971).
 			if (pDirName[0] == 0)
 				strcpy(szPath, state.m_Name);
+			else if (strstr(pDirName, "/"))
+				sprintf(szPath, "%s/%s", pDirName, state.m_Name);
 			else
 				sprintf(szPath, "%s\\%s", pDirName, state.m_Name);
 

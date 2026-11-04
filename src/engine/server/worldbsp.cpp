@@ -318,6 +318,18 @@ CSubRecord* CWorldBsp::GetPointStatus(LTVector vPoint)
 	return m_Sub108.GetPointStatus(vPoint);
 }
 
+// AVP2: slots 5 and 6, the point grid's cell size and origin (Primal Hunt
+// lithtech.exe 0x00430470/0x00430480, server.dll 0x1000e3ec/0x1000e3f3).
+LTVector* CWorldBsp::GetCellSize()
+{
+	return &m_Sub108.m_vCell;
+}
+
+LTVector* CWorldBsp::GetCellOrigin()
+{
+	return &m_Sub108.m_vOrigin;
+}
+
 // Which cell a point falls in. The point is turned into three indices, each
 // clamped to its own count, and the cell is looked up by them. The three
 // negative tests afterwards cannot fire once the clamping has run — they are
@@ -379,6 +391,22 @@ CSubRecord* CWorldSub108::GetPointStatus(LTVector vPoint)
 // ebx/edi rotation that came with the miss went with it too: pp lands in %edi
 // and the vertex cursor in %ebx, the way it shipped. A register rotation is
 // again a consequence of a misplaced local rather than a lottery.
+//
+// AVP2: (NOLF had the count at +0x50 and the vertices at +0x54) AvP2's and
+// Primal Hunt's polygon has its vertex count at +0x54 and its vertices at
+// +0x58 (0x0042f887, 0x0042f88f; AvP2 0x0042c105; the loader's
+// 0x0042c47d and 0x0042c495 agree).  worldbsp.h's CWorldPart still carries
+// NOLF's offsets and other objects include it, so the polygon is read here
+// through a view of AvP2's layout.
+class CWorldPartViewQ505
+{
+public:
+	uint8  m_pad_00[0x54];
+	uint16 m_nVerts;                         // 0x54
+	class CWorldVertRef { public: LTVector* m_pPos; uint8 m_pad[0x18 - 4]; }
+	       m_Verts[1];                       // 0x58
+};
+
 float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
 {
 	float        fMax = 0.0f;
@@ -393,7 +421,7 @@ float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
 
 		do
 		{
-			CWorldPart* pPart = *pp;
+			CWorldPartViewQ505* pPart = (CWorldPartViewQ505*)*pp;
 
 			for (j = 0; j < pPart->m_nVerts; j++)
 			{
@@ -439,6 +467,18 @@ void CWorldSimple::ComputeRadius()
 CSubRecord* CWorldSimple::GetPointStatus(LTVector vPoint)
 {
 	return m_Sub80.GetPointStatus(vPoint);
+}
+
+// AVP2: slots 5 and 6, as the BSP world's (Primal Hunt lithtech.exe
+// 0x0042f960/0x0042f970, server.dll 0x1000dfe3/0x1000dfea).
+LTVector* CWorldSimple::GetCellSize()
+{
+	return &m_Sub80.m_vCell;
+}
+
+LTVector* CWorldSimple::GetCellOrigin()
+{
+	return &m_Sub80.m_vOrigin;
 }
 
 // Four bytes: the storage the array at +0x68 is holding, handed out raw.
@@ -761,77 +801,67 @@ struct WorldObjectRecQT1
 // the constructor below calls Init on it with its own `this` as the owner.
 typedef Model::CModelSub14 CWorldSurfSub28QT1;
 
+// AVP2: AvP2's and Primal Hunt's surface is 0x40 bytes and has NO vptr.
+// Its constructor (Primal Hunt 0x0042ca70, server.dll 0x1000c130; reached
+// through the eh vector constructor at 0x0042bb99 with 0x40 and the
+// compiler-generated destructor 0x0042a8f0, `add $0x24,%ecx ; jmp`)
+// builds the chain at +0x24, calls its Init with `this`, and stores no
+// vtable; then +0x2c and +0x30 (dwords), +0x34, +0x36, +0x38 (words), +0x3c
+// (byte) and +0x3a = 0x7fff.  NOLF's m_n30 is gone.  The loader (Primal
+// Hunt 0x0042c033..0x0042c24e, stride 0x40) reads +0x36 (2 bytes), merges
+// the flag word into +0x30 with the 0x1fffffff bit-field store, reads +0x3c
+// (1 byte) and, last, +0x34 (2 bytes); w_LinkSurfacePolies threads the
+// chain head at +0x38 (0x0042cb2a, 0x0042cb55).  Neither image has a
+// `shr $0x1d` anywhere, so nothing reads the axis code back: NOLF's
+// one-slot GetBasisVectors virtual (0x1000af3b) is not in AvP2's source.
 class CWorldSurface
 {
 public:
-	CWorldSurface();                         // 0x10009275
+	CWorldSurface();                         // PH 0x0042ca70
 
-	// +0x00 IS A VPTR: one virtual, and 0x1004d344 is its one-slot vtable
-	// (0x1004d344 -> 0x1000af3b).  This used to be modelled as a function-
-	// pointer field, because the 0x10009275 constructor stores it AFTER
-	// constructing the member at +0x28 and the implicit destructor inside
-	// ??_ECWorldSurface (0x1000796d) restores none.  VC6 compiles the
-	// virtual spelling to exactly those bytes (constructor, ??_E and the
-	// slot all match on both images), and the whole-DLL link needs the
-	// vtable to be one: the old field stored a function symbol,
-	// `w_SurfaceTestQT1`, that stood for a .rdata address.
-	virtual void GetBasisVectors(LTVector* pR, LTVector* pU);  // 0x1000af3b
-
-	LTVector  m_vO;                          // 0x04  texture origin
-	LTVector  m_vP;                          // 0x10  texture U vector
-	LTVector  m_vQ;                          // 0x1c  texture V vector
-	// 0x28 -- worldbsp.h's CWorldTreeSub28, the member with the ctor
+	LTVector  m_vO;                          // 0x00  texture origin
+	LTVector  m_vP;                          // 0x0c  texture U vector
+	LTVector  m_vQ;                          // 0x18  texture V vector
+	// 0x24 -- worldbsp.h's CWorldTreeSub28, the member with the ctor
 	// (0x100243f6) and the dtor (0x10024404).  Spelling it as a member
 	// with a DESTRUCTOR rather than as padding is what puts the array
-	// cookie on the `new[]` below: 0x10008767 asks the allocator for
-	// `n*0x48 + 4`, 0x10008781 stores the count at [p] and 0x1000877e
-	// hands back p+4.  A destructor-free element gets no cookie at all.
-	CWorldSurfSub28QT1 m_Sub28;              // 0x28
-	uint32    m_n30;                         // 0x30
-	class LTPlane* m_pPlane;                 // 0x34  ltobject_internal.h
+	// cookie on the `new[]` below: Primal Hunt's 0x0042bb60 asks the
+	// allocator for `n*0x40 + 4` and stores the count at [p].
+	CWorldSurfSub28QT1 m_Sub28;              // 0x24
+	class LTPlane* m_pPlane;                 // 0x2c  ltobject_internal.h
 	// ltobject_internal.h's WorldBspData::m_nFlags.  TWO BIT-FIELDS: the
-	// loader writes the top three (the axis code) with an OR-merge at
-	// 0x10008b9c and the bottom twenty-nine with the XOR-merge at
-	// 0x10008bb9 (`x ^= ((x ^ v) & 0x1fffffff)`), which is MSVC 6's
-	// bit-field store.  WBSP_NOSTEP (0x400000) lives in the low field.
-	uint32    m_nFlags : 29;                 // 0x38
+	// loader writes the bottom twenty-nine with the XOR-merge at
+	// 0x0042c083..0x0042c09f (`x ^= ((x ^ v) & 0x1fffffff)`), which is
+	// MSVC 6's bit-field store.  WBSP_NOSTEP (0x400000) lives in the low
+	// field.
+	uint32    m_nFlags : 29;                 // 0x30
 	uint32    m_nAxis  : 3;
-	uint16    m_nTextureFlags;               // 0x3c  ltobject_internal.h
-	uint16    m_n3e;                         // 0x3e
-	uint16    m_nFirstPoly;                  // 0x40  head of the per-surface
+	uint16    m_nTextureFlags;               // 0x34  ltobject_internal.h
+	uint16    m_n36;                         // 0x36
+	uint16    m_nFirstPoly;                  // 0x38  head of the per-surface
 	                                         //       polygon chain, by index
-	uint16    m_nLink42;                     // 0x42  constructor sets 0x7fff
-	uint8     m_n44;                         // 0x44
-	uint8     m_pad_45[0x48 - 0x45];
+	uint16    m_nLink3a;                     // 0x3a  constructor sets 0x7fff
+	uint8     m_n3c;                         // 0x3c
+	uint8     m_pad_3d[0x40 - 0x3d];
 };
 
-// 0x10009275 (65 bytes) — `inline` because the /O2 client expands it into
-// the `new CWorldSurface[n]` loop (0x00422da2) and /O1 does not
-// (0x100087a7 calls it); defined above w_LoadWorldModel because /Ob1 is
-// forward-only.
+// PH 0x0042ca70 (NOLF 0x10009275).  NOT `inline`: NOLF's /O2 client
+// expanded it into the `new CWorldSurface[n]` loop (NOLF 0x00422da2), and
+// Primal Hunt's instead hands its address to the eh vector constructor
+// (0x0042bb89), which /O2 (/Ob1) does only for a constructor it may not
+// expand.
 
-inline CWorldSurface::CWorldSurface()
+CWorldSurface::CWorldSurface()
 {
 	m_Sub28.Init((uint32)this);
-	m_n30 = 0;
 	m_pPlane = LTNULL;
 	m_nFlags = 0;
 	m_nAxis = 0;
 	m_nTextureFlags = 0;
-	m_n3e = 0;
+	m_n36 = 0;
 	m_nFirstPoly = 0;
-	m_nLink42 = 0x7fff;
-	m_n44 = 0;
-}
-
-// 0x1000af3b -- the one slot of 0x1004d344: the surface's two texture-plane
-// basis vectors, off its plane's normal and the axis code (names ours).
-void math_GetAxisBasisVectors(uint32 iBasis, LTVector* pDir,
-                              LTVector* pOut1, LTVector* pOut2);  // 0x1001457f
-
-void CWorldSurface::GetBasisVectors(LTVector* pR, LTVector* pU)
-{
-	math_GetAxisBasisVectors(m_nAxis, (LTVector*)m_pPlane, pR, pU);
+	m_nLink3a = 0x7fff;
+	m_n3c = 0;
 }
 
 
@@ -888,12 +918,19 @@ public:
 	uint32    m_nEdges;                      // 0x10
 	uint8     m_pad_14[0x16 - 0x14];
 	uint16    m_nIndex;                      // 0x16  its own index
-	uint8     m_pad_18[0x28 - 0x18];         // 0x18 m_vCentre, 0x24 m_fRadius
-	CWorldSurface* m_pSurface;               // 0x28  WorldPolyOwner::m_pParent
-	uint8     m_pad_2c[0x34 - 0x2c];
+	// AVP2: (NOLF had the surface at +0x28 and the chain link at +0x40)
+	// AvP2's and Primal Hunt's polygon is four bytes longer ahead of the
+	// surface: w_LinkSurfacePolies reads the surface at +0x2c and threads
+	// +0x44 (0x0042cb4e, 0x0042cb59; AvP2 0x00429d8e, 0x00429d99), and the
+	// loader stores the surface at +0x2c (0x0042c3e5).  What follows is
+	// still NOLF's.
+	uint8     m_pad_18[0x2c - 0x18];         // 0x18 m_vCentre, 0x24 m_fRadius
+	CWorldSurface* m_pSurface;               // 0x2c  WorldPolyOwner::m_pParent
+	uint8     m_pad_30[0x34 - 0x30];
 	LTVector  m_v34;                         // 0x34  read by w_ReadVector
-	uint16    m_nNextOnSurface;              // 0x40  0x100092e4 threads this
-	uint8     m_pad_42[0x48 - 0x42];
+	uint8     m_pad_40[0x44 - 0x40];
+	uint16    m_nNextOnSurface;              // 0x44  w_LinkSurfacePolies threads this
+	uint8     m_pad_46[0x48 - 0x46];
 	uint8     m_n48;                         // 0x48
 	uint8     m_n49;                         // 0x49
 	uint8     m_pad_4a[0x4c - 0x4a];
@@ -1419,7 +1456,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		pStream->Read(&pSurf->m_vO, 0xc);    // 0x10008b33
 		pStream->Read(&pSurf->m_vP, 0xc);    // 0x10008b40
 		pStream->Read(&pSurf->m_vQ, 0xc);    // 0x10008b4d
-		pStream->Read(&pSurf->m_n3e, 2);     // 0x10008b5a
+		pStream->Read(&pSurf->m_n36, 2);     // 0x10008b5a
 		pStream->Read(&nPlane, 4);                // 0x10008b67, -0x68
 
 		if (nPlane >= pWorld->m_n6c)              // 0x10008b6d, unsigned
@@ -1444,7 +1481,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		                                     //   `x ^= ((x ^ v) & 0x1fffffff)`
 		                                     //   bit-field store
 
-		pStream->Read(&pSurf->m_n44, 1);     // 0x10008bd0, +0x44
+		pStream->Read(&pSurf->m_n3c, 1);     // 0x10008bd0, NOLF +0x44
 
 		// Three bytes read and never used.  Three DISTINCT frame slots, so
 		// they are three named variables and not one reused temporary —

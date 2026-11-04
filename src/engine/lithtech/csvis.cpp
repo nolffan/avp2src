@@ -1212,8 +1212,14 @@ void cs_ApplyPendingMovesQ414(CClientMgrQ414* pMgr)
 
 
 // The client model instance, at cmodelload.cpp's CClientModelInstQ474
-// offsets: two skin textures at +0x1b8, two skin sprites at +0x208 and
-// their trackers at +0x210 (20 bytes each: esi steps by 0x14 at 0x00415faf).
+// offsets: the skin textures, the skin sprites and their trackers (20
+// bytes each: esi steps by 0x14 at 0x0041a486).
+//
+// AVP2: (NOLF had skins at +0x1b8, sprites at +0x210, records at +0x220)
+// AvP2's skins are at +0x1c0, its sprites at +0x250 and their records at
+// +0x260 (AvP2 0x00418245..0x00418251).
+// PH: the sprites are 0x14 further on, at +0x264 with records from +0x274
+// (0x0041a435..0x0041a441): the extra texture at +0x1d0 and the +4 after it.
 class CTexRefQ414
 {
 public:
@@ -1231,11 +1237,15 @@ public:
 class CModelInstQ414
 {
 public:
-	uint8              m_pad_000[0x1b8];
-	void*              m_pSkins[MAX_MODEL_TEXTURES];           // 0x1b8
-	uint8              m_pad_1c0[0x208 - 0x1c0];
-	void*              m_pSprites[MAX_MODEL_TEXTURES];         // 0x208
-	CSpriteTrackerQ414 m_SpriteRecs[MAX_MODEL_TEXTURES];       // 0x210
+	uint8              m_pad_000[0x1c0];
+	void*              m_pSkins[MAX_MODEL_TEXTURES];           // 0x1c0
+#ifdef PRIMAL_HUNT
+	uint8              m_pad_1d0[0x264 - 0x1d0];
+#else
+	uint8              m_pad_1d0[0x250 - 0x1d0];
+#endif
+	void*              m_pSprites[MAX_MODEL_TEXTURES];         // 0x250 (PH 0x264)
+	CSpriteTrackerQ414 m_SpriteRecs[MAX_MODEL_TEXTURES];       // 0x260 (PH 0x274)
 };
 
 // 0x0041ff50 -- lttexmod.cpp's texture resolver (cmodelload.cpp's

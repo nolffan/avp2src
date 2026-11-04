@@ -248,10 +248,25 @@ LTRESULT SharedCommonLT::GetRotationVectors(LTRotation& rot, LTVector& up,
 	return m_pMath->GetRotationVectors(&rot, &right, &up, &forward);
 }
 
+// AVP2: the math the shared half reaches has iltmath.h's two SetupEuler
+// overloads, and VC6 lays an overload pair out in reverse declaration order:
+// the vector form is slot 2, this one slot 3 (`call *0xc(%eax)`,
+// 0x0043ffb9; AvP2's server.dll 0x10015f99 the same). servermath.h's
+// ICommonMath, which the rest of the engine shares, has only the one.
+class ICommonMathQ508
+{
+public:
+	virtual LTRESULT GetRotationVectors(LTRotation*, LTVector*, LTVector*, LTVector*)=0;   // 0x00
+	virtual LTRESULT InterpolateRotation(LTRotation*, LTRotation*, LTRotation*, float)=0;  // 0x04
+	// Declared as iltmath.h does, float form first; it lands in slot 3.
+	virtual LTRESULT SetupEuler(LTRotation*, float, float, float)=0;                       // 0x0c
+	virtual LTRESULT SetupEuler(LTRotation*, LTVector*)=0;                                 // 0x08
+};
+
 LTRESULT SharedCommonLT::SetupEuler(LTRotation& rot, float pitch, float yaw,
                                     float roll)
 {
-	return m_pMath->SetupEuler(&rot, pitch, yaw, roll);
+	return ((ICommonMathQ508*)m_pMath)->SetupEuler(&rot, pitch, yaw, roll);
 }
 
 

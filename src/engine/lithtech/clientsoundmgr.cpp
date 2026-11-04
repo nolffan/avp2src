@@ -488,15 +488,15 @@ public:
 	virtual LTRESULT IsSoundDone(HLTSOUND hSound, LTBOOL& bDone);       // +0x08
 	virtual LTRESULT KillSound(HLTSOUND hSound);                        // +0x0c
 	virtual LTRESULT KillSoundLoop(HLTSOUND hSound);                    // +0x10
-	virtual LTRESULT _v14(HLTSOUND h, LTFLOAT fFadeOutTime)=0;          // KillSoundFade
+	virtual LTRESULT KillSoundFade(HLTSOUND hSound, LTFLOAT fFadeOutTime); // +0x14
 	virtual LTRESULT GetSound3DProviderLists(Sound3DProvider*& pList,
 	                                         LTBOOL bVerify);           // +0x18
 	virtual LTRESULT ReleaseSound3DProviderList(Sound3DProvider* pList);// +0x1c
 	virtual LTRESULT _v20(InitSoundInfo* pSoundInfo)=0;                 // InitSound
 	virtual LTRESULT GetVolume(uint16& nVolume);                        // +0x24
 	virtual LTRESULT SetVolume(uint16 nVolume);                         // +0x28
-	virtual LTRESULT _v2c(uint16& nVolume, uint8 nType)=0;              // GetVolumeByType
-	virtual LTRESULT _v30(uint16 nVolume, uint8 nType)=0;               // SetVolumeByType
+	virtual LTRESULT GetVolumeByType(uint16& nVolume, uint8 nType);     // +0x2c
+	virtual LTRESULT SetVolumeByType(uint16 nVolume, uint8 nType);      // +0x30
 	virtual LTRESULT _v34(ReverbProperties* p)=0;                       // SetReverbProperties
 	virtual LTRESULT _v38(ReverbProperties* p)=0;                       // GetReverbProperties
 	virtual LTRESULT _v3c(HLTSOUND h, LTFLOAT f)=0;                     // SetSoundOcclusion
@@ -640,6 +640,12 @@ public:
 	uint32 m_dwLastUpdateTime;                // 0x804  AIL_ms_count at Init, then at each Update
 	uint32 m_dwNextCommitTime;                // 0x808  pushed 100 ms on each time it passes
 	uint32 m_bCommitChanges;                  // 0x80c  push orientation to Miles this frame
+	// AVP2: a volume per sound type, 0..100, indexed by the byte the two
+	// ByType slots take. The constructor (0x0049bf40) fills all 0x100 with
+	// 100 (`mov $0x40,%ecx`, `mov $0x64646464,%eax`, `rep stos` at
+	// 0x0049c088), and Init stores 100 into the first again (0x0049ca27)
+	// (name ours).
+	uint8  m_TypeVolumes[0x100];              // 0x810
 };
 
 
@@ -1771,6 +1777,26 @@ LTRESULT CSoundMgrView::GetVolume(uint16& nVolume)
 }
 
 
+
+// AVP2: 0x0049e040 and 0x0049e070 -- vtable slots +0x30 and +0x2c (Primal
+// Hunt's table at 0x004d6844, slots 12 and 11). The volume is clamped to a
+// hundred in sixteen bits (`cmp $0x64,%ax`) and kept as a byte; no Miles
+// call either way.
+LTRESULT CSoundMgrView::SetVolumeByType(uint16 nVolume, uint8 nType)
+{
+	if (nVolume > 100)
+		nVolume = 100;
+
+	m_TypeVolumes[nType] = (uint8)nVolume;
+	return LT_OK;
+}
+
+LTRESULT CSoundMgrView::GetVolumeByType(uint16& nVolume, uint8 nType)
+{
+	nVolume = m_TypeVolumes[nType];
+	return LT_OK;
+}
+
 // 0x004816c0 — play one sound from a file record (name ours; vtable slot 0,
 // PlaySound at 0x004822f0, is its caller).  Pick the bank from the flags
 // (in-head when the listener is the attached client object, or when neither
@@ -2610,6 +2636,30 @@ LTRESULT CSoundMgrView::KillSoundLoop(HLTSOUND hSound)
 		return LT_INVALIDPARAMS;
 
 	pSound->KillLoop();
+	return LT_OK;
+}
+
+
+// AVP2: 0x0049eec0 -- vtable slot +0x14, KillSoundLoop's twin: the sound's
+// own fade (clientsoundinst.cpp's CSoundInstanceView::KillFade, 0x0049a9d0,
+// reached by a direct call at 0x0049eedf; declared here under that class's
+// name so the call links to it).
+class CSoundInstanceView
+{
+public:
+	LTRESULT KillFade(float fFadeOutTime);
+};
+
+LTRESULT CSoundMgrView::KillSoundFade(HLTSOUND hSound, LTFLOAT fFadeOutTime)
+{
+	CSoundInstanceRef* pSound;
+
+	pSound = GetSoundInstance(hSound, 1);
+
+	if (!pSound)
+		return LT_INVALIDPARAMS;
+
+	((CSoundInstanceView*)pSound)->KillFade(fFadeOutTime);
 	return LT_OK;
 }
 

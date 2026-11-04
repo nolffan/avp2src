@@ -301,12 +301,18 @@ public:
 	uint32 m_Unknown2c;                      // +0x2c  (the SFX message ref)
 	void*  m_pModelFile;                     // +0x30  (0x0047486e)
 	void*  m_pSkinFile;                      // +0x34  (0x0047486c)
-	uint8  m_pad_38[0x3c - 0x38];
-	LTLink m_StateLink;                      // +0x3c  (0x004748fa)
-	class LTObject* m_pNextChanged;          // +0x48
-	uint8  m_pad_4c[0x50 - 0x4c];
-	uint16 m_ClientChangeFlags;              // +0x50  (0x004748a7)
-	uint16 m_NetFlags;                       // +0x52  (0x004748ab)
+	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
+	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
+#ifdef PRIMAL_HUNT
+	uint8  m_pad_38[0x48 - 0x38];
+#else
+	uint8  m_pad_38[0x44 - 0x38];
+#endif
+	LTLink m_StateLink;                      // +0x44 (PH +0x48; NOLF +0x3c, 0x004748fa)
+	class LTObject* m_pNextChanged;          // +0x50 (PH +0x54)
+	uint8  m_pad_4c[4];
+	uint16 m_ClientChangeFlags;              // +0x58 (PH +0x5c; NOLF +0x50, 0x004748a7)
+	uint16 m_NetFlags;                       // +0x5a (PH +0x5e; NOLF +0x52, 0x004748ab)
 };
 
 class IServerShell

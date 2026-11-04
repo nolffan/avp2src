@@ -38,6 +38,29 @@ LTRESULT ServerLightAnimLT::FindLightAnim(const char* pName, HLIGHTANIM& hLightA
 	return LT_NOTFOUND;
 }
 
+// AVP2: the percentage between the two frames is no longer a float. It is
+// kept as an integer 0..255, the wire format's own byte: la_SetInfo stores
+// `(int)(f * 255.0f)` (0x004413b6..0x004413c4), la_GetInfo turns it back
+// with an unsigned-to-float `fild` and `* (1/255.0f)` (0x00441346..
+// 0x0044135a), la_CompareInfo compares `m >> 3` with the caller's `* 32.0f`
+// (0x004414bb) and la_WriteChange writes its low byte as is (0x00475b54).
+// AvP2 1.0.9.6's lithtech.exe has the same compare (0x0043d757).
+// servermgr.h's LightAnim, shared with the rest of the server, still calls
+// the word m_fPercentBetween; this is the view of it these four read.
+class LightAnimQ508
+{
+public:
+	uint8  m_pad_00[0x28];
+	uint8  m_nFrames;                        // 0x28  (GetNumFrames)
+	uint8  m_pad_29[0x3c - 0x29];
+	uint32 m_PercentBetween;                 // 0x3c
+};
+
+inline uint32& la_PercentBetweenQ508(LightAnim* pAnim)
+{
+	return ((LightAnimQ508*)pAnim)->m_PercentBetween;
+}
+
 LTRESULT ServerLightAnimLT::GetNumFrames(HLIGHTANIM hLightAnim, uint32& nFrames)
 {
 	nFrames = 0;
@@ -45,7 +68,9 @@ LTRESULT ServerLightAnimLT::GetNumFrames(HLIGHTANIM hLightAnim, uint32& nFrames)
 	if (hLightAnim >= m_pServerMgr->m_nLightAnims)
 		RETURN_ERROR_NAMED(2, "ServerLightAnimLT::GetNumFrames", LT_INVALIDPARAMS);
 
-	nFrames = m_pServerMgr->m_pLightAnims[hLightAnim].m_nFrames;
+	// AVP2: the frame count is a byte (`movb 0x28(...)`, 0x00482584; AvP2's
+	// lithtech.exe the same), servermgr.h's word notwithstanding.
+	nFrames = ((LightAnimQ508*)&m_pServerMgr->m_pLightAnims[hLightAnim])->m_nFrames;
 	return LT_OK;
 }
 
@@ -88,7 +113,7 @@ void la_GetInfo(LightAnim* pAnim, LAInfo* pInfo)
 	pInfo->m_bShadowMap = pAnim->m_bShadowMap;
 	pInfo->m_iFrames[0] = pAnim->m_iFrames[0];
 	pInfo->m_iFrames[1] = pAnim->m_iFrames[1];
-	pInfo->m_fPercentBetween = pAnim->m_fPercentBetween;
+	pInfo->m_fPercentBetween = (float)la_PercentBetweenQ508(pAnim) * (1.0f / 255.0f);
 	pInfo->m_fBlendPercent = pAnim->m_fBlendPercent;
 	pInfo->m_vLightPos = pAnim->m_vLightPos;
 	pInfo->m_vLightColor = pAnim->m_vLightColor;
@@ -104,8 +129,9 @@ void la_GetInfo(LightAnim* pAnim, LAInfo* pInfo)
 //
 // Read off the bytes rather than guessed:
 //
-//   * the quantizer is `(int)(x * 32.0f)` for the two percentages and a bare
-//     `(int)x` for the radius. The 32.0f is loaded once into %st(1) and four
+//   * the quantizer is `(int)(x * 32.0f)` for the two percentages (AVP2: the
+//     stored percentage is already 0..255 and is shifted down by three
+//     instead) and a bare `(int)x` for the radius. (NOLF's server.dll:) The 32.0f is loaded once into %st(1) and four
 //     `fmul %st(1),%st` share it, which is VC6 commoning the constant across
 //     four separate `* 32.0f` in the source, not one hoisted local.
 //   * the position and colour go through 0x10012a59 with scales of 10.0 and
@@ -128,8 +154,8 @@ LTBOOL la_CompareInfo(LightAnim* pAnim, LAInfo* pInfo, uint32* pChangeFlags)
 		*pChangeFlags |= 1;
 	}
 
-	if ((int)(pAnim->m_fPercentBetween * 32.0f) !=
-	    (int)(pInfo->m_fPercentBetween * 32.0f))
+	if ((la_PercentBetweenQ508(pAnim) >> 3) !=
+	    (uint32)(int)(pInfo->m_fPercentBetween * 32.0f))
 	{
 		*pChangeFlags |= 2;
 	}
@@ -160,7 +186,7 @@ void la_SetInfo(LightAnim* pAnim, LAInfo* pInfo)
 {
 	pAnim->m_iFrames[0] = pInfo->m_iFrames[0];
 	pAnim->m_iFrames[1] = pInfo->m_iFrames[1];
-	pAnim->m_fPercentBetween = pInfo->m_fPercentBetween;
+	la_PercentBetweenQ508(pAnim) = (int)(pInfo->m_fPercentBetween * 255.0f);
 	pAnim->m_fBlendPercent = pInfo->m_fBlendPercent;
 	pAnim->m_vLightPos = pInfo->m_vLightPos;
 	pAnim->m_vLightColor = pInfo->m_vLightColor;
@@ -314,7 +340,7 @@ void la_WriteChange(CServerMgr* pMgr, LightAnim* pAnim, uint32 hLightAnim,
 	}
 
 	if (nChangeFlags & 2)
-		pMsg->WriteByte((uint8)(pAnim->m_fPercentBetween * 255.0f));
+		pMsg->WriteByte((uint8)la_PercentBetweenQ508(pAnim));
 
 	if (nChangeFlags & 4)
 		pMsg->WriteByte((uint8)(pAnim->m_fBlendPercent * 255.0f));

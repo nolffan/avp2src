@@ -226,10 +226,20 @@ public:
 	virtual HPOLY       MakeHPoly(void* pPoly) = 0;          // 0x08
 	virtual void*       FindPoly(HPOLY hPoly) = 0;           // 0x0c
 	virtual class CSubRecord* GetPointStatus(LTVector vPoint) = 0;  // 0x10
-	virtual void*       GetPolyRefs() = 0;                   // 0x14
-	virtual uint32      GetWorldFlags() = 0;                 // 0x18
-	virtual uint32      IsFlagSet() = 0;                     // 0x1c
-	virtual float       GetRadiusSqr() = 0;                  // 0x20
+	// AVP2: two slots NOLF does not have, between GetPointStatus and
+	// GetPolyRefs: the addresses of the point grid's cell size and origin
+	// (CWorldSub108's m_vCell and m_vOrigin; names ours).  Primal Hunt's
+	// server.dll tables 0x10074404 (simple), 0x100744bc (BSP) and the
+	// pure base 0x10074490 are eleven/twelve/eleven slots, and AvP2's
+	// agree (server.dll 0x10069404/0x100694bc, lithtech.exe
+	// 0x004c7118/0x004c71a0; Primal Hunt's lithtech.exe 0x004d5130/
+	// 0x004d51b8).
+	virtual LTVector*   GetCellSize() = 0;                   // 0x14
+	virtual LTVector*   GetCellOrigin() = 0;                 // 0x18
+	virtual void*       GetPolyRefs() = 0;                   // 0x1c
+	virtual uint32      GetWorldFlags() = 0;                 // 0x20
+	virtual uint32      IsFlagSet() = 0;                     // 0x24
+	virtual float       GetRadiusSqr() = 0;                  // 0x28
 
 	char m_Name[0x41];                       // 0x04
 };                                           //      = 0x48
@@ -395,6 +405,11 @@ public:
 	virtual HPOLY  MakeHPoly(void* pPoly);   // 0x1000ab53
 	virtual void*  FindPoly(HPOLY hPoly);    // 0x1000ab62
 	virtual class CSubRecord* GetPointStatus(LTVector vPoint);  // 0x1000ab71
+	// AVP2: slots 5 and 6, `lea 0x80(%ecx)` and `lea 0x8c(%ecx)` (Primal
+	// Hunt server.dll 0x1000dfe3/0x1000dfea, lithtech.exe 0x0042f960/
+	// 0x0042f970).
+	virtual LTVector* GetCellSize();
+	virtual LTVector* GetCellOrigin();
 	virtual void*  GetPolyRefs();            // 0x1000ab8f
 	virtual uint32 GetWorldFlags();          // 0x1000ab93
 	virtual uint32 IsFlagSet();              // 0x10014d2f
@@ -455,7 +470,12 @@ public:
 	// carries something else in its high half (name ours).
 	virtual void*  FindPoly(HPOLY hPoly);    // 0x1000aef8
 	virtual class CSubRecord* GetPointStatus(LTVector vPoint);  // 0x1000af19
-	// Slot 5: four bytes, the pointer at +0x70 handed out raw — the same one
+	// AVP2: slots 5 and 6, `lea 0x108(%ecx)` and `lea 0x114(%ecx)` (Primal
+	// Hunt server.dll 0x1000e3ec/0x1000e3f3, lithtech.exe 0x00430470/
+	// 0x00430480).
+	virtual LTVector* GetCellSize();
+	virtual LTVector* GetCellOrigin();
+	// Slot 7 (NOLF's 5): four bytes, the pointer at +0x70 handed out raw — the same one
 	// FreeTree releases (name ours).
 	virtual void*  GetPolyRefs();            // 0x1000af37
 	virtual uint32 GetWorldFlags();          // 0x1000aea6

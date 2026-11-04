@@ -461,32 +461,24 @@ void tm_MarkTexture(SharedTextureView* pTexture)
 // from 0x1118 before the loop, and `andw $0x7fff,0x32(%ecx)` for the store,
 // which is the same one-bit field cleared instead of set.
 //
-// NEAR (37 of 37 bytes) in BOTH images: the store is `movw $0x0,0x32(%edx)`
-// -- the WHOLE word, reference count included -- in Primal Hunt (0x00428957)
-// and AvP2 (0x004261b7) alike, where ours is the one-bit `andw $0x7fff`, and
-// the extra temp that costs moves the head from %ecx to %edx. Both images'
-// mark (`orb $0x80,0x33`), sweep (`testb $0x80,0x33`) and reference test
-// (`test $0x7fff`) are the bitfield's, so it is only this store that
-// differs; clearing m_nRefCount and m_bMarked as two statements does not
-// merge into one word store (two `andw`s, 46 bytes). The source must write
-// a 16-bit lvalue overlaying the pair, which SharedTexture's view here does
-// not have -- and doing so zeroes every live texture's reference count each
-// sweep (a probable retail bug).
+// AVP2: the store is `movw $0x0,0x32(%edx)` -- the WHOLE word, reference
+// count included -- in Primal Hunt (0x00428957) and AvP2 (0x004261b7)
+// alike. That is the mark cleared and then the reference count, two
+// statements in that order through one texture pointer, which VC6 merges
+// into one word store (the other order gives two `andw`s). The head is
+// reached through the pointer to it (`pHead->m_pNext`), which is what puts
+// it in %ecx and the texture in %edx. Whether clearing the count is meant
+// (a per-sweep use count) or a slip is not something these bytes say.
 void tm_UnmarkTextures(CClientMgrTexBankView* pClientMgr)
 {
-	LTLink* pCur;
-	LTLink* pHead;
+	LTLink* pHead = &pClientMgr->m_TextureList.m_Head;
 
-	// The HEAD ADDRESS is taken first: shipped emits `lea <head>` BEFORE
-	// loading m_pNext, where the inline condition makes VC6 load the link
-	// first and compute the sentinel after.
-	pHead = &pClientMgr->m_TextureList.m_Head;
-
-	for (pCur = pClientMgr->m_TextureList.m_Head.m_pNext;
-	     pCur != pHead;
-	     pCur = pCur->m_pNext)
+	for (LTLink* pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
 	{
-		((SharedTextureView*)pCur->m_pData)->m_bMarked = 0;
+		SharedTextureView* pTexture = (SharedTextureView*)pCur->m_pData;
+
+		pTexture->m_bMarked   = 0;
+		pTexture->m_nRefCount = 0;
 	}
 }
 
@@ -700,6 +692,10 @@ public:
 	// PH: and a fifth at +0x1d0, marked after the four (0x00428a65); AvP2's
 	// walk has no such load.
 	SharedTextureView* m_pTexture1d0;        // 0x1d0
+	uint8              m_pad_1d4[0x264 - 0x1d4];
+	// PH: one flag per texture, read by 0x00428bc0 (`cmpl $0x0,(%ecx)` at
+	// 0x00428c25, the texture 0xa4 below it).
+	uint32             m_Unknown264[4];      // 0x264
 #endif
 };
 
@@ -821,6 +817,75 @@ void tm_MarkUsedTextures(CClientMgrTexBankView* pClientMgr)
 			tm_MarkTexture(g_RenderStruct.m_GlobalPanInfo[j].m_pTexture);
 	}
 }
+
+#ifdef PRIMAL_HUNT
+// PH: 0x00428bc0, cdecl (manager, object); AvP2 has no such function. Called
+// for a type-1 object (`cmpb $0x1,0xbc(%esi)`) from 0x00405ce8 and
+// 0x00413f45. Drops one object's textures that nothing else holds: its
+// repeated texture pointers are cleared first; each texture is then marked if
+// its flag at +0x264 is set, or unmarked (with its count) if nothing
+// references it; every OTHER object on the list at +0x41c marks its four; and
+// whatever of this object's four is still unmarked is freed and cleared
+// (name ours).
+void sub_00428bc0Q506(CClientMgrTexBankView* pClientMgr, CTexOwner1b8View* pObj)
+{
+	LTLink*            pCur;
+	LTLink*            pHead;
+	SharedTextureView* pTexture;
+	CTexOwner1b8View*  pOther;
+	uint32             i;
+	uint32             j;
+
+	for (i = 0; i < 4; i++)
+	{
+		for (j = i + 1; j < 4; j++)
+		{
+			if (pObj->m_pTextures[i] == pObj->m_pTextures[j] && pObj->m_pTextures[i])
+				pObj->m_pTextures[j] = LTNULL;
+		}
+	}
+
+	for (i = 0; i < 4; i++)
+	{
+		pTexture = pObj->m_pTextures[i];
+
+		if (pTexture)
+		{
+			if (pObj->m_Unknown264[i])
+			{
+				pTexture->m_bMarked = 1;
+			}
+			else if (!pTexture->m_nRefCount)
+			{
+				pTexture->m_bMarked   = 0;
+				pTexture->m_nRefCount = 0;
+			}
+		}
+	}
+
+	pHead = &pClientMgr->m_List41c.m_Head;
+
+	for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+	{
+		pOther = (CTexOwner1b8View*)pCur->m_pData;
+
+		if (pOther != pObj)
+		{
+			for (j = 0; j < 4; j++)
+				tm_MarkTexture(pOther->m_pTextures[j]);
+		}
+	}
+
+	for (i = 0; i < 4; i++)
+	{
+		if (pObj->m_pTextures[i] && !pObj->m_pTextures[i]->m_bMarked)
+		{
+			tm_FreeTexture(pClientMgr, pObj->m_pTextures[i]);
+			pObj->m_pTextures[i] = LTNULL;
+		}
+	}
+}
+#endif
 
 
 // ======================================================================= //
@@ -1019,11 +1084,13 @@ class CClientMgrObjView
 public:
 	uint8             m_pad_000[0x6c];
 	CObjWorldTreeView m_WorldTree;                           // 0x06c
-	uint8             m_pad_070[0x508 - 0x70];
-	void*             m_pUnknown508;                         // 0x508
+	// AVP2: +4 here as everywhere past 0x50c (0x0042915d PH, AvP2
+	// 0x0042693d+0x1d): the NOLF name is kept.
+	uint8             m_pad_070[0x50c - 0x70];
+	void*             m_pUnknown508;                         // 0x50c
 };
 
-// servermgr.h's WMMoveState, 0x68 bytes (cltapi.cpp / cchandler.cpp).
+// servermgr.h's WMMoveState, 0x6c bytes (cltapi.cpp / cchandler.cpp).
 struct WMMoveStateT
 {
 	void*  m_pContainer;                     // 0x00
@@ -1034,6 +1101,9 @@ struct WMMoveStateT
 	uint32 m_nPushCount;                     // 0x14
 	uint8  m_pad_18[0x64 - 0x18];
 	uint32 m_nUnknown64;                     // 0x64
+	// AVP2: one dword longer -- cm_SetObjectRotation's frame is 0x6c and it
+	// clears +0x68 too (0x0042913d PH).
+	uint32 m_nUnknown68;                     // 0x68
 };
 
 // 0x00450c30 -- the client's obj_RetransformWorldModel (commonphysics.cpp).
@@ -1093,6 +1163,26 @@ void cm_ResetObjectPos(CClientMgrObjView* pClientMgr, CObjSetView* pObj)
 	cm_SetObjectPos(pClientMgr, pObj, &pObj->m_Pos, 1);
 }
 
+
+// smgr.cpp's sm_IsWorldModelType and sm_InitMoveState on the client.
+inline LTBOOL cm_IsWorldModelTypeQ506(CObjSetView* pObj)
+{
+	return pObj->m_ObjectType == OT_WORLDMODEL ||
+	       pObj->m_ObjectType == OT_CONTAINER;
+}
+
+static inline void cm_InitMoveStateQ506(WMMoveStateT* pState, void* pContainer,
+                                        void* pUnknown04, CObjSetView* pObj,
+                                        uint32 nPriority)
+{
+	pState->m_pContainer = pContainer;
+	pState->m_pUnknown04 = pUnknown04;
+	pState->m_pObj       = pObj;
+	pState->m_nUnknown0C = nPriority;
+	pState->m_pPushList  = 0;
+	pState->m_nPushCount = 0;
+}
+
 // 0x00420880 -- cdecl(manager, object, rotation): smgr.cpp's
 // sm_SetObjectRotation shape on the client: the state's four clears, the
 // rotation (its last dword store lands after the clears), then a world model is turned through the simulation (flag 0), and
@@ -1106,25 +1196,31 @@ void cm_SetObjectRotation(CClientMgrObjView* pClientMgr, CObjSetView* pObj,
 	state.m_pUnknown04 = LTNULL;
 	state.m_pObj = LTNULL;
 	state.m_nUnknown64 = 0;
+	state.m_nUnknown68 = 0;
 
-	pObj->m_Rotation = *pRotation;
-
+	// AVP2: a world model's rotation is left to the rotate (PH 0x00429194,
+	// AvP2 0x004269b4); only the other arms copy it in. The type test and
+	// the state's fill are inline helpers, as in smgr.cpp's server twin:
+	// with a `char nType` local VC6 lays the copy arm first.
 	if (pClientMgr)
 	{
-		char nType = pObj->m_ObjectType;
-
-		if (nType == OT_WORLDMODEL || nType == OT_CONTAINER)
+		if (cm_IsWorldModelTypeQ506(pObj))
 		{
-			state.m_pContainer = &pClientMgr->m_WorldTree;
-			state.m_pUnknown04 = pClientMgr->m_pUnknown508;
-			state.m_pObj       = pObj;
-			state.m_nUnknown0C = pObj->m_BlockingPriority;
-			state.m_pPushList  = 0;
-			state.m_nPushCount = 0;
+			cm_InitMoveStateQ506(&state, &pClientMgr->m_WorldTree,
+			                     pClientMgr->m_pUnknown508, pObj,
+			                     pObj->m_BlockingPriority);
 			wm_RotateWorldModelT(&state, pRotation, 0);
+		}
+		else
+		{
+			pObj->m_Rotation = *pRotation;
 		}
 
 		pClientMgr->m_WorldTree.AddObject(pObj, 0);
+	}
+	else
+	{
+		pObj->m_Rotation = *pRotation;
 	}
 }
 

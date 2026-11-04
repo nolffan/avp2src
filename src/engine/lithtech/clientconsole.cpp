@@ -1957,6 +1957,18 @@ public:
 	void* m_pFreeList;                       // 0x18
 };
 
+// stdlith's sb_Free as servermgr.h expands it: AVP2: the record and then the
+// bank are tested before the two stores (0x0040d59e `mov $0x4eff70,%ecx ;
+// test %ecx,%ecx`; the record's test folds away, it was tested at entry).
+inline void con_sb_FreeQ501(CStructBankM12* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
 // The surface list: cissurf.cpp's CGLinkedListQ40C at 0x004b1798, whose
 // count (+0x04) and head (+0x08) are the two words this body keeps.
 class CSurfaceListM12
@@ -2011,8 +2023,7 @@ LTRESULT ci_DeleteSurface(HSURFACE hSurface)
 		cis_FreeSysMemM12(pSurface);
 		cis_FreeRenderDataM12(pSurface);
 
-		*(void**)pSurface = g_SurfaceBankM12.m_pFreeList;
-		g_SurfaceBankM12.m_pFreeList = pSurface;
+		con_sb_FreeQ501(&g_SurfaceBankM12, pSurface);
 	}
 
 	return LT_OK;

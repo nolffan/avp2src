@@ -133,6 +133,14 @@ PacketHandlerFn g_PacketHandlers[256];
 int             g_FindSphereCount;       // 0x10058be4
 int             g_FindSphereTicks;       // 0x10058be8
 uint32          g_Unknown58bec;          // 0x10058bec
+// AVP2: si_FindPoliesTouchingBox's two stats beside the sphere query's,
+// cleared by Update and printed under "ShowPolyFindTicks" (Primal Hunt
+// lithtech.exe 0x004f6f90 ticks, 0x004f6f7c count; the cvar's record at
+// 0x004e3878 points at 0x004f4934). The cvar's storage is defined here
+// until dsi.cpp's table carries it.
+int             g_FindPolyTicksQ502;
+int             g_FindPolyCountQ502;
+int             g_ShowPolyFindTicksQ502;
 // 0x10058bf0 — the manager the old-API wrappers reach through
 // (servermgr.h); SetupGlobals below refreshes it on every API entry. It
 // follows this unit's own counters (0x10058be4..0x10058bec) in .bss, zeroed.
@@ -653,11 +661,19 @@ LTRESULT CServerMgr::FreeUnusedModels()
 		hElement = dhash_GetNext(&hCur);
 		pModel = (Model*)dhash_GetData(hElement);
 
-		pModel->m_CacheCount--;
+		// AVP2: the count only comes down while it is nonzero, compared
+		// unsigned, and a level-3 report follows the level-2 one (Primal
+		// Hunt 0x0048da59..0x0048daad).
+		if ((uint32)pModel->m_CacheCount > 0)
+			pModel->m_CacheCount--;
+
 		if (pModel->m_CacheCount == 0 && !(pModel->m_Flags & 1))
 		{
 			if (g_DebugLevel >= 2)
 				dsi_ServerError("Debug: Server caching out model %s", pModel->GetFilename());
+
+			if (g_DebugLevel >= 3)
+				dsi_ServerError("Removing model from resource list: %s\n", pModel->GetFilename());
 
 			dhash_Remove(m_hModelHash, hElement);
 			delete pModel;
@@ -849,6 +865,8 @@ void CServerMgr::Term()
 // with `lea 0x134(%ecx),%edx`, which is what shipped. (Loops want
 // the array indexed, not walked — and this was the last byte of a function
 // previously written off as the SpriteControl::SetCurPos SIB near class.)
+void sub_48d400Q502(CServerMgr* pMgr);    // 0x0048d400
+
 void CServerMgr::EndWorld(int bKeepWorldData)
 {
 	LTLink* pCur;
@@ -889,6 +907,10 @@ void CServerMgr::EndWorld(int bKeepWorldData)
 		m_World.Term();
 
 	m_Unknown198 = 1;
+	// AVP2: one more teardown step after the flag (Primal Hunt 0x0048d396
+	// -> 0x0048d400, AvP2 1.0.9.6 0x00485175 likewise; cdecl, the manager
+	// its one argument; not yet reconstructed).
+	sub_48d400Q502(this);
 	dsi_ServerError("World ended");
 }
 
@@ -1300,6 +1322,14 @@ LTRESULT CServerMgr::PlaySound(PlaySoundInfo* pPlaySoundInfo, HLTSOUND& hResult)
 	if ((pPlaySoundInfo->m_dwFlags & PLAYSOUND_CTRL_PITCH) && pPlaySoundInfo->m_fPitchShift == 1.0f)
 		pPlaySoundInfo->m_dwFlags &= ~PLAYSOUND_CTRL_PITCH;
 
+	// AVP2: and the two the AvP2 SDK added (Primal Hunt 0x0048dfe4 and
+	// 0x0048dffa: the byte at +0x134, the dword at +0x138).
+	if ((pPlaySoundInfo->m_dwFlags & PLAYSOUND_CTRL_TYPE) && pPlaySoundInfo->m_nUserSoundType == 0)
+		pPlaySoundInfo->m_dwFlags &= ~PLAYSOUND_CTRL_TYPE;
+
+	if ((pPlaySoundInfo->m_dwFlags & PLAYSOUND_USER_DATA) && pPlaySoundInfo->m_UserData == 0)
+		pPlaySoundInfo->m_dwFlags &= ~PLAYSOUND_USER_DATA;
+
 	if (pPlaySoundInfo->m_dwFlags & (PLAYSOUND_TIMESYNC | PLAYSOUND_TIME |
 	    PLAYSOUND_GETHANDLE | PLAYSOUND_ATTACHED | PLAYSOUND_LOOP))
 	{
@@ -1329,9 +1359,10 @@ LTRESULT CServerMgr::PlaySound(PlaySoundInfo* pPlaySoundInfo, HLTSOUND& hResult)
 		{
 			pPlaySoundInfo->m_hSound = LTNULL;
 
-			// Hand the instance straight back to its bank.
-			*(void**)pSound = pBank->m_pFreeList;
-			pBank->m_pFreeList = pSound;
+			// Hand the instance straight back to its bank. AVP2: through
+			// the header's sb_Free, whose bank test survives (`test
+			// %ebp,%ebp`, Primal Hunt 0x0048e0c5).
+			sb_Free(pBank, pSound);
 			return LT_ERROR;
 		}
 
@@ -1389,6 +1420,8 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 	g_nIsectTime = 0;
 	g_FindSphereTicks = 0;
 	g_FindSphereCount = 0;
+	g_FindPolyTicksQ502 = 0;
+	g_FindPolyCountQ502 = 0;
 
 	if (sm_ProcessPackets(this))
 		return LTFALSE;
@@ -1432,8 +1465,8 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 			// old spelling ran the counter through the volatile fTime slot
 			// and was 711 bytes against 698. Only the m_Unknown1a0 store
 			// still goes through that slot (0x0047443e). server.dll
-			// (0x10032e69) is identical either way. Left in lithtech (698 of
-			// 698, 6 blocks): the busy-wait has a pre-test there
+			// (0x10032e69) is identical either way. Left in lithtech (Primal
+			// Hunt 0x0048b5d0: 761 of 761 bytes, 6 blocks): the busy-wait has a pre-test there
 			// (0x0047446a) and not in server.dll, the float zero to
 			// g_Unknown585a0 comes from %edi, and the slot store is
 			// scheduled ahead of the m_Time store. Every while/goto/pointer
@@ -1482,11 +1515,36 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 	if (g_ShowGameTime)
 		dsi_ServerError("Game time: %.2f", m_Time);
 
+#ifdef PRIMAL_HUNT
+	// PH: the stats go through the varargs printer, each call popped on its
+	// own (0x0048b871/0x0048b87b); AvP2 1.0.9.6 batches each pair into one
+	// `add $0x10` (0x004837d0, 0x004837fc).
+	if (g_ShowTickCounts)
+	{
+		dsi_ServerError("ILTServer::FindObjectsTouchingSphere ticks: %d", g_FindSphereTicks);
+		dsi_ServerError("ILTServer::FindObjectsTouchingSphere count: %d", g_FindSphereCount);
+	}
+
+	if (g_ShowPolyFindTicksQ502)
+	{
+		dsi_ServerError("ILTServer::FindPoliesTouchingBox ticks: %d", g_FindPolyTicksQ502);
+		dsi_ServerError("ILTServer::FindPoliesTouchingBox count: %d", g_FindPolyCountQ502);
+	}
+#else
 	if (g_ShowTickCounts)
 	{
 		dsi_PrintStat("ILTServer::FindObjectsTouchingSphere ticks: %d", g_FindSphereTicks);
 		dsi_PrintStat("ILTServer::FindObjectsTouchingSphere count: %d", g_FindSphereCount);
 	}
+
+	// AVP2: the poly query's pair, under its own cvar (AvP2 1.0.9.6
+	// 0x004837d3).
+	if (g_ShowPolyFindTicksQ502)
+	{
+		dsi_PrintStat("ILTServer::FindPoliesTouchingBox ticks: %d", g_FindPolyTicksQ502);
+		dsi_PrintStat("ILTServer::FindPoliesTouchingBox count: %d", g_FindPolyCountQ502);
+	}
+#endif
 
 	return LTTRUE;
 }
@@ -1509,6 +1567,7 @@ int sub_1002a167(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient);
 int sub_1002a0f2(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient);
 LTRESULT sm_GiveMessageToShell(CServerMgr* pMgr, ServerMessage* pMsg,
                                HCLIENT hClient);
+int sub_100358baQ502(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient);
 
 // 0x10029ee7 — clear the packet-handler table and install the seven handlers
 // the server has. Another declaration in servermgr.h whose name does not
@@ -1538,6 +1597,10 @@ void sm_ResetProfileCounters()
 	g_PacketHandlers[11] = (PacketHandlerFn)sm_GiveMessageToShell;
 	g_PacketHandlers[9]  = sub_1002a167;
 	g_PacketHandlers[5]  = sub_1002a193;
+	// AVP2: an eighth handler, 13, stored last (lithtech.exe 0x0047d215 ->
+	// 0x0047d630; AvP2 1.0.9.6 0x00476bd5 likewise; server.dll 0x100356f0
+	// -> 0x100358ba).
+	g_PacketHandlers[13] = sub_100358baQ502;
 }
 
 // The shipped UpdateObjects pads the class name with an inlined rep-stos
@@ -1568,6 +1631,18 @@ void sm_ResetProfileCounters()
 // after the m_nFrames store). Also probed for lithtech without effect: int
 // nLen, `sName + nLen`, a named pad count, `30 > nLen`; strlen written out
 // at each use is not CSE'd (969 bytes).
+//
+// PH: every print here goes through the varargs printer, each call popped on
+// its own (0x0048b08c, 0x0048b099, 0x0048b0ac ... 0x0048b234), where AvP2
+// 1.0.9.6 batches the header and footer prints (0x0048316b..0x00483181), as
+// these fixed prototypes do. So in Primal Hunt's build the three names are
+// the varargs printer itself. Primal Hunt's 0x0048aed0 is then 965 of 965,
+// with only the strlen register above left (shipped eax, ours edx).
+#ifdef PRIMAL_HUNT
+#define dsi_PrintString      dsi_ServerError
+#define dsi_PrintClassRow    dsi_ServerError
+#define dsi_PrintFrameTotals dsi_ServerError
+#endif
 void CServerMgr::UpdateObjects()
 {
 	char sName[32];
@@ -1738,6 +1813,11 @@ void CServerMgr::UpdateObjects()
 		}
 	}
 }
+#ifdef PRIMAL_HUNT
+#undef dsi_PrintString
+#undef dsi_PrintClassRow
+#undef dsi_PrintFrameTotals
+#endif
 
 void CServerMgr::UpdateSounds(float fFrameTime)
 {
@@ -1845,9 +1925,10 @@ void CServerMgr::RemoveDeadSounds()
 
 			pSound->Term();
 
-			// Hand the instance straight back to its bank.
-			*(void**)pSound = m_Bank28.m_pFreeList;
-			m_Bank28.m_pFreeList = pSound;
+			// Hand the instance straight back to its bank. AVP2: through
+			// the header's sb_Free, whose bank test survives (`lea
+			// 0x28(%edi),%eax; cmp %ebp,%eax`, Primal Hunt 0x0048b4e9).
+			sb_Free(&m_Bank28, pSound);
 		}
 
 		pCur = pNext;
@@ -1866,10 +1947,20 @@ void sm_DrainObjectQueue(CServerMgr* pMgr)
 
 		LTLink* pNext = pCur->m_pNext;
 
+		// AVP2: the link is tied off after the unlink (CheapLTLink::Remove:
+		// `mov %esi,0x4(%esi); mov %esi,(%esi)`, AvP2 1.0.9.6 0x00477dd0,
+		// Primal Hunt 0x0047e77c), then goes back to the pool.
+		pCur->Remove();
+#ifdef PRIMAL_HUNT
+		// PH: through the header's null-tested sb_Free (`test %esi`, then
+		// the bank 0x004f0124 tested, 0x0047e77f..0x0047e78c); AvP2 1.0.9.6
+		// has the two bare stores.
+		sb_Free(&g_ObjQueueBank.m_Bank, pCur);
+#else
 		// The spent link goes back to the global pool through its prev slot.
-		dl_Remove(pCur);
 		pCur->m_pPrev = SM_FREE_LINKS;
 		SM_FREE_LINKS = pCur;
+#endif
 
 		pCur = pNext;
 	}
@@ -1981,6 +2072,11 @@ void sm_FlushObjectQueue(CServerMgr* pMgr)
 	while (pMgr->m_Link83c.m_pNext != &pMgr->m_Link83c)
 		sm_DrainObjectQueue(pMgr);
 
+	// AVP2: both changed lists are dropped before the sends (Primal Hunt
+	// 0x0048b2d8, AvP2 1.0.9.6 0x00483e3d, server.dll 0x10040177).
+	pMgr->m_pChangedObjects = LTNULL;
+	pMgr->m_pChangedSounds = LTNULL;
+
 	sm_SendClientUpdates(pMgr);
 }
 
@@ -1994,21 +2090,47 @@ void sm_UpdateClient(CServerMgr* pMgr, Client* pClient)
 	sm_FlushClientPackets(pMgr, pClient);
 }
 
+// AVP2: CNetMgr::Disconnect has lost its flags argument -- both AvP2
+// 1.0.9.6 (0x00476c20) and Primal Hunt (0x0047d5e0) push only `$5` and the
+// connection before the thiscall on pMgr+0xaec. servermgr.h still declares
+// NOLF's three-argument form, so the call goes through a view of the
+// two-argument one.
+class CNetMgrQ502
+{
+public:
+	void Disconnect(NetConnection* pConn, uint32 nReason);
+
+	// AVP2: GetPacket takes a second argument, 2 at sm_ProcessPackets'
+	// both calls (`push $2; push %esi`, Primal Hunt 0x0047d0d6 and
+	// 0x0047d14e).
+	LTBOOL GetPacket(ServerMessage* pMsg, int nArg);
+};
+
+// NEAR on Primal Hunt (0x0047d060, 339 of 346 bytes): what is left is the
+// allocation. There the packet comes back BY VALUE, as a one-pointer
+// reference object built in a frame temporary (`lea 0x18(%esp),%eax; push
+// %eax` before the two sizes, 0x0047d087), copied into msg with an AddRef
+// (0x0047d0b0) and destroyed with a Release (0x0047d0c2) under its own EH
+// state (`movb $1,0x20(%esp)` / `movb $0`); no CAbstractIO out-parameter.
+// msg_AllocPacket's declaration here is still NOLF's.
 int sm_ProcessPackets(CServerMgr* pMgr)
 {
 	CMessageRef msg;
 	CAbstractIO* pIO;
 	int nResult;
 
-	msg.Init(msg_AllocPacket(&pIO, 0x1000, 0x1000));
+	// AVP2: the packet buffer is 0x44c bytes, not 0x1000 (Primal Hunt
+	// 0x0047d082).
+	msg.Init(msg_AllocPacket(&pIO, 0x44c, 0x44c));
 	if (pIO)
 		pIO->Release();
 
 	pMgr->m_NetMgr.StartGettingPackets();
 
-	while (pMgr->m_NetMgr.GetPacket(msg.m_pMsg))
+	while (((CNetMgrQ502*)&pMgr->m_NetMgr)->GetPacket(msg.m_pMsg, 2))
 	{
-		int nPacketID = msg.m_pMsg->m_pData[0] & 0x3f;
+		// AVP2: the id is kept as a byte (`mov %dl,0x28(%esp)`, 0x0047d0ec).
+		uint8 nPacketID = msg.m_pMsg->m_pData[0] & 0x3f;
 
 		// The handler SLOT, not the index, is what the loop keeps: both
 		// shipped builds materialise `&g_PacketHandlers[nPacketID]` in a
@@ -3390,6 +3512,90 @@ LTBOOL si_GetModelFilenames(LTObject* hObj, char* pFilename, int fileBufLen,
 	return LTTRUE;
 }
 
+// AVP2: the file identifiers SObjData keeps for a model: the model at +0x30
+// and four skins from +0x34 (MAX_MODEL_TEXTURES), the loop over them reading
+// `(%eax,%esi,1)` with esi stepping 0x34..0x40 (Primal Hunt 0x00488dbe, AvP2
+// 1.0.9.6 0x00481a5d). Primal Hunt has one more at +0x44, which goes into
+// the create struct's +0x300, after the four skin names (0x00488e08).
+class CSObjDataFilesQ502
+{
+public:
+	uint8  m_pad_00[0x30];
+	void*  m_pModelFile;                     // +0x30
+	void*  m_pSkinFiles[MAX_MODEL_TEXTURES]; // +0x34
+#ifdef PRIMAL_HUNT
+	void*  m_pFile44;                        // +0x44  PH only
+#endif
+};
+
+// AVP2: ILTServer::GetModelFilenames2 (Primal Hunt 0x00488d50, AvP2
+// 1.0.9.6 0x004819f0): the names of a model's files, straight into a
+// create struct, each cut at MAX_CS_FILENAME_LEN - 1 (`push $0x7e`); an
+// unset one leaves an empty string.
+//
+// NEAR on Primal Hunt (250 of 252 bytes): the shape is right, but shipped
+// keeps hObj in ebp and pStruct in ebx with esi/edi shrink-wrapped around
+// the skin loop (pushed at 0x00488db1, popped at 0x00488e06); ours swaps
+// the two and saves all four up front. A block-scoped loop counter does not
+// move it.
+LTBOOL si_GetModelFilenames2(LTObject* hObj, ObjectCreateStruct* pStruct)
+{
+	if (!hObj)
+		return LTFALSE;
+
+	if (hObj->m_ObjectType != OT_MODEL)
+		return LTFALSE;
+
+	if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pModelFile)
+	{
+		strncpy(pStruct->m_Filename,
+		        fs_GetFileName(&g_pServerMgr->m_FileMgr,
+		                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pModelFile),
+		        MAX_CS_FILENAME_LEN - 1);
+	}
+	else
+	{
+		pStruct->m_Filename[0] = 0;
+	}
+
+	for (int i = 0; i < MAX_MODEL_TEXTURES; i++)
+	{
+		if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pSkinFiles[i])
+		{
+			strncpy(pStruct->m_SkinNames[i],
+			        fs_GetFileName(&g_pServerMgr->m_FileMgr,
+			                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pSkinFiles[i]),
+			        MAX_CS_FILENAME_LEN - 1);
+		}
+		else
+		{
+			pStruct->m_SkinNames[i][0] = 0;
+		}
+	}
+
+#ifdef PRIMAL_HUNT
+	// PH: the create struct is Primal Hunt's, with a name buffer after the
+	// skins that the AvP2 SDK's ltbasedefs.h does not have.
+	{
+		char* pName300 = (char*)pStruct + 0x300;
+
+		if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44)
+		{
+			strncpy(pName300,
+			        fs_GetFileName(&g_pServerMgr->m_FileMgr,
+			                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44),
+			        MAX_CS_FILENAME_LEN - 1);
+		}
+		else
+		{
+			pName300[0] = 0;
+		}
+	}
+#endif
+
+	return LTTRUE;
+}
+
 int si_Parse(char* pCommand, char** pNewCommandPos, char* argBuffer,
              char** argPointers, int* nArgs)
 {
@@ -3479,12 +3685,17 @@ LTRESULT si_CacheFile(uint32 fileType, char* pFilename)
 	return sm_CacheFile(g_pServerMgr, fileType, pFilename);
 }
 
+
+// AVP2: the SDK's KickClient takes the client alone (iltserver.h), and the
+// reason pushed is always 6 (Primal Hunt 0x00487010: `push $6; push
+// %eax`, the second argument never read). The table's slot type here keeps
+// NOLF's reason parameter, unused.
 void si_KickClient(Client* pClient, uint32 nReasonCode)
 {
 	if (!pClient)
 		return;
 
-	g_pServerMgr->m_NetMgr.Disconnect(pClient->m_pConnection, 6, nReasonCode);
+	((CNetMgrQ502*)&g_pServerMgr->m_NetMgr)->Disconnect(pClient->m_pConnection, 6);
 }
 
 // The one check site in the file that reports at level 0, and the one whose
@@ -4038,8 +4249,11 @@ LTBOOL si_GetModelFilenames2(HOBJECT hObj, ObjectCreateStruct *pStruct);
 
 void si_SetupInterface(CLTServer* pServer)
 {
-	// AVP2: in the table's order, as both of AvP2's server.dlls store it
-	// (Primal Hunt 0x1003c604: one run of stores from +0x20 to +0x240)
+	// AVP2: one run of stores from +0x20 to +0x240, in the order every AvP2
+	// image has them (Primal Hunt lithtech.exe 0x00485860 and server.dll
+	// 0x1003c604, AvP2 1.0.9.6's two alike) -- the table's order but for a
+	// few blocks: FindPoliesTouchingBox's pair, CreateObjectList's run and
+	// the attachment/link groups sit where the source evidently had them.
 	pServer->SetCRCString               = si_SetCRCString;   // AVP2: new, to be reconstructed
 	pServer->CreateStringCRC            = si_CreateStringCRC;   // AVP2: new, to be reconstructed
 	pServer->CreateWorldCRC             = si_CreateWorldCRC;   // AVP2: new, to be reconstructed
@@ -4076,9 +4290,22 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->FindObjectsTouchingSphere  = sm_FindObjectsTouchingSphere;
 	pServer->FindPoliesTouchingBox      = si_FindPoliesTouchingBox;   // AVP2: new, to be reconstructed
 	pServer->RelinquishList             = sm_RelinquishList;
+	pServer->ObjectToHandle             = si_ObjectToHandle;
+	pServer->HandleToObject             = si_HandleToObject;
 	pServer->CreateObjectList           = si_CreateObjectList;
 	pServer->AddObjectToList            = si_AddObjectToList;
 	pServer->RemoveObjectFromList       = si_RemoveObjectFromList;
+	pServer->GetPropString              = si_GetPropString;
+	pServer->GetPropVector              = si_GetPropVector;
+	pServer->GetPropColor               = si_GetPropVector;
+	pServer->GetPropReal                = si_GetPropReal;
+	pServer->GetPropFlags               = si_GetPropFlags;
+	pServer->GetPropBool                = si_GetPropBool;
+	pServer->GetPropLongInt             = si_GetPropLongInt;
+	pServer->GetPropRotation            = si_GetPropRotation;
+	pServer->GetPropRotationEuler       = si_GetPropRotationEuler;
+	pServer->GetPropGeneric             = si_GetPropGeneric;
+	pServer->DoesPropExist              = si_DoesPropExist;
 	pServer->AttachClient               = si_AttachClient;
 	pServer->DetachClient               = si_DetachClient;
 	pServer->GetNextClient              = si_GetNextClient;
@@ -4097,25 +4324,12 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->RunGameConString           = si_RunGameConString;
 	pServer->SetGameConVar              = si_SetGameConVar;
 	pServer->GetGameConVar              = si_GetGameConVar;
-	pServer->GetPropString              = si_GetPropString;
-	pServer->GetPropVector              = si_GetPropVector;
-	pServer->GetPropColor               = si_GetPropVector;
-	pServer->GetPropReal                = si_GetPropReal;
-	pServer->GetPropFlags               = si_GetPropFlags;
-	pServer->GetPropBool                = si_GetPropBool;
-	pServer->GetPropLongInt             = si_GetPropLongInt;
-	pServer->GetPropRotation            = si_GetPropRotation;
-	pServer->GetPropRotationEuler       = si_GetPropRotationEuler;
-	pServer->GetPropGeneric             = si_GetPropGeneric;
-	pServer->DoesPropExist              = si_DoesPropExist;
-	pServer->ObjectToHandle             = si_ObjectToHandle;
-	pServer->HandleToObject             = si_HandleToObject;
 	pServer->IsCommandOn                = si_IsCommandOn;
 	pServer->UpperStrcmp                = ci_UpperStrcmp;
-	pServer->Parse                      = si_Parse;
+	pServer->GetLastCollision           = si_GetLastCollision;
 	pServer->PlaySound                  = si_PlaySound;
-	pServer->GetSoundDuration           = si_GetSoundDuration;
 	pServer->IsSoundDone                = si_IsSoundDone;
+	pServer->GetSoundDuration           = si_GetSoundDuration;
 	pServer->KillSound                  = si_KillSound;
 	pServer->KillSoundLoop              = si_KillSoundLoop;
 	pServer->CreateInterObjectLink      = si_CreateInterObjectLink;
@@ -4139,16 +4353,15 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->ScaleObject                = si_ScaleObject;
 	pServer->GetObjectScale             = si_GetObjectScale;
 	pServer->TeleportObject             = si_TeleportObject;
-	pServer->GetLastCollision           = si_GetLastCollision;
 	pServer->GetObjectRotation          = si_GetObjectRotation;
 	pServer->SetObjectRotation          = si_SetObjectRotation;
 	pServer->RotateObject               = si_RotateObject;
-	pServer->TiltToPlane                = si_TiltToPlane;
-	pServer->SetObjectState             = si_SetObjectState;
-	pServer->GetObjectState             = si_GetObjectState;
-	pServer->SetBlockingPriority        = si_SetBlockingPriority;
 	pServer->GetBlockingPriority        = si_GetBlockingPriority;
+	pServer->SetBlockingPriority        = si_SetBlockingPriority;
 	pServer->ClipSprite                 = si_ClipSprite;
+	pServer->TiltToPlane                = si_TiltToPlane;
+	pServer->GetObjectState             = si_GetObjectState;
+	pServer->SetObjectState             = si_SetObjectState;
 	pServer->GetLightColor              = si_GetLightColor;
 	pServer->SetLightColor              = si_SetLightColor;
 	pServer->GetLightRadius             = si_GetLightRadius;
@@ -4161,6 +4374,7 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->GetModelPlaying            = si_GetModelPlaying;
 	pServer->GetModelFilenames          = si_GetModelFilenames;
 	pServer->GetModelFilenames2         = si_GetModelFilenames2;   // AVP2: new, to be reconstructed
+	pServer->Parse                      = si_Parse;
 	pServer->GetObjectContainers        = si_GetObjectContainers;
 	pServer->GetContainedObjects        = si_GetContainedObjects;
 	pServer->SaveObjects                = si_SaveObjects;
@@ -4175,6 +4389,44 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->FreeFileList               = fs_FreeFileList;
 }
 
+
+// CServerMgr members AvP2 added that servermgr.h does not declare yet, all
+// thiscalls on the manager (names ours, by address in Primal Hunt's
+// lithtech.exe; none reconstructed yet).
+class CServerMgrQ502
+{
+public:
+	LTRESULT CreateStringCRC();                              // 0x0048bac0
+	LTRESULT CreateWorldCRC();                               // 0x0048bd70
+	void     Sub48f570(Client* pClient, ServerMessage* pMsg);   // 0x0048f570
+};
+
+// AVP2: ILTServer::SetCRCString, 0x00485d50: a string shorter than 0x400
+// bytes is copied into the manager's 0x400-byte buffer at +0x66c (strncpy,
+// the CRT's 0x004c03e0, with the full 0x400); anything else -- null
+// included -- is LT_ERROR, the one trailing `mov $1,%eax`.
+LTRESULT si_SetCRCString(char *szCRCFiles)
+{
+	if (szCRCFiles && strlen(szCRCFiles) < 0x400)
+	{
+		strncpy((char*)g_pServerMgr->m_Unknown66c, szCRCFiles, 0x400);
+		return LT_OK;
+	}
+
+	return LT_ERROR;
+}
+
+// AVP2: ILTServer::CreateStringCRC (0x00485d90) and CreateWorldCRC
+// (0x00485da0), each a tail jump into a manager member.
+LTRESULT si_CreateStringCRC()
+{
+	return ((CServerMgrQ502*)g_pServerMgr)->CreateStringCRC();
+}
+
+LTRESULT si_CreateWorldCRC()
+{
+	return ((CServerMgrQ502*)g_pServerMgr)->CreateWorldCRC();
+}
 
 // The three entries the table opens with. GetGameInfo re-reads the manager
 // for the second field because the store through the first out-parameter
@@ -4298,6 +4550,83 @@ LTRESULT si_GetNextPoly(HPOLY* hPoly)
 	}
 
 	return LT_OK;
+}
+
+// AVP2: the world model's BSP as GetNextWMPoly reaches it, at +0x1b8 of
+// the object (Primal Hunt 0x004869a5): slot 0 is IsBusy, +0xa4 the poly
+// count and the uint16 at +0xf8 the world's index, the high half of an
+// HPOLY (names ours).
+class CWMPolyBspQ502
+{
+public:
+	virtual uint32 IsBusy() = 0;             // slot 0
+
+	uint8  m_pad_04[0xa4 - 0x04];
+	uint32 m_nPolies;                        // +0xa4
+	uint8  m_pad_a8[0xf8 - 0xa8];
+	uint16 m_wIndex;                         // +0xf8
+};
+
+class CWMPolyObjQ502
+{
+public:
+	uint8           m_pad_000[0x1b8];
+	CWMPolyBspQ502* m_pBsp;                  // +0x1b8
+
+	// The BSP, unless it is busy (name ours).
+	CWMPolyBspQ502* GetIdleBsp()
+	{
+#ifdef AVP2_MODERN
+		if (!m_pBsp || m_pBsp->IsBusy())
+#else
+		if (m_pBsp->IsBusy())
+#endif
+			return LTNULL;
+
+		return m_pBsp;
+	}
+};
+
+// AVP2: ILTServer::GetNextWMPoly, 0x00486920 -- GetNextPoly over one world
+// model's polies: INVALID_HPOLY starts at its first, the last answers
+// LT_FINISHED with the handle set back to INVALID_HPOLY.
+//
+// The busy test is an inline that hands back the BSP or null: the virtual
+// call, then the pointer reloaded and tested (0x004869a5..0x004869bb), and
+// one error block after it.
+//
+// RETAIL BUG: the BSP's IsBusy is called before the BSP pointer is tested,
+// so a world model without one crashes instead of answering
+// LT_INVALIDDATA.
+LTRESULT si_GetNextWMPoly(HPOLY* hPoly, LTObject* hWorldModel)
+{
+	CWMPolyObjQ502* pObj = (CWMPolyObjQ502*)hWorldModel;
+
+	if (!hPoly)
+		RETURN_ERROR(1, "ILTServer::GetNextWMPoly", LT_INVALIDPARAMS);
+
+	if (!hWorldModel)
+		RETURN_ERROR(1, "ILTServer::GetNextWMPoly", LT_INVALIDPARAMS);
+
+	CWMPolyBspQ502* pBsp = pObj->GetIdleBsp();
+	if (!pBsp)
+		RETURN_ERROR(1, "ILTServer::GetNextWMPoly", LT_INVALIDDATA);
+
+	if (*hPoly == INVALID_HPOLY)
+	{
+		*hPoly = pBsp->m_wIndex << 16;
+		return LT_OK;
+	}
+
+	uint32 iPoly = (*hPoly & 0xffff) + 1;
+	if (iPoly < pBsp->m_nPolies)
+	{
+		*hPoly = (pBsp->m_wIndex << 16) | (iPoly & 0xffff);
+		return LT_OK;
+	}
+
+	*hPoly = INVALID_HPOLY;
+	return LT_FINISHED;
 }
 
 int si_IntRandom(int min, int max)
@@ -4455,6 +4784,45 @@ void si_BreakInterObjectLink(LTObject* pOwner, LTObject* pLinked)
 		return;
 
 	sm_BreakInterObjectLink(g_pServerMgr, pOwner, pLinked, 0);
+}
+
+// AVP2: the smart-link body an owner keeps, found or made by 0x00447c70
+// (a walk of the list at 0x004f5454 matching the owner at +0x0c, answering
+// the record's +0x08), and let go by 0x00447d00. Names ours; neither is
+// reconstructed yet.
+LTSmartLink_Body* sm_GetSmartLinkBodyQ502(LTObject* pOwner);         // 0x00447c70
+void              sm_ReleaseSmartLinkBodyQ502(LTSmartLink_Body* pBody);   // 0x00447d00
+
+// AVP2: ILTServer::GetSmartLinkBody, 0x00487340. The body is linked to its
+// owner as an inter-object link of type 3 (sm_CreateInterObjectLink,
+// 0x00447f70), whose answer is the result; no body is LT_OK with *pRet
+// null. The error literal is "CreateSmartLink"; the failure block is the
+// trailing statement (0x00487380), so the test is a positive guard.
+LTRESULT si_GetSmartLinkBody(LTObject* hOwner, LTSmartLink_Body** pRet)
+{
+	if (hOwner && pRet)
+	{
+		LTRESULT dResult = LT_OK;
+
+		*pRet = LTNULL;
+		*pRet = sm_GetSmartLinkBodyQ502(hOwner);
+		if (*pRet)
+			dResult = sm_CreateInterObjectLink(g_pServerMgr, hOwner, (LTObject*)*pRet, 3);
+
+		return dResult;
+	}
+
+	RETURN_ERROR(1, "ILTPhysics::CreateSmartLink", LT_INVALIDPARAMS);
+}
+
+// AVP2: ILTServer::ReleaseSmartLinkBody, 0x004873c0.
+LTRESULT si_ReleaseSmartLinkBody(LTSmartLink_Body* pBody)
+{
+	if (!pBody)
+		RETURN_ERROR(1, "ILTPhysics::ReleaseSmartLinkBody", LT_INVALIDPARAMS);
+
+	sm_ReleaseSmartLinkBodyQ502(pBody);
+	return LT_OK;
 }
 
 LTRESULT si_CreateAttachment(LTObject* hParent, LTObject* hChild, char* pSocketName,
@@ -5550,10 +5918,11 @@ inline uint8 ReadByteFromEndInline(ServerMessage* pMsg)
 // 0x3c(%eax),%eax ; test ; je`, then `push $0 ; push $5 ; push %eax` and a
 // thiscall on pMgr+0x6e0 to CNetMgr::Disconnect (0x10021c18 / 0x00456320),
 // and `xor %eax,%eax` at the one exit.
+
 int sub_1002a0d0(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient)
 {
 	if (pMsg->m_pConnection)
-		pMgr->m_NetMgr.Disconnect(pMsg->m_pConnection, 5, 0);
+		((CNetMgrQ502*)&pMgr->m_NetMgr)->Disconnect(pMsg->m_pConnection, 5);
 
 	return 0;
 }
@@ -5577,6 +5946,20 @@ int sub_1002a0f2(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient)
 	if (pClient->m_ClientFlags & 2)
 		return cc_RunConsoleString(&pMgr->m_ConsoleState,
 			((CMsgStringReader*)pMsg)->ReadStringInPlace());
+
+	return 0;
+}
+
+// AVP2: packet handler 13 (name by address), lithtech.exe 0x0047d630,
+// server.dll 0x100358ba: with a client and a server shell (+0xc30, the
+// same test sm_GiveMessageToShell makes) the packet goes to a CServerMgr
+// thiscall of two arguments, client first (lithtech.exe 0x0048f570,
+// server.dll 0x10042e1e; 969 bytes, not yet reconstructed). Its result is
+// dropped: `xor %eax,%eax` follows the call.
+int sub_100358baQ502(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient)
+{
+	if (pClient && pMgr->m_ClassMgr.m_pServerShell)
+		((CServerMgrQ502*)pMgr)->Sub48f570(pClient, pMsg);
 
 	return 0;
 }
@@ -6412,10 +6795,17 @@ void sub_100277e2(CServerMgr* pMgr, ServerMessage* pMsg)
 // body answers 0 on the "not yet" path and 1 when it sent, and VC6 could not
 // have compiled a value-returning function that fell off the end. Renamed
 // here for that reason; every call site discards the answer.
+//
+// NEAR on Primal Hunt (0x00477c80, 451 of 451 bytes, 3 blocks): only the
+// SIB base/index roles of the two byte copies and one lea inside the
+// expanded WriteType's Insert2 (0x00477d48, 0x00477d5f, 0x00477da1:
+// shipped `(%eax,%ecx,1)`, ours `(%ecx,%eax,1)`) -- allocation.
 LTBOOL sm_FinishUpdatePacket(CUpdateContext* pCtx, ServerMessage* pMsg,
                              int nA, int nThreshold)
 {
-	if (nThreshold != -1 && ((CMsgLenView*)pMsg)->GetSpaceLeft() >= nThreshold)
+	// AVP2: four bytes of slack over the threshold (`add $0x4,%ecx; cmp;
+	// jle`, Primal Hunt 0x00477ca5, AvP2 1.0.9.6 0x00471769 alike).
+	if (nThreshold != -1 && ((CMsgLenView*)pMsg)->GetSpaceLeft() > nThreshold + 4)
 		return LTFALSE;
 
 	{
@@ -6478,9 +6868,19 @@ void sm_EndWorldD(CServerMgr* pMgr)
 		if ((pSound->m_PlaySoundFlags & 0x10) && g_DebugLevel >= 3 &&
 			((CSoundFileView*)pSound)->m_pFile)
 		{
+#ifdef PRIMAL_HUNT
+			// PH: through the varargs prototype -- fs_GetFilename's call
+			// is popped on its own (`add $0x8,%esp` at 0x0048eb52) before
+			// the print, where AvP2 1.0.9.6 (0x004866ac) batches both into
+			// one `add $0x10`.
+			dsi_ServerError("Unfreed sound file (server) %s",
+				fs_GetFilename(&pMgr->m_FileMgr,
+					((CSoundFileView*)pSound)->m_pFile));
+#else
 			dsi_PrintFileName("Unfreed sound file (server) %s",
 				fs_GetFilename(&pMgr->m_FileMgr,
 					((CSoundFileView*)pSound)->m_pFile));
+#endif
 		}
 
 		dl_RemoveAt(&pMgr->m_List54, &pSound->m_Link);
@@ -8058,8 +8458,18 @@ void sm_TermModels(CServerMgr* pMgr)
 		void*  hElement = dhash_GetNext(&hIter);
 		Model* pModel = (Model*)dhash_GetData(hElement);
 
-		if (--pModel->m_CacheCount == 0)
+		// AVP2: the count only comes down while it is nonzero, compared
+		// unsigned (`jbe` over the decrement, Primal Hunt 0x0047da62), each removal is
+		// reported at debug level 3, and both prints are gated on it
+		// (AvP2 1.0.9.6 0x00477096 / 0x004781aa alike).
+		if ((uint32)pModel->m_CacheCount > 0)
+			pModel->m_CacheCount--;
+
+		if (pModel->m_CacheCount == 0)
 		{
+			if (g_DebugLevel >= 3)
+				dsi_ServerError("Removing model from resource list:  %s\n", pModel->GetFilename());
+
 			dhash_Remove(pMgr->m_hModelHash, hElement);
 
 			delete pModel;
@@ -8071,8 +8481,9 @@ void sm_TermModels(CServerMgr* pMgr)
 	{
 		Model* pModel = (Model*)dhash_GetData(dhash_GetNext(&hIter));
 
-		dsi_ServerError("Warning!  Server unable to unload model %s due to reference count!",
-			pModel->GetFilename());
+		if (g_DebugLevel >= 3)
+			dsi_ServerError("Warning!  Server unable to unload model %s due to reference count!",
+				pModel->GetFilename());
 	}
 }
 
@@ -8210,6 +8621,17 @@ public:
 	uint8          m_pad_00[0x2c];
 	IObjDataOwned* m_pOwned2c;               // +0x2c
 };
+
+#ifdef PRIMAL_HUNT
+// PH: lithtech.exe 0x00418e40, 13 bytes -- CSObjDataTermView::Term's
+// release of +0x2c with nothing after it, out of line (it sits far from
+// this file, among the 0x00418xxx client code). Name ours.
+class CSObjDataReleaseQ502
+{
+public:
+	void Release();                          // 0x00418e40
+};
+#endif
 
 // ---- putting a created object into the world ----------------------------- //
 
@@ -8381,13 +8803,23 @@ LTRESULT sm_ObjectRemoved2(CServerMgr* pMgr, LTObject* pObject)
 	sm_BreakAttachments(pMgr, pObject, 0, 1);
 	sm_BreakAttachments(pMgr, pObject, 1, 0);
 	sm_BreakAttachments(pMgr, pObject, 2, 0);
+	// AVP2: a fourth attachment kind (`push $0; push $3`, Primal Hunt
+	// 0x0048c0b3, AvP2 1.0.9.6 0x00483fc4).
+	sm_BreakAttachments(pMgr, pObject, 3, 0);
 
 	dl_RemoveAt(&pMgr->m_List8dc, &pObject->m_pSData->m_StateLink);
 
 	{
 		SObjData* pSData = pObject->m_pSData;
 
+#ifdef PRIMAL_HUNT
+		// PH: the release is a call, `mov %edi,%ecx; call 0x00418e40`, to
+		// an out-of-line 13-byte copy of the same body (`mov 0x2c(%ecx),
+		// %ecx; test; je; jmp *0x8(%eax)`); AvP2 1.0.9.6 expands it here.
+		((CSObjDataReleaseQ502*)pSData)->Release();
+#else
 		((CSObjDataTermView*)pSData)->Term(0);
+#endif
 
 		sb_Free(&pMgr->m_MessageBank.m_Bank, pSData);
 	}
@@ -8508,7 +8940,9 @@ uint32 sm_GetObjectChangeFlags2(CServerMgr* pMgr, LTObject* pObject)
 		nFlags = 0x601;
 	}
 
-	if ((pObject->m_Flags & 0xffff) != 0 || pObject->m_UserFlags != 0)
+	// AVP2: the mask takes bit 18 as well (`testl $0x4ffff,0x88`, AvP2
+	// 1.0.9.6 0x00476f25, Primal Hunt 0x0047d915).
+	if ((pObject->m_Flags & 0x4ffff) != 0 || pObject->m_UserFlags != 0)
 		nFlags |= 8;
 
 	if (pObject->m_Scale.x != 1.0f || pObject->m_Scale.y != 1.0f ||
@@ -8537,9 +8971,13 @@ uint32 sm_GetObjectChangeFlags2(CServerMgr* pMgr, LTObject* pObject)
 	if (pObject->m_ObjectType == 1)
 		nFlags |= 0x20;
 
+	// AVP2: a third reason, bit 10 of the object's change flags (`mov
+	// 0x124(%ecx),%eax; test $0x4,%ah`, Primal Hunt 0x0047d9c7, AvP2
+	// 1.0.9.6 likewise).
 	if (pObject->m_pAttachments != 0 ||
 		(pObject->m_ObjectType == 1 &&
-			((CObjectModelView*)pObject)->m_Unknown204 != 0))
+			((CObjectModelView*)pObject)->m_Unknown204 != 0) ||
+		(pObject->m_ChangeFlags & 0x400))
 	{
 		nFlags |= 0x100;
 	}
@@ -9968,9 +10406,10 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 //
 // The declared name is servermgr.h's and it is a misnomer: the list walked
 // is m_List54, the sound instances, and what the loop skips is a sound the
-// client cannot hear. A killed sound is written only if the client's table
-// still has the 0x20 bit for it; a playing one only while its timer has time
-// left; and a sound with either of the low two play flags has to be within
+// client cannot hear. A sound whose 0x20 bit the client's table still has
+// is always written; otherwise a killed sound is skipped, a playing one is
+// written only while its timer has time left, and a sound with either of
+// the low two play flags has to be within
 // twice its radius (the test is against radius squared times four) of either
 // the object the client is looking through or the client's own view
 // position.
@@ -9993,32 +10432,35 @@ void sm_WriteRemovedObjects(CUpdateContext* pCtx, ServerMessage* pMsg)
 	{
 		SoundInstance* pSound = (SoundInstance*)pCur->m_pData;
 
-		if (pSound->m_bKill)
+		// AVP2: the client table's 0x20 bit is tested FIRST, for every
+		// sound, and a set bit writes the sound with no further test; only
+		// without it do the kill, timer and range tests apply, a killed
+		// sound being skipped outright (Primal Hunt 0x00479408..0x0047944b:
+		// `testb $0x20; jne <write>`, then m_bKill `jne <next>`).
+		if (!(pCtx->m_pClient->m_pObjInfos[
+				((uint32*)pSound->m_pUnknown0c)[2]].m_ChangeFlags & 0x20))
 		{
-			if (!(pCtx->m_pClient->m_pObjInfos[
-					((uint32*)pSound->m_pUnknown0c)[2]].m_ChangeFlags & 0x20))
-			{
+			if (pSound->m_bKill)
 				continue;
+
+			if (pSound->m_hSample)
+			{
+				if (pSound->m_fTimer <= 0.0f)
+					continue;
 			}
-		}
 
-		if (pSound->m_hSample)
-		{
-			if (pSound->m_fTimer <= 0.0f)
-				continue;
-		}
-
-		if (pSound->m_PlaySoundFlags & 3)
-		{
-			float fRangeSqr = ((CSoundRangeView*)pSound)->m_fRadius *
-				((CSoundRangeView*)pSound)->m_fRadius * 4.0f;
-
-			if (((CSoundRangeView*)pSound)->m_vPos.DistSqr(
-					pCtx->m_pClient->m_pUnknown3AC->m_Pos) >= fRangeSqr &&
-				((CSoundRangeView*)pSound)->m_vPos.DistSqr(
-					pCtx->m_pClient->m_Position) >= fRangeSqr)
+			if (pSound->m_PlaySoundFlags & 3)
 			{
-				continue;
+				float fRangeSqr = ((CSoundRangeView*)pSound)->m_fRadius *
+					((CSoundRangeView*)pSound)->m_fRadius * 4.0f;
+
+				if (((CSoundRangeView*)pSound)->m_vPos.DistSqr(
+						pCtx->m_pClient->m_pUnknown3AC->m_Pos) >= fRangeSqr &&
+					((CSoundRangeView*)pSound)->m_vPos.DistSqr(
+						pCtx->m_pClient->m_Position) >= fRangeSqr)
+				{
+					continue;
+				}
 			}
 		}
 
@@ -11541,10 +11983,16 @@ public:
 	uint8          m_pad_000[0x2c];
 	ServerMessage* m_pSFXMessage;            // +0x2c
 	void*          m_pModelFile;             // +0x30
-	uint8          m_pad_034[0x4c - 0x34];
-	uint32         m_Unknown4c;              // +0x4c
-	uint16         m_ClientChangeFlags;      // +0x50
-	uint16         m_NetFlags;               // +0x52
+	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
+	// (PH +0xc): the flag word at 0x54 (PH 0x58), the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
+#ifdef PRIMAL_HUNT
+	uint8          m_pad_034[0x58 - 0x34];
+#else
+	uint8          m_pad_034[0x54 - 0x34];
+#endif
+	uint32         m_Unknown4c;              // +0x54 (PH +0x58; NOLF +0x4c)
+	uint16         m_ClientChangeFlags;      // +0x58 (PH +0x5c)
+	uint16         m_NetFlags;               // +0x5a (PH +0x5e)
 };
 
 // The file record the file id comes out of: smgr.cpp's CSoundIDRec is the

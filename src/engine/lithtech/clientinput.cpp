@@ -2993,7 +2993,7 @@ void input_FreeDeviceBindings(DeviceBinding* pBindings)
 
 
 // 0x00439090 -- slot 13 (clientmgr.h's GetDeviceBindings).  The bindings
-// of ONE device, as the SDK DeviceBinding/GameAction lists (0xe0 and 0x30
+// of ONE device, as the SDK DeviceBinding/GameAction lists (0x144 and 0x30
 // bytes, each memset over after `new`), built by pushing on the FRONT, so
 // they come out in reverse.  Keyboard is tested by equality and the rest by
 // bit (0x0043909a vs 0x004390ba); nothing matched is a plain NULL.  Every
@@ -3039,6 +3039,9 @@ DeviceBinding* input_GetDeviceBindings(uint32 nDevice)
 
 		SAFE_STRCPY(pBinding->strDeviceName, pDevice->m_Name);
 		SAFE_STRCPY(pBinding->strTriggerName, pObject->m_Name);
+		// AVP2: the SDK's third name, out of the object's +0x6c
+		// (0x00445190..0x004451a2).
+		SAFE_STRCPY(pBinding->strRealName, pObject->m_TriggerName);
 
 		pBinding->nScale                     = pObject->m_fScale;
 		pBinding->nRangeScaleMin             = pObject->m_fRangeScaleMin;

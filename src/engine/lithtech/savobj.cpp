@@ -201,9 +201,9 @@ public:
 class SavServerMgr
 {
 public:
-	uint8            m_pad_000[0x390];
-	uint8            m_Unknown390[4];        // 0x390  the object manager
-	uint8            m_pad_394[0xc14 - 0x394];
+	uint8            m_pad_000[0x394];
+	uint8            m_Unknown390[4];        // 0x394  the object manager (AVP2: NOLF's 0x390)
+	uint8            m_pad_398[0xc14 - 0x398];
 	void*            m_pClassMgr;            // 0xc14
 	uint8            m_pad_808[4];
 	void*            m_ClassMgrFirst;        // 0xc1c
@@ -619,9 +619,15 @@ public:
 	void*       m_Unknown28;                 // 0x28
 	CMessageRef m_SaveData;                  // 0x2c
 	void*       m_hFiles[3];                 // 0x30
-	uint8       m_pad_3c[0x50 - 0x3c];
-	uint16      m_ClientChangeFlags;         // 0x50
-	uint16      m_NetFlags;                  // 0x52
+	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
+	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
+#ifdef PRIMAL_HUNT
+	uint8       m_pad_3c[0x5c - 0x3c];
+#else
+	uint8       m_pad_3c[0x58 - 0x3c];
+#endif
+	uint16      m_ClientChangeFlags;         // 0x58 (PH 0x5c)
+	uint16      m_NetFlags;                  // 0x5a (PH 0x5e)
 };
 
 // The model object past LTObject's own fields: the animation tracker the

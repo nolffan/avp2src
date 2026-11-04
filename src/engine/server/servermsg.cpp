@@ -1057,8 +1057,8 @@ void lmsg_CompressPos(uint8* pOut, LTVector* pVec, CPosRef* pRef)
 // up vector that goes with it.
 //
 // The forward vector is the same decode the long form (sub_10013382's else
-// arm) uses — 1/127 on all three, with the extra `- 0.5` and doubling on
-// the two bytes the writer produced as an unsigned 0..127 over -1..1 — read
+// arm) uses — 1/63 less one on the two bytes the writer produced as an
+// unsigned 0..126 over -1..1, 1/127 on the third — read
 // out of bytes 1, 0 and 2 in that order, which is the order the shipped
 // `movsbl`s take them in.
 //
@@ -1106,8 +1106,11 @@ inline void sub_100131c1(uint8* pData, LTVector* pUp, LTVector* pForward)
 	LTVector v;
 	float    fScale;
 
-	pForward->x = ((char)pData[1] * (1.0f / 127.0f) - 0.5f) * 2.0f;
-	pForward->y = ((char)pData[0] * (1.0f / 127.0f) - 0.5f) * 2.0f;
+	// AVP2: the two unsigned bytes are 1/63 less one (0x004d556c, 1.0 at
+	// 0x004d4ab0, lithtech.exe 0x00441c70/0x00441c82), NOLF's 1/127 less a
+	// half, doubled, is gone; AvP2 1.0.9.6 agrees.
+	pForward->x = (char)pData[1] * (1.0f / 63.0f) - 1.0f;
+	pForward->y = (char)pData[0] * (1.0f / 63.0f) - 1.0f;
 	pForward->z = (char)pData[2] * (1.0f / 127.0f);
 
 	pUp->Init(pForward->x, pForward->y + 50.0f, pForward->z);
@@ -1143,10 +1146,9 @@ inline void sub_100131c1(uint8* pData, LTVector* pUp, LTVector* pForward)
 // (forward) for the first three bytes and column 1 (up) for the last three.
 //
 // The two encodings differ, which is in the bytes and not a slip: bytes 0
-// and 1 are `(v + 1.0f) * 63.9f` — an unsigned 0..127 over the range -1..1 —
-// while bytes 2 to 5 are `v * 127.9f`, a signed -127..127. The two scales
-// are separate `.rdata` floats, and 127.9f is loaded once and kept on the
-// FPU stack across the last four conversions.
+// and 1 are `(v + 1.0f) * 63.0f`, rounded — an unsigned 0..126 over the
+// range -1..1 — while bytes 2 to 5 are `v * 127.0f`, rounded, a signed
+// -127..127. (NOLF truncated `* 63.9f` / `* 127.9f`; AvP2 rounds.)
 //
 // The second half is a round-trip check. The six bytes are decoded again and
 // the vector that comes back is normalised and dotted against the real up
@@ -1178,12 +1180,15 @@ void sub_1001307f(LTRotation* pRot, uint8* pOut)
 	vUp.y = mat.m[1][1];
 	vUp.z = mat.m[2][1];
 
-	pOut[0] = (uint8)(int)((mat.m[1][2] + 1.0f) * 63.9f);
-	pOut[1] = (uint8)(int)((mat.m[0][2] + 1.0f) * 63.9f);
-	pOut[2] = (uint8)(int)(mat.m[2][2] * 127.9f);
-	pOut[3] = (uint8)(int)(mat.m[0][1] * 127.9f);
-	pOut[4] = (uint8)(int)(mat.m[1][1] * 127.9f);
-	pOut[5] = (uint8)(int)(mat.m[2][1] * 127.9f);
+	// AVP2: rounded, not truncated: 63.0f/127.0f and a `+ 0.5f` ahead of
+	// every _ftol (lithtech.exe 0x00441bb9..0x00441c53, server.dll
+	// 0x1001829d..0x10018318; AvP2 1.0.9.6's 0x0043de79 agrees).
+	pOut[0] = (uint8)(int)((mat.m[1][2] + 1.0f) * 63.0f + 0.5f);
+	pOut[1] = (uint8)(int)((mat.m[0][2] + 1.0f) * 63.0f + 0.5f);
+	pOut[2] = (uint8)(int)(mat.m[2][2] * 127.0f + 0.5f);
+	pOut[3] = (uint8)(int)(mat.m[0][1] * 127.0f + 0.5f);
+	pOut[4] = (uint8)(int)(mat.m[1][1] * 127.0f + 0.5f);
+	pOut[5] = (uint8)(int)(mat.m[2][1] * 127.0f + 0.5f);
 
 	sub_100131c1(pOut, &vCheck, &vOther);
 
@@ -1319,8 +1324,9 @@ inline void sub_10013382(uint8* pData, LTRotation* pRot)
 	}
 	else
 	{
-		vForward.y = ((char)pData[0] * (1.0f / 127.0f) - 0.5f) * 2.0f;
-		vForward.x = ((char)pData[1] * (1.0f / 127.0f) - 0.5f) * 2.0f;
+		// AVP2: 1/63 less one, as in sub_100131c1.
+		vForward.y = (char)pData[0] * (1.0f / 63.0f) - 1.0f;
+		vForward.x = (char)pData[1] * (1.0f / 63.0f) - 1.0f;
 		vForward.z = (char)pData[2] * (1.0f / 127.0f);
 
 		vUp.x = (char)pData[3] * (1.0f / 127.0f);
@@ -1347,6 +1353,11 @@ inline void sub_10013382(uint8* pData, LTRotation* pRot)
 // same short-form flag the writer's 0x10013287 tests. The byte the reader
 // hands the message is a local of its own that VC6 parks in the top byte of
 // the dead pMsg parameter slot.
+//
+// lithtech.exe 0x00441e80: NEAR (1016 vs ours 970). The decode now matches;
+// the one residual is the inliner: shipped expands the long-form path's
+// first Norm (vRight's, 0x00442012..0x00442044) and CALLS the second
+// (0x00442053), ours calls both.
 void lmsg_ReadCompRotation(LMessageImpl* pMsg, LTRotation* pRot)
 {
 	char data[6];

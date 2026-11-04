@@ -1281,9 +1281,11 @@ public:
 	IDMPerformanceQ7* m_pPerformance;        // 0x014
 	uint8 m_pad_18[0x68 - 0x18];
 	CDMPendingListQ7 m_PendingList;          // 0x068
+	// AVP2: clientmusic.h's m_PendingSecondaryList.
+	CDMPendingListQ7 m_PendingSecondaryList; // 0x070
 	// AVP2: the fields below are 0x10..0x14 bytes past NOLF's (clientmgr3.cpp's
 	// CCmgMusicMgr has the layout).
-	uint8 m_pad_70[0xb0 - 0x70];
+	uint8 m_pad_78[0xb0 - 0x78];
 	int   m_nNumIntensities;                 // 0x0b0
 	uint8 m_pad_b4[0xd0 - 0xb4];
 	int   m_nNumTransitions;                 // 0x0d0
@@ -1352,6 +1354,8 @@ CDMIntensityQ7::~CDMIntensityQ7()
 }
 
 // 0x00442100, 46 bytes.  Empty the pending list onto its bank.
+// AVP2: and then the secondary pending list onto the same bank (PH
+// 0x0044e2f0, 92 bytes; AvP2 1.0.9.6's 0x0044a42e).
 void CLTDirectMusicMgrQ7::ClearPendingList()
 {
 	CDMPendingNodeQ7* pNode = m_PendingList.m_pHead;
@@ -1367,6 +1371,21 @@ void CLTDirectMusicMgrQ7::ClearPendingList()
 		}
 
 		pNode = m_PendingList.m_pHead;
+	}
+
+	pNode = m_PendingSecondaryList.m_pHead;
+
+	while (pNode)
+	{
+		m_PendingSecondaryList.Remove(pNode);
+
+		if (pNode)
+		{
+			*(void**)pNode = g_pPendingBankFreeQ7;
+			g_pPendingBankFreeQ7 = pNode;
+		}
+
+		pNode = m_PendingSecondaryList.m_pHead;
 	}
 }
 
@@ -1459,7 +1478,9 @@ void CDMPlayingListQ7::StopNode(CLTDirectMusicMgrQ7* pMgr, CDMPlayingNodeQ7* pNo
 	if (pMgr->m_pPerformance->IsPlaying(LTNULL, pNode->m_pSegState) != 0 && bOnlyIfStopped)
 		return;
 
-	pMgr->m_pPerformance->Stop(LTNULL, pNode->m_pSegState, 0, 0);
+	// AVP2: the Stop only when asked to enact (PH 0x0044e534, 120 bytes).
+	if (nEnact)
+		pMgr->m_pPerformance->Stop(LTNULL, pNode->m_pSegState, 0, 0);
 
 	if (pNode->m_pSegState)
 		pNode->m_pSegState->Release();

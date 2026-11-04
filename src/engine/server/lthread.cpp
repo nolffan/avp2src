@@ -253,7 +253,9 @@ LTRESULT LThreadQueue::PostMessage(LThreadMessage* pMsg)
 	m_CS.Enter();
 	g_ThreadCS.Enter();
 
-#ifdef LT_SERVER_BUILD
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
+	// PH: lithtech 0x00450b1d calls the out-of-line Allocate (0x00451120)
+	// as server.dll does; AvP2's client (0x0044c690) expands it.
 	pNewMsg = g_ThreadMessageBank.Allocate();
 #else
 	pNewMsg = tm_AllocateMessage(&g_ThreadMessageBank);
@@ -340,15 +342,18 @@ LTBOOL LThreadQueue::TakeMessage(LThreadMessage* pMsg)
 
 	m_CS.Enter();
 
-	pCur = m_MessageList.m_pTail;
-
-	if (!pCur)
+	// The tail is tested in place and only then read into pCur: lithtech
+	// 0x00450c70 (PH) keeps sb_Free's record test at 0x00450cff, which it
+	// could not if the null test had been on pCur itself.
+	if (!m_MessageList.m_pTail)
 	{
 		ResetEvent(m_hEvent);
 		m_CS.Leave();
 
 		return LTFALSE;
 	}
+
+	pCur = m_MessageList.m_pTail;
 
 	if (pMsg)
 		*pMsg = *pCur;

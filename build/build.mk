@@ -352,7 +352,7 @@ ICL_ENV := WINEPREFIX=$(PFX_PLAIN) WINEPATH='$(call wz,$(TC)/icl-4.0)\BIN;$(call
     INCLUDE='$(call wz,$(TC)/icl-4.0)\INCLUDE;$(call wz,$(V8168))\INCLUDE;$(call wz,$(ROOT)/src/avp2src)' \
     LIB='$(call wz,$(TC)/icl-4.0)\LIB;$(call wz,$(V8168))\LIB'
 
-# server.dll: nolfsrc's /O1, no /GX; localdriver.cpp /Os
+# server.dll: nolfsrc's /O1 (Primal Hunt adds /GX, below); localdriver.cpp /Os
 SERVER := $(E)/server
 SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c
 SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp commonphysics.cpp commonmodel.cpp \
@@ -366,7 +366,7 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp c
 SERVER_OS_SRC := localdriver.cpp
 server_flags = $(if $(filter $(1),$(SERVER_OS_SRC)),$(subst /O1,/Os /Ob1 /Gf,$(SERVER_CL)),$(SERVER_CL))
 
-# lithtech.exe: nolfsrc's /O2; its copy of server's localdriver.cpp /Od with
+# lithtech.exe: nolfsrc's /O2 (Primal Hunt adds /GX, below); its copy of server's localdriver.cpp /Od with
 # intrinsics, inlining and string pooling; controlfile.cpp with /GX
 LITHTECH := $(E)/lithtech
 LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c
@@ -399,6 +399,9 @@ lithtech_flags = $(subst /O2,$(strip \
     $(if $(filter $(1),$(LITHTECH_OD_SRC)),/Od /Oi /Ob1 /Gf,\
     $(if $(filter $(1),$(LITHTECH_GX_SRC)),/GX /O2,/O2))),$(LITHTECH_CL))
 LITHTECH_ALL := $(LITHTECH_SRC) $(LITHTECH_OD_SRC) $(LITHTECH_GX_SRC)
+# ... and never with /GX, even in Primal Hunt: StdLith's allocator code
+# (LAllocSimpleBlock's constructor, 0x004b4e30, has no exception frame)
+LITHTECH_NOGX_SRC := stdlithalloc.cpp
 
 # d3d.ren. Not the renderer's own: StdLith's l_allocator.cpp (LAlloc,
 # g_DefAlloc), library code linked into d3d.ren, built as StdLith is
@@ -445,14 +448,19 @@ define engine_variant
 $(foreach s,$(SERVER_SRC) $(SERVER_OS_SRC),$(eval $(call compile,$(SERVER)/$(1)/$(s:.cpp=.obj),$(SERVER),$(s),$(3),$(2),\
     /nologo $(4) $(call server_flags,$(s)) /Fo$(1)/,wine-drives)))
 $(foreach s,$(LITHTECH_ALL),$(eval $(call compile,$(call c_obj,$(s),$(LITHTECH)/$(1)),$(LITHTECH),$(s),$(3),$(2),\
-    /nologo $(4) $(call lithtech_flags,$(s)) /Fo$(1)/,wine-drives)))
+    /nologo $(if $(filter $(s),$(LITHTECH_NOGX_SRC)),$(filter-out /GX,$(4)),$(4)) $(call lithtech_flags,$(s)) /Fo$(1)/,wine-drives)))
 $(foreach s,$(D3D_CL_SRC),$(eval $(call compile,$(D3D)/$(1)/$(s:.cpp=.obj),$(D3D),$(s),$(3),$(2),\
-    $(D3D_CL) $(4) /Fo$(1)/,wine-drives)))
+    $(D3D_CL) $(filter-out /GX,$(4)) /Fo$(1)/,wine-drives)))
 $(foreach s,$(filter-out $(D3D_CL_SRC),$(D3D_SRC)),$(eval $(call compile,$(D3D)/$(1)/$(s:.cpp=.obj),$(D3D),$(s),\
     $(if $(filter icl,$(5)),$(ICL_ENV),$(3)),$(if $(filter icl,$(5)),$(ICL),$(2)),\
-    $(D3D_BASE) $(4) $(if $(filter icl,$(5)),$(call d3d_opt,$(s)),/O2) /Fo$(1)/,$(if $(filter icl,$(5)),wine-plain,wine-drives))))
+    $(D3D_BASE) $(filter-out /GX,$(4)) $(if $(filter icl,$(5)),$(call d3d_opt,$(s)),/O2) /Fo$(1)/,$(if $(filter icl,$(5)),wine-plain,wine-drives))))
 endef
-$(eval $(call engine_variant,Release,$(ENG_PH_CC),$(ENG_PH_ENV),/D PRIMAL_HUNT,cl))
+# Primal Hunt's engine and server (not its renderer, whose flags are its own)
+# are built with /GX: their functions with
+# destructible locals carry exception frames that AvP2 1.0.9.6's lack (e.g.
+# lithtech.exe 0x00452310, ~CModelSub1D4; server.dll 0x1000c130, the
+# CWorldSurface constructor, against AvP2's frameless 0x1000be60).
+$(eval $(call engine_variant,Release,$(ENG_PH_CC),$(ENG_PH_ENV),/D PRIMAL_HUNT /GX,cl))
 $(eval $(call engine_variant,AvP2Release,$(ENG_AVP_CC),$(ENG_AVP_ENV),,icl))
 
 eng_objs = $(sort $(patsubst %.cpp,$(SERVER)/$(1)/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC))) \

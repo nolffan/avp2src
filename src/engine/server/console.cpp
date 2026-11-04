@@ -353,47 +353,76 @@ void con_Term(ConsoleState* pState)
 
 // ---- the tokenizer ------------------------------------------------------ //
 
-// One token off the front of the text, copied into the argument buffer with
-// its own terminator. The answer says what was found: nothing left at all,
-// an argument, or the end of a statement.
+// AVP2: the tokenizer is not NOLF's single depth-counting loop. Brackets and
+// quotes are each read by a helper of their own, the bracket one recursive,
+// and every character goes into the argument buffer through one more helper
+// that holds the 0x100-character limit. Both of AvP2's images and both of
+// Primal Hunt's carry it: lithtech.exe 0x00422680..0x00422958 (AvP2 1.0.9.6
+// around 0x00420470), server.dll 0x10007b15..0x10007d65. Names of the three
+// helpers are ours.
 //
-// Quoting is a depth counter rather than a flag, so "(a (b c))" comes through
-// as one argument with its inner brackets intact, while a double quote is a
-// one-deep bracket of its own. A per-cent sign escapes whatever follows it,
-// including a bracket or a quote. A token longer than 0x100 characters simply
-// stops growing — the last character is overwritten rather than the buffer.
-//
-// The token loop is `while (TRUE)` with the zero test as a `break` at its
-// head, and that alone is what keeps it UNROTATED as shipped (the test at
-// the top, a bare `jmp` back): `for (;;)` with the same body rotates it,
-// tail-duplicating the load and compare onto the back edge, and every other
-// head shape measured (c-first, `while ((c = **ppPos) != 0)`, `while
-// (**ppPos)`, a goto loop) rotates or peels too. The two "skip this
-// character" exits -- the opening bracket and the opening quote -- are
-// `goto next` onto the loop's own `(*ppPos)++` at the bottom: shipped jumps
-// both of them there (0x10005e90, 0x10005eb2 -> 0x10005ed9); written as
-// `(*ppPos)++; continue;` VC6 hosts the shared increment-and-jump in the
-// bracket arm instead and the bottom jumps back up to it.
+// A per-cent sign still escapes whatever follows it, a bracketed group keeps
+// its inner brackets, and an empty group or empty quote still yields an
+// argument -- a single space.
 #define PARSE_DONE  0
 #define PARSE_ARG   1
 #define PARSE_END   2
 
-// 0x10005e24. lithtech.exe 0x0041b710 (272 bytes) is BYTE-IDENTICAL.
-//
-// server.dll is NEAR, 238 of 238 and 98 instructions of 98, and the one
-// residual is the shared-exit host of the two statement-end returns: shipped
-// keeps `pop %eax; jmp <epilogue>` in the PARSE_END arm (`push $2; pop %eax`)
-// and has PARSE_ARG's `push $1` jump back into it; ours hosts it in the
-// PARSE_ARG arm. Measured, none moving it: an explicit else, the tests
-// inverted (`if (*pStart) return PARSE_ARG;`, je and worse), a goto to an
-// `arg:` label, `?:` with a comma, an nRet local set on both arms, literal
-// 1/2, and `else if` (234). The esi/edi swap and the rotation that used to
-// sit here went with the loop shape above.
+static int  parse_Token(char** ppPos, char** ppOut);
+static void parse_AddCharQ507(char** ppOut, char* pStart, char c);
+static int  parse_GroupQ507(char** ppPos, char** ppOut, char* pStart);
+static int  parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart);
+
+// lithtech.exe 0x00422680, server.dll 0x10007b15 -- one statement's worth
+// of tokens, up to thirty arguments. The buffer cursor runs on across the
+// arguments, so each one keeps its own terminated copy and the pointers hand
+// them back in order; where the argument starts is taken before each token
+// (0x004226a2).
+int parse_Command(char* pCommand, char** pNewCommandPos, char* argBuffer,
+                  char** argPointers, int* nArgs)
+{
+	char* pCur = pCommand;
+	char* pOut = argBuffer;
+	int   nType;
+
+	*nArgs = 0;
+
+	while (TRUE)
+	{
+		char* pArg = pOut;
+
+		nType = parse_Token(&pCur, &pOut);
+
+		if (nType == PARSE_DONE)
+			break;
+
+		if (nType == PARSE_ARG)
+		{
+			argPointers[*nArgs] = pArg;
+			(*nArgs)++;
+
+			if (*nArgs >= 30)
+				break;
+		}
+		else if (nType == PARSE_END)
+		{
+			*pNewCommandPos = pCur;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+// lithtech.exe 0x00422700, server.dll 0x10007b71 -- one token off the front
+// of the text, copied into the argument buffer with its own terminator. The
+// answer says what was found: nothing left at all, an argument, or the end
+// of a statement. A bracket or a quote only opens a group at the start of a
+// token, and the group ends the token.
 static int parse_Token(char** ppPos, char** ppOut)
 {
 	char* pStart;
 	char  c;
-	int   nDepth = 0;
 
 	while (**ppPos == ' ')
 		(*ppPos)++;
@@ -405,10 +434,10 @@ static int parse_Token(char** ppPos, char** ppOut)
 
 	while (TRUE)
 	{
-		if (**ppPos == 0)
-			break;
-
 		c = **ppPos;
+
+		if (c == 0)
+			break;
 
 		if (c == '%')
 		{
@@ -417,8 +446,14 @@ static int parse_Token(char** ppPos, char** ppOut)
 
 			if (c == 0)
 				break;
+
+			// The escaped character's copy is its own (0x0042274d).
+			parse_AddCharQ507(ppOut, pStart, c);
+			(*ppPos)++;
+			continue;
 		}
-		else if (c == ';' || iscntrl(c))
+
+		if (c == ';' || iscntrl(c))
 		{
 			**ppOut = 0;
 			(*ppOut)++;
@@ -433,47 +468,30 @@ static int parse_Token(char** ppPos, char** ppOut)
 		}
 		else if (c == '(')
 		{
-			nDepth++;
-
-			if (nDepth == 1)
-				goto next;
-		}
-		else if (c == ')')
-		{
-			nDepth--;
-
-			if (nDepth == 0)
+			if (*ppOut == pStart)
 			{
 				(*ppPos)++;
-				break;
+				parse_GroupQ507(ppPos, ppOut, pStart);
 			}
+
+			break;
 		}
 		else if (c == '"')
 		{
-			if (nDepth != 0)
+			if (*ppOut == pStart)
 			{
 				(*ppPos)++;
-				break;
+				parse_QuoteQ507(ppPos, ppOut, pStart);
 			}
 
-			nDepth = 1;
-			goto next;
+			break;
 		}
-		else if (c == ' ' && nDepth == 0)
+		else if (c == ' ')
 		{
 			break;
 		}
 
-		**ppOut = c;
-
-		if (*ppOut - pStart >= 0x100)
-		{
-			**ppOut = 0;
-			(*ppOut)--;
-		}
-
-		(*ppOut)++;
-	next:
+		parse_AddCharQ507(ppOut, pStart, c);
 		(*ppPos)++;
 	}
 
@@ -483,44 +501,88 @@ static int parse_Token(char** ppPos, char** ppOut)
 	return (*pStart != 0);
 }
 
-// 0x10005dc6 — one statement's worth of tokens, up to thirty arguments. The
-// buffer cursor runs on across the arguments, so each one keeps its own
-// terminated copy and the pointers hand them back in order.
-int parse_Command(char* pCommand, char** pNewCommandPos, char* argBuffer,
-                  char** argPointers, int* nArgs)
+// lithtech.exe 0x00422810, server.dll 0x10007c35 -- one character into the
+// argument; past 0x100 the last character is overwritten rather than the
+// buffer.
+static void parse_AddCharQ507(char** ppOut, char* pStart, char c)
 {
-	char* pCur = pCommand;
-	char* pOut = argBuffer;
-	int   nType;
+	**ppOut = c;
 
-	*nArgs = 0;
-
-	for (;;)
+	if (*ppOut - pStart >= 0x100)
 	{
-		nType = parse_Token(&pCur, &pOut);
-
-		if (nType == PARSE_DONE)
-			return 0;
-
-		if (nType == PARSE_ARG)
-		{
-			argPointers[*nArgs] = argBuffer;
-			(*nArgs)++;
-
-			if (*nArgs >= 30)
-				return 0;
-		}
-		else if (nType == PARSE_END)
-		{
-			break;
-		}
-
-		argBuffer = pOut;
+		**ppOut = 0;
+		(*ppOut)--;
 	}
 
-	*pNewCommandPos = pCur;
+	(*ppOut)++;
+}
 
-	return 1;
+// lithtech.exe 0x00422840, server.dll 0x10007c59 -- the inside of a
+// bracketed group, up to its closing bracket, nested groups copied with
+// their brackets (0x004228b8..0x004228d0).
+static int parse_GroupQ507(char** ppPos, char** ppOut, char* pStart)
+{
+	while (**ppPos != 0 && **ppPos != ')')
+	{
+		if (**ppPos == '%')
+		{
+			parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+
+			if (**ppPos == 0)
+				continue;
+		}
+		else if (**ppPos == '(')
+		{
+			parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+			parse_GroupQ507(ppPos, ppOut, pStart);
+			parse_AddCharQ507(ppOut, pStart, ')');
+			continue;
+		}
+
+		parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+	}
+
+	if (**ppPos == ')')
+	{
+		(*ppPos)++;
+
+		if (*ppOut == pStart)
+			parse_AddCharQ507(ppOut, pStart, ' ');
+
+		return 1;
+	}
+
+	return 0;
+}
+
+// lithtech.exe 0x004228e0, server.dll 0x10007cf3 -- the inside of a quoted
+// argument, up to the closing quote.
+static int parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart)
+{
+	while (**ppPos != 0 && **ppPos != '"')
+	{
+		if (**ppPos == '%')
+		{
+			parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+
+			if (**ppPos == 0)
+				continue;
+		}
+
+		parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+	}
+
+	if (**ppPos == '"')
+	{
+		(*ppPos)++;
+
+		if (*ppOut == pStart)
+			parse_AddCharQ507(ppOut, pStart, ' ');
+
+		return 1;
+	}
+
+	return 0;
 }
 
 // The walk stops on the first command whose name matches; the parser is left

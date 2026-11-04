@@ -1,4 +1,5 @@
 // server.dll — the server's half of ILTCommon (reconstruction). Build /O1.
+#include <stdio.h>
 #include "servercommon.h"
 #include "servermsg.h"
 #include "servermgr.h"
@@ -86,10 +87,28 @@ inline WorldPoly* CServerWorld::FindPoly(HPOLY hPoly)
 // now the plane), and its vertices are its own, after the count at +0x54.
 // The surface's flags are at +0x30, its texture flags at +0x34 (NOLF's
 // +0x3c). Names ours, as WorldPoly's.
+// The texture's file, as lithtech.exe's GetPolyTextureName walks to its
+// name: the surface's +0x2c, that object's +0x24, and the name at +0x1c
+// (0x004812dc..0x0048136e). Names ours.
+class CPolyTexFileQ508
+{
+public:
+	uint8 m_pad_00[0x1c];
+	char* m_pName;                           // 0x1c
+};
+
+class CPolyTextureQ508
+{
+public:
+	uint8             m_pad_00[0x24];
+	CPolyTexFileQ508* m_pFile;               // 0x24
+};
+
 class WorldSurfaceAvP2
 {
 public:
-	uint8  m_pad_00[0x30];
+	uint8  m_pad_00[0x2c];
+	CPolyTextureQ508* m_pTexture;            // 0x2c
 	uint32 m_nFlags;                         // 0x30
 	uint16 m_nTextureFlags;                  // 0x34
 };
@@ -121,6 +140,7 @@ LTRESULT ServerCommonLT::GetPolyTextureFlags(HPOLY hPoly, uint32* pFlags)
 }
 
 #ifdef PRIMAL_HUNT
+#ifdef LT_SERVER_BUILD
 // PH: 0x10039e2d -- the server has no textures: an empty name, LT_ERROR,
 // and no error message.
 LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen)
@@ -130,6 +150,41 @@ LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMa
 
 	return LT_ERROR;
 }
+#else
+// PH: 0x00481280 -- lithtech.exe's does have them: the name of the poly's
+// surface's texture file, through _snprintf("%s"). No buffer is LT_ERROR
+// without a message; everything else that fails is RETURN_ERROR at level 2,
+// in three copies (0x004812ea, 0x00481333, 0x00481387).
+//
+// NEAR (281 against 321): the shipped build keeps all three error bodies
+// whole, each printing through a different scratch register (edx, ecx,
+// eax), and tests the texture through a copy (`mov 0x2c(%eax),%edx`) so the
+// surface stays live; ours cross-jumps the first body into the third's
+// print and tests in place. A nested `if (pSurface) { if (!tex) error; if
+// (file) success }` form and this flat one compile the same.
+LTRESULT ServerCommonLT::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen)
+{
+	if (!pName)
+		return LT_ERROR;
+
+	WorldPolyAvP2* pPoly = (WorldPolyAvP2*)m_pServerMgr->m_World.FindPoly(hPoly);
+	if (pPoly && nMaxLen)
+	{
+		WorldSurfaceAvP2* pSurface = pPoly->m_pSurface;
+
+		if (pSurface && !pSurface->m_pTexture)
+			RETURN_ERROR(2, "CommonLT::GetPolyTextureName", LT_ERROR);
+
+		if (!pSurface || !pSurface->m_pTexture->m_pFile)
+			RETURN_ERROR(2, "CommonLT::GetPolyTextureName", LT_ERROR);
+
+		_snprintf(pName, nMaxLen, "%s", pSurface->m_pTexture->m_pFile->m_pName);
+		return LT_OK;
+	}
+
+	RETURN_ERROR(2, "CommonLT::GetPolyTextureName", LT_ERROR);
+}
+#endif
 #endif
 
 // AVP2: 0x10039e3e. The vertices are copied while there are both vertices
@@ -247,8 +302,19 @@ LTRESULT ServerCommonLT::SetObjectFlags(HOBJECT hObj, const ObjFlagType flagType
 struct CSavedFileStateLT
 {
 	LTAnimTracker m_Tracker;                 // 0x00  its AnimTimeRef at +0x1c
-	void*         m_pModelFile;              // 0x38
-	void*         m_pSkinFile;               // 0x3c
+	uint8         m_pad_38[0x50 - 0x38];     // AVP2: the tracker is 0x50 bytes
+	void*         m_pModelFile;              // 0x50
+	void*         m_pSkinFile;               // 0x54
+};
+#else
+// AVP2: the same record, the tracker grown to 0x50 bytes (see
+// w_SaveObjectFileState); servercommon.h's CSavedFileState is NOLF's.
+struct CSavedFileStateSvQ508
+{
+	CSavedTracker m_Tracker;                 // 0x00
+	uint8         m_pad_38[0x50 - 0x38];
+	void*         m_pModelFile;              // 0x50
+	void*         m_pSkinFile;               // 0x54
 };
 #endif
 
@@ -256,7 +322,7 @@ LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 {
 	CMessageRef msg;
 #ifdef LT_SERVER_BUILD
-	CSavedFileState state;
+	CSavedFileStateSvQ508 state;
 #else
 	CSavedFileStateLT state;
 #endif
@@ -431,30 +497,52 @@ void CAnimTimeRef::Clear()
 // store and reloads the pointer through it for the second field, because the
 // store to the caller's record could alias — which is just what writing the
 // two members out separately gives you.
+//
+// AVP2: the tracker is 0x50 bytes, not 0x38: the copy is `rep movsl` of 0x14
+// and the two identifiers sit at 0x50 and 0x54 (0x0047fbaa..0x0047fbcb,
+// 0x0047fc27..0x0047fc4b; AvP2's lithtech.exe 0x00478fd2 the same). The
+// header's CSavedFileState is NOLF's, so the record is read through this
+// view.
+struct CSavedTrackerQ508
+{
+	uint8 m_Data[0x50];
+};
+
+struct CSavedFileStateQ508
+{
+	CSavedTrackerQ508 m_Tracker;             // 0x00
+	void*             m_pModelFile;          // 0x50  SObjData +0x30
+	void*             m_pSkinFile;           // 0x54  SObjData +0x34
+};
+
 LTRESULT w_SaveObjectFileState(LTObject* pObj, CSavedFileState* pState)
 {
+	CSavedFileStateQ508* pSaved = (CSavedFileStateQ508*)pState;
+
 	if (!pObj || !pObj->m_pSData)
 		RETURN_ERROR(1, "BackupExtraData", LT_INVALIDPARAMS);
 
-	pState->m_pModelFile = pObj->m_pSData->m_pModelFile;
-	pState->m_pSkinFile = pObj->m_pSData->m_pSkinFile;
+	pSaved->m_pModelFile = pObj->m_pSData->m_pModelFile;
+	pSaved->m_pSkinFile = pObj->m_pSData->m_pSkinFile;
 
 	if (pObj->m_ObjectType == OT_MODEL)
-		pState->m_Tracker = *(CSavedTracker*)&((ModelInstance*)pObj)->m_AnimTracker;
+		pSaved->m_Tracker = *(CSavedTrackerQ508*)&((ModelInstance*)pObj)->m_AnimTracker;
 
 	return LT_OK;
 }
 
 LTRESULT w_RestoreObjectFileState(LTObject* pObj, CSavedFileState* pState)
 {
+	CSavedFileStateQ508* pSaved = (CSavedFileStateQ508*)pState;
+
 	if (!pObj || !pObj->m_pSData)
 		RETURN_ERROR(1, "RestoreExtraData", LT_INVALIDPARAMS);
 
-	pObj->m_pSData->m_pModelFile = pState->m_pModelFile;
-	pObj->m_pSData->m_pSkinFile = pState->m_pSkinFile;
+	pObj->m_pSData->m_pModelFile = pSaved->m_pModelFile;
+	pObj->m_pSData->m_pSkinFile = pSaved->m_pSkinFile;
 
 	if (pObj->m_ObjectType == OT_MODEL)
-		*(CSavedTracker*)&((ModelInstance*)pObj)->m_AnimTracker = pState->m_Tracker;
+		*(CSavedTrackerQ508*)&((ModelInstance*)pObj)->m_AnimTracker = pSaved->m_Tracker;
 
 	return LT_OK;
 }

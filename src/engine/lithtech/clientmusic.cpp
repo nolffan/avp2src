@@ -49,7 +49,8 @@ LTRESULT CLTDirectMusicMgr::Play()
 // stack home first.
 LTRESULT CLTDirectMusicMgr::SetVolume(const long nVolume)
 {
-	long nSetVolume = nVolume;
+	// AVP2: the level's VOLUMEOFFSET is added (0x0044c75f).
+	long nSetVolume = m_nVolumeOffset + nVolume;
 
 	dm_Printf(4, "CLTDirectMusicMgr::SetVolume nVolume=%i\n", nVolume);
 
@@ -441,6 +442,21 @@ LTRESULT CLTDirectMusicMgr::Stop(const LTDMEnactTypes nStart)
 		}
 	}
 
+	// AVP2: the second pending list (0x0044c6a1) and the primary playing
+	// list (0x0044c6cb) are emptied the same way.
+	{
+		CDMPendingNode* pPending = m_PendingSecondaryList.m_pHead;
+
+		while (pPending)
+		{
+			m_PendingSecondaryList.Remove(pPending);
+			g_PendingBank.Free(pPending);
+
+			pPending = m_PendingSecondaryList.m_pHead;
+		}
+	}
+
+	m_PrimaryList.StopAll(this, 0);
 	m_SecondaryList.StopAll(this, 0);
 	m_MotifList.StopAll(this, 0);
 
@@ -503,6 +519,7 @@ LTRESULT CLTDirectMusicMgr::TermLevel()
 
 	m_SecondaryDefs.StopAll(this, 0);
 	m_MotifDefs.StopAll(this, 0);
+	m_PrimaryList.StopAll(this, 0);         // AVP2: 0x0044c424
 	m_SecondaryList.StopAll(this, 0);
 	m_MotifList.StopAll(this, 0);
 

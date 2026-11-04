@@ -131,14 +131,20 @@ public:
 	// built without them, which the physics complains about by name.
 	virtual class CPhysicsBlock* GetPBlock(LTVector vPos)=0;
 
-	// 0x14 — the polygon table the physics blocks index into.
-	virtual struct WorldPolyRef* GetPolyRefs()=0;
-	virtual uint32 GetWorldFlags()=0;        // 0x18
+	// AVP2: 0x14 and 0x18, two slots NOLF does not have -- the physics
+	// grid's cell size and origin, by address (worldbsp.h's CWorldBspBase
+	// gives the evidence; names ours).
+	virtual LTVector* GetCellSize()=0;       // 0x14
+	virtual LTVector* GetCellOrigin()=0;     // 0x18
 
-	// 0x1c — CObjWorldModel::ForwardToWorldBsp (0x10024bf1) tail-jumps to it
+	// 0x1c (NOLF 0x14) — the polygon table the physics blocks index into.
+	virtual struct WorldPolyRef* GetPolyRefs()=0;
+	virtual uint32 GetWorldFlags()=0;        // 0x20
+
+	// 0x24 (NOLF 0x1c) — CObjWorldModel::ForwardToWorldBsp (0x10024bf1) tail-jumps to it
 	// with no arguments and returns whatever it returns, which is all that is
 	// known about it.
-	virtual void   _v1c()=0;                 // 0x1c
+	virtual void   _v1c()=0;                 // 0x24 (NOLF 0x1c)
 
 	// 0x1002fb47 — the squared length of the box diagonal. Its only caller is
 	// the point-container gather, which drops a container whose diagonal is

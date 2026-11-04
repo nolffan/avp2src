@@ -1367,7 +1367,8 @@ public:
 	~CCmgClientMgr();                                           // 0x00410ec0
 
 	// 0x0040f8d0
-	LTRESULT Init(char** pResTrees, uint32 nResTrees, char* pCommands);
+	LTRESULT Init(char** pResTrees, uint32 nResTrees, char* pCommands,
+	              struct CCmdArgsQ503* pArgs);
 	// 0x0040fc80
 	void     TermClientShell();
 	// 0x0041fd30
@@ -1570,6 +1571,81 @@ extern int g_CV_DebugNumSounds;                                 // 0x004b32e4  "
 //  is expanded before it is stringized (de_error.h's RETURN_ERROR).
 // ======================================================================= //
 
+// AVP2: a file-scope WONAPI smart pointer (WONCommon/SmartPtr.h's
+// SmartPtr<T> over a RefCount-derived object: vptr at +0, the count at +4)
+// at 0x004f0118.  Its constructor (0x00414090) and destructor (0x0048fac0)
+// are registered by the _$E pair at 0x004108c0/0x004108e0, in this TU's
+// run.  TermClientShell (0x00411370) and Init (0x00410dff) both drop it
+// with `= NULL`, which expands ConstSmartPtr::operator= and RefCount::
+// Release in place.  AvP2 1.0.9.6 has the same at 0x004103d6.  What T is
+// is not pinned here, so the view carries RefCount's shape only.
+extern "C" {
+__declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
+__declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
+}
+
+class CWonRefCountQ503                       // WONAPI::RefCount
+{
+protected:
+	virtual ~CWonRefCountQ503() {}
+
+public:
+	const CWonRefCountQ503* CreateRef() const
+	{
+		InterlockedIncrement(&mRefCount);
+		return this;
+	}
+
+	void Release()
+	{
+		if (InterlockedDecrement(&mRefCount) <= 0)
+			delete this;
+	}
+
+private:
+	mutable long mRefCount;                  // +0x04
+};
+
+template<class T>
+class CWonConstSmartPtrQ503                  // WONAPI::ConstSmartPtr<T>
+{
+protected:
+	T* mObject;
+
+public:
+	CWonConstSmartPtrQ503() : mObject(LTNULL) {}
+	~CWonConstSmartPtrQ503() { if (mObject != LTNULL) mObject->Release(); }
+
+	const T* operator=(const T* thePtr)
+	{
+		if (mObject != thePtr)
+		{
+			if (mObject != LTNULL) mObject->Release();
+			mObject = (T*)(thePtr ? thePtr->CreateRef() : LTNULL);
+		}
+		return thePtr;
+	}
+};
+
+template<class T>
+class CWonSmartPtrQ503 : public CWonConstSmartPtrQ503<T>  // WONAPI::SmartPtr<T>
+{
+public:
+	CWonSmartPtrQ503() {}
+
+	T* operator=(T* thePtr)
+	{
+		CWonConstSmartPtrQ503<T>::operator=(thePtr);
+		return thePtr;
+	}
+};
+
+// Its definition belongs to this TU (the dynamic initialiser pair at
+// 0x004108c0 / 0x004108e0 jumps to an OUT-OF-LINE constructor and
+// destructor); defined here, VC6 expands the constructor into the _$E
+// instead, so it is left declared until that is understood.
+extern CWonSmartPtrQ503<CWonRefCountQ503> g_WonPtrQ503;  // 0x004f0118
+
 // What Init reaches outside this run.  (names ours where not cited)
 void r_InitRenderStruct(int bFullClear);                        // 0x00462110
 void phys_ResetMoveCounter();                                   // 0x004451a0
@@ -1594,7 +1670,11 @@ CCmgSub1610* cmg_CreateVideoMgr(CCmgClientMgr* pClientMgr,
 void con_RunString(CCmgConsoleState* pState, char* pString);    // 0x0041abe0
 void cm_ParseConsoleCommands(CCmgClientMgr* pClientMgr, char* pCommands,
                              int nStage);                       // 0x00411670
-void cm_RunPlusCommands(CCmgClientMgr* pClientMgr, int nStage); // 0x00411600
+// AVP2: a third argument, Init's fourth, handed straight through
+// (0x00410d0d / 0x00410d5a): when set, the `+command` pairs come out of it
+// instead of the process command line (0x00413768).
+void cm_RunPlusCommands(CCmgClientMgr* pClientMgr, int nStage,
+                        struct CCmdArgsQ503* pArgs);           // 0x00411600
 // clientmgr2.cpp / clientconsole.cpp's name and type for 0x004b2f44.
 class CClientMgrView;
 extern CClientMgrView* g_pConsoleClientMgr;                     // 0x004b2f44
@@ -1615,7 +1695,11 @@ public:
 struct CEngineVersionQ42E;
 LTRESULT dsi_GetEngineVersion(CEngineVersionQ42E* pVersion);    // 0x0042e7b0
 
-LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands)
+// AVP2: four arguments (`ret $0x10`, 0x00410e35); the fourth only reaches
+// cm_RunPlusCommands.  And the WON pointer is dropped on the way out
+// (0x00410dff), after the 0x11f0 object's Init.
+LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands,
+                             CCmdArgsQ503* pArgs)
 {
 	LTRect   rcScreen;
 	int      nTreesAdded;
@@ -1692,7 +1776,7 @@ LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands
 
 	g_pConsoleClientMgr = (CClientMgrView*)this;
 	cm_ParseConsoleCommands(this, pCommands, 2);
-	cm_RunPlusCommands(this, 2);
+	cm_RunPlusCommands(this, 2, pArgs);
 
 	dsi_OpenLog();
 
@@ -1703,7 +1787,7 @@ LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands
 		con_ConsolePrint("Warning: NullRender is ON.");
 
 	cm_ParseConsoleCommands(this, pCommands, 1);
-	cm_RunPlusCommands(this, 1);
+	cm_RunPlusCommands(this, 1, pArgs);
 
 	m_bConsoleReady   = 1;
 	m_pCollisionInfo  = LTNULL;
@@ -1720,12 +1804,15 @@ LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands
 	rcScreen.Init(0, 0, mode.m_Width, mode.m_Height);
 	m_Sub11f0.Init(m_pSub4c0, &rcScreen);
 
+	g_WonPtrQ503 = LTNULL;
+
 	return dResult;
 }
 
 
 // ======================================================================= //
-//  3b. 0x0040fc80 — CClientMgr::TermClientShell, 196 bytes.  __thiscall,
+//  3b. 0x0040fc80 — CClientMgr::TermClientShell, 196 bytes (PH 0x00411370,
+//      234: the WON pointer release up front, IDENTICAL).  __thiscall,
 //      no arguments; called once, from the destructor (0x00410efe).
 //      REAL HOME: the CClientMgr TU that holds Init (0x0040f8d0) and
 //      StartShell (0x0040fd90) -- this sits between them.
@@ -1746,6 +1833,9 @@ void CCmgClientMgr::TermClientShell()
 	CCmgConsoleCommand* pCmd;
 	void*               pCreate;
 	void              (*pDelete)(IClientShell*);
+	IClientShell*       pShell;
+
+	g_WonPtrQ503 = LTNULL;
 
 	m_Unknown1524 = 0;
 
@@ -1761,11 +1851,14 @@ void CCmgClientMgr::TermClientShell()
 		pCur = pNext;
 	}
 
-	if (m_pClientShell)
+	// AVP2: the shell pointer is taken and cleared before the module
+	// lookup (the +0x620 store at 0x004113f5, ahead of the call).
+	pShell = m_pClientShell;
+	if (pShell)
 	{
-		cmg_GetShellFunctions(m_Unknown618, &pCreate, (void**)&pDelete);
-		pDelete(m_pClientShell);
 		m_pClientShell = LTNULL;
+		cmg_GetShellFunctions(m_Unknown618, &pCreate, (void**)&pDelete);
+		pDelete(pShell);
 	}
 
 	if (m_Unknown618)

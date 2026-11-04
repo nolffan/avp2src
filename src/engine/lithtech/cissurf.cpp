@@ -257,6 +257,18 @@ public:
 	void*  m_pFreeList;                      // 0x18
 };
 
+// stdlith's sb_Free as servermgr.h expands it: AVP2: the record and then the
+// bank are tested before the two stores (0x0040ff73 `cmp %ebx,%esi`, then
+// 0x0040ff77 `mov $0x4eff70,%ecx ; test %ecx,%ecx` on the bank's address).
+inline void cis_sb_FreeQ501(CStructBankQ40C* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
 // clientmgr.h's, as far as this file reaches it.
 class CClientMgrQ40C
 {
@@ -1682,8 +1694,9 @@ LTRESULT cis_MaskedDraw(LTBOOL /*bOverlap*/, void* pSrcBits, void* pDestBits,
 //  0`) branches here instead: 94 bytes, near; a ternary on a separate
 //  pNext was 99, near.
 //
-//  The last two instructions of the body are stdlith's sb_Free expanded:
-//  the surface's own first dword becomes the bank's free-list link.
+//  The tail of the body is stdlith's sb_Free expanded, AvP2's form with its
+//  two null tests: the surface's own first dword becomes the bank's
+//  free-list link.  Byte-identical at Primal Hunt's 0x0040ff40.
 // ======================================================================= //
 
 void cis_FreeAllSurfacesQ40C()
@@ -1699,8 +1712,7 @@ void cis_FreeAllSurfacesQ40C()
 		cis_FreeSysMemQ40C(pSurface);                     // 0x0040ee65
 		cis_FreeRenderDataQ40C(pSurface);                 // 0x0040ee6b
 
-		pSurface->m_pPrev = (CSurfaceQ40C*)g_SurfaceBankQ40C.m_pFreeList;  // 0x0040ee79
-		g_SurfaceBankQ40C.m_pFreeList = pSurface;         // 0x0040ee7d
+		cis_sb_FreeQ501(&g_SurfaceBankQ40C, pSurface);    // 0x0040ff73..88
 	}
 
 	g_SurfaceListQ40C.m_pHead = LTNULL;                              // 0x0040ee86

@@ -2438,7 +2438,8 @@ LTRESULT sub_479bf0(CClientShellQ478* pShell, CPacketQ478* pPacket,
 
 
 // ======================================================================= //
-//  0x00479d50 -- 893 bytes, cdecl(shell, packet, info, file ref, &offset):
+//  0x00479d50 -- 893 bytes in NOLF; IDENTICAL as Primal Hunt's 0x00495e70
+//  (1019 bytes, AvP2 0x0048c940) -- cdecl(shell, packet, info, file ref, &offset):
 //  the sound UNPACKER 0x00479bf0 runs for a new sound (its only call is
 //  0x00479c83, in 0x00479bf0 above).  Both `ret`s return 0, so it is an
 //  LTRESULT (the caller ignores it).  (name ours)
@@ -2466,11 +2467,13 @@ LTRESULT sub_479bf0(CClientShellQ478* pShell, CPacketQ478* pPacket,
 //     m_vPosition.
 // ======================================================================= //
 
+// AVP2: (NOLF had the position at +0x18c) +0x194 in AvP2 and Primal Hunt
+// (0x0049622b; AvP2 0x0048ccff).
 class CShellObjQ478
 {
 public:
-	uint8    m_pad_000[0x18c];
-	LTVector m_Pos;                          // 0x18c  (LTObject::m_Pos)
+	uint8    m_pad_000[0x194];
+	LTVector m_Pos;                          // 0x194  (LTObject::m_Pos)
 };
 
 // ccobj.cpp's CSoundSentStateQ464, the record 0x00414a50 hands back.
@@ -2527,13 +2530,16 @@ LTRESULT sub_479d50(CClientShellQ478* pShell, CPacketQ478* pPacket,
 		pInfo->m_fInnerRadius = pInfo->m_fOuterRadius * (float)pRec->m_nInnerRatio * (1.0f / 255.0f);
 	}
 
+	// AVP2: the volume byte is the out-of-line read (0x00495f62).
 	if (pInfo->m_dwFlags & PLAYSOUND_CTRL_VOL)
-		pInfo->m_nVolume = pPacket->ReadType((uint8*)0);
+		pInfo->m_nVolume = pPacket->ReadTypeOOL((uint8*)0);
 	else
 		pInfo->m_nVolume = 100;
 
+	// AVP2: the pitch read is expanded (0x00495f7c..0x00495fec; AvP2
+	// 0x0048ca3c on), not a call.
 	if (pInfo->m_dwFlags & PLAYSOUND_CTRL_PITCH)
-		pInfo->m_fPitchShift = pPacket->ReadTypeOOL((float*)0);
+		pInfo->m_fPitchShift = pPacket->ReadType((float*)0);
 	else
 		pInfo->m_fPitchShift = 1.0f;
 
@@ -2550,7 +2556,16 @@ LTRESULT sub_479d50(CClientShellQ478* pShell, CPacketQ478* pPacket,
 		*pOffset = 0.0f;
 	}
 
-	pInfo->m_UserData = pPacket->ReadType((uint32*)0);
+	// AVP2: (NOLF read m_UserData unconditionally) the SDK's two optional
+	// fields, each behind its own flag: PLAYSOUND_CTRL_TYPE (0x2000) a
+	// byte into m_nUserSoundType (+0x134), PLAYSOUND_USER_DATA (0x4000) a
+	// dword into m_UserData (+0x138) -- 0x0049611d..0x0049620c; AvP2
+	// 0x0048cbee..0x0048cce1.
+	if (pInfo->m_dwFlags & PLAYSOUND_CTRL_TYPE)
+		pInfo->m_nUserSoundType = pPacket->ReadType((uint8*)0);
+
+	if (pInfo->m_dwFlags & PLAYSOUND_USER_DATA)
+		pInfo->m_UserData = pPacket->ReadType((uint32*)0);
 
 	if (bClientLocal)
 	{
