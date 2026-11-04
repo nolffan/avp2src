@@ -386,10 +386,10 @@ all game: $(WANTED) ltmsg wonapi debuglibs
 #                   per-file flag groups (1.0.9.6's d3d.ren is NOLF's
 #                   renderer's shape)
 #
-# Both keep nolfsrc's file lists and per-file flags. Objects only, so far:
-# the links want the lithshared libraries and nolfsrc's link-time tables,
-# which name NOLF's addresses; `make progress` scores the objects
-# (progress/targets.py, partial_objs).
+# Both keep nolfsrc's file lists and per-file flags. Primal Hunt's
+# lithtech.exe and server.dll are linked (below, engine-link) for the
+# scoreboard, not to run; the rest is objects only, which `make progress`
+# scores as they are (progress/targets.py, partial_objs).
 E := src/engine
 V9044 := $(TC)/msvc-6.00-9044
 ENG_PH_CC   := $(V8966)/BIN/cl.exe
@@ -586,6 +586,86 @@ launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.
 ph-engine-objs: $(call eng_objs,Release) src/engine/lithtech/Release/wonapi/WONAPI.lib
 avp2-engine-objs: $(call eng_objs,AvP2Release)
 engine-objs: ph-engine-objs avp2-engine-objs
+
+# Primal Hunt's lithtech.exe and server.dll, linked from our objects: not to
+# run (the engine is far from whole) but so that the scoreboard can read
+# what our link put where -- progress/targets.py's `built` images, their
+# response files (<image>.rsp: what was linked) and maps. In a linked image
+# the relocations are resolved, which is what verifies the "small"
+# functions (tools/progress.py, VERIFYING THE SMALL ONES).
+#
+# $(LINK), link.exe 6.00.8447 (SP5's, as the rest of Primal Hunt's build),
+# with /FORCE: an image is written whatever is unresolved or defined twice.
+# An unresolved symbol then resolves to the image's base, RVA 0 (our
+# lithtech.exe's calls to unresolved functions all reach 0x00400000),
+# which tools/progress.py never takes as naming anything. Neither link takes nolfsrc's link-time stand-ins
+# (link/aliases.rsp, link/vtables.txt): they name NOLF's symbols and
+# addresses, and an alias or a stand-in vtable that is wrong for Primal
+# Hunt would make our image name a thing it does not have. No resources:
+# they are no code. /OPT:NOREF keeps every function of ours in the image,
+# where the retail link's /OPT:REF (the default) dropped what nothing
+# reaches: with so much unresolved, nothing reaches most of the engine, and
+# REF kept 2,222 of lithtech.exe's 7,252 code symbols -- a function not in
+# our image cannot be verified through it. /OPT:ICF still folds identical
+# COMDATs as the retail link did (REF implies it; NOREF does not): 7,252
+# symbols at 5,916 addresses. Each link's output goes to its report,
+# Release/<image>-link.txt; the rule fails only when no image comes out.
+#
+# The import libraries are what the retail images' import tables name:
+#   lithtech.exe  WINMM DINPUT KERNEL32 USER32 GDI32 ole32 mss32 WSOCK32
+#   server.dll    WINMM KERNEL32 USER32 ole32 WSOCK32
+# Miles' mss32.dll exports its functions under their decorated names, and
+# lithtech.exe imports them so (_AIL_startup@0): its import libraries are
+# made from src/launcher/libs/mss32.def (lib.exe for the descriptor,
+# tools/mkimplib.py --keep-decoration for the names), into Release/implib/
+# on the link's LIB path, where the scoreboard does not take them for an
+# input of ours (link_inputs reads only the directory the link runs in
+# and its /libpath:s).
+ENG_IMPLIB := $(LITHTECH)/Release/implib
+MSS32_DEF := src/launcher/libs/mss32.def
+MSS32_DECORATED = $(shell sed -n "s/^ *\(AIL_[A-Za-z0-9_]*@[0-9]*\) *$$/_\1/p" $(MSS32_DEF))
+$(eval $(call tool,$(ENG_IMPLIB)/mss32.lib,$(MSS32_DEF) | wine-drives,\
+    mkdir -p $(ENG_IMPLIB) && cd src/launcher && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo /machine:i386 '/def:libs\mss32.def' \
+    '/out:$(call ws,$(ROOT)/$(ENG_IMPLIB))\mss32.lib' >/dev/null))
+$(eval $(call tool,$(ENG_IMPLIB)/mss32dec.lib,$(MSS32_DEF),\
+    python3 tools/mkimplib.py --keep-decoration $(ENG_IMPLIB)/mss32dec.lib mss32.dll $$(MSS32_DECORATED) >/dev/null))
+ENG_LINK_ENV := $(subst LIB=',LIB='$(call ws,$(ROOT)/$(ENG_IMPLIB));,$(ENG_PH_ENV))
+
+# $(call eng_link,<image>,<link dir>,<flags>,<inputs as the link dir sees them>,<prerequisites>)
+define eng_link
+$(call tool,$(1),$(5) | wine-drives,\
+    cd $(2) && { printf '%s\n' $(call q,/nologo $(3) /FORCE /OPT:NOREF /OPT:ICF /machine:I386 /out:$(subst /,\,$(patsubst $(2)/%,%,$(1))) \
+    /map:$(subst /,\,$(patsubst $(2)/%,%,$(basename $(1)))).map $(subst /,\,$(4))) > $(1:%=$(ROOT)/%).rsp; } && \
+    { $(ENG_LINK_ENV) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(1)).rsp' > $(basename $(1:%=$(ROOT)/%))-link.txt 2>&1 || true; } && \
+    grep -c 'error LNK2001\|error LNK2019' $(basename $(1:%=$(ROOT)/%))-link.txt | sed 's/^/   LINK $(notdir $(1)): unresolved references: /' ; \
+    grep -c 'error LNK2005' $(basename $(1:%=$(ROOT)/%))-link.txt | sed 's/^/   LINK $(notdir $(1)): defined twice: /' ; \
+    test -f $(1:%=$(ROOT)/%) || { grep -i 'error\|fatal' $(basename $(1:%=$(ROOT)/%))-link.txt | head -20 >&2; false; })
+endef
+LS_R := ..\..\LT2\lithshared\libs\Release
+LS_D := ..\..\LT2\lithshared\libs\Debug
+LT_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/Release)))
+SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC)))
+# lithtech.exe: our objects, then WON (the engine's VC6-STL build), RezMgr,
+# lith and StdLith, in the order their blocks lie in the retail image
+# (progress/targets.py, lib_range: 0x004aab40, 0x004ba2a0..)
+$(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:windows,\
+    $(LT_OBJS:$(LITHTECH)/%=%) Release/wonapi/WONAPI.lib $(LS_R)\RezMgr.lib $(LS_R)\lith.lib $(LS_R)\StdLith.lib \
+    winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib wsock32.lib,\
+    $(LT_OBJS) $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/RezMgr.lib $(LOUT)/lith.lib $(LOUT)/StdLith.lib \
+    $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib))
+# server.dll: our objects, then the debug RezMgr and StdLith (one block from
+# 0x1004a6e0) and WON (0x10051e10); link/server.def names the DLL
+# "server.DLL" as the retail export table does. The debug libraries name
+# LIBCMTD as their default library, but the retail image has the release
+# runtime's only (its "Assertion failed: %s, file %s, line %d" is
+# libcmt.lib's assert.c; no "Debug Assertion Failed!", nothing of the
+# debug heap or _CrtDbgReport), so not LIBCMTD.
+$(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\server.def /nodefaultlib:libcmtd.lib,\
+    $(SV_OBJS:$(SERVER)/%=%) $(LS_D)\RezMgr.lib $(LS_D)\StdLith.lib ..\lithtech\Release\wonapi\WONAPI.lib \
+    winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib,\
+    $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(SERVER)/link/server.def))
+.PHONY: engine-link
+engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
 
 # ---------------------------------------------------------------------------
 # The rules all compiles and tools share

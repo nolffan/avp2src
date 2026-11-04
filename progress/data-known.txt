@@ -514,3 +514,9 @@ PHObject.lto	retail	A formatting error in the attribute file was encountered.
 PHObject.lto	retail	EXPANSION
 PHObject.lto	retail	File "%s", line %d :  %s
 PHObject.lto	retail	Line %d :  %s
+
+# Primal Hunt's engine, linked for the scoreboard only (build/build.mk, engine-link): /FORCE over an engine still missing much of its code (1,440 symbols unresolved in lithtech.exe, 320 in server.dll), and /OPT:NOREF, so its data holds every string of every object and lacks those of everything unwritten; not to be compared string by string until the engine links whole
+lithtech.exe	retail	*
+lithtech.exe	ours	*
+server.dll	retail	*
+server.dll	ours	*

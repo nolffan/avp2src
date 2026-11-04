@@ -430,7 +430,9 @@ int bsp_SphereInside(BSPNode** ppRoot, LTVector* pPoint, float fRadius)
 // server.dll 0x10017e31, 109 bytes; lithtech.exe 0x00441620, 145 bytes.
 // The point's descent: 0x02 answers 0 and 0x01 answers 1, tested one at a
 // time; otherwise the child on the point's side (front for a distance
-// above zero, 0.0f at server .rdata 0x10074210).  Identical in both images.
+// above -0.001f: server.dll .rdata 0x10074210, lithtech.exe 0x004d4ec0,
+// AvP2 1.0.9.6's lithtech.exe 0x004c6ea8 -- tools/fpconst.py).  Identical
+// in both images.
 int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint)
 {
 	BSPNode* pNode = pRoot;
@@ -448,6 +450,6 @@ int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint)
 		float fDist = v.y * pPlane->m_Normal.y + v.z * pPlane->m_Normal.z +
 		              v.x * pPlane->m_Normal.x - pPlane->m_Dist;
 
-		pNode = pNode->m_pChild[fDist > 0.0f ? 1 : 0];
+		pNode = pNode->m_pChild[fDist > -0.001f ? 1 : 0];
 	}
 }

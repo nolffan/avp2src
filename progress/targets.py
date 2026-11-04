@@ -133,8 +133,10 @@ TARGETS = [
     # All of it is VC6 SP5 (C++ 8966), the renderer included.
     dict(label="lithtech.exe", what="the engine", kind="image",
          shipped=REFERENCE + "/lithtech.exe", stem="lithtech",
-         # nolfsrc's engine compiled for Primal Hunt, objects only until it
-         # links (build/build.mk, "The engine")
+         # nolfsrc's engine compiled for Primal Hunt, and linked with /FORCE
+         # for the scoreboard (build/build.mk, engine-link: `built`, its .rsp
+         # and .map, through which the small functions are verified); its
+         # objects alone (partial_objs) until that link has been made
          # and its WON client (0x004aab40..0x004ba2a0, the WON templates
          # the engine's own objects instantiate elsewhere): WONAPI.lib from
          # the release's source, with VC6's STL (build/build.mk, "WONAPI.lib")
@@ -163,8 +165,10 @@ TARGETS = [
          app=[(0x00401000, 0x004bf4c0)]),
     dict(label="server.dll", what="the server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
-         # nolfsrc's engine compiled for Primal Hunt, objects only until it
-         # links (build/build.mk, "The engine")
+         # nolfsrc's engine compiled for Primal Hunt, and linked with /FORCE
+         # for the scoreboard (build/build.mk, engine-link: `built`, its .rsp
+         # and .map, through which the small functions are verified); its
+         # objects alone (partial_objs) until that link has been made
          # and the WON client, the same VC6-STL WONAPI.lib lithtech.exe
          # links (server.dll 0x10052030 is lithtech.exe 0x004aad60, byte
          # for byte), 0x10051e10 up to the runtime library's helpers at

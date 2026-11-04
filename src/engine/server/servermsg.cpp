@@ -1006,20 +1006,22 @@ void ServerMessage::WriteData(void* pData, uint32 nBytes)
 
 // 0x10012ec5. Pack a position into the seven bytes the writer sends: each
 // axis becomes the fraction of the way across the reference box, scaled by
-// 65536, truncated to an integer and sent as its low sixteen bits; the
-// seventh byte ORs the three *high* halves together and nothing ever reads
-// it (lmsg_ReadCompPos rebuilds the position from the three words alone).
+// 65535 (server.dll .rdata 0x10074878, lithtech.exe 0x004d5558, AvP2
+// 1.0.9.6's 0x004c7538), truncated to an integer and sent as its low
+// sixteen bits; the seventh byte ORs the three *high* halves together and
+// nothing ever reads it (lmsg_ReadCompPos rebuilds the position from the
+// three words alone).
 //
-// The 65536.0f is loaded once, before anything else, and kept on the FPU
+// The 65535.0f is loaded once, before anything else, and kept on the FPU
 // stack across all three conversions — one `.rdata` load for three uses,
 // with the `fstp %st(0)` at the end dropping it. The three `(int)` casts are
 // `_ftol` calls, and the shifts are unsigned, so the three results are
 // uint32 locals and not ints.
 void lmsg_CompressPos(uint8* pOut, LTVector* pVec, CPosRef* pRef)
 {
-	uint32 nX = (uint32)(int)((pVec->x - pRef->m_vMin.x) * pRef->m_vScale.x * 65536.0f);
-	uint32 nY = (uint32)(int)((pVec->y - pRef->m_vMin.y) * pRef->m_vScale.y * 65536.0f);
-	uint32 nZ = (uint32)(int)((pVec->z - pRef->m_vMin.z) * pRef->m_vScale.z * 65536.0f);
+	uint32 nX = (uint32)(int)((pVec->x - pRef->m_vMin.x) * pRef->m_vScale.x * 65535.0f);
+	uint32 nY = (uint32)(int)((pVec->y - pRef->m_vMin.y) * pRef->m_vScale.y * 65535.0f);
+	uint32 nZ = (uint32)(int)((pVec->z - pRef->m_vMin.z) * pRef->m_vScale.z * 65535.0f);
 
 	*(uint16*)&pOut[0] = (uint16)nX;
 	*(uint16*)&pOut[2] = (uint16)nY;
@@ -1359,9 +1361,10 @@ inline float lmsg_Get(const float* p) { return *p; }
 
 
 // 0x10012f9e (lithtech.exe 0x004359c0, 261 bytes). The compressed position
-// back out: three words, each the fraction (in units of 1/65536) of the way
-// across the reference box on that axis. With no reference box there is
-// nothing to be a fraction of, so a null pRef reads back as the zero vector
+// back out: three words, each the fraction (in units of 1/65535: server.dll
+// .rdata 0x1007487c, lithtech.exe 0x004d555c, AvP2 1.0.9.6's 0x004c753c)
+// of the way across the reference box on that axis. With no reference box
+// there is nothing to be a fraction of, so a null pRef reads back as the zero vector
 // -- three separate stores, not an Init -- and the words are not read at all.
 //
 // IDENTICAL on both images. Two source facts carry it:
@@ -1409,9 +1412,9 @@ void lmsg_ReadCompPos(LMessageImpl* pMsg, LTVector* pVec, CPosRef* pRef)
 	{ uint16 w; ((IMessageRead*)pMsg)->ReadWord(&w); n[1] = w; }
 	{ uint16 w; ((IMessageRead*)pMsg)->ReadWord(&w); n[2] = w; }
 
-	vFrac.x = (float)n[0] * (1.0f / 65536.0f);
-	vFrac.y = (float)n[1] * (1.0f / 65536.0f);
-	vFrac.z = (float)n[2] * (1.0f / 65536.0f);
+	vFrac.x = (float)n[0] * (1.0f / 65535.0f);
+	vFrac.y = (float)n[1] * (1.0f / 65535.0f);
+	vFrac.z = (float)n[2] * (1.0f / 65535.0f);
 
 	pVec->x = lmsg_Get(&pRef->m_vMin.x) + (lmsg_Get(&pRef->m_vMax.x) - lmsg_Get(&pRef->m_vMin.x)) * vFrac.x;
 	pVec->y = lmsg_Get(&pRef->m_vMin.y) + (lmsg_Get(&pRef->m_vMax.y) - lmsg_Get(&pRef->m_vMin.y)) * vFrac.y;
