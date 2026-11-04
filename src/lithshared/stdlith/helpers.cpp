@@ -27,20 +27,10 @@ static CHelpers	g_Helpers;
 
 CHelpers::CHelpers()
 {
-	// TWO induction variables, not one. The shipped constructor keeps the
-	// index in %esi AND a separate down-counter in %edi -- `mov $0x100,%edi`
-	// at +0x7, `dec %edi ; jne` at +0x1c -- where a `for (i = 0; i < 256; i++)`
-	// tests the index itself (`cmp $0x100,%esi ; jb`). The extra live value is
-	// also why the shipped body needs %ebx and therefore saves it: with three
-	// registers in play `this` cannot stay where a two-variable loop leaves it.
-	DWORD	i = 0;
-	int		nLeft = 256;
+	WORD	i;
 
-	do
-	{
+	for( i=0; i < 256; i++ )
 		g_UpperTable[i] = (char)toupper( i );
-		i++;
-	} while( --nLeft );
 }
 
 

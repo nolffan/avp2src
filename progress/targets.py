@@ -103,8 +103,13 @@ LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
 # (VC6's STL, not STLport: lithtech.exe's partial_objs) library code there,
 # placed where it is linked and never unplaced where it is not.
 LIBS.append(("WONAPI", "src/LT2/lithshared/libs/Release/wonapi/WONAPI.lib"))
+# The debug builds of StdLith and RezMgr (build/build.mk, "The debug
+# builds"), which Primal Hunt's server.dll links: each scored against the
+# release's prebuilt debug build of it (libs/debug/).
+DEBUG_LIBS = ["StdLith", "RezMgr"]
+LIBS += [(n + "Debug", "src/LT2/lithshared/libs/Debug/%s.lib" % n) for n in DEBUG_LIBS]
 SHIPPED_LIB = "LT2/lithshared/libs/release/{}.lib"
-SHIPPED_AS = {}
+SHIPPED_AS = {n + "Debug": "../debug/%s.lib" % n for n in DEBUG_LIBS}
 SHIPPED_ENV = "AVP2_SOURCE"     # build/progress.sh: progress/reference
 
 DRIVER_OBJS = {"sdkforce.obj"}
@@ -153,9 +158,16 @@ TARGETS = [
          # links (server.dll 0x10052030 is lithtech.exe 0x004aad60, byte
          # for byte), 0x10051e10 up to the runtime library's helpers at
          # 0x10060eec
+         # and the debug builds of RezMgr and StdLith, interleaved in one
+         # block from 0x1004a6e0 up to the WON client (build/build.mk, "The
+         # debug builds")
          partial_objs=["src/engine/server/Release/*.obj",
-                       "src/engine/lithtech/Release/wonapi/WONAPI.lib"],
-         lib_range={"WONAPI": (0x10051e10, 0x10060eec)},
+                       "src/engine/lithtech/Release/wonapi/WONAPI.lib",
+                       "src/LT2/lithshared/libs/Debug/RezMgr.lib",
+                       "src/LT2/lithshared/libs/Debug/StdLith.lib"],
+         lib_range={"WONAPI": (0x10051e10, 0x10060eec),
+                    "RezMgr": (0x1004a6e0, 0x10051e10),
+                    "StdLith": (0x1004a6e0, 0x10051e10)},
          built="src/engine/server/Release/server.dll", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib from __ftol (0x10061048), 354 members to

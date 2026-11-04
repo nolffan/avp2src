@@ -235,6 +235,17 @@ libraries, ours"); each is scored against the release's prebuilt build
 MFCStub 96.2 %, lith 43.8 %, RezMgr 0.3 %. With them, `CShell.dll` is 62.7 %,
 `Object.lto` 89.1 %.
 
+RezMgr is now Monolith's (`src/lithshared/rezmgr`: NOLF2's release's
+rezmgr.cpp, rezhash.cpp and rezfile.cpp, the three objects the shipped
+builds hold, in AvP2's REZMGRLITE build), and it and StdLith are built a
+second time as the release's Debug builds (/MTd /ZI /Od), which Primal
+Hunt's `server.dll` links (`build/build.mk`, "The debug builds"). /ZI makes
+every assert carry its line relative to its function, so the debug builds
+fix the source's line layout too, and the release's prebuilt
+`Rezmgrfull.lib` (the full build of the same file, /Z7, with COFF line
+numbers) shows where the code REZMGRLITE leaves out stood. All four --
+RezMgr and StdLith, release and debug -- are 100 %.
+
 ButeMgr is NOLF2's (`src/lithshared/ButeMgr`): AvP2's parser is NOLF2's
 line -- STLport symbol tables, the same four objects -- at an earlier stage,
 with CString accessors and a second tag table, which ours takes from
@@ -244,8 +255,8 @@ line %d`, an `EXPANSION` keyword) is still NOLF2's (progress/data-known.txt).
 Two more are not NOLF's and stay prebuilt (left out of our score) until
 reconstructed from the release's builds: LTGUIMgr (menu fonts with three
 faces, DrawMenu, GetTextExtents) and LithFontMgr (a CString for the
-previous string, a default colour). RezMgr and lith are
-different versions too, by their scores. Prebuilt and not ours to build:
+previous string, a default colour). lith is a
+different version too, by its score. Prebuilt and not ours to build:
 GameSpy's managers (middleware) and LithTrackMgr (headers only); WONAPI's
 source is in the release, to be built from it.
 

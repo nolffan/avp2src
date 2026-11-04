@@ -226,15 +226,18 @@ LS_OURS += $(2)
 endef
 c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
 
-$(eval $(call lslib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib,\
-    abstractio.cpp dynarray.cpp fileio.cpp goodlinklist.cpp helpers.cpp l_allocator.cpp \
+SL_SRCS := abstractio.cpp dynarray.cpp fileio.cpp goodlinklist.cpp helpers.cpp l_allocator.cpp \
     linklist.cpp lithexception.cpp memory.cpp memoryio.cpp stringholder.cpp struct_bank.cpp \
-    sys\win\compressedio.cpp))
+    sys\win\compressedio.cpp
+$(eval $(call lslib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib,$(SL_SRCS)))
 $(eval $(call lslib,CryptMgr,CryptMgr,/I $(LT2LS2)\\cryptmgr /I $(LT2LS2)\\incs /I .,cryptmgr.cpp blowfish.cpp))
 # (lith.lib: the release names it in lower case, and so does Windows when
 # ours replaces a copy of it)
 $(eval $(call lslib,lith,lith,/I .,basehash.cpp baselist.cpp virtlist.cpp))
-$(eval $(call lslib,rezmgr,RezMgr,/I $(LT2LS2)\\incs /I .,rezmgr.cpp rezmgr2.cpp rezfile.cpp rezemu.cpp rezdir.cpp rezhash.cpp))
+# (RezMgr.lib: Monolith's RezMgr, the REZMGRLITE build its header defaults
+# to; the shipped builds hold these three objects)
+RM_SRCS := rezmgr.cpp rezhash.cpp rezfile.cpp
+$(eval $(call lslib,rezmgr,RezMgr,/D REZMGRLITE /I $(LT2LS2)\\incs /I .,$(RM_SRCS)))
 $(eval $(call lslib,RegMgr,RegMgr,/I $(LT2LS2)\\incs /I .,regmgr.cpp))
 $(eval $(call lslib,MFCStub,MFCStub,/I $(LT2LS2)\\mfcstub /I $(LT2LS2)\\incs /I $(LT2LS2)\\lith /I .,mfcs_string.cpp mfcs_rect.cpp mfcs_point.cpp))
 # Not yet ours: AvP2's LTGUIMgr is another version of the library than
@@ -291,6 +294,33 @@ wonapi: $(LOUT)/wonapi/WONAPI.lib src/engine/lithtech/Release/wonapi/WONAPI.lib
 .PHONY: libs
 libs: $(LS_OURS:%=$(LOUT)/%.lib) $(LOUT)/wonapi/WONAPI.lib
 
+# The debug builds of StdLith and RezMgr. Primal Hunt's server.dll links
+# them, not the release builds (its block from 0x1004a6e0, between the
+# world tree and the net objects: frame pointers, asserts naming
+# rezmgr.cpp and stringholder.cpp), and the release ships them prebuilt
+# (libs/debug/). Their objects' own command lines (cl 8966): /MTd /W3 /GX
+# /ZI /Od /D _DEBUG /D WIN32 /D _WINDOWS /D NO_PRAGMA_LIBS, RezMgr's with
+# /D REZMGRLITE too; /ZI (edit and continue), not the /Zi /GZ the project
+# files' Debug configurations say. Each object gets a program database of
+# its own (/Fd), so that parallel compiles never share one. Into
+# $(LDOUT), where the project files' Debug configurations look and the
+# Final builds never do; progress/targets.py scores them against the
+# shipped debug builds, and as server.dll's.
+LIB_DCFLAGS := /nologo /MTd /W3 /GX /ZI /Od /D _DEBUG /D WIN32 /D _WINDOWS /D NO_PRAGMA_LIBS /c
+LDOUT := src/LT2/lithshared/libs/Debug
+LS_DEBUG :=
+# $(call lsdlib,<dir>,<library>,<incs>,<sources>)
+define lsdlib
+$(foreach s,$(4),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/Debug),src/lithshared/$(1),$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_DCFLAGS) $(3) /FoDebug/ /FdDebug/$(basename $(notdir $(subst \,/,$(s)))).pdb,wine-drives)))
+LSDOBJ_$(1) := $(foreach s,$(4),$(call c_obj,$(s),src/lithshared/$(1)/Debug))
+$(call tool,$(LDOUT)/$(2).lib,$$(LSDOBJ_$(1)) | wine-drives,cd src/lithshared/$(1) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LDOUT))\$(2).lib' $$(call q,$$(subst /,\,$$(patsubst src/lithshared/$(1)/%,%,$$(LSDOBJ_$(1))))))
+LS_DEBUG += $(2)
+endef
+$(eval $(call lsdlib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib,$(SL_SRCS)))
+$(eval $(call lsdlib,rezmgr,RezMgr,/D REZMGRLITE /I $(LT2LS2)\\incs /I .,$(RM_SRCS)))
+.PHONY: debuglibs
+debuglibs: $(LS_DEBUG:%=$(LDOUT)/%.lib)
+
 # ---------------------------------------------------------------------------
 # The prebuilt libraries
 #
@@ -338,7 +368,7 @@ endef
 $(foreach w,$(WORKSPACES),$(eval $(call workspace,$(firstword $(subst :, ,$(w))),$(lastword $(subst :, ,$(w))))))
 
 .PHONY: all game
-all game: $(WANTED) ltmsg wonapi
+all game: $(WANTED) ltmsg wonapi debuglibs
 
 # ---------------------------------------------------------------------------
 # The engine: lithtech.exe, server.dll, d3d.ren

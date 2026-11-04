@@ -91,7 +91,7 @@ void sb_Term2(StructBank *pBank, int bCheckObjects)
 				++freeListCount;
 			}
 
-			ASSERT(freeListCount == pBank->m_nTotalObjects);
+			//ASSERT(freeListCount == pBank->m_nTotalObjects);
 		}
 	#endif
 

@@ -1,1068 +1,2365 @@
-// *********************************************************************** //
-//
-//  MODULE:   REZMGR (.CPP) -- Monolith's RezMgr resource-archive library,
-//            the slice 0x0048df30..0x0048e62a of lithtech.exe.
-//
-//  WHAT THIS IS, AND HOW IT WAS IDENTIFIED
-//  ---------------------------------------
-//  The 50-function run 0x0048d210..0x00490abd is ONE MODULE and that module
-//  is **RezMgr** -- `rezmgr.cpp` out of Monolith's `lithshared\rezmgr`,
-//  compiled into the static library `rezmgr.lib` (the one rezmgr.h names in
-//  its own `#pragma comment (lib, "\\proj\\libs\\release\\rezmgr.lib")`) and
-//  linked into lithtech.exe and server.dll.  Four independent lines of
-//  evidence, in the order they landed:
-//
-//   1. THE SAME BYTES ARE IN BOTH BINARIES, CONTIGUOUSLY.  Masking call
-//      rel32s and in-image absolutes, every enumerated start from
-//      0x0048df10 to 0x00491060 has exactly one counterpart in
-//      the retail server.dll, and the counterparts are in the same order and
-//      the same relative positions: 0x0048df10 -> 0x1003a530,
-//      0x0048df30 -> 0x1003a550, 0x0048e040 -> 0x1003a660,
-//      0x0048e550 -> 0x1003ab70, 0x0048ed50 -> 0x1003b370,
-//      0x00490210 -> 0x1003c830, 0x00491060 -> 0x1003d600.  lithtech.exe is
-//      built /O2 and server.dll /O1, so identical bytes in both cannot come
-//      from a shared .cpp -- it is one PRE-BUILT .LIB linked into each.
-//      (NOLF.exe does not contain it; the launcher has its own RezFind.cpp.)
-//
-//   2. filemgr.cpp ALREADY NAMES IT.  src/engine/server/filemgr.cpp calls
-//      the layer it sits on "the archive layer" and cites its class's
-//      constructor/destructor at server.dll 0x1003b370 / 0x1003b470 -- which
-//      are exactly the images of lithtech 0x0048ed50 / 0x0048ee40 under the
-//      map above.  So the run is the thing filemgr.cpp opens .rez files
-//      with, and filemgr.cpp is the fs_* layer ON TOP of it, not it.
-//
-//   3. THE HEADER IS IN THE REPO AND THE LAYOUTS MATCH TO THE BYTE.
-//      src/LT2/lithshared/incs/rezmgr.h declares CRezItm, CRezTyp, CRezDir,
-//      CRezMgr.  REZMGRFULL is not defined, so REZMGRLITE is, and every
-//      offset the disassembly shows falls out of that header exactly:
-//        * CRezItm::InitRezItm is declared with ELEVEN parameters and
-//          0x0048df30 is `ret 0x2c`; the four that REZMGRLITE compiles out
-//          (nID, sDesc, nNumKeys, pKeyAry) are the four the shipped code
-//          reads and never stores.
-//        * CRezItm: m_sName +0x00, m_pType +0x04, m_nTime +0x08,
-//          m_nSize +0x0c, m_pParentDir +0x10, m_nFilePos +0x14,
-//          m_nCurPos +0x18, m_heName +0x1c (0x18 bytes), m_pRezFile +0x34,
-//          m_pData +0x38 -- total 0x3c, and src/engine/lithtech/ltnew1.cpp
-//          independently pinned the stride of this class at 0x3c from the
-//          `new T[n]` loop at 0x0048ff6b.
-//        * CRezDir: m_sDirName +0x00, m_nDirPos +0x04, m_nDirSize +0x08,
-//          m_nItemsPos +0x0c, m_nItemsSize +0x10, m_nLastTimeModified +0x14,
-//          m_pRezMgr +0x18, m_pParentDir +0x1c, m_heDir +0x20,
-//          m_haDir +0x38, m_haTypes +0x40, m_pMemBlock +0x48.  CRezItm::Read
-//          reaches m_pParentDir->+0x48 and ->+0x0c, i.e. m_pMemBlock and
-//          m_nItemsPos, which is precisely how a directory loaded as one
-//          block is read out of.
-//        * CRezDir's constructor is declared with EIGHT parameters and
-//          0x0048e300 is `ret 0x20`; CRezTyp has two constructors, one with
-//          four parameters and one with three, and 0x0048e120 is `ret 0x10`
-//          while 0x0048e1b0 is `ret 0x0c`.
-//        * `DWORD Read(BYTE*, DWORD length, DWORD seekPos = 0xffffffff)` --
-//          0x0048e040 opens with `cmp eax,0xffffffff` on its third argument
-//          and calls Seek when it differs.
-//
-//   4. THE CALLEES ARE THE `lith` LIBRARY, WHICH IS ALREADY RECONSTRUCTED
-//      IN THIS REPO.  0x004a0420/0x004a0430/0x004a04c0/0x004a0530/
-//      0x004a0560/0x004a03d0/0x004a0590 are CBaseHash::CBaseHash(),
-//      CBaseHash::CBaseHash(unsigned), CBaseHash::~CBaseHash,
-//      CBaseHash::Delete, CBaseHash::GetFirst, CBaseHashItem::Next and
-//      CBaseHash::GetFirstInBin -- compare src/lithshared/lith/basehash.cpp
-//      and .h line for line (the `new CHashBin[NumBins]` in the one-argument
-//      constructor is why it carries an SEH frame of its own).  rezmgr.h
-//      includes "..\rezmgr\rezhash.h", whose hash elements derive from
-//      CBaseHashItem; that is the vptr CRezItm/CRezTyp/CRezDir each store
-//      into the MIDDLE of themselves (+0x1c, +0x04, +0x20).
-//
-//  The last of the run's own evidence that it is an archive reader, rather
-//  than anything else: the only three string literals in the whole
-//  0x0048d210..0x00490abd run are "r+b", "w+b" and "*.*" -- CRezMgr::Open's
-//  two fopen modes and the wildcard its directory-emulation scan uses.
-//
-//  NOT ALREADY RECONSTRUCTED.  There is no rezmgr source anywhere in
-//  src/engine/ or src/lithshared/ (the latter has ButeMgr, CryptMgr,
-//  MFCStub, RegMgr, lith, lithfontmgr, ltguimgr, stdlith, zlib, ztools --
-//  no rezmgr).  Of this run only the small shared pieces are written:
-//  ltnew1.cpp has 0x0048de30/0x0048de60/0x0048de90/0x0048dee0 (CBaseList
-//  Insert/Delete), 0x0048df10 (CRezItm::CRezItm) and 0x0048e680..0x0048e700;
-//  lt2new2/3/4 and ltnew2 have scattered pieces above 0x0048ec80.  Nothing
-//  in 0x0048df30..0x0048e62a is written anywhere.
-//
-//  BUILD FLAGS -- THIS TU NEEDS /GX.
-//  rezmgr.lib was built WITH C++ exceptions.  0x0048e120, 0x0048e1b0,
-//  0x0048e220, 0x0048e300 and 0x0048e3e0 all open with
-//      push -1 ; push <__ehhandler> ; mov eax,fs:0 ; push eax ; mov fs:0,esp
-//  which is VC6's three-dword __CxxFrameHandler registration, and they carry
-//  EH state stores (`movl $0,0x10(%esp)`, `movb $1,...`, `movl $-1,...`) and
-//  unwind funclets (0x004a07a0, 0x004a07c0, 0x004a07e0/0x004a07eb,
-//  0x004a0800 ... each `mov ecx,[ebp-0x10]; add ecx,<member offset>;
-//  jmp 0x0048e1a0`, 0x0048e1a0 being a bare `jmp CBaseHash::~CBaseHash`).
-//  build/engine.sh's `lithtech)` recipe has no /GX, so compiled under it
-//  these five lose their frames entirely.  Compile this file the way
-//  build/engine.sh already compiles the OTHER lithshared libraries:
-//      /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS
-//      /D NO_PRAGMA_LIBS
-//  The four EH-free functions (0x0048df30, 0x0048dfc0, 0x0048e040,
-//  0x0048e550) are unaffected either way.
-//
-//  ENUMERATION DEFECT FOUND.  The row `0x0048e120 133` is two things: the
-//  four-argument CRezTyp constructor really runs 0x0048e120..0x0048e18f
-//  (112 bytes, its one `ret 0x10` at 0x0048e18e), and 0x0048e1a0 is a
-//  separate five-byte compiler artefact, `jmp 0x004a04c0`, that the unwind
-//  funclets above jump to.  An extent check flags it ("a SEPARATE function" at
-//  0x0048e1a0, branch target 0x004a04c0 outside the range).  The other eight
-//  rows check out exactly as stated.
-//
-//  NAMING.  Every type and global below carries the suffix `Rz48` so this
-//  file cannot collide with the two sibling chunks of this run or with
-//  anything already in src/engine/lithtech.  The real names (CRezItm,
-//  CRezDir, CRezTyp, CRezMgr, CBaseHash, CBaseHashItem, CBaseListItem and
-//  the member names) are rezmgr.h's and basehash.h's own; only the suffix is
-//  added.
-//
-// *********************************************************************** //
-
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <io.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include "rezmgr.h"
 
-
-// ======================================================================= //
-//  reztypes.h's typedefs (the header itself is in ..\rezmgr\, not in this
-//  repo; these are the ones rezmgr.h uses and their widths are forced by
-//  the code -- every one of them moves as a dword).
-// ======================================================================= //
-
-typedef int             BOOLRz48;
-typedef unsigned char   BYTERz48;
-typedef unsigned long   DWORDRz48;
-
-typedef char*           REZNAMERz48;
-typedef char*           REZDIRNAMERz48;
-typedef char*           REZDESCRz48;
-typedef unsigned long   REZTYPERz48;
-typedef unsigned long   REZSIZERz48;
-typedef unsigned long   REZTIMERz48;
-typedef unsigned long   REZIDRz48;
-typedef unsigned long   REZKEYVALRz48;
-
-#ifndef NULL
-#define NULL 0
-#endif
-#ifndef TRUE
-#define TRUE  1
-#define FALSE 0
+#ifdef _CONSOLE
+#define TRACE printf
+#else
+#define TRACE dprintf
 #endif
 
-class CRezItmRz48;
-class CRezTypRz48;
-class CRezDirRz48;
-class CRezMgrRz48;
 
+//***************************************************************************************************
+// file format data structures
 
-// ======================================================================= //
-//  lith -- baselist.h / basehash.h.  These are src/lithshared/lith's own
-//  classes, reproduced here verbatim in shape so the offsets and the
-//  out-of-line calls come out right.  The out-of-line members are DECLARED
-//  and not defined on purpose: they live in lith.lib at 0x004a03d0 ..
-//  0x004a05e0 and every call to them is a masked rel32.
-// ======================================================================= //
+#pragma pack(1)
+struct FileMainHeaderStruct {
+  char CR1;
+  char LF1;
+  char FileType[RezMgrUserTitleSize];
+  char CR2;
+  char LF2;
+  char UserTitle[RezMgrUserTitleSize];
+  char CR3;
+  char LF3;
+  char EOF1;
+  DWORD FileFormatVersion; 	// the file format version number only 1 is possible here right now
+  DWORD RootDirPos; 		// Position of the root directory structure in the file
+  DWORD RootDirSize;        // Size of root directory
+  DWORD RootDirTime;        // Time Root dir was last updated
+  DWORD NextWritePos;       // Position of first directory in the file
+  DWORD Time; 				// Time resource file was last updated
+  DWORD LargestKeyAry;		// Size of the largest key array in the resource file
+  DWORD LargestDirNameSize; // Size of the largest directory name in the resource file (including 0 terminator)
+  DWORD LargestRezNameSize;	// Size of the largest resource name in the resource file (including 0 terminator)
+  DWORD LargestCommentSize;	// Size of the largest comment in the resource file (including 0 terminator)
+  BYTE  IsSorted;           // If 0 then data is not sorted if 1 then it is sorted
+};
 
-class CBaseListItemRz48
+enum FileDirEntryType {
+  ResourceEntry = 0,
+  DirectoryEntry = 1
+};
+
+struct FileDirEntryDirHeader {
+  DWORD Pos; 					// File positon of dir entry
+  DWORD Size;					// Size of directory data
+  DWORD Time;					// Last time anything in directory was modified
+//  char Name[];				// Name of this directory
+};
+
+struct FileDirEntryRezHeader {
+  DWORD Pos; 					// File positon of dir entry
+  DWORD Size;					// Size of directory data
+  DWORD Time;					// Last time this resource was modified
+  DWORD ID;                     // Resource ID number
+  DWORD Type;					// Type of resource this is
+  DWORD NumKeys;				// The number of keys to read in for this resource
+//  char Name[];				// The name of this resource
+//  char Comment[];             // The comment data for this resource
+//  DWORD Keys[];				// The key values for this resource
+};
+
+struct FileDirEntryHeader {
+  DWORD Type;
+  union {
+    FileDirEntryRezHeader Rez;
+	FileDirEntryDirHeader Dir;
+  };
+};
+#pragma pack()
+
+//***************************************************************************************************
+// CRezItm implementation
+
+//---------------------------------------------------------------------------------------------------
+CRezItm::CRezItm()
 {
-public:
-	CBaseListItemRz48*  Next()      { return m_pNext; }
-	CBaseListItemRz48*  Prev()      { return m_pPrev; }
+  m_pRezFile = NULL;
+  m_pParentDir = NULL;
+  m_sName = NULL;
+  m_heName.SetRezItm(this);
+};
 
-protected:
-	CBaseListItemRz48*  m_pNext;                     // +0x00 (+0x04 under a vptr)
-	CBaseListItemRz48*  m_pPrev;                     // +0x04 (+0x08 under a vptr)
+//---------------------------------------------------------------------------------------------------
+void CRezItm::InitRezItm(CRezDir* pParentDir, REZNAME sName, REZID nID, CRezTyp* pType, REZDESC sDesc,
+                    REZSIZE nSize, DWORD nFilePos, REZTIME nTime, DWORD nNumKeys, REZKEYVAL* pKeyAry,
+				    CBaseRezFile* pRezFile) {
+  ASSERT(pParentDir != NULL);
+  m_pRezFile = pRezFile;
+  m_pParentDir = pParentDir;
+  if (sName == NULL) m_sName = NULL;
+  else {
+    m_sName = new char [strlen(sName)+1];
+    ASSERT(m_sName != NULL);
+    if (m_sName != NULL) strcpy(m_sName,sName);
+  }
+
+  m_pType = pType;
+
+  m_nSize = nSize;
+  m_nFilePos = nFilePos;
+  m_nTime = nTime;
+
+  m_pData = NULL;
+  m_nCurPos = 0;
+
+  m_heName.SetRezItm(this);
+};
+
+//---------------------------------------------------------------------------------------------------
+void CRezItm::TermRezItm() {
+  // free up all members
+  if (m_sName != NULL) delete [] m_sName;
+
+  if (m_pParentDir != NULL) {
+    if (m_pParentDir->m_pMemBlock == NULL) {
+      if (m_pData != NULL) delete [] m_pData;
+    }
+  }
+  else if (m_pData != NULL) delete [] m_pData;
+
+
+  // set members back to default settings
+  m_sName = NULL;
+
+  m_pType = NULL;
+
+  m_nTime = 0;
+  m_nSize = 0;
+  m_pData = NULL;
+
+  m_pParentDir = NULL;
+  m_nFilePos = 0;
+  m_nCurPos = 0;
+
+  m_heName.SetRezItm(NULL);
+};
+
+//---------------------------------------------------------------------------------------------------
+REZTYPE	CRezItm::GetType() { 
+  ASSERT(m_pType != NULL); 
+  return m_pType->GetType(); 
+};
+
+//---------------------------------------------------------------------------------------------------
+REZPATH	CRezItm::GetPath(char* Buf, unsigned int BufSize) {
+  // Note! This is really slow, could be sped up!
+  ASSERT(Buf != NULL);
+  ASSERT(BufSize > 0);
+
+  // if this is in the root directory just return that
+  if (m_pParentDir->m_pParentDir == NULL) {
+    // (the root directory has no name, its path is just the separator)
+    strcpy(Buf,"\\");
+  }
+
+  // if this is not the root dir build the path up from the bottom:
+  // starting with the directory this resource is in, put each directory's
+  // name (and a separator) in front of the path so far, then move up to
+  // its parent until the root directory is reached
+  else {
+
+    // allocate memory for temp buffer and clear initial buffer
+    char* TempBuf = new char[BufSize];
+    ASSERT(TempBuf != NULL);
+    strcpy(Buf,"");
+
+    // loop thru all directories appending them to the path
+    // (the root directory's empty name gets no separator in front of it)
+    ASSERT(m_pParentDir != NULL);
+    CRezDir* pDir = m_pParentDir;
+    while (pDir != NULL) {
+      ASSERT((strlen(pDir->GetDirName())+strlen(Buf)+1) < BufSize);
+      strcpy(TempBuf,Buf);
+      if (pDir->m_pParentDir != NULL) strcpy(Buf,"\\");
+  	  else Buf[0] = '\0';
+      strcat(Buf,pDir->GetDirName());
+      strcat(Buf,TempBuf);
+      pDir = pDir->m_pParentDir;
+    }
+
+    // remove temp buffer
+    delete [] TempBuf;
+  }
+
+  return Buf;
+};
+
+//---------------------------------------------------------------------------------------------------
+REZDIRNAME CRezItm::GetDir() {
+  ASSERT(m_pParentDir != NULL);
+  return m_pParentDir->GetDirName();
+};
+
+//---------------------------------------------------------------------------------------------------
+BYTE* CRezItm::Load() {
+  ASSERT(m_pParentDir != NULL);
+  ASSERT(m_pRezFile != NULL);
+
+  // check if the whole directory is in memory already
+  if (m_pParentDir->m_pMemBlock != NULL) {
+    return m_pParentDir->m_pMemBlock+m_nFilePos-m_pParentDir->m_nItemsPos;
+  }
+
+  // check if the data is already in memory
+  if (m_pData != NULL) return m_pData;
+
+  // allocate memory for the data
+  if (m_nSize == 0) return NULL;
+  m_pData = new BYTE[m_nSize];
+  ASSERT(m_pData != NULL);
+  if (m_pData == NULL) return NULL;
+
+  // load in the data from disk
+  ASSERT(m_pParentDir->m_pRezMgr != NULL);
+  if (m_pRezFile->Read(m_nFilePos,0,m_nSize,m_pData) != m_nSize) {
+    delete [] m_pData;
+    m_pData = NULL;
+  }
+
+  return m_pData;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::UnLoad() {
+  if (m_pData != NULL) {
+    delete [] m_pData;
+    m_pData = NULL;
+  } 
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::IsLoaded() { 
+  ASSERT(m_pParentDir != NULL);
+  if (m_pParentDir->m_pMemBlock != NULL) return TRUE;
+  else return (m_pData != NULL); 
+}; 
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::Get(BYTE* pBytes) {
+  return (Get(pBytes,0,m_nSize));
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::Get(BYTE* pBytes, DWORD startOffset, DWORD length) {
+  ASSERT(m_pParentDir != NULL);
+  ASSERT(m_pRezFile != NULL);
+  ASSERT(pBytes != NULL);
+  ASSERT(length > 0);
+  ASSERT(length <= m_nSize+startOffset);
+
+  // Check if the whole directory is in memory already and just copy it if it is
+  if (m_pParentDir->m_pMemBlock != NULL) {
+    memcpy(pBytes,m_pParentDir->m_pMemBlock+m_nFilePos+startOffset-m_pParentDir->m_nItemsPos,length);
+    return TRUE;
+  }
+
+  // Check if this resource is in memory already and just copy it if so
+  if (m_pData != NULL) {
+    memcpy(pBytes,m_pData+startOffset,length);
+    return TRUE;
+  }
+
+  // Load this part of the resource from disk
+  ASSERT(m_pParentDir->m_pRezMgr != NULL);
+  if (m_pRezFile->Read(m_nFilePos,startOffset,length,pBytes) != length) return FALSE;
+  
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::Seek(DWORD offset) {
+  m_nCurPos = offset;
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+DWORD CRezItm::Read(BYTE* pBytes, DWORD length, DWORD seekPos) {
+  ASSERT(m_pParentDir != NULL);
+  ASSERT(pBytes != NULL);
+  ASSERT(m_pRezFile != NULL);
+
+  // do seek if necessary
+  if (seekPos != 0xffffffff) Seek(seekPos);
+
+  // check if we are already past the end of the file
+  if (m_nCurPos > m_nSize) return 0;
+
+  // truncate length if necessary
+  if ((length+m_nCurPos) > m_nSize) length = m_nSize-m_nCurPos;
+
+  // if length is zero just return
+  if (length <= 0) return 0;
+
+  // Check if the whole directory is in memory already and just copy it if it is
+  if (m_pParentDir->m_pMemBlock != NULL) {
+    memcpy(pBytes,m_pParentDir->m_pMemBlock+m_nFilePos+m_nCurPos-m_pParentDir->m_nItemsPos,length);
+    m_nCurPos += length; 
+    return length;
+  }
+
+  // Check if this resource is in memory already and just copy it if so
+  if (m_pData != NULL) {
+    memcpy(pBytes,m_pData+m_nCurPos,length);
+    m_nCurPos += length; 
+    return length;
+  }
+
+  // Load from disk
+  ASSERT(m_pParentDir->m_pRezMgr != NULL);
+  if (m_pRezFile->Read(m_nFilePos,m_nCurPos,length,pBytes) == length) {
+    m_nCurPos += length;
+    return length;
+  }
+  else {
+    return 0;
+  };
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::EndOfRes() {
+  if (m_nCurPos >= m_nSize) return TRUE;
+  else return FALSE;
+};
+
+//---------------------------------------------------------------------------------------------------
+char CRezItm::GetChar() {
+  // This could be way more efficent!!!!!!
+  char Ch;
+  Read((BYTE*)&Ch,1);
+  return Ch;
 };
 
 
-class CBaseHashItemRz48;
+#ifndef REZMGRLITE
+BYTE* CRezItm::Create(DWORD Size) {
+  ASSERT(m_pParentDir != NULL);
+  ASSERT(m_pParentDir->m_pRezMgr != NULL);
+  ASSERT(m_pParentDir->m_pRezMgr->m_bReadOnly != TRUE); // You can't do this if the resource was open read only!
 
-// 8 bytes: m_nNumBins then m_pBinAry.  CRezTyp's two tables sit at +0x1c and
-// +0x24 and CRezDir's at +0x38 and +0x40, eight bytes apart in both.
-class CBaseHashRz48
-{
-public:
-	CBaseHashRz48();                                 // 0x004a0420
-	CBaseHashRz48(unsigned int NumBins);             // 0x004a0430 (SEH: new[])
-	~CBaseHashRz48();                                // 0x004a04c0
+  // store the size the resource used to be
+  DWORD nOldSize = m_nSize;
 
-	void                Insert(CBaseHashItemRz48* pItem);
-	void                Delete(CBaseHashItemRz48* pItem);   // 0x004a0530
-	CBaseHashItemRz48*  GetFirst();                         // 0x004a0560
-	CBaseHashItemRz48*  GetLast();
+  // make sure old memory is removed
+  UnLoad();
 
-private:
-	friend class CBaseHashItemRz48;
+  // make sure parent does not have resources in memory (if so remove them)
+  ASSERT(m_pParentDir != NULL);
+  if (m_pParentDir->m_pMemBlock != NULL) m_pParentDir->UnLoad();
 
-	unsigned int        m_nNumBins;
-	void*               m_pBinAry;
+  // allocate the new memory and set the new size member
+  m_nSize = Size;
+  m_pData = new BYTE[m_nSize];
+  ASSERT(m_pData != NULL);
+
+  // mark this resource as not existing in the resource file yet
+  m_nFilePos = 0;
+
+  // update the directory items size in the parent directory
+  m_pParentDir->m_nItemsSize += m_nSize;
+  m_pParentDir->m_nItemsSize -= nOldSize;
+
+  // mark data as not sorted
+  m_pParentDir->m_pRezMgr->m_bIsSorted = FALSE;
+
+  // update the timestamp for this item
+  MarkCurTime();
+  
+  return m_pData;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezItm::Save() {
+  ASSERT(m_pData != NULL);
+  ASSERT(m_pRezFile != NULL);
+  ASSERT(m_pParentDir != NULL);
+  ASSERT(m_pParentDir->m_pRezMgr != NULL);
+  ASSERT(m_pParentDir->m_pRezMgr->m_bReadOnly != TRUE); // You can't do this if the resource was open read only!
+
+  // we don't have to do anything if the size is 0
+  if (m_nSize <= 0) return TRUE;
+
+  // if this resource has never been saved
+  if (m_nFilePos == 0) {
+
+    // mark resource file as not sorted
+    m_pParentDir->m_pRezMgr->m_bIsSorted = FALSE;
+
+    // write out the data
+    if (m_pRezFile->Write(m_pParentDir->m_pRezMgr->m_nNextWritePos,0,m_nSize,m_pData) != m_nSize) {
+      ASSERT(FALSE); // failed to write out data
+      return FALSE;
+    }
+
+    // set the position we wrote the data to
+    m_nFilePos = m_pParentDir->m_pRezMgr->m_nNextWritePos;
+
+    // update start of dir data position
+    m_pParentDir->m_pRezMgr->m_nNextWritePos += m_nSize;
+  }
+
+  // if this resource has been saved before (just write it where it belongs)
+  else {
+
+    // write out the data
+    if (m_pRezFile->Write(m_nFilePos,0,m_nSize,m_pData) != m_nSize) {
+      ASSERT(FALSE); // failed to write out data
+      return FALSE;
+    }
+  }
+
+  // update the timestamp for this item
+  MarkCurTime();
+
+  return TRUE;
 };
 
 
-// vptr at +0x00 (HashFunc is the only virtual and CBaseListItem carries
-// none, so MSVC puts the pointer first and the base after it), m_pNext
-// +0x04, m_pPrev +0x08, m_pParentHash +0x0c, m_nCurBin +0x10.  Size 0x14 --
-// which is why every one of the three hash elements below is 0x18 bytes and
-// why its owner pointer lands at +0x14 of the element.
-class CBaseHashItemRz48 : public CBaseListItemRz48
-{
-public:
-	CBaseHashItemRz48*  Next();                      // 0x004a03d0
-	CBaseHashItemRz48*  Prev();
+void CRezItm::MarkCurTime() {
+  ASSERT(m_pParentDir != NULL);
+  ASSERT(m_pParentDir->m_pRezMgr != NULL);
+  ASSERT(m_pParentDir->m_pRezMgr->m_bReadOnly != TRUE); // You can't do this if the resource was open read only!
 
-protected:
-	virtual unsigned int HashFunc() = 0;
+  // get the current time
+  REZTIME nTime = m_pParentDir->m_pRezMgr->GetCurTime();
 
-	CBaseHashRz48*      GetParentHash() { return m_pParentHash; }
+  // mark this item
+  m_nTime = nTime;
 
-private:
-	friend class CBaseHashRz48;
+  // mark this items directory
+  m_pParentDir->m_nLastTimeModified = nTime;
 
-	CBaseHashRz48*      m_pParentHash;
-	unsigned int        m_nCurBin;
+  // mark the main rez file
+  m_pParentDir->m_pRezMgr->m_nLastTimeModified = nTime;
 };
 
 
-// ======================================================================= //
-//  rezhash.h -- the three hash elements and the two typed hash tables.
-//  Shapes forced by the code:
-//    * the element is 0x18 bytes with its owner back-pointer at +0x14
-//      (CRezItm +0x30, CRezTyp +0x18, CRezDir +0x34 -- all written twice in
-//      the constructors, NULL from the element's own constructor and then
-//      `this` from the owner's body).
-//    * CRezTypeHashTable::Find(REZTYPE) is 0x00490130, `ret 4`.
-//    * CRezItmHashTableByName::Find(REZNAME, BOOL) is 0x00490050, `ret 8`.
-//  Both tables are plain CBaseHash derivatives: eight bytes, no vptr of
-//  their own (the constructors 0x004a0420 / 0x004a0430 are called on them
-//  directly and store nothing but the two base words).
-// ======================================================================= //
+#endif
 
-class CRezItmHashByNameRz48 : public CBaseHashItemRz48
-{
-public:
-	CRezItmHashByNameRz48() { m_pRezItm = NULL; }
+//***************************************************************************************************
+// CRezType implementation
 
-	CRezItmRz48*    GetRezItm()                  { return m_pRezItm; }
-	void            SetRezItm(CRezItmRz48* pItm) { m_pRezItm = pItm; }
+//---------------------------------------------------------------------------------------------------
+CRezTyp::CRezTyp(REZTYPE nType, CRezDir* pParentDir, unsigned int nByIDNumHashBins, unsigned int nByNameNumHashBins) : m_haID(nByIDNumHashBins) , m_haName(nByNameNumHashBins) {
+  m_nType = nType;
+  m_heType.SetRezTyp(this);
+  m_pParentDir = pParentDir;
+};                                    
 
-protected:
-	virtual unsigned int HashFunc();
+//---------------------------------------------------------------------------------------------------
+CRezTyp::CRezTyp(REZTYPE nType, CRezDir* pParentDir, unsigned int nByNameNumHashBins) : m_haID() , m_haName(nByNameNumHashBins) {
+  m_nType = nType;
+  m_heType.SetRezTyp(this);
+  m_pParentDir = pParentDir;
+};                                    
 
-private:
-	CRezItmRz48*    m_pRezItm;                       // element +0x14
+//---------------------------------------------------------------------------------------------------
+CRezTyp::~CRezTyp() {
+  // remove all of the items in the ByID hash table 
+  // Don't delete objectes here, they are deleted in the ByName table below!
+  if (m_pParentDir->m_pRezMgr->m_bItemByIDUsed)
+  {
+    CRezItmHashByID* pItm = m_haID.GetFirst();
+    CRezItmHashByID* pDel;
+    while (pItm != NULL) {
+      pDel = pItm;
+      pItm = pItm->Next();
+      m_haID.Delete(pDel);
+    }
+  }
+
+  // remove all of the items in the ByName hash table and delete the objects
+  {
+    CRezItmHashByName* pItm = m_haName.GetFirst();
+    CRezItmHashByName* pDel;
+    while (pItm != NULL) {
+      pDel = pItm;
+      pItm = pItm->Next();
+      m_haName.Delete(pDel);
+      ASSERT(pDel->GetRezItm() != NULL);
+//	  delete pDel->GetRezItm();
+      pDel->GetRezItm()->TermRezItm();
+      m_pParentDir->m_pRezMgr->DeAllocateRezItm(pDel->GetRezItm());
+    }
+  }
+
+  m_nType = 0;
+  m_heType.SetRezTyp(NULL);
 };
 
 
-class CRezTypeHashRz48 : public CBaseHashItemRz48
-{
-public:
-	CRezTypeHashRz48() { m_pRezTyp = NULL; }
+//***************************************************************************************************
+// CRezDir implementation
 
-	CRezTypRz48*    GetRezTyp()                  { return m_pRezTyp; }
-	void            SetRezTyp(CRezTypRz48* pTyp) { m_pRezTyp = pTyp; }
+//---------------------------------------------------------------------------------------------------
+CRezDir::CRezDir(CRezMgr* pRezMgr, CRezDir* pParentDir, REZDIRNAME szDirName, DWORD nDirPos, DWORD nDirSize, REZTIME nTime, unsigned int nDirNumHashBins, unsigned int nTypNumHashBins)
+        : m_haDir(nDirNumHashBins), m_haTypes(nTypNumHashBins) {
+  ASSERT(pRezMgr != NULL);
+//  ASSERT(pParentDir != NULL);
+  ASSERT(szDirName != NULL);
 
-protected:
-	virtual unsigned int HashFunc();
+  // allocate and copy name
+  m_sDirName = new char[strlen(szDirName)+1];
+  ASSERT(m_sDirName != NULL);
+  if (m_sDirName != NULL) strcpy(m_sDirName,szDirName);
 
-private:
-	CRezTypRz48*    m_pRezTyp;                       // element +0x14
+  // set valuse for other member functions
+  m_nLastTimeModified = nTime;
+  m_nDirSize = nDirSize;
+  m_nDirPos = nDirPos;
+  m_nItemsSize = 0;
+  m_nItemsPos = 0;
+  m_pMemBlock = NULL;
+  m_pRezMgr = pRezMgr;
+  m_pParentDir = pParentDir;
+  m_heDir.SetRezDir(this);
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezDir::~CRezDir() {
+  // remove all typ hash table contents and delete the objects
+  {
+    CRezTypeHash* pItm = m_haTypes.GetFirst();
+    CRezTypeHash* pDel;
+    while (pItm != NULL) {
+      pDel = pItm;
+      pItm = pItm->Next();
+      m_haTypes.Delete(pDel);
+      ASSERT(pDel->GetRezTyp() != NULL);
+      delete pDel->GetRezTyp();
+    }
+  }
+
+  // remove all dir hash table contents and delete the objects
+  {
+    CRezDirHash* pItm = m_haDir.GetFirst();
+    CRezDirHash* pDel;
+    while (pItm != NULL) {
+      pDel = pItm;
+      pItm = pItm->Next();
+      m_haDir.Delete(pDel);
+      ASSERT(pDel->GetRezDir() != NULL);
+      delete pDel->GetRezDir();
+    }
+  }
+
+  // remove simple member data
+  if (m_sDirName != NULL) delete [] m_sDirName;
+  if (m_pMemBlock != NULL) delete [] m_pMemBlock;
+
+  // reset variables to default settings
+  m_sDirName = NULL;
+  m_nLastTimeModified = 0;
+  m_nDirSize = 0;
+  m_nDirPos = 0;
+  m_nItemsSize = 0;
+  m_nItemsPos = 0;
+  m_pMemBlock = NULL;
+  m_pRezMgr = NULL;
+  m_pParentDir = NULL;
+  m_heDir.SetRezDir(NULL);
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::GetRez(REZNAME sRes, REZTYPE nType) {
+  ASSERT(sRes != NULL);
+
+  // get the Type for the resource
+  CRezTyp* pTyp = m_haTypes.Find(nType);
+  if (pTyp == NULL) return NULL;
+
+  // get the item
+  return pTyp->m_haName.Find(sRes,!GetParentMgr()->GetLowerCaseUsed());
 };
 
 
-class CRezDirHashRz48 : public CBaseHashItemRz48
-{
-public:
-	CRezDirHashRz48() { m_pRezDir = NULL; }
-
-	CRezDirRz48*    GetRezDir()                  { return m_pRezDir; }
-	void            SetRezDir(CRezDirRz48* pDir) { m_pRezDir = pDir; }
-
-protected:
-	virtual unsigned int HashFunc();
-
-private:
-	CRezDirRz48*    m_pRezDir;                       // element +0x14
-};
-
-
-class CRezItmHashTableByIDRz48 : public CBaseHashRz48
-{
-public:
-	CRezItmHashTableByIDRz48() : CBaseHashRz48() {}
-	CRezItmHashTableByIDRz48(unsigned int nBins) : CBaseHashRz48(nBins) {}
-};
-
-
-class CRezItmHashTableByNameRz48 : public CBaseHashRz48
-{
-public:
-	CRezItmHashTableByNameRz48() : CBaseHashRz48() {}
-	CRezItmHashTableByNameRz48(unsigned int nBins) : CBaseHashRz48(nBins) {}
-
-	CRezItmRz48* Find(REZNAMERz48 sName, BOOLRz48 bCaseSensitive);   // 0x00490050
-};
-
-
-class CRezTypeHashTableRz48 : public CBaseHashRz48
-{
-public:
-	CRezTypeHashTableRz48() : CBaseHashRz48() {}
-	CRezTypeHashTableRz48(unsigned int nBins) : CBaseHashRz48(nBins) {}
-
-	CRezTypRz48* Find(REZTYPERz48 nType);                            // 0x00490130
-};
-
-
-class CRezDirHashTableRz48 : public CBaseHashRz48
-{
-public:
-	CRezDirHashTableRz48() : CBaseHashRz48() {}
-	CRezDirHashTableRz48(unsigned int nBins) : CBaseHashRz48(nBins) {}
-};
-
-
-// ======================================================================= //
-//  rezfile.h -- CBaseRezFile, reached only through slot 2 of its vtable.
-//
-//  0x0048e0f2 is `call *0x8(%edx)` with four arguments pushed and NO caller
-//  clean-up, so slot 2 is a __thiscall member taking four dwords, and the
-//  order the pushes give is (m_nFilePos, m_nCurPos, length, pBytes).  The
-//  two slots before it are not reached from this slice; they are declared
-//  only so Read lands at slot 2.
-// ======================================================================= //
-
-class CBaseRezFileRz48
-{
-public:
-	virtual BOOLRz48   Open(const char* sFileName, BOOLRz48 bReadOnly,
-	                        BOOLRz48 bCreateNew) = 0;                 // slot 0
-	virtual BOOLRz48   Close() = 0;                                   // slot 1
-	virtual DWORDRz48  Read(DWORDRz48 nFilePos, DWORDRz48 nPos,
-	                        DWORDRz48 nSize, void* pData) = 0;        // slot 2
-
-	const char* GetFileName();
-};
-
-
-// ======================================================================= //
-//  CRezMgr -- only the three things this slice reaches.
-//
-//  0x0048e510 reads m_pRezMgr->+0x68 and turns `== 0` into the second
-//  argument of the by-name lookup, i.e. the lookup is case-SENSITIVE when
-//  lower case is NOT used: that is rezmgr.h's m_bLowerCaseUsed.  0x0048e220
-//  gates its whole by-ID sweep on m_pRezMgr->+0x6c, the flag right after it:
-//  m_bItemByIDUsed.  The 0x68 bytes in front of them are not decoded here
-//  and are left as opaque padding rather than guessed at from the header's
-//  declaration order.
-// ======================================================================= //
-
-class CRezMgrRz48
-{
-public:
-	void         DeAllocateRezItm(CRezItmRz48* pItem);   // 0x00490010
-	REZTYPERz48  StrToType(char* pStr);                  // 0x0048f9c0
-
-public:
-	// UNDECODED: +0x00..+0x67.  rezmgr.h's declaration order does not land
-	// m_bLowerCaseUsed on 0x68 by itself, so no field names are invented
-	// for this span -- only the two flags the code actually reads are named.
-	unsigned char m_pad_00[0x68];
-	BOOLRz48      m_bLowerCaseUsed;                      // +0x68
-	BOOLRz48      m_bItemByIDUsed;                       // +0x6c
-};
-
-
-// ======================================================================= //
-//  CRezItm -- 0x3c bytes.
-//
-//  Every offset below is read off the code, not off the header alone:
-//    +0x00 m_sName      0x0048df30 strdup target, 0x0048dfc0 frees it
-//    +0x04 m_pType      0x0048e020 `mov eax,[ecx+4]; mov eax,[eax]`
-//    +0x08 m_nTime      0x0048df30 stores the eighth argument there
-//    +0x0c m_nSize      0x0048e040 clamps the read against it
-//    +0x10 m_pParentDir 0x0048e040 reaches its +0x48 and +0x0c
-//    +0x14 m_nFilePos   0x0048e040 hands it to CBaseRezFile::Read
-//    +0x18 m_nCurPos    0x0048e030 writes it, 0x0048e040 advances it
-//    +0x1c m_heName     vptr store at 0x0048df14 (the default constructor)
-//    +0x34 m_pRezFile   0x0048df30 stores the eleventh argument there
-//    +0x38 m_pData      0x0048e040's in-memory fast path
-// ======================================================================= //
-
-class CRezItmRz48
-{
-public:
-	REZNAMERz48  GetName() { return m_sName; }
-	REZTYPERz48  GetType();                                          // 0x0048e020
-	REZSIZERz48  GetSize() { return m_nSize; }
-	CRezDirRz48* GetParentDir() { return m_pParentDir; }
-	REZTIMERz48  GetTime() { return m_nTime; }
-
-	DWORDRz48    GetSeekPos() { return m_nCurPos; }
-	BOOLRz48     Seek(DWORDRz48 offset);                             // 0x0048e030
-	DWORDRz48    Read(BYTERz48* pBytes, DWORDRz48 length,
-	                  DWORDRz48 seekPos = 0xffffffff);               // 0x0048e040
-
-	void         SetTime(REZTIMERz48 Time) { m_nTime = Time; }
-
-	// public here only so this file's own CRezTyp destructor can reach them
-	// the way the shipped code does; in rezmgr.h they are private with
-	// CRezTyp, CRezDir and CRezMgr as friends.
-	CRezItmRz48();                                                   // 0x0048df10
-	void InitRezItm(CRezDirRz48* pParentDir, REZNAMERz48 sName,
-	                REZIDRz48 nID, CRezTypRz48* pType, REZDESCRz48 sDesc,
-	                REZSIZERz48 nSize, DWORDRz48 nFilePos, REZTIMERz48 nTime,
-	                DWORDRz48 nNumKeys, REZKEYVALRz48* pKeyAry,
-	                CBaseRezFileRz48* pRezFile);                     // 0x0048df30
-	void TermRezItm();                                               // 0x0048dfc0
-
-public:
-	REZNAMERz48             m_sName;                 // +0x00
-	CRezTypRz48*            m_pType;                 // +0x04
-	REZTIMERz48             m_nTime;                 // +0x08
-	REZSIZERz48             m_nSize;                 // +0x0c
-	CRezDirRz48*            m_pParentDir;            // +0x10
-	DWORDRz48               m_nFilePos;              // +0x14
-	DWORDRz48               m_nCurPos;               // +0x18
-	CRezItmHashByNameRz48   m_heName;                // +0x1c .. +0x33
-	CBaseRezFileRz48*       m_pRezFile;              // +0x34
-	BYTERz48*               m_pData;                 // +0x38
-};
-
-
-// ======================================================================= //
-//  CRezTyp -- 0x30 bytes.
-//
-//    +0x00 m_nType       stored from argument one in both constructors and
-//                        zeroed by the destructor; CRezItm::GetType loads it
-//                        through m_pType with no offset.
-//    +0x04 m_heType      vptr store `movl $0x004a3b74,0x4(%esi)`
-//    +0x1c m_haID        `lea 0x1c(%esi),%ecx` -> CBaseHash ctor
-//    +0x24 m_haName      `lea 0x24(%esi),%ecx` -> CBaseHash ctor, and
-//                        0x0048e53b's `lea 0x24(%eax),%ecx` for the lookup
-//    +0x2c m_pParentDir  stored from argument two, read by the destructor
-// ======================================================================= //
-
-class CRezTypRz48
-{
-public:
-	REZTYPERz48 GetType() { return m_nType; }
-
-	CRezTypRz48(REZTYPERz48 nType, CRezDirRz48* pParentDir,
-	            unsigned int nByIDNumHashBins,
-	            unsigned int nByNameNumHashBins);                    // 0x0048e120
-	CRezTypRz48(REZTYPERz48 nType, CRezDirRz48* pParentDir,
-	            unsigned int nByNameNumHashBins);                    // 0x0048e1b0
-	~CRezTypRz48();                                                  // 0x0048e220
-
-public:
-	REZTYPERz48                 m_nType;             // +0x00
-	CRezTypeHashRz48            m_heType;            // +0x04 .. +0x1b
-	CRezItmHashTableByIDRz48    m_haID;              // +0x1c .. +0x23
-	CRezItmHashTableByNameRz48  m_haName;            // +0x24 .. +0x2b
-	CRezDirRz48*                m_pParentDir;        // +0x2c
-};
-
-
-// ======================================================================= //
-//  CRezDir -- 0x4c bytes.
-//
-//    +0x00 m_sDirName           strdup'd from argument three
-//    +0x04 m_nDirPos            argument four
-//    +0x08 m_nDirSize           argument five
-//    +0x0c m_nItemsPos          zeroed by the constructor; CRezItm::Read
-//                               subtracts it from m_nFilePos
-//    +0x10 m_nItemsSize         zeroed by the constructor
-//    +0x14 m_nLastTimeModified  argument six
-//    +0x18 m_pRezMgr            argument one
-//    +0x1c m_pParentDir         argument two
-//    +0x20 m_heDir              vptr store `movl $0x004a3b78,0x20(%ebx)`
-//    +0x38 m_haDir              `lea 0x38(%ebx),%ecx` -> CBaseHash(argument 7)
-//    +0x40 m_haTypes            `lea 0x40(%ebx),%ecx` -> CBaseHash(argument 8)
-//    +0x48 m_pMemBlock          zeroed by the constructor; CRezItm::Read's
-//                               first fast path and TermRezItm's guard
-// ======================================================================= //
-
-class CRezDirRz48
-{
-public:
-	REZDIRNAMERz48 GetDirName() { return m_sDirName; }
-	CRezDirRz48*   GetParentDir() { return m_pParentDir; }
-	CRezMgrRz48*   GetParentMgr() { return m_pRezMgr; }
-
-	CRezItmRz48*   GetRez(REZNAMERz48 sRes, REZTYPERz48 Type);       // 0x0048e510
-	CRezItmRz48*   GetRezFromDosName(char* sDosname);                // 0x0048e550
-
-	BOOLRz48       IsLoaded() { return (m_pMemBlock != NULL); }
-	REZTIMERz48    GetTime() { return m_nLastTimeModified; }
-
-	CRezDirRz48(CRezMgrRz48* pRezMgr, CRezDirRz48* pParentDir,
-	            REZDIRNAMERz48 szDirName, DWORDRz48 nFilePos, DWORDRz48 nSize,
-	            REZTIMERz48 nTime, unsigned int nDirNumHashBins,
-	            unsigned int nTypNumHashBins);                       // 0x0048e300
-	~CRezDirRz48();                                                  // 0x0048e3e0
-
-public:
-	REZDIRNAMERz48          m_sDirName;              // +0x00
-	DWORDRz48               m_nDirPos;               // +0x04
-	DWORDRz48               m_nDirSize;              // +0x08
-	DWORDRz48               m_nItemsPos;             // +0x0c
-	DWORDRz48               m_nItemsSize;            // +0x10
-	REZTIMERz48             m_nLastTimeModified;     // +0x14
-	CRezMgrRz48*            m_pRezMgr;               // +0x18
-	CRezDirRz48*            m_pParentDir;            // +0x1c
-	CRezDirHashRz48         m_heDir;                 // +0x20 .. +0x37
-	CRezDirHashTableRz48    m_haDir;                 // +0x38 .. +0x3f
-	CRezTypeHashTableRz48   m_haTypes;               // +0x40 .. +0x47
-	BYTERz48*               m_pMemBlock;             // +0x48
-};
-
-
-// ======================================================================= //
-//  0x0048df30, 141 bytes -- void CRezItm::InitRezItm(11 args), `ret 0x2c`
-//
-//  ELEVEN dwords of argument, and only SEVEN of them are stored.  That is
-//  not a puzzle, it is the proof: rezmgr.h declares InitRezItm with eleven
-//  parameters unconditionally but wraps m_nID, m_sDescription, m_nNumKeys
-//  and m_pKeyAry in `#ifndef REZMGRLITE`, and the four arguments the shipped
-//  code never touches are exactly nID (+0x0c), sDesc (+0x14), nNumKeys
-//  (+0x24) and pKeyAry (+0x28).  So this build is REZMGRLITE, the parameter
-//  list is the full one, and the assignments are the LITE subset.
-//
-//  THE NAME COPY.  `repnz scasb` twice with the allocation between them is
-//  the explicit `strlen(sName) + 1` for the `new`, and then STRCPY's OWN
-//  inline expansion, which scans the source again.  The tell that it is
-//  strcpy and not memcpy is 0x0048df76 `sub %ecx,%edi` followed by
-//  `mov %edi,%esi`: the intrinsic recovers the source pointer by subtracting
-//  the length it just measured from the scan cursor, where memcpy would
-//  simply reuse the pointer it was handed.  The same three instructions are
-//  at 0x0048e37a in CRezDir::CRezDir and 0x0048e5d7 in GetRezFromDosName --
-//  and GetRezFromDosName's copy is an unambiguous strcpy.
-//
-//  THE NULL ARM.  0x0048df4b stores %esi, which the `test %esi,%esi` two
-//  instructions earlier has just proved zero; that is the vanishing
-//  null test, and `m_sName = NULL` is its source.  The fall-through being
-//  the null arm is what `if (sName == NULL) ... else ...` gives.
-//
-//  STORE ORDER.  m_pRezFile and m_pParentDir are written BEFORE the call to
-//  operator new and m_pType/m_nSize/m_nFilePos/m_nTime after it, so their
-//  side of the call is fixed; within each side the scheduler is free and the
-//  order below is the emitted one.
-// ======================================================================= //
-
-void CRezItmRz48::InitRezItm(CRezDirRz48* pParentDir, REZNAMERz48 sName,
-                             REZIDRz48 nID, CRezTypRz48* pType, REZDESCRz48 sDesc,
-                             REZSIZERz48 nSize, DWORDRz48 nFilePos, REZTIMERz48 nTime,
-                             DWORDRz48 nNumKeys, REZKEYVALRz48* pKeyAry,
-                             CBaseRezFileRz48* pRezFile)
-{
-	m_pRezFile = pRezFile;
-	m_pParentDir = pParentDir;
-
-	if (sName == NULL)
-	{
-		m_sName = NULL;
-	}
-	else
-	{
-		m_sName = new char[strlen(sName) + 1];
-		if (m_sName != NULL) strcpy(m_sName, sName);
-	}
-
-	m_pType = pType;
-	m_nSize = nSize;
-	m_nFilePos = nFilePos;
-	m_nTime = nTime;
-
-	m_pData = NULL;
-	m_nCurPos = 0;
-	m_heName.SetRezItm(this);
-}
-
-
-// ======================================================================= //
-//  0x0048dfc0, 87 bytes -- void CRezItm::TermRezItm(), `ret` (no arguments)
-//
-//  THE OWNERSHIP RULE THIS ENCODES.  m_pData is only ours to free when the
-//  directory did NOT load itself as one block: if m_pParentDir->m_pMemBlock
-//  is non-null the item's bytes are a slice of that block and freeing them
-//  would be a free of an interior pointer.  0x0048dfdc tests exactly that.
-//
-//  THE TEST IS WRITTEN TWICE, NOT ONCE.  0x0048dfe1 and 0x0048dfea are two
-//  copies of `if (m_pData != NULL)`, and only the free itself is shared --
-//  0x0048dfe8 jumps forward INTO the second copy's `push`/`call`.  A single
-//  `||` gives one copy of the body and no such jump; the rule that
-//  of two identical sites VC6 keeps the SECOND inline and jumps the first
-//  into it says these are two separate source statements, so the guard is
-//  an if/else on m_pParentDir with the same free written in both arms.
-//
-//  The nine trailing zero stores all come out of one `xor %edi,%edi`, which
-//  is also the register every comparison above uses; that is what writing
-//  NULL/0 as constants gives at /O2.
-// ======================================================================= //
-
-void CRezItmRz48::TermRezItm()
-{
-	if (m_sName != NULL) delete[] m_sName;
-
-	if (m_pParentDir != NULL)
-	{
-		if (m_pParentDir->m_pMemBlock == NULL)
-		{
-			if (m_pData != NULL) delete[] m_pData;
-		}
-	}
-	else
-	{
-		if (m_pData != NULL) delete[] m_pData;
-	}
-
-	m_sName = NULL;
-	m_pType = NULL;
-	m_nTime = 0;
-	m_nSize = 0;
-	m_pData = NULL;
-	m_pParentDir = NULL;
-	m_nFilePos = 0;
-	m_nCurPos = 0;
-	m_heName.SetRezItm(NULL);
-}
-
-
-// ======================================================================= //
-//  0x0048e020, 6 bytes -- REZTYPE CRezItm::GetType(), `ret` (thiscall)
-//
-//  `mov 0x4(%ecx),%eax ; mov (%eax),%eax`: m_pType, then CRezTyp::m_nType at
-//  its +0x00, with the header's inline CRezTyp::GetType() folded in.  No
-//  null check, which is why it cannot be the header's inline GetName form.
-//  (In the gap between two of the enumerated rows, but inside this
-//  file's range, and Read below needs it to be here.)
-// ======================================================================= //
-
-REZTYPERz48 CRezItmRz48::GetType()
-{
-	return m_pType->GetType();
-}
-
-
-// ======================================================================= //
-//  0x0048e030, 15 bytes -- BOOL CRezItm::Seek(DWORD offset), `ret 4`
-// ======================================================================= //
-
-BOOLRz48 CRezItmRz48::Seek(DWORDRz48 offset)
-{
-	m_nCurPos = offset;
-	return TRUE;
-}
-
-
-// ======================================================================= //
-//  0x0048e040, 211 bytes -- DWORD CRezItm::Read(BYTE*, DWORD, DWORD),
-//  `ret 0xc`.  Four `ret`s, and the extent check's warning is a false alarm: this
-//  is one function with the /O2 epilogue duplicated into each of its three
-//  successful exits plus the shared `xor %eax,%eax` failure exit at
-//  0x0048e10a, every one of them inside the range and reached only from
-//  inside it.
-//
-//  AND THAT SPLIT IS THE SHAPE OF THE SOURCE.  Several copies of
-//  an epilogue mean several separate `return` statements, one shared copy
-//  means the conditions nest around a single one.  Here the THREE
-//  `m_nCurPos += length; return length;` tails are each written out and the
-//  ONE `return 0` is the last statement of the function, with every failure
-//  branching to it -- so the three guards are nested positively rather than
-//  written as early `if (...) return 0;` returns.  Written the other way
-//  round the compiler inverts the split exactly: one shared success tail and
-//  three copies of the failure epilogue.
-//
-//  THE DEFAULT ARGUMENT IS VISIBLE.  rezmgr.h declares
-//  `DWORD Read(BYTE* pBytes, DWORD length, DWORD seekPos = 0xffffffff)` and
-//  0x0048e047 is `cmp $0xffffffff,%eax` on the third argument, calling Seek
-//  only when the caller supplied one.
-//
-//  THREE WAYS TO GET THE BYTES, in the order the code tries them:
-//    1. the whole DIRECTORY is in memory (m_pParentDir->m_pMemBlock): the
-//       item's bytes are at m_nFilePos - m_pParentDir->m_nItemsPos into it,
-//       m_nFilePos being file-relative and m_nItemsPos the block's own base.
-//    2. this ITEM is in memory (m_pData): straight offset by m_nCurPos.
-//    3. neither: go to the rez file, and only advance m_nCurPos if it
-//       returned everything that was asked for.
-//
-//  `test %ebp,%ebp ; jbe` rather than `je` is what `length <= 0` on an
-//  unsigned gives; `je` is what `length == 0` gives, so the source says
-//  `<= 0`.
-// ======================================================================= //
-
-DWORDRz48 CRezItmRz48::Read(BYTERz48* pBytes, DWORDRz48 length, DWORDRz48 seekPos)
-{
-	if (seekPos != 0xffffffff) Seek(seekPos);
-
-	if (m_nCurPos <= m_nSize)
-	{
-		if ((m_nCurPos + length) > m_nSize) length = m_nSize - m_nCurPos;
-
-		if (length > 0)
-		{
-			if (m_pParentDir->m_pMemBlock != NULL)
-			{
-				memcpy(pBytes,
-				       m_pParentDir->m_pMemBlock + (m_nFilePos - m_pParentDir->m_nItemsPos) + m_nCurPos,
-				       length);
-				m_nCurPos += length;
-				return length;
-			}
-
-			if (m_pData != NULL)
-			{
-				memcpy(pBytes, m_pData + m_nCurPos, length);
-				m_nCurPos += length;
-				return length;
-			}
-
-			if (m_pRezFile->Read(m_nFilePos, m_nCurPos, length, pBytes) == length)
-			{
-				m_nCurPos += length;
-				return length;
-			}
-		}
-	}
-
-	return 0;
-}
-
-
-// ======================================================================= //
-//  0x0048e120, 112 bytes (NOT 133 -- see the extent note in the header) --
-//  CRezTyp::CRezTyp(REZTYPE, CRezDir*, unsigned, unsigned), `ret 0x10`
-//
-//  Four arguments, which is rezmgr.h's first of the two constructors, the
-//  one that gives the type BOTH hash tables.  The member-initialiser order
-//  is forced: m_heType's implicit constructor (the vptr store at +0x04 and
-//  its owner pointer at +0x18 set to NULL) runs first, then m_haID at +0x1c
-//  with argument three, then m_haName at +0x24 with argument four; the body
-//  then writes m_nType, m_heType's owner pointer again -- this time `this`
-//  -- and m_pParentDir, in that order.
-//
-//  THE EH FRAME IS THE POINT.  0x0048e120's three-push registration and its
-//  `movl $0,0x10(%esp)` state store exist because m_haName's constructor can
-//  throw and m_haID would then have to be destroyed; the funclet that does
-//  it is 0x004a07a0 -> 0x0048e1a0 -> CBaseHash::~CBaseHash.  Compile this
-//  file WITHOUT /GX and none of that is emitted.
-// ======================================================================= //
-
-CRezTypRz48::CRezTypRz48(REZTYPERz48 nType, CRezDirRz48* pParentDir,
-                         unsigned int nByIDNumHashBins,
-                         unsigned int nByNameNumHashBins)
-	: m_haID(nByIDNumHashBins), m_haName(nByNameNumHashBins)
-{
-	m_nType = nType;
-	m_heType.SetRezTyp(this);
-	m_pParentDir = pParentDir;
-}
-
-
-// ======================================================================= //
-//  0x0048e1b0, 108 bytes -- CRezTyp::CRezTyp(REZTYPE, CRezDir*, unsigned),
-//  `ret 0x0c`.  rezmgr.h's second constructor, commented there as "non ID
-//  has table version": the only difference from the one above is that
-//  m_haID gets CBaseHash's DEFAULT constructor (0x004a0420, which just
-//  zeroes the two words) instead of the sized one, and that is exactly what
-//  0x0048e1de calls.
-// ======================================================================= //
-
-CRezTypRz48::CRezTypRz48(REZTYPERz48 nType, CRezDirRz48* pParentDir,
-                         unsigned int nByNameNumHashBins)
-	: m_haName(nByNameNumHashBins)
-{
-	m_nType = nType;
-	m_heType.SetRezTyp(this);
-	m_pParentDir = pParentDir;
-}
-
-
-// ======================================================================= //
-//  0x0048e220, 215 bytes -- CRezTyp::~CRezTyp(), `ret` (no arguments)
-//
-//  TWO SWEEPS, and the first is conditional.  0x0048e24b walks
-//  m_pParentDir->m_pRezMgr and tests its +0x6c before touching m_haID at
-//  all: rezmgr.h's m_bItemByIDUsed, whose whole documented job is that "if
-//  false then [items] can not be [accessed by ID]" -- so when it is false
-//  the by-ID table was never populated and there is nothing to unhook.
-//
-//  Both sweeps take the successor BEFORE unhooking the node, because
-//  CBaseHashItem::Next() walks the bin array through m_pParentHash and
-//  CBaseHash::Delete clears it -- and the way they are written is visible.
-//  0x0048e267 copies the node into edi BEFORE the Next() call and
-//  0x0048e271 drops Next()'s result straight into esi, the register the
-//  loop test and the loop head both use; there is no copy at the bottom of
-//  the loop at all.  That is `pCur = pItem; pItem = pItem->Next();` -- the
-//  successor is assigned to the loop variable itself and the node being
-//  unhooked is the saved copy.  The other spelling, `pNext = pItem->Next();
-//  ... pItem = pNext;`, puts the copy at the BOTTOM instead and costs a
-//  `mov` there; both walks here, and both in ~CRezDir, are the first form.
-//
-//  THE DOUBLE LOAD AT 0x0048e29f / 0x0048e2aa is not a spill: the item
-//  pointer is loaded out of the hash element, used, and loaded AGAIN after
-//  TermRezItm has run, because TermRezItm could have changed it.  This is
-//  the repeated expression, and the source has to spell it twice.
-//
-//  The two tables are destroyed in reverse declaration order, m_haName then
-//  m_haID, which is the compiler's doing and not the body's.
-// ======================================================================= //
-
-CRezTypRz48::~CRezTypRz48()
-{
-	CBaseHashItemRz48* pItem;
-	CBaseHashItemRz48* pCur;
-
-	if (m_pParentDir->m_pRezMgr->m_bItemByIDUsed)
-	{
-		pItem = m_haID.GetFirst();
-		while (pItem != NULL)
-		{
-			pCur = pItem;
-			pItem = pItem->Next();
-			m_haID.Delete(pCur);
-		}
-	}
-
-	pItem = m_haName.GetFirst();
-	while (pItem != NULL)
-	{
-		pCur = pItem;
-		pItem = pItem->Next();
-		m_haName.Delete(pCur);
-		((CRezItmHashByNameRz48*)pCur)->GetRezItm()->TermRezItm();
-		m_pParentDir->m_pRezMgr->DeAllocateRezItm(
-			((CRezItmHashByNameRz48*)pCur)->GetRezItm());
-	}
-
-	m_nType = 0;
-	m_heType.SetRezTyp(NULL);
-}
-
-
-// ======================================================================= //
-//  0x0048e300, 212 bytes -- CRezDir::CRezDir(8 args), `ret 0x20`
-//
-//  Eight arguments, matching rezmgr.h's one constructor exactly, and each
-//  one lands where the header says: pRezMgr -> +0x18, pParentDir -> +0x1c,
-//  szDirName -> the strdup at +0x00, nFilePos -> +0x04, nSize -> +0x08,
-//  nTime -> +0x14, nDirNumHashBins -> the CBaseHash at +0x38,
-//  nTypNumHashBins -> the CBaseHash at +0x40.  m_nItemsPos, m_nItemsSize and
-//  m_pMemBlock start at zero: nothing has been read into this directory yet.
-//
-//  UNLIKE InitRezItm THERE IS NO NULL TEST ON THE NAME.  0x0048e34e goes
-//  straight into `repnz scasb` on argument three; the only test is on what
-//  operator new returned.  So the source here really is the two-line form
-//  and not the three-arm one, and the copy is strcpy (0x0048e37a's
-//  `sub %ecx,%edi` / `mov %edi,%esi` recovering the source pointer from the
-//  scan cursor is the intrinsic's signature, not memcpy's).
-//
-//  THE FIRST FOUR ASSIGNMENTS ARE IN THE ARGUMENT PRELOADS, not in the store
-//  order.  VC6 preloads the first three values into ecx/edx/eax and then
-//  alternates store-then-reload: 0x0048e38e..0x0048e396 fetch nTime, nSize
-//  and nFilePos, so those are source statements one, two and three, and
-//  pRezMgr -- reloaded into ecx after nTime's store frees it -- is the
-//  fourth even though its store at 0x0048e3a8 comes out BEFORE nFilePos's at
-//  0x0048e3b0.  Read the preloads, not the stores.
-// ======================================================================= //
-
-CRezDirRz48::CRezDirRz48(CRezMgrRz48* pRezMgr, CRezDirRz48* pParentDir,
-                         REZDIRNAMERz48 szDirName, DWORDRz48 nFilePos,
-                         DWORDRz48 nSize, REZTIMERz48 nTime,
-                         unsigned int nDirNumHashBins,
-                         unsigned int nTypNumHashBins)
-	: m_haDir(nDirNumHashBins), m_haTypes(nTypNumHashBins)
-{
-	m_sDirName = new char[strlen(szDirName) + 1];
-	if (m_sDirName != NULL) strcpy(m_sDirName, szDirName);
-
-	m_nLastTimeModified = nTime;
-	m_nDirSize = nSize;
-	m_nDirPos = nFilePos;
-	m_pRezMgr = pRezMgr;
-	m_nItemsSize = 0;
-	m_nItemsPos = 0;
-	m_pMemBlock = NULL;
-	m_pParentDir = pParentDir;
-	m_heDir.SetRezDir(this);
-}
-
-
-// ======================================================================= //
-//  0x0048e3e0, 289 bytes -- CRezDir::~CRezDir(), `ret` (no arguments)
-//
-//  The whole tree comes down from here: every CRezTyp in m_haTypes is
-//  unhooked and deleted (0x0048e43c calls ~CRezTyp at 0x0048e220 and then
-//  operator delete directly, which is how VC6 spells `delete p` for a class
-//  with a NON-virtual destructor -- rezmgr.h's ~CRezTyp is private and
-//  non-virtual), and then every CRezDir in m_haDir the same way, 0x0048e480
-//  being this function calling ITSELF.  The header's comment on ReadAllDirs,
-//  "Recursivly read all directories in this dir", has its mirror here.
-//
-//  Then the two owned buffers: m_sDirName always, m_pMemBlock if this
-//  directory was loaded as one block.  Then the ten zero stores, all off one
-//  `xor %ebx,%ebx`, in the emitted order.
-//
-//  WHERE THE NULL TESTS COME FROM.  The two `delete p` of class pointers
-//  need no `if` written: VC6 has to test before it can call a destructor, so
-//  0x0048e438 and 0x0048e47c are the compiler's.  The two `delete []` of
-//  char/BYTE arrays have no destructor to guard, so 0x0048e498 and
-//  0x0048e4aa are the source's own tests and are written out.
-// ======================================================================= //
-
-CRezDirRz48::~CRezDirRz48()
-{
-	CBaseHashItemRz48* pItem;
-	CBaseHashItemRz48* pCur;
-	CRezTypRz48*       pTyp;
-	CRezDirRz48*       pDir;
-
-	pItem = m_haTypes.GetFirst();
-	while (pItem != NULL)
-	{
-		pCur = pItem;
-		pItem = pItem->Next();
-		m_haTypes.Delete(pCur);
-		pTyp = ((CRezTypeHashRz48*)pCur)->GetRezTyp();
-		delete pTyp;
-	}
-
-	pItem = m_haDir.GetFirst();
-	while (pItem != NULL)
-	{
-		pCur = pItem;
-		pItem = pItem->Next();
-		m_haDir.Delete(pCur);
-		pDir = ((CRezDirHashRz48*)pCur)->GetRezDir();
-		delete pDir;
-	}
-
-	if (m_sDirName != NULL) delete[] m_sDirName;
-	if (m_pMemBlock != NULL) delete[] m_pMemBlock;
-
-	m_sDirName = NULL;
-	m_nLastTimeModified = 0;
-	m_nDirSize = 0;
-	m_nDirPos = 0;
-	m_nItemsSize = 0;
-	m_nItemsPos = 0;
-	m_pMemBlock = NULL;
-	m_pRezMgr = NULL;
-	m_pParentDir = NULL;
-	m_heDir.SetRezDir(NULL);
-}
-
-
-// ======================================================================= //
-//  0x0048e510, 55 bytes -- CRezItm* CRezDir::GetRez(REZNAME, REZTYPE),
-//  `ret 8`.  (Between two enumerated rows, inside this file's range, and
-//  GetRezFromDosName below tail-calls it.)
-//
-//  The type table first, then that type's by-name table.  The second
-//  argument of the by-name lookup is `m_pRezMgr->m_bLowerCaseUsed == 0`
-//  (`test %ecx,%ecx ; sete %dl`), i.e. the compare is case-SENSITIVE exactly
-//  when the manager has been told lower case is not used -- which is what
-//  rezmgr.h's "DEFAULT IS FALSE" flag is for.
-// ======================================================================= //
-
-CRezItmRz48* CRezDirRz48::GetRez(REZNAMERz48 sRes, REZTYPERz48 Type)
-{
-	CRezTypRz48* pTyp;
-
-	pTyp = m_haTypes.Find(Type);
-	if (pTyp == NULL) return NULL;
-
-	return pTyp->m_haName.Find(sRes, !m_pRezMgr->m_bLowerCaseUsed);
-}
-
-
-// ======================================================================= //
-//  0x0048e550, 218 bytes -- CRezItm* CRezDir::GetRezFromDosName(char*),
-//  `ret 4`.  rezmgr.h: "gets a resource from an old style dos file name
-//  which includes the type in the extension".
-//
-//  _splitpath (0x00495313) pulls the name apart; the extension IS the type.
-//    * longer than five characters (".abcd" is five) it cannot be a type, so
-//      it is glued back onto the name and the type is left 0;
-//    * absent entirely, the type is 0;
-//    * otherwise the characters after the dot are copied out, upper-cased
-//      (0x004a0320 is _strupr) and handed to CRezMgr::StrToType
-//      (0x0048f9c0), which rezmgr.h declares as "Convert an ascii string to
-//      a rez type".
-//  Either way the answer comes from GetRez above.
-//
-//  The `strcpy` at 0x0048e5cc is VC6's expansion -- strlen then rep movs --
-//  not a call; only _splitpath, strncat (0x004951f0), _strupr, StrToType and
-//  GetRez are calls.
-//
-//  UNPINNED, AND SAID SO RATHER THAN DRESSED UP: the buffer SIZES.  The
-//  frame is `sub $0x418,%esp` and the five live slots start at +0x00 (the
-//  type string, <= 8 bytes), +0x08 (the drive, 4), +0x0c (the extension,
-//  0x104), +0x110 (the name, 0x204) and +0x314 (the directory, 0x104), which
-//  sums to 0x418 exactly -- so those are the slot sizes, but which _MAX_*
-//  constants the source spelled them with is not recoverable, and neither is
-//  the 0x201 strncat bound nor the 256 the name is truncated at.  They are
-//  written as the literals the bytes give.
-//  ARM ORDER.  The second test is `strlen(sExt) != 0` with the TYPE arm as
-//  its body and `nType = 0` as the trailing `else`, not the other way
-//  round.  Two things say so and one source change fixes both: 0x0048e60d's
-//  `xor %eax,%eax` sits AFTER the type arm's body, which is where an `else`
-//  clause lands (the body has to `jmp` over it at 0x0048e60b), and the type
-//  arm's strcpy has NO `xor %eax,%eax` of its own -- reached by fall-through
-//  from the strlen block it inherits the zero already in eax, which a block
-//  reached only by a branch does not.
-//
-//  COIN FLIP, UNSETTLED: the declaration order below is the one that puts
-//  each array where the frame has it if VC6 lays locals out first-declared-
-//  highest.  If it lays them out the other way round, reverse these five
-//  lines; nothing else changes.
-// ======================================================================= //
-
-CRezItmRz48* CRezDirRz48::GetRezFromDosName(char* sDosName)
-{
-	char sDir[260];
-	char sName[516];
-	char sExt[260];
-	char sDrive[4];
-	char sType[5];
-	REZTYPERz48 nType;
-
-	_splitpath(sDosName, sDrive, sDir, sName, sExt);
-
-	if (strlen(sExt) > 5)
-	{
-		strncat(sName, sExt, 513);
-		sName[256] = '\0';
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::GetRezFromDosName(char* sDosName) {
+  ASSERT(sDosName != NULL);
+//  ASSERT(strlen(sDosName) < 13);
+  char sExt[5];
+  REZTYPE nType;
+
+  // split the file name up into its parts
+  char drive[_MAX_DRIVE+1];
+  char dir[_MAX_DIR+1];
+  char fname[_MAX_FNAME+1+_MAX_EXT+1];
+  char ext[_MAX_EXT+1];
+  _splitpath(sDosName, drive, dir, fname, ext );
+
+  // check if the extension is too long
+  BOOL bExtensionTooLong = FALSE;
+  if (strlen(ext) > 5)
+  {
+ 		bExtensionTooLong = TRUE;
+		strncat(fname,ext,_MAX_FNAME+1+_MAX_EXT);
+		fname[_MAX_FNAME] = '\0';
 		nType = 0;
+  }
+  else
+  {
+  
+	// figure out the Type for this file
+	if (strlen(ext) > 0) {
+		strcpy(sExt,&ext[1]);
+		strupr(sExt);
+		nType = m_pRezMgr->StrToType(sExt);
 	}
-	else if (strlen(sExt) != 0)
+	else nType = 0;
+  }
+
+  // call the normal GetRez function
+  return GetRez(fname,nType);
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezDir::Load(BOOL LoadAllSubDirs) {
+
+  // if this directory is already loaded then just return TRUE
+  if (m_pMemBlock != NULL) return TRUE;
+
+  // if the file is not sorted then we cannot load it by directory (actualy we could but it would take more effort)
+  // we also can't do this if we have loaded more than 1 rez file
+  if ((m_pRezMgr->m_bIsSorted == FALSE) || (m_pRezMgr->m_nNumRezFiles > 1)) {
+//    TRACE("CRezDir::Load Failed! (File is not sorted!)\n");
+    return FALSE;
+  }
+
+  // if the data size is 0 then we don't need to do anything
+  // (there are no resources in this directory itself)
+  if (m_nItemsSize > 0) {
+
+    // allocate memory for data
+    m_pMemBlock = new BYTE[m_nItemsSize];
+    ASSERT(m_pMemBlock != NULL);
+    if (m_pMemBlock != NULL) {
+
+      // read in data
+      ASSERT(m_pRezMgr != NULL);
+      ASSERT(m_nItemsPos > 0);
+      m_pRezMgr->m_pPrimaryRezFile->Read(m_nItemsPos,0,m_nItemsSize,m_pMemBlock);
+    }
+  }
+
+  // load all sub directories data if we are supposed to
+  if (LoadAllSubDirs) {
+    CRezDirHash* pItm = m_haDir.GetFirst();
+    while (pItm != NULL) {
+      ASSERT(pItm->GetRezDir() != NULL);
+      pItm->GetRezDir()->Load(TRUE);
+      pItm = pItm->Next();
+    }
+  }
+
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezDir::UnLoad(BOOL UnLoadAllSubDirs) {
+  // delete this directory whole data if it exists
+  if (m_pMemBlock != NULL) {
+    delete [] m_pMemBlock;
+    m_pMemBlock = NULL;
+  }
+
+  // if the memory is not stored globally then unload all items individually
+  else {
+
+    // go through all types in this directory 
+    CRezTyp* pTyp = GetFirstType();
+    while (pTyp != NULL) {
+
+      // go through all items in this type and transfer them to the new dir
+      CRezItm* pItm = GetFirstItem(pTyp);
+      while (pItm != NULL) {
+        pItm->UnLoad();
+        pItm = GetNextItem(pItm);
+      }
+
+      pTyp = GetNextType(pTyp);
+    }
+  }
+
+  // delete all sub directories data if we are supposed to
+  if (UnLoadAllSubDirs) {
+    CRezDirHash* pItm = m_haDir.GetFirst();
+    while (pItm != NULL) {
+      ASSERT(pItm->GetRezDir() != NULL);
+      pItm->GetRezDir()->UnLoad(TRUE);
+      pItm = pItm->Next();
+    }
+  }
+
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezDir::GetDir(REZCDIRNAME sDir) {
+  ASSERT(sDir != NULL);
+  if (sDir == NULL) return NULL;
+  return m_haDir.Find(sDir,!GetParentMgr()->GetLowerCaseUsed());
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezDir::GetFirstSubDir() {
+  CRezDirHash* pHash = m_haDir.GetFirst();
+  if (pHash == NULL) return NULL;
+  ASSERT(pHash->GetRezDir() != NULL);
+  return pHash->GetRezDir();
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezDir::GetNextSubDir(CRezDir* pRezDir) {
+  ASSERT(pRezDir != NULL);
+  CRezDirHash* pHash = pRezDir->m_heDir.Next();
+  if (pHash == NULL) return NULL;
+  ASSERT(pHash->GetRezDir() != NULL);
+  return pHash->GetRezDir();
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezTyp* CRezDir::GetRezTyp(REZTYPE nType) {
+  return m_haTypes.Find(nType);;
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezTyp* CRezDir::GetFirstType() {
+  CRezTypeHash* pHash = m_haTypes.GetFirst();
+  if (pHash == NULL) return NULL;
+  ASSERT(pHash->GetRezTyp() != NULL);
+  return pHash->GetRezTyp();
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezTyp* CRezDir::GetNextType(CRezTyp* pRezType) {
+  ASSERT(pRezType != NULL);
+  CRezTypeHash* pHash = pRezType->m_heType.Next();
+  if (pHash == NULL) return NULL;
+  ASSERT(pHash->GetRezTyp() != NULL);
+  return pHash->GetRezTyp();
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::GetFirstItem(CRezTyp* pRezType) {
+  ASSERT(pRezType != NULL);
+  CRezItmHashByName* pHash = pRezType->m_haName.GetFirst();
+  if (pHash == NULL) return NULL;
+  return pHash->GetRezItm();
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::GetNextItem(CRezItm* pRezItm) {
+  ASSERT(pRezItm != NULL);
+  CRezItmHashByName* pHash = pRezItm->m_heName.Next();
+  if (pHash == NULL) return NULL;
+  return pHash->GetRezItm();
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezDir::CreateDir(REZDIRNAME sDir) {
+  ASSERT(sDir != NULL);
+  ASSERT(m_pRezMgr != NULL);
+//  ASSERT(m_pRezMgr->m_bReadOnly == FALSE);  // You can't do this if the resource was open read only!
+
+  // make sure directory does not already exist
+  CRezDir* pDir = m_haDir.Find(sDir,!GetParentMgr()->GetLowerCaseUsed());
+  ASSERT(!(pDir != NULL));
+  if (pDir != NULL) return NULL;
+
+  // create new directory structure
+  pDir = new CRezDir(m_pRezMgr, this, sDir, 0, 0, m_pRezMgr->GetCurTime(), m_pRezMgr->m_nDirNumHashBins, m_pRezMgr->m_nTypNumHashBins);
+  ASSERT(pDir != NULL);
+  if (pDir == NULL) return NULL;
+
+  // add to this directories hash table
+  m_haDir.Insert(&pDir->m_heDir);
+
+  // update largest variables
+  DWORD sNameLen = strlen(sDir);
+  if (m_pRezMgr->m_nLargestDirNameSize <= sNameLen) m_pRezMgr->m_nLargestDirNameSize = sNameLen+1;
+
+  return pDir;
+};
+
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::CreateRez(REZID nID, REZNAME sName, REZTYPE nType) {
+  ASSERT(sName != NULL);
+  ASSERT(m_pRezMgr != NULL);
+  ASSERT(m_pRezMgr->m_bReadOnly == FALSE);  // You can't do this if the resource was open read only!
+
+  // find or create the type for this resource
+  CRezTyp* pTyp = GetOrMakeTyp(nType);
+  ASSERT(pTyp != NULL);
+
+  // make sure resource does not already exist in ID hash table
+  CRezItm* pItm = NULL;
+#ifndef REZMGRLITE
+  if (m_pRezMgr->m_bItemByIDUsed)
+  {
+    pItm = pTyp->m_haID.Find(nID);
+    if (pItm != NULL) return NULL;
+  }
+#endif
+
+  // make sure resource does not already exist in Name hash table
+  pItm = pTyp->m_haName.Find(sName,!GetParentMgr()->GetLowerCaseUsed());
+  if (pItm != NULL) return NULL;
+
+  // create new resource structure
+//  pItm = new CRezItm(this,sName,nID,pTyp,NULL,0,0,m_pRezMgr->GetCurTime(),0,NULL,m_pRezMgr->m_pPrimaryRezFile);
+  pItm = m_pRezMgr->AllocateRezItm();
+  pItm->InitRezItm(this,sName,nID,pTyp,NULL,0,0,m_pRezMgr->GetCurTime(),0,NULL,m_pRezMgr->m_pPrimaryRezFile);
+  ASSERT(pItm != NULL);
+  if (pItm == NULL) return NULL;
+
+  // add to the types hash tables
+#ifndef REZMGRLITE
+  if (m_pRezMgr->m_bItemByIDUsed) pTyp->m_haID.Insert(&pItm->m_heID);
+#endif
+  pTyp->m_haName.Insert(&pItm->m_heName);
+
+  // update largest variables
+  DWORD sNameLen = strlen(sName);
+  if (m_pRezMgr->m_nLargestRezNameSize <= sNameLen) m_pRezMgr->m_nLargestRezNameSize = sNameLen+1;
+
+  return pItm;
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::CreateRezInternal(REZID nID, REZNAME sName, CRezTyp* pTyp, CBaseRezFile* pRezFile) {
+  ASSERT(sName != NULL);
+  ASSERT(m_pRezMgr != NULL);
+
+  // create new resource structure
+//  CRezItm* pItm = new CRezItm(this,sName,nID,pTyp,NULL,0,0,m_pRezMgr->GetCurTime(),0,NULL,pRezFile);
+  CRezItm* pItm = m_pRezMgr->AllocateRezItm();
+  ASSERT(pItm != NULL);
+  if (pItm == NULL) return NULL; 
+  pItm->InitRezItm(this,sName,nID,pTyp,NULL,0,0,m_pRezMgr->GetCurTime(),0,NULL,pRezFile);
+
+  // add to the types hash tables
+  pTyp->m_haName.Insert(&pItm->m_heName);
+
+  // update largest variables
+  DWORD sNameLen = strlen(sName);
+  if (m_pRezMgr->m_nLargestRezNameSize <= sNameLen) m_pRezMgr->m_nLargestRezNameSize = sNameLen+1;
+
+  return pItm;
+};
+
+BOOL CRezDir::RemoveRezInternal(CRezTyp* pTyp, CRezItm* pItm) {
+  ASSERT(pItm != NULL);
+
+  // update the directory items size
+  m_nItemsSize -= pItm->m_nSize;
+
+  // remove from hash tables
+  pTyp->m_haName.Delete(&pItm->m_heName);
+
+  // delete item
+//  delete pItm;
+  pItm->TermRezItm();
+  m_pRezMgr->DeAllocateRezItm(pItm);
+
+  // mark data as not sorted
+  m_pRezMgr->m_bIsSorted = FALSE;
+
+  return TRUE;
+};
+
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezDir::ReadAllDirs(CBaseRezFile* pRezFile, DWORD Pos, DWORD Size, BOOL bOverwriteItems) {
+  BOOL bRetFlag = TRUE;
+  ASSERT(Pos > 0);
+
+  // return if this is an empty directory
+  if (Size <= 0) return TRUE;
+
+  // clear out the DirPos variables in any currently existing directories so we don't try to read a dir we shouldn't
+  {
+    CRezDirHash* pDir = m_haDir.GetFirst();
+    while (pDir != NULL) {
+      CRezDir* pRezDir = pDir->GetRezDir();
+      ASSERT(pRezDir != NULL);
+      pRezDir->m_nDirPos = 0;
+      pDir = pDir->Next();
+    }
+  }
+
+  // read in this directory
+  if (ReadDirBlock(pRezFile, Pos, Size, bOverwriteItems)) {
+
+    // loop through all directorys in this directory and recursivly call this function
+    CRezDirHash* pDir = m_haDir.GetFirst();
+    while (pDir != NULL) {
+      CRezDir* pRezDir = pDir->GetRezDir();
+      ASSERT(pRezDir != NULL);
+	  if (pRezDir->m_nDirPos != 0) {
+        if (!pRezDir->ReadAllDirs(pRezFile, pRezDir->m_nDirPos, pRezDir->m_nDirSize, bOverwriteItems)) bRetFlag = FALSE;
+      }
+      pDir = pDir->Next();
+    }
+  }
+
+  else bRetFlag = FALSE;
+
+  return bRetFlag;
+};
+
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezDir::ReadDirBlock(CBaseRezFile* pRezFile, DWORD Pos, DWORD Size, BOOL bOverwriteItems) {
+  ASSERT(Pos > 0);
+  m_nItemsSize = 0;
+  m_nItemsPos = 0xffffffff;
+  DWORD nLastItemPos = 0;
+  DWORD nLastItemSize = 0;
+
+  // allocate memory for directory block
+  BYTE* pBlk = new BYTE[Size];
+  ASSERT(pBlk != NULL);
+  if (pBlk == NULL) return FALSE;
+
+  // read in directory block (exit if error)
+  if (pRezFile->Read(Pos,0,Size,pBlk) != Size) {
+    delete [] pBlk;
+    return FALSE;
+  };
+
+  // process all data in directory block 
+  BYTE* pCur = pBlk;
+  BYTE* pEnd = pBlk+Size;
+  while (pCur < pEnd) {
+
+    // if this is a directory entry
+    if ((*(DWORD*)pCur) == DirectoryEntry) {
+      pCur += sizeof(DWORD);
+
+      // variables to store data read in
+      DWORD Pos;
+      DWORD Size;
+      DWORD Time;
+      char* sDirName;
+
+      // convert simple header variables
+      Pos = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      Size = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      Time = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+
+      // convert dir name
+      sDirName = (char*)pCur;
+      pCur += strlen(sDirName)+1;
+
+	  // make sure this dir doesn't already exist if it does we don't need to add it again
+	  CRezDir* pDir = m_haDir.Find(sDirName,!GetParentMgr()->GetLowerCaseUsed());
+	  if (pDir == NULL) {	
+
+        // construct new directory item
+        pDir = new CRezDir(m_pRezMgr, this, sDirName, Pos, Size, Time, m_pRezMgr->m_nDirNumHashBins, m_pRezMgr->m_nTypNumHashBins);
+        ASSERT(pDir != NULL);
+
+        // insert new directory item in hash table
+        m_haDir.Insert(&pDir->m_heDir);
+      }
+	  else {
+	    pDir->m_nDirPos = Pos;
+		pDir->m_nDirSize = Size;
+		pDir->m_nLastTimeModified = Time;
+	  }
+    }
+
+    // if this is a resource item entry
+    else {
+      ASSERT((*(DWORD*)pCur) == ResourceEntry); // Type is not a resource or a directory!!!!
+      pCur += sizeof(DWORD);
+
+      // variables to store data read in
+      DWORD Pos;
+      DWORD Size;
+      DWORD Time;
+      DWORD ID;
+      DWORD Type;
+      DWORD NumKeys;
+      char* sName;
+      char* sDescription;
+      DWORD* pKeyAry;
+
+      // convert simple header variables
+      Pos = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      Size = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      Time = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      ID = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      Type = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+      NumKeys = (*(DWORD*)pCur);
+      pCur += sizeof(DWORD);
+
+      // convert item name
+      sName = (char*)pCur;
+      pCur += strlen(sName)+1;
+
+      // find or create the type for this resource
+      CRezTyp* pTyp = GetOrMakeTyp(Type);
+      ASSERT(pTyp != NULL);
+
+	  // if this gets set to true then this item will not be added
+	  BOOL bSkipThisItem = FALSE;
+
+#ifndef REZMGRLITE
+	  // check if this ID already exists and deal with it
+	  if (m_pRezMgr->m_bItemByIDUsed) {
+	    // see if there is already an item with this ID
+		CRezItm* pDupIDItem = pTyp->m_haID.Find(ID);
+		if (pDupIDItem != NULL) {
+		  if (m_pRezMgr->m_bRenumberIDCollisions) {
+		    ID = m_pRezMgr->m_nNextIDNumToUse;
+			m_pRezMgr->m_nNextIDNumToUse++;
+		  }
+		  else {
+		    if (bOverwriteItems) {
+		      RemoveRezInternal(pTyp,pDupIDItem);
+		    }
+		    else {
+  		      bSkipThisItem = TRUE;
+		    }
+		  }
+		}
+	  }
+#endif
+
+	  // check if this name already exists and deal with it
+	  {
+        CRezItm* pDupNameItem = pTyp->m_haName.Find(sName);
+		if (pDupNameItem != NULL) {
+		  if (bOverwriteItems) {
+		    RemoveRezInternal(pTyp,pDupNameItem);
+		  }
+		  else {
+  		    bSkipThisItem = TRUE;
+		  }
+		}
+      }
+
+      // convert description name
+      sDescription = (char*)pCur;
+      pCur += strlen(sDescription)+1;
+      if (sDescription[0] == '\0') sDescription = NULL;
+
+      // convert KeyAry
+      if (NumKeys > 0) {
+        pKeyAry = new REZKEYVAL[NumKeys];
+        ASSERT(pKeyAry != NULL);
+        for (unsigned int i = 0; i < NumKeys; i++) {
+          pKeyAry[i] = *(DWORD*)pCur;
+          pCur += sizeof(DWORD);
+        }
+      }
+      else pKeyAry = NULL;
+
+	  // check if we are really going to add this item
+ 	  if (!bSkipThisItem) {
+
+        // construct new resource item
+//        CRezItm* pItm = new CRezItm(this,sName,ID,pTyp,sDescription,Size,Pos,Time,NumKeys,pKeyAry,pRezFile);
+		CRezItm* pItm = m_pRezMgr->AllocateRezItm();
+        ASSERT(pItm != NULL);
+		pItm->InitRezItm(this,sName,ID,pTyp,sDescription,Size,Pos,Time,NumKeys,pKeyAry,pRezFile);
+
+        // insert new resource item in hash tables
+#ifndef REZMGRLITE
+        if (m_pRezMgr->m_bItemByIDUsed) pTyp->m_haID.Insert(&pItm->m_heID);
+#endif
+        pTyp->m_haName.Insert(&pItm->m_heName);
+
+        // update the directory items size and position
+        m_nItemsSize += pItm->m_nSize;
+        if (pItm->m_nFilePos < m_nItemsPos) m_nItemsPos = pItm->m_nFilePos;
+        if (pItm->m_nFilePos > nLastItemPos) {
+          nLastItemPos = pItm->m_nFilePos;
+          nLastItemSize = pItm->m_nSize;
+        }
+	  }
+
+      // delete any needed allocations
+      if (pKeyAry != NULL) delete [] pKeyAry;
+    }
+  };
+
+  // check if resource data was sorted
+//  if (m_nItemsPos != 0xffffffff) { // make sure there were items (if not we don't care)
+//    if (m_nItemsSize != (nLastItemPos+nLastItemSize-m_nItemsPos)) m_pRezMgr->m_bIsSorted = FALSE;
+//  }
+
+  // free memory for block
+  delete [] pBlk;
+
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezTyp* CRezDir::GetOrMakeTyp(REZTYPE nType) {
+  // find the type 
+  CRezTyp* pTyp = m_haTypes.Find(nType);
+
+  // create a new type if this one is not found
+  if (pTyp == NULL) {
+    
+    // create type structure
+	if (m_pRezMgr->m_bItemByIDUsed)
 	{
-		strcpy(sType, &sExt[1]);
-		_strupr(sType);
-		nType = m_pRezMgr->StrToType(sType);
+		pTyp = new CRezTyp(nType, this, m_pRezMgr->m_nByIDNumHashBins, m_pRezMgr->m_nByNameNumHashBins);
 	}
 	else
 	{
-		nType = 0;
+		pTyp = new CRezTyp(nType, this, m_pRezMgr->m_nByNameNumHashBins);
+	}
+    ASSERT(pTyp != NULL);
+    if (pTyp == NULL) return NULL;
+
+    // add new type to typ hash table
+    m_haTypes.Insert(&pTyp->m_heType);
+  }
+
+  return pTyp;
+};
+
+
+//***************************************************************************************************
+// CRezMgr implementation
+
+//---------------------------------------------------------------------------------------------------
+CRezMgr::CRezMgr() {
+  m_bFileOpened = FALSE; 
+  m_bRenumberIDCollisions = TRUE;
+  m_nNextIDNumToUse = 2000000000;	
+  m_pPrimaryRezFile = NULL;
+  m_nNumRezFiles = 0;
+  m_nRootDirPos = 0;
+  m_nNextWritePos = 0;
+  m_bReadOnly = TRUE;
+  m_pRootDir = NULL;
+  m_nLastTimeModified = 0;
+  m_bMustReWriteDirs = FALSE;
+  m_nFileFormatVersion = 0;
+  m_nLargestKeyAry = 0;
+  m_nLargestDirNameSize = 0;
+  m_nLargestRezNameSize = 0;
+  m_nLargestCommentSize = 0;
+  m_bIsSorted = TRUE;
+  m_sFileName = NULL;
+  m_nMaxOpenFilesInEmulatedDir = 3;
+  m_sDirSeparators = NULL;
+  m_bLowerCaseUsed = FALSE;
+  m_bItemByIDUsed = FALSE;
+  m_nByNameNumHashBins = kDefaultByNameNumHashBins;
+  m_nByIDNumHashBins = kDefaultByIDNumHashBins;	
+  m_nDirNumHashBins = kDefaultDirNumHashBins;	
+  m_nTypNumHashBins = kDefaultTypNumHashBins;	
+  m_nRezItmChunkSize = 100;	
+  m_sUserTitle[0] = '\0';	
+ };
+
+//---------------------------------------------------------------------------------------------------
+CRezMgr::CRezMgr(const char* FileName, BOOL ReadOnly, BOOL CreateNew) {
+  CRezMgr();
+  Open(FileName,ReadOnly,CreateNew);
+};
+
+//---------------------------------------------------------------------------------------------------
+CRezMgr::~CRezMgr() {
+  if (m_bFileOpened) Close();
+  CBaseRezFile* pRezFile;
+  while ((pRezFile = m_lstRezFiles.GetFirst()) != NULL) {
+    m_lstRezFiles.Delete(pRezFile);
+	m_nNumRezFiles--;
+	delete pRezFile;
+  }
+  if (m_pRootDir != NULL) {
+    delete m_pRootDir;
+    m_pRootDir = NULL;
+  }
+  if (m_sFileName != NULL) {
+    delete [] m_sFileName;
+    m_sFileName = NULL;
+  }
+  if (m_sDirSeparators != NULL) 
+  {
+	  delete [] m_sDirSeparators;
+	  m_sDirSeparators = NULL;
+  }
+  m_bFileOpened = FALSE; 
+  m_pPrimaryRezFile = NULL;
+  m_nRootDirPos = 0;
+  m_nRootDirSize = 0;
+  m_nRootDirTime = 0;
+  m_nNextWritePos = 0;
+  m_bReadOnly = TRUE;
+  m_pRootDir = NULL;
+  m_nLastTimeModified = 0;
+  m_bMustReWriteDirs = FALSE;
+  m_nFileFormatVersion = 1;
+  m_nLargestKeyAry = 0;
+  m_nLargestDirNameSize = 0;
+  m_nLargestRezNameSize = 0;
+  m_nLargestCommentSize = 0;
+  m_bIsSorted = TRUE;
+  m_sFileName = NULL;
+
+  // remove all RezItm Chunks
+  {
+	CRezItmChunk* pChunk;
+	while ((pChunk = m_lstRezItmChunks.GetFirst()) != NULL)
+	{
+		delete [] pChunk->m_pRezItmAry;
+		m_lstRezItmChunks.Delete(pChunk);
+		delete pChunk;
+	}
+  }
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::Open(const char* FileName, BOOL ReadOnly, BOOL CreateNew) {
+  ASSERT(FileName != NULL); // NULL file name!
+  ASSERT(!(ReadOnly && CreateNew)); // gee, we can't do both!
+  m_bReadOnly = ReadOnly;
+
+#ifdef REZMGRLITE
+  // the lite version can only read resource files
+  if (ReadOnly == FALSE) return FALSE;
+#endif
+
+  // store file name in class
+  if (m_sFileName != NULL) delete [] m_sFileName;
+  m_sFileName = new char[strlen(FileName)+1];
+  ASSERT(m_sFileName != NULL);
+  strcpy(m_sFileName,FileName);
+
+  // check if user has asked us to open a directory instead of a rez file
+  if (IsDirectory(FileName)) {
+
+    // make sure this is only open for read only
+	ASSERT(m_bReadOnly != FALSE);  // we can only read from directories not write to them!
+    if (m_bReadOnly == FALSE) return FALSE;
+
+    // Create the CRezFileDirectoryEmulation object
+    CRezFileDirectoryEmulation* pRezFile = new CRezFileDirectoryEmulation(this,m_nMaxOpenFilesInEmulatedDir);
+    ASSERT(pRezFile != NULL);
+    if (pRezFile == NULL) {
+	  delete [] m_sFileName;
+	  m_sFileName = NULL;
+      return FALSE;
+    }
+    m_pPrimaryRezFile = pRezFile;
+    m_lstRezFiles.Insert(pRezFile);
+    m_nNumRezFiles++;
+
+    // open the file
+    if (!pRezFile->Open(FileName,ReadOnly,CreateNew)) return FALSE;
+    m_bFileOpened = TRUE;
+
+	// create empty root directory
+    m_pRootDir = new CRezDir(this, NULL, "", 0, 0, GetCurTime(), m_nDirNumHashBins, m_nTypNumHashBins);
+    ASSERT(m_pRootDir != NULL);
+
+	// read in data from directory and all sub directories
+	ReadEmulationDirectory(pRezFile,m_pRootDir,m_sFileName,FALSE);
+
+    return TRUE;
+  }
+
+  // create a new CRezFile object for the RezFile
+  CRezFile* pRezFile = new CRezFile(this);
+  ASSERT(pRezFile != NULL);
+  if (pRezFile == NULL) {
+	delete [] m_sFileName;
+	m_sFileName = NULL;
+    return FALSE;
+  }
+  m_pPrimaryRezFile = pRezFile;
+  m_lstRezFiles.Insert(pRezFile);
+  m_nNumRezFiles++;
+
+  // open the file
+  if (!pRezFile->Open(FileName,ReadOnly,CreateNew)) return FALSE;
+  m_bFileOpened = TRUE;
+
+  // set up variables if this is a new file
+  if (CreateNew) {
+    m_nNextWritePos = sizeof(FileMainHeaderStruct);
+    m_bMustReWriteDirs = TRUE;
+
+    m_pRootDir = new CRezDir(this, NULL, "", 0, 0, GetCurTime(), m_nDirNumHashBins, m_nTypNumHashBins);
+    ASSERT(m_pRootDir != NULL);
+  }
+
+  // if this is an old file read in header and directories
+  else {
+
+    // read in the header
+    FileMainHeaderStruct Header;
+    pRezFile->Read(0,0,sizeof(Header),&Header);
+
+    // store header values in RezMgr class
+    m_nNextWritePos =       Header.NextWritePos;
+    m_nRootDirPos =         Header.RootDirPos;
+    m_nRootDirSize =        Header.RootDirSize;
+    m_nRootDirTime =        Header.RootDirTime;
+    m_nLastTimeModified =   Header.Time;
+    m_nFileFormatVersion =  Header.FileFormatVersion;
+    m_nLargestKeyAry =      Header.LargestKeyAry;
+    m_nLargestDirNameSize = Header.LargestDirNameSize;
+    m_nLargestRezNameSize = Header.LargestRezNameSize;
+    m_nLargestCommentSize = Header.LargestCommentSize;
+    m_bIsSorted =           Header.IsSorted;
+
+	// set the internal value for the user title in the header
+	memcpy(m_sUserTitle, Header.UserTitle, RezMgrUserTitleSize);
+	m_sUserTitle[RezMgrUserTitleSize] = '\0';
+	{
+		for (int i = RezMgrUserTitleSize-1; i >= 0; i--)
+		{
+			if (m_sUserTitle[i] != ' ') break;
+			m_sUserTitle[i] = '\0';
+		}
 	}
 
-	return GetRez(sName, nType);
+    // verify that this is a valid file
+    ASSERT(Header.CR1 == 0x0d);
+    ASSERT(Header.LF2 == 0x0a);
+    ASSERT(Header.EOF1 == 0x1a);
+    ASSERT(m_nFileFormatVersion == 1);
+	if (Header.CR1 != 0x0d) return FALSE;
+	if (Header.LF2 != 0x0a) return FALSE;
+	if (Header.EOF1 != 0x1a) return FALSE;
+	if (m_nFileFormatVersion != 1) return FALSE;
+
+    // create root directory
+    m_pRootDir = new CRezDir(this, NULL, "", m_nRootDirPos, m_nRootDirSize, m_nRootDirTime, m_nDirNumHashBins, m_nTypNumHashBins);
+    ASSERT(m_pRootDir != NULL);
+
+    // read in directories
+    m_pRootDir->ReadAllDirs(pRezFile, m_nRootDirPos, m_nRootDirSize, FALSE);
+  }
+
+  return TRUE;
+}; 
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::OpenAdditional(const char* FileName, BOOL bOverwriteItems) {
+  ASSERT(FileName != NULL); // NULL file name!
+  ASSERT(m_pRootDir != NULL);  // must have already called open
+  ASSERT(m_bReadOnly == TRUE); // if original rez wasn't read only we can't do this!
+  BOOL ReadOnly = TRUE;
+  BOOL CreateNew = FALSE;
+  ASSERT(!(ReadOnly && CreateNew)); // gee, we can't do both!
+
+  // we can not open additinoal files if the original was not read only
+  if (m_bReadOnly == FALSE) return FALSE;
+
+  // by definition nothing is sorted anymore because we have mutiple files
+  m_bIsSorted = FALSE;
+
+  // store file name in class
+  if (m_sFileName != NULL) delete [] m_sFileName;
+  m_sFileName = new char[strlen(FileName)+1];
+  ASSERT(m_sFileName != NULL);
+  strcpy(m_sFileName,FileName);
+
+  // check if user has asked us to open a directory instead of a rez file
+  if (IsDirectory(FileName)) {
+
+    // Create the CRezFileDirectoryEmulation object
+    CRezFileDirectoryEmulation* pRezFile = new CRezFileDirectoryEmulation(this,m_nMaxOpenFilesInEmulatedDir);
+    ASSERT(pRezFile != NULL);
+    if (pRezFile == NULL) {
+	  delete [] m_sFileName;
+	  m_sFileName = NULL;
+      return FALSE;
+    }
+    m_lstRezFiles.Insert(pRezFile);
+    m_nNumRezFiles++;
+
+    // open the file
+    if (!pRezFile->Open(FileName,ReadOnly,CreateNew)) return FALSE;
+    m_bFileOpened = TRUE;
+
+	// read in data from directory and all sub directories
+	ReadEmulationDirectory(pRezFile,m_pRootDir,m_sFileName,bOverwriteItems);
+
+    return TRUE;
+  }
+
+  // create a new CRezFile object for the RezFile
+  CRezFile* pRezFile = new CRezFile(this);
+  ASSERT(pRezFile != NULL);
+  if (pRezFile == NULL) {
+	delete [] m_sFileName;
+	m_sFileName = NULL;
+    return FALSE;
+  }
+  m_lstRezFiles.Insert(pRezFile);
+  m_nNumRezFiles++;
+
+  // open the file
+  if (!pRezFile->Open(FileName,ReadOnly,CreateNew)) return FALSE;
+
+  // read in the header
+  FileMainHeaderStruct Header;
+  pRezFile->Read(0,0,sizeof(Header),&Header);
+
+  // store header values in RezMgr class
+  if (Header.LargestKeyAry > m_nLargestKeyAry) m_nLargestKeyAry = Header.LargestKeyAry;
+  if (Header.LargestDirNameSize > m_nLargestDirNameSize) m_nLargestDirNameSize = Header.LargestDirNameSize;
+  if (Header.LargestRezNameSize > m_nLargestRezNameSize) m_nLargestRezNameSize = Header.LargestRezNameSize;
+  if (Header.LargestCommentSize > m_nLargestCommentSize) m_nLargestCommentSize = Header.LargestCommentSize;
+
+  // verify that this is a valid file
+  ASSERT(Header.CR1 == 0x0d);
+  ASSERT(Header.LF2 == 0x0a);
+  ASSERT(Header.EOF1 == 0x1a);
+  ASSERT(Header.FileFormatVersion == 1);
+
+  // read in directories
+  m_pRootDir->ReadAllDirs(pRezFile, Header.RootDirPos, Header.RootDirSize, bOverwriteItems);
+
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::ReadEmulationDirectory(CRezFileDirectoryEmulation* pRezFileEmulation, CRezDir* pDir, char* sParamPath, BOOL bOverwriteItems) {
+  int i = 0;
+
+  ASSERT(pDir != NULL);
+  ASSERT(this != NULL);
+  ASSERT(sParamPath != NULL);
+  ASSERT(m_bFileOpened);
+  
+  _finddata_t fileinfo;
+
+  // figure out the path to this dir with added backslash
+  char sPath[_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5];
+  strcpy(sPath,sParamPath);
+
+  if (sPath[strlen(sPath)-1] != '\\') strcat(sPath,"\\");
+
+  // figure out the find search string by adding *.* to search for everything
+  // in this directory (both the files, which are added as resources, and the
+  // sub directories, which are added as directories and then searched in
+  // turn)
+  char sFindPath[_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5];
+  strcpy(sFindPath,sPath);
+  strcat(sFindPath,"*.*");
+
+  // being search for everything in this directory using findfirst and findnext
+  long nFindHandle = _findfirst( sFindPath, &fileinfo );
+  if (nFindHandle >= 0) {
+
+    // loop through all entries in this directory
+    do {
+
+      // skip the files . and ..
+      if (strcmp(fileinfo.name,".") == 0) continue;
+      if (strcmp(fileinfo.name,"..") == 0) continue;
+      
+      // if this is a subdirectory
+      if ((fileinfo.attrib & _A_SUBDIR) == _A_SUBDIR) {
+
+        // figure out the base name
+        char sBaseName[_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5];
+        strcpy(sBaseName,fileinfo.name);
+        if (!m_bLowerCaseUsed) strupr(sBaseName);
+
+        // figure out the path name we are working on
+        char sPathName[_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5];
+        strcpy(sPathName,sPath);
+        strcat(sPathName,sBaseName);              
+        // (it ends in a backslash too, as sPath does)
+        strcat(sPathName,"\\");
+
+        // create new directory entry in resource file (unless directory already exists)
+        // (if more than one directory or rez file is opened the directory
+        // might already be there, in which case its contents are merged
+        // with the ones already read)
+        CRezDir* pNewDir;
+		pNewDir = pDir->GetDir(sBaseName);
+		if (pNewDir == NULL) pNewDir = pDir->CreateDir(sBaseName);
+
+        // error if directory not found or created
+        if (pNewDir == NULL) {
+		  ASSERT(FALSE); 
+          continue;
+        }
+
+        // call TransferDir on the new directory
+        ReadEmulationDirectory(pRezFileEmulation,pNewDir,sPathName,bOverwriteItems);
+      }
+
+      // if this is a file add it to the resource file
+      else {
+
+        // figure out the file name we are working on
+        char sFileName[_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5];
+        strcpy(sFileName,sPath);
+        strcat(sFileName,fileinfo.name);              
+        
+        // skip if file size is 0
+//        if (fileinfo.size <= 0) continue;
+        
+        // split the file name up into its parts
+        char drive[_MAX_DRIVE+1];
+        char dir[_MAX_DIR+1];
+        char fname[_MAX_FNAME+1+_MAX_EXT+1];
+        char ext[_MAX_EXT+1];
+         _splitpath(sFileName, drive, dir, fname, ext );
+        
+        // figure out the Name for this file
+        char sName[_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5];
+        ASSERT(strlen(fname) < (_MAX_DRIVE+_MAX_DIR+_MAX_FNAME+_MAX_EXT+5));
+        strcpy(sName,fname);
+        strupr(sName);
+        
+        // figure out the ID for this file (if name is all digits use it as ID number, otherwise assign a number)
+        REZID nID;
+        {
+          int nNameLen = strlen(sName);
+          for (i = 0; i < nNameLen; i++) {
+            if ((sName[i] < '0') || (sName[i] > '9')) break;
+          }
+          if (i < nNameLen) {
+            nID = m_nNextIDNumToUse;
+            m_nNextIDNumToUse++;
+          }
+          else {
+            nID = atol(sName);
+          }
+        }
+        
+        REZTYPE nType;
+
+	    // check if the extension is too long
+	    if (strlen(ext) > 5)
+		{
+		  strncat(sName,ext,_MAX_FNAME+1+_MAX_EXT);
+		  fname[_MAX_FNAME] = '\0';
+		  nType = 0;
+		}  
+        else
+		{ 
+          // figure out the Type for this file
+          char sExt[5];
+          if (strlen(ext) > 0) {
+            strcpy(sExt,&ext[1]);
+            strupr(sExt);
+            nType = StrToType(sExt);
+		  }
+          else nType = 0;
+		}
+        
+        // convert type back to string 
+        char sType[5];
+        TypeToStr(nType,sType);
+        
+        // print out message to user
+//        TRACE("Adding: Type = %-4s Name = %-12s Size = %-8i ID = %-8i\n",sType,sName,(int)fileinfo.size,(int)nID);
+
+        // find or create the type for this resource
+        CRezTyp* pTyp = pDir->GetOrMakeTyp(nType);
+        ASSERT(pTyp != NULL);
+
+        // create new resource if it doesn't exist
+        CRezItm* pItm;
+		pItm = pDir->GetRez(sName,nType);
+		if (pItm == NULL) pItm = pDir->CreateRezInternal(nID,sName,pTyp,NULL);
+		else {
+		  if (bOverwriteItems) {
+		    pDir->RemoveRezInternal(pTyp,pItm);
+			pItm = pDir->CreateRezInternal(nID,sName,pTyp,NULL);
+		  }
+		  else {
+		    pItm = NULL;
+		  }
+		}
+        
+        // make sure resource was created
+        if (pItm != NULL) {
+
+     	  // store the file time in the resource
+		  pItm->SetTime((REZTIME)fileinfo.time_write);
+
+		  // store the size of the file in the resource
+		  pItm->m_nSize = fileinfo.size;
+
+  		  // set the file pointer for the item
+		  pItm->m_pRezFile = new CRezFileSingleFile(this, sFileName, pRezFileEmulation);
+		  ASSERT(pItm->m_pRezFile != NULL);
+        }
+      }
+        
+    // get the next entry in this directory
+    } while (_findnext(nFindHandle, &fileinfo) == 0);
+
+    // close out the directory findfirst and findnext
+    _findclose(nFindHandle);
+  }
+
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::Close(BOOL bCompact) {
+  ASSERT(m_bFileOpened);
+  BOOL bRetVal;
+
+  // if this is not read only flush it
+#ifndef REZMGRLITE
+  if (!m_bReadOnly) Flush();
+#endif
+
+  bRetVal = m_pPrimaryRezFile->Close();
+
+  // remove the primary RezFile from the list of RezFiles
+  m_lstRezFiles.Delete(m_pPrimaryRezFile);
+  m_nNumRezFiles--;
+  delete m_pPrimaryRezFile;
+  m_pPrimaryRezFile = NULL;
+
+  // delete and close out all the rest of the RezFiles
+  CBaseRezFile* pRezFile;
+  while ((pRezFile = m_lstRezFiles.GetFirst()) != NULL) {
+	pRezFile->Close();
+    m_lstRezFiles.Delete(pRezFile);
+	m_nNumRezFiles--;
+	delete pRezFile;
+  }
+
+  // remove memory in this object associated with the open file
+  if (m_pRootDir != NULL) {
+    delete m_pRootDir;
+    m_pRootDir = NULL;
+  }
+  if (m_sFileName != NULL) {
+    delete [] m_sFileName;
+    m_sFileName = NULL;
+  }
+
+  // mark resource as closed
+  m_bFileOpened = FALSE;
+
+  return bRetVal;
+}; 
+
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezMgr::GetRootDir() {
+  ASSERT(m_bFileOpened);
+  return m_pRootDir;
+};
+
+
+//---------------------------------------------------------------------------------------------------
+REZTYPE CRezMgr::StrToType(char* pStr) {
+  ASSERT(pStr != NULL);
+  if (pStr == NULL) return 0;
+  REZTYPE nType = 0;
+  BYTE* pType = (BYTE*)&nType;
+
+  // figure out length of string
+  int nStrLen = strlen(pStr);
+
+  // store string in type
+  if (nStrLen > 0) pType[nStrLen-1] = pStr[0];
+  if (nStrLen > 1) pType[nStrLen-2] = pStr[1];
+  if (nStrLen > 2) pType[nStrLen-3] = pStr[2];
+  if (nStrLen > 3) pType[nStrLen-4] = pStr[3];
+
+  return nType;
+};
+
+//---------------------------------------------------------------------------------------------------
+void CRezMgr::TypeToStr(REZTYPE nType, char* sType) {
+  ASSERT(sType != NULL);
+  if (sType == NULL) return;
+  BYTE* pType = (BYTE*)&nType;
+  int nStrLen = 0;
+
+  // figure out the length of the string
+  if (pType[3] != '\0') nStrLen = 4;
+  else if (pType[2] != '\0') nStrLen = 3;
+  else if (pType[1] != '\0') nStrLen = 2;
+  else if (pType[0] != '\0') nStrLen = 1;
+
+  // store type in string
+  if (nStrLen > 0) sType[0] = pType[nStrLen-1];
+  if (nStrLen > 1) sType[1] = pType[nStrLen-2];
+  if (nStrLen > 2) sType[2] = pType[nStrLen-3];
+  if (nStrLen > 3) sType[3] = pType[nStrLen-4];
+
+  // put terminator on string
+  sType[nStrLen] = '\0';
+
+  return;
+};
+
+//---------------------------------------------------------------------------------------------------
+void* CRezMgr::Alloc(DWORD NumBytes) {
+  ASSERT(FALSE); // Not implemented!
+  return NULL;
+};
+
+//---------------------------------------------------------------------------------------------------
+void CRezMgr::Free(void* Ptr) {
+  ASSERT(FALSE); // Not implemented!
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::DiskError() {
+  return FALSE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::VerifyFileOpen() {
+  BOOL bRetVal = TRUE;
+  CBaseRezFile* pRezFile = m_lstRezFiles.GetFirst();
+  while (pRezFile != NULL) {
+    if (pRezFile->VerifyFileOpen() == FALSE) bRetVal = FALSE; 		
+	pRezFile = pRezFile->Next();
+  }
+  return bRetVal;
+};
+
+//---------------------------------------------------------------------------------------------------
+void CRezMgr::SetHashTableBins(unsigned int nByNameNumHashBins, unsigned int nByIDNumHashBins, 
+							   unsigned int nDirNumHashBins, unsigned int nTypNumHashBins)
+{
+	m_nByNameNumHashBins = nByNameNumHashBins;
+	m_nByIDNumHashBins = nByIDNumHashBins;
+	m_nDirNumHashBins =	nDirNumHashBins;
+	m_nTypNumHashBins = nTypNumHashBins;
+};
+
+#ifndef REZMGRLITE
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::Flush() {
+  ASSERT(m_bReadOnly != TRUE);
+
+  // write out directory and header if not read only
+  if (!m_bReadOnly) {
+
+    // save the next write pos for the header information
+    unsigned long nSaveWritePos = m_nNextWritePos;
+
+    // write out all of the directories
+    m_pRootDir->WriteAllDirs(m_pPrimaryRezFile, &m_nRootDirPos,&m_nRootDirSize);
+    
+    // fill out the permant parts of the header
+    FileMainHeaderStruct Header;
+    Header.CR1 = 0x0d;
+    Header.CR2 = 0x0d;
+    Header.CR3 = 0x0d;
+    Header.LF1 = 0x0a;
+    Header.LF2 = 0x0a;
+    Header.LF3 = 0x0a;
+    Header.EOF1 = 0x1a;
+    memset(Header.FileType,' ',RezMgrUserTitleSize);
+    strcpy(Header.FileType,"RezMgr Version 1 Copyright (C) 1995 MONOLITH INC.");
+    Header.FileType[strlen(Header.FileType)] = ' ';
+    memset(Header.UserTitle,' ',RezMgrUserTitleSize);
+	if (m_sUserTitle[0] != '\0') memcpy(Header.UserTitle,m_sUserTitle,strlen(m_sUserTitle));
+    
+    // fill out the variable parts of the header
+    Header.FileFormatVersion      = 1;     
+    Header.RootDirPos             = m_nRootDirPos; 			
+    Header.RootDirSize            = m_nRootDirSize;              
+    Header.RootDirTime            = m_nRootDirTime;           
+    Header.NextWritePos           = nSaveWritePos;           
+    Header.Time                   = m_nLastTimeModified; 					
+    Header.LargestKeyAry          = m_nLargestKeyAry;			
+    Header.LargestDirNameSize     = m_nLargestDirNameSize;    
+    Header.LargestRezNameSize     = m_nLargestRezNameSize;	
+    Header.LargestCommentSize     = m_nLargestCommentSize;	
+    Header.IsSorted               = m_bIsSorted;                
+    
+    // write the header
+    m_pPrimaryRezFile->Write(0,0,sizeof(Header),&Header);
+
+    // actually flush the file 
+    m_pPrimaryRezFile->Flush();
+
+    return TRUE;
+  }
+  else return FALSE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezDir::WriteAllDirs(CBaseRezFile* pRezFile, DWORD* Pos, DWORD* Size) {
+  BOOL bRetFlag = TRUE;
+
+  // first write out all directories contained in this directory
+  CRezDirHash* pDir = m_haDir.GetFirst();
+  while (pDir != NULL) {
+    CRezDir* pRezDir = pDir->GetRezDir();
+    ASSERT(pRezDir != NULL);
+    if (!pRezDir->WriteAllDirs(pRezFile, &pRezDir->m_nDirPos,&pRezDir->m_nDirSize)) {
+      bRetFlag = FALSE;
+      break;
+    }
+    pDir = pDir->Next();
+  }
+
+  // now write out our own directory block
+  *Pos = m_pRezMgr->m_nNextWritePos;
+  if (!WriteDirBlock(pRezFile, m_pRezMgr->m_nNextWritePos,Size)) bRetFlag = FALSE;
+  else m_pRezMgr->m_nNextWritePos += *Size;
+
+  return bRetFlag;
+}; 
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezDir::WriteDirBlock(CBaseRezFile* pRezFile, DWORD Pos, DWORD* Size) {
+  ASSERT(Pos > 0);
+  DWORD nCurPos = Pos;
+  FileDirEntryHeader Header;
+  BYTE Zero = 0;
+
+  // write all dir hash table contents out to file
+  {
+    Header.Type = DirectoryEntry;
+    CRezDirHash* pDir = m_haDir.GetFirst();
+    while (pDir != NULL) {
+      CRezDir* pRezDir = pDir->GetRezDir();
+      ASSERT(pRezDir != NULL);
+
+      // Fill out the header we are going to write out
+      Header.Dir.Pos = pRezDir->m_nDirPos;
+      Header.Dir.Size = pRezDir->m_nDirSize;
+      Header.Dir.Time = pRezDir->m_nLastTimeModified;
+
+      // write out dir entry
+      nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Type),&Header.Type);
+      nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Dir.Pos),&Header.Dir.Pos);
+      nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Dir.Size),&Header.Dir.Size);
+      nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Dir.Time),&Header.Dir.Time);
+      if (pRezDir->m_sDirName == NULL) nCurPos += pRezFile->Write(nCurPos,0,1,&Zero);
+      else nCurPos += pRezFile->Write(nCurPos,0,strlen(pRezDir->m_sDirName)+1,pRezDir->m_sDirName);
+
+      pDir = pDir->Next();
+    }
+  }
+
+  // write all typ hash table contents 
+  {
+    Header.Type = ResourceEntry;
+    CRezTypeHash* pTyp = m_haTypes.GetFirst();
+    CRezItmHashByName* pItm;
+    while (pTyp != NULL) {
+      ASSERT(pTyp->GetRezTyp() != NULL);
+
+      // go through all items of this type
+      pItm = pTyp->GetRezTyp()->m_haName.GetFirst();
+      while (pItm != NULL) {
+        CRezItm* pRezItm = pItm->GetRezItm();
+        ASSERT(pRezItm != NULL);
+        
+        // Fill out the header we are going to write out
+        Header.Rez.Pos = pRezItm->m_nFilePos;
+        Header.Rez.Size = pRezItm->m_nSize;
+        Header.Rez.Time = pRezItm->m_nTime;
+        Header.Rez.ID = 0;
+        Header.Rez.Type = pTyp->GetRezTyp()->GetType();
+        Header.Rez.NumKeys = 0;
+
+        // write out item header
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Type),&Header.Type);
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Rez.Pos),&Header.Rez.Pos);
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Rez.Size),&Header.Rez.Size);
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Rez.Time),&Header.Rez.Time);
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Rez.ID),&Header.Rez.ID);
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Rez.Type),&Header.Rez.Type);
+        nCurPos += pRezFile->Write(nCurPos,0,sizeof(Header.Rez.NumKeys),&Header.Rez.NumKeys);
+        if (pRezItm->m_sName == NULL) nCurPos += pRezFile->Write(nCurPos,0,1,&Zero);
+        else nCurPos += pRezFile->Write(nCurPos,0,strlen(pRezItm->m_sName)+1,pRezItm->m_sName);
+        nCurPos += pRezFile->Write(nCurPos,0,1,&Zero);
+
+        // advance to next item
+        pItm = pItm->Next();
+      }
+
+      // advance to next resource type
+      pTyp = pTyp->Next();
+    }
+  }
+
+  m_pRezMgr->m_nNextWritePos = nCurPos;
+  *Size = nCurPos - Pos;
+  return TRUE;
+};
+#endif
+
+/*
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::VerifyFileOpen() {
+  // check if the files is even supposed to be open
+  if (m_bFileOpened == FALSE) return FALSE;
+
+  // test to see if the file is open
+  if (ftell(m_pRezFile) != -1L) return TRUE;
+  else {
+
+    // try to open the file again
+    if (!FileOpen(m_sFileName,m_bReadOnly,FALSE)) return FALSE;
+  }
+  
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+DWORD CRezMgr::FileRead(DWORD Pos, DWORD Size, void* DataPtr) {
+  ASSERT(DataPtr != NULL);
+
+  // if size is zero just return
+  if (Size <= 0) return 0;
+
+  while (fseek(m_pRezFile,Pos,SEEK_SET) != 0) {
+    if (!DiskError()) {
+      ASSERT(FALSE); // Seek Failed!
+      return 0;
+    }
+  }
+
+  DWORD nRetVal;
+  while ((nRetVal = fread(DataPtr,1,Size,m_pRezFile)) != Size) {
+    if (!DiskError()) {
+      ASSERT(FALSE); // Read Failed!
+      return 0;
+    };
+  };
+
+  return nRetVal;
+};
+
+//---------------------------------------------------------------------------------------------------
+DWORD CRezMgr::FileWrite(DWORD Pos, DWORD Size, void* DataPtr) {
+  ASSERT(DataPtr != NULL);
+
+  // if size is zero just return
+  if (Size <= 0) return 0;
+
+  while (fseek(m_pRezFile,Pos,SEEK_SET) != 0) {
+    if (!DiskError()) {
+      ASSERT(FALSE); // Seek Failed!
+      return 0;
+    }
+  }
+
+  DWORD nRetVal;
+  while ((nRetVal = fwrite(DataPtr,1,Size,m_pRezFile)) != Size) {
+    if (!DiskError()) {
+      ASSERT(FALSE); // Write Failed!
+      return 0;
+    };
+  };
+
+  return nRetVal;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::FileOpen(const char* FileName, BOOL ReadOnly, BOOL CreateNew) {
+  do {
+    if (CreateNew) {
+      if (ReadOnly) return FALSE;
+      else m_pRezFile = fopen(FileName,"w+b");
+    }
+    else {
+      if (ReadOnly) m_pRezFile = fopen(FileName,"rb");
+      else m_pRezFile = fopen(FileName,"r+b");
+    }
+    if (m_pRezFile == NULL) {
+      if (!DiskError()) return FALSE;
+    }
+  } while (m_pRezFile == NULL);
+  m_bReadOnly = ReadOnly;
+  return TRUE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::FileClose() {
+  ASSERT(m_pRezFile != NULL);
+  if (m_pRezFile != NULL) {
+    BOOL bRetVal;
+    while ((bRetVal = (fclose(m_pRezFile) == 0)) == FALSE) {
+      if (!DiskError()) return FALSE;
+    };
+    return bRetVal;
+  }
+  else return FALSE;
+};
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::FileFlush() {
+  ASSERT(m_pRezFile != NULL);
+  if (m_pRezFile != NULL) {
+    BOOL bRetVal;
+    while ((bRetVal = (fflush(m_pRezFile) == 0)) == FALSE) {
+      if (!DiskError()) return FALSE;
+    };
+    return bRetVal;
+  }
+  else return FALSE;
+};
+*/
+
+//---------------------------------------------------------------------------------------------------
+REZTIME CRezMgr::GetCurTime() {
+  time_t nTimeVal;
+  nTimeVal = time(&nTimeVal);
+  return (REZTIME)nTimeVal;
+};
+
+
+//---------------------------------------------------------------------------------------------------
+void CRezMgr::SetDirSeparators(const char* sDirSeparators) {
+	if (m_sDirSeparators != NULL) delete [] m_sDirSeparators;
+	int nLen = strlen(sDirSeparators);
+	m_sDirSeparators = new char[nLen+1];
+	strcpy(m_sDirSeparators,sDirSeparators);
+};
+
+
+//---------------------------------------------------------------------------------------------------
+inline BOOL CRezDir::IsGoodChar(char c)
+{
+	if (m_pRezMgr->m_sDirSeparators != NULL)
+	{
+		return (strchr(m_pRezMgr->m_sDirSeparators,c) == NULL);
+	}
+	else
+	{
+		if (c >= ' ' && c <= '.') return(TRUE);
+		if (c >= '0' && c <= '9') return(TRUE);
+		if (c >= 'A' && c <= 'Z') return(TRUE);
+		if (c >= 'a' && c <= 'z') return(TRUE);
+		return(FALSE);
+	}
+}
+
+// [blg]
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezDir::GetDirFromPath(REZCDIRNAME sPath)
+{
+	// Strip off leading slash...
+
+	int len = strlen(sPath);
+
+	if (len > 1)
+	{
+		if (!IsGoodChar(sPath[0]))
+		{
+			sPath = &sPath[1];
+			len--;
+		}
+	}
+
+
+	// Read the first directory name...
+
+	int i = 0;
+	char sDir[1024];
+
+	while (IsGoodChar(sPath[i]))
+	{
+		sDir[i] = sPath[i];
+		i++;
+		len--;
+		if (i >= 1023) break;
+	}
+
+	sDir[i] = '\0';
+
+	// A ".." after the name leaves us in this directory...
+	if ((len >= 3) && (sPath[i+1] == '.') && (sPath[i+2] == '.'))
+	{
+		return(this);
+	}
+
+	CRezDir* pDir = GetDir(sDir);
+	if (!pDir) return(NULL);
+
+
+	// If this is the last name in the path string, we're done...
+
+	if (sPath[i] == '\0')
+	{
+		return(pDir);
+	}
+
+
+	// Skip any white space...
+
+	while (!IsGoodChar(sPath[i]))
+	{
+		i++;
+		if (sPath[i] == '\0') return(pDir);
+	}
+
+
+	// Recursively continue...
+
+	return(pDir->GetDirFromPath(&sPath[i]));
 }
 
 
-// ======================================================================= //
-//  NOT WRITTEN HERE, and why
-//
-//  0x0048df10 (26 bytes, CRezItm::CRezItm) is below this file's range and
-//  is already reconstructed as CSub48df10View in
-//  src/engine/lithtech/ltnew1.cpp -- with the vptr at +0x1c, the owner
-//  pointer at +0x30 written twice, and the 0x3c stride, all of which this
-//  file's CRezItm confirms.  It is declared above and deliberately left
-//  undefined so the two cannot collide.
-//
-//  0x0048e1a0 (5 bytes, `jmp CBaseHash::~CBaseHash`) is not source: it is
-//  the shared tail of this translation unit's unwind funclets, emitted by
-//  the compiler when /GX is on.
-// ======================================================================= //
+// [blg]
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::GetRezFromDosPath(const char* sPath)
+{
+	char	sDir[1024];
+	char	sRez[1024];
+
+
+	// Strip off leading slash...
+
+	int len = strlen(sPath);
+
+	if (len >= 1023) return NULL;
+
+	if (len > 1)
+	{
+		if (!IsGoodChar(sPath[0]))
+		{
+			sPath = &sPath[1];
+			len--;
+		}
+	}
+
+
+	// Strip off the rez name...
+
+	int i   = len - 1;
+
+	while (IsGoodChar(sPath[i]))
+	{
+		i--;
+		if (i < 0) break;
+	}
+
+	if (i == len) return(NULL);
+
+	strncpy(sRez, &sPath[i+1], 1023);
+	sRez[1023] = '\0';
+
+
+	// If we were only given a rez name, try to get it...
+
+	if (i <= 1)
+	{
+		return(GetRezFromDosName(sRez));
+	}
+
+
+	// Copy everything except for the rez name...
+
+	strncpy(sDir, sPath, i);
+	sDir[i] = '\0';
+
+
+	// Find the directory for this path...
+
+	CRezDir* pDir = GetDirFromPath(sDir);
+
+	if (!pDir) return(NULL);
+
+
+	// Try to get the rez from the dir we just got...
+
+	return(pDir->GetRezFromDosName(sRez));
+}
+
+
+// [blg]
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezDir::GetRezFromPath(const char* sPath, REZTYPE type)
+{
+	char	sDir[1024];
+	char	sRez[1024];
+
+
+	// Strip off leading slash...
+
+	int len = strlen(sPath);
+
+	if (len >= 1023) return NULL;
+
+	if (len > 1)
+	{
+		if (!IsGoodChar(sPath[0]))
+		{
+			sPath = &sPath[1];
+			len--;
+		}
+	}
+
+
+	// Strip off the rez name...
+
+	int i   = len - 1;
+
+	while (IsGoodChar(sPath[i]))
+	{
+		i--;
+		if (i < 0) break;
+	}
+
+	if (i == len) return(NULL);
+
+	strncpy(sRez, &sPath[i+1], 1023);
+	sRez[1023] = '\0';
+
+	// If we were only given a rez name, try to get it...
+
+	if (i <= 1)
+	{
+		return(GetRez(sRez, type));
+	}
+
+
+	// Copy everything except for the rez name...
+
+	strncpy(sDir, sPath, i);
+	sDir[i] = '\0';
+
+
+	// Find the directory for this path...
+
+	CRezDir* pDir = GetDirFromPath(sDir);
+
+	if (!pDir) return(NULL);
+
+
+	// Try to get the rez from the dir we just got...
+
+	return(pDir->GetRez(sRez, type));
+}
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezMgr::GetRezFromPath(const char* sPath, REZTYPE type)
+{
+	return(GetRootDir()->GetRezFromPath(sPath, type));
+}
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezMgr::GetRezFromDosPath(const char* sPath)
+{
+	return(GetRootDir()->GetRezFromDosPath(sPath));
+}
+
+//---------------------------------------------------------------------------------------------------
+CRezDir* CRezMgr::GetDirFromPath(const char* sPath)
+{
+	return(GetRootDir()->GetDirFromPath(sPath));
+}
+
+
+// [blg]
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::Reset()
+{
+	if (!IsOpen()) return(FALSE);
+
+	Close();
+	return(Open(m_sFileName));
+}
+
+
+//---------------------------------------------------------------------------------------------------
+BOOL CRezMgr::IsDirectory(const char* sFileName) {
+   struct stat buf;
+   int result;
+
+   // Get data associated with "stat.c"
+   result = stat( sFileName, &buf );
+
+   // Check if statistics are valid 
+   if( result != 0 ) return FALSE;
+
+   // is this a directory
+   if ((buf.st_mode & _S_IFDIR) == _S_IFDIR) return TRUE;
+   else return FALSE;
+}
+
+
+//---------------------------------------------------------------------------------------------------
+CRezItm* CRezMgr::AllocateRezItm()
+{
+	CRezItm* pNewItem = NULL;
+	CRezItmHashByName* pHash;
+
+	pHash = m_hashRezItmFreeList.GetFirst();
+	if (pHash != NULL) pNewItem = pHash->GetRezItm();
+
+	// if we are out of free Rez Items then make a new chunk and allocate one from there
+	if (pNewItem == NULL)
+	{
+		CRezMgr::CRezItmChunk* pNewChunk;
+		pNewChunk = new CRezItmChunk;
+		if (pNewChunk == NULL) return NULL;
+
+		pNewChunk->m_pRezItmAry = new CRezItm[m_nRezItmChunkSize];
+		if (pNewChunk->m_pRezItmAry == NULL)
+		{
+			delete pNewChunk;
+			return NULL;
+		}
+
+		for (unsigned int i = 0; i < m_nRezItmChunkSize; i++)
+		{
+			pNewChunk->m_pRezItmAry[i].m_heName.SetRezItm(&pNewChunk->m_pRezItmAry[i]);
+			m_hashRezItmFreeList.Insert(&pNewChunk->m_pRezItmAry[i].m_heName);
+		}
+
+		m_lstRezItmChunks.Insert(pNewChunk);		
+
+		pNewItem = m_hashRezItmFreeList.GetFirst()->GetRezItm();
+	}
+
+	if (pNewItem != NULL)
+	{
+		m_hashRezItmFreeList.Delete(&pNewItem->m_heName);
+	}
+
+	return pNewItem;
+}
+
+
+//---------------------------------------------------------------------------------------------------
+void CRezMgr::DeAllocateRezItm(CRezItm* pItem)
+{
+
+	if (pItem != NULL)
+	{
+		m_hashRezItmFreeList.Insert(&pItem->m_heName);
+	}
+}
+
+
+//---------------------------------------------------------------------------------------------------
+void CRezMgr::SetUserTitle(const char* sUserTitle)
+{
+	strncpy(m_sUserTitle, sUserTitle, RezMgrUserTitleSize);
+	m_sUserTitle[RezMgrUserTitleSize] = '\0';
+}

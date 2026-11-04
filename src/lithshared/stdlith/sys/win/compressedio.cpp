@@ -18,33 +18,12 @@
 
 // Allocators for ZLib's allocation stuff.
 //
-// The allocator catches its own throw. That is not as odd as it reads: zlib
-// is C and cannot be unwound through, so the exception has to stop here and
-// the failure has to come back as a null pointer. The shipped code says so
-// plainly — it registers an exception frame, and the funclet at the end is a
-// `catch(...)` whose body is `return NULL`, reached by the throw two
-// instructions earlier.
-//
-// NEAR (114 of 115 bytes, ONE instruction): the shipped frame is `sub
-// $0xc,%esp` where ours is `sub $0x8` — one unused dword. Every other byte
-// agrees, and the mnemonic diff is empty.
-//
-// Where that dword goes, read off the shipped frame: -0x10 holds the EH esp
-// save, the dword at -0x14 carries the one-byte exception temporary at its
-// top (`lea -0x11(%ebp),%edx` at +0x3f — CLithMemException is an empty class,
-// so sizeof is 1), and -0x18 is the extra one. Nothing reads or writes it.
-//
-// FOUR spellings ruled out, each measured:
-//   * a named `CLithMemException e; throw e;`        — two bytes wrong, not one
-//   * `ptr = NULL` in the catch instead of `return NULL` — spills and reloads ptr
-//   * a named `uInt nBytes = items * size;`          — FIVE instructions wrong
-//   * `return ptr;` INSIDE the try, catch returning NULL, no trailing return
-//                                                    — byte-identical to this
-//
-// That last one is worth keeping: a return inside a try with an active EH
-// frame does NOT cost a temporary here, which was the most plausible source
-// of a spare dword. Whatever reserves it is not the shape of the control
-// flow, the number of named locals, or where the throw's operand lives.
+// The allocator catches its own throw: zlib is C and cannot be unwound
+// through, so the failure has to come back as a null pointer. The shape is
+// the debug build's (libs/debug/StdLith.lib, /Od): the return inside the
+// try, and a named catch parameter -- its slot is the dword the release
+// build's frame reserves and never touches -- assigned to itself, the old
+// way of keeping the compiler from warning that it is never used.
 
 void* CustomZAlloc( voidpf opqaud, uInt items, uInt size )
 {
@@ -57,13 +36,13 @@ void* CustomZAlloc( voidpf opqaud, uInt items, uInt size )
 		{
 			throw CLithMemException();
 		}
+		return ptr;
 	}
-	LithCatch( ... )
+	LithCatch( CLithMemException &memException )
 	{
+		memException = memException;
 		return NULL;
 	}
-
-	return ptr;
 }
 
 void CustomZFree( voidpf opaque, voidpf address )
