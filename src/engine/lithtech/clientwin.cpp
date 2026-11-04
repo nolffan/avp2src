@@ -733,9 +733,9 @@ public:
 
 // The crash reporter WinMain's exception filter calls (0x00439b80 in Primal
 // Hunt's image, 0x00436270 in AvP2 1.0.9.6's): it is handed the exception
-// record and the thread's name, writes its report, and answers the filter's
-// verdict.  That module has no source yet; see the definition below.
-int clu_ReportExceptionQ501(EXCEPTION_POINTERS* pInfo, char* pThreadName);
+// record and the thread's name, writes crashlog.txt, and answers the
+// filter's verdict (clientdsi.cpp).
+int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char* Message);
 
 
 // ----------------------------------------------------------------------- //
@@ -1572,22 +1572,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	{
 		nRet = clu_WinMainQ501(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
 	}
-	__except (clu_ReportExceptionQ501(GetExceptionInformation(), "main thread"))
+	__except (RecordExceptionInfo(GetExceptionInformation(), "main thread"))
 	{
 	}
 
 	return nRet;
 }
 
-// Not the shipped reporter: 0x00439b80 is a module of its own (a 0xb44-byte
-// frame, its own __try, the module file name, a report written to disk),
-// not yet written.  Its common exit answers zero (0x0043a08c), which is
-// EXCEPTION_CONTINUE_SEARCH, so the exception carries on to the system's
-// own handling; this stands in for it with only that answer.
-int clu_ReportExceptionQ501(EXCEPTION_POINTERS* pInfo, char* pThreadName)
-{
-	return EXCEPTION_CONTINUE_SEARCH;
-}
 
 
 // ======================================================================= //

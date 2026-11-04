@@ -1871,8 +1871,10 @@ public:
 	VisChunkQ488* GetChunk(uint32 i) { return &m_pChunks[i]; }
 
 	// The walk's lookup (0x0048be9c..0x0048bec3): straight off the world,
-	// the array base loaded into its own register before the add.
-	VisRecordQ488* GetRecord(uint32 i)
+	// the array base loaded into its own register before the add.  The index
+	// is a const reference to the node's word: by value Primal Hunt's cl 8966
+	// loads the base second (PH 0x004a8ef5, 0x004a8a1f).
+	VisRecordQ488* GetRecord(const uint16& i)
 	{
 		if (i < m_Records.m_nElements)
 			return &m_Records.m_pArray[i];
@@ -2016,7 +2018,7 @@ void vis_TraversalQ488(CVisQueryQ488* pQuery)
 
 			if (pLeaf->m_iRecord != 0xffff)
 			{
-				pQuery->ReportRecord(pQuery->m_pWorld->GetRecord(pLeaf->m_iRecord));
+				pQuery->ReportRecord(pQuery->m_pWorld->m_Records.GetRecord(pLeaf->m_iRecord));
 			}
 
 			pQuery->m_CollectFn((LTLinkQ488*)&pLeaf->m_Objects, &pObjects, &nObjects);
@@ -2258,11 +2260,15 @@ inline void vis_WalkNodeQ488(VisNodeQ488* pNode, CVisObjectQ488** pArray,
 
 // ======================================================================= //
 //  0x0048b8e0 (880) and 0x0048be40 (862) -- NOW WRITTEN above
-//  (vis_TraversalQ488 / vis_WalkNodeQ488), both size-exact nears whose only
-//  residual is the record lookup's registers (shipped scales the index in
-//  place and adds the base, ours the reverse; ternary, if/else, result local,
-//  byte arithmetic, uint16/int index and a CMoArray at +0x84 all measured).
-//  The notes below are the evidence as first gathered.
+//  (vis_TraversalQ488 / vis_WalkNodeQ488), both byte-identical in Primal
+//  Hunt (0x004a8900, 0x004a8e80) and AvP2 1.0.9.6.  The record lookup was
+//  the last residual: the world's GetRecord takes its index by const
+//  reference (the walk's `xor; mov %ax` and base-first scaling at
+//  0x004a8ee4..0x004a8f01), and the leaf loop asks the record array itself
+//  (the `and $0xffff` on the value already in %cx at 0x004a8be2).  By value,
+//  as uint32 or uint16, cl 8966 scales the index into a fresh register and
+//  adds it to the base instead.  The notes below are the evidence as first
+//  gathered.
 //
 //  BOTH ARE SINGLE FUNCTIONS.  Both extents are clean: no branch
 //  target leaves either range and the last instruction ends exactly on the

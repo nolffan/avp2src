@@ -2139,52 +2139,62 @@ void xfer_FinishTransfer(CClientFiles* pState)
 // single destructor at 0x004303a6 (an early `return` gives that block twice,
 // which is the 25 bytes we were over by), and it emits `mov $0x1,%ebx`
 // before `mov %eax,%ebp`.
+//
+// AVP2: the chunk is 0x424 bytes (1060.0f in the budget test) and the read
+// buffer 0x44c, the packet size: Primal Hunt lithtech.exe 0x0043b435
+// (`mov $0x424,%ebx`, 0x4d5454 = 1060.0f, a 0x454-byte frame) and
+// server.dll 0x10012aa1 (0x100746fc = 1060.0f, `sub $0x450,%esp`, no
+// _chkstk), and AvP2 1.0.9.6's server.dll 0x1001210b alike.
 void xfer_SendNextChunk(CClientFiles* pState)
 {
-	uint8       buf[0x1000];
+	uint8       buf[0x44c];
 	CMessageRef msg;
-	uint32      nSend = 0xfd8;
+	uint32      nSend = 0x424;
 
-	if (pState->m_nChunks == 6)
-		return;
-
-	msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
-
-	if (4056.0f / pState->m_fRate <= pState->m_fBudget)
+	// A positive guard round the whole body, not an early return: the
+	// six-chunk test jumps to the reference's release (lithtech.exe
+	// 0x0043b441 -> 0x0043b517, server.dll 0x10012aad -> 0x10012b6d), which
+	// an early return skipped.
+	if (pState->m_nChunks != 6)
 	{
-		int bLast = 0;
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));   // AVP2: 0x44c (0x00483d1e)
 
-		msg.m_pMsg->m_pData[0] = 0x35;
-
-		if (pState->m_nRemaining <= nSend)
+		if (1060.0f / pState->m_fRate <= pState->m_fBudget)
 		{
-			bLast = 1;
-			nSend = pState->m_nRemaining;
+			int bLast = 0;
+
+			msg.m_pMsg->m_pData[0] = 0x35;
+
+			if (pState->m_nRemaining <= nSend)
+			{
+				bLast = 1;
+				nSend = pState->m_nRemaining;
+			}
+
+			pState->m_pStream->Read(buf, nSend);
+
+			msg.m_pMsg->WriteData(buf, nSend);
+
+			pState->m_pNetMgr->SendToConnection(msg.m_pMsg, pState->m_pConnection, 0x80);
+
+			if (bLast)
+			{
+				xfer_FreeFile(pState, pState->m_pCurFile);
+
+				pState->m_pCurFile = LTNULL;
+
+				pState->m_pfnDone(pState, pState->m_pStream);
+
+				pState->m_pStream = LTNULL;
+			}
+
+			pState->m_nChunks++;
+
+			// The RATE is what is cleared, not the budget: the next chunk's
+			// division then produces +INF and fails the test until something
+			// else refills it. `fstps 0x5c`, one byte from the other reading.
+			pState->m_fRate = 0.0f;
 		}
-
-		pState->m_pStream->Read(buf, nSend);
-
-		msg.m_pMsg->WriteData(buf, nSend);
-
-		pState->m_pNetMgr->SendToConnection(msg.m_pMsg, pState->m_pConnection, 0x80);
-
-		if (bLast)
-		{
-			xfer_FreeFile(pState, pState->m_pCurFile);
-
-			pState->m_pCurFile = LTNULL;
-
-			pState->m_pfnDone(pState, pState->m_pStream);
-
-			pState->m_pStream = LTNULL;
-		}
-
-		pState->m_nChunks++;
-
-		// The RATE is what is cleared, not the budget: the next chunk's
-		// division then produces +INF and fails the test until something
-		// else refills it. `fstps 0x5c`, one byte from the other reading.
-		pState->m_fRate = 0.0f;
 	}
 }
 

@@ -43,8 +43,9 @@ LTRESULT CPhysicsLT::SetAcceleration(HOBJECT hObj, LTVector* pAccel)
 // The world's address is taken and then tested for null, which it can never
 // be - a check the compiler kept rather than the source dropping it.
 //
-// 0x00404e10, identical. Three things closed it, each measured: the fill is
-// an inline helper (commonphysics.cpp's wm_InitMoveState shape, copied here
+// NOLF 0x00404e10 was identical (Primal Hunt 0x004054d0 and AvP2 1.0.9.6
+// 0x00404d40 add the CountAdder and flag 2 below). Three things closed it,
+// each measured: the fill is an inline helper (commonphysics.cpp's wm_InitMoveState shape, copied here
 // because this TU is client-only), not six stores written out; the clearing
 // stores come BEFORE the counter increment in source -- they are
 // servermgr.h's WMMoveState constructor, run at the declaration (VC6 still
@@ -52,6 +53,19 @@ LTRESULT CPhysicsLT::SetAcceleration(HOBJECT hObj, LTVector* pAccel)
 // handle to %eax as shipped); and the move flags are a local set to 1 and
 // raised to 9 under `if`, not a ternary (the `mov $1,%eax ; test %cl,%al ;
 // je` at 0x00404edc).
+// AVP2: the mover's second pointer is at CClientMgr+0x50c, not clientmgr.h's
+// NOLF 0x508 -- the world in front of it is four bytes longer in both retail
+// exes (Primal Hunt 0x00405606, AvP2 1.0.9.6 0x00404e4a; clienttexmgr.cpp's
+// view says the same at 0x0042915d). A local view until the header moves.
+class CClientMgrMoveViewQ538
+{
+public:
+	uint8                 m_pad_000[0x50c];
+	class CUnknown6A8Obj* m_pUnknown50c;      // 0x50c
+};
+
+#define CP_MOVER_Q538(pMgr) (((CClientMgrMoveViewQ538*)(pMgr))->m_pUnknown50c)
+
 static inline void cp_InitMoveState(WMMoveState* pState, void* pContainer,
                                     void* pUnknown04, LTObject* pObj,
                                     uint32 nPriority)
@@ -88,6 +102,11 @@ LTRESULT CPhysicsLT::MoveObject(HOBJECT hObj, LTVector* pPos, uint32 flags)
 
 	g_nMoveObjectCount++;
 
+	// AVP2: a counted move, as sm_MoveObject is: the ticks go to
+	// commonphysics.cpp's g_Unknown5872c (Primal Hunt 0x004f5718 at
+	// 0x0040551e, AvP2 1.0.9.6 0x004e4558 at 0x00404d79).
+	CountAdder cntAdder((uint32*)&g_Unknown5872c);
+
 	if (!hObj)
 		RETURN_ERROR(2, "CPhysicsLT::MoveObject", LT_INVALIDPARAMS);
 
@@ -96,13 +115,22 @@ LTRESULT CPhysicsLT::MoveObject(HOBJECT hObj, LTVector* pPos, uint32 flags)
 	if (!pWorld)
 		RETURN_ERROR(3, "CPhysicsLT::MoveObject", LT_NOTINITIALIZED);
 
-	cp_InitMoveState(&state, pWorld, m_pClientMgr->m_pUnknown508, hObj,
+	cp_InitMoveState(&state, pWorld, CP_MOVER_Q538(m_pClientMgr), hObj,
 	                 hObj->m_BlockingPriority);
 
 	nMoveFlags = 1;
 	if (flags & 1)
 		nMoveFlags = 9;
 
+	// AVP2: flag 2 adds 0x20 (Primal Hunt 0x00405641, AvP2 0x00404e85).
+	if (flags & 2)
+		nMoveFlags |= 0x20;
+
+	// NEAR (Primal Hunt 0x004054d0, 476 of 476, 3 blocks): shipped keeps the
+	// manager in %ecx and the world in %edi and stores the record's mover,
+	// object, world, priority in that order; ours has the manager in %edx.
+	// Six explicit stores in either order, and the flags computed first,
+	// are worse.
 	wm_MoveObject(&state, *pPos, nMoveFlags);
 	return LT_OK;
 }
@@ -113,7 +141,8 @@ LTRESULT CPhysicsLT::MoveObject(HOBJECT hObj, LTVector* pPos, uint32 flags)
 // level 1. The refusal for containers and world models shares its return with
 // both of them, which is why one LT_INVALIDPARAMS tail serves four paths.
 //
-// 0x00405000, identical once the six state stores became MoveObject's
+// NOLF 0x00405000 (Primal Hunt 0x004057a0, identical with the mover read at
+// +0x50c), identical once the six state stores became MoveObject's
 // cp_InitMoveState call. Written out as six stores it was a 334-byte near
 // (shipped 341) with the flags, dims pointer and state pointer in a
 // different three of %eax/%ecx/%edx and the error tails cross-jumped one
@@ -141,7 +170,7 @@ LTRESULT CPhysicsLT::SetObjectDims(HOBJECT hObj, LTVector* pNewDims, uint32 flag
 	if (hObj->m_ObjectType == OT_CONTAINER || hObj->m_ObjectType == OT_WORLDMODEL)
 		return LT_INVALIDPARAMS;
 
-	cp_InitMoveState(&state, pWorld, m_pClientMgr->m_pUnknown508, hObj,
+	cp_InitMoveState(&state, pWorld, CP_MOVER_Q538(m_pClientMgr), hObj,
 	                 hObj->m_BlockingPriority);
 
 	if (wm_SetObjectDims(&state, &vDims, flags & 1, 1))
@@ -169,7 +198,8 @@ LTRESULT CPhysicsLT::SetObjectDims(HOBJECT hObj, LTVector* pNewDims, uint32 flag
 //      +0x08/+0x64 (0x0040523d..0x0040524c, and 0x0040535d..0x0040536c).
 //    * `mov 0xc(%ecx),%eax` -> m_pClientMgr, `lea 0x6c(%eax)` -> m_World,
 //      tested for null though it never can be (0x0040525f, 0x0040537f).
-//    * `mov 0x508(%eax),%eax` -> m_pUnknown508 (0x004052a9, 0x00405402).
+//    * `mov 0x508(%eax),%eax` -> m_pUnknown508 (NOLF 0x004052a9, 0x00405402;
+//      0x50c in Primal Hunt and AvP2, CP_MOVER_Q538 above).
 //    * `mov 0xbd(%esi/%edx),%al` -> m_BlockingPriority (0x004052b7,0x00405412)
 //
 //  WHAT IS NEW HERE AND IS THE ONLY REAL FINDING: THE NAME IS A VARIABLE.
@@ -233,7 +263,7 @@ LTRESULT CPhysicsLT::MovePushObjects(HOBJECT hToMove, LTVector& newPos,
 	if (!pWorld)
 		RETURN_ERROR(3, pErrFnName, LT_NOTINITIALIZED);
 
-	cp_InitPushState(&state, pWorld, m_pClientMgr->m_pUnknown508, hToMove,
+	cp_InitPushState(&state, pWorld, CP_MOVER_Q538(m_pClientMgr), hToMove,
 	                 hToMove->m_BlockingPriority, hPushObjects, nPushObjects);
 
 	wm_MoveObject(&state, newPos, 0x15);
@@ -286,7 +316,7 @@ LTRESULT CPhysicsLT::RotatePushObjects(HOBJECT hToMove, LTRotation& newRot,
 	    hToMove->m_ObjectType != OT_CONTAINER)
 		RETURN_ERROR(3, "CPhysicsLT::RotatePushObjects", LT_INVALIDPARAMS);
 
-	cp_InitPushState(&state, pWorld, m_pClientMgr->m_pUnknown508, hToMove,
+	cp_InitPushState(&state, pWorld, CP_MOVER_Q538(m_pClientMgr), hToMove,
 	                 hToMove->m_BlockingPriority, hPushObjects, nPushObjects);
 
 	wm_RotateWorldModel(&state, &newRot, 1);

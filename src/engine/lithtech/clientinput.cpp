@@ -2645,7 +2645,7 @@ LTBOOL input_StartDeviceTrack(InputMgr* pMgr, uint32 nDevices, uint32 nBufferSiz
 // it (dwOfs / 4 is the row), its type from eleven IsEqualGUID tests
 // (GUID_Unknown's 0 is stored out of memcmp's zeroed edx), and the last byte
 // of the control name carries DIDFT_GETINSTANCE, the DIK code
-// FolderCustomControls.cpp reads back from m_ControlName[63].
+// FolderCustomControls.cpp reads back as m_ControlCode.
 LTBOOL input_TrackDevice(DeviceInput* pInputArray, uint32* pnInOut)
 {
 	DIDEVICEOBJECTDATA data[32];
@@ -2744,8 +2744,15 @@ LTBOOL input_TrackDevice(DeviceInput* pInputArray, uint32* pnInOut)
 				pInputArray[*pnInOut].m_ControlType = CONTROLTYPE_UNKNOWN;
 
 			strncpy(pInputArray[*pnInOut].m_ControlName, ((DIObjectRow*)pDevice->m_pTrackData)[iObject].m_Name, 62);
-			pInputArray[*pnInOut].m_ControlName[62] = '\0';
-			pInputArray[*pnInOut].m_ControlName[63] = (char)DIDFT_GETINSTANCE(((DIObjectRow*)pDevice->m_pTrackData)[iObject].m_dwType);
+			// AVP2: the SDK's m_ControlCode word at +0xc8 takes the DIK code
+			// (AvP2 1.0.9.6 0x00441b3c); NOLF parked it in m_ControlName[63].
+			// PH: narrowed to a byte first (`xor %cx,%cx; mov %al,%cl` at
+			// 0x004459bd).
+#ifdef PRIMAL_HUNT
+			pInputArray[*pnInOut].m_ControlCode = (uint8)DIDFT_GETINSTANCE(((DIObjectRow*)pDevice->m_pTrackData)[iObject].m_dwType);
+#else
+			pInputArray[*pnInOut].m_ControlCode = (uint16)DIDFT_GETINSTANCE(((DIObjectRow*)pDevice->m_pTrackData)[iObject].m_dwType);
+#endif
 			pInputArray[*pnInOut].m_InputValue = data[i].dwData;
 
 			(*pnInOut)++;

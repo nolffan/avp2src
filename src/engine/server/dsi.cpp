@@ -198,7 +198,18 @@ extern float  g_CV_DefaultDrawIndexedDist;
 // char** }, one pointer set per entry, in the shipped order. Two of the
 // bound variables are narrower or unsigned in the files that read them
 // (IPClientPort's short, the uint32 trace flags), so their int* is a cast.
-ConsoleBinding g_EngineConsoleBindings[93] =
+// AVP2: three bindings NOLF's table lacks, in both AvP2 1.0.9.6's and
+// Primal Hunt's (96 entries; server.dll 0x1007dfd0, lithtech.exe
+// 0x004e33e8): "NewCollision" and "NewStairStep" after "ForceRemote", two
+// ints in initialised .data that are both 1 (server.dll 0x1007df04 /
+// 0x1007df08, read by the collision code at 0x10005ac2.. and not yet
+// reconstructed, so their storage is defined here; names ours), and
+// "ShowPolyFindTicks" after "ShowSphereFindTicks" (smgr.cpp's switch).
+int g_CV_NewCollisionQ537 = 1;
+int g_CV_NewStairStepQ537 = 1;
+extern int g_ShowPolyFindTicksQ502;
+
+ConsoleBinding g_EngineConsoleBindings[96] =
 {
 	{ "BindIP",                  LTNULL, LTNULL, LTNULL, &g_pBindAddress },
 	{ "IP",                      LTNULL, LTNULL, LTNULL, &g_pLocalAddress },
@@ -225,6 +236,8 @@ ConsoleBinding g_EngineConsoleBindings[93] =
 	{ "UpdateRate",              LTNULL, &g_CV_UpdateRate, LTNULL, LTNULL },
 	{ "InputRate",               LTNULL, &g_CV_InputRate, LTNULL, LTNULL },
 	{ "ForceRemote",             LTNULL, &g_LocalNoFlag, LTNULL, LTNULL },
+	{ "NewCollision",            LTNULL, &g_CV_NewCollisionQ537, LTNULL, LTNULL },
+	{ "NewStairStep",            LTNULL, &g_CV_NewStairStepQ537, LTNULL, LTNULL },
 	{ "DebugLevel",              LTNULL, &g_DebugLevel, LTNULL, LTNULL },
 	{ "ShowRunningTime",         LTNULL, &g_CV_ShowRunningTime, LTNULL, LTNULL },
 	{ "NullRender",              LTNULL, &g_CV_NullRender, LTNULL, LTNULL },
@@ -256,6 +269,7 @@ ConsoleBinding g_EngineConsoleBindings[93] =
 	{ "ForceSoundDisable",       LTNULL, &g_CV_ForceSoundDisable, LTNULL, LTNULL },
 	{ "AllowTimeout",            LTNULL, &g_NetTimeouts, LTNULL, LTNULL },
 	{ "ShowSphereFindTicks",     LTNULL, &g_ShowTickCounts, LTNULL, LTNULL },
+	{ "ShowPolyFindTicks",       LTNULL, &g_ShowPolyFindTicksQ502, LTNULL, LTNULL },
 	{ "ShowClassTicks",          LTNULL, &g_ShowClassTicks, LTNULL, LTNULL },
 	{ "ShowGameTime",            LTNULL, &g_ShowGameTime, LTNULL, LTNULL },
 	{ "AutoDeactivate",          LTNULL, &g_bAutoDeactivate, LTNULL, LTNULL },
@@ -479,7 +493,7 @@ ConsoleBinding* dsi_GetConsoleBindings()
 
 int dsi_GetNumConsoleBindings()
 {
-	return 93;
+	return 96;   // AVP2: 0x60 (server.dll 0x100123e0, lithtech.exe 0x00439ab0)
 }
 
 

@@ -159,6 +159,45 @@ string keys are not re-walked and the object is not flagged (change flag
 
 Not fixed yet: the override's signature has to follow the interface's.
 
+### A long wildcard in the CRC string list overruns two buffers
+
+lithtech.exe 0x0048bac0, server.dll 0x10040836
+(`CServerMgr::CreateStringCRC`, src/engine/server/smgr.cpp). A
+wildcard pattern's prefix and suffix are copied into 0x80-byte buffers
+with no length check, from tokens of up to 0x3ff characters.
+
+Fixed in the modern build: smgr.cpp, a pattern that does not fit is
+skipped.
+
+### A world name of 255 characters or more is left unterminated
+
+lithtech.exe 0x0048bd70, server.dll 0x10040a44
+(`CServerMgr::CreateWorldCRC`, src/engine/server/smgr.cpp). The name is
+copied with `strncpy` limited to 0xff into a 0x100-byte buffer that is
+never cleared, so a name that long has no terminator.
+
+Not fixed yet.
+
+### The packet trace reads past a truncated flag record
+
+server.dll 0x1002b584 (`net_LogPacket`, Primal Hunt's server only,
+src/engine/server/netmgr.cpp). The FLG arm checks for eight bytes and
+reads ten (0x1002bae2..0x1002bb1e), so a truncated record is read two
+bytes past its end. Only the debug trace is affected.
+
+Not fixed: debug output only.
+
+### A segment hitting a box's positive face reports the wrong plane
+
+The unoptimised segment-query module's box test (lithtech.exe
+0x0043bdf3/0x0043bf15 and its server.dll twin; AvP2 1.0.9.6's too;
+src/engine/server/worldisect.cpp). For the three positive faces the hit
+plane's distance is taken from the box's minimum (`min.coord * +1`)
+instead of its maximum, so the intersection reports a plane on the far
+side of the box.
+
+Fixed in the modern build: worldisect.cpp, the maximum.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

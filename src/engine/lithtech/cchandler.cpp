@@ -3550,6 +3550,10 @@ class CModelFlagsQ478
 public:
 	uint8   m_pad_00[0x20];
 	uint32  m_Flags;                         // 0x20
+	// AVP2: a preload count, bumped with the cached bit (Primal Hunt
+	// 0x004972e8, AvP2 1.0.9.6 0x0048dd22) (name ours).
+	uint8   m_pad_24[0x20c - 0x24];
+	uint32  m_nPreloads;                     // 0x20c
 };
 
 // A shared texture's flag word (0x0041ff90's result); 0x8000 is the
@@ -3558,7 +3562,45 @@ class CTextureFlagsQ478
 {
 public:
 	uint8   m_pad_00[0x32];
-	uint16  m_Flags;                         // 0x32
+	// AVP2: a 15-bit preload count under the mark bit (Primal Hunt
+	// 0x00497341: `and $0x7fff; inc; or $0x80,%ch`) (names ours).
+	uint16  m_nPreloads : 15;                // 0x32
+	uint16  m_bMarked   : 1;
+};
+
+// AVP2: the texture manager's mark-and-sweep halves the preload end calls
+// (clienttexmgr.cpp; Primal Hunt 0x00428970 / 0x00428cc0).
+class CClientMgrTexBankView;
+void tm_MarkUsedTextures(CClientMgrTexBankView* pClientMgr);
+void tm_FreeUnmarkedTextures(CClientMgrTexBankView* pClientMgr);
+
+// The write message held across the whole handler: empty at birth (Primal
+// Hunt 0x00497177, before the switch), taken from the by-value reference
+// in the one case that sends, released on the single way out (0x004974f9)
+// (name ours).
+class CMsgHoldTopQ537
+{
+public:
+	CMsgHoldTopQ537() { m_pMsg = LTNULL; }
+
+	~CMsgHoldTopQ537()
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+	}
+
+	void Set(const CMsgRefQ478& other)
+	{
+		if (m_pMsg)
+			m_pMsg->Release();
+
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			m_pMsg->AddRef();
+	}
+
+	CMsgQ478* m_pMsg;
 };
 
 // CClientMgr with its model list (+0x10f4) and FreeUnusedModels
@@ -3600,16 +3642,26 @@ CTextureFlagsQ478* sub_41ff90Q478(CClientMgrQ478* pClientMgr,
 LTRESULT sub_476e80Q478(CClientMgrQ478* pClientMgr, CClientFileRefQ478* pRef,
                         void** ppSprite);                       // 0x00476e80
 
+// AVP2: Primal Hunt 0x00497150 (AvP2 1.0.9.6 0x0048dbe0..).  Every case
+// breaks to one exit that releases the message (0x004974f9).  The end of a
+// preload (case 1) also runs the texture manager's mark and sweep after
+// FreeUnusedModels (0x00497214, 0x0049721d); a preloaded model counts its
+// preloads at +0x20c (0x004972e8); a preloaded texture's flag word keeps a
+// 15-bit count under its mark bit (0x00497341..0x0049734f).
 LTRESULT sub_47af20(CClientShellQ478* pShell, CPacketQ478* pPacket)
 {
 	CClientFileRefQ478 cRef;
+	CMsgHoldTopQ537    cMsg;
 	CModelQ478*        pModel;
 	CFileRecQ478*      pRec;
 	void*              pSprite;
+	uint8              nType;
 
 	cRef.m_nFileType = CFILEREF_BYID;
 
-	switch (pPacket->ReadTypeOOL((uint8*)0))
+	nType = pPacket->ReadTypeOOL((uint8*)0);
+
+	switch (nType)
 	{
 		case 0:
 		{
@@ -3621,22 +3673,24 @@ LTRESULT sub_47af20(CClientShellQ478* pShell, CPacketQ478* pPacket)
 
 			sub_4200c0Q478(pShell->m_pClientMgr);
 			((CSoundMgrPreloadQ478*)ci_GetSoundMgr())->sub_481c60();
-			return LT_OK;
+			break;
 		}
 
 		case 1:
 		{
 			((CSoundMgrPreloadQ478*)ci_GetSoundMgr())->sub_481ca0();
 			((CClientMgrPreloadQ478*)pShell->m_pClientMgr)->FreeUnusedModels();
+			tm_MarkUsedTextures((CClientMgrTexBankView*)pShell->m_pClientMgr);
+			tm_FreeUnmarkedTextures((CClientMgrTexBankView*)pShell->m_pClientMgr);
 
-			CMsgHoldQ478 cMsg(msg_StartWrite(0x44c, 0x44c).m_pMsg);
+			cMsg.Set(msg_StartWrite(0x44c, 0x44c));
 
 			cMsg.m_pMsg->m_Data.m_pArray[0] = 9;
 			((CMsgWriteQ478*)cMsg.m_pMsg)->WriteTypeOOL(1);
 
 			pShell->m_pClientMgr->m_NetMgr.SendTo(cMsg.m_pMsg, pShell->m_nConnID,
 			                                      0x80);
-			return LT_OK;
+			break;
 		}
 
 		case 2:
@@ -3648,6 +3702,7 @@ LTRESULT sub_47af20(CClientShellQ478* pShell, CPacketQ478* pPacket)
 				               1, 1) == LT_OK)
 				{
 					((CModelFlagsQ478*)pModel)->m_Flags |= 1;
+					((CModelFlagsQ478*)pModel)->m_nPreloads++;
 				}
 			}
 			break;
@@ -3661,7 +3716,10 @@ LTRESULT sub_47af20(CClientShellQ478* pShell, CPacketQ478* pPacket)
 
 				pTexture = sub_41ff90Q478(pShell->m_pClientMgr, &cRef);
 				if (pTexture)
-					pTexture->m_Flags |= 0x8000;
+				{
+					pTexture->m_nPreloads = pTexture->m_nPreloads + 1;
+					pTexture->m_bMarked = LTTRUE;
+				}
 			}
 			break;
 

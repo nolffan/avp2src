@@ -329,11 +329,24 @@ void CNetMgr::EndGettingPackets()
 //   Taking the field's address stops VC6 hoisting the m_pData load above the
 //   m_Unknown34 store. /O1 does not care, but /O2 (lithtech 0x004579d6) keeps
 //   the store first and loads src, then dest. Same fix as WriteAckPacket below.
+#ifdef LT_SERVER_BUILD
+// AVP2: the trace writes into its caller's buffer and is handed the
+// direction byte GetPacket was given (server.dll 0x1002c280: push the second
+// argument, &szTrace, 1, the length, pMsg; `add $0x14,%esp`). servermgr.h
+// still declares the three-argument form, which nothing defines.
+void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut, char* pStr,
+                   uint8 nDir);
+#endif
+
 LTBOOL CNetMgr::GetPacket(ServerMessage* pMsg, uint32 nUnused)
 {
 	CBaseDriver* pDriver;
 	NetConnection* pConn;
 	uint32 i;
+#ifdef LT_SERVER_BUILD
+	char szTrace[0x2000];                    // -0x2008(%ebp)
+	LTBOOL bPrint;
+#endif
 
 	// Fresh arrivals straight off the drivers.
 	for (i = 0; i < m_Drivers.m_nElements; i++)
@@ -344,11 +357,35 @@ LTBOOL CNetMgr::GetPacket(ServerMessage* pMsg, uint32 nUnused)
 			AddRecvBytes(pMsg->m_pConnection, pDriver->GetRecvSize() + pMsg->m_Unknown34);
 			pMsg->m_Unknown38 = 1;
 
+#ifdef LT_SERVER_BUILD
+			// The packet trace is server.dll's alone: Primal Hunt's
+			// lithtech.exe 0x00468d80 goes from the read reset straight to
+			// TranslatePacket (0x00468dd0 -> 0x00468dd6).
+			//
+			// AVP2: the three category filters live here now, as strstr
+			// tests on the finished line (server.dll 0x1002c2a4..0x1002c322:
+			// "(UUP)", "(UPD)", "(NM )"), and the line goes out through
+			// dsi_ServerError (0x10012297) only if none of them dropped it.
 			if (g_NetLogPackets)
 			{
-				net_LogPacket(pMsg, pMsg->m_Unknown34, 1);
+				net_LogPacket(pMsg, pMsg->m_Unknown34, 1, szTrace, (uint8)nUnused);
 				pMsg->m_Unknown38 = 1;
+
+				bPrint = LTTRUE;
+
+				if (!(g_NetLogPackets & 2) && strstr(szTrace, "(UUP)"))
+					bPrint = LTFALSE;
+
+				if (!(g_NetLogPackets & 4) && strstr(szTrace, "(UPD)"))
+					bPrint = LTFALSE;
+
+				if (!(g_NetLogPackets & 8) && strstr(szTrace, "(NM )"))
+					bPrint = LTFALSE;
+
+				if (bPrint)
+					dsi_ServerError(szTrace);
 			}
+#endif
 
 			if (TranslatePacket(pMsg, pMsg->m_pConnection, 1))
 				return LTTRUE;
@@ -1765,6 +1802,11 @@ public:
 	// STAND-IN (name ours): WriteData through one inline level. See
 	// sub_10023d73 for why the level is measured.
 	void   WriteDataInline(void* pData, uint16 nBytes) { WriteData(pData, nBytes); }
+	// STAND-IN (name ours): ReadData through the same one inline level, for
+	// net_LogPacket's sub-packet copies, whose destination is loaded into a
+	// register and pushed (server.dll 0x1002b773 `mov 0x54(%eax),%eax ; push
+	// %eax`) where a direct call pushes the field.
+	void   ReadDataInline(void* pData, uint16 nBytes) { ReadData(pData, nBytes); }
 	void   WriteByte(uint8 nValue);          // 0x1001393e
 	void   WriteWord(uint16 nValue);         // 0x1000ec3d
 	void   WriteDWord(uint32 nValue);        // 0x1000ecd6
@@ -3077,12 +3119,28 @@ LTBOOL CNetMgrSendView::SendPacket(ServerMessage* pMsg, NetConnection* pConn, ui
 //   * no `nType` local: the first byte is read through pData at each use.
 //     With a uint8 local /O2 put it in %al and spilled it across the flag
 //     test; shipped keeps it in %dl (0x4588ad) and reuses %edi for nID.
+//
+// PH: an empty CMessageRef opens the frame, as in sub_10023d73: server.dll
+// 0x1002cbdd zeroes -0x14(%ebp) and enters EH state 0, the unwind at
+// 0x100713bc being `lea -0x14(%ebp),%ecx; jmp 0x10012b8b` (~CMessageRef).
+// The packet's first byte is a uint8 local after the internal handler
+// (0x1002cd59 `mov (%eax),%cl`, reused as %cl for the frame-count warning
+// and the unguaranteed print).
+//
+// NEAR (PH server.dll 839 of 837 bytes; lithtech.exe 0x00469b40 987 of
+// 988): register allocation in the guaranteed arm. Shipped keeps `this` in
+// %ebx throughout and spills the packet id into pMsg's dead home
+// (0x8(%ebp)), reloading m_pData for the id read; ours takes %ebx for the
+// trailer length and the id and pushes `this` from its spill. One shared
+// trailer test after the if/else changed nothing on server.dll and cost
+// lithtech.exe a byte.
 int CNetMgr::TranslatePacket(ServerMessage* pMsg, NetConnection* pConn, int bRaw)
 {
+	CMessageRef cUnused;
 	uint32 nFlags;
 	uint32 nID;
 	uint16 nStrip;
-	uint8* pData;
+	uint8  nType;
 	CNetRecvPacket* pRec;
 
 	if (g_NetDropRate > 0.0001f && bRaw)
@@ -3171,9 +3229,9 @@ int CNetMgr::TranslatePacket(ServerMessage* pMsg, NetConnection* pConn, int bRaw
 	if (((CNetMgrSendView*)this)->sub_100235e8(pConn, pMsg))
 		return 0;
 
-	pData = pMsg->m_pData;
+	nType = pMsg->m_pData[0];
 
-	if (pData[0] & 0x80)
+	if (nType & 0x80)
 	{
 		uint16 nTail = 4;
 
@@ -3183,7 +3241,7 @@ int CNetMgr::TranslatePacket(ServerMessage* pMsg, NetConnection* pConn, int bRaw
 		if (pMsg->m_Unknown34 < nTail)
 			return 0;
 
-		nID = *(uint32*)&pData[pMsg->m_Unknown34 - nTail];
+		nID = *(uint32*)&pMsg->m_pData[pMsg->m_Unknown34 - nTail];
 
 		if (nID == pConn->m_PacketID)
 		{
@@ -3202,7 +3260,7 @@ int CNetMgr::TranslatePacket(ServerMessage* pMsg, NetConnection* pConn, int bRaw
 		{
 			if (nID > pConn->m_PacketID + 0x100)
 				DebugPrint(pConn, 1, "Warning! Suspicious frame count %d on msg ID %d",
-					nID, pData[0]);
+					nID, nType);
 
 			if (FindQueuedPacket(&pConn->m_GuaranteedQueue, nID))
 			{
@@ -3246,7 +3304,7 @@ int CNetMgr::TranslatePacket(ServerMessage* pMsg, NetConnection* pConn, int bRaw
 	else
 	{
 		DebugPrint(pConn, 4, "Got packet from %p (packet ID %d, length %d).",
-			pConn, pData[0] & 0x3f, pMsg->m_Unknown34);
+			pConn, nType & 0x3f, pMsg->m_Unknown34);
 
 		nStrip = 0;
 
@@ -3489,8 +3547,17 @@ CNetFragRec* CNetMgrSendView::sub_100233ad(uint32 nID, NetConnection* pConn)
 // forwarder after the WriteType is what keeps Insert2 a call inside the
 // expanded write (0x00459a31 -> 0x00412f50). Without it Insert2 expands too
 // (365 bytes against 195).
+//
+// PH: an empty CMessageRef lives across both writes. Nothing ever lands in it,
+// so its closing Release folds away, but under /GX it still owns the frame:
+// server.dll 0x1002d953 (`and -0x10(%ebp),0` then EH state 0, the unwind at
+// 0x10071450 being `lea -0x10(%ebp),%ecx; jmp 0x10012b8b`, ~CMessageRef) and
+// lithtech.exe 0x0046aef0 (the null at 0x8(%esp), state byte 0 before the
+// expanded write's Insert2 call).
 void CNetMgrSendView::sub_10023d73(ServerMessage* pMsg, void* pData, uint32 nLen)
 {
+	CMessageRef cUnused;
+
 	((CPacket*)pMsg)->WriteType((uint16)nLen);
 
 	((ServerMessageTypeView*)pMsg)->WriteDataInline(pData, (uint16)nLen);
@@ -3877,80 +3944,111 @@ LTBOOL CNetMgrSendView::sub_100233e3(ServerMessage* pMsg, uint8 nIndex,
 //  either way.  The header is not edited here.  Alternative spelling at this site: `LTBOOL`, but the engine
 //  typedefs LTBOOL to a 32-bit type, so it would not give `cmpb`.
 // ---------------------------------------------------------------------
-void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
+// AVP2: the body below is Primal Hunt's server.dll 0x1002b584..0x1002c185,
+// 3074 bytes, with its two jump tables to 0x1002c215 (AvP2 1.0.9.6's
+// server.dll carries the same strings). The readings above are the older
+// engine's (0x10021cbe); what changed:
+//  * the line is the caller's (the fourth argument), and so is the direction
+//    byte (the fifth); the recursion passes both on (0x1002b77c..0x1002b79e).
+//    Only the outermost call clears it, and with sizeof(pStr) -- four bytes,
+//    the size of the pointer, a leftover from when the buffer was this
+//    function's own array. strcat only needs the first byte zeroed, so it
+//    does no harm.
+//  * a "<S2C_" / "<C2S_" / "<U2U_" prefix by direction (1, 2, anything
+//    else; lower case for the nested calls), then "G> " / "U> ".
+//  * the names are bracketed -- "(NM )  ", "(UPD) " -- and the counts print
+//    as "|%d| ". The sub-packets are sized to the engine's 0x44c packet.
+//  * the update records no longer stop at the first opaque field: each of
+//    MI, CLR, SCL, POS, ROT and ATT prints the length left and zeroes it
+//    (`xor %ebx,%ebx` after each), so the loop ends at its own test.
+//  * the filters and the print moved to CNetMgr::GetPacket.
+//  * the message classes: 0x64 "[PLU]" decodes its flag word, 0x6a "PLO",
+//    0x71 "PLD", 0xbe "PHU", 0x66 "PIC" with nineteen pickup types.
+//
+// NEAR (3084 of 3074 bytes): register allocation in the "(UPD) " arm. The
+// shipped build keeps nLen in %ebx through both of its loops and the
+// sub-packet's reference in nLen's dead home (0xc(%ebp)); ours keeps the
+// 16-bit sub-length in %bx there and nLen in memory, which costs a frame
+// slot (0x114 against 0x110) and the ReadByte(0) zero in %edi. Also the
+// "|REQ %d| " print keeps its own sprintf where shipped jumps into the
+// shared one (0x1002b8a3 -> 0x1002bdaf). Tried: a block-scoped uint16 for
+// the sub-length, nLen-- ahead of the arm's strcat (3088).
+//
+// Every read is packet.h's CPacket::ReadType (0x10018b0a byte, 0x10012bd6
+// word, 0x1002dce9 dword).
+//
+// RETAIL BUG: the FLG arm checks for eight bytes and reads ten (a dword, a
+// word and a dword, 0x1002bae2..0x1002bb1e), so a truncated record reads
+// two bytes past its end. A debugging trace only; not fixed.
+#ifdef LT_SERVER_BUILD
+// server.dll only: neither lithtech.exe (Primal Hunt or AvP2 1.0.9.6) carries
+// the trace -- no "(UUP)", "(NM )" or "<U2U_" in either image.
+void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut, char* pStr,
+                   uint8 nDir)
 {
 	char         temp[0x100];
-	char         str[0x2000];
 	uint32       nFlags;
 	uint32       nCount;
 	uint32       nSubLen;
 	uint16       nSubWord;
 	uint8        nSubByte;
-	uint16       nFlagWord;
-	uint8        nFlagByte;
 	uint32       nFlagLong;
+	uint16       nFlagWord;
 	uint8        nMsgClass;
 
-	// 0x10021cce: push 0x2000 / push 0 / push str -> 0x1003e280.
-	memset(str, 0, sizeof(str));
+	// 0x1002b59a: no line, no trace.
+	if (!pStr)
+		return;
 
-	// 0x10021ce7  mov 0x54(%esi),%eax ; testb $0x80,(%eax)
-	// -- payload byte 0, bit 7 = "this packet is guaranteed".
+	if (bOut)
+		memset(pStr, 0, sizeof(pStr));
+
+	switch (nDir)
+	{
+		case 1:
+			strcat(pStr, bOut ? "<S2C_" : "<s2c_");
+			break;
+
+		case 2:
+			strcat(pStr, bOut ? "<C2S_" : "<c2s_");
+			break;
+
+		default:
+			strcat(pStr, bOut ? "<U2U_" : "<u2u_");
+			break;
+	}
+
 	if (pMsg->m_pData[0] & 0x80)
 	{
-		// 0x10021cef: cmpb $0x0,0x10(%ebp), then the pointer select
-		// 0x10053780 "G " (bOut != 0) / 0x1005377c "g " (bOut == 0).
-		strcat(str, bOut ? "G " : "g ");
+		strcat(pStr, bOut ? "G> " : "g> ");
 
-		// 0x10021d11  sub $0x4,%ebx -- only on the guaranteed side.
 		nLen -= 4;
 	}
 	else
 	{
-		// 0x10021d16: 0x10053778 "U " / 0x10053774 "u ".
-		strcat(str, bOut ? "U " : "u ");
+		strcat(pStr, bOut ? "U> " : "u> ");
 	}
 
-	// 0x10021d38: the payload byte is RE-READ from m_pData, not carried
-	// over from the test above -- `mov 0x54(%esi),%eax ; mov (%eax),%al ;
-	// and $0x3f,%eax`.  (VC6 does not CSE across the strcat call.)
 	switch (pMsg->m_pData[0] & 0x3f)
 	{
-		// --------------------------------------------------------- 0x10021d5f
 		case 0:
-			strcat(str, "TCP ");
+			strcat(pStr, "(TCP) ");
 			break;
 
-		// ------------------------------------------------------------
-		//  1 -- the engine's own packet.  0x10021d69.
-		//  Sub-type in the next payload byte; the four arms are the same
-		//  four the internal handler at 0x100235e8 dispatches, and its
-		//  own error string "Error in SUB_ACK" names arm 0.
-		// ------------------------------------------------------------
 		case 1:
-			strcat(str, "NM  ");
+			strcat(pStr, "(NM )  ");
 
-			// 0x10021d7c  push $1 ; pop %edi -- the constant 1 is parked
-			// in %edi for both guards and both `nLen--`s in this arm.
 			if (nLen < 1)
 				goto bad;
-			// 0x10021d87  movzwl 0x34 ; movzwl 0x38 ; sub ; cmp ; jl
-			// -- SIGNED, because these are two uint16 members promoted to
-			// int by the usual arithmetic conversions.  Not a cast.
 			if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 1)
 				goto bad;
 
 			nLen--;
 
-			// 0x10021d9e -> 0x100138d6.  The chain at 0x10021da3 is
-			// `movzbl %al,%eax ; sub $0x0,%eax ; je ... ; dec ; je ...`,
-			// i.e. a dense 0..3 switch that /O1 laid out as a compare
-			// chain.  (/O2 gave it the 4-dword table at 0x004577e0.)
-			switch (pMsg->ReadByte(0))
+			switch (((CPacket*)pMsg)->ReadType((uint8*)0))
 			{
-				// --------------------------------------- 0x10021ee8
 				case 0:
-					strcat(str, "ACK ");
+					strcat(pStr, "ACK ");
 
 					if (nLen < 1)
 						goto bad;
@@ -3959,280 +4057,176 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 					nLen--;
 
-					// 0x10021f1f  test %al,%al
-					if (pMsg->ReadByte(0))
-						strcat(str, "PRQ ");
+					if (((CPacket*)pMsg)->ReadType((uint8*)0))
+						strcat(pStr, "PRQ ");
 
 					if (nLen < 8)
 						goto bad;
 					if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 8)
 						goto bad;
 
-					// 0x10021f52  xor %edi,%edi -- %edi stops being the
-					// constant 1 here and becomes nCount.
 					nLen -= 8;
 					nCount = 0;
 
-					((ServerMessageTypeView*)pMsg)->ReadDWord(0);
-					((ServerMessageTypeView*)pMsg)->ReadDWord(0);
+					((CPacket*)pMsg)->ReadType((uint32*)0);
+					((CPacket*)pMsg)->ReadType((uint32*)0);
 
-					// 0x10021f67: the entry test is PEELED (`cmp $4 ; jle
-					// 0x100226be`) and jumps straight to the print tail --
-					// VC6 threads it through the `if (nCount)` below,
-					// which it knows is still zero on that edge.  The loop
-					// proper is 0x10021f7a..0x10021f99, bottom-tested.
 					while (pMsg->m_Unknown34 - pMsg->m_Unknown38 > 4)
 					{
-						// 0x10021f7d  cmp $0x4,%ebx ; jbe -- UNSIGNED.
 						if (nLen <= 4)
 							break;
 
 						nCount++;
 						nLen -= 4;
 
-						((ServerMessageTypeView*)pMsg)->ReadDWord(0);
+						((CPacket*)pMsg)->ReadType((uint32*)0);
 					}
 
-					// 0x10021f9b  test %edi,%edi ; je 0x100226be
 					if (nCount)
 					{
-						sprintf(temp, "REQ %d", nCount);
-						strcat(str, temp);
+						sprintf(temp, "|REQ %d| ", nCount);
+						strcat(pStr, temp);
 					}
+					break;
 
-					goto done;
-
-				// --------------------------------------- 0x10021ede
 				case 1:
-					strcat(str, "DIS ");
+					strcat(pStr, "DIS ");
 					break;
 
-				// --------------------------------------- 0x10021ed4
 				case 2:
-					strcat(str, "PNG ");
+					strcat(pStr, "PNG ");
 					break;
 
-				// ------------------------------------------ 0x10021dc4
-				//  3 -- a group packet: a run of word-length-prefixed
-				//  sub-packets, each carved out and traced on its own.
-				// ------------------------------------------
 				case 3:
-					strcat(str, "GRP ");
+					strcat(pStr, "GRP ");
 
-					// 0x10021dd5  andl $0x0,0x8(%ebp)
 					nCount = 0;
 
-					// 0x10021dda  cmp $0x2,%ebx ; jb  (unsigned, entry)
-					// 0x10021ea9  cmp $0x2,%ebx ; jae (unsigned, bottom)
 					while (nLen >= 2)
 					{
-						// `< 2`, NOT `== 0`: 0x10021df3 is
-						// `cmp $0x2,%eax ; jl` and the /O2 twin
-						// 0x004566d9 is the same.  The UPD and UUP loops
-						// below really ARE `== 0`, so this is a local
-						// difference, not a blanket one.
 						if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 2)
 							break;
 
-						// 0x10021dfc / 0x10021e01 -- two `dec %ebx`
-						// straddling the argument push.
 						nLen -= 2;
 
-						nSubWord = ((ServerMessageTypeView*)pMsg)->ReadWord(0);
+						nSubWord = ((CPacket*)pMsg)->ReadType((uint16*)0);
 
-						// 0x10021e07  test %ax,%ax -- 16-bit, so the
-						// variable is uint16 and not uint32.
 						if (nSubWord)
 						{
-							// 0x10021e13  movzwl %ax,%eax ; mov %eax,-0x4(%ebp)
 							nSubLen = nSubWord;
 
-							if (nLen < nSubLen)                                     // 0x10021e16 jb
+							if (nLen < nSubLen)
 							{
-								strcat(str, "BAD ");
-								break;
-							}
-							if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < (int)nSubLen) // 0x10021e2b jl
-							{
-								strcat(str, "BAD ");
+								strcat(pStr, "BAD ");
 								break;
 							}
 
-							// 0x10021e33  incl 0x8(%ebp) -- BEFORE the
-							// block below, not after.
+							if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < (int)nSubLen)
+							{
+								strcat(pStr, "BAD ");
+								break;
+							}
+
 							nCount++;
 
 							{
-								CMessageRef  ref;
+								CMessageRef ref;
 
-								// 0x10021e36  andl $0x0,0x10(%ebp) -- the
-								// CMessageRef constructor, expanded.
-								// 0x10021e40  msg_AllocPacket(0x44c, 0x44c)
-								// 0x10021e4c  ref.Init(...)   (0x1000ebab,
-								//   out of line: /Os declines its 37 bytes)
 								ref.Init(msg_AllocPacket(0x44c, 0x44c));
+								ref.m_pMsg->Init(nSubWord, 0x44c);
 
-								// 0x10021e64 -> 0x10010da9.  Note the raw
-								// `push 0xc(%ebp)` -- a uint16 argument is
-								// passed as the dword it sits in without
-								// zero-extension, which is only legal
-								// because the callee's parameter is uint16.
-								ref.m_pMsg->Init(nSubWord, 0x1000);
-
-								// 0x10021e74 -> 0x100260d9
-								((ServerMessageTypeView*)pMsg)->ReadData(
+								((ServerMessageTypeView*)pMsg)->ReadDataInline(
 									ref.m_pMsg->m_pData, nSubWord);
 
-								// 0x10021e85 / 0x10021e8c -- both 16-bit
-								// stores.
 								ref.m_pMsg->m_Unknown34 = nSubWord;
 								ref.m_pMsg->m_Unknown38 = 1;
 
-								// 0x10021e95  call 0x10021cbe (itself)
-								net_LogPacket(ref.m_pMsg, nSubLen, 0);
-
-								// 0x10021e9a  ~CMessageRef, expanded.
+								net_LogPacket(ref.m_pMsg, nSubLen, 0, pStr, nDir);
 							}
 						}
 					}
 
-					// 0x10021ec7: push nCount, push "%d ", then jmp to the
-					// shared sprintf+strcat at 0x1002230e, which exits to
-					// the print tail.
-					sprintf(temp, "%d ", nCount);
-					strcat(str, temp);
-					goto done;
-
-				// --------------------------------------- 0x10022681
-				default:
-					strcat(str, "UNK ");
+					sprintf(temp, "|%d| ", nCount);
+					strcat(pStr, temp);
 					break;
+
+				default:
+					goto unknown;
 			}
 			break;
 
-		case 4:                                   // 0x10021fae
-			strcat(str, "NPV ");
+		case 4:
+			strcat(pStr, "(NPV) ");
 			break;
 
-		case 5:                                   // 0x10021fb8
-			strcat(str, "ULW ");
+		case 5:
+			strcat(pStr, "(ULW) ");
 			break;
 
-		case 6:                                   // 0x10021fc2
-			strcat(str, "LW  ");
+		case 6:
+			strcat(pStr, "(LW )  ");
 			break;
 
-		case 7:                                   // 0x10021fcc
-			strcat(str, "COI ");
+		case 7:
+			strcat(pStr, "(COI) ");
 			break;
 
-		// ------------------------------------------------------------
-		//  8 -- the object update packet.  0x10021fd6.  A run of
-		//  byte-length-prefixed sub-messages first, then the per-object
-		//  update records.
-		// ------------------------------------------------------------
 		case 8:
-			strcat(str, "UPD ");
+			strcat(pStr, "(UPD) ");
 
-			// 0x10021fe2  dec %ebx -- placed among the strcat pushes.
 			nLen--;
 
-			// 0x10021fe9  test %ebx,%ebx ; je (entry)
-			// 0x100220b9  test %ebx,%ebx ; jne (bottom)
 			while (nLen)
 			{
-				// 0x10021ff7  ... sub ; je -- `== 0`, unlike GRP's `< 2`.
 				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 == 0)
 					break;
 
 				nLen--;
 
-				nSubByte = pMsg->ReadByte(0);
+				nSubByte = ((CPacket*)pMsg)->ReadType((uint8*)0);
 
-				// 0x10022011  test %al,%al ; mov %al,0x13(%ebp) ; je
 				if (nSubByte == 0)
 					break;
 
-				// 0x1002201c  movzbl %al,%eax ; mov %eax,-0x4(%ebp)
 				nSubLen = nSubByte;
 
-				if (nLen < nSubLen)                                       // 0x1002201f jb
+				if (nLen < nSubLen)
 				{
-					strcat(str, "BAD ");
-					break;
-				}
-				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < (int)nSubLen)  // 0x10022034 jl
-				{
-					strcat(str, "BAD ");
+					strcat(pStr, "BAD ");
 					break;
 				}
 
+				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < (int)nSubLen)
 				{
-					CMessageRef  ref;
+					strcat(pStr, "BAD ");
+					break;
+				}
 
-					ref.Init(msg_AllocPacket(0x44c, 0x44c));   // 0x1002203c
+				{
+					CMessageRef ref;
 
-					// 0x10022063  movzbw 0x13(%ebp),%ax ; mov %ax,0x8(%ebp)
-					// -- the uint8 is widened to uint16 ONCE and the
-					// result reused by both Init and ReadData below.
-					// The shipped widening lives in MEMORY (0x8(%ebp),
-					// re-read at 0x10022076 and 0x1002208c) and ours in
-					// %ebx; naming the widened value -- `nSubWord =
-					// nSubByte;` then passing nSubWord at all three sites
-					// -- is a MEASURED no-op, byte-identical output, so
-					// the difference is the allocator's and not the
-					// spelling's.
-					ref.m_pMsg->Init(nSubByte, 0x1000);                // 0x10022071
+					ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
-					// 0x1002207c  sub -0x4(%ebp),%ebx -- AFTER Init and
-					// BEFORE ReadData.  GRP has no such subtraction at
-					// all; UUP has it in exactly this position.  That
-					// asymmetry is in the shipped bytes of both images
-					// and is source, not scheduling.
+					nSubWord = nSubByte;
+
+					ref.m_pMsg->Init(nSubWord, 0x44c);
+
 					nLen -= nSubLen;
 
-					((ServerMessageTypeView*)pMsg)->ReadData(
-						ref.m_pMsg->m_pData, nSubByte);                // 0x10022084
+					((ServerMessageTypeView*)pMsg)->ReadDataInline(
+						ref.m_pMsg->m_pData, nSubWord);
 
-					ref.m_pMsg->m_Unknown34 = nSubByte;                // 0x10022095
-					ref.m_pMsg->m_Unknown38 = 1;                       // 0x1002209c
+					ref.m_pMsg->m_Unknown34 = nSubWord;
+					ref.m_pMsg->m_Unknown38 = 1;
 
-					net_LogPacket(ref.m_pMsg, nSubLen, 0);             // 0x100220a5
+					net_LogPacket(ref.m_pMsg, nSubLen, 0, pStr, nDir);
 				}
 			}
 
-			// The record loop.  Head 0x100220d6; every `continue` in it
-			// jumps back there and there is no duplicated bottom test.
-			// 0x100220e0  test %eax,%eax ; jle -- SIGNED  (> 0)
-			// 0x100220e8  test %ebx,%ebx ; jbe -- UNSIGNED (> 0)
 			while (pMsg->m_Unknown34 - pMsg->m_Unknown38 > 0 && nLen > 0)
 			{
-				// 0x100220f0  testb $0x4,0x100584f0 ; je PAST the block.
-				// THE GUARD IS NOT NEGATED: the line is flushed when the
-				// bit is SET.  Reads correctly too -- bit 2 means "expand
-				// UPD", and the tail filter drops the line unless the
-				// same bit is set.
-				if (g_NetLogPackets & 4)
-				{
-					// 0x10022100 -> 0x1000e3f9, and the argument slot is
-					// REUSED by the strcpy at 0x1002210b rather than
-					// popped.  Cleanup batching across two cdecl calls is
-					// the fixed-prototype signature servermgr.h:2372
-					// records, so this site was compiled against
-					// dsi_PrintString(char*), not con_Printf's varargs.
-					// (Alternative spelling at this site: con_Printf(str)
-					// -- same five call bytes, but it would force a
-					// `pop %ecx` here and cost three bytes.)
-					dsi_PrintString(str);
-					strcpy(str, "      ");     // 0x100536f8, six spaces
-				}
-
-				// 0x1002211a  xor %edi,%edi -- %edi is the constant zero
-				// for the rest of this loop.
 				nLen--;
 
-				// 0x10022120 -> 0x100138d6, then
-				// 0x10022125  movzbl %al,%eax ; test $0x80,%al
 				nFlags = ((CPacket*)pMsg)->ReadType((uint8*)0);
 
 				if (nFlags & 0x80)
@@ -4244,16 +4238,9 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 					nLen--;
 
-					// 0x10022154  xor %ecx,%ecx ; mov %al,%ch ; or %ecx,slot
 					nFlags |= (uint32)((CPacket*)pMsg)->ReadType((uint8*)0) << 8;
 				}
 
-				// 0x1002215b  cmp %edi,0xc(%ebp) ; je 0x1002228f -- an
-				// if/ELSE, not an early-out.  The zero-flags arm is laid
-				// out AFTER the whole rest of the body (0x1002228f, past
-				// the 0x1002228a fall-through jump), which is the shape
-				// VC6 gives an else arm and not the one it gives a
-				// `continue` guard.
 				if (nFlags != 0)
 				{
 					if (nLen < 2)
@@ -4263,98 +4250,79 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 					nLen -= 2;
 
-					// 0x1002218a  movzwl %ax,%eax -- the uint16 read widened
-					// for the varargs push.
-					sprintf(temp, "%08x ",
+					sprintf(temp, "|%04x| ",
 					        ((CPacket*)pMsg)->ReadType((uint16*)0));
-					strcat(str, temp);
+					strcat(pStr, temp);
 
-					// 0x100221b5  testb $0x1,0xc(%ebp)
 					if (nFlags & 1)
 					{
-						// 0x100221bb: pushes "NEW " and jumps INTO the BAD
-						// block's strcat tail at 0x100220c8, which falls
-						// through to the loop head -- so this is a `continue`.
-						strcat(str, "NEW ");
+						strcat(pStr, "NEW ");
 						continue;
 					}
 
-					// The six "(!%d)" arms below leave with `break` (out of the
-					// record loop, whose exit is `goto done`), not `goto done`
-					// directly: with `goto done` VC6 hosts the shared
-					// sprintf+strcat tail on UUP's copy, with `break` it hosts
-					// it on MI's (0x10022308..0x10022330), as shipped.
-					//
-					// 0x100221c5  mov 0xc(%ebp),%eax, then a chain of tests on
-					// %al / %ax / %ah.  nFlags never exceeds 16 bits, so VC6
-					// narrowed every test.
-					if (nFlags & 0x20)                    // 0x100221c8 test $0x20,%al
+					if (nFlags & 0x2020)
 					{
-						sprintf(temp, "MI  (!%d)", nLen);
-						strcat(str, temp);
-						break;
+						sprintf(temp, "MI  |%d| ", nLen);
+						strcat(pStr, temp);
+						nLen = 0;
 					}
 
-					if (nFlags & 8)                       // 0x100221d0 test $0x8,%al
+					if (nFlags & 8)
 					{
-						strcat(str, "FLG ");
+						strcat(pStr, "FLG ");
 
-						if (nLen < 7)
+						if (nLen < 8)
 							goto bad;
-						if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 7)
+						if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 8)
 							goto bad;
 
-						nLen -= 7;
+						nLen -= 10;
 
-						nFlagWord = ((CPacket*)pMsg)->ReadType((uint16*)0);   // 0x1002220d
-						nFlagByte = ((CPacket*)pMsg)->ReadType((uint8*)0);    // 0x10022218
-						nFlagLong = ((CPacket*)pMsg)->ReadType((uint32*)0);   // 0x10022223
+						// The third read is the last argument itself: it is
+						// pushed straight from eax (0x1002bb1e..0x1002bb23).
+						nFlagLong = ((CPacket*)pMsg)->ReadType((uint32*)0);
+						nFlagWord = ((CPacket*)pMsg)->ReadType((uint16*)0);
 
-						// 0x10022239: the dword is pushed raw, the byte
-						// movzbl'd and the word movzwl'd -- the argument
-						// order that gives is (word, byte, dword).
-						sprintf(temp, "%04hx %02hx %08x ",
-						        nFlagWord, nFlagByte, nFlagLong);
-						strcat(str, temp);
+						sprintf(temp, "|%08hx %04hx %08x| ",
+						        nFlagLong, nFlagWord,
+						        ((CPacket*)pMsg)->ReadType((uint32*)0));
+						strcat(pStr, temp);
 					}
 
-					if (nFlags & 0x40)                    // 0x1002225d test $0x40,%al
+					if (nFlags & 0x40)
 					{
-						sprintf(temp, "CLR (!%d)", nLen);
-						strcat(str, temp);
-						break;
+						sprintf(temp, "CLR |%d| ", nLen);
+						strcat(pStr, temp);
+						nLen = 0;
 					}
 
-					if (nFlags & 0x10)                    // 0x10022265 test $0x10,%al
+					if (nFlags & 0x10)
 					{
-						sprintf(temp, "SCL (!%d)", nLen);
-						strcat(str, temp);
-						break;
+						sprintf(temp, "SCL |%d| ", nLen);
+						strcat(pStr, temp);
+						nLen = 0;
 					}
 
-					if (nFlags & 0x202)                   // 0x1002226d test $0x202,%ax
+					if (nFlags & 0x202)
 					{
-						sprintf(temp, "POS (!%d)", nLen);
-						strcat(str, temp);
-						break;
+						sprintf(temp, "POS |%d| ", nLen);
+						strcat(pStr, temp);
+						nLen = 0;
 					}
 
-					if (nFlags & 0x404)                   // 0x10022277 test $0x404,%ax
+					if (nFlags & 0x404)
 					{
-						sprintf(temp, "ROT (!%d)", nLen);
-						strcat(str, temp);
-						break;
+						sprintf(temp, "ROT |%d| ", nLen);
+						strcat(pStr, temp);
+						nLen = 0;
 					}
 
-					if (nFlags & 0x100)                   // 0x10022281 test $0x1,%ah
+					if (nFlags & 0x100)
 					{
-						sprintf(temp, "ATT (!%d)", nLen);
-						strcat(str, temp);
-						break;
+						sprintf(temp, "ATT |%d| ", nLen);
+						strcat(pStr, temp);
+						nLen = 0;
 					}
-
-					// 0x1002228a  jmp 0x100220d6 -- fall off the end of the
-					// body, back to the loop head.
 				}
 				else
 				{
@@ -4365,118 +4333,95 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 					nLen--;
 
-					// 0x100222b4  movzbl %al,%eax ; sub %edi,%eax ; je ...
-					// -- cases 0, 1, 3 and default, laid out as a compare
-					// chain with the `push %ebx` for the default/REM pair
-					// hoisted into it at 0x100222bf.
-					// Each case carries its own strcat: VC6 merges the four
-					// copies into the one at 0x100222eb and batches the
-					// cleanup as `add $0x14` (a single strcat after the
-					// switch gives `add $0xc` + two pops, 2 instructions long).
 					switch (((CPacket*)pMsg)->ReadType((uint8*)0))
 					{
 						case 0:
-							sprintf(temp, "SND (!%d)", nLen);
-							strcat(str, temp);
+							sprintf(temp, "SND |%d| ", nLen);
 							break;
+
 						case 1:
-							sprintf(temp, "STK (!%d)", nLen);
-							strcat(str, temp);
+							sprintf(temp, "STK |%d| ", nLen);
 							break;
+
 						case 3:
-							sprintf(temp, "REM (!%d)", nLen);
-							strcat(str, temp);
+							sprintf(temp, "REM |%d| ", nLen);
 							break;
+
 						default:
-							sprintf(temp, "UNK (!%d)", nLen);
-							strcat(str, temp);
+							sprintf(temp, "UNK |%d| ", nLen);
 							break;
 					}
 
-					// 0x10022301  xor %ebx,%ebx ; jmp 0x100220d6 (head)
+					strcat(pStr, temp);
 					nLen = 0;
 				}
 			}
+			break;
 
-			goto done;
-
-		// ------------------------------------------------------------
-		//  0x0a -- the unguaranteed update packet.  0x1002235d.  The same
-		//  sub-packet loop as UPD, and then just the leftover count.
-		// ------------------------------------------------------------
 		case 0x0a:
-			strcat(str, "UUP ");
+			strcat(pStr, "(UUP) ");
 
-			nLen--;                                       // 0x10022369
+			nLen--;
 
-			while (nLen)                                  // 0x10022370 / 0x10022440
+			while (nLen)
 			{
-				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 == 0)   // 0x1002237e je
+				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 == 0)
 					break;
 
 				nLen--;
 
-				// 0x10022393 -> 0x100138d6.  This is read #15, so it goes
-				// through the template (see THE SIXTEEN READS) even though
-				// the UPD twin above uses ReadByte.  Byte-identical here;
-				// the difference only shows in lithtech.exe.
 				nSubByte = ((CPacket*)pMsg)->ReadType((uint8*)0);
 
-				if (nSubByte == 0)                        // 0x10022398
+				if (nSubByte == 0)
 					break;
 
-				nSubLen = nSubByte;                       // 0x100223a3
+				nSubLen = nSubByte;
 
-				if (nLen < nSubLen)                                       // 0x100223a6 jb
+				if (nLen < nSubLen)
 				{
-					strcat(str, "BAD ");
-					break;
-				}
-				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < (int)nSubLen)  // 0x100223bb jl
-				{
-					strcat(str, "BAD ");
+					strcat(pStr, "BAD ");
 					break;
 				}
 
+				if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < (int)nSubLen)
 				{
-					CMessageRef  ref;
+					strcat(pStr, "BAD ");
+					break;
+				}
 
-					ref.Init(msg_AllocPacket(0x44c, 0x44c));   // 0x100223c3
+				{
+					CMessageRef ref;
 
-					ref.m_pMsg->Init(nSubByte, 0x1000);                // 0x100223f8
+					ref.Init(msg_AllocPacket(0x44c, 0x44c));
 
-					nLen -= nSubLen;                                   // 0x10022403
+					nSubWord = nSubByte;
 
-					((ServerMessageTypeView*)pMsg)->ReadData(
-						ref.m_pMsg->m_pData, nSubByte);                // 0x1002240b
+					ref.m_pMsg->Init(nSubWord, 0x44c);
 
-					ref.m_pMsg->m_Unknown34 = nSubByte;                // 0x1002241c
-					ref.m_pMsg->m_Unknown38 = 1;                       // 0x10022423
+					nLen -= nSubLen;
 
-					net_LogPacket(ref.m_pMsg, nSubLen, 0);             // 0x1002242c
+					((ServerMessageTypeView*)pMsg)->ReadDataInline(
+						ref.m_pMsg->m_pData, nSubWord);
+
+					ref.m_pMsg->m_Unknown34 = nSubWord;
+					ref.m_pMsg->m_Unknown38 = 1;
+
+					net_LogPacket(ref.m_pMsg, nSubLen, 0, pStr, nDir);
 				}
 			}
 
-			// 0x1002245d: push nLen, push "(!%d) ", jmp to the shared
-			// sprintf+strcat at 0x1002230e, which exits to the tail.
-			sprintf(temp, "(!%d) ", nLen);
-			strcat(str, temp);
-			goto done;
-
-		case 0x0c:                                // 0x10022468
-			strcat(str, "YID ");
+			sprintf(temp, "|%d| ", nLen);
+			strcat(pStr, temp);
 			break;
 
-		// ------------------------------------------------------------
-		//  0x0d -- a game message.  0x10022472.  The LAST unread payload
-		//  byte is the message class, and for class 'g' the next byte
-		//  READ (not the last one) is the sub-type.
-		// ------------------------------------------------------------
-		case 0x0d:
-			strcat(str, "MSG ");
+		case 0x0c:
+			strcat(pStr, "(YID) ");
+			break;
 
-			// 0x10022485  push $1 ; pop %edi -- the constant 1 again, and
-			// it stays 1 for the PIC guards below.
+		case 0x0b:
+		case 0x0d:
+			strcat(pStr, "(MSG) ");
+
 			if (nLen < 1)
 				goto bad;
 			if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 1)
@@ -4484,176 +4429,169 @@ void net_LogPacket(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 
 			nLen--;
 
-			// 0x100224a2  mov 0x54(%esi),%eax ; dec %ebx ;
-			//             movzbl (%ebx,%eax,1),%eax
-			// -- indexed with the DECREMENTED count, so it is the last
-			// unread byte, and the read does NOT move the cursor.
 			nMsgClass = pMsg->m_pData[nLen];
 
-			// 0x100224ac  sub $0x67,%ecx ; je   -- 0x67 == 'g'
-			// 0x100224b1  sub $0x6d,%ecx ; je   -- 0x67 + 0x6d == 0xd4
 			switch (nMsgClass)
 			{
-				// --------------------------------------- 0x100224ee
-				case 0x67:
-					strcat(str, "PIC ");
+				case 0x64:
+					sprintf(temp, "[PLU] |%d| ", nLen);
+					strcat(pStr, temp);
 
-					// The guard is ONE positive test with the refusal as its
-					// `else`, not two `goto bad` refusals: that is what puts
-					// the lone "BAD " block at 0x100225ec, after the INT arm,
-					// where the shipped build has it (two refusals lay it out
-					// straight after the guard -- 4 bytes short).
-					//
-					// NO `nLen--` here -- 0x1002251b reads the sub-type
-					// without touching %ebx.  Shipped in both images.
-					// 0x10022527  dec %eax ; cmp $0x11 ; ja UNK ;
-					//             jmp *0x1002277d(,%eax,4)
-					// so the table covers 1..18 and 0 falls to UNK.
-					if (nLen >= 1 && pMsg->m_Unknown34 - pMsg->m_Unknown38 >= 1)
-					{
-						switch (((CPacket*)pMsg)->ReadType((uint8*)0))
-						{
-							case 1:  strcat(str, "AMO "); break;   // 0x10022538
-							case 2:  strcat(str, "HEA "); break;   // 0x10022542
-							case 3:  strcat(str, "ARM "); break;   // 0x1002254c
-							case 4:  strcat(str, "WEA "); break;   // 0x10022556
-							case 5:  strcat(str, "WPI "); break;   // 0x10022560
-							case 6:  strcat(str, "AIR "); break;   // 0x1002256a
-							case 7:  strcat(str, "ROC "); break;   // 0x10022574
-							case 8:  strcat(str, "OUT "); break;   // 0x1002257e
-							case 9:  strcat(str, "OBJ "); break;   // 0x10022588
-							case 10: strcat(str, "MOD "); break;   // 0x10022592
-							case 11: strcat(str, "FAD "); break;   // 0x1002259c
-							case 12: strcat(str, "INV "); break;   // 0x100225a6
-							case 13: strcat(str, "MTX "); break;   // 0x100225b0
-							case 14: strcat(str, "MFA "); break;   // 0x100225ba
-							case 15: strcat(str, "MXH "); break;   // 0x100225c4
-							case 16: strcat(str, "MXA "); break;   // 0x100225ce
-							case 17: strcat(str, "WOI "); break;   // 0x100225d8
-							case 18: strcat(str, "INT "); break;   // 0x100225e2
-							default: strcat(str, "UNK "); break;   // 0x10022681
-						}
-					}
-					else
+					if (nLen < 2)
 						goto bad;
+					if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 2)
+						goto bad;
+
+					nFlags = ((CPacket*)pMsg)->ReadType((uint16*)0);
+
+					if (nFlags & 0x001) strcat(pStr, "POS ");
+					if (nFlags & 0x002) strcat(pStr, "ROT ");
+					if (nFlags & 0x004) strcat(pStr, "VEL ");
+					if (nFlags & 0x008) strcat(pStr, "AIM ");
+					if (nFlags & 0x010) strcat(pStr, "INP ");
+					if (nFlags & 0x020) strcat(pStr, "SCA ");
+					if (nFlags & 0x040) strcat(pStr, "DIM ");
+					if (nFlags & 0x080) strcat(pStr, "FL1 ");
+					if (nFlags & 0x100) strcat(pStr, "FL2 ");
+					if (nFlags & 0x200) strcat(pStr, "MST ");
+					if (nFlags & 0x400) strcat(pStr, "CTR ");
 					break;
 
-				// --------------------------------------- 0x100224e4
-				case 0xd4:
-					strcat(str, "PHU ");
+				case 0x66:
+					strcat(pStr, "PIC ");
+
+					if (nLen < 1)
+						goto bad;
+					if (pMsg->m_Unknown34 - pMsg->m_Unknown38 < 1)
+						goto bad;
+
+					switch (((CPacket*)pMsg)->ReadType((uint8*)0))
+					{
+						case 1:  strcat(pStr, "AMO "); break;
+						case 2:  strcat(pStr, "HEA "); break;
+						case 3:  strcat(pStr, "ARM "); break;
+						case 4:  strcat(pStr, "WEA "); break;
+						case 5:  strcat(pStr, "WPI "); break;
+						case 6:  strcat(pStr, "AIR "); break;
+						case 7:  strcat(pStr, "ROC "); break;
+						case 8:  strcat(pStr, "OUT "); break;
+						case 9:  strcat(pStr, "OBJ "); break;
+						case 10: strcat(pStr, "MOD "); break;
+						case 11: strcat(pStr, "EMP "); break;
+						case 12: strcat(pStr, "INV "); break;
+						case 13: strcat(pStr, "MTX "); break;
+						case 14: strcat(pStr, "MFA "); break;
+						case 15: strcat(pStr, "MXH "); break;
+						case 16: strcat(pStr, "MXA "); break;
+						case 17: strcat(pStr, "FAC "); break;
+						case 18: strcat(pStr, "CAN "); break;
+						case 19: strcat(pStr, "BAT "); break;
+						default: goto unknown;
+					}
 					break;
 
-				// --------------------------------------- 0x100224b6
+				case 0x6a:
+					sprintf(temp, "PLO |%d|", nLen);
+					strcat(pStr, temp);
+					break;
+
+				case 0x71:
+					sprintf(temp, "PLD |%d|", nLen);
+					strcat(pStr, temp);
+					break;
+
+				case 0xbe:
+					strcat(pStr, "PHU ");
+					break;
+
 				default:
-					// push %ebx ; push %eax ; push "%2x LEN %d " --
-					// so the order is (class, nLen), and the 0x18 pop at
-					// 0x100224dc accounts for sprintf's four and strcat's
-					// two dwords.
-					sprintf(temp, "%2x LEN %d ", nMsgClass, nLen);
-					strcat(str, temp);
-					goto done;
+					sprintf(temp, "%2x |%d| ", nMsgClass, nLen);
+					strcat(pStr, temp);
+					break;
 			}
 			break;
 
-		case 0x0e:                                // 0x100225f6, same literal as NM's GRP
-			strcat(str, "GRP ");
+		case 0x0e:
+			strcat(pStr, "(GRP) ");
 			break;
 
-		case 0x0f:                                // 0x10022600
-			strcat(str, "COF ");
+		case 0x0f:
+			strcat(pStr, "(COF) ");
 			break;
 
-		case 0x10:                                // 0x1002260a
-			strcat(str, "CV  ");
+		case 0x10:
+			strcat(pStr, "(CV ) ");
 			break;
 
-		case 0x11:                                // 0x10022614 (the `je` arm)
-			strcat(str, "SKY ");
+		case 0x11:
+			strcat(pStr, "(SKY) ");
 			break;
 
-		case 0x12:                                // 0x1002265e
-			strcat(str, "ISE ");
+		case 0x12:
+			strcat(pStr, "(ISE) ");
 			break;
 
-		case 0x13:                                // 0x10022657
-			strcat(str, "PF  ");
+		case 0x13:
+			strcat(pStr, "(PF ) ");
 			break;
 
-		case 0x15:                                // 0x10022650
-			strcat(str, "PLL ");
+		case 0x15:
+			strcat(pStr, "(PLL) ");
 			break;
 
-		case 0x17:                                // 0x10022649
-			strcat(str, "THL ");
+		case 0x17:
+			strcat(pStr, "(THL) ");
 			break;
 
-		case 0x18:                                // 0x10022642
-			strcat(str, "UL  ");
+		case 0x18:
+			strcat(pStr, "(UL ) ");
 			break;
 
-		case 0x19:                                // 0x1002263b
-			strcat(str, "LMA ");
+		case 0x19:
+			strcat(pStr, "(LMA) ");
 			break;
 
-		case 0x1a:                                // 0x10022665
-			strcat(str, "GL  ");
+		case 0x1a:
+			strcat(pStr, "(GL ) ");
 			break;
 
-		case 0x32:                                // 0x100226ab
-			strcat(str, "FD  ");
+		case 0x32:
+			strcat(pStr, "(FD ) ");
 			break;
 
-		case 0x33:                                // 0x100226a4
-			strcat(str, "ST  ");
+		case 0x33:
+			strcat(pStr, "(ST ) ");
 			break;
 
-		case 0x34:                                // 0x1002269d
-			strcat(str, "CFT ");
+		case 0x34:
+			strcat(pStr, "(CFT) ");
 			break;
 
-		case 0x35:                                // 0x10022696
-			strcat(str, "FB  ");
+		case 0x35:
+			strcat(pStr, "(FB ) ");
 			break;
 
-		case 0x36:                                // 0x1002268f
-			strcat(str, "FS  ");
+		case 0x36:
+			strcat(pStr, "(FS ) ");
 			break;
 
-		case 0x38:                                // 0x10022688
-			strcat(str, "GYS ");
+		case 0x38:
+			strcat(pStr, "(GYS) ");
 			break;
 
-		default:                                  // 0x10022681
-			strcat(str, "UNK ");
+		default:
+			sprintf(temp, "(UNK) |%d, %d|", pMsg->m_pData[0] & 0x3f, nLen);
+			strcat(pStr, temp);
 			break;
 	}
 
-	goto done;
+	return;
+
+unknown:
+	strcat(pStr, "UNK ");
+	return;
 
 bad:
-	// 0x100225ec -- one shared arm; every `goto bad` above is a direct
-	// branch to it.
-	strcat(str, "BAD ");
-
-done:
-	// 0x100226be.  Three sequential filters over the name just built, each
-	// skipped when its bit is set in the trace variable; &str[2] steps past
-	// the direction pair.  The three `jz` targets are all 0x10022737, the
-	// bare `leave ; ret`.
-	//
-	// The register restores (pop %edi/%esi/%ebx) are scheduled at
-	// 0x100226c5, between the first `testb` and its `jne` -- nothing in
-	// source corresponds to that.
-	if (!(g_NetLogPackets & 2) && strncmp(&str[2], "UUP", 3) == 0)   // 0x100226be
-		return;
-
-	if (!(g_NetLogPackets & 4) && strncmp(&str[2], "UPD", 3) == 0)   // 0x100226e4
-		return;
-
-	if (!(g_NetLogPackets & 8) && strncmp(&str[2], "NM", 2) == 0)    // 0x10022707
-		return;
-
-	// 0x10022731 -> 0x1000e3f9.  Same prototype question as the in-loop
-	// print above; alternative spelling con_Printf(str).
-	dsi_PrintString(str);
+	strcat(pStr, "BAD ");
 }
+#endif // LT_SERVER_BUILD

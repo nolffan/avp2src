@@ -9,27 +9,44 @@
 // The file name is ours.
 #include "servermgr.h"
 
-// The bank's two ends, inline so the static-initialisation pair below
-// expands them as the shipped one does: 0x1000d967 stores the vptr
-// (0x1004d638) and calls sb_Init2(&bank, 0x18, 0x20, 0x40); the atexit
-// thunk 0x1000d991 stores it again, calls sb_FreeChunks(&bank, 1) and ends
-// on the base's (0x1004d260, CBankBase's). servermgr.h only declares them.
-inline CHashElementBank::CHashElementBank()
+// The bank's two ends. The constructor takes the bank's cache size and
+// preallocation as ARGUMENTS: Primal Hunt's /GX builds do not expand it, and
+// both call it out of line with the two values pushed (server.dll 0x100117be
+// `push 0x40 ; push 0x20 ; call 0x10011ce0`, lithtech.exe 0x00436da0 ->
+// 0x004373c0), its body storing the vptr and calling
+// sb_Init2(&bank, 0x18, nCacheSize, nPreAllocate). AvP2's builds expand it
+// and see the same constants. The atexit thunk stores the vptr again, calls
+// sb_FreeChunks(&bank, 1) and ends on the base's.
+//
+// servermgr.h declares the bank as CHashElementBank with an argumentless
+// constructor and this file may not change it, so the bank is defined
+// through this stand-in of the same layout (vptr, StructBank at +0x04, a
+// dword at +0x20) and the header's class is reached by a cast where its
+// out-of-line Allocate is called. Nothing outside this file names the
+// global. HEADER: CHashElementBank(uint32 nCacheSize, uint32 nPreAllocate)
+// would let this go.
+class CHashElementBankQ532 : public CBankBase
 {
-	sb_Init2(&m_Bank, 0x18, 0x20, 0x40);
-}
+public:
+	CHashElementBankQ532(uint32 nCacheSize, uint32 nPreAllocate)
+	{
+		sb_Init2(&m_Bank, 0x18, nCacheSize, nPreAllocate);
+	}
 
-inline CHashElementBank::~CHashElementBank()
-{
-	sb_FreeChunks(&m_Bank, 1);
-}
+	virtual ~CHashElementBankQ532()
+	{
+		sb_FreeChunks(&m_Bank, 1);
+	}
 
-// 0x100583e8 — the bank word-keyed elements come out of (servermgr.h). Its
-// static-initialisation pair, 0x1000d95d (the constructor expanded) and the
-// atexit thunk 0x1000d991 (the destructor expanded), opens this unit's code
-// in the shipped image. Its free list at +0x1c (0x10058404) is where the
-// frees below put recycled elements.
-CHashElementBank g_HashElementBank;
+	StructBank m_Bank;                       // +0x04
+	uint32     m_Unknown20;                  // +0x20
+};
+
+// 0x100583e8 -- the bank word-keyed elements come out of (servermgr.h's
+// g_HashElementBank). Its static-initialisation pair opens this unit's
+// code in the shipped image. Its free list at +0x1c (0x10058404) is where
+// the frees below put recycled elements.
+CHashElementBankQ532 g_HashElementBankQ532(0x20, 0x40);
 
 // 0x1005840c and 0x1005841c — the per-key-kind compare and hash tables
 // dhash_Create fills (servermgr.h); they follow the bank in .bss (zeroed).
@@ -362,7 +379,7 @@ void dhash_Remove(void* hTable, void* hElement)
 	if (pTable->m_nKeyType == DHASHKEY_WORD)
 	{
 		// AVP2: the header's sb_Free, its null tests and all (0x004371e6).
-		sb_Free(&g_HashElementBank.m_Bank, pElement);
+		sb_Free(&g_HashElementBankQ532.m_Bank, pElement);
 	}
 	else
 	{
@@ -444,7 +461,7 @@ void dhash_Free(void* hTable)
 			if (pTable->m_nKeyType == DHASHKEY_WORD)
 			{
 				// AVP2: sb_Free, null tests included (0x0043709b).
-				sb_Free(&g_HashElementBank.m_Bank, pElement);
+				sb_Free(&g_HashElementBankQ532.m_Bank, pElement);
 			}
 			else
 			{
@@ -494,9 +511,9 @@ void* dhash_AddElement(CHashTable* pTable, void* pKey, uint32 nKeyLen)
 	// it (0x00433991).
 	if (pTable->m_nKeyType == DHASHKEY_WORD)
 #if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
-		pElement = g_HashElementBank.Allocate();
+		pElement = ((CHashElementBank*)&g_HashElementBankQ532)->Allocate();
 #else
-		pElement = dhash_BankAllocate(&g_HashElementBank);
+		pElement = dhash_BankAllocate((CHashElementBank*)&g_HashElementBankQ532);
 #endif
 	else
 		pElement = (CHashElement*)dalloc(nKeyLen + 0x16);

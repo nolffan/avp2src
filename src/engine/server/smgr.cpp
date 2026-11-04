@@ -558,6 +558,177 @@ LTRESULT CServerMgr::LoadWorld(ILTStream* pStream, char* pWorldName)
 	RETURN_ERROR_INFO(1, "CServerMgr::LoadWorld", LT_INVALIDWORLDFILE, pWorldName);
 }
 
+// CServerMgr members AvP2 added that servermgr.h does not declare yet, all
+// thiscalls on the manager (names ours, by address in Primal Hunt's
+// lithtech.exe). The class doubles as a view of the fields they use, which
+// servermgr.h has as m_Unknown66c's padding and m_pUnknown928: the CRC
+// string SetCRCString fills (+0x66c), the two sums the CRC members leave
+// behind it (+0xa6c, +0xa70), and the manager's ILTServer at +0xd38 (whose
+// +0x08 is ILTCSBase's m_pCommonLT: `mov 0x8(%eax),%ecx; call *0x3c`, slot
+// 15, ILTCommon::GetCRC).
+class CServerMgrQ502
+{
+public:
+	LTRESULT CreateStringCRC();                              // 0x0048bac0
+	LTRESULT CreateWorldCRC();                               // 0x0048bd70
+	void     Sub48f570(Client* pClient, ServerMessage* pMsg);   // 0x0048f570
+
+	uint8       m_pad_000[0x664];
+	int         m_bWorldLoaded;              // 0x664
+	void*       m_hWorldFile;                // 0x668
+	char        m_szCRCFiles[0x400];         // 0x66c
+	uint32      m_nStringCRC;                // 0xa6c
+	uint32      m_nWorldCRC;                 // 0xa70
+	uint8       m_pad_a74[0xd38 - 0xa74];
+	ILTServer*  m_pServer;                   // 0xd38
+	uint8       m_pad_d3c[0xe3c - 0xd3c];
+	uint8       m_FileMgr[4];                // 0xe3c  the CFileMgr
+};
+
+// AVP2: ILTServer::CreateStringCRC's body (Primal Hunt lithtech.exe
+// 0x0048bac0, 687 bytes; server.dll 0x10040836, 526 bytes). The CRC string
+// is split on "; \n\r\t" (0x1008167c); a name without a '*' is opened
+// and summed as it is, a name with one is a pattern: everything before the
+// star is a prefix and its directory (cut back to the last '\\'), everything
+// after it a suffix, and every file of the directory listing that starts
+// with the one and ends with the other (_strnicmp, 0x1006fca0) is summed.
+// No file at all leaves the sum 1, never 0. The file count is kept and never
+// read (server.dll -0xc(%ebp), `incl` only). Always LT_OK.
+LTRESULT CServerMgrQ502::CreateStringCRC()
+{
+	char       szPrefix[0x80];
+	char       szDir[0x80];
+	char       szSuffix[0x80];
+	char       szFiles[0x400];
+	uint32     nCRC;
+	uint32     nFiles;
+	uint32     dwCRC;
+	char*      pTok;
+	ILTStream* pStream;
+
+	if (m_szCRCFiles[0])
+	{
+#ifdef PRIMAL_HUNT
+		// PH: the two zeroes ahead of the copy (lithtech.exe 0x0048bae8
+		// `xor %ebp,%ebp` inside the expanded strcpy, server.dll 0x1004085e
+		// before its call); AvP2 1.0.9.6 zeroes them after it (lithtech.exe
+		// 0x00483a34). Each image matches only its own order.
+		nFiles = 0;
+		nCRC   = 0;
+
+		strcpy(szFiles, m_szCRCFiles);
+#else
+		strcpy(szFiles, m_szCRCFiles);
+
+		nFiles = 0;
+		nCRC   = 0;
+#endif
+
+		pTok = strtok(szFiles, "; \n\r\t");
+		while (pTok)
+		{
+			char* pStar = strstr(pTok, "*");
+
+#ifdef AVP2_MODERN
+			// RETAIL BUG: a pattern's prefix and suffix are copied into
+			// 0x80-byte buffers unchecked, from a token of up to 0x3ff
+			// characters; the modern build skips a pattern that will not fit.
+			if (pStar && (pStar - pTok >= (int)sizeof(szPrefix) ||
+			              strlen(pStar + 1) >= sizeof(szSuffix)))
+			{
+				pTok = strtok(LTNULL, "; \n\r\t");
+				continue;
+			}
+#endif
+
+			if (pStar)
+			{
+				strncpy(szPrefix, pTok, pStar - pTok);
+				strcpy(szSuffix, pStar + 1);
+				szPrefix[pStar - pTok] = 0;
+
+				strcpy(szDir, szPrefix);
+				for (int i = strlen(szDir); i > 0 && szDir[i] != '\\'; i--)
+					szDir[i] = 0;
+
+				FileEntry* pList  = fs_GetFileList((CFileMgr*)m_FileMgr, szDir);
+				FileEntry* pEntry = pList;
+				uint32 nPrefixLen = strlen(szPrefix);
+				uint32 nSuffixLen = strlen(szSuffix);
+
+				for (; pEntry; pEntry = pEntry->m_pNext)
+				{
+					if (pEntry->m_Type == TYPE_FILE &&
+					    !_strnicmp(pEntry->m_pFullFilename, szPrefix, nPrefixLen) &&
+					    !_strnicmp(pEntry->m_pFullFilename +
+					               strlen(pEntry->m_pFullFilename) - nSuffixLen,
+					               szSuffix, nSuffixLen))
+					{
+						pStream = fs_OpenFile((CFileMgr*)m_FileMgr,
+						                      pEntry->m_pFullFilename);
+						if (pStream)
+						{
+							m_pServer->Common()->GetCRC(pStream, dwCRC);
+							nCRC += dwCRC;
+							nFiles++;
+							pStream->Release();
+						}
+					}
+				}
+
+				fs_FreeFileList(pList);
+			}
+			else
+			{
+				pStream = fs_OpenFile((CFileMgr*)m_FileMgr, pTok);
+				if (pStream)
+				{
+					m_pServer->Common()->GetCRC(pStream, dwCRC);
+					nCRC += dwCRC;
+					nFiles++;
+					pStream->Release();
+				}
+			}
+
+			pTok = strtok(LTNULL, "; \n\r\t");
+		}
+
+		if (!nCRC)
+			nCRC = 1;
+
+		m_nStringCRC = nCRC;
+	}
+
+	return LT_OK;
+}
+
+// AVP2: ILTServer::CreateWorldCRC's body (Primal Hunt lithtech.exe
+// 0x0048bd70, 156 bytes; server.dll 0x10040a44, 148 bytes): with a world
+// loaded, its file named and the server interface up, the world file's
+// name (fs_GetFileName, cut at 0xff), upper-cased (_strupr, lithtech.exe
+// 0x004ce856), is opened again and summed into +0xa70. Anything missing is
+// LT_ERROR, the trailing statement.
+LTRESULT CServerMgrQ502::CreateWorldCRC()
+{
+	char szName[0x100];
+
+	if (m_bWorldLoaded && m_hWorldFile && m_pServer)
+	{
+		strncpy(szName, fs_GetFileName((CFileMgr*)m_FileMgr, m_hWorldFile), 0xff);
+		_strupr(szName);
+
+		ILTStream* pStream = fs_OpenFile((CFileMgr*)m_FileMgr, szName);
+		if (pStream)
+		{
+			m_pServer->Common()->GetCRC(pStream, m_nWorldCRC);
+			pStream->Release();
+			return LT_OK;
+		}
+	}
+
+	return LT_ERROR;
+}
+
 LTRESULT CServerMgr::DoRunWorld()
 {
 	if (!m_pWorldFile)
@@ -3735,8 +3906,20 @@ LTBOOL si_GetModelPlaying(LTObject* hObj)
 // The object keeps its model and skin as file identifiers, not strings, so
 // both come back through the file manager. An unset one leaves an empty
 // string rather than failing.
+//
+// AVP2: each buffer is optional -- a null buffer or a size below one skips
+// it (`test %esi,%esi; je` then `test %ecx,%ecx; jle`, AvP2 lithtech.exe
+// 0x0048195f..0x00481969 and 0x004819a3..0x004819ad), as the SDK comment
+// promises ("You can pass in LTNULL for pFilename and pSkinName").
+// PH: a third buffer pair after the skin's, for the model's extra texture
+// (SObjData +0x44: lithtech.exe 0x00488cf1..0x00488d07, the arguments at
+// 0x20/0x24 off %esp past the two pushes).
 LTBOOL si_GetModelFilenames(LTObject* hObj, char* pFilename, int fileBufLen,
-                            char* pSkinName, int skinBufLen)
+                            char* pSkinName, int skinBufLen
+#ifdef PRIMAL_HUNT
+                            , char* pExtraName, int extraBufLen
+#endif
+                            )
 {
 	if (!hObj)
 		return LTFALSE;
@@ -3744,27 +3927,49 @@ LTBOOL si_GetModelFilenames(LTObject* hObj, char* pFilename, int fileBufLen,
 	if (hObj->m_ObjectType != OT_MODEL)
 		return LTFALSE;
 
-	if (hObj->m_pSData->m_pModelFile)
+	if (pFilename && fileBufLen > 0)
 	{
-		strncpy(pFilename,
-		        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pModelFile),
-		        fileBufLen - 1);
-	}
-	else
-	{
-		pFilename[0] = 0;
+		if (hObj->m_pSData->m_pModelFile)
+		{
+			strncpy(pFilename,
+			        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pModelFile),
+			        fileBufLen - 1);
+		}
+		else
+		{
+			pFilename[0] = 0;
+		}
 	}
 
-	if (hObj->m_pSData->m_pSkinFiles[0])
+	if (pSkinName && skinBufLen > 0)
 	{
-		strncpy(pSkinName,
-		        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pSkinFiles[0]),
-		        skinBufLen - 1);
+		if (hObj->m_pSData->m_pSkinFiles[0])
+		{
+			strncpy(pSkinName,
+			        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pSkinFiles[0]),
+			        skinBufLen - 1);
+		}
+		else
+		{
+			pSkinName[0] = 0;
+		}
 	}
-	else
+
+#ifdef PRIMAL_HUNT
+	if (pExtraName && extraBufLen > 0)
 	{
-		pSkinName[0] = 0;
+		if (hObj->m_pSData->m_pFile44)
+		{
+			strncpy(pExtraName,
+			        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pFile44),
+			        extraBufLen - 1);
+		}
+		else
+		{
+			pExtraName[0] = 0;
+		}
 	}
+#endif
 
 	return LTTRUE;
 }
@@ -4566,7 +4771,11 @@ LTRESULT si_GetModelCommandString(HOBJECT hObj, char *pStr, uint32 maxLen);     
 const char *ci_GetAnimName(HOBJECT hObject, HMODELANIM hAnim);                                       // 0x1e4
 void si_SetModelPlaying(HOBJECT hObj, LTBOOL bPlaying);                                              // 0x1e8
 LTBOOL si_GetModelPlaying(HOBJECT hObj);                                                             // 0x1ec
-LTBOOL si_GetModelFilenames(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen); // 0x1f0
+LTBOOL si_GetModelFilenames(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen
+#ifdef PRIMAL_HUNT
+                            , char *pExtraName, int extraBufLen
+#endif
+                            ); // 0x1f0
 uint32 si_GetObjectContainers(HOBJECT hObj, HOBJECT *pContainerList, uint32 *pFlagList, uint32 maxListSize); // 0x1f4
 uint32 si_GetContainedObjects(HOBJECT hContainer, HOBJECT *pObjectList, uint32 *pFlagList, uint32 maxListSize); // 0x1f8
 LTRESULT si_SaveObjects(char *pszSaveFileName, ObjectList *pList, uint32 dwParam, uint32 flags);     // 0x1fc
@@ -4598,8 +4807,8 @@ void si_SetupInterface(CLTServer* pServer)
 	// few blocks: FindPoliesTouchingBox's pair, CreateObjectList's run and
 	// the attachment/link groups sit where the source evidently had them.
 	pServer->SetCRCString               = si_SetCRCString;   // AVP2: new, to be reconstructed
-	pServer->CreateStringCRC            = si_CreateStringCRC;   // AVP2: new, to be reconstructed
-	pServer->CreateWorldCRC             = si_CreateWorldCRC;   // AVP2: new, to be reconstructed
+	pServer->CreateStringCRC            = si_CreateStringCRC;   // AVP2: new
+	pServer->CreateWorldCRC             = si_CreateWorldCRC;   // AVP2: new
 	pServer->GetGameInfo                = si_GetGameInfo;
 	pServer->GetClass                   = si_GetClass;
 	pServer->GetStaticObject            = si_GetStaticObject;
@@ -4715,7 +4924,15 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->GetAnimName                = ci_GetAnimName;
 	pServer->SetModelPlaying            = si_SetModelPlaying;
 	pServer->GetModelPlaying            = si_GetModelPlaying;
+#ifdef PRIMAL_HUNT
+	// PH: the engine's GetModelFilenames takes the third buffer pair
+	// (see si_GetModelFilenames); iltserver.h still has AvP2's five-argument
+	// slot type.
+	pServer->GetModelFilenames          =
+		(LTBOOL (*)(HOBJECT, char*, int, char*, int))si_GetModelFilenames;
+#else
 	pServer->GetModelFilenames          = si_GetModelFilenames;
+#endif
 	pServer->GetModelFilenames2         = si_GetModelFilenames2;   // AVP2: new, to be reconstructed
 	pServer->Parse                      = si_Parse;
 	pServer->GetObjectContainers        = si_GetObjectContainers;
@@ -4733,16 +4950,8 @@ void si_SetupInterface(CLTServer* pServer)
 }
 
 
-// CServerMgr members AvP2 added that servermgr.h does not declare yet, all
-// thiscalls on the manager (names ours, by address in Primal Hunt's
-// lithtech.exe; none reconstructed yet).
-class CServerMgrQ502
-{
-public:
-	LTRESULT CreateStringCRC();                              // 0x0048bac0
-	LTRESULT CreateWorldCRC();                               // 0x0048bd70
-	void     Sub48f570(Client* pClient, ServerMessage* pMsg);   // 0x0048f570
-};
+// CServerMgrQ502, the manager members AvP2 added, is declared above
+// CServerMgr::LoadWorld, beside the two CRC members it defines.
 
 // AVP2: ILTServer::SetCRCString, 0x00485d50: a string shorter than 0x400
 // bytes is copied into the manager's 0x400-byte buffer at +0x66c (strncpy,

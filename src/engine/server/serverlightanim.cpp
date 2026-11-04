@@ -373,3 +373,81 @@ void la_WriteChange(CServerMgr* pMgr, LightAnim* pAnim, uint32 hLightAnim,
 // smgr.cpp, which is where both images put the latter: lithtech.exe's
 // 0x00462fd0 sits between two of smgr.cpp's functions (0x00462ee0,
 // 0x004630f0), as server.dll's 0x10026755 sits inside that file's run.
+
+
+// ======================================================================= //
+//  The two BSP descents both images place right after this file's code and
+//  ahead of servercommon.cpp's world_PointInsideCB (server.dll 0x10017e9e,
+//  lithtech.exe 0x004416c0, which calls the point test at 0x004417a2):
+//  server.dll 0x10017db3 / 0x10017e31, lithtech.exe 0x00441570 /
+//  0x00441620.  Their callers are worldsim.cpp's ws_GetBoxStatus (server
+//  0x100042c2 for the sphere, 0x10004286/97/a8 for the point; lithtech
+//  0x0041d2a7, 0x0041d25a/70/86) and servercommon.cpp's callback.
+//
+//  Earlier reconstructions of these two in worldsim.cpp matched neither
+//  image: the shipped node plane is null-tested
+//  through the polygon and its surface (`test %eax,%eax; je; cmpl $0,
+//  0x2c(%eax); je; mov 0x28(%eax),%eax`, server 0x10017dc6..0x10017dd7),
+//  and the sphere test is a plain descent with no stack -- frame 0xc, the
+//  point copy only.  So the two are defined here, where both images place
+//  them, and worldsim.cpp only calls them.
+// ======================================================================= //
+#include "ltobject_internal.h"
+
+#include "worldsim.h"
+
+// server.dll 0x10017db3, 126 bytes; lithtech.exe 0x00441570, 168 bytes.
+// Walk the node the caller points at down whichever side the sphere is
+// wholly on, writing each step back through the caller's pointer; a sphere
+// across a plane answers 2, a leaf answers its 0x01 bit.  Both tests are
+// strict (`jbe` past the front arm at 0x10017e00, `jae` to the straddle at
+// 0x10017e17).  The straddle's `return 2` is the trailing statement
+// (server 0x10017e2a, after the leaf's return): a `while` guard with the leaf
+// return after it puts the two the other way round.  Identical in both images.
+int bsp_SphereInside(BSPNode** ppRoot, LTVector* pPoint, float fRadius)
+{
+	for (;;)
+	{
+		if ((*ppRoot)->m_Flags & 3)
+			return (*ppRoot)->m_Flags & 1;
+
+		LTPlane* pPlane = (*ppRoot)->m_pOwner ? (*ppRoot)->m_pOwner->GetPlane() : LTNULL;
+		LTVector v = *pPoint;
+		float fDist = v.y * pPlane->m_Normal.y + v.z * pPlane->m_Normal.z +
+		              v.x * pPlane->m_Normal.x - pPlane->m_Dist;
+
+		if (fDist > fRadius)
+			*ppRoot = (*ppRoot)->m_pChild[1];
+		else if (fDist < -fRadius)
+			*ppRoot = (*ppRoot)->m_pChild[0];
+		else
+			break;
+	}
+
+	return 2;
+}
+
+// server.dll 0x10017e31, 109 bytes; lithtech.exe 0x00441620, 145 bytes.
+// The point's descent: 0x02 answers 0 and 0x01 answers 1, tested one at a
+// time; otherwise the child on the point's side (front for a distance
+// above zero, 0.0f at server .rdata 0x10074210).  Identical in both images.
+int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint)
+{
+	BSPNode* pNode = pRoot;
+
+	for (;;)
+	{
+		if (pNode->m_Flags & 2)
+			return 0;
+
+		if (pNode->m_Flags & 1)
+			return 1;
+
+		LTPlane* pPlane = pNode->m_pOwner ? pNode->m_pOwner->GetPlane() : LTNULL;
+		LTVector v = *pPoint;
+		float fDist = v.y * pPlane->m_Normal.y + v.z * pPlane->m_Normal.z +
+		              v.x * pPlane->m_Normal.x - pPlane->m_Dist;
+
+		pNode = pNode->m_pChild[fDist > 0.0f ? 1 : 0];
+	}
+}

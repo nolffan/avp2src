@@ -1260,8 +1260,13 @@ public:
 //     `test $0x1; jne` (skip when less).
 //   * then `m_Children[0]` null test and four recursions, split on the
 //     centre's x (+0x30) and z (+0x38): min < centre and max > centre.
+//   * the tree's touch code is read ONCE, ahead of the +0x44 test
+//     (Primal Hunt 0x004aa1a0..0x004aa1a7, spilled to the query's dead
+//     argument slot and reloaded per object at 0x004aa1cc): a local
+//     initialised at its declaration.  Byte-identical there (342 bytes).
 void wt_FindInBoxQ48D(CWTNode2View* pNode, CWTBoxQueryView* pQuery)
 {
+	uint32          nCurCode = pQuery->m_pTree->m_nCurCode;
 	CheapLTLink*    pHead;
 	LTLink*         pCur;
 	CWTObject2View* pObj;
@@ -1278,9 +1283,9 @@ void wt_FindInBoxQ48D(CWTNode2View* pNode, CWTBoxQueryView* pQuery)
 		pObj = (CWTObject2View*)pCur->m_pData;
 		pCur = pCur->m_pNext;
 
-		if (pObj->m_nTouchCode != pQuery->m_pTree->m_nCurCode)
+		if (pObj->m_nTouchCode != nCurCode)
 		{
-			pObj->m_nTouchCode = pQuery->m_pTree->m_nCurCode;
+			pObj->m_nTouchCode = nCurCode;
 
 			pObj->GetBBox(&vMin, &vMax);
 

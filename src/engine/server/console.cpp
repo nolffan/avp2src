@@ -455,13 +455,24 @@ static int parse_Token(char** ppPos, char** ppOut)
 			if (c == 0)
 				break;
 
-			// The escaped character's copy is its own (0x0042274d).
+#ifdef LT_SERVER_BUILD
+			// server.dll 0x10007bb2: the escaped character goes through the
+			// one copy at the foot of the loop -- its null test `jmp`s into
+			// the space test's `je` (0x10007bd7) and on to the shared
+			// parse_AddChar call (0x10007bd9).
+		}
+		else if (c == ';' || iscntrl(c))
+#else
+			// The escaped character's copy is its own (lithtech.exe
+			// 0x0042274d); the fall-through spelling above loses it at /O2
+			// (243 bytes against 263).
 			parse_AddCharQ507(ppOut, pStart, c);
 			(*ppPos)++;
 			continue;
 		}
 
 		if (c == ';' || iscntrl(c))
+#endif
 		{
 			**ppOut = 0;
 			(*ppOut)++;

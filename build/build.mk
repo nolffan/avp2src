@@ -425,9 +425,13 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp c
     serverengine.cpp ltobject.cpp lmessage.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
     genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
     savrest.cpp shade.cpp smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
-    svtiny.cpp worldtree.cpp
+    svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp
 SERVER_OS_SRC := localdriver.cpp
-server_flags = $(if $(filter $(1),$(SERVER_OS_SRC)),$(subst /O1,/Os /Ob1 /Gf,$(SERVER_CL)),$(SERVER_CL))
+# the segment-query module, unoptimised in Primal Hunt and AvP2 1.0.9.6
+# (server.dll 0x10012de7..0x10013ebf)
+SERVER_OD_SRC := worldisect.cpp
+server_flags = $(if $(filter $(1),$(SERVER_OS_SRC)),$(subst /O1,/Os /Ob1 /Gf,$(SERVER_CL)),\
+    $(if $(filter $(1),$(SERVER_OD_SRC)),$(subst /O1,/Od /Os /Ob1,$(SERVER_CL)),$(SERVER_CL)))
 
 # lithtech.exe: nolfsrc's /O2 (Primal Hunt adds /GX, below), with the server's timers
 # (AvP2's client times what server.dll does); its copy of server's localdriver.cpp /Od with
@@ -456,13 +460,17 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     ..\server\counter.cpp ..\server\dalloc.cpp ..\server\modelanim.cpp ..\server\basestream.cpp \
     ..\server\collection.cpp ..\server\fsstream.cpp ..\server\objbank.cpp ..\server\objtypes.cpp \
     ..\server\saveio.cpp ..\server\serverengine.cpp ..\server\streamsim.cpp ..\server\tcpdriver.cpp \
-    ..\server\worldbsp.cpp ..\server\worldmodels.cpp ..\server\worldsim.cpp worldtree.cpp clientmusic.cpp
+    ..\server\worldbsp.cpp ..\server\worldmodels.cpp ..\server\worldsim.cpp worldtree.cpp clientmusic.cpp \
+    ..\server\sweptsphere.cpp
 LITHTECH_OD_SRC := ..\server\localdriver.cpp
+# the segment-query module, unoptimised as in server.dll (lithtech.exe 0x0043b750..)
+LITHTECH_ODS_SRC := ..\server\worldisect.cpp
 LITHTECH_GX_SRC := controlfile.cpp
 lithtech_flags = $(subst /O2,$(strip \
     $(if $(filter $(1),$(LITHTECH_OD_SRC)),/Od /Oi /Ob1 /Gf,\
-    $(if $(filter $(1),$(LITHTECH_GX_SRC)),/GX /O2,/O2))),$(LITHTECH_CL))
-LITHTECH_ALL := $(LITHTECH_SRC) $(LITHTECH_OD_SRC) $(LITHTECH_GX_SRC)
+    $(if $(filter $(1),$(LITHTECH_ODS_SRC)),/Od /Os /Ob1,\
+    $(if $(filter $(1),$(LITHTECH_GX_SRC)),/GX /O2,/O2)))),$(LITHTECH_CL))
+LITHTECH_ALL := $(LITHTECH_SRC) $(LITHTECH_OD_SRC) $(LITHTECH_ODS_SRC) $(LITHTECH_GX_SRC)
 # ... and never with /GX, even in Primal Hunt (none so far: stdlithalloc.cpp
 # was listed on a mispairing -- 0x004b4e30 is MFCStub's CString constructor,
 # and ~LAllocSimpleBlock at 0x004bf320 has an exception frame)

@@ -506,7 +506,7 @@ public:
 class CCollElem18L
 {
 public:
-	CCollElem18L(uint8 bInit = 0) { Init(bInit); }
+	CCollElem18L();
 
 	void            Init(uint8 bInit);
 
@@ -519,10 +519,19 @@ public:
 
 // The shipped function is NOT the constructor: it leaves eax holding
 // `&m_head` rather than `this`, and a VC6 constructor always hands `this`
-// back. What BaseNew's placement new calls is a void member function, so
-// the constructor itself is one line — `Init(bInit)` — expanded at the
-// placement-new site, which is also why the defaulted argument shows up
-// as BaseNew's `push $0x0`.
+// back. It is Init, and the constructor is one line, `Init(0)`.
+//
+// 0x1000c0f9 (server.dll): the constructor is NOT inline. Primal Hunt's BaseNew<CCollElem18L>
+// (0x10010ee9) calls it out of line, pushing nothing, inside an EH state
+// region (`and [ebp-4],0` / `or [ebp-4],-1` around the call, because <new>'s
+// matching placement delete is visible under /GX); the body is
+// `push 0 ; call Init`. An inline constructor expanded into BaseNew as a
+// bare `push 0 ; call Init` with no frame at all.
+CCollElem18L::CCollElem18L()
+{
+	Init(0);
+}
+
 void CCollElem18L::Init(uint8 bInit)
 {
 	CCollElem18Link* pHead;
@@ -631,7 +640,61 @@ CCollElem20K::CCollElem20K()
 }
 DECLARE_COLLCTORELEM(CCollElem24, 0x24);
 DECLARE_COLLPOD (CCollElem40, 0x40);
-DECLARE_COLLCTOR    (CCollElem60, 0x60);
+// The 0x60 element CMoArray<CCollElem60> holds. Its fields are read off
+// server.dll's constructor 0x1000abcf (74 bytes), which BaseNew<CCollElem60>
+// (0x10010fdc) calls: a byte at 0x00, dwords at 0x20/0x24/0x2c, a byte at
+// 0x28, a word at 0x30, two -1 dwords at 0x34/0x38 (`or $-1`), a zeroed dword
+// at 0x3c, 1.0f at 0x40 (`fld1`) and seven 0.0f floats at 0x44..0x5c
+// (`fldz`). 0x01..0x1f are not touched. Names ours. The seven floats are
+// two vectors and a float: written as seven float stores, /O1 fills the
+// first x87 gaps with the integer stores, while two inline LTVector::Init
+// calls keep the first six `fldz/fstps` back to back as shipped.
+class CCollElem60
+{
+public:
+	CCollElem60();
+
+	uint8  m_flag;                 // +0x00
+	uint8  m_pad0[0x1f];
+	uint32 m_a;                    // +0x20
+	uint32 m_b;                    // +0x24
+	uint8  m_c;                    // +0x28
+	uint8  m_pad1[3];
+	uint32 m_d;                    // +0x2c
+	uint16 m_e;                    // +0x30
+	uint16 m_pad2;
+	int32  m_f;                    // +0x34
+	int32  m_g;                    // +0x38
+	uint32 m_h;                    // +0x3c
+	float  m_i;                    // +0x40
+	LTVector m_v1;                 // +0x44
+	LTVector m_v2;                 // +0x50
+	float  m_k;                    // +0x5c
+};
+
+#ifdef LT_SERVER_BUILD
+// server.dll's BaseNew<CCollElem60> (0x10010fdc, 58 bytes) has no EH
+// frame around its constructor call, so the constructor's body was compiled
+// in this translation unit before the instantiation: VC6 then knows it
+// cannot throw and drops the state stores. lithtech.exe's (0x00416510, 139
+// bytes) keeps the frame, so its body is not seen there.
+CCollElem60::CCollElem60()
+{
+	m_v1.Init();
+	m_v2.Init();
+	m_k = 0.0f;
+	m_g = -1;
+	m_f = -1;
+	m_i = 1.0f;
+	m_flag = 0;
+	m_a = 0;
+	m_b = 0;
+	m_c = 0;
+	m_d = 0;
+	m_e = 0;
+	m_h = 0;
+}
+#endif
 // 0x10007e85 (40 bytes) is the constructor BaseNew<CCollElem60> (0x1000d1f2)
 // calls, so this is the 0x60 element's own shape as far as its constructor
 // touches it: a byte at 0x00, five dwords at 0x20..0x30, two -1 words at

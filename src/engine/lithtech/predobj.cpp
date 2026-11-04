@@ -246,9 +246,9 @@ public:
 // ----------------------------------------------------------------------- //
 //  IClientShell -- the game DLL's callback interface, src/LT2/sdk/inc/
 //  iclientshell.h.  Counting that header's virtuals from the destructor
-//  gives OnObjectMove at slot 15 (0x3c) and OnObjectRotate at slot 16
-//  (0x40), which is exactly what 0x004610f9 and 0x0046125b call.  Both are
-//  __thiscall with three stack arguments and no caller cleanup.
+//  gives OnObjectMove at slot 17 (0x44) and OnObjectRotate at slot 18
+//  (0x48).  Both are __thiscall with three stack arguments and no caller
+//  cleanup.
 // ----------------------------------------------------------------------- //
 class IClientShellQ460
 {
@@ -268,10 +268,15 @@ public:
 	virtual void _v030()=0;
 	virtual void _v034()=0;
 	virtual void _v038()=0;
+	// AVP2: PreUpdate/Update/PostUpdate come first, as src/LT2/sdk/inc/
+	// iclientshell.h has them: OnObjectRotate is slot 18 (PH 0x00474347
+	// `call *0x48(%edx)`, AvP2 1.0.9.6 0x0046e227).
+	virtual void _v03c()=0;
+	virtual void _v040()=0;
 	virtual LTRESULT OnObjectMove(LTObjectQ460* hObj, LTBOOL bTeleport,
-	                              LTVector* pNewPos)=0;      // 0x3c
+	                              LTVector* pNewPos)=0;      // 0x44
 	virtual LTRESULT OnObjectRotate(LTObjectQ460* hObj, LTBOOL bTeleport,
-	                                LTRotation* pNewRot)=0;  // 0x40
+	                                LTRotation* pNewRot)=0;  // 0x48
 };
 
 
@@ -285,8 +290,10 @@ class CClientMgrQ460
 public:
 	uint8             m_pad_000[0x4c0];
 	ICltQ460*         m_pClientDE;                           // 0x4c0
-	uint8             m_pad_4c4[0x61c - 0x4c4];
-	IClientShellQ460* m_pClientShell;                        // 0x61c
+	// AVP2: the shell pointer is at 0x620 (PH 0x00474253, AvP2 1.0.9.6
+	// 0x0046e133).
+	uint8             m_pad_4c4[0x620 - 0x4c4];
+	IClientShellQ460* m_pClientShell;                        // 0x620
 };
 
 
@@ -346,6 +353,7 @@ public:
 	uint8      m_pad_8c[0xc4 - 0x8c];
 	LTVector   m_Velocity;                                   // 0x0c4
 	LTVector   m_Acceleration;                               // 0x0d0
+	uint8      m_pad_dc[0xe0 - 0xdc];
 	float      m_FrictionCoefficient;                        // 0x0e0
 	uint8      m_pad_e4[0xf4 - 0xe4];
 	LTVector   m_BBoxMin;                                    // 0x0f4
@@ -359,6 +367,9 @@ public:
 	LTVector   m_vPredictBase;                               // 0x148
 	LTLink     m_PosPredictLink;                             // 0x154
 	float      m_fRotPredictTime;                            // 0x160
+	// AVP2: the shell time the last rotation arrived at (PH 0x00474264,
+	// AvP2 1.0.9.6 0x0046e144). (name ours)
+	float      m_fRotStampQ534;                              // 0x164
 	LTRotation m_PredictRot;                                 // 0x168
 	LTLink     m_RotPredictLink;                             // 0x178
 	HLOCALOBJ  m_hPredictLines;                              // 0x184
@@ -439,22 +450,37 @@ void sub_420880Q460(CClientMgrQ460* pClientMgr, LTObjectQ460* hObj,
 //      that VC6 tail-duplicated: the two copies differ only in where the
 //      zero came from, and both fall into the same `mov (%ecx),%edx`.
 //
+//  IDENTICAL against Primal Hunt's 0x00474240 (300 bytes; AvP2 1.0.9.6's
+//  0x0046e120 is the same source). The notes above are an older build's
+//  addresses. In this one the stopping arm makes the two calls itself and
+//  returns: written once after the `if`, the stopping arm's window store is
+//  an immediate (`movl $0`) and the arm jumps to the shared tail, where
+//  shipped stores the `xor`'s zero and evaluates its own `||` (0x0047430a..
+//  0x0047431b).
 // ======================================================================= //
 void sub_461120Q460(CClientShellQ460* pShell, LTObjectQ460* pObj,
                     LTRotation* pRot, LTBOOL bTeleport, LTBOOL bStopped)
 {
 	IClientShellQ460* pShellIface = pShell->m_pClientMgr->m_pClientShell;
 
+	// AVP2: the window is twice the time since the last rotation arrived,
+	// not the shell's scale (PH lithtech.exe 0x00474240, 300 bytes; AvP2
+	// 1.0.9.6 0x0046e120): the stamp and the rotation are stored before the
+	// prediction test (0x00474264..0x0047428b), and an update at the same
+	// time as the last one stops (`test $0x40,%ah`, 0x004742ba).
+	float fDelta = pShell->m_fTime28 - pObj->m_fRotStampQ534;
+
+	pObj->m_fRotStampQ534 = pShell->m_fTime28;
+	pObj->m_PredictRot    = *pRot;
+
 	if (g_CV_Prediction)
 	{
-		if (!bTeleport && !bStopped && pShell->m_fPredictScale24 != 0.0f)
+		if (!bTeleport && !bStopped && fDelta != 0.0f)
 		{
 			pObj->m_RotPredictLink.Remove();
 			pShell->m_RotPredictList.AddAfter(&pObj->m_RotPredictLink);
 
-			pObj->m_PredictRot = *pRot;
-			pObj->m_fRotPredictTime = g_fPredictSlackQ460 *
-			                          pShell->m_fPredictScale24;
+			pObj->m_fRotPredictTime = fDelta * 2.0f;
 			return;
 		}
 
@@ -462,7 +488,10 @@ void sub_461120Q460(CClientShellQ460* pShell, LTObjectQ460* pObj,
 		pObj->m_RotPredictLink.TieOff();
 
 		pObj->m_fRotPredictTime = 0.0f;
-		pObj->m_PredictRot = *pRot;
+
+		pShellIface->OnObjectRotate(pObj, bTeleport || bStopped, pRot);
+		sub_420880Q460(pShell->m_pClientMgr, pObj, pRot);
+		return;
 	}
 
 	pShellIface->OnObjectRotate(pObj, bTeleport || bStopped, pRot);
@@ -537,19 +566,43 @@ inline void pred_MoveTailQ460(IClientShellQ460* pShellIface, CClientShellQ460* p
 	sub_4207a0Q460(pShell->m_pClientMgr, pObj, pPos, 1);
 }
 
+// AVP2: Primal Hunt's 0x00473f40 (768 bytes; AvP2 1.0.9.6 has the same
+// source). The prediction lines are gone, the velocity is compared squared
+// and read once, first (0x00473f4d..0x00473f7c, into the dead pShell slot),
+// an object that has jumped more than a thousand units while not moving
+// fast is treated as stopped too (0x00474033..0x00474099), the window is
+// the slack times the time since the last update (0x0047416b) and an update
+// at the same time as the last one stops (0x00474132), and a stopped object
+// that is still moving stays on the prediction list (0x004741c0..
+// 0x004741e2).
+//
+// NEAR (749 of 756 code bytes; the enumeration splits the row at
+// 0x00473f5d): the x LTDIFF is the residual the older note above describes
+// (ours loads the prediction first and keeps it for both arms, `fsubrs`;
+// shipped `flds (%edi); fcomps 0x130(%esi)` and loads in each arm), plus a
+// few loads scheduled one instruction apart. `(*pPos).x` and declaring the
+// shell pointer first do not move it.
 void sub_460db0Q460(CClientShellQ460* pShell, LTObjectQ460* pObj,
                     LTVector* pPos, LTVector* pVel,
                     LTBOOL bTeleport, LTBOOL bStopped)
 {
-	IClientShellQ460* pShellIface = pShell->m_pClientMgr->m_pClientShell;
+	IClientShellQ460* pShellIface;
+	float             fVelMagSqr;
 
-	if (LTDIFF(pPos->x, pObj->m_vPredictPos.x) <= 0.1f &&
-	    LTDIFF(pPos->y, pObj->m_vPredictPos.y) <= 0.1f &&
-	    LTDIFF(pPos->z, pObj->m_vPredictPos.z) <= 0.1f &&
-	    pVel->Mag() < 0.01f)
+	fVelMagSqr  = pVel->MagSqr();
+	pShellIface = pShell->m_pClientMgr->m_pClientShell;
+
+	if ((LTDIFF(pPos->x, pObj->m_vPredictPos.x) <= 0.1f &&
+	     LTDIFF(pPos->y, pObj->m_vPredictPos.y) <= 0.1f &&
+	     LTDIFF(pPos->z, pObj->m_vPredictPos.z) <= 0.1f &&
+	     fVelMagSqr < 0.01f) ||
+	    (!bStopped && fVelMagSqr < 1000000.0f &&
+	     (pObj->m_Pos - *pPos).MagSqr() > 1000000.0f))
 	{
 		bStopped = 1;
 	}
+
+	float fDelta = pShell->m_fTime28 - pObj->m_fPredictStamp;
 
 	pObj->m_fPredictStamp = pShell->m_fTime28;
 	pObj->m_vPredictPos   = *pPos;
@@ -558,46 +611,28 @@ void sub_460db0Q460(CClientShellQ460* pShell, LTObjectQ460* pObj,
 
 	if (g_CV_Prediction)
 	{
-		if (!bTeleport && !bStopped && pShell->m_fPredictScale24 != 0.0f)
+		if (!bTeleport && !bStopped && fDelta != 0.0f)
 		{
-			if (!pObj->m_hPredictLines && g_CV_PredictionLines)
-			{
-				ObjectCreateStruct ocs;
-
-				INIT_OBJECTCREATESTRUCT(ocs);
-				ocs.m_ObjectType = OT_LINESYSTEM;
-				ocs.m_Flags      = FLAG_VISIBLE;
-
-				pObj->m_hPredictLines =
-					pShell->m_pClientMgr->m_pClientDE->CreateObject(&ocs);
-			}
-			else if (pObj->m_hPredictLines && !g_CV_PredictionLines)
-			{
-				pShell->m_pClientMgr->m_pClientDE->_v0dc(
-					pObj->m_hPredictLines);
-
-				pObj->m_hPredictLines = NULL;
-			}
-
 			pObj->m_PosPredictLink.Remove();
 			pShell->m_PosPredictList.AddAfter(&pObj->m_PosPredictLink);
 
-			pObj->m_fPosPredictTime = g_fPredictSlackQ460 *
-			                          pShell->m_fPredictScale24;
+			pObj->m_fPosPredictTime = g_fPredictSlackQ460 * fDelta;
 			return;
 		}
 
 		pObj->m_PosPredictLink.Remove();
 		pObj->m_PosPredictLink.TieOff();
 
+		if (pVel->MagSqr() > 0.01f)
+			pShell->m_PosPredictList.AddAfter(&pObj->m_PosPredictLink);
+
 		pObj->m_fPosPredictTime = 0.0f;
 
 		pred_MoveTailQ460(pShellIface, pShell, pObj, pPos, bTeleport, bStopped);
+		return;
 	}
-	else
-	{
-		pred_MoveTailQ460(pShellIface, pShell, pObj, pPos, bTeleport, bStopped);
-	}
+
+	pred_MoveTailQ460(pShellIface, pShell, pObj, pPos, bTeleport, bStopped);
 }
 
 
@@ -759,6 +794,7 @@ LTVector sub_4619a0Q460(LTObjectQ460* pObj, SPredictRecQ460* pRec,
 		LTVector vSaveVel         = pObj->m_Velocity;
 		LTVector vSaveAccel       = pObj->m_Acceleration;
 		uint32   nSaveChangeFlags = pObj->m_ChangeFlags;
+		uint32   nSaveFlags       = pObj->m_Flags;
 		float    fSaveFriction    = pObj->m_FrictionCoefficient;
 
 		pObj->SetPos(pRec->m_vPos);
@@ -768,6 +804,11 @@ LTVector sub_4619a0Q460(LTObjectQ460* pObj, SPredictRecQ460* pRec,
 		pObj->m_Acceleration.Init();
 
 		pObj->m_FrictionCoefficient = 0.0f;
+
+		// AVP2: the object carries flag 0x20000 for the length of the
+		// simulated move (0x0047494c), and gets its own flags back after
+		// (0x00474a94).
+		pObj->m_Flags |= 0x20000;
 
 		GlobalForceControlQ460 move;
 
@@ -788,6 +829,7 @@ LTVector sub_4619a0Q460(LTObjectQ460* pObj, SPredictRecQ460* pRec,
 		pObj->m_Acceleration        = vSaveAccel;
 		pObj->m_ChangeFlags         = nSaveChangeFlags;
 		pObj->m_FrictionCoefficient = fSaveFriction;
+		pObj->m_Flags               = nSaveFlags;
 
 		return move.m_vFrameMove + pRec->m_vPos;
 	}
@@ -800,8 +842,10 @@ LTVector sub_4619a0Q460(LTObjectQ460* pObj, SPredictRecQ460* pRec,
 	{
 		float fDelta = fTime * fMaxTime;
 
-		return pRec->m_vPos + pRec->m_vVel * fDelta +
-		       *pForce * (fDelta * fDelta * 0.5f);
+		LTVector vRet = pRec->m_vPos + pRec->m_vVel * fDelta +
+		                *pForce * (fDelta * fDelta * 0.5f);
+
+		return vRet;
 	}
 }
 

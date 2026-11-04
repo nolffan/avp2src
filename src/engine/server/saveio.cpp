@@ -196,7 +196,8 @@ public:
 	uint8       m_pad_9c[0xb8 - 0x9c];
 	uint16      m_nObjectID;                 // 0xb8  the runtime id
 	uint16      m_nSaveIndex;                // 0xba
-	uint8       m_pad_bc[0x190 - 0xbc];
+	uint8       m_ObjectType;                // 0xbc  OT_*
+	uint8       m_pad_bd[0x190 - 0xbd];
 	SavObjData* m_pSData;                    // 0x190
 };
 
@@ -279,7 +280,11 @@ public:
 	void*            m_pClassMgr;            // 0xc14
 	uint8            m_pad_808[4];
 	void*            m_ClassMgrFirst;        // 0xc1c
-	uint8            m_pad_c20[0xe84 - 0xc20];
+	uint8            m_pad_c20[0xd38 - 0xc20];
+	// servermgr.h's m_pUnknown928: the server interface (an ILTCSBase), of
+	// which only its ILTModel pointer at +0x10 is reached here.
+	class SavServerLTQ535* m_pServerLT;      // 0xd38
+	uint8            m_pad_d3c[0xe84 - 0xd3c];
 	SavConsoleState  m_ConsoleState;         // 0xe84
 };
 
@@ -1052,6 +1057,55 @@ CSaveXlatInit::~CSaveXlatInit()
 static CSaveXlatInit g_SaveXlatInit;
 
 
+#ifdef PRIMAL_HUNT
+// PH: what sm_RestoreNextObject restores of a model before the object's own
+// data (lithtech.exe 0x0043e7b3..0x0043e7e7, server.dll 0x10015570): its
+// hidden-piece bits and its main animation tracker. The model's layout is
+// objbank.cpp's ModelInstance (tracker 0x1d4, hidden pieces 0x260).
+#define SAV_OT_MODEL 1
+
+class SavModelQ535
+{
+public:
+	uint8  m_pad_00[0x1d4];
+	uint8  m_AnimTracker[0x50];              // 0x1d4  the SDK's LTAnimTracker
+	uint8  m_pad_224[0x260 - 0x224];
+	uint32 m_HiddenPieces;                   // 0x260
+};
+
+// ILTModel (iltmodel.h) up to ReadTracker, its slot 16 (`call *0x40(%edx)`
+// at 0x0043e7e7), which reads a tracker back out of a message.
+class SavModelLTQ535
+{
+public:
+	virtual LTRESULT _v00() = 0;
+	virtual LTRESULT _v04() = 0;
+	virtual LTRESULT _v08() = 0;
+	virtual LTRESULT _v0c() = 0;
+	virtual LTRESULT _v10() = 0;
+	virtual LTRESULT _v14() = 0;
+	virtual LTRESULT _v18() = 0;
+	virtual LTRESULT _v1c() = 0;
+	virtual LTRESULT _v20() = 0;
+	virtual LTRESULT _v24() = 0;
+	virtual LTRESULT _v28() = 0;
+	virtual LTRESULT _v2c() = 0;
+	virtual LTRESULT _v30() = 0;
+	virtual LTRESULT _v34() = 0;
+	virtual LTRESULT _v38() = 0;
+	virtual LTRESULT _v3c() = 0;
+	virtual LTRESULT ReadTracker(void* pTracker, void* hRead) = 0;
+};
+
+// ILTCSBase's members (iltcsbase.h): vptr, ILTMath, common, physics, model.
+class SavServerLTQ535
+{
+public:
+	uint8           m_pad_00[0x10];
+	SavModelLTQ535* m_pModelLT;              // 0x10
+};
+#endif
+
 // The object the engine hands MID_LOADOBJECT. Its vtable (0x1004d660) puts
 // CSaveIO::ReadChecked in slot 8, so in the original this and CSaveIO are one
 // class; only the three guarded accessors above are compiled into this file
@@ -1137,6 +1191,18 @@ LTRESULT sm_RestoreNextObject(SavServerMgr* pMgr, ILTStream* pStream,
 	pStream->Read(&nStart, 4);
 	pStream->ReadString(szName, sizeof(szName));
 	pStream->SeekTo(nStart);
+
+#ifdef PRIMAL_HUNT
+	if (pObject->m_ObjectType == SAV_OT_MODEL)
+	{
+		SavModelQ535* pModel = (SavModelQ535*)pObject;
+
+		pStream->Read(&pModel->m_HiddenPieces, 4);
+
+		if (pMgr->m_pServerLT->m_pModelLT)
+			pMgr->m_pServerLT->m_pModelLT->ReadTracker(&pModel->m_AnimTracker, &msg);
+	}
+#endif
 
 	pObject->m_pSData->m_pObject->EngineMessageFn(SAV_MID_LOADOBJECT, &msg,
 	                                              (float)dwParam);

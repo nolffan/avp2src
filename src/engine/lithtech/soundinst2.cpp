@@ -107,7 +107,10 @@ public:
 	virtual void _v00()=0; virtual void _v04()=0; virtual void _v08()=0;
 	virtual void _v0c()=0; virtual void _v10()=0; virtual void _v14()=0;
 	virtual void _v18()=0; virtual void _v1c()=0; virtual void _v20()=0;
-	virtual void _v24()=0; virtual void _v28()=0; virtual void _v2c()=0;
+	virtual void _v24()=0; virtual void _v28()=0;
+	// AVP2: +0x2c is iltsoundmgr.h's GetVolumeByType, the user sound type's
+	// volume (the three Update bodies, PH 0x0049aec8 / 0x0049b28f / 0x0049b8de).
+	virtual LTRESULT GetVolumeByType(uint16& nVolume, uint8 nSoundType)=0;  // +0x2c
 	virtual void _v30()=0; virtual void _v34()=0;
 	// Three slots later than NOLF's +0x2c: AvP2's iltsoundmgr.h adds
 	// KillSoundFade, GetVolumeByType and SetVolumeByType ahead of it.
@@ -201,6 +204,8 @@ __declspec(dllimport) void __stdcall AIL_set_3D_position(void* hObj, float x,
                                                          float y, float z);
 __declspec(dllimport) int  __stdcall AIL_sample_volume(void* hSample);
 __declspec(dllimport) void __stdcall AIL_set_sample_volume(void* hSample, int nVolume);
+__declspec(dllimport) int  __stdcall AIL_3D_sample_volume(void* hSample);
+__declspec(dllimport) void __stdcall AIL_set_3D_sample_volume(void* hSample, int nVolume);
 __declspec(dllimport) int  __stdcall AIL_stream_volume(void* hStream);
 __declspec(dllimport) void __stdcall AIL_set_stream_volume(void* hStream, int nVolume);
 __declspec(dllimport) void __stdcall AIL_3D_velocity(void* hObj, float* pDX,
@@ -410,6 +415,9 @@ LTRESULT CSndInstanceLocalJ::UpdateImportance(CSndVec3J* pListenerPos)
 }
 
 
+// AVP2: Primal Hunt's body is 0x0049ae70, 659 bytes (AvP2 1.0.9.6 the same);
+// the volume pass and the stream arm are described in the body.
+//
 // 0x0047e7b0 — 436 bytes, `ret $4`, one (unused) argument, 13 calls
 // (4 direct to 0x0040f7f0, 9 indirect: one vtable call on the manager, one on
 // this, and seven Miles imports).
@@ -448,61 +456,98 @@ LTBOOL CSndInstanceLocalJ::Update(uint32 nUnknown)
 	CSndVec3J        vUp;
 	ReverbProperties reverbProperties;
 	void*            h3DListener;
+	uint16           nTypeVolume;
+	uint8            nVolume;
 
 	if (!m_hSample && !m_h3DSample && !m_hStream)
 		return LTTRUE;
 
-	if (!sub_0040f7f0()->m_p80c && (m_StateFlags & 0x02))
-		return LTFALSE;
-
-	if (m_hSample)
+	// AVP2 (PH 0x0049ae70, 659 bytes; AvP2 1.0.9.6 the same body): the
+	// stopping gate now guards the whole body, whose refusal jumps into the
+	// shared tail (0x0049aead -> 0x0049b0d9) rather than to its own return.
+	if (sub_0040f7f0()->m_p80c || !(m_StateFlags & 0x02))
 	{
-		if (sub_0040f7f0()->m_pReverb && (m_dwFlags & PLAYSOUND_REVERB))
+		// The volume every handle is brought to: the user sound type's
+		// volume (a percentage, `fmul 0.01f` at 0x0049aee6) times the
+		// instance's own byte and its +0x3c scale, capped at 100
+		// (0x0049aef8: `cmp $0x64,%al ; jb`).
+		sub_0040f7f0()->GetVolumeByType(nTypeVolume, m_nUserSoundType);
+
+		nVolume = (uint8)(m_fUnknown3c * (m_nVolume * ((float)nTypeVolume * 0.01f)));
+		nVolume = LTMIN(nVolume, 100);
+
+		if (m_hSample)
 		{
-			reverbProperties.m_dwParams = REVERBPARAM_VOLUME |
-			                              REVERBPARAM_REFLECTTIME |
-			                              REVERBPARAM_DECAYTIME;
-			sub_0040f7f0()->GetReverbProperties(&reverbProperties);
+			if (sub_0040f7f0()->m_pReverb && (m_dwFlags & PLAYSOUND_REVERB))
+			{
+				reverbProperties.m_dwParams = REVERBPARAM_VOLUME |
+				                              REVERBPARAM_REFLECTTIME |
+				                              REVERBPARAM_DECAYTIME;
+				sub_0040f7f0()->GetReverbProperties(&reverbProperties);
+
+				AIL_lock();
+
+				AIL_set_sample_reverb(m_hSample,
+				                      reverbProperties.m_fVolume,
+				                      reverbProperties.m_fReflectTime,
+				                      reverbProperties.m_fDecayTime);
+
+				AIL_unlock();
+			}
+
+			// 0x0049af68: the byte compare (`cmp %al,%bl`) says the
+			// handle's volume is taken as a byte.
+			AIL_lock();
+
+			if (nVolume != (uint8)AIL_sample_volume(m_hSample))
+				AIL_set_sample_volume(m_hSample, nVolume);
+
+			AIL_unlock();
+		}
+		else if (m_hStream)
+		{
+			AIL_lock();
+
+			if (nVolume != (uint8)AIL_stream_volume(m_hStream))
+				AIL_set_stream_volume(m_hStream, nVolume);
+
+			AIL_unlock();
+		}
+		else if (m_h3DSample)
+		{
+			h3DListener = sub_0040f7f0()->m_h3DListener;
 
 			AIL_lock();
 
-			AIL_set_sample_reverb(m_hSample,
-			                      reverbProperties.m_fVolume,
-			                      reverbProperties.m_fReflectTime,
-			                      reverbProperties.m_fDecayTime);
+			AIL_3D_orientation(h3DListener,
+			                   &vFace.x, &vFace.y, &vFace.z,
+			                   &vUp.x, &vUp.y, &vUp.z);
+
+			VEC_MULSCALAR(vFace, vFace, 5.0f);
+
+			AIL_3D_position(m_h3DSample, &vSamplePos.x, &vSamplePos.y, &vSamplePos.z);
+
+			// `fcomps` against 0.5f, and the `jne` on ah & 0x41 skips the
+			// store, so the store happens when the squared distance is
+			// GREATER.  Only move the sample when it has drifted.
+			// LTVector's DistSqr: differences x, y, z, squares summed z, x,
+			// y.  VEC_DISTSQR loads z first.
+			if (((LTVector*)&vSamplePos)->DistSqr(*(LTVector*)&vFace) > 0.5f)
+				AIL_set_3D_position(m_h3DSample, vFace.x, vFace.y, vFace.z);
+
+			AIL_unlock();
+
+			AIL_lock();
+
+			if (nVolume != (uint8)AIL_3D_sample_volume(m_h3DSample))
+				AIL_set_3D_sample_volume(m_h3DSample, nVolume);
 
 			AIL_unlock();
 		}
 	}
-	else if (!m_hStream && m_h3DSample)
-	{
-		h3DListener = sub_0040f7f0()->m_h3DListener;
 
-		AIL_lock();
-
-		AIL_3D_orientation(h3DListener,
-		                   &vFace.x, &vFace.y, &vFace.z,
-		                   &vUp.x, &vUp.y, &vUp.z);
-
-		VEC_MULSCALAR(vFace, vFace, 5.0f);
-
-		AIL_3D_position(m_h3DSample, &vSamplePos.x, &vSamplePos.y, &vSamplePos.z);
-
-		// 0x0047e90c: `fcomps 0x004a1a74` against 0.5f, and the `jne` on
-		// ah & 0x41 skips the store, so the store happens when the squared
-		// distance is GREATER.  Only move the sample when it has drifted.
-		// LTVector's DistSqr: differences x, y, z, squares summed z, x, y
-		// (0x0047e8e3..0x0047e90a).  VEC_DISTSQR loads z first.
-		if (((LTVector*)&vSamplePos)->DistSqr(*(LTVector*)&vFace) > 0.5f)
-			AIL_set_3D_position(m_h3DSample, vFace.x, vFace.y, vFace.z);
-
-		AIL_unlock();
-	}
-
-	// The tail both Update bodies share.  ONE `return LTFALSE` epilogue,
-	// last (0x0047e95b), which the early m_p80c refusal also jumps to; the
-	// keep-the-sound answer is the nested positive test.  Two refusals in a
-	// row folded the _v54 result into neg/sbb/neg instead.
+	// The tail: ONE `return LTFALSE` epilogue, last (0x0049b0fa); the
+	// keep-the-sound answer is the nested positive test.
 	if (!(m_StateFlags & 0x02))
 	{
 		if (_v54())
@@ -684,24 +729,11 @@ LTRESULT CSndInstanceAmbientJ::UpdateImportance(CSndVec3J* pListenerPos)
 // and it never touches memory — every arm leaves the answer in st(0) and the
 // `fmul %st(1),%st` at 0x0047ed00 consumes it there.
 //
-// THE FRAME is 0x28 bytes and holds four things, all of which the register
-// allocator shares between the two arms by live range: one 4-byte scalar
-// (the distance, then the squared distance, then the volume byte), one
-// 12-byte vector (the listener offset, then the listener position, then the
-// delta), the sample position, and the 12-byte temporary LTVector's
-// constructor returns at 0x0047ec66.
-// The subtraction below goes through a const-reference boundary: at
-// 0x0047ec21 the listener's x and y are loaded straight off the manager
-// (`mov 0x72c(%eax)`, `mov 0x730(%eax)`) BEFORE the `add $0x72c`, which is
-// the by-value operand copy made from a reference.  Handing operator- the
-// member expression directly adds first and copies through the sum
-// (measured: 2 more blocks).  What the reference was in the real source is
-// not established; this helper is the stand-in (name ours).
-inline CSndVec3J SubQ(const CSndVec3J& a, const CSndVec3J& b)
-{
-	return a - b;
-}
-
+// AVP2: Primal Hunt's body is 0x0049b250, 903 bytes (AvP2 1.0.9.6 the
+// same), with a 0x24-byte frame: the user sound type's volume joins both
+// arms, and the squared distance is LTVector's DistSqr expanded in place,
+// with no call to the three-float constructor.
+//
 // The listener distance at 0x0047eb3b.  LTVector::Dist's shape -- the
 // difference made through two const references, then a magnitude of the
 // temporary -- but the squares come out z, x, y, which LTVector::Mag's
@@ -724,16 +756,19 @@ LTBOOL CSndInstanceAmbientJ::Update(uint32 nUnknown)
 	float     fDistance;
 	CSndVec3J vListenerOffset;
 	CSndVec3J vSamplePos;
-	CSndVec3J vDelta;
 	float     fDistanceSqr;
 	float     fAttenuation;
 	uint8     nVolume;
+	uint16    nTypeVolume;
 
 	if (!m_hSample && !m_h3DSample && !m_hStream)
 		return LTTRUE;
 
-	if (!sub_0040f7f0()->m_p80c && (m_StateFlags & 0x02))
-		return LTFALSE;
+	// AVP2 (PH 0x0049b250, 903 bytes; AvP2 1.0.9.6 the same): the gate
+	// guards the body as in the local sound's Update, and both arms now
+	// bring the handle to the user sound type's volume as well.
+	if (!(sub_0040f7f0()->m_p80c || !(m_StateFlags & 0x02)))
+		goto done;
 
 	if (!m_hSample && !m_hStream)
 	{
@@ -763,17 +798,29 @@ LTBOOL CSndInstanceAmbientJ::Update(uint32 nUnknown)
 				                    vListenerOffset.y, vListenerOffset.z);
 
 			AIL_unlock();
+
+			// PH 0x0049b3ce: the 3D handle's volume, a lock of its own.
+			sub_0040f7f0()->GetVolumeByType(nTypeVolume, m_nUserSoundType);
+
+			nVolume = (uint8)(m_fUnknown3c * (m_nVolume * ((float)nTypeVolume * 0.01f)));
+			nVolume = LTMIN(nVolume, 100);
+
+			AIL_lock();
+
+			if (nVolume != (uint8)AIL_3D_sample_volume(m_h3DSample))
+				AIL_set_3D_sample_volume(m_h3DSample, nVolume);
+
+			AIL_unlock();
 		}
 	}
 	else
 	{
-		// The temporary at 0x0047ec66 is LTVector's out-of-line three-float
-		// constructor being handed (x-x, y-y, z-z) — the arguments are
-		// pushed z, y, x, which is right-to-left evaluation of exactly that.
-		// The result is then COPIED into the named vector, which is what
-		// return-by-value plus copy-initialisation is.
-		vDelta = SubQ(m_vPos, sub_0040f7f0()->m_vListenerPos);
-		fDistanceSqr = VEC_MAGSQR(vDelta);
+		// AVP2 (PH 0x0049b44d): LTVector's DistSqr, expanded -- the listener
+		// copied off the manager, the three differences, the squares summed
+		// z, y, x -- where the older engine called the three-float
+		// constructor out of line.
+		fDistanceSqr = ((LTVector*)&m_vPos)->DistSqr(
+		    *(LTVector*)&sub_0040f7f0()->m_vListenerPos);
 
 		if (fDistanceSqr <= m_fInnerRadius * m_fInnerRadius)
 		{
@@ -791,7 +838,10 @@ LTBOOL CSndInstanceAmbientJ::Update(uint32 nUnknown)
 
 		// LTMIN, not an if: 0x0047ed07 compares the __ftol result in %al
 		// before it is moved to %bl, and spills it once, after the join.
-		nVolume = (uint8)(m_nVolume * fAttenuation);
+		sub_0040f7f0()->GetVolumeByType(nTypeVolume, m_nUserSoundType);
+
+		nVolume = (uint8)(fAttenuation *
+		    (m_fUnknown3c * (m_nVolume * ((float)nTypeVolume * 0.01f))));
 		nVolume = LTMIN(nVolume, 100);
 
 		AIL_lock();
@@ -813,6 +863,7 @@ LTBOOL CSndInstanceAmbientJ::Update(uint32 nUnknown)
 		AIL_unlock();
 	}
 
+done:
 	if (!(m_StateFlags & 0x02))
 	{
 		if (_v54())
@@ -984,10 +1035,17 @@ LTRESULT CSndInstance3DJ::UpdateImportance(CSndVec3J* pListenerPos)
 //  * the three velocity scales are read into argument temporaries before any
 //    multiply (0x0047f315..0x0047f338), which is float parameters of an
 //    inline call; see SetVelocityQ.
-//  * the effects level: the `jne` at 0x0047f36e goes to the 1.0f arm, and each
-//    arm carries its own AIL_unlock + `jmp` to the tail.
+//  * the effects level: the `jne` at 0x0047f36e goes to the 1.0f arm.
 //
-// NEAR (size-exact, 1384 bytes, 2 instructions): the first component of the
+// AVP2: Primal Hunt's body is 0x0049b870, 1548 bytes (AvP2 1.0.9.6 the same):
+// after the effects level, still under the lock, the 3D handle is brought to
+// the user sound type's volume (0x0049bbd6), and the software path's volume
+// takes the same factor (0x0049bd0b).  Each arm's nTypeVolume is its own
+// block-scoped local: one function-scope local swapped its slot with the
+// inline velocity call's fScaleY and the software path's fScale
+// (0x10(%esp) / 0x14(%esp), 8 operand diffs).
+//
+// NEAR (size-exact, 1548 bytes, 2 instructions): the first component of the
 // normalise.  Shipped `fld %st(0) ; fmuls 0x10(%esp)` (the reciprocal as an
 // expression temporary), ours `flds 0x10(%esp) ; fmul %st(1),%st` (as a
 // variable), y and z as shipped.  `vDir.x *= (fMag = 1.0f / fMag)` fixes x
@@ -1002,8 +1060,9 @@ LTRESULT CSndInstance3DJ::UpdateImportance(CSndVec3J* pListenerPos)
 //
 // The listener-minus-position difference takes its by-value operand copy
 // AFTER the manager call (0x0047f105..0x0047f117); handed the member
-// expression directly the copy of m_vPos goes first.  Same boundary as SubQ
-// above, over LTVector's own operator- (stand-in, name ours).
+// expression directly the copy of m_vPos goes first: the by-value operand
+// copy made from a const reference, over LTVector's own operator- (stand-in,
+// name ours).
 inline LTVector SubLTQ(const LTVector& a, const LTVector& b)
 {
 	return a - b;
@@ -1057,6 +1116,8 @@ LTBOOL CSndInstance3DJ::Update(uint32 msDelta)
 		{
 			if (m_h3DSample)
 			{
+				uint16 nTypeVolume;
+
 				vDir = *(LTVector*)&m_vPos - *(LTVector*)&sub_0040f7f0()->m_vListenerPos;
 
 				AIL_lock();
@@ -1079,19 +1140,29 @@ LTBOOL CSndInstance3DJ::Update(uint32 msDelta)
 					             sub_0040f7f0()->m_fVelocityScale);
 
 				if (!(m_dwFlags & PLAYSOUND_REVERB))
-				{
 					AIL_set_3D_sample_effects_level(m_h3DSample, 0.0f);
-					AIL_unlock();
-				}
 				else
-				{
 					AIL_set_3D_sample_effects_level(m_h3DSample, 1.0f);
-					AIL_unlock();
-				}
+
+				// AVP2 (PH 0x0049bbd6): the 3D handle's volume, still under
+				// the same lock -- the user sound type's volume, the byte and
+				// its +0x3c scale, taken as a byte (`and $0xff` on both sides,
+				// 0x0049bc1b / 0x0049bc36) and capped at 100.
+				sub_0040f7f0()->GetVolumeByType(nTypeVolume, m_nUserSoundType);
+
+				nVolume = (uint8)(m_fUnknown3c * (m_nVolume * ((float)nTypeVolume * 0.01f)));
+				nVolume = LTMIN(nVolume, 100);
+
+				if (nVolume != (uint8)AIL_3D_sample_volume(m_h3DSample))
+					AIL_set_3D_sample_volume(m_h3DSample, nVolume);
+
+				AIL_unlock();
 			}
 		}
 		else
 		{
+			uint16 nTypeVolume;
+
 			// fDistSqr becomes the attenuation: one local, one home.
 			fDistSqr = vDelta.MagSqr();
 
@@ -1115,7 +1186,12 @@ LTBOOL CSndInstance3DJ::Update(uint32 msDelta)
 			else
 				fScale = 1.0f - fScale * 0.25f;
 
-			nVolume = (uint32)(m_nVolume * fScale * fDistSqr);
+			// AVP2 (PH 0x0049bd0b): times the user sound type's volume
+			// and the +0x3c scale, as in the other two Update bodies.
+			sub_0040f7f0()->GetVolumeByType(nTypeVolume, m_nUserSoundType);
+
+			nVolume = (uint32)(fDistSqr * (fScale * (m_fUnknown3c *
+			    (m_nVolume * ((float)nTypeVolume * 0.01f)))));
 			nVolume = LTMIN(nVolume, 100);
 
 			AIL_lock();

@@ -1761,7 +1761,9 @@ void* sub_42f470(SurfaceData* pSurfaceData, int argc, char** argv)
 // by frame time times their rate (g_pClientMgr is re-read for the second:
 // the first float store could alias it), then the surface origin is rebuilt
 // from the two axes and the original origin -- three separate stores to O,
-// so three statements.
+// so three statements.  The axes are the effect's saved copies, not the
+// surface's own (Primal Hunt 0x00439500, 213 bytes: `fmuls 0xc(%eax)` and
+// `fmuls 0x18(%eax)` off the effect data in %eax); byte-identical.
 extern "C" void sub_42f120(SurfaceData* pSurfaceData, void* pVoid)
 {
 	SurfaceEffectData* pData = (SurfaceEffectData*)pVoid;
@@ -1769,8 +1771,8 @@ extern "C" void sub_42f120(SurfaceData* pSurfaceData, void* pVoid)
 	pData->m_fUnknown38 += g_pClientMgr->m_FrameTime * pData->m_fRate;
 	pData->m_fUnknown3c += g_pClientMgr->m_FrameTime * pData->m_fUnknown34;
 
-	pSurfaceData->O  = pSurfaceData->P * pData->m_fUnknown38;
-	pSurfaceData->O += pSurfaceData->Q * pData->m_fUnknown3c;
+	pSurfaceData->O  = pData->m_P * pData->m_fUnknown38;
+	pSurfaceData->O += pData->m_Q * pData->m_fUnknown3c;
 	pSurfaceData->O += pData->m_O;
 }
 
@@ -1967,6 +1969,382 @@ void errorlog_Term()
 
 		g_pErrorLogFile = LTNULL;
 	}
+}
+
+
+// ======================================================================= //
+//
+//  THE CRASH REPORTER
+//
+//  Primal Hunt 0x00439b80..0x0043a6ba (AvP2 1.0.9.6 0x00436270..): WinMain's
+//  exception filter (clientwin.cpp, the call at 0x004042c9) hands the
+//  exception and the thread's name to RecordExceptionInfo, which appends a
+//  report to "crashlog.txt" beside the executable.  It is the error log's
+//  neighbour in .bss too: its re-entry flag (0x004f493c) follows
+//  g_pErrorLogFile (0x004f4938).
+//
+//  Every format string, the 24-entry exception table and the shape (a
+//  Win95-style first line, the registers, sixteen code bytes and the stack
+//  under their own __try blocks, then the module list) are those of Bruce
+//  Dawson's published "release mode debugging" exception handler
+//  (exceptionhandler.cpp), and the names below are that file's.  Read off
+//  the shipped bytes, Monolith's copy differs from it in two places: the
+//  report is "crashlog.txt" (0x004d540c), not "errorlog.txt", and
+//  RecordSystemInformation names the user "Unknown" without asking
+//  GetUserName (0x0043a422: the lstrcpy is unconditional, and the frame,
+//  0x27c, has no room for the size word the call needs).
+//
+// ======================================================================= //
+
+static void __cdecl hprintf(HANDLE LogFile, const char* Format, ...);   // 0x0043a0a0
+static void RecordModuleList(HANDLE LogFile);                           // 0x0043a0f0
+static void RecordSystemInformation(HANDLE LogFile);                    // 0x0043a3b0
+static const char* GetExceptionDescription(DWORD ExceptionCode);        // 0x0043a4b0
+static char* GetFilePart(char* source);                                 // 0x0043a6a0
+
+// 0x0043a0f0's arithmetic: the 4 GB address space is counted in pages as
+// four times a gigabyte's worth (`mov $0x40000000,%eax; div; shl $2`), and a
+// failed query steps 64 KB (0x0043a179), VirtualAlloc's granularity.
+#define ONEK        1024
+#define SIXTYFOURK  (64 * ONEK)
+#define ONEM        (ONEK * ONEK)
+#define ONEG        (ONEK * ONEK * ONEK)
+
+// 0x00439e83 (`cmp $0x10,%edi`), 0x00439f10 (`lea 0x2000(%esi)`: 2048
+// dwords) and 0x00439f89 (`and $0x80000007`: a signed % 8).
+static const int NumCodeBytes = 16;
+static const int MaxStackDump = 2048;
+static const int StackColumns = 8;
+
+// 0x00439b80 -- 1311 bytes with its two __except blocks (0x00439eb3..,
+// 0x0043a058..), which the enumeration lists as rows of their own.  Answers
+// EXCEPTION_CONTINUE_SEARCH (0x0043a08c) on every path, so the exception
+// goes on to the system's own handling.
+int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char* Message)
+{
+	// 0x004f493c, tested as a dword: a second fault inside the report.
+	static int BeenHere = false;
+	if (BeenHere)
+		return EXCEPTION_CONTINUE_SEARCH;
+	BeenHere = true;
+
+	char ModuleName[MAX_PATH];
+	char FileName[MAX_PATH] = "Unknown";
+	if (GetModuleFileName(0, ModuleName, sizeof(ModuleName)) <= 0)
+		ModuleName[0] = 0;
+	char* FilePart = GetFilePart(ModuleName);
+
+	lstrcpy(FileName, FilePart);
+	char* lastperiod = strrchr(FileName, '.');
+	if (lastperiod)
+		lastperiod[0] = 0;
+	lstrcpy(FilePart, "crashlog.txt");
+	HANDLE LogFile = CreateFile(ModuleName, GENERIC_WRITE, 0, 0,
+				OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, 0);
+	if (LogFile == INVALID_HANDLE_VALUE)
+	{
+		OutputDebugString("Error creating exception report");
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	SetFilePointer(LogFile, 0, 0, FILE_END);
+	hprintf(LogFile, "\r\n\r\n\r\n\r\n");
+	PEXCEPTION_RECORD Exception = data->ExceptionRecord;
+	PCONTEXT          Context = data->ContextRecord;
+
+	char  CrashModulePathName[MAX_PATH];
+	char* CrashModuleFileName = "Unknown";
+	MEMORY_BASIC_INFORMATION MemInfo;
+	if (VirtualQuery((void*)Context->Eip, &MemInfo, sizeof(MemInfo)) &&
+				GetModuleFileName((HINSTANCE)MemInfo.AllocationBase,
+				CrashModulePathName,
+				sizeof(CrashModulePathName)) > 0)
+		CrashModuleFileName = GetFilePart(CrashModulePathName);
+
+	hprintf(LogFile, "%s caused %s in module %s at %04x:%08x.\r\n",
+				FileName, GetExceptionDescription(Exception->ExceptionCode),
+				CrashModuleFileName, Context->SegCs, Context->Eip);
+	hprintf(LogFile, "Exception handler called in %s.\r\n", Message);
+	RecordSystemInformation(LogFile);
+	if (Exception->ExceptionCode == STATUS_ACCESS_VIOLATION &&
+				Exception->NumberParameters >= 2)
+	{
+		char DebugMessage[1000];
+		const char* readwrite = "Read from";
+		if (Exception->ExceptionInformation[0])
+			readwrite = "Write to";
+		wsprintf(DebugMessage, "%s location %08x caused an access violation.\r\n",
+					readwrite, Exception->ExceptionInformation[1]);
+		hprintf(LogFile, "%s", DebugMessage);
+	}
+	hprintf(LogFile, "\r\n");
+	hprintf(LogFile, "Registers:\r\n");
+	hprintf(LogFile, "EAX=%08x CS=%04x EIP=%08x EFLGS=%08x\r\n",
+				Context->Eax, Context->SegCs, Context->Eip, Context->EFlags);
+	hprintf(LogFile, "EBX=%08x SS=%04x ESP=%08x EBP=%08x\r\n",
+				Context->Ebx, Context->SegSs, Context->Esp, Context->Ebp);
+	hprintf(LogFile, "ECX=%08x DS=%04x ESI=%08x FS=%04x\r\n",
+				Context->Ecx, Context->SegDs, Context->Esi, Context->SegFs);
+	hprintf(LogFile, "EDX=%08x ES=%04x EDI=%08x GS=%04x\r\n",
+				Context->Edx, Context->SegEs, Context->Edi, Context->SegGs);
+	hprintf(LogFile, "Bytes at CS:EIP:\r\n");
+
+	unsigned char* code = (unsigned char*)Context->Eip;
+	for (int codebyte = 0; codebyte < NumCodeBytes; codebyte++)
+	{
+		__try
+		{
+			hprintf(LogFile, "%02x ", code[codebyte]);
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER)
+		{
+			hprintf(LogFile, "?? ");
+		}
+	}
+
+	hprintf(LogFile, "\r\n"
+					"Stack dump:\r\n");
+	__try
+	{
+		DWORD* pStack = (DWORD*)Context->Esp;
+		DWORD* pStackTop;
+		// The top of the stack, from the thread information block
+		// (0x00439f04: `mov %fs:0x4,%eax`, stored straight to the local).
+		__asm
+		{
+			mov eax, fs:[4]
+			mov pStackTop, eax
+		}
+		if (pStackTop > pStack + MaxStackDump)
+			pStackTop = pStack + MaxStackDump;
+		int Count = 0;
+		char  buffer[1000] = "";
+		const int safetyzone = 50;
+		char* nearend = buffer + sizeof(buffer) - safetyzone;
+		char* output = buffer;
+		while (pStack + 1 <= pStackTop)
+		{
+			if ((Count % StackColumns) == 0)
+				output += wsprintf(output, "%08x: ", pStack);
+			char* Suffix = " ";
+			if ((++Count % StackColumns) == 0 || pStack + 2 > pStackTop)
+				Suffix = "\r\n";
+			output += wsprintf(output, "%08x%s", *pStack, Suffix);
+			pStack++;
+			if (output > nearend)
+			{
+				hprintf(LogFile, "%s", buffer);
+				buffer[0] = 0;
+				output = buffer;
+			}
+		}
+		hprintf(LogFile, "%s", buffer);
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		hprintf(LogFile, "Exception encountered during stack dump.\r\n");
+	}
+
+	RecordModuleList(LogFile);
+
+	CloseHandle(LogFile);
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+// 0x0043a0a0 -- 75 bytes.  printf to a file handle through a 2000-byte
+// buffer (`sub $0x7d4,%esp`: the buffer and the byte count).
+static void __cdecl hprintf(HANDLE LogFile, const char* Format, ...)
+{
+	char buffer[2000];
+	va_list arglist;
+	va_start(arglist, Format);
+	wvsprintf(buffer, Format, arglist);
+	va_end(arglist);
+	DWORD NumBytes;
+	WriteFile(LogFile, buffer, lstrlen(buffer), &NumBytes, 0);
+}
+
+static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle);      // 0x0043a190
+static void PrintTime(char* output, FILETIME TimeToPrint);              // 0x0043a310
+
+// 0x0043a0f0 -- 160 bytes.  Walk the address space a region at a time and
+// report each new committed allocation base as a module.
+static void RecordModuleList(HANDLE LogFile)
+{
+	hprintf(LogFile, "\r\n"
+					 "\tModule list: names, addresses, sizes, time stamps "
+			"and file times:\r\n");
+	SYSTEM_INFO SystemInfo;
+	GetSystemInfo(&SystemInfo);
+	const size_t PageSize = SystemInfo.dwPageSize;
+	const size_t NumPages = 4 * size_t(ONEG / PageSize);
+	size_t pageNum = 0;
+	void* LastAllocationBase = 0;
+	while (pageNum < NumPages)
+	{
+		MEMORY_BASIC_INFORMATION MemInfo;
+		if (VirtualQuery((void*)(pageNum * PageSize), &MemInfo,
+					sizeof(MemInfo)))
+		{
+			if (MemInfo.RegionSize > 0)
+			{
+				pageNum += MemInfo.RegionSize / PageSize;
+				if (MemInfo.State == MEM_COMMIT && MemInfo.AllocationBase >
+							LastAllocationBase)
+				{
+					LastAllocationBase = MemInfo.AllocationBase;
+					ShowModuleInfo(LogFile, (HINSTANCE)LastAllocationBase);
+				}
+			}
+			else
+				pageNum += SIXTYFOURK / PageSize;
+		}
+		else
+			pageNum += SIXTYFOURK / PageSize;
+	}
+}
+
+// 0x0043a190 -- 351 bytes with its empty __except (0x0043a2ef, 0x0043a2f5).
+// A module's name, base, file size, link time stamp and file date, if the
+// base really is a PE image.
+static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
+{
+	char ModName[MAX_PATH];
+	__try
+	{
+		if (GetModuleFileName(ModuleHandle, ModName, sizeof(ModName)) > 0)
+		{
+			IMAGE_DOS_HEADER* DosHeader = (IMAGE_DOS_HEADER*)ModuleHandle;
+			if (IMAGE_DOS_SIGNATURE != DosHeader->e_magic)
+				return;
+			IMAGE_NT_HEADERS* NTHeader = (IMAGE_NT_HEADERS*)((char*)DosHeader
+						+ DosHeader->e_lfanew);
+			if (IMAGE_NT_SIGNATURE != NTHeader->Signature)
+				return;
+			HANDLE ModuleFile = CreateFile(ModName, GENERIC_READ,
+						FILE_SHARE_READ, 0, OPEN_EXISTING,
+						FILE_ATTRIBUTE_NORMAL, 0);
+			char TimeBuffer[100] = "";
+			DWORD FileSize = 0;
+			if (ModuleFile != INVALID_HANDLE_VALUE)
+			{
+				FileSize = GetFileSize(ModuleFile, 0);
+				FILETIME LastWriteTime;
+				if (GetFileTime(ModuleFile, 0, 0, &LastWriteTime))
+				{
+					wsprintf(TimeBuffer, " - file date is ");
+					PrintTime(TimeBuffer + lstrlen(TimeBuffer), LastWriteTime);
+				}
+				CloseHandle(ModuleFile);
+			}
+			hprintf(LogFile, "%s, loaded at 0x%08x - %d bytes - %08x%s\r\n",
+						ModName, ModuleHandle, FileSize,
+						NTHeader->FileHeader.TimeDateStamp, TimeBuffer);
+		}
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+	}
+}
+
+// 0x0043a310 -- 147 bytes.  A file time as local m/d/y h:m:s, through the
+// DOS date and time words.
+static void PrintTime(char* output, FILETIME TimeToPrint)
+{
+	WORD Date, Time;
+	if (FileTimeToLocalFileTime(&TimeToPrint, &TimeToPrint) &&
+				FileTimeToDosDateTime(&TimeToPrint, &Date, &Time))
+	{
+		wsprintf(output, "%d/%d/%d %02d:%02d:%02d",
+					(Date / 32) & 15, Date & 31, (Date / 512) + 1980,
+					(Time / 2048), (Time / 32) & 63, (Time & 31) * 2);
+	}
+	else
+		output[0] = 0;
+}
+
+// 0x0043a3b0 -- 250 bytes.  When, what, how many processors, how much
+// memory.  The user is always "Unknown" (see the block comment).
+static void RecordSystemInformation(HANDLE LogFile)
+{
+	FILETIME CurrentTime;
+	GetSystemTimeAsFileTime(&CurrentTime);
+	char TimeBuffer[100];
+	PrintTime(TimeBuffer, CurrentTime);
+	hprintf(LogFile, "Error occurred at %s.\r\n", TimeBuffer);
+	char ModuleName[MAX_PATH];
+	if (GetModuleFileName(0, ModuleName, sizeof(ModuleName)) <= 0)
+		lstrcpy(ModuleName, "Unknown");
+	char UserName[200];
+	lstrcpy(UserName, "Unknown");
+	hprintf(LogFile, "%s, run by %s.\r\n", ModuleName, UserName);
+
+	SYSTEM_INFO SystemInfo;
+	GetSystemInfo(&SystemInfo);
+	hprintf(LogFile, "%d processor(s), type %d.\r\n",
+				SystemInfo.dwNumberOfProcessors, SystemInfo.dwProcessorType);
+
+	MEMORYSTATUS MemInfo;
+	MemInfo.dwLength = sizeof(MemInfo);
+	GlobalMemoryStatus(&MemInfo);
+	hprintf(LogFile, "%d MBytes physical memory.\r\n", (MemInfo.dwTotalPhys +
+				ONEM - 1) / ONEM);
+}
+
+// 0x0043a4b0 -- 487 bytes.  The table is built on the stack at every call
+// (24 code/name pairs, 0xc0 bytes) and searched with an unsigned count.
+static const char* GetExceptionDescription(DWORD ExceptionCode)
+{
+	struct ExceptionNames
+	{
+		DWORD ExceptionCode;
+		char* ExceptionName;
+	};
+
+	ExceptionNames ExceptionMap[] =
+	{
+		{0x40010005, "a Control-C"},
+		{0x40010008, "a Control-Break"},
+		{0x80000002, "a Datatype Misalignment"},
+		{0x80000003, "a Breakpoint"},
+		{0xc0000005, "an Access Violation"},
+		{0xc0000006, "an In Page Error"},
+		{0xc0000017, "a No Memory"},
+		{0xc000001d, "an Illegal Instruction"},
+		{0xc0000025, "a Noncontinuable Exception"},
+		{0xc0000026, "an Invalid Disposition"},
+		{0xc000008c, "a Array Bounds Exceeded"},
+		{0xc000008d, "a Float Denormal Operand"},
+		{0xc000008e, "a Float Divide by Zero"},
+		{0xc000008f, "a Float Inexact Result"},
+		{0xc0000090, "a Float Invalid Operation"},
+		{0xc0000091, "a Float Overflow"},
+		{0xc0000092, "a Float Stack Check"},
+		{0xc0000093, "a Float Underflow"},
+		{0xc0000094, "an Integer Divide by Zero"},
+		{0xc0000095, "an Integer Overflow"},
+		{0xc0000096, "a Privileged Instruction"},
+		{0xc00000fD, "a Stack Overflow"},
+		{0xc0000142, "a DLL Initialization Failed"},
+		{0xe06d7363, "a Microsoft C++ Exception"},
+	};
+
+	for (int i = 0; i < sizeof(ExceptionMap) / sizeof(ExceptionMap[0]); i++)
+		if (ExceptionCode == ExceptionMap[i].ExceptionCode)
+			return ExceptionMap[i].ExceptionName;
+
+	return "Unknown exception type";
+}
+
+// 0x0043a6a0 -- 27 bytes.  The file name part of a path.
+static char* GetFilePart(char* source)
+{
+	char* result = strrchr(source, '\\');
+	if (result)
+		result++;
+	else
+		result = source;
+	return result;
 }
 
 

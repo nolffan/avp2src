@@ -470,6 +470,7 @@ class CSubGrid
 public:
 	void   Term();                           // 0x1000a63a
 	LTBOOL Load(class ILTStream* pStream);   // 0x1000a663
+	CSubCell* GetCell(LTVector vPos);        // 0x1000db48
 
 	LTVector  m_vCellSize;                   // 0x00
 	LTVector  m_vOrigin;                     // 0x0c
@@ -540,6 +541,40 @@ LTBOOL CSubGrid::Load(ILTStream* pStream)
 	}
 
 	return LTTRUE;
+}
+
+// lithtech.exe 0x0042f290 (right after Load) / server.dll 0x1000db48 -- the
+// cell a point falls in, the point BY VALUE (`ret $0xc`). Each axis is the
+// offset from the origin in cells, nudged up by 0.0001f (0x004d4f30,
+// server.dll 0x100742d0) and truncated; each is then clamped into the grid,
+// and the sign tests that follow are what the source still says although
+// the clamp has already settled them. The cell is x + y*X + z*(X*Y), eight
+// bytes each (name ours).
+CSubCell* CSubGrid::GetCell(LTVector vPos)
+{
+	int x = (int)((vPos.x - m_vOrigin.x) / m_vCellSize.x + 0.0001f);
+	int y = (int)((vPos.y - m_vOrigin.y) / m_vCellSize.y + 0.0001f);
+	int z = (int)((vPos.z - m_vOrigin.z) / m_vCellSize.z + 0.0001f);
+
+	if (x < 0)
+		x = 0;
+	else if (x > m_nCountX - 1)
+		x = m_nCountX - 1;
+
+	if (y < 0)
+		y = 0;
+	else if (y > m_nCountY - 1)
+		y = m_nCountY - 1;
+
+	if (z < 0)
+		z = 0;
+	else if (z > m_nCountZ - 1)
+		z = m_nCountZ - 1;
+
+	if (x < 0 || y < 0 || z < 0)
+		return LTNULL;
+
+	return &m_pCells[x + y * m_nCountX + z * m_nSliceStride];
 }
 
 

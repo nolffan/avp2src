@@ -1163,7 +1163,8 @@ LTRESULT sub_47ac40(CMsgCtxView* pCtx, CMessageView* pMsg)
 //    member (C0 and C3 both clear), so the source is `if (f > m_f18)`.
 //    The store itself is `mov %edx,0x18(%ecx)` — an integer move of the
 //    dword the temporary holds, which is a float-to-float assignment.
-//  * `fildl 0x004a9ed8` then `fdivrs 0x004a1a08` (which is 1.0f):
+//  * (NOLF's image only; see the AVP2 note on the function)
+//    `fildl 0x004a9ed8` then `fdivrs 0x004a1a08` (which is 1.0f):
 //    st(0) = 1.0f / (float)<the int at 0x004a9ed8, currently 10>.  The
 //    integer goes through `fild` rather than `fidiv`, which
 //    means a float TEMPORARY stood between the cast and the divide.
@@ -1184,20 +1185,24 @@ public:
 // binding in lithtech.exe's table); server/dsi.cpp's name.
 extern int g_CV_UpdateRate;
 
+// AVP2: AvP2's and Primal Hunt's version (Primal Hunt 0x00496590, AvP2
+// 1.0.9.6 0x0048d0..) keeps the step instead of the update rate: +0x24 is
+// how far the peak moved (`fsubs 0x18(%ecx)` before the store, 0x00496624),
+// zero (0x00496597, the store ahead of the read) when it did not.
 LTRESULT sub_47a3e0(CPacketCtxView* pCtx, CPacket* pPacket)
 {
+	float fDelta = 0.0f;
 	float fVal;
 
 	fVal = pPacket->ReadType((float*)0);
 
 	if (fVal > pCtx->m_fPeak18)
-		pCtx->m_fPeak18 = fVal;
-
 	{
-		float fCount = (float)g_CV_UpdateRate;
-
-		pCtx->m_fRate24 = 1.0f / fCount;
+		fDelta = fVal - pCtx->m_fPeak18;
+		pCtx->m_fPeak18 = fVal;
 	}
+
+	pCtx->m_fRate24 = fDelta;
 
 	return LT_OK;
 }

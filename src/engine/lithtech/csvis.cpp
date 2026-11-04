@@ -1534,6 +1534,11 @@ void spr_UpdateTrackerQ414(CSpriteTrackerQ414* pTracker, uint32 msDelta)
 //  declines the same inline body, which is why server.dll calls it.  When
 //  smgr.cpp's CObjQueueBank::Allocate gets the inline body below, this
 //  stand-in can go.  (Q414 stand-ins, as elsewhere in this file.)
+//
+//  That expansion is AvP2 1.0.9.6's (0x0046a280). Primal Hunt's copy,
+//  0x0047e6d0 (110 bytes, just after sm_LoadWorldObjects), CALLS the bank's
+//  Allocate as server.dll does, and is IDENTICAL with the PH declaration
+//  below.
 // ======================================================================= //
 
 // stdlith's StructBank: the cache size +0x08, the free list +0x18.
@@ -1573,7 +1578,14 @@ inline void* sb_AllocateQ414(StructBankQ414* pBank)
 class CObjQueueBankQ414
 {
 public:
+#ifdef PRIMAL_HUNT
+	// PH: called, not expanded (0x0047e6f3 `mov $0x4f0120,%ecx; call
+	// 0x00404fb0`, the shared CObjectBank<T>::Allocate body), as in
+	// sm_CreateNewID (smgrnew.cpp's CObjQueueBank). AvP2 1.0.9.6 expands it.
+	LTLink* Allocate();
+#else
 	LTLink* Allocate() { return (LTLink*)sb_AllocateQ414(&m_Bank); }
+#endif
 
 	uint8          m_vptr[4];                // 0x004b17a8
 	StructBankQ414 m_Bank;                   // 0x004b17ac

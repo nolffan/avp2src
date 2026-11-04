@@ -815,6 +815,10 @@ LTRESULT sm_LoadWorldObjects(CServerMgr* pMgr, ILTStream* pStream,
 		ocs.m_ObjectType = 0;
 		ocs.m_Filename[0] = 0;
 		ocs.m_SkinNames[0][0] = 0;
+#ifdef PRIMAL_HUNT
+		// PH: the extra texture name too (server.dll 0x100361c2, ocs +0x300).
+		ocs.m_ExtraTextureName[0] = 0;
+#endif
 		ocs.m_Pos.Init();
 
 		pStream->Read(&nNumProps, 4);

@@ -1276,134 +1276,9 @@ inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTest* pTest)
 	return ws_ShiftBox();
 }
 
-// Is this point inside the world? A plain descent, no stack and no geometry:
-// at each node the point goes to whichever side of the plane it falls on, and
-// the answer is whichever leaf it lands in. The two leaf bits are tested one
-// at a time rather than together, so a node carrying 0x02 answers without
-// 0x01 ever being looked at.
-int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint)
-{
-	BSPNode* pNode = pRoot;
-	LTVector v;
-	float    fDist;
-	int      nSide;
-
-	for (;;)
-	{
-		if (pNode->m_Flags & BSPNODE_LEAF_BIT1)
-			return 0;
-
-		if (pNode->m_Flags & BSPNODE_LEAF_BIT0)
-			return 1;
-
-		{
-			LTPlane* pPlane = pNode->m_pOwner->m_pPlane;
-
-			v = *pPoint;
-
-			fDist = v.y * pPlane->m_Normal.y + v.z * pPlane->m_Normal.z +
-			        v.x * pPlane->m_Normal.x - pPlane->m_Dist;
-		}
-
-		if (fDist > 0.0f)
-			nSide = 1;
-		else
-			nSide = 0;
-
-		pNode = pNode->m_pChild[nSide];
-	}
-}
-
-// Is a sphere entirely inside the world, entirely outside it, or across the
-// boundary? The walk keeps its own five-hundred-node stack: a node the sphere
-// clears on one side is followed down that side alone, and a node it straddles
-// is followed down the front with the back side pushed for later — unless the
-// back side is a leaf carrying 0x02, which settles the question at once and
-// answers two.
-//
-// Nothing is returned when a leaf is reached, only when the stack runs out:
-// the answer is then the last leaf's own 0x01 bit, so a sphere that has been
-// entirely on one side of everything reports what that side is.
-//
-// The if/else below is load-bearing, and it is the whole difference between
-// this function and a near. Both arms end in the same "descend the front
-// side" tail, which VC6 emits once and jumps to from the other arm. Written
-// as a guard —
-//
-//     if (fDist > fRadius) { pNode = pNode->m_pChild[1]; continue; }
-//     ... the straddle work ...
-//     pNode = pNode->m_pChild[1];
-//
-// — the surviving copy is the *last* one and the guard jumps forward to it.
-// Written as an explicit if/else, as here, the surviving copy is the *first*
-// one and the straddle path jumps backward into it, which is what shipped.
-// Same instructions either way, twenty bytes of different placement. This is
-// the "shared-exit host" near class and the arm shape moves it.
-// AVP2: the root comes by address (PH lithtech 0x00441570 `mov 0x4(%esp),
-// %edx; mov (%edx),%ecx`; ws_GetBoxStatus passes its own parameter's,
-// 0x0041d29c `lea 0x24(%esp),%eax`). Shipped, this lives in another TU.
-int bsp_SphereInside(BSPNode** ppRoot, LTVector* pPoint, float fRadius)
-{
-	BSPNode*  pStack[BSP_SPHERE_STACK];
-	BSPNode** ppTop = pStack;
-	BSPNode*  pNode = *ppRoot;
-	LTVector  v;
-	float     fDist;
-
-	for (;;)
-	{
-		// A `while` rather than `if (...) { ...; continue; }`: the CFG is the
-		// same, but VC6 only rotates a loop it was given as one. The shipped
-		// /O2 client emits the leaf test twice -- once as the loop's entry
-		// test and once at the bottom of the pop body (`test %bl,0x16(%ecx);
-		// jne`) -- and puts the 3 in %bl because the constant now has two
-		// uses, which is the extra `push %ebx` this function's frame carries.
-		// /O1 declines the duplication on size and keeps the single test the
-		// `if`/`continue` form gives, so server.dll is unaffected.
-		while (pNode->m_Flags & BSPNODE_LEAF)
-		{
-			if (ppTop == pStack)
-				return pNode->m_Flags & BSPNODE_LEAF_BIT0;
-
-			ppTop--;
-			pNode = *ppTop;
-		}
-
-		{
-			LTPlane* pPlane = pNode->m_pOwner->m_pPlane;
-
-			v = *pPoint;
-
-			fDist = v.y * pPlane->m_Normal.y + v.z * pPlane->m_Normal.z +
-			        v.x * pPlane->m_Normal.x - pPlane->m_Dist;
-		}
-
-		if (fDist > fRadius)
-		{
-			pNode = pNode->m_pChild[1];
-		}
-		else
-		{
-			if (fDist < -fRadius)
-			{
-				pNode = pNode->m_pChild[0];
-				continue;
-			}
-
-			{
-				BSPNode* pBack = pNode->m_pChild[0];
-
-				if (pBack->m_Flags & BSPNODE_LEAF_BIT1)
-					return 2;
-
-				*ppTop = pBack;
-				ppTop++;
-			}
-
-			pNode = pNode->m_pChild[1];
-		}
-	}
-}
+// bsp_PointInside and bsp_SphereInside (worldsim.h) are serverlightanim.cpp's:
+// both images place them after that file's code (server.dll 0x10017db3 /
+// 0x10017e31, lithtech.exe 0x00441570 / 0x00441620).
 
 // The walk's entry point, whose whole job is to unpack the query: the two
 // ends the caller pointed at are copied onto the stack so the recursion can
@@ -1459,7 +1334,9 @@ WorldPoly* bsp_IntersectLine(BSPNode* pRoot, LTVector* pStart, LTVector* pEnd,
 	// shorter and not what shipped.
 	if (bspq_IntersectLine(pRoot, &query))
 	{
-		*pPlane = *query.m_pPoly->GetPlane();
+		// AVP2: the owner and surface tests expanded in place
+		// (server.dll 0x1001947e..0x10019492).
+		*pPlane = *ws_GetPlaneQ506(query.m_pPoly->m_pOwner);
 
 		return query.m_pPoly;
 	}
@@ -2367,6 +2244,14 @@ int CSimContext::TestPoly(WorldPolyOwner* pPoly, WorldPoly* pHandle)
 	return 0;
 }
 
+// AVP2: the physics-block walks share one node stack in .bss rather than
+// each keeping 0x800 bytes of frame: server.dll 0x1008a3a0 (ws_StairStep
+// 0x10006b73, ws_MoveCylinder 0x100061f3, ws_MoveBox 0x1000517e, and the
+// sphere walk's overflow test at 0x10003b6b, which bounds it at 0x800
+// bytes), lithtech.exe 0x004f1e20 (0x004205e7). AvP2 1.0.9.6 agrees
+// (server.dll 0x1007d1d8). (name ours)
+uint16 g_BlockStackQ534[WS_NODE_STACK];
+
 // March the cylinder along its path a step at a time, testing the world's
 // tree at each step. The step length is the cylinder's own size along the
 // direction of travel, so it can never pass through anything thinner than
@@ -2408,7 +2293,6 @@ int CSimContext::TestPoly(WorldPolyOwner* pPoly, WorldPoly* pHandle)
 // through the whole frame.
 int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 {
-	uint16        nStack[WS_NODE_STACK];
 	CSimContext   sim;
 	LTVector      vNext;
 	LTVector      vStep;
@@ -2562,13 +2446,13 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 			}
 
 			nBlock = nRoot;
-			pTop  = nStack;
+			pTop  = g_BlockStackQ534;
 
 			for (;;)
 			{
 				if (nBlock == WS_NODE_EMPTY || nBlock == WS_NODE_SOLID)
 				{
-					if (pTop == nStack)
+					if (pTop == g_BlockStackQ534)
 						break;
 
 					pTop--;
@@ -2579,7 +2463,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 
 				pNode  = &g_pPBlock->m_pNodes[nBlock];
 				pRec   = &pRecs[pNode->m_nPoly];
-				pPlane = pRec->m_pOwner->m_pPlane;
+				pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 				fDist = sim.m_vMid.z * pPlane->m_Normal.z +
 				        sim.m_vMid.y * pPlane->m_Normal.y +
@@ -2602,7 +2486,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 				{
 					nStart = sim.ClassifyPlane(pPlane, &sim.m_vStart, 0, 1);
 
-					pPlane = pRec->m_pOwner->m_pPlane;
+					pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 					nEnd = sim.ClassifyPlane(pPlane, &sim.m_vEnd, 1,
 					                         nStart != 1);
@@ -2622,7 +2506,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 							}
 
 							// descend copy #1 -- 0x00419e34..0x00419e9a
-							pPlane = pRec->m_pOwner->m_pPlane;
+							pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 							fDist = sim.m_vStart.z * pPlane->m_Normal.z +
 							        sim.m_vStart.y * pPlane->m_Normal.y +
@@ -2663,7 +2547,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 						}
 
 						// descend copy #2 -- 0x00419ecc..0x00419f3a
-						pPlane = pRec->m_pOwner->m_pPlane;
+						pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 						fDist = sim.m_vStart.z * pPlane->m_Normal.z +
 						        sim.m_vStart.y * pPlane->m_Normal.y +
@@ -2747,6 +2631,12 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 // would lift the object further than the move descends, answers one instead
 // and leaves everything alone.
 //
+// PH: against Primal Hunt's server.dll 0x10006b27 (1161 bytes) this is now
+// 1124. Two layout changes are in: the shared node stack, and the plane read
+// through the polygon's surface test, both at the node (0x10006bc0..
+// 0x10006bcd) and again for the step test and vNormal (0x10006c39..
+// 0x10006c95), where shipped re-reads pOwner->GetPlane() rather than the
+// local. The note below is from an earlier image.
 // NEAR (1078 of 1080, the same 361 instructions, 9 blocks; lithtech 1430 of
 // 1429). The layout came from three spellings: the radius tests as ONE
 // if / else-if / else chain with no `continue`s (that puts the shared
@@ -2826,7 +2716,6 @@ static int ws_PolyTopOver(WorldPolyOwner* pPoly, float x0, float x1,
 
 int ws_StairStep(uint16 nBlock, CBounceState* pState)
 {
-	uint16         nStack[WS_NODE_STACK];
 	LTVector       vMax;
 	LTVector       vMin;
 	LTVector       vSave;
@@ -2865,13 +2754,13 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 
 	pRecs = g_pMoveState->m_pWorldBsp->GetPolyRefs();
 
-	pTop  = nStack;
+	pTop  = g_BlockStackQ534;
 
 	for (;;)
 	{
 		if (nBlock == WS_NODE_EMPTY || nBlock == WS_NODE_SOLID)
 		{
-			if (pTop == nStack)
+			if (pTop == g_BlockStackQ534)
 				break;
 
 			pTop--;
@@ -2881,7 +2770,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 		pNode  = &g_pPBlock->m_pNodes[nBlock];
 		pOwner = pRecs[pNode->m_nPoly].m_pOwner;
 		pRec   = &pRecs[pNode->m_nPoly];
-		pPlane = pOwner->m_pPlane;
+		pPlane = ws_GetPlaneQ506(pOwner);
 
 		vCentre = g_BoxSphere.m_vPoint;
 
@@ -2916,13 +2805,13 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 		}
 		else
 		{
-			if (pOwner && pPlane->m_Normal.y > g_fStepMinNormalY)
+			if (pOwner && pOwner->GetPlane()->m_Normal.y > g_fStepMinNormalY)
 			{
 				vVel = g_pMoveResult->m_vVelocityAdd;
 
 				pObj = g_pMoveState->m_pObject;
 
-				vNormal = pPlane->m_Normal;
+				vNormal = pOwner->GetPlane()->m_Normal;
 
 				vAny = pObj->m_Velocity + vVel;
 
@@ -2931,7 +2820,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 				{
 					fBest = WS_STEP_FAR;
 
-					pPlane = pRec->m_pOwner->m_pPlane;
+					pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 					pInfo = g_pMoveState->m_pInfo;
 
@@ -3129,7 +3018,6 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 // structure.
 int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 {
-	uint16     nStack[WS_NODE_STACK];
 	CPolyTest test;
 #ifdef LT_SERVER_TIMERS
 	CountAdder cntAdder(&g_nPhysStepTime);
@@ -3185,14 +3073,14 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 
 	pRecs = g_pMoveState->m_pWorldBsp->GetPolyRefs();
 
-	pTop  = nStack;
+	pTop  = g_BlockStackQ534;
 	nNode = nBlock;
 
 	for (;;)
 	{
 		if (nNode == WS_NODE_EMPTY || nNode == WS_NODE_SOLID)
 		{
-			if (pTop == nStack)
+			if (pTop == g_BlockStackQ534)
 			{
 				return 1;
 			}
@@ -3205,7 +3093,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 
 		pNode  = &g_pPBlock->m_pNodes[nNode];
 		pRec   = &pRecs[pNode->m_nPoly];
-		pPlane = pRec->m_pOwner->m_pPlane;
+		pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 		fDist = pPlane->DistTo(g_BoxSphere.m_vPoint);
 
@@ -3223,7 +3111,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 
 		nProjected = 1;
 
-		test.m_End.m_pPlane   = pRec->m_pOwner->m_pPlane;
+		test.m_End.m_pPlane   = ws_GetPlaneQ506(pRec->m_pOwner);
 		test.m_Start.m_pPlane = test.m_End.m_pPlane;
 
 		nStart = g_BoxProjectFns[pRec->m_nProject](&test.m_Start);
@@ -3309,7 +3197,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 					else
 					{
 						g_pMoveState->m_pInfo->m_Plane =
-						    *pRec->m_pOwner->m_pPlane;
+						    *ws_GetPlaneQ506(pRec->m_pOwner);
 
 						g_pMoveState->m_pInfo->m_hObject = g_pMoveState->m_hObject;
 
@@ -3320,7 +3208,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 					}
 				}
 
-				pPlane = pRec->m_pOwner->m_pPlane;
+				pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 				fDist = g_vMoveStart.z * pPlane->m_Normal.z +
 				        g_vMoveStart.y * pPlane->m_Normal.y +
@@ -3370,7 +3258,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 				continue;
 			}
 
-			pPlane = pRec->m_pOwner->m_pPlane;
+			pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
 			fDist = g_vMoveStart.z * pPlane->m_Normal.z +
 			        g_vMoveStart.y * pPlane->m_Normal.y +

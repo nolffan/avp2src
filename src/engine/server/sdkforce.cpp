@@ -72,6 +72,13 @@ SDKVecScalarOut g_pSDKVecMagSqr    = &LTVector::MagSqr;
 // a pointer-to-member emits the body. Adds a COMDAT; changes none.
 float (LTVector::*g_pSDKVecDot)(LTVector) const = &LTVector::Dot;
 
+// lithtech.exe 0x00421b20, 46 bytes: operator!=, after the scalar operator*
+// (0x00421ab0) -- three `fcomp; fnstsw; test $0x40,%ah; je` exits to the
+// shared `mov $1,%eax`, zero on the fall-through.  Out of line in the
+// client; reached only through a pointer here.
+typedef LTBOOL (LTVector::*SDKVecCompare)(const LTVector&) const;
+SDKVecCompare   g_pSDKVecNotEqual  = &LTVector::operator!=;
+
 
 // *********************************************************************** //
 //  ltmatrix.h. Seventeen of these match in server.dll on the first build,

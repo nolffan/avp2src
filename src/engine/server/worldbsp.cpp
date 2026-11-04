@@ -93,7 +93,30 @@ public:
 	uint32 m_n0f4;                           // 0x0f4  list head
 };
 
-// Everything the world holds, cleared in one pass. The order is the source's
+
+
+// Construction is the three members and then the same reset the teardown
+// ends with; there is nothing else to set up.
+CWorldBsp::CWorldBsp()
+{
+	Init();
+}
+
+// The members' own destructors come out of collection.h, so both are inlined
+// here — each restoring its vtable and resizing to nothing. One vtable store
+// apiece, which is what says neither array derives from anything.
+CWorldBsp::~CWorldBsp()
+{
+	Term();
+}
+
+// Everything the world holds, cleared in one pass. Defined after the two
+// structors and ahead of Term, where server.dll has it (0x1000e010 ctor,
+// 0x1000e068 dtor, 0x1000e0cc Init, 0x1000e1c4 Term): with the body already
+// compiled VC6 /GX dropped the EH state store ahead of the constructor's call
+// to it (0x1000e04a), and lithtech.exe's Term (0x0042fcc0) wants it compiled
+// first (one SIB operand order otherwise).
+// The order is the source's
 // own and not the layout's: the flags and the byte count go first, the long
 // run of pointers and counts next, and the field at 0x48 last of all.
 void CWorldBsp::Init()
@@ -222,21 +245,6 @@ void CWorldBsp::Term()
 
 	FreeTree();
 	Init();
-}
-
-// Construction is the three members and then the same reset the teardown
-// ends with; there is nothing else to set up.
-CWorldBsp::CWorldBsp()
-{
-	Init();
-}
-
-// The members' own destructors come out of collection.h, so both are inlined
-// here — each restoring its vtable and resizing to nothing. One vtable store
-// apiece, which is what says neither array derives from anything.
-CWorldBsp::~CWorldBsp()
-{
-	Term();
 }
 
 // The tree the world builds for itself goes back through the engine's delete

@@ -1171,3 +1171,31 @@ CBspWorldPoly* w_FindPolyAtPoint(CBspWorldView* pWorld, LTVector* pPoint)
 
 	return &pWorld->m_pPolys[nIndex];
 }
+
+
+// server.dll 0x1002eced / lithtech.exe 0x0046c9d0 -- the physics block under
+// a point, asked of a world model: the point is taken into the model's own
+// space through the second of its two transforms (+0x238) and handed BY
+// VALUE to the world-model interface's GetPBlock (slot 0x10). No interface
+// is no block. A thiscall on the object (server.dll's callers 0x100038cd,
+// 0x10003b39 and 0x10004bc1 load it into ecx); server.dll calls MatVMul_H
+// (0x10004864) and drops its result (`fstp %st(0)`), lithtech.exe's /O2
+// expands it. objtypes.h has no slot for it, so it sits on a view (name
+// ours).
+class CObjWorldModelPBlockQ532 : public CObjWorldModel
+{
+public:
+	class CPhysicsBlock* GetPBlockAt(LTVector* pPos);
+};
+
+CPhysicsBlock* CObjWorldModelPBlockQ532::GetPBlockAt(LTVector* pPos)
+{
+	LTVector vLocal;
+
+	if (!m_pWMIface)
+		return LTNULL;
+
+	MatVMul_H(&vLocal, &m_Transform230, pPos);
+
+	return ((IWorldBsp*)m_pWMIface)->GetPBlock(vLocal);
+}

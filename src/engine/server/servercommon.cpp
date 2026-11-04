@@ -326,11 +326,24 @@ struct CSavedFileStateLT
 // w_SaveObjectFileState); servercommon.h's CSavedFileState is NOLF's.
 struct CSavedFileStateSvQ508
 {
+#ifdef PRIMAL_HUNT
+	// PH: the tracker's time reference sits twelve bytes further in, at
+	// +0x28: SetObjectFilenames constructs it at -0x4c(%ebp) with the
+	// record at -0x74 (server.dll 0x10039b57, 0x10039bcb).
+	uint8         m_pad_00[0x28];
+	CAnimTimeRef  m_TimeRef;                 // 0x28
+	uint8         m_pad_44[0x50 - 0x44];
+#else
 	CSavedTracker m_Tracker;                 // 0x00
 	uint8         m_pad_38[0x50 - 0x38];
+#endif
 	void*         m_pModelFile;              // 0x50
 	void*         m_pSkinFile;               // 0x54
 };
+#endif
+
+#ifdef PRIMAL_HUNT
+void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize);  // PH: 0x1003448c
 #endif
 
 LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pStruct)
@@ -380,7 +393,13 @@ LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 		pMsg->m_Unknown34 = 1;
 	}
 	msg.m_pMsg->WriteWord(pObj->m_ObjectID);
+#ifdef PRIMAL_HUNT
+	// PH: the writer takes a third argument, a running size, passed as
+	// zero here (server.dll 0x10039c33 `push 0`, lithtech.exe 0x0048104a).
+	sm_WriteObjectFiles(pObj, msg.m_pMsg, LTNULL);
+#else
 	sm_WriteObjectFiles(pObj, msg.m_pMsg);
+#endif
 
 	// Every client whose table already carries the object learns the names.
 	LTLink* pListHead = &m_pServerMgr->m_ClientList.m_Head;
@@ -614,6 +633,86 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg)
 #endif
 	}
 }
+
+
+#ifdef PRIMAL_HUNT
+// PH: server.dll 0x1003448c (lithtech.exe 0x0047a7e0) -- Primal Hunt's
+// writer for an object's files. Six identifiers now, not three: the model
+// at +0x30 (still dereferenced without a null test), four skins at
+// +0x34..+0x40 in a loop counted down from four, and one more at +0x44.
+// Either half is optional: with no message nothing is written, and with a
+// size every identifier adds its two bytes to it -- the same walk both
+// writes a message and measures one. Names ours.
+class CObjFilesPHQ532
+{
+public:
+	uint8                  m_pad_00[0x30];
+	class CFileIdentifier* m_pModelFile;     // +0x30
+	class CFileIdentifier* m_pSkins[4];      // +0x34
+	class CFileIdentifier* m_pFile44;        // +0x44
+};
+
+void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
+{
+	uint16 i;
+
+	if (pMsg)
+#ifdef LT_SERVER_BUILD
+		pMsg->WriteWord(((CObjFilesPHQ532*)pObj->m_pSData)->m_pModelFile->m_FileID);
+#else
+		((CPacket*)pMsg)->WriteType(((CObjFilesPHQ532*)pObj->m_pSData)->m_pModelFile->m_FileID);
+#endif
+	if (pnSize)
+		*pnSize += 2;
+
+	for (i = 0; i < 4; i++)
+	{
+		if (pMsg)
+		{
+			CFileIdentifier* pFile = ((CObjFilesPHQ532*)pObj->m_pSData)->m_pSkins[i];
+			uint16 nFileID;
+
+			if (pFile)
+				nFileID = pFile->m_FileID;
+			else
+				nFileID = 0xffff;
+
+#ifdef LT_SERVER_BUILD
+	#ifdef LT_SERVER_BUILD
+		pMsg->WriteWord(nFileID);
+#else
+		((CPacket*)pMsg)->WriteType(nFileID);
+#endif
+#else
+			((CPacket*)pMsg)->WriteType(nFileID);
+#endif
+		}
+
+		if (pnSize)
+			*pnSize += 2;
+	}
+
+	if (pMsg)
+	{
+		CFileIdentifier* pFile = ((CObjFilesPHQ532*)pObj->m_pSData)->m_pFile44;
+		uint16 nFileID;
+
+		if (pFile)
+			nFileID = pFile->m_FileID;
+		else
+			nFileID = 0xffff;
+
+#ifdef LT_SERVER_BUILD
+		pMsg->WriteWord(nFileID);
+#else
+		((CPacket*)pMsg)->WriteType(nFileID);
+#endif
+	}
+
+	if (pnSize)
+		*pnSize += 2;
+}
+#endif
 
 
 // 0x1000f878 is `MatVMul_H` — and that is not a name of ours, it is
