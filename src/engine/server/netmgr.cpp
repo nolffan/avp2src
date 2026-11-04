@@ -57,6 +57,24 @@ LTRESULT CNetMgr::Init()
 	return LT_OK;
 }
 
+// AVP2: the handler's notification slot (servermgr.h's CBaseMgr::_v10, at
+// vtable +0x10) takes TWO arguments in both AvP2 1.0.9.6 and Primal Hunt,
+// not NOLF's three: every call pushes the event and the name only (PH
+// server.dll 0x1002b17d and 0x1002d408, lithtech.exe 0x004683c4 and
+// 0x0046a589; AvP2 server.dll 0x10029725 and 0x1002b837), and the dead
+// connection's name is the empty string, not the trace name buffer.
+// servermgr.h is shared, so the call goes through this view of the same
+// table (name ours).
+class CNetHandlerQ556
+{
+public:
+	virtual void _v00()=0;
+	virtual void _v04()=0;
+	virtual void _v08()=0;
+	virtual void _v0c()=0;
+	virtual void Notify(int nEvent, char* pName)=0;                 // 0x10
+};
+
 // 0x100213ee — the manager handed back. Term() is the whole body; the five
 // sub-objects are the compiler's, expanded in reverse declaration order
 // (m_QueueC4, m_QueueB8, m_Drivers, m_Connections, m_PacketBank).
@@ -195,7 +213,7 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 
 	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
-	for (i = 0; i < m_Connections.m_nElements; i++)
+	for (i = 0; i < m_Connections.GetSize(); i++)
 	{
 		NetConnection* pConn = m_Connections.m_pArray[i];
 
@@ -271,7 +289,7 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 					dsi_ServerError("Connection dead (timed out).");
 
 				RemoveConnection(pConn);
-				m_pHandler->_v10(5, g_NetNameBuf, 0);
+				((CNetHandlerQ556*)m_pHandler)->Notify(5, g_EmptyString);
 				pConn->m_pDriver->Disconnect(pConn, 3);
 			}
 		}
@@ -288,14 +306,22 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 		for (i = 0; i < m_Connections.m_nElements; i++)
 		{
 			NetConnection* pConn = m_Connections.m_pArray[i];
+			uint32         nRecvQueued;
+			uint32         nSendQueued;
 
 			DebugPrint(pConn, 0, "Conn %d Info - Ping: %.2f", i, pConn->m_Ping);
+
+			// AVP2: each queue size is read into a register ahead of its
+			// line's float arguments (PH server.dll 0x1002b14b, 0x1002b17a),
+			// so it is a local of its own.
+			nRecvQueued = pConn->m_GuaranteedQueue.m_nMessages;
 			DebugPrint(pConn, 0, "Conn %d Recv - Wait: %.1f, Q Size: %d, PPS: %.1f, BPS: %.1f",
-				i, pConn->m_RecvWait, pConn->m_GuaranteedQueue.m_nMessages,
+				i, pConn->m_RecvWait, nRecvQueued,
 				pConn->m_RecvPPS.m_Value / pConn->m_RecvPPS.m_Time,
 				pConn->m_RecvBPS.m_Value / pConn->m_RecvBPS.m_Time);
+			nSendQueued = pConn->m_SendQueue.m_nMessages;
 			DebugPrint(pConn, 0, "Conn %d Send - Wait: %.1f, Q Size: %d, PPS: %.1f, BPS: %.1f",
-				i, pConn->m_SendWait, pConn->m_SendQueue.m_nMessages,
+				i, pConn->m_SendWait, nSendQueued,
 				pConn->m_SendPPS.m_Value / pConn->m_SendPPS.m_Time,
 				pConn->m_SendBPS.m_Value / pConn->m_SendBPS.m_Time);
 		}
@@ -1846,6 +1872,13 @@ public:
 int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
 {
 	CMessageRef ref;
+#ifdef PRIMAL_HUNT
+	// PH: a second reference, constructed (zeroed, EH state 1 -- server.dll
+	// 0x1002d1cf..0x1002d1d6, lithtech.exe 0x0046a32a) and never assigned, so
+	// VC6 drops its release from every exit.  AvP2 1.0.9.6 has no such slot
+	// (`sub $0x50`).  (name ours)
+	CMessageRef refUnused;
+#endif
 	uint32      nAcks[16];
 	uint32      nAckID;
 	uint32      nCount;
@@ -1940,8 +1973,7 @@ int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
 
 		pConn->m_pDriver->Disconnect(pConn, 4);
 
-		m_pHandler->_v10(4, g_EmptyString,
-			((ServerMessageTypeView*)pMsg)->ReadDWord(0));
+		((CNetHandlerQ556*)m_pHandler)->Notify(4, g_EmptyString);
 	}
 	else if (nSubType == 2)
 	{

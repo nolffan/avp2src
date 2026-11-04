@@ -35,21 +35,45 @@ float g_CV_DefaultDrawIndexedDist = 500.0f;
 // IntersectRays' worker, a 0x14-byte local (the whole of 0x0045fc30's
 // frame): bound to the instance and its LOD, prepared, then run over the
 // rays. Its bodies follow IntersectRays in both images (0x0045feb0..,
-// server.dll 0x10025afa..) and are not reconstructed yet (name ours).
+// server.dll 0x10025afa..); they are written further down, after the
+// piece-data types they read (name ours).
+// One element of the intersector's triangle table: a corner and the two
+// edges out of it (0x00460480 stores v0, then v1 - v0 at +0x0c and v2 - v0
+// at +0x18). (name ours)
+class CModelRayTriQ554
+{
+public:
+	LTVector m_vOrigin;                      // 0x00
+	LTVector m_vEdge1;                       // 0x0c
+	LTVector m_vEdge2;                       // 0x18
+};
+
+class CRayLodQ554;
+
 class CModelRayIntersectQ504
 {
 public:
+	// The transformed vertices and the triangles built from them; defined
+	// after IntersectRays (names ours).
+	static CMoArray<LTVector, DefaultCache>         s_VertsQ554;
+	static CMoArray<CModelRayTriQ554, DefaultCache> s_TrisQ554;
+
 	LTBOOL Init(HOBJECT hModel, const LTVector& vCamPos, int32 nLODOffset);       // 0x0045feb0
+	uint32 CalcLODQ554(const LTVector& vCamPos, int32 nLODOffset);                // 0x0045fee0
 	LTBOOL Prepare();                                                             // 0x00460030
-	void   Intersect(HMODELPIECE* aPieces, uint32 nPieceCount,
+	LTBOOL Intersect(HMODELPIECE* aPieces, uint32 nPieceCount,
 	                 ILTModel::LTRayResult* aRays, uint32 nRayCount);              // 0x00460100
+	LTBOOL SetupTablesQ554(CRayLodQ554* pLOD);                                    // 0x00460210
+	void   TransformVertsQ554(CRayLodQ554* pLOD);                                 // 0x00460340
+	void   BuildTrisQ554(CRayLodQ554* pLOD);                                      // 0x00460480
+	void   IntersectRayQ554(ILTModel::LTRayResult* pRay);                         // 0x004605d0
 
 public:
-	uint32 m_Unknown00;                      // 0x00
+	uint32 m_nTrisQ554;                      // 0x00  0x00460480's triangle count
 	HOBJECT m_hModel;                        // 0x04
-	void*  m_pModel;                         // 0x08  the instance's +0x1fc
+	Model* m_pModel;                         // 0x08  the instance's +0x1fc
 	uint32 m_iLOD;                           // 0x0c  0x0045fee0's answer
-	uint32 m_Unknown10;                      // 0x10
+	uint32 m_iPieceQ554;                     // 0x10  the piece being tested
 };
 
 // The model object's own virtuals the AvP2 transform accessors reach, past
@@ -63,7 +87,8 @@ public:
 	virtual void _v24();
 	virtual void GetTransformMatrix(LTMatrix* pMat);         // 0x28
 	virtual void _v2c(); virtual void _v30(); virtual void _v34();
-	virtual void _v38(); virtual void _v3c(); virtual void _v40();
+	virtual void SetupModelWalker(class ModelWalkerQ554* pWalker);  // 0x38
+	virtual void _v3c(); virtual void _v40();
 	virtual void _v44(); virtual void _v48();
 	virtual LTMatrix* GetCachedNodeTransform(uint32 iNode);  // 0x4c
 };
@@ -512,6 +537,20 @@ LTRESULT CommonModelLT::IntersectRays(HOBJECT hModel, const LTVector& vCamPos, i
 
 	RETURN_ERROR_SYM(2, pFnName, LT_INVALIDPARAMS);
 }
+
+// The ray intersector's two scratch tables, shared by every call: static
+// data members defined out of class, which is what VC6 guards the atexit
+// destructors of (cltcursor.cpp's record banks are the same idiom).
+// lithtech.exe 0x004f5700 (vtable 0x004d5bcc, the LTVector instantiation)
+// and 0x004f56e8 (vtable 0x004d5bfc, the 0x24-byte one); server.dll
+// 0x1008cb38 and 0x1008cb20. Their initializers follow IntersectRays in
+// both images and in this order (lithtech.exe 0x0045fd30 / 0x0045fdf0,
+// .CRT$XCU 0x004e0184 / 0x004e0188; server.dll 0x10025a62 / 0x10025aae,
+// .CRT$XCU 0x1007d0c4 / 0x1007d0c8), and their destructors (0x0045fd80 /
+// 0x0045fe40; 0x10025a82 / 0x10025ace) test bits 1 and 2 of the guard byte
+// just past the first (0x004f5714 / 0x1008cb4c). (names ours)
+CMoArray<LTVector, DefaultCache>         CModelRayIntersectQ504::s_VertsQ554;
+CMoArray<CModelRayTriQ554, DefaultCache> CModelRayIntersectQ504::s_TrisQ554;
 
 LTRESULT CommonModelLT::GetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece, LTBOOL& bHidden)
 {
@@ -2394,6 +2433,392 @@ public:
 };
 
 
+// *********************************************************************** //
+//  IntersectRays' worker, CModelRayIntersectQ504 (lithtech.exe
+//  0x0045feb0..0x004608ae, server.dll 0x10025afa..). Written here rather
+//  than beside IntersectRays because it reads the piece-data layout above.
+// *********************************************************************** //
+
+// The piece data the intersector reads, as views (names ours). One vertex
+// weight: a homogeneous position in the node's space and the node
+// (Model::m_Unknown054's 0x14-byte element; 0x00460390..0x0046042d).
+class CRayWeightQ554
+{
+public:
+	float  m_Vec[4];                         // 0x00
+	uint32 m_iNode;                          // 0x10
+};
+
+// One vertex: its weights (0x00460390 reads the count as a word).
+class CRayVertQ554
+{
+public:
+	CRayWeightQ554* m_pWeights;              // 0x00
+	uint16 m_nWeights;                       // 0x04
+	uint8  m_pad_06[0x20 - 0x06];
+};
+
+// One triangle: three vertex indices (0x004604c9, 0x004604fa, 0x00460550).
+class CRayTriSrcQ554
+{
+public:
+	uint16 m_Indices[3];                     // 0x00
+	uint8  m_pad_06[0x20 - 0x06];
+};
+
+// One level of detail of a piece: CPieceDataQ44C's two arrays, seen as the
+// vertices and the triangles they are. A piece IS its level zero and keeps
+// the others in an array at +0x34 (ModelPieceQ44C).
+class CRayLodQ554
+{
+public:
+	void*           m_pVtbl00;               // 0x00
+	CRayVertQ554*   m_pVerts;                // 0x04
+	uint32          m_nVerts;                // 0x08
+	uint32          m_pad_0c;                // 0x0c
+	void*           m_pVtbl10;               // 0x10
+	CRayTriSrcQ554* m_pTris;                 // 0x14
+	uint32          m_nTris;                 // 0x18
+	uint32          m_pad_1c;                // 0x1c
+	Model*          m_pModel;                // 0x20
+};
+
+class CRayPieceQ554 : public CRayLodQ554
+{
+public:
+	uint8           m_pad_24[0x34 - 0x24];
+	void*           m_pVtbl34;               // 0x34
+	CRayLodQ554*    m_pLODs;                 // 0x38  levels 1..
+	uint32          m_nLODs;                 // 0x3c
+};
+
+// The model walker as Primal Hunt has it (objbank.cpp's ModelWalkerQ521):
+// 0x2a8 bytes, eight 0x24-byte AnimTimeRefs and then the walk state at
+// 0x120. Its constructor is inline: lithtech.exe expands it into Prepare
+// (the eight-record loop at 0x00460051), server.dll calls the out-of-line
+// copy (0x1001d477). (name ours)
+class ModelWalkerQ554
+{
+public:
+	ModelWalkerQ554()
+	{
+		m_pObjTransform = LTNULL;
+		m_pOutput = LTNULL;
+		m_Unknown_ec = 0;
+		m_Unknown_f0 = 0;
+		m_hObject = LTNULL;
+		m_nTimeRefs = 0;
+	}
+
+	LTBOOL sub_100386c6();                   // 0x004a6a20 / server.dll 0x1004879f
+
+	AnimTimeRef m_TimeRefs[8];               // 0x000 .. 0x120
+	uint32     m_nTimeRefs;                  // 0x120
+	LTMatrix*  m_pObjTransform;              // 0x124
+	LTMatrix*  m_pOutput;                    // 0x128
+	uint32     m_Unknown_ec;                 // 0x12c
+	uint32     m_Unknown_f0;                 // 0x130
+	HOBJECT    m_hObject;                    // 0x134
+	uint8      m_pad_138[0x2a8 - 0x138];
+};
+
+// A model's level-of-detail distance: level zero's is the model's own
+// +0xa0, the rest come out of the float array at +0x8c, and a level past
+// the end reads through a null pointer (0x0045ff50..0x0045ff7f, three
+// times over in 0x0045fee0). (name ours)
+inline float* GetLODDistQ554(Model* pModel, uint32 iLOD)
+{
+	if (iLOD == 0)
+		return &pModel->m_f0a0;
+
+	iLOD--;
+
+	if (iLOD < pModel->m_Unknown08c.m_nElements)
+		return &pModel->m_Unknown08c.m_pArray[iLOD].m_f;
+
+	return LTNULL;
+}
+
+// The same shape over a piece's levels (0x00460186..0x004601a0).
+inline CRayLodQ554* GetPieceLODQ554(CRayPieceQ554* pPiece, uint32 iLOD)
+{
+	if (iLOD == 0)
+		return pPiece;
+
+	iLOD--;
+
+	if (iLOD < pPiece->m_nLODs)
+		return &pPiece->m_pLODs[iLOD];
+
+	return LTNULL;
+}
+
+// 0x0045feb0 (server.dll 0x10025afa).
+LTBOOL CModelRayIntersectQ504::Init(HOBJECT hModel, const LTVector& vCamPos, int32 nLODOffset)
+{
+	m_hModel = hModel;
+	m_pModel = ((ModelInstance*)hModel)->m_AnimTracker.m_TimeRef.m_pModel;
+	m_iLOD = CalcLODQ554(vCamPos, nLODOffset);
+	return LTTRUE;
+}
+
+// 0x0045fee0 (server.dll 0x10025b24): the level of detail for the camera's
+// distance, pushed out or pulled in by the caller's offset in levels.
+// Both offsets are LTCLAMPed (server.dll's `cmp; jg` at 0x10025b4b is the
+// clamp's upper half; the lower is folded away under the `> 0` test).
+// server.dll IDENTICAL. lithtech.exe NEAR (319 of 327): shipped expands
+// Dist and operator- but CALLS LTVector's three-float constructor
+// (0x004140a0) and Mag (0x004219e0) out of line, where our ltvector.h
+// expands all four -- the same inline-budget difference sweptsphere.cpp
+// records; the rest of the body is the same.
+uint32 CModelRayIntersectQ504::CalcLODQ554(const LTVector& vCamPos, int32 nLODOffset)
+{
+	float  fDist;
+	uint32 i, iLOD;
+
+	fDist = vCamPos.Dist(m_hModel->m_Pos);
+
+	if (nLODOffset > 0)
+		fDist += *GetLODDistQ554(m_pModel,
+			LTCLAMP(nLODOffset, 0, (int32)m_pModel->m_Unknown08c.m_nElements));
+	else if (nLODOffset < 0)
+		fDist -= *GetLODDistQ554(m_pModel,
+			LTCLAMP(-nLODOffset, 0, (int32)m_pModel->m_Unknown08c.m_nElements));
+
+	iLOD = 0;
+	for (i = 0; i < m_pModel->m_Unknown08c.m_nElements + 1; i++)
+	{
+		if (fDist > *GetLODDistQ554(m_pModel, i))
+			iLOD = i;
+	}
+
+	return iLOD;
+}
+
+// 0x00460030 (server.dll 0x10025c0e): the model's node transforms brought
+// up to date in the object's own space ("Model::SetupTransforms failed for
+// %s." at 0x004e5ef8 / 0x1007f738). The object's transform is fetched
+// before the walker is built (server.dll calls the walker's constructor at
+// 0x10025c2c, after slot 0x28). IDENTICAL in both images (lithtech.exe's
+// function table splits it at 0x00460066; it is one 200-byte body).
+LTBOOL CModelRayIntersectQ504::Prepare()
+{
+	LTMatrix mObj;
+
+	((CModelObjViewQ504*)m_hModel)->GetTransformMatrix(&mObj);
+
+	ModelWalkerQ554 walker;
+
+	walker.m_pObjTransform = &mObj;
+	walker.m_pOutput = LTNULL;
+	walker.m_hObject = m_hModel;
+
+	((CModelObjViewQ504*)m_hModel)->SetupModelWalker(&walker);
+
+	if (!walker.sub_100386c6())
+	{
+		dsi_ServerError("Model::SetupTransforms failed for %s.", m_pModel->GetFilename());
+		return LTFALSE;
+	}
+
+	return LTTRUE;
+}
+
+// 0x00460100 (server.dll 0x10025c84): every ray starts out missing at its
+// full length, then each visible piece (all of them, when the caller names
+// none) at the chosen level of detail is tested against every ray.
+// IDENTICAL in both images.
+LTBOOL CModelRayIntersectQ504::Intersect(HMODELPIECE* aPieces, uint32 nPieceCount,
+                                         ILTModel::LTRayResult* aRays, uint32 nRayCount)
+{
+	uint32 i, j;
+	CRayPieceQ554* pPiece;
+	CRayLodQ554* pLOD;
+
+	if (!aPieces || !nPieceCount)
+	{
+		aPieces = LTNULL;
+		nPieceCount = m_pModel->m_Pieces.m_nElements;
+	}
+
+	for (i = 0; i < nRayCount; i++)
+	{
+		aRays[i].m_bIntersect = LTFALSE;
+		aRays[i].m_fDistance = aRays[i].m_fMaxDist;
+	}
+
+	for (i = 0; i < nPieceCount; i++)
+	{
+		m_iPieceQ554 = aPieces ? aPieces[i] : i;
+
+		pPiece = (CRayPieceQ554*)m_pModel->m_Pieces.m_pArray[m_iPieceQ554];
+
+		if (((ModelInstance*)m_hModel)->m_HiddenPieces & (1 << m_iPieceQ554))
+			continue;
+
+		pLOD = GetPieceLODQ554(pPiece, m_iLOD);
+
+		if (!SetupTablesQ554(pLOD))
+			return LTFALSE;
+
+		TransformVertsQ554(pLOD);
+		BuildTrisQ554(pLOD);
+
+		for (j = 0; j < nRayCount; j++)
+			IntersectRayQ554(&aRays[j]);
+	}
+
+	return LTTRUE;
+}
+
+// 0x00460210 (server.dll 0x10025d6f): both tables grown, with 32 to spare,
+// when this level has more vertices or triangles than they hold.
+// NEAR in both. server.dll (83 of 83): pLOD and the hoisted &g_DefAlloc
+// swap esi/edi. lithtech.exe (311 against 300): shipped CALLS the vertex
+// array's _DeleteAndDestroyArray (0x0040d020) and expands the triangle
+// array's, where ours expands both; SetSize2(n, &g_DefAlloc) for the
+// second leaves it as is.
+LTBOOL CModelRayIntersectQ504::SetupTablesQ554(CRayLodQ554* pLOD)
+{
+	if (pLOD->m_nVerts > s_VertsQ554.GetSize())
+	{
+		if (!s_VertsQ554.SetSize(pLOD->m_nVerts + 32))
+			return LTFALSE;
+	}
+
+	if (pLOD->m_nTris > s_TrisQ554.GetSize())
+	{
+		if (!s_TrisQ554.SetSize(pLOD->m_nTris + 32))
+			return LTFALSE;
+	}
+
+	return LTTRUE;
+}
+
+// 0x00460340 (server.dll 0x10025dc2): each vertex as the sum of its
+// weights through their nodes' transforms (ltmatrix.h's MatVMul_Add, which
+// server.dll calls at 0x10025e2b and lithtech.exe expands, the 4-float sum
+// promoted to the FPU stack all but w), divided through by the summed w.
+// NEAR in both, in the final three multiplies only: lithtech.exe (324
+// against 312) wants `fmuls [w]` on each component where ours reloads the
+// inverse and pops; server.dll (182 against 190) wants each component
+// loaded and multiplied by the inverse kept in st(1). Scalar sums, an
+// LTVector sum, Init() and either operand order measured.
+void CModelRayIntersectQ504::TransformVertsQ554(CRayLodQ554* pLOD)
+{
+	LTMatrix* pTransforms;
+	LTVector* pOut;
+	CRayVertQ554* pVert;
+	CRayWeightQ554* pWeight;
+	float vSum[4];
+	float fInvW;
+	uint32 i, j;
+
+	pTransforms = m_pModel->m_NodeTransforms.m_pArray;
+	pOut = s_VertsQ554.GetArray();
+
+	for (i = 0; i < pLOD->m_nVerts; i++)
+	{
+		pVert = &pLOD->m_pVerts[i];
+
+		vSum[0] = vSum[1] = vSum[2] = vSum[3] = 0.0f;
+
+		for (j = 0; j < pVert->m_nWeights; j++)
+		{
+			pWeight = &pVert->m_pWeights[j];
+			MatVMul_Add(vSum, &pTransforms[pWeight->m_iNode], pWeight->m_Vec);
+		}
+
+		fInvW = 1.0f / vSum[3];
+
+		pOut[i].x = vSum[0] * fInvW;
+		pOut[i].y = vSum[1] * fInvW;
+		pOut[i].z = vSum[2] * fInvW;
+	}
+}
+
+// 0x00460480 (server.dll 0x10025e80): each triangle as a corner and its
+// two edges. The count is kept in m_nTrisQ554, which is what the loop and
+// the ray test both read (`cmp eax,[ecx]`).
+// NEAR in both (lithtech.exe 333 of 333, server.dll 224 against 223): the
+// shipped code reads the source triangle's array pointer before adding the
+// strength-reduced offset, ours the other way round, and lithtech.exe keeps
+// the two offsets in each other's frame slots. Taking the destination
+// first makes server.dll 223 of 223 (one load order left) and lithtech.exe
+// worse (331).
+void CModelRayIntersectQ504::BuildTrisQ554(CRayLodQ554* pLOD)
+{
+	CRayTriSrcQ554* pSrc;
+	CModelRayTriQ554* pTri;
+	LTVector* pVerts;
+	LTVector* pV0;
+	uint32 i;
+
+	pVerts = s_VertsQ554.GetArray();
+	m_nTrisQ554 = pLOD->m_nTris;
+
+	for (i = 0; i < m_nTrisQ554; i++)
+	{
+		pSrc = &pLOD->m_pTris[i];
+		pTri = &s_TrisQ554.GetArray()[i];
+
+		pV0 = &pVerts[pSrc->m_Indices[0]];
+
+		pTri->m_vOrigin = *pV0;
+		pTri->m_vEdge1 = pVerts[pSrc->m_Indices[1]] - *pV0;
+		pTri->m_vEdge2 = pVerts[pSrc->m_Indices[2]] - pTri->m_vOrigin;
+	}
+}
+
+// 0x004605d0 (server.dll 0x10025f5f): one ray against every triangle of
+// the piece (the Moller-Trumbore test), keeping the nearest hit inside the
+// ray's range. NEAR: lithtech.exe (705 against 737) calls the three-float
+// constructor (0x004140a0), Cross (0x004428a0) and Dot (0x00421a10) at some
+// sites and expands them at others; server.dll (184 bytes) calls nearly
+// everything out of line. Ours expands all of them -- the inline-budget
+// difference again. Flow, frame and tests are as shipped.
+void CModelRayIntersectQ504::IntersectRayQ554(ILTModel::LTRayResult* pRay)
+{
+	CModelRayTriQ554* pTri;
+	LTVector vP, vT, vQ, vNormal;
+	float fInvDet, fU, fV, fT;
+	uint32 i;
+
+	for (i = 0; i < m_nTrisQ554; i++)
+	{
+		pTri = &s_TrisQ554.GetArray()[i];
+
+		vP = pRay->m_vDir.Cross(pTri->m_vEdge2);
+		fInvDet = 1.0f / pTri->m_vEdge1.Dot(vP);
+
+		vT = pRay->m_vOrigin - pTri->m_vOrigin;
+
+		fU = vT.Dot(vP) * fInvDet;
+		if (fU < 0.0f || fU > 1.0f)
+			continue;
+
+		vQ = pTri->m_vEdge1.Cross(vT);
+
+		fV = pRay->m_vDir.Dot(vQ) * fInvDet;
+		if (fV < 0.0f || fU + fV > 1.0f)
+			continue;
+
+		fT = pTri->m_vEdge2.Dot(vQ) * fInvDet;
+		if (fT < pRay->m_fDistance && fT > pRay->m_fMinDist)
+		{
+			pRay->m_fDistance = fT;
+			pRay->m_bIntersect = LTTRUE;
+
+			vNormal = pTri->m_vEdge1.Cross(pTri->m_vEdge2);
+			vNormal.Norm();
+
+			pRay->m_vNormal = vNormal;
+			pRay->m_nPiece = m_iPieceQ554;
+		}
+	}
+}
+
+
 // --------------------------------------------------------------------- //
 //  0x0044d3f0   749 bytes   CPieceDataQ44C::sub_1001bf85
 //                           (server.dll 0x1001bf85 -- the enumeration there
@@ -3161,6 +3586,15 @@ void Model::sub_10017517()
 
 
 // 0x10016c95 — a socket's default state.
+//
+// Primal Hunt has it beside Model::Model (lithtech.exe 0x00453570, server.dll
+// 0x1001ca04) and in a DIFFERENT translation unit from LoadSockets: both
+// images' BaseNew<ModelSocket> (lithtech.exe 0x0045da10, server.dll
+// 0x10023f9f) carry /GX's placement-new frame around the constructor call,
+// which VC6 drops when the constructor's body is in the same TU (measured:
+// with this definition out of commonmodel.cpp both come out identical; moved
+// to the end of this file they do not). It belongs with the model half that
+// modelnew.cpp stages.
 ModelSocket::ModelSocket()
 {
 	m_Name[0] = '\0';

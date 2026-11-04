@@ -850,7 +850,11 @@ public:
 	// 0x10023f87
 	virtual LTBOOL GenAppendList(const GenList<LThreadMessage*>& other)
 	{
-		GenListPos pos = other.GenBegin();
+		// AVP2: declared, then assigned -- the temporary copied into it is
+		// retail's 0x10-byte frame (server.dll 0x1002daf5 / 0x1002db6d;
+		// AvP2 1.0.9.6's 0x1001a3c5).
+		GenListPos pos;
+		pos = other.GenBegin();
 
 		while (other.GenIsValid(pos))
 			Prepend(other.GenGetNext(pos));

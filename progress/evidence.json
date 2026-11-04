@@ -57,9 +57,9 @@
   },
   "lithtech.exe": {
    "cmd": "7457eecbf784b2df0881bf25581acba64ed31922be5d28d8ab5cec43ffdd210b",
-   "image": "4ac41e59eee4cac584f5299ac745b5c1164310d1887d49cb2600fec2580b245f",
+   "image": "49f8bc3f5ae58f51b8de700c618a0c25cca2eb96a7527af39f675a5a58e29748",
    "link_command": "cd src/engine/lithtech && { printf '%s\\n' '/nologo' '/subsystem:windows' '/FORCE' '/OPT:NOREF' '/OPT:ICF' '/machine:I386' '/out:Release\\lithtech.exe' '/map:Release\\lithtech.map' 'Release\\basestream.obj' 'Release\\binkvideo.obj' 'Release\\ccclient.obj' 'Release\\cchandler.obj' 'Release\\ccline.obj' 'Release\\ccobj.obj' 'Release\\cissurf.obj' 'Release\\clientblit.obj' 'Release\\clientconsole.obj' 'Release\\clientdsi.obj' 'Release\\clientinput.obj' 'Release\\clientinterface.obj' 'Release\\clientmgr2.obj' 'Release\\clientmgr3.obj' 'Release\\clientmusic.obj' 'Release\\clientphysics.obj' 'Release\\clientrender.obj' 'Release\\clientshell.obj' 'Release\\clientsound.obj' 'Release\\clientsoundinst.obj' 'Release\\clientsoundmgr.obj' 'Release\\clientstreams.obj' 'Release\\clienttexmgr.obj' 'Release\\clientwin.obj' 'Release\\clientworld.obj' 'Release\\clientworldinfo.obj' 'Release\\cltapi.obj' 'Release\\cltcursor.obj' 'Release\\cltnew.obj' 'Release\\cltrest.obj' 'Release\\cmgrinit.obj' 'Release\\cmgsurf.obj' 'Release\\cmodelload.obj' 'Release\\collection.obj' 'Release\\collelem.obj' 'Release\\commonmodel.obj' 'Release\\commonphysics.obj' 'Release\\conline.obj' 'Release\\console.obj' 'Release\\controlfile.obj' 'Release\\counter.obj' 'Release\\csbase.obj' 'Release\\csvis.obj' 'Release\\dalloc.obj' 'Release\\demodtx.obj' 'Release\\dhash.obj' 'Release\\diblit.obj' 'Release\\dmextra.obj' 'Release\\dmgrow.obj' 'Release\\dmloader.obj' 'Release\\dsi.obj' 'Release\\filemgr.obj' 'Release\\fmconvert.obj' 'Release\\fmcvt32.obj' 'Release\\fntdraw.obj' 'Release\\fsstream.obj' 'Release\\genericprop.obj' 'Release\\lithtech.obj' 'Release\\lmessage.obj' 'Release\\localdriver.obj' 'Release\\lt2new1.obj' 'Release\\lt2new2.obj' 'Release\\lt2new3.obj' 'Release\\lt2new4.obj' 'Release\\lthread.obj' 'Release\\ltnew1.obj' 'Release\\ltnew2.obj' 'Release\\ltobject.obj' 'Release\\lttexmod.obj' 'Release\\lvideomgr.obj' 'Release\\modchunk.obj' 'Release\\modelanim.obj' 'Release\\modelnew.obj' 'Release\\msgterm.obj' 'Release\\netmgr.obj' 'Release\\netobj.obj' 'Release\\nettrace.obj' 'Release\\objbank.obj' 'Release\\objmover.obj' 'Release\\objtypes.obj' 'Release\\packet.obj' 'Release\\partfm.obj' 'Release\\predobj.obj' 'Release\\predtick.obj' 'Release\\saveio.obj' 'Release\\savobj.obj' 'Release\\sdkforce.obj' 'Release\\server.obj' 'Release\\servercommon.obj' 'Release\\serverengine.obj' 'Release\\serverlightanim.obj' 'Release\\servermath.obj' 'Release\\servermessage.obj' 'Release\\servermgr.obj' 'Release\\servermodel.obj' 'Release\\servermsg.obj' 'Release\\shade.obj' 'Release\\sharedcommon.obj' 'Release\\smackvideo.obj' 'Release\\smgr.obj' 'Release\\smgrmisc.obj' 'Release\\smgrnew.obj' 'Release\\sndinst2.obj' 'Release\\sndmgr2.obj' 'Release\\soundinst2.obj' 'Release\\spritecontrol.obj' 'Release\\startload.obj' 'Release\\stdlithalloc.obj' 'Release\\streamsim.obj' 'Release\\stringbank.obj' 'Release\\structbank.obj' 'Release\\sweptsphere.obj' 'Release\\tcpdriver.obj' 'Release\\tcpqarray.obj' 'Release\\transform.obj' 'Release\\warpblit.obj' 'Release\\wgrid.obj' 'Release\\wmrotate.obj' 'Release\\worldbsp.obj' 'Release\\worldisect.obj' 'Release\\worldmodels.obj' 'Release\\worldsim.obj' 'Release\\worldtree.obj' 'Release\\worldtree2.obj' 'Release\\wonapi\\WONAPI.lib' '..\\..\\LT2\\lithshared\\libs\\Release\\RezMgr.lib' '..\\..\\LT2\\lithshared\\libs\\Release\\lith.lib' '..\\..\\LT2\\lithshared\\libs\\Release\\StdLith.lib' 'winmm.lib' 'dinput.lib' 'dxguid.lib' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'ole32.lib' 'uuid.lib' 'mss32dec.lib' 'mss32.lib' 'wsock32.lib' > /repo/out/release-tree/src/engine/lithtech/Release/lithtech.exe.rsp; } && { WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='s:\\engine\\lithtech\\Release\\implib;t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\engine\\lithtech\\Release\\lithtech.exe.rsp' > /repo/out/release-tree/src/engine/lithtech/Release/lithtech-link.txt 2>&1 || true; } && grep -c 'error LNK2001\\|error LNK2019' /repo/out/release-tree/src/engine/lithtech/Release/lithtech-link.txt | sed 's/^/   LINK lithtech.exe: unresolved references: /' ; grep -c 'error LNK2005' /repo/out/release-tree/src/engine/lithtech/Release/lithtech-link.txt | sed 's/^/   LINK lithtech.exe: defined twice: /' ; test -f /repo/out/release-tree/src/engine/lithtech/Release/lithtech.exe || { grep -i 'error\\|fatal' /repo/out/release-tree/src/engine/lithtech/Release/lithtech-link.txt | head -20 >&2; false; }",
-   "map": "a6764a981775904b77e99827716cf4b71050c8d58289f4aa722b4150fd8d8439",
+   "map": "42fdf4b40f8e476004d42a896034b21004a9260568b34ce5f7fbef6f409b1f3e",
    "rsp": "1a6bf7eb91a92d5762ec30550ad0ea897af0a0cefa531425fe6186ff9bde5a59"
   },
   "ltmsg.dll": {
@@ -70,22 +70,22 @@
   },
   "server.dll": {
    "cmd": "8ed47af7a0d8212c569b7fac923dc57c0b9de46b842bee31bf368e4179999cdb",
-   "image": "0f9055f6363281f50e5ac7467738049ba4c97bbe06de86eb28e77c1bd1e279d0",
+   "image": "6bfe3974b447b3b14136873e4816dbbd1d952dd0a4fd18b70bf6435aa3a0175c",
    "link_command": "cd src/engine/server && { printf '%s\\n' '/nologo' '/dll' '/def:link\\server.def' '/nodefaultlib:libcmtd.lib' '/FORCE' '/OPT:NOREF' '/OPT:ICF' '/machine:I386' '/out:Release\\server.dll' '/map:Release\\server.map' 'Release\\basestream.obj' 'Release\\collection.obj' 'Release\\commonmodel.obj' 'Release\\commonphysics.obj' 'Release\\console.obj' 'Release\\counter.obj' 'Release\\csbase.obj' 'Release\\dalloc.obj' 'Release\\dhash.obj' 'Release\\dsi.obj' 'Release\\filemgr.obj' 'Release\\fsstream.obj' 'Release\\genericprop.obj' 'Release\\lmessage.obj' 'Release\\localdriver.obj' 'Release\\lthread.obj' 'Release\\ltobject.obj' 'Release\\modelanim.obj' 'Release\\modelnew.obj' 'Release\\netmgr.obj' 'Release\\netobj.obj' 'Release\\objbank.obj' 'Release\\objmover.obj' 'Release\\objtypes.obj' 'Release\\packet.obj' 'Release\\saveio.obj' 'Release\\savrest.obj' 'Release\\sdkforce.obj' 'Release\\server.obj' 'Release\\servercommon.obj' 'Release\\serverengine.obj' 'Release\\serverlightanim.obj' 'Release\\servermath.obj' 'Release\\servermessage.obj' 'Release\\servermgr.obj' 'Release\\servermodel.obj' 'Release\\servermsg.obj' 'Release\\shade.obj' 'Release\\sharedcommon.obj' 'Release\\smgr.obj' 'Release\\smgrmisc.obj' 'Release\\smgrnew.obj' 'Release\\spritecontrol.obj' 'Release\\streamsim.obj' 'Release\\stringbank.obj' 'Release\\structbank.obj' 'Release\\svlast.obj' 'Release\\svnew.obj' 'Release\\svtiny.obj' 'Release\\sweptsphere.obj' 'Release\\tcpdriver.obj' 'Release\\worldbsp.obj' 'Release\\worldisect.obj' 'Release\\worldmodels.obj' 'Release\\worldsim.obj' 'Release\\worldtree.obj' '..\\..\\LT2\\lithshared\\libs\\Debug\\RezMgr.lib' '..\\..\\LT2\\lithshared\\libs\\Debug\\StdLith.lib' '..\\lithtech\\Release\\wonapi\\WONAPI.lib' 'winmm.lib' 'kernel32.lib' 'user32.lib' 'ole32.lib' 'wsock32.lib' > /repo/out/release-tree/src/engine/server/Release/server.dll.rsp; } && { WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='s:\\engine\\lithtech\\Release\\implib;t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\engine\\server\\Release\\server.dll.rsp' > /repo/out/release-tree/src/engine/server/Release/server-link.txt 2>&1 || true; } && grep -c 'error LNK2001\\|error LNK2019' /repo/out/release-tree/src/engine/server/Release/server-link.txt | sed 's/^/   LINK server.dll: unresolved references: /' ; grep -c 'error LNK2005' /repo/out/release-tree/src/engine/server/Release/server-link.txt | sed 's/^/   LINK server.dll: defined twice: /' ; test -f /repo/out/release-tree/src/engine/server/Release/server.dll || { grep -i 'error\\|fatal' /repo/out/release-tree/src/engine/server/Release/server-link.txt | head -20 >&2; false; }",
-   "map": "75228a57c735680c471cb3445fe64f6bd34609f9ac75acad29af9c3a7cae8a58",
+   "map": "58ec9775d0fad3a8b410cae346902a1395b80d76d4c31161efe139afd1694d20",
    "rsp": "b6aef42f42181b55f1c6c6b8e58dfa9978c278b581ef2abea8e56dccc595dd0c"
   }
  },
  "config": {
   "progress/COMPILERS.md": "4df10fbf55f0c53474a8279634778a701738584e8e8458b8084167c2d10a6da8",
   "progress/data-known.txt": "600c6beb712f4ddb39a322f919ce2de80044b049a498273990734bb9c4370212",
-  "progress/extent-splits.csv": "f2b44677f7aaa47cba0aa58c84f449f3bee94b6760772dfd989a1518bffa9f71",
+  "progress/extent-splits.csv": "f359a365769465c43c88ec48c5728a226424533cc41b6769c0cdaf0a6566a0ae",
   "progress/lithtech-screen-exclude.csv": "7f9795aa9622a9ceec0fc4b08d7337ab402a89cc065f6bd40625d87f52bbd1b4",
   "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
-  "progress/server-screen-exclude.csv": "0fbf5f7fdc44e14ea2f1f799f87d9f7378f8e790580596df7aaf3d9135ef779c",
+  "progress/server-screen-exclude.csv": "38af58795ae688e73414ba230a14e4324e0efcef25453a989f0ebb2bb74e7a65",
   "progress/shipped-libs.sha256": "67e76edfc9d6bd5f6cd55c1397f829260dbdb71729e2fe8dd508d7b3bcb94c59",
   "progress/targets.py": "45e0328df0fadcae63de827663c99e63552efb46762f1b472d4a0b40cc2b287f",
-  "progress/vtab-known.txt": "e1777936c005553a395f21250346700e333271c74b8e13c883c0d4e162986e24"
+  "progress/vtab-known.txt": "b1dd02888611bd9f630b4df9ba91049cc545b50daa7fcc98ea3c753e40c18d17"
  },
  "reference": {
   "out/reference/AVP2.exe": "516ae2949d609aadc6a4c83160fb7bf380265d488f3b0d5f4f717bf8b36af404",
@@ -114,12 +114,12 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "5417b7ede1e3e9440d106640f107282a4557409e9224c4f95e71e41e754c7354",
-  "out/progress/summary.json": "8175f57b8448f531dacb4dd7a7179842720606067fceaccee481ed7334c3208a"
+  "out/progress/functions.csv": "3cf0489eeb400bafecedd76cccb4f0fd93ca30ce5def4ddbcffbf4cbc1691100",
+  "out/progress/summary.json": "3c86c1f5b7466f75338fa170e03d626f8a23864535bf0f8af8aa38fdfceff223"
  },
  "source": {
-  "modified_files": 7,
-  "revision": "4dea255d4983a545aab97cbf285bd5771622d41b",
+  "modified_files": 27,
+  "revision": "f5f12c7827dce783745679810f6a458327fd9394",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "1b61dca55fbfa6344b7306aa445d2af689fb29b8"

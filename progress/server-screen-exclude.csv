@@ -6,3 +6,4 @@ addr,reason
 0x10020600,"NOT A FUNCTION: interior block of CMoArray<0x1c-byte element>::Insert2 (0x1002054b), a 338-byte function running to 0x1002069d: the only reference is a pointer inside that function's own tables"
 0x10027af3,"NOT A FUNCTION: interior block of wm_MoveObject (0x100277cb), ~1,400 bytes: the 'call' that enumerated it is an e8 operand byte at 0x10062d6b (mov -0x18(%ebp),%esp), not a call instruction"
 0x100293ac,"NOT A FUNCTION: interior block of wm_PushWorldModel (0x10029376): the 'call' that enumerated it is an e8 operand byte at 0x100293a6 (an ebp-0x18 displacement), not a call instruction"
+0x10047016,"NOT A FUNCTION: interior block of TCPDriver::HandleConnPacket (0x10046e2e), mid-instruction: the 'call' that enumerated it is an e8 operand byte at 0x10047010, not a call instruction; our HandleConnPacket is byte-identical across both rows"

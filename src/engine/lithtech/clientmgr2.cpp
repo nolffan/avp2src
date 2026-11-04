@@ -302,7 +302,9 @@ public:
 	                                LTVector* pStopVel, float fForceMag); // 2
 	virtual void        _p0c(void* p1, void* p2);                     // 3
 	virtual void        _p10()=0;                                     // 4 -> 0x0048faa0
-	virtual void        _p14()=0;                                     // 5 -> 0x0048faa0
+	// AVP2: slot 5 is the client's attachment walker (0x00419740); NOLF's
+	// was the shared empty body 0x0048faa0.
+	virtual void        UpdateAttachments(struct WMMoveState* pState); // 5
 	virtual LTBOOL      IsMatch(void* pRec, uint32 nKey, void* pTest); // 6
 	virtual void        _p1c(void* p1, void* p2);                     // 7
 	virtual void        _p20(void* p1, void* p2);                     // 8
@@ -941,6 +943,184 @@ CClientMsgQ411* CClientMgrView::StartMessage()
 	cMsg.m_pMsg->m_Flags |= 1;
 
 	return cMsg.m_pMsg;
+}
+
+
+// ----------------------------------------------------------------------- //
+// AVP2: 0x004133c0 (755 bytes; AvP2 1.0.9.6 has its own copy, the
+// "; \n\r\t" literal at 0x004d0584 read from 0x00411e24) -- the client's
+// twin of smgr.cpp's CServerMgrQ502::CreateStringCRC: sum the CRCs of every
+// file a list names.  A thiscall on the manager, `ret $8`, with the list and
+// where the sum goes; its one caller is DoLoadWorld (0x00417d5f).  The list
+// is split on "; \n\r\t" (0x004e173c); a name without a '*' (0x004e1738)
+// is opened as it is, a name with one is a prefix and a suffix, the prefix
+// cut back to its directory -- at a '\\' or, unlike the server's, a '/'
+// (0x004134ca/0x004134ce) -- whose listing (sub_404610, 0x00404a90) is
+// matched with _strnicmp (0x004ce090) on both ends.  Each file goes through
+// a type-1 CClientFileRef (two of them, one per arm: the 0x5b0 frame) to the
+// file manager's open (0x00404d30) and through ILTCommon::GetCRC (slot 15)
+// of the interface at +0x4c4.  No file at all is a sum of 1; no list is 0
+// (PH only, below).  The file count is kept and never read.  Always LT_OK
+// (names ours).  IDENTICAL in both images (PH 755 bytes, AvP2 655).
+// clientmgr.h's CClientFileRef, which clientwin.cpp's open reads as its
+// CluFileIdent.
+struct CluFileIdent
+{
+	CluFileIdent() { m_nFileType = 0; m_pFilename = LTNULL; m_nLocalID = 0; }
+
+	uint32 m_nFileType;                      // 0x00
+	char*  m_pFilename;                      // 0x04
+	uint16 m_nLocalID;                       // 0x08
+};
+
+class CFileMgr;
+class CluFileMgr;
+class ILTStream;
+FileEntry* sub_404610(CFileMgr* pFileMgr, char* pDirName);         // 0x00404a90 (clientinterface.cpp)
+ILTStream* clu_fm_OpenFile(CluFileMgr* pMgr, CluFileIdent* pIdent); // 0x00404d30 (clientwin.cpp)
+void       fs_FreeFileList(FileEntry* pList);                       // 0x00442850
+
+class ILTStreamCRCQ558
+{
+public:
+	virtual void     _v00();
+	virtual void     Release();              // 0x04
+};
+
+// ILTCommon (iltcommon.h) to GetCRC, slot 15 (`call *0x3c(%edx)`, 0x004135c1).
+class ILTCommonCRCQ558
+{
+public:
+	virtual void _v00(); virtual void _v04(); virtual void _v08();
+	virtual void _v0c(); virtual void _v10(); virtual void _v14();
+	virtual void _v18(); virtual void _v1c(); virtual void _v20();
+	virtual void _v24(); virtual void _v28(); virtual void _v2c();
+	virtual void _v30(); virtual void _v34(); virtual void _v38();
+	virtual LTRESULT GetCRC(ILTStreamCRCQ558* pStream, uint32& dwResult);   // 0x3c
+};
+
+// ILTCSBase's members (iltcsbase.h): vptr, ILTMath, then the common.
+class ILTCSBaseCRCQ558
+{
+public:
+	ILTCommonCRCQ558* Common() { return m_pCommonLT; }
+
+	uint8             m_pad_00[0x08];
+	ILTCommonCRCQ558* m_pCommonLT;           // 0x08
+};
+
+class CClientMgrCRCQ558
+{
+public:
+	LTRESULT CreateStringCRC(char* pFiles, uint32* pCRC);
+
+	uint8             m_pad_000[0x4c4];
+	ILTCSBaseCRCQ558* m_pClientLT;           // 0x4c4
+	uint8             m_pad_4c8[0x1644 - 0x4c8];
+	CFileMgr*         m_pFileMgr;            // 0x1644  (clientmgr.h)
+};
+
+LTRESULT CClientMgrCRCQ558::CreateStringCRC(char* pFiles, uint32* pCRC)
+{
+	char              szPrefix[0x80];
+	char              szDir[0x80];
+	char              szSuffix[0x80];
+	char              szFiles[0x400];
+	uint32            nCRC;
+	uint32            nFiles;
+	uint32            dwCRC;
+	char*             pTok;
+	ILTStreamCRCQ558* pStream;
+
+	if (pFiles && pFiles[0])
+	{
+		strcpy(szFiles, pFiles);
+
+		nFiles = 0;
+		nCRC   = 0;
+
+		pTok = strtok(szFiles, "; \n\r\t");
+		while (pTok)
+		{
+			char* pStar = strstr(pTok, "*");
+
+			if (pStar)
+			{
+				strncpy(szPrefix, pTok, pStar - pTok);
+				strcpy(szSuffix, pStar + 1);
+				szPrefix[pStar - pTok] = 0;
+
+				strcpy(szDir, szPrefix);
+				for (int i = strlen(szDir); i > 0 && szDir[i] != '\\' && szDir[i] != '/'; i--)
+					szDir[i] = 0;
+
+				FileEntry* pList  = sub_404610(m_pFileMgr, szDir);
+				FileEntry* pEntry = pList;
+				uint32 nPrefixLen = strlen(szPrefix);
+				uint32 nSuffixLen = strlen(szSuffix);
+
+				for (; pEntry; pEntry = pEntry->m_pNext)
+				{
+					if (pEntry->m_Type == TYPE_FILE &&
+					    !_strnicmp(pEntry->m_pFullFilename, szPrefix, nPrefixLen) &&
+					    !_strnicmp(pEntry->m_pFullFilename +
+					               strlen(pEntry->m_pFullFilename) - nSuffixLen,
+					               szSuffix, nSuffixLen))
+					{
+						CluFileIdent ref;
+
+						ref.m_nFileType = 1;
+						ref.m_pFilename = pEntry->m_pFullFilename;
+
+						pStream = (ILTStreamCRCQ558*)clu_fm_OpenFile((CluFileMgr*)m_pFileMgr, &ref);
+						if (pStream)
+						{
+							m_pClientLT->Common()->GetCRC(pStream, dwCRC);
+							nCRC += dwCRC;
+							nFiles++;
+							pStream->Release();
+						}
+					}
+				}
+
+				fs_FreeFileList(pList);
+			}
+			else
+			{
+				CluFileIdent ref;
+
+				ref.m_nFileType = 1;
+				ref.m_pFilename = pTok;
+
+				pStream = (ILTStreamCRCQ558*)clu_fm_OpenFile((CluFileMgr*)m_pFileMgr, &ref);
+				if (pStream)
+				{
+					m_pClientLT->Common()->GetCRC(pStream, dwCRC);
+					nCRC += dwCRC;
+					nFiles++;
+					pStream->Release();
+				}
+			}
+
+			pTok = strtok(LTNULL, "; \n\r\t");
+		}
+
+		if (!nCRC)
+			nCRC = 1;
+
+		*pCRC = nCRC;
+	}
+#ifdef PRIMAL_HUNT
+	else
+	{
+		// PH: no list is a sum of 0 (0x0041369c); AvP2 1.0.9.6 leaves the
+		// caller's value alone (its empty path jumps straight to the
+		// shared epilogue, 0x00411df6 -> 0x00412063).
+		*pCRC = 0;
+	}
+#endif
+
+	return LT_OK;
 }
 
 // 0x00411440 — give a packet the manager's message object helper.
@@ -2212,6 +2392,147 @@ void CClientCSBase::TouchNotify(HLOCALOBJ hObj, HOBJECT hToucher,
 		if (m_pClientMgr->m_pClientShell)
 			m_pClientMgr->m_pClientShell->OnTouchNotify(
 			    hObj, m_pClientMgr->m_pCollisionInfo, fForceMag);
+	}
+}
+
+// AVP2: 0x00419740, slot 5 (+0x014) -- the client's twin of objmover.cpp's
+// CObjectMoverQ47C::UpdateAttachments (server.dll 0x10045177): move every
+// attached child to where its attachment puts it relative to the parent.
+// The client differs from the server in three ways, each read off the
+// bytes: a child with none of FLAG_SOLID | FLAG_TOUCH_NOTIFY |
+// FLAG_CONTAINER (0x20012000) is skipped outright (0x004197a1); the place
+// is computed in line -- quat_ConvertToMatrix (0x00451180), the
+// one-argument Apply3x3 (0x00419a40 and its copy-back), the parent's
+// position added -- where the server calls 0x1002a7ed; and every move goes
+// with flags 5 (0x00419822).  The rotation is the parent's times the
+// attachment's (LTRotation::operator*, quat_Mul 0x004199b0), compared with
+// LTRotation::Equals at 0.00001f (the double at 0x004d4eb8); a world model
+// or container is turned through wm_RotateWorldModel (0x00466a40) with the
+// child's own priority, anything else takes the rotation.  The child comes
+// from clienttexmgr.cpp's tbl_GetObject (0x00428dc0).  The frame is the
+// matrix, then the move request, then the scalars (names ours).
+//
+// IDENTICAL (611 bytes).  Two spellings are load-bearing: the child tests
+// nest the body (a `continue` puts the `this` spill four bytes high), and
+// the world-model test repeats the child's null test, which VC6 folds but
+// which is what lays the rotate arm out first (0x00419920..0x00419926: `je`
+// then `jne` to the assignment); `==`/`||`, `!=`/`&&`, a switch and a
+// `continue` out of the rotate arm all put the assignment first.
+struct WMMoveState
+{
+	// servermgr.h's inline constructor (one zero to +0x00, +0x04, +0x08,
+	// +0x64 and +0x68: 0x00419756..0x00419769).
+	WMMoveState()
+	{
+		m_pContainer = LTNULL;
+		m_pUnknown04 = LTNULL;
+		m_pObj       = LTNULL;
+		m_nUnknown64 = 0;
+		m_fUnknown68 = 0.0f;
+	}
+
+	void*                    m_pContainer;  // +0x00
+	void*                    m_pUnknown04;  // +0x04
+	class CAttachObjectQ558* m_pObj;        // +0x08
+	uint32                   m_nUnknown0C;  // +0x0c
+	uint32                   m_pPushList;   // +0x10
+	uint32                   m_nPushCount;  // +0x14
+	uint8                    m_pad_18[0x64 - 0x18];
+	uint32                   m_nUnknown64;  // +0x64
+	float                    m_fUnknown68;  // +0x68
+};
+
+// ltobject_internal.h's Attachment.
+class CAttachmentQ558
+{
+public:
+	LTransform       m_Offset;              // 0x00  position + rotation offset
+	uint16           m_nParentID;           // 0x1c
+	uint16           m_nChildID;            // 0x1e
+	int              m_iNode;               // 0x20
+	CAttachmentQ558* m_pNext;               // 0x24
+};
+
+// ltobject_internal.h's LTObject, at the fields the walk reaches.
+class CAttachObjectQ558
+{
+public:
+	uint8            m_pad_000[0x88];
+	uint32           m_Flags;               // 0x088
+	uint8            m_pad_08c[0x98 - 0x8c];
+	CAttachmentQ558* m_pAttachments;        // 0x098
+	LTRotation       m_Rotation;            // 0x09c
+	uint8            m_pad_0ac[0xbc - 0xac];
+	char             m_ObjectType;          // 0x0bc
+	uint8            m_BlockingPriority;    // 0x0bd
+	uint8            m_pad_0be[0x194 - 0xbe];
+	LTVector         m_Pos;                 // 0x194
+};
+
+void* tbl_GetObject(CClientMgrTexBankView* pClientMgr, uint16 nID);  // 0x00428dc0
+void  quat_ConvertToMatrix(LTRotation* pRot, LTMatrix* pMat);        // 0x00451180
+void  wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags);   // 0x00462610
+void  wm_RotateWorldModel(WMMoveState* pState, LTRotation* pRotation, int bUnknown); // 0x00466a40
+
+// objmover.cpp's six-field move-request fill (om_InitMoveState).
+static inline void cm_InitMoveStateQ558(WMMoveState* pState, void* pContainer,
+                                        void* pUnknown04, CAttachObjectQ558* pObj,
+                                        uint32 nPriority)
+{
+	pState->m_pContainer = pContainer;
+	pState->m_pUnknown04 = pUnknown04;
+	pState->m_pObj       = pObj;
+	pState->m_nUnknown0C = nPriority;
+	pState->m_pPushList  = 0;
+	pState->m_nPushCount = 0;
+}
+
+void CClientCSBase::UpdateAttachments(WMMoveState* pState)
+{
+	LTMatrix           mRot;
+	WMMoveState        state;
+	CAttachmentQ558*   pAttach;
+	CAttachObjectQ558* pChild;
+	LTVector           vOffset;
+
+	for (pAttach = pState->m_pObj->m_pAttachments; pAttach; pAttach = pAttach->m_pNext)
+	{
+		pChild = (CAttachObjectQ558*)tbl_GetObject(
+		    (CClientMgrTexBankView*)m_pClientMgr, pAttach->m_nChildID);
+
+		if (pChild && (pChild->m_Flags & 0x20012000))
+		{
+			vOffset = pAttach->m_Offset.m_Pos;
+
+			quat_ConvertToMatrix(&pState->m_pObj->m_Rotation, &mRot);
+			mRot.Apply3x3(vOffset);
+
+			LTVector vNew = pState->m_pObj->m_Pos + vOffset;
+
+			cm_InitMoveStateQ558(&state, pState->m_pContainer, pState->m_pUnknown04,
+			                     pChild, pState->m_nUnknown0C);
+
+			wm_MoveObject(&state, vNew, 5);
+
+			LTRotation rRot = pState->m_pObj->m_Rotation * pAttach->m_Offset.m_Rot;
+
+			if (!rRot.Equals(pChild->m_Rotation, 0.00001f))
+			{
+				if (pChild && (pChild->m_ObjectType == OT_WORLDMODEL ||
+				               pChild->m_ObjectType == OT_CONTAINER))
+				{
+					cm_InitMoveStateQ558(&state, pState->m_pContainer,
+					                     pState->m_pUnknown04, pChild,
+					                     pChild->m_BlockingPriority);
+
+					wm_RotateWorldModel(&state, &rRot, 1);
+				}
+				else
+				{
+					pChild->m_Rotation = rRot;
+				}
+			}
+		}
 	}
 }
 

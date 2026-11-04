@@ -201,6 +201,9 @@ public:
 	// 0x1002ccb0 — slot 1 of the bank's vftable (0x1004e2f0), five bytes:
 	// `jmp 0x1002ce15`, Allocate as a tail call. Defined below Allocate.
 	virtual void _v04();
+	// Slot 2, the record's free (servermgr.h's _v08).  Defined below for
+	// Primal Hunt's lithtech.exe only.
+	virtual void _v08(void* pRec);
 
 	StructBank m_Bank;                       // +0x04  (CServerMgr+0x9f4)
 	uint32     m_Unknown20;
@@ -624,6 +627,47 @@ void CMessageBank::_v04()
 {
 	Allocate();
 }
+
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// PH: lithtech.exe 0x00418b40 (39 bytes), slot 2 of the bank's vftable
+// (0x004d4e7c, beside the 0x00418b30 `jmp Allocate` of slot 1): the
+// record's destructor CALLED (0x00418e40, the out-of-line ~SObjData whose
+// only work is releasing the save-data reference at +0x2c -- smgr.cpp's
+// CSObjDataDtorQ523), then servermgr.h's guarded sb_Free over m_Bank
+// (`lea 0x4(%edi),%eax`, both pointers tested).  server.dll keeps this
+// body in smgr.cpp's CMessageBankFreeQ523::Free (0x10038c4c) and its slot
+// forwards there.  (names ours)
+class CSObjDataRefQ556
+{
+public:
+	~CSObjDataRefQ556() { if (m_pMsg) m_pMsg->Release(); }
+
+	ServerMessage* m_pMsg;
+};
+
+class CSObjDataDtorQ556
+{
+public:
+	uint8            m_pad_00[0x2c];
+	CSObjDataRefQ556 m_SaveData;             // +0x2c
+};
+
+// servermgr.h's inline sb_Free, against this file's StructBank stand-in.
+inline void sb_FreeQ556(StructBank* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
+void CMessageBank::_v08(void* pRec)
+{
+	((CSObjDataDtorQ556*)pRec)->~CSObjDataDtorQ556();
+	sb_FreeQ556(&m_Bank, pRec);
+}
+#endif
 
 LTRESULT sub_100332e8(CServerMgr* pMgr, ObjectCreateStruct* pStruct,
                           struct ClassDef* pClassDef, LTObject* pLTObject,

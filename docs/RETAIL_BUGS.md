@@ -229,6 +229,24 @@ the end.
 
 Fixed in the modern build: clientmgr2.cpp, the bound.
 
+### The model ray test's level of detail reads through a null pointer
+
+The ray-vs-triangle worker behind `IntersectRays` (CalcLOD: lithtech.exe
+0x0045ff50.., server.dll 0x10025b5c..; src/engine/server/commonmodel.cpp).
+The level-of-detail distance lookup reads through a null pointer when the
+level is past the end of the distance array.
+
+Not fixed yet.
+
+### A world model pushing a no-slide object never corrects it
+
+`wm_SeparateFromBox` (Primal Hunt server.dll 0x1002915d, lithtech.exe
+0x004646c0; src/engine/server/commonphysics.cpp) tests `-|vSep| > 0`,
+which is never true, so an object that may not slide always gets no
+separating correction.
+
+Fixed in the modern build: commonphysics.cpp, `fMag < 0.0f`.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

@@ -3771,3 +3771,117 @@ LTRESULT ci_FitPolyGrid(HLOCALOBJ hObj, LTVector* pMin, LTVector* pMax,
 //  0x00411340 — 1 call
 //      IND         delete pObj  (the scalar deleting destructor, flag 1)
 // ======================================================================= //
+
+
+// ======================================================================= //
+//  0x00419490 -- the client loader thread's IsRequestQueued, 277 bytes
+//  (called on the manager's m_Thread, `lea 0x16b8(%edi),%ecx` at
+//  0x004928d4; answer nonzero -> LT_INPROGRESS 0x54).  Primal Hunt's
+//  lithtech.exe carries the same body twice: here and at 0x004982c0
+//  (smgr.cpp's CServerThread::IsRequestQueued, server.dll 0x1003a14e),
+//  byte for byte the same.
+//
+//  WHAT PINS IT
+//    * the exception frame, and the two locks taken through stack OBJECTS
+//      (0x004194b3, 0x004194c9) released through %ebx/%ebp or the slot on
+//      every return: each queue's critical section is held by a scoped lock
+//      whose constructor enters and whose destructor leaves.  Its
+//      destructor's out-of-line COMDAT is 0x004195b0 (`mov (%ecx),%ecx; jmp
+//      Leave`), reached only from the unwind funclets (0x004cf923/b,
+//      0x004d18d3/db) -- one shared inline class, used by both copies.
+//    * the two walks are smgr.cpp's: the message's fourth payload dword
+//      against the file, stepping back through +0x04 with the branchless
+//      "back at the tail" test (0x004194f1..0x004194f7).
+//  Names ours; the queue layout is lthread.h's (critical section at +0x00,
+//  tail at +0x20).
+// ======================================================================= //
+
+class LCriticalSection
+{
+public:
+	void Enter();                            // 0x00450940
+	void Leave();                            // 0x00450950
+
+	uint8 m_Opaque[0x18];
+};
+
+class CCmgCSLockQ557
+{
+public:
+	CCmgCSLockQ557(LCriticalSection* pCS)
+	{
+		m_pCS = pCS;
+		m_pCS->Enter();
+	}
+
+	~CCmgCSLockQ557()                        // 0x004195b0
+	{
+		m_pCS->Leave();
+	}
+
+	LCriticalSection* m_pCS;
+};
+
+class CCmgThreadMessageQ557
+{
+public:
+	CCmgThreadMessageQ557* m_pNext;          // +0x00
+	CCmgThreadMessageQ557* m_pPrev;          // +0x04
+	uint32                 m_Data[6];        // +0x08
+};
+
+struct CCmgThreadQueueQ557
+{
+	LCriticalSection       m_CS;             // +0x00
+	uint8                  m_pad_18[0x20 - 0x18];
+	CCmgThreadMessageQ557* m_pTail;          // +0x20
+	void*                  m_hEvent;         // +0x24
+};
+
+class CCmgThreadViewQ557
+{
+public:
+	LTBOOL IsRequestQueued(void* pFile);     // 0x00419490
+
+	void*               m_pVTable;           // +0x00
+	CCmgThreadQueueQ557 m_IncomingQueue;     // +0x04
+	CCmgThreadQueueQ557 m_OutgoingQueue;     // +0x2c
+	uint8               m_pad_54[0x60 - 0x54];
+	void*               m_pClientMgr;        // +0x60
+};
+
+LTBOOL CCmgThreadViewQ557::IsRequestQueued(void* pFile)
+{
+	CCmgCSLockQ557 lock1(&m_IncomingQueue.m_CS);
+	CCmgCSLockQ557 lock2(&m_OutgoingQueue.m_CS);
+
+	if (m_pClientMgr)
+	{
+		CCmgThreadMessageQ557* pCur;
+		CCmgThreadMessageQ557* pRec;
+
+		pCur = m_IncomingQueue.m_pTail;
+
+		while (pCur)
+		{
+			pRec = pCur;
+			pCur = (pCur->m_pPrev == m_IncomingQueue.m_pTail) ? LTNULL : pCur->m_pPrev;
+
+			if ((void*)pRec->m_Data[3] == pFile)
+				return LTTRUE;
+		}
+
+		pCur = m_OutgoingQueue.m_pTail;
+
+		while (pCur)
+		{
+			pRec = pCur;
+			pCur = (pCur->m_pPrev == m_OutgoingQueue.m_pTail) ? LTNULL : pCur->m_pPrev;
+
+			if ((void*)pRec->m_Data[3] == pFile)
+				return LTTRUE;
+		}
+	}
+
+	return LTFALSE;
+}

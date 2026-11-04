@@ -127,8 +127,19 @@ public:
 	uint32             m_ObjectType;         // 0x0e4
 	uint32             m_Unknown0e8;         // 0x0e8
 	int32              m_nValue;             // 0x0ec
+#ifdef PRIMAL_HUNT
+	// PH: five more dwords here, all zeroed by the constructor, and the
+	// field it sets to 1 is at +0x104 (0x0044492f..0x00444957; names ours).
+	uint32             m_Unknown0f0;         // 0x0f0
+	uint32             m_Unknown0f4;         // 0x0f4
+	uint32             m_Unknown0f8;         // 0x0f8
+	uint32             m_Unknown0fc;         // 0x0fc
+	uint32             m_Unknown100;         // 0x100
+	uint32             m_Unknown104;         // 0x104
+#else
 	uint32             m_Unknown0f0;         // 0x0f0
 	uint8              m_pad_0f4[0x108 - 0x0f4];
+#endif
 	float              m_fScale;             // 0x108
 	float              m_fUnknown10c;        // 0x10c
 	float              m_fUnknown110;        // 0x110
@@ -151,8 +162,20 @@ public:
 // That is shipped behaviour, not a misreading.
 inline CDeviceObjectQ438::CDeviceObjectQ438()
 {
+#ifdef PRIMAL_HUNT
+	// PH: 0x0044492f..0x00444964, in this order.
+	m_nValue     = 0;
+	m_Unknown0f0 = 0;
+	m_Unknown0f4 = 0;
+	m_Unknown104 = 1;
+	m_Unknown0f8 = 0;
+	m_Unknown0fc = 0;
+	m_Unknown100 = 0;
+	m_fScale     = 1.0f;
+#else
 	m_nValue     = 0;
 	m_Unknown0f0 = 1;
+#endif
 }
 
 struct InputDeviceQ438

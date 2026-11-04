@@ -4326,9 +4326,10 @@ struct CPolyBoxSphereQ523
 CPolyBoxSphereQ523 g_PolyBoxSphereQ523;
 
 // The world tree's per-object callback for the walk (server.dll 0x1003bf5a,
-// lithtech.exe 0x00484f50; not yet reconstructed): world models only, through
-// the caller's filter, then the model's polygons against the box.
-int sm_PolyBoxGatherQ523(LTObject* pObj, void* pUser);
+// lithtech.exe 0x00484f50; defined below, before sm_SphereGather): world
+// models only, through the caller's filter, then the model's polygons
+// against the box.
+void sm_PolyBoxGatherQ523(LTObject* pObj, void* pUser);
 
 // AVP2: ILTServer::FindPoliesTouchingBox -- server.dll 0x1003cd82 (with the
 // counter LT_SERVER_TIMERS gives it), lithtech.exe 0x00486090 (without). The
@@ -4365,7 +4366,8 @@ void si_FindPoliesTouchingBox(const LTVector& vBoxMin, const LTVector& vBoxMax,
 	g_PolyBoxPlanesQ523[5].m_Dist = -vBoxMax.z;
 
 	((IObjectQuery*)&g_pServerMgr->m_Unknown210)->FindObjectsInBox(
-		(LTVector*)&vBoxMin, (LTVector*)&vBoxMax, sm_PolyBoxGatherQ523,
+		(LTVector*)&vBoxMin, (LTVector*)&vBoxMax,
+		(int (*)(LTObject*, void*))sm_PolyBoxGatherQ523,
 		&query, 0);
 
 #ifdef LT_SERVER_BUILD
@@ -9892,6 +9894,51 @@ LTBOOL CPrecacheView::PrecacheModels()
 }
 
 
+// AVP2: ILTSoundMgr::KillSoundFade, the slot after KillSoundLoop that
+// NOLF's interface lacks (lithtech.exe 0x0048e3f0, server.dll 0x100422d1;
+// AvP2 1.0.9.6 has the "CServerMgr::KillSoundFade" literal too). Like
+// KillSoundLoop it is reached through the sound personality at +0x04 and
+// steps back four bytes for the manager (server.dll `add $-4,%ecx`,
+// 0x10042347); lithtech.exe expands SetSoundTrackChangeFlags as it does
+// there. Only a sound the game kept a handle to (PLAYSOUND_GETHANDLE, 0x10
+// at +0x34) can be faded; it is flagged changed (0x20), its timer cleared
+// and killed, and the fade time goes in +0x5c -- lithtech.exe's /O2 stores
+// in source order, +0x20, +0x10, +0x5c (0x0048e4e1..0x0048e4ef).
+// servermgr.h's CServerSoundMgr has five slots and CServerMgr does not
+// declare this one, so it is defined on a view of the sound personality
+// (names ours).
+class CSoundFadeInstanceQ551
+{
+public:
+	uint8 m_pad_00[0x5c];
+	float m_fFadeOutTime;                    // 0x5c
+};
+
+class CServerSoundFadeQ551
+{
+public:
+	LTRESULT KillSoundFade(HLTSOUND hSound, LTFLOAT fFadeOutTime);
+};
+
+LTRESULT CServerSoundFadeQ551::KillSoundFade(HLTSOUND hSound, LTFLOAT fFadeOutTime)
+{
+	SoundInstance* pSound = (SoundInstance*)hSound;
+
+	if (!pSound)
+		RETURN_ERROR(1, "CServerMgr::KillSoundFade", LT_INVALIDPARAMS);
+
+	if (!(pSound->m_PlaySoundFlags & PLAYSOUND_GETHANDLE))
+		RETURN_ERROR(1, "CServerMgr::KillSoundFade", LT_ERROR);
+
+	sm_SetSoundTrackChangeFlags((CServerMgr*)((uint8*)this - 4), pSound, 0x20);
+
+	pSound->m_fTimer = 0.0f;
+	pSound->m_bKill = LTTRUE;
+	((CSoundFadeInstanceQ551*)pSound)->m_fFadeOutTime = fFadeOutTime;
+	return LT_OK;
+}
+
+
 // 0x1003446d — is this file already on the cache list? A thiscall on the
 // manager (the caller pushes only the handle and cleans nothing up), so it
 // is a member CServerMgr does not declare; reached through a view. Name
@@ -10273,28 +10320,44 @@ void CServerWorld::Term()
 // Each walk is the cursor-alias form the circular lists want, and the
 // "already back at the tail" test compiles branchlessly (`sub`/`neg`/`sbb`/
 // `and`), which is what says the source wrote a conditional expression and
-// not an `if`. Both locks' addresses are named in locals because `this` is
-// spent on the second queue's tail by the time they are released.
+// not an `if`.
 //
-// There is no tail local: the terminator test reads the list's m_pTail
-// member each time and VC6 CSEs it into its own register, separate from the
-// cursor, which is why the guard tests the cursor copy (`mov %ecx,%eax;
-// test %eax,%eax` at 0x1003517e, and `mov %esi,%eax` at 0x1003519f with
-// `this` reused for the second tail). A `pTail` local that the cursor is
-// copied from coalesces the two, tests the tail, and tail-duplicates the
-// second loop's head (139 bytes, the old cl-8168 misread).
+// The two locks are scoped objects (below), both at function scope: that
+// is retail's /GX frame and its two unwind states (Primal Hunt lithtech.exe
+// 0x004982c0, server.dll 0x10044f4e), and without /GX it is AvP2 1.0.9.6's
+// server.dll 0x10040602 too -- all three byte-identical. (A block of its own
+// for the second lock is as good on Primal Hunt and hosts AvP2's shared
+// `return LTTRUE` in the wrong place.)
+// The first lock's section is named in a local first: server.dll's /O1
+// homes it next to the lock's own copy (`mov %ecx,-0x14(%ebp); mov
+// %ecx,-0x18(%ebp)`, 0x10044f63), four bytes of frame the bare argument
+// does not have; lithtech.exe's /O2 drops it either way.
+// A critical section held for a scope (name ours): the constructor enters
+// and the destructor leaves, which is what gives retail's /GX frame and the
+// unwind entries that leave each lock (lithtech.exe 0x004982c0; the client
+// loader thread's IsRequestQueued, 0x00419490, is the same code).
+class CCSLockQ551
+{
+public:
+	CCSLockQ551(LCriticalSection* pCS)
+	{
+		m_pCS = pCS;
+		m_pCS->Enter();
+	}
+
+	~CCSLockQ551()
+	{
+		m_pCS->Leave();
+	}
+
+	LCriticalSection* m_pCS;
+};
+
 LTBOOL CServerThread::IsRequestQueued(void* pFile)
 {
-	LCriticalSection* pCS2;
-	LCriticalSection* pCS1;
-
-	pCS1 = &m_IncomingQueue.m_CS;
-
-	pCS1->Enter();
-
-	pCS2 = &m_OutgoingQueue.m_CS;
-
-	pCS2->Enter();
+	LCriticalSection* pCS = &m_IncomingQueue.m_CS;
+	CCSLockQ551 lock1(pCS);
+	CCSLockQ551 lock2(&m_OutgoingQueue.m_CS);
 
 	if (m_pServerMgr)
 	{
@@ -10309,11 +10372,7 @@ LTBOOL CServerThread::IsRequestQueued(void* pFile)
 			pCur = (pCur->m_pPrev == m_IncomingQueue.m_MessageList.m_pTail) ? LTNULL : pCur->m_pPrev;
 
 			if ((void*)pRec->m_Data[3] == pFile)
-			{
-				pCS2->Leave();
-				pCS1->Leave();
 				return LTTRUE;
-			}
 		}
 
 		pCur = m_OutgoingQueue.m_MessageList.m_pTail;
@@ -10324,16 +10383,9 @@ LTBOOL CServerThread::IsRequestQueued(void* pFile)
 			pCur = (pCur->m_pPrev == m_OutgoingQueue.m_MessageList.m_pTail) ? LTNULL : pCur->m_pPrev;
 
 			if ((void*)pRec->m_Data[3] == pFile)
-			{
-				pCS2->Leave();
-				pCS1->Leave();
 				return LTTRUE;
-			}
 		}
 	}
-
-	pCS2->Leave();
-	pCS1->Leave();
 
 	return LTFALSE;
 }
@@ -11406,6 +11458,157 @@ void sm_GatherContainers(LTObject* pObj, void* pUser)
 
 	pGather->m_pList[pGather->m_nElements] = (HOBJECT)pObj;
 	pGather->m_nElements++;
+}
+
+
+// FindPoliesTouchingBox's per-object callback and the BSP walk under it
+// (lithtech.exe 0x00484f50 and 0x00484fa0; server.dll 0x1003bf5a and
+// 0x1003bfa4; AVP2: AvP2 1.0.9.6 has both, lithtech.exe 0x0047dc70 and
+// 0x0047dcc0, server.dll 0x10038de0 and 0x10038e2a). Read off the bytes:
+//
+//   * the callback takes world models and containers only (type 2 or 9 at
+//     +0xbc, 0x00484f63/0x00484f67), skips an excluded object (+0x54), asks
+//     the caller's filter if there is one, and hands the walk the tree the
+//     model's interface at +0x1b8 returns from slot 1, the query and the
+//     interface itself (0x00484f84..0x00484f92). Nothing is put in eax on
+//     the early exits, so it is void like sm_SphereGather; the query slot it
+//     is installed in is cast at the call site.
+//   * a node is its polygon (+0x00), its back and front children (+0x04,
+//     +0x08) and the flag pair at +0x16 that marks the tree's ends -- the
+//     same record wt_FindNodeForSphere (ltobject.cpp) descends. The plane is
+//     read through the polygon and its surface (0x00484fda..0x00484fe7),
+//     and the sphere's centre is copied for a by-value DistTo
+//     (0x00484fee..0x00485002, server.dll's three movs at 0x1003bff1).
+//   * wholly in front goes front, wholly behind goes back; a node the sphere
+//     straddles has its polygon tested against the box (w_IsPolyBlocking
+//     with no bounds, 0x0048505e / 0x1003c03c), the handle slot 2 makes of
+//     the node is added to the list once, and the back child is pushed on a
+//     static stack of 1000 nodes (lithtech.exe 0x004f5fb8..0x004f6f57,
+//     server.dll 0x1008d024..0x1008dfc3: the next global referenced is
+//     0xfa0 bytes on in both) before the walk carries on forward.
+//   * the count goes up for every new handle, the list taking it only while
+//     there is room (0x004850a4..0x004850ae), so the caller learns how many
+//     there were (names ours). The search is by pointer, bounded by the
+//     list's room and by the count (two `lea (%ecx,%reg,4)` bounds,
+//     0x1003c05d/0x1003c067); an index loop is 23 bytes short on server.dll.
+//   * the three ways on are one if / else-if / else storing pNode: server.dll
+//     hosts the store and the jump back once, in the back arm (0x1003c02e);
+//     `continue` in each arm hosts it at the end instead.
+//
+// Byte-identical: both callbacks and server.dll's walk. NEAR on lithtech.exe
+// (walk 316 of 319 bytes): the query and the handle swap ebx/ebp -- shipped
+// keeps the list's room in %eax across the search and so moves the handle
+// to %ebx (0x00485077), ours keeps the handle in %eax. Unmoved by the handle
+// declared at function scope; the search as an inline helper costs
+// server.dll its match.
+class CPolyWalkNodeQ551
+{
+public:
+	WorldPolyOwner*    m_pPoly;              // 0x00
+	CPolyWalkNodeQ551* m_pBack;              // 0x04
+	CPolyWalkNodeQ551* m_pFront;             // 0x08
+	uint8              m_pad_0c[0x16 - 0x0c];
+	uint16             m_Flags;              // 0x16  either low bit: no node
+};
+
+class CPolyWalkTreeQ551
+{
+public:
+	virtual void               _v00() = 0;
+	virtual CPolyWalkNodeQ551* GetRoot() = 0;                         // 0x04
+	virtual HPOLY              MakeHPoly(CPolyWalkNodeQ551* pNode) = 0; // 0x08
+};
+
+int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax);
+
+CPolyWalkNodeQ551* g_PolyWalkStackQ551[1000];
+
+inline LTPlane* sm_GetPolyPlaneQ551(WorldPolyOwner* pPoly)
+{
+	return pPoly ? pPoly->GetPlane() : LTNULL;
+}
+
+void sm_PolyBoxWalkQ551(CPolyWalkNodeQ551* pNode, CPolyBoxQueryQ523* pQuery,
+                        CPolyWalkTreeQ551* pTree);
+
+void sm_PolyBoxGatherQ523(LTObject* pObj, void* pUser)
+{
+	CPolyBoxQueryQ523* pQuery = (CPolyBoxQueryQ523*)pUser;
+
+	if (pObj->m_Unknown54 != 0)
+		return;
+
+	if (pObj->m_ObjectType != 2 && pObj->m_ObjectType != 9)
+		return;
+
+	if (pQuery->m_FilterFn && !pQuery->m_FilterFn((HOBJECT)pObj, pQuery->m_pUserData))
+		return;
+
+	{
+		CPolyWalkTreeQ551* pTree = (CPolyWalkTreeQ551*)pObj->m_pWMIface;
+
+		sm_PolyBoxWalkQ551(pTree->GetRoot(), pQuery, pTree);
+	}
+}
+
+void sm_PolyBoxWalkQ551(CPolyWalkNodeQ551* pNode, CPolyBoxQueryQ523* pQuery,
+                        CPolyWalkTreeQ551* pTree)
+{
+	CPolyWalkNodeQ551** pStack = g_PolyWalkStackQ551;
+
+	for (;;)
+	{
+		if (pNode->m_Flags & 3)
+		{
+			if (pStack == g_PolyWalkStackQ551)
+				return;
+
+			pNode = *--pStack;
+		}
+
+		WorldPolyOwner* pPoly = pNode->m_pPoly;
+		float fDist = sm_GetPolyPlaneQ551(pPoly)->DistTo(pQuery->m_vCenter);
+
+		if (fDist > pQuery->m_fRadius)
+		{
+			pNode = pNode->m_pFront;
+		}
+		else if (fDist < -pQuery->m_fRadius)
+		{
+			pNode = pNode->m_pBack;
+		}
+		else
+		{
+			if (pPoly)
+			{
+				if (w_IsPolyBlocking(pPoly, LTNULL, LTNULL))
+				{
+					HPOLY  hPoly = pTree->MakeHPoly(pNode);
+					HPOLY* pCur  = pQuery->m_pList;
+					HPOLY* pEnd  = &pQuery->m_pList[pQuery->m_nMax];
+
+					for (; pCur < pEnd && pCur < &pQuery->m_pList[pQuery->m_nFound]; pCur++)
+					{
+						if (*pCur == hPoly)
+							break;
+					}
+
+					if (pCur >= &pQuery->m_pList[pQuery->m_nFound])
+					{
+						if (pQuery->m_pList && pQuery->m_nFound < pQuery->m_nMax)
+							pQuery->m_pList[pQuery->m_nFound] = hPoly;
+
+						pQuery->m_nFound++;
+					}
+				}
+			}
+
+			if (!(pNode->m_pBack->m_Flags & 3))
+				*pStack++ = pNode->m_pBack;
+
+			pNode = pNode->m_pFront;
+		}
+	}
 }
 
 

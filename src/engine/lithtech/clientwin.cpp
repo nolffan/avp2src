@@ -1677,9 +1677,8 @@ public:
 	CluClientMgrView* m_pClientMgr;                  // 0xe84
 };
 
-// 0x00404480 -- drop every id record back on its bank and close the queue.
-// Declared, not defined: it is enumerated separately (160 bytes) and
-// src/engine/lithtech/clientmgr2.cpp already carries a declaration of it.
+// 0x00404480 -- drop every id record back on its bank and close the queue
+// (defined below, after clu_sub_404410).
 void clu_sub_404480(CluFileMgr* pFileMgr);                   // 0x00404480
 
 CluTreeNode* clu_fm_FindTreeWithFile(LTLink* pTreeList, char* pName);   // 0x004043b0
@@ -1997,6 +1996,70 @@ CluNetFileRec* clu_sub_404410(CluFileMgr* pFileMgr, uint16 nID)
 	return NULL;
 }
 
+
+// ----------------------------------------------------------------------- //
+//  0x00404480 -- the per-shell reset; IDENTICAL in AvP2 1.0.9.6 (0x004043e0,
+//  196 bytes) and Primal Hunt (0x004048e0, 192 bytes): it is the reset
+//  (called from clu_fm_Destroy above and cm_OnShellTerm): close the cache
+//  tree, then for each of the 100 id buckets unlink every net-file record,
+//  give its file record (if any) back to the 0x20-byte bank (+0x28) and the
+//  record itself to the 0x28-byte bank (+0x4c), and finally close the
+//  message queue (0x0043a700).
+//
+//  WHAT PINS IT
+//    * both gives-back are clu_sb_FreeQ501, the record and then the bank
+//      tested (PH 0x00404927/0x0040492e, 0x00404943/0x00404959).
+//    * the record (+0x08) is read before the next link (+0x04), and the
+//      unlink is ltlink.h's Remove, TieOff included (0x0040493e..).
+//    * the bucket walk is a pointer kept in a spilled local and a
+//      separate down-counter from 100 (0x0040490f, 0x00404972).
+// ----------------------------------------------------------------------- //
+
+void clu_sub_404480(CluFileMgr* pFileMgr)
+{
+	LTLink*        pHead;
+	LTLink*        pCur;
+	LTLink*        pNext;
+	CluNetFileRec* pRec;
+	uint32         nBuckets;
+
+	if (!pFileMgr)
+		return;
+
+	if (pFileMgr->m_pCacheTree)
+	{
+		clu_fs_CloseTree(pFileMgr->m_pCacheTree);
+		pFileMgr->m_pCacheTree = LTNULL;
+	}
+
+	pHead = pFileMgr->m_ByID;
+	nBuckets = 100;
+	do
+	{
+		pCur = pHead->m_pNext;
+		while (pCur != pHead)
+		{
+			pRec = (CluNetFileRec*)pCur->m_pData;
+			pNext = pCur->m_pNext;
+
+			if (pRec->m_pFileRec)
+				clu_sb_FreeQ501(&pFileMgr->m_FileRecBank.m_Bank, pRec->m_pFileRec);
+
+			pCur->Remove();
+			clu_sb_FreeQ501(&pFileMgr->m_NetFileRecBank.m_Bank, pRec);
+
+			pCur = pNext;
+		}
+		++pHead;
+	}
+	while (--nBuckets);
+
+	if (pFileMgr->m_pQueue)
+	{
+		clu_sub_42f780(pFileMgr->m_pQueue);
+		pFileMgr->m_pQueue = LTNULL;
+	}
+}
 
 // ----------------------------------------------------------------------- //
 //  0x00404520 -- 172 bytes, 3 calls.  Mount a list of resource names.

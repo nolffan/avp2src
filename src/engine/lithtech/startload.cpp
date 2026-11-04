@@ -150,8 +150,50 @@ public:
 // about its contents is known.  clientwin.cpp calls the type CluFileRec.
 class CluFileRecQ2B;
 // The stream 0x004048c0 hands back (clientworldinfo.cpp: "open one
-// CClientFileRef and hand back a stream, or LTNULL").
-class ILTStreamQ2B;
+// CClientFileRef and hand back a stream, or LTNULL").  iltstream.h's
+// ILTStream, with the slot DoLoadWorld calls: SeekTo, slot 5 (PH
+// 0x00417e14 `call *0x14(%edx)` with one zero argument, after the virtual
+// destructor, Release, Read, ReadString and ErrorStatus).
+class ILTStreamQ2B
+{
+public:
+	virtual void     _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
+	virtual void     _p0c()=0; virtual void _p10()=0;
+	virtual LTRESULT SeekTo(uint32 nOffset)=0;                           // 0x14
+};
+// AVP2: iltcommon.h's ILTCommon, as far as GetCRC, slot 15 (0x3c): the
+// virtual destructor, then SetObjectFilenames .. CreateMessage.  PH
+// 0x00417cd0 `call *0x3c(%edx)` with (stream, &result).
+class ILTCommonQ556
+{
+public:
+	virtual void _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
+	virtual void _p0c()=0; virtual void _p10()=0; virtual void _p14()=0;
+	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
+	virtual void _p24()=0; virtual void _p28()=0; virtual void _p2c()=0;
+	virtual void _p30()=0; virtual void _p34()=0; virtual void _p38()=0;
+	virtual LTRESULT GetCRC(ILTStreamQ2B* pStream, uint32& dwResult)=0; // 0x3c
+};
+// The client interface CClientMgr+0x4c4 points to: iltcsbase.h's
+// ILTCSBase puts the embedded ILTMath (one vptr) at +0x04 and m_pCommonLT
+// after it, at +0x08 (PH 0x00417ccb `mov 0x8(%ecx),%ecx`).
+class ILTClientQ556
+{
+public:
+	void*          m_pVtbl;                                              // 0x00
+	void*          m_MathLT;                                             // 0x04
+	ILTCommonQ556* m_pCommonLT;                                          // 0x08
+};
+// lmessage.cpp's view of the ServerMessage string read: the string in place,
+// the cursor stepped past its terminator (lithtech.exe 0x0046f380, server.dll
+// 0x10031041).  DoLoadWorld calls it on its CPacket (PH 0x0041796f, `mov
+// %edi,%ecx`).  The same class name and signature as lmessage.cpp's, so the
+// two declarations name one function.
+class CServerMessageStrQ528
+{
+public:
+	const char* ReadString();                // 0x10031041 / 0x0046f380
+};
 // The file manager at CClientMgr+0x1534 (clientmgr2.cpp / clientwin.cpp).
 class CFileMgrQ2B;
 // The server's world object.  The global at 0x004b17e8 is written at
@@ -278,29 +320,29 @@ public:
 
 
 // The game DLL's shell.  src/LT2/sdk/inc/iclientshell.h's declaration order with
-// ~IClientShell at slot 0 -- the count clientmgr2.cpp establishes off
-// OnEnterWorld/OnExitWorld at 0x20/0x24 and clientinterface.cpp off
-// OnPlaySound at 0x5c.  This file needs slot 7 (0x1c) and slot 24 (0x60),
-// and slot 24 is the one that CONFIRMS the whole count: SetDisconnectCode
-// is the only slot in the header with a DEFAULT ARGUMENT, and the shipped
-// call at 0x00413fd5 pushes exactly three dwords, the last of them the zero
-// register -- the default being materialised by the caller.
+// ~IClientShell at slot 0.  (NOLF's header, which this view was first read
+// against at NOLF 0x00413fd5, had PreLoadWorld at 0x1c and a three-argument
+// SetDisconnectCode at 0x60.)
 class IClientShellQ2B
 {
 public:
+	// AVP2: the AvP2 SDK's iclientshell.h order, not NOLF's: GetAuthContext
+	// at slot 1 and OnPeerToPeerAuthPacket at slot 6 push PreLoadWorld to
+	// slot 9 (0x24, PH 0x00417c2c) and SetDisconnectCode to slot 26 (0x68,
+	// PH 0x00417c7b), where it has two arguments and no default -- the
+	// shipped sites push two dwords.
 	virtual void _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
 	virtual void _p0c()=0; virtual void _p10()=0; virtual void _p14()=0;
-	virtual void _p18()=0;
-	virtual void PreLoadWorld(char* pWorldName)=0;                       // 0x1c
-	virtual void OnEnterWorld()=0;                                       // 0x20
-	virtual void OnExitWorld()=0;                                        // 0x24
-	virtual void _p28()=0; virtual void _p2c()=0; virtual void _p30()=0;
-	virtual void _p34()=0; virtual void _p38()=0; virtual void _p3c()=0;
-	virtual void _p40()=0; virtual void _p44()=0; virtual void _p48()=0;
-	virtual void _p4c()=0; virtual void _p50()=0; virtual void _p54()=0;
-	virtual void _p58()=0; virtual void _p5c()=0;
-	virtual void SetDisconnectCode(uint32 nCode, const char* pMsg,
-	                               uint32 nSubReason = 0)=0;             // 0x60
+	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
+	virtual void PreLoadWorld(char* pWorldName)=0;                       // 0x24
+	virtual void OnEnterWorld()=0;                                       // 0x28
+	virtual void OnExitWorld()=0;                                        // 0x2c
+	virtual void _p30()=0; virtual void _p34()=0; virtual void _p38()=0;
+	virtual void _p3c()=0; virtual void _p40()=0; virtual void _p44()=0;
+	virtual void _p48()=0; virtual void _p4c()=0; virtual void _p50()=0;
+	virtual void _p54()=0; virtual void _p58()=0; virtual void _p5c()=0;
+	virtual void _p60()=0; virtual void _p64()=0;
+	virtual void SetDisconnectCode(uint32 nCode, const char* pMsg)=0;   // 0x68
 };
 
 
@@ -391,6 +433,34 @@ public:
 	CPacket* m_pMsg;                                                     // 0x00
 };
 
+// AVP2: Primal Hunt's StartGame (0x004114a0) declares its holder EMPTY at
+// the top -- `mov %edi,0x1c(%esp)` and EH state 0 before Disconnect
+// (0x004114c9) -- and assigns the returned temporary to it at the send
+// (0x004118c4..0x004118ef): the pointer copied and AddRef'd, nothing
+// released first, then the temporary's Release under EH state 2.  The
+// release at the end tests the copy kept in %edi (0x004119f8).  (name ours)
+class CMsgSlotQ556
+{
+public:
+	CMsgSlotQ556() { m_pMsg = LTNULL; }
+
+	~CMsgSlotQ556()
+	{
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->Release();
+	}
+
+	void operator=(const CMsgRefQ2B& other)
+	{
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->AddRef();
+	}
+
+	CPacket* m_pMsg;                                                     // 0x00
+};
+
 // 0x0045c080 -- a fresh write message of the given size.  __cdecl, returns
 // the holder by value (clientshell.cpp names it).
 CMsgRefQ2B msg_StartWriteQ2B(uint32 nMaxSize, uint32 nSize);
@@ -428,44 +498,57 @@ public:
 class CClientMgrQ2B
 {
 public:
+	// AVP2: the offsets below are AvP2's and Primal Hunt's, not NOLF's (the
+	// NOLF displacements this view was first read at are kept in the
+	// comments): four bytes longer from m_World's end to the client shell and
+	// 0x110 longer from the music manager on, as clientmgr.h has it.  Every
+	// one is read off Primal Hunt's DoLoadWorld (0x00417790) and StartGame
+	// (0x004114a0); AvP2 1.0.9.6's (0x004157b0) reads the same ones.
 	uint8            m_pad_0000[0x184];
 	// 0x00414085 stores the world stream here and 0x0041408b reads it back
 	// one instruction later, through the SAME base register -- so it is a
 	// member and not a local.  It falls inside clientmgr.h's m_World
-	// (0x06c..0x508).  (name ours)
+	// (0x06c..0x50c).  (name ours)  PH 0x00417e5d.
 	ILTStreamQ2B*    m_pWorldStream184;                        // 0x000184
-	uint8            m_pad_0188[0x40c - 0x188];
-	// clientmgr2.cpp's m_Records40c: eleven sixteen-byte records.  Both
-	// CClientShell::ResetRecords (0x00413cf0) and DoLoadWorld's tail loop
-	// (0x00414163) walk them with a `add 0x10` stride and a
-	// `cmp 0xb0` bound, so the count and the width are proven twice.  They
-	// are LTLists: 0x00414370 takes each one's address as an LTList*.
-	uint8            m_Lists40c[0xb0];                         // 0x00040c
-	uint8            m_pad_04bc[0x50c - 0x4bc];
-	CNetMgrQ2B       m_NetMgr;                                 // 0x00050c
-	uint8            m_pad_0610[0x61c - 0x610];
-	IClientShellQ2B* m_pClientShell;                           // 0x00061c
-	uint8            m_pad_0620[0x11d8 - 0x620];
-	// clientmgr2.cpp: "zeroed by the ctor", read by 0x004746aa and by
-	// cm_GetUnknown11d8 (0x00414920).  DoLoadWorld copies it into the world
-	// load request.
-	uint32           m_Unknown11d8;                            // 0x0011d8
-	uint8            m_pad_11dc[0x125c - 0x11dc];
+	uint8            m_pad_0188[0x410 - 0x188];
+	// clientmgr2.cpp's m_Records40c (NOLF +0x40c): eleven sixteen-byte
+	// records.  Both CClientShell::ResetRecords and DoLoadWorld's tail loop
+	// (PH 0x00417f2e, `mov edi,0x410 .. cmp edi,0x4c0`) walk them with an
+	// `add 0x10` stride and a 0xb0 span.  They are LTLists: 0x00418130
+	// takes each one's address as an LTList*.
+	uint8            m_Lists40c[0xb0];                         // 0x000410
+	uint8            m_pad_04c0[0x4c4 - 0x4c0];
+	// clientmgr.h's m_pClientDE (ccline.cpp / cchandler.cpp: +0x4c4 in both
+	// retail exes).  DoLoadWorld reaches its CommonLT for the world CRC
+	// (PH 0x00417cbf).
+	ILTClientQ556*   m_pClientDE;                              // 0x0004c4
+	uint8            m_pad_04c8[0x510 - 0x4c8];
+	CNetMgrQ2B       m_NetMgr;                                 // 0x000510 (NOLF 0x50c)
+	uint8            m_pad_0614[0x620 - 0x614];
+	IClientShellQ2B* m_pClientShell;                           // 0x000620 (NOLF 0x61c)
+	uint8            m_pad_0624[0x12e8 - 0x624];
+	// clientmgr2.cpp: "zeroed by the ctor", read by cm_GetUnknown11d8.
+	// DoLoadWorld copies it into the world load request (PH 0x00417e35).
+	uint32           m_Unknown11d8;                            // 0x0012e8 (NOLF 0x11d8)
+	uint8            m_pad_12ec[0x136c - 0x12ec];
 	// A FLOAT.  lt2new3.cpp's note settles it from the other side --
-	// CLTClient::GetTime (0x00407b40) is `mov 0x4b17e0,%eax ; flds
-	// 0x125c(%eax)` -- and the decoded mangled
-	// name for 0x004750f0 (`...@@QAEKPADKM@Z`) makes StartGame's third
-	// DoStartWorld argument a float too, which agrees.
-	float            m_fTime125c;                              // 0x00125c
-	uint8            m_pad_1260[0x150c - 0x1260];
-	CClientShellQ2B* m_pClientShell2;                          // 0x00150c
-	uint8            m_pad_1510[0x1534 - 0x1510];
-	CFileMgrQ2B*     m_pFileMgr;                               // 0x001534
-	uint8            m_pad_1538[0x158c - 0x1538];
-	CDemoMgrQ2B      m_DemoMgr;                                // 0x00158c
+	// CLTClient::GetTime is a `flds` of it -- and the decoded mangled name
+	// for DoStartWorld (`...@@QAEKPADKM@Z`) makes StartGame's third
+	// DoStartWorld argument a float too, which agrees.  PH 0x0041783d.
+	float            m_fTime125c;                              // 0x00136c (NOLF 0x125c)
+	uint8            m_pad_1370[0x161c - 0x1370];
+	CClientShellQ2B* m_pClientShell2;                          // 0x00161c (NOLF 0x150c)
+	uint8            m_pad_1620[0x1644 - 0x1620];
+	CFileMgrQ2B*     m_pFileMgr;                               // 0x001644 (NOLF 0x1534)
+	uint8            m_pad_1648[0x169c - 0x1648];
+	CDemoMgrQ2B      m_DemoMgr;                                // 0x00169c (NOLF 0x158c)
 
 	// ---- the two entry points this file defines -------------------------
 	LTRESULT StartGame(StartGameRequest* pRequest);            // 0x0040fd90
+	// PH 0x00410e40 -- __thiscall, no arguments; StartGame's last act for
+	// every game type but the two hosts and NORMAL.  It starts from the
+	// shell's GetAuthContext (slot 1 of m_pClientShell).  (name ours)
+	void     Sub410e40Q556();                                  // PH 0x00410e40
 	inline void SendToServerQ2B(CPacket* pMsg);
 
 
@@ -490,6 +573,11 @@ public:
 	// so the row's class is at least not the one at this call site.  Kept
 	// as an address.
 	void     Sub4250e0Q2B(ILTStreamQ2B* pStream);              // 0x004250e0
+	// PH 0x004133c0 -- __thiscall, (string, uint32*): the CRC of the misc
+	// files the server names in the world-load packet, checked against the
+	// server's own value (LT_DISCON_MISCCRC / LT_CRCMISCCHECKFAILED when they
+	// differ).  The answer is never read.  (name ours)
+	LTRESULT GetMiscCRCQ556(const char* pFiles, uint32& nCRC); // PH 0x004133c0
 	// 0x004224d0 -- __thiscall, one argument, LTRESULT; it answers 3
 	// immediately if the request's first dword is null.  Same
 	// `bridged-callsite` caveat: the map calls it CServerWorldFull::Load.
@@ -778,135 +866,212 @@ static void cs_WorldLoadNotifyQ2B(CClientMgrQ2B* pClientMgr)
 
 LTRESULT CClientShellQ2B::DoLoadWorld(CPacket* pMsg, int /*nUnused*/)
 {
-	// Slot order, read off the frame: E-0x24 pWorldName, E-0x20 pFileRec,
-	// E-0x1c fileRef (12 bytes), E-0x10 request (16 bytes), and the frame
-	// is `sub esp,0x24` = 0x24 exactly.  Note that the SCALARS sit at the
-	// LOW end and the aggregates above them, which is the mirror image of
-	// the ebp-frame rule -- this image is /Oy and esp-relative.
+	// AVP2: Primal Hunt 0x00417790 (2093 bytes) and AvP2 1.0.9.6 0x004157b0.
+	// The frame is `sub esp,0x34`: E-0x34 bWorldChanged, -0x30 pFileRec,
+	// -0x2c pWorldName, -0x28 nWorldCRC, -0x24 pMiscFiles, -0x20 nMiscCRC,
+	// -0x1c fileRef (12 bytes), -0x10 request (16 bytes); nLoadResult and
+	// nCRC live in the dead argument-one home (esp+0x48 after the prologue).
 	char*                pWorldName;
 	CluFileRecQ2B*       pFileRec;
 	CClientFileRefQ2B    fileRef;
 	CWorldLoadRequestQ2B request;
-	// Register-resident: bWorldChanged takes the dead argument-two home
-	// slot, pStream takes ebp, dResult and fTime never touch memory.
 	LTBOOL               bWorldChanged;
 	ILTStreamQ2B*        pStream;
 	LTRESULT             dResult;
 	float                fTime;
-	int                  nOffset;
+	int                  nList;
 	CServerWorldQ2B*     pServerWorld;
 	CClientMgrQ2B*       pClientMgr;
+	uint32               nLoadResult;
+	const char*          pMiscFiles;
+	uint32               nMiscCRC;
+	uint32               nWorldCRC;
 
-	cs_TermWorldQ2B(this);                                          // 0x00413d59
+	cs_TermWorldQ2B(this);                                          // 0x004177b9
 
-	fTime           = pMsg->ReadType((float*)0);                    // 0x00413d65
-	m_fPrevGameTime = fTime;                                        // 0x00413dd7
-	m_fGameTime     = fTime;                                        // 0x00413dda
-	m_fFrameTime    = 0.0f;                                         // 0x00413dd4
-	m_Unknown20     = *(uint32*)&m_pClientMgr->m_fTime125c;         // 0x00413dea
-	m_fUnknown24    = 1.0f / 30.0f;                                 // 0x00413de3
+	fTime           = pMsg->ReadType((float*)0);                    // 0x004177c5
+	m_fPrevGameTime = fTime;                                        // 0x00417837
+	m_fGameTime     = fTime;                                        // 0x0041783a
+	m_fFrameTime    = 0.0f;                                         // 0x00417834
+	m_Unknown20     = *(uint32*)&m_pClientMgr->m_fTime125c;         // 0x0041784a
+	m_fUnknown24    = 1.0f / 30.0f;                                 // 0x00417843
 
-	fileRef.m_nFileType = 2;                                        // 0x00413dfb
-	fileRef.m_nLocalID  = pMsg->ReadType((uint16*)0);               // 0x00413ded
+	fileRef.m_nFileType = 2;                                        // 0x0041785b
+	fileRef.m_nLocalID  = pMsg->ReadType((uint16*)0);               // 0x0041784d
 
-	pWorldName = fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef);    // 0x00413e7d
-	pFileRec   = fm_GetFileRecQ2B(m_pClientMgr->m_pFileMgr, &fileRef, 0);  // 0x00413e96
+	pWorldName = fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef);    // 0x004178dd
+	pFileRec   = fm_GetFileRecQ2B(m_pClientMgr->m_pFileMgr, &fileRef, 0);  // 0x004178f6
 
-	bWorldChanged = LTTRUE;                                         // 0x00413ea7
-	if (pFileRec == m_pWorldFileRec)                                // 0x00413ea1
-		bWorldChanged = LTFALSE;                                    // 0x00413eb1
+	// AVP2: what the server says about the world it is sending, ahead of
+	// it: a refusal code, the misc files to check and the two CRCs the
+	// client's copies must have (PH 0x004178fb..0x00417a54).  (names ours)
+	nLoadResult = pMsg->ReadType((uint32*)0);                       // 0x004178fb
+	pMiscFiles  = ((CServerMessageStrQ528*)pMsg)->ReadString();     // 0x00417971
+	nMiscCRC    = pMsg->ReadType((uint32*)0);                       // 0x00417976
+	nWorldCRC   = pMsg->ReadType((uint32*)0);                       // 0x004179e7
 
-	pServerWorld = g_pServerWorldQ2B;                               // 0x00413eb8
-	sub_460d80Q2B(this, m_fGameTime);                               // 0x00413ec0
-	pClientMgr   = m_pClientMgr;                                    // 0x00413ec8
+	// A refusal becomes the shell's disconnect code (1 -> LT_DISCON_PASSWORD,
+	// 0x51 -> LT_DISCON_USER, PH 0x10001 passed on as is) and the load
+	// fails.  The three calls share one tail (0x00417af1).
+	if (nLoadResult != 0)                                           // 0x00417a58
+	{
+		if (nLoadResult == 1)                                       // 0x00417a60
+		{
+			if (m_pClientMgr->m_pClientShell)
+				m_pClientMgr->m_pClientShell->SetDisconnectCode(
+					LT_DISCON_PASSWORD,
+					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));
+		}
+		else if (nLoadResult == 0x51)                               // 0x00417a91
+		{
+			if (m_pClientMgr->m_pClientShell)
+				m_pClientMgr->m_pClientShell->SetDisconnectCode(
+					LT_DISCON_USER,
+					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));
+		}
+#ifdef PRIMAL_HUNT
+		// PH: a third refusal, which AvP2 1.0.9.6 (0x00415a8b) has not.
+		else if (nLoadResult == 0x10001)                            // 0x00417ac1
+		{
+			if (m_pClientMgr->m_pClientShell)
+				m_pClientMgr->m_pClientShell->SetDisconnectCode(
+					0x10001,
+					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));
+		}
+#endif
 
-	if (m_bLocal)                                                   // 0x00413ece
+		RETURN_ERROR(1, "CClientShell::DoLoadWorld", LT_ERROR)    // 0x00417afd
+	}
+
+	bWorldChanged = LTTRUE;                                         // 0x00417b4b
+	if (pFileRec == m_pWorldFileRec)                                // 0x00417b49
+		bWorldChanged = LTFALSE;                                    // 0x00417b55
+
+	pServerWorld = g_pServerWorldQ2B;                               // 0x00417b5c
+	sub_460d80Q2B(this, m_fGameTime);                               // 0x00417b64
+	pClientMgr   = m_pClientMgr;                                    // 0x00417b6c
+
+	if (m_bLocal)                                                   // 0x00417b72
 	{
 		// The server is in this process, so the world it already has is
 		// taken over rather than read off disk again.
-		if (!pServerWorld)                                          // 0x00413ed6
+		if (!pServerWorld)                                          // 0x00417b7c
 			RETURN_ERROR(1, "ClientShell::DoLoadWorld", LT_ERROR)
 
-		if (!pClientMgr->InheritWorld(pServerWorld))                // 0x00413f22
+		if (!pClientMgr->InheritWorld(pServerWorld))                // 0x00417bc8
 			RETURN_ERROR_SYM_DESC(1, "ClientShell::DoLoadWorld", LT_ERROR,
 			                      "Inherit failed")
 	}
 	else
 	{
-		if (pClientMgr->m_pClientShell)                             // 0x00413f74
-			pClientMgr->m_pClientShell->PreLoadWorld(pWorldName);   // 0x00413f85
+		uint32 nCRC;
 
-		pStream = fm_OpenFileQ2B(m_pClientMgr->m_pFileMgr, &fileRef);  // 0x00413f97
+		if (m_pClientMgr->m_pClientShell)                           // 0x00417c1f
+			m_pClientMgr->m_pClientShell->PreLoadWorld(pWorldName); // 0x00417c2c
 
-		if (!pStream)                                               // 0x00413fa1
+		pStream = fm_OpenFileQ2B(m_pClientMgr->m_pFileMgr, &fileRef);  // 0x00417c3e
+
+		if (!pStream)                                               // 0x00417c4b
 		{
 			// The vtable is loaded BEFORE the filename call and `this`
 			// reloaded after it, so the shell member is written out twice
 			// in the source and VC6 commons only the pair the call does
-			// not separate.  nSubReason is the header's default.
-			if (m_pClientMgr->m_pClientShell)                       // 0x00413fae
+			// not separate.
+			if (m_pClientMgr->m_pClientShell)                       // 0x00417c55
 				m_pClientMgr->m_pClientShell->SetDisconnectCode(
 					LT_DISCON_MISSINGFILE,
-					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));  // 0x00413fd5
+					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));  // 0x00417c7b
 
 			RETURN_ERROR(1, "CClientShell::DoLoadWorld", LT_MISSINGWORLDFILE)
 		}
 
+		// AVP2: the world file and the misc files must have the server's
+		// CRCs (PH 0x00417cbf..0x00417de0).
+		m_pClientMgr->m_pClientDE->m_pCommonLT->GetCRC(pStream, nCRC);  // 0x00417cd0
+
+		if (nCRC != nWorldCRC)                                      // 0x00417cdb
+		{
+			if (m_pClientMgr->m_pClientShell)
+				m_pClientMgr->m_pClientShell->SetDisconnectCode(
+					LT_DISCON_WORLDCRC,
+					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));  // 0x00417d0e
+
+			RETURN_ERROR(1, "CClientShell::DoLoadWorld", LT_CRCWORLDCHECKFAILED)
+		}
+
+		m_pClientMgr->GetMiscCRCQ556(pMiscFiles, nCRC);             // 0x00417d5f
+
+		if (nCRC != nMiscCRC)                                       // 0x00417d6c
+		{
+			if (m_pClientMgr->m_pClientShell)
+				m_pClientMgr->m_pClientShell->SetDisconnectCode(
+					LT_DISCON_MISCCRC,
+					fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef));  // 0x00417d9f
+
+			RETURN_ERROR(1, "CClientShell::DoLoadWorld", LT_CRCMISCCHECKFAILED)
+		}
+
 		con_PrintColoredQ2B(WORLDLOAD_COLOR_Q2B, 1, "Entering world %s",
-			fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef)); // 0x0041403a
+			fm_GetFilenameQ2B(m_pClientMgr->m_pFileMgr, &fileRef)); // 0x00417e07
+
+		// The CRC read the stream to its end.
+		pStream->SeekTo(0);                                         // 0x00417e14
 
 		// Re-initialised here; see the SETTLED note above.
-		memset(&request, 0, sizeof(request));                       // 0x00414042
+		memset(&request, 0, sizeof(request));                       // 0x00417e17
 
-		request.m_pStream       = pStream;                          // 0x00414048
-		request.m_nUnknown04    = m_pClientMgr->m_Unknown11d8;      // 0x00414065
-		request.m_pfnCallback   = cs_WorldLoadNotifyQ2B;            // 0x0041406c
-		request.m_pCallbackUser = m_pClientMgr;                     // 0x00414074
+		request.m_pStream       = pStream;                          // 0x00417e21
+		request.m_nUnknown04    = m_pClientMgr->m_Unknown11d8;      // 0x00417e43
+		request.m_pfnCallback   = cs_WorldLoadNotifyQ2B;            // 0x00417e3b
+		request.m_pCallbackUser = m_pClientMgr;                     // 0x00417e49
 
-		dResult = pClientMgr->LoadWorldQ2B(&request);               // 0x00414078
+		dResult = pClientMgr->LoadWorldQ2B(&request);               // 0x00417e4d
 
-		if (dResult == LT_OK)                                       // 0x0041407d
+		if (dResult == LT_OK)                                       // 0x00417e52
 		{
-			pClientMgr->m_pWorldStream184 = pStream;                // 0x00414085
+			// AVP2: the stream goes straight on to 0x0042e690 here, where
+			// NOLF tested +0x184 again after the two arms joined.
+			pClientMgr->m_pWorldStream184 = pStream;                // 0x00417e5d
+			pClientMgr->Sub4250e0Q2B(pStream);                      // 0x00417e63
 		}
 		else
 		{
 			// The cold arm VC6 sinks past the success return.
-			m_pClientMgr->SetupError(LT_INVALIDWORLDFILE, pWorldName);  // 0x004141b2
+			m_pClientMgr->SetupError(LT_INVALIDWORLDFILE, pWorldName);  // 0x00417f7d
 
 			RETURN_ERROR_SYM_DESC(1, "CClientShell::DoLoadWorld",
 			                      LT_INVALIDWORLDFILE, pWorldName)
 		}
 	}
 
-	// 0x0041408b -- where both arms join.
-	if (pClientMgr->m_pWorldStream184)                              // 0x00414091
-		pClientMgr->Sub4250e0Q2B(pClientMgr->m_pWorldStream184);    // 0x00414098
-
-	if (!CreateRenderWorld())                                       // 0x0041409f
+	// 0x00417e68 -- where both arms join.
+	if (!CreateRenderWorld())                                       // 0x00417e6a
 		RETURN_ERROR(1, "CClientShell::DoLoadWorld", LT_ERRORBINDINGWORLD)
 
-	if (bWorldChanged)                                              // 0x004140e8
-		tex_Sub4202c0Q2B(m_pClientMgr);                             // 0x004140f2
+	if (bWorldChanged)                                              // 0x00417eb3
+		tex_Sub4202c0Q2B(m_pClientMgr);                             // 0x00417ebd
 
-	cs_ReleaseArrayItemsQ2B(m_pClientMgr, pClientMgr);              // 0x004140ff
-	tex_Sub4202f0Q2B(m_pClientMgr);                                 // 0x00414108
+	cs_ReleaseArrayItemsQ2B(m_pClientMgr, pClientMgr);              // 0x00417eca
+	tex_Sub4202f0Q2B(m_pClientMgr);                                 // 0x00417ed3
 
-	if (!CreateVisContainerObjects())                               // 0x00414112
+	if (!CreateVisContainerObjects())                               // 0x00417edd
 	{
-		Sub4143f0Q2B();                                             // 0x0041411d
+		Sub4143f0Q2B();                                             // 0x00417ee8
 
 		RETURN_ERROR_SYM_DESC(1, "CClientShell::DoLoadWorld", LT_ERROR,
 		                      "CreateVisContainerObjects failed")
 	}
 
-	for (nOffset = 0; nOffset < 0xb0; nOffset += 0x10)              // 0x00414163
+	// AVP2: an index over the eleven lists, not NOLF's byte offset: the
+	// strength-reduced counter runs from the first list's own displacement
+	// (`mov $0x410,%edi .. cmp $0x4c0,%edi`, 0x00417f2e / 0x00417f47).
+	for (nList = 0; nList < 11; nList++)                            // 0x00417f2e
 		cs_ReleaseListToWorldQ2B(this,
-			(LTList*)(m_pClientMgr->m_Lists40c + nOffset));         // 0x00414171
+			&((LTList*)m_pClientMgr->m_Lists40c)[nList]);           // 0x00417f3c
 
-	m_pWorldFileRec = pFileRec;                                     // 0x00414189
-	m_pClientMgr->OnEnterWorld(this);                               // 0x0041418f
-	m_bWorldLoaded  = LTTRUE;                                       // 0x00414194
+	m_pWorldFileRec = pFileRec;                                     // 0x00417f57
+	m_pClientMgr->OnEnterWorld(this);                               // 0x00417f5a
+	m_bWorldLoaded  = LTTRUE;                                       // 0x00417f5f
 
 	return LT_OK;
 }
@@ -1011,7 +1176,7 @@ LTRESULT CClientShellQ2B::DoLoadWorld(CPacket* pMsg, int /*nUnused*/)
 //  exists; it is a copy-paste in the original source and is reproduced.
 // ======================================================================= //
 
-// WHAT CLOSED StartGame (measured, lithtech.exe 0x0040fd90, now identical):
+// WHAT CLOSED StartGame IN NOLF'S BUILD (measured, NOLF lithtech.exe 0x0040fd90):
 //   * the type test is a SWITCH: `sub ecx,2 ; je ; dec ecx ; je` at
 //     0x0040fde8 is VC6's small-switch chain; the if/else-if chain gave
 //     `cmp $2 ; jne` and 83 bytes more.
@@ -1033,191 +1198,210 @@ inline void CClientMgrQ2B::SendToServerQ2B(CPacket* pMsg)
 
 LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 {
-	// Frame arithmetic: `sub esp,0x20c` = 524.  0x20c = 4 (the compiler's
-	// own spill of `this`, 0x0040fd9c) + 4 unused + 4 (dResult, E-0x204)
-	// + 256 (errorString, E-0x200) + 256 (worldName, E-0x100).  Slot order
-	// again runs scalars-low / arrays-high, as in DoLoadWorld.
+	// NEAR (Primal Hunt 0x004114a0: 1419 shipped, 1704 ours).  Everything
+	// down to the message is shipped's block for block -- the holder
+	// declared empty at the top with EH state 0, the early returns leaving
+	// without its Release, the empty-name error, the start flags, the
+	// trailing 0x00410e40 call.  What is left is the message's WriteType:
+	// shipped CALLS the byte array's Insert2 (0x004118e9 -> 0x004162f0)
+	// where ours expands it.  Measured: the NOLF-shaped body this replaced
+	// (holder built in the block, no 0x00410e40 call) calls it, and adding
+	// EITHER the top-level holder or the trailing call alone makes VC6
+	// expand it; the empty-name test, the flags local, an inline
+	// shell-disconnect helper at the four sites, an operator=(CPacket*)
+	// holder and an explicit Insert2 instantiation ahead of the function
+	// change nothing.
+	//
+	// AVP2: Primal Hunt 0x004114a0 (1419 bytes).  `sub esp,0x210`: E-0x210
+	// the `this` spill that pDriver (and the message temporary) reuse,
+	// E-0x208 dResult, E-0x204 cMsg, E-0x200 errorString, E-0x100
+	// worldName.
+	CMsgSlotQ556     cMsg;
 	LTRESULT         dResult;
 	char             errorString[256];
 	char             worldName[256];
 	CClientShellQ2B* pShell;
 	CBaseDriverQ2B*  pDriver;
 	char*            pWorldName;
+	uint32           nFlags;
 
-	Disconnect();                                                   // 0x0040fda0
+	Disconnect();                                                   // 0x004114d4
 
-	pShell = new CClientShellQ2B;                                   // 0x0040fda5
-	pShell->m_nGameMode = pRequest->m_Type;                         // 0x0040fdcf
-	pShell->Init(this);                                             // 0x0040fdd5
+	pShell = new CClientShellQ2B;                                   // 0x004114de
+	pShell->m_nGameMode = pRequest->m_Type;                         // 0x00411514
+	pShell->Init(this);                                             // 0x0041151a
 
-	sub_42e680(0);                                                  // 0x0040fddc
+	sub_42e680(0);                                                  // 0x00411521
 
-	switch (pRequest->m_Type)                                       // 0x0040fde6
+	switch (pRequest->m_Type)                                       // 0x0041152e
 	{
-	case STARTGAME_CLIENT:                                          // 0x0040fdeb
+	case STARTGAME_CLIENT:                                          // 0x00411531
 	{
-		pDriver = m_NetMgr.m_pMainDriver;                           // 0x004101b5
+		pDriver = m_NetMgr.m_pMainDriver;                           // 0x00411803
 
-		if (!pDriver)                                               // 0x004101bb
+		if (!pDriver)                                               // 0x00411809
 			RETURN_ERROR(1, "StartGame", LT_NOTINITIALIZED)
 
-		if (pRequest->m_flags & SG_LOBBY)                           // 0x00410207
+		if (pRequest->m_flags & SG_LOBBY)                           // 0x0041180d
 		{
-			if (!pDriver->JoinLobbySession())                       // 0x00410215
+			if (!pDriver->JoinLobbySession())                       // 0x0041181a
 				RETURN_ERROR(1, "StartGame", LT_ERROR)
 		}
 		else
 		{
-			if (!pRequest->m_pNetSession)                           // 0x00410267
+			if (!pRequest->m_pNetSession)                           // 0x0041182c
 				RETURN_ERROR_SYM_DESC(1, "StartGame", LT_INVALIDPARAMS,
 				                      "Missing m_pNetSession")
 
-			dResult = pDriver->JoinSession(pRequest->m_pNetSession);  // 0x004102bb
+			dResult = pDriver->JoinSession(pRequest->m_pNetSession);  // 0x00411871
 
-			if (dResult != LT_OK)                                   // 0x00410190
+			if (dResult != LT_OK)                                   // 0x00411874
 				return dResult;
 		}
 
-		dResult = pShell->SetUnknown30(pDriver);                    // 0x0041019b
+		dResult = pShell->SetUnknown30(pDriver);                    // 0x0041187f
 
-		if (dResult != LT_OK)                                       // 0x004101a0
+		if (dResult != LT_OK)                                       // 0x00411884
 			return dResult;
 		break;
 	}
-	case STARTGAME_CLIENTTCP:                                       // 0x0040fdf2
+	case STARTGAME_CLIENTTCP:                                       // 0x00411538
 	{
-		pDriver = m_NetMgr.FindDriver("internet");                  // 0x00410132
+		pDriver = m_NetMgr.FindDriver("internet");                  // 0x00411790
 
-		if (!pDriver)                                               // 0x00410139
+		if (!pDriver)                                               // 0x00411797
 			RETURN_ERROR(1, "StartGame", LT_NOTINITIALIZED)
 
-		dResult = pDriver->JoinTCPSession(pRequest->m_TCPAddress);  // 0x0041018d
+		dResult = pDriver->JoinTCPSession(pRequest->m_TCPAddress);  // 0x004117e3
 
-		if (dResult != LT_OK)                                       // 0x00410190
+		if (dResult != LT_OK)                                       // 0x004117e6
 			return dResult;
 
-		dResult = pShell->SetUnknown30(pDriver);                    // 0x0041019b
+		dResult = pShell->SetUnknown30(pDriver);                    // 0x004117f1
 
-		if (dResult != LT_OK)                                       // 0x004101a0
+		if (dResult != LT_OK)                                       // 0x004117f6
 			return dResult;
 		break;
 	}
 	default:
 	{
-		pDriver = LTNULL;                                           // 0x0040fdf8
+		pDriver = LTNULL;                                           // 0x00411540
 
-		if (pRequest->m_Type == STARTGAME_HOST)                     // 0x0040fdfa
+		if (pRequest->m_Type == STARTGAME_HOST)                     // 0x0041153e
 		{
-			pDriver = m_NetMgr.m_pMainDriver;                       // 0x0040fe06
+			pDriver = m_NetMgr.m_pMainDriver;                       // 0x0041154e
 
-			if (!pDriver)                                           // 0x0040fe0c
+			if (!pDriver)                                           // 0x00411554
 				RETURN_ERROR(1, "StartGame", LT_NOTINITIALIZED)
 
-			if (pRequest->m_flags & SG_LOBBY)                       // 0x0040fe60
+			if (pRequest->m_flags & SG_LOBBY)                       // 0x004115a0
 			{
-				if (pDriver->HostLobbySession(&pRequest->m_HostInfo) != LT_OK)  // 0x0040fe69
+				if (pDriver->HostLobbySession(&pRequest->m_HostInfo) != LT_OK)  // 0x004115ab
 					RETURN_ERROR(1, "StartGame", LT_ERROR)
 			}
 			else
 			{
-				dResult = pDriver->HostSession(&pRequest->m_HostInfo);  // 0x0040feb4
+				dResult = pDriver->HostSession(&pRequest->m_HostInfo);  // 0x004115ee
 
-				if (dResult != LT_OK)                               // 0x0040feb7
+				if (dResult != LT_OK)                               // 0x004115f1
 					return dResult;
 			}
 		}
 
-		pWorldName = pRequest->m_WorldName;                         // 0x0040fecd
+		pWorldName = pRequest->m_WorldName;                         // 0x00411607
 
-		if (pRequest->m_RecordFilename[0])                          // 0x0040fecb
+		if (pRequest->m_RecordFilename[0])                          // 0x00411605
 		{
 			dResult = m_DemoMgr.StartRecording(pWorldName,
-			                                   pRequest->m_RecordFilename);  // 0x0040fede
+			                                   pRequest->m_RecordFilename);  // 0x00411614
 
-			if (dResult != LT_OK)                                   // 0x0040fee3
+			if (dResult != LT_OK)                                   // 0x00411619
 			{
-				if (pShell)                                         // 0x0040feeb
-					pShell->Disconnect(1);                          // 0x0040fef9
+				if (pShell)                                         // 0x00411621
+					pShell->Disconnect(1);                          // 0x0041162f
 
 				return dResult;
 			}
 
-			pWorldName[0] = 0;                                      // 0x0040ff62
+			pWorldName[0] = 0;                                      // 0x00411684
 		}
-		else if (pRequest->m_PlaybackFilename[0])                   // 0x0040ff18
+		else if (pRequest->m_PlaybackFilename[0])                   // 0x00411646
 		{
-			// The demo file names the world it was recorded in; that name
-			// comes back in worldName and is copied over m_WorldName once
-			// the local server is up.
 			dResult = m_DemoMgr.StartPlayback(pRequest->m_PlaybackFilename,
-			                                  worldName, 0x100);    // 0x0040ff34
+			                                  worldName, 0x100);    // 0x0041165e
 
-			if (dResult != LT_OK)                                   // 0x0040ff39
+			if (dResult != LT_OK)                                   // 0x00411663
 			{
-				if (pShell)                                         // 0x0040ff41
-					pShell->Disconnect(1);                          // 0x0040ff4f
+				if (pShell)                                         // 0x0041166b
+					pShell->Disconnect(1);                          // 0x00411679
 
 				return dResult;
 			}
 
-			pWorldName[0] = 0;                                      // 0x0040ff62
+			pWorldName[0] = 0;                                      // 0x00411684
 		}
 
 		dResult = pShell->StartupLocal(pRequest,
 		                               pRequest->m_Type == STARTGAME_HOST,
-		                               (uint32)pDriver);            // 0x0040ff74
+		                               (uint32)pDriver);            // 0x0041169b
 
-		if (dResult != LT_OK)                                       // 0x0040ff7b
+		if (dResult != LT_OK)                                       // 0x004116a0
 		{
-			if (pShell)                                             // 0x0040ff7f
-				pShell->Disconnect(1);                              // 0x0040ff89
+			if (pShell)                                             // 0x004116a8
+				pShell->Disconnect(1);                              // 0x004116b6
 
 			return dResult;
 		}
 
-		if (pWorldName[0])                                          // 0x0040ff9a
+		// AVP2: an empty world name is now an error rather than a skip
+		// (0x004116c9 jumps straight to the report), and the start flags
+		// are 0 for STARTGAME_NORMAL, 3 otherwise (0x004116ce..0x004116d8).
+		nFlags = 3;                                                 // 0x004116ce
+		if (pRequest->m_Type == STARTGAME_NORMAL)                   // 0x004116d3
+			nFlags = 0;
+
+		if (!pWorldName[0] ||                                       // 0x004116c7
+		    pShell->m_pServerMgr->DoStartWorld(pWorldName, nFlags,
+		                                       m_fTime125c) != LT_OK)  // 0x004116e6
 		{
-			if (pShell->m_pServerMgr->DoStartWorld(pWorldName, 3,
-			                                       m_fTime125c) != LT_OK)  // 0x0040ffb5
-			{
-				pShell->m_pServerMgr->GetErrorString(errorString, 0x100);  // 0x0040ffcb
-				SetupError(LT_SERVERERROR, errorString);            // 0x0040ffd8
+			pShell->m_pServerMgr->GetErrorString(errorString, 0x100);  // 0x004116fc
+			SetupError(LT_SERVERERROR, errorString);                // 0x00411709
 
-				if (pShell)                                         // 0x0040ffe0
-					pShell->Disconnect(1);                          // 0x0040ffea
+			if (pShell)                                             // 0x00411711
+				pShell->Disconnect(1);                              // 0x0041171b
 
-				RETURN_ERROR_SYM_DESC(1, "CClientMgr::StartShell", LT_SERVERERROR,
-				                      "error loading world")
-			}
+			RETURN_ERROR_SYM_DESC(1, "CClientMgr::StartShell", LT_SERVERERROR,
+			                      "error loading world")
 		}
 
-		if (pRequest->m_PlaybackFilename[0])                        // 0x00410030
+		if (pRequest->m_PlaybackFilename[0])                        // 0x00411758
 		{
-			LTStrCpy(pWorldName, worldName, MAX_SGR_STRINGLEN);     // 0x00410045
+			LTStrCpy(pWorldName, worldName, MAX_SGR_STRINGLEN);     // 0x00411774
 		}
 		break;
 	}
 	}
 
-	m_pClientShell2 = pShell;                                       // 0x00410056
-	cm_OnShellInitQ2B(this);                                        // 0x0041005c
+	m_pClientShell2 = pShell;                                       // 0x00411891
+	cm_OnShellInitQ2B(this);                                        // 0x00411897
 
-	if (m_pClientShell2)                                            // 0x0041006a
+	if (m_pClientShell2)                                            // 0x004118a5
 	{
-		// AVP2: 0x44c (Primal Hunt 0x004118ad).  Primal Hunt also declares
-		// the holder empty at the top of the function (0x004114c9 nulls it
-		// and sets EH state 0 before Disconnect) and assigns it here, with
-		// the holder kept in %edi so that the early error returns skip its
-		// Release; written that way here the holder stays in memory and
-		// every RETURN_ERROR grows a Release (1661 bytes against 1419).
-		CMsgHoldQ2B cMsg(msg_StartWriteQ2B(0x44c, 0x44c).m_pMsg);   // 0x00410081
+		// AVP2: 0x44c (Primal Hunt 0x004118ad).
+		cMsg = msg_StartWriteQ2B(0x44c, 0x44c);                     // 0x004118bc
 
-		cMsg.m_pMsg->WriteType((uint16)pRequest->m_ClientDataLen);  // 0x004100a3
+		cMsg.m_pMsg->WriteType((uint16)pRequest->m_ClientDataLen);  // 0x004118f2
 		((IPacketRefQ2B*)cMsg.m_pMsg)->WriteData(pRequest->m_pClientData,
-			(uint16)pRequest->m_ClientDataLen);                     // 0x0041030e
-		cMsg.m_pMsg->m_Data.m_pArray[0] = 5;                         // 0x0041031b
-		SendToServerQ2B(cMsg.m_pMsg);                               // 0x0041032f
+			(uint16)pRequest->m_ClientDataLen);                     // 0x004119ba
+		cMsg.m_pMsg->m_Data.m_pArray[0] = 5;                         // 0x004119c7
+		SendToServerQ2B(cMsg.m_pMsg);                               // 0x004119db
 	}
+
+	// AVP2: every game type but the two hosts and NORMAL (0x004119e0).
+	if (pRequest->m_Type != STARTGAME_HOST &&
+	    pRequest->m_Type != STARTGAME_HOSTTCP &&
+	    pRequest->m_Type != STARTGAME_NORMAL)
+		Sub410e40Q556();                                            // 0x004119f3
 
 	return LT_OK;
 }
@@ -1228,8 +1412,10 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 //  PER-ADDRESS STATUS
 //
 //    0x00413d20    12 B   1 call   cs_WorldLoadNotify           HIGH
-//    0x00413d30  1219 B  38 calls  CClientShell::DoLoadWorld    IDENTICAL
-//    0x0040fd90  1472 B  47 calls  CClientMgr::StartGame        IDENTICAL
+//    0x00413d30  1219 B  38 calls  CClientShell::DoLoadWorld    IDENTICAL (NOLF)
+//    0x0040fd90  1472 B  47 calls  CClientMgr::StartGame        IDENTICAL (NOLF)
+//    PH 0x00417790  2095 B         CClientShell::DoLoadWorld    IDENTICAL (and AvP2 0x004157b0)
+//    PH 0x004114a0  1419 B         CClientMgr::StartGame        NEAR (1704; see the note in it)
 //
 //  CALL CENSUS -- counted on the shipped
 //  side and BY HAND on this source, because there is no object to

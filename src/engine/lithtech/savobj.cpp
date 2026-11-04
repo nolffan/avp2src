@@ -117,13 +117,23 @@ public:
 	SavLink      m_Links;                    // 0x00
 	void*        m_hIdentifier;              // 0x0c
 	float        m_NextUpdate;               // 0x10
-	uint8        m_pad_14[0x1c - 0x14];
+	// AVP2: the record carries these two as well (Primal Hunt 0x0043d03e,
+	// 0x0043d051; AvP2 1.0.9.6 0x004394fc, 0x0043950f).
+	float        m_DeactivationTime;         // 0x14
+	float        m_UpdateTimer;              // 0x18
 	SavClient*   m_pOwningClient;            // 0x1c
 	SavBaseClass* m_pBaseClass;              // 0x20
 	SavClassDef* m_pClass;                   // 0x24
 	uint8        m_pad_28[0x2c - 0x28];
 	CPacket*     m_pSaveData;                // 0x2c  (name ours)
-	void*        m_hFiles[3];                // 0x30  (name ours; see above)
+	// AVP2: the model file and four skins (the model arm's loop runs four
+	// times from +0x34: Primal Hunt 0x0043cf95, AvP2 1.0.9.6 0x0043945b).
+	// PH: and the extra file at +0x44 (ltobject_internal.h's m_pFile44).
+#ifdef PRIMAL_HUNT
+	void*        m_hFiles[1 + MAX_MODEL_TEXTURES + 1]; // 0x30  (name ours)
+#else
+	void*        m_hFiles[1 + MAX_MODEL_TEXTURES];     // 0x30  (name ours)
+#endif
 };
 
 // worldbsp.h's world, at the one field the save reads: the name, which is
@@ -162,6 +172,11 @@ public:
 	uint8       m_pad_0be[0x0c4 - 0x0be];
 	float       m_Velocity[3];               // 0x0c4
 	float       m_Acceleration[3];           // 0x0d0
+	// AVP2: one byte between the acceleration and the friction, written
+	// after the acceleration (Primal Hunt 0x0043d12f, AvP2 0x004395ed)
+	// (name ours).
+	uint8       m_Unknowndc;                 // 0x0dc
+	uint8       m_pad_0dd[0x0e0 - 0x0dd];
 	float       m_FrictionCoefficient;       // 0x0e0
 	float       m_Mass;                      // 0x0e4
 	float       m_ForceIgnoreLimitSqr;       // 0x0e8
@@ -176,13 +191,24 @@ public:
 		SavWorldBsp* m_pWorldBsp;            // 0x1b0
 		float        m_LightRadius;          // 0x1b0  (OT_LIGHT only)
 	};
-	uint8       m_pad_1b4[0x1e0 - 0x1b4];
-	uint16      m_Model1d8;                  // 0x1e0  (name ours)
-	uint8       m_pad_1e2[0x1f0 - 0x1e2];
-	uint16      m_Model1e8;                  // 0x1f0  (name ours)
-	uint8       m_pad_1f2[0x1f4 - 0x1f2];
-	uint32      m_Model1ec;                  // 0x1f4  (name ours)
-	uint8       m_pad_1f8[0x278 - 0x1f8];
+	// AVP2: the model's main animation tracker and its hidden-piece bits,
+	// which is all of a model the record keeps besides its files (Primal
+	// Hunt 0x0043d284 / 0x0043d2aa, AvP2 0x00439742 / 0x00439768); the
+	// tracker goes out through ILTModel. PH: both four bytes on from
+	// AvP2's, past the model's extra texture (saveio.cpp's SavModelQ535).
+#ifdef PRIMAL_HUNT
+	uint8       m_pad_1b4[0x1d4 - 0x1b4];
+	uint8       m_AnimTracker[0x50];         // 0x1d4  the SDK's LTAnimTracker
+	uint8       m_pad_224[0x260 - 0x224];
+	uint32      m_HiddenPieces;              // 0x260
+	uint8       m_pad_264[0x278 - 0x264];
+#else
+	uint8       m_pad_1b4[0x1d0 - 0x1b4];
+	uint8       m_AnimTracker[0x50];         // 0x1d0  the SDK's LTAnimTracker
+	uint8       m_pad_220[0x24c - 0x220];
+	uint32      m_HiddenPieces;              // 0x24c
+	uint8       m_pad_250[0x278 - 0x250];
+#endif
 	uint16      m_Container270;              // 0x278  (name ours)
 };
 
@@ -205,6 +231,40 @@ public:
 // servermgr.h's CServerMgr, at the offsets these two reach. m_SkyObjects is
 // servermgr.h's name for the thirty object ids at 0x95c (MAX_SKYOBJECTS is
 // thirty in ltbasedefs.h, and 0x00431e2b compares the index against 0x1e).
+// ILTModel (iltmodel.h) up to WriteTracker, its slot 17 (`call *0x44(%eax)`
+// at Primal Hunt 0x0043d2b1, AvP2 0x0043976f): saveio.cpp's
+// SavModelLTQ535 has ReadTracker in the slot before it.
+class SavModelLTQ558
+{
+public:
+	virtual LTRESULT _v00() = 0;
+	virtual LTRESULT _v04() = 0;
+	virtual LTRESULT _v08() = 0;
+	virtual LTRESULT _v0c() = 0;
+	virtual LTRESULT _v10() = 0;
+	virtual LTRESULT _v14() = 0;
+	virtual LTRESULT _v18() = 0;
+	virtual LTRESULT _v1c() = 0;
+	virtual LTRESULT _v20() = 0;
+	virtual LTRESULT _v24() = 0;
+	virtual LTRESULT _v28() = 0;
+	virtual LTRESULT _v2c() = 0;
+	virtual LTRESULT _v30() = 0;
+	virtual LTRESULT _v34() = 0;
+	virtual LTRESULT _v38() = 0;
+	virtual LTRESULT _v3c() = 0;
+	virtual LTRESULT ReadTracker(void* pTracker, void* hRead) = 0;
+	virtual LTRESULT WriteTracker(void* pTracker, void* hWrite) = 0;
+};
+
+// The manager's server interface (an ILTCSBase), at its ILTModel.
+class SavServerLTQ558
+{
+public:
+	uint8           m_pad_00[0x10];
+	SavModelLTQ558* m_pModelLT;              // 0x10
+};
+
 class SavServerMgr
 {
 public:
@@ -214,7 +274,9 @@ public:
 	void*            m_pClassMgr;            // 0xc14
 	uint8            m_pad_808[4];
 	void*            m_ClassMgrFirst;        // 0xc1c
-	uint8            m_pad_c20[0xd6c - 0xc20];
+	uint8            m_pad_c20[0xd38 - 0xc20];
+	SavServerLTQ558* m_pServerLT;            // 0xd38  (saveio.cpp's name)
+	uint8            m_pad_d3c[0xd6c - 0xd3c];
 	uint16           m_SkyObjects[30];       // 0xd6c
 	uint8            m_pad_da8[0xe3c - 0xda8];
 	SavFileMgr       m_FileMgr;              // 0xe3c
@@ -325,7 +387,9 @@ public:
 // source tests the flag and not the pointer. Those two are the object's
 // save-data packet and its owning client.
 //
-// Byte-identical (1242). The five spellings that close it are the ones that
+// Byte-identical on Primal Hunt's lithtech.exe (0x0043ce20, 1305 bytes;
+// AvP2 1.0.9.6's 0x004392f0, 1287, differs only by the PH extra file and
+// model offsets), and was on NOLF's (1242). The five spellings that close it are the ones that
 // closed the /O1 twin in server/savrest.cpp, and its comments carry the
 // evidence: each fs_GetFileName result named as its own statement, a uint16
 // skin index (strength-reduced `mov ebx,2 ... dec ebx ; jne` at 0x00431c2b),
@@ -339,7 +403,6 @@ void sav_SaveObject(SavServerMgr* pMgr, SavObject* pObj, ILTStream* pStream,
 	CSaveLoadMessage msg(pMgr->m_pClassMgr, pStream);
 	uint32      nEndFieldPos;
 	uint32      nSkyIndex;
-	uint32      nAnim;
 	uint32      nValue;
 	char        bHasSaveData;
 	char        bHasClient;
@@ -388,11 +451,18 @@ void sav_SaveObject(SavServerMgr* pMgr, SavObject* pObj, ILTStream* pStream,
 		{
 			uint16 i;
 
-			for (i = 1; i < 3; i++)
+			for (i = 1; i < 1 + MAX_MODEL_TEXTURES; i++)
 			{
 				pName = fs_GetFileName(&pMgr->m_FileMgr, pObj->m_pSData->m_hFiles[i]);
 				pStream->WriteString(pName);
 			}
+
+#ifdef PRIMAL_HUNT
+			// PH: and the extra file (0x0043cfcb, whose WriteString is the
+			// else arm's, 0x0043cfe9).
+			pName = fs_GetFileName(&pMgr->m_FileMgr, pObj->m_pSData->m_hFiles[1 + MAX_MODEL_TEXTURES]);
+			pStream->WriteString(pName);
+#endif
 		}
 		else
 		{
@@ -407,6 +477,8 @@ void sav_SaveObject(SavServerMgr* pMgr, SavObject* pObj, ILTStream* pStream,
 			pStream->Write(&pObj->m_Container270, 2);
 
 		pStream->Write(&pObj->m_pSData->m_NextUpdate, 4);
+		pStream->Write(&pObj->m_pSData->m_DeactivationTime, 4);
+		pStream->Write(&pObj->m_pSData->m_UpdateTimer, 4);
 		pStream->Write(&pObj->m_BlockingPriority, 1);
 
 		bHasSaveData = (pObj->m_pSData->m_pSaveData != LTNULL);
@@ -427,6 +499,7 @@ void sav_SaveObject(SavServerMgr* pMgr, SavObject* pObj, ILTStream* pStream,
 
 		pStream->Write(pObj->m_Velocity, 0x0c);
 		pStream->Write(pObj->m_Acceleration, 0x0c);
+		pStream->Write(&pObj->m_Unknowndc, 1);
 		pStream->Write(&pObj->m_FrictionCoefficient, 4);
 		pStream->Write(&pObj->m_Mass, 4);
 		pStream->Write(&pObj->m_ForceIgnoreLimitSqr, 4);
@@ -454,15 +527,6 @@ void sav_SaveObject(SavServerMgr* pMgr, SavObject* pObj, ILTStream* pStream,
 			pStream->Write(&nSkyIndex, 2);
 		}
 
-		if (pObj->m_ObjectType == OT_MODEL)
-		{
-			nAnim = pObj->m_Model1e8;
-
-			pStream->Write(&nAnim, 4);
-			pStream->Write(&pObj->m_Model1ec, 4);
-			pStream->Write(&pObj->m_Model1d8, 2);
-		}
-
 		bHasClient = (pObj->m_pSData->m_pOwningClient != LTNULL);
 
 		pStream->Write(&bHasClient, 1);
@@ -483,6 +547,16 @@ void sav_SaveObject(SavServerMgr* pMgr, SavObject* pObj, ILTStream* pStream,
 			pStream->Write(&nValue, 4);
 			pStream->SeekTo(nValue);
 		}
+	}
+
+	// AVP2: a model's hidden pieces and its tracker, after the start
+	// offset's back-patch and before the object's own data.
+	if (pObj->m_ObjectType == OT_MODEL)
+	{
+		pStream->Write(&pObj->m_HiddenPieces, 4);
+
+		if (pMgr->m_pServerLT->m_pModelLT)
+			pMgr->m_pServerLT->m_pModelLT->WriteTracker(pObj->m_AnimTracker, &msg);
 	}
 
 	{

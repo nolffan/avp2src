@@ -1184,13 +1184,23 @@ public:
 	uint16 m_bMarked   : 1;                  // 0x32 bit 15
 };
 
+// AVP2: four skins at +0x1c0 and a flag per skin behind them (AvP2
+// 0x004263fd `lea 0x1c0(%esi)`, 0x0042643a `lea 0x250(%esi)`; Primal Hunt
+// 0x00428bc8, 0x00428c0b `lea 0x264(%ebx)`); NOLF had two at +0x1b8 and
+// their flags at +0x208.
 class CTexObjectQ3
 {
 public:
-	uint8            m_pad_00[0x1b8];
-	SharedTextureQ3* m_pSkins[2];            // 0x1b8
-	uint8            m_pad_1c0[0x208 - 0x1c0];
-	uint32           m_Unknown208[2];        // 0x208  non-zero keeps the skin
+	uint8            m_pad_00[0x1c0];
+	SharedTextureQ3* m_pSkins[MAX_MODEL_TEXTURES];         // 0x1c0
+#ifdef PRIMAL_HUNT
+	// PH: the model's fifth texture and what follows it (clienttexmgr.cpp's
+	// CTexOwner1b8View) put the flags 0x14 further on.
+	uint8            m_pad_1d0[0x264 - 0x1d0];
+#else
+	uint8            m_pad_1d0[0x250 - 0x1d0];
+#endif
+	uint32           m_SkinFlags[MAX_MODEL_TEXTURES];      // non-zero keeps the skin
 };
 
 struct LTLinkQ3
@@ -1200,19 +1210,24 @@ struct LTLinkQ3
 	void*     m_pData;
 };
 
+// AVP2: the object list is at +0x424 in both images (AvP2 0x00426475
+// `mov 0x428(%ebp)`, Primal Hunt 0x00428c46).
 class CClientMgrTexViewQ3
 {
 public:
-	uint8    m_pad_00[0x420];
-	LTLinkQ3 m_ObjectListHead;               // 0x420
+	uint8    m_pad_00[0x424];
+	LTLinkQ3 m_ObjectListHead;               // 0x424
 };
 
 void tm_MarkTextureQ3(SharedTextureQ3* pTexture);                              // 0x00420060
 void tm_FreeTextureQ3(CClientMgrTexViewQ3* pClientMgr, SharedTextureQ3* pTex); // 0x0041ffc0
 
-// 0x00420330, 238 bytes.
+// NOLF 0x00420330, 238 bytes; IDENTICAL on Primal Hunt's lithtech.exe at
+// 0x00428bc0 (249 bytes; AvP2 1.0.9.6 0x004263f0) with four skins.
 //   1. drop a skin that repeats an earlier one (0x00420348..0x00420379);
-//   2. mark each skin by the flag beside it (0x0042037b..0x004203a5);
+//   2. mark each skin by the flag beside it (0x0042037b..0x004203a5); AVP2:
+//      an unflagged skin is unmarked only while nothing holds it (`testw
+//      $0x7fff,0x32` then a whole-word zero store, PH 0x00428c30);
 //   3. mark every skin any OTHER object on the list still uses;
 //   4. free the skins left unmarked and clear the slot.
 // Two spellings are load-bearing (each measured): step 2 reads the skin into
@@ -1231,23 +1246,23 @@ void cm_ReleaseObjectTexturesQ404(CClientMgr* pClientMgrIn, HOBJECT hObj)
 	uint32               i, j;
 	SharedTextureQ3*     pTex;
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 	{
-		for (j = i + 1; j < 2; j++)
+		for (j = i + 1; j < MAX_MODEL_TEXTURES; j++)
 		{
 			if (pObj->m_pSkins[i] == pObj->m_pSkins[j] && pObj->m_pSkins[i])
 				pObj->m_pSkins[j] = LTNULL;
 		}
 	}
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 	{
 		pTex = pObj->m_pSkins[i];
 		if (pTex)
 		{
-			if (pObj->m_Unknown208[i])
+			if (pObj->m_SkinFlags[i])
 				pTex->m_bMarked = 1;
-			else
+			else if (!pTex->m_nRefCount)
 				pTex->m_bMarked = 0;
 		}
 	}
@@ -1258,12 +1273,12 @@ void cm_ReleaseObjectTexturesQ404(CClientMgr* pClientMgrIn, HOBJECT hObj)
 		pOther = (CTexObjectQ3*)pCur->m_pData;
 		if (pOther != pObj)
 		{
-			for (i = 0; i < 2; i++)
+			for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 				tm_MarkTextureQ3(pOther->m_pSkins[i]);
 		}
 	}
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 	{
 		if (pObj->m_pSkins[i] && !pObj->m_pSkins[i]->m_bMarked)
 		{

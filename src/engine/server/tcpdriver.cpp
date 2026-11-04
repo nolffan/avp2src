@@ -866,6 +866,28 @@ LTRESULT TCPDriver::StartQuery(char* pAddresses)
 // that comes back is examined until the host answers, ten seconds pass, or the
 // host says no. Both message references are scoped, which is why the shipped
 // code carries the same two releases at all six exits.
+#ifdef PRIMAL_HUNT
+// PH: the datagram's payload is read through the packet's byte array
+// accessor (collection.h's in-class GetArray(), CPacket's m_Data at +0x50)
+// wherever a message is handed to SendTo: the returned pointer is
+// materialised into a register ahead of the length (`mov 0x54(%eax),%ecx ;
+// movzwl 0x34(%eax),%eax`, server.dll 0x10047109, 0x100471a6, 0x100472b3;
+// JoinSession and UpdateQuery the same), where AvP2 1.0.9.6 pushes the
+// plain m_pData field from memory after the length (server.dll 0x10042551).
+#define TCP_MSGDATA_Q556(pMsg) (((CPacket*)(pMsg))->m_Data.GetArray())
+#else
+#define TCP_MSGDATA_Q556(pMsg) ((pMsg)->m_pData)
+#endif
+
+// AVP2: the packet id handed to the trace below is read through a
+// by-value byte accessor: the shipped load is `mov (%eax),%al ; movzbl
+// %al,%eax` (PH server.dll 0x100477d0), a returned uint8 widened at the
+// push, where a plain subscript is one `movzbl (%eax),%eax` (name ours).
+inline uint8 tcp_PacketIDQ556(ServerMessage* pMsg)
+{
+	return pMsg->m_pData[0];
+}
+
 LTRESULT TCPDriver::JoinSession(struct sockaddr_in* pHostAddr)
 {
 	char               addrStr[128];
@@ -925,7 +947,7 @@ LTRESULT TCPDriver::JoinSession(struct sockaddr_in* pHostAddr)
 					hostAddr.sin_addr.S_un.S_un_b.s_b3, hostAddr.sin_addr.S_un.S_un_b.s_b4,
 					ntohs(hostAddr.sin_port));
 
-			SendTo(hSocket, msgOut.m_pMsg->m_pData, msgOut.m_pMsg->m_Unknown34, &hostAddr);
+			SendTo(hSocket, TCP_MSGDATA_Q556(msgOut.m_pMsg), msgOut.m_pMsg->m_Unknown34, &hostAddr);
 			lastSend = now;
 		}
 
@@ -938,7 +960,7 @@ LTRESULT TCPDriver::JoinSession(struct sockaddr_in* pHostAddr)
 		{
 			if (g_ShowNetInfo)
 				dsi_ServerError("IP: Got PacketID %d (len %d) while connecting",
-					msgIn.m_pMsg->m_pData[0], nRead);
+					tcp_PacketIDQ556(msgIn.m_pMsg), nRead);
 
 			msgIn.m_pMsg->m_Unknown34 = (uint16)nRead;
 			msgIn.m_pMsg->m_Unknown38 = 1;
@@ -1134,7 +1156,13 @@ void TCPDriver::CloseSockets(int bTerm)
 // without the free: the socket closed if there is one, then the base
 // destructor, ~NetConnection (0x004679f0, server.dll 0x1002aa95), which
 // the compiler runs after the body.
-TCPConnection::~TCPConnection()
+//
+// `inline`, defined here: VC6's inliner only sees bodies it has already
+// compiled, so CloseSockets and Disconnect above call the out-of-line copy
+// while HandleConnPacket below has it -- lithtech.exe expands the whole
+// delete there (0x004a33cd..0x004a33e6) and server.dll's /O1 calls the
+// scalar deleting destructor (0x10047124, 0x1004724a).
+inline TCPConnection::~TCPConnection()
 {
 	if (m_Socket)
 		closesocket(m_Socket);
@@ -2361,7 +2389,7 @@ LTRESULT TCPDriver::UpdateQuery()
 			// That is the evidence that the source subscripts the array
 			// again instead of naming a pointer -- a named pointer would
 			// have survived in %esi.
-			SendTo(m_QuerySocket, msgOut.m_pMsg->m_pData,
+			SendTo(m_QuerySocket, TCP_MSGDATA_Q556(msgOut.m_pMsg),
 			       msgOut.m_pMsg->m_Unknown34, &m_Query.m_pArray[i].m_Addr);
 		}
 
@@ -2549,6 +2577,19 @@ LTRESULT TCPDriver::UpdateQuery()
 //      twin keeps nSub in 0x28(%esp) (its own dead pMsg slot) and the
 //      temporaries in real frame.
 // ===========================================================================
+// AVP2: the net handler's two-argument notification slot (+0x10), as
+// netmgr.cpp's CNetHandlerQ556 has it; servermgr.h still declares NOLF's
+// three arguments (name ours).
+class CNetHandlerTQ556
+{
+public:
+	virtual void _v00()=0;
+	virtual void _v04()=0;
+	virtual void _v08()=0;
+	virtual void _v0c()=0;
+	virtual void Notify(int nEvent, char* pName)=0;                 // 0x10
+};
+
 void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 {
 	CMessageRef    msgOut;
@@ -2616,7 +2657,7 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 				m_pSessionName ? m_pSessionName : g_EmptyString);
 			msgOut.m_pMsg->WriteByte(nSub);
 
-			SendTo(m_Socket, msgOut.m_pMsg->m_pData,
+			SendTo(m_Socket, TCP_MSGDATA_Q556(msgOut.m_pMsg),
 			       msgOut.m_pMsg->m_Unknown34, pFrom);
 			return;
 		}
@@ -2683,7 +2724,7 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 					// (SendDisconnect, by contrast, really does send four.)
 					for (i = 0; i < 5; i++)
 					{
-						SendTo(m_Socket, msgOut.m_pMsg->m_pData,
+						SendTo(m_Socket, TCP_MSGDATA_Q556(msgOut.m_pMsg),
 						       msgOut.m_pMsg->m_Unknown34, pFrom);
 					}
 
@@ -2728,7 +2769,7 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 #endif
 
 			// Sent once, not five times.
-			SendTo(m_Socket, msgOut.m_pMsg->m_pData,
+			SendTo(m_Socket, TCP_MSGDATA_Q556(msgOut.m_pMsg),
 			       msgOut.m_pMsg->m_Unknown34, pFrom);
 		}
 	}
@@ -2751,24 +2792,12 @@ void TCPDriver::HandleConnPacket(ServerMessage* pMsg, struct sockaddr_in* pFrom)
 					ntohs(pFrom->sin_port));
 			}
 
-			// Character for character the notice netmgr.cpp already sends at
-			// its own line 1750, down to g_EmptyString and the argument
-			// order.  m_pHandler is read twice -- the guard's copy supplies
-			// the vtable (`mov (%eax),%esi` at 0x1003727c) and the call
-			// re-reads the field for `this` (0x10037292) -- which is the
-			// two-mentions rule again.
+			// AVP2: the handler's notice takes two arguments, the event and
+			// the empty name -- nothing is read from the packet (PH
+			// server.dll 0x100471f7, lithtech.exe 0x004a3372; AvP2
+			// server.dll 0x10042682).  netmgr.cpp's CNetHandlerQ556 note.
 			if (m_pNetMgr->m_pHandler)
-			{
-				// lithtech.exe expands the read in place (0x004864e3 ..);
-				// see the note at UpdateQuery's second read.
-#ifdef LT_SERVER_BUILD
-				m_pNetMgr->m_pHandler->_v10(4, g_EmptyString,
-					((ServerMessageTypeView*)pMsg)->ReadDWord(0));
-#else
-				m_pNetMgr->m_pHandler->_v10(4, g_EmptyString,
-					((CPacket*)pMsg)->ReadType((uint32*)0));
-#endif
-			}
+				((CNetHandlerTQ556*)m_pNetMgr->m_pHandler)->Notify(4, g_EmptyString);
 
 			m_pNetMgr->CloseConnection(pConn);
 			m_ConnTable.Remove((TCPConnNode*)&pConn->m_TableNode);

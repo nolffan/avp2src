@@ -350,12 +350,13 @@ LTRESULT SharedCommonLT::GetAttachedTransform(HATTACHMENT hAttachment, uint32 hP
 }
 
 
-// 0x10015bcd — quaternion to matrix. This one needed no reconstruction: the
-// SDK ships the source in src/LT2/sdk/inc/ltquatbase.cpp and the shipped bytes are
-// that function, statement for statement, including the six-deep chained
-// assignment of the last row and column (the zero stores come out in reverse
-// order, 0x38 down to 0x0c, which is that chain evaluating right to left).
-// Its real home is ltquatbase.cpp; it sits here because that TU is not part of
+// 0x10015bcd (NOLF) — quaternion to matrix; Primal Hunt lithtech.exe
+// 0x00451180, server.dll 0x1001b2da, both IDENTICAL. This one needed no
+// reconstruction: the SDK ships the source in src/LT2/sdk/inc/ltquatbase.cpp
+// and the shipped bytes are that function, statement for statement -- its
+// static intermediates and its row-by-row fill included. Its real home is
+// ltquatbase.cpp (beside commonmodel.cpp's quat_ConvertFromMatrix, which
+// follows it in both images); it sits here because that TU is not part of
 // the reconstruction yet.
 //
 // The declaration this file uses takes the quaternion and the matrix as their
@@ -364,7 +365,10 @@ LTRESULT SharedCommonLT::GetAttachedTransform(HATTACHMENT hAttachment, uint32 hP
 // same offsets.
 void quat_ConvertToMatrix(LTRotation* pQuat, LTMatrix* pMat)
 {
-	float s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
+	// AVP2: the SDK's `static` locals (AvP2 lithtech.exe 0x0044cc80 and
+	// Primal Hunt's 0x00451180 / server.dll 0x1001b2da store every
+	// intermediate to .bss, 0x004f569c..0x004f56cc).
+	static float s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
 
 	// get the values for matrix calcuation...
 	s = 2.0f / ((pQuat->m_Quat[0] * pQuat->m_Quat[0]) + (pQuat->m_Quat[1] * pQuat->m_Quat[1]) +
@@ -387,21 +391,26 @@ void quat_ConvertToMatrix(LTRotation* pQuat, LTMatrix* pMat)
 
 	zz = pQuat->m_Quat[2] * zs;
 
-	// Fill in matrix
+	// Fill in matrix -- AVP2: the SDK's row-by-row order, each row's zero
+	// stored after it (server.dll 0x1001b3d3 `fldz; fstps 0xc(%eax)`).
 	pMat->m[0][0] = 1.0f - (yy + zz);
 	pMat->m[0][1] = xy - wz;
 	pMat->m[0][2] = xz + wy;
+	pMat->m[0][3] = 0.0f;
 
 	pMat->m[1][0] = xy + wz;
 	pMat->m[1][1] = 1.0f - (xx + zz);
 	pMat->m[1][2] = yz - wx;
+	pMat->m[1][3] = 0.0f;
 
 	pMat->m[2][0] = xz - wy;
 	pMat->m[2][1] = yz + wx;
 	pMat->m[2][2] = 1.0f - (xx + yy);
+	pMat->m[2][3] = 0.0f;
 
-	pMat->m[0][3] = pMat->m[1][3] = pMat->m[2][3] =
-		pMat->m[3][0] = pMat->m[3][1] = pMat->m[3][2] = 0.0f;
+	pMat->m[3][0] = 0.0f;
+	pMat->m[3][1] = 0.0f;
+	pMat->m[3][2] = 0.0f;
 	pMat->m[3][3] = 1.0f;
 }
 

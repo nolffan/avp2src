@@ -83,6 +83,16 @@ struct LTRectQ438
 struct LTVectorQ438
 {
 	float x, y, z;
+
+	// ltvector.h's Init, defaults and all: the zeroes arrive as arguments,
+	// which is why an expanded Init stores them from one register where a
+	// constant store is an immediate (0x0044296a..0x00442974).
+	void Init(float a = 0.0f, float b = 0.0f, float c = 0.0f)
+	{
+		x = a;
+		y = b;
+		z = c;
+	}
 };
 
 // ltbasetypes.h's LTWarpPt, already pinned by diblit.cpp PART THREE:
@@ -570,10 +580,20 @@ inline void di_FreeBindNodeQ438(SBindNodeQ438* pNode)
 class CBindNodeOwnerQ438
 {
 public:
+	// AVP2: eight dwords where NOLF set two (Primal Hunt 0x00442940, AvP2
+	// 1.0.9.6 0x0043eba0, the same bytes). The zeroes at +0x00..+0x08 are
+	// immediates and those at +0x0c..+0x14 come from one `xor %eax,%eax`:
+	// the first three are an expanded vector Init (float arguments), the
+	// other three integer stores, and the 1 at +0x18 goes before them.
+	// Byte-identical (names ours).
 	CBindNodeOwnerQ438()
 	{
-		m_n00 = 0;                           // 0x00436890
-		m_n04 = 1;                           // 0x0043689a
+		m_v00.Init();                        // 0x00442942..0x00442956
+		m_n18 = 1;                           // 0x00442960
+		m_n0c = 0;                           // 0x0044296a
+		m_n10 = 0;                           // 0x0044296f
+		m_n14 = 0;                           // 0x00442974
+		m_f1c = 1.0f;                        // 0x00442979
 	}
 
 	~CBindNodeOwnerQ438()
@@ -593,9 +613,13 @@ public:
 		}
 	}
 
-	uint32         m_n00;                    // 0x00  0x004b348c
-	uint32         m_n04;                    // 0x04  0x004b3490
-	uint8          m_pad08[0x4c - 0x08];
+	LTVectorQ438   m_v00;                    // 0x00  PH 0x004f4ab4
+	uint32         m_n0c;                    // 0x0c
+	uint32         m_n10;                    // 0x10
+	uint32         m_n14;                    // 0x14
+	uint32         m_n18;                    // 0x18
+	float          m_f1c;                    // 0x1c
+	uint8          m_pad20[0x4c - 0x20];
 	SBindNodeQ438* m_pList;                  // 0x4c  0x004b34d8
 };
 

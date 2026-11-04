@@ -2,6 +2,7 @@
 #include <math.h>
 #include <float.h>
 #include "worldsim.h"
+#include "iltmath.h"
 
 // PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
 // lithtech.exe's do (AvP2 1.0.9.6's none).  Its trace is
@@ -944,6 +945,563 @@ void ws_HandleImpact(CollisionInfo* pInfo, CBounceState* pState,
 	}
 }
 
+// ======================================================================= //
+//  AVP2: the sphere mover. Primal Hunt's FLAG2_SPHEREPHYSICS objects are
+//  moved by a module of their own that NOLF's engine has not: server.dll
+//  0x1000346a..0x100041ca (lithtech.exe 0x0041bff0..0x0041d13f), whose two
+//  error strings name its polygon gathers (0x1007d350.., 0x1007d2d4..), and
+//  which hands the gathered polygons to the swept-sphere module
+//  (sweptsphere.cpp, 0x10009413 / 0x100095f4 / 0x100096a3). Names ours.
+// ======================================================================= //
+
+// The objects a sphere move is tested against: a count at +4 and eight-byte
+// records from +8, of which only the object is read (server.dll 0x10003ae5
+// count, 0x10003b18 record; names ours).
+struct SphereObjEntryQ553
+{
+	LTObject* m_pObject;                     // 0x00
+	uint32    m_n04;                         // 0x04
+};
+
+struct SphereObjListQ553
+{
+	uint32             m_n00;                // 0x00
+	int                m_nCount;             // 0x04
+	SphereObjEntryQ553 m_Entries[1];         // 0x08
+};
+
+// A polygon gather's optional second answer: which object each polygon
+// came from, and its record in that object's table (0x10003c6a, 0x10003c6f).
+struct SphereHitQ553
+{
+	LTObject*     m_pObject;                 // 0x00
+	WorldPolyRef* m_pRec;                    // 0x04
+};
+
+// The sphere move's own state, as the mover at 0x1000346a reads and writes it
+// (names ours).
+// Where a gather's segment comes from when the caller gives none: a pointer
+// to the start at +0x1c and the end itself at +0x20 (0x100037f6,
+// 0x1000380e; names ours).
+class CSphereSrcQ553
+{
+public:
+	uint8     m_pad_00[0x1c];
+	LTVector* m_pStart;                      // 0x1c
+	LTVector  m_vEnd;                        // 0x20
+};
+
+class CSphereMoveQ553
+{
+public:
+	LTObject*          m_pObject;            // 0x00  +0x9c rotation, +0x8c flags
+	CSphereSrcQ553*    m_pSrc;               // 0x04
+	SphereObjListQ553* m_pObjects;           // 0x08
+	LTVector           m_vStart;             // 0x0c
+	LTVector           m_vEnd;               // 0x18
+	float              m_fRadius;            // 0x24
+	float              m_fFraction;          // 0x28
+	LTVector           m_vNormal;            // 0x2c
+	uint8              m_nIterations;        // 0x38
+	uint8              m_pad_39[3];
+	int                m_nNormals;           // 0x3c
+	LTVector           m_vNormals[10];       // 0x40
+	int                m_nContacts;          // 0xb8
+	LTVector           m_vContacts[10];      // 0xbc
+	uint32             m_bContact;           // 0x134
+};
+
+// objtypes.cpp's GetPBlockAt (0x1002eced), as worldsim's three callers reach
+// it: a thiscall on the world model taking the point by address.
+class CObjWorldModelPBlockQ532
+{
+public:
+	class CPhysicsBlock* GetPBlockAt(LTVector* pPos);
+};
+
+extern uint16 g_BlockStackQ534[];
+
+// How far the gather reaches past the sphere's own radius (0x100742ac).
+#define WS_SPHERE_SLOP 0.1f
+
+// The sphere move's helpers, in address order below the mover (names ours).
+void ws_GetSphereCollideTestPolysQ553(CSphereMoveQ553* pMove,
+                                      WorldPolyOwner** pList, int* pnCount,
+                                      int nMax, LTVector* pStart,
+                                      LTVector* pEnd, SphereHitQ553* pHits);
+void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
+                                  WorldPolyOwner** pList, int* pnCount,
+                                  int nMax, LTVector vPos,
+                                  SphereHitQ553* pHits);
+// server.dll 0x10003cc0 / lithtech.exe 0x0041ca70: the FLAG2_ORIENTMOVEMENT
+// pass after a move (not reconstructed yet).
+void ws_SphereOrientMoveQ553(CSphereMoveQ553* pMove);
+
+// sweptsphere.cpp's push-out and polygon sweep (0x10009413, 0x100095f4).
+LTBOOL sp_PushSphereOutQ533(LTVector* pPos, float fRadius,
+                            WorldPolyOwner** ppPolys, int nPolys);
+LTBOOL sp_SweptSphereToPolysQ533(LTVector* pStart, LTVector* pEnd,
+                                 float fRadius, WorldPolyOwner** ppPolys,
+                                 int nPolys, LTVector* pHitNormal,
+                                 LTVector* pPlaneNormal, float* pT,
+                                 LTBOOL* pbOrient);
+
+// The gathers' list size: 0x200 polygons (`push $0x200`, 0x10003510).
+#define WS_SPHERE_MAX_POLYS 0x200
+
+// Ten sweeps, ten remembered normals and ten contacts at most.
+#define WS_SPHERE_MAX_ITER 10
+
+// How far past a hit the remaining move is pulled back, and how close to
+// the object's up vector a surface may face before it stops counting as a
+// contact (0x1007425c, 0x10074258).
+#define WS_SPHERE_PUSHBACK  1.02f
+#define WS_SPHERE_UP_LIMIT  0.99f
+
+// server.dll 0x1000346a (870 bytes) / lithtech.exe 0x0041bff0 (1151) -- the
+// sphere move itself, called from 0x1002801b. The start is first pushed
+// clear of whatever it is resting in (no room to do so abandons the move,
+// end = start); then up to ten sweeps from start to end: each hit takes the
+// rest of the move back off the end along the hit normal -- or, when the
+// normal opposes one already met (a crease), the rest of the move outright
+// -- remembers the normal, and records it as a contact unless it faces the
+// object's own up vector. A sweep that hits nothing ends it; FLAG2_ORIENT
+// MOVEMENT then has its own pass (0x100037b0). Answers whether any sweep
+// hit.
+//
+// Byte-identical on server.dll. Load-bearing: `while (TRUE)` (a `for (;;)`
+// duplicates the loop head), the fraction stored before the normal
+// (0x1000365a), and sp_PushSphereOutQ533 answering a full register
+// (`test %eax,%eax`, 0x10003545; sweptsphere.cpp still declares it uint16).
+// NEAR on lithtech.exe (1151 of 1151, 6 blocks): the two `end = start`
+// copies load all three dwords before storing (0x0041c101, 0x0041c428)
+// where ours interleaves them. ILTMath is declared where it is constructed,
+// after the field resets, as lithtech's vptr store shows (0x0041c052).
+LTBOOL ws_MoveSphereQ553(CSphereMoveQ553* pMove)
+{
+	int              nCount;
+	WorldPolyOwner*  pList[WS_SPHERE_MAX_POLYS];
+	LTVector         vRight;
+	LTVector         vUp;
+	LTVector         vForward;
+	LTVector         vHitNormal;
+	LTVector         vPlaneNormal;
+	float            fT;
+	LTBOOL           bOrient;
+	LTVector*        pEnd;
+	int              j;
+	uint8            bOpposed;
+
+	pMove->m_fFraction = 1.0f;
+	pMove->m_vNormal = LTVector(0.0f, 0.0f, 0.0f);
+	pMove->m_nIterations = 0;
+	pMove->m_nNormals = 0;
+	pMove->m_nContacts = 0;
+	pMove->m_bContact = 0;
+
+	ILTMath    math;
+	LTRotation rRot = pMove->m_pObject->m_Rotation;
+
+	math.GetRotationVectors(rRot, vRight, vUp, vForward);
+
+	nCount = 0;
+
+	LTVector* pStart = &pMove->m_vStart;
+
+	ws_GetSpherePosTestPolysQ553(pMove, pList, &nCount, WS_SPHERE_MAX_POLYS,
+	                             *pStart, LTNULL);
+
+	if (!sp_PushSphereOutQ533(pStart, pMove->m_fRadius, pList, nCount))
+	{
+		pMove->m_vEnd = *pStart;
+
+		return 0;
+	}
+
+	pEnd = &pMove->m_vEnd;
+
+	while (TRUE)
+	{
+		ws_GetSphereCollideTestPolysQ553(pMove, pList, &nCount,
+		                                 WS_SPHERE_MAX_POLYS,
+		                                 LTNULL, LTNULL, LTNULL);
+
+		if (!sp_SweptSphereToPolysQ533(pStart, pEnd,
+		                               pMove->m_fRadius, pList, nCount,
+		                               &vHitNormal, &vPlaneNormal, &fT,
+		                               &bOrient))
+			break;
+
+		if (vHitNormal.MagSqr() <= 0.001f)
+		{
+			*pEnd = *pStart;
+
+			return 0;
+		}
+
+		LTVector vRemain = (*pEnd - *pStart) * (1.0f - fT);
+		LTVector vProj   = vHitNormal * vHitNormal.Dot(vRemain);
+
+		if (bOrient && fT <= pMove->m_fFraction)
+		{
+			pMove->m_fFraction = fT;
+			pMove->m_vNormal   = vPlaneNormal;
+		}
+
+		bOpposed = 0;
+
+		for (j = 0; j < pMove->m_nNormals && !bOpposed; j++)
+			bOpposed = vHitNormal.Dot(pMove->m_vNormals[j]) < 0.0f;
+
+		if (pMove->m_nNormals < WS_SPHERE_MAX_ITER)
+		{
+			pMove->m_vNormals[pMove->m_nNormals] = vHitNormal;
+			pMove->m_nNormals++;
+		}
+
+		if (pMove->m_nIterations >= WS_SPHERE_MAX_ITER)
+		{
+			*pEnd = *pStart;
+
+			return 0;
+		}
+
+		if (!bOpposed)
+			*pEnd -= vProj * WS_SPHERE_PUSHBACK;
+		else
+			*pEnd -= vRemain * WS_SPHERE_PUSHBACK;
+
+		if (bOrient && vUp.Dot(vHitNormal) < WS_SPHERE_UP_LIMIT)
+		{
+			pMove->m_vContacts[pMove->m_nContacts] = vHitNormal;
+			pMove->m_nContacts++;
+			pMove->m_bContact = 1;
+		}
+
+		pMove->m_nIterations++;
+	}
+
+	if (pMove->m_pObject->m_Flags2 & FLAG2_ORIENTMOVEMENT)
+		ws_SphereOrientMoveQ553(pMove);
+
+	return pMove->m_nIterations > 0;
+}
+
+// How far past the segment's own half-length and the sphere's radius the
+// collide gather reaches (0x100742a8).
+#define WS_SPHERE_COLLIDE_SLOP 5.0f
+
+// server.dll 0x100037d0 (764 bytes) / lithtech.exe 0x0041c470 (934) -- the
+// polygons a sphere swept from pStart to pEnd may hit: "GetSphereCollide
+// TestPolys" (0x1007d314). The segment defaults to the move's own
+// (0x100037f0, 0x1000380b). The walk is GetSpherePosTestPolys' over the
+// segment: a plane both ends clear by the radius on one side is descended on
+// that side, and a straddler is collected when its bounding sphere comes
+// within reach of the segment's midpoint; the far child is pushed by the
+// start's side of the plane (0x10003a67), as ws_MoveCylinder does.
+// Byte-identical on server.dll: vDelta and vMid are initialised where they
+// are declared (assigned into function-scope vectors, VC6 copies vDelta for
+// Mag), and vFrom is the per-object copy the start-side distance reads
+// (0x100038dd).
+void ws_GetSphereCollideTestPolysQ553(CSphereMoveQ553* pMove,
+                                      WorldPolyOwner** pList, int* pnCount,
+                                      int nMax, LTVector* pStart,
+                                      LTVector* pEnd, SphereHitQ553* pHits)
+{
+	LTVector       vStart;
+	LTVector       vEnd;
+	float          fReach;
+	int            i;
+	LTObject*      pObj;
+	IWorldBsp*     pBsp;
+	CPhysicsBlock* pBlock;
+	WorldPolyRef*  pRecs;
+	WorldPolyRef*  pRec;
+	WSNode*        pNode;
+	LTPlane*       pPlane;
+	uint16*        pTop;
+	uint16         nNode;
+	float          fStartDist;
+	float          fEndDist;
+	float          fPolyReach;
+	int            nSide;
+
+	if (pList)
+	{
+		*pnCount = 0;
+
+		vStart = *(pStart ? pStart : pMove->m_pSrc->m_pStart);
+		vEnd   = *(pEnd ? pEnd : &pMove->m_pSrc->m_vEnd);
+
+		LTVector vDelta = vEnd - vStart;
+		LTVector vMid   = vStart + vDelta * 0.5f;
+
+		fReach = vDelta.Mag() + pMove->m_fRadius + WS_SPHERE_COLLIDE_SLOP;
+
+		for (i = pMove->m_pObjects->m_nCount - 1; i >= 0; i--)
+		{
+			pObj = pMove->m_pObjects->m_Entries[i].m_pObject;
+
+			if (pObj->m_ObjectType == OT_WORLDMODEL ||
+			    pObj->m_ObjectType == OT_CONTAINER)
+			{
+				pBsp   = (IWorldBsp*)pObj->m_pWMIface;
+				pBlock = ((CObjWorldModelPBlockQ532*)pObj)->GetPBlockAt(&vStart);
+
+				if (pBlock)
+				{
+					LTVector vFrom = vStart;
+
+					nNode = pBlock->m_nIndex;
+					pTop  = g_BlockStackQ534;
+					pRecs = pBsp->GetPolyRefs();
+
+					while (TRUE)
+					{
+						if (pTop - g_BlockStackQ534 >= WS_NODE_STACK)
+						{
+							dsi_ServerError("GetSphereCollideTestPolys!!  World caused stack overflow!");
+							break;
+						}
+
+						if (nNode == WS_NODE_EMPTY || nNode == WS_NODE_SOLID)
+						{
+							if (pTop == g_BlockStackQ534)
+								break;
+
+							pTop--;
+							nNode = *pTop;
+						}
+
+						pNode = &pBlock->m_pNodes[nNode];
+
+						if (pNode->m_nPoly == 0xffff)
+						{
+							nNode = pNode->m_nChild[1];
+							continue;
+						}
+
+						pRec   = &pRecs[pNode->m_nPoly];
+						pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
+
+						fStartDist = vFrom.z * pPlane->m_Normal.z +
+						             vFrom.y * pPlane->m_Normal.y +
+						             vFrom.x * pPlane->m_Normal.x - pPlane->m_Dist;
+
+						pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
+
+						fEndDist = vEnd.y * pPlane->m_Normal.y +
+						           vEnd.z * pPlane->m_Normal.z +
+						           vEnd.x * pPlane->m_Normal.x - pPlane->m_Dist;
+
+						if (fStartDist > pMove->m_fRadius &&
+						    fEndDist > pMove->m_fRadius)
+						{
+							nNode = pNode->m_nChild[1];
+							continue;
+						}
+
+						if (fStartDist < -pMove->m_fRadius &&
+						    fEndDist < -pMove->m_fRadius)
+						{
+							nNode = pNode->m_nChild[0];
+							continue;
+						}
+
+						if (pRec->m_pOwner->m_pSurface->m_Flags & 1)
+						{
+							LTVector vD = pRec->m_pOwner->m_vCentre - vMid;
+
+							fPolyReach = fReach + pRec->m_pOwner->m_fRadius;
+
+							if (vD.MagSqr() <= fPolyReach * fPolyReach)
+							{
+								if (*pnCount >= nMax)
+								{
+									dsi_ServerError("GetSphereCollideTestPolys!!  World caused max collision polys!");
+									break;
+								}
+
+								pList[*pnCount] = pRec->m_pOwner;
+
+								if (pHits)
+								{
+									pHits[*pnCount].m_pObject = pObj;
+									pHits[*pnCount].m_pRec    = pRec;
+								}
+
+								(*pnCount)++;
+							}
+						}
+
+						if (fStartDist > WS_PLANE_SLOP)
+							nSide = 1;
+						else
+							nSide = 0;
+
+						if (pNode->m_nChild[nSide == 0] != WS_NODE_EMPTY &&
+						    pNode->m_nChild[nSide == 0] != WS_NODE_SOLID)
+						{
+							*pTop = pNode->m_nChild[nSide == 0];
+							pTop++;
+						}
+
+						nNode = pNode->m_nChild[nSide];
+					}
+				}
+			}
+		}
+	}
+}
+
+// server.dll 0x10003acc (500 bytes) / lithtech.exe 0x0041c820 (581) -- every
+// polygon of every world model or container in the move's object list whose
+// bounding sphere comes within the sphere's reach of vPos: the error string
+// at 0x1007d38c names it GetSpherePosTestPolys. Each object's physics block
+// under the point is walked through the shared node stack; a plane further
+// in front than the reach is descended in front, one behind the slop
+// behind, and a straddling polygon on a solid surface (bit 0 of +0x30) is
+// collected when the two spheres overlap (`fcompp` against the squared sum,
+// 0x10003c45). Both errors leave that object's walk (0x10003cae).
+//
+// NEAR on server.dll (500 of 500, one instruction): the object load is
+// `mov (%ecx,%eax,1),%ebx` (0x10003b18) where ours names the two registers
+// the other way round; the collide gather above, which reads the list the
+// same way, is identical. A pointer-arithmetic spelling of the entry and a
+// loop-scoped pObj give the same. Two shapes it needed: `while (TRUE)` (a
+// `for (;;)` peels the stack check into the entry, constant-folded) and
+// guarded `continue`s for the three descends (an if/else chain hosts the
+// shared descend at the plane test instead of the 0xffff test). NEAR on
+// lithtech.exe (565 of 581, 4 blocks): shipped keeps the squared distance's
+// z and the reach in frame slots (0x0041c9a8, `sub $0x1c`) and sums x, y, z;
+// ours keeps all five values in st and sums z, y, x. The collide gather's
+// lithtech copy (0x0041c470, 918 of 934) has the same residual.
+void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
+                                  WorldPolyOwner** pList, int* pnCount,
+                                  int nMax, LTVector vPos,
+                                  SphereHitQ553* pHits)
+{
+	float          fRadius;
+	int            i;
+	LTObject*      pObj;
+	IWorldBsp*     pBsp;
+	CPhysicsBlock* pBlock;
+	WorldPolyRef*  pRecs;
+	WorldPolyRef*  pRec;
+	WSNode*        pNode;
+	LTPlane*       pPlane;
+	uint16*        pTop;
+	uint16         nNode;
+	float          fDist;
+	float          fReach;
+
+	if (pList)
+	{
+		*pnCount = 0;
+
+		fRadius = pMove->m_fRadius + WS_SPHERE_SLOP;
+
+		for (i = pMove->m_pObjects->m_nCount - 1; i >= 0; i--)
+		{
+			pObj = pMove->m_pObjects->m_Entries[i].m_pObject;
+
+			if (pObj->m_ObjectType == OT_WORLDMODEL ||
+			    pObj->m_ObjectType == OT_CONTAINER)
+			{
+				pBsp   = (IWorldBsp*)pObj->m_pWMIface;
+				pBlock = ((CObjWorldModelPBlockQ532*)pObj)->GetPBlockAt(&vPos);
+
+				if (pBlock)
+				{
+					nNode = pBlock->m_nIndex;
+					pTop  = g_BlockStackQ534;
+					pRecs = pBsp->GetPolyRefs();
+
+					while (TRUE)
+					{
+						if (pTop - g_BlockStackQ534 >= WS_NODE_STACK)
+						{
+							dsi_ServerError("GetSpherePosTestPolys!!  World caused stack overflow!");
+							break;
+						}
+
+						if (nNode == WS_NODE_EMPTY || nNode == WS_NODE_SOLID)
+						{
+							if (pTop == g_BlockStackQ534)
+								break;
+
+							pTop--;
+							nNode = *pTop;
+						}
+
+						pNode = &pBlock->m_pNodes[nNode];
+
+						if (pNode->m_nPoly == 0xffff)
+						{
+							nNode = pNode->m_nChild[1];
+							continue;
+						}
+
+						pRec   = &pRecs[pNode->m_nPoly];
+						pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
+
+						fDist = vPos.z * pPlane->m_Normal.z +
+						        vPos.y * pPlane->m_Normal.y +
+						        vPos.x * pPlane->m_Normal.x - pPlane->m_Dist;
+
+						if (fDist > fRadius)
+						{
+							nNode = pNode->m_nChild[1];
+							continue;
+						}
+
+						if (fDist < WS_PLANE_SLOP)
+						{
+							nNode = pNode->m_nChild[0];
+							continue;
+						}
+
+						if (pRec->m_pOwner->m_pSurface->m_Flags & 1)
+						{
+							LTVector vDelta = pRec->m_pOwner->m_vCentre - vPos;
+
+							fReach = fRadius + pRec->m_pOwner->m_fRadius;
+
+							if (vDelta.MagSqr() <= fReach * fReach)
+							{
+								if (*pnCount >= nMax)
+								{
+									dsi_ServerError("GetSpherePosTestPolys!!  World caused max collision polys!");
+									break;
+								}
+
+								pList[*pnCount] = pRec->m_pOwner;
+
+								if (pHits)
+								{
+									pHits[*pnCount].m_pObject = pObj;
+									pHits[*pnCount].m_pRec    = pRec;
+								}
+
+								(*pnCount)++;
+							}
+						}
+
+						if (pNode->m_nChild[0] != WS_NODE_EMPTY &&
+						    pNode->m_nChild[0] != WS_NODE_SOLID)
+						{
+							*pTop = pNode->m_nChild[0];
+							pTop++;
+						}
+
+						nNode = pNode->m_nChild[1];
+					}
+				}
+			}
+		}
+	}
+}
+
 // The other way to answer a contact: instead of shoving the box out along the
 // plane's normal, wind the move back to the fraction of it that reaches the
 // plane and no further. That is what a slide wants -- the box keeps the part
@@ -1059,16 +1617,24 @@ void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 // Dot and the flat sum all start on x before the z load is stored; the
 // index form `v = pPoint[i]` fixes the copy but puts `inc %edx` ahead of
 // the pointer step, and only the odd `y + (x + z)` sum gives z, x, y.
+// The corner pointer is taken AFTER the two extreme stores: server.dll
+// 0x10002216..0x10002224 stores m_fMin/m_fMax before parking it in the dead
+// parameter slot (9 -> 6 differing instructions there). What is left on
+// both images is the z, x, y term order: every grouping and operand order
+// of the three products measured here comes out x first (x, y, z flat;
+// x, z, y for each `y + (x + z)` / `y + x + z` spelling).
 int ws_ProjectBox(CBoxProject* pProject)
 {
 	CBoxProject*     pBox   = pProject;
 	LTPlane*         pPlane = pBox->m_pPlane;
-	LTVector*        pPoint = pBox->m_pPoints;
+	LTVector*        pPoint;
 	float            fDist;
 	int              i;
 
 	pBox->m_fMin =  WS_FAR;
 	pBox->m_fMax = -WS_FAR;
+
+	pPoint = pBox->m_pPoints;
 
 	for (i = 0; i < 8; i++)
 	{
@@ -1638,6 +2204,83 @@ void ws_ObjectsCollided(IPhysicsSim* pSim, LTObject* pObj1, LTObject* pObj2,
 	}
 }
 
+// server.dll 0x1000464b (537 bytes) -- AVP2: every physics block the swept
+// box overlaps, for ws_MoveObject (its caller, 0x10004e3b). The box is
+// taken into the world model's space through the moving-against object's
+// second transform (+0x238) at both corners (MatVMul_H, 0x10004864, its
+// result dropped), and the world's block grid (cell size and origin, slots
+// 0x14 and 0x18) is walked y, x, z from the cell holding the low corner;
+// _ftol truncates (0x1000473e). Stops when nMax blocks are found. A box that
+// found none asks for the block at the grid's origin (0x10004837).
+// Byte-identical in both images (lithtech.exe 0x0041d750, 1106 bytes). Two
+// shapes are load-bearing: the low corner is its own vector (vLo, whose
+// slot the walk's vPos then shares) and the cell starts are a vector too
+// (only their y stays in st); and the world model is a named pointer
+// (`lea 0x238(%eax),%esi`, 0x10004695). Name ours.
+void ws_GetPBlocksQ553(CPhysicsBlock** ppBlocks, int* pnBlocks, int nMax)
+{
+	LTVector  vA;
+	LTVector  vB;
+	LTVector  vLo;
+	LTVector  vPos;
+	LTVector  vHi;
+	LTVector  vCellSize;
+	LTVector  vOrigin;
+	LTVector  vStart;
+	LTVector  vMin;
+	LTVector  vMax;
+	WorldModelObject* pObj;
+	LTBOOL    bFull;
+
+	ws_SetupSweptBox(&vMin, &vMax);
+
+	vCellSize = *g_pMoveState->m_pWorldBsp->GetCellSize();
+	vOrigin   = *g_pMoveState->m_pWorldBsp->GetCellOrigin();
+
+	pObj = (WorldModelObject*)g_pMoveState->m_hObject;
+
+	MatVMul_H(&vA, &pObj->m_Transform230, &vMin);
+	MatVMul_H(&vB, &pObj->m_Transform230, &vMax);
+
+	VEC_MIN(vLo, vA, vB);
+	VEC_MAX(vHi, vA, vB);
+
+	vStart.x = (float)(int)((vLo.x - vOrigin.x) / vCellSize.x) * vCellSize.x + vOrigin.x;
+	vStart.y = (float)(int)((vLo.y - vOrigin.y) / vCellSize.y) * vCellSize.y + vOrigin.y;
+	vStart.z = (float)(int)((vLo.z - vOrigin.z) / vCellSize.z) * vCellSize.z + vOrigin.z;
+
+	*pnBlocks = 0;
+	bFull = LTFALSE;
+
+	for (vPos.y = vStart.y; vPos.y <= vHi.y && !bFull; vPos.y += vCellSize.y)
+	{
+		for (vPos.x = vStart.x; vPos.x <= vHi.x && !bFull; vPos.x += vCellSize.x)
+		{
+			for (vPos.z = vStart.z; vPos.z <= vHi.z && !bFull; vPos.z += vCellSize.z)
+			{
+				*ppBlocks = g_pMoveState->m_pWorldBsp->GetPBlock(vPos);
+
+				if (*ppBlocks)
+				{
+					(*pnBlocks)++;
+					ppBlocks++;
+
+					if (*pnBlocks >= nMax)
+						bFull = LTTRUE;
+				}
+			}
+		}
+	}
+
+	if (*pnBlocks == 0)
+	{
+		*ppBlocks = g_pMoveState->m_pWorldBsp->GetPBlock(vOrigin);
+
+		if (*ppBlocks)
+			(*pnBlocks)++;
+	}
+}
+
 // Everything the move could possibly touch, as one box: the span between
 // where the move wanted to go and where it has been pushed to, widened by the
 // object's own half-extents at both ends. The bounding sphere gets a metre of
@@ -1804,38 +2447,77 @@ int ws_ShiftBox()
 	return 1;
 }
 
+// AVP2: the move state is 0x4c bytes (`rep movsl` of 0x13 dwords,
+// server.dll 0x10004ad5..0x10004b0f): past NOLF's +0x44 it carries a
+// pointer to the mover's step offset, which the new stair step reads and
+// adjusts (0x10004c63, 0x10004cdb). worldsim.h's CMoveState stops at +0x44
+// and two other files include it, so the extra member is a view here (name
+// ours).
+class CMoveStateQ553 : public CMoveState
+{
+public:
+	float* m_pStepOffset;                    // 0x48
+};
+
+// AVP2: the console's "NewCollision" and "NewStairStep" (dsi.cpp's table,
+// 0x1007df04 / 0x1007df08): the first sends cylinder movers through the box
+// sweep as well, the second picks the stair step below.
+extern int g_CV_NewCollisionQ537;
+extern int g_CV_NewStairStepQ537;
+
+// AVP2: the swept box the step-up works in, kept in .data rather than the
+// mover's frame (0x1008bb68, 0x1008bb90; names ours).
+LTVector g_vStepSweepMinQ553;
+LTVector g_vStepSweepMaxQ553;
+
+// AVP2: every physics block the move overlaps (0x10089b88, 0x200 entries,
+// which run exactly up to g_pPBlock at 0x1008a388; name ours).
+#define WS_MAX_PBLOCKS 0x200
+CPhysicsBlock* g_PBlockListQ553[WS_MAX_PBLOCKS];
+
+void ws_GetPBlocksQ553(CPhysicsBlock** ppBlocks, int* pnBlocks, int nMax);
+int  ws_MoveBoxPassesQ544(uint16 nBlock, CBounceState* pState);    // 0x10004f9e
+
+// server.dll 0x100064fa: the "NewStairStep" step-up, which answers through
+// its third argument (not reconstructed yet; name ours).
+void ws_StairStepNewQ553(uint16 nBlock, CBounceState* pState, int* pbStepped);
+
 // The move, from the outside. Everything else in the module runs under this.
 // The state it is given is copied, because the module works on one global move
 // and a move can start another one before it finishes -- the old pointers are
 // put back on the way out, which is what makes the recursion safe.
 //
-// An object flagged for point collision skips all of it: no box, no contacts,
-// just a line through the world. Everything else gets up to forty attempts,
-// each one earned by the last having hit something new -- except a cylinder
-// mover, which gets one: both images re-read the hit count right after
-// ws_MoveCylinder (server 0x10003690, lithtech 0x4180ad), so the loop's test
-// always ends it. The timing counter exists only in the server build
-// (lithtech 0x417da0 has no CBaseCounter), and fStepHeight lives only in the
-// step-up block, which is what lets it share bStepped's slot as shipped.
-// Each global is saved and replaced in turn (state, then result): lithtech
-// 0x417deb reads g_pMoveResult only after the copy, and with both saves
-// written first /O2 hoists that read above the rep movs.
+// AVP2: server.dll 0x10004ac9 (1237 bytes) / lithtech.exe 0x0041e070 (1654).
+// The result starts at the move's start (0x10004b5d). An object flagged for
+// point collision skips all of it. A step-up is tried first when the move
+// asks for one, the "NewStairStep" way (the step height clamped between half
+// the object's height and its height, half of it taken off the box, and
+// ws_StairStepNewQ553 at 0x10004cc1) or NOLF's (ws_StairStep, 0x10004dca).
+// Then the box is moved through every physics block it overlaps (0x10004e3b;
+// none is an error at debug level 1), up to forty attempts in each, each one
+// earned by the last having hit something new -- except a cylinder mover
+// under the old collision, which gets one: the hit count is re-read right
+// after ws_MoveCylinder (0x10004ef2), so the loop's test always ends it.
+//
+// Byte-identical on lithtech.exe. NEAR on server.dll (1233 of 1237, 3
+// blocks): shipped does not CSE &g_vMoveStart between its copy and the
+// GetPBlockAt push (0x10004b7a, 0x10004bb9), and multiplies the re-read step
+// offset as `flds; fmulp` (0x10004cf1) where ours folds it into `fmuls`.
+// fStepHeight is scoped to the step-up so that the block walk's induction
+// pointer can take its slot, pState's dead one (0x10004ea5), as shipped.
 void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 {
-#ifdef LT_SERVER_TIMERS
-	CBaseCounter  counter(0);
-#endif
-	CMoveState    state;
-	LTVector      vMax;
-	LTVector      vMin;
-	uint32        nOldHits;
-	CBounceState* pOldResult;
-	CMoveState*   pOldState;
-	int           nTries;
-	int           bStepped;
-	uint32        nHits;
-
-	state.m_n44 = 0;
+	CMoveStateQ553  state;
+	CMoveStateQ553* pMove = (CMoveStateQ553*)pIn;
+	CBounceState*   pOldResult;
+	CMoveState*     pOldState;
+	int             bStepped = 0;
+	int             nTries;
+	uint32          nHits;
+	uint32          nOldHits;
+	int             nBlocks;
+	int             iBlock;
+	float           fHalfStep;
 
 	g_nPhysStatA8 = 0;
 	g_nPhysMoveTime = 0;
@@ -1845,11 +2527,7 @@ void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 	g_nPhysMoves = 0;
 	g_nPhysNodes = 0;
 
-#ifdef LT_SERVER_TIMERS
-	cnt_StartCounter(&counter);
-#endif
-
-	state = *pIn;
+	state = *pMove;
 
 	pOldState     = g_pMoveState;
 	g_pMoveState  = &state;
@@ -1860,6 +2538,8 @@ void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 	pState->m_vMomentum.Init();
 	pState->m_vVelocityAdd.Init();
 	pState->m_nHits = 0;
+
+	pState->m_vPoint = pIn->m_vStart;
 
 	if (pIn->m_pObject->m_Flags & FLAG_POINTCOLLIDE)
 	{
@@ -1880,12 +2560,119 @@ void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 	g_vMoveBase.y = 0.0f;
 	g_vMoveBase.z = 0.0f;
 
-	g_pPBlock = g_pMoveState->m_pWorldBsp->GetPBlock(g_vMoveStart);
-
-	if (!g_pPBlock)
+	if (pIn->m_n38)
 	{
-		dsi_ServerError("World %s doesn't have PBlocks!",
-		                g_pMoveState->m_pWorldBsp->m_Name);
+		float fStepHeight;
+
+		g_pPBlock = ((CObjWorldModelPBlockQ532*)g_pMoveState->m_hObject)->
+		    GetPBlockAt(&g_vMoveStart);
+
+		if (g_CV_NewStairStepQ537)
+		{
+			LTVector vStart;
+			int      bStepUp;
+			float    fOffset;
+
+			pIn->m_pHost->GetStepper()->GetStepHeight(&fStepHeight);
+
+			fStepHeight = LTMIN(pIn->m_vDims.y,
+			                    LTMAX(pIn->m_vDims.y * 0.5f, fStepHeight));
+
+			fHalfStep = fStepHeight * 0.5f;
+
+			g_vMoveBase.y = -(pIn->m_vDims.y - fHalfStep);
+
+			g_pMoveState->m_vDims = pIn->m_vDims;
+			g_pMoveState->m_vDims.y = fHalfStep;
+
+			fOffset = *pMove->m_pStepOffset * 0.5f;
+
+			g_vMoveBase.y += fOffset;
+			g_pMoveState->m_vDims.y -= fOffset;
+
+			bStepUp = 0;
+
+			vStart = g_vMoveStart;
+
+			if (g_pMoveState->m_vDims.y > 0.0f)
+			{
+				ws_SetupSweptBox(&g_vStepSweepMinQ553, &g_vStepSweepMaxQ553);
+
+				ws_StairStepNewQ553(g_pPBlock->m_nIndex, pState, &bStepUp);
+			}
+
+			*pMove->m_pStepOffset += g_vMoveStart.y - vStart.y;
+
+			fOffset = *pMove->m_pStepOffset * 0.5f;
+
+			g_vMoveStart = vStart;
+
+			if (bStepUp)
+			{
+				g_vMoveBase.y = fOffset;
+
+				g_pMoveState->m_vDims = pIn->m_vDims;
+				g_pMoveState->m_vDims.y -= fOffset;
+			}
+			else
+			{
+				g_vMoveBase.y = fHalfStep;
+
+				g_pMoveState->m_vDims = pIn->m_vDims;
+				g_pMoveState->m_vDims.y -= fHalfStep;
+			}
+		}
+		else
+		{
+			pIn->m_pHost->GetStepper()->GetStepHeight(&fStepHeight);
+
+			if (fStepHeight < 0.0f)
+				fStepHeight = pIn->m_vDims.y * 0.5f;
+
+			fStepHeight = (fStepHeight + 0.5f) * 0.5f;
+
+			g_vMoveBase.y = -(pIn->m_vDims.y - fStepHeight);
+
+			g_pMoveState->m_vDims = pIn->m_vDims;
+			g_pMoveState->m_vDims.y = fStepHeight;
+
+			nOldHits = pState->m_nHits;
+
+			ws_SetupSweptBox(&g_vStepSweepMinQ553, &g_vStepSweepMaxQ553);
+
+			bStepped = ws_StairStep(g_pPBlock->m_nIndex, pState);
+
+			g_pMoveState->m_vDims = pIn->m_vDims;
+
+			if (bStepped)
+			{
+				g_vMoveBase.y = 0.0f;
+			}
+			else
+			{
+				g_vMoveBase.y = fStepHeight;
+
+				g_pMoveState->m_vDims.y -= fStepHeight;
+			}
+
+			if (pState->m_nHits != nOldHits && !g_pMoveState->m_n44)
+				bStepped = 1;
+			else
+				bStepped = 0;
+
+			pState->m_nHits = nOldHits;
+		}
+	}
+
+	ws_GetPBlocksQ553(g_PBlockListQ553, &nBlocks, WS_MAX_PBLOCKS);
+
+	if (nBlocks == 0)
+	{
+		if (g_DebugLevel >= 1)
+		{
+			dsi_ServerError("Did not intersect with WorldModel %s PBlocks!",
+			                g_pMoveState->m_pWorldBsp->m_Name);
+		}
 
 		g_pMoveState  = pOldState;
 		g_pMoveResult = pOldResult;
@@ -1893,84 +2680,45 @@ void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 		return;
 	}
 
-	bStepped = 0;
-
-	if (pIn->m_n38)
-	{
-		float fStepHeight;
-
-		pIn->m_pHost->GetStepper()->GetStepHeight(&fStepHeight);
-
-		if (fStepHeight < 0.0f)
-			fStepHeight = pIn->m_vDims.y * 0.5f;
-
-		fStepHeight = (fStepHeight + 0.5f) * 0.5f;
-
-		g_vMoveBase.y = -(pIn->m_vDims.y - fStepHeight);
-
-		g_pMoveState->m_vDims = pIn->m_vDims;
-		g_pMoveState->m_vDims.y = fStepHeight;
-
-		nOldHits = pState->m_nHits;
-
-		ws_SetupSweptBox(&vMin, &vMax);
-
-		bStepped = ws_StairStep(g_pPBlock->m_nIndex, pState);
-
-		g_pMoveState->m_vDims = pIn->m_vDims;
-
-		if (bStepped)
-		{
-			g_vMoveBase.y = 0.0f;
-		}
-		else
-		{
-			g_vMoveBase.y = fStepHeight;
-
-			g_pMoveState->m_vDims.y -= fStepHeight;
-		}
-
-		if (pState->m_nHits != nOldHits && !g_pMoveState->m_n44)
-			bStepped = 1;
-		else
-			bStepped = 0;
-
-		pState->m_nHits = nOldHits;
-	}
-
 	g_fBoxRadius = g_pMoveState->m_vDims.Mag() + 0.01f;
 
-	for (nTries = 0; nTries < WS_MAX_MOVE_STEPS; nTries++)
+	for (iBlock = 0; iBlock < nBlocks; iBlock++)
 	{
-		nHits = pState->m_nHits;
+		g_pPBlock = g_PBlockListQ553[iBlock];
 
-		if (ws_ShiftBox())
+		for (nTries = 0; nTries < WS_MAX_MOVE_STEPS; nTries++)
 		{
-			// AVP2: NOLF's FLAG2_PLAYERCOLLIDE is AvP2's FLAG2_CYLINDERPHYSICS, the
-			// same bit (1<<4); AvP2 adds sphere physics and edge-following beside it
-			if (g_pMoveState->m_pObject->m_Flags2 & FLAG2_CYLINDERPHYSICS)
+			nHits = pState->m_nHits;
+
+			if (ws_ShiftBox())
 			{
-				ws_MoveCylinder(g_pPBlock->m_nIndex, pState, nTries > 0);
-				nHits = pState->m_nHits;
+				// AVP2: NOLF's FLAG2_PLAYERCOLLIDE is AvP2's
+				// FLAG2_CYLINDERPHYSICS, the same bit (1<<4).
+				if (!g_CV_NewCollisionQ537 &&
+				    (g_pMoveState->m_pObject->m_Flags2 & FLAG2_CYLINDERPHYSICS))
+				{
+					ws_MoveCylinder(g_pPBlock->m_nIndex, pState, nTries > 0);
+					nHits = pState->m_nHits;
+				}
+				else
+					ws_MoveBoxPassesQ544(g_pPBlock->m_nIndex, pState);
 			}
-			else
-				ws_MoveBox(g_pPBlock->m_nIndex, pState, nTries > 0);
+
+			if (nHits == pState->m_nHits)
+				break;
 		}
 
-		if (nHits == pState->m_nHits)
-			break;
-	}
-
-	if (nTries == WS_MAX_MOVE_STEPS)
-	{
-		if (g_DebugLevel > 0)
+		if (nTries == WS_MAX_MOVE_STEPS)
 		{
-			dsi_ServerError("Error: physics recursed infinitely on a %s",
-			                g_pMoveState->m_pHost->GetObjectName(
-			                    pIn->m_pObject));
-		}
+			if (g_DebugLevel > 0)
+			{
+				dsi_ServerError("Error: physics recursed infinitely on a %s",
+				                g_pMoveState->m_pHost->GetObjectName(
+				                    pIn->m_pObject));
+			}
 
-		g_vMoveEnd = g_vMoveStart;
+			g_vMoveEnd = g_vMoveStart;
+		}
 	}
 
 	pState->m_vPoint = g_vMoveEnd;
@@ -1978,7 +2726,7 @@ void ws_MoveObject(CMoveState* pIn, CBounceState* pState)
 	g_pMoveState  = pOldState;
 	g_pMoveResult = pOldResult;
 
-	if (pState->m_nHits == 0 && bStepped)
+	if (!g_CV_NewStairStepQ537 && pState->m_nHits == 0 && bStepped)
 		pState->m_nHits = 1;
 }
 
@@ -2326,6 +3074,12 @@ uint16 g_BlockStackQ534[WS_NODE_STACK];
 // whatever was hit and the same step is tried again. Run out of deflections
 // with the object still stuck and the whole move is abandoned back to where
 // it started.
+//
+// AVP2: Primal Hunt's copy is server.dll 0x10005ebc (1598
+// bytes, called from ws_MoveObject at 0x10004eed) and lithtech.exe
+// 0x0041fdb0 (its enumeration splits it at 0x00420062); the progress
+// pairing against 0x100064fa is the "NewStairStep" step-up, a different
+// function. The notes below were measured before that was known.
 //
 // NEAR on both images: server 1472 of 1472 bytes with 2 mnemonic blocks
 // left, lithtech 1987 of 1983 bytes with the same 502 instructions and 17

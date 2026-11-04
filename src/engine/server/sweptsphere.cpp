@@ -282,7 +282,7 @@ static LTBOOL sp_SweptSphereToPoint(LTVector* pStart, LTVector* pEnd, float fRad
 // at -0x80 before the cross product). The `for` with the decrement as its
 // increment and the plane read through the polygon at every use are what
 // the bytes show; while/goto shapes were further off.
-uint16 sp_PushSphereOutQ533(LTVector* pPos, float fRadius, WorldPolyOwner** ppPolys, int nPolys)
+LTBOOL sp_PushSphereOutQ533(LTVector* pPos, float fRadius, WorldPolyOwner** ppPolys, int nPolys)
 {
 	uint16 nTries;
 	int i;

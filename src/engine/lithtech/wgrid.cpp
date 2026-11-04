@@ -215,8 +215,12 @@ CWorldGridQ43C::~CWorldGridQ43C()            // 0x0043c6e0
 //  and not `1.0f / fCellSize`.  The x reciprocal is kept live on the FPU
 //  stack (0x0043c718 is `fst`, not `fstp`) and consumed by `fmul st,st(1)`
 //  at 0x0043c73f; y and z are spilled to [esp+0x1c] and [esp+0xc] and
-//  reloaded at 0x0043c752 / 0x0043c769.  All three are the compiler's
-//  choice, not the source's.
+//  reloaded at 0x0043c752 / 0x0043c769.  Kept, not re-read off the member
+//  after the count stores, so the source holds them in locals as well
+//  (PH 0x00448940, the same 235 bytes): each reciprocal is assigned to the
+//  member and a local at once.  Read back off m_vInvCellSize the counts
+//  reload all three (222 bytes); through Init() and three locals the
+//  by-value copies cost 6.
 //
 //  THE THREE `== 0` FIXUPS ARE THREE SEPARATE `if`s, not a nested chain:
 //  0x0043c775 hoists the 1 into %eax once and each guard is
@@ -227,18 +231,20 @@ CWorldGridQ43C::~CWorldGridQ43C()            // 0x0043c6e0
 // ======================================================================= //
 void CWorldGridQ43C::Init(LTVector* pMin, LTVector* pMax, float fCellSize)
 {
+	float fInvX, fInvY, fInvZ;
+
 	// 0x0043c703..0x0043c709 — one argument copied into all three.
 	m_vCellSize.Init(fCellSize, fCellSize, fCellSize);
 
 	// 0x0043c6f6 / 0x0043c71b / 0x0043c72b each `fld` 1.0f from
 	// .rdata 0x004a1a08 (= 0x3f800000).
-	m_vInvCellSize.Init(1.0f / m_vCellSize.x,
-	                    1.0f / m_vCellSize.y,
-	                    1.0f / m_vCellSize.z);
+	m_vInvCellSize.x = fInvX = 1.0f / m_vCellSize.x;
+	m_vInvCellSize.y = fInvY = 1.0f / m_vCellSize.y;
+	m_vInvCellSize.z = fInvZ = 1.0f / m_vCellSize.z;
 
-	m_nCountX = (int)((pMax->x - pMin->x) * m_vInvCellSize.x) + 1;
-	m_nCountY = (int)((pMax->y - pMin->y) * m_vInvCellSize.y) + 1;
-	m_nCountZ = (int)((pMax->z - pMin->z) * m_vInvCellSize.z) + 1;
+	m_nCountX = (int)((pMax->x - pMin->x) * fInvX) + 1;
+	m_nCountY = (int)((pMax->y - pMin->y) * fInvY) + 1;
+	m_nCountZ = (int)((pMax->z - pMin->z) * fInvZ) + 1;
 
 	if (m_nCountX == 0)
 		m_nCountX = 1;
@@ -283,19 +289,35 @@ void CWorldGridQ43C::Init(LTVector* pMin, LTVector* pMax, float fCellSize)
 // definition, here with its dynamic initializer.
 struct SAxisBasis                            // plain, 0x24 bytes
 {
+#ifdef PRIMAL_HUNT
+	// PH: the record carries the constructor itself.  Primal Hunt's
+	// initializer (0x00448ad0, 949 bytes) builds each element IN PLACE --
+	// `mov $0x4f54b0,%ecx ; call 0x448e90` and no temporary, no `rep movs`
+	// -- which only an element of the constructed type allows.  AvP2
+	// 1.0.9.6 copies a derived temporary (0x0043c850, below).
+	SAxisBasis(LTVector vRight, LTVector vUp, LTVector vForward);
+#endif
 	LTVector m_vRight;                       // +0x00
 	LTVector m_vUp;                          // +0x0c
 	LTVector m_vNormal;                      // +0x18  (the side's forward)
 };
 
+#ifdef PRIMAL_HUNT
+typedef SAxisBasis CSideBasisQ43C;           // PH: see SAxisBasis
+#else
 class CSideBasisQ43C : public SAxisBasis
 {
 public:
 	CSideBasisQ43C(LTVector vRight, LTVector vUp, LTVector vForward);
 };
+#endif
 
-// 0x0043cc60
+// 0x0043cc60 (PH 0x00448e90)
+#ifdef PRIMAL_HUNT
+SAxisBasis::SAxisBasis(LTVector vRight, LTVector vUp, LTVector vForward)
+#else
 CSideBasisQ43C::CSideBasisQ43C(LTVector vRight, LTVector vUp, LTVector vForward)
+#endif
 {
 	m_vRight  = vRight;
 	m_vUp     = vUp;

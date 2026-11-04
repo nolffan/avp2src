@@ -1056,43 +1056,25 @@ LTRESULT om_CreateObject(CUnknown390* p, ObjectCreateStruct* pStruct,
 //  headers'; only what is used appears.
 // *********************************************************************** //
 
-class CBspPolyOwner;
-
-// worldsim.h's BSPNode. The uint16 at +0x14 is the addition: the walk reads
-// it off every node it passes and keeps the last one that is not 0xffff,
-// which is the poly the point belongs to (name ours; the rest is worldsim.h's).
+// AVP2: the node's owner is ltobject_internal.h's WorldPolyOwner, and the
+// plane comes through WorldPoly::GetPlane's two null tests -- no owner, or
+// an owner without a surface (+0x2c), is no plane (server.dll
+// 0x1002eb23..0x1002eb34; the same bytes in AvP2 1.0.9.6's 0x1002cd52).
+// NOLF's walk went owner -> parent (+0x28) -> plane (+0x34) unchecked.
 class CBspWalkNode
 {
 public:
-	CBspPolyOwner*  m_pOwner;                // 0x00
+	WorldPolyOwner* m_pOwner;                // 0x00
 	CBspWalkNode*   m_pChild[2];             // 0x04  [0] behind, [1] in front
 	uint8           m_pad_0c[0x14 - 0x0c];
 	uint16          m_nPolyIndex;            // 0x14
 	uint8           m_Flags;                 // 0x16
 
-	LTPlane* GetPlane();
+	LTPlane* GetPlane()
+	{
+		return (m_pOwner && m_pOwner->m_pSurface) ? m_pOwner->m_pPlane : LTNULL;
+	}
 };
-
-// worldsim.h's WorldPolyOwner -> its parent -> the plane, which is what
-// BSPNode::GetPlane() there resolves to in one chain.
-class CBspPolyParent
-{
-public:
-	uint8    m_pad_00[0x34];
-	LTPlane* m_pPlane;                       // 0x34
-};
-
-class CBspPolyOwner
-{
-public:
-	uint8            m_pad_00[0x28];
-	CBspPolyParent*  m_pParent;              // 0x28
-};
-
-inline LTPlane* CBspWalkNode::GetPlane()
-{
-	return m_pOwner->m_pParent->m_pPlane;
-}
 
 // worldbsp.h's CWorldPoly, whose stride the walk's `lea (%eax,%eax,2)` plus
 // `shl $0x4` gives in the clear: 0x30, where that header names only the
@@ -1127,15 +1109,18 @@ public:
 //   * the answer's 0xffff is stored as a dword and read back as a word,
 //     which is the same byte-saving trick CBaseStream::ReadString's length
 //     uses. Every read of it is sixteen-bit, so it is a uint16.
-//   * and that is the whole residual. This is size- and instruction-exact --
-//     144 bytes, 57 instructions -- with nine of them naming a different
-//     slot: the shipped build parks the uint16 in the dead pWorld PARAMETER
-//     slot (pWorld being cached in %ebx from the first instruction) and
-//     reserves 0xc bytes of frame for the point alone, where our cl 8447
-//     gives the uint16 a slot of its own and reserves 0x10. Neither the
-//     declaration order nor anything else in the source moves it, and it is
-//     the same disagreement w_IsectObjectBounds shows from the other side --
-//     a cl-8168 TU candidate.
+//   * and that is the whole residual. NEAR on Primal Hunt's server.dll
+//     (0x1002eaec, 155 of 155 bytes, 62 of 62 instructions, once the plane
+//     comes through the AvP2 owner's null tests above) with nine of them
+//     naming a different slot: the shipped build parks the uint16 in the
+//     dead pWorld PARAMETER slot (pWorld being cached in %ebx from the first
+//     instruction) and reserves 0xc bytes of frame for the point alone,
+//     where our cl 8966 gives the uint16 a slot of its own and reserves
+//     0x10. Neither the declaration order nor the walk as an inline helper
+//     (not inlined at /O1: 49 bytes and a call) moves it, and it is the
+//     same disagreement w_IsectObjectBounds shows from the other side.
+//     lithtech.exe has no copy of its own: netobj.cpp's inline twin is the
+//     only one there (0x0046c722..).
 //   * the side test is `>= -0.0001f`, not `>= 0`, so a point exactly on a
 //     plane goes in FRONT.
 //   * the point is copied into a local before the loop, and DistTo's own

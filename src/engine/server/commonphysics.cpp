@@ -9,6 +9,8 @@
 #include <string>
 #endif
 #include <math.h>
+#include <stdlib.h>
+#include <float.h>
 #include "commonphysics.h"
 #include "servermgr.h"
 #include "worldsim.h"
@@ -726,6 +728,42 @@ int wm_CompareSortRecsQ528(const void* p1, const void* p2)
 	return 0;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: the swept-sphere mover (server.dll 0x1000346a, an 0x8bc frame; not
+// reconstructed, name ours) and the record it works on: the mover, the
+// move state, the hits, the two ends of the move and the sphere's radius
+// are what wm_PushIntersectingObjects fills (0x10027f8c..0x10027ff0); the
+// rest is the mover's own (+0x28 1.0f, +0x2c a zeroed vector, +0x38 a
+// byte, +0x3c/+0xb8/+0x134 dwords at 0x10003477..0x100034b3). Its
+// constructor is empty and defined out of line, after the sort comparator
+// (server.dll 0x10029bcf, a bare `ret`, which wm_PushIntersectingObjects
+// calls at 0x10027f92). Names ours.
+struct CSphereMoveQ555
+{
+	CSphereMoveQ555();
+
+	LTObject*          m_pObj;               // 0x000
+	WMMoveState*       m_pState;             // 0x004
+	struct CFindObjectsQuery* m_pQuery;             // 0x008
+	LTVector           m_vStart;             // 0x00c
+	LTVector           m_vEnd;               // 0x018
+	float              m_fRadius;            // 0x024
+	float              m_fUnknown28;         // 0x028
+	LTVector           m_vUnknown2c;         // 0x02c
+	uint8              m_pad_38[0xc4 - 0x38];
+	LTVector           m_Unknownc4[10];      // 0x0c4
+	uint8              m_pad_13c[0x140 - 0x13c];
+};
+
+void sm_MoveSphereQ555(CSphereMoveQ555* pMove);     // 0x1000346a
+
+CSphereMoveQ555::CSphereMoveQ555()
+{
+}
+
+
+#endif
+
 // 0x10020611 — resize a world object through the simulation.
 //
 // Three separate one-axis passes, and which way each goes is decided by a
@@ -1244,6 +1282,17 @@ WM_CINLINE int wm_ObjectsIntersect(LTObject* pObj1, LTObject* pObj2,
 // above it at -0x224, and `query.m_ppObjects = query.m_Objects` is what puts
 // the header BELOW the array. Two separate locals put the 512-byte array at
 // the bottom of the frame instead, whatever their declaration order.
+#ifdef PRIMAL_HUNT
+// PH: the hits are kept with a sort key beside each, so the record is the
+// state, the count and the sorted pairs (server.dll's frame: the state at
+// -0x5a8, the count at -0x5a4, 0x80 eight-byte records from -0x5a0).
+struct CFindObjectsQuery
+{
+	struct WMMoveState* m_pState;            // 0x00
+	int                 m_nObjects;          // 0x04
+	CWMSortRecQ528      m_Recs[WM_MAX_FOUND_OBJECTS];      // 0x08
+};
+#else
 struct CFindObjectsQuery
 {
 	struct WMMoveState* m_pState;            // 0x00
@@ -1251,6 +1300,7 @@ struct CFindObjectsQuery
 	int                 m_nObjects;          // 0x08
 	class LTObject*     m_Objects[WM_MAX_FOUND_OBJECTS];   // 0x0c
 };
+#endif
 
 void FindObjectsCB(class LTObject* pObj, CFindObjectsQuery* pQuery);  // 0x100205af
 
@@ -1279,7 +1329,18 @@ void wm_SweepBox(LTVector* pMinOut, LTVector* pMaxOut, LTVector* pMove,
 
 // 0x1001f3e7 — is this object one this move has to shift, and did shifting it
 // work? Nonzero means it moved (name ours).
+#ifdef PRIMAL_HUNT
+// (defined below, with wm_IsPushBlocker)
+LTBOOL wm_NeedsGeometryQ528(class LTObject* pObj);
+
+// PH: two more arguments, which the body never reads (server.dll's two
+// call sites push the addresses of two dword locals, the second zeroed,
+// 0x1002819c..0x100281a5).
+int  wm_PushObject(struct WMMoveState* pState, class LTObject* pObj,
+                   float* pfUnused, int* pnUnused);
+#else
 int  wm_PushObject(struct WMMoveState* pState, class LTObject* pObj);
+#endif
 
 // 0x10058730 — the six axis directions, in +X, -X, +Y, -Y, +Z, -Z order, and
 // an array rather than six globals: 0x1001fd56 indexes it at runtime with
@@ -1318,7 +1379,12 @@ int    wm_PushWithGeometry(struct WMMoveState* pState, class LTObject* pObj,
                            int* pnOut);
 int    wm_PushWithBox(struct WMMoveState* pState, class LTObject* pObj,
                       LTVector* pOrigPos, LTVector* pNewPos);
+#ifdef PRIMAL_HUNT
+int    wm_PushWorldModel(struct WMMoveState* pState, class LTObject* pObj,
+                         int bBothSolid);
+#else
 int    wm_PushWorldModel(struct WMMoveState* pState, class LTObject* pObj);
+#endif
 LTBOOL wm_PairNeedsGeometry(class LTObject* pObj1, class LTObject* pObj2);
 
 // 0x1001ff57 — of the six ways one box can be pushed clear of another (two
@@ -1437,6 +1503,217 @@ public:
 // the second (calling its constructor), which costs a 0x244 frame against
 // 0x238. With obj_MaybeRetransformWorldModel `inline` ours expands it and
 // calls operator- (frame 0x234) -- and loses the out-of-line 0x00451c80.
+#ifdef PRIMAL_HUNT
+
+// dsi.cpp's "NewStairStep" console variable (0x1007df08, 1).
+extern int g_CV_NewStairStepQ537;
+
+// PH: server.dll 0x10027ec3 (1289 bytes), called from wm_MoveObject
+// (0x10027ac0). Same geometry as before (0x10027ecc..0x10027f77), then:
+//
+//   * a sphere-physics mover is handed to the swept-sphere mover with the
+//     hits of its swept box and set down where that leaves it
+//     (0x10027f7f..0x10028028);
+//   * otherwise the hits, from the caller's list (each kept when its box
+//     overlaps the swept one, keyed by its squared distance from the start,
+//     0x10028065..0x1002810d) or from the box query, are sorted nearest
+//     first (qsort, 0x10028150) and pushed in turn: with "NewStairStep"
+//     clear from the far end down as before (0x1002816c..0x10028233), with
+//     it set from the near end up, restarting after every push and
+//     rebuilding the swept box from where the mover now is
+//     (0x10028238..0x10028385).
+void wm_PushIntersectingObjects(WMMoveState* pState, LTVector* pOrigPos,
+                                LTVector* pNewPos)
+{
+	CFindObjectsQuery query;
+	CWMMoveGeom*      pGeom = (CWMMoveGeom*)pState;
+	LTVector          vMin, vMax;
+	int               i;
+
+	pGeom->m_pOrigPos = pOrigPos;
+	query.m_nObjects = 0;
+
+	pGeom->m_vPos = *pNewPos;
+	pGeom->m_vMove = *pNewPos - *pOrigPos;
+	pGeom->m_vMid = *pOrigPos + pGeom->m_vMove * 0.5f;
+
+	LTVector* pDims = &pState->m_pObj->m_Dims;
+	float     fHalfMove = pGeom->m_vMove.Mag() * 0.5f;
+
+	pGeom->m_fRadius = pDims->Mag() + fHalfMove;
+
+	pState->m_fUnknown68 = 0.0f;
+
+	if (pState->m_pObj->m_Flags2 & FLAG2_SPHEREPHYSICS)
+	{
+		CSphereMoveQ555 sphere;
+
+		sphere.m_pState  = pState;
+		sphere.m_vStart  = *pGeom->m_pOrigPos;
+		sphere.m_vEnd    = pGeom->m_vPos;
+		sphere.m_fRadius = pState->m_pObj->m_Dims.y;
+		sphere.m_pObj    = pState->m_pObj;
+
+		query.m_pState  = pState;
+		sphere.m_pQuery = &query;
+
+		float fDiameter = sphere.m_fRadius + sphere.m_fRadius;
+
+		wm_SweptBoxQ528(&pGeom->m_vBoxMin, &pGeom->m_vBoxMax, pGeom->m_pOrigPos,
+		                &pGeom->m_vPos, fDiameter);
+
+		((IBoxQueryWorld*)pState->m_pContainer)->FindObjectsInBox(
+			&pGeom->m_vBoxMin, &pGeom->m_vBoxMax, FindObjectsCB, sphere.m_pQuery, 0);
+
+		sm_MoveSphereQ555(&sphere);
+
+		pState->m_pObj->SetPos(sphere.m_vEnd);
+		return;
+	}
+
+	// A byte store (`movb $5,0xdc(%eax)`, 0x1002802d), as InitFields' own
+	// (objtypes.h has it a uint8; ltobject_internal.h a dword).
+	*(uint8*)&pState->m_pObj->m_Unknowndc = 5;
+
+	wm_SweepBox(&pGeom->m_vBoxMin, &pGeom->m_vBoxMax, &pGeom->m_vMove,
+	            &pState->m_pObj->m_BBoxMin, &pState->m_pObj->m_BBoxMax);
+
+	query.m_pState = pState;
+
+	if (pState->m_pPushList)
+	{
+		CWMSortRecQ528* pRec;
+		LTObject**      ppList;
+
+		query.m_nObjects = 0;
+		pRec = query.m_Recs;
+		ppList = (LTObject**)pState->m_pPushList;
+
+		for (i = 0; i < (int)pState->m_nPushCount; i++, ppList++)
+		{
+			LTObject* pObj = *ppList;
+
+			if (wm_BoxesOverlap(&pObj->m_BBoxMin, &pObj->m_BBoxMax,
+			                    &pGeom->m_vBoxMin, &pGeom->m_vBoxMax, -1.0f))
+			{
+				wm_IntersectBoxesQ528(&pObj->m_BBoxMin, &pObj->m_BBoxMax,
+				                      &pGeom->m_vBoxMin, &pGeom->m_vBoxMax,
+				                      &vMin, &vMax);
+
+				pRec->m_fKey = pGeom->m_pOrigPos->DistSqr(pObj->m_Pos);
+				pRec->m_pItem = pObj;
+				pRec++;
+				query.m_nObjects++;
+			}
+		}
+	}
+	else
+	{
+		((IBoxQueryWorld*)pState->m_pContainer)->FindObjectsInBox(
+			&pGeom->m_vBoxMin, &pGeom->m_vBoxMax, FindObjectsCB, &query, 0);
+	}
+
+	LTObject* pLast[2];
+	int       nHandled;
+	float     fUnused;
+	int       nUnused;
+
+	pLast[1] = LTNULL;
+	pLast[0] = LTNULL;
+	nUnused  = 0;
+
+	if (!query.m_nObjects)
+		return;
+
+	qsort(query.m_Recs, query.m_nObjects, sizeof(CWMSortRecQ528),
+	      wm_CompareSortRecsQ528);
+
+	if (!g_CV_NewStairStepQ537)
+	{
+		nHandled = 0;
+
+		for (i = query.m_nObjects - 1; i >= 0; i--)
+		{
+			if (nHandled >= 10)
+				break;
+
+			LTObject* pObj = (LTObject*)query.m_Recs[i].m_pItem;
+
+			pState->m_nUnknown64 = (pObj == pLast[0] || pObj == pLast[1]) ? nHandled : 0;
+
+			if (!wm_PushObject(pState, pObj, &fUnused, &nUnused))
+				continue;
+
+			if (nHandled >= 2 && (pObj == pLast[0] || pObj == pLast[1]))
+			{
+				pGeom->m_vPos = *pGeom->m_pOrigPos;
+				pState->m_pObj->SetPos(*pGeom->m_pOrigPos);
+				break;
+			}
+
+			pLast[nHandled & 1] = pObj;
+
+			obj_MaybeRetransformWorldModel(pState->m_pObj, 1);
+
+			nHandled++;
+
+			i = query.m_nObjects;
+
+			pGeom->m_vPos = pState->m_pObj->m_Pos;
+			pGeom->m_vMove = pGeom->m_vPos - *pOrigPos;
+		}
+	}
+	else
+	{
+		for (i = 0, nHandled = 0; i < query.m_nObjects; i++)
+		{
+			if (nHandled >= 10)
+				break;
+
+			LTObject* pObj = (LTObject*)query.m_Recs[i].m_pItem;
+
+			if (!wm_PushObject(pState, pObj, &fUnused, &nUnused))
+				continue;
+
+			if (pObj == pLast[0] && pObj == pLast[1])
+			{
+				if (!wm_NeedsGeometryQ528(pObj))
+				{
+					pGeom->m_vPos = *pGeom->m_pOrigPos;
+					pState->m_pObj->SetPos(*pGeom->m_pOrigPos);
+					break;
+				}
+			}
+			else
+			{
+				i = -1;
+				pLast[nHandled & 1] = pObj;
+				nHandled++;
+			}
+
+			obj_MaybeRetransformWorldModel(pState->m_pObj, 1);
+
+			pGeom->m_vPos = pState->m_pObj->m_Pos;
+			pGeom->m_vMove = pGeom->m_vPos - *pOrigPos;
+			pGeom->m_vMid = *pGeom->m_pOrigPos + pGeom->m_vMove * 0.5f;
+
+			LTVector* pNewDims = &pState->m_pObj->m_Dims;
+			float     fNewHalfMove = pGeom->m_vMove.Mag() * 0.5f;
+
+			pGeom->m_fRadius = pNewDims->Mag() + fNewHalfMove;
+
+			wm_SweepBox(&pGeom->m_vBoxMin, &pGeom->m_vBoxMax, &pGeom->m_vMove,
+			            &pState->m_pObj->m_BBoxMin, &pState->m_pObj->m_BBoxMax);
+		}
+	}
+
+	if (nHandled >= 10)
+	{
+		pGeom->m_vPos = *pGeom->m_pOrigPos;
+		pState->m_pObj->SetPos(*pGeom->m_pOrigPos);
+	}
+}
+#else
 void wm_PushIntersectingObjects(WMMoveState* pState, LTVector* pOrigPos,
                                 LTVector* pNewPos)
 {
@@ -1521,6 +1798,7 @@ void wm_PushIntersectingObjects(WMMoveState* pState, LTVector* pOrigPos,
 		pState->m_pObj->SetPos(*pGeom->m_pOrigPos);
 	}
 }
+#endif
 
 
 // 0x1001eb2d — the world simulation's move. It sets the object down at the
@@ -2037,6 +2315,80 @@ WM_CINLINE LTBOOL wm_PairNeedsGeometry(LTObject* pObj1, LTObject* pObj2)
 //
 // The cap and the overflow message's argument are the same 0x80, which is
 // what puts it in a register rather than as two immediates.
+#ifdef PRIMAL_HUNT
+// PH: server.dll 0x100299eb (388 bytes), handed to the box query at
+// 0x1002800a and 0x1002811b. The overflow is reported and returned from
+// first (0x10029a0c); two semi-solid objects never meet (0x10029a41); and
+// each hit is kept with its sort key: the largest float for an object
+// pushed with its world-model geometry (0x10029aa9), otherwise the squared
+// distance from the start of the move to the middle of the part of its box
+// the swept box overlaps (0x10029ad5..0x10029b5e).
+void FindObjectsCB(LTObject* pObj, CFindObjectsQuery* pQuery)
+{
+	if (pObj->m_Unknown54)
+		return;
+
+	if (pQuery->m_nObjects >= WM_MAX_FOUND_OBJECTS)
+	{
+		dsi_ServerError("FindObjectsCB: Overflowed (more than %d intersecting objects)!",
+		                WM_MAX_FOUND_OBJECTS);
+		return;
+	}
+
+	LTObject* pMover = pQuery->m_pState->m_pObj;
+
+	if (pObj == pMover)
+		return;
+
+	uint32 nFlags = pObj->m_Flags;
+
+	if (!(nFlags & (FLAG_SOLID | FLAG_TOUCH_NOTIFY | FLAG_CONTAINER)))
+		return;
+
+	if ((pObj->m_Flags2 & FLAG2_SEMISOLID) && (pMover->m_Flags2 & FLAG2_SEMISOLID))
+		return;
+
+	if (!((CWMMoveSetup*)pQuery->m_pState)->m_Unknown18)
+	{
+		if (nFlags & FLAG_CLIENTNONSOLID)
+			return;
+
+		if (pMover->m_Flags & FLAG_CLIENTNONSOLID)
+			return;
+
+		if (!(nFlags & FLAG_SOLID))
+			return;
+
+		if (!(pMover->m_Flags & FLAG_SOLID))
+			return;
+	}
+
+	CWMSortRecQ528* pRec = &pQuery->m_Recs[pQuery->m_nObjects];
+
+	pRec->m_pItem = pObj;
+
+	if (wm_IsWorldObjectQ528(pObj))
+	{
+		pRec->m_fKey = FLT_MAX;
+	}
+	else
+	{
+		LTVector vMin, vCenter, vMax;
+
+		wm_IntersectBoxesQ528(&pObj->m_BBoxMin, &pObj->m_BBoxMax,
+		                      &((CWMMoveGeom*)pQuery->m_pState)->m_vBoxMin,
+		                      &((CWMMoveGeom*)pQuery->m_pState)->m_vBoxMax,
+		                      &vMin, &vMax);
+
+		vCenter = (vMax - vMin) * 0.5f;
+		vCenter += vMin;
+
+		pRec->m_fKey = VEC_DISTSQR(vCenter, *((CWMMoveGeom*)pQuery->m_pState)->m_pOrigPos);
+	}
+
+	pQuery->m_nObjects++;
+}
+#else
 void FindObjectsCB(LTObject* pObj, CFindObjectsQuery* pQuery)
 {
 	if (pObj->m_Unknown54)
@@ -2073,8 +2425,115 @@ void FindObjectsCB(LTObject* pObj, CFindObjectsQuery* pQuery)
 		                WM_MAX_FOUND_OBJECTS);
 	}
 }
+#endif
 
 
+#ifdef PRIMAL_HUNT
+// PH: server.dll 0x1002850a (574 bytes; called at 0x100281a6 and
+// 0x10028268 from wm_PushIntersectingObjects). Rewritten around the two
+// geometry tests, which are made once and kept (-0x4, -0x8):
+//
+//   * a sphere-physics mover pushes nothing (0x10028529);
+//   * a geometry pair is never pushed, and a geometry object against a mover
+//     that may pass through the world (or the reverse) neither
+//     (0x1002854b..0x10028578);
+//   * a non-solid pair is a blocker only if the object is a geometry one the
+//     push-blocker test accepts (0x1002859f..0x100285ad);
+//   * a move longer than the mover's own dims on any axis whose start box
+//     misses the object goes to wm_PushWorldModel, the sweep (server.dll
+//     0x10029376, called only from here, 0x1002869e), with the blocker
+//     test passed in (0x100285b0..0x100286a6);
+//   * a blocker is pushed by the box pusher when neither end needs geometry,
+//     by the geometry pusher otherwise (0x100286dd..0x10028713).
+//
+// Byte-identical in server.dll. lithtech.exe expands it into
+// wm_PushIntersectingObjects (0x00462e50).
+WM_CINLINE int wm_PushObject(WMMoveState* pState, LTObject* pObj,
+                             float* pfUnused, int* pnUnused)
+{
+	CWMMoveGeom* pGeom = (CWMMoveGeom*)pState;
+	int          bMoverGeom;
+	int          bObjGeom;
+	int          bBlocker;
+	int          nMoved;
+	int          nUnused;
+
+	if (pObj->m_ChangeFlags & 2)
+		return 0;
+
+	if (pState->m_pObj->m_Flags2 & FLAG2_SPHEREPHYSICS)
+		return 0;
+
+	bMoverGeom = wm_NeedsGeometryQ528(pState->m_pObj);
+	bObjGeom   = wm_NeedsGeometryQ528(pObj);
+
+	// Three tests, in this order: VC6 threads the jumps on what it knows
+	// of bMoverGeom, which is why the last one sits out of line after the
+	// second (0x10028571). Nested if/else spellings of the same logic give
+	// the same bytes; one test per line is the plain reading.
+	if (bMoverGeom && bObjGeom)
+		return 0;
+
+	if (bObjGeom && (pState->m_pObj->m_Flags & FLAG_GOTHRUWORLD))
+		return 0;
+
+	if (bMoverGeom && (pObj->m_Flags & FLAG_GOTHRUWORLD))
+		return 0;
+
+	if ((pObj->m_Flags & FLAG_SOLID) && (pState->m_pObj->m_Flags & FLAG_SOLID))
+	{
+		bBlocker = 1;
+	}
+	else
+	{
+		bBlocker = 0;
+
+		if (bObjGeom)
+			bBlocker = wm_IsPushBlocker(pObj);
+	}
+
+	// The dims on the LEFT: each one is loaded (as a double) before fabs
+	// is called (0x100285b5).
+	if (pState->m_pObj->m_Dims.x < fabs(pGeom->m_vMove.x) ||
+	    pState->m_pObj->m_Dims.y < fabs(pGeom->m_vMove.y) ||
+	    pState->m_pObj->m_Dims.z < fabs(pGeom->m_vMove.z))
+	{
+		LTVector vMin = *pGeom->m_pOrigPos - pState->m_pObj->m_Dims;
+		LTVector vMax = *pGeom->m_pOrigPos + pState->m_pObj->m_Dims;
+
+		if (!wm_BoxesOverlap(&vMin, &vMax, &pObj->m_BBoxMin, &pObj->m_BBoxMax,
+		                     0.0f))
+			return wm_PushWorldModel(pState, pObj, bBlocker);
+	}
+
+	if (!wm_ObjectsIntersect(pState->m_pObj, pObj,
+	                         &pGeom->m_vBoxMin, &pGeom->m_vBoxMax,
+	                         &pObj->m_BBoxMin, &pObj->m_BBoxMax,
+	                         0.0f, LTNULL))
+		return 0;
+
+	if (bBlocker)
+	{
+		if (!bMoverGeom && !bObjGeom)
+			nMoved = wm_PushWithBox(pState, pObj, pGeom->m_pOrigPos, &pGeom->m_vPos);
+		else
+			nMoved = wm_PushWithGeometry(pState, pObj, pGeom->m_pOrigPos,
+			                             &pGeom->m_vPos, 1, &nUnused);
+
+		if (nMoved)
+			pState->m_pObj->SetPos(pGeom->m_vPos);
+
+		return nMoved;
+	}
+	else
+	{
+		wm_NotifyContact((IWMSetupSource*)pState->m_pUnknown04, pObj,
+		                 pState->m_pObj);
+	}
+
+	return 0;
+}
+#else
 // 0x1001f3e7 — one object out of the swept box: does the move have to shift
 // it, and did shifting it work?
 WM_CINLINE int wm_PushObject(WMMoveState* pState, LTObject* pObj)
@@ -2152,6 +2611,7 @@ WM_CINLINE int wm_PushObject(WMMoveState* pState, LTObject* pObj)
 
 	return 0;
 }
+#endif
 
 
 // 0x1001e088 — the frame-move worker (declared in commonphysics.h; the
@@ -3120,6 +3580,47 @@ void wm_RotatePushFilter(LTObject* pObj, WMMoveState* pState)
 }
 
 
+#ifdef PRIMAL_HUNT
+// PH: an attachment's world transform, which smgr.cpp's si_CreateAttachment
+// calls (lithtech.exe 0x004675c0, 377 bytes, called at 0x00488033 and from
+// 0x0049871c; server.dll 0x1002a7ed, 157 bytes, between wm_RotatePushFilter
+// and the quat_Mul / Apply3x3 COMDATs this unit emits at 0x1002a88a and
+// 0x1002a912). Name ours (smgr.cpp's declaration).
+//
+//   * the offset is copied out first (0x1002a7ff `movsl` x3 into pPos),
+//     the parent's rotation (+0x9c) turned into a matrix (0x1001b2da
+//     `quat_ConvertToMatrix(rot, mat)`), and the offset turned by it with
+//     the one-argument Apply3x3, whose temporary is the -0xc slot and which
+//     calls the two-argument form out of line at /O1 (0x1002a820);
+//   * then the parent's position (+0x194) is added, through operator+='s
+//     by-value copy into that same slot (0x1002a830..0x1002a83b);
+//   * and the rotation is parent * offset (0x1002a87c: quat_Mul(tmp,
+//     &parent->m_Rotation, &offset.m_Rot)), copied out to pRot.
+//
+// Byte-identical in server.dll. NEAR in lithtech.exe (377 of 377 bytes):
+// the inlined quat_Mul's x component sums its first three terms as
+// (a.x*b.w + a.w*b.x) + a.y*b.z where ours is (a.w*b.x + a.y*b.z) +
+// a.x*b.w (0x0046769c..0x004676af); the other three components agree.
+// /O2's reassociation, not the written order: the formula spelt out by
+// hand in either term order, quat_Mul called directly, and a named
+// temporary all leave it where it is.
+void sm_GetAttachmentTransformQ523(LTObject* pParent, Attachment* pAttach,
+                                   LTVector* pPos, LTRotation* pRot)
+{
+	LTMatrix mRot;
+
+	*pPos = pAttach->m_Offset.m_Pos;
+
+	quat_ConvertToMatrix(pParent->m_Rotation.m_Quat, mRot.m);
+	mRot.Apply3x3(*pPos);
+
+	*pPos += pParent->m_Pos;
+
+	*pRot = pParent->m_Rotation * pAttach->m_Offset.m_Rot;
+}
+#endif
+
+
 // ======================================================================= //
 //  wm_PushWithGeometry (0x00451e10) and wm_PushWithBox (0x004526f0).
 //
@@ -3595,6 +4096,157 @@ WM_CINLINE int wm_PushWithGeometry(WMMoveState* pState, LTObject* pObj, LTVector
 //      `if (!(flags & FLAG_NOSLIDING)) { simple } else { sliding }`.
 //      Written the other way round VC6 should swap the two blocks.
 // ======================================================================= //
+#ifdef PRIMAL_HUNT
+// PH: the two halves below were folded into one helper (names ours), which
+// both halves of wm_PushWithBox call: server.dll 0x10028f52 (700 bytes,
+// called at 0x10028e5a and 0x10028f13), lithtech.exe 0x004646c0 (called at
+// 0x00464594 and 0x00464661). It returns the separated position BY VALUE
+// (the hidden result pointer is the first argument pushed last).
+LTVector wm_SeparateFromBoxQ555(LTObject* pObj, LTObject* pOther,
+                                const LTVector& vFrom, const LTVector& vTo,
+                                int* pnSide, float* pfDist);
+
+// PH: server.dll 0x10028dc3 (399 bytes), lithtech.exe 0x004644d0 (488),
+// called from wm_PushObject (0x100286f5) and wm_PushWorldModel
+// (0x1002989e). Half 1 pushes the other object from where the mover's move
+// would carry it (pObj->m_Pos plus the move, 0x10028e05..0x10028e55) back to
+// its own position and moves it there; half 2 separates the mover's own
+// move and writes the answer to *pNewPos (0x10028f24). The fDist the helper
+// fills lives in the dead pState slot (0x8(%ebp)); the overlap tolerance is
+// 0.001f (0x10074208).
+int wm_PushWithBox(WMMoveState* pState, LTObject* pObj, LTVector* pOrigPos,
+                   LTVector* pNewPos)
+{
+	WMMoveState state;
+	int         nSide;
+	float       fDist;
+
+	if (((IWMSetupSource*)pState->m_pUnknown04)->_v18(pState, pState->m_pObj,
+	                                                  pObj))
+	{
+		LTVector vNew = wm_SeparateFromBoxQ555(pObj, pState->m_pObj,
+		                                       pObj->m_Pos + (*pNewPos - *pOrigPos),
+		                                       pObj->m_Pos, &nSide, &fDist);
+
+		((CWMStateInit*)&state)->InitFrom(pState, pObj);
+		state.m_nUnknown0C = pObj->m_BlockingPriority;
+
+		wm_MoveObject(&state, vNew, 7);
+
+		ws_ObjectsCollided((IPhysicsSim*)pState->m_pUnknown04, pObj,
+		                   pState->m_pObj, &g_AxisDirs[nSide], fDist);
+
+		if (wm_BoxesOverlap(&pState->m_pObj->m_BBoxMin,
+		                    &pState->m_pObj->m_BBoxMax,
+		                    &pObj->m_BBoxMin, &pObj->m_BBoxMax, 0.001f))
+		{
+			((IWMSetupSource*)pState->m_pUnknown04)->_v1c(pObj,
+			                                              pState->m_pObj);
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	*pNewPos = wm_SeparateFromBoxQ555(pState->m_pObj, pObj, *pOrigPos, *pNewPos,
+	                                  &nSide, &fDist);
+
+	ws_ObjectsCollided((IPhysicsSim*)pState->m_pUnknown04, pState->m_pObj,
+	                   pObj, &g_AxisDirs[nSide], fDist);
+
+	return 1;
+}
+
+// PH: separate pObj, moving from *pFrom to *pTo, from pOther's box. The
+// box the move sweeps (the union of the start and end boxes, built as a
+// componentwise LTMIN/LTMAX, 0x10029011..0x1002907f) and the start box go
+// to the nine-argument wm_SmallestSeparation with the move as its direction
+// (0x100290b8). The face distance is read off pOther in both arms
+// (0x100290c9, 0x100290d6), and the standing-on test compares the START
+// height against pOther's (0x100290f1).
+//
+// Byte-identical in lithtech.exe (0x004646c0, 996 bytes). NEAR in
+// server.dll (700 of 700, no mnemonic block): the dot product of the
+// no-sliding arm sums its terms z, x, y where shipped has z, y, x
+// (0x10029190..0x100291a1). vMove.Dot(vDir), vDir.Dot(vMove), the dot
+// inside the expression, a named fDot and an fX local all compile the
+// same; only a hand-written right-associated sum gives shipped's order,
+// which is not what the SDK's Dot is.
+//
+// RETAIL BUG: the no-sliding arm tests the NEGATED magnitude against zero
+// (0x1002915d `call Mag ; fchs ; fcoms 0.0 ; jbe`), which can never be
+// greater, so an object that may not slide always comes back with no
+// correction at all (*pTo). The NOLF/AvP2 two-half version had no test.
+LTVector wm_SeparateFromBoxQ555(LTObject* pObj, LTObject* pOther,
+                                const LTVector& vFrom, const LTVector& vTo,
+                                int* pnSide, float* pfDist)
+{
+	LTVector vMove    = vTo - vFrom;
+	LTVector vFromMin = vFrom - pObj->m_Dims;
+	LTVector vFromMax = vFrom + pObj->m_Dims;
+	LTVector vToMin   = vTo - pObj->m_Dims;
+	LTVector vToMax   = vTo + pObj->m_Dims;
+	LTVector vMin(LTMIN(vFromMin.x, vToMin.x), LTMIN(vFromMin.y, vToMin.y),
+	              LTMIN(vFromMin.z, vToMin.z));
+	LTVector vMax(LTMAX(vFromMax.x, vToMax.x), LTMAX(vFromMax.y, vToMax.y),
+	              LTMAX(vFromMax.z, vToMax.z));
+	LTVector vSep;
+
+	wm_SmallestSeparation(&vMin, &vMax, &vFromMin, &vFromMax,
+	                      &pOther->m_BBoxMin, &pOther->m_BBoxMax,
+	                      &vSep, pnSide, &vMove);
+
+	if (*pnSide & 1)
+		*pfDist = -(&pOther->m_BBoxMin.x)[(*pnSide - 1) >> 1];
+	else
+		*pfDist = (&pOther->m_BBoxMax.x)[*pnSide >> 1];
+
+	if (*pnSide == 2 || *pnSide == 3)
+	{
+		if (vFrom.y > pOther->m_Pos.y)
+		{
+			if (vMove.y < 0.0f)
+				obj_SetStandingOn(pObj, pOther, LTNULL);
+		}
+		else
+		{
+			if (vMove.y > 0.0f)
+				obj_SetStandingOn(pOther, pObj, LTNULL);
+		}
+	}
+
+	LTVector vResult;
+
+	if (!(pObj->m_Flags & FLAG_NOSLIDING))
+	{
+		vResult = vTo + vSep;
+	}
+	else
+	{
+		float fMag = -vSep.Mag();
+
+#ifdef AVP2_MODERN
+		if (fMag < 0.0f)
+#else
+		if (fMag > 0.0f)
+#endif
+		{
+			LTVector vDir = vSep / -fMag;
+
+			vResult = vMove * (fMag / ((fMag - vMove.Dot(vDir)) - fMag));
+		}
+		else
+		{
+			vResult.Init();
+		}
+
+		vResult += vTo;
+	}
+
+	return vResult;
+}
+#else
 WM_CINLINE int wm_PushWithBox(WMMoveState* pState, LTObject* pObj, LTVector* pOrigPos,
                    LTVector* pNewPos)
 {
@@ -3779,6 +4431,7 @@ WM_CINLINE int wm_PushWithBox(WMMoveState* pState, LTObject* pObj, LTVector* pOr
 
 	return 1;
 }
+#endif
 
 // ======================================================================= //
 //  EXTENT VERIFICATION FOR THE WHOLE CLUSTER, and the index
@@ -3974,6 +4627,246 @@ WM_CINLINE int wm_PushWithBox(WMMoveState* pState, LTObject* pObj, LTVector* pOr
 //  and the final obj_MaybeRetransformWorldModel) -- same compiler, a
 //  different spend order.
 // ----------------------------------------------------------------------- //
+#ifdef PRIMAL_HUNT
+// PH: set the mover down at a position, but only when that moves it: the
+// SetPos and the retransform are skipped for a position it already has.
+// Written out at every site in server.dll's wm_PushWorldModel
+// (0x100294f6..0x10029532 and five more), so a macro (name ours).
+#define WM_SETPOS_IF_MOVED(pObj, vPos) \
+	if ((vPos) != (pObj)->m_Pos) \
+	{ \
+		(pObj)->SetPos(vPos); \
+		obj_MaybeRetransformWorldModel((pObj), 1); \
+	}
+
+// PH: server.dll 0x10029376 (1490 bytes), called only from wm_PushObject
+// (0x1002869e), which has already made the both-solid test and passes it
+// in (read from the third argument, 0x1002949b). Against the AvP2 body
+// below: the pair test is the two geometry tests (0x1002938a/0x10029397);
+// every set-down is skipped when it would not move the mover; the overlap
+// tolerance is -0.01f (0x10074230); and the not-both-solid geometry arm
+// moves through the simulation with neither flag (0x100298d8/0x10029904)
+// and reports the contact when that hit, where AvP2's took the move back.
+//
+// NEAR (server.dll 1495 against 1490): two residuals. The both-solid
+// box-push arm and the not-both-solid arm are laid out after the return in
+// shipped (0x1002988e..0x10029943, each jumping back to the bAny test),
+// inline in ours; and shipped homes nResult in the dead pState slot
+// (0x8(%ebp)) with bMoved at -0x4, ours the reverse. Declaration order,
+// a function-scope bHit or vTarget, and nResult doubling as bHit change
+// neither.
+int wm_PushWorldModel(WMMoveState* pState, LTObject* pObj, int bBothSolid)
+{
+	CWMMoveGeom* pGeom = (CWMMoveGeom*)pState;
+	int          bNeedsGeom;
+	int          nTries;
+	int          nAxis;
+	int          bMoved;
+	int          bAny;
+	int          nResult;
+	LTVector     vNew;
+
+	nTries = 0;
+
+	bNeedsGeom = wm_NeedsGeometryQ528(pState->m_pObj) || wm_NeedsGeometryQ528(pObj);
+
+	do
+	{
+		nResult = 0;
+		bMoved  = 0;
+		bAny    = 0;
+
+		for (nAxis = 0; nAxis < 3 && !bMoved; nAxis++)
+		{
+			float fMinT;
+			float fMaxT;
+			float fT1;
+			float fT2;
+			int   bMinFirst;
+
+			fMaxT = 0.0f;
+			fMinT = 0.0f;
+
+			if ((&pGeom->m_vMove.x)[nAxis] < 0.0f ||
+			    (&pGeom->m_vMove.x)[nAxis] > 0.0f)
+			{
+				fMinT = (VEC_INDEX(pObj->m_BBoxMin, nAxis) -
+				         ((float*)pGeom->m_pOrigPos)[nAxis]) /
+				        (&pGeom->m_vMove.x)[nAxis];
+
+				if (fMinT < 0.0f)
+					fMinT = 0.0f;
+				else if (fMinT > 1.0f)
+					fMinT = 1.0f;
+
+				fMaxT = (VEC_INDEX(pObj->m_BBoxMax, nAxis) -
+				         ((float*)pGeom->m_pOrigPos)[nAxis]) /
+				        (&pGeom->m_vMove.x)[nAxis];
+
+				if (fMaxT < 0.0f)
+					fMaxT = 0.0f;
+				else if (fMaxT > 1.0f)
+					fMaxT = 1.0f;
+			}
+
+			if (fMinT < fMaxT)
+			{
+				bMinFirst = 1;
+				fT1       = fMinT;
+				fT2       = fMaxT;
+			}
+			else
+			{
+				bMinFirst = 0;
+				fT1       = fMaxT;
+				fT2       = fMinT;
+			}
+
+			if ((0.0f < fT1 || bNeedsGeom) &&
+			    (!bBothSolid ||
+			     (bMinFirst ? (&pGeom->m_vMove.x)[nAxis] > 0.0f
+			                : (&pGeom->m_vMove.x)[nAxis] < 0.0f)))
+			{
+				bAny = 1;
+
+				vNew.x = (pGeom->m_vPos.x - pGeom->m_pOrigPos->x) * fT1 +
+					pGeom->m_pOrigPos->x;
+				vNew.y = (pGeom->m_vPos.y - pGeom->m_pOrigPos->y) * fT1 +
+					pGeom->m_pOrigPos->y;
+				vNew.z = (pGeom->m_vPos.z - pGeom->m_pOrigPos->z) * fT1 +
+					pGeom->m_pOrigPos->z;
+
+				WM_SETPOS_IF_MOVED(pState->m_pObj, vNew)
+
+				if (wm_BoxesOverlap(&pState->m_pObj->m_BBoxMin,
+				                    &pState->m_pObj->m_BBoxMax,
+				                    &pObj->m_BBoxMin, &pObj->m_BBoxMax,
+				                    -0.01f))
+				{
+					bMoved = 1;
+				}
+			}
+
+			if (!bMoved)
+			{
+				if ((0.0f < fT2 || bNeedsGeom) &&
+				    (!bBothSolid ||
+				     (bMinFirst ? (&pGeom->m_vMove.x)[nAxis] < 0.0f
+				                : (&pGeom->m_vMove.x)[nAxis] > 0.0f)))
+				{
+					bAny = 1;
+
+					vNew.x = (pGeom->m_vPos.x - pGeom->m_pOrigPos->x) * fT2 +
+						pGeom->m_pOrigPos->x;
+					vNew.y = (pGeom->m_vPos.y - pGeom->m_pOrigPos->y) * fT2 +
+						pGeom->m_pOrigPos->y;
+					vNew.z = (pGeom->m_vPos.z - pGeom->m_pOrigPos->z) * fT2 +
+						pGeom->m_pOrigPos->z;
+
+					WM_SETPOS_IF_MOVED(pState->m_pObj, vNew)
+
+					if (wm_BoxesOverlap(&pState->m_pObj->m_BBoxMin,
+					                    &pState->m_pObj->m_BBoxMax,
+					                    &pObj->m_BBoxMin, &pObj->m_BBoxMax,
+					                    -0.01f))
+					{
+						bMoved = 1;
+					}
+				}
+
+				if (bAny && !bMoved)
+				{
+					bAny = 0;
+
+					vNew = *pGeom->m_pOrigPos + pGeom->m_vMove;
+
+					WM_SETPOS_IF_MOVED(pState->m_pObj, vNew)
+				}
+			}
+		}
+
+		if (bMoved)
+		{
+			if (bBothSolid)
+			{
+				if (bNeedsGeom)
+				{
+					WM_SETPOS_IF_MOVED(pState->m_pObj, pGeom->m_vPos)
+
+					nResult = wm_PushWithGeometry(pState, pObj,
+					                              pGeom->m_pOrigPos,
+					                              &pGeom->m_vPos, 1, &bMoved);
+
+					if (nResult)
+					{
+						WM_SETPOS_IF_MOVED(pState->m_pObj, pGeom->m_vPos)
+					}
+				}
+				else
+				{
+					nResult = wm_PushWithBox(pState, pObj, pGeom->m_pOrigPos,
+					                         &pState->m_pObj->m_Pos);
+				}
+			}
+			else
+			{
+				int bHit = 1;
+
+				if (bNeedsGeom)
+				{
+					LTVector vTarget;
+
+					vTarget = pGeom->m_vPos;
+
+					if ((pObj->m_ObjectType == OT_WORLDMODEL ||
+					     pObj->m_ObjectType == OT_CONTAINER) &&
+					    !(pObj->m_Flags & FLAG_BOXPHYSICS))
+					{
+						bHit = wm_MoveThroughSim(pState,
+						                         (IWorldBsp*)pObj->m_pWMIface,
+						                         pObj, pState->m_pObj,
+						                         pGeom->m_pOrigPos, &vTarget,
+						                         0, 0);
+					}
+					else if ((pState->m_pObj->m_ObjectType == OT_WORLDMODEL ||
+					          pState->m_pObj->m_ObjectType == OT_CONTAINER) &&
+					         !(pState->m_pObj->m_Flags & FLAG_BOXPHYSICS))
+					{
+						bHit = wm_MoveThroughSim(pState,
+						                         (IWorldBsp*)pState->m_pObj->m_pWMIface,
+						                         pState->m_pObj, pObj,
+						                         pGeom->m_pOrigPos, &vTarget,
+						                         0, 0);
+					}
+				}
+
+				if (bHit)
+					wm_NotifyContact((IWMSetupSource*)pState->m_pUnknown04,
+					                 pObj, pState->m_pObj);
+
+				nResult = 0;
+			}
+		}
+
+		// The test is on the whole move but the set-down is to m_vPos
+		// (0x100297f1..0x10029855: the sum compared, `lea 0x20(%ebx)`
+		// copied), the same point by construction.
+		if (bAny && !nResult)
+		{
+			vNew = *pGeom->m_pOrigPos + pGeom->m_vMove;
+
+			if (vNew != pState->m_pObj->m_Pos)
+			{
+				pState->m_pObj->SetPos(pGeom->m_vPos);
+				obj_MaybeRetransformWorldModel(pState->m_pObj, 1);
+			}
+		}
+	}
+	while (bBothSolid && bMoved && !nResult && nTries++ < 10);
+
+	return nResult;
+}
+#else
 int wm_PushWorldModel(WMMoveState* pState, LTObject* pObj)
 {
 	CWMMoveGeom* pGeom = (CWMMoveGeom*)pState;
@@ -4265,6 +5158,7 @@ int wm_PushWorldModel(WMMoveState* pState, LTObject* pObj)
 
 	return nResult;
 }
+#endif
 
 
 // *********************************************************************** //

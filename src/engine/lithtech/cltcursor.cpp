@@ -591,10 +591,13 @@ void CObj4a1ab4View::ResetCounters()
 //   * the frame is 0x3e8 because the stream length is iltstream.h's inline
 //     `GetLen()` -- its local shares a slot with y (shipped 0x0043e0c7 and
 //     0x0043e14b both use 0x14(%esp)); a named `len` cost a dword (0x3ec);
-//   * the plane test is the nested `if (!= 1) { if (!= 3) return; ... }`:
-//     byte compares with the default return inline between them (0x0043df94);
-//     a switch gives `movsbl; dec; sub`, a flat if/else chain tail-merges
-//     the returns;
+//   * the plane test is a guard that refuses anything but one or three
+//     planes, then the two-way choice: shipped (PH 0x0044a224, AvP2 1.0.9.6
+//     0x00446224 the same) is `cmp $1; je Init; cmp $3; je InitPValue`,
+//     the default return inline between them, and Init's arm FIRST.  The
+//     nested `if (!= 1) { if (!= 3) return; ... }` puts InitPValue's arm
+//     first; a switch gives `movsbl; dec; sub`, a flat if/else chain
+//     tail-merges the returns;
 //   * nPlane at 0x18(%esp), nCol at 0x20(%esp) follow the statement order in
 //     the row set-up and the plane-advance block.
 // Left: shipped reloads pDib into %ebx at the row loop's EXIT (0x0043e2de)
@@ -653,14 +656,13 @@ LTBOOL dib_LoadQ41C(ILTStream* pStream, CObj4a1ab4View* pDib)
 	if (hdr.m_BitsPerPixel != 8)
 		return LTFALSE;
 
-	if (hdr.m_nPlanes != 1)
-	{
-		if (hdr.m_nPlanes != 3)
-			return LTFALSE;
-		format.InitPValue();
-	}
-	else
+	if (hdr.m_nPlanes != 1 && hdr.m_nPlanes != 3)
+		return LTFALSE;
+
+	if (hdr.m_nPlanes == 1)
 		format.Init(0, 0, 0, 0, 0);
+	else
+		format.InitPValue();
 
 	nBytesPerPixel = format.GetBytesPerPixel();
 	width  = hdr.m_XMax - hdr.m_XMin + 1;

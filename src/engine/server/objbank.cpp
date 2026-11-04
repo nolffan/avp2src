@@ -683,10 +683,10 @@ LTMatrix& CObjModel::GetNodeTransform(uint32 iNode)
 // slot 0x50 -- are the cached transforms still the ones the trackers and the
 // hook would produce? A pending invalidation at 0x2e0 is consumed here.
 //
-// server.dll: BYTE-IDENTICAL. lithtech.exe: NEAR (495 against 504): the
-// shipped memcmp expands as the general byte compare with its signed result
-// (`repz cmpsb; sbb; sbb`, 0x0046d23e) where ours, tested only against zero,
-// becomes the dword compare; `!= 0` does not change it.
+// The memcmp's answer is a named local: only then does lithtech.exe's /O2
+// expand it as the general byte compare with its signed result (`repz
+// cmpsb; sbb; sbb`, 0x0046d23e); tested in place against zero (with or
+// without `!= 0`) it becomes the dword compare.
 //
 // ODDITY KEPT: a tracker-count mismatch on the 0x238 array RESIZES it
 // (0x1002f12a..0x1002f13d, the same SetSize2 UpdateTransforms makes) rather
@@ -730,13 +730,15 @@ LTBOOL CObjModel::AreTransformsValid()
 	{
 		LTMatrix mIdent;
 		LTMatrix mHook;
+		int      nDiff;
 
 		mIdent.Identity();
 		mHook = mIdent;
 
 		((ModelHookFnQ521)m_Unknown1fc)(this, -1, &mHook, m_Unknown200);
 
-		if (memcmp(&mIdent, &mHook, sizeof(LTMatrix)) != 0)
+		nDiff = memcmp(&mIdent, &mHook, sizeof(LTMatrix));
+		if (nDiff)
 			return LTFALSE;
 	}
 
