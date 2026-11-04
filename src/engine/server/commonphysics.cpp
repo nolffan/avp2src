@@ -103,27 +103,16 @@ LTRESULT CommonPhysicsLT::SetObjectMass(HOBJECT hObj, float mass)
 	return LT_OK;
 }
 
-// AVP2: the polygon's plane is reached through its owner record, which
-// carries the plane pointer itself at +0x28 and a gating dword at +0x2c: a
-// null owner, a zero +0x2c or a null plane all mean "no plane" (server.dll
+// AVP2: the polygon's plane is reached through its owner record: a null
+// owner, or one without a surface, means "no plane" (server.dll
 // 0x10017aa0..0x10017ab1 is the inline answering null; Primal Hunt
 // 0x004411a4..0x004411b4 and AvP2 1.0.9.6 0x0043d454..0x0043d464 fold it into
-// the caller's test). ltobject_internal.h still has NOLF's owner layout (the
-// BSP data at +0x28, the plane behind it), so this file reads the AvP2 one
-// through a view (names ours).
-class CPolyOwnerViewQ512
-{
-public:
-	uint8    m_pad_00[0x28];
-	LTPlane* m_pPlane;                       // +0x28
-	uint32   m_Unknown2c;                    // +0x2c
-};
-
+// the caller's test) (name ours).
 inline LTPlane* poly_GetPlaneQ512(WorldPoly* pPoly)
 {
-	CPolyOwnerViewQ512* pOwner = (CPolyOwnerViewQ512*)pPoly->m_pOwner;
+	WorldPolyOwner* pOwner = pPoly->m_pOwner;
 
-	if (pOwner && pOwner->m_Unknown2c)
+	if (pOwner && pOwner->m_pSurface)
 		return pOwner->m_pPlane;
 
 	return LTNULL;
@@ -435,18 +424,6 @@ LTRESULT SPhysicsLT::SetStairHeight(float fHeight)
 	return LT_OK;
 }
 
-// AVP2: the move request is 0x6c bytes, not servermgr.h's 0x68: one more
-// float at +0x68, cleared together with +0x64 wherever a request is set
-// up on the stack (lithtech.exe 0x00498a42/0x00498a49 in sm_MoveObject, a
-// 0x78 frame in Primal Hunt and in AvP2 1.0.9.6 alike, 0x0048f130; a float
-// by server.dll's `fldz ; fstp -0x1c(%ebp)` at 0x100453e4/0x10045401).
-// servermgr.h is not this file's alone, so the requests built here are
-// this extension of it (name ours).
-struct WMMoveStateQ528 : public WMMoveState
-{
-	float  m_fUnknown68;                     // +0x68
-};
-
 // The six-field fill: four values in and the two supplied-list fields
 // cleared. SPhysicsLT::SetObjectDims just below, and the two out-of-line
 // fillers CWMStateInit::Init / InitFrom further down, all use it (defined
@@ -496,10 +473,6 @@ LTRESULT SPhysicsLT::SetObjectDims(HOBJECT hObj, LTVector* pNewDims, uint32 flag
 	WMMoveState state;
 	LTVector vDims;
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
 	vDims = *pNewDims;
 
 	if (!hObj || !pNewDims)
@@ -570,35 +543,6 @@ int g_Unknown5872c;
 // byte short). And m_pObj has to precede m_nUnknown0C even though the shipped
 // code stores them in that order anyway — with the priority written first,
 // the object pointer and the byte read off it end up in the wrong registers.
-// The scoped timer. server.dll calls its destructor (0x10001ed7, as
-// servermgr.h declares it); lithtech.exe expands it here at the normal
-// exit (0x00498a84 cnt_EndCounter, then the add through m_pTotal), with an
-// out-of-line copy only for the unwinding (0x004056b0, dalloc.cpp's). So
-// the client's copy of this function sees the body in the class (name ours).
-#ifdef LT_SERVER_BUILD
-typedef CountAdder CountAdderQ528;
-#else
-class CountAdderQ528
-{
-public:
-	CountAdderQ528(uint32* pTotal) : m_Counter(0)
-	{
-		m_pTotal = pTotal;
-		cnt_StartCounter(&m_Counter);
-	}
-
-	~CountAdderQ528()
-	{
-		uint32 nElapsed = cnt_EndCounter(&m_Counter);
-
-		*m_pTotal += nElapsed;
-	}
-
-	CBaseCounter m_Counter;                  // 0x00
-	uint32*      m_pTotal;                   // 0x08
-};
-#endif
-
 void sm_MoveObject(IWorldSim* pWorld, HOBJECT hObj, LTVector* pPos, uint32 flags)
 {
 	g_Unknown58728++;
@@ -619,12 +563,10 @@ void sm_MoveObject(IWorldSim* pWorld, HOBJECT hObj, LTVector* pPos, uint32 flags
 	// ours has it in edx (six bytes). Written out field by field the
 	// server copy is size-exact but 10 blocks; a helper taking the manager
 	// is worse.
-	CountAdderQ528 cntAdder((uint32*)&g_Unknown5872c);
-	WMMoveStateQ528 state;
+	CountAdder cntAdder((uint32*)&g_Unknown5872c);
+	WMMoveState state;
 	CServerMgr* pMgr = (CServerMgr*)pWorld;
 
-	state.m_nUnknown64 = 0;
-	state.m_fUnknown68 = 0.0f;
 	wm_InitMoveState(&state, &pMgr->m_Unknown210, pMgr->m_pUnknown6a8, hObj,
 	                 hObj->m_BlockingPriority);
 
@@ -951,19 +893,10 @@ void CWMMoveSetup::Setup()
 // ltobject_internal.h is not a file this reconstruction owns.
 #ifdef LT_SERVER_BUILD
 // AVP2: the dims are at +0x1a0, not NOLF's +0x198 (server.dll 0x1002e8af
-// `lea 0x1a0(%ecx),%edi`; lithtech.exe's copy below agrees). commonphysics.h
-// still carries +0x198 and is not this file's alone, so the store goes
-// through a view until the header moves.
-class CObjDimsViewQ528
-{
-public:
-	uint8    m_pad_000[0x1a0];
-	LTVector m_Dims;                         // 0x1a0
-};
-
+// `lea 0x1a0(%ecx),%edi`; lithtech.exe's copy below agrees).
 void CObjDimsSetter::SetDims(LTVector vDims)
 {
-	((CObjDimsViewQ528*)this)->m_Dims = vDims;
+	m_Dims = vDims;
 
 	UpdateBounds();
 }
@@ -1128,11 +1061,6 @@ void wm_ResizeAxis(WMMoveState* pState, int nAxis, float* pfWanted)
 	float       fOrigPos;
 	float       fPosA;
 	float       fPosB;
-
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj       = LTNULL;
-	state.m_nUnknown64 = 0;
 
 	LTObject* pObj = pState->m_pObj;
 
@@ -1721,11 +1649,6 @@ void wm_MoveObject(WMMoveState* pState, LTVector vPos, uint32 flags)
 	uint32        bWalk;
 	int           nFound;
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj       = LTNULL;
-	state.m_nUnknown64 = 0;
-
 	((CWMMoveSetup*)pState)->Setup();
 
 	if (pState->m_pObj->m_ChangeFlags & 2)
@@ -1996,7 +1919,7 @@ LTBOOL wm_IsPushBlocker(LTObject* pObj)
 	// early `return LTFALSE`s: lithtech 0x451c40 shares a single `xor/pop/ret`
 	// for the not-solid and wrong-type cases; two refusals gave /O2 two
 	// copies (server.dll was identical either way).
-	if (!((IWMMovableObject*)pObj)->_v34())
+	if (!pObj->_p34())
 	{
 		if (!(pObj->m_Flags & FLAG_SOLID) ||
 		    (pObj->m_ObjectType != OT_WORLDMODEL &&
@@ -2785,9 +2708,10 @@ void wm_RotatePushObject(WMMoveState* pState, LTObject* pObj);   // 0x10020e31
 // pState->m_pRotation for wm_RotatePushObject, and every object standing on
 // the world model is moved to where that 4x4 puts it, half a unit low.
 //
-// lithtech.exe's twin is 0x00454530 (src/engine/lithtech/wmrotate.cpp, read
-// against the client bytes), which has the counter and not the CountAdder --
-// the same LT_SERVER_TIMERS split sm_MoveObject has. /O1 calls out of line
+// NOLF's lithtech.exe twin was 0x00454530 (src/engine/lithtech/wmrotate.cpp,
+// read against those client bytes), which had the counter and not the
+// CountAdder; AvP2's clients keep the CountAdder too, as in sm_MoveObject
+// (LT_SERVER_TIMERS is defined for both images). /O1 calls out of line
 // what the client inlines: CWMMoveSetup::Setup, LTMatrix::Init (0x10011dc5),
 // MatTranspose3x3 (0x10020e08), obj_MaybeRetransformWorldModel, memset and
 // MatVMul_H (0x1000f878).
@@ -2828,11 +2752,6 @@ void wm_RotateWorldModel(WMMoveState* pState, LTRotation* pRotation, int bUnknow
 	void*         pSavedRequest;
 	LTObject*     pObj;
 	int           nFound;
-
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj       = LTNULL;
-	state.m_nUnknown64 = 0;
 
 	g_Unknown58728++;
 
@@ -3046,11 +2965,6 @@ void wm_RotatePushObject(WMMoveState* pState, LTObject* pObj)
 	// first instruction.
 	int         nSteps;
 	int         bMoved;
-
-	move.m_pContainer = LTNULL;
-	move.m_pUnknown04 = LTNULL;
-	move.m_pObj       = LTNULL;
-	move.m_nUnknown64 = 0;
 
 	if (((IObjPushTestView*)pObj)->TakesPartInPush())
 		return;
@@ -3349,11 +3263,6 @@ WM_CINLINE int wm_PushWithGeometry(WMMoveState* pState, LTObject* pObj, LTVector
 	LTVector    vMove, vTo, vDir, vMin, vMax;
 	int         bUsedGeometry;
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj       = LTNULL;
-	state.m_nUnknown64 = 0;
-
 	*pnOut = 0;
 
 	// The mover is the world model: sweep the object BACKWARDS, from where
@@ -3630,11 +3539,6 @@ WM_CINLINE int wm_PushWithBox(WMMoveState* pState, LTObject* pObj, LTVector* pOr
 	LTVector    vSlide;
 	int         nSide;
 	float       fDist;
-
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj       = LTNULL;
-	state.m_nUnknown64 = 0;
 
 	// Only the sliding paths below need it, and they are the only paths
 	// either NOSLIDING flag can reach -- so the whole vector is computed
@@ -4334,10 +4238,11 @@ void phys_ResetMoveCounter()
 #endif
 
 
-// 0x00453ee0, 16 bytes — the constructor of wm_PushWithBox's stack local.
-// It is in no map; the
-// neighbours place it, wm_PushWithBox at 0x004526f0 and wm_ResizeAxis at
-// 0x00454250 bracketing it.
+// STAND-IN for servermgr.h's inline WMMoveState constructor, out of line:
+// lithtech.exe's wm_PushWithBox, its inline budget spent, calls a copy
+// (Primal Hunt 0x00465cc0, AvP2 1.0.9.6 0x00460c60, 19 bytes; NOLF's was
+// 0x00453ee0) where every other site expands it. Ours expands it there too,
+// so this class carries the copy's bytes:
 //
 //      8b c1         mov %ecx,%eax
 //      33 c9         xor %ecx,%ecx
@@ -4345,28 +4250,22 @@ void phys_ResetMoveCounter()
 //      89 48 04      mov %ecx,0x4(%eax)
 //      89 48 08      mov %ecx,0x8(%eax)
 //      89 48 64      mov %ecx,0x64(%eax)
+//      89 48 68      mov %ecx,0x68(%eax)
 //      c3            ret
 //
-// __thiscall, no arguments, `this` back in %eax. One call site, 0x00453750,
-// inside wm_PushWithBox, with `lea 0x230(%esp),%ecx` — a stack local at
-// least 0x68 wide of which only four dwords are initialised: +0x00, +0x04,
-// +0x08 and +0x64. The three consecutive dwords and the isolated one 0x5c
-// further on are two different members rather than one array; the zero is
-// materialised ONCE into %ecx and reused, which is what VC6 does for a
-// constructor whose initialisers are all literal zero.
-//
-// Written before its only caller because an out-of-line member definition
-// is emitted whether or not the TU calls it.
+// An out-of-line member definition is emitted whether or not the TU calls
+// it.
 class CPushState453EE0
 {
 public:
-	CPushState453EE0();                      // 0x00453ee0
+	CPushState453EE0();                      // 0x00465cc0
 
 	void*  m_pUnknown00;                     // 0x00
 	void*  m_pUnknown04;                     // 0x04
 	uint32 m_nUnknown08;                     // 0x08
 	uint8  m_pad_0c[0x64 - 0x0c];
 	uint32 m_nUnknown64;                     // 0x64
+	float  m_fUnknown68;                     // 0x68
 };
 
 CPushState453EE0::CPushState453EE0()
@@ -4375,4 +4274,5 @@ CPushState453EE0::CPushState453EE0()
 	m_pUnknown04 = LTNULL;
 	m_nUnknown08 = 0;
 	m_nUnknown64 = 0;
+	m_fUnknown68 = 0.0f;
 }

@@ -24,6 +24,7 @@
 #include "ltanimtracker.h"
 #include "ltobject_internal.h"
 #include "collection.h"
+#include "iltmodel.h"                // ILTModel::LTRayResult, IntersectRays' rays
 
 // The array allocator with constructor arguments. stdlith's own `BaseNew`
 // (collection.h) default-constructs its elements; the model reader needs the
@@ -1052,7 +1053,9 @@ public:
 	uint32     m_nChildModels;               // 0x1d4
 	CModelSub1D4 m_Sub1d4;                   // 0x1d8 .. 0x208
 	uint32     m_nFileVersion;               // 0x208  9, 10, 11 or 12
-	int        m_CacheCount;                 // 0x20c  FreeUnusedModels' scratch counter
+	// AVP2: unsigned -- the release tests it with `jbe` (Primal Hunt
+	// lithtech.exe 0x00453d83), where NOLF's was an int.
+	uint32     m_CacheCount;                 // 0x20c  FreeUnusedModels' scratch counter
 	// The class runs to 0x2c4, which is what both places that build one
 	// allocate; the rest is not reached from the reconstructed set.
 	// 0x20c — the thirteenth, 0xb4 bytes, ending at 0x2c0 where Model stores
@@ -1342,11 +1345,14 @@ void FreeArrayElements(CMoArray<T, NoCache>* pArray, LAlloc* pAlloc)
 void at_UpdateTracker(LTAnimTracker* pTracker, uint32 nMS);
 
 
-// The vtable at 0x1004e5f4 is iltmodel.h's twenty-seven virtuals in the
-// header's own declaration order — anchored by the twenty already matched,
-// which fixes every slot without a guess. The order matters: UpdateMainTracker
-// reaches GetMainTracker at 0x28 through `this`, which is index ten and
-// nothing else.
+// AVP2: the vtable is the AvP2 SDK's iltmodel.h, thirty-seven virtuals in
+// the header's own declaration order (Primal Hunt lithtech.exe 0x004d4744,
+// server.dll's ServerModelLT 0x100757b8): GetModelLighting is slot 4,
+// Read/WriteTracker 16/17, the allow-transition and time-scale pairs
+// 27..30, the three time accessors take the bIncorporateScale argument
+// (slots 31..33), and Get/SetNormalize and IntersectRays close it. The
+// order matters: UpdateMainTracker reaches GetMainTracker at 0x2c through
+// `this`, which is index eleven and nothing else.
 class CommonModelLT
 {
 public:
@@ -1355,23 +1361,28 @@ public:
 	virtual LTRESULT GetPiece(HOBJECT hObj, char* pPieceName, HMODELPIECE& hPiece);
 	virtual LTRESULT FindWeightSet(HOBJECT hObj, char* pSetName, HMODELWEIGHTSET& hSet);
 
+	virtual LTRESULT GetModelLighting(HOBJECT hObj, LTVector& vModelLighting);
+
 	virtual LTRESULT GetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece, LTBOOL& bHidden);
 	virtual LTRESULT SetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece, LTBOOL bHidden);
 
 	virtual LTRESULT GetNodeTransform(HOBJECT hObj, HMODELNODE hNode,
-	                                  LTransform& transform, LTBOOL bWorldSpace);  // 0x1001d478
+	                                  LTransform& transform, LTBOOL bWorldSpace);
 	virtual LTRESULT GetSocketTransform(HOBJECT hObj, HMODELSOCKET hSocket,
-	                                    LTransform& transform, LTBOOL bWorldSpace);// 0x1001d77f
+	                                    LTransform& transform, LTBOOL bWorldSpace);
 
 	virtual LTRESULT GetInstanceHookFn(HOBJECT hObj, ModelInstanceHookFn& fn);
 	virtual LTRESULT SetInstanceHookFn(HOBJECT hObj, ModelInstanceHookFn fn);
 
 	virtual LTRESULT GetMainTracker(HOBJECT hObj, LTAnimTracker*& pTracker);
-	virtual LTRESULT UpdateMainTracker(HOBJECT hObj, float fUpdateDelta);          // 0x1001e056
+	virtual LTRESULT UpdateMainTracker(HOBJECT hObj, float fUpdateDelta);
 	virtual LTRESULT GetPlaybackState(LTAnimTracker* pTracker, uint32& flags);
 
 	virtual LTRESULT AddTracker(HOBJECT hObj, LTAnimTracker* pTracker);
 	virtual LTRESULT RemoveTracker(HOBJECT hObj, LTAnimTracker* pTracker);
+
+	virtual LTRESULT ReadTracker(LTAnimTracker* pTracker, HMESSAGEREAD hRead);
+	virtual LTRESULT WriteTracker(LTAnimTracker* pTracker, HMESSAGEWRITE hWrite);
 
 	virtual LTRESULT GetCurAnim(LTAnimTracker* pTracker, HMODELANIM& hAnim);
 	virtual LTRESULT SetCurAnim(LTAnimTracker* pTracker, HMODELANIM hAnim);
@@ -1385,9 +1396,25 @@ public:
 	virtual LTRESULT GetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET& hSet);
 	virtual LTRESULT SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hSet);
 
-	virtual LTRESULT GetCurAnimLength(LTAnimTracker* pTracker, uint32& length);
-	virtual LTRESULT GetCurAnimTime(LTAnimTracker* pTracker, uint32& curTime);
-	virtual LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime);
+	virtual LTRESULT GetAllowTransition(LTAnimTracker* pTracker, LTBOOL& bAllowTransition);
+	virtual LTRESULT SetAllowTransition(LTAnimTracker* pTracker, LTBOOL bAllowTransition);
+
+	virtual LTRESULT GetTimeScale(LTAnimTracker* pTracker, LTFLOAT& fTimeScale);
+	virtual LTRESULT SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeScale);
+
+	virtual LTRESULT GetCurAnimLength(LTAnimTracker* pTracker, uint32& length,
+	                                  LTBOOL bIncorporateScale = LTTRUE);
+	virtual LTRESULT GetCurAnimTime(LTAnimTracker* pTracker, uint32& curTime,
+	                                LTBOOL bIncorporateScale = LTTRUE);
+	virtual LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime,
+	                                LTBOOL bIncorporateScale = LTTRUE);
+
+	virtual LTRESULT GetNormalize(LTAnimTracker* pTracker);
+	virtual LTRESULT SetNormalize(LTAnimTracker* pTracker, LTBOOL bNormalize);
+
+	virtual LTRESULT IntersectRays(HOBJECT hModel, const LTVector& vCamPos, int32 nLODOffset,
+	                               HMODELPIECE* aPieces, uint32 nPieceCount,
+	                               ILTModel::LTRayResult* aRays, uint32 nRayCount);
 };
 
 #endif

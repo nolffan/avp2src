@@ -786,11 +786,6 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	fLightRadius = 0.0f;
 	nSkyIndex = 0;
 
-	moveState.m_pContainer = LTNULL;
-	moveState.m_pUnknown04 = LTNULL;
-	moveState.m_pObj = LTNULL;
-	moveState.m_nUnknown64 = 0;
-
 	pStream->Read(&nEnd, 4);
 
 	if (nEnd == 0xffffffff)

@@ -41,10 +41,15 @@ public:
 public:
 	uint8  m_pad_04[0x08 - 0x04];
 	class CSoundData* m_pData;               // 0x008
-	uint8  m_pad_0c[0x44 - 0x0c];
+	uint8  m_pad_0c[0x4c - 0x0c];
 	// Null until a filter has been set on the sound; reading a filter
-	// parameter off a sound without one is refused.
-	void*  m_pFilter;                        // 0x044
+	// parameter off a sound without one is refused. AVP2: +0x4c, eight
+	// bytes past NOLF's +0x44 (lithtech.exe 0x0049f754; AvP2 1.0.9.6
+	// 0x00495c0b).
+	void*  m_pFilter;                        // 0x04c
+	// The local and ambient instances are 0xc4 bytes (the client manager's
+	// instance banks, Primal Hunt 0x0049bfdf/0x0049c004).
+	uint8  m_pad_50[0xc4 - 0x50];
 };
 
 // The sample behind a sound. Only the length is reached from the manager.

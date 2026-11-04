@@ -45,8 +45,9 @@ LTRESULT CPhysicsLT::SetAcceleration(HOBJECT hObj, LTVector* pAccel)
 //
 // 0x00404e10, identical. Three things closed it, each measured: the fill is
 // an inline helper (commonphysics.cpp's wm_InitMoveState shape, copied here
-// because this TU is client-only), not six stores written out; the four
-// clearing stores come BEFORE the counter increment in source (VC6 still
+// because this TU is client-only), not six stores written out; the clearing
+// stores come BEFORE the counter increment in source -- they are
+// servermgr.h's WMMoveState constructor, run at the declaration (VC6 still
 // schedules the increment first, but the zero then goes to %esi and the
 // handle to %eax as shipped); and the move flags are a local set to 1 and
 // raised to 9 under `if`, not a ternary (the `mov $1,%eax ; test %cl,%al ;
@@ -85,11 +86,6 @@ LTRESULT CPhysicsLT::MoveObject(HOBJECT hObj, LTVector* pPos, uint32 flags)
 	CUnknown210*  pWorld;
 	uint32        nMoveFlags;
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
-
 	g_nMoveObjectCount++;
 
 	if (!hObj)
@@ -127,11 +123,6 @@ LTRESULT CPhysicsLT::SetObjectDims(HOBJECT hObj, LTVector* pNewDims, uint32 flag
 	WMMoveState  state;
 	LTVector     vDims;
 	CUnknown210* pWorld;
-
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
 
 	if (!hObj || !pNewDims)
 #ifdef AVP2_MODERN
@@ -234,11 +225,6 @@ LTRESULT CPhysicsLT::MovePushObjects(HOBJECT hToMove, LTVector& newPos,
 
 	static char* pErrFnName = "CPhysicsLT::MovePushObjects";
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
-
 	if (!hToMove || !hPushObjects)
 		RETURN_ERROR_SYM(2, pErrFnName, LT_INVALIDPARAMS);
 
@@ -287,11 +273,6 @@ LTRESULT CPhysicsLT::RotatePushObjects(HOBJECT hToMove, LTRotation& newRot,
 	CUnknown210* pWorld;
 
 	static char* pErrFnName = "CPhysicsLT::RotatePushObjects";
-
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
 
 	if (!hToMove || !hPushObjects)
 		RETURN_ERROR_SYM(2, pErrFnName, LT_INVALIDPARAMS);

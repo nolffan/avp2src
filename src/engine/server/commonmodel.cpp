@@ -17,8 +17,6 @@
 #include "de_error.h"
 // AvP2's ReadTracker/WriteTracker stream through the message interface.
 #include "iltmessage.h"
-// ILTModel::LTRayResult, IntersectRays' ray records.
-#include "iltmodel.h"
 // CModelLoadRequest, which LoadChildModels below both reads and fills in for
 // each child it asks for.
 #include "serverengine.h"
@@ -33,63 +31,6 @@ static int g_QNext[3] = { QY, QZ, QX };
 // lithtech.exe's twin is 0x004abfc4 (500.0f), in the same place right
 // after its g_pEmptyFilename (0x004abfc0), so both images define it.
 float g_CV_DefaultDrawIndexedDist = 500.0f;
-
-// ---- AvP2's ILTModel (iltmodel.h's thirty-seven virtuals) --------------- //
-//
-// AVP2: CommonModelLT's vtable is the AvP2 SDK's iltmodel.h, in declaration
-// order, thirty-seven slots (Primal Hunt lithtech.exe 0x004d4744; the
-// client's twin 0x004d6404 overrides the setters): GetModelLighting is slot
-// 4, Read/WriteTracker 16/17, the allow-transition and time-scale pairs
-// 27..30, the three time accessors take the bIncorporateScale argument, and
-// Get/SetNormalize and IntersectRays close it. commonmodel.h still declares
-// NOLF's twenty-seven, so UpdateMainTracker's own `call *0x2c` (slot 11,
-// GetMainTracker) and the new members below are written against this view
-// of the same class until the header follows (name ours).
-class CommonModelLTQ504
-{
-public:
-	virtual LTRESULT GetSocket(HOBJECT hObj, char* pSocketName, HMODELSOCKET& hSocket);
-	virtual LTRESULT GetNode(HOBJECT hObj, char* pNodeName, HMODELNODE& hNode);
-	virtual LTRESULT GetPiece(HOBJECT hObj, char* pPieceName, HMODELPIECE& hPiece);
-	virtual LTRESULT FindWeightSet(HOBJECT hObj, char* pSetName, HMODELWEIGHTSET& hSet);
-	virtual LTRESULT GetModelLighting(HOBJECT hObj, LTVector& vModelLighting);
-	virtual LTRESULT GetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece, LTBOOL& bHidden);
-	virtual LTRESULT SetPieceHideStatus(HOBJECT hObj, HMODELPIECE hPiece, LTBOOL bHidden);
-	virtual LTRESULT GetNodeTransform(HOBJECT hObj, HMODELNODE hNode,
-	                                  LTransform& transform, LTBOOL bWorldSpace);
-	virtual LTRESULT GetSocketTransform(HOBJECT hObj, HMODELSOCKET hSocket,
-	                                    LTransform& transform, LTBOOL bWorldSpace);
-	virtual LTRESULT GetInstanceHookFn(HOBJECT hObj, ModelInstanceHookFn& fn);
-	virtual LTRESULT SetInstanceHookFn(HOBJECT hObj, ModelInstanceHookFn fn);
-	virtual LTRESULT GetMainTracker(HOBJECT hObj, LTAnimTracker*& pTracker);
-	virtual LTRESULT UpdateMainTracker(HOBJECT hObj, float fUpdateDelta);
-	virtual LTRESULT GetPlaybackState(LTAnimTracker* pTracker, uint32& flags);
-	virtual LTRESULT AddTracker(HOBJECT hObj, LTAnimTracker* pTracker);
-	virtual LTRESULT RemoveTracker(HOBJECT hObj, LTAnimTracker* pTracker);
-	virtual LTRESULT ReadTracker(LTAnimTracker* pTracker, HMESSAGEREAD hRead);
-	virtual LTRESULT WriteTracker(LTAnimTracker* pTracker, HMESSAGEWRITE hWrite);
-	virtual LTRESULT GetCurAnim(LTAnimTracker* pTracker, HMODELANIM& hAnim);
-	virtual LTRESULT SetCurAnim(LTAnimTracker* pTracker, HMODELANIM hAnim);
-	virtual LTRESULT ResetAnim(LTAnimTracker* pTracker);
-	virtual LTRESULT GetLooping(LTAnimTracker* pTracker);
-	virtual LTRESULT SetLooping(LTAnimTracker* pTracker, LTBOOL bLooping);
-	virtual LTRESULT GetPlaying(LTAnimTracker* pTracker);
-	virtual LTRESULT SetPlaying(LTAnimTracker* pTracker, LTBOOL bPlaying);
-	virtual LTRESULT GetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET& hSet);
-	virtual LTRESULT SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hSet);
-	virtual LTRESULT GetAllowTransition(LTAnimTracker* pTracker, LTBOOL& bAllowTransition);
-	virtual LTRESULT SetAllowTransition(LTAnimTracker* pTracker, LTBOOL bAllowTransition);
-	virtual LTRESULT GetTimeScale(LTAnimTracker* pTracker, LTFLOAT& fTimeScale);
-	virtual LTRESULT SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeScale);
-	virtual LTRESULT GetCurAnimLength(LTAnimTracker* pTracker, uint32& length, LTBOOL bIncorporateScale);
-	virtual LTRESULT GetCurAnimTime(LTAnimTracker* pTracker, uint32& curTime, LTBOOL bIncorporateScale);
-	virtual LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime, LTBOOL bIncorporateScale);
-	virtual LTRESULT GetNormalize(LTAnimTracker* pTracker);
-	virtual LTRESULT SetNormalize(LTAnimTracker* pTracker, LTBOOL bNormalize);
-	virtual LTRESULT IntersectRays(HOBJECT hModel, const LTVector& vCamPos, int32 nLODOffset,
-	                               HMODELPIECE* aPieces, uint32 nPieceCount,
-	                               ILTModel::LTRayResult* aRays, uint32 nRayCount);
-};
 
 // IntersectRays' worker, a 0x14-byte local (the whole of 0x0045fc30's
 // frame): bound to the instance and its LOD, prepared, then run over the
@@ -226,7 +167,7 @@ LTRESULT CommonModelLT::FindWeightSet(HOBJECT hObj, char* pSetName, HMODELWEIGHT
 
 // AVP2: 0x0045e700 (server.dll 0x100248f1) -- a positive guard, the copy
 // first and the report as the trailing statement.
-LTRESULT CommonModelLTQ504::GetModelLighting(HOBJECT hObj, LTVector& vModelLighting)
+LTRESULT CommonModelLT::GetModelLighting(HOBJECT hObj, LTVector& vModelLighting)
 {
 	if (hObj && hObj->m_ObjectType == OT_MODEL)
 	{
@@ -356,31 +297,11 @@ LTRESULT CommonModelLT::SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hS
 	return LT_OK;
 }
 
-LTRESULT CommonModelLT::GetCurAnimTime(LTAnimTracker* pTracker, uint32& curTime)
-{
-	curTime = 0;
-
-	if (!pTracker)
-		RETURN_ERROR_NAMED(2, "ILTModel::GetCurAnimTime", LT_INVALIDPARAMS);
-
-	curTime = pTracker->m_TimeRef.m_Cur.m_Time;
-	return LT_OK;
-}
-
-LTRESULT CommonModelLT::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime)
-{
-	if (!pTracker)
-		RETURN_ERROR_NAMED(2, "ILTModel::SetCurAnimTime", LT_INVALIDPARAMS);
-
-	pTracker->m_TimeRef.m_Cur.m_Time = curTime;
-	return LT_OK;
-}
-
 // AVP2: the allow-transition and time-scale pairs, 0x0045f030..0x0045f230.
 // The time-scale pair reports under the allow-transition pair's names: the
 // shipped .data holds "ILTModel::GetAllowTransition" and
 // "ILTModel::SetAllowTransition" twice each (0x004e5b4c..0x004e5b58).
-LTRESULT CommonModelLTQ504::GetAllowTransition(LTAnimTracker* pTracker, LTBOOL& bAllowTransition)
+LTRESULT CommonModelLT::GetAllowTransition(LTAnimTracker* pTracker, LTBOOL& bAllowTransition)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::GetAllowTransition", LT_INVALIDPARAMS);
@@ -389,7 +310,7 @@ LTRESULT CommonModelLTQ504::GetAllowTransition(LTAnimTracker* pTracker, LTBOOL& 
 	return LT_OK;
 }
 
-LTRESULT CommonModelLTQ504::SetAllowTransition(LTAnimTracker* pTracker, LTBOOL bAllowTransition)
+LTRESULT CommonModelLT::SetAllowTransition(LTAnimTracker* pTracker, LTBOOL bAllowTransition)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::SetAllowTransition", LT_INVALIDPARAMS);
@@ -404,7 +325,7 @@ LTRESULT CommonModelLTQ504::SetAllowTransition(LTAnimTracker* pTracker, LTBOOL b
 	return LT_OK;
 }
 
-LTRESULT CommonModelLTQ504::GetTimeScale(LTAnimTracker* pTracker, LTFLOAT& fTimeScale)
+LTRESULT CommonModelLT::GetTimeScale(LTAnimTracker* pTracker, LTFLOAT& fTimeScale)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::GetAllowTransition", LT_INVALIDPARAMS);
@@ -413,7 +334,7 @@ LTRESULT CommonModelLTQ504::GetTimeScale(LTAnimTracker* pTracker, LTFLOAT& fTime
 	return LT_OK;
 }
 
-LTRESULT CommonModelLTQ504::SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeScale)
+LTRESULT CommonModelLT::SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeScale)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::SetAllowTransition", LT_INVALIDPARAMS);
@@ -439,7 +360,7 @@ LTRESULT CommonModelLTQ504::SetTimeScale(LTAnimTracker* pTracker, LTFLOAT fTimeS
 
 // AVP2: the three time accessors with bIncorporateScale, 0x0045f240,
 // 0x0045f310 and 0x0045f390.
-LTRESULT CommonModelLTQ504::GetCurAnimLength(LTAnimTracker* pTracker, uint32& length, LTBOOL bIncorporateScale)
+LTRESULT CommonModelLT::GetCurAnimLength(LTAnimTracker* pTracker, uint32& length, LTBOOL bIncorporateScale)
 {
 	ModelAnim* pAnim;
 
@@ -462,7 +383,7 @@ LTRESULT CommonModelLTQ504::GetCurAnimLength(LTAnimTracker* pTracker, uint32& le
 	return LT_OK;
 }
 
-LTRESULT CommonModelLTQ504::GetCurAnimTime(LTAnimTracker* pTracker, uint32& curTime, LTBOOL bIncorporateScale)
+LTRESULT CommonModelLT::GetCurAnimTime(LTAnimTracker* pTracker, uint32& curTime, LTBOOL bIncorporateScale)
 {
 	curTime = 0;
 
@@ -479,7 +400,7 @@ LTRESULT CommonModelLTQ504::GetCurAnimTime(LTAnimTracker* pTracker, uint32& curT
 	return LT_OK;
 }
 
-LTRESULT CommonModelLTQ504::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime, LTBOOL bIncorporateScale)
+LTRESULT CommonModelLT::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime, LTBOOL bIncorporateScale)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::SetCurAnimTime", LT_INVALIDPARAMS);
@@ -496,7 +417,7 @@ LTRESULT CommonModelLTQ504::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTi
 // ReadByte/ReadWord helpers: the byte's temporary is what 0x0045f64c reads
 // into the dead hRead slot, and the 4-local frame (`sub $0x10`) only comes
 // out that way; the FL forms into locals cost a fifth.
-LTRESULT CommonModelLTQ504::ReadTracker(LTAnimTracker* pTracker, HMESSAGEREAD hRead)
+LTRESULT CommonModelLT::ReadTracker(LTAnimTracker* pTracker, HMESSAGEREAD hRead)
 {
 	uint16 iAnim;
 	uint32 curTime, weightSet, timeScaleNum, timeScaleDenom;
@@ -526,7 +447,7 @@ LTRESULT CommonModelLTQ504::ReadTracker(LTAnimTracker* pTracker, HMESSAGEREAD hR
 	RETURN_ERROR_NAMED(2, "ILTModel::ReadTracker", LT_INVALIDPARAMS);
 }
 
-LTRESULT CommonModelLTQ504::WriteTracker(LTAnimTracker* pTracker, HMESSAGEWRITE hWrite)
+LTRESULT CommonModelLT::WriteTracker(LTAnimTracker* pTracker, HMESSAGEWRITE hWrite)
 {
 	if (hWrite && pTracker)
 	{
@@ -545,7 +466,7 @@ LTRESULT CommonModelLTQ504::WriteTracker(LTAnimTracker* pTracker, HMESSAGEWRITE 
 
 // AVP2: 0x0045fb90 and 0x0045fbe0, reporting under the looping pair's names
 // (0x004e5b9c, 0x004e5ba0).
-LTRESULT CommonModelLTQ504::GetNormalize(LTAnimTracker* pTracker)
+LTRESULT CommonModelLT::GetNormalize(LTAnimTracker* pTracker)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::GetLooping", LT_INVALIDPARAMS);
@@ -553,7 +474,7 @@ LTRESULT CommonModelLTQ504::GetNormalize(LTAnimTracker* pTracker)
 	return pTracker->m_TimeRef.m_bNormalize;
 }
 
-LTRESULT CommonModelLTQ504::SetNormalize(LTAnimTracker* pTracker, LTBOOL bNormalize)
+LTRESULT CommonModelLT::SetNormalize(LTAnimTracker* pTracker, LTBOOL bNormalize)
 {
 	if (!pTracker)
 		RETURN_ERROR_NAMED(2, "ILTModel::SetLooping", LT_INVALIDPARAMS);
@@ -564,7 +485,7 @@ LTRESULT CommonModelLTQ504::SetNormalize(LTAnimTracker* pTracker, LTBOOL bNormal
 
 // AVP2: 0x0045fc30 (server.dll 0x100259cf). One name for both reports, and
 // both checks are positive guards whose failures trail the body.
-LTRESULT CommonModelLTQ504::IntersectRays(HOBJECT hModel, const LTVector& vCamPos, int32 nLODOffset,
+LTRESULT CommonModelLT::IntersectRays(HOBJECT hModel, const LTVector& vCamPos, int32 nLODOffset,
                                           HMODELPIECE* aPieces, uint32 nPieceCount,
                                           ILTModel::LTRayResult* aRays, uint32 nRayCount)
 {
@@ -657,23 +578,6 @@ LTRESULT CommonModelLT::SetInstanceHookFn(HOBJECT hObj, ModelInstanceHookFn fn)
 		RETURN_ERROR_NAMED(2, "ILTModel::SetModelInstanceHookFn", LT_INVALIDPARAMS);
 
 	((ModelInstance*)hObj)->m_HookFn = fn;
-	return LT_OK;
-}
-
-LTRESULT CommonModelLT::GetCurAnimLength(LTAnimTracker* pTracker, uint32& length)
-{
-	ModelAnim* pAnim;
-
-	length = 0;
-
-	if (!pTracker)
-		RETURN_ERROR_NAMED(2, "ILTModel::GetCurAnimLength", LT_INVALIDPARAMS);
-
-	pAnim = pTracker->m_TimeRef.m_pModel->m_AnimArray.m_pArray[pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
-	if (!pAnim)
-		RETURN_ERROR_NAMED(1, "ILTModel::GetCurAnimLength", LT_NOTINITIALIZED);
-
-	length = pAnim->GetLength();
 	return LT_OK;
 }
 
@@ -884,7 +788,7 @@ LTRESULT CommonModelLT::GetSocketTransform(HOBJECT hObj, HMODELSOCKET hSocket,
 		// GetNodeTransform is slot seven (`call *0x1c`).
 		if (hSocket >= pModel->m_Sockets.m_nElements)
 		{
-			return ((CommonModelLTQ504*)this)->GetNodeTransform(hObj,
+			return GetNodeTransform(hObj,
 				hSocket - pModel->m_Sockets.m_nElements, transform, bWorldSpace);
 		}
 
@@ -1435,10 +1339,8 @@ void Model::sub_10017145(LTBOOL bFlag)
 				if (pModel && pModel != this)
 				{
 					// AVP2: the count never goes below zero (Primal Hunt
-					// lithtech.exe 0x00453d83), tested UNSIGNED (`jbe`):
-					// AvP2's m_CacheCount is a uint32, which commonmodel.h
-					// still declares as NOLF's int.
-					if ((uint32)pModel->m_CacheCount > 0)
+					// lithtech.exe 0x00453d83, an unsigned `jbe`).
+					if (pModel->m_CacheCount > 0)
 						pModel->m_CacheCount--;
 
 					if (bFlag && pRec->m_pOwner28->m_CacheCount == 0)
@@ -4588,7 +4490,7 @@ HMODELANIM ci_GetAnimIndex(LTObject* pObj, char* pName)
 LTRESULT CommonModelLT::UpdateMainTracker(HOBJECT hObj, float fUpdateDelta)
 {
 	LTAnimTracker* pTracker;
-	LTRESULT       dResult = ((CommonModelLTQ504*)this)->GetMainTracker(hObj, pTracker);
+	LTRESULT       dResult = GetMainTracker(hObj, pTracker);
 
 	if (dResult)
 		return dResult;
@@ -6491,7 +6393,8 @@ int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 
 	w_GetAmbientLight(m_pWorldName, &vScratch);
 
-#ifdef LT_SERVER_TIMERS
+#ifdef LT_SERVER_BUILD
+	// Server-only (lithtech.exe has no CBaseCounter in its world load).
 	// The precalculation counter is declared HERE, where it starts: Primal
 	// Hunt's server.dll constructs it after the ambient light (0x1000b0cf),
 	// not in the prologue.  NEAR there (0x1000adff, 930 of 930 bytes, 0
@@ -6524,7 +6427,7 @@ int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 
 	w_ReadWorldLights(pStream, this, &m_SubFC);
 
-#ifdef LT_SERVER_TIMERS
+#ifdef LT_SERVER_BUILD
 	nPrecalcTicks += cnt_EndCounter(&counter);
 #endif
 

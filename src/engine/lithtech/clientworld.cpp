@@ -159,10 +159,9 @@
 // Landing these for real means turning those `=0` in src/engine/server/
 // servermgr.h into plain declarations and giving CBaseDriver the bodies —
 // a change to a header server.dll is built from.
-// So they are written below against a layout-identical view, house style (see
-// IObjInsideTestView in src/engine/server/servercommon.cpp): the view exists
-// only to give the slots somewhere to live and is never instantiated, so it
-// never acquires a vtable.  Because ICF is on, the linker folds the eight
+// So they are written below against a layout-identical view, house style: the
+// view exists only to give the slots somewhere to live and is never
+// instantiated, so it never acquires a vtable.  Because ICF is on, the linker folds the eight
 // one-argument `return 1;` bodies into one address whichever file declares
 // them.
 class CBaseDriverDefaultsView
@@ -195,7 +194,7 @@ public:
 	virtual LTBOOL SendTo(const void* pData, uint32 len,
 	                      const char* sAddr, uint32 port);     // 0x58
 
-	virtual void   Disconnect(void* pConn, uint32 nReason, uint32 flags)=0;
+	virtual void   Disconnect(void* pConn, uint32 nReason)=0;
 	virtual void   _p60()=0;
 	virtual LTBOOL ReceivePacket(class ServerMessage* pMsg)=0;
 	virtual uint32 GetRecvSize()=0;

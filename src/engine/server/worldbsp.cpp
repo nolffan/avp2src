@@ -80,15 +80,6 @@ public:
 };
 
 
-// AVP2: the dword at CWorldBsp+0x150 that Init resets (see there), past
-// where worldbsp.h's class stops (name ours).
-class CWorldBspTailQ517
-{
-public:
-	uint8  m_pad_000[0x150];
-	uint32 m_n150;                           // 0x150
-};
-
 // CServerWorldFull is a class local to commonmodel.cpp, not a header type, and
 // this function touches exactly one of its fields -- the world-object list head
 // at +0xf4 (0x10008cee / 0x10008cf1). Declared as an opaque type here and
@@ -151,13 +142,11 @@ void CWorldBsp::Init()
 
 	m_nUnknown48 = 0;
 
-	// AVP2: a dword past NOLF's end of the class, reset to -1 (Primal Hunt
-	// server.dll 0x1000e19a `orl $-1,0x150(%ecx)`, which /O1 schedules
-	// between the vector and +0xf4; lithtech.exe 0x0042fcaa, last; AvP2's
-	// lithtech.exe has it too; written last, both images are identical). The client allocates the world 0x154 bytes
-	// (0x0042b773, 0x0042df75), so worldbsp.h's CWorldBsp is one member
-	// short; reached through a view until that header carries it.
-	((CWorldBspTailQ517*)this)->m_n150 = 0xffffffff;
+	// AVP2: reset to -1 (Primal Hunt server.dll 0x1000e19a `orl
+	// $-1,0x150(%ecx)`, which /O1 schedules between the vector and +0xf4;
+	// lithtech.exe 0x0042fcaa, last; AvP2's lithtech.exe has it too; written
+	// last, both images are identical).
+	m_n150 = 0xffffffff;
 }
 
 // Giving the world back. A world whose flags carry bit zero owns nothing —
@@ -482,22 +471,6 @@ CSubRecord* CWorldSub108::GetPointStatus(LTVector vPoint)
 // ebx/edi rotation that came with the miss went with it too: pp lands in %edi
 // and the vertex cursor in %ebx, the way it shipped. A register rotation is
 // again a consequence of a misplaced local rather than a lottery.
-//
-// AVP2: (NOLF had the count at +0x50 and the vertices at +0x54) AvP2's and
-// Primal Hunt's polygon has its vertex count at +0x54 and its vertices at
-// +0x58 (0x0042f887, 0x0042f88f; AvP2 0x0042c105; the loader's
-// 0x0042c47d and 0x0042c495 agree).  worldbsp.h's CWorldPart still carries
-// NOLF's offsets and other objects include it, so the polygon is read here
-// through a view of AvP2's layout.
-class CWorldPartViewQ505
-{
-public:
-	uint8  m_pad_00[0x54];
-	uint16 m_nVerts;                         // 0x54
-	class CWorldVertRef { public: LTVector* m_pPos; uint8 m_pad[0x18 - 4]; }
-	       m_Verts[1];                       // 0x58
-};
-
 float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
 {
 	float        fMax = 0.0f;
@@ -512,7 +485,7 @@ float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
 
 		do
 		{
-			CWorldPartViewQ505* pPart = (CWorldPartViewQ505*)*pp;
+			CWorldPart* pPart = *pp;
 
 			for (j = 0; j < pPart->m_nVerts; j++)
 			{

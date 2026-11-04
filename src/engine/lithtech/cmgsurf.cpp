@@ -761,7 +761,7 @@ LTRESULT CSub11F0Q428::SetRect(LTRect* pRect)
 //  AND THE FUNCTION IS ALREADY WRITTEN.  src/engine/server/dalloc.cpp's
 //  `void* dalloc(uint32 nSize)` is this source; build/engine.sh line 331
 //  compiles ..\server\dalloc.cpp into lithtech.exe too.  The client body
-//  has no CTimedScope because /D LT_SERVER_TIMERS is server-only
+//  had no timer (NOLF's; AvP2's times it, the CountAdder in dalloc.cpp)
 //  which is why it is 83 bytes against the server's
 //  0x1000d2ef.  Nothing to write.
 //
@@ -794,7 +794,7 @@ LTRESULT CSub11F0Q428::SetRect(LTRect* pRect)
 // ----------------------------------------------------------------------- //
 //  2.  NOT-A-FUNCTION ROWS
 //
-//  0x00428fdd,"not a function -- interior block of dalloc(), which starts at 0x00428fd0 and is 83 bytes: the jne at 0x00428fd7 is the only entry, the push edi at 0x00428fd0 is what the pop edi at 0x00429021 balances, and the 13-byte row 0x00428fd0 tiles the rest exactly. The function is already reconstructed as dalloc() in src/engine/server/dalloc.cpp, which build/engine.sh compiles into lithtech.exe as well as server.dll; the client body lacks the CTimedScope because LT_SERVER_TIMERS is server-only."
+//  0x00428fdd,"not a function -- interior block of dalloc(), which starts at 0x00428fd0 and is 83 bytes: the jne at 0x00428fd7 is the only entry, the push edi at 0x00428fd0 is what the pop edi at 0x00429021 balances, and the 13-byte row 0x00428fd0 tiles the rest exactly. The function is already reconstructed as dalloc() in src/engine/server/dalloc.cpp, which build/engine.sh compiles into lithtech.exe as well as server.dll; NOLF's client body lacked the timer AvP2's has."
 //  0x00478930,"not independent work -- ObjectCreateStruct::ObjectCreateStruct(), the in-class constructor at src/LT2/sdk/inc/ltbasedefs.h:218, emitted out of line. Identified field for field against Clear() and distinguished from Clear() itself (0x004147f0, which predobj.obj already emits as ?Clear@ObjectCreateStruct@@QAEXXZ) by the mov eax,ecx this-return at 0x00478930. Its ONE call site is 0x00478623, inside the 1314-byte function at 0x00478320, so the COMDAT falls out when that TU is written with an ObjectCreateStruct local; there is nothing to author."
 //
 // ----------------------------------------------------------------------- //

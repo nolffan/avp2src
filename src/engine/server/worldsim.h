@@ -19,9 +19,9 @@
 #include "servermgr.h"
 #include "de_error.h"
 
-// One node of a world's BSP tree. The plane is two indirections away, the
-// same walk WorldPoly::GetPlane makes; the flag byte at 0x16 marks a node
-// with nothing below it, and both of its low bits do.
+// One node of a world's BSP tree. The plane is its polygon's (AVP2: one
+// indirection, NOLF's two); the flag byte at 0x16 marks a node with nothing
+// below it, and both of its low bits do.
 class BSPNode
 {
 public:
@@ -30,7 +30,7 @@ public:
 	uint8           m_pad_0c[0x16 - 0x0c];
 	uint8           m_Flags;                 // 0x16
 
-	LTPlane* GetPlane() { return m_pOwner->m_pParent->m_pPlane; }
+	LTPlane* GetPlane() { return m_pOwner->m_pPlane; }
 };
 
 #define BSPNODE_LEAF 0x03
@@ -82,7 +82,9 @@ extern float        g_fBoxRadius;
 // The world's own cheap containment tests, which answer before any of the
 // box machinery is set up (0x10012c3a and 0x10012ba2; names ours).
 int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint);
-int bsp_SphereInside(BSPNode* pRoot, LTVector* pPoint, float fRadius);
+// AVP2: the sphere test takes the root by address (PH lithtech.exe
+// 0x00441570; ws_GetBoxStatus passes its parameter's, 0x0041d29c).
+int bsp_SphereInside(BSPNode** ppRoot, LTVector* pPoint, float fRadius);
 
 // 0x10002fff — does this box touch the world? One of the three ways into the
 // module from outside it (name ours).
@@ -128,6 +130,11 @@ public:
 	                                         //       filled in
 	LTVector      m_vMin;                    // 0x18  the box's own bounds
 	LTVector      m_vMax;                    // 0x24
+	// AVP2: 0x38 bytes in every AvP2 image, two dwords longer than NOLF's:
+	// the corners that gave the minimum and the maximum (PH 0x0041a6fd
+	// `mov %edx,0x30(%ecx)`, 0x0041a70f `mov %edx,0x34(%ecx)`).
+	int           m_iMinCorner;              // 0x30
+	int           m_iMaxCorner;              // 0x34
 };
 
 // How far past a plane a corner has to be before it counts as being on the
@@ -266,7 +273,7 @@ class CPolyTest
 {
 public:
 	CBoxProject m_Start;                     // 0x00
-	CBoxProject m_End;                       // 0x30
+	CBoxProject m_End;                       // 0x38
 };
 
 // A plane the moving box has been found inside, remembered with whatever
@@ -325,7 +332,7 @@ int  ws_IsBoxOutsidePoly(WorldPolyOwner* pPoly, LTVector* pPoints1,
 
 void ws_HandleImpact(CollisionInfo* pInfo, CBounceState* pState,
                      LTObject* pObj, HOBJECT hObject, IWorldBsp* pWorldBsp,
-                     WorldPoly* pPoly, int bWorld);              // 0x10005103
+                     WorldPoly* pPoly, LTVector* pNormal);       // 0x10005103
 
 // A point move takes at most forty steps. Needing more means the point is
 // wedged between surfaces that keep bouncing it back at each other, and the
@@ -344,7 +351,9 @@ void ws_SetupSweptBox(LTVector* pMin, LTVector* pMax);
 // caller in the module goes through this one address: the sphere walk's
 // per-node geometry test and both of the box sweep's blocking tests are the
 // same function (name ours).
-int  w_IsPolyBlocking(WorldPolyOwner* pOwner);
+// AVP2: with the clip's two optional out-parameters (filled only when both
+// are given; most callers pass null).
+int  w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax);
 
 // The polygon-versus-box clip's three working arrays, sized off the frame:
 // `sub $0xd58,%esp` is 200 clipped vertices, 200 pointers of output list, 40
@@ -442,7 +451,8 @@ WorldPoly* bsp_IntersectLine(class BSPNode* pRoot, LTVector* pStart,
 int  ws_HitPoly(WorldPoly* pPoly, CBounceState* pState,
                 CPolyTest* pTest);                                 // 0x10004167
 
-void ws_AddContact(LTPlane* pPlane, void* pObject, float fDepth);  // 0x10004213
+// AVP2: no depth -- the contact is only recorded (server.dll 0x10005c4c).
+void ws_AddContact(LTPlane* pPlane, void* pObject);                // 0x10005c4c
 void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist);
                                                                    // 0x100044b4
 void ws_PushBoxOutOfContacts();                                    // 0x100042db

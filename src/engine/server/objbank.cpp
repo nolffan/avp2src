@@ -2349,16 +2349,18 @@ LTBOOL w_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo,
 	// and a frame with no room for the object. server.dll's (0x1000edd7) has
 	// all three. cnt_StartCounter reaches QueryPerformanceCounter and cannot
 	// be optimised away, so this is the preprocessor, not the optimiser —
-	// the same split wmrotate.cpp documents for sm_MoveObject's CountAdder
-	// and worldsim.cpp already spells LT_SERVER_TIMERS. The counter global
-	// itself is incremented in BOTH, so only the timer is guarded.
-#ifdef LT_SERVER_TIMERS
+	// and it is guarded with LT_SERVER_BUILD, not LT_SERVER_TIMERS, which
+	// AvP2's client defines too (its physics is timed). Primal Hunt's
+	// lithtech.exe constructs no CBaseCounter (`call 0x00426060`) between
+	// dfree's (0x0043354a) and 0x004515c5. The counter global itself is
+	// incremented in BOTH, so only the timer is guarded.
+#ifdef LT_SERVER_BUILD
 	CBaseCounter counter(0);
 #endif
 
 	g_nIsectQueries++;
 
-#ifdef LT_SERVER_TIMERS
+#ifdef LT_SERVER_BUILD
 	cnt_StartCounter(&counter);
 #endif
 
@@ -2421,7 +2423,7 @@ LTBOOL w_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo,
 	                                                      w_IsectObjectCB,
 	                                                      0, 0);
 
-#ifdef LT_SERVER_TIMERS
+#ifdef LT_SERVER_BUILD
 	g_nIsectTime += cnt_EndCounter(&counter);
 #endif
 

@@ -131,7 +131,12 @@ public:
 
 	LTRESULT SetLooping(LTAnimTracker* pTracker, LTBOOL bLooping);
 	LTRESULT SetPlaying(LTAnimTracker* pTracker, LTBOOL bPlaying);
-	LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime);
+	// NOLF's two-argument signature, kept when CommonModelLT's took
+	// bIncorporateScale: it overrides nothing and is a new virtual, slot 37
+	// past the interface's thirty-seven (server.dll 0x100757b8 slot 37 is
+	// 0x1003a130, slot 33 CommonModelLT's own 0x100252b9), so the
+	// interface's SetCurAnimTime never reaches it (RETAIL_BUGS.md).
+	virtual LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime);
 	LTRESULT SetCurAnim(LTAnimTracker* pTracker, HMODELANIM hAnim);
 	LTRESULT ResetAnim(LTAnimTracker* pTracker);
 	LTRESULT SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hSet);

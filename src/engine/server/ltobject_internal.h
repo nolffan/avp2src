@@ -38,17 +38,6 @@
 
 #include "ltbasedefs.h"
 
-// The plane of a world polygon is two indirections away from the poly. The
-// binary gives the offsets but not the type names, so the intermediate
-// classes below are named for their role in that walk, not from any source.
-class WorldBspData
-{
-public:
-	uint8    m_pad_000[0x34];
-	LTPlane* m_pPlane;                       // 0x34
-	uint32   m_nFlags;                       // 0x38
-};
-
 // Bit 22 marks geometry the physics will not let an object step up onto,
 // however low the step is (name ours).
 #define WBSP_NOSTEP 0x400000
@@ -62,28 +51,46 @@ struct WorldPolyVertex
 	uint8     m_pad_04[0x18 - 0x04];
 };
 
+// The surface a world polygon is drawn with. AVP2: the flags are at +0x30
+// (w_IsPolyBlocking's solid test, AvP2 lithtech.exe 0x00416f69 `testb
+// $0x1,0x30(%ecx)`) and the texture flags at +0x34; the plane NOLF kept here
+// (+0x34, flags +0x38) moved to the polygon (names ours).
+class WorldSurface
+{
+public:
+	uint8  m_pad_00[0x30];
+	uint32 m_Flags;                          // 0x30  bit 0: solid; WBSP_NOSTEP
+	uint16 m_nTextureFlags;                  // 0x34
+};
+
+// A world polygon. AVP2: the plane is the polygon's own (+0x28, NOLF's was
+// behind a pointer there), the surface follows at +0x2c, and the vertex
+// count and table are four bytes on from NOLF's (+0x54, +0x58: AvP2
+// lithtech.exe 0x00416fd6, 0x00416ff5; Primal Hunt 0x0042eeba
+// `cmp %bp,0x54(%esi)`, 0x0042eec0 `lea 0x58(%esi),%edx`) (names ours).
 class WorldPolyOwner
 {
 public:
-	uint8         m_pad_000[0x18];
+	uint8         m_pad_000[0x15];
+	// Two bits a light animation sets on every polygon it touches
+	// (lithtech.exe 0x0042ecd9 `orb $0xc0,0x15(%edx)`).
+	uint8         m_Flags15;                 // 0x15
+	uint8         m_pad_016[0x18 - 0x16];
 	// The polygon's bounding sphere, which is what the physics rejects on
 	// before it looks at any edge.
 	LTVector      m_vCentre;                 // 0x18
 	float         m_fRadius;                 // 0x24
-	WorldBspData* m_pParent;                 // 0x28
-	uint8         m_pad_02c[0x50 - 0x2c];
-	uint16        m_nVertices;               // 0x50
-	uint8         m_pad_052[0x54 - 0x52];
-	WorldPolyVertex m_Vertices[1];           // 0x54  as many as m_nVertices
+	LTPlane*      m_pPlane;                  // 0x28
+	WorldSurface* m_pSurface;                // 0x2c
+	uint8         m_pad_030[0x54 - 0x30];
+	uint16        m_nVertices;               // 0x54
+	uint8         m_pad_056[0x58 - 0x56];
+	WorldPolyVertex m_Vertices[1];           // 0x58  as many as m_nVertices
 
-	LTPlane* GetPlane() { return m_pParent->m_pPlane; }
-};
-
-class WorldSurface
-{
-public:
-	uint8  m_pad_00[0x3c];
-	uint16 m_nTextureFlags;                  // 0x3c
+	// A polygon without a surface has no plane: every reader tests both the
+	// polygon and its surface first (bspq_TestSphere lithtech.exe
+	// 0x0041d54c, AvP2 0x0041b2cc, server.dll 0x100044c1).
+	LTPlane* GetPlane() { return m_pSurface ? m_pPlane : LTNULL; }
 };
 
 // The polygon table a physics block indexes: fixed twenty-four byte records,
@@ -106,7 +113,9 @@ public:
 	uint8           m_pad_04[0x28 - 0x04];
 	WorldSurface*   m_pSurface;              // 0x28
 
-	LTPlane* GetPlane() { return m_pOwner->m_pParent->m_pPlane; }
+	// AVP2: null for a polygon without an owner or a surface (server.dll
+	// 0x10019481..0x10019492).
+	LTPlane* GetPlane() { return m_pOwner ? m_pOwner->GetPlane() : LTNULL; }
 };
 
 
@@ -195,29 +204,34 @@ public:
 	                                         //        its +8 points back here)
 	class CClassInfo* m_pClass;              // +0x24  the class manager's record
 	void*  m_Unknown28;                      // +0x28  freed by removal when set
-	uint32 m_Unknown2c;                      // +0x2c  nonzero keeps the object out
-	                                         //        of the inactive sweep
-	void*  m_pModelFile;                     // +0x30  file identifiers, not names:
-	void*  m_pSkinFile;                      // +0x34  GetModelFilenames resolves both
-	                                         //        through the file manager
-	// AVP2: eight bytes more than NOLF's before the state link, and Primal
-	// Hunt four more again: GetNextObject follows the link's next at +0x48
-	// in AvP2 1.0.9.6 (lithtech.exe 0x00480484) and +0x4c in Primal Hunt
-	// (0x004877c4); GetNetFlags reads +0x5a and +0x5e (0x0047b9ed,
-	// 0x0048298d); sm_SetObjectChangeFlag's stores are at PH +0x54 and
-	// +0x5c (0x0048c3da, 0x0048c3e5). What the new bytes hold is not read
-	// by anything reconstructed yet.
+	class ServerMessage* m_pSFXMessage;      // +0x2c  the object's special-effect
+	                                         //        message; nonzero keeps the
+	                                         //        object out of the inactive sweep
+	// File identifiers, not names: GetModelFilenames resolves them through
+	// the file manager.
+	// AVP2: four skins, not NOLF's one: GetModelFilenames2's loop reads
+	// `(%eax,%esi,1)` with esi stepping 0x34..0x40 (Primal Hunt 0x00488dbe,
+	// AvP2 1.0.9.6 0x00481a5d), which is what puts the state link eight
+	// bytes later than NOLF's (GetNextObject follows its next at +0x48 in
+	// AvP2 1.0.9.6, lithtech.exe 0x00480484).
+	void*  m_pModelFile;                     // +0x30
+	void*  m_pSkinFiles[MAX_MODEL_TEXTURES]; // +0x34
 #ifdef PRIMAL_HUNT
-	uint8  m_Unknown38[0x48 - 0x38];
-#else
-	uint8  m_Unknown38[0x44 - 0x38];
+	// PH: one more file, cleared by sm_CreateServerData (server.dll
+	// 0x10040bd3) and copied into the create struct's +0x300 after the four
+	// skin names (0x00488e08); the link's next is at +0x4c (0x004877c4)
+	// (name ours).
+	void*  m_pFile44;                        // +0x44 (PH only)
 #endif
 	LTLink m_StateLink;                      // +0x44 (PH +0x48; NOLF +0x3c)  in the
 	                                         //        manager's state list: actives are
 	                                         //        walked forward, inactives from
 	                                         //        the tail (GetNextObject pair)
 	class LTObject* m_pNextChanged;          // +0x50 (PH +0x54)  the changed-objects list
-	uint8  m_pad_54[4];
+	// NOLF's +0x4c: cleared, then set to the create struct's AUTOLOAD bit
+	// (AvP2 server.dll 0x1003d3a9 / 0x1003d3c1, PH 0x10040c05 / 0x10040c1d);
+	// bit 0 sets 0x20 in the object's info byte (0x00467661).
+	uint32 m_bAutoLoad;                      // +0x54 (PH +0x58; NOLF +0x4c)
 	uint16 m_ClientChangeFlags;              // +0x58 (PH +0x5c)  ORed into each client's table
 	uint16 m_NetFlags;                       // +0x5a (PH +0x5e)  NETFLAG_* (ltcodes.h); SetNetFlags
 	                                         //        strips ANIMUNGUARANTEED off non-models
@@ -255,7 +269,12 @@ public:
 	// (0x1001eb2d) gives up when it says no. LTBOOL, not void: the caller
 	// tests eax (name not recoverable).
 	virtual LTBOOL _p30()=0;
-	virtual void _p34()=0;
+	// 0x34 — another yes/no about the object: the point-containment
+	// callback skips an object that says no (server.dll 0x10012c9c), and
+	// TouchNotify and the push test check it before the object's type
+	// (Primal Hunt lithtech.exe 0x004985e0 / server.dll 0x100450db: `call
+	// *0x34(%edx) ; test %eax,%eax`). Name not recoverable.
+	virtual LTBOOL _p34()=0;
 	virtual void SetupModelWalker(class ModelWalker* pWalker)=0;
 	virtual void _p3c()=0;
 	virtual LTBOOL FindTracker(LTAnimTracker* pTracker, LTAnimTracker*** pppLink)=0;  // 0x40

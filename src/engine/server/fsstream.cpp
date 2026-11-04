@@ -660,23 +660,6 @@ inline ILTStream* CMemStreamBank::Allocate()
 uint32 g_Unknown5835c;
 
 
-// servermgr.h's CountAdder with its destructor in the class: the /O2 client
-// expands it at its one use here (PH lithtech 0x0042991e..0x00429930), where
-// server.dll calls CountAdder's out-of-line one (PH 0x10009db4).
-class CCountAdderQ516
-{
-public:
-	CCountAdderQ516(uint32* pTotal) : m_Counter(0)
-	{
-		m_pTotal = pTotal;
-		cnt_StartCounter(&m_Counter);
-	}
-	~CCountAdderQ516() { *m_pTotal += cnt_EndCounter(&m_Counter); }
-
-	CBaseCounter m_Counter;                  // 0x00
-	uint32*      m_pTotal;                   // 0x08
-};
-
 // 0x100070e3 — open a stream on one named file inside one mounted tree
 // (serverengine.h's name).
 //
@@ -726,14 +709,10 @@ ILTStream* fs_OpenStreamInTree(COpenFileTree* pTree, char* pFilename, int nFlag)
 			sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
 
 		{
-#ifdef LT_SERVER_TIMERS
-			CountAdder counter(&g_Unknown5835c);
-#else
 			// AVP2: the client times the fopen as well (PH 0x004298f1
 			// CBaseCounter(0), 0x00429903 cnt_StartCounter, 0x0042991e
 			// cnt_EndCounter added to the total, AvP2 0x0042708e..0x004270c9).
-			CCountAdderQ516 counter(&g_Unknown5835c);
-#endif
+			CountAdder counter(&g_Unknown5835c);
 
 			pFile = fopen(szPath, "rb");
 		}

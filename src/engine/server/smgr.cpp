@@ -331,7 +331,7 @@ LTBOOL CServerMgr::BootClient(uint32 dwClientID)
 	if (!pClient)
 		return LTFALSE;
 
-	m_NetMgr.Disconnect(pClient->m_pConnection, 6, 0);
+	m_NetMgr.Disconnect(pClient->m_pConnection, 6);
 	return LTTRUE;
 }
 
@@ -681,7 +681,7 @@ LTRESULT CServerMgr::FreeUnusedModels()
 		// AVP2: the count only comes down while it is nonzero, compared
 		// unsigned, and a level-3 report follows the level-2 one (Primal
 		// Hunt 0x0048da59..0x0048daad).
-		if ((uint32)pModel->m_CacheCount > 0)
+		if (pModel->m_CacheCount > 0)
 			pModel->m_CacheCount--;
 
 		if (pModel->m_CacheCount == 0 && !(pModel->m_Flags & 1))
@@ -2372,22 +2372,6 @@ void sm_UpdateClient(CServerMgr* pMgr, Client* pClient)
 	sm_FlushClientPackets(pMgr, pClient);
 }
 
-// AVP2: CNetMgr::Disconnect has lost its flags argument -- both AvP2
-// 1.0.9.6 (0x00476c20) and Primal Hunt (0x0047d5e0) push only `$5` and the
-// connection before the thiscall on pMgr+0xaec. servermgr.h still declares
-// NOLF's three-argument form, so the call goes through a view of the
-// two-argument one.
-class CNetMgrQ502
-{
-public:
-	void Disconnect(NetConnection* pConn, uint32 nReason);
-
-	// AVP2: GetPacket takes a second argument, 2 at sm_ProcessPackets'
-	// both calls (`push $2; push %esi`, Primal Hunt 0x0047d0d6 and
-	// 0x0047d14e).
-	LTBOOL GetPacket(ServerMessage* pMsg, int nArg);
-};
-
 // The packet comes back BY VALUE (msg_AllocPacket, servermsg.h): a frame
 // temporary (`lea 0x18(%esp),%eax; push %eax` before the two
 // sizes, 0x0047d087), copied into msg with an AddRef (0x0047d0b0) and
@@ -2405,7 +2389,7 @@ int sm_ProcessPackets(CServerMgr* pMgr)
 
 	pMgr->m_NetMgr.StartGettingPackets();
 
-	while (((CNetMgrQ502*)&pMgr->m_NetMgr)->GetPacket(msg.m_pMsg, 2))
+	while (pMgr->m_NetMgr.GetPacket(msg.m_pMsg, 2))
 	{
 		// AVP2: the id is kept as a byte (`mov %dl,0x28(%esp)`, 0x0047d0ec).
 		uint8 nPacketID = msg.m_pMsg->m_pData[0] & 0x3f;
@@ -2630,9 +2614,9 @@ inline void sm_WriteObjectUpdateInline(CUpdateContext* pCtx, LTObject* pObject,
 
 	nFlags = pInfo->m_ChangeFlags;
 
-	if ((nFlags & 1) && pObject->m_pSData->m_Unknown2c)
+	if ((nFlags & 1) && pObject->m_pSData->m_pSFXMessage)
 	{
-		nSize = ((ServerMessage*)pObject->m_pSData->m_Unknown2c)->m_Unknown34
+		nSize = pObject->m_pSData->m_pSFXMessage->m_Unknown34
 			+ 100;
 	}
 
@@ -3771,10 +3755,10 @@ LTBOOL si_GetModelFilenames(LTObject* hObj, char* pFilename, int fileBufLen,
 		pFilename[0] = 0;
 	}
 
-	if (hObj->m_pSData->m_pSkinFile)
+	if (hObj->m_pSData->m_pSkinFiles[0])
 	{
 		strncpy(pSkinName,
-		        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pSkinFile),
+		        fs_GetFileName(&g_pServerMgr->m_FileMgr, hObj->m_pSData->m_pSkinFiles[0]),
 		        skinBufLen - 1);
 	}
 	else
@@ -3784,22 +3768,6 @@ LTBOOL si_GetModelFilenames(LTObject* hObj, char* pFilename, int fileBufLen,
 
 	return LTTRUE;
 }
-
-// AVP2: the file identifiers SObjData keeps for a model: the model at +0x30
-// and four skins from +0x34 (MAX_MODEL_TEXTURES), the loop over them reading
-// `(%eax,%esi,1)` with esi stepping 0x34..0x40 (Primal Hunt 0x00488dbe, AvP2
-// 1.0.9.6 0x00481a5d). Primal Hunt has one more at +0x44, which goes into
-// the create struct's +0x300, after the four skin names (0x00488e08).
-class CSObjDataFilesQ502
-{
-public:
-	uint8  m_pad_00[0x30];
-	void*  m_pModelFile;                     // +0x30
-	void*  m_pSkinFiles[MAX_MODEL_TEXTURES]; // +0x34
-#ifdef PRIMAL_HUNT
-	void*  m_pFile44;                        // +0x44  PH only
-#endif
-};
 
 // AVP2: ILTServer::GetModelFilenames2 (Primal Hunt 0x00488d50, AvP2
 // 1.0.9.6 0x004819f0): the names of a model's files, straight into a
@@ -3818,11 +3786,11 @@ LTBOOL si_GetModelFilenames2(LTObject* hObj, ObjectCreateStruct* pStruct)
 	if (hObj->m_ObjectType != OT_MODEL)
 		return LTFALSE;
 
-	if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pModelFile)
+	if (hObj->m_pSData->m_pModelFile)
 	{
 		strncpy(pStruct->m_Filename,
 		        fs_GetFileName(&g_pServerMgr->m_FileMgr,
-		                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pModelFile),
+		                       hObj->m_pSData->m_pModelFile),
 		        MAX_CS_FILENAME_LEN - 1);
 	}
 	else
@@ -3832,11 +3800,11 @@ LTBOOL si_GetModelFilenames2(LTObject* hObj, ObjectCreateStruct* pStruct)
 
 	for (int i = 0; i < MAX_MODEL_TEXTURES; i++)
 	{
-		if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pSkinFiles[i])
+		if (hObj->m_pSData->m_pSkinFiles[i])
 		{
 			strncpy(pStruct->m_SkinNames[i],
 			        fs_GetFileName(&g_pServerMgr->m_FileMgr,
-			                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pSkinFiles[i]),
+			                       hObj->m_pSData->m_pSkinFiles[i]),
 			        MAX_CS_FILENAME_LEN - 1);
 		}
 		else
@@ -3849,11 +3817,11 @@ LTBOOL si_GetModelFilenames2(LTObject* hObj, ObjectCreateStruct* pStruct)
 	// PH: the create struct's extra name after the skins (+0x300), written
 	// through the member at each use: server.dll adds 0x300 only on the
 	// copying arm (0x1003ea0e) and clears `0x300(%esi)` on the other.
-	if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44)
+	if (hObj->m_pSData->m_pFile44)
 	{
 		strncpy(pStruct->m_ExtraTextureName,
 		        fs_GetFileName(&g_pServerMgr->m_FileMgr,
-		                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44),
+		                       hObj->m_pSData->m_pFile44),
 		        MAX_CS_FILENAME_LEN - 1);
 	}
 	else
@@ -3964,7 +3932,7 @@ void si_KickClient(Client* pClient, uint32 nReasonCode)
 	if (!pClient)
 		return;
 
-	((CNetMgrQ502*)&g_pServerMgr->m_NetMgr)->Disconnect(pClient->m_pConnection, 6);
+	g_pServerMgr->m_NetMgr.Disconnect(pClient->m_pConnection, 6);
 }
 
 // The one check site in the file that reports at level 0, and the one whose
@@ -5607,11 +5575,6 @@ LTRESULT sm_SetObjectRotation(LTObject* hObj, LTRotation* pRotation, int bGuaran
 {
 	WMMoveState state;
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj = LTNULL;
-	state.m_nUnknown64 = 0;
-
 	if (!hObj)
 		RETURN_ERROR(1, "ILTPhysics::SetObjectRotation", LT_ERROR);
 
@@ -6225,7 +6188,7 @@ inline int sub_10027be0(CServerMgr* pMgr, LTObject* pObject)
 			return 0;
 
 		if (pObject->m_ObjectType == OT_NORMAL &&
-			pObject->m_pSData->m_Unknown2c == 0)
+			pObject->m_pSData->m_pSFXMessage == 0)
 			return 0;
 	}
 
@@ -6347,7 +6310,7 @@ inline uint8 ReadByteFromEndInline(ServerMessage* pMsg)
 int sub_1002a0d0(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient)
 {
 	if (pMsg->m_pConnection)
-		((CNetMgrQ502*)&pMgr->m_NetMgr)->Disconnect(pMsg->m_pConnection, 5);
+		pMgr->m_NetMgr.Disconnect(pMsg->m_pConnection, 5);
 
 	return 0;
 }
@@ -8129,22 +8092,22 @@ inline void sm_SFXMsgInit(ServerMessage* pMsg, uint16 nMaxDataLen, uint16 nGrowS
 
 void sm_SetObjectSFXMessage(CServerMgr* pMgr, LTObject* pObj, ServerMessage* pMsg)
 {
-	if (pObj->m_pSData->m_Unknown2c == 0)
+	if (pObj->m_pSData->m_pSFXMessage == 0)
 	{
-		((CMessageRef*)&pObj->m_pSData->m_Unknown2c)->Init(
+		((CMessageRef*)&pObj->m_pSData->m_pSFXMessage)->Init(
 			msg_AllocPacket(0x44c, 0x44c));
 	}
 
 #ifdef LT_SERVER_BUILD
-	((ServerMessage*)pObj->m_pSData->m_Unknown2c)->Init(pMsg->m_Unknown34, 0x1000);
+	pObj->m_pSData->m_pSFXMessage->Init(pMsg->m_Unknown34, 0x1000);
 #else
-	sm_SFXMsgInit((ServerMessage*)pObj->m_pSData->m_Unknown2c, pMsg->m_Unknown34, 0x1000);
+	sm_SFXMsgInit(pObj->m_pSData->m_pSFXMessage, pMsg->m_Unknown34, 0x1000);
 #endif
 
-	memcpy(((ServerMessage*)pObj->m_pSData->m_Unknown2c)->m_pData,
+	memcpy(pObj->m_pSData->m_pSFXMessage->m_pData,
 		pMsg->m_pData + 1, pMsg->m_Unknown34 - 1);
 
-	((ServerMessage*)pObj->m_pSData->m_Unknown2c)->m_Unknown34 =
+	pObj->m_pSData->m_pSFXMessage->m_Unknown34 =
 		pMsg->m_Unknown34 - 1;
 
 	sm_UpdateObjectBBox(pMgr, pObj);
@@ -8828,7 +8791,7 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 
 #ifdef PRIMAL_HUNT
 			// PH: Primal Hunt's object data has four skins and an extra
-			// texture after them (CSObjDataFilesQ502 above). Every skin is
+			// texture after them (ltobject_internal.h's SObjData). Every skin is
 			// cached (server.dll 0x100411bd..0x100411ec), then the first
 			// again, and then the extra one with no test at all
 			// (0x10041214): fs_GetFilename is handed whatever is there.
@@ -8837,30 +8800,30 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 
 				for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 				{
-					if (((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[i])
+					if (pObj->m_pSData->m_pSkinFiles[i])
 					{
 						sm_CacheFile(pMgr, 2,
 							fs_GetFilename(&pMgr->m_FileMgr,
-								((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[i]));
+								pObj->m_pSData->m_pSkinFiles[i]));
 					}
 				}
 			}
 
-			if (((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[0])
+			if (pObj->m_pSData->m_pSkinFiles[0])
 			{
 				sm_CacheFile(pMgr, 2,
 					fs_GetFilename(&pMgr->m_FileMgr,
-						((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[0]));
+						pObj->m_pSData->m_pSkinFiles[0]));
 			}
 
 			sm_CacheFile(pMgr, 2,
 				fs_GetFilename(&pMgr->m_FileMgr,
-					((CSObjDataFilesQ502*)pObj->m_pSData)->m_pFile44));
+					pObj->m_pSData->m_pFile44));
 #else
-			if (pObj->m_pSData->m_pSkinFile)
+			if (pObj->m_pSData->m_pSkinFiles[0])
 			{
 				sm_CacheFile(pMgr, 2,
-					fs_GetFilename(&pMgr->m_FileMgr, pObj->m_pSData->m_pSkinFile));
+					fs_GetFilename(&pMgr->m_FileMgr, pObj->m_pSData->m_pSkinFiles[0]));
 			}
 #endif
 		}
@@ -8962,7 +8925,7 @@ void sm_TermModels(CServerMgr* pMgr)
 		// unsigned (`jbe` over the decrement, Primal Hunt 0x0047da62), each removal is
 		// reported at debug level 3, and both prints are gated on it
 		// (AvP2 1.0.9.6 0x00477096 / 0x004781aa alike).
-		if ((uint32)pModel->m_CacheCount > 0)
+		if (pModel->m_CacheCount > 0)
 			pModel->m_CacheCount--;
 
 		if (pModel->m_CacheCount == 0)
@@ -10446,9 +10409,9 @@ void sm_WriteObjectUpdate(CUpdateContext* pCtx, LTObject* pObject,
 
 	nFlags = pInfo->m_ChangeFlags;
 
-	if ((nFlags & 1) && pObject->m_pSData->m_Unknown2c)
+	if ((nFlags & 1) && pObject->m_pSData->m_pSFXMessage)
 	{
-		nSize = ((ServerMessage*)pObject->m_pSData->m_Unknown2c)->m_Unknown34
+		nSize = pObject->m_pSData->m_pSFXMessage->m_Unknown34
 			+ 100;
 	}
 
@@ -12543,28 +12506,6 @@ public:
 	uint16 m_ContainerCode;                  // 0x278
 };
 
-// SObjData's two fields ltobject_internal.h does not name at these offsets:
-// +0x2c is the stowed SFX ServerMessage (smgr.cpp's sm_SetObjectSFXMessage
-// already treats it as one) and +0x4c is a flag word whose bit 0 sets 0x20
-// in the info byte (0x100292d7 / 0x00467661).
-class CSObjDataQ291
-{
-public:
-	uint8          m_pad_000[0x2c];
-	ServerMessage* m_pSFXMessage;            // +0x2c
-	void*          m_pModelFile;             // +0x30
-	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
-	// (PH +0xc): the flag word at 0x54 (PH 0x58), the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
-#ifdef PRIMAL_HUNT
-	uint8          m_pad_034[0x58 - 0x34];
-#else
-	uint8          m_pad_034[0x54 - 0x34];
-#endif
-	uint32         m_Unknown4c;              // +0x54 (PH +0x58; NOLF +0x4c)
-	uint16         m_ClientChangeFlags;      // +0x58 (PH +0x5c)
-	uint16         m_NetFlags;               // +0x5a (PH +0x5e)
-};
-
 // The file record the file id comes out of: smgr.cpp's CSoundIDRec is the
 // same eight-bytes-then-a-word shape, and this is the file manager's.
 class CFileIDRecQ291
@@ -12675,14 +12616,14 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 		nFlags &= 0xfbfb;                    // ~(CF_ROTATION | 0x400)
 	}
 
-	if (((CSObjDataQ291*)pObject->m_pSData)->m_NetFlags & NETFLAG_POSUNGUARANTEED)
+	if (pObject->m_pSData->m_NetFlags & NETFLAG_POSUNGUARANTEED)
 		nFlags &= 0xfffd;                    // ~CF_POSITION
 
-	if (((CSObjDataQ291*)pObject->m_pSData)->m_NetFlags & NETFLAG_ROTUNGUARANTEED)
+	if (pObject->m_pSData->m_NetFlags & NETFLAG_ROTUNGUARANTEED)
 		nFlags &= 0xfffb;                    // ~CF_ROTATION
 
 	if (pObject->m_ObjectType == OT_MODEL &&
-		(((CSObjDataQ291*)pObject->m_pSData)->m_NetFlags & NETFLAG_ANIMUNGUARANTEED))
+		(pObject->m_pSData->m_NetFlags & NETFLAG_ANIMUNGUARANTEED))
 	{
 		nFlags &= 0xffdf;                    // ~CF_MODELINFO
 	}
@@ -12717,33 +12658,31 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 	{
 		nInfo = (uint8)pObject->m_ObjectType;
 
-		if (((CSObjDataQ291*)pObject->m_pSData)->m_pSFXMessage)
+		if (pObject->m_pSData->m_pSFXMessage)
 		{
 			nInfo |= 0x40;
 
-			if (((CSObjDataQ291*)pObject->m_pSData)->m_pSFXMessage->m_Unknown34
+			if (pObject->m_pSData->m_pSFXMessage->m_Unknown34
 				>= 0x100)
 			{
 				nInfo |= 0x80;
 			}
 		}
 
-		if (((CSObjDataQ291*)pObject->m_pSData)->m_Unknown4c & 1)
+		if (pObject->m_pSData->m_bAutoLoad & 1)
 			nInfo |= 0x20;
 
 		pMsg->WriteByte(nInfo);
 
-		if (((CSObjDataQ291*)pObject->m_pSData)->m_pSFXMessage)
+		if (pObject->m_pSData->m_pSFXMessage)
 		{
 			if (nInfo & 0x80)
 			{
-				pMsg->WriteWord(((CSObjDataQ291*)pObject->m_pSData)
-					->m_pSFXMessage->m_Unknown34);
+				pMsg->WriteWord(pObject->m_pSData->m_pSFXMessage->m_Unknown34);
 			}
 			else
 			{
-				pMsg->WriteByte((uint8)((CSObjDataQ291*)pObject->m_pSData)
-					->m_pSFXMessage->m_Unknown34);
+				pMsg->WriteByte((uint8)pObject->m_pSData->m_pSFXMessage->m_Unknown34);
 			}
 
 			// THROUGH CMsgDataView, whose length parameter is uint16.
@@ -12753,8 +12692,8 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 			// with a stale top half, which is what a uint16 argument does.
 			// That view already exists in this file for the same reason.
 			((CMsgDataView*)pMsg)->WriteData(
-				((CSObjDataQ291*)pObject->m_pSData)->m_pSFXMessage->m_pData,
-				((CSObjDataQ291*)pObject->m_pSData)->m_pSFXMessage->m_Unknown34);
+				pObject->m_pSData->m_pSFXMessage->m_pData,
+				pObject->m_pSData->m_pSFXMessage->m_Unknown34);
 		}
 
 		if (pObject->m_ObjectType == OT_WORLDMODEL)
@@ -12773,8 +12712,8 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 		}
 		else if (pObject->m_ObjectType == OT_SPRITE)
 		{
-			pMsg->WriteWord(((CFileIDRecQ291*)((CSObjDataQ291*)
-				pObject->m_pSData)->m_pModelFile)->m_nID);
+			pMsg->WriteWord(((CFileIDRecQ291*)
+				pObject->m_pSData->m_pModelFile)->m_nID);
 		}
 	}
 

@@ -17,49 +17,15 @@
 // 0x10057f98, is exactly 0xfa0 bytes on.
 BSPNode* g_NodeStack[1000];
 
-// AVP2: the polygon behind a BSP node, as every AvP2 image lays it out
-// (lithtech.exe PH and 1.0.9.6, server.dll). worldsim.h / ltobject_internal.h
-// still carry NOLF's WorldPolyOwner, whose +0x28 is a surface holding the
-// plane (+0x34) and the flags (+0x38). Here +0x28 is the plane itself, the
-// surface moves to +0x2c with its solid bit at +0x30 (w_IsPolyBlocking,
-// AvP2 0x00416f69 `mov 0x2c(%esi),%ecx; testb $0x1,0x30(%ecx)`), and the
-// vertex count and table are four bytes on (0x54, 0x58; AvP2 0x00416fd6,
-// 0x00416ff5). Names ours.
-class CWorldSurfaceQ506
-{
-public:
-	uint8    m_pad_00[0x30];
-	uint8    m_Flags;                        // 0x30  bit 0: solid
-};
-
-class CWorldPolyQ506
-{
-public:
-	uint8              m_pad_00[0x18];
-	LTVector           m_vCentre;            // 0x18
-	float              m_fRadius;            // 0x24
-	LTPlane*           m_pPlane;             // 0x28
-	CWorldSurfaceQ506* m_pSurface;           // 0x2c
-	uint8              m_pad_30[0x54 - 0x30];
-	uint16             m_nVertices;          // 0x54
-	uint8              m_pad_56[0x58 - 0x56];
-	WorldPolyVertex    m_Vertices[1];        // 0x58
-
-	// A polygon without a surface has no plane: every reader tests both the
-	// polygon and its surface first (bspq_TestSphere lithtech 0x0041d54c,
-	// AvP2 0x0041b2cc, server.dll 0x100044c1).
-	LTPlane* GetPlane() { return m_pSurface ? m_pPlane : LTNULL; }
-};
-
+// A null polygon has no plane either (name ours).
 inline LTPlane* ws_GetPlaneQ506(WorldPolyOwner* pOwner)
 {
-	return pOwner ? ((CWorldPolyQ506*)pOwner)->GetPlane() : LTNULL;
+	return pOwner ? pOwner->GetPlane() : LTNULL;
 }
 
-// AVP2: two out-parameters, the clipped polygon's bounds, filled only when
-// both are given (AvP2 0x0041718c..0x00417287); bspq_TestSphere passes
-// neither (lithtech 0x0041d5c0).
-int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax);
+// AVP2: w_IsPolyBlocking's two out-parameters, the clipped polygon's
+// bounds, are filled only when both are given (AvP2 0x0041718c..0x00417287);
+// bspq_TestSphere passes neither (lithtech 0x0041d5c0).
 
 // Walking the tree for anything inside a sphere. The walk keeps its own stack
 // rather than recursing: where the sphere straddles a plane, the near side is
@@ -316,17 +282,15 @@ inline void ws_SetupBoxGeometry(LTVector* pMin, LTVector* pMax)
 // the exit test on the other induction variable.
 // AVP2: not yet matched in any AvP2 image (AvP2 0x00416f10, PH 0x00418e80
 // with an exception frame, server.dll 0x10001db0). What is known and
-// written: the polygon layout (CWorldPolyQ506 above), the two bounds
+// written: the polygon layout (ltobject_internal.h's WorldPolyOwner), the two bounds
 // out-parameters (filled from the surviving vertices only when both are
 // given; PH 0x0041ec79 and 0x004207f9 pass them, every other caller passes
-// null). Still different: the client keeps the timer (AvP2
-// 0x00416f3e..0x00416f5d, a CountAdder on 0x004e0490) that this writes
-// under LT_SERVER_TIMERS only, and the shipped
+// null), and the client's timer (AvP2 0x00416f3e..0x00416f5d, a CountAdder
+// on 0x004e0490). Still different: the shipped
 // vertex lists are static arrays (0x004df018, 0x004df418, 0x004e0070), with
 // a static-local guard at 0x004df010 whose object this does not name.
-int w_IsPolyBlocking(WorldPolyOwner* pOwnerIn, LTVector* pMin, LTVector* pMax)
+int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax)
 {
-	CWorldPolyQ506* pOwner = (CWorldPolyQ506*)pOwnerIn;
 	LTVector   vClipped[WS_MAX_CLIP_VERTS];
 	LTVector*  pWork[WS_MAX_CLIP_VERTS];
 	LTVector*  pInList[WS_MAX_POLY_VERTS];
@@ -731,29 +695,6 @@ void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 	}
 }
 
-// servermgr.h's CountAdder as the client compiles it: AvP2's lithtech.exe
-// times the same blocks server.dll does (PH lithtech 0x0041fab0 CBaseCounter(0),
-// 0x0041fac2 cnt_StartCounter, the total at 0x0041fb46..0x0041fb58), with the
-// destructor expanded where server.dll calls CountAdder's out-of-line one
-// (PH 0x10005cd1 -> 0x100020e8).
-#ifdef LT_SERVER_TIMERS
-typedef CountAdder CWsCountAdderQ516;
-#else
-class CWsCountAdderQ516
-{
-public:
-	CWsCountAdderQ516(uint32* pTotal) : m_Counter(0)
-	{
-		m_pTotal = pTotal;
-		cnt_StartCounter(&m_Counter);
-	}
-	~CWsCountAdderQ516() { *m_pTotal += cnt_EndCounter(&m_Counter); }
-
-	CBaseCounter m_Counter;                  // 0x00
-	uint32*      m_pTotal;                   // 0x08
-};
-#endif
-
 // Remember a plane the box has hit; the moment there are two, the solver
 // has to be run. Above the solver, as shipped (PH 0x0041fa90 / 0x0041fb80):
 // /GX keeps the counter's unwind state around a callee VC6 has not yet seen
@@ -764,8 +705,8 @@ public:
 // g_vMoveEnd), and the client times it too.
 void ws_AddContact(LTPlane* pPlane, void* pObject)
 {
-	CWsCountAdderQ516 cntAdder(&g_nPhysContactTime);
-	int               i;
+	CountAdder cntAdder(&g_nPhysContactTime);
+	int        i;
 
 	if (g_nContacts < WS_MAX_CONTACTS)
 	{
@@ -1107,26 +1048,6 @@ void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 // ws_ProjectBoxCheap (which emits z, y, x, and matched with `x + y + z`
 // written out) and the accumulator here, three lines away. Both spellings
 // are in this file for that reason, and neither is a stylistic choice.
-// AVP2: CBoxProject is 0x38 bytes in every AvP2 image, two dwords longer
-// than worldsim.h's NOLF layout: the indices of the corners that gave the
-// minimum and the maximum (PH 0x0041a6fd `mov %edx,0x30(%ecx)`, 0x0041a70f
-// `mov %edx,0x34(%ecx)`). Names ours.
-class CBoxProjectQ506 : public CBoxProject
-{
-public:
-	int m_iMinCorner;                        // 0x30
-	int m_iMaxCorner;                        // 0x34
-};
-
-// worldsim.h's CPolyTest over the longer projection, so ws_ProjectBox's two
-// index stores land in this half and not in the next one's plane.
-class CPolyTestQ506
-{
-public:
-	CBoxProjectQ506 m_Start;                 // 0x00
-	CBoxProjectQ506 m_End;                   // 0x38
-};
-
 // AVP2: the corners are counted up rather than down, so each extreme can
 // remember which corner it came from; the two tests are an if/else (a new
 // minimum is never also a new maximum); and the projected flag is set before
@@ -1139,7 +1060,7 @@ public:
 // the pointer step, and only the odd `y + (x + z)` sum gives z, x, y.
 int ws_ProjectBox(CBoxProject* pProject)
 {
-	CBoxProjectQ506* pBox   = (CBoxProjectQ506*)pProject;
+	CBoxProject*     pBox   = pProject;
 	LTPlane*         pPlane = pBox->m_pPlane;
 	LTVector*        pPoint = pBox->m_pPoints;
 	float            fDist;
@@ -1324,7 +1245,7 @@ WSProjectFn g_BoxProjectFns[7] = {
 // `inline`, defined above its one caller: lithtech.exe's /O2 ws_MoveBox
 // (0x00418650, 3189 bytes) carries this body and the client has no copy of
 // its own; server.dll's /Os declines it and ws_MoveBox calls 0x10004167.
-inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTestQ506* pTest)
+inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTest* pTest)
 {
 	LTPlane* pPlane = pPoly->GetPlane();
 
@@ -1376,7 +1297,7 @@ int bsp_PointInside(BSPNode* pRoot, LTVector* pPoint)
 			return 1;
 
 		{
-			LTPlane* pPlane = pNode->m_pOwner->m_pParent->m_pPlane;
+			LTPlane* pPlane = pNode->m_pOwner->m_pPlane;
 
 			v = *pPoint;
 
@@ -1449,7 +1370,7 @@ int bsp_SphereInside(BSPNode** ppRoot, LTVector* pPoint, float fRadius)
 		}
 
 		{
-			LTPlane* pPlane = pNode->m_pOwner->m_pParent->m_pPlane;
+			LTPlane* pPlane = pNode->m_pOwner->m_pPlane;
 
 			v = *pPoint;
 
@@ -2222,7 +2143,7 @@ int CSimContext::TestPoly(WorldPolyOwner* pPoly, WorldPoly* pHandle)
 	float     fT, fMag, fInv, fDrop;
 	LTVector  vFlatDelta;
 
-	pPlane = pPoly->m_pParent->m_pPlane;
+	pPlane = pPoly->m_pPlane;
 
 	if (!(m_vDir.Dot(pPlane->m_Normal) > 0.01))
 	{
@@ -2658,7 +2579,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 
 				pNode  = &g_pPBlock->m_pNodes[nBlock];
 				pRec   = &pRecs[pNode->m_nPoly];
-				pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+				pPlane = pRec->m_pOwner->m_pPlane;
 
 				fDist = sim.m_vMid.z * pPlane->m_Normal.z +
 				        sim.m_vMid.y * pPlane->m_Normal.y +
@@ -2681,7 +2602,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 				{
 					nStart = sim.ClassifyPlane(pPlane, &sim.m_vStart, 0, 1);
 
-					pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+					pPlane = pRec->m_pOwner->m_pPlane;
 
 					nEnd = sim.ClassifyPlane(pPlane, &sim.m_vEnd, 1,
 					                         nStart != 1);
@@ -2701,7 +2622,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 							}
 
 							// descend copy #1 -- 0x00419e34..0x00419e9a
-							pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+							pPlane = pRec->m_pOwner->m_pPlane;
 
 							fDist = sim.m_vStart.z * pPlane->m_Normal.z +
 							        sim.m_vStart.y * pPlane->m_Normal.y +
@@ -2742,7 +2663,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 						}
 
 						// descend copy #2 -- 0x00419ecc..0x00419f3a
-						pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+						pPlane = pRec->m_pOwner->m_pPlane;
 
 						fDist = sim.m_vStart.z * pPlane->m_Normal.z +
 						        sim.m_vStart.y * pPlane->m_Normal.y +
@@ -2960,7 +2881,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 		pNode  = &g_pPBlock->m_pNodes[nBlock];
 		pOwner = pRecs[pNode->m_nPoly].m_pOwner;
 		pRec   = &pRecs[pNode->m_nPoly];
-		pPlane = pOwner->m_pParent->m_pPlane;
+		pPlane = pOwner->m_pPlane;
 
 		vCentre = g_BoxSphere.m_vPoint;
 
@@ -3010,7 +2931,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 				{
 					fBest = WS_STEP_FAR;
 
-					pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+					pPlane = pRec->m_pOwner->m_pPlane;
 
 					pInfo = g_pMoveState->m_pInfo;
 
@@ -3101,7 +3022,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 #endif
 						vPush = vFlat * -fBest;
 
-						if (pRec->m_pOwner->m_pParent->m_nFlags & WBSP_NOSTEP)
+						if (pRec->m_pOwner->m_pSurface->m_Flags & WBSP_NOSTEP)
 						{
 							if (fRise < vPush.y)
 							{
@@ -3209,7 +3130,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 {
 	uint16     nStack[WS_NODE_STACK];
-	CPolyTestQ506 test;
+	CPolyTest test;
 #ifdef LT_SERVER_TIMERS
 	CountAdder cntAdder(&g_nPhysStepTime);
 #endif
@@ -3284,7 +3205,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 
 		pNode  = &g_pPBlock->m_pNodes[nNode];
 		pRec   = &pRecs[pNode->m_nPoly];
-		pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+		pPlane = pRec->m_pOwner->m_pPlane;
 
 		fDist = pPlane->DistTo(g_BoxSphere.m_vPoint);
 
@@ -3302,7 +3223,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 
 		nProjected = 1;
 
-		test.m_End.m_pPlane   = pRec->m_pOwner->m_pParent->m_pPlane;
+		test.m_End.m_pPlane   = pRec->m_pOwner->m_pPlane;
 		test.m_Start.m_pPlane = test.m_End.m_pPlane;
 
 		nStart = g_BoxProjectFns[pRec->m_nProject](&test.m_Start);
@@ -3388,7 +3309,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 					else
 					{
 						g_pMoveState->m_pInfo->m_Plane =
-						    *pRec->m_pOwner->m_pParent->m_pPlane;
+						    *pRec->m_pOwner->m_pPlane;
 
 						g_pMoveState->m_pInfo->m_hObject = g_pMoveState->m_hObject;
 
@@ -3399,7 +3320,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 					}
 				}
 
-				pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+				pPlane = pRec->m_pOwner->m_pPlane;
 
 				fDist = g_vMoveStart.z * pPlane->m_Normal.z +
 				        g_vMoveStart.y * pPlane->m_Normal.y +
@@ -3449,7 +3370,7 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 				continue;
 			}
 
-			pPlane = pRec->m_pOwner->m_pParent->m_pPlane;
+			pPlane = pRec->m_pOwner->m_pPlane;
 
 			fDist = g_vMoveStart.z * pPlane->m_Normal.z +
 			        g_vMoveStart.y * pPlane->m_Normal.y +

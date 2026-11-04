@@ -365,9 +365,12 @@ public:
 class CMessageBank : public CBankBase
 {
 public:
+	// The bank's records are the objects' SObjData (sm_CreateServerData
+	// allocates them here): 0x5c bytes in AvP2 1.0.9.6 (server.dll
+	// 0x100355bb), 0x60 in Primal Hunt (server.dll 0x100382e4), NOLF's 0x54.
 	CMessageBank()
 	{
-		sb_Init(&m_Bank, 0x54, 0x20);
+		sb_Init(&m_Bank, sizeof(SObjData), 0x20);
 	}
 	// Inline: CServerMgr's destructor expands it.
 	virtual ~CMessageBank() { sb_FreeChunks(&m_Bank, 1); }
@@ -695,8 +698,14 @@ uint32 cnt_EndCounter(CBaseCounter* pCounter);
 
 // Scoped timing: starts a counter on the way in and adds however long the
 // block took to a running total on the way out. The engine leaves these in
-// release builds — the totals are what the timing console commands report.
-// Names ours.
+// release builds — the totals are what the timing console commands report,
+// and LT_SERVER_TIMERS, which guards some of them, is defined for both
+// images. Names ours.
+//
+// The destructor is inline: lithtech.exe's /O2 expands it at the normal
+// exits (`push; call cnt_EndCounter; mov 8(..),%ecx; add %eax,(%ecx)`, as
+// at 0x00498a84), with an out-of-line copy for the unwinding (0x004056b0);
+// server.dll's /O1 keeps it out of line (0x100020e8).
 class CountAdder
 {
 public:
@@ -705,11 +714,18 @@ public:
 		m_pTotal = pTotal;
 		cnt_StartCounter(&m_Counter);
 	}
-	~CountAdder();                           // 0x10001ed7
+	~CountAdder();
 
 	CBaseCounter m_Counter;                  // 0x00
 	uint32*      m_pTotal;                   // 0x08
 };
+
+inline CountAdder::~CountAdder()
+{
+	uint32 nElapsed = cnt_EndCounter(&m_Counter);
+
+	*m_pTotal += nElapsed;
+}
 
 // 0x10058778 — the counter the net trace timestamps its lines from.
 extern CBaseCounter g_NetCounter;
@@ -1318,11 +1334,16 @@ public:
 	LTRESULT UpdateSessionName(const char* sName);       // 0x100215f3
 	LTRESULT GetTcpIpAddress(char* sAddress, uint32 dwBufferSize,
 	                         unsigned short& hostPort);  // 0x1002160e
-	void     Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags);  // 0x10021c18
+	// AVP2: two arguments, NOLF's flags word gone (`ret $8`: server.dll
+	// 0x1002b4e0, lithtech.exe 0x00468ca0, AvP2 1.0.9.6 0x00463980).
+	void     Disconnect(NetConnection* pConn, uint32 nReason);                // 0x1002b4e0
 	void     Update(char* pTraceName, float fCurTime, int bAllowTimeout);      // 0x10021637 (name ours)
 	void     StartGettingPackets();                                             // 0x10021cb6 (name ours)
 	void     EndGettingPackets();                                               // 0x10021cba (name ours)
-	LTBOOL   GetPacket(class ServerMessage* pMsg);                              // 0x100227c5 (name ours)
+	// AVP2: a second argument the body never reads (`ret $8`, lithtech.exe
+	// 0x00468d80): the server's packet loop passes 2 (0x0047d0d6), the
+	// client shell's 1 (0x00497ddd; AvP2 1.0.9.6 0x0048e7b7).
+	LTBOOL   GetPacket(class ServerMessage* pMsg, uint32 nUnused);             // 0x00468d80 (name ours)
 
 	// Internals (names ours, from what they do).
 	void  TermDrivers();                                              // 0x1002150e
@@ -1420,8 +1441,9 @@ public:
 	virtual void _p54()=0;
 	virtual LTRESULT SendTo(const void* pData, uint32 len,
 	                        const char* sAddr, uint32 port)=0;  // 0x58
-	virtual void Disconnect(NetConnection* pConn, uint32 nReason,
-	                        uint32 flags)=0;             // 0x5c
+	// AVP2: two arguments, as CNetMgr::Disconnect (`ret $8`, lithtech.exe
+	// 0x004a2cae).
+	virtual void Disconnect(NetConnection* pConn, uint32 nReason)=0;  // 0x5c
 	virtual void _p60()=0;
 	virtual LTBOOL ReceivePacket(class ServerMessage* pMsg)=0;  // 0x64
 	virtual uint32 GetRecvSize()=0;                      // 0x68
@@ -1994,10 +2016,23 @@ LTRESULT am_RemoveAttachment(CUnknown390* pAttachMgr, LTObject* pParent,
 // SetDeactivationTime consult.
 extern int g_bAutoDeactivate;
 
-// The world-model move/rotate request (names ours): only the fields the
-// rotator reads are mapped; the last dword is cleared with the pointers.
+// The world-model move/rotate request (names ours), 0x6c bytes: only the
+// fields the rotator reads are mapped; the last two dwords are cleared with
+// the pointers.
 struct WMMoveState
 {
+	// Inline; lithtech.exe's wm_PushWithBox, its budget spent, calls the
+	// out-of-line copy (0x00465cc0: one zero in %ecx stored to +0x00,
+	// +0x04, +0x08, +0x64 and +0x68).
+	WMMoveState()
+	{
+		m_pContainer  = LTNULL;
+		m_pUnknown04  = LTNULL;
+		m_pObj        = LTNULL;
+		m_nUnknown64  = 0;
+		m_fUnknown68  = 0.0f;
+	}
+
 	CUnknown210*          m_pContainer;      // +0x00  &pMgr->m_Unknown210
 	class CUnknown6A8Obj* m_pUnknown04;      // +0x04  pMgr->m_pUnknown6a8
 	LTObject*             m_pObj;            // +0x08
@@ -2025,6 +2060,11 @@ struct WMMoveState
 	// would put that object (name ours).
 	class LTMatrix*       m_pRotation;       // +0x60
 	uint32                m_nUnknown64;      // +0x64
+	// +0x68 -- a float, cleared together with +0x64 wherever a request is
+	// set up on the stack: server.dll's `fldz ; fstp -0x1c(%ebp)` at
+	// 0x100453e4, lithtech.exe 0x00498a42/0x00498a49 in sm_MoveObject (a
+	// 0x78 frame; AvP2 1.0.9.6 0x0048f130 the same).
+	float                 m_fUnknown68;      // +0x68
 };
 // 0x10020a53 — rotate a world model through the simulation (name ours).
 void wm_RotateWorldModel(WMMoveState* pState, LTRotation* pRotation, int bUnknown);
@@ -2051,7 +2091,7 @@ inline LTBOOL sm_CanDeactivate(LTObject* pObj)
 	uint32 nFlags;
 
 	pSData = pObj->m_pSData;
-	if (!pSData->m_Unknown2c)
+	if (!pSData->m_pSFXMessage)
 	{
 		nFlags = pObj->m_Flags;
 

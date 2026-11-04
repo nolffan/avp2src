@@ -502,7 +502,7 @@ LTRESULT se_TermModel(CServerMgr* pMgr, LTObject* pObj)
 	// shipped field is a uint32 where commonmodel.h declares an int.
 	Model* pModel = ((ModelInstanceViewQ507*)pObj)->m_pModel;
 
-	if ((uint32)pModel->m_CacheCount > 0)
+	if (pModel->m_CacheCount > 0)
 		pModel->m_CacheCount--;
 
 	return LT_OK;
@@ -548,33 +548,20 @@ char* se_FixSlashes(char* pPath)
 // it is — the BSP's centre — and sized to half the span of its box, which is
 // what a half-extent is. A world model whose BSP reports itself busy is left
 // alone rather than re-placed.
-// AVP2: the move state is 0x6c bytes, not servermgr.h's 0x68: both images
-// zero one more dword after +0x64 (lithtech.exe 0x0047f9a7..0x0047f9ae, AvP2
-// 1.0.9.6 0x00478e19..0x00478e20; the frame is 0x90, not 0x8c). Until the
-// header has the field, a view adds it here.
+// AVP2: the move state's +0x68 is cleared with +0x64 (lithtech.exe
+// 0x0047f9a7..0x0047f9ae, AvP2 1.0.9.6 0x00478e19..0x00478e20; the frame is
+// 0x90, not NOLF's 0x8c).
 //
 // NEAR (402/402, lithtech.exe 0x0047f970): ebx and edi swap -- shipped keeps
-// the zero in ebx and pMgr in edi. The field in servermgr.h itself, the
-// stores in either order, and the locals declared in either order all
-// leave it.
-struct WMMoveStateQ507
-{
-	WMMoveState m_State;                     // +0x00
-	uint32      m_nUnknown68;                // +0x68
-};
+// the zero in ebx and pMgr in edi. The stores in either order and the
+// locals declared in either order all leave it.
 
 LTRESULT se_InitWorldModel(CServerMgr* pMgr, LTObject* pObj,
                            ObjectCreateStruct* pStruct)
 {
 	LTVector        vHalfDims;
 	CWorldBsp*      pBsp;
-	WMMoveStateQ507 state;
-
-	state.m_State.m_pContainer  = LTNULL;
-	state.m_State.m_pUnknown04  = LTNULL;
-	state.m_State.m_pObj        = LTNULL;
-	state.m_State.m_nUnknown64  = 0;
-	state.m_nUnknown68  = 0;
+	WMMoveState     state;
 
 	if (pMgr->m_World.AttachWorldModel(pObj, pStruct->m_Filename))
 	{
@@ -592,14 +579,14 @@ LTRESULT se_InitWorldModel(CServerMgr* pMgr, LTObject* pObj,
 
 		pObj->SetPos(pBsp->m_ve8);
 
-		state.m_State.m_pContainer = &pMgr->m_Unknown210;
-		state.m_State.m_pUnknown04 = pMgr->m_pUnknown6a8;
-		state.m_State.m_pObj       = pObj;
-		state.m_State.m_nUnknown0C = pObj->m_BlockingPriority;
-		state.m_State.m_pPushList  = LTNULL;
-		state.m_State.m_nPushCount = 0;
+		state.m_pContainer = &pMgr->m_Unknown210;
+		state.m_pUnknown04 = pMgr->m_pUnknown6a8;
+		state.m_pObj       = pObj;
+		state.m_nUnknown0C = pObj->m_BlockingPriority;
+		state.m_pPushList  = LTNULL;
+		state.m_nPushCount = 0;
 
-		wm_SetObjectDims(&state.m_State, &vHalfDims, 0, 1);
+		wm_SetObjectDims(&state, &vHalfDims, 0, 1);
 		}
 
 		return LT_OK;
@@ -1419,8 +1406,9 @@ LTRESULT se_LoadChildModel(CModelLoadRequest* pRequest, Model** ppModel)
 // THE MACRO'S REAL NAME IS NOT KNOWN. build/engine.sh now defines
 // LT_SERVER_BUILD for the server target only, purely as a named
 // discriminator for cases like this one -- do NOT overload
-// LT_SERVER_TIMERS, which means something narrower (the scoped
-// CountAdder the client genuinely lacks). The original symbol
+// LT_SERVER_TIMERS, which means something narrower (the scoped timers,
+// which AvP2's lithtech.exe has too, so build.mk defines it for both
+// images). The original symbol
 // build/engine.sh defines for server.dll and not for lithtech.exe (worldsim.cpp
 // and four other files already turn on server-only code with it), so its
 // negation is used here as the stand-in for "a client is in this process".
@@ -1506,7 +1494,7 @@ LTRESULT se_RegisterModel(CServerMgr* pMgr, Model* pModel, void* pFile,
 				{
 					// AVP2: not below zero, unsigned (0x0047f35d), as
 					// se_TermModel.
-					if ((uint32)pInst->m_AnimTracker.GetModel()->m_CacheCount > 0)
+					if (pInst->m_AnimTracker.GetModel()->m_CacheCount > 0)
 						pInst->m_AnimTracker.GetModel()->m_CacheCount--;
 
 					pInst->m_AnimTracker.SetModel(pModel);

@@ -682,8 +682,8 @@ public:
 	virtual LTRESULT ConnectTCP(char* pAddress) = 0;                // 0x54
 	virtual LTRESULT SendToAddr(void* pData, uint32 nLen,
 	                            char* sAddr, uint32 port) = 0;      // 0x58
-	virtual void     Disconnect(NetConnectionC4* pConn, uint32 nReason,
-	                            uint32 flags) = 0;                  // 0x5c
+	virtual void     Disconnect(NetConnectionC4* pConn,
+	                            uint32 nReason) = 0;                // 0x5c
 	virtual LTBOOL   _p60(void* pData, uint32 nLen, uint32 nUnused,
 	                      NetConnectionC4* pConn) = 0;              // 0x60
 	virtual LTBOOL   ReceivePacket(ServerMessageC4* pMsg) = 0;      // 0x64

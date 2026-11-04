@@ -90,23 +90,6 @@ public:
 #define MID_TOUCHNOTIFY_Q47C 3
 #define MID_CRUSH_Q47C       6
 
-// LTObject's vtable as far as slot 13 (+0x34), which ltobject_internal.h
-// leaves as a void `_p34`. TouchNotify tests its answer in %eax (AvP2
-// 1.0.9.6 0x0048ed6d, Primal Hunt lithtech.exe 0x004985e0 / server.dll
-// 0x100450db: `call *0x34(%edx) ; test %eax,%eax`) before it looks at the
-// object type (what it answers is not recovered here).
-class CLTObjectSlotsQ524
-{
-public:
-	virtual void _v00(); virtual void _v04(); virtual void _v08();
-	virtual void _v0c(); virtual void _v10(); virtual void _v14();
-	virtual void _v18(); virtual void _v1c(); virtual void _v20();
-	virtual void _v24(); virtual void _v28(); virtual void _v2c();
-	virtual void _v30();
-	virtual LTBOOL _v34();                             // +0x34
-};
-
-
 // ---- the class --------------------------------------------------------- //
 //
 // Layout is spritecontrol.cpp's CObjectMover exactly: the vptr at +0x00 and
@@ -238,7 +221,7 @@ void CObjectMoverQ47C::TouchNotify(LTObject* pObj, HOBJECT hToucher,
 		// INVALID_HPOLY (CollisionInfo+0x14; Primal Hunt lithtech.exe
 		// 0x004985cf..0x004985fe, server.dll 0x100450ca..0x100450f9, AvP2
 		// 1.0.9.6 0x0048ed5f).
-		if (hToucher && !((CLTObjectSlotsQ524*)hToucher)->_v34() &&
+		if (hToucher && !hToucher->_p34() &&
 		    hToucher->m_ObjectType != OT_WORLDMODEL &&
 		    hToucher->m_ObjectType != OT_CONTAINER)
 		{
@@ -450,9 +433,9 @@ static inline void om_InitMoveState(WMMoveState* pState, void* pContainer,
 //     0.00001f, 0x100749f4), and a solid world model or container is turned
 //     through wm_RotateWorldModel (0x10029ffa) with om_InitMoveState's
 //     six-field fill expanded in front of it (0x1004526e..0x100452a4);
-//   * the request is 0x6c bytes: servermgr.h's WMMoveState (0x68) plus a
-//     float the walker zeroes with the other four fields (`fldz ; fstps
-//     -0x28(%ebp)`, state at -0x90). CMoveStateQ524 carries it here.
+//   * the request is servermgr.h's 0x6c-byte WMMoveState, whose float at
+//     +0x68 the walker zeroes with the other four fields (`fldz ; fstps
+//     -0x28(%ebp)`, state at -0x90).
 //
 // (name ours) -- the transform helper; its body is not this file's.
 void sub_1002a7edQ524(LTObject* pParent, Attachment* pAttach, LTVector* pPos,
@@ -477,15 +460,8 @@ public:
 #define OM_STATEINITQ524 CWMStateInit
 #endif
 
-struct CMoveStateQ524
-{
-	WMMoveState m_State;                     // 0x00
-	float       m_fUnknown68;                // 0x68
-};
-
 void CObjectMoverQ47C::UpdateAttachments(WMMoveState* pState)
 {
-	CMoveStateQ524 state;
 	LTVector       vPos;
 	LTRotation     rRot;
 	Attachment*    pAttach;
@@ -495,11 +471,7 @@ void CObjectMoverQ47C::UpdateAttachments(WMMoveState* pState)
 	if (!pState->m_pObj->m_pAttachments)
 		return;
 
-	state.m_State.m_pContainer = LTNULL;
-	state.m_State.m_pUnknown04 = LTNULL;
-	state.m_State.m_pObj       = LTNULL;
-	state.m_State.m_nUnknown64 = 0;
-	state.m_fUnknown68         = 0.0f;
+	WMMoveState state;
 
 	for (pAttach = pState->m_pObj->m_pAttachments; pAttach; pAttach = pAttach->m_pNext)
 	{
@@ -511,9 +483,9 @@ void CObjectMoverQ47C::UpdateAttachments(WMMoveState* pState)
 
 			nFlags = (pChild->m_Flags & 0x20012000) ? 5 : 0xd;
 
-			((OM_STATEINITQ524*)&state.m_State)->InitFrom(pState, pChild);
+			((OM_STATEINITQ524*)&state)->InitFrom(pState, pChild);
 
-			wm_MoveObject(&state.m_State, vPos, nFlags);
+			wm_MoveObject(&state, vPos, nFlags);
 
 			if (!rRot.Equals(pChild->m_Rotation, 0.00001f))
 			{
@@ -521,11 +493,11 @@ void CObjectMoverQ47C::UpdateAttachments(WMMoveState* pState)
 				     pChild->m_ObjectType == OT_CONTAINER) &&
 				    (pChild->m_Flags & 0x20012000))
 				{
-					om_InitMoveState(&state.m_State, pState->m_pContainer,
+					om_InitMoveState(&state, pState->m_pContainer,
 					                 pState->m_pUnknown04, pChild,
 					                 pChild->m_BlockingPriority);
 
-					wm_RotateWorldModel(&state.m_State, &rRot, 1);
+					wm_RotateWorldModel(&state, &rRot, 1);
 				}
 				else
 				{

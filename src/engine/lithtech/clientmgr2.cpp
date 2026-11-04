@@ -34,8 +34,7 @@
 //  CClientConnection, CSurface, ConsoleState and g_pClientMgr, but it pads
 //  over most of the fields this run reaches, and that header is shared with
 //  work in flight.  So each class below is a local layout-identical VIEW in
-//  the house style (see the IObjInsideTestView comment in
-//  src/engine/server/servercommon.cpp): every offset it declares is read off
+//  the house style: every offset it declares is read off
 //  a shipped displacement, the offsets it shares with clientmgr.h agree with
 //  it, and when the new fields are folded into that header the views go away
 //  and these become plain CClientMgr / CClientConnection methods.

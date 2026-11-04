@@ -168,7 +168,7 @@ LTRESULT CNetMgr::GetTcpIpAddress(char* sAddress, uint32 dwBufferSize,
 	return m_pMainDriver->GetTcpIpAddress(sAddress, dwBufferSize, hostPort);
 }
 
-void CNetMgr::Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags)
+void CNetMgr::Disconnect(NetConnection* pConn, uint32 nReason)
 {
 	if (!pConn)
 		return;
@@ -176,7 +176,7 @@ void CNetMgr::Disconnect(NetConnection* pConn, uint32 nReason, uint32 flags)
 	RemoveConnection(pConn);
 	DebugPrint(pConn, 1, "CNetMgr::Disconnect called, (reason %d).", nReason);
 
-	pConn->m_pDriver->Disconnect(pConn, nReason, flags);
+	pConn->m_pDriver->Disconnect(pConn, nReason);
 }
 
 void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
@@ -214,7 +214,7 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 			SendPacket(msg.m_pMsg, pConn, 0);
 			SendPacket(msg.m_pMsg, pConn, 0);
 
-			Disconnect(pConn, 2, 0);
+			Disconnect(pConn, 2);
 
 			i = (uint32)-1;
 			continue;
@@ -272,7 +272,7 @@ void CNetMgr::Update(char* pTraceName, float fCurTime, int bAllowTimeout)
 
 				RemoveConnection(pConn);
 				m_pHandler->_v10(5, g_NetNameBuf, 0);
-				pConn->m_pDriver->Disconnect(pConn, 3, 0);
+				pConn->m_pDriver->Disconnect(pConn, 3);
 			}
 		}
 		else
@@ -329,7 +329,7 @@ void CNetMgr::EndGettingPackets()
 //   Taking the field's address stops VC6 hoisting the m_pData load above the
 //   m_Unknown34 store. /O1 does not care, but /O2 (lithtech 0x004579d6) keeps
 //   the store first and loads src, then dest. Same fix as WriteAckPacket below.
-LTBOOL CNetMgr::GetPacket(ServerMessage* pMsg)
+LTBOOL CNetMgr::GetPacket(ServerMessage* pMsg, uint32 nUnused)
 {
 	CBaseDriver* pDriver;
 	NetConnection* pConn;
@@ -1944,7 +1944,7 @@ int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
 
 		RemoveConnection(pConn);
 
-		pConn->m_pDriver->Disconnect(pConn, 4, 0);
+		pConn->m_pDriver->Disconnect(pConn, 4);
 
 		m_pHandler->_v10(4, g_EmptyString,
 			((ServerMessageTypeView*)pMsg)->ReadDWord(0));

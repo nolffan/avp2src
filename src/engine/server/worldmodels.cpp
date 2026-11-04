@@ -212,27 +212,6 @@ public:
 	uint8           m_pad_32[0x60 - 0x32];
 };
 
-// AVP2: the polygon as the sphere rebuild reads it. AvP2 1.0.9.6 and Primal
-// Hunt both keep the vertex count at +0x54 and the vertices at +0x58 (PH
-// 0x0042eeba `cmp %bp,0x54(%esi)`, 0x0042eec0 `lea 0x58(%esi),%edx`; the
-// same pair in AvP2's lithtech.exe), four bytes past NOLF's WorldPolyOwner in
-// ltobject_internal.h, which other modules still read at NOLF's offsets.
-class WorldPolyOwnerQ517
-{
-public:
-	uint8           m_pad_000[0x15];
-	// Two bits a light animation sets on every polygon it touches
-	// (0x0042ecd9 `orb $0xc0,0x15(%edx)`), name ours.
-	uint8           m_Flags15;               // 0x15
-	uint8           m_pad_016[0x18 - 0x16];
-	LTVector        m_vCentre;               // 0x18
-	float           m_fRadius;               // 0x24
-	uint8           m_pad_028[0x54 - 0x28];
-	uint16          m_nVertices;             // 0x54
-	uint8           m_pad_056[0x58 - 0x56];
-	WorldPolyVertex m_Vertices[1];           // 0x58  as many as m_nVertices
-};
-
 // One record of the run at +0x88: a bounding sphere and the polygons it
 // covers. 0x30 bytes, from the stride the rebuild's loop advances by (names
 // ours).
@@ -242,7 +221,7 @@ public:
 	LTVector         m_vCentre;              // 0x00
 	float            m_fRadius;              // 0x0c
 	uint8            m_pad_10[0x20 - 0x10];
-	WorldPolyOwnerQ517** m_ppPolies;             // 0x20
+	WorldPolyOwner** m_ppPolies;             // 0x20
 	uint32           m_nPolies;              // 0x24
 	uint8            m_pad_28[0x30 - 0x28];
 };
@@ -256,7 +235,7 @@ public:
 	CWMBlock*        m_pBlocks;              // 0x88
 	uint32           m_nBlocks;              // 0x8c
 	uint8            m_pad_90[0xa0 - 0x90];
-	WorldPolyOwnerQ517** m_ppPolies;             // 0xa0
+	WorldPolyOwner** m_ppPolies;             // 0xa0
 	uint32           m_nPolies;              // 0xa4
 };
 
@@ -610,7 +589,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 
 		for (j = 0; j < pBlock->m_nPolies; j++)
 		{
-			WorldPolyOwnerQ517* pPoly = pBlock->m_ppPolies[j];
+			WorldPolyOwner* pPoly = pBlock->m_ppPolies[j];
 
 			if (pPoly)
 			{
@@ -646,7 +625,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 
 		for (j = 0; j < pBlock->m_nPolies; j++)
 		{
-			WorldPolyOwnerQ517* pPoly = pBlock->m_ppPolies[j];
+			WorldPolyOwner* pPoly = pBlock->m_ppPolies[j];
 
 			if (pPoly)
 			{
@@ -667,7 +646,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 
 	for (i = 0; i < ((CWMGeom*)pData)->m_nPolies; i++)
 	{
-		WorldPolyOwnerQ517* pPoly = ((CWMGeom*)pData)->m_ppPolies[i];
+		WorldPolyOwner* pPoly = ((CWMGeom*)pData)->m_ppPolies[i];
 #ifdef AVP2_MODERN
 		LTVector*       pCentre;
 		float           fCount;

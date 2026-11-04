@@ -144,6 +144,21 @@ record's first dword.
 
 Fixed in the modern build: smgr.cpp, the id is read first.
 
+### Setting a model's animation time on the server is not sent to clients
+
+server.dll 0x1003a130, lithtech.exe 0x00481b20, AvP2 1.0.9.6 lithtech.exe
+0x0047abd0 and server.dll 0x10037173 (`ServerModelLT::SetCurAnimTime`,
+src/engine/server/servermodel.cpp). AvP2's `ILTModel::SetCurAnimTime`
+gained a third argument, `bIncorporateScale`; the server's override kept
+NOLF's two-argument signature, so it overrides nothing and lands in a slot
+of its own past the interface (slot 37 of server.dll's vtable 0x100757b8,
+where slot 33 is still `CommonModelLT::SetCurAnimTime`, 0x100252b9). A game
+calling the interface gets the shared accessor: the time is set, but the
+string keys are not re-walked and the object is not flagged (change flag
+0x2000), so clients do not hear of the change.
+
+Not fixed yet: the override's signature has to follow the interface's.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

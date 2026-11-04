@@ -429,10 +429,11 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp c
 SERVER_OS_SRC := localdriver.cpp
 server_flags = $(if $(filter $(1),$(SERVER_OS_SRC)),$(subst /O1,/Os /Ob1 /Gf,$(SERVER_CL)),$(SERVER_CL))
 
-# lithtech.exe: nolfsrc's /O2 (Primal Hunt adds /GX, below); its copy of server's localdriver.cpp /Od with
+# lithtech.exe: nolfsrc's /O2 (Primal Hunt adds /GX, below), with the server's timers
+# (AvP2's client times what server.dll does); its copy of server's localdriver.cpp /Od with
 # intrinsics, inlining and string pooling; controlfile.cpp with /GX
 LITHTECH := $(E)/lithtech
-LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c
+LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c
 LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\server\netobj.cpp \
     ..\server\smgrnew.cpp ..\server\modelnew.cpp ..\server\objmover.cpp ..\server\smgrmisc.cpp \
     ..\server\shade.cpp wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \

@@ -172,13 +172,17 @@ public:
 
 // One piece of the world the radius is measured over: a vertex count and a
 // run of records, each of which points at a position (names ours).
+//
+// AVP2: the count is at +0x54 and the records at +0x58 (Primal Hunt
+// lithtech.exe 0x0042f887/0x0042f88f, AvP2 1.0.9.6 0x0042c105; the loader's
+// 0x0042c47d and 0x0042c495 agree), where NOLF's were at +0x50/+0x54.
 class CWorldPart
 {
 public:
-	uint8  m_pad_00[0x50];
-	uint16 m_nVerts;                         // 0x50
+	uint8  m_pad_00[0x54];
+	uint16 m_nVerts;                         // 0x54
 	class CWorldVertRef { public: LTVector* m_pPos; uint8 m_pad[0x18 - 4]; }
-	       m_Verts[1];                       // 0x54
+	       m_Verts[1];                       // 0x58
 };
 
 // 0x1000aaee — the furthest any of those positions gets from a point, as a
@@ -541,6 +545,10 @@ public:
 	CWorldSub108   m_Sub108;                 // 0x108
 	CWorldArray138 m_Array138;               // 0x138
 	float    m_fDiagonal;                    // 0x14c  computed by Recalc
+	// AVP2: one dword past NOLF's end of the class, reset to -1 by Init
+	// (server.dll 0x1000e19a, lithtech.exe 0x0042fcaa); the client
+	// allocates the world 0x154 bytes (0x0042b773, 0x0042df75) (name ours).
+	uint32   m_n150;                         // 0x150
 };
 
 // One record of the run at +0xb0, 0x24 bytes of it, owning a single

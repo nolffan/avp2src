@@ -282,8 +282,10 @@ public:
 	void SetDims(LTVector vDims);            // 0x10024ae3
 	void UpdateBounds();                     // 0x10024a4c
 
-	uint8    m_pad_000[0x198];
-	LTVector m_Dims;                         // 0x198
+	// AVP2: +0x1a0, not NOLF's +0x198 (server.dll 0x1002e8af `lea
+	// 0x1a0(%ecx),%edi`).
+	uint8    m_pad_000[0x1a0];
+	LTVector m_Dims;                         // 0x1a0
 };
 
 // 0x1001e6d7 — LTVector's three-float constructor: it stores the three

@@ -533,7 +533,7 @@ LTRESULT w_SaveObjectFileState(LTObject* pObj, CSavedFileState* pState)
 		RETURN_ERROR(1, "BackupExtraData", LT_INVALIDPARAMS);
 
 	pSaved->m_pModelFile = pObj->m_pSData->m_pModelFile;
-	pSaved->m_pSkinFile = pObj->m_pSData->m_pSkinFile;
+	pSaved->m_pSkinFile = pObj->m_pSData->m_pSkinFiles[0];
 
 	if (pObj->m_ObjectType == OT_MODEL)
 		pSaved->m_Tracker = *(CSavedTrackerQ508*)&((ModelInstance*)pObj)->m_AnimTracker;
@@ -549,7 +549,7 @@ LTRESULT w_RestoreObjectFileState(LTObject* pObj, CSavedFileState* pState)
 		RETURN_ERROR(1, "RestoreExtraData", LT_INVALIDPARAMS);
 
 	pObj->m_pSData->m_pModelFile = pSaved->m_pModelFile;
-	pObj->m_pSData->m_pSkinFile = pSaved->m_pSkinFile;
+	pObj->m_pSData->m_pSkinFiles[0] = pSaved->m_pSkinFile;
 
 	if (pObj->m_ObjectType == OT_MODEL)
 		*(CSavedTrackerQ508*)&((ModelInstance*)pObj)->m_AnimTracker = pSaved->m_Tracker;
@@ -628,23 +628,6 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg)
 // included here).
 int bsp_PointInside(class BSPNode* pRoot, LTVector* pPoint);
 
-// The LTObject virtual at slot 0x34 answers whether the object takes part in
-// the containment test at all. ltobject_internal.h declares the slot as
-// `void _p34()` and is not this reconstruction's to change, so it is
-// redeclared on a layout-identical view whose only purpose is to give the
-// slot a return value (names ours; the view's vptr is the object's own, at
-// offset 0, which is where the shipped `mov (%esi),%eax` reads it).
-class IObjInsideTestView
-{
-public:
-	virtual void _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
-	virtual void _p0c()=0; virtual void _p10()=0; virtual void _p14()=0;
-	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
-	virtual void _p24()=0; virtual void _p28()=0; virtual void _p2c()=0;
-	virtual void _p30()=0;
-	virtual LTBOOL TakesPartInPointTest()=0;   // 0x34
-};
-
 // 0x10012c9c — the callback world_IsPointInside installs. One object gets
 // to veto the point, and only ever in that direction.
 //
@@ -678,7 +661,7 @@ void world_PointInsideCB(LTObject* pObj, CPointQuery* pQuery)
 	if (pObj->m_Unknown54 != 0)
 		return;
 
-	if (!((IObjInsideTestView*)pObj)->TakesPartInPointTest())
+	if (!pObj->_p34())
 		return;
 
 	LTVector* pSrc = &pQuery->m_vPoint;

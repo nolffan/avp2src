@@ -54,8 +54,7 @@
 // clientsound.h declares CSoundInstance with the ten slots CSoundMgr
 // forwards to and three fields; the class has twenty-three slots and runs to
 // at least 0xc1 bytes (0xb8 in NOLF). That header is not this reconstruction's to change, so
-// the whole of it is redeclared here on a view (house style: see the
-// IObjInsideTestView comment in src/engine/server/servercommon.cpp). The
+// the whole of it is redeclared here on a view (house style). The
 // vptr is at offset 0, which is where every `mov (%esi),%eax` below reads it.
 //
 // WHERE THE LAYOUT COMES FROM. Four vtables share these bodies, so there are

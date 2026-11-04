@@ -539,7 +539,7 @@ public:
 	uint32 m_nChildModels;                                  // 0x1d4
 	uint8  m_Sub1d4[0x208 - 0x1d8];                         // 0x1d4
 	uint32 m_nFileVersion;                                  // 0x208
-	int32  m_CacheCount;                                    // 0x20c
+	uint32 m_CacheCount;                                    // 0x20c
 	uint8  m_pad_210[0x2c4 - 0x210];
 	CModelSub20CQ444* m_pSub20c;                            // 0x2c4
 };

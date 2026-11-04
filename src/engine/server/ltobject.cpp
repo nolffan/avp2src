@@ -315,56 +315,25 @@ public:
 	void*            m_pTree9c;              // 0x9c
 };
 
-// The plane record a node splits on, three indirections off the node: the
-// tree it belongs to, that tree's pointer at 0x28, and the plane at 0x34 of
-// what THAT points at. worldbsp.h models the middle one as CWorldTree and its
-// 0x28 as CWorldTreeSub28; these are the local views, the same way CWMPart
-// and CWMGeometry above are (names ours).
-class CWorldNodePlanesView
-{
-public:
-	uint8    m_pad_00[0x34];
-	LTPlane* m_pPlane;                       // 0x34
-};
-
-class CWorldTreeView
-{
-public:
-	uint8 m_pad_00[0x28];
-	CWorldNodePlanesView* m_pSub28;          // 0x28
-};
-
-// AVP2: what a node's first field really points at in every AvP2 image: the
-// node's polygon, whose +0x28 is the plane itself and whose +0x2c is the
-// surface, and a polygon without a surface has no plane -- the descent
+// AVP2: a node's polygon is ltobject_internal.h's WorldPolyOwner, the
+// plane its own and a polygon without a surface without one: the descent
 // tests the polygon and then its surface before it reads the plane
 // (lithtech.exe 0x00433779..0x0043378d, `mov (%esi),%eax; test; mov
-// 0x2c(%eax),%ecx; test; mov 0x28(%eax),%eax`; worldsim.cpp's
-// CWorldPolyQ506 is the same polygon). NOLF's three indirections above are
-// gone (names ours).
-class CWorldNodePolyQ517
+// 0x2c(%eax),%ecx; test; mov 0x28(%eax),%eax`). NOLF's three indirections
+// are gone (name ours).
+inline LTPlane* wt_GetNodePlaneQ517(WorldPolyOwner* pPoly)
 {
-public:
-	uint8    m_pad_00[0x28];
-	LTPlane* m_pPlane;                       // 0x28
-	void*    m_pSurface;                     // 0x2c
-
-	LTPlane* GetPlane() { return m_pSurface ? m_pPlane : LTNULL; }
-};
-
-inline LTPlane* wt_GetNodePlaneQ517(void* pPoly)
-{
-	return pPoly ? ((CWorldNodePolyQ517*)pPoly)->GetPlane() : LTNULL;
+	return pPoly ? pPoly->GetPlane() : LTNULL;
 }
 
-// A node of the world tree as the descent reads it: the tree it belongs to,
-// then the back child and the front child. 0x1000d4a9 adds the two fields
+// A node of the world tree as the descent reads it: its polygon, then the
+// back child and the front child. 0x1000d4a9 adds the two fields
 // that end a descent -- the leaf index, which is 0xffff on every node that
 // still has a plane, and the flag pair that stops one early.
 class CWorldNodeView
 {
 public:
-	CWorldTreeView*  m_pTree;                // 0x00
+	WorldPolyOwner*  m_pTree;                // 0x00
 	CWorldNodeView*  m_pBack;                // 0x04
 	CWorldNodeView*  m_pFront;               // 0x08
 	uint8            m_pad_0c[0x14 - 0x0c];

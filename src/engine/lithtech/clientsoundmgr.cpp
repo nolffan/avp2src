@@ -45,8 +45,7 @@
 //  with the fields THOSE files need.  Neither is this reconstruction's to
 //  change and neither can be extended from here without risking the symbols
 //  those TUs already match, so the three classes are redeclared as
-//  layout-identical views under names of their own (house style: see the
-//  IObjInsideTestView comment in src/engine/server/servercommon.cpp).  Every
+//  layout-identical views under names of their own (house style).  Every
 //  offset below is read off the shipped bytes and the note beside it says
 //  from where.
 //
