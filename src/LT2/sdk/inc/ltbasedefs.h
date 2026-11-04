@@ -275,6 +275,9 @@
 			m_NextUpdate = 0.0f;
 			m_fDeactivationTime = 0.0f;
 			m_bResetAnimations = LTTRUE;		// Usually we want to reset animations
+#ifdef PRIMAL_HUNT
+			m_ExtraTextureName[0] = 0;
+#endif
 		}
 
 		// Main info.
@@ -306,6 +309,15 @@
 															// OT_MODEL, it's the skin filename.
 			char		m_SkinNames[MAX_MODEL_TEXTURES][MAX_CS_FILENAME_LEN+1];
 		};
+
+#ifdef PRIMAL_HUNT
+		// PH: one more file name after the skins, cleared last (lithtech.exe
+		// 0x00418630 stores +0x300 after +0x408; AvP2 1.0.9.6's 0x004165f0
+		// has the name at +0x300). The model's extra texture: the engine
+		// keeps it at instance +0x1d0 and GetModelFilenames hands back a
+		// third name (name ours).
+		char			m_ExtraTextureName[MAX_CS_FILENAME_LEN+1];
+#endif
 
 		// Server only info.
 		char			m_Name[MAX_CS_FILENAME_LEN+1];		// This object's name.
