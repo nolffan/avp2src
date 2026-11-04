@@ -117,7 +117,10 @@ public:
 	class CClientMsgObjectHelper* m_pObjectHelper; // 0x0004c0
 	// Reached only as `m_pUnknown4c0->m_Unknown0c` by one vtable slot.
 	class CUnknown4C0* m_pUnknown4c0;             // 0x0004c4
-	uint8            m_pad_4c8[0x508 - 0x4c8];
+	uint8            m_pad_4c8[0x4dc - 0x4c8];
+	// Copied out whole by the 0x508 object's slot 13 (PH 0x00419b13).
+	LTVector         m_vUnknown4dc;               // 0x0004dc
+	uint8            m_pad_4e8[0x508 - 0x4e8];
 	// CClientMgr::Init zeroes this and slot 1 of the 0x508 object hands out
 	// its ADDRESS; slot 2 (0x00415760) dereferences it and writes +0x18 and
 	// +0x10 through it, so it is a POINTER to ltbasedefs.h's CollisionInfo
@@ -308,6 +311,7 @@ public:
 	virtual void        _p28()=0;                                     // 10 -> 0x0048fa90
 	virtual const char* GetSideName(void* pUnused);                   // 11
 	virtual uint32      GetUnknown4c0_0c();                           // 12
+	virtual LTRESULT    GetUnknown4dc(void* p1, LTVector* pVec);      // 13
 
 	CClientMgrView*     m_pClientMgr;                                 // 0x04
 };
@@ -323,6 +327,11 @@ public:
 	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
 	virtual void _p24()=0; virtual void _p28()=0; virtual void _p2c()=0;
 	virtual LTBOOL Test()=0;                                          // 0x30
+
+	// AVP2: compared against the record's +0x0c (PH 0x00419ab9, AvP2
+	// 0x004179b9: `movzbl 0xbd(%ecx)`).
+	uint8  m_pad_04[0xbd - 0x04];
+	uint8  m_Unknown0bd;                                              // 0xbd
 };
 
 // The record slot 6 is handed.  Three fields, all read, none written.
@@ -331,8 +340,9 @@ class CSlot6Record
 public:
 	uint8  m_pad_00[0x08];
 	uint32 m_nKey;                                // 0x08
-	uint8  m_pad_0c[0x10 - 0x0c];
-	uint32 m_Unknown10;                           // 0x010  the gate
+	// AVP2: the gate, which must exceed the tested object's byte at +0xbd
+	// (NOLF's was a flag at +0x10).
+	uint32 m_Unknown0c;                           // 0x0c
 };
 
 
@@ -2094,10 +2104,30 @@ CollisionInfo** CClientCSBase::GetCollisionInfo()
 // The client twin of server objmover.cpp's slot 2 (0x0047c120 /
 // 0x10035269): record the collision in the manager's CollisionInfo, then
 // tell the game.  Where the server hands MID_TOUCHNOTIFY to the object's
-// class, the client calls IClientShell slot 20 (+0x50), OnTouchNotify
+// class, the client calls IClientShell slot 22 (+0x58), OnTouchNotify
 // (hMain, pInfo, forceMag) -- the shipped pushes are the float as an
 // integer move, then the CollisionInfo pointer, then the first argument.
 // The pointer is re-read off the manager at each use, as on the server.
+//
+// AVP2: AvP2's and Primal Hunt's (PH 0x004196b0, 141 bytes; AvP2
+// 0x004175a0, the same bytes) also clear the polygon: unless the toucher is
+// null, answers its slot 13 (+0x34) or is of type 2 (OT_WORLDMODEL) or 9
+// (OT_CONTAINER) -- the byte at +0xbc -- m_hPoly becomes INVALID_HPOLY
+// (0x004196f7..0x0041970e).  Slot 13's meaning is not established here.
+class CTouchObjectViewQ526
+{
+public:
+	virtual void   _v00()=0; virtual void _v04()=0; virtual void _v08()=0;
+	virtual void   _v0c()=0; virtual void _v10()=0; virtual void _v14()=0;
+	virtual void   _v18()=0; virtual void _v1c()=0; virtual void _v20()=0;
+	virtual void   _v24()=0; virtual void _v28()=0; virtual void _v2c()=0;
+	virtual void   _v30()=0;
+	virtual LTBOOL Unknown34()=0;                 // slot 13
+
+	uint8  m_pad_04[0xbc - 0x04];
+	uint8  m_ObjectType;                          // 0xbc
+};
+
 void CClientCSBase::TouchNotify(HLOCALOBJ hObj, HOBJECT hToucher,
                                 LTVector* pStopVel, float fForceMag)
 {
@@ -2105,6 +2135,18 @@ void CClientCSBase::TouchNotify(HLOCALOBJ hObj, HOBJECT hToucher,
 	{
 		m_pClientMgr->m_pCollisionInfo->m_vStopVel = *pStopVel;
 		m_pClientMgr->m_pCollisionInfo->m_hObject  = hToucher;
+
+		if (hToucher)
+		{
+			CTouchObjectViewQ526* pToucher = (CTouchObjectViewQ526*)hToucher;
+
+			if (!pToucher->Unknown34() &&
+			    pToucher->m_ObjectType != OT_WORLDMODEL &&
+			    pToucher->m_ObjectType != OT_CONTAINER)
+			{
+				m_pClientMgr->m_pCollisionInfo->m_hPoly = INVALID_HPOLY;
+			}
+		}
 
 		if (m_pClientMgr->m_pClientShell)
 			m_pClientMgr->m_pClientShell->OnTouchNotify(
@@ -2121,6 +2163,31 @@ uint32 CClientCSBase::GetUnknown4c0_0c()
 	return *(uint32*)((uint8*)m_pClientMgr->m_pUnknown4c0 + 0x0c);
 }
 
+// 0x00419b00 — slot 13 (+0x034), PH (AvP2 0x00417a00, the same bytes):
+// copy the manager's vector at +0x4dc out through the second argument when
+// it is there, and say LT_OK either way.  The two copies are two arms on the
+// first argument's null test (0x00419b0a), each with its own copy; only the
+// null arm returns from inside (0x00419b2b).  What the first argument is is
+// not visible here.
+LTRESULT CClientCSBase::GetUnknown4dc(void* p1, LTVector* pVec)
+{
+	if (!p1)
+	{
+		if (pVec)
+		{
+			*pVec = m_pClientMgr->m_vUnknown4dc;
+			return LT_OK;
+		}
+	}
+	else
+	{
+		if (pVec)
+			*pVec = m_pClientMgr->m_vUnknown4dc;
+	}
+
+	return LT_OK;
+}
+
 // 0x004157c0 — slot 6 (+0x018): does this record match?
 //
 // `this` is never read, which is what makes the body worth stating exactly.
@@ -2132,13 +2199,16 @@ uint32 CClientCSBase::GetUnknown4c0_0c()
 // virtual on the third argument, slot 12 (+0x30), asked for a truth value.
 LTBOOL CClientCSBase::IsMatch(void* pRec, uint32 nKey, void* pTest)
 {
-	CSlot6Record* pRecord = (CSlot6Record*)pRec;
+	CSlot6Record*   pRecord = (CSlot6Record*)pRec;
+	ISlot6TestView* pObj    = (ISlot6TestView*)pTest;
 
-	if (pRecord->m_Unknown10)
+	// AVP2: PH 0x00419aa0 / AvP2 0x004179a0 (58 bytes): the key first, then
+	// the record's +0x0c against the object's +0xbd, then the virtual.
+	if (pRecord->m_nKey == nKey)
 	{
-		if (pRecord->m_nKey == nKey)
+		if (pRecord->m_Unknown0c > pObj->m_Unknown0bd)
 		{
-			if (((ISlot6TestView*)pTest)->Test())
+			if (pObj->Test())
 				return LTTRUE;
 		}
 	}

@@ -631,6 +631,23 @@ LTRESULT CLTDirectMusicMgr::TermLevel()
 // one block, the literal spelled out twice, a local static array - and
 // whatever the pooling and optimisation flags. The residual is that one block:
 // 1340 bytes against 1373, 446 instructions against 454.
+// The intensity's and the transition's setters, as InitLevel reaches them
+// (clientmusic.h declares the fields only; names ours).
+class CDMIntensityQ528 : public CDMIntensity
+{
+public:
+	void SetUnknown00(int n) { m_nUnknown00 = n; }
+	void SetUnknown04(int n) { m_nUnknown04 = n; }
+};
+
+class CDMTransitionQ528 : public CDMTransition
+{
+public:
+	void SetEnact(LTDMEnactTypes nEnact) { m_nEnact = nEnact; }
+	void SetManual(int bManual)          { m_bManual = bManual; }
+	void SetDMSegment(void* pSegment)    { m_pDMSegment = pSegment; }
+};
+
 LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char* sControlFileName,
                                       const char* sDefine1, const char* sDefine2,
                                       const char* sDefine3)
@@ -780,14 +797,15 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 
 	m_aIntensities = new CDMIntensity[m_nNumIntensities + 1];
 
-	// NEAR (1445 of 1460 bytes, AvP2 shape): everything else agrees.  In
-	// this loop and the transitions' below, shipped forms each element's
-	// address in a register (`mov %ecx,%eax; add %esi,%eax; mov %ebx,(%eax)`,
-	// 0x0044c1b9..) where ours folds it into a scale-1 SIB store.
+	// The defaults go in through one-line setters: shipped forms each
+	// element's address in a register for every store, base reloaded each
+	// time (`mov 0xcc(%ebp),%esi; mov %ecx,%eax; add %esi,%eax; mov
+	// %ebx,(%eax)`, 0x0044c1cf..), an inlined member call's `this`, where a
+	// plain field store folds into a scale-1 SIB store.
 	for (i = 0; i <= m_nNumIntensities; i++)
 	{
-		m_aIntensities[i].m_nUnknown00 = 0;
-		m_aIntensities[i].m_nUnknown04 = 0;
+		((CDMIntensityQ528*)&m_aIntensities[i])->SetUnknown00(0);
+		((CDMIntensityQ528*)&m_aIntensities[i])->SetUnknown04(0);
 	}
 
 	m_nNumTransitions = (m_nNumIntensities + 1) * (m_nNumIntensities + 1);
@@ -795,9 +813,9 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 
 	for (i = 0; i < m_nNumTransitions; i++)
 	{
-		m_aTransitions[i].m_nEnact = LTDMEnactNextMeasure;
-		m_aTransitions[i].m_bManual = 1;
-		m_aTransitions[i].m_pDMSegment = LTNULL;
+		((CDMTransitionQ528*)&m_aTransitions[i])->SetEnact(LTDMEnactNextMeasure);
+		((CDMTransitionQ528*)&m_aTransitions[i])->SetManual(1);
+		((CDMTransitionQ528*)&m_aTransitions[i])->SetDMSegment(LTNULL);
 	}
 
 	if (!m_aIntensities || !m_aTransitions)

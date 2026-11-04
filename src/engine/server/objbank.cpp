@@ -125,6 +125,15 @@ public:
 void at_Init(LTAnimTracker* pTracker, class Model* pModel,
              uint32 iAnim);
 
+#ifdef PRIMAL_HUNT
+// PH: one of the model's four twenty-byte records at 0x274 (name ours): the
+// constructor clears all five dwords, in address order.
+struct CModelSlot274Q521
+{
+	uint32 m_Unknown[5];
+};
+#endif
+
 // OT_MODEL, 0x248 bytes. commonmodel.h models the same object from the
 // animation side as ModelInstance and agrees offset for offset: the hook at
 // +0x1b4, the tracker at +0x1c0, the extra-tracker list at +0x1f8 and the
@@ -148,6 +157,16 @@ public:
 	virtual LTBOOL FindTracker(LTAnimTracker* pTracker,
 	                               LTAnimTracker*** pppLink); // 0x100250d0
 	virtual float  GetScaledRadius();                             // 0x10024f4b
+#ifdef PRIMAL_HUNT
+	// PH: three more slots (server.dll vtable 0x10075110 +0x48..+0x50,
+	// lithtech.exe 0x004d5e7c): the node transforms the arrays below cache,
+	// rebuilt by UpdateTransforms whenever slot 0x50 says they are stale
+	// (names ours).
+	virtual LTMatrix* GetNodeTransforms();                  // 0x1002f074 / 0x0046cf70
+	virtual LTMatrix& GetNodeTransform(uint32 iNode);       // 0x1002f08f / 0x0046cf90
+	virtual LTBOOL    AreTransformsValid();                 // 0x1002f0ce / 0x0046d070
+	void              UpdateTransforms();                   // 0x1002f211 / 0x0046d2b0
+#endif
 
 	// Not in the vftable: called directly.
 	uint32 GetTrackerCount();                // 0x100250a4
@@ -160,6 +179,36 @@ public:
 	void*             m_pHookFn;             // 0x1bc
 	void*             m_pUnknown1b8;         // 0x1c0
 	void*             m_pUnknown1bc;         // 0x1c4
+#ifdef PRIMAL_HUNT
+	// PH: the sixteen bytes from 0x1c0 are one fill (server.dll's four
+	// `stos` at 0x1002edaa, lithtech's 0x0046cb77..), 0x1d0 a store of its
+	// own; then the tracker at 0x1d4, its list, and three NoCache arrays
+	// whose element sizes are their Init's multipliers: 12 (0x0046ec05),
+	// 2 (0x0046edc5) and 64 (0x004597e0). UpdateTransforms says what they
+	// hold: each tracker's current FrameLocator, each tracker's
+	// m_InterpolationMS, and one LTMatrix per node. AvP2
+	// 1.0.9.6's object has two arrays, at 0x224 and 0x234 (0x004674ce,
+	// 0x00467502), so this layout is Primal Hunt's own.
+	uint32            m_Unknown1c8[2];       // 0x1c8
+	uint32            m_Unknown1d0;          // 0x1d0
+	LTAnimTracker     m_AnimTracker;         // 0x1d4  (the SDK's tracker, 0x50 bytes)
+	LTAnimTracker*    m_pTrackerList;        // 0x224
+	CMoArray<FrameLocator, NoCache> m_Array228;  // 0x228  vtable 0x004d5f00
+	CMoArray<uint16, NoCache>   m_Array238;  // 0x238  vtable 0x004d5ed0
+	CMoArray<LTMatrix, NoCache> m_Array248;  // 0x248  vtable 0x004d5aa8
+	uint32            m_Unknown1fc;          // 0x258
+	uint32            m_Unknown200;          // 0x25c
+	uint32            m_HiddenPieces;        // 0x260
+	// Four pointers and four twenty-byte records, cleared together by one
+	// loop (0x0046cbe6..0x0046cbfd, server.dll 0x1002edfb..0x1002ee12).
+	void*             m_pUnknown264[4];      // 0x264
+	CModelSlot274Q521 m_Slots274[4];         // 0x274 .. 0x2c3
+	LTVector          m_v2c4;                // 0x2c4  starts at zero
+	float             m_f244;                // 0x2d0  starts at minus one
+	LTVector          m_v2d4;                // 0x2d4  starts at minus one
+	uint32            m_Unknown2e0;          // 0x2e0  starts at one
+};
+#else
 	// AVP2: twelve bytes NOLF's engine had not before the tracker (the
 	// tracker's fields are at NOLF's offsets plus 0x14, m_pHookFn's plus
 	// eight). Provisional: where in 0x1c0..0x1d4 they go is still to be read.
@@ -179,14 +228,11 @@ public:
 	// -- 0x2e4 bytes (lithtech.exe 0x004152a0, server.dll 0x10030578), the
 	// minus one at +0x2d0 (0x0046cc4c). After it, in both, a vector the
 	// constructor sets to minus one and a dword it sets to one.
-#ifdef PRIMAL_HUNT
-	uint8             m_pad_26c[0x2d0 - 0x26c];
-#else
 	uint8             m_pad_26c[0x2bc - 0x26c];
-#endif
-	float             m_f244;                // PH 0x2d0 (AvP2 0x2bc)  starts at minus one
+	float             m_f244;                // AvP2 0x2bc  starts at minus one
 	uint8             m_pad_after_f244[0x10];
 };
+#endif
 
 // OT_PARTICLESYSTEM, 0x25c bytes. Two of its pointers start at the address
 // of its own storage at +0x1a8 — one `lea`, stored twice — and the two float
@@ -215,9 +261,12 @@ public:
 	uint8  m_u1ec;                           // 0x1f4
 	uint8  m_u1ed;                           // 0x1f5
 	uint8  m_u1ee;                           // 0x1f6
-	uint8  m_pad_1f7[0x1f8 - 0x1f7];
+	// AVP2: as Primal Hunt -- the byte at 0x1f7 and the five dwords at
+	// 0x1fc..0x20c are cleared by the constructor (PH lithtech 0x0046d88b..
+	// 0x0046d8be, server.dll 0x1002f5a6..0x1002f5e2; AvP2 0x004680d4..).
+	uint8  m_u1ef;                           // 0x1f7
 	uint32 m_u1f0;                           // 0x1f8
-	uint8  m_pad_1fc[0x210 - 0x1fc];
+	uint32 m_u1f4[5];                        // 0x1fc .. 0x20c
 	float  m_f208;                           // 0x210
 	float  m_f20c;                           // 0x214
 	float  m_f210;                           // 0x218
@@ -262,7 +311,9 @@ public:
 	void*  m_pUnknown1a8;                    // 0x1b0
 	void*  m_pUnknown1ac;                    // 0x1b4
 	void*  m_pUnknown1b0;                    // 0x1b8
-	uint8  m_pad_1bc[0x1d0 - 0x1bc];
+	// AVP2: as Primal Hunt -- five dwords the constructor clears (server.dll
+	// 0x1002f75f..0x1002f77d, lithtech 0x0046da7c..0x0046da94).
+	uint32 m_Unknown1bc[5];                  // 0x1bc .. 0x1cc
 	uint32 m_Unknown1c8;                     // 0x1d0
 	float  m_f1cc;                           // 0x1d4
 	float  m_f1d0;                           // 0x1d8
@@ -273,7 +324,10 @@ public:
 	LTLink m_Link1e4;                        // 0x1ec  a tied-off head
 	uint32 m_Unknown1f0;                     // 0x1f8
 	uint32 m_Unknown1f4;                     // 0x1fc
-	uint8  m_pad_200[0x1200 - 0x200];
+	// AVP2: as Primal Hunt -- cleared whole by the constructor (server.dll
+	// `push 0x1000; call memset` at 0x1002f79a, lithtech `rep stos` of 0x400
+	// dwords at 0x0046dabd).
+	uint8  m_Grid200[0x1000];                // 0x200
 };
 
 class CObjSprite : public CObjBase
@@ -546,6 +600,212 @@ uint32 CObjModel::GetTrackerCount()
 	return nCount;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: the cache of node transforms the model keeps (none of this is in NOLF
+// or AvP2 1.0.9.6). Placed in the shipped order: server.dll 0x1002f074 ..
+// 0x1002f38e and lithtech.exe 0x0046cf70 .. 0x0046d647, between
+// GetTrackerCount and GetFilename.
+
+// 0x1008cbb8 / 0x004f5788 -- what an out-of-range node gets: set to the
+// identity every time it is handed out (name ours).
+static LTMatrix g_mOutOfRangeQ521;
+
+// Signature of the hook at 0x258 (m_Unknown1fc): cdecl, four arguments, the
+// last the dword at 0x25c (0x1002f1a6..0x1002f1b5).
+// Primal Hunt's model walker, as UpdateTransforms builds it: 0x2a8 bytes
+// (its frame is `sub $0x330`, the walker at -0x330 and the two matrices above
+// it), eight AnimTimeRefs of 0x24 and then commonmodel.h's ModelWalker
+// fields at 0x120.. -- +0x124 the object transform, +0x128 the output
+// array, +0x134 the model. The constructor is INLINE: lithtech.exe expands
+// it into UpdateTransforms (the eight-record loop at 0x0046d2f0), server.dll
+// calls the out-of-line copy (0x1001d477: the eight records, then 124, 128,
+// 12c, 130, 134 and 120 last). A view (name ours) until commonmodel.h's
+// ModelWalker is brought up to Primal Hunt's.
+class ModelWalkerQ521
+{
+public:
+	ModelWalkerQ521()
+	{
+		m_pObjTransform = LTNULL;
+		m_Unknown_e8 = 0;
+		m_Unknown_ec = 0;
+		m_Unknown_f0 = 0;
+		m_Unknown_f4 = 0;
+		m_Unknown_e0 = 0;
+	}
+
+	LTBOOL sub_100386c6();                   // 0x1004879f / NOLF 0x100386c6
+
+	AnimTimeRef m_TimeRefs[8];               // 0x000 .. 0x120
+	uint32     m_Unknown_e0;                 // 0x120
+	LTMatrix*  m_pObjTransform;              // 0x124
+	uint32     m_Unknown_e8;                 // 0x128
+	uint32     m_Unknown_ec;                 // 0x12c
+	uint32     m_Unknown_f0;                 // 0x130
+	uint32     m_Unknown_f4;                 // 0x134
+	uint8      m_pad_138[0x2a8 - 0x138];
+};
+
+typedef void (*ModelHookFnQ521)(CObjModel* pModel, int iNode, LTMatrix* pMat,
+                                uint32 nUser);
+
+static LTBOOL ml_FrameLocatorDiffersQ521(FrameLocator* pA, FrameLocator* pB);
+
+// slot 0x48 -- the whole array, brought up to date first.
+LTMatrix* CObjModel::GetNodeTransforms()
+{
+	if (!AreTransformsValid())
+		UpdateTransforms();
+
+	return m_Array248.GetArray();
+}
+
+// slot 0x4c -- one node's transform, or the identity past the end.
+LTMatrix& CObjModel::GetNodeTransform(uint32 iNode)
+{
+	if (!AreTransformsValid())
+		UpdateTransforms();
+
+	if (iNode < m_Array248.GetSize())
+		return m_Array248.GetArray()[iNode];
+
+	g_mOutOfRangeQ521.Identity();
+	return g_mOutOfRangeQ521;
+}
+
+// slot 0x50 -- are the cached transforms still the ones the trackers and the
+// hook would produce? A pending invalidation at 0x2e0 is consumed here.
+//
+// server.dll: BYTE-IDENTICAL. lithtech.exe: NEAR (495 against 504): the
+// shipped memcmp expands as the general byte compare with its signed result
+// (`repz cmpsb; sbb; sbb`, 0x0046d23e) where ours, tested only against zero,
+// becomes the dword compare; `!= 0` does not change it.
+//
+// ODDITY KEPT: a tracker-count mismatch on the 0x238 array RESIZES it
+// (0x1002f12a..0x1002f13d, the same SetSize2 UpdateTransforms makes) rather
+// than answering no, where the 0x228 array's mismatch answers no.
+LTBOOL CObjModel::AreTransformsValid()
+{
+	LTAnimTracker* pTracker;
+	uint32         i;
+
+	if (m_Unknown2e0)
+	{
+		m_Unknown2e0 = 0;
+		return LTFALSE;
+	}
+
+	if (m_Array248.GetSize() != m_AnimTracker.m_TimeRef.m_pModel->m_NodeTransforms.GetSize())
+		return LTFALSE;
+
+	if (m_Array228.GetSize() != GetTrackerCount())
+		return LTFALSE;
+
+	if (m_Array238.GetSize() != GetTrackerCount())
+		m_Array238.SetSize(GetTrackerCount());
+
+	for (pTracker = m_pTrackerList, i = 0; pTracker;
+	     pTracker = pTracker->GetNext(), i++)
+	{
+		// The answer is tested as a BYTE (`test %al,%al`, 0x1002f164) while
+		// the callee sets all of %eax (`xor %eax,%eax` / `push 1; pop %eax`):
+		// an LTBOOL narrowed at the call. A bool or uint8 return type changes
+		// the callee instead (`xor %al,%al` / `mov $1,%al`).
+		if ((uint8)ml_FrameLocatorDiffersQ521(&pTracker->m_TimeRef.m_Cur,
+		                                      &m_Array228[i]))
+			return LTFALSE;
+
+		if (pTracker->m_InterpolationMS != m_Array238[i])
+			return LTFALSE;
+	}
+
+	if (m_Unknown1fc)
+	{
+		LTMatrix mIdent;
+		LTMatrix mHook;
+
+		mIdent.Identity();
+		mHook = mIdent;
+
+		((ModelHookFnQ521)m_Unknown1fc)(this, -1, &mHook, m_Unknown200);
+
+		if (memcmp(&mIdent, &mHook, sizeof(LTMatrix)) != 0)
+			return LTFALSE;
+	}
+
+	return LTTRUE;
+}
+
+// 0x1002f1e0 / 0x0046d270 -- cdecl: nonzero when any of the four fields
+// differs.
+static LTBOOL ml_FrameLocatorDiffersQ521(FrameLocator* pA, FrameLocator* pB)
+{
+	if (pA->m_iAnim == pB->m_iAnim &&
+	    pA->m_iFrame == pB->m_iFrame &&
+	    pA->m_Time == pB->m_Time &&
+	    pA->m_iWeightSet == pB->m_iWeightSet)
+		return LTFALSE;
+
+	return LTTRUE;
+}
+
+// Rebuild the cache: size the arrays to the model and the trackers, record
+// each tracker's frame, run the walker over the node transforms, and with a
+// hook installed take the object's own transform back out of every node.
+//
+// server.dll: BYTE-IDENTICAL. lithtech.exe: NEAR (925 against 920): the
+// shipped /O2 build CALLS AnimTimeRef's constructor for each of the walker's
+// eight records (0x0046d3d8, 0x004543d0) where ours expands it, and the
+// zero that expansion hoists into %ebp turns the shipped `push $0` /
+// `movl $0` immediates into register operands. An extra struct level round
+// the eight records does not move it.
+void CObjModel::UpdateTransforms()
+{
+	LTAnimTracker* pTracker;
+	uint32         i;
+	LTMatrix       mTemp;
+	LTMatrix       mBase;
+
+	if (m_Array248.GetSize() != m_AnimTracker.m_TimeRef.m_pModel->m_NodeTransforms.GetSize())
+		m_Array248.SetSize(m_AnimTracker.m_TimeRef.m_pModel->m_NodeTransforms.GetSize());
+
+	if (m_Array228.GetSize() != GetTrackerCount())
+		m_Array228.SetSize(GetTrackerCount());
+
+	if (m_Array238.GetSize() != GetTrackerCount())
+		m_Array238.SetSize(GetTrackerCount());
+
+	for (pTracker = m_pTrackerList, i = 0; pTracker;
+	     pTracker = pTracker->GetNext(), i++)
+	{
+		m_Array228[i] = pTracker->m_TimeRef.m_Cur;
+		m_Array238[i] = pTracker->m_InterpolationMS;
+	}
+
+	if (m_Unknown1fc)
+		GetTransform(&mBase);
+	else
+		mBase.Identity();
+
+	ModelWalkerQ521 walker;
+
+	walker.m_pObjTransform = &mBase;
+	walker.m_Unknown_e8    = (uint32)m_Array248.GetArray();
+	walker.m_Unknown_f4    = (uint32)this;
+
+	SetupModelWalker((ModelWalker*)&walker);
+
+	if (walker.sub_100386c6() && m_Unknown1fc && mBase.Inverse())
+	{
+		for (i = 0; i < m_Array248.GetSize(); i++)
+		{
+			MatMul(&mTemp, &mBase, &m_Array248.GetArray()[i]);
+			m_Array248.GetArray()[i] = mTemp;
+		}
+	}
+}
+#endif
+
 // 0x100250b7 — the model file's name, or the shared empty string when there
 // is no model. A tail call into Model::GetFilename.
 char* CObjModel::GetFilename()
@@ -621,6 +881,59 @@ CObjSprite::CObjSprite() : CObjBase(OT_SPRITE)
 // server.dll (13-22 differing instructions or 152/153 bytes) and still
 // `lea`s on lithtech.exe; the tracker and link stores through an
 // `LTAnimTracker*` local are 145 / 196 bytes.
+#ifdef PRIMAL_HUNT
+// PH: lithtech.exe 0x0046cac0 (459 bytes, /GX), server.dll 0x1002ed32 (313).
+// The members construct first -- the tracker's AnimTimeRef (server.dll calls
+// it, 0x1002ee6b), then the three arrays (exception states 1, 2, 3) -- and
+// the body runs in the order server.dll's /O1 keeps: the four pointers and
+// the sixteen-byte fill from 0x1c0, 0x1d0, the tracker and its link, the
+// three counts, the slot loop, and the two vectors built as temporaries
+// around the minus one at 0x2d0.
+//
+// server.dll: BYTE-IDENTICAL, and so is the destructor (0x1002ef14; and
+// lithtech.exe's 0x0046cd50), which is the three arrays' inline ~CMoArray in
+// reverse order and the base's. lithtech.exe: NEAR (517 against 459): the
+// shipped /O2 build CALLS each array's Init(0, 0) (0x0046ebd0, 0x0046ed90,
+// 0x004597a0, with Term and SetSize expanded inside them) where ours expands
+// Init into the constructor and calls its SetSize2 instead.
+CObjModel::CObjModel() : CObjBase(OT_MODEL)
+{
+	uint32 i;
+
+	m_pUnknown1ac = LTNULL;
+	m_pUnknown1b0 = LTNULL;
+	m_pUnknown1b8 = LTNULL;
+	m_pHookFn     = LTNULL;
+	memset(&m_pUnknown1b8, 0, 16);
+	m_Unknown1d0  = 0;
+
+	at_Init(&m_AnimTracker, LTNULL, LTFALSE);
+
+	m_pTrackerList = &m_AnimTracker;
+
+	m_AnimTracker.m_Link.m_pNext = LTNULL;
+	m_AnimTracker.m_Link.m_pData = this;
+
+	m_Unknown1fc   = 0;
+	m_Unknown200   = 0;
+	m_HiddenPieces = 0;
+
+	for (i = 0; i < 4; i++)
+	{
+		m_pUnknown264[i] = LTNULL;
+		m_Slots274[i].m_Unknown[0] = 0;
+		m_Slots274[i].m_Unknown[1] = 0;
+		m_Slots274[i].m_Unknown[2] = 0;
+		m_Slots274[i].m_Unknown[3] = 0;
+		m_Slots274[i].m_Unknown[4] = 0;
+	}
+
+	m_v2c4 = LTVector(0.0f, 0.0f, 0.0f);
+	m_f244 = -1.0f;
+	m_v2d4 = LTVector(-1.0f, -1.0f, -1.0f);
+	m_Unknown2e0 = 1;
+}
+#else
 CObjModel::CObjModel() : CObjBase(OT_MODEL)
 {
 	m_pUnknown1ac = LTNULL;
@@ -645,36 +958,52 @@ CObjModel::CObjModel() : CObjBase(OT_MODEL)
 
 	m_f244 = -1.0f;
 }
+#endif
 
-// 0x10025229.
-//
-// Byte-identical on server.dll. What closed it was m_u1e8's position: it is
-// the FIRST store in the source, ahead of the two -1 stores. That is what
-// makes the shipped build materialise the zero into %ecx at the top (next to
-// `mov $0xff,%al`) and keep it there for all six integer zero stores; with
-// m_u1e8 in its declaration-order place, down among the other zeros, VC6
-// deferred the constant past the `lea`, reused %eax for it, and scheduled
-// the second `orl $-1` and both large-immediate float stores late (21
-// differing instructions). lithtech.exe's /O2 copy (0x0045b610) agrees on
-// this too -- its zero stores open with 0x1e8 -- but still groups its
-// constant stores in an order no source order tried here reproduces
-// (1.0, 0, 255, -1, 300/-500, then the `lea`), so it stays a size-exact
-// near there; moving the -1 pair or the 258/1e4/1f0 trio leaves both
-// images exactly where they were.
+// 0x10025229 (NOLF); Primal Hunt's server.dll 0x1002f528, 296 bytes,
+// BYTE-IDENTICAL: /O1 keeps the x87 stores in source order (218 214 210, the
+// one at 21c, 228 224 220, the one at 22c, then the two boxes z,y,x), which
+// is what fixes the order of the float statements; the integer stores are
+// placed to match. lithtech.exe's /O2 copy (0x0046d830, 274 bytes) is a
+// size-exact NEAR: it groups all six 0xff byte stores and both 1.0 stores
+// ahead of the zeros and leaves the -1 pair last, where ours schedules the
+// 1f4/94..96 group and the constants after the zeros.
 CObjParticleSystem::CObjParticleSystem() : CObjBase(OT_PARTICLESYSTEM)
 {
+	m_p1e0 = m_Data1a8;
+	m_p1c8 = m_Data1a8;
+
+	m_p1e4 = LTNULL;
 	m_u1e8 = 0;
 
-	m_n254 = -1;
-	m_n250 = -1;
+	m_u1ee = 255;
+	m_u1ed = 255;
+	m_u1ec = 255;
 
 	m_ColorB = 255;
 	m_ColorG = 255;
 	m_ColorR = 255;
 
-	m_u1ee = 255;
-	m_u1ed = 255;
-	m_u1ec = 255;
+	m_u1ef = 0;
+	m_u1f0 = 0;
+	m_u1f4[0] = 0;
+	m_u1f4[1] = 0;
+	m_u1f4[2] = 0;
+	m_u1f4[3] = 0;
+	m_u1f4[4] = 0;
+
+	m_f210 = 0.0f;
+	m_f20c = 0.0f;
+	m_f208 = 0.0f;
+	m_f214 = 1.0f;
+
+	m_f220 = 0.0f;
+	m_f21c = 0.0f;
+	m_f218 = 0.0f;
+	m_f224 = 1.0f;
+
+	m_u228 = 0;
+	m_u22c = 0;
 
 	m_vBoxMin.z = 0.0f;
 	m_vBoxMin.y = 0.0f;
@@ -684,56 +1013,61 @@ CObjParticleSystem::CObjParticleSystem() : CObjBase(OT_PARTICLESYSTEM)
 	m_vBoxMax.y = 0.0f;
 	m_vBoxMax.x = 0.0f;
 
-	m_p1e0 = m_Data1a8;
-	m_p1c8 = m_Data1a8;
-
-	m_f210 = 0.0f;
-	m_f20c = 0.0f;
-	m_f208 = 0.0f;
-	m_f214 = 1.0f;
-
-	m_f24c = 300.0f;
-	m_f248 = -500.0f;
-
 	m_u258 = 0;
-	m_p1e4 = LTNULL;
-	m_u1f0 = 0;
 
-	m_f220 = 0.0f;
-	m_f21c = 0.0f;
-	m_f218 = 0.0f;
-	m_f224 = 1.0f;
+	m_f248 = -500.0f;
+	m_f24c = 300.0f;
 
-	m_u228 = 0;
-	m_u22c = 0;
+	m_n254 = -1;
+	m_n250 = -1;
 }
 
-// 0x100253f0.
+// 0x100253f0 (NOLF); Primal Hunt's server.dll 0x1002f71b and lithtech.exe
+// 0x0046da40.
+//
+// lithtech.exe: BYTE-IDENTICAL (155 bytes; the grid is an inline `rep stos`
+// at 0x0046dad4). server.dll: NEAR (160 against 164). Its /O1 CALLS the
+// CRT's memset for the grid (0x1002f7b3) with no exception frame, where the
+// `#pragma intrinsic(memset)` above (which the model constructor's 16-byte
+// fill needs, 0x1002edaa) expands it here too. Probed: once memset has been
+// made intrinsic ANYWHERE in a /GX translation unit, a call to it is treated
+// as throwing -- defining this above the pragma, or `#pragma function` after
+// it, both give the call but with an EH frame (192 bytes). So the shipped
+// file cannot have used the pragma; the model's stosd fill then comes from
+// some other construct not yet found.
+//
+// The float statements keep the order server.dll's x87 stream has (/O1 does
+// not reorder FP stores among themselves): 1d8, 1d4, then the two ones at
+// 1e0 and 1dc. The integer clears follow in address order, the link is tied
+// off after them (0x1002f795) and the grid's 0x1000 bytes are cleared last.
 CObjPolyGrid::CObjPolyGrid() : CObjBase(OT_POLYGRID)
 {
-	m_Link1e4.TieOff();
-
-	// The source order is the one server.dll's x87 stream keeps (0x10025406:
-	// 1d0, 1cc, 1d8, 1d4 -- /O1 does not reorder FP stores among
-	// themselves). lithtech.exe's /O2 copy (0x0045b806) turns the float
-	// constants into integer stores and schedules m_f1d8 up to the top, next
-	// to the `mov $0x3f800000,%ecx` it hoists, so it is not a source-order
-	// witness for that one store.
 	m_pUnknown1a8 = LTNULL;
 	m_pUnknown1ac = LTNULL;
 	m_pUnknown1b0 = LTNULL;
+	m_Unknown1bc[0] = 0;
+	m_Unknown1bc[1] = 0;
+	m_Unknown1bc[2] = 0;
+	m_Unknown1bc[3] = 0;
+	m_Unknown1bc[4] = 0;
+	m_Unknown1c8  = 0;
 
 	m_f1d0 = 0.0f;
 	m_f1cc = 0.0f;
 	m_f1d8 = 1.0f;
-	m_Unknown1c8  = 0;
+	m_f1d4 = 1.0f;
+
 	m_pUnknown1dc = LTNULL;
 	m_pUnknown1e0 = LTNULL;
+
+	m_Link1e4.TieOff();
+
 	m_Unknown1f4  = 0;
 	m_Unknown1f0  = 0;
 
-	m_f1d4 = 1.0f;
+	memset(m_Grid200, 0, sizeof(m_Grid200));
 }
+
 // One particle as the destructor reads it: the bank's intrusive free link at
 // +0x00 and the next-in-list at +0x20 (name ours).
 struct CParticle

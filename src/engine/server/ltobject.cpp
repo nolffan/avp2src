@@ -1,11 +1,12 @@
 // server.dll — LTObject's own engine-internal methods (reconstruction). Build /O1.
 #include "ltobject_internal.h"
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifdef PRIMAL_HUNT
 // PH: Primal Hunt's engine sees the STL's <string> here, through a header
 // AvP2's does not have: the translation unit carries <string>'s 44-byte
 // guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
 // atexit of the empty 0x00401790; this one's near 0x00433d00). server.dll has it
 // in collection/objbank only.
+// (server.dll too: 0x1001175c, guard 0x1008ec84)
 #include <string>
 #endif
 

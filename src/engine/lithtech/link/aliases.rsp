@@ -3037,3 +3037,6 @@
 # VC6 /O2 tail-merges ChangeIntensity's two refusals (777 bytes) where the
 # shipped 0x00440620 keeps both (798, byte-identical with two symbols).
 /ALTERNATENAME:?dm_NotLevelInitError@@YAXPAD@Z=?dm_NotInitError@@YAXPAD@Z
+# Primal Hunt calls the shared CObjectBank<T>::Allocate out of line (0x00404fb0)
+# where smgrnew.cpp's queue bank names its own; AvP2 1.0.9.6 expands it inline.
+/ALTERNATENAME:?Allocate@CObjQueueBank@@QAEPAVLTLink@@XZ=?Allocate@?$CObjectBank@VCBankElem0c@@@@UAEPAXXZ

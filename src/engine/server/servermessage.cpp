@@ -1,10 +1,14 @@
 // server.dll — the ILTServer message starters (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifdef PRIMAL_HUNT
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
-// (guard 0x004f8014, atexit of the empty 0x00401790; 0x498260).
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x498260).  Both
+// images' CLTServer keep a map of string sets at +0x280 (below), which is
+// what brings in <map> and <set>.
 #include <string>
+#include <map>
+#include <set>
 #endif
 #include <string.h>
 #include <stdio.h>
@@ -200,6 +204,59 @@ LTRESULT CLTServer::GetClientData(HCLIENT hClient, void *&pData, uint32 &nLength
 	nLength = ((Client*)hClient)->m_ClientDataLen;
 	return LT_OK;
 }
+
+#ifdef PRIMAL_HUNT
+// ---- the string-set map (PH 0x1003b1f0-0x1003b2c8) ----------------------- //
+//
+// PH: CLTServer's ILTServer slots 99, 100 and 101 (vtable 0x10075504 /
+// lithtech 0x004d6150; AvP2 1.0.9.6 has the same three as its slots 97..99,
+// 0x100381bc / 0x10038243 / 0x1003824e, but over a different string type,
+// so the code below is Primal Hunt's only).  They keep a
+// std::map<std::string, std::set<std::string> > at +0x280: the node's value
+// is at +0x1c (`add $0x1c,%eax` at 0x1002310a, the end of the map's
+// operator[]: the 16-byte key string at +0x0c), the set's insert is
+// 0x1003ebee, the map's clear 0x1003ebda.  servermsg.h's CLTServer has no
+// members past m_pServerMgr, so these are written against a view; the names
+// are ours.
+class CLTServerStringSetViewQ526
+{
+public:
+	typedef std::set<std::string>                 StringSet;
+	typedef std::map<std::string, StringSet>      StringSetMap;
+
+	void          AddStrings(const char* pKey, const char** pStrings, int nStrings);
+	void          ClearStrings();
+	StringSetMap* GetStrings();
+
+	uint8         m_pad_000[0x280];
+	StringSetMap  m_StringSets;                  // 0x280
+};
+
+// 0x1003b1f0 / lithtech 0x00483a30 — slot 99: add nStrings names to the set
+// filed under pKey (made empty first if there is none).  The key is a
+// temporary string (0x1003b20b..0x1003b244, destroyed before the loop), each
+// name another (0x1003b25c..0x1003b29a).
+void CLTServerStringSetViewQ526::AddStrings(const char* pKey, const char** pStrings, int nStrings)
+{
+	StringSet& set = m_StringSets[pKey];
+
+	for (int i = 0; i < nStrings; i++)
+		set.insert(pStrings[i]);
+}
+
+// 0x1003b2b7 / lithtech 0x00483bf0 — slot 100: empty the map (server.dll's
+// /O1 jumps to the map's clear; lithtech.exe expands it).
+void CLTServerStringSetViewQ526::ClearStrings()
+{
+	m_StringSets.clear();
+}
+
+// 0x1003b2c2 / lithtech 0x00483ca0 — slot 101: the map itself.
+CLTServerStringSetViewQ526::StringSetMap* CLTServerStringSetViewQ526::GetStrings()
+{
+	return &m_StringSets;
+}
+#endif
 
 // ---- the threaded-loader halves (0x1002ec9a-0x1002ef14) ------------------ //
 

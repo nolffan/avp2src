@@ -1018,23 +1018,70 @@ CDMUnknown58Record::~CDMUnknown58Record()
 		delete m_pName;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: the six banks are dmextra.cpp's CDMRecordBankQ522, whose constructor
+// and destructors are out of line there: every initializer CALLS the one
+// (folded) constructor, 0x0044ee50, and each atexit destructor JUMPS to its
+// bank's own (0x0044ebe0 plain, 0x0044ec40 segment, 0x0044ecf0 playing,
+// 0x0044eda0 unknown58; 0x0044b3a0..0x0044b54e).  AvP2 1.0.9.6 expands both
+// in place, with the template above.  Declared here as dmextra.cpp defines
+// it, without the bodies.
+struct CDMBankNodeQ522;
+
+struct CDMBankListQ522
+{
+	CDMBankNodeQ522* m_pHead;                // 0x000
+	CDMBankNodeQ522* m_pTail;                // 0x004
+
+	~CDMBankListQ522() {}
+};
+
+template<class T>
+class CDMRecordBankQ522
+{
+public:
+	int              m_bInitialized;         // 0x000
+	uint32           m_nGrowCount;           // 0x004
+	CDMBankListQ522  m_Chunks;               // 0x008
+	void*            m_pFree;                // 0x010
+
+	CDMRecordBankQ522();
+	~CDMRecordBankQ522();
+};
+
+struct CDMPlainRecordQ522;
+struct CDMSegmentRecordQ522;
+struct CDMEmptyDtorRecordQ522;
+struct CDMStyleRecordQ522;
+
+typedef CDMRecordBankQ522<CDMPlainRecordQ522>     CDMPlainBankQ527;
+typedef CDMRecordBankQ522<CDMSegmentRecordQ522>   CDMSegmentBankQ527;
+typedef CDMRecordBankQ522<CDMEmptyDtorRecordQ522> CDMPlayingBankQ527;
+typedef CDMRecordBankQ522<CDMStyleRecordQ522>     CDMUnknown58BankQ527;
+#else
+typedef CDMRecordBank<CDMPlainRecord>             CDMPlainBankQ527;
+typedef CDMRecordBank<CDMSegmentRecord>           CDMSegmentBankQ527;
+typedef CDMRecordBank<CDMEmptyDtorRecord>         CDMPlayingBankQ527;
+typedef CDMRecordBank<CDMUnknown58Record>         CDMUnknown58BankQ527;
+#endif
+
 class CDMBanks
 {
 public:
-	static CDMRecordBank<CDMPlainRecord>      s_PendingBank;
-	static CDMRecordBank<CDMSegmentRecord>    s_SegmentBank;
-	static CDMRecordBank<CDMEmptyDtorRecord>  s_PlayingBank;
-	static CDMRecordBank<CDMPlainRecord>      s_BandBank;
-	static CDMRecordBank<CDMUnknown58Record>  s_Unknown58Bank;
-	static CDMRecordBank<CDMPlainRecord>      s_Unknown60Bank;
+	static CDMPlainBankQ527      s_PendingBank;
+	static CDMSegmentBankQ527    s_SegmentBank;
+	static CDMPlayingBankQ527    s_PlayingBank;
+	static CDMPlainBankQ527      s_BandBank;
+	static CDMUnknown58BankQ527  s_Unknown58Bank;
+	static CDMPlainBankQ527      s_Unknown60Bank;
 };
 
-CDMRecordBank<CDMPlainRecord>      CDMBanks::s_PendingBank;     // 0x004b3fc8
-CDMRecordBank<CDMSegmentRecord>    CDMBanks::s_SegmentBank;     // 0x004b3f50
-CDMRecordBank<CDMEmptyDtorRecord>  CDMBanks::s_PlayingBank;     // 0x004b3f98
-CDMRecordBank<CDMPlainRecord>      CDMBanks::s_BandBank;        // 0x004b3fb0
-CDMRecordBank<CDMUnknown58Record>  CDMBanks::s_Unknown58Bank;   // 0x004b3f68
-CDMRecordBank<CDMPlainRecord>      CDMBanks::s_Unknown60Bank;   // 0x004b3f80
+CDMPlainBankQ527      CDMBanks::s_PendingBank;     // 0x004b3fc8 (PH 0x004f5600)
+CDMSegmentBankQ527    CDMBanks::s_SegmentBank;     // 0x004b3f50 (PH 0x004f5588)
+CDMPlayingBankQ527    CDMBanks::s_PlayingBank;     // 0x004b3f98 (PH 0x004f55d0)
+CDMPlainBankQ527      CDMBanks::s_BandBank;        // 0x004b3fb0 (PH 0x004f55e8)
+CDMUnknown58BankQ527  CDMBanks::s_Unknown58Bank;   // 0x004b3f68 (PH 0x004f55a0)
+CDMPlainBankQ527      CDMBanks::s_Unknown60Bank;   // 0x004b3f80 (PH 0x004f55b8)
 
 // ======================================================================= //
 //  ATTRIBUTION ONLY — 38 enumerated rows whose bodies belong elsewhere

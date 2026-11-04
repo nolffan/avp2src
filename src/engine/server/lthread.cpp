@@ -1,11 +1,12 @@
 // server.dll — LThread / LThreadQueue (reconstruction). Build /O1.
 #include <string.h>
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifdef PRIMAL_HUNT
 // PH: Primal Hunt's engine sees the STL's <string> here, through a header
 // AvP2's does not have: the translation unit carries <string>'s 44-byte
 // guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
 // atexit of the empty 0x00401790; this one's near 0x004997c0). server.dll has it
 // in collection/objbank only.
+// (server.dll too: 0x100190c1, guard 0x1008ec84)
 #include <string>
 #endif
 #include "servermgr.h"
@@ -194,6 +195,100 @@ inline void tm_FreeMessages(LMessageList* pList, LThreadMessageBank* pBank)
 }
 
 
+// 0x100157ec — the dequeue itself. The event is waited on a second time,
+// with a zero timeout, so a wake with nothing behind it costs nothing; then
+// the queue's own lock is taken, the tail is unlinked, its payload copied
+// into the caller's storage if the caller gave any, and the record handed
+// back to the global bank under the global lock.
+//
+// Two ResetEvents, and they answer different questions: the first is a wake
+// with an empty queue, the second the queue going empty on this call. The
+// event is manual-reset, so it stays signalled while anything is queued and
+// a caller can drain it in a loop.
+//
+// In server.dll the zero the timeout pushes is the same zero the merged
+// answer starts at and the same one the tail is compared against — one
+// `xor %esi,%esi` serving three uses. It is also what the message assignment
+// spends: `*pMsg = *pCur` is a `rep movsl` of eight dwords through %esi and
+// %edi, which is why the success arm has to put the one back into %esi
+// afterwards rather than incrementing what was there. All three uses are an
+// artefact of the /O1 merge, not of the source — see below.
+//
+// The empty case falls through and the work is jumped over it, which is the
+// shape of a negative guard hosting an early return (`if (!pCur) { ...;
+// return LTFALSE; }`) with the dequeue trailing, not of an if/else.
+//
+// There is no answer variable either. server.dll's single exit at 0x1001586e
+// is /O1 cross-jumping three returns into one — which is also what makes the
+// zero do triple duty there, the timeout argument and the initial answer and
+// the tail comparison all reading one `xor %esi,%esi` — and lithtech
+// 0x4444a0 keeps the three apart: `push $0x0` as a literal for the wait, and
+// three epilogues each loading its own constant (0x4444b8, 0x4444de,
+// 0x444560) after its own `call Leave`.
+//
+// The bank's free is inline (servermgr.h): the record's first dword becomes
+// the next-free link. There is no null test around it here because the tail
+// was just proved non-null and nothing has intervened but calls VC6 can see
+// through.
+//
+// PH: the queue's lock is a scoped holder, not an Enter/Leave pair: Primal
+// Hunt's /GX server.dll (0x1001ae29) builds an exception frame round it
+// whose unwind (0x1001aee9, `mov (%ecx),%ecx; jmp Leave`) is the holder's
+// destructor, and both returns leave through one Leave (0x1001aed0).
+// lithtech.exe's /O2 expands Enter and Leave into the API calls, which
+// cannot throw, so it has no frame and the same bytes as before.
+//
+// PH: the frame also needs CMessageQueueBase::Remove (called, 0x1001ae88)
+// to be a body VC6 has NOT compiled yet: defined below the queue's
+// constructor (whose vtable brings in GenRemoveAt, and Remove with it),
+// VC6 knows Remove cannot throw and drops the frame.  The shipped image
+// places it after PeekMessage (0x1001ae29), so what made Remove unknown
+// there is not established; this placement is the one that reproduces it.
+class CSLockQ526
+{
+public:
+	CSLockQ526(LCriticalSection* pCS) { m_pCS = pCS; m_pCS->Enter(); }
+	~CSLockQ526() { m_pCS->Leave(); }
+
+	LCriticalSection* m_pCS;
+};
+
+LTBOOL LThreadQueue::TakeMessage(LThreadMessage* pMsg)
+{
+	LThreadMessage* pCur;
+
+	if (WaitForSingleObject(m_hEvent, 0) == WAIT_TIMEOUT)
+		return LTFALSE;
+
+	CSLockQ526 lock(&m_CS);
+
+	// The tail is tested in place and only then read into pCur: lithtech
+	// 0x00450c70 (PH) keeps sb_Free's record test at 0x00450cff, which it
+	// could not if the null test had been on pCur itself.
+	if (!m_MessageList.m_pTail)
+	{
+		ResetEvent(m_hEvent);
+		return LTFALSE;
+	}
+
+	pCur = m_MessageList.m_pTail;
+
+	if (pMsg)
+		*pMsg = *pCur;
+
+	m_MessageList.Remove(pCur);
+
+	g_ThreadCS.Enter();
+	sb_Free(&g_ThreadMessageBank.m_Bank, pCur);
+	g_ThreadCS.Leave();
+
+	if (!m_MessageList.m_pTail)
+		ResetEvent(m_hEvent);
+
+	return LTTRUE;
+}
+
+
 LThreadQueue::LThreadQueue()
 {
 	m_hEvent = CreateEvent(LTNULL, TRUE, FALSE, LTNULL);
@@ -306,79 +401,6 @@ LTRESULT LThreadQueue::GetMessage(LThreadMessage* pMsg, LTBOOL bWait)
 }
 
 
-// 0x100157ec — the dequeue itself. The event is waited on a second time,
-// with a zero timeout, so a wake with nothing behind it costs nothing; then
-// the queue's own lock is taken, the tail is unlinked, its payload copied
-// into the caller's storage if the caller gave any, and the record handed
-// back to the global bank under the global lock.
-//
-// Two ResetEvents, and they answer different questions: the first is a wake
-// with an empty queue, the second the queue going empty on this call. The
-// event is manual-reset, so it stays signalled while anything is queued and
-// a caller can drain it in a loop.
-//
-// In server.dll the zero the timeout pushes is the same zero the merged
-// answer starts at and the same one the tail is compared against — one
-// `xor %esi,%esi` serving three uses. It is also what the message assignment
-// spends: `*pMsg = *pCur` is a `rep movsl` of eight dwords through %esi and
-// %edi, which is why the success arm has to put the one back into %esi
-// afterwards rather than incrementing what was there. All three uses are an
-// artefact of the /O1 merge, not of the source — see below.
-//
-// The empty case falls through and the work is jumped over it, which is the
-// shape of a negative guard hosting an early return (`if (!pCur) { ...;
-// return LTFALSE; }`) with the dequeue trailing, not of an if/else.
-//
-// There is no answer variable either. server.dll's single exit at 0x1001586e
-// is /O1 cross-jumping three returns into one — which is also what makes the
-// zero do triple duty there, the timeout argument and the initial answer and
-// the tail comparison all reading one `xor %esi,%esi` — and lithtech
-// 0x4444a0 keeps the three apart: `push $0x0` as a literal for the wait, and
-// three epilogues each loading its own constant (0x4444b8, 0x4444de,
-// 0x444560) after its own `call Leave`.
-//
-// The bank's free is inline (servermgr.h): the record's first dword becomes
-// the next-free link. There is no null test around it here because the tail
-// was just proved non-null and nothing has intervened but calls VC6 can see
-// through.
-LTBOOL LThreadQueue::TakeMessage(LThreadMessage* pMsg)
-{
-	LThreadMessage* pCur;
-
-	if (WaitForSingleObject(m_hEvent, 0) == WAIT_TIMEOUT)
-		return LTFALSE;
-
-	m_CS.Enter();
-
-	// The tail is tested in place and only then read into pCur: lithtech
-	// 0x00450c70 (PH) keeps sb_Free's record test at 0x00450cff, which it
-	// could not if the null test had been on pCur itself.
-	if (!m_MessageList.m_pTail)
-	{
-		ResetEvent(m_hEvent);
-		m_CS.Leave();
-
-		return LTFALSE;
-	}
-
-	pCur = m_MessageList.m_pTail;
-
-	if (pMsg)
-		*pMsg = *pCur;
-
-	m_MessageList.Remove(pCur);
-
-	g_ThreadCS.Enter();
-	sb_Free(&g_ThreadMessageBank.m_Bank, pCur);
-	g_ThreadCS.Leave();
-
-	if (!m_MessageList.m_pTail)
-		ResetEvent(m_hEvent);
-
-	m_CS.Leave();
-
-	return LTTRUE;
-}
 
 
 // The routine handed to CreateThread: run the thread's body, then its

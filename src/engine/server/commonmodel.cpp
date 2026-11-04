@@ -1,9 +1,12 @@
 // server.dll — the shared ILTModel tracker accessors (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x459e30, 0x45e2d0).
+// server.dll's units end the same way, in /O1's 33-byte shape (guard
+// 0x1008ec84, atexit of the empty 0x1002eaeb; 0x1002162a, 0x10024249,
+// 0x10024546).
 #include <string>
 #endif
 #include <string.h>
@@ -1244,6 +1247,11 @@ Model::Model(uint32* pAlloc1, uint32* pAlloc2)
 	// LCG on the per-thread seed at +0x14, shifted down 16 and masked to
 	// 0x7fff. The sub-object's +0x20 is the only field of it Model writes.
 	m_Sub1d4.m_Unknown20 = rand();
+
+	// AVP2: the word after the data block is cleared last (Primal Hunt
+	// server.dll 0x1001ccaf, lithtech.exe 0x004538cd; AvP2 1.0.9.6
+	// 0x1001bc48, 0x0044eea1).
+	m_Unknown190 = 0;
 
 	g_nModelDataBytes += sizeof(Model);
 }
@@ -4428,26 +4436,22 @@ void quat_GetVectors(const float* pQuat, float* pRight, float* pUp,
 	pForward[2] = mat[2][2];
 }
 
-// The interpolation. Three details are worth reading off the bytes because
-// they are what says this is the SDK source rather than something like it:
+// The interpolation -- AVP2: the AvP2 SDK's ltquatbase.cpp verbatim
+// (src/LT2/sdk/inc/ltquatbase.cpp), which writes the sign adjustment and the
+// blend out component by component and takes ONE reciprocal of the sine
+// (`fdivrs 1.0`) to multiply by, where NOLF's looped and divided twice.
+// Primal Hunt lithtech.exe 0x00451490 (298 bytes) and server.dll 0x1001b5de
+// (284); AvP2 1.0.9.6 0x0044cf90.  Two details the bytes keep:
 //
-//  - the 0x14 frame is `rot1q[4]` plus one float, and that float is
-//    scalerot0; scalerot1 never leaves st0, and `omega` and `sinom` are
-//    parked in the dead pQ1 and pQ2 parameter slots (0xc(%ebp), 0x10(%ebp)),
-//    which is where VC6 puts a local once the argument it displaces is in a
-//    register;
-//  - the sign-adjust loop is written out twice, once negating and once as a
-//    four-dword `movsl` run, because one arm is `-pQ2[j]` and the other a
-//    plain copy — a `rep movs` would not survive the negation;
-//  - `(1.0 - cosom) > 0.00001f` is compared in *double* (`fcompl` against
-//    0x1004d938, which reads as 1e-05), because the SDK wrote the 1.0 as a
-//    double literal. The `1.0 - t` beside it does the same.
+//  - `(1.0 - cosom) > 0.00001f` is compared in *double* (`fcompl`), because
+//    the SDK wrote the 1.0 as a double literal; `1.0 - t` does the same;
+//  - omega and the reciprocal are parked in the dead cosom and pQ2 slots,
+//    which is where VC6 puts a local once what it displaces is dead.
 void quat_Slerp(float* pDest, const float* pQ1, const float* pQ2, float t)
 {
 	float rot1q[4];
 	float omega, cosom, sinom;
 	float scalerot0, scalerot1;
-	int   i, j;
 
 	// Calculate the cosine
 	cosom = pQ1[0]*pQ2[0] + pQ1[1]*pQ2[1] + pQ1[2]*pQ2[2] + pQ1[3]*pQ2[3];
@@ -4456,13 +4460,17 @@ void quat_Slerp(float* pDest, const float* pQ1, const float* pQ2, float t)
 	if (cosom < 0.0f)
 	{
 		cosom = -cosom;
-		for (j = 0; j < 4; j++)
-			rot1q[j] = -pQ2[j];
+		rot1q[0] = -pQ2[0];
+		rot1q[1] = -pQ2[1];
+		rot1q[2] = -pQ2[2];
+		rot1q[3] = -pQ2[3];
 	}
 	else
 	{
-		for (j = 0; j < 4; j++)
-			rot1q[j] = pQ2[j];
+		rot1q[0] = pQ2[0];
+		rot1q[1] = pQ2[1];
+		rot1q[2] = pQ2[2];
+		rot1q[3] = pQ2[3];
 	}
 
 	// calculate interpolating coeffs
@@ -4470,9 +4478,9 @@ void quat_Slerp(float* pDest, const float* pQ1, const float* pQ2, float t)
 	{
 		// standard case
 		omega = (float)acos(cosom);
-		sinom = (float)sin(omega);
-		scalerot0 = (float)sin((1.0 - t) * omega) / sinom;
-		scalerot1 = (float)sin(t * omega) / sinom;
+		sinom = 1.0f / (float)sin(omega);
+		scalerot0 = (float)sin((1.0 - t) * omega) * sinom;
+		scalerot1 = (float)sin(t * omega) * sinom;
 	}
 	else
 	{
@@ -4481,8 +4489,10 @@ void quat_Slerp(float* pDest, const float* pQ1, const float* pQ2, float t)
 		scalerot1 = t;
 	}
 
-	for (i = 0; i < 4; i++) // build the new quarternion
-		pDest[i] = (float)(scalerot0 * pQ1[i] + scalerot1 * rot1q[i]);
+	pDest[0] = (float)(scalerot0 * pQ1[0] + scalerot1 * rot1q[0]);
+	pDest[1] = (float)(scalerot0 * pQ1[1] + scalerot1 * rot1q[1]);
+	pDest[2] = (float)(scalerot0 * pQ1[2] + scalerot1 * rot1q[2]);
+	pDest[3] = (float)(scalerot0 * pQ1[3] + scalerot1 * rot1q[3]);
 }
 
 
@@ -6334,9 +6344,6 @@ void w_SetupPointShade(CWorldSubFC* pShade, char* pName, LTVector* pMin,
 //     both — the same register the merged failure tail returns.
 int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 {
-#ifdef LT_SERVER_TIMERS
-	CBaseCounter counter(0);
-#endif
 	ILTStream*   pStream;
 	CServerWorldRec* pRec;
 	CWorldGeom*  pOriginal;
@@ -6485,6 +6492,15 @@ int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 	w_GetAmbientLight(m_pWorldName, &vScratch);
 
 #ifdef LT_SERVER_TIMERS
+	// The precalculation counter is declared HERE, where it starts: Primal
+	// Hunt's server.dll constructs it after the ambient light (0x1000b0cf),
+	// not in the prologue.  NEAR there (0x1000adff, 930 of 930 bytes, 0
+	// mnemonic blocks): shipped's frame is four bytes smaller -- its nPos
+	// shares the slot pStream is spilled to (-0x2c), where ours gives every
+	// local its own.  Not moved by declaring nPos/nNextOffset first or in
+	// the loop (the latter is 945 bytes).
+	CBaseCounter counter(0);
+
 	cnt_StartCounter(&counter);
 #endif
 
@@ -7218,7 +7234,12 @@ void Model::sub_100176dc()
 	{
 		// 0x1001779e -- m_nArgs is SIGNED: 0x10017953 and 0x10017a77 are
 		// `jl`, not `jb`.
-		if (parser.m_nArgs == 2)             // 0x100177a4
+		// AVP2: a switch on the argument count (Primal Hunt server.dll
+		// 0x1001d669's `dec ; je` chain, AvP2 1.0.9.6 0x1001c59d), where
+		// NOLF tested ==2, ==1, >=3 and >=4 in turn.
+		switch (parser.m_nArgs)
+		{
+		case 2:
 		{
 			// -- 0x100177ad .. 0x100177df ------------------------------ //
 			//
@@ -7238,9 +7259,11 @@ void Model::sub_100176dc()
 			// also bare.  Nothing in the source distinguishes them, so
 			// this is 4 bytes of /Os scheduling to watch for, not a
 			// different statement.
+			// AVP2: a null name is skipped (Primal Hunt 0x1001d806).
 			for (i = 0; i < 7; i++)
 			{
-				if (stricmp(props[i].m_pName, parser.m_ArgPointers[0]) == 0)
+				if (props[i].m_pName &&
+				    stricmp(props[i].m_pName, parser.m_ArgPointers[0]) == 0)
 					*props[i].m_pValue = (float)atof(parser.m_ArgPointers[1]);
 			}
 
@@ -7299,7 +7322,9 @@ void Model::sub_100176dc()
 		// (0x10017941).  The CLIENT does exactly the same (0x00447426 and
 		// 0x004474bc), so it is the allocator's live range ending and not
 		// a source difference.
-		else if (parser.m_nArgs == 1)
+		break;
+
+		case 1:
 		{
 			if (stricmp("NoAnimation", parser.m_ArgPointers[0]) == 0)
 			{
@@ -7318,8 +7343,10 @@ void Model::sub_100176dc()
 				m_Unknown150 = 1;            // 0x10017941
 			}
 		}
+		break;
+
 		// -- 0x10017950 ------------------------------------------------ //
-		else if (parser.m_nArgs >= 3)
+		case 3:
 		{
 			// 0x10017959.  Two atof calls whose cdecl cleanups batch into
 			// two `pop %ecx` at 0x10017991 -- /Os spelling `add $0x8,%esp`.
@@ -7386,7 +7413,9 @@ void Model::sub_100176dc()
 		}
 		// -- 0x10017a74 -- UNREACHABLE; see the header note.  Kept because
 		//    the shipped bytes keep it.
-		else if (parser.m_nArgs >= 4)
+		break;
+
+		case 4:
 		{
 			// 0x10017a79.  Three atof calls, one cleanup (`add $0xc,%esp`
 			// at 0x10017ac2), components in x, y, z order.
@@ -7396,6 +7425,8 @@ void Model::sub_100176dc()
 				m_Vec0e8.y = (float)atof(parser.m_ArgPointers[2]);
 				m_Vec0e8.z = (float)atof(parser.m_ArgPointers[3]);
 			}
+		}
+		break;
 		}
 	}
 }
@@ -7776,7 +7807,10 @@ void w_AddFastLight(LTVector* pPos, LTVector* pColor, float fRadius,
 //     expansion Load carries.
 //   * the polygon list is a CopyArray2 call (0x00428bb0, &g_DefAlloc).
 //   * the +0x04 array is stdlith's CopyPointers expanded: its Term (a call,
-//     0x00414f00) and four dword copies.
+//     0x00414f00) and four dword copies.  AvP2 1.0.9.6 and Primal Hunt
+//     expand the Term as well (SetSize2(0): the guarded free and the count
+//     cleared) and copy the cache as one member.  IDENTICAL on Primal Hunt,
+//     0x0042de20, 834 bytes.
 //   * per record: the source record is read BEFORE the `new`, the record is
 //     stored into the table only after its null test, and the geometry is
 //     re-created (0x150 bytes, 0x00426200, then 0x00426670 Inherit) only
@@ -7798,18 +7832,32 @@ public:
 	CWorldBspInheritView();                  // 0x00426200
 	LTBOOL Inherit(CWorldGeom* pSrc);        // 0x00426670
 
-	uint8 m_pad[0x150];
+	// AVP2: 0x154 bytes, four more than wgrid.cpp's NOLF-sized 0x150 (the
+	// `push $0x154` ahead of the allocation: Primal Hunt 0x0042df75, AvP2
+	// 1.0.9.6 0x0042afe1).
+	uint8 m_pad[0x154];
 };
 
 // The +0x04 array's four data dwords (stdlith CMoArray + DefaultCache).
 class CWorldArrayPtrsView
 {
 public:
-	void*  m_vptr;
-	void*  m_pArray;
-	uint32 m_nElements;
-	uint32 m_CacheSize;
-	uint32 m_WantedCache;
+	// stdlith's CMoArray::_DeleteAndDestroyArray (0x0040d020, `ret 8`) and
+	// the parts of SetSize2(0) that survive in front of CopyPointers.
+	void   _DeleteAndDestroyArray(LAlloc* pAlloc, uint32 nElements);
+	uint32 GetNumAllocatedElements() { return m_nElements + m_Cache.GetCacheSize(); }
+	void   Term()
+	{
+		if (m_pArray)
+			_DeleteAndDestroyArray(&g_DefAlloc, GetNumAllocatedElements());
+
+		m_nElements = 0;
+	}
+
+	void*        m_vptr;
+	void*        m_pArray;
+	uint32       m_nElements;
+	DefaultCache m_Cache;
 };
 
 LTBOOL CServerWorldFull::InheritWorld(CServerWorldFull* pSrc)
@@ -7832,14 +7880,16 @@ LTBOOL CServerWorldFull::InheritWorld(CServerWorldFull* pSrc)
 		return LTFALSE;
 	}
 
-	// CopyPointers.
-	((CWorldSub04Term*)&m_Sub04)->Term(0, (CMoAllocator*)&g_DefAlloc);
+	// CopyPointers.  AVP2: its Term is SetSize2(0) EXPANDED (Primal Hunt
+	// 0x0042debd, AvP2 1.0.9.6 0x0042af37): the free behind its own null
+	// test, then the count cleared.  SetSize2's other stores are dead under
+	// the four copies that follow, and VC6 drops them.
 	pArr = (CWorldArrayPtrsView*)&m_Sub04;
 	pSrcArr = (CWorldArrayPtrsView*)&pSrc->m_Sub04;
+	pArr->Term();
 	pArr->m_pArray = pSrcArr->m_pArray;
 	pArr->m_nElements = pSrcArr->m_nElements;
-	pArr->m_CacheSize = pSrcArr->m_CacheSize;
-	pArr->m_WantedCache = pSrcArr->m_WantedCache;
+	pArr->m_Cache = pSrcArr->m_Cache;
 
 	for (i = 0; i < m_Worlds.m_nWorlds; i++)
 	{

@@ -9,10 +9,12 @@
 #include "de_error.h"
 
 // PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
-// lithtech.exe's do (AvP2 1.0.9.6's and PH's server.dll engine TUs none).
+// lithtech.exe's do (AvP2 1.0.9.6's engine TUs none).
 // Its trace is std::ctype<unsigned short>::id's guarded initializer at the
 // end of the TU (0x004270e0: guard 0x004f8014 bit 0, atexit of the empty 0x00401790).
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// Primal Hunt's server.dll has it too, right after SetupRotationAroundPoint
+// (0x10008bd2, 33 bytes: guard 0x1008ec84, atexit of 0x1002eaeb).
+#if defined(PRIMAL_HUNT)
 #include <string>
 #endif
 
@@ -183,6 +185,15 @@ LTRESULT ILTMath::SetupEuler(LTRotation& rot, float pitch, float yaw,
 	return LT_OK;
 }
 
+// AVP2: iltmath.h's second SetupEuler, the angles as a vector, through the
+// first one's slot (Primal Hunt lithtech.exe 0x004516f0, server.dll
+// 0x1001b7da: `call *0xc(%edx)`, VC6 putting an overload pair in the vtable
+// in reverse declaration order).
+LTRESULT ILTMath::SetupEuler(LTRotation& rRot, LTVector& vAngles)
+{
+	return SetupEuler(rRot, vAngles.x, vAngles.y, vAngles.z);
+}
+
 LTRESULT ILTMath::InterpolateRotation(LTRotation& dest, LTRotation& rot1,
                                       LTRotation& rot2, float t)
 {
@@ -313,6 +324,129 @@ LTRESULT ILTMath::GetRotationVectorsFromMatrix(LTMatrix& mat,
 	mat.GetBasisVectors(&right, &up, &forward);
 
 	return LT_OK;
+}
+
+// AVP2: iltmath.h's GetEulerAngles (Primal Hunt lithtech.exe 0x00451b40,
+// server.dll 0x1001bac7; AvP2 1.0.9.6 has it too). The angles are peeled
+// off one at a time -- roll, then pitch, then yaw -- each by measuring the
+// rotation's axes against the world's with a dot product, clamping the
+// cosine to [-1, 1] (the constants 1.0f and -1.0f at server.dll 0x10074224
+// / 0x1007420c), taking acos and choosing the sign from a second dot
+// product, and then realigning the rotation (slot 12, AlignRotation) so
+// that angle is gone before the next. Every rotation call goes through the
+// vtable. Variable names ours.
+//
+// The first two angles' dot products are written out (VEC_DOT): Dot() takes
+// its operand by value, and the copy of the freshly crossed up vector it
+// makes in the roll block (server.dll) is not in the shipped code. The yaw
+// block's are Dot(): its two axes are constants, and Dot()'s by-value
+// operand is what folds them into the shipped `fldz ; flds ; fadd`
+// (0x1001bd6b).
+//
+// NEAR on both images, size-exact with the same frame (0x64 bytes on
+// server.dll): server.dll 0x1001bac7 818/818 with no mnemonic difference --
+// the operand order of the roll's and the pitch's products differs (the
+// shipped build loads vRight before vWorldUp, 0x1001bb87); no ordering or
+// association of the terms, either operand first, nor Dot() moved it.
+// lithtech.exe 0x00451b40 1161/1161, three blocks: the inlined Norm()s
+// multiply y and z as `flds y ; fmul %st(1)` where ours does
+// `fld %st(0) ; fmuls y`, and pop the inverse at the shared join.
+LTRESULT ILTMath::GetEulerAngles(LTRotation& rRot, float* pPitch, float* pYaw,
+                                 float* pRoll)
+{
+	LTRotation rTemp;
+	LTVector   vRight, vUp, vForward;
+	LTVector   vWorldUp;
+	LTVector   vLeft;
+	LTVector   vAhead;
+
+	rTemp = rRot;
+
+	GetRotationVectors(rTemp, vRight, vUp, vForward);
+
+	vWorldUp.Init(0.0f, 1.0f, 0.0f);
+	vLeft = vForward.Cross(vWorldUp);
+	vLeft.Norm();
+	vWorldUp = vLeft.Cross(vForward);
+
+	if (pRoll)
+	{
+		float fCos = VEC_DOT(vRight, vLeft);
+		float fSin = VEC_DOT(vRight, vWorldUp);
+
+		if (fCos > 1.0f)
+			fCos = 1.0f;
+		if (fCos < -1.0f)
+			fCos = -1.0f;
+		if (fSin > 1.0f)
+			fSin = 1.0f;
+		if (fSin < -1.0f)
+			fSin = -1.0f;
+
+		*pRoll = (float)acos(fCos);
+		if (fSin < 0.0f)
+			*pRoll = -*pRoll;
+	}
+
+	AlignRotation(rTemp, vForward, vWorldUp);
+	GetRotationVectors(rTemp, vRight, vUp, vForward);
+
+	vWorldUp.Init(0.0f, 1.0f, 0.0f);
+	vAhead = vWorldUp.Cross(vRight);
+	vAhead.Norm();
+
+	if (pPitch)
+	{
+		float fCos = VEC_DOT(vForward, vAhead);
+		float fSin = VEC_DOT(vForward, vWorldUp);
+
+		if (fCos > 1.0f)
+			fCos = 1.0f;
+		if (fCos < -1.0f)
+			fCos = -1.0f;
+		if (fSin > 1.0f)
+			fSin = 1.0f;
+		if (fSin < -1.0f)
+			fSin = -1.0f;
+
+		*pPitch = (float)acos(fCos);
+		if (fSin > 0.0f)
+			*pPitch = -*pPitch;
+	}
+
+	AlignRotation(rTemp, vAhead, vWorldUp);
+	GetRotationVectors(rTemp, vRight, vUp, vForward);
+
+	if (pYaw)
+	{
+		vLeft.Init(1.0f, 0.0f, 0.0f);
+		vAhead.Init(0.0f, 0.0f, 1.0f);
+
+		float fCos = vForward.Dot(vAhead);
+		float fSin = vForward.Dot(vLeft);
+
+		if (fCos > 1.0f)
+			fCos = 1.0f;
+		if (fCos < -1.0f)
+			fCos = -1.0f;
+		if (fSin > 1.0f)
+			fSin = 1.0f;
+		if (fSin < -1.0f)
+			fSin = -1.0f;
+
+		*pYaw = (float)acos(fCos);
+		if (fSin < 0.0f)
+			*pYaw = -*pYaw;
+	}
+
+	return LT_OK;
+}
+
+// AVP2: and its vector form, through the slot above (Primal Hunt
+// lithtech.exe 0x00451fd0, server.dll 0x1001bdf9: `call *0x14(%edx)`).
+LTRESULT ILTMath::GetEulerAngles(LTRotation& rRot, LTVector& vAngles)
+{
+	return GetEulerAngles(rRot, &vAngles.x, &vAngles.y, &vAngles.z);
 }
 
 // Rotating about a point is three matrices in a row: out to the point, the

@@ -597,7 +597,8 @@ public:
 	                        LTRotation *pRot, LTVector *pPos);  // 0x00489ce0
 	void   GetNodeTransformRel(uint32 iTimeRef, uint32 iNode,
 	                           LTRotation *pRot, LTVector *pPos);// 0x00489eb0
-	void   BlendNode(uint32 iTimeRef, uint32 iNode);            // 0x0048a110
+	float  BlendNode(uint32 iTimeRef, uint32 iNode,
+	                 float fTotal, LTBOOL bNormalize);          // PH 0x004a6f20
 	void   ProcessNode(uint32 iNode, LTMatrix *pParent);        // 0x0048a2d0
 
 public:
@@ -1018,15 +1019,49 @@ void CTransformMakerK::GetNodeTransformRel(uint32 iTimeRef, uint32 iNode,
 //      operator*'s quat_Mul is CALLED (0x0048a17a) rather than expanded.
 //  CONFIDENCE: byte-identical (lithtech.exe).
 // ----------------------------------------------------------------------- //
-void CTransformMakerK::BlendNode(uint32 iTimeRef, uint32 iNode)
+// AVP2: AvP2's and Primal Hunt's BlendNode (PH 0x004a6f20, 603 bytes,
+// `ret $0x10`; AvP2 0x0049cac0) takes ProcessNode's running weight total and
+// the time ref's m_bNormalize, and returns the weight it applied:
+//    * fTotal is clamped to 1.0f first (0x004a6f20..0x004a6f3f: `fcomps
+//      1.0f; test $0x41,%ah` keeps fTotal when it is not greater); only the
+//      normalising arm reads it, as 1.0f minus it (0x004a6f53).
+//    * otherwise the weight is lerped between the previous and the current
+//      key frame's weight sets (+0x228 / +0x248, a missing set weighing 0),
+//      by the time ref's m_Percent (0x004a6fc2) -- unless either side is the
+//      2.0f "additive" mark: a previous 2.0f takes the current weight as it
+//      is (0x004a6fac), a current 2.0f goes straight to the additive arm
+//      (0x004a6fb9, the jump-threaded `fWeight = 2.0f`).
+//    * a zero weight returns 0.0f (0x004a6fdf); the additive arm returns
+//      0.0f too (0x004a7086), the blending arm the weight (0x004a716e).
+//    * the two arms are NOLF's.
+float CTransformMakerK::BlendNode(uint32 iTimeRef, uint32 iNode,
+                                  float fTotal, LTBOOL bNormalize)
 {
-	float      fWeight;
+	float      fRemaining, fWeight, fPrev, fCur;
 	LTRotation rot, rOld;
 	LTVector   vPos;
 
-	fWeight = m_pWeightSets[iTimeRef]->m_pWeights[iNode];
+	fRemaining = (fTotal > 1.0f) ? 1.0f : fTotal;
+
+	if (bNormalize)
+	{
+		fWeight = 1.0f - fRemaining;
+	}
+	else
+	{
+		fPrev = m_pPrevWeightSets[iTimeRef] ? m_pPrevWeightSets[iTimeRef]->m_pWeights[iNode] : 0.0f;
+		fCur  = m_pWeightSets[iTimeRef] ? m_pWeightSets[iTimeRef]->m_pWeights[iNode] : 0.0f;
+
+		if (fPrev == 2.0f)
+			fWeight = fCur;
+		else if (fCur == 2.0f)
+			fWeight = 2.0f;
+		else
+			fWeight = fPrev + (fCur - fPrev) * m_TimeRefs[iTimeRef].m_Percent;
+	}
+
 	if (fWeight == 0.0f)
-		return;
+		return 0.0f;
 
 	if (fWeight == 2.0f)
 	{
@@ -1034,6 +1069,8 @@ void CTransformMakerK::BlendNode(uint32 iTimeRef, uint32 iNode)
 
 		m_rBlend = m_rBlend * rot;
 		m_vBlend = m_vBlend + vPos;
+
+		return 0.0f;
 	}
 	else
 	{
@@ -1043,6 +1080,8 @@ void CTransformMakerK::BlendNode(uint32 iTimeRef, uint32 iNode)
 		quat_Slerp(m_rBlend.m_Quat, rOld.m_Quat, rot.m_Quat, fWeight);
 
 		m_vBlend = m_vBlend + (vPos - m_vBlend) * fWeight;
+
+		return fWeight;
 	}
 }
 
@@ -1104,6 +1143,7 @@ void CTransformMakerK::ProcessNode(uint32 iNode, LTMatrix *pParent)
 	ModelNodeK  *pNode;
 	CModelXform *pXform;
 	uint32       i, iChild, nLast;
+	float        fPrev, fTotal;
 
 	for (;;)
 	{
@@ -1111,8 +1151,20 @@ void CTransformMakerK::ProcessNode(uint32 iNode, LTMatrix *pParent)
 
 		GetNodeTransform(0, iNode, &m_rBlend, &m_vBlend);
 
+		// AVP2: time ref zero's own weight starts the total BlendNode
+		// clamps against (PH 0x004a71b6..0x004a71f5).
+		if (m_pPrevWeightSets[0] && m_pWeightSets[0] && m_TimeRefs[0].m_Percent != 2.0f)
+		{
+			fPrev  = m_pPrevWeightSets[0]->m_pWeights[iNode];
+			fTotal = fPrev + (m_pWeightSets[0]->m_pWeights[iNode] - fPrev) * m_TimeRefs[0].m_Percent;
+		}
+		else
+		{
+			fTotal = 0.0f;
+		}
+
 		for (i = 1; i < m_nTimeRefs; i++)
-			BlendNode(i, iNode);
+			fTotal += BlendNode(i, iNode, fTotal, m_TimeRefs[i].m_bNormalize);
 
 		pNode = m_pModel->m_pNodes[iNode];
 

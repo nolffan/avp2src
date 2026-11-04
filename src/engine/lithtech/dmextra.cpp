@@ -53,6 +53,15 @@
 //
 // *********************************************************************** //
 
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's engine saw the STL's <string> here (AvP2 1.0.9.6's did
+// not): the object ends in <string>'s guarded initializer of
+// std::ctype<unsigned short>::id (guard 0x004f8014, atexit of the empty
+// 0x00401790; 0x0044f2b0), and <new>'s nothrow operator delete is what
+// leaves the record banks' plain destructor (0x0044ebe0) without the
+// exception frame its three siblings have.
+#include <string>
+#endif
 #include <string.h>
 
 #include "ltbasedefs.h"
@@ -2631,6 +2640,208 @@ LTDMEnactTypes CLTDirectMusicMgr::StringToEnactType(const char* sName)
 
 	return LTDMEnactInvalid;
 }
+
+
+// --------------------------------------------------------------------- //
+// The five interface slots that only read a number out of the manager.
+// The vtable at 0x004d5680 holds, after StopMotif's neighbour 0x0044d080:
+//   0x004d56dc 0x0044eb90  GetCurIntensity     `mov 0xac(%ecx),%eax; ret`
+//   0x004d56e0 0x0044ea20  StringToEnactType   (above)
+//   0x004d56e4 0x0044e970  EnactTypeToString   (above)
+//   0x004d56e8 0x0044eba0  GetNumIntensities   0xb0
+//   0x004d56ec 0x0044ebb0  GetInitialIntensity 0xb4
+//   0x004d56f0 0x0044ebc0  GetInitialVolume    0xb8
+//   0x004d56f4 0x0044ebd0  GetVolumeOffset     0xbc
+// which is iltdirectmusic.h's declaration order, and each offset is the
+// member CLTDirectMusicMgr above already names for it.  AVP2: 1.0.9.6 ships
+// the same five bodies, 0x0044ace0..0x0044ad20.  (dmloader.cpp's
+// CDMMgrIntensityView carries NOLF's three at 0xa0..0xa8.)  They are reached
+// through a layout view so this file's stand-in keeps the header's vtable;
+// a non-virtual member reading a field compiles to the same two
+// instructions.
+// --------------------------------------------------------------------- //
+
+class CDMMgrGettersQ522
+{
+public:
+	uint8 m_pad_00[0xac];
+	int   m_nCurIntensity;                   // 0x0ac
+	int   m_nNumIntensities;                 // 0x0b0
+	int   m_nInitialIntensity;               // 0x0b4
+	int   m_nInitialVolume;                  // 0x0b8
+	int   m_nVolumeOffset;                   // 0x0bc
+
+	int GetCurIntensity();                                          // 0x0044eb90
+	int GetNumIntensities();                                        // 0x0044eba0
+	int GetInitialIntensity();                                      // 0x0044ebb0
+	int GetInitialVolume();                                         // 0x0044ebc0
+	int GetVolumeOffset();                                          // 0x0044ebd0
+};
+
+int CDMMgrGettersQ522::GetCurIntensity()
+{
+	return m_nCurIntensity;
+}
+
+int CDMMgrGettersQ522::GetNumIntensities()
+{
+	return m_nNumIntensities;
+}
+
+int CDMMgrGettersQ522::GetInitialIntensity()
+{
+	return m_nInitialIntensity;
+}
+
+int CDMMgrGettersQ522::GetInitialVolume()
+{
+	return m_nInitialVolume;
+}
+
+int CDMMgrGettersQ522::GetVolumeOffset()
+{
+	return m_nVolumeOffset;
+}
+
+
+// --------------------------------------------------------------------- //
+// The record banks' destructors and constructor, out of line.
+//
+// The enumeration's one 621-byte row at 0x0044ebe0 is FOUR destructors,
+// each ending `ret` + nop padding: 0x0044ebe0 (95 bytes), 0x0044ec40,
+// 0x0044ecf0 and 0x0044eda0 (173 each); 0x0044ee50 (13) is the one
+// constructor.  Nothing in .text calls them: they are reached only by the
+// six banks' CRT stubs at 0x0044b370..0x0044b54e, each `mov $bank,%ecx ;
+// jmp 0x0044ee50` and an atexit destructor guarded by a bit of the byte
+// at 0x004f5614, `mov $bank,%ecx ; jmp <dtor>`:
+//
+//   bank 0x004f5600  bit 0x01  dtor 0x0044ebe0  records with no destructor
+//   bank 0x004f5588  bit 0x02  dtor 0x0044ec40  0x54-byte records
+//   bank 0x004f55d0  bit 0x04  dtor 0x0044ecf0  0x10-byte, empty destructor
+//   bank 0x004f55e8  bit 0x08  dtor 0x0044ebe0
+//   bank 0x004f55a0  bit 0x10  dtor 0x0044eda0  0x50-byte records
+//   bank 0x004f55b8  bit 0x20  dtor 0x0044ebe0
+//
+// which is cltcursor.cpp's CDMRecordBank (NOLF expanded the same bodies
+// into its CRT stubs, 0x0043eff0..).  Here they are CALLED, so the
+// members are defined outside the class, and they sit after this file's
+// last function because VC6 emits a template's instantiated members at
+// the end of the object.  Each `delete []` of a record with a destructor
+// is /GX's eh vector destructor iterator (0x004c0ed0) handed the stride
+// (0x54, 0x10, 0x50) and the destructor: 0x00416500, `if (m_pName)
+// delete m_pName;` for the two named records, and the folded empty
+// `ret` at 0x00401790.  The CRT stubs and the banks themselves are
+// clientmusic.cpp's; this file only instantiates the members.
+// --------------------------------------------------------------------- //
+
+struct CDMBankNodeQ522
+{
+	CDMBankNodeQ522* m_pNext;                // 0x000
+	CDMBankNodeQ522* m_pPrev;                // 0x004
+	void*            m_pRecords;             // 0x008  the chunk, new T[n]
+};
+
+// The chunk list.  Its destructor does nothing, but it has one: that is
+// what gives the three destructors whose record release can throw (the
+// iterator) an exception frame, state 0 with `this` as the object
+// (0x0044ec40..0x0044ec5f), while 0x0044ebe0, which calls only operator
+// delete, has none.
+struct CDMBankListQ522
+{
+	CDMBankNodeQ522* m_pHead;                // 0x000
+	CDMBankNodeQ522* m_pTail;                // 0x004
+
+	~CDMBankListQ522() {}
+};
+
+template<class T>
+class CDMRecordBankQ522
+{
+public:
+	int              m_bInitialized;         // 0x000
+	uint32           m_nGrowCount;           // 0x004
+	CDMBankListQ522  m_Chunks;               // 0x008
+	void*            m_pFree;                // 0x010
+
+	CDMRecordBankQ522();
+	~CDMRecordBankQ522();
+};
+
+// 0x0044ee50: head, tail, then the flag (`mov %ecx,0x8(%eax) ; mov
+// %ecx,0xc(%eax) ; mov %ecx,(%eax)`).
+template<class T>
+CDMRecordBankQ522<T>::CDMRecordBankQ522()
+{
+	m_Chunks.m_pHead = LTNULL;
+	m_Chunks.m_pTail = LTNULL;
+	m_bInitialized = 0;
+}
+
+// 0x0044ebe0 / 0x0044ec40 / 0x0044ecf0 / 0x0044eda0: unlink each chunk from
+// the head, release its records and the chunk, then clear the free list
+// (+0x10) and the flag (+0x00) in that order.
+template<class T>
+CDMRecordBankQ522<T>::~CDMRecordBankQ522()
+{
+	if (m_bInitialized)
+	{
+		CDMBankNodeQ522* pNode;
+
+		while ((pNode = m_Chunks.m_pHead) != LTNULL)
+		{
+			if (pNode->m_pPrev)
+				pNode->m_pPrev->m_pNext = pNode->m_pNext;
+			else
+				m_Chunks.m_pHead = pNode->m_pNext;
+
+			if (pNode->m_pNext)
+				pNode->m_pNext->m_pPrev = pNode->m_pPrev;
+			else
+				m_Chunks.m_pTail = pNode->m_pPrev;
+
+			delete [] (T*)pNode->m_pRecords;
+			delete pNode;
+		}
+
+		m_pFree = LTNULL;
+		m_bInitialized = 0;
+	}
+}
+
+// The four record types, by what their destructor is.
+struct CDMPlainRecordQ522
+{
+	uint32 m_Data;
+};
+
+struct CDMSegmentRecordQ522                  // 0x54 bytes
+{
+	uint8  m_pad_00[0x4c];
+	char*  m_pName;                          // 0x04c
+	uint32 m_nStopEnact;                     // 0x050
+
+	~CDMSegmentRecordQ522() { if (m_pName) delete m_pName; }
+};
+
+struct CDMEmptyDtorRecordQ522                // 0x10 bytes
+{
+	uint32 m_Data[4];
+
+	~CDMEmptyDtorRecordQ522() {}
+};
+
+struct CDMStyleRecordQ522                    // 0x50 bytes
+{
+	uint8  m_pad_00[0x4c];
+	char*  m_pName;                          // 0x04c
+
+	~CDMStyleRecordQ522() { if (m_pName) delete m_pName; }
+};
+
+template class CDMRecordBankQ522<CDMPlainRecordQ522>;
+template class CDMRecordBankQ522<CDMSegmentRecordQ522>;
+template class CDMRecordBankQ522<CDMEmptyDtorRecordQ522>;
+template class CDMRecordBankQ522<CDMStyleRecordQ522>;
 
 
 // *********************************************************************** //

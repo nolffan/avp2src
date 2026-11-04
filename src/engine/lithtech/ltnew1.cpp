@@ -1328,12 +1328,40 @@ struct CDMPlainRecord;
 struct CDMSegmentRecord;
 struct CDMEmptyDtorRecord;
 
+#ifdef PRIMAL_HUNT
+// PH: the banks are dmextra.cpp's CDMRecordBankQ522 (whose constructor and
+// destructors Primal Hunt calls, 0x0044ebe0..0x0044ee50); cltcursor.cpp
+// types its static members with it.  Layout only, as above.
+template<class T>
+class CDMRecordBankQ522
+{
+public:
+	int          m_bInitialized;             // 0x000
+	uint32       m_nGrowCount;               // 0x004
+	void*        m_pHead;                    // 0x008
+	void*        m_pTail;                    // 0x00c
+	void*        m_pFree;                    // 0x010
+};
+
+struct CDMPlainRecordQ522;
+struct CDMSegmentRecordQ522;
+struct CDMEmptyDtorRecordQ522;
+
+typedef CDMRecordBankQ522<CDMPlainRecordQ522>     CDMPlainBankQ527;
+typedef CDMRecordBankQ522<CDMSegmentRecordQ522>   CDMSegmentBankQ527;
+typedef CDMRecordBankQ522<CDMEmptyDtorRecordQ522> CDMPlayingBankQ527;
+#else
+typedef CDMRecordBank<CDMPlainRecord>             CDMPlainBankQ527;
+typedef CDMRecordBank<CDMSegmentRecord>           CDMSegmentBankQ527;
+typedef CDMRecordBank<CDMEmptyDtorRecord>         CDMPlayingBankQ527;
+#endif
+
 class CDMBanks
 {
 public:
-	static CDMRecordBank<CDMPlainRecord>      s_PendingBank;     // 0x004b3fc8
-	static CDMRecordBank<CDMSegmentRecord>    s_SegmentBank;     // 0x004b3f50
-	static CDMRecordBank<CDMEmptyDtorRecord>  s_PlayingBank;     // 0x004b3f98
+	static CDMPlainBankQ527    s_PendingBank;    // 0x004b3fc8
+	static CDMSegmentBankQ527  s_SegmentBank;    // 0x004b3f50
+	static CDMPlayingBankQ527  s_PlayingBank;    // 0x004b3f98
 };
 
 #define g_pSegmentBankFreeQ7 (CDMBanks::s_SegmentBank.m_pFree)   // 0x004b3f60

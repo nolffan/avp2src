@@ -1,9 +1,11 @@
 // server.dll — the shared ILTPhysics implementation (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x467740).
+// Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
+// 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
 #endif
 #include <math.h>
@@ -433,6 +435,18 @@ LTRESULT SPhysicsLT::SetStairHeight(float fHeight)
 	return LT_OK;
 }
 
+// AVP2: the move request is 0x6c bytes, not servermgr.h's 0x68: one more
+// float at +0x68, cleared together with +0x64 wherever a request is set
+// up on the stack (lithtech.exe 0x00498a42/0x00498a49 in sm_MoveObject, a
+// 0x78 frame in Primal Hunt and in AvP2 1.0.9.6 alike, 0x0048f130; a float
+// by server.dll's `fldz ; fstp -0x1c(%ebp)` at 0x100453e4/0x10045401).
+// servermgr.h is not this file's alone, so the requests built here are
+// this extension of it (name ours).
+struct WMMoveStateQ528 : public WMMoveState
+{
+	float  m_fUnknown68;                     // +0x68
+};
+
 // The six-field fill: four values in and the two supplied-list fields
 // cleared. SPhysicsLT::SetObjectDims just below, and the two out-of-line
 // fillers CWMStateInit::Init / InitFrom further down, all use it (defined
@@ -556,6 +570,35 @@ int g_Unknown5872c;
 // byte short). And m_pObj has to precede m_nUnknown0C even though the shipped
 // code stores them in that order anyway — with the priority written first,
 // the object pointer and the byte read off it end up in the wrong registers.
+// The scoped timer. server.dll calls its destructor (0x10001ed7, as
+// servermgr.h declares it); lithtech.exe expands it here at the normal
+// exit (0x00498a84 cnt_EndCounter, then the add through m_pTotal), with an
+// out-of-line copy only for the unwinding (0x004056b0, dalloc.cpp's). So
+// the client's copy of this function sees the body in the class (name ours).
+#ifdef LT_SERVER_BUILD
+typedef CountAdder CountAdderQ528;
+#else
+class CountAdderQ528
+{
+public:
+	CountAdderQ528(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+
+	~CountAdderQ528()
+	{
+		uint32 nElapsed = cnt_EndCounter(&m_Counter);
+
+		*m_pTotal += nElapsed;
+	}
+
+	CBaseCounter m_Counter;                  // 0x00
+	uint32*      m_pTotal;                   // 0x08
+};
+#endif
+
 void sm_MoveObject(IWorldSim* pWorld, HOBJECT hObj, LTVector* pPos, uint32 flags)
 {
 	g_Unknown58728++;
@@ -565,20 +608,25 @@ void sm_MoveObject(IWorldSim* pWorld, HOBJECT hObj, LTVector* pPos, uint32 flags
 	// 1.0.9.6 0x0048f144/0x0048f156), where NOLF's lithtech.exe (0x0047c5b0)
 	// had none and a frame 12 bytes smaller.
 	//
-	// NEAR on Primal Hunt (0x004989b0, 250 bytes): the shipped record is
-	// 0x6c bytes, not servermgr.h's 0x68 -- a dword at +0x68 cleared with
-	// +0x64 (0x00498a42/0x00498a49) -- so the frame is 0x78 against ours.
-	CountAdder  cntAdder((uint32*)&g_Unknown5872c);
-	WMMoveState state;
+	// The record is filled by wm_InitMoveState: both images read the
+	// priority byte before the manager's fields (lithtech.exe 0x00498a15,
+	// server.dll 0x100453dd), an inline helper's arguments evaluated right
+	// to left.
+	//
+	// NEAR (lithtech.exe 0x004989b0 251 of 250, 4 blocks; server.dll
+	// 0x100453a0 161 of 160, 5 blocks): shipped keeps the world pointer in
+	// eax and adds 0x210 to it in place (`add $0x210,%eax`, five bytes);
+	// ours has it in edx (six bytes). Written out field by field the
+	// server copy is size-exact but 10 blocks; a helper taking the manager
+	// is worse.
+	CountAdderQ528 cntAdder((uint32*)&g_Unknown5872c);
+	WMMoveStateQ528 state;
 	CServerMgr* pMgr = (CServerMgr*)pWorld;
 
 	state.m_nUnknown64 = 0;
-	state.m_pContainer = &pMgr->m_Unknown210;
-	state.m_pUnknown04 = pMgr->m_pUnknown6a8;
-	state.m_pObj = hObj;
-	state.m_nUnknown0C = hObj->m_BlockingPriority;
-	state.m_pPushList  = LTNULL;
-	state.m_nPushCount = 0;
+	state.m_fUnknown68 = 0.0f;
+	wm_InitMoveState(&state, &pMgr->m_Unknown210, pMgr->m_pUnknown6a8, hObj,
+	                 hObj->m_BlockingPriority);
 
 	wm_MoveObject(&state, *pPos, flags);
 }
@@ -615,6 +663,126 @@ static inline void obj_MaybeRetransformWorldModelInline(LTObject* pObj, int bFla
 #define WM_RETRANSFORM obj_MaybeRetransformWorldModel
 #endif
 
+
+// AVP2: a box stretched back along a move: the source box is copied out,
+// then on each axis a positive delta pulls the min back by it and a
+// negative one pulls the max (lithtech.exe 0x00464c00, called at
+// 0x0046391a; 0x004d4524 is 0.0f). Names ours.
+void wm_StretchBoxQ528(LTVector* pMin, LTVector* pMax, LTVector* pDelta,
+                       LTVector* pSrcMin, LTVector* pSrcMax)
+{
+	*pMin = *pSrcMin;
+	*pMax = *pSrcMax;
+
+	if (pDelta->x > 0.0f)
+		pMin->x -= pDelta->x;
+	else if (pDelta->x < 0.0f)
+		pMax->x -= pDelta->x;
+
+	if (pDelta->y > 0.0f)
+		pMin->y -= pDelta->y;
+	else if (pDelta->y < 0.0f)
+		pMax->y -= pDelta->y;
+
+	if (pDelta->z > 0.0f)
+		pMin->z -= pDelta->z;
+	else if (pDelta->z < 0.0f)
+		pMax->z -= pDelta->z;
+}
+
+// AVP2: the box swept between two points, grown by a radius on every side
+// (server.dll 0x1002847e, called at 0x10027ff6 with the move request's box
+// at +0x48/+0x54 as the output and twice the object's radius). Names ours.
+void wm_SweptBoxQ528(LTVector* pMin, LTVector* pMax,
+                     LTVector* pPt1, LTVector* pPt2, float fRadius)
+{
+	if (pPt1->x > pPt2->x)
+	{
+		pMin->x = pPt2->x - fRadius;
+		pMax->x = pPt1->x + fRadius;
+	}
+	else
+	{
+		pMin->x = pPt1->x - fRadius;
+		pMax->x = pPt2->x + fRadius;
+	}
+
+	if (pPt1->y > pPt2->y)
+	{
+		pMin->y = pPt2->y - fRadius;
+		pMax->y = pPt1->y + fRadius;
+	}
+	else
+	{
+		pMin->y = pPt1->y - fRadius;
+		pMax->y = pPt2->y + fRadius;
+	}
+
+	if (pPt1->z > pPt2->z)
+	{
+		pMin->z = pPt2->z - fRadius;
+		pMax->z = pPt1->z + fRadius;
+	}
+	else
+	{
+		pMin->z = pPt1->z - fRadius;
+		pMax->z = pPt2->z + fRadius;
+	}
+}
+
+// AVP2: the overlap of two boxes, the maxes' minimum first and then the
+// mins' maximum (lithtech.exe 0x00466210: the six compares write the
+// sixth argument from the second and fourth, then the fifth from the first
+// and third; called at 0x0046327a and 0x004663b2 with an object's box and
+// the container's at +0x48/+0x54). Names ours.
+void wm_IntersectBoxesQ528(LTVector* pMin1, LTVector* pMax1,
+                           LTVector* pMin2, LTVector* pMax2,
+                           LTVector* pOutMin, LTVector* pOutMax)
+{
+	VEC_MIN(*pOutMax, *pMax1, *pMax2);
+	VEC_MAX(*pOutMin, *pMin1, *pMin2);
+}
+
+// AVP2: CommonPhysicsLT::IsWorldObject's test as a free function, without
+// the null check: a world model whose BSP is the main world or carries world
+// flag 8, each flag read through its own GetWorldFlags call. server.dll
+// 0x10029b6f (called at 0x10029a9f), lithtech.exe 0x00466480 (called at
+// 0x0046636d); name ours.
+LTBOOL wm_IsWorldObjectQ528(LTObject* pObj)
+{
+	if (pObj->m_ObjectType == OT_WORLDMODEL &&
+	    ((pObj->m_pWorldBsp->GetWorldFlags() & WORLDFLAG_MAINWORLD) ||
+	     (pObj->m_pWorldBsp->GetWorldFlags() & 8)))
+	{
+		return LTTRUE;
+	}
+
+	return LTFALSE;
+}
+
+// AVP2: the qsort comparator over 8-byte records keyed by the float at +4,
+// ascending (server.dll 0x10029ba6, handed to qsort at 0x1002813c with an
+// element size of 8; lithtech.exe 0x004664c0, at 0x0046334f). What the
+// first dword holds is not read here (names ours).
+struct CWMSortRecQ528
+{
+	void*  m_pItem;                          // +0x00
+	float  m_fKey;                           // +0x04
+};
+
+int wm_CompareSortRecsQ528(const void* p1, const void* p2)
+{
+	const CWMSortRecQ528* pRec1 = (const CWMSortRecQ528*)p1;
+	const CWMSortRecQ528* pRec2 = (const CWMSortRecQ528*)p2;
+
+	if (pRec1->m_fKey < pRec2->m_fKey)
+		return -1;
+
+	if (pRec1->m_fKey > pRec2->m_fKey)
+		return 1;
+
+	return 0;
+}
 
 // 0x10020611 — resize a world object through the simulation.
 //
@@ -782,9 +950,20 @@ void CWMMoveSetup::Setup()
 // bounds are rebuilt afterwards. Reached here through a cast because
 // ltobject_internal.h is not a file this reconstruction owns.
 #ifdef LT_SERVER_BUILD
+// AVP2: the dims are at +0x1a0, not NOLF's +0x198 (server.dll 0x1002e8af
+// `lea 0x1a0(%ecx),%edi`; lithtech.exe's copy below agrees). commonphysics.h
+// still carries +0x198 and is not this file's alone, so the store goes
+// through a view until the header moves.
+class CObjDimsViewQ528
+{
+public:
+	uint8    m_pad_000[0x1a0];
+	LTVector m_Dims;                         // 0x1a0
+};
+
 void CObjDimsSetter::SetDims(LTVector vDims)
 {
-	m_Dims = vDims;
+	((CObjDimsViewQ528*)this)->m_Dims = vDims;
 
 	UpdateBounds();
 }
@@ -1255,6 +1434,14 @@ LTBOOL wm_PairNeedsGeometry(class LTObject* pObj1, class LTObject* pObj2);
 void wm_SmallestSeparation(LTVector* pMin1, LTVector* pMax1,
                            LTVector* pMin2, LTVector* pMax2,
                            LTVector* pOut, int* pnSide);
+// AVP2: the same search, but a candidate only counts when the move's
+// direction allows it and the object was clear of a second box on that side
+// (server.dll 0x1002920e, called at 0x100290b8; lithtech.exe 0x00464ab0,
+// at 0x004648be). See the definition.
+void wm_SmallestSeparation(LTVector* pMin1, LTVector* pMax1,
+                           LTVector* pMin3, LTVector* pMax3,
+                           LTVector* pMin2, LTVector* pMax2,
+                           LTVector* pOut, int* pnSide, LTVector* pDir);
 
 // 0x1001f9ac — run one box move through the world simulation on a world
 // model's behalf, and deal with what it hit: what the object is now standing
@@ -1863,6 +2050,24 @@ void wm_NotifyContact(IWMSetupSource* pSource, LTObject* pObj, LTObject* pOther)
 }
 
 
+// AVP2: the one-object half of the test below, out of line in both images
+// (server.dll 0x100283cc, called at 0x10028283/0x10028537/0x10028540;
+// lithtech.exe 0x004639c0, called at 0x00463407): a world model or container
+// that did not ask for box physics needs its geometry. The type byte is read
+// once and compared twice (name ours).
+LTBOOL wm_NeedsGeometryQ528(LTObject* pObj)
+{
+	uint8 nType = pObj->m_ObjectType;
+
+	if ((nType == OT_WORLDMODEL || nType == OT_CONTAINER) &&
+	    !(pObj->m_Flags & FLAG_BOXPHYSICS))
+	{
+		return LTTRUE;
+	}
+
+	return LTFALSE;
+}
+
 // 0x1002056f — does this pair of objects need the real world-model geometry,
 // or will the boxes do? Either end being a world model or container that did
 // NOT ask for box physics is what forces the geometry (name ours).
@@ -2255,6 +2460,72 @@ void wm_SmallestSeparation(LTVector* pMin1, LTVector* pMax1,
 	*pnSide = nSide;
 }
 
+// AVP2: Primal Hunt's (and AvP2's) separation search takes nine arguments
+// (server.dll 0x1002920e, lithtech.exe 0x00464ab0): the two boxes as
+// before, a second box for the first one (pMin3/pMax3, locals of the caller
+// at 0x100290b8) and the move's direction last. The +axis candidate
+// (max2 - min1) only counts when the direction is not positive on that axis
+// and pMin3 was at or past max2; the -axis one (min2 - max1) when the
+// direction is not negative and min2 was at or past pMax3, each to within
+// 0.0001 (0x100742d0 / 0x100742c8). The direction component is read once
+// into the dead third parameter's slot (`fsts 0x10(%ebp)`) and tested twice.
+// A best still at its 1.0e37 start comes out as zero (0x1002935d).
+void wm_SmallestSeparation(LTVector* pMin1, LTVector* pMax1,
+                           LTVector* pMin3, LTVector* pMax3,
+                           LTVector* pMin2, LTVector* pMax2,
+                           LTVector* pOut, int* pnSide, LTVector* pDir)
+{
+	float fBest = 1.0e37f;
+	int   nAxis = 0;
+	int   nCount = 0;
+	int   nSide = 0;
+	int   i;
+
+	for (i = 0; i < 3; i++)
+	{
+		float f;
+		float fDir = ((float*)pDir)[i];
+
+		if (fDir <= 0.0001f &&
+		    ((float*)pMin3)[i] - ((float*)pMax2)[i] >= -0.0001f)
+		{
+			f = ((float*)pMax2)[i] - ((float*)pMin1)[i];
+
+			if (fabs(f) < fabs(fBest))
+			{
+				fBest = f;
+				nAxis = i;
+				nSide = nCount;
+			}
+		}
+
+		nCount++;
+
+		if (fDir >= -0.0001f &&
+		    ((float*)pMin2)[i] - ((float*)pMax3)[i] >= -0.0001f)
+		{
+			f = ((float*)pMin2)[i] - ((float*)pMax1)[i];
+
+			if (fabs(f) < fabs(fBest))
+			{
+				fBest = f;
+				nAxis = i;
+				nSide = nCount;
+			}
+		}
+
+		nCount++;
+	}
+
+	pOut->x = 0.0f;
+	pOut->y = 0.0f;
+	pOut->z = 0.0f;
+
+	((float*)pOut)[nAxis] = (fBest == 1.0e37f) ? 0.0f : fBest;
+
+	*pnSide = nSide;
+}
+
 
 // 0x1001f9ac — the bridge into worldsim's box move.
 //
@@ -2353,18 +2624,19 @@ int wm_MoveThroughSim(WMMoveState* pState, IWorldBsp* pWorldBsp,
 // geometry as transformed, then push the geometry itself through. The three
 // calls share one stack cleanup (`add $0x14,%esp`), which is what says all
 // three were compiled against fixed prototypes (name ours).
+//
+// AVP2: the geometry goes through wm_Transform directly, with the object's
+// flag bit 14 (`shr $0xe ; and $1`), as obj_RetransformWorldModel's own
+// body does -- no type test (server.dll 0x10027798, lithtech.exe
+// 0x004625d0, the same bytes in both).
 void obj_RetransformWorldModelDims(LTObject* pObj)
 {
+	LTMatrix* pTransform;
+
 	obj_UpdateTransform(pObj);
-	wm_UpdateDimsFromGeometry(pObj, &((WorldModelObject*)pObj)->m_Transform1f0);
-#ifdef LT_SERVER_BUILD
-	obj_MaybeRetransformWorldModel(pObj, 1);
-#else
-	// 0x00450fc0 (52 bytes): the client expands the call -- the type byte
-	// is read and tested against 2 / 9 inline before 0x00450c30 -- as at
-	// wm_MoveThroughSim's site.
-	obj_MaybeRetransformWorldModelInline(pObj, 1);
-#endif
+	pTransform = &((WorldModelObject*)pObj)->m_Transform1f0;
+	wm_UpdateDimsFromGeometry(pObj, pTransform);
+	wm_Transform(pObj, pTransform, (pObj->m_Flags >> 14) & 1);
 }
 
 

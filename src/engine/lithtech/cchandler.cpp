@@ -2239,10 +2239,15 @@ void cc_TraceChangeFlags(CObjChangeInfoQ478* pInfo, uint32 nFlags)
 //  overwritten by the second call, whose result is returned).
 // ======================================================================= //
 
+// AVP2: the decoder takes the object as well (Primal Hunt 0x00495500, 53
+// bytes: four pushes before the call to 0x00495540, the object last).
+void sub_4792c0Q495(void* pShell, CPacket* pPacket, CUpdListQ478* pList,
+                    CObjChangeInfoQ478* pInfo);                     // 0x00495540
+
 LTRESULT sub_479280(void* pShell, CObjChangeInfoQ478* pInfo, CPacket* pPacket,
                     int bNotNew, int nOne, void* pArg5)
 {
-	sub_4792c0(pShell, pPacket, (CUpdListQ478*)pArg5);
+	sub_4792c0Q495(pShell, pPacket, (CUpdListQ478*)pArg5, pInfo);
 	return sub_4789d0(pShell, pInfo, bNotNew, nOne, (CUpdListQ478*)pArg5);
 }
 

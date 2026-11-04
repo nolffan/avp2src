@@ -1,11 +1,12 @@
 // server.dll — the object save file: the guard words CSaveIO puts around
 // every object's data, and the two ends of the block itself (reconstruction).
 // Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifdef PRIMAL_HUNT
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
-// (guard 0x004f8014, atexit of the empty 0x00401790; 0x43eaf0).
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x43eaf0), in
+// server.dll too (0x100158a6, after sav_WriteVector; guard 0x1008ec84).
 #include <string>
 #endif
 #include <string.h>

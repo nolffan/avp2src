@@ -3,10 +3,12 @@
 #include "worldsim.h"
 
 // PH: Primal Hunt's engine TUs see the C++ library's <string>, as ~95 of
-// lithtech.exe's do (AvP2 1.0.9.6's and PH's server.dll engine TUs none).
-// Its trace is std::ctype<unsigned short>::id's guarded initializer at the
-// end of the TU (0x00421bb0: guard 0x004f8014 bit 0, atexit of the empty 0x00401790).
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// lithtech.exe's do (AvP2 1.0.9.6's none).  Its trace is
+// std::ctype<unsigned short>::id's guarded initializer at the end of the TU
+// (lithtech.exe 0x00421bb0: guard 0x004f8014 bit 0, atexit of the empty
+// 0x00401790), and server.dll's copy of this TU ends in the same one
+// (0x10007327, after its out-of-line _CVector members: guard 0x1008ec84).
+#ifdef PRIMAL_HUNT
 #include <string>
 #endif
 

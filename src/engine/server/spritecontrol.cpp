@@ -3,11 +3,13 @@
 // offsets (names ours). A sprite instance hangs its resource at +0x1a8 and
 // its play position — anim pointer, frame pointer, milliseconds into the
 // frame — at +0x1ac/+0x1b0/+0x1b4.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x4a0570).
+// Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
+// 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
 #endif
 #include "servermgr.h"
@@ -177,7 +179,7 @@ LTRESULT SpriteControl::SetUnknown1b8(uint32 val)
 // of the same name (ltbasedefs.h), which is what names them: the request's
 // m_nPriority, m_fOuterRadius, m_fInnerRadius, m_nVolume, m_fPitchShift,
 // m_vPosition and m_UserData land at 0x3c, 0x40, 0x44, 0x48, 0x4c, 0x50 and
-// 0x5c, in that order, and their widths agree byte for byte (two of them are
+// 0x64 (AvP2; NOLF's 0x5c), in that order, and their widths agree byte for byte (two of them are
 // single-byte stores). 0x1c takes Init's second argument. Names ours only in
 // the sense that they are the SDK's.
 class CSoundFields
@@ -196,7 +198,13 @@ public:
 	uint8    m_pad_49[0x4c - 0x49];
 	float    m_fPitchShift;                  // 0x4c
 	LTVector m_vPosition;                    // 0x50  what the clients last heard
-	uint32   m_UserData;                     // 0x5c
+	// AVP2: a float Init zeroes and the SDK's user sound type before the
+	// user data (server.dll 0x1004553f `fstps 0x5c(%ebx)`, 0x100455b7
+	// pInfo+0x134 -> +0x60, 0x100455e6 pInfo+0x138 -> +0x64).
+	float    m_fUnknown5c;                   // 0x5c
+	uint8    m_nUserSoundType;               // 0x60
+	uint8    m_pad_61[0x64 - 0x61];
+	uint32   m_UserData;                     // 0x64
 };
 
 // The record the sound is filed under in the manager's object-id map: the
@@ -381,6 +389,7 @@ LTBOOL SoundInstance::Init(PlaySoundInfo* pInfo, float fTime, void* hFile, void*
 	m_Unknown2c = 0;
 	m_Unknown28 = LTNULL;
 	pFields->m_hFile = hFile;
+	pFields->m_fUnknown5c = 0.0f;
 
 	m_PlaySoundFlags = pInfo->m_dwFlags;
 
@@ -417,6 +426,7 @@ LTBOOL SoundInstance::Init(PlaySoundInfo* pInfo, float fTime, void* hFile, void*
 	pFields->m_fInnerRadius = pInfo->m_fInnerRadius;
 	pFields->m_nVolume = pInfo->m_nVolume;
 	pFields->m_fPitchShift = pInfo->m_fPitchShift;
+	pFields->m_nUserSoundType = pInfo->m_nUserSoundType;
 
 	if (!(m_PlaySoundFlags & PLAYSOUND_ATTACHED))
 	{

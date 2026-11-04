@@ -53,6 +53,15 @@
 //
 // *********************************************************************** //
 
+#if defined(PRIMAL_HUNT)
+// PH: Primal Hunt's engine saw the STL's <string> here, as it did in ~95
+// lithtech.exe translation units (AvP2 1.0.9.6's did not): this one ends in
+// <string>'s guarded initializer of std::ctype<unsigned short>::id, after
+// slot 13 -- lithtech.exe 0x00498b00 (guard 0x004f8014, atexit of the empty
+// 0x00401790), server.dll 0x10045462 (guard 0x1008ec84, atexit of
+// 0x1002eaeb).
+#include <string>
+#endif
 #include "servermgr.h"          // CServerMgr, WMMoveState, sm_FindObjectByID,
                                 // sm_CanDeactivate, LTObject, Attachment
 #include "servermodel.h"        // sm_SetObjectChangeFlag (inline)
@@ -80,6 +89,22 @@ public:
 // same vtable pushes 6 = MID_CRUSH, which is how the numbering is checked.
 #define MID_TOUCHNOTIFY_Q47C 3
 #define MID_CRUSH_Q47C       6
+
+// LTObject's vtable as far as slot 13 (+0x34), which ltobject_internal.h
+// leaves as a void `_p34`. TouchNotify tests its answer in %eax (AvP2
+// 1.0.9.6 0x0048ed6d, Primal Hunt lithtech.exe 0x004985e0 / server.dll
+// 0x100450db: `call *0x34(%edx) ; test %eax,%eax`) before it looks at the
+// object type (what it answers is not recovered here).
+class CLTObjectSlotsQ524
+{
+public:
+	virtual void _v00(); virtual void _v04(); virtual void _v08();
+	virtual void _v0c(); virtual void _v10(); virtual void _v14();
+	virtual void _v18(); virtual void _v1c(); virtual void _v20();
+	virtual void _v24(); virtual void _v28(); virtual void _v2c();
+	virtual void _v30();
+	virtual LTBOOL _v34();                             // +0x34
+};
 
 
 // ---- the class --------------------------------------------------------- //
@@ -116,6 +141,8 @@ public:
 	// 0x0047c590 / 0x100355ec
 	virtual char*  GetObjectClassName(LTObject* pObj);
 	virtual uint32 _v30() = 0;
+	// AVP2: a fourteenth slot, +0x34 -- defined below.
+	virtual LTRESULT _v34(LTObject* pObj, LTVector* pForce);
 
 	// +0x04 -- reached as `0x4(%ecx)` by slots 0, 1, 2, 3, 4 and 5.
 	class CServerMgr* m_pMgr;
@@ -205,6 +232,18 @@ void CObjectMoverQ47C::TouchNotify(LTObject* pObj, HOBJECT hToucher,
 	{
 		m_pMgr->m_pCollisionInfo->m_vStopVel = *pStopVel;
 		m_pMgr->m_pCollisionInfo->m_hObject  = hToucher;
+
+		// AVP2: the poly handle is only meaningful against the world or a
+		// world model / container: touching anything else clears it to
+		// INVALID_HPOLY (CollisionInfo+0x14; Primal Hunt lithtech.exe
+		// 0x004985cf..0x004985fe, server.dll 0x100450ca..0x100450f9, AvP2
+		// 1.0.9.6 0x0048ed5f).
+		if (hToucher && !((CLTObjectSlotsQ524*)hToucher)->_v34() &&
+		    hToucher->m_ObjectType != OT_WORLDMODEL &&
+		    hToucher->m_ObjectType != OT_CONTAINER)
+		{
+			m_pMgr->m_pCollisionInfo->m_hPoly = INVALID_HPOLY;
+		}
 
 		((CBaseClassQ47C*)pObj->m_pSData->m_pBaseClass)->EngineMessageFn(
 		    MID_TOUCHNOTIFY_Q47C, hToucher, fForceMag);
@@ -396,59 +435,104 @@ static inline void om_InitMoveState(WMMoveState* pState, void* pContainer,
 	pState->m_nPushCount = 0;
 }
 
+// AVP2: the whole of the above is NOLF's walker. AvP2's and Primal Hunt's
+// (AvP2 1.0.9.6 server.dll 0x100407e9; Primal Hunt server.dll 0x10045177,
+// lithtech.exe 0x004986a0) is a different function:
+//
+//   * the child's place comes from a helper that takes the parent, the
+//     attachment and two outputs (server.dll 0x1002a7ed, called at
+//     0x100451f2): NOLF's inline matrix/Apply3x3/quat_Mul body moved there;
+//   * the move request is filled from the caller's by CWMStateInit::InitFrom
+//     (0x10027d53, commonphysics.h), and the flags are 5 for a child with
+//     any of FLAG_SOLID | FLAG_TOUCH_NOTIFY | FLAG_CONTAINER (0x20012000)
+//     and 13 otherwise (`neg ; sbb ; and $-8 ; add $0xd`, 0x1004520c);
+//   * the rotation is only touched when it changed (LTRotation::Equals with
+//     0.00001f, 0x100749f4), and a solid world model or container is turned
+//     through wm_RotateWorldModel (0x10029ffa) with om_InitMoveState's
+//     six-field fill expanded in front of it (0x1004526e..0x100452a4);
+//   * the request is 0x6c bytes: servermgr.h's WMMoveState (0x68) plus a
+//     float the walker zeroes with the other four fields (`fldz ; fstps
+//     -0x28(%ebp)`, state at -0x90). CMoveStateQ524 carries it here.
+//
+// (name ours) -- the transform helper; its body is not this file's.
+void sub_1002a7edQ524(LTObject* pParent, Attachment* pAttach, LTVector* pPos,
+                      LTRotation* pRot);                            // 0x1002a7ed
+
+// CWMStateInit::InitFrom is WM_CINLINE in commonphysics.cpp: lithtech.exe
+// expands it (here at 0x0049872f..0x00498768), server.dll calls its one copy
+// (0x10027d53, from 0x10045218). Its body is not visible from this file, so
+// the client gets the same body here (name ours).
+#ifndef LT_SERVER_BUILD
+class CWMStateInitQ524
+{
+public:
+	void InitFrom(WMMoveState* pSrc, LTObject* pObj)
+	{
+		om_InitMoveState((WMMoveState*)this, pSrc->m_pContainer,
+		                 pSrc->m_pUnknown04, pObj, pSrc->m_nUnknown0C);
+	}
+};
+#define OM_STATEINITQ524 CWMStateInitQ524
+#else
+#define OM_STATEINITQ524 CWMStateInit
+#endif
+
+struct CMoveStateQ524
+{
+	WMMoveState m_State;                     // 0x00
+	float       m_fUnknown68;                // 0x68
+};
+
 void CObjectMoverQ47C::UpdateAttachments(WMMoveState* pState)
 {
-	LTMatrix    mRot;
-	WMMoveState state;
-	LTVector    vOffset;
-	LTVector    vNew;
-	Attachment* pAttach;
-	LTObject*   pChild;
+	CMoveStateQ524 state;
+	LTVector       vPos;
+	LTRotation     rRot;
+	Attachment*    pAttach;
+	LTObject*      pChild;
+	uint32         nFlags;
 
-	state.m_pContainer = LTNULL;
-	state.m_pUnknown04 = LTNULL;
-	state.m_pObj       = LTNULL;
-	state.m_nUnknown64 = 0;
+	if (!pState->m_pObj->m_pAttachments)
+		return;
 
-	pAttach = pState->m_pObj->m_pAttachments;
+	state.m_State.m_pContainer = LTNULL;
+	state.m_State.m_pUnknown04 = LTNULL;
+	state.m_State.m_pObj       = LTNULL;
+	state.m_State.m_nUnknown64 = 0;
+	state.m_fUnknown68         = 0.0f;
 
-	while (pAttach)
+	for (pAttach = pState->m_pObj->m_pAttachments; pAttach; pAttach = pAttach->m_pNext)
 	{
 		pChild = sm_FindObjectByID(m_pMgr, pAttach->m_nChildID);
 
 		if (pChild)
 		{
-			vOffset = pAttach->m_Offset.m_Pos;
+			sub_1002a7edQ524(pState->m_pObj, pAttach, &vPos, &rRot);
 
-			quat_ConvertToMatrix(&pState->m_pObj->m_Rotation, &mRot);
-			mRot.Apply3x3(vOffset);
+			nFlags = (pChild->m_Flags & 0x20012000) ? 5 : 0xd;
 
-			vNew = pState->m_pObj->m_Pos + vOffset;
+			((OM_STATEINITQ524*)&state.m_State)->InitFrom(pState, pChild);
 
-			om_InitMoveState(&state, pState->m_pContainer, pState->m_pUnknown04,
-			                 pChild, pChild->m_BlockingPriority);
+			wm_MoveObject(&state.m_State, vPos, nFlags);
 
-			wm_MoveObject(&state, vNew, 0xd);
+			if (!rRot.Equals(pChild->m_Rotation, 0.00001f))
+			{
+				if ((pChild->m_ObjectType == OT_WORLDMODEL ||
+				     pChild->m_ObjectType == OT_CONTAINER) &&
+				    (pChild->m_Flags & 0x20012000))
+				{
+					om_InitMoveState(&state.m_State, pState->m_pContainer,
+					                 pState->m_pUnknown04, pChild,
+					                 pChild->m_BlockingPriority);
 
-			// Two spellings that server.dll does not see and lithtech.exe
-			// does (both measured; server.dll is identical either way):
-			//  * a NAMED product rather than the product assigned straight
-			//    into the child: the named local is what spends the last of
-			//    /O2's inline budget, so the EARLIER Apply3x3(const&, &)
-			//    stays a call to 0x0047c400 as shipped (written straight in,
-			//    VC6 expands it and the function is 605 bytes, not 518);
-			//  * the attachment's rotation through a const REFERENCE: it is
-			//    what makes the expanded quat_Mul load b[] before a[] in
-			//    every term but the first (0x0047c32a..0x0047c3a3), the
-			//    order its out-of-line copy has.  Named straight in the
-			//    product, all sixteen products load a[] first (7 blocks).
-			const LTRotation& rOffset = pAttach->m_Offset.m_Rot;
-			LTRotation        rNew    = pState->m_pObj->m_Rotation * rOffset;
-
-			pChild->m_Rotation = rNew;
+					wm_RotateWorldModel(&state.m_State, &rRot, 1);
+				}
+				else
+				{
+					pChild->m_Rotation = rRot;
+				}
+			}
 		}
-
-		pAttach = pAttach->m_pNext;
 	}
 }
 
@@ -493,4 +577,31 @@ LTBOOL CObjectMoverQ47C::CanDeactivate(LTObject* pObj)
 char* CObjectMoverQ47C::GetObjectClassName(LTObject* pObj)
 {
 	return pObj->m_pSData->m_pClass->m_pClassName;
+}
+
+
+// ======================================================================= //
+//  SLOT 13 (AVP2) -- Primal Hunt lithtech.exe 0x00498ab0 (80 bytes),
+//  server.dll 0x10045440 (34 bytes); the table's +0x34 (lithtech.exe
+//  .rdata 0x004e06dc). AvP2's and Primal Hunt's table has a fourteenth
+//  slot NOLF's did not: the manager's global force (m_ForceControl.m_Force,
+//  +0xa88) copied out to the caller, LT_OK either way, null output skipped.
+//  The object argument only chooses between two arms that compile alike:
+//  lithtech.exe keeps both copies (0x00498abc, 0x00498ade), server.dll
+//  merges them and keeps only the dead compare (0x10045440). (name ours)
+// ======================================================================= //
+LTRESULT CObjectMoverQ47C::_v34(LTObject* pObj, LTVector* pForce)
+{
+	if (!pObj)
+	{
+		if (pForce)
+			*pForce = m_pMgr->m_ForceControl.m_Force;
+	}
+	else
+	{
+		if (pForce)
+			*pForce = m_pMgr->m_ForceControl.m_Force;
+	}
+
+	return LT_OK;
 }

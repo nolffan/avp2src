@@ -257,6 +257,12 @@ public:
 	// (`lea 0x4(%esi),%eax`) and 0x0045b073 (`add $0x48,%eax`).
 	char   m_Name[0x48 - 0x04];              // 0x04  the section's name
 	uint8  m_NodePath[0x4c - 0x48];          // 0x48
+	uint8  m_pad_4c[0x150 - 0x4c];
+	// AVP2: the last word of AvP2's 0x154-byte world (commonmodel.cpp's
+	// CWorldBspInheritView).  Primal Hunt's box query stamps the query's
+	// code here so a section the walk reaches twice is answered once
+	// (0x0046c702 / 0x0046c71c; name ours).
+	uint32 m_nLastFoundCode;                 // 0x150
 };
 
 // worldtree2.cpp's CWTLinkN48C -- ltlink.h's LTLink plus the owning node
@@ -361,16 +367,22 @@ public:
 	LTPlane* m_pPlane;                       // 0x34
 };
 
+// AVP2: the node's polygon carries its plane itself, at +0x28, and the
+// plane is only taken when the word after it is set -- a null polygon or
+// a clear +0x2c answers NULL (Primal Hunt lithtech.exe 0x0046c753 and
+// server.dll 0x1002eb23; AvP2 1.0.9.6 0x00467133 and 0x1002cd52).  NOLF
+// went through a parent record (CBspPolyParentQ458, kept for the record).
 class CBspPolyOwnerQ458
 {
 public:
 	uint8               m_pad_00[0x28];
-	CBspPolyParentQ458* m_pParent;           // 0x28
+	LTPlane*            m_pPlane;            // 0x28
+	void*               m_pUnknown2c;        // 0x2c  (name ours)
 };
 
 inline LTPlane* CBspWalkNodeQ458::GetPlane()
 {
-	return m_pOwner->m_pParent->m_pPlane;
+	return (m_pOwner && m_pOwner->m_pUnknown2c) ? m_pOwner->m_pPlane : LTNULL;
 }
 
 class CBspWorldPolyQ458
@@ -663,8 +675,27 @@ void CObjWorldModelQ458::OnFoundInBoxQ458(WTFindInfoQ458* pInfo)
 	// assignment, a void*/register local) matches /O1 but flips the
 	// inlined DistTo's y/z terms at lithtech 0x0045af13..0x0045af24.
 	pWorldBsp = m_pWorldBsp;
+
+#ifdef PRIMAL_HUNT
+	// PH: once per query code (0x0046c6fd..0x0046c71c, the code fetched
+	// twice through the holder; AvP2 1.0.9.6 and server.dll have no test).
+	if (pWorldBsp->m_nLastFoundCode == pInfo->m_pCodeHolder->CodeSourceSlot1Q458())
+		return;
+
+	pWorldBsp->m_nLastFoundCode = pInfo->m_pCodeHolder->CodeSourceSlot1Q458();
+#endif
+
+#ifdef PRIMAL_HUNT
+	// PH: and the walk is handed the local (%esi from 0x0046c6c5 on; the
+	// object itself is never read again).  NEAR (0x0046c6c0, 334 of 334
+	// bytes, 0 mnemonic blocks): the y/z flip described above -- shipped
+	// takes DistTo's z term first (0x0046c765), ours y.
+	query.m_Unknown00 = w_FindPolyAtPointQ458(
+		(CBspWorldViewQ458*)pWorldBsp, &pInfo->m_vCenter);       // 0x0046c731
+#else
 	query.m_Unknown00 = w_FindPolyAtPointQ458(
 		(CBspWorldViewQ458*)m_pWorldBsp, &pInfo->m_vCenter);     // 0x0045af80
+#endif
 	query.m_Unknown04 = pWorldBsp;                               // 0x0045af8e
 	query.m_pFn08     = (void (*)(void*, void*))pInfo->m_pfnCallback;  // 0x0045af79
 	query.m_Unknown18 = pInfo->m_pUserData;                      // 0x0045af92

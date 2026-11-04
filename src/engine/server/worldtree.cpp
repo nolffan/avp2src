@@ -15,6 +15,14 @@
 //
 //------------------------------------------------------------------
 
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's server.dll saw the STL's <string> in the sources this
+// file stands for: three of them end in <string>'s guarded initializer of
+// std::ctype<unsigned short>::id (guard 0x1008ec84, atexit of the empty
+// 0x1002eaeb) -- 0x1004872c, 0x10048f7f (after the transform maker) and
+// 0x100493e8 (after the visibility walk).  One TU can give only one.
+#include <string>
+#endif
 #include "worldbsp.h"
 #include "servermgr.h"
 
@@ -346,10 +354,15 @@ LTRESULT ILTTransform::Difference(LTransform &diff, LTransform &t1, LTransform &
 //   0x10038c4d ProcessNode                (client 0x0048a2d0)
 //   0x10038e1f / 0x10038e3e are LTRotation::operator= and ::Conjugate, the
 //   SDK COMDATs these call (already produced by sdkforce.cpp).
-// Status: IsValid, SetupTransforms, SetupTransformsForNode, Prepare,
+// Status (NOLF): IsValid, SetupTransforms, SetupTransformsForNode, Prepare,
 // BlendNode and ProcessNode byte-identical; GetNodeTransform (361 vs 357)
 // and GetNodeTransformRel (323 vs 321) are nears whose residual is
 // register/slot choice only (see the notes above each).
+// Primal Hunt server.dll: IsValid 0x1004874d, SetupTransforms 0x1004879f,
+// Prepare 0x100487d0 and ProcessNode 0x10048d4d identical; GetNodeTransform
+// 0x100488d2 (361/357), GetNodeTransformRel 0x10048a37 (314/310) and
+// BlendNode 0x10048b90 (449/445) near.  The TU ends in <string>'s ctype
+// initializer (0x10048f7f).
 // 0x1003882d is NOT a function: it is the zero displacement of the
 // `cmpl $0x0,0xe8(%esi)` at 0x10038826 inside Prepare read as `e8 00000000`.
 //
@@ -441,8 +454,11 @@ public:
 	uint32         m_nTransforms;            // 0x078
 	uint8          m_pad_7c[0x168 - 0x7c];
 	CAnimInfo_C*   m_pAnims;                 // 0x168  m_AnimArray's array
-	uint8          m_pad_16c[0x2c0 - 0x16c];
-	CModelNode_C*  m_pRootNode;              // 0x2c0
+	// AVP2: four bytes more than NOLF's before the root node, as the
+	// client's ModelK (transform.cpp): SetupTransforms reads 0x2c4 in both
+	// AvP2 1.0.9.6's server.dll and Primal Hunt's (0x100487bb).
+	uint8          m_pad_16c[0x2c4 - 0x16c];
+	CModelNode_C*  m_pRootNode;              // 0x2c4
 };
 
 #define MAX_TM_TIMEREFS_C  8
@@ -460,7 +476,8 @@ public:
 	                        LTRotation* pRot, LTVector* pPos);  // 0x10038864
 	void   GetNodeTransformRel(uint32 iTimeRef, uint32 iNode,
 	                           LTRotation* pRot, LTVector* pPos);// 0x100389c9
-	void   BlendNode(uint32 iTimeRef, uint32 iNode);            // 0x10038b0a
+	float  BlendNode(uint32 iTimeRef, uint32 iNode,
+	                 float fBlended, LTBOOL bNormalize);        // 0x10038b0a
 	void   ProcessNode(uint32 iNode, LTMatrix* pParent);        // 0x10038c4d
 
 	AnimTimeRef    m_TimeRefs[MAX_TM_TIMEREFS_C];    // 0x000
@@ -480,9 +497,14 @@ public:
 	LTVector       m_vBlend;                         // 0x198
 	CModel_C*      m_pModel;                         // 0x1a4
 	LTMatrix       m_matIdentity;                    // 0x1a8
-	CWeightSet_C*  m_pWeightSets[MAX_TM_TIMEREFS_C]; // 0x1e8
-	CModelAnim_C*  m_pPrevAnims[MAX_TM_TIMEREFS_C];  // 0x208
-	CModelAnim_C*  m_pCurAnims[MAX_TM_TIMEREFS_C];   // 0x228
+	// AVP2: a weight set per key-frame side, as the client's
+	// CTransformMakerK: Prepare walks one induction pointer from this+0x248
+	// at -0x20/0/+0x1c/+0x3c (server.dll 0x100487f8..0x1004886b), and the
+	// whole object is NOLF's +0x40 from the eight bigger time refs on.
+	CWeightSet_C*  m_pPrevWeightSets[MAX_TM_TIMEREFS_C]; // 0x228
+	CWeightSet_C*  m_pWeightSets[MAX_TM_TIMEREFS_C]; // 0x248
+	CModelAnim_C*  m_pPrevAnims[MAX_TM_TIMEREFS_C];  // 0x268
+	CModelAnim_C*  m_pCurAnims[MAX_TM_TIMEREFS_C];   // 0x288
 };
 
 // 0x10058c28 — the scratch 4x4 ProcessNode multiplies through.
@@ -570,8 +592,15 @@ LTBOOL CTransformMaker_C::Prepare()
 
 	for (i = 0; i < m_nTimeRefs; i++)
 	{
-		if (i > 0)
-			m_pWeightSets[i] = m_pModel->m_pWeightSets[m_TimeRefs[i].m_Cur.m_iWeightSet]; // AVP2: provisional, as above
+		// AVP2: both weight sets, for every time ref, and an index the model
+		// does not have gives none (server.dll 0x10048801..0x10048833), as
+		// the client's Prepare.
+		m_pPrevWeightSets[i] =
+			(m_TimeRefs[i].m_Prev.m_iWeightSet >= m_pModel->m_nWeightSets) ? LTNULL :
+			m_pModel->m_pWeightSets[m_TimeRefs[i].m_Prev.m_iWeightSet];
+		m_pWeightSets[i] =
+			(m_TimeRefs[i].m_Cur.m_iWeightSet >= m_pModel->m_nWeightSets) ? LTNULL :
+			m_pModel->m_pWeightSets[m_TimeRefs[i].m_Cur.m_iWeightSet];
 
 		m_pPrevAnims[i] = m_pModel->m_pAnims[m_TimeRefs[i].m_Prev.m_iAnim].m_pAnim;
 		m_pCurAnims[i]  = m_pModel->m_pAnims[m_TimeRefs[i].m_Cur.m_iAnim].m_pAnim;
@@ -655,15 +684,47 @@ void CTransformMaker_C::GetNodeTransformRel(uint32 iTimeRef, uint32 iNode,
 	*pPos = *pPos - pBase->m_Pos;
 }
 
-void CTransformMaker_C::BlendNode(uint32 iTimeRef, uint32 iNode)
+// AVP2: the blend now takes the weight already blended in and the time
+// ref's normalize flag, and answers the weight it used (server.dll
+// 0x10048b90, `ret $0x10`, the result in %st(0)).  A normalizing time ref
+// takes whatever is left of 1.0; otherwise the weight is lerped between
+// the two key frames' weight sets, where 2.0 (relative) on either side is
+// kept rather than lerped.  The relative blend answers 0.0.
+// NEAR (449 against 445): the shipped code keeps the 2.0f in an x87
+// register across all three comparisons (one `flds 0x100742b0` at
+// 0x10048bbc, then `fcomp %st(2)` / `fcom %st(1)`), and its clamp keeps an
+// else arm that copies fBlended onto itself (0x10048baf); ours reloads the
+// constant at each test and drops the copy.  A named 2.0f local folds.
+float CTransformMaker_C::BlendNode(uint32 iTimeRef, uint32 iNode,
+                                   float fBlended, LTBOOL bNormalize)
 {
 	float      fWeight;
 	LTRotation rot, rOld;
 	LTVector   vPos;
 
-	fWeight = m_pWeightSets[iTimeRef]->m_pWeights[iNode];
+	fBlended = (fBlended > 1.0f) ? 1.0f : fBlended;
+
+	if (bNormalize)
+	{
+		fWeight = 1.0f - fBlended;
+	}
+	else
+	{
+		float fPrev = m_pPrevWeightSets[iTimeRef] ?
+			m_pPrevWeightSets[iTimeRef]->m_pWeights[iNode] : 0.0f;
+		float fCur  = m_pWeightSets[iTimeRef] ?
+			m_pWeightSets[iTimeRef]->m_pWeights[iNode] : 0.0f;
+
+		if (fPrev == 2.0f)
+			fWeight = fCur;
+		else if (fCur == 2.0f)
+			fWeight = 2.0f;
+		else
+			fWeight = fPrev + (fCur - fPrev) * m_TimeRefs[iTimeRef].m_Percent;
+	}
+
 	if (fWeight == 0.0f)
-		return;
+		return 0.0f;
 
 	if (fWeight == 2.0f)
 	{
@@ -671,16 +732,18 @@ void CTransformMaker_C::BlendNode(uint32 iTimeRef, uint32 iNode)
 
 		m_rBlend = m_rBlend * rot;
 		m_vBlend = m_vBlend + vPos;
-	}
-	else
-	{
-		GetNodeTransform(iTimeRef, iNode, &rot, &vPos);
 
-		rOld = m_rBlend;
-		quat_Slerp(m_rBlend.m_Quat, rOld.m_Quat, rot.m_Quat, fWeight);
-
-		m_vBlend = m_vBlend + (vPos - m_vBlend) * fWeight;
+		return 0.0f;
 	}
+
+	GetNodeTransform(iTimeRef, iNode, &rot, &vPos);
+
+	rOld = m_rBlend;
+	quat_Slerp(m_rBlend.m_Quat, rOld.m_Quat, rot.m_Quat, fWeight);
+
+	m_vBlend = m_vBlend + (vPos - m_vBlend) * fWeight;
+
+	return fWeight;
 }
 
 // Byte-identical. The shipped tail jumps back to the top (0x10038c58) are
@@ -698,7 +761,8 @@ void CTransformMaker_C::ProcessNode(uint32 iNode, LTMatrix* pParent)
 	LTMatrix      *pTransform;
 	CModelNode_C  *pNode;
 	CModelXform_C *pXform;
-	uint32         i, iChild, nLast;
+	uint32         i, nLast;
+	float          fBlended;
 
 	for (;;)
 	{
@@ -706,8 +770,22 @@ void CTransformMaker_C::ProcessNode(uint32 iNode, LTMatrix* pParent)
 
 		GetNodeTransform(0, iNode, &m_rBlend, &m_vBlend);
 
+		// AVP2: the weight already blended in, seeded from time ref zero's
+		// two weight sets (server.dll 0x10048d81..0x10048dbf) and summed
+		// over what each BlendNode reports it used.
+		if (m_pPrevWeightSets[0] && m_pWeightSets[0] &&
+		    m_TimeRefs[0].m_Percent != 2.0f)
+		{
+			float fPrev = m_pPrevWeightSets[0]->m_pWeights[iNode];
+			float fCur  = m_pWeightSets[0]->m_pWeights[iNode];
+
+			fBlended = fPrev + (fCur - fPrev) * m_TimeRefs[0].m_Percent;
+		}
+		else
+			fBlended = 0.0f;
+
 		for (i = 1; i < m_nTimeRefs; i++)
-			BlendNode(i, iNode);
+			fBlended += BlendNode(i, iNode, fBlended, m_TimeRefs[i].m_bNormalize);
 
 		pNode = m_pModel->m_pNodes[iNode];
 
@@ -750,8 +828,8 @@ void CTransformMaker_C::ProcessNode(uint32 iNode, LTMatrix* pParent)
 				return;
 			nLast--;
 
-			for (iChild = 0; iChild < nLast; iChild++)
-				ProcessNode(pNode->m_pChildren[iChild]->m_iNode, pTransform);
+			for (i = 0; i < nLast; i++)
+				ProcessNode(pNode->m_pChildren[i]->m_iNode, pTransform);
 
 			m_nNodePath = 1;
 			iNode = pNode->m_pChildren[nLast]->m_iNode;
@@ -1007,17 +1085,18 @@ void wt_CollectList_C(CVisLinkHead_C* pHead, CVisObject_C*** ppArray,
 
 // ---- the PVS walk ------------------------------------------------------ //
 
-// The walked object: +0x58 the visit mark, +0x18c/+0x1a4 LTObject's m_Pos
-// and m_Radius.
+// The walked object: +0x58 the visit mark, LTObject's m_Pos and m_Radius.
+// AVP2: ltobject_internal.h's 0x194/0x1ac, NOLF's +8 (both AvP2 1.0.9.6's
+// and Primal Hunt's filters read them there: PH 0x100492ff, 0x10049326).
 class CVisObj_D
 {
 public:
 	uint8    m_pad_00[0x58];
 	uint32   m_nMark;                        // 0x058
-	uint8    m_pad_5c[0x18c - 0x5c];
-	LTVector m_Pos;                          // 0x18c
-	uint8    m_pad_198[0x1a4 - 0x198];
-	float    m_Radius;                       // 0x1a4
+	uint8    m_pad_5c[0x194 - 0x5c];
+	LTVector m_Pos;                          // 0x194
+	uint8    m_pad_1a0[0x1ac - 0x1a0];
+	float    m_Radius;                       // 0x1ac
 };
 
 // A leaf record, 0x30 bytes (`lea (%ecx,%ecx,2); shl $4`).
@@ -1052,16 +1131,15 @@ struct VisQuery_D
 	uint32        m_nMark;                   // 0x1c
 };
 
-struct VisSurface_D
-{
-	uint8    m_pad_00[0x34];
-	LTPlane* m_pPlane;                       // 0x34
-};
-
+// AVP2: the node's polygon carries its plane at +0x28 itself, guarded by
+// the word after it: both AvP2 1.0.9.6's walk and Primal Hunt's read
+// `node->+0 ? (+0x2c ? +0x28 : 0) : 0` (PH 0x100491f8..0x10049209), where
+// NOLF went through a surface at +0x28 to its plane at +0x34 (names ours).
 struct VisPoly_D
 {
 	uint8         m_pad_00[0x28];
-	VisSurface_D* m_pSurface;                // 0x28
+	LTPlane*      m_pPlane;                  // 0x28
+	uint32        m_Unknown2c;               // 0x2c
 };
 
 struct VisNode_D
@@ -1072,7 +1150,10 @@ struct VisNode_D
 	uint16      m_nLeaf;                     // 0x14  0xffff: none
 	uint8       m_Flags;                     // 0x16
 
-	LTPlane* GetPlane() { return m_pPoly->m_pSurface->m_pPlane; }
+	LTPlane* GetPlane()
+	{
+		return (m_pPoly && m_pPoly->m_Unknown2c) ? m_pPoly->m_pPlane : LTNULL;
+	}
 };
 
 extern CVisObj_D**  g_pVisLimit_D;           // 0x10058c68
@@ -1103,6 +1184,9 @@ CVisObj_D** vis_FilterPos_D(LTPlane* pPlane, CVisObj_D** pIn, uint32 nIn,
 // change; nor does modelling +0x84 as a CMoArray<VisLeaf_D> (GetSize() /
 // operator[], ternary or if/return), and a result-local GetLeaf loses the
 // ternary's jmp. Register allocation.
+// PH NEAR (376 against 374, server.dll 0x1004911a): only GetLeaf's
+// address, which the shipped code forms in one register (`lea ; shl ; add
+// 0x88(%edx),%ecx`) and ours through a second (allocation).
 void vis_WalkNode_D(VisNode_D* pNode, CVisObj_D** pArray, uint32 nCount)
 {
 	uint32 bBack;
@@ -2407,13 +2491,10 @@ void w_ReadVector(ILTStream* pStream, LTVector* pVec);                    // 0x1
 void   wt_FindInRect_F(CWTNode_F* pNode, WTRectInfo_F* pInfo);
 uint32 wt_ProcessNodeSeg_F(CWTNode_F* pNode, WTSegInfo_F* pInfo);
 uint32 wt_TestNodeSeg_F(CWTNode_F* pNode, WTSegInfo_F* pInfo);
-uint32 wt_ClassifyAxis_F(LTVector* pPt1, LTVector* pPt2, LTVector* pMin,
-                         LTVector* pMax, uint32 nAxis);
 LTBOOL wt_SegHitsRect_F(LTVector* pPt1, LTVector* pPt2, LTVector* pMin,
                         LTVector* pMax, uint32 nAxis1, uint32 nAxis2);
-LTBOOL wt_SegHitsPlane_F(LTVector* pPt1, LTVector* pPt2, float fPlane,
-                         LTVector* pMin, LTVector* pMax,
-                         uint32 nAxis1, uint32 nAxis2);
+LTBOOL wt_SegHitsEdge_F(float a1, float a2, float fPlane,
+                        float fMin, float fMax, float b1, float b2);
 int    wt_DefaultNodeTest_F(CWTNode_F* pNode);
 void   wt_WalkRootList_F(CheapLTLink* pHead, WTSphereInfo_F* pInfo);
 
@@ -2425,8 +2506,14 @@ void wt_FindInRect_F(CWTNode_F* pNode, WTRectInfo_F* pInfo)
 	CheapLTLink* pHead;
 	LTLink*      pCur;
 	CWTObj_F*    pObj;
-	uint32       nCode;
 	LTVector     vMin, vMax;
+
+	// AVP2: the box corners are named once and the code is read once,
+	// before the node is even tested (Primal Hunt server.dll 0x1004a05d..
+	// 0x1004a071, 235 bytes).
+	uint32       nCode = pInfo->m_pTree->m_nCurCode;
+	LTVector*    pMin  = &pInfo->m_vMin;
+	LTVector*    pMax  = &pInfo->m_vMax;
 
 	if (!pNode->m_nNumObjects)
 		return;
@@ -2437,19 +2524,18 @@ void wt_FindInRect_F(CWTNode_F* pNode, WTRectInfo_F* pInfo)
 	{
 		pObj  = (CWTObj_F*)pCur->m_pData;
 		pCur  = pCur->m_pNext;
-		nCode = pInfo->m_pTree->m_nCurCode;
 
 		if (pObj->m_nTouchCode != nCode)
 		{
 			pObj->m_nTouchCode = nCode;
 			pObj->GetDims(&vMin, &vMax);
 
-			if (vMin.x > pInfo->m_vMax.x) continue;
-			if (vMin.y > pInfo->m_vMax.y) continue;
-			if (vMin.z > pInfo->m_vMax.z) continue;
-			if (vMax.x < pInfo->m_vMin.x) continue;
-			if (vMax.y < pInfo->m_vMin.y) continue;
-			if (vMax.z < pInfo->m_vMin.z) continue;
+			if (vMin.x > pMax->x) continue;
+			if (vMin.y > pMax->y) continue;
+			if (vMin.z > pMax->z) continue;
+			if (vMax.x < pMin->x) continue;
+			if (vMax.y < pMin->y) continue;
+			if (vMax.z < pMin->z) continue;
 
 			pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
 		}
@@ -2457,7 +2543,7 @@ void wt_FindInRect_F(CWTNode_F* pNode, WTRectInfo_F* pInfo)
 
 	if (pNode->m_Children[0])
 	{
-		wt_ForEachChildInBox_E(&pInfo->m_vMin, &pInfo->m_vMax, (CWTNode_E*)pNode,
+		wt_ForEachChildInBox_E(pMin, pMax, (CWTNode_E*)pNode,
 		                       (WTNodeCallback_E)wt_FindInRect_F, pInfo);
 	}
 }
@@ -2546,8 +2632,28 @@ inline LTBOOL wt_PtInRectXZ_F(LTVector* pPt, LTVector* pMin, LTVector* pMax)
 }
 
 
+// AVP2: 0 if both endpoints are below the range, 1 if both are above it,
+// 2 otherwise -- now over the coordinates themselves and expanded even at
+// /O1 (Primal Hunt server.dll 0x1004a313..0x1004a39b, the range's minimum
+// homed to a frame slot); NOLF's was the out-of-line 0x1003a1d1 over the
+// vectors and an axis.  The client's twin is worldtree.cpp's
+// wt_ClassifySpanQ522 (name ours).
+inline uint32 wt_ClassifySpan_F(float f1, float f2, float fMin, float fMax)
+{
+	if (f1 < fMin && f2 < fMin)
+		return 0;
+
+	if (f1 > fMax && f2 > fMax)
+		return 1;
+
+	return 2;
+}
+
+
 // 0x1003a0e3, 238 bytes -- does the segment touch this node at all
-// (client 0x0048d3a0, with its helpers out of line).
+// (client 0x0048d3a0, with its helpers out of line).  AVP2: PH 0x1004a29f,
+// 338 bytes, with the side codes expanded and X's third value folded into
+// the jump to the exact test.
 uint32 wt_TestNodeSeg_F(CWTNode_F* pNode, WTSegInfo_F* pInfo)
 {
 	uint32 nSide;
@@ -2558,11 +2664,11 @@ uint32 wt_TestNodeSeg_F(CWTNode_F* pNode, WTSegInfo_F* pInfo)
 		return wt_ProcessNodeSeg_F(pNode, pInfo);
 	}
 
-	nSide = wt_ClassifyAxis_F(&pInfo->m_vPt1, &pInfo->m_vPt2,
-	                          &pNode->m_vBoxMin, &pNode->m_vBoxMax, 0);
+	nSide = wt_ClassifySpan_F(pInfo->m_vPt1.x, pInfo->m_vPt2.x,
+	                          pNode->m_vBoxMin.x, pNode->m_vBoxMax.x);
 	if (nSide != 2 &&
-	    nSide == wt_ClassifyAxis_F(&pInfo->m_vPt1, &pInfo->m_vPt2,
-	                               &pNode->m_vBoxMin, &pNode->m_vBoxMax, 2))
+	    nSide == wt_ClassifySpan_F(pInfo->m_vPt1.z, pInfo->m_vPt2.z,
+	                               pNode->m_vBoxMin.z, pNode->m_vBoxMax.z))
 	{
 		return 0;
 	}
@@ -2579,59 +2685,57 @@ uint32 wt_TestNodeSeg_F(CWTNode_F* pNode, WTSegInfo_F* pInfo)
 }
 
 
-// 0x1003a1d1, 90 bytes -- 0 both endpoints below the box on nAxis, 1 both
-// above, 2 otherwise.
-uint32 wt_ClassifyAxis_F(LTVector* pPt1, LTVector* pPt2, LTVector* pMin,
-                         LTVector* pMax, uint32 nAxis)
-{
-	if (((float*)pPt1)[nAxis] < ((float*)pMin)[nAxis] &&
-	    ((float*)pPt2)[nAxis] < ((float*)pMin)[nAxis])
-		return 0;
-
-	if (((float*)pPt1)[nAxis] > ((float*)pMax)[nAxis] &&
-	    ((float*)pPt2)[nAxis] > ((float*)pMax)[nAxis])
-		return 1;
-
-	return 2;
-}
-
-
-// 0x1003a22b, 96 bytes -- either of the two nAxis1 planes.
+// 0x1003a22b, 96 bytes -- either of the two nAxis1 planes.  AVP2: PH
+// 0x1004a3f1, 202 bytes: each plane is now the scalar edge test below,
+// handed the plane, the nAxis2 range and both endpoints' nAxis2
+// coordinates by value.
 LTBOOL wt_SegHitsRect_F(LTVector* pPt1, LTVector* pPt2, LTVector* pMin,
                         LTVector* pMax, uint32 nAxis1, uint32 nAxis2)
 {
-	if (wt_SegHitsPlane_F(pPt1, pPt2, ((float*)pMin)[nAxis1], pMin, pMax,
-	                      nAxis1, nAxis2))
+	if (wt_SegHitsEdge_F(((float*)pPt1)[nAxis1], ((float*)pPt2)[nAxis1],
+	                     ((float*)pMin)[nAxis1],
+	                     ((float*)pMin)[nAxis2], ((float*)pMax)[nAxis2],
+	                     ((float*)pPt1)[nAxis2], ((float*)pPt2)[nAxis2]))
 		return LTTRUE;
 
-	return wt_SegHitsPlane_F(pPt1, pPt2, ((float*)pMax)[nAxis1], pMin, pMax,
-	                         nAxis1, nAxis2) != LTFALSE;
+	if (wt_SegHitsEdge_F(((float*)pPt1)[nAxis1], ((float*)pPt2)[nAxis1],
+	                     ((float*)pMax)[nAxis1],
+	                     ((float*)pMin)[nAxis2], ((float*)pMax)[nAxis2],
+	                     ((float*)pPt1)[nAxis2], ((float*)pPt2)[nAxis2]))
+		return LTTRUE;
+
+	return LTFALSE;
 }
 
 
-// 0x1003a28b, 251 bytes -- does the segment cross the plane fPlane
-// (perpendicular to nAxis1) inside the box's nAxis2 range.
-LTBOOL wt_SegHitsPlane_F(LTVector* pPt1, LTVector* pPt2, float fPlane,
-                         LTVector* pMin, LTVector* pMax,
-                         uint32 nAxis1, uint32 nAxis2)
+// AVP2: PH 0x1004a4bb, 127 bytes, cdecl, seven floats -- does the segment
+// (a1,b1)-(a2,b2) cross the line a = fPlane between fMin and fMax on b?
+// The client's twin is lithtech.exe 0x004aa780 (worldtree.cpp's
+// wt_SegHitsEdgeQ522).  Replaces NOLF's 0x1003a28b, which lerped whole
+// vectors (name ours).
+LTBOOL wt_SegHitsEdge_F(float a1, float a2, float fPlane,
+                        float fMin, float fMax, float b1, float b2)
 {
-	float    fPercent;
-	LTVector vTest;
+	LTBOOL bSide1 = (a1 < fPlane);
+	LTBOOL bSide2 = (a2 <= fPlane);
 
-	if ((((float*)pPt1)[nAxis1] <  fPlane) ==
-	    (((float*)pPt2)[nAxis1] <= fPlane))
+	if (bSide1 == bSide2)
 		return LTFALSE;
 
-	if (fabs(((float*)pPt2)[nAxis1] - ((float*)pPt1)[nAxis1]) < 0.001f)
-		fPercent = 0.0f;
+	float fDiff = a2 - a1;
+	float fB;
+
+	if (fabs(fDiff) < 0.001f)
+	{
+		fB = b1;
+	}
 	else
-		fPercent = (fPlane - ((float*)pPt1)[nAxis1]) /
-		           (((float*)pPt2)[nAxis1] - ((float*)pPt1)[nAxis1]);
+	{
+		float fPercent = (fPlane - a1) * (b2 - b1);
+		fB = b1 + fPercent / fDiff;
+	}
 
-	vTest = *pPt1 + (*pPt2 - *pPt1) * fPercent;
-
-	if (((float*)&vTest)[nAxis2] >= ((float*)pMin)[nAxis2] &&
-	    ((float*)&vTest)[nAxis2] <= ((float*)pMax)[nAxis2])
+	if (fB >= fMin && fB <= fMax)
 		return LTTRUE;
 
 	return LTFALSE;

@@ -2,6 +2,12 @@
 // (reconstruction). Build /O1.
 //
 // See objtypes.h for how the hierarchy was established.
+#if defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's server.dll saw the STL's <string> here (its copy of
+// this translation unit ends in std::ctype<unsigned short>::id's guarded
+// initializer, guard 0x1008ec84: 0x1003f1e7); lithtech.exe's does not.
+#include <string>
+#endif
 #include <string.h>
 #include "ltlink.h"
 #include "objtypes.h"

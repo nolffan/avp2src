@@ -149,7 +149,13 @@ TARGETS = [
          shipped=REFERENCE + "/server.dll", stem="server",
          # nolfsrc's engine compiled for Primal Hunt, objects only until it
          # links (build/build.mk, "The engine")
-         partial_objs=["src/engine/server/Release/*.obj"],
+         # and the WON client, the same VC6-STL WONAPI.lib lithtech.exe
+         # links (server.dll 0x10052030 is lithtech.exe 0x004aad60, byte
+         # for byte), 0x10051e10 up to the runtime library's helpers at
+         # 0x10060eec
+         partial_objs=["src/engine/server/Release/*.obj",
+                       "src/engine/lithtech/Release/wonapi/WONAPI.lib"],
+         lib_range={"WONAPI": (0x10051e10, 0x10060eec)},
          built="src/engine/server/Release/server.dll", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib from __ftol (0x10061048), 354 members to

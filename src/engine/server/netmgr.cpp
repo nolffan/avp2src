@@ -1,9 +1,11 @@
 // server.dll — CNetMgr (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x424890).
+// Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
+// 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
 #endif
 #include <string.h>
@@ -1339,19 +1341,6 @@ inline void CNetPending::Term()
 	}
 }
 
-// 0x10023542 — take a pending record off the queue, let go of what it owns,
-// and hand the record itself back (name ours).
-void CNetMgr::ReleaseQueued(CNetPending* pRec)
-{
-	if (pRec)
-	{
-		((LMessageList*)&m_QueueC4)->Remove((LThreadMessage*)pRec);
-
-		pRec->Term();
-
-		::operator delete(pRec);
-	}
-}
 
 
 // NEAR (106 of 106 bytes): an ebx/edi transposition, nothing else.
@@ -1571,7 +1560,11 @@ public:
 // carries another copy. server.dll keeps the out-of-line 0x10024162 and
 // the `call` to it at 0x10022990, which /Os would not keep if this were
 // inline there.
-#ifndef LT_SERVER_BUILD
+//
+// PH: Primal Hunt's lithtech.exe calls it out of line (0x00468fd0 ->
+// 0x0046b5c0, with an exception frame for the packet's constructor), where
+// AvP2 1.0.9.6's expands it into SendPacket (0x00463cb5..0x00463cd5).
+#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
 inline
 #endif
 CNetSentPacketView* CNetBankAllocView::Allocate()
@@ -1699,6 +1692,13 @@ class CNetFragSlot
 {
 public:
 	CNetFragSlot() { m_pMsg = LTNULL; }
+
+	// AVP2: the slots are destroyed with the record, CMessageRef's own
+	// release: ~CNetFragRec is `__ehvec_dtor(this+8, 4, 4, ...)` (server.dll
+	// 0x1002d144, lithtech.exe 0x0046a260), its element destructor the
+	// tail-jump to Release (server.dll 0x10012b8b), and the constructor
+	// builds the four through `__ehvec_ctor` with both (0x1002d0b5).
+	~CNetFragSlot() { if (m_pMsg) m_pMsg->Release(); }
 
 	// The clear is servermsg.h's CMsgCursor::Init (0x10023e86), reached
 	// through a cast in CNetFragRec::Clear.
@@ -3003,6 +3003,8 @@ LTBOOL CNetMgrSendView::SendPacketData(ServerMessage* pMsg, NetConnection* pConn
 // The result local lives in the *parameter* slot the now-dead pConn
 // occupied — the frame has no `sub esp` at all — which is the usual /O1
 // reuse and needs no help from the source.
+// AVP2: the record's packet grows by 0x44c, the engine's packet size
+// (server.dll 0x1002c4b5, lithtech.exe 0x00469033 `push $0x44c`).
 LTBOOL CNetMgrSendView::SendPacket(ServerMessage* pMsg, NetConnection* pConn, uint8 n)
 {
 	LTBOOL bSent;
@@ -3011,7 +3013,7 @@ LTBOOL CNetMgrSendView::SendPacket(ServerMessage* pMsg, NetConnection* pConn, ui
 	{
 		CNetSentPacketView* pRec = ((CNetBankAllocView*)&m_PacketBank)->Allocate();
 
-		pRec->m_Packet.Init(pMsg->m_Unknown34 + 0x32, 0x1000);
+		pRec->m_Packet.Init(pMsg->m_Unknown34 + 0x32, 0x44c);
 
 		memcpy(pRec->m_Packet.m_pData, pMsg->m_pData, pMsg->m_Unknown34);
 		pRec->m_Packet.m_Unknown34 = pMsg->m_Unknown34;
@@ -3671,6 +3673,22 @@ NETFRAG_INLINE void CNetFragRec::Clear()
 NETFRAG_INLINE CNetFragRec::CNetFragRec()
 {
 	Clear();
+}
+
+
+// 0x10023542 — take a pending record off the queue and delete it (name
+// ours). AVP2: the record is a CNetFragRec, and deleting it runs its
+// destructor -- the four slots' releases -- before the free (server.dll
+// 0x1002d11d: the list removal, `call 0x1002d144`, then operator delete;
+// lithtech.exe 0x0046a200 the same with the removal expanded).
+void CNetMgr::ReleaseQueued(CNetPending* pRec)
+{
+	if (pRec)
+	{
+		((LMessageList*)&m_QueueC4)->Remove((LThreadMessage*)pRec);
+
+		delete (CNetFragRec*)pRec;
+	}
 }
 
 

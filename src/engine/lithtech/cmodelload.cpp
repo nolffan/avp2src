@@ -1651,10 +1651,14 @@ LTRESULT cm_InitExtraTextureQ474(CClientMgrQ474* pMgr, CFileIdentQ474* pIdent,
 //  0x8(%esp)`).  It is the other half of cm_InitModelQ474's first two lines:
 //  the model the object held gives back its use count (+0x208, dropped at
 //  0x00477b6e), and the answer is LT_OK (`xor %eax,%eax`).  (name ours)
+//
+//  AVP2: the count is only dropped while it is above zero, as in
+//  cm_InitModelQ474 (AvP2 1.0.9.6 0x0048a3f0, Primal Hunt 0x00493520:
+//  `test %ecx,%ecx ; jbe` before the `dec`).
 // ======================================================================= //
 LTRESULT cm_TermModelQ474(CClientMgrQ474* pMgr, CClientModelInstQ474* pObject)
 {
-	if (pObject->m_pModel)
+	if (pObject->m_pModel && pObject->m_pModel->m_nCacheCount > 0)
 		pObject->m_pModel->m_nCacheCount--;
 
 	return LT_OK;

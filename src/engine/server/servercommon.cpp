@@ -1,9 +1,11 @@
 // server.dll — the server's half of ILTCommon (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
-// (guard 0x004f8014, atexit of the empty 0x00401790; 0x47fc90).
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x47fc90). server.dll's
+// unit ends the same way, in /O1's 33-byte shape (guard 0x1008ec84, atexit
+// of the empty 0x1002eaeb; 0x1003753f).
 #include <string>
 #endif
 #include <stdio.h>

@@ -815,14 +815,17 @@ public:
 
 // The member at +0x68.  0x0045a350 is its constructor (`push $0x0; call
 // 0x45a370; return this`) and 0x0045a370 is `{ m_p00 = 0; m_p04 = arg; }`;
-// 0x0045a360 is a bare `jmp 0x0045a390` -- a tail-called one-line method,
-// not a destructor (a destructor would be emitted where the member's
-// destruction belongs, which is AFTER the body, and this call is BEFORE
-// the two stores).
+// 0x0045a360 is a bare `jmp 0x0045a390`: the member's DESTRUCTOR, a
+// one-liner tail-calling its cleanup.  Members are destroyed in reverse
+// order of declaration, so this one (+0x68) goes before m_Pair10's two
+// stores -- and Primal Hunt's /GX build says so outright: its copy
+// (0x004a7ca0) drops the exception state from 2 to 1 (`movb $0x1`) just
+// before the call (0x00430560 there), which is what a member's destruction
+// does and a call in the body does not.
 class CUnknown45A350
 {
 public:
-	void Release();                                        // 0x0045a360
+	~CUnknown45A350();                                     // 0x0045a360
 };
 
 class CClass4A38A4 : public CUnknown4A147C
@@ -845,9 +848,10 @@ public:
 //   * `call 0x48ac70` with %ecx untouched -> a non-virtual member call on
 //     `this`.  VC6 does not devirtualise a call through `this`, so a
 //     virtual one would be `mov (%ecx),%eax; call *0xNN(%eax)`.
-//   * `lea 0x68(%esi),%ecx; call 0x45a360` -> a member sub-object at +0x68,
-//     called BEFORE the two stores.  Were it the member's destructor it
-//     would have to come after them (body, then members, then base).
+//   * `lea 0x68(%esi),%ecx; call 0x45a360` -> the destructor of the member
+//     at +0x68, the LAST declared and so the first destroyed, BEFORE the
+//     two stores of the one declared ahead of it.  Primal Hunt's copy is
+//     0x004a7ca0 (91 bytes, /GX: states 2 -> 1 around it).
 //   * the two stores are +0x14 THEN +0x10, descending, from one `xor
 //     %eax,%eax`, and they come AFTER both calls but BEFORE the base vptr
 //     store.  That is destruction order: body, then MEMBERS, then base.  So
@@ -861,7 +865,6 @@ public:
 CClass4A38A4::~CClass4A38A4()
 {
 	Term();
-	m_Unknown68.Release();
 }
 
 

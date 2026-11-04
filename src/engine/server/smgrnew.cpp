@@ -77,6 +77,12 @@
 //
 // *********************************************************************** //
 
+#if defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's server.dll saw the STL's <string> here (its copy of
+// this translation unit ends in std::ctype<unsigned short>::id's guarded
+// initializer, guard 0x1008ec84: 0x10038f15); lithtech.exe's does not.
+#include <string>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -303,14 +309,17 @@ public:
 	void*  m_pSkinFile;                      // +0x34  (0x0047486c)
 	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
 	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
-#ifdef PRIMAL_HUNT
-	uint8  m_pad_38[0x48 - 0x38];
-#else
 	uint8  m_pad_38[0x44 - 0x38];
+#ifdef PRIMAL_HUNT
+	// PH: cleared by sm_CreateServerData (server.dll 0x10040bd3,
+	// lithtech.exe 0x0048bf50); AvP2 1.0.9.6 has no such word (name ours).
+	uint32 m_UnknownPH44;                    // +0x44 (PH only)
 #endif
 	LTLink m_StateLink;                      // +0x44 (PH +0x48; NOLF +0x3c, 0x004748fa)
 	class LTObject* m_pNextChanged;          // +0x50 (PH +0x54)
-	uint8  m_pad_4c[4];
+	// NOLF's +0x4c: cleared, then set to the AUTOLOAD bit (AvP2 server.dll
+	// 0x1003d3a9 / 0x1003d3c1 +0x54, PH 0x10040c05 / 0x10040c1d +0x58).
+	uint32 m_bAutoLoad;                      // +0x54 (PH +0x58; NOLF +0x4c)
 	uint16 m_ClientChangeFlags;              // +0x58 (PH +0x5c; NOLF +0x50, 0x004748a7)
 	uint16 m_NetFlags;                       // +0x5a (PH +0x5e; NOLF +0x52, 0x004748ab)
 };
@@ -594,7 +603,14 @@ inline void* operator new(size_t, CSObjDataCtorQ474* p)
 	return p;
 }
 
+// PH: Primal Hunt's lithtech.exe calls the bank's allocate instead of
+// expanding it (0x0048bef5 `call 0x00418d40`); AvP2 1.0.9.6's expands it,
+// and so does /O2 here when the body is `inline`.
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+void* CMessageBank::Allocate()
+#else
 inline void* CMessageBank::Allocate()
+#endif
 {
 	void* pRec = sm_sb_AllocateQ474(&m_Bank);
 
@@ -627,6 +643,9 @@ LTRESULT sub_100332e8(CServerMgr* pMgr, ObjectCreateStruct* pStruct,
 	pSData->m_pBaseClass    = LTNULL;                        // 0x00474869
 	pSData->m_pSkinFile     = LTNULL;                        // 0x0047486c
 	pSData->m_pModelFile    = LTNULL;                        // 0x0047486e
+#ifdef PRIMAL_HUNT
+	pSData->m_UnknownPH44   = 0;                             // PH 0x10040bd3
+#endif
 	pSData->m_pClass        = (CClassInfo*)pClassDef;        // 0x00474871
 	pSData->m_pOwningClient = LTNULL;                        // 0x00474874
 
@@ -637,7 +656,7 @@ LTRESULT sub_100332e8(CServerMgr* pMgr, ObjectCreateStruct* pStruct,
 	((CMsgCursorViewQ474*)&pSData->m_Unknown2c)->Init(LTNULL);
 
 	pSData->m_Unknown28        = LTNULL;                     // 0x004748a1
-	*(uint32*)((uint8*)pSData + 0x4c) = 0;                   // 0x004748a4
+	pSData->m_bAutoLoad = 0;                                 // 0x004748a4
 	pSData->m_ClientChangeFlags = 0;                         // 0x004748a7
 	pSData->m_NetFlags          = 0;                         // 0x004748ab
 
@@ -659,7 +678,7 @@ LTRESULT sub_100332e8(CServerMgr* pMgr, ObjectCreateStruct* pStruct,
 	// named length, a `(uint32)` cast, `&m_Name[0]` and a name local
 	// leave it.
 	nAutoLoad = (uint8)(*(volatile uint32*)&pStruct->m_CreateFlags & 0xff); // 0x004748af
-	*(uint32*)((uint8*)pSData + 0x4c) =
+	pSData->m_bAutoLoad =
 		nAutoLoad & OCS_AUTOLOAD;                            // 0x004748c0
 
 	// The NULL store is in BOTH arms, not one statement ahead of the test:
@@ -767,7 +786,8 @@ void CServerMgrCmdViewQ474::NotifyCommandChanges(Client* pClient,
 //  lithtech.exe (/O2) expands both the bank's allocate and Insert2 inline.
 //  Both are lithtech-only here (#ifndef LT_SERVER_BUILD): an inline
 //  Allocate body and the real collection.h CMoArray<CObjectMapEntry> for
-//  the map.  Identical on both images.
+//  the map.  Identical on both images (PH lithtech 0x0048e790, with the
+//  allocate a call: see below).
 // ======================================================================= //
 
 #ifndef SMGR_CPP_Q474      // <- stand-in only
@@ -792,7 +812,13 @@ public:
 class CObjQueueBank
 {
 public:
-#ifdef LT_SERVER_BUILD
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
+	// PH: Primal Hunt's lithtech.exe CALLS it from sm_CreateNewID
+	// (0x0048e7e9 `mov $0x4f0120,%ecx ; call 0x00404fb0`), and 0x00404fb0
+	// is the shared CObjectBank<T>::Allocate body; AvP2 1.0.9.6 expands it
+	// (0x0048633f..).  Its link needs the alias
+	// ?Allocate@CObjQueueBank@@QAEPAVLTLink@@XZ ->
+	// ?Allocate@?$CObjectBank@VCBankElem0c@@@@UAEPAXXZ.
 	LTLink* Allocate();                      // 0x1000ed6f
 #else
 	// lithtech 0x004761af..0x004761de: the forward and sb_Allocate both

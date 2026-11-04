@@ -47,6 +47,11 @@
 //
 // *********************************************************************** //
 
+#ifdef PRIMAL_HUNT
+// PH: <new>'s throw()-qualified operator delete is what lets /GX leave
+// ~CLTClient (0x00408850) without an exception frame.
+#include <new>
+#endif
 #include <stdio.h>            // _vsnprintf
 #include <stdarg.h>           // va_list / va_start / va_end
 
@@ -89,13 +94,14 @@ public:
 	void*         m_pNodeControlUser;        // 0x25c
 };
 
-// A container's code is a uint16 at 0x270 -- the same displacement
-// CLTServer::GetContainerCode reads in this image (0x0046e8dd).
+// A container's code is a uint16.  NOLF's was at 0x270; AVP2: 0x278 in
+// both AvP2 1.0.9.6 and Primal Hunt (PH 0x00408579), the client object's
+// per-type fields having moved on by 8.
 class CClientContainerView
 {
 public:
-	uint8  m_pad_00[0x270];
-	uint16 m_ContainerCode;                  // 0x270
+	uint8  m_pad_00[0x278];
+	uint16 m_ContainerCode;                  // 0x278
 };
 
 // A canvas lays its own fields out from 0x1b0, like every other object type
@@ -1110,8 +1116,7 @@ uint32 CLTClient::GetPointContainers(LTVector* pPoint, HOBJECT* pList, uint32 ma
 //
 //  WHAT PINS IT
 //    * `ret $8`, `cmpb $0x9,0xbc(%ecx)` (OT_CONTAINER), and a uint16 read
-//      from 0x270 written through the second argument -- the identical
-//      field CLTServer::GetContainerCode reads at 0x0046e8dd in this image.
+//      from 0x278 (PH 0x00408560) written through the second argument.
 //    * THE SHAPE IS NOT THE SERVER'S, and the pair is worth stating: the
 //      server twin (also /O2, also in this image) leaves each `return
 //      LTFALSE` inline where it falls -- it even reuses the null hObj in
@@ -1233,6 +1238,94 @@ LTRESULT CLTClient::RemoveObject(HOBJECT hObj)
 
 	return sub_411bf0(g_pClientMgr, hObj);
 }
+
+
+#ifdef PRIMAL_HUNT
+// ======================================================================= //
+//  PH: 0x00408800, 33 bytes -- slot 108 (vtable 0x004d452c + 0x1b0)
+//      LTRESULT GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen)
+//
+//  Primal Hunt's new ILTClient virtual (iltclient.h), and all it does is
+//  hand the call to the client's common interface: the member object at
+//  +0x380 (`add $0x380,%ecx`), through ITS vtable at +0x4c -- ILTCommon's
+//  GetPolyTextureName, slot 19 (iltcommon.h).  AvP2 1.0.9.6 has neither
+//  slot.
+// ======================================================================= //
+
+// The client's ILTCommon implementation as CLTClient embeds it at +0x380
+// (vtable 0x004d4ab4; AvP2 1.0.9.6's at +0x370, cltapi.cpp's
+// ClientCommonLT).  Only the slot reached here is named.
+class CClientCommonLTViewQ527
+{
+public:
+	virtual void _v00(); virtual void _v01(); virtual void _v02(); virtual void _v03();
+	virtual void _v04(); virtual void _v05(); virtual void _v06(); virtual void _v07();
+	virtual void _v08(); virtual void _v09(); virtual void _v10(); virtual void _v11();
+	virtual void _v12(); virtual void _v13(); virtual void _v14(); virtual void _v15();
+	virtual void _v16(); virtual void _v17(); virtual void _v18();
+	virtual LTRESULT GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen);  // 0x4c
+};
+
+class CLTClientPolyViewQ527
+{
+public:
+	LTRESULT GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen);
+
+	uint8                   m_pad_000[0x380];
+	CClientCommonLTViewQ527 m_CommonLT;      // 0x380
+};
+
+LTRESULT CLTClientPolyViewQ527::GetPolyTextureName(HPOLY hPoly, char* pName, uint32 nMaxLen)
+{
+	return m_CommonLT.GetPolyTextureName(hPoly, pName, nMaxLen);
+}
+
+
+// ======================================================================= //
+//  PH: 0x00408850, 56 bytes -- ~CLTClient, and its scalar deleting
+//      destructor ??_G at 0x00408830 (vtable 0x004d452c slot 73), which
+//      CALLS it.  AvP2 1.0.9.6 inlines the same body into its ??_G
+//      (cltapi.cpp's CLTClientQ404), so there it has no copy of its own.
+//
+//  The body: CLTClient's own vptr (0x004d452c) stored on entry; the owned
+//  pointer at +0x37c freed through bare operator delete (0x00479ee0) and
+//  nulled; the member at +0x380 (the common interface above) restoring its
+//  vptr (0x004d4ab4) as its inline destructor does; then the base's
+//  (0x004d48a0).  The classes here carry only what the destructor touches.
+// ======================================================================= //
+class CLTClientBaseDtorQ527
+{
+public:
+	virtual ~CLTClientBaseDtorQ527() {}                  // vptr 0x004d48a0
+};
+
+class CClientCommonLTDtorQ527
+{
+public:
+	virtual ~CClientCommonLTDtorQ527() {}                // vptr 0x004d4ab4
+};
+
+class CClientMusicMgrQ527;
+
+class CLTClientDtorQ527 : public CLTClientBaseDtorQ527
+{
+public:
+	virtual ~CLTClientDtorQ527();
+
+	uint8                   m_pad_004[0x37c - 0x04];
+	CClientMusicMgrQ527*    m_pMusicMgr;     // 0x37c
+	CClientCommonLTDtorQ527 m_CommonLT;      // 0x380
+};
+
+CLTClientDtorQ527::~CLTClientDtorQ527()
+{
+	if (m_pMusicMgr)
+	{
+		delete m_pMusicMgr;
+		m_pMusicMgr = LTNULL;
+	}
+}
+#endif
 
 
 // ======================================================================= //

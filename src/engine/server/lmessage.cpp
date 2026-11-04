@@ -1,11 +1,13 @@
 // server.dll — LMessageImpl reader/writer bodies (reconstruction). Build /O1.
 // (The neighboring localdriver TU is the /Os one — WriteMessage matches
 // under /O1, so this TU keeps the server default.)
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x449f70).
+// Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
+// 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
 #endif
 #include <string.h>
@@ -314,6 +316,34 @@ LTRESULT LMessageImpl::GetStatus(uint32& flags)
 	return LT_OK;
 }
 
+// AVP2: iltmessage.h's ReadString(), slot 1 of the reader (servermsg.h's
+// IMessageRead +0x04): the owner hands back a pointer to the string in
+// place and steps its read cursor past the terminator, then the same
+// end-of-data test as every read. server.dll 0x1001a2c3 (ServerMessage's
+// half at 0x10031041), lithtech.exe 0x0044a050 (0x0046f380), each right
+// after GetStatus. servermsg.h declares neither half, so both are views
+// here (names ours).
+class CServerMessageStrQ528
+{
+public:
+	const char* ReadString();                // 0x10031041 / 0x0046f380
+};
+
+class CLMessageStrQ528 : public LMessageImpl
+{
+public:
+	const char* ReadString();                // 0x1001a2c3 / 0x0044a050
+};
+
+const char* CLMessageStrQ528::ReadString()
+{
+	const char* pRet = ((CServerMessageStrQ528*)m_pOwner)->ReadString();
+
+	lmsg_AfterRead(this);
+
+	return pRet;
+}
+
 
 // Vectors and rotations go component by component through the float
 // primitives, so nothing here has to know how a float is encoded.
@@ -480,6 +510,25 @@ LTRESULT LMessageImpl::ReadCompVectorFL(LTVector& vec)
 // movzwl %cx,%edi; inc %edi` — the sixteen-bit `i - 1`, widened, plus one.
 // The `for` form lets VC6 simplify that to one `movzwl` of the count, which
 // is two instructions and two bytes shorter and not what shipped.
+// iltmessage.h's value-returning ReadByte()/ReadWord() (`uint8 temp;
+// ReadByteFL(temp); return temp;`), spelled over the IMessageRead view.
+// Inlined, their temporaries go into the dead pMsg parameter slot, which is
+// where both images read the length and every byte (server.dll 0x10019f11 /
+// 0x10019f3a `lea 0x8(%ebp)`, lithtech.exe 0x00449bd9 / 0x00449c1a).
+inline uint8 lm_ReadByteQ528(IMessageRead* pRead)
+{
+	uint8 temp;
+	pRead->ReadByte(&temp);
+	return temp;
+}
+
+inline uint16 lm_ReadWordQ528(IMessageRead* pRead)
+{
+	uint16 temp;
+	pRead->ReadWord(&temp);
+	return temp;
+}
+
 LTRESULT LMessageImpl::ReadMessageFL(LMessageImpl*& pMsg)
 {
 	CMessageRef  msg;
@@ -488,33 +537,26 @@ LTRESULT LMessageImpl::ReadMessageFL(LMessageImpl*& pMsg)
 
 	msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
+	// AVP2: the new message inherits this one's object reader/writer
+	// (server.dll 0x10019f02, lithtech.exe 0x00449bcc: `mov 0x4(%esi)` into
+	// the packet's +0xc).
+	msg.m_pMsg->m_Write.m_pObjectIO = m_pObjectIO;
+
 	pMsg = &msg.m_pMsg->m_Write;
 
+	nCount = lm_ReadWordQ528((IMessageRead*)this);
+
+	if (nCount == 0xffff)
 	{
-		uint16 nLen;
+		pMsg = LTNULL;
 
-		((IMessageRead*)this)->ReadWord(&nLen);
-
-		if (nLen == 0xffff)
-		{
-			pMsg = LTNULL;
-
-			return LT_OK;
-		}
-
-		nCount = nLen;
+		return LT_OK;
 	}
 
 	i = nCount;
 
 	while (i--)
-	{
-		uint8 ch;
-
-		((IMessageRead*)this)->ReadByte(&ch);
-
-		msg.m_pMsg->WriteByte(ch);
-	}
+		msg.m_pMsg->WriteByte(lm_ReadByteQ528((IMessageRead*)this));
 
 	msg.m_pMsg->AddRef();
 	msg.m_pMsg->m_Unknown38 = 1;

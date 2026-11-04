@@ -3,6 +3,13 @@
 // A bank hands out fixed-size records from chunks it grows on demand. Only
 // the allocate lives inside the app region; the init, grow and teardown are
 // in the statically linked half of the image. The file name is ours.
+#if defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+// PH: Primal Hunt's server.dll saw the STL's <string> here too (AvP2
+// 1.0.9.6's did not): this unit ends in std::ctype<unsigned short>::id's
+// guarded initializer, /O1's 33-byte shape (guard 0x1008ec84, atexit of the
+// empty 0x1002eaeb; 0x10001d8f, right after sb_Allocate's 0x10001d68).
+#include <string>
+#endif
 #include <string.h>
 #include "servermgr.h"
 

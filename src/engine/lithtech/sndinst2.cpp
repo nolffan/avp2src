@@ -33,6 +33,14 @@
 //
 // *********************************************************************** //
 
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's engine saw the STL's <string> here (AvP2 1.0.9.6's did
+// not): the sound data's unit ends in <string>'s guarded initializer of
+// std::ctype<unsigned short>::id (guard 0x004f8014, atexit of the empty
+// 0x00401790; 0x004997c0, between CSoundData's 0x004996b0 and the sound
+// instance's 0x0049a000).
+#include <string>
+#endif
 #include "ltbasedefs.h"
 #include "ltcodes.h"
 #include <stdio.h>
@@ -151,6 +159,10 @@ struct ObjectBankQ47C
 	void*          m_pVTable;                // +0x00  BaseObjectBank's vptr
 	StructBankQ47C m_Bank;                   // +0x04
 	uint32         m_CS;                     // +0x20  the empty CS member
+
+	// object_bank.h's ObjectBank<T>::Allocate (defined below, once
+	// CSoundDataQ47C is complete).
+	class CSoundDataQ47C* Allocate();
 };                                           // 0x24
 
 // 0x00490c20 — struct_bank.h's page grower, __cdecl.
@@ -189,6 +201,14 @@ inline void* operator new(size_t size, DummyThingForConstructorQ47C* pThing,
                           void* ptr)
 {
 	return ptr;
+}
+
+// ...and its matching placement delete, also verbatim.  Under /GX it gives
+// every `::new(...) T` an exception state, which is what keeps Primal
+// Hunt's ObjectBank<T>::Allocate out of line (0x00499780).
+inline void operator delete(void* pDataPtr, DummyThingForConstructorQ47C* pThing,
+                            void* ptr)
+{
 }
 
 // 0x0040f7f0 — `*(char**)0x004b17e0 + 0x774`, the client's sound manager
@@ -236,10 +256,10 @@ class CSoundDataQ47C
 {
 public:
 	// NOT pure, and there is a reason: 0x0047cec0 placement-news one of
-	// these, so the class has to be concrete.  The constructor is declared
-	// and not defined because the shipped code CALLS it out of line
-	// (`call 0x0047c630` at 0x0047cf06); an implicit constructor would be
-	// expanded to a bare vptr store and the call would vanish.  On
+	// these, so the class has to be concrete.  The constructor is a real
+	// out-of-line one because the shipped code CALLS it (`call 0x0047c630`
+	// at 0x0047cf06); an implicit constructor would be expanded to a bare
+	// vptr store and the call would vanish.  On
 	// integration this whole view is replaced by clientsoundinst.cpp's
 	// CSoundDataView, which already has the right shape.
 	CSoundDataQ47C();                                      // 0x0047c630
@@ -480,6 +500,42 @@ inline void ob_FreeQ47C(ObjectBankQ47C* pBank, CSoundDataQ47C* pObj)
 {
 	pObj->~CSoundDataQ47C();
 	sb_FreeQ47C(&pBank->m_Bank, pObj);
+}
+
+
+// Primal Hunt 0x00498b30 (AvP2 0x0047c630), 86 bytes (clientsoundinst.cpp's
+// CSoundDataView carries the same constructor).  The constructor:
+// LTList's own constructor ties the instance list off, then dl_InitList
+// does it again (the second tie-off and zeroing of 0x88 at 0x00498b67), and
+// the Miles description is cleared with one `rep stos` of nine dwords.
+// Defined here, ahead of everything that constructs one, so that /GX knows
+// it cannot throw: ObjectBank<T>::Allocate (0x00499780) then has no
+// exception frame.
+CSoundDataQ47C::CSoundDataQ47C()
+{
+	m_pUnknown04      = LTNULL;
+	m_pDataStart      = LTNULL;
+	m_pDecompressed   = LTNULL;
+	m_pSampleData     = LTNULL;
+	m_nSampleDataSize = 0;
+	m_nSampleType     = 0;
+
+	dl_InitList(&m_InstanceList);
+
+	m_bInitialised = 0;
+	m_nLoopEnd5c   = 0;
+	m_nLoopStart58 = 0;
+
+	memset(&m_SoundInfo, 0, sizeof(m_SoundInfo));
+}
+
+
+// Primal Hunt 0x00498bb0, 11 bytes: the vptr store and a tail jump into
+// Free (0x00498cd0), called directly as a destructor's virtual calls are.
+// Its scalar deleting thunk is 0x00498b90.
+CSoundDataQ47C::~CSoundDataQ47C()
+{
+	Free();
 }
 
 
@@ -1002,14 +1058,15 @@ LTRESULT CSoundDataQ47C::sub_47cd90()
 //     free (0x0047cecf and 0x0047cf27) — written out at each use.
 // ======================================================================= //
 
-// object_bank.h's ObjectBank<T>::Allocate, as an inline helper (the
-// redundant null test before the constructor, 0x0047cf02, is the
-// template's own).
-inline CSoundDataQ47C* ob_AllocateQ47C(ObjectBankQ47C* pBank)
+// object_bank.h's ObjectBank<T>::Allocate (the redundant null test before
+// the constructor, 0x0047cf02, is the template's own). AvP2 expands it at
+// its call; Primal Hunt's /GX build keeps it out of line, a thiscall on the
+// bank (0x00499780, 58 bytes, after CSoundData's last member).
+inline CSoundDataQ47C* ObjectBankQ47C::Allocate()
 {
 	CSoundDataQ47C* pRet;
 
-	pRet = (CSoundDataQ47C*)sb_AllocateQ47C(&pBank->m_Bank);
+	pRet = (CSoundDataQ47C*)sb_AllocateQ47C(&m_Bank);
 	if (pRet)
 	{
 		::new((DummyThingForConstructorQ47C*)0, pRet) CSoundDataQ47C;
@@ -1024,7 +1081,7 @@ LTRESULT CSoundDataQ47C::sub_47cec0()
 
 	if (!m_pDecompressed)
 	{
-		m_pDecompressed = ob_AllocateQ47C(&ci_GetSoundMgrQ47C()->m_SoundDataBank);
+		m_pDecompressed = ci_GetSoundMgrQ47C()->m_SoundDataBank.Allocate();
 
 		if (!m_pDecompressed)
 			return LT_ERROR;
@@ -1483,6 +1540,11 @@ LTRESULT CSoundInstanceQ47C::sub_47dd50()
 //      "paused" -- but nothing else in the image names it, so it stays
 //      m_nUnknown54.
 //
+//  Primal Hunt 0x00499e70, 394 bytes, with the fade below (AvP2 1.0.9.6
+//  0x004904e0 has it too).  NEAR there, size-exact, 0 mnemonic blocks:
+//  the frame-slot residual described next, plus the fade's conversion temp
+//  following the loop marks' (shipped 0x00499f73 uses the first slot).
+//
 //  NEAR, size-exact 311/311, 0 mnemonic blocks.  `nSpan = nEnd - nCur`
 //  comes BEFORE the two loop-mark conversions (shipped computes it in %ebp
 //  between the first fild and its fdiv, 0x0047d8f9/0x0047d8ff); after them
@@ -1560,6 +1622,22 @@ LTRESULT CSoundInstanceQ47C::sub_47d860(uint32 nElapsedMS)
 			else if (m_nUnknown54 != 1)
 			{
 				m_nPriority = nCur - nElapsedMS;
+			}
+
+			// AVP2: KillFade's fade (0x0049a9d0 arms it: the time in
+			// m_Unknown38, ms, and state 0x80) runs down m_fUnknown3c here,
+			// and a sound faded to nothing stops at once (Primal Hunt
+			// 0x00499f69, AvP2 1.0.9.6 0x004905e9).
+			if (m_StateFlags & 0x80)
+			{
+				m_fUnknown3c -= (float)nElapsedMS / m_Unknown38;
+
+				if (m_fUnknown3c <= 0.0f)
+				{
+					m_fUnknown3c = 0.0f;
+					m_nPriority = 0;
+					return LT_OK;
+				}
 			}
 
 			if (m_nPriority == 0)

@@ -155,6 +155,12 @@ struct ObjectBankView
 	void*          m_pVTable;    // +0x00
 	StructBankView m_Bank;       // +0x04
 	uint32         m_CS;         // +0x20  the empty CS member's padding
+
+	// The sample bank's ObjectBank<CSoundData>::Allocate.  Primal Hunt's
+	// /GX build keeps it out of line (0x00499780, sndinst2.cpp's
+	// ObjectBankQ47C::Allocate) and GetSoundData calls it (0x0049d459);
+	// AvP2 1.0.9.6 expands it in place.
+	class CSoundDataRef* Allocate();
 };                               // 0x24
 
 
@@ -169,7 +175,9 @@ class CSoundDataRef
 {
 public:
 	virtual ~CSoundDataRef();                      // +0x00 0x0047c6b0
-	virtual void _v04(void* pFileRef)=0;           // +0x04 (load; see 0x00480abf)
+	// +0x04 — bind to a file record and load (sndinst2.cpp's Init); a
+	// nonzero answer is a failure (0x0049d472).
+	virtual LTRESULT Init(void* pFileRef)=0;
 	virtual void _v08()=0;
 	virtual void Free()=0;
 	// +0x10 / +0x14 -- the two per-sample tests Init (0x0047f9e0) sweeps
@@ -723,7 +731,14 @@ __declspec(dllimport) void   __stdcall AIL_set_3D_orientation(void* hObj,
 // written that way.
 struct CSoundFileRecRef
 {
-	uint8 m_pad_00[0x1c];
+	// 0x00 — the sample loaded from this file, or null (sndinst2.cpp's
+	// CSoundFileRefQ47C::m_pSoundData).
+	CSoundDataRef* m_pSoundData;            // 0x00
+	uint8 m_pad_04[0x18 - 0x04];
+	// 0x18 — a byte GetSoundData tests against 4 and 0xff before handing
+	// back a sample already loaded (0x0049d431; name ours).
+	uint8 m_nFlag;                          // 0x18
+	uint8 m_pad_19[0x1c - 0x19];
 	char* m_pFilename;                      // 0x1c
 };
 
@@ -2495,6 +2510,49 @@ LTRESULT CSoundMgrView::ReleaseSound(CSoundInstanceRef* pSound)
 	}
 
 	return LT_OK;
+}
+
+
+// Primal Hunt 0x0049d410, 187 bytes (sndmgr2.cpp has the same body as
+// AvP2's 0x00480a40) — find, or load, the sample behind one file record.
+// The type test is `&&` (two `je`s onto the success arm), and on an Init
+// failure the sample goes back to the bank the way FreeSoundData returns
+// one: the explicit virtual destructor, then sb_Free.  The allocate is
+// the bank's out-of-line Allocate (see ObjectBankView).
+CSoundDataRef* CSoundMgrView::GetSoundData(void* pFileRec)
+{
+	CSoundDataRef* pSoundData;
+
+	if (!m_pSoundSys)
+		return LTNULL;
+
+	pSoundData = ((CSoundFileRecRef*)pFileRec)->m_pSoundData;
+
+	if (pSoundData)
+	{
+		if (((CSoundFileRecRef*)pFileRec)->m_nFlag != 4 &&
+		    ((CSoundFileRecRef*)pFileRec)->m_nFlag != 0xff)
+			return LTNULL;
+
+		pSoundData->m_nUnknown40 = 1;
+		return pSoundData;
+	}
+
+	pSoundData = m_SoundDataBank.Allocate();
+	if (!pSoundData)
+		return LTNULL;
+
+	if (pSoundData->Init(pFileRec) != LT_OK)
+	{
+		pSoundData->~CSoundDataRef();
+		sb_FreeRef(&m_SoundDataBank.m_Bank, pSoundData);
+
+		return LTNULL;
+	}
+
+	dl_AddTail(&m_SoundDataList, &pSoundData->m_MgrLink, pSoundData);
+
+	return pSoundData;
 }
 
 

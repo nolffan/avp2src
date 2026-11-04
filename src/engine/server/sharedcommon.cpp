@@ -1,9 +1,11 @@
 // server.dll — the shared ILTCommon implementation (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x47a6a0).
+// Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
+// 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
 #endif
 #include <string.h>
@@ -699,9 +701,14 @@ LTRESULT SharedCommonLT::GetCRC(ILTStream* pStream, uint32& dwResult)
 		return LT_ERROR;
 	}
 
-	unsigned long nLen;
-	pStream->GetLen(&nLen);
-	for (; nLen; nLen--)
+	// iltstream.h's value-returning GetLen(): its temporary is the frame
+	// slot the length comes back in, and the loop counts its own index
+	// (lithtech.exe 0x00440aa4..0x00440ab6: `cmp %ebx,%eax ; jbe`, then the
+	// count copied into ebx).
+	uint32 nLen = pStream->GetLen();
+	uint32 i;
+
+	for (i = 0; i < nLen; i++)
 	{
 		pStream->Read(&nByte, 1);
 		nCRC = (nCRC >> 8) ^ crcTable[(uint8)nCRC ^ nByte];

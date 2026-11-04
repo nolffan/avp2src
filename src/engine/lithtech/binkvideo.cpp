@@ -62,6 +62,13 @@
 //
 // *********************************************************************** //
 
+#if defined(PRIMAL_HUNT)
+// PH: Primal Hunt's engine saw the STL's <string> here (AvP2 1.0.9.6's did
+// not): this translation unit ends in <string>'s guarded initializer of
+// std::ctype<unsigned short>::id at 0x00402920 (guard 0x004f8014, atexit of
+// the empty 0x00401790).
+#include <string>
+#endif
 #include <windows.h>
 #include <string.h>
 
@@ -223,7 +230,11 @@ public:
 class SharedTextureK
 {
 public:
-	SharedTextureK();
+	// AVP2: as Primal Hunt -- both out of line (wgrid.cpp's
+	// SharedTextureQ517): 0x004304f0 and 0x00430560, which BinkVideoInst's
+	// constructor (0x00401ce0) and destructor (0x00401da0) call.
+	SharedTextureK();                        // 0x004304f0
+	~SharedTextureK();                       // 0x00430560
 
 public:
 	CBankLinkK    m_Bank;                    // 0x00
@@ -244,29 +255,8 @@ public:
 	uint32        m_Unknown34[3];            // 0x34 .. 0x3f
 };
 
-// 0x00401b90 / 0x0048aba0 expand this inline, identically but for the
-// sub-object's offset (+0x28 in Bink, +0x68 in Smack).  Neither +0x10 nor
-// +0x14 nor +0x2c is touched, so they are not in the initialiser list.
-//   * +0x1c/+0x20 are cleared through their OWN pointer and their OWN zero
-//     (`lea 0x1c(%esi),%ecx; xor %eax,%eax; mov %eax,(%ecx); mov
-//     %eax,0x4(%ecx)` at 0x00401bad..0x00401bbe) while every other field
-//     shares %ebx: an inline /Oi memset of 8 bytes, not two assignments.
-//   * +0x32 is stored as a whole word (`mov %bx,0x32(%esi)`, 0x00401bd2):
-//     BOTH bitfields are cleared; clearing only the count gives `andw
-//     $0x8000`.
-inline SharedTextureK::SharedTextureK()
-{
-	m_pEngineData = LTNULL;
-	m_pRenderData = LTNULL;
-	m_Link.m_pData = this;
-	memset(&m_Unknown1c, 0, sizeof(m_Unknown1c));
-	m_pFileRef = LTNULL;
-	m_Bank.Init(this);
-	m_Unknown28 = 0;
-	m_nRefCount = 0;
-	m_bMarked = 0;
-	m_nFrameCode = 0;
-}
+// NOLF's 0x00401b90 / 0x0048aba0 expanded the constructor inline; AvP2's
+// and Primal Hunt's call it (see the declaration above).
 
 // 0x004628e0 / 0x00462900 -- clientrender.cpp names both.
 void rif_BindTextureK(SharedTextureK* pTexture, LTBOOL bChanged);
@@ -505,6 +495,16 @@ struct LTListInitK : public LTListK
 	LTListInitK() { m_nElements = 0; m_pHead = LTNULL; }
 };
 
+// The instance's binding list is a member with a destructor of its own:
+// 0x00402910 is its out-of-line copy (head +0x04 cleared before the count,
+// both immediates), reached from the unwind tables, and the constructor
+// (0x00401ce0) and destructor (0x00401da0) carry an exception state for it.
+struct LTListBindingsK : public LTListK
+{
+	LTListBindingsK() { m_nElements = 0; m_pHead = LTNULL; }
+	~LTListBindingsK() { m_pHead = LTNULL; m_nElements = 0; }
+};
+
 inline void k_AddToList(LTListK* pList, LTLinkK* pLink, void* pObj)
 {
 	if (pList->m_pHead)
@@ -654,11 +654,12 @@ public:
 // The abstract base behind vtable 0x004a147c (lt2new3.cpp's
 // CUnknown4A147C).  Ten slots: an inline empty destructor, one non-pure
 // body that is a bare `ret` at 0x00491b40, and eight _purecall.  Its size
-// is 0x18, which is where BinkVideoInstK's own first field sits.
+// is 0x10: the binding list at +0x10 is BinkVideoInstK's own first member
+// (Primal Hunt's 0x00401d50, ~VideoInst, is the vptr store alone, while
+// 0x00401da0 clears the list after the texture's destructor and before it).
 class VideoInstK
 {
 public:
-	VideoInstK() { m_Bindings.m_nElements = 0; m_Bindings.m_pHead = LTNULL; }
 	virtual ~VideoInstK() {}                                   // slot 0
 	virtual void     Release() {}                              // slot 1
 	virtual void     Restore() = 0;                            // slot 2
@@ -672,7 +673,6 @@ public:
 
 public:
 	LTLinkK  m_Link;                         // 0x04  the manager's list
-	LTListK  m_Bindings;                     // 0x10 count, 0x14 head
 };
 
 class BinkVideoMgrK;
@@ -703,6 +703,7 @@ public:
 	LTRESULT UpdateTextureVideo();                             // 0x00402540
 
 public:
+	LTListBindingsK       m_Bindings;        // 0x10 count, 0x14 head
 	BINKK*                m_pBink;           // 0x18
 	BinkVideoMgrK*        m_pMgr;            // 0x1c
 	IDirectDrawSurfaceK*  m_pSurface;        // 0x20
@@ -1050,6 +1051,9 @@ LTRESULT BinkVideoMgrK::StartTextureVideo(char* pFilename, uint32 nFlags,
 //      +0x20, +0x24, +0x64 from one zeroed register.
 // ======================================================================= //
 
+// Primal Hunt: 0x00401ce0, 107 bytes (/GX): base vptr, state 0, the
+// binding list's inline constructor, state 1, the texture's out-of-line
+// constructor (0x004304f0), then the stores above.
 BinkVideoInstK::BinkVideoInstK(BinkVideoMgrK* pMgr)
 {
 	m_pMgr = pMgr;
@@ -1068,11 +1072,12 @@ BinkVideoInstK::BinkVideoInstK(BinkVideoMgrK* pMgr)
 //  destructor: +0x14/+0x10 cleared from one zero, base vptr last.
 // ======================================================================= //
 
+// Primal Hunt: 0x00401da0, 91 bytes: state 2, Term (0x00401e00), state 1,
+// the texture's destructor (0x00430560), the binding list's (head, then
+// count), base vptr.
 BinkVideoInstK::~BinkVideoInstK()
 {
 	Term();
-	m_Texture.m_Bank.Release();
-	m_Bindings.Init();
 }
 
 

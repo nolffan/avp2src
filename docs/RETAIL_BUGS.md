@@ -124,6 +124,26 @@ Only the debug output is wrong.
 
 Not fixed: harmless, kept for byte identity.
 
+### childmodel.map is never closed
+
+server.dll 0x10041166 (`sm_LoadChildModelMap`, Primal Hunt only,
+src/engine/server/smgr.cpp; lithtech.exe's copy 0x0048ca10). The file is
+opened and read line by line into the child-model table, and the loop
+ends (server.dll 0x100417ff) with no `fclose`: one handle leaks for every
+world started.
+
+Fixed in the modern build: smgr.cpp, the file is closed.
+
+### Removing an attachment reads its record after freeing it
+
+`si_RemoveAttachment` (Primal Hunt lithtech.exe 0x00488270, server.dll's
+copy; src/engine/server/smgr.cpp) takes the child's object id from the
+attachment record after `am_RemoveAttachment` has returned the record to
+its bank. It works only because the bank's free writes nothing but the
+record's first dword.
+
+Fixed in the modern build: smgr.cpp, the id is read first.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

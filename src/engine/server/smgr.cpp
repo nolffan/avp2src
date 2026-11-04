@@ -1,9 +1,18 @@
 // server.dll — CServerMgr's interface-facing half (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifdef PRIMAL_HUNT
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x40d050).
+// (server.dll too: 0x10010dab, 0x10033e4d, guard 0x1008ec84)
+#include <string>
+#endif
+#ifdef PRIMAL_HUNT
+// PH: the world's end gathers the models still in use into an STL set
+// (sub_48d400Q502), and the child-model table is an STL map of maps keyed
+// by strings (sm_LoadChildModelMapQ523), in both images.
+#include <set>
+#include <map>
 #include <string>
 #endif
 #include <stdarg.h>
@@ -585,9 +594,12 @@ CServerMgr::~CServerMgr()
 
 CServerMgr::CServerMgr()
 {
+	// The type first: Primal Hunt's /GX build stores it ahead of the two
+	// counters (server.dll 0x1003832d). AvP2 1.0.9.6's lifts the counters
+	// above the vtable stores (0x100355f2), where the order is not visible.
+	m_ClientServerType = ServerType;
 	m_Unknown7fc = 0;
 	m_Unknown800 = 0;
-	m_ClientServerType = ServerType;
 }
 #endif
 
@@ -919,6 +931,87 @@ void CServerMgr::EndWorld(int bKeepWorldData)
 	dsi_ServerError("World ended");
 }
 
+#ifdef PRIMAL_HUNT
+// PH: CLTServer::BroadcastFileMessage again, as a free function of the
+// manager (server.dll 0x10041ad0, lithtech.exe 0x0048d660; name ours): tell
+// every client -- or, without bToAll, every client not flagged 2 -- about
+// one file. The writes are WriteType's, called at /O1 (0x10041b42,
+// 0x10041b4d) and expanded at /O2, as in servermessage.cpp's PH copy.
+void sm_BroadcastFileMessageQ523(CServerMgr* pMgr, uint32 nFileType,
+                                 uint32 nMsgID, uint16 nFileID, int bToAll)
+{
+	CMessageRef msg;
+	LTLink*     pListHead;
+	LTLink*     pCur;
+
+	pListHead = &pMgr->m_ClientList.m_Head;
+	for (pCur = pListHead->m_pNext; pCur != pListHead; pCur = pCur->m_pNext)
+	{
+		Client* pClient = (Client*)pCur->m_pData;
+
+		if (!bToAll && (pClient->m_ClientFlags & 2))
+			continue;
+
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));
+
+		((CPacket*)msg.m_pMsg)->WriteType((uint8)nFileType);
+		((CPacket*)msg.m_pMsg)->WriteType((uint16)nFileID);
+
+		sm_SendToClient(pMgr, pClient, nMsgID, msg.m_pMsg, 0, 0x80);
+	}
+}
+
+// PH: CLTServer::UnloadModel as a free function of the manager (server.dll
+// 0x10041a4e, lithtech.exe 0x0048d5d0; name ours), which the world's end
+// calls for every model nothing uses any more (sub_48d400Q502). The missing
+// file is reported under "ThreadLoadTexture", the literal the interface's
+// copy has too.
+LTRESULT sm_UnloadModelFileQ523(CServerMgr* pMgr, char* pFilename)
+{
+	CFileIdentifier* pFile;
+
+	if (!fs_GetFileIdentifier(&pMgr->m_FileMgr, pFilename, 0, (void**)&pFile))
+#ifdef AVP2_MODERN
+		RETURN_ERROR_INFO(1, "UnloadModel", LT_MISSINGFILE, pFilename);
+#else
+		RETURN_ERROR_INFO(1, "ThreadLoadTexture", LT_MISSINGFILE, pFilename);
+#endif
+
+	LTRESULT dResult = sm_UnloadModel(pMgr, pFilename, pFile);
+	if (dResult != LT_OK)
+		return dResult;
+
+	sm_BroadcastFileMessageQ523(pMgr, FT_MODEL, 0x18, pFile->m_FileID, 0);
+	return LT_OK;
+}
+
+// PH: lithtech.exe 0x0048d400, server.dll 0x10041995 -- the last step of
+// EndWorld. Every model in the manager's model hash whose +0x190 is set goes
+// into a set (so each is visited once, in address order), and then each of
+// them is unloaded by name and the clients told. The set's own code is the
+// STL's: its insert, iterator step and destructor are the template members
+// around this function (server.dll 0x10043541, 0x10044089, 0x10043251;
+// lithtech.exe 0x004904e0 ...).
+void sub_48d400Q502(CServerMgr* pMgr)
+{
+	std::set<Model*> models;
+	void*            hIter;
+	Model*           pModel;
+
+	hIter = dhash_GetFirst(pMgr->m_hModelHash);
+	while (hIter)
+	{
+		pModel = (Model*)dhash_GetData(dhash_GetNext(&hIter));
+
+		if (pModel->m_Unknown190)
+			models.insert(pModel);
+	}
+
+	for (std::set<Model*>::iterator it = models.begin(); it != models.end(); ++it)
+		sm_UnloadModelFileQ523(pMgr, (*it)->GetFilename());
+}
+#endif
+
 // Detach every client's tracked object (name ours).
 void sm_EndWorldC(CServerMgr* pMgr)
 {
@@ -1043,12 +1136,24 @@ public:
 	LTBOOL PrecacheModels();                 // 0x10033e76
 };
 
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's "child model" table, defined below sm_CacheObjectFiles
+// (names ours).
+void     sm_LoadChildModelMapQ523();
+void     sm_ApplyChildModelsQ523(ILTServer* pServer, char* pWorldName);
+#endif
+
 LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 {
 	char str[256];
 	LTBOOL bSameWorld;
 	void* hFile;
 	LTRESULT dResult;
+
+#ifdef PRIMAL_HUNT
+	// PH: server.dll 0x100413fe, before anything else.
+	sm_LoadChildModelMapQ523();
+#endif
 
 	// Reseed everything from the clock, the game shell included.
 	uint32 seed = (uint32)dsi_GetTime();
@@ -1105,6 +1210,12 @@ LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 	cs_PreLoadWorld(pszWorldName);
 #endif
 
+#ifdef PRIMAL_HUNT
+	// PH: server.dll 0x10041588 (lithtech.exe 0x0048cd99, after the client
+	// shell's notice), once the world file is known.
+	sm_ApplyChildModelsQ523((ILTServer*)m_pUnknown928, pszWorldName);
+#endif
+
 	if (bSameWorld && m_hWorldFile)
 	{
 		m_bWorldLoaded = 1;
@@ -1151,6 +1262,57 @@ LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 	return LT_OK;
 }
 
+#ifdef PRIMAL_HUNT
+extern std::map<std::string, std::map<std::string, std::string> > g_ChildModelMapQ523;
+extern std::string g_sChildModelDefaultQ523;
+
+// PH: server.dll 0x1004167e -- fill the child-model table from
+// childmodel.map, once. Each line is a world, a model file and the child
+// model that stands in for it, separated by any of "; \t\n\r", all three
+// lowered; a line short of three is skipped.
+// RETAIL BUG: the file is never closed (no fclose after the loop,
+// 0x100417ff); the modern build closes it.
+//
+// NEAR on both images, one register fact: shipped tests the size in
+// memory (server.dll 0x10041691 `cmp %ebx,0x1008dfe4`) and lithtech.exe
+// zeroes %eax again before the "none" strlen (0x0048cef4) -- the shipped
+// compiler did not know the size it had tested was in a register and zero.
+// Ours loads it and reuses it (server.dll 401/400, lithtech.exe 885/887).
+// Unmoved by an if-block round the body, `!size()`, empty(); `<= 0`,
+// `>= 1` and a cast give `ja`.
+void sm_LoadChildModelMapQ523()
+{
+	if (g_ChildModelMapQ523.size() != 0)
+		return;
+
+	g_sChildModelDefaultQ523 = "none";
+
+	FILE* pFile = fopen("childmodel.map", "r");
+	if (!pFile)
+		return;
+
+	char szLine[256];
+
+	while (fgets(szLine, 256, pFile))
+	{
+		char* pWorld = strtok(szLine, "; \t\n\r");
+		char* pModel = strtok(LTNULL, "; \t\n\r");
+		char* pChild = strtok(LTNULL, "; \t\n\r");
+
+		_strlwr(pWorld);
+		_strlwr(pModel);
+		_strlwr(pChild);
+
+		if (pWorld && pModel && pChild)
+			g_ChildModelMapQ523[pWorld][pModel] = pChild;
+	}
+
+#ifdef AVP2_MODERN
+	fclose(pFile);
+#endif
+}
+#endif
+
 // The object Init hangs at +0x6a8: the object mover, whose vtable is the
 // thirteen-slot table at 0x1004e8c8 (Init's inline construction stores it at
 // 0x10031fbe, then the manager at +0x04). servermgr.h's CUnknown6A8Obj
@@ -1184,6 +1346,95 @@ public:
 
 	CServerMgr* m_pMgr;                      // +0x04
 };
+
+#ifdef PRIMAL_HUNT
+extern "C" {
+__declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
+__declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
+}
+
+// PH: a reference-counted object, released through its virtual destructor
+// when the last reference goes (server.dll 0x1003f2d1: InterlockedDecrement
+// of +0x04, then `delete this` -- the null test and slot 0 with 1 pushed).
+// What it is is not established; only the count at +0x04 and the virtual
+// destructor are read (names ours).
+class CRefObjQ523
+{
+public:
+	virtual ~CRefObjQ523();
+
+	CRefObjQ523* AddRef()
+	{
+		InterlockedIncrement(&m_nRefs);
+		return this;
+	}
+
+	void Release()                           // 0x1003f2d1
+	{
+		if (InterlockedDecrement(&m_nRefs) <= 0)
+			delete this;
+	}
+
+	long m_nRefs;                            // +0x04
+};
+
+// PH: the one-pointer smart reference that holds one (names ours):
+// assignment (server.dll 0x10043361) releases what it held and takes a
+// reference on what it is given; the destructor (0x1003f2c5) releases.
+class CRefPtrQ523
+{
+public:
+	CRefPtrQ523();                           // 0x100430c1
+	~CRefPtrQ523();                          // 0x1003f2c5
+
+	CRefObjQ523* operator=(CRefObjQ523* p)
+	{
+		if (m_p != p)
+		{
+			if (m_p)
+				m_p->Release();
+
+			m_p = p ? p->AddRef() : LTNULL;
+		}
+
+		return p;
+	}
+
+	CRefObjQ523* m_p;
+};
+
+// Out of line: the global's initializer reaches both by a tail jump
+// (server.dll 0x1003f2aa, 0x1003f2c0), and the constructor's six bytes are
+// shared by identical-code folding with three other users.
+CRefPtrQ523::CRefPtrQ523()
+{
+	m_p = LTNULL;
+}
+
+CRefPtrQ523::~CRefPtrQ523()
+{
+	if (m_p)
+		m_p->Release();
+}
+
+// PH: server.dll 0x1008dfc8 (its initializer 0x1003f29b, the destructor
+// registered through atexit at 0x1003f2af); cleared by Init. Name ours.
+CRefPtrQ523 g_RefQ523;
+
+// PH: what Primal Hunt keeps in the 0x408 bytes servermgr.h carries as
+// m_Unknown66c: Init empties a 0x400-byte string at the front and zeroes the
+// two dwords after it (server.dll 0x1003f79e, 0x1003f7a4, 0x1003f7b2).
+// servermgr.h is shared with files this one does not own, so the fields are
+// reached through a view (names ours).
+class CServerMgrPHViewQ523
+{
+public:
+	uint8  m_pad_000[0x66c];
+	char   m_sz66c[0x400];                   // 0x66c
+	uint32 m_na6c;                           // 0xa6c
+	uint32 m_na70;                           // 0xa70
+};
+#endif
 
 LTBOOL CServerMgr::Init()
 {
@@ -1229,7 +1480,13 @@ LTBOOL CServerMgr::Init()
 		sb_Init2(&m_Bank9D4, 0x164, 0x30, 0x20);
 		sb_Init2(&m_Bank864, 0x18, 0x20, 0x10);
 		sb_Init2(&m_Bank0C, 0x1c, 0x10, 0x10);
+#ifdef PRIMAL_HUNT
+		// PH: the sound instance is 0x68 bytes (server.dll 0x1003f6a2), the
+		// sound type and user data at +0x60/+0x64 that sub_100298d9 sends.
+		sb_Init2(&m_Bank28, 0x68, 0x10, 0x10);
+#else
 		sb_Init2(&m_Bank28, 0x60, 0x10, 0x10);
+#endif
 		sb_Init2(&m_PropBank, 0xc0, 0x10, 0x10);
 		sb_Init2(&m_Bank89C, 10, 0x20, 0x20);
 
@@ -1252,6 +1509,11 @@ LTBOOL CServerMgr::Init()
 		// zero stores in source order (server.dll's /O1 is identical either way).
 		m_bWorldLoaded = 0;
 		m_hWorldFile = LTNULL;
+#ifdef PRIMAL_HUNT
+		((CServerMgrPHViewQ523*)this)->m_sz66c[0] = 0;
+		((CServerMgrPHViewQ523*)this)->m_na6c = 0;
+		((CServerMgrPHViewQ523*)this)->m_na70 = 0;
+#endif
 		m_pUnknown808 = LTNULL;
 		m_FrameTime = 0.0f;
 		m_UpdatesPerSec = 0.0f;
@@ -1279,6 +1541,11 @@ LTBOOL CServerMgr::Init()
 
 		m_pCollisionInfo = LTNULL;
 		sm_ResetProfileCounters();
+#ifdef PRIMAL_HUNT
+		// PH: server.dll 0x1003f87f, a call to the assignment with zero;
+		// lithtech.exe expands it (0x0048a7xx: the release, then the store).
+		g_RefQ523 = LTNULL;
+#endif
 		return LTTRUE;
 	}
 
@@ -1643,6 +1910,10 @@ void sm_ResetProfileCounters()
 // these fixed prototypes do. So in Primal Hunt's build the three names are
 // the varargs printer itself. Primal Hunt's 0x0048aed0 is then 965 of 965,
 // with only the strlen register above left (shipped eax, ours edx).
+// server.dll 0x1003fdda (877, PH counter per object below) has the same
+// residual, 879 against 877: the length is copied to %edx before the
+// compare. Unmoved by an int length (worse: `jge`), the length at function
+// scope, and `sName + nLen`.
 #ifdef PRIMAL_HUNT
 #define dsi_PrintString      dsi_ServerError
 #define dsi_PrintClassRow    dsi_ServerError
@@ -1651,7 +1922,7 @@ void sm_ResetProfileCounters()
 void CServerMgr::UpdateObjects()
 {
 	char sName[32];
-#ifdef LT_SERVER_BUILD
+#if defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
 	CBaseCounter counter(0);
 #endif
 	LTLink* pCur;
@@ -1708,6 +1979,12 @@ void CServerMgr::UpdateObjects()
 			// the update is a bare call (0x00473cc9 -> 0x004697e0), so the
 			// class tick counts it prints are always zero.
 #ifdef LT_SERVER_BUILD
+#ifdef PRIMAL_HUNT
+			// PH: the counter is the update's own, constructed for each
+			// object (server.dll 0x1003fecb `push $0 ... call`, after the
+			// stats are found).
+			CBaseCounter counter(0);
+#endif
 			cnt_StartCounter(&counter);
 			sm_UpdateObject(this, pObject);
 			pStats->m_Ticks += cnt_EndCounter(&counter);
@@ -2742,7 +3019,14 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 					}
 					msg.m_pMsg->WriteWord((uint16)i);
 					msg.m_pMsg->WriteWord((uint16)j);
-					msg.m_pMsg->WriteByte((uint8)((CFileRec*)(pList->m_pFiles + j * 0x24))->m_nFlags);
+					{
+						// A named byte: server.dll homes it in a frame slot
+						// and pushes the slot (0x1003191a, 0x1003191d),
+						// which is what the shipped 0xc frame is for.
+						uint8 nFlags = (uint8)((CFileRec*)(pList->m_pFiles + j * 0x24))->m_nFlags;
+
+						msg.m_pMsg->WriteByte(nFlags);
+					}
 					sm_SendToClient(pMgr, pClient, 0x13, msg.m_pMsg, 0, 0x80);
 				}
 			}
@@ -3101,9 +3385,6 @@ void sm_SphereGather(LTObject* pObj, void* pUser);                 // 0x1002f861
 // source serves both images (identical on both).
 ObjectList* sm_FindObjectsTouchingSphere(LTVector* pPosition, float radius)
 {
-#ifdef LT_SERVER_BUILD
-	CBaseCounter counter(0);
-#endif
 	SphereQuery  query;
 	LTVector     vMin;
 	LTVector     vMax;
@@ -3123,6 +3404,10 @@ ObjectList* sm_FindObjectsTouchingSphere(LTVector* pPosition, float radius)
 	query.m_Diameter = radius + radius;
 
 #ifdef LT_SERVER_BUILD
+	// Declared here and not at the top: server.dll constructs the counter
+	// after the list is allocated and the query filled in (0x1003c1b8),
+	// so the early return has no counter to skip.
+	CBaseCounter counter(0);
 	cnt_StartCounter(&counter);
 #endif
 
@@ -3521,11 +3806,10 @@ public:
 // create struct, each cut at MAX_CS_FILENAME_LEN - 1 (`push $0x7e`); an
 // unset one leaves an empty string.
 //
-// NEAR on Primal Hunt (250 of 252 bytes): the shape is right, but shipped
-// keeps hObj in ebp and pStruct in ebx with esi/edi shrink-wrapped around
-// the skin loop (pushed at 0x00488db1, popped at 0x00488e06); ours swaps
-// the two and saves all four up front. A block-scoped loop counter does not
-// move it.
+// NEAR on Primal Hunt, both images size-exact (lithtech.exe 0x00488d50,
+// 252/252; server.dll 0x1003e93d, 242/242): one instruction each, the skin
+// load's base and index swapped (`(%eax,%esi,1)` shipped, 0x00488dc4,
+// 0x1003e9b1). Allocation (guide 09); a uint32 counter is worse (`jb`).
 LTBOOL si_GetModelFilenames2(LTObject* hObj, ObjectCreateStruct* pStruct)
 {
 	if (!hObj)
@@ -3562,22 +3846,19 @@ LTBOOL si_GetModelFilenames2(LTObject* hObj, ObjectCreateStruct* pStruct)
 	}
 
 #ifdef PRIMAL_HUNT
-	// PH: the create struct is Primal Hunt's, with a name buffer after the
-	// skins that the AvP2 SDK's ltbasedefs.h does not have.
+	// PH: the create struct's extra name after the skins (+0x300), written
+	// through the member at each use: server.dll adds 0x300 only on the
+	// copying arm (0x1003ea0e) and clears `0x300(%esi)` on the other.
+	if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44)
 	{
-		char* pName300 = (char*)pStruct + 0x300;
-
-		if (((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44)
-		{
-			strncpy(pName300,
-			        fs_GetFileName(&g_pServerMgr->m_FileMgr,
-			                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44),
-			        MAX_CS_FILENAME_LEN - 1);
-		}
-		else
-		{
-			pName300[0] = 0;
-		}
+		strncpy(pStruct->m_ExtraTextureName,
+		        fs_GetFileName(&g_pServerMgr->m_FileMgr,
+		                       ((CSObjDataFilesQ502*)hObj->m_pSData)->m_pFile44),
+		        MAX_CS_FILENAME_LEN - 1);
+	}
+	else
+	{
+		pStruct->m_ExtraTextureName[0] = 0;
 	}
 #endif
 
@@ -3808,6 +4089,112 @@ LTBOOL si_CastRay(IntersectQuery* pQuery, IntersectInfo* pInfo)
 	pQuery->m_To += pQuery->m_From;
 
 	return si_IntersectSegment(pQuery, pInfo);
+}
+
+// AVP2: what the polygon box walk carries (0x24 bytes; names ours): the
+// caller's list and its room, the count found so far, the caller's filter,
+// and the box as a sphere -- its centre and half its diagonal.
+//
+// The constructor is the shipped server.dll 0x1003ced1 (thiscall, `ret 8`),
+// emitted after its one caller: defined in the class, so /O1 declines it and
+// leaves a COMDAT behind, and lithtech.exe's /O2 expands it in place
+// (0x00486093..0x004860c8). A list with no room is a list of none.
+class CPolyBoxQueryQ523
+{
+public:
+	CPolyBoxQueryQ523(HPOLY* pList, uint32 nMax)
+	{
+		m_pList     = pList;
+		m_nMax      = pList ? nMax : 0;
+		m_nFound    = 0;
+		m_FilterFn  = LTNULL;
+		m_pUserData = LTNULL;
+		m_vCenter.Init();
+		m_fRadius   = 0.0f;
+	}
+
+	HPOLY*         m_pList;                  // +0x00
+	uint32         m_nMax;                   // +0x04
+	uint32         m_nFound;                 // +0x08
+	ObjectFilterFn m_FilterFn;               // +0x0c
+	void*          m_pUserData;              // +0x10
+	LTVector       m_vCenter;                // +0x14
+	float          m_fRadius;                // +0x20
+};
+
+// The box's six faces as planes whose normals are fixed and whose distances
+// each query sets (server.dll 0x1008c608, lithtech.exe 0x004f4088, 0x10
+// apart), and the box's bounding sphere (server.dll 0x1008bb48 radius,
+// 0x1008bb4c centre; lithtech.exe 0x004f35c8, 0x004f35cc). The walk's
+// callback reads them; names ours. The sphere is ONE object: as two
+// separate globals server.dll's /O1 scheduled the first dword of the
+// centre's copy ahead of the radius store (0x1003ce42), which it does not
+// do into one aggregate.
+struct CPolyBoxPlaneQ523
+{
+	float m_Normal[3];
+	float m_Dist;
+};
+
+CPolyBoxPlaneQ523 g_PolyBoxPlanesQ523[6];
+struct CPolyBoxSphereQ523
+{
+	float    m_fRadius;
+	LTVector m_vCenter;
+};
+
+CPolyBoxSphereQ523 g_PolyBoxSphereQ523;
+
+// The world tree's per-object callback for the walk (server.dll 0x1003bf5a,
+// lithtech.exe 0x00484f50; not yet reconstructed): world models only, through
+// the caller's filter, then the model's polygons against the box.
+int sm_PolyBoxGatherQ523(LTObject* pObj, void* pUser);
+
+// AVP2: ILTServer::FindPoliesTouchingBox -- server.dll 0x1003cd82 (with the
+// counter LT_SERVER_TIMERS gives it), lithtech.exe 0x00486090 (without). The
+// box goes to the world tree as a box, and the walk's callback gets the same
+// box as six planes and a sphere through the globals above. The count is
+// added to the "ShowPolyFindTicks" stats whether or not the caller asked for
+// it.
+void si_FindPoliesTouchingBox(const LTVector& vBoxMin, const LTVector& vBoxMax,
+                              HPOLY* pPolyList, uint32 nPolyListSize,
+                              uint32* pnNumPoliesFound, ObjectFilterFn FilterFn,
+                              void* pUserData)
+{
+#ifdef LT_SERVER_BUILD
+	CBaseCounter counter(0);
+
+	cnt_StartCounter(&counter);
+#endif
+
+	CPolyBoxQueryQ523 query(pPolyList, nPolyListSize);
+
+	query.m_vCenter = (vBoxMax + vBoxMin) * 0.5f;
+	query.m_fRadius = (vBoxMax - vBoxMin).Mag() * 0.5f;
+	query.m_FilterFn  = FilterFn;
+	query.m_pUserData = pUserData;
+
+	g_PolyBoxSphereQ523.m_fRadius = query.m_fRadius;
+	g_PolyBoxSphereQ523.m_vCenter = query.m_vCenter;
+
+	g_PolyBoxPlanesQ523[0].m_Dist = vBoxMin.x;
+	g_PolyBoxPlanesQ523[1].m_Dist = -vBoxMax.x;
+	g_PolyBoxPlanesQ523[2].m_Dist = vBoxMin.y;
+	g_PolyBoxPlanesQ523[3].m_Dist = -vBoxMax.y;
+	g_PolyBoxPlanesQ523[4].m_Dist = vBoxMin.z;
+	g_PolyBoxPlanesQ523[5].m_Dist = -vBoxMax.z;
+
+	((IObjectQuery*)&g_pServerMgr->m_Unknown210)->FindObjectsInBox(
+		(LTVector*)&vBoxMin, (LTVector*)&vBoxMax, sm_PolyBoxGatherQ523,
+		&query, 0);
+
+#ifdef LT_SERVER_BUILD
+	g_FindPolyTicksQ502 += cnt_EndCounter(&counter);
+#endif
+	g_FindPolyCountQ502 += query.m_nFound;
+
+	if (pnNumPoliesFound)
+		*pnNumPoliesFound = query.m_nFound;
 }
 
 // ---- the object property readers (0x1003047c-0x100306f0) ---------------- //
@@ -4813,6 +5200,14 @@ LTRESULT si_ReleaseSmartLinkBody(LTSmartLink_Body* pBody)
 	return LT_OK;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: an attachment's world transform -- the offset turned by the parent's
+// rotation and added to its position, and the two rotations composed --
+// (server.dll 0x1002a7ed, 157 bytes; not yet reconstructed, name ours).
+void sm_GetAttachmentTransformQ523(LTObject* pParent, Attachment* pAttach,
+                                   LTVector* pPos, LTRotation* pRot);
+#endif
+
 LTRESULT si_CreateAttachment(LTObject* hParent, LTObject* hChild, char* pSocketName,
                              LTVector* pOffset, LTRotation* pRotationOffset,
                              Attachment** pAttachment)
@@ -4844,7 +5239,26 @@ LTRESULT si_CreateAttachment(LTObject* hParent, LTObject* hChild, char* pSocketN
 	if (dResult != LT_OK)
 		return dResult;
 
+#ifdef PRIMAL_HUNT
+	// PH: the child is put where the attachment holds it at once, and
+	// marked attached -- change bit 0x400, which si_RemoveAttachment clears
+	// -- with the attachment change flagged on both (server.dll
+	// 0x1003e37d..0x1003e3c3).
+	{
+		LTVector   vPos;
+		LTRotation rRot;
+
+		sm_GetAttachmentTransformQ523(hParent, pAttach, &vPos, &rRot);
+		si_SetObjectPos(hChild, &vPos);
+		si_SetObjectRotation(hChild, &rRot);
+
+		sm_SetObjectChangeFlag(g_pServerMgr, hParent, 0x100);
+		hChild->m_ChangeFlags |= 0x400;
+		sm_SetObjectChangeFlag(g_pServerMgr, hChild, 0x100);
+	}
+#else
 	sm_SetObjectChangeFlag(g_pServerMgr, hParent, 0x100);
+#endif
 	if (pAttachment)
 		*pAttachment = pAttach;
 	return LT_OK;
@@ -4859,9 +5273,37 @@ LTRESULT si_RemoveAttachment(Attachment* hAttachment)
 	if (!pParent)
 		RETURN_ERROR(1, "ILTPhysics::RemoveAttachment", LT_ERROR);
 
+#ifdef PRIMAL_HUNT
+#ifdef AVP2_MODERN
+	uint16 nChildID = hAttachment->m_nChildID;
+#endif
+#endif
+
 	if (am_RemoveAttachment(&g_pServerMgr->m_Unknown390, pParent, hAttachment) == LT_OK)
 	{
 		sm_SetObjectChangeFlag(g_pServerMgr, pParent, 0x100);
+
+#ifdef PRIMAL_HUNT
+		// PH: the child is let go as well -- change bit 0x400 cleared and
+		// the attachment change flagged on it too (server.dll 0x1003e4c9..
+		// 0x1003e4f4).
+		// RETAIL BUG: the child's id is read out of the attachment record
+		// AFTER am_RemoveAttachment has handed it back to its bank. Only the
+		// record's first dword is written by the free, so the id survives,
+		// but it is a read of freed memory; the modern build reads it first.
+#ifdef AVP2_MODERN
+		LTObject* pChild = sm_FindObjectByID(g_pServerMgr, nChildID);
+#else
+		LTObject* pChild = sm_FindObjectByID(g_pServerMgr, hAttachment->m_nChildID);
+#endif
+
+		if (pChild)
+		{
+			pChild->m_ChangeFlags &= ~0x400;
+			sm_SetObjectChangeFlag(g_pServerMgr, pChild, 0x100);
+		}
+#endif
+
 		return LT_OK;
 	}
 
@@ -6641,6 +7083,9 @@ class CMsgLenView
 public:
 	int GetSpaceLeft();                      // 0x1000e845
 	int GetSpaceLeftCall();                  // stand-in, see below
+#ifdef PRIMAL_HUNT
+	int GetSpaceLeftInline();                // stand-in, see below
+#endif
 
 	uint8  m_pad_00[0x36];
 	uint16 m_MaxDataLen;                     // +0x36
@@ -6684,6 +7129,23 @@ int CMsgLenView::GetSpaceLeftCall()
 inline int CMsgLenView::GetSpaceLeftCall()
 {
 	return GetSpaceLeft();
+}
+#endif
+
+#ifdef PRIMAL_HUNT
+// PH: the converse STAND-IN. Primal Hunt's server.dll calls its copy
+// (0x1003102f) from six sites but EXPANDS it at one: the cache-record loop
+// of sm_SendObjectInfo2 (0x10031cc1..0x10031cd3), the same site lithtech.exe
+// expands. Inline in the class sense in both builds, so that site expands
+// in both.
+inline int CMsgLenView::GetSpaceLeftInline()
+{
+	int nLeft = m_MaxDataLen - m_Pos - 7;
+
+	if (nLeft < 0)
+		nLeft = 0;
+
+	return nLeft;
 }
 #endif
 
@@ -7250,6 +7712,11 @@ public:
 // itself is in edi -- and the list head is re-`lea`d at both ends of the
 // walk rather than named, which is the opposite of every other walk in this
 // file and is what the shipped bytes have.
+//
+// Primal Hunt server.dll 0x10031b67: identical. NEAR on lithtech.exe
+// 0x00476550 (678/678): the cursor's next pointer is loaded into %edx where
+// shipped reuses %eax (0x0047669d). Allocation; unmoved by pRec at function
+// scope.
 LTRESULT sm_SendObjectInfo2(CServerMgr* pMgr, Client* pClient)
 {
 	CMessageRef msg;
@@ -7318,11 +7785,20 @@ LTRESULT sm_SendObjectInfo2(CServerMgr* pMgr, Client* pClient)
 		{
 			if (pRec->m_bWanted && pRec->m_hFile)
 			{
-				msg.m_pMsg->WriteWord(
-					((CFileIdentifier*)pRec->m_hFile)->m_FileID);
+				// A named id: written into the call, the value took %eax
+				// and was pushed after the message load; named, it reuses
+				// the record's register and is pushed first (server.dll
+				// 0x10031cb4, lithtech.exe 0x004766b6).
+				uint16 nFileID = ((CFileIdentifier*)pRec->m_hFile)->m_FileID;
+
+				msg.m_pMsg->WriteWord(nFileID);
 			}
 
+#ifdef PRIMAL_HUNT
+			if (((CMsgLenView*)msg.m_pMsg)->GetSpaceLeftInline() < 0x32)
+#else
 			if (((CMsgLenView*)msg.m_pMsg)->GetSpaceLeft() < 0x32)
+#endif
 			{
 				sm_SendToClient(pMgr, pClient, 0x15, msg.m_pMsg, 0, 0x80);
 
@@ -7566,20 +8042,25 @@ void sm_BroadcastPrintf(char* pMsg, ...)
 	char        sBuffer[500];
 	va_list     marker;
 
-	if (!g_pServerMgr)
-		return;
+	// A positive guard round the whole body: the null manager falls through
+	// to the reference's release with everything else (Primal Hunt
+	// server.dll 0x10042448 jumps straight to it, and the send's `add esp`
+	// stays inside the body, 0x100424be).
+	if (g_pServerMgr)
+	{
+		va_start(marker, pMsg);
+		_vsnprintf(sBuffer, sizeof(sBuffer) - 1, pMsg, marker);
 
-	va_start(marker, pMsg);
-	_vsnprintf(sBuffer, sizeof(sBuffer) - 1, pMsg, marker);
+		msg.Init(msg_AllocPacket(0x44c, 0x44c));
 
-	msg.Init(msg_AllocPacket(0x44c, 0x44c));
+		// WriteType<uint8> -- 0x1001393e is that instantiation, the same
+		// body as the word one a byte wide; lithtech.exe expands it at
+		// 0x00476074.
+		((CPacket*)msg.m_pMsg)->WriteType((uint8)0);
+		((CMsgStringView*)msg.m_pMsg)->WriteString(sBuffer);
 
-	// WriteType<uint8> -- 0x1001393e is that instantiation, the same body as
-	// the word one a byte wide; lithtech.exe expands it at 0x00476074.
-	((CPacket*)msg.m_pMsg)->WriteType((uint8)0);
-	((CMsgStringView*)msg.m_pMsg)->WriteString(sBuffer);
-
-	sm_BroadcastToClientsEx(g_pServerMgr, 0xd, msg.m_pMsg, 0x80);
+		sm_BroadcastToClientsEx(g_pServerMgr, 0xd, msg.m_pMsg, 0x80);
+	}
 }
 
 
@@ -8290,9 +8771,11 @@ void sm_BroadcastCacheFile(CServerMgr* pMgr, uint32 fileType, uint16 nFileID)
 class CObjectModelView
 {
 public:
-	uint8        m_pad_00[0x1f0];
-	class Model* m_pModel;                   // +0x1f0
-	uint8        m_pad_1f4[0x260 - 0x1f4];
+	// AVP2: +0x1fc, as CModelInstView has it (Primal Hunt server.dll
+	// 0x10041185 reads it there); NOLF's was +0x1f0.
+	uint8        m_pad_00[0x1fc];
+	class Model* m_pModel;                   // +0x1fc
+	uint8        m_pad_200[0x260 - 0x200];
 	// +0x204 — only ever read as "does this container-type object have one";
 	// nonzero makes the change-flag reader set the attachment bit even with
 	// no attachment list (name ours).
@@ -8343,11 +8826,43 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 					fs_GetFilename(&pMgr->m_FileMgr, pObj->m_pSData->m_pModelFile));
 			}
 
+#ifdef PRIMAL_HUNT
+			// PH: Primal Hunt's object data has four skins and an extra
+			// texture after them (CSObjDataFilesQ502 above). Every skin is
+			// cached (server.dll 0x100411bd..0x100411ec), then the first
+			// again, and then the extra one with no test at all
+			// (0x10041214): fs_GetFilename is handed whatever is there.
+			{
+				int i;
+
+				for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+				{
+					if (((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[i])
+					{
+						sm_CacheFile(pMgr, 2,
+							fs_GetFilename(&pMgr->m_FileMgr,
+								((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[i]));
+					}
+				}
+			}
+
+			if (((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[0])
+			{
+				sm_CacheFile(pMgr, 2,
+					fs_GetFilename(&pMgr->m_FileMgr,
+						((CSObjDataFilesQ502*)pObj->m_pSData)->m_pSkinFiles[0]));
+			}
+
+			sm_CacheFile(pMgr, 2,
+				fs_GetFilename(&pMgr->m_FileMgr,
+					((CSObjDataFilesQ502*)pObj->m_pSData)->m_pFile44));
+#else
 			if (pObj->m_pSData->m_pSkinFile)
 			{
 				sm_CacheFile(pMgr, 2,
 					fs_GetFilename(&pMgr->m_FileMgr, pObj->m_pSData->m_pSkinFile));
 			}
+#endif
 		}
 	}
 
@@ -8373,6 +8888,49 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 	return LT_OK;
 }
 
+
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's "child model" table: for each world, which model file
+// stands for which extra child model. Read from childmodel.map once (the
+// first world start that finds the table empty) and handed to the server
+// interface world by world. The globals' initializers sit here in
+// server.dll's code (0x1004128b map, 0x100412c8 string), between
+// sm_CacheObjectFiles and the first function that uses them, which is
+// where the definitions are (names ours).
+std::map<std::string, std::map<std::string, std::string> > g_ChildModelMapQ523;
+std::string g_sChildModelDefaultQ523;
+
+// server.dll 0x10041303, lithtech.exe 0x0048ca10 -- hand the interface
+// every link the table has for this world (ILTServer's
+// ResetModelToChildModelLink, then LinkModelToExtraChildModel once per
+// entry, each with a one-name list). The world name is lowered first: the
+// table's keys are.
+void sm_ApplyChildModelsQ523(ILTServer* pServer, char* pWorldName)
+{
+	char szWorld[256];
+
+	pServer->ResetModelToChildModelLink();
+
+	strcpy(szWorld, pWorldName);
+	_strlwr(szWorld);
+
+	std::string sWorld(szWorld);
+
+	std::map<std::string, std::string>& links = g_ChildModelMapQ523[sWorld];
+
+	if (links.size())
+	{
+		for (std::map<std::string, std::string>::iterator it = links.begin();
+		     it != links.end(); ++it)
+		{
+			char* pChild = (char*)it->second.c_str();
+
+			pServer->LinkModelToExtraChildModel((char*)it->first.c_str(),
+			                                    &pChild, 1);
+		}
+	}
+}
+#endif
 
 // 0x1002a365 — shut every model down at server teardown. Three passes over
 // the model hash: bump every cache count so nothing can go while the sweep
@@ -8565,13 +9123,35 @@ public:
 };
 
 #ifdef PRIMAL_HUNT
-// PH: lithtech.exe 0x00418e40, 13 bytes -- CSObjDataTermView::Term's
-// release of +0x2c with nothing after it, out of line (it sits far from
-// this file, among the 0x00418xxx client code). Name ours.
-class CSObjDataReleaseQ502
+// PH: the object data goes back to the message bank through a member of the
+// bank, not through two statements at the call site: server.dll CALLS it
+// (0x10040d47, thiscall on CServerMgr+0xe00 with the data pushed; the
+// bank's vtable slot 2, 0x10038a68, forwards to it too) and its body is
+// 0x10038c4c -- the record's destructor (0x10015563; lithtech.exe
+// 0x00418e40, savobj.cpp's SavObjDataQ430 destructor), then sb_Free's
+// guarded push onto the free list. lithtech.exe's /O2 expands it, which is
+// why the client shows the two statements in line. CMessageBank is
+// servermgr.h's, shared with files this one does not own, so the member is
+// reached through a view of the same layout, as is the record, whose only
+// member with a destructor is the save-data reference at +0x2c (names ours).
+class CSObjDataDtorQ523
 {
 public:
-	void Release();                          // 0x00418e40
+	uint8       m_pad_00[0x2c];
+	CMessageRef m_SaveData;                  // +0x2c
+};
+
+class CMessageBankFreeQ523
+{
+public:
+	void Free(void* pStruct)                 // 0x10038c4c
+	{
+		((CSObjDataDtorQ523*)pStruct)->~CSObjDataDtorQ523();
+		sb_Free(&m_Bank, pStruct);
+	}
+
+	void*      m_pVTable;                    // +0x00
+	StructBank m_Bank;                       // +0x04
 };
 #endif
 
@@ -8751,20 +9331,21 @@ LTRESULT sm_ObjectRemoved2(CServerMgr* pMgr, LTObject* pObject)
 
 	dl_RemoveAt(&pMgr->m_List8dc, &pObject->m_pSData->m_StateLink);
 
+#ifdef PRIMAL_HUNT
+	// PH: the release is a call, `mov %edi,%ecx; call 0x00418e40`, to the
+	// record's out-of-line 13-byte destructor (`mov 0x2c(%ecx),%ecx; test;
+	// je; jmp *0x8(%eax)`), from the bank's Free above, which server.dll
+	// calls and lithtech.exe expands; AvP2 1.0.9.6 expands the release too.
+	((CMessageBankFreeQ523*)&pMgr->m_MessageBank)->Free(pObject->m_pSData);
+#else
 	{
 		SObjData* pSData = pObject->m_pSData;
 
-#ifdef PRIMAL_HUNT
-		// PH: the release is a call, `mov %edi,%ecx; call 0x00418e40`, to
-		// an out-of-line 13-byte copy of the same body (`mov 0x2c(%ecx),
-		// %ecx; test; je; jmp *0x8(%eax)`); AvP2 1.0.9.6 expands it here.
-		((CSObjDataReleaseQ502*)pSData)->Release();
-#else
 		((CSObjDataTermView*)pSData)->Term(0);
-#endif
 
 		sb_Free(&pMgr->m_MessageBank.m_Bank, pSData);
 	}
+#endif
 
 	return LT_OK;
 }
@@ -8821,7 +9402,13 @@ void sm_SendWorldInfo(CServerMgr* pMgr, Client* pClient)
 	{
 		la_WriteChange(pMgr, &pServerMgr->m_pLightAnims[i], i, msg.m_pMsg, 0xff);
 
+#ifdef PRIMAL_HUNT
+		// PH: server.dll expands this one (0x100316a1), see
+		// GetSpaceLeftInline.
+		if (((CMsgLenView*)msg.m_pMsg)->GetSpaceLeftInline() <= 0x16)
+#else
 		if (((CMsgLenView*)msg.m_pMsg)->GetSpaceLeft() <= 0x16)
+#endif
 		{
 			sm_SendToClient(pMgr, pClient, 0x19, msg.m_pMsg, 0, 0x80);
 
@@ -9986,7 +10573,16 @@ public:
 	uint8    m_pad_49[0x4c - 0x49];
 	float    m_f4c;                          // +0x4c
 	LTVector m_vPos;                         // +0x50
+#ifdef PRIMAL_HUNT
+	// PH: a float, sent scaled by ten and clamped to a byte (server.dll
+	// 0x1003522a), and two more fields after it (names ours).
+	float    m_f5c;                          // +0x5c
+	uint8    m_Unknown60;                    // +0x60
+	uint8    m_pad_61[0x64 - 0x61];
+	uint32   m_Unknown64;                    // +0x64
+#else
 	uint32   m_Unknown5c;                    // +0x5c
+#endif
 
 	// Stand-in accessors (names ours): a float RETURNED from an inline
 	// reaches its use on the x87 stack, which is how sub_100298d9 reads both
@@ -10155,7 +10751,8 @@ public:
 //   * if (pInfo->m_ChangeFlags & 2): lmsg_WriteCompPos(&pMsg's LMessageImpl,
 //     &pSound->m_vPos, (CPosRef*)&pMgr->m_World).
 //
-// MATCH, 587 of 587 bytes. The last residuals were:
+// MATCH, 587 of 587 bytes (AvP2 1.0.9.6; Primal Hunt adds the PH blocks
+// at the end, 673 bytes in server.dll). The last residuals were:
 //   * The flag word: a uint32 FIELD read into a uint16 LOCAL. That is a
 //     truncating `mov 0x34(%ebx),%ax` with a dead upper half, which is what
 //     the shipped code has; sm_WriteQueuedMessageBody forced the spelling
@@ -10332,7 +10929,18 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 			}
 		}
 
+#ifdef PRIMAL_HUNT
+		// PH: the dword at +0x5c is gone from here; two flag bits of their
+		// own send a byte and a dword instead (server.dll 0x100351e2,
+		// 0x100351f3).
+		if (nFlags & 0x2000)
+			((CPacket*)pMsg)->WriteType(pSnd->m_Unknown60);
+
+		if (nFlags & 0x4000)
+			((CPacket*)pMsg)->WriteType(pSnd->m_Unknown64);
+#else
 		((CPacket*)pMsg)->WriteType(pSnd->m_Unknown5c);
+#endif
 	}
 
 	if (pInfo->m_ChangeFlags & 2)
@@ -10340,6 +10948,22 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 		lmsg_WriteCompPos((LMessageImpl*)((uint8*)pMsg + 8), &pSnd->m_vPos,
 		                  (CPosRef*)&pMgr->m_World);
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: change bit 0x20 sends the float at +0x5c, times ten and clamped to
+	// 0..255, as a byte (server.dll 0x10035224; 10.0f at 0x100753c0, 0.0f
+	// at 0x10074220, 255.0f at 0x10074400). The byte is a named local:
+	// handed straight to the write, lithtech.exe's /O2 lowered the clamp to
+	// immediate stores into a temporary; named, the value stays on the x87
+	// stack into the ftol as shipped (0x0047c918..0x0047c952). Both images
+	// byte-identical (server.dll 0x10034fc7, lithtech.exe 0x0047c310).
+	if (pInfo->m_ChangeFlags & 0x20)
+	{
+		uint8 nVal = (uint8)LTCLAMP(pSnd->m_f5c * 10.0f, 0.0f, 255.0f);
+
+		((CPacket*)pMsg)->WriteType(nVal);
+	}
+#endif
 }
 
 // 0x10028454 — write the sounds this client still has to hear about.
@@ -10587,7 +11211,13 @@ void sm_SphereGather(LTObject* pObj, void* pUser)
 		return;
 
 	{
-		float  fDistSqr = (pObj->m_Pos - *pQuery->m_pPosition).MagSqr();
+		// AVP2: the difference is ASSIGNED to a named vector before it is
+		// measured: server.dll copies the operator's temporary into the
+		// local before the MagSqr call (0x1003c0f4..0x1003c108; AvP2
+		// 1.0.9.6's 0x10038f7e alike). lithtech.exe's /O2 folds the copy.
+		LTVector vDiff;
+		vDiff = pObj->m_Pos - *pQuery->m_pPosition;
+		float  fDistSqr = vDiff.MagSqr();
 		float* pRadius = &pObj->m_Radius;
 		float  fRadius = *pRadius;
 
@@ -11816,9 +12446,20 @@ void sm_WriteQueuedMessageBody(SoundRecord* pRec, Client* pClient,
 			(CPosRef*)&g_pServerMgr->m_World);       // 0x00468d6a
 	}
 
+#ifdef PRIMAL_HUNT
+	// PH: the sound type and the user data each travel only under the flag
+	// the SDK gives them (server.dll 0x10035532 `test $0x20,%bh`, a byte
+	// from +0x13c; 0x10035545 `test $0x40,%bh`, a dword from +0x140).
+	if (nFlags & PLAYSOUND_CTRL_TYPE)
+		((CPacket*)pMsg)->WriteType(pRec->m_Info.m_nUserSoundType);
+
+	if (nFlags & PLAYSOUND_USER_DATA)
+		((CPacket*)pMsg)->WriteType(pRec->m_Info.m_UserData);
+#else
 	// 0x00468d72 -- the last field, expanded, and its overrun tail at
 	// 0x00468de6 is the block the enumerator mistook for a second function.
 	((CPacket*)pMsg)->WriteType(pRec->m_Info.m_UserData);
+#endif
 }
 
 

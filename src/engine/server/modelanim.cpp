@@ -16,11 +16,13 @@
 // is what a fresh tracker and a hard animation change both leave behind.
 //
 // The file name is ours.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
 // (guard 0x004f8014, atexit of the empty 0x00401790; 0x401760).
+// Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
+// 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
 #endif
 #include "servermgr.h"
@@ -319,10 +321,15 @@ public:
 	class AnimKeyFrame* GetCurKeyFrame();    // 0x10001541
 	class AnimKeyFrame* GetPrevKeyFrame();   // 0x10001562
 
-	uint8             m_pad_00[0x1c];
-	class Model*      m_pModel;              // 0x1c
-	CFrameLocatorView m_Prev;                // 0x20
-	CFrameLocatorView m_Cur;                 // 0x28
+	// AVP2: the SDK tracker's layout (ltanimtracker.h): the time scale and
+	// interpolation switch move the time reference to +0x28, and each frame
+	// locator carries a weight set after its time (server.dll 0x10001604:
+	// `movzwl 0x38(%ecx)` / `mov 0x28(%ecx)` / `movzwl 0x3a(%ecx)`).
+	uint8             m_pad_00[0x28];
+	class Model*      m_pModel;              // 0x28
+	CFrameLocatorView m_Prev;                // 0x2c
+	uint32            m_PrevWeightSet;       // 0x34
+	CFrameLocatorView m_Cur;                 // 0x38
 };
 
 // 0x10001541 and 0x10001562 — the keyframe each of the tracker's two time

@@ -508,6 +508,18 @@ inline void* sb_AllocateQ45C(StructBankQ45C* pBank)
 	return pRet;
 }
 
+// servermgr.h's sb_Free over this file's bank view.  AVP2: both pointers
+// are tested before the two stores, the record first (Primal Hunt
+// 0x0046fd3f then 0x0046fd55, inside ps_UpdateParticlesQ45C below).
+inline void sb_FreeQ45C(StructBankQ45C* pBank, void* pStruct)
+{
+	if (pStruct && pBank)
+	{
+		*(void**)pStruct = pBank->m_pFreeList;
+		pBank->m_pFreeList = pStruct;
+	}
+}
+
 void sub_45c780Q45C(HLOCALOBJQ45C hObj, uint32 nParticles, LTVector* pMinOffset,
                     LTVector* pMaxOffset, LTVector* pMinVelocity,
                     LTVector* pMaxVelocity, LTVector* pMinColor,
@@ -619,6 +631,9 @@ void sub_45c780Q45C(HLOCALOBJQ45C hObj, uint32 nParticles, LTVector* pMinOffset,
 //      bank's free list through the record's own first word, decrement
 //      m_nParticles.  clientinterface.cpp's ci_RemoveParticle writes the
 //      identical three steps as a call to sb_Free; here /O2 expanded it.
+//      AVP2: sb_Free tests the record and the bank first (sb_FreeQ45C);
+//      with it the function is byte-identical to Primal Hunt 0x0046fb70
+//      (920 bytes, the zero register %edi and the flag word spilled).
 //   3. flags & 1  -> drop a segment 400 units straight down from the
 //      system's position and, if it hits, bounce every particle that is
 //      falling and below the plane (0x0045cd38..0x0045cdd7).
@@ -678,10 +693,7 @@ void ps_UpdateParticlesQ45C(CClientParticleSystemQ45C* pSys, float fFrameTime)
 					pCur->m_pPrev->m_pNext = pCur->m_pNext;
 					pCur->m_pNext->m_pPrev = pCur->m_pPrev;
 
-					// 0x0045cc3b loads the bank pointer ONCE (%edx).
-					StructBankQ45C* pBank = pSys->m_pParticleBank;
-					*(void**)pCur = pBank->m_pFreeList;
-					pBank->m_pFreeList = pCur;
+					sb_FreeQ45C(pSys->m_pParticleBank, pCur);
 
 					pSys->m_nParticles--;
 
@@ -756,11 +768,20 @@ void ps_UpdateParticlesQ45C(CClientParticleSystemQ45C* pSys, float fFrameTime)
 //  off a float sum, so they are written x,y,z as Mag() spells them.
 //
 //  0x004a1a74 is 0.5f and 0x004a2ec0 is 400.0f, both read as floats.
+//
+//  THE HALF EXTENT IS ASSIGNED, THEN SCALED IN PLACE.  Primal Hunt
+//  0x0046ff10 (289 bytes) stores operator-'s result to a temporary
+//  (0x0046ff37..0x0046ff6a), copies it into a second object, and writes
+//  the scaled z back into that copy (0x0046ff94): `vHalf = max - min;
+//  vHalf *= 0.5f;`.  A constructed `vDims` and `vDims * 0.5f` elide the
+//  copy and come out 253 bytes.  Byte-identical with the form below.
 // ======================================================================= //
 void ps_UpdateBoundsQ45C(CClientParticleSystemQ45C* pSys)
 {
-	LTVector vDims = pSys->m_BoxMax - pSys->m_BoxMin;
-	LTVector vHalf = vDims * 0.5f;
+	LTVector vHalf;
+
+	vHalf  = pSys->m_BoxMax - pSys->m_BoxMin;
+	vHalf *= 0.5f;
 
 	pSys->m_Center  = pSys->m_BoxMin + vHalf;
 	pSys->m_Center += pSys->m_Pos;

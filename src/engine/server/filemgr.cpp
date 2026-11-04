@@ -8,12 +8,13 @@
 //
 // The file name is ours.
 #include <string.h>
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine sees the STL's <string> here, through a header
 // AvP2's does not have: the translation unit carries <string>'s 44-byte
 // guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
-// atexit of the empty 0x00401790; this one's near 0x00480250). server.dll has it
-// in collection/objbank only.
+// atexit of the empty 0x00401790; this one's near 0x00480250). Primal
+// Hunt's server.dll has it too, right after this file's fs_GetFileName
+// (0x10037a45, 33 bytes: guard 0x1008ec84, atexit of 0x1002eaeb).
 #include <string>
 #endif
 #include <stdio.h>
@@ -81,12 +82,17 @@ public:
 	                                         //        words for a rez member
 	uint32 m_nSize;                          // 0x108
 #ifdef PRIMAL_HUNT
-	// PH: 0x104 more bytes (MAX_PATH), which no walk reconstructed so far
-	// reads: every PH frame holding one is 0x214 where AvP2's is 0x110
-	// (fs_FindFileInTrees, 0x10037836; fs_GetFileInfo, 0x10037780). They
-	// sit BEFORE the cursor: PH's ar_FindNext reads and clears it at +0x210
-	// (lithtech.exe 0x00429d7b, 0x00429e27).
-	char   m_Unknown10c[0x104];              // 0x10c
+	// PH: 0x104 more bytes: every PH frame holding one is 0x214 where
+	// AvP2's is 0x110 (fs_FindFileInTrees, 0x10037836; fs_GetFileInfo,
+	// 0x10037780). They sit BEFORE the cursor: PH's ar_FindNext reads and
+	// clears it at +0x210 (lithtech.exe 0x00429d7b, 0x00429e27). PH's
+	// ar_FindFile fills them (lithtech.exe 0x00429610): a flag that is 1
+	// for a rez member and 0 for a file on disk (0x004296fa, 0x0042977f),
+	// and the member's own path inside the rez, "<dir>\<name>", built at
+	// 0x00429789..0x004297e1 (empty for a file on disk, 0x00429704).
+	// (names ours)
+	uint32 m_bInRez;                         // 0x10c
+	char   m_szRezPath[0x100];               // 0x110
 #endif
 	void*  m_pCursor;                        // 0x10c (PH 0x210)  null starts
 	                                         //        a new walk
@@ -216,6 +222,12 @@ class CRezItm
 {
 public:
 	uint32 GetType();                        // 0x1003a640
+#ifdef PRIMAL_HUNT
+	// rezmgr.h's CRezItm::GetPath(char* Buf, unsigned int BufSize): "the
+	// directory path that this resource is contained in" (lithtech.exe
+	// 0x004ba6c0, a thiscall with the buffer and 0xff).
+	char*  GetPath(char* pBuf, unsigned int nBufSize);
+#endif
 
 	char*  m_pName;                          // +0x00
 	uint8  m_pad_04[0x08 - 0x04];
@@ -663,7 +675,9 @@ void fs_CloseTree(void* pTree)
 // out, which is why this is a find and not a stat. A .rez tree asks its
 // archive for the item and reads the two words straight off it.
 //
-// Byte-identical on both images. The walk is the ordinary find idiom: one
+// Byte-identical on both images, and with the forward-slash join and PH's two
+// extra record fields on Primal Hunt's too (lithtech.exe 0x00429610, 491
+// bytes; server.dll 0x10009b76, 354 bytes). The walk is the ordinary find idiom: one
 // result variable, seeded from _findfirst and refreshed from _findnext, is
 // the loop's condition, and the handle is kept apart from it for the close.
 // VC6 rotates that `while` into an entry test and a bottom test, which is the
@@ -700,7 +714,12 @@ int ar_FindFile(COpenTree* pTree, char* pFilename, CFileFindState* pState)
 
 	if (pTree->m_nKind == 1)
 	{
-		sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
+		// AVP2: a name with a forward slash in it is joined with one (AvP2
+		// 1.0.9.6 0x00426e7d, Primal Hunt 0x0042963f: strstr(name, "/")).
+		if (strstr(pFilename, "/"))
+			sprintf(szPath, "%s/%s", pTree->m_szDir, pFilename);
+		else
+			sprintf(szPath, "%s\\%s", pTree->m_szDir, pFilename);
 
 		hFind = _findfirst(szPath, &fd);
 		nRet  = hFind;
@@ -715,6 +734,10 @@ int ar_FindFile(COpenTree* pTree, char* pFilename, CFileFindState* pState)
 				pState->m_nSize = fd.size;
 
 				memcpy(&pState->m_Time, &fd.time_write, 4);
+#ifdef PRIMAL_HUNT
+				pState->m_bInRez = 0;
+				pState->m_szRezPath[0] = 0;
+#endif
 
 				_findclose(hFind);
 				return 1;
@@ -741,6 +764,13 @@ int ar_FindFile(COpenTree* pTree, char* pFilename, CFileFindState* pState)
 			pState->m_Type = 1;
 			pState->m_nSize = pItm->m_nSize;
 			pState->m_Time = pItm->m_Time;
+#ifdef PRIMAL_HUNT
+			pState->m_bInRez = 1;
+
+			pItm->GetPath(pState->m_szRezPath, 0xff);
+			strcat(pState->m_szRezPath, "\\");
+			strcat(pState->m_szRezPath, pItm->m_pName);
+#endif
 
 			return 1;
 		}
@@ -761,6 +791,9 @@ int ar_FindFile(COpenTree* pTree, char* pFilename, CFileFindState* pState)
 // forward to it and the second jumps over it, where ours puts it after the
 // body and both guards jump forward. `&&` around the success path and `||`
 // around the failure both give ours. Cross-jump-host class.
+//
+// AVP2: with the forward-slash join below, byte-identical to Primal Hunt
+// (lithtech.exe 0x00429800, 106 bytes; server.dll 0x10009cd8, 79 bytes).
 int sub_100070b6(void* hTree, char* pFilename, char* pOutPath, uint32 nOutLen)
 {
 	COpenTree* pTree = (COpenTree*)hTree;
@@ -789,7 +822,12 @@ int sub_100070b6(void* hTree, char* pFilename, char* pOutPath, uint32 nOutLen)
 		}
 	}
 #else
-	sprintf(pOutPath, "%s\\%s", pTree->m_szDir, pFilename);
+	// AVP2: the forward-slash join, as ar_FindFile's (AvP2 1.0.9.6 and
+	// Primal Hunt 0x0042981b: strstr(name, "/")).
+	if (strstr(pFilename, "/"))
+		sprintf(pOutPath, "%s/%s", pTree->m_szDir, pFilename);
+	else
+		sprintf(pOutPath, "%s\\%s", pTree->m_szDir, pFilename);
 #endif
 
 	return 1;
@@ -909,10 +947,14 @@ FileEntry* fs_BuildFileList(void** pTrees, int nTrees, char* pDirName)
 
 			nType = (state.m_Type == 0) ? TYPE_DIRECTORY : TYPE_FILE;
 
+			// The type is stored before the link: server.dll's /O1 build
+			// (0x10018a7c..0x10018a88) stores it first and is byte-identical
+			// so. NEAR on lithtech.exe (0x00442630, 483 of 477 bytes, register
+			// allocation; stored after the link it is 475 of 477).
+			pEntry->m_Type = nType;
+
 			pEntry->m_pNext = pHead;
 			pHead = pEntry;
-
-			pEntry->m_Type = nType;
 		}
 	}
 

@@ -1804,16 +1804,16 @@ struct VisChunkQ488
 	uint8 m_pad_07[0x24 - 0x07];
 };
 
-struct VisSurfaceQ488
-{
-	uint8    m_pad_00[0x34];
-	LTPlane* m_pPlane;                       // 0x34
-};
-
+// AVP2: AvP2's and Primal Hunt's node polygon carries its plane itself at
+// +0x28, and the walk only takes it when the polygon and the pointer at
+// +0x2c are both there, NULL otherwise (PH 0x004a8fea..0x004a8ffc and
+// 0x004a910d..0x004a9137, AvP2 0x0049ea37..; NOLF read +0x28 as a surface
+// and its plane at +0x34, unconditionally).
 struct VisPolyQ488
 {
-	uint8           m_pad_00[0x28];
-	VisSurfaceQ488* m_pSurface;              // 0x28
+	uint8    m_pad_00[0x28];
+	LTPlane* m_pPlane;                       // 0x28
+	void*    m_Unknown2c;                    // 0x2c
 };
 
 struct VisNodeQ488
@@ -1824,7 +1824,13 @@ struct VisNodeQ488
 	uint16       m_nLeaf;                    // 0x14  0xffff: none
 	uint8        m_Flags;                    // 0x16  bit 3: descend
 
-	LTPlane* GetPlane() { return m_pPoly->m_pSurface->m_pPlane; }
+	LTPlane* GetPlane()
+	{
+		if (m_pPoly && m_pPoly->m_Unknown2c)
+			return m_pPoly->m_pPlane;
+
+		return NULL;
+	}
 };
 
 class CVisRecordArrayQ488

@@ -157,14 +157,26 @@ public:
 // per skin, and the create struct.  clientmgr.h's CClientCreateRequest, and
 // the shipped constructor run at 0x004144fe..0x0041451c proves the shape --
 // the object's file is inlined (three stores) and exactly
-// MAX_MODEL_TEXTURES (2, from ltbasedefs.h) more are built by a loop over a
-// 12-byte stride, which puts m_pStruct at +0x24 where 0x00414526 stores it.
+// MAX_MODEL_TEXTURES more are built by a loop over a 12-byte stride (NOLF's
+// two put m_pStruct at +0x24 where 0x00414526 stores it; AvP2 has four).
+// IDENTICAL on Primal Hunt with the layout below (0x004182b0, 886 bytes).
+// AVP2: cltapi.cpp's CClientCreateRequest -- four skins, and the flag after
+// the struct that the constructor sets (Primal Hunt 0x00418302). PH: the
+// model's extra texture file ahead of the struct, built by its own
+// constructor call after the skin loop (0x004182f0), so the struct is at
+// +0x48 and the flag at +0x4c.
 class CClientCreateRequestQ414
 {
 public:
+	CClientCreateRequestQ414() { m_pStruct = LTNULL; m_bResetAnimations = LTTRUE; }
+
 	CClientFileRefQ414  m_ObjectFile;                          // 0x00
 	CClientFileRefQ414  m_SkinFiles[MAX_MODEL_TEXTURES];       // 0x0c
-	ObjectCreateStruct* m_pStruct;                             // 0x24
+#ifdef PRIMAL_HUNT
+	CClientFileRefQ414  m_ExtraFile;                           // 0x3c
+#endif
+	ObjectCreateStruct* m_pStruct;                             // 0x3c (PH 0x48)
+	uint32              m_bResetAnimations;                    // 0x40 (PH 0x4c)
 };
 
 // The client's world, as far as this run reaches it.  Offsets read off
@@ -298,6 +310,10 @@ public:
 	uint8                 m_pad_1510[0x1534 - 0x1510];
 	// clientmgr.h's own name and offset; cmodelload.cpp uses the same pair.
 	class CFileMgrQ414*   m_pFileMgr;                          // 0x1534
+
+	// The per-frame object updates (clientmgr2.cpp's RunFrameUpdates, the
+	// shape AvP2 had before the counter went in).
+	void RunFrameUpdates();
 };
 
 // clientmgr.h / clientmgr2.cpp's g_pClientMgr.  Read by both the inherit
@@ -1020,6 +1036,73 @@ void cs_UpdateSpritesQ414(CClientMgrQ414* pMgr)
 		}
 	}
 }
+
+// ======================================================================= //
+//  Primal Hunt 0x00419fa0, 157 bytes -- the per-frame object updates.
+//
+//  A thiscall with no arguments (`mov %ecx,%esi`, then the manager pushed
+//  to each walk), called between the client shell's Update and PostUpdate.
+//  It is timed: the dword at 0x004f15f8 (clientmgr2.cpp's g_Unknown4b1800)
+//  is zeroed and then made the TOTAL of a scoped counter -- servermgr.h's
+//  CountAdder, its destructor expanded (`push; call 0x00426160; add
+//  %eax,(*m_pTotal)` at 0x0041a01b) -- so it ends up holding this frame's
+//  update time.  The six walks run sprites (0x00419f40), animations
+//  (0x0041a150, clientmgr2.cpp's), particle systems (0x0041a040), sprite
+//  objects (0x0041a310), the pending moves (0x0041a390) and the model
+//  skins (0x0041a3e0); one `add $0x20` pops the six arguments and the
+//  counter's two.
+// ======================================================================= //
+class CBaseCounter
+{
+public:
+	CBaseCounter(int nMode);                                   // 0x00426060
+
+	uint32 m_Data[2];
+};
+void   cnt_StartCounter(CBaseCounter* pCounter);               // 0x00426150
+uint32 cnt_EndCounter(CBaseCounter* pCounter);                 // 0x00426160
+
+class CountAdderQ525
+{
+public:
+	CountAdderQ525(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+
+	~CountAdderQ525()
+	{
+		*m_pTotal += cnt_EndCounter(&m_Counter);
+	}
+
+	CBaseCounter m_Counter;                                    // 0x00
+	uint32*      m_pTotal;                                     // 0x08
+};
+
+extern uint32 g_Unknown4b1800;                                 // 0x004f15f8
+
+class CClientMgrView;
+void cs_UpdateAnimations(CClientMgrView* pMgr);                // 0x0041a150
+void cs_UpdateParticleSystemsQ414(CClientMgrQ414* pMgr);       // 0x0041a040
+void cs_UpdateSpriteObjectsQ414(CClientMgrQ414* pMgr);         // 0x0041a310
+void cs_ApplyPendingMovesQ414(CClientMgrQ414* pMgr);           // 0x0041a390
+void cs_UpdateModelSkinsQ414(CClientMgrQ414* pMgr);            // 0x0041a3e0
+
+void CClientMgrQ414::RunFrameUpdates()
+{
+	g_Unknown4b1800 = 0;
+
+	CountAdderQ525 cntAdder(&g_Unknown4b1800);
+
+	cs_UpdateSpritesQ414(this);
+	cs_UpdateAnimations((CClientMgrView*)this);
+	cs_UpdateParticleSystemsQ414(this);
+	cs_UpdateSpriteObjectsQ414(this);
+	cs_ApplyPendingMovesQ414(this);
+	cs_UpdateModelSkinsQ414(this);
+}
+
 
 // The client object's flag word at +0x88, as the two object walks below
 // use it: bits 3 and 30 each make the object live this frame, and bits 4

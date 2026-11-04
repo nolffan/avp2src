@@ -307,9 +307,6 @@ LTBOOL wt_DefaultTestN48D();
 
 uint32 wt_ProcessNodeSegN48D(CWTNodeN48D *pNode, CWTSegInfoN48D *pInfo);
 uint32 wt_TestNodeSegN48D(CWTNodeN48D *pNode, CWTSegInfoN48D *pInfo);
-LTBOOL wt_SegmentHitsRectN48D(const CWTVecN48D *pPt1, const CWTVecN48D *pPt2,
-                              const CWTVecN48D *pMin, const CWTVecN48D *pMax,
-                              uint32 nAxis1, uint32 nAxis2);
 
 
 // ======================================================================= //
@@ -532,182 +529,131 @@ inline LTBOOL wt_PtInNodeN48D(const CWTVecN48D *pPt, const CWTVecN48D *pMin,
 	       pPt->x <= pMax->x && pPt->z <= pMax->z;
 }
 
+// AVP2/PH: the segment test was rewritten after this engine's NOLF base.
+// Primal Hunt's 0x004aa4a0 (732 bytes, to the `ret` at 0x004aa77b; the
+// enumeration's 16-byte row at 0x004aa76c is its own process-and-return
+// tail) and AvP2 1.0.9.6's twin keep the endpoint test and the trivial
+// reject above, but the exact test is now four calls of a scalar helper,
+// one per rectangle edge, each passing the crossing axis, the plane, the
+// other axis' range and the other axis' endpoints by value:
+//
+//   0x004aa5d2..0x004aa672  X = min.x, expanded (the parameters are homed
+//                           to frame slots: `mov %ecx,0x18(%esp)` ...)
+//   0x004aa676..0x004aa714  X = max.x, expanded
+//   0x004aa716..0x004aa737  Z = min.z, `call 0x004aa780`
+//   0x004aa73e..0x004aa75f  Z = max.z, `call 0x004aa780`
+//
+// -- the last two are past VC6's per-function inline budget.  The reject's
+// two side codes are an inline helper too: both are the same `fld p2 ; fld
+// p1 ; fcom lo` shape over homed copies of the node's range, and X's
+// third value is tested against 2 (folded into the jumps to 0x004aa5d0 /
+// 0x004aa5d2), which is why the X arm skips straight to the exact test.
+
+// 0x004aa51d / 0x004aa56c expanded (names ours): 0 if both endpoints are
+// below the range, 1 if both are above it, 2 otherwise (server.dll's twin
+// is wt_ClassifySpan_F).
+inline uint32 wt_ClassifySpanQ522(float f1, float f2, float fMin, float fMax)
+{
+	if (f1 < fMin && f2 < fMin)
+		return 0;
+
+	if (f1 > fMax && f2 > fMax)
+		return 1;
+
+	return 2;
+}
+
+// 0x004aa780, 142 bytes, cdecl, seven floats (`add $0x1c,%esp` at the
+// callers).  Does the segment (a1,b1)-(a2,b2) cross the line a = fPlane
+// between fMin and fMax on b?  The two sides are spelled with different
+// operators, as in NOLF: `test $0x01` is `<`, `test $0x41` is `<=`.  The
+// 0.001 guard is the same (double)0.001f qword (0x004d5c30); under it the
+// crossing is taken at b1 (0x004aa7cf).  (name ours)
+inline LTBOOL wt_SegHitsEdgeQ522(float a1, float a2, float fPlane,
+                                 float fMin, float fMax, float b1, float b2)
+{
+	LTBOOL bSide1 = (a1 < fPlane);
+	LTBOOL bSide2 = (a2 <= fPlane);
+
+	if (bSide1 == bSide2)
+		return LTFALSE;
+
+	float fDiff = a2 - a1;
+	float fB;
+
+	if (fabs(fDiff) < 0.001f)
+	{
+		fB = b1;
+	}
+	else
+	{
+		float fPercent = (fPlane - a1) * (b2 - b1);
+		fB = b1 + fPercent / fDiff;
+	}
+
+	if (fB >= fMin && fB <= fMax)
+		return LTTRUE;
+
+	return LTFALSE;
+}
+
+// Either of the two nAxis1 edges, inside the node's nAxis2 range: the
+// server's 0x1004a3f1 (wt_SegHitsRect_F, out of line at /O1), expanded
+// here for (0, 2) and then (2, 0) -- the second expansion's two edge tests
+// past the inline budget, which is the shipped pair of calls (name ours).
+inline LTBOOL wt_SegHitsRectQ522(const CWTVecN48D *pPt1, const CWTVecN48D *pPt2,
+                                 const CWTVecN48D *pMin, const CWTVecN48D *pMax,
+                                 uint32 nAxis1, uint32 nAxis2)
+{
+	if (wt_SegHitsEdgeQ522(((const float*)pPt1)[nAxis1], ((const float*)pPt2)[nAxis1],
+	                       ((const float*)pMin)[nAxis1],
+	                       ((const float*)pMin)[nAxis2], ((const float*)pMax)[nAxis2],
+	                       ((const float*)pPt1)[nAxis2], ((const float*)pPt2)[nAxis2]))
+		return LTTRUE;
+
+	return wt_SegHitsEdgeQ522(((const float*)pPt1)[nAxis1], ((const float*)pPt2)[nAxis1],
+	                          ((const float*)pMax)[nAxis1],
+	                          ((const float*)pMin)[nAxis2], ((const float*)pMax)[nAxis2],
+	                          ((const float*)pPt1)[nAxis2], ((const float*)pPt2)[nAxis2]);
+}
+
+// IDENTICAL (732 bytes, 0x004aa4a0).  The source is the server's
+// (server.dll 0x1004a29f, byte-identical at /O1 with this body): the side
+// codes, then the two-edge rectangle test for (0, 2) and (2, 0).  /O2
+// expands the first rectangle's two edges and calls both of the second's.
+// What it took, measured: the side codes as early returns (an nSide local
+// in the helper moves the budget), and the rectangle's second edge
+// returned bare (`!= LTFALSE` on it expands the fourth edge instead of the
+// second, and the server's `if (...) return LTTRUE; return LTFALSE;` is
+// 788 here); the four edge tests written out directly expand all four.
 uint32 wt_TestNodeSegN48D(CWTNodeN48D *pNode, CWTSegInfoN48D *pInfo)
 {
-	const CWTVecN48D *pPt1, *pPt2, *pMin, *pMax;
-	uint32 nSide1, nSide2;
+	uint32 nSide;
 
-	pPt1 = &pInfo->m_vPt1;
-	pMin = &pNode->m_vBoxMin;
-	pMax = &pNode->m_vBoxMax;
-
-	if (wt_PtInNodeN48D(pPt1, pMin, pMax) ||
-	    wt_PtInNodeN48D(&pInfo->m_vPt2, pMin, pMax))
+	if (wt_PtInNodeN48D(&pInfo->m_vPt1, &pNode->m_vBoxMin, &pNode->m_vBoxMax) ||
+	    wt_PtInNodeN48D(&pInfo->m_vPt2, &pNode->m_vBoxMin, &pNode->m_vBoxMax))
 	{
 		return wt_ProcessNodeSegN48D(pNode, pInfo);
 	}
 
-	pPt2 = &pInfo->m_vPt2;
-
-	if (pPt1->x < pMin->x && pPt2->x < pMin->x)
+	nSide = wt_ClassifySpanQ522(pInfo->m_vPt1.x, pInfo->m_vPt2.x,
+	                            pNode->m_vBoxMin.x, pNode->m_vBoxMax.x);
+	if (nSide != 2 &&
+	    nSide == wt_ClassifySpanQ522(pInfo->m_vPt1.z, pInfo->m_vPt2.z,
+	                                 pNode->m_vBoxMin.z, pNode->m_vBoxMax.z))
 	{
-		nSide1 = 0;
-	}
-	else if (pPt1->x > pMax->x && pPt2->x > pMax->x)
-	{
-		nSide1 = 1;
-	}
-	else
-	{
-		goto exact;
-	}
-
-	if (pPt1->z < pMin->z && pPt2->z < pMin->z)
-	{
-		nSide2 = 0;
-	}
-	else if (pPt1->z > pMax->z && pPt2->z > pMax->z)
-	{
-		nSide2 = 1;
-	}
-	else
-	{
-		nSide2 = 2;
-	}
-
-	if (nSide1 == nSide2)
 		return 0;
-
-exact:
-	if (!wt_SegmentHitsRectN48D(pPt1, pPt2, pMin, pMax, 0, 2))
-	{
-		if (!wt_SegmentHitsRectN48D(pPt1, pPt2, pMin, pMax, 2, 0))
-		{
-			return 0;
-		}
 	}
 
-	return wt_ProcessNodeSegN48D(pNode, pInfo);
-}
-
-
-// ======================================================================= //
-//  4.  0x0048d500, 779 bytes -- "does the segment cross either of the two
-//      planes perpendicular to nAxis1, inside the node's nAxis2 range?"
-//
-//  cdecl, SIX arguments (0x18 comes off %esp at 0x0048d4b6).  Everything is
-//  reached by index: `(%esi,%ebx,4)` is pPt1[nAxis1], `(%eax,%ebx,4)` the
-//  plane, `0x10(%esp,%ebp,4)` the intersection point's nAxis2 component.
-//
-//  THE BODY IS THE SAME BLOCK TWICE -- 0x0048d503..0x0048d68b against
-//  *pMin and 0x0048d68c..0x0048d800 against *pMax -- and it is written out
-//  twice below for that reason.  The two copies are not byte-identical in
-//  the shipped image either: the middle `fmul` of the scale is `flds t;
-//  fmuls y` at 0x0048d5ed and `flds y; fmuls t` at 0x0048d762.  That is the
-//  x87 scheduler, not the source; /O2 fixes neither operand order.
-//
-//  ONE HALF, INSTRUCTION BY INSTRUCTION:
-//
-//    0x0048d512  fPlane = pPlane[nAxis1]           (spilled to %esp+0x54,
-//                which is nAxis1's own ARGUMENT slot -- nAxis1 lives in
-//                %ebx, so its slot is dead and VC6 homes fPlane there)
-//    0x0048d51a  `test $0x01` / je -> 0            pPt1[a1] <  fPlane
-//    0x0048d535  `test $0x41` / je -> 0            pPt2[a1] <= fPlane
-//    0x0048d550  `cmp %eax,%ecx; je` -- equal means both endpoints are on
-//                the same side, so this plane is not crossed.  The two
-//                comparisons really are spelled with different operators:
-//                `test $0x01` is a bare `<`, `test $0x41` is `<=`.
-//    0x0048d558  fDiff = pPt2[a1] - pPt1[a1], left ON the x87 stack and
-//                duplicated (`fld %st(0); fabs`) for the guard.
-//    0x0048d562  `fcompl 0x004a2a30` -- that qword is 0.0010000000474974513,
-//                which is (double)0.001f exactly: the literal in the source
-//                is `0.001f` and fabs() promotes the comparison to double.
-//                Below the threshold the percentage is forced to 0.0f
-//                (0x0048d571); otherwise 0x0048d57b..0x0048d584 divides by
-//                the copy still in %st(1).  Both write the SAME stack slot
-//                as fPlane -- disjoint live ranges, one slot.  fPercent is
-//                BLOCK-scoped inside each half (a function-scope fPercent
-//                gets a frame slot of its own: frame 0x34, not 0x30).
-//    0x0048d58a  the by-value copy of *pPt1 that ltvector.h's
-//                `operator - (const _CVector<T> v)` makes, then the
-//                three-float constructor at 0x00411d40.
-//    0x0048d5c9  the result is copied out and scaled -- `operator * (T v)`,
-//                constructor again.
-//    0x0048d60a  the scale result is copied as operator+'s by-value
-//                argument and added to *pPt1 -- constructor a third time.
-//                `flds <local>; fadds 0x8(%esi)` rather than the other way
-//                round is /O2 canonicalising a commutative FP sum.
-//    The by-value temporaries and the intersection point all share the one
-//    12-byte slot at %esp+0x10 in BOTH halves.  That needs vTest declared
-//    inside each half's block, initialised from the one expression
-//    `*pPt1 + (*pPt2 - *pPt1) * fPercent`: a function-scope vTest (or a
-//    named vDir) pushes the second half's temporaries to a slot of their own.
-//
-//    RESIDUAL (near, 779/779): in the FIRST half only, the y product is
-//    `flds t; fmuls y` (0x0048d5e9) where ours is `flds y; fmuls t`; the
-//    second half matches.  x87 operand order of a commutative multiply;
-//    unmoved by a named vDir, an assign-after-declare, a goto vs if/else
-//    structure, and an inline per-plane helper called twice.
-//
-//    0x0048d65f  the intersection point's nAxis2 component against
-//                pMin[nAxis2] (`test $0x01`, i.e. `>=`) and pMax[nAxis2]
-//                (`test $0x41`, i.e. `<=`); inside both is LTTRUE.
-// ======================================================================= //
-LTBOOL wt_SegmentHitsRectN48D(const CWTVecN48D *pPt1, const CWTVecN48D *pPt2,
-                              const CWTVecN48D *pMin, const CWTVecN48D *pMax,
-                              uint32 nAxis1, uint32 nAxis2)
-{
-	float fPlane, fDiff;
-
-	// ---- the plane at pMin[nAxis1] ------------------------------------ //
-	fPlane = ((const float*)pMin)[nAxis1];
-
-	if ((((const float*)pPt1)[nAxis1] <  fPlane) !=
-	    (((const float*)pPt2)[nAxis1] <= fPlane))
+	if (wt_SegHitsRectQ522(&pInfo->m_vPt1, &pInfo->m_vPt2,
+	                       &pNode->m_vBoxMin, &pNode->m_vBoxMax, 0, 2) ||
+	    wt_SegHitsRectQ522(&pInfo->m_vPt1, &pInfo->m_vPt2,
+	                       &pNode->m_vBoxMin, &pNode->m_vBoxMax, 2, 0))
 	{
-		float fPercent;
-
-		fDiff = ((const float*)pPt2)[nAxis1] - ((const float*)pPt1)[nAxis1];
-
-		if (fabs(fDiff) < 0.001f)
-			fPercent = 0.0f;
-		else
-			fPercent = (fPlane - ((const float*)pPt1)[nAxis1]) / fDiff;
-
-		CWTVecN48D vTest = *pPt1 + (*pPt2 - *pPt1) * fPercent;
-
-		if (((const float*)&vTest)[nAxis2] >= ((const float*)pMin)[nAxis2] &&
-		    ((const float*)&vTest)[nAxis2] <= ((const float*)pMax)[nAxis2])
-		{
-			return LTTRUE;
-		}
+		return wt_ProcessNodeSegN48D(pNode, pInfo);
 	}
 
-	// ---- the plane at pMax[nAxis1] ------------------------------------ //
-	fPlane = ((const float*)pMax)[nAxis1];
-
-	if ((((const float*)pPt1)[nAxis1] <  fPlane) !=
-	    (((const float*)pPt2)[nAxis1] <= fPlane))
-	{
-		float fPercent;
-
-		fDiff = ((const float*)pPt2)[nAxis1] - ((const float*)pPt1)[nAxis1];
-
-		if (fabs(fDiff) < 0.001f)
-			fPercent = 0.0f;
-		else
-			fPercent = (fPlane - ((const float*)pPt1)[nAxis1]) / fDiff;
-
-		CWTVecN48D vTest = *pPt1 + (*pPt2 - *pPt1) * fPercent;
-
-		if (((const float*)&vTest)[nAxis2] >= ((const float*)pMin)[nAxis2] &&
-		    ((const float*)&vTest)[nAxis2] <= ((const float*)pMax)[nAxis2])
-		{
-			return LTTRUE;
-		}
-	}
-
-	return LTFALSE;
+	return 0;
 }
 
 
