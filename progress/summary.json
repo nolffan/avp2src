@@ -808,8 +808,8 @@
       "unwritten_bytes": 1467
     },
     "lithtech.exe": {
-      "attempted": 72,
-      "bytes_identical": 504758,
+      "attempted": 69,
+      "bytes_identical": 517741,
       "bytes_total": 748737,
       "crt": 1842,
       "crt_bytes": 76211,
@@ -817,21 +817,21 @@
       "driver_bytes": 8260,
       "encrypted": 0,
       "encrypted_bytes": 0,
-      "funcs": 4350,
-      "identical": 3461,
+      "funcs": 4346,
+      "identical": 3553,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 120,
-      "small": 340,
+      "near": 118,
+      "small": 351,
       "started": false,
-      "todo": 357,
+      "todo": 255,
       "unlinked": 0,
       "unlinked_bytes": 0,
-      "unplaced": 734,
-      "unplaced_bytes": 211907,
-      "unwritten": 429,
-      "unwritten_bytes": 163997
+      "unplaced": 736,
+      "unplaced_bytes": 212269,
+      "unwritten": 324,
+      "unwritten_bytes": 151273
     },
     "ltmsg.dll": {
       "attempted": 0,
@@ -887,17 +887,17 @@
     }
   },
   "total": {
-    "attempted": 296,
-    "bytes_identical": 6545838,
+    "attempted": 293,
+    "bytes_identical": 6558821,
     "bytes_total": 10819872,
-    "funcs": 55721,
-    "identical": 35223,
-    "near": 4253,
-    "small": 5263,
-    "todo": 10686,
-    "unplaced": 6091,
-    "unplaced_bytes": 1596771,
-    "unwritten": 10982,
-    "unwritten_bytes": 2350729
+    "funcs": 55717,
+    "identical": 35315,
+    "near": 4251,
+    "small": 5274,
+    "todo": 10584,
+    "unplaced": 6093,
+    "unplaced_bytes": 1597133,
+    "unwritten": 10877,
+    "unwritten_bytes": 2338005
   }
 }

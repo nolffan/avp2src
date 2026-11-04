@@ -139,10 +139,19 @@ TARGETS = [
          # the engine's own objects instantiate elsewhere): WONAPI.lib from
          # the release's source, with VC6's STL (build/build.mk, "WONAPI.lib")
          partial_objs=["src/engine/lithtech/Release/*.obj",
-                       "src/engine/lithtech/Release/wonapi/WONAPI.lib"],
-         # WONAPI.lib's block: its generic shapes (deleting destructors,
-         # std::string's members) recur all over the engine and are not it
-         lib_range={"WONAPI": (0x004aab40, 0x004ba2a0)},
+                       "src/engine/lithtech/Release/wonapi/WONAPI.lib",
+                       # and the release lithshared libraries it links
+                       # after WON: RezMgr, lith, then StdLith
+                       "src/LT2/lithshared/libs/Release/RezMgr.lib",
+                       "src/LT2/lithshared/libs/Release/lith.lib",
+                       "src/LT2/lithshared/libs/Release/StdLith.lib"],
+         # each library's block: their generic shapes (deleting
+         # destructors, std::string's and the collections' members) recur
+         # all over the engine and are not them
+         lib_range={"WONAPI": (0x004aab40, 0x004ba2a0),
+                    "RezMgr": (0x004ba2a0, 0x004bf4c0),
+                    "lith": (0x004ba2a0, 0x004bf4c0),
+                    "StdLith": (0x004ba2a0, 0x004bf4c0)},
          built="src/engine/lithtech/Release/lithtech.exe", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib (msvc-6.00-8966's) from ftol.obj's
