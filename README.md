@@ -62,8 +62,8 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `lithtech.exe` | the engine | 2,432 / 4,406 | 284,517 / 750,020 bytes | `███████░░░░░░░░░░░░░` 37.9% | 1,584 | 1,232 |
-| `server.dll` | the server | 1,558 / 3,136 | 122,235 / 389,403 bytes | `██████░░░░░░░░░░░░░░` 31.3% | 1,292 | 782 |
+| `lithtech.exe` | the engine | 2,456 / 4,405 | 290,272 / 750,020 bytes | `███████░░░░░░░░░░░░░` 38.7% | 1,564 | 1,213 |
+| `server.dll` | the server | 1,566 / 3,136 | 123,205 / 389,403 bytes | `██████░░░░░░░░░░░░░░` 31.6% | 1,291 | 777 |
 | `d3d.ren` | the Direct3D renderer | 139 / 1,302 | 9,303 / 240,344 bytes | `░░░░░░░░░░░░░░░░░░░░` 3.8% | 1,020 | 806 |
 | `cdaudio.dll` | the engine's CD-audio music driver | 0 / 90 | 0 / 6,350 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 90 | 0 |
 | `Launch.dll` | the engine's command-line helper | 0 / 43 | 0 / 6,084 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 43 | 0 |
@@ -75,8 +75,8 @@ those functions make up.
 | `AVP2Serv.exe` | AvP2's dedicated server | 169 / 332 | 35,598 / 58,956 bytes | `████████████░░░░░░░░` 60.3% | 145 | 0 |
 | `CShell.dll` | AvP2's game: client | 4,423 / 6,707 | 932,125 / 1,464,020 bytes | `████████████░░░░░░░░` 63.6% | 1,479 | 2 |
 | `Object.lto` | AvP2's game: server objects | 7,818 / 10,763 | 2,004,978 / 2,237,283 bytes | `█████████████████░░░` 89.6% | 912 | 0 |
-| `AvP2 lithtech.exe` | AvP2's engine | 2,498 / 4,112 | 290,067 / 704,866 bytes | `████████░░░░░░░░░░░░` 41.1% | 1,099 | 916 |
-| `AvP2 server.dll` | AvP2's server | 1,590 / 2,875 | 120,539 / 351,881 bytes | `██████░░░░░░░░░░░░░░` 34.2% | 923 | 617 |
+| `AvP2 lithtech.exe` | AvP2's engine | 2,516 / 4,111 | 294,521 / 704,866 bytes | `████████░░░░░░░░░░░░` 41.7% | 1,079 | 897 |
+| `AvP2 server.dll` | AvP2's server | 1,596 / 2,875 | 121,325 / 351,881 bytes | `██████░░░░░░░░░░░░░░` 34.4% | 922 | 612 |
 | `AvP2 d3d.ren` | AvP2's Direct3D renderer | 10 / 1,286 | 124 / 236,591 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1,256 | 1,275 |
 | libraries | the shared libraries | 427 / 599 | 46,657 / 70,845 bytes | `█████████████░░░░░░░` 65.8% | 146 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
@@ -87,7 +87,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **29,932 / 53,144** | **5,614,638 / 10,397,543 bytes** | `██████████░░░░░░░░░░` **53.9%** | **13,669** | **7,018** |
+| **All** | | **29,988 / 53,142** | **5,626,603 / 10,397,543 bytes** | `██████████░░░░░░░░░░` **54.1%** | **13,627** | **6,970** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

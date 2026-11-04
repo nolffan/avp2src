@@ -194,14 +194,26 @@ public:
 	void*  m_pModelFile;                     // +0x30  file identifiers, not names:
 	void*  m_pSkinFile;                      // +0x34  GetModelFilenames resolves both
 	                                         //        through the file manager
-	uint8  m_pad_38[0x3c - 0x38];
-	LTLink m_StateLink;                      // +0x3c  in the 0x8dc list: actives are
+	// AVP2: eight bytes more than NOLF's before the state link, and Primal
+	// Hunt four more again: GetNextObject follows the link's next at +0x48
+	// in AvP2 1.0.9.6 (lithtech.exe 0x00480484) and +0x4c in Primal Hunt
+	// (0x004877c4); GetNetFlags reads +0x5a and +0x5e (0x0047b9ed,
+	// 0x0048298d); sm_SetObjectChangeFlag's stores are at PH +0x54 and
+	// +0x5c (0x0048c3da, 0x0048c3e5). What the new bytes hold is not read
+	// by anything reconstructed yet.
+#ifdef PRIMAL_HUNT
+	uint8  m_Unknown38[0x48 - 0x38];
+#else
+	uint8  m_Unknown38[0x44 - 0x38];
+#endif
+	LTLink m_StateLink;                      // +0x44 (PH +0x48; NOLF +0x3c)  in the
+	                                         //        manager's state list: actives are
 	                                         //        walked forward, inactives from
 	                                         //        the tail (GetNextObject pair)
-	class LTObject* m_pNextChanged;          // +0x48  the changed-objects list at 0x910
-	uint8  m_pad_4c[0x50 - 0x4c];
-	uint16 m_ClientChangeFlags;              // +0x50  ORed into each client's table
-	uint16 m_NetFlags;                       // +0x52  NETFLAG_* (ltcodes.h); SetNetFlags
+	class LTObject* m_pNextChanged;          // +0x50 (PH +0x54)  the changed-objects list
+	uint8  m_pad_54[4];
+	uint16 m_ClientChangeFlags;              // +0x58 (PH +0x5c)  ORed into each client's table
+	uint16 m_NetFlags;                       // +0x5a (PH +0x5e)  NETFLAG_* (ltcodes.h); SetNetFlags
 	                                         //        strips ANIMUNGUARANTEED off non-models
 };
 
