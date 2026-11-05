@@ -200,6 +200,35 @@ $(1) &: $(2) | wine-drives
 endef
 
 # ---------------------------------------------------------------------------
+# Links under Microsoft's msvcrt.dll
+#
+# link.exe sorts each DLL's imports with the C runtime's qsort, among keys
+# that are all equal: Microsoft's qsort first swaps the middle element to
+# the front, Wine's builtin msvcrt.dll's keeps the order. So a retail
+# image's KERNEL32 thunks start with EnterCriticalSection, where a link
+# under Wine's msvcrt starts with GetCommandLineA. The links that have to
+# match there run a copy of the VC6 tree's linker (with mspdb60.dll and
+# cvtres.exe, which it loads and starts) beside a native msvcrt.dll, the
+# one icl-5.0.1 ships, loaded in the place of Wine's (msvcrt=n).
+# $(call nlink_dir,<VC6 tree>): where that copy is
+nlink_dir = out/native-link/$(notdir $(1))
+# $(call nlink,<VC6 tree>): its link.exe, as a prerequisite and to run
+nlink = $(call nlink_dir,$(1))/link.exe
+# $(call nlink_env,<VC6 tree>): the environment to run it in, one at a
+# time: under Microsoft's msvcrt two links at once name the same temporary
+# file (LNK1104, C:\windows\temp\lnk2)
+nlink_env = $(call vc_env,$(1)) WINEPATH='$(call ws,$(ROOT)/$(call nlink_dir,$(1)))' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' \
+    flock $(ROOT)/out/native-link/.lock
+$(foreach v,$(V8168) $(V8966),$(eval $(call tool,$(call nlink,$(v)),$(v)/BIN/link.exe $(TC)/icl-5.0.1/BIN/Msvcrt.dll,\
+    mkdir -p $(call nlink_dir,$(v)) && cp $(v)/BIN/link.exe $(v)/BIN/mspdb60.dll $(v)/BIN/cvtres.exe $(call nlink_dir,$(v))/ && \
+    cp $(TC)/icl-5.0.1/BIN/Msvcrt.dll $(call nlink_dir,$(v))/msvcrt.dll)))
+# AvP2's client resources link so (its one source compiles as the rest do)
+ENV_ClientRes       := $(call nlink_env,$(V8966))
+ENV_ClientRes__main := $(ENV_GAME)
+LINK_ClientRes      := $(ROOT)/$(call nlink,$(V8966))
+src/AVP2/ClientRes/Release/CRes.dll: $(call nlink,$(V8966))
+
+# ---------------------------------------------------------------------------
 # The lithshared libraries, ours
 #
 # AvP2's release ships them as headers (src/LT2/lithshared/) and prebuilt
@@ -545,7 +574,8 @@ eng_objs = $(sort $(patsubst %.cpp,$(SERVER)/$(1)/%.obj,$(SERVER_SRC) $(SERVER_O
 # DLLs by tools/rsrc2rc.py: Primal Hunt's and 1.0.9.6's are the same
 # resources) around the C runtime's DLL startup (ltmsg.cpp, nolfsrc's).
 # Primal Hunt's is SP5's tools' (its Rich header: C++ 8966), 1.0.9.6's RTM's
-# (C++ 8168, its runtime 8168's).
+# (C++ 8168, its runtime 8168's). Linked under Microsoft's msvcrt.dll
+# (nlink, above), for the order of the imports.
 LTMSG := $(E)/ltmsg
 LTMSG_CL := /nologo /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /c
 # $(call ltmsg_variant,<object dir>,<VC6 tree>)
@@ -553,8 +583,8 @@ define ltmsg_variant
 $(eval $(call compile,$(LTMSG)/$(1)/ltmsg.obj,$(LTMSG),ltmsg.cpp,$(call vc_env,$(2)),$(2)/BIN/cl.exe,$(LTMSG_CL) /Fo$(1)/,wine-drives))
 $(eval $(call tool,$(LTMSG)/$(1)/ltmsg.res,$(LTMSG)/ltmsg.rc | wine-drives,\
     cd $(LTMSG) && $(call vc_env,$(2)) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /fo$(1)/ltmsg.res ltmsg.rc))
-$(eval $(call tool,$(LTMSG)/$(1)/ltmsg.dll,$(LTMSG)/$(1)/ltmsg.obj $(LTMSG)/$(1)/ltmsg.res | wine-drives,\
-    cd $(LTMSG) && $(call vc_env,$(2)) $(WINE) $(2)/BIN/link.exe $(AVP2SRC_LDFLAGS) /nologo /subsystem:windows /dll /machine:I386 \
+$(eval $(call tool,$(LTMSG)/$(1)/ltmsg.dll,$(LTMSG)/$(1)/ltmsg.obj $(LTMSG)/$(1)/ltmsg.res $(call nlink,$(2)) | wine-drives,\
+    cd $(LTMSG) && $(call nlink_env,$(2)) $(WINE) $(ROOT)/$(call nlink,$(2)) $(AVP2SRC_LDFLAGS) /nologo /subsystem:windows /dll /machine:I386 \
     /out:$(1)/ltmsg.dll /map:$(1)/ltmsg.map $(1)/ltmsg.obj $(1)/ltmsg.res kernel32.lib))
 endef
 $(eval $(call ltmsg_variant,Release,$(V8966)))
@@ -640,25 +670,12 @@ launch-dll: $(LAUNCHDLL)/Debug/Launch.dll
 # 5.00.1735. Linked as Developer Studio links, through a response file
 # and with a map.
 #
-# link.exe sorts each DLL's imports with the C runtime's qsort, among keys
-# that are all equal: Microsoft's qsort first swaps the middle element to
-# the front, Wine's builtin msvcrt.dll's keeps the order. So the retail
-# images' KERNEL32 thunks start with EnterCriticalSection, the 33rd
-# (0x10005000; GetCommandLineA at 0x10005080), where a link under Wine's
-# msvcrt starts with GetCommandLineA and moves EnterCriticalSection to
-# 0x10005080. These links run a copy of the linker beside a native
-# msvcrt.dll (the one icl-5.0.1 ships), loaded in the place of Wine's
-# (WINEDLLOVERRIDES msvcrt=n); cvtres.exe, which link.exe starts, beside
-# it too.
+# Linked under Microsoft's msvcrt.dll (nlink, above), for the order of
+# the imports.
 AVP2UP := src/AVP2/AVP2Up
 AVP2UP_CL := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /D _USRDLL /D AVP2UP_EXPORTS /c
 AVP2UP_LIBS := kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib \
     oleaut32.lib uuid.lib odbc32.lib odbccp32.lib
-AVP2UP_LINKDIR := out/avp2up-link
-$(eval $(call tool,$(AVP2UP_LINKDIR)/link.exe,$(V8966)/BIN/link.exe $(TC)/icl-5.0.1/BIN/Msvcrt.dll,\
-    mkdir -p $(AVP2UP_LINKDIR) && cp $(V8966)/BIN/link.exe $(V8966)/BIN/mspdb60.dll $(V8966)/BIN/cvtres.exe $(AVP2UP_LINKDIR)/ && \
-    cp $(TC)/icl-5.0.1/BIN/Msvcrt.dll $(AVP2UP_LINKDIR)/msvcrt.dll))
-AVP2UP_ENV := $(ENV_GAME) WINEPATH='$(call ws,$(ROOT)/$(AVP2UP_LINKDIR))' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n'
 # $(call avp2up_variant,<object dir>,<dll and script stem>)
 define avp2up_variant
 $(eval $(call compile,$(AVP2UP)/$(1)/StdAfx.obj,$(AVP2UP),StdAfx.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
@@ -667,8 +684,8 @@ $(eval $(call compile,$(AVP2UP)/$(1)/AVP2Up.obj,$(AVP2UP),AVP2Up.cpp,$(ENV_GAME)
     $(AVP2UP_CL) /Yustdafx.h /Fp$(1)/AVP2Up.pch /Fo$(1)/,wine-drives $(AVP2UP)/$(1)/StdAfx.obj))
 $(eval $(call rcfile,$(AVP2UP)/$(1)/$(2).res,$(AVP2UP),$(2).rc,$(AVP2UP)/$(2).rc,/l 0x409 /d NDEBUG /fo$(1)/$(2).res))
 $(eval $(call binary,$(AVP2UP)/$(1)/$(2).dll,$(AVP2UP),/nologo /subsystem:windows /dll /machine:I386 /out:$(1)\$(2).dll /implib:$(1)\$(2).lib,\
-    $(AVP2UP)/$(1)/AVP2Up.obj $(AVP2UP)/$(1)/StdAfx.obj $(AVP2UP)/$(1)/$(2).res $(AVP2UP_LINKDIR)/link.exe,\
-    $(AVP2UP_LIBS) $(1)/AVP2Up.obj $(1)/StdAfx.obj $(1)/$(2).res,,$(AVP2UP_ENV),$(ROOT)/$(AVP2UP_LINKDIR)/link.exe))
+    $(AVP2UP)/$(1)/AVP2Up.obj $(AVP2UP)/$(1)/StdAfx.obj $(AVP2UP)/$(1)/$(2).res $(call nlink,$(V8966)),\
+    $(AVP2UP_LIBS) $(1)/AVP2Up.obj $(1)/StdAfx.obj $(1)/$(2).res,,$(call nlink_env,$(V8966)),$(ROOT)/$(call nlink,$(V8966))))
 endef
 $(eval $(call avp2up_variant,Release,AVP2Up))
 $(eval $(call avp2up_variant,PrimalHunt,AVP2XUp))

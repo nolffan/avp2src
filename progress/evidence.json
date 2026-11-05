@@ -15,10 +15,10 @@
    "rsp": "1a4e3020a1a205cd715796cbe4d10b48616edbbbafc90a2cb5cfd7d78e4139c4"
   },
   "AVP2Up.dll": {
-   "cmd": "a14247989aaeb8ca8d42e888ede94184e454e2eedd303c5a6a4b145ead320ae9",
-   "image": "941d614540ce7b9e8bc24a198d07e53009bb3981b40e3c6b26aff2ef586b9187",
-   "link_command": "cd src/AVP2/AVP2Up && { printf '%s\\n' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:Release\\AVP2Up.dll' '/implib:Release\\AVP2Up.lib' '/map:s:\\AVP2\\AVP2Up\\Release\\AVP2Up.map' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' 'Release\\AVP2Up.obj' 'Release\\StdAfx.obj' 'Release\\AVP2Up.res' > /repo/out/release-tree/src/AVP2/AVP2Up/Release/AVP2Up.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\avp2up-link' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' wine /repo/out/release-tree/out/avp2up-link/link.exe '@s:\\AVP2\\AVP2Up\\Release\\AVP2Up.dll.rsp'",
-   "map": "258324d45d0ee22efd92948808626e2e21fa5ddf6777033a151255bde448402b",
+   "cmd": "9122b41c3e5d5696c4e350ac5317ade07ab7116860ad7a55eb9bd9d82f93154f",
+   "image": "08d8e83ec9d9775b7e34c56170c58e7973674e909431518b6188a45255471ede",
+   "link_command": "cd src/AVP2/AVP2Up && { printf '%s\\n' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:Release\\AVP2Up.dll' '/implib:Release\\AVP2Up.lib' '/map:s:\\AVP2\\AVP2Up\\Release\\AVP2Up.map' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' 'Release\\AVP2Up.obj' 'Release\\StdAfx.obj' 'Release\\AVP2Up.res' > /repo/out/release-tree/src/AVP2/AVP2Up/Release/AVP2Up.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\native-link\\msvc-6.00-8966' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' flock /repo/out/release-tree/out/native-link/.lock wine /repo/out/release-tree/out/native-link/msvc-6.00-8966/link.exe '@s:\\AVP2\\AVP2Up\\Release\\AVP2Up.dll.rsp'",
+   "map": "bfaa1fee69333a2066f22028335346cc4115c649d59d5f111fab4622c5509b6d",
    "rsp": "8be8dc0439dba808238fa5773f91b1730cfb2000beebd6a112f9d7e5845937be"
   },
   "AVP2XServ.exe": {
@@ -29,23 +29,23 @@
    "rsp": "0bf0ef94f3df6de457fc4eeb27ce84fe4fc1a2a8ebf7c043c9534dbbaa97a4e9"
   },
   "AVP2XUp.dll": {
-   "cmd": "634bc8c93fa2ce1d1ef6adfc232d747323bf7e4757990515ffce46e2356f15f8",
-   "image": "43be6e5a2857f5e5ea0429c9a8e087e56f85ccee022b66783e5ec6c543e0dcb9",
-   "link_command": "cd src/AVP2/AVP2Up && { printf '%s\\n' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:PrimalHunt\\AVP2XUp.dll' '/implib:PrimalHunt\\AVP2XUp.lib' '/map:s:\\AVP2\\AVP2Up\\PrimalHunt\\AVP2XUp.map' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' 'PrimalHunt\\AVP2Up.obj' 'PrimalHunt\\StdAfx.obj' 'PrimalHunt\\AVP2XUp.res' > /repo/out/release-tree/src/AVP2/AVP2Up/PrimalHunt/AVP2XUp.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\avp2up-link' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' wine /repo/out/release-tree/out/avp2up-link/link.exe '@s:\\AVP2\\AVP2Up\\PrimalHunt\\AVP2XUp.dll.rsp'",
-   "map": "d32678563ed49fce56e2a0e6ae30d3f5b5a9eda932f01d84100391483dacfa04",
+   "cmd": "33075358c1065cc15cff06d187e899545aa6d6112ef4570a9c3322b8a49e11db",
+   "image": "2e6409dfdadd4c672653274cedb05297c7bd951f5847457ea9cb0f198f345804",
+   "link_command": "cd src/AVP2/AVP2Up && { printf '%s\\n' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:PrimalHunt\\AVP2XUp.dll' '/implib:PrimalHunt\\AVP2XUp.lib' '/map:s:\\AVP2\\AVP2Up\\PrimalHunt\\AVP2XUp.map' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' 'PrimalHunt\\AVP2Up.obj' 'PrimalHunt\\StdAfx.obj' 'PrimalHunt\\AVP2XUp.res' > /repo/out/release-tree/src/AVP2/AVP2Up/PrimalHunt/AVP2XUp.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\native-link\\msvc-6.00-8966' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' flock /repo/out/release-tree/out/native-link/.lock wine /repo/out/release-tree/out/native-link/msvc-6.00-8966/link.exe '@s:\\AVP2\\AVP2Up\\PrimalHunt\\AVP2XUp.dll.rsp'",
+   "map": "9188852a7e343bf24fc2bc0f2e56419c5e832db9a3d185dd64714053affec724",
    "rsp": "52814faef5a5fa2d0605b7cdfc757a2d1c2a2ad5bcf9fffe5ae8b976e5659bc4"
   },
   "AvP2 ltmsg.dll": {
-   "cmd": "b6984a1e666ba8943b8fdb9cdec7b3c6c99f1c2c3924295c31af91a1fe579e2b",
-   "image": "8f4b78bfd5f4a128f30d2c3256d3fc9c8b10a4b6f2304619b278460ca86158e9",
-   "link_command": "cd src/engine/ltmsg && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe  /nologo /subsystem:windows /dll /machine:I386 /out:AvP2Release/ltmsg.dll /map:AvP2Release/ltmsg.map AvP2Release/ltmsg.obj AvP2Release/ltmsg.res kernel32.lib",
-   "map": "0408bb46e14b6e204590232ca1f4ce0f1310ae06ecbc195c347eccd7ecf0adff"
+   "cmd": "1517873c67194c98a0d34428730b22139c21283e7089fbe54952b235eb9431b0",
+   "image": "ffd0ca87badc4dde45f28660ab1843682570c7517432e0c372ad8717bfa1a8b8",
+   "link_command": "cd src/engine/ltmsg && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\native-link\\msvc-6.00-8168' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' flock /repo/out/release-tree/out/native-link/.lock wine /repo/out/release-tree/out/native-link/msvc-6.00-8168/link.exe  /nologo /subsystem:windows /dll /machine:I386 /out:AvP2Release/ltmsg.dll /map:AvP2Release/ltmsg.map AvP2Release/ltmsg.obj AvP2Release/ltmsg.res kernel32.lib",
+   "map": "142fe3f70f41d0b81ec3b611b1c17d9655349b2e55a5d5074b0a526a9ae8e6c7"
   },
   "CRes.dll": {
-   "cmd": "be84b10cdcc9840f6c13f88cfc9c67b00102ff7e6a628961944e0ce4965e0b08",
-   "image": "1d6e88491df604f3c41bb795179d1de0c62da5f77dddd53d77dc5f03dee9b949",
-   "link_command": "cd src/AVP2/ClientRes && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:release\\CRes.dll' '/map:s:\\AVP2\\ClientRes\\Release\\CRes.map' 'Release\\main.obj' 'Release\\ClientRes.res' > /repo/out/release-tree/src/AVP2/ClientRes/Release/CRes.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\AVP2\\ClientRes\\Release\\CRes.dll.rsp'",
-   "map": "c60fe2bd1d0c797aee4a97abfcef368fbfcd2c1c14173ee8efef6445df899ba3",
+   "cmd": "0b7e3c5d3c1caef53a9c552aac87809ccc8c4ef4ab67f52e07c939be96626182",
+   "image": "e479e1386caa883b20030c5b282a5df75d8283cf6061699819c4d8726e8df59a",
+   "link_command": "cd src/AVP2/ClientRes && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:release\\CRes.dll' '/map:s:\\AVP2\\ClientRes\\Release\\CRes.map' 'Release\\main.obj' 'Release\\ClientRes.res' > /repo/out/release-tree/src/AVP2/ClientRes/Release/CRes.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\native-link\\msvc-6.00-8966' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' flock /repo/out/release-tree/out/native-link/.lock wine /repo/out/release-tree/out/native-link/msvc-6.00-8966/link.exe '@s:\\AVP2\\ClientRes\\Release\\CRes.dll.rsp'",
+   "map": "3f159147e4827a2e4172862e2858fdb541762789a11922a3f681cf52fdd4209f",
    "rsp": "2ab00bc95a364728875637b1522dc93f5da7808451247edecbbf1cd7a54790fa"
   },
   "CShell.dll": {
@@ -111,10 +111,10 @@
    "rsp": "0adf39478ea1edce925960d3dc90e7531d30e570ee71c9f844f2c37845dd32e0"
   },
   "ltmsg.dll": {
-   "cmd": "aba67ad49d075f41ccad08690b2a2872287c9c6ee11021fbbcda73cedf8821d1",
-   "image": "aba451d8cd74a91ff7fbb217b2e7d9ef463222486aee5736310be130af71738b",
-   "link_command": "cd src/engine/ltmsg && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe  /nologo /subsystem:windows /dll /machine:I386 /out:Release/ltmsg.dll /map:Release/ltmsg.map Release/ltmsg.obj Release/ltmsg.res kernel32.lib",
-   "map": "afe0dc5adb4e7c7a402ecb00d973bf74d48669041e439347e42d26765faa55a4"
+   "cmd": "504d5d5f788c156369050c2877a9c517faa8e9e9471ae499d8fca097c1c17d2e",
+   "image": "e25a06965005bba1a21e81e9683c31f0d20e9b3fdb58332a878301fb9e3766de",
+   "link_command": "cd src/engine/ltmsg && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\native-link\\msvc-6.00-8966' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' flock /repo/out/release-tree/out/native-link/.lock wine /repo/out/release-tree/out/native-link/msvc-6.00-8966/link.exe  /nologo /subsystem:windows /dll /machine:I386 /out:Release/ltmsg.dll /map:Release/ltmsg.map Release/ltmsg.obj Release/ltmsg.res kernel32.lib",
+   "map": "dd6e664a67ce755cdc9931102c775988d71fd7ad50f70eaabb152f554842f59a"
   },
   "server.dll": {
    "cmd": "f9abb28d1db82b4a6b1f5f443beb0f4c39561517571d800d30bfab89615f2c56",
@@ -169,8 +169,8 @@
   "out/progress/summary.json": "368f3635cb8feeca449b49cb06b242e8cdec4fa231c251fc36d2278964869299"
  },
  "source": {
-  "modified_files": 2,
-  "revision": "4b6eefd4ef342906c9cc754bc10b45b22dd872ab",
+  "modified_files": 1,
+  "revision": "c8193b21b5fd4f3ac686b86d2cad7996c249a065",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "5660aba9d377caa4799edfdb00a329dca5a51152"
