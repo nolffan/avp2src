@@ -18,6 +18,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -92,3 +94,5 @@ void sub_10009ae0()
 
 	g_10091d80.m_nCacheDelay60 = g_1008abb0.m_nValue00;
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

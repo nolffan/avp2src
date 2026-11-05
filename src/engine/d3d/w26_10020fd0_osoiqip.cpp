@@ -33,6 +33,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 // DirectDraw's DDPIXELFORMAT (big3a080.cpp spells it the same way).
@@ -812,3 +813,4 @@ int32 sub_100215a0(RenderStructInit* pInit)
 	sub_10021d60(0, "VisibleSet::Init failed (invalid object list size?).");
 	return 1;
 }
+#endif // Primal Hunt: ph/common_init.cpp

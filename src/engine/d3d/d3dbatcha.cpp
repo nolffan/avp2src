@@ -706,6 +706,7 @@ C1000adc0* C1000adc0::sub_1000adc0(uint32 nState, uint32 nValue)
 
 #define VS(g) (*(DDSurface* volatile*)&(g))
 #define VC(g) (*(DDClipper* volatile*)&(g))
+#ifndef PRIMAL_HUNT
 void sub_100210d0()
 {
 	ShowCursor(1);
@@ -750,6 +751,7 @@ void sub_100210d0()
 		g_pDirectDraw = LTNULL;
 	}
 }
+#endif // Primal Hunt: ph/common_init.cpp
 
 
 // *********************************************************************** //

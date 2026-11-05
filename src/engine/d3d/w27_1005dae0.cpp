@@ -50,7 +50,9 @@ void sub_1005dae0(void* pCtx, void* pItem)
 // ======================================================================= //
 //  0x100646a0 -- 38 bytes.  Queue with 0x10061a30.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_100646a0(void* pCtx, void* pItem)
 {
 	g_p1008ef3c->sub_100500a0(pItem, (void (*)(void*, void*))sub_10061a30);
 }
+#endif // Primal Hunt: ph/drawlight.cpp

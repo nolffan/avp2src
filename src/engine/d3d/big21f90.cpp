@@ -219,6 +219,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
@@ -548,3 +549,4 @@ void sub_10021f90()
 	g_varLightmapsOnly.sub_10021f44("LightmapsOnly", 0.0f, &g_CV_LightmapsOnly, LTNULL);
 	g_varDither.sub_10021f44("Dither", 1.0f, &g_CV_Dither, LTNULL);
 }
+#endif // Primal Hunt: ph/common_stuff.cpp

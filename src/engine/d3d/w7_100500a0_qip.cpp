@@ -16,6 +16,8 @@
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 
+#ifndef PRIMAL_HUNT
+
 
 // One queued draw: an item and the callback that draws it; the third
 // dword is always written zero.
@@ -275,3 +277,4 @@ void C100500a0::sub_100500a0(void* pItem, void (*pfnDraw)(void* pCtx, void* pIte
 
 	m_nUsed++;
 }
+#endif // Primal Hunt: ph/drawobjects.cpp

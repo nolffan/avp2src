@@ -15,6 +15,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -41,3 +43,5 @@ extern "C" void __fastcall sub_10003bf0(BankVert28* pDst, BankVert28* pSrc)
 {
 	*pDst = *pSrc;
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

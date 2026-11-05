@@ -198,6 +198,7 @@ extern CObj1006a6a0    *g_100911a0;                     // 0x100911a0
 extern uint32           g_100911a4;                     // 0x100911a4
 extern uint32           g_100911a8;                     // 0x100911a8
 
+#ifndef PRIMAL_HUNT
 CObj1006a6a0 *sub_1006a6a0(uint32 nA, uint32 nB)
 {
 	if (!g_100911a0 || g_100911a4 != nA || g_100911a8 != nB)
@@ -211,6 +212,7 @@ CObj1006a6a0 *sub_1006a6a0(uint32 nA, uint32 nB)
 
 	return g_100911a0;
 }
+#endif // Primal Hunt: ph/lmdynamic.cpp (d3d_GetLMBuffer2)
 
 
 // ----------------------------------------------------------------------- //

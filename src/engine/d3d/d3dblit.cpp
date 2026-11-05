@@ -409,6 +409,7 @@ struct D3DDevice
 // which is why +0x84 and +0x88 are never written here yet are safe to read.
 // The redundant `memset(&m_Desc, 0, 0x7c)` that follows is in the shipped
 // code all the same.
+#ifndef PRIMAL_HUNT
 D3DRenderData* d3d_CreateSurface(uint32 nWidth, uint32 nHeight)
 {
 	DDSurfaceDesc2 desc;
@@ -457,6 +458,7 @@ D3DRenderData* d3d_CreateSurface(uint32 nWidth, uint32 nHeight)
 
 	return pData;
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -493,6 +495,7 @@ D3DRenderData* d3d_CreateSurface(uint32 nWidth, uint32 nHeight)
 // stores first.
 struct IUnkB { virtual long __stdcall QueryInterface(void*, void**) = 0; virtual uint32 __stdcall AddRef() = 0; virtual uint32 __stdcall Release() = 0; };
 struct ISurfB : public IUnkB { virtual long __stdcall QueryInterface(void*, void**) = 0; virtual uint32 __stdcall AddRef() = 0; virtual uint32 __stdcall Release() = 0; };
+#ifndef PRIMAL_HUNT
 void d3d_DeleteSurface(D3DRenderData* pData)
 {
 	if (!pData)
@@ -505,6 +508,7 @@ void d3d_DeleteSurface(D3DRenderData* pData)
 
 	d3d_Free(pData);
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -521,6 +525,7 @@ void d3d_DeleteSurface(D3DRenderData* pData)
 // COMPILER: the null-argument path shares the failure path's
 // `xor %eax,%eax` through a two-byte `jmp`, and the frame is opened with
 // `sub $0x90` for a 0x7c-byte local.
+#ifndef PRIMAL_HUNT
 void* d3d_LockSurface(D3DRenderData* pData)
 {
 	DDSurfaceDesc2 desc;
@@ -542,6 +547,7 @@ void* d3d_LockSurface(D3DRenderData* pData)
 
 	return LTNULL;
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -549,6 +555,7 @@ void* d3d_LockSurface(D3DRenderData* pData)
 // ---------------------------------------------------------------------- //
 //
 // 0x100369a0, 43 bytes.  DECODED.  Returns nothing; %eax is never set.
+#ifndef PRIMAL_HUNT
 void d3d_UnlockSurface(D3DRenderData* pData)
 {
 	if (!pData)
@@ -556,6 +563,7 @@ void d3d_UnlockSurface(D3DRenderData* pData)
 
 	pData->m_pSurface->lpVtbl->Unlock(pData->m_pSurface, LTNULL);
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -574,6 +582,7 @@ void d3d_UnlockSurface(D3DRenderData* pData)
 //
 // COMPILER: `xor %eax,%eax; inc %eax` for the success return, and %esi/%edi
 // are saved into frame locals rather than pushed.
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_LockScreen(int32 nLeft, int32 nTop, int32 nRight, int32 nBottom,
                       void** ppPixels, uint32* pPitch)
 {
@@ -607,6 +616,7 @@ LTBOOL d3d_LockScreen(int32 nLeft, int32 nTop, int32 nRight, int32 nBottom,
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -621,6 +631,7 @@ LTBOOL d3d_LockScreen(int32 nLeft, int32 nTop, int32 nRight, int32 nBottom,
 // The BlitToScreen path calls it with its destination rectangle for the same
 // reason, which is the cross-check that it is a dirty-rect list and not
 // something else.
+#ifndef PRIMAL_HUNT
 void d3d_UnlockScreen()
 {
 	if (!g_pOffscreen || !g_bScreenLocked)
@@ -632,6 +643,7 @@ void d3d_UnlockScreen()
 
 	d3d_AddDirtyRect(&g_ScreenLockRect);
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 #ifdef AVP2_MODERN
 // ---------------------------------------------------------------------- //
@@ -839,6 +851,7 @@ void d3d_BlitToScreen_DD(RenderBlitRequest* pRequest)
 // The blend is fetched through slot +0xa4's implementation (0x10034ed0),
 // which d3d.cpp calls dead because nothing in lithtech.exe reaches the slot.
 // It is not dead: the renderer calls it internally.
+#ifndef PRIMAL_HUNT
 void d3d_BlitToScreen(RenderBlitRequest* pRequest)
 {
 	D3DRenderData* pData;
@@ -865,6 +878,7 @@ void d3d_BlitToScreen(RenderBlitRequest* pRequest)
 	else
 		d3d_BlitToScreen_DD(pRequest);
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -889,6 +903,7 @@ void d3d_BlitToScreen(RenderBlitRequest* pRequest)
 //
 // COMPILER: `xor %eax,%eax; inc %eax` for the success return, and it is one
 // of the few functions here with no frame pointer.
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_BlitWarpedToScreen(RenderBlitRequest* pRequest, void* pPoints,
                               uint32 nPoints)
 {
@@ -904,6 +919,7 @@ LTBOOL d3d_BlitWarpedToScreen(RenderBlitRequest* pRequest, void* pPoints,
 
 	return LTFALSE;
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -920,6 +936,7 @@ LTBOOL d3d_BlitWarpedToScreen(RenderBlitRequest* pRequest, void* pPoints,
 // No colour key, no dirty rect (nothing on screen changed), and no null
 // checks at all: the render data is dereferenced before the very first
 // branch.  Returns nothing.
+#ifndef PRIMAL_HUNT
 void d3d_BlitFromScreen(RenderBlitRequest* pRequest)
 {
 	D3DRenderData* pData = pRequest->m_pRenderData;
@@ -961,6 +978,7 @@ void d3d_BlitFromScreen(RenderBlitRequest* pRequest)
 			g_pD3DDevice->lpVtbl->BeginScene(g_pD3DDevice);
 	}
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //

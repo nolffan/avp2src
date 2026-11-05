@@ -117,6 +117,7 @@ struct Sub10050e40Object
 	uint32  m_n44;                                      // +0x44
 };
 
+#ifndef PRIMAL_HUNT
 void sub_10050e40(Sub10050e40Object* pObject, uint32* pOutField,
                   uint32* pOutRaw)
 {
@@ -125,6 +126,7 @@ void sub_10050e40(Sub10050e40Object* pObject, uint32* pOutField,
 	*pOutRaw   = nValue;
 	*pOutField = (nValue >> 2) & 0x1f;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -411,12 +413,14 @@ struct Sub1005a050Owner
 	uint32 sub_1005a050(Sub1005a050Arg* pArg, uint32 nIndex);
 };
 
+#ifndef PRIMAL_HUNT
 uint32 Sub1005a050Owner::sub_1005a050(Sub1005a050Arg* pArg, uint32 nIndex)
 {
 	return sub_10039f90(*(void**)(pArg->m_p28 + 0x30), nIndex,
 	                    &m_Pairs[nIndex].m_nA,
 	                    &m_Pairs[nIndex].m_nB);
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ---------------------------------------------------------------------- //

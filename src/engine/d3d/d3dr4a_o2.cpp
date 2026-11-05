@@ -753,6 +753,7 @@ extern uint32 g_100893dc;
 extern uint8 g_1008b880[];
 extern void sub_10040cc0();
 
+#ifndef PRIMAL_HUNT
 void sub_10040dd0()
 {
 	if(!g_100893dc)
@@ -760,6 +761,7 @@ void sub_10040dd0()
 
 	sub_1007b8d0()->m_Sub244.sub_1007b8e0(g_1008b880, sub_10040cc0);
 }
+#endif // Primal Hunt: ph/drawlight.cpp
 
 
 // ---------------------------------------------------------------------- //

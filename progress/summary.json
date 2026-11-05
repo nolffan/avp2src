@@ -132,7 +132,7 @@
       "unwritten_bytes": 0
     },
     "AvP2 d3d.ren": {
-      "attempted": 60,
+      "attempted": 96,
       "bytes_identical": 124,
       "bytes_total": 236591,
       "crt": 296,
@@ -149,7 +149,7 @@
       "near": 4,
       "small": 16,
       "started": false,
-      "todo": 1196,
+      "todo": 1160,
       "unlinked": 0,
       "unlinked_bytes": 0,
       "unplaced": 1275,
@@ -210,7 +210,7 @@
       "unwritten_bytes": 0
     },
     "AvP2 server.dll": {
-      "attempted": 29,
+      "attempted": 32,
       "bytes_identical": 167432,
       "bytes_total": 351917,
       "crt": 1077,
@@ -227,7 +227,7 @@
       "near": 146,
       "small": 205,
       "started": false,
-      "todo": 681,
+      "todo": 678,
       "unlinked": 0,
       "unlinked_bytes": 0,
       "unplaced": 534,
@@ -782,8 +782,8 @@
       "unwritten_bytes": 0
     },
     "d3d.ren": {
-      "attempted": 28,
-      "bytes_identical": 10265,
+      "attempted": 73,
+      "bytes_identical": 51746,
       "bytes_total": 240234,
       "crt": 334,
       "crt_bytes": 45354,
@@ -791,21 +791,21 @@
       "driver_bytes": 0,
       "encrypted": 0,
       "encrypted_bytes": 0,
-      "funcs": 1290,
-      "identical": 154,
+      "funcs": 1288,
+      "identical": 730,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 443,
-      "small": 71,
+      "near": 208,
+      "small": 62,
       "started": true,
-      "todo": 594,
-      "unlinked": 26,
-      "unlinked_bytes": 2340,
-      "unplaced": 431,
-      "unplaced_bytes": 231721,
-      "unwritten": 622,
-      "unwritten_bytes": 113069
+      "todo": 215,
+      "unlinked": 33,
+      "unlinked_bytes": 2823,
+      "unplaced": 675,
+      "unplaced_bytes": 277848,
+      "unwritten": 288,
+      "unwritten_bytes": 115514
     },
     "lith": {
       "attempted": 0,
@@ -913,17 +913,17 @@
     }
   },
   "total": {
-    "attempted": 204,
-    "bytes_identical": 6795980,
+    "attempted": 288,
+    "bytes_identical": 6837461,
     "bytes_total": 10779189,
-    "funcs": 55443,
-    "identical": 36566,
-    "near": 4853,
-    "small": 5289,
-    "todo": 8531,
-    "unplaced": 5168,
-    "unplaced_bytes": 1248708,
-    "unwritten": 8735,
-    "unwritten_bytes": 1790116
+    "funcs": 55441,
+    "identical": 37142,
+    "near": 4618,
+    "small": 5280,
+    "todo": 8113,
+    "unplaced": 5412,
+    "unplaced_bytes": 1294835,
+    "unwritten": 8401,
+    "unwritten_bytes": 1792561
   }
 }

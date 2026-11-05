@@ -45,6 +45,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -165,3 +167,5 @@ extern "C" void __fastcall sub_10003b50(ModelDraw3a10* pDraw,
 	else
 		pOut->m_fU18 = pOut->m_fV1c = 0.0f;
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

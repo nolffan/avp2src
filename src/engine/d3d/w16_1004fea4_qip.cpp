@@ -68,6 +68,8 @@
 
 #include "ltbasedefs.h"
 
+#ifndef PRIMAL_HUNT
+
 struct Item1004fea4
 {
 	uint8		m_pad_000[0x88];
@@ -197,3 +199,4 @@ void C100500a0::sub_1004fea4(void* pCtx)
 	if (g_1008ef60.m_nValue00)
 		g_1008cbcc->m_pfnPrint14("Sort: %d ticks", 0);
 }
+#endif // Primal Hunt: ph/drawobjects.cpp

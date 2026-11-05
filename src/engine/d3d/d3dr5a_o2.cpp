@@ -489,6 +489,7 @@ extern Root1007b8d0* sub_1007b8d0();                    // 0x1007b8d0
 
 
 // ---- 0x1005d960 -- the set at +0x264.  /O2 (duplicated epilogue).
+#ifndef PRIMAL_HUNT
 void sub_1005d960(void* pItem)
 {
 	Root1007b8d0* pRoot = sub_1007b8d0();
@@ -503,9 +504,11 @@ void sub_1005d960(void* pItem)
 		sub_10021d60(1, "Set '%s' overflowed", pRoot->m_Set264.m_pszName);
 	}
 }
+#endif // Primal Hunt: ph/drawpolygrid.cpp
 
 
 // ---- 0x10042d40 -- the set at +0x2a4.  /O2 (duplicated epilogue).
+#ifndef PRIMAL_HUNT
 void sub_10042d40(void* pItem)
 {
 	Root1007b8d0* pRoot = sub_1007b8d0();
@@ -520,6 +523,7 @@ void sub_10042d40(void* pItem)
 		sub_10021d60(1, "Set '%s' overflowed", pRoot->m_Set2a4.m_pszName);
 	}
 }
+#endif // Primal Hunt: ph/drawlight.cpp
 
 
 // ---- 0x100508a0 -- the set at +0x2c4.  /Os (cross-jumped exit).
@@ -1245,6 +1249,7 @@ extern void sub_10015c70(Ctx1007b8e0* pContext, void* pElem);
 extern uint8 g_1008b880[];                              // 0x1008b880
 extern uint32 g_100893f8;                               // 0x100893f8
 
+#ifndef PRIMAL_HUNT
 void sub_10043a30()
 {
 	if (!g_100893f8)
@@ -1257,3 +1262,4 @@ void sub_10043a30()
 
 	pReg->sub_1007b8e0(g_1008b880, (void (*)())sub_10015c70);
 }
+#endif // Primal Hunt: ph/drawlight.cpp

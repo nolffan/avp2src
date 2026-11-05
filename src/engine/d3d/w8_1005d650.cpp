@@ -55,6 +55,7 @@ extern float g_1008b910;                                // 0x1008b910 far z
 // ======================================================================= //
 //  0x1005d650  780 bytes
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 extern "C" int32 sub_1005d650(uint32 nClipMask, uint32* pOutMask,
                               Vert1005d650* pV0, Vert1005d650* pV1,
                               Vert1005d650* pV2)
@@ -70,3 +71,4 @@ extern "C" int32 sub_1005d650(uint32 nClipMask, uint32* pOutMask,
 
 	return 0;
 }
+#endif // Primal Hunt: ph/drawpolygrid.cpp

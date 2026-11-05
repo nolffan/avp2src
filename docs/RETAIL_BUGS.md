@@ -405,6 +405,18 @@ starting.
 
 Not fixed yet: the launchers have no modern build yet.
 
+### A dynamic lightmap is cleared only a quarter of the way (probable)
+
+d3d.ren 0x10033512 and 0x10033652 (the 16- and 32-bit dynamic-light fills,
+src/engine/d3d/ph/lmdynamic.cpp). Each clears the lightmap with
+`memset(pData, 0, (m_Pitch * height) >> 2)`. The pitch is in bytes, so
+that is a quarter of the buffer. The fill then writes only the pixels
+inside the light's sphere, so below the cleared quarter, the texels outside
+the sphere keep whatever the buffer held before. Probable: it rests on
+`m_Pitch` being in bytes, as it is wherever else the renderer uses it.
+
+Not fixed yet (the renderer has no modern build).
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

@@ -81,6 +81,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include <ctype.h>
 #include <string.h>
 #include "ltbasedefs.h"
@@ -288,3 +289,4 @@ LTBOOL C10023130::sub_10023130(const char* pName, uint32 bCaseSensitive,
 
 	return LTFALSE;
 }
+#endif // Primal Hunt: ph/conparse.cpp

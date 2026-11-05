@@ -679,6 +679,7 @@ struct Rec100895b4
 
 extern Rec100895b4 g_100895b4[11];                      // 0x100895b4
 
+#ifndef PRIMAL_HUNT
 void sub_1004fb80()
 {
 	uint32 i;
@@ -691,6 +692,7 @@ void sub_1004fb80()
 		g_100895b4[i].m_bSet = 0;
 	}
 }
+#endif // Primal Hunt: ph/drawobjects.cpp
 
 
 // ======================================================================= //

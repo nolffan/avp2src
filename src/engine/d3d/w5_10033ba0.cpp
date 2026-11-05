@@ -146,6 +146,9 @@ struct ZFormats10033ba0
 //  increment (`incl (%eax)` after reloading 0x1008d98c) because the
 //  32-byte copy through another pointer could alias it.
 // ======================================================================= //
+long __stdcall sub_100329a0(DDPixFmt10033ba0* pFmt, void* pContext);
+
+#ifndef PRIMAL_HUNT
 long __stdcall sub_100329a0(DDPixFmt10033ba0* pFmt, void* pContext)
 {
 	if (*g_p1008d98c < MAX_ZFORMATS_10033BA0)
@@ -156,6 +159,7 @@ long __stdcall sub_100329a0(DDPixFmt10033ba0* pFmt, void* pContext)
 
 	return 1;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // ======================================================================= //

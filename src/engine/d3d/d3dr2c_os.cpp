@@ -423,6 +423,7 @@ public:
 	uint32	m_00;
 };
 
+#ifndef PRIMAL_HUNT
 int32 C1007a180Disp::sub_1007a180(C1007a180Req *pReq, uint32 nParam,
                                   void *pData)
 {
@@ -436,6 +437,7 @@ int32 C1007a180Disp::sub_1007a180(C1007a180Req *pReq, uint32 nParam,
 
 	return 1;
 }
+#endif // Primal Hunt: ph/pixelformat.cpp (FormatMgr::PValueToFormatColor)
 
 
 // ----------------------------------------------------------------------- //

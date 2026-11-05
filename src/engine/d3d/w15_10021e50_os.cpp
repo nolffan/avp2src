@@ -17,6 +17,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 // The console-variable record (big21f90.cpp's CD3DConVar), spelled with
@@ -81,3 +82,4 @@ void sub_10021e50()
 	if (g_1008cba8)
 		g_CV_LightMap = 0;
 }
+#endif // Primal Hunt: ph/common_stuff.cpp

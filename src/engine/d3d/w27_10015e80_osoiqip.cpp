@@ -221,6 +221,7 @@ extern "C" int __cdecl atexit(void (__cdecl* pfn)(void));
 // ======================================================================= //
 //  0x1001bfa0 -- 523 bytes.  IDENTICAL.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_1001bfa0()
 {
 	g_1008b090.sub_10015e80();
@@ -240,3 +241,4 @@ void sub_1001bfa0()
 	g_1008aef4.sub_10021f40("ModelCacheRigid", 0.0f, 0, 0);
 	g_1008aed4.sub_10021f40("ModelUseTnL", 0.0f, 0, 0);
 }
+#endif // Primal Hunt: ph/drawmodel.cpp

@@ -24,6 +24,7 @@ extern uint32       g_n1008fea0;                        // 0x1008fea0
 
 extern "C" void sub_10021cb0(void* p);                  // 0x10021cb0
 
+#ifndef PRIMAL_HUNT
 void sub_1005db50()
 {
 	sub_10021cb0(g_p1008fe60);
@@ -34,3 +35,4 @@ void sub_1005db50()
 	g_n1008fe9c = 0;
 	g_p1008fe60 = 0;
 }
+#endif // Primal Hunt: ph/drawpolygrid.cpp

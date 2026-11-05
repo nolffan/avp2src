@@ -610,6 +610,7 @@ struct Link10020f80
 
 extern Link10020f80 g_1008bf78;                         // 0x1008bf78
 
+#ifndef PRIMAL_HUNT
 void sub_10020f80()
 {
 	Link10020f80* pCur;
@@ -624,6 +625,7 @@ void sub_10020f80()
 		pCur = pCur->m_pPrev;
 	}
 }
+#endif // Primal Hunt: ph/common_init.cpp
 
 
 // ======================================================================= //

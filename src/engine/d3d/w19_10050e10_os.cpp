@@ -32,6 +32,7 @@ struct Sub10050e10Object
 	Sub10050e10Inner*   m_p28;                          // +0x28
 };
 
+#ifndef PRIMAL_HUNT
 void sub_10050e10(Sub10050e10Object* pObject, uint32* pOutField,
                   uint32* pOutRaw)
 {
@@ -40,6 +41,7 @@ void sub_10050e10(Sub10050e10Object* pObject, uint32* pOutField,
 	*pOutRaw   = nValue;
 	*pOutField = (nValue >> 2) & 0x1f;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ---------------------------------------------------------------------- //

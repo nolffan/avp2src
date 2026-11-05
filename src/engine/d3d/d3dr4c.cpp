@@ -881,12 +881,14 @@ public:
 	Scale100591a0	m_Scale770[1];                      // +0x770
 };
 
+#ifndef PRIMAL_HUNT
 void C100591a0::sub_100591a0(const Src100591a0* pSrc, Dest100591a0* pDest,
                              uint32 nIndex)
 {
 	pDest->m_f00 = m_Scale770[nIndex].m_fX * pSrc->m_f04;
 	pDest->m_f04 = m_Scale770[nIndex].m_fY * pSrc->m_f08;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ----------------------------------------------------------------------- //

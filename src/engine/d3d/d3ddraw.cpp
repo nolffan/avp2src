@@ -43,6 +43,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
@@ -276,3 +277,4 @@ void* d3d_CreateWorld(void** pRequest)
 
 	return pWorld;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp

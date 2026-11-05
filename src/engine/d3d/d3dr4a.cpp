@@ -1183,11 +1183,13 @@ struct C10059270
 	void		sub_10059270(const LTVector* pIn, float* pOut, uint32 nUnused);
 };
 
+#ifndef PRIMAL_HUNT
 void C10059270::sub_10059270(const LTVector* pIn, float* pOut, uint32 nUnused)
 {
 	pOut[0] = m_fScaleX * pIn->y;
 	pOut[1] = m_fScaleY * pIn->z;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ---------------------------------------------------------------------- //

@@ -26,6 +26,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include <math.h>
 #include "ltbasedefs.h"
 
@@ -235,3 +236,4 @@ void sub_100316e0()
 		g_1008ca40 = g_CV_Bilinear;
 	}
 }
+#endif // Primal Hunt: ph/d3d_init.cpp

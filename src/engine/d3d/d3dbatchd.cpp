@@ -519,10 +519,12 @@ public:
 	void	sub_1007a3b0();
 };
 
+#ifndef PRIMAL_HUNT
 void C1007a3b0::sub_1007a3b0()
 {
 	Slot0(3, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
 }
+#endif // Primal Hunt: ph/pixelformat.cpp (PFormat::InitPValueFormat)
 
 
 // ---------------------------------------------------------------------- //
@@ -915,6 +917,7 @@ sub_1003b924::sub_1003b924()
 //  by 0x90 fill (/Os).  Moved here from d3dr2d.cpp, where /O2 expanded
 //  strlen inline twice (112 bytes); /Os /Oi- is byte-identical.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT
 void sub_10021ed0(char* pStr)
 {
 	uint32 i;
@@ -922,6 +925,7 @@ void sub_10021ed0(char* pStr)
 	for (i = 0; i < strlen(pStr); ++i)
 		pStr[i] = (char)toupper(pStr[i]);
 }
+#endif // Primal Hunt: ph/conparse.cpp
 
 
 // ---------------------------------------------------------------------- //

@@ -628,6 +628,7 @@ extern Rec100895bc g_a100895bc[11];
 // The counter is SIGNED: with `uint32 i` icl keeps an up-counting index
 // and a `cmp $0xdc`; with int32 it strength-reduces to the biased index
 // running up to zero that the shipped loop has (measured, identical).
+#ifndef PRIMAL_HUNT
 void sub_10050390()
 {
 	int32 i;
@@ -638,6 +639,7 @@ void sub_10050390()
 			g_a100895bc[i].m_pfnSlot00();
 	}
 }
+#endif // Primal Hunt: ph/drawobjects.cpp
 
 
 // 0x10021ed0 (strlen/toupper upper-caser) is in d3dbatchd.cpp, the /Os /Oi-

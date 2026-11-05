@@ -18,6 +18,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,3 +52,4 @@ void* sub_10021c50(uint32 nSize)
 
 	return p;
 }
+#endif // Primal Hunt: ph/common_stuff.cpp

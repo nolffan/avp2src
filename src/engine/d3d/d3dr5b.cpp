@@ -282,6 +282,7 @@ struct CTexStage
 	uint32 sub_10059fc0(void* pThing, uint32 nIndex);
 };
 
+#ifndef PRIMAL_HUNT
 void CTexStage::sub_10059210(TexSrc* pSrc, TexPair* pOut, uint32 nIndex)
 {
 	pOut->u = m_f798 * m_f790 + pSrc->m_pVec->x;
@@ -290,6 +291,7 @@ void CTexStage::sub_10059210(TexSrc* pSrc, TexPair* pOut, uint32 nIndex)
 	pOut->u *= m_Pairs[nIndex].u;
 	pOut->v *= m_Pairs[nIndex].v;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ======================================================================= //
@@ -1048,6 +1050,7 @@ struct Node10059fc0
 	Node10059fc0* m_p30;                                // +0x30
 };
 
+#ifndef PRIMAL_HUNT
 uint32 CTexStage::sub_10059fc0(void* pThing, uint32 nIndex)
 {
 	Node10059fc0* pA;
@@ -1073,6 +1076,7 @@ uint32 CTexStage::sub_10059fc0(void* pThing, uint32 nIndex)
 
 	return 0;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp
 
 
 // ======================================================================= //

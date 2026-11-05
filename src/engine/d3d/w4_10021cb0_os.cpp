@@ -13,6 +13,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -131,3 +132,4 @@ CD3DConVar* CD3DConVar::sub_10021f44(const char* pszName, float fDefault,
 	m_pNext1c  = pHead;
 	return this;
 }
+#endif // Primal Hunt: ph/common_stuff.cpp

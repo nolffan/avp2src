@@ -12,6 +12,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 struct LTMat
@@ -122,4 +124,4 @@ void XForm66f08::sub_1001e360(LTVec vPos)
 	m_n4f4 = nMode;
 }
 
-
+#endif // Primal Hunt: ph/d3d_viewparams.cpp

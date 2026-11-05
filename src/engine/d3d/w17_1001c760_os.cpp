@@ -75,9 +75,11 @@ public:
 	                     uint32 nIndex);
 };
 
+#ifndef PRIMAL_HUNT
 void C100591e0::sub_100591e0(const Src100591e0* pSrc, Dest100591e0* pDest,
                              uint32 nIndex)
 {
 	pDest->m_fU00 = pSrc->m_fU0c;
 	pDest->m_fV04 = pSrc->m_fV10;
 }
+#endif // Primal Hunt: ph/drawpolymgr.cpp

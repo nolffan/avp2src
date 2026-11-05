@@ -284,6 +284,7 @@ extern CVarR5C g_1008ade0;                              // LMAnim
 // ---------------------------------------------------------------------- //
 //  0x10014600 -- 276 bytes, seven registrations.  In .data at 0x10089030.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT
 void sub_10014600()
 {
 	g_1008aea0.sub_10021f40("DetailTextures", 1.0f, 0, 0);
@@ -294,6 +295,7 @@ void sub_10014600()
 	g_1008ae00.sub_10021f40("EnvMapWorld", 1.0f, 0, 0);
 	g_1008ade0.sub_10021f40("LMAnim", 1.0f, 0, 0);
 }
+#endif // Primal Hunt: ph/drawworld.cpp
 
 
 extern CVarR5C g_1008d7a0;                              // UseD3DClip
@@ -1506,6 +1508,7 @@ struct Src10021220
 extern Src10021220*	g_1008bf20;                         // 0x1008bf20
 extern Node10021220*	g_1008bf24;                     // 0x1008bf24
 
+#ifndef PRIMAL_HUNT
 LTBOOL __stdcall sub_10021220(Mode10021220* pMode, uint32 nUnused)
 {
 	Node10021220*	pNode;
@@ -1531,6 +1534,7 @@ LTBOOL __stdcall sub_10021220(Mode10021220* pMode, uint32 nUnused)
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/common_init.cpp
 
 
 // ======================================================================= //

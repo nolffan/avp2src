@@ -215,11 +215,13 @@ uint32 g_1008bf68;                                      // 0x1008bf68
 // stored as a callback at 0x100337bc -- so the argument types are not
 // recoverable and are left as dwords. 0x1008bf68 is the most-referenced
 // global in the module (33 references), a device/context pointer.
+#ifndef PRIMAL_HUNT
 uint32 __stdcall sub_10032600(uint32 nArg0, uint32 nArg1, uint32 nArg2)
 {
 	g_1008bf68 = nArg0;
 	return 0;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // ----------------------------------------------------------------------- //
@@ -351,10 +353,12 @@ uint32 g_1008d7e4;                                      // 0x1008d7e4
 // then `test`s the register. cl is at least as likely to emit
 // `cmp DWORD PTR ?g, 0` and skip the register entirely, which is 10 bytes
 // instead of 11 and shifts everything after it.
+#ifndef PRIMAL_HUNT
 LTBOOL sub_10032990()
 {
 	return g_1008d7e4 > 0;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // 0x1000a6e0 -- 25 bytes. Unlink a node from a doubly-linked list and tie it

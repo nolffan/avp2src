@@ -44,6 +44,7 @@ struct Vert1005f9a0
 // ======================================================================= //
 //  0x1005f9a0  224 bytes
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 extern "C" void sub_1005f9a0(Vert1005f9a0* pDest, Vert1005f9a0* pSrc,
                              float fBias)
 {
@@ -68,3 +69,4 @@ extern "C" void sub_1005f9a0(Vert1005f9a0* pDest, Vert1005f9a0* pSrc,
 	pDest->z = fZ;
 	pDest->rhw = oowBias;
 }
+#endif // Primal Hunt: ph/drawpolygrid.cpp

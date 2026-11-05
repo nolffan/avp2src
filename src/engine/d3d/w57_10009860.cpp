@@ -42,6 +42,8 @@
 //  ModelVB* variables; referenced: g_vtbl_10089260/280/2a0/2c0 (new).
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 struct CConVar
@@ -95,3 +97,5 @@ CConVar   g_1008ac10("ModelVBSize", 126.0f, LTNULL, LTNULL);          // 0x1008a
 CConVar   g_1008abf0("ModelVBCount", 1.0f, LTNULL, LTNULL);           // 0x1008abf0
 CConVar   g_1008abd0("ModelVBCache", 128.0f, LTNULL, LTNULL);         // 0x1008abd0
 CConVar   g_1008abb0("ModelVBCacheDelay", 4.0f, LTNULL, LTNULL);      // 0x1008abb0
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

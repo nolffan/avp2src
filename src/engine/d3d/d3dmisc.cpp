@@ -70,10 +70,12 @@ LTBOOL d3d_IsInOptimized2D()
 // A slot that always refuses. Two dwords are pushed at its one call site and
 // the answer is discarded, so the arguments are unrecoverable and it is named
 // after its slot.
+#ifndef PRIMAL_HUNT
 uint32 d3d_Slot_c0()
 {
 	return 0;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // 0x10036920 -- RenderStruct slot +0xd0, 48 bytes. Three OUT parameters, each
@@ -96,6 +98,7 @@ struct D3DRenderDataHead
 	uint32 m_nPitch;                                    // +0x14  lPitch
 };
 
+#ifndef PRIMAL_HUNT
 void d3d_GetSurfaceInfo(D3DRenderDataHead* pSurface, uint32* pOutWidth,
                         uint32* pOutHeight, uint32* pOutPitch)
 {
@@ -111,6 +114,7 @@ void d3d_GetSurfaceInfo(D3DRenderDataHead* pSurface, uint32* pOutWidth,
 			*pOutPitch = pSurface->m_nPitch;
 	}
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // 0x1001e420 -- transpose the 3x3 rotation part of an LTMatrix in place.

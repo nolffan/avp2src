@@ -502,6 +502,7 @@ struct Elem100503c0
 
 extern Elem100503c0 g_100895b0[11];                     // 0x100895b0
 
+#ifndef PRIMAL_HUNT
 void sub_100503c0()
 {
 	uint32 i;
@@ -514,6 +515,7 @@ void sub_100503c0()
 		g_100895b0[i].m_n08 = 1;
 	}
 }
+#endif // Primal Hunt: ph/drawobjects.cpp
 
 
 // ======================================================================= //
@@ -597,6 +599,7 @@ void  sub_1004fb80();
 // does with the answer.
 uint32 sub_1006a780();
 
+#ifndef PRIMAL_HUNT
 void sub_10032cc0()
 {
 	C1006a780* pObj;
@@ -611,6 +614,7 @@ void sub_10032cc0()
 	if (pObj)
 		pObj->Slot00(1);
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // ======================================================================= //

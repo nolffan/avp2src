@@ -176,6 +176,7 @@ void sub_1002e2d0();
 void sub_1007b8c0();                                    // d3dneutral.cpp
 void sub_100503c0();
 
+#ifndef PRIMAL_HUNT
 LTBOOL sub_10033120()
 {
 	sub_1002e2d0();
@@ -186,6 +187,7 @@ LTBOOL sub_10033120()
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // ----------------------------------------------------------------------- //
@@ -478,6 +480,7 @@ inline void SetAdd1005d9c0(CSetA* pSet, void* pItem)
 //      `incl` is lost;
 //    * the append is the inline helper in the THEN arm (`!= 0xFF`), which
 //      puts pW in %ebp, the index in %ebx and the 0x1005a960 call last.
+#ifndef PRIMAL_HUNT
 void sub_1005d9c0()
 {
 	C10091a10A	   *pW;
@@ -514,6 +517,7 @@ void sub_1005d9c0()
 			sub_1005a960(&g_1008b880, pItem);
 	}
 }
+#endif // Primal Hunt: ph/drawpolygrid.cpp
 
 
 // ----------------------------------------------------------------------- //

@@ -16,6 +16,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 #include <stdio.h>
@@ -90,3 +91,4 @@ void sub_10021dc0()
 		pVar = pVar->m_pNext;
 	}
 }
+#endif // Primal Hunt: ph/common_stuff.cpp

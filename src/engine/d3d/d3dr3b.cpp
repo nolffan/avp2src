@@ -254,6 +254,7 @@ extern uint32            g_nKeyA100911b0;               // 0x100911b0
 extern uint32            g_nKeyB100911b4;               // 0x100911b4
 extern C1006a710Factory* g_pFactory100911b8;            // 0x100911b8
 
+#ifndef PRIMAL_HUNT
 void* sub_1006a710(uint32 nA, uint32 nB)
 {
 	if (!g_pCached100911ac || nA != g_nKeyA100911b0 ||
@@ -267,6 +268,7 @@ void* sub_1006a710(uint32 nA, uint32 nB)
 
 	return g_pCached100911ac;
 }
+#endif // Primal Hunt: ph/lmdynamic.cpp (d3d_GetLMBuffer)
 
 
 // ======================================================================= //

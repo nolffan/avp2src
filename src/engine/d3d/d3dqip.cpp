@@ -227,6 +227,7 @@ inline LTBOOL LightTouches10040930(Ctx10040938* pLight, Poly10040930* pPoly,
 	       (pPoly->m_fRadius24 + fRadius) * (pPoly->m_fRadius24 + fRadius);
 }
 
+#ifndef PRIMAL_HUNT
 void sub_10040930(Ctx10040938* pLight, Obj10040ca0* pWM)
 {
 	Node10040930*	stack[1024];
@@ -319,9 +320,12 @@ void sub_10040930(Ctx10040938* pLight, Obj10040ca0* pWM)
 		}
 	}
 }
+#endif // Primal Hunt: ph/drawlight.cpp
 
+#ifndef PRIMAL_HUNT
 void sub_10040ca0(Obj10040ca0* pObj, Ctx10040938* pCtx)
 {
 	if (pObj->m_bMode == 2)
 		sub_10040930(pCtx, pObj);
 }
+#endif // Primal Hunt: ph/drawlight.cpp
