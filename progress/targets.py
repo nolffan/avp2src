@@ -194,18 +194,43 @@ TARGETS = [
          app=[(0x10001000, 0x10061048)]),
     dict(label="d3d.ren", what="the Direct3D renderer", kind="image",
          shipped=REFERENCE + "/d3d.ren", stem="d3d",
-         # nolfsrc's engine compiled for Primal Hunt, objects only until it
-         # links (build/build.mk, "The engine")
-         partial_objs=["src/engine/d3d/Release/*.obj"],
+         # nolfsrc's renderer compiled for Primal Hunt, and linked with
+         # /FORCE for the scoreboard (build/build.mk, d3d-link: `built`,
+         # its .rsp and .map, through which the small functions are
+         # verified); its objects alone (partial_objs) until that link has
+         # been made
+         # and the debug build of StdLith it links after the import
+         # thunks, as server.dll does (build/build.mk, "The debug builds")
+         partial_objs=["src/engine/d3d/Release/*.obj",
+                       "src/LT2/lithshared/libs/Debug/StdLith.lib"],
+         lib_range={"StdLith": (0x1003c150, 0x1003c58b)},
          built="src/engine/d3d/Release/d3d.ren", optional=True,
          cites=True, cited_src=["src/engine"],
          # 2002-06-03. Unlike NOLF's and 1.0.9.6's (Intel C/C++'s shape),
          # its Rich header is Microsoft's throughout: C++ 8966 x69, one C++
-         # object of cl 13.00.9178 and three import descriptors of implib
-         # 7.00.9210 (a DirectX SDK's). Provisional: libcmt.lib from
-         # onexit.obj (0x1003c5e5), 250 members to 0x10047783; 181 bytes of
-         # packed code (4 functions) from 0x1003c530 below it
-         app=[(0x10001000, 0x1003c5e5)]),
+         # object of cl 13.00.9178 (dxguid.lib's: the DirectX 8.1 SDK's
+         # carries that @comp.id) and three import descriptors of implib
+         # 7.00.9210 (the same SDK's ddraw.lib).
+         # The renderer's objects end at 0x1003c136, where the linker put
+         # the three DDRAW import thunks (jmp [0x10048008], [0x10048000],
+         # [0x10048004]), then int3 padding to 0x1003c150. From there to
+         # 0x1003c58b is the DEBUG StdLith.lib, unoptimised and int3-padded:
+         # struct_bank.obj (sb_Init 0x1003c150 .. sb_AllocateNewStructPage
+         # 0x1003c300), l_allocator.obj (LAlloc's vtable 0x10048654:
+         # 0x1003c4f0, Alloc 0x1003c3d0, Free 0x1003c400; g_DefAlloc's
+         # initialisers from 0x1003c430) and dynarray.obj
+         # (MoArray_FindElementMemcmp 0x1003c530) -- tools/libscan.py finds
+         # the release's prebuilt debug StdLith.lib there, 18 functions at
+         # one address each, and our link's build of it is identical at
+         # all 15 rows. Then libcmt.lib (msvc-6.00-8966's): delete.obj's
+         # operator delete at 0x1003c58b (`push [esp+4]; call _free
+         # (0x1003d36e); pop ecx; ret`), fpinit.obj's _fpmath (0x1003c596)
+         # and _cfltcvt_init (0x1003c5ad) as our link's LIBCMT:fpinit.obj
+         # (less __fpclear, which the retail /OPT:REF dropped), then
+         # onexit.obj (0x1003c5e5), libscan's first unique hit of 250 to
+         # 0x10047783. The thunks are the linker's, not code of the image's
+         # own: left out, as the runtime is
+         app=[(0x10001000, 0x1003c136), (0x1003c150, 0x1003c58b)]),
     dict(label="ltmsg.dll", what="the engine's messages", kind="resources",
          shipped=REFERENCE + "/ltmsg.dll", stem="ltmsg",
          built="src/engine/ltmsg/Release/ltmsg.dll", optional=True),

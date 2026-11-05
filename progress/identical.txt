@@ -30186,6 +30186,7 @@ d3d.ren	sub_1001c450
 d3d.ren	sub_1001c480
 d3d.ren	sub_1001c990
 d3d.ren	sub_1001c9c0
+d3d.ren	sub_1001ca30
 d3d.ren	sub_1001ca40
 d3d.ren	sub_1001e086
 d3d.ren	sub_1001e73e
@@ -30193,7 +30194,6 @@ d3d.ren	sub_1001e7a4
 d3d.ren	sub_1001f2e0
 d3d.ren	sub_1001f310
 d3d.ren	sub_1001f350
-d3d.ren	sub_1001f3b0
 d3d.ren	sub_1001f3e0
 d3d.ren	sub_1001f3f0
 d3d.ren	sub_1001f400
@@ -30256,6 +30256,21 @@ d3d.ren	sub_1003b190
 d3d.ren	sub_1003b290
 d3d.ren	sub_1003b3a0
 d3d.ren	sub_1003b3c0
+d3d.ren	sub_1003c150
+d3d.ren	sub_1003c1f0
+d3d.ren	sub_1003c240
+d3d.ren	sub_1003c2e0
+d3d.ren	sub_1003c300
+d3d.ren	sub_1003c3d0
+d3d.ren	sub_1003c400
+d3d.ren	sub_1003c430
+d3d.ren	sub_1003c450
+d3d.ren	sub_1003c470
+d3d.ren	sub_1003c490
+d3d.ren	sub_1003c4b0
+d3d.ren	sub_1003c4d0
+d3d.ren	sub_1003c4f0
+d3d.ren	sub_1003c530
 lith	??0CBaseHash@@QAE@I@Z
 lith	??0CBaseHash@@QAE@XZ
 lith	??0CHashBin@CBaseHash@@QAE@XZ

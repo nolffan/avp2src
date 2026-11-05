@@ -423,9 +423,10 @@ all game: $(WANTED) ltmsg wonapi debuglibs
 #                   renderer's shape)
 #
 # Both keep nolfsrc's file lists and per-file flags. Primal Hunt's
-# lithtech.exe and server.dll are linked (below, engine-link) for the
-# scoreboard, not to run; the rest is objects only, which `make progress`
-# scores as they are (progress/targets.py, partial_objs).
+# lithtech.exe and server.dll (below, engine-link) and d3d.ren (d3d-link)
+# are linked for the scoreboard, not to run; the rest is objects only,
+# which `make progress` scores as they are (progress/targets.py,
+# partial_objs).
 E := src/engine
 V9044 := $(TC)/msvc-6.00-9044
 ENG_PH_CC   := $(V8966)/BIN/cl.exe
@@ -857,6 +858,103 @@ $(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\ser
     $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(SERVER)/link/server.def))
 .PHONY: engine-link
 engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
+
+# Primal Hunt's d3d.ren, linked from our objects as lithtech.exe and
+# server.dll are (engine-link, above): for the scoreboard, not to run, with
+# /FORCE and /OPT:NOREF /OPT:ICF for the same reasons. Unresolved symbols
+# resolve to the image base; Release/d3d-link.txt lists them. nolfsrc's
+# link-time stand-ins (link/aliases.rsp, link/d3dviews.txt) are not taken:
+# they name NOLF's renderer's addresses, not Primal Hunt's.
+#
+# As the retail image has it (its headers, export and import tables, Rich
+# header): a DLL at 0x10000000 linked by link 6.00.8447, exporting
+# FreeModeList, GetSupportedModes and RenderDLLSetup (ordinals 1..3, by
+# name, from /export:, which numbers them alphabetically as the retail
+# export table does), its one resource (d3d.rc; cvtres in the Rich
+# header). Imports DDRAW (the DirectX 8.1 SDK's ddraw.lib, whose import
+# descriptors are implib 7.00.9210's: the header's three), WINMM, KERNEL32,
+# USER32, in that order: the import libraries in that order on the line,
+# and the runtime's (libcmt.lib, by default) after. Linked under
+# Microsoft's msvcrt (nlink, above), for the order of the imports within
+# each DLL.
+#
+# After the objects and the three DDRAW import thunks (0x1003c136) the
+# retail image has the DEBUG StdLith.lib, as server.dll does:
+# struct_bank.obj, l_allocator.obj (LAlloc, g_DefAlloc) and dynarray.obj
+# at 0x1003c150..0x1003c58b, unoptimised and int3-padded (tools/libscan.py
+# finds the release's prebuilt debug build there, function for function),
+# and then libcmt.lib. So $(LS_D)\StdLith.lib follows the import
+# libraries, without its default LIBCMTD, and nolfsrc's w12_7fae0.cpp
+# (NOLF's renderer's /O2 build of l_allocator.cpp) is left out of the
+# link. Our objects still call DefaultCache's members out of line, which
+# draws in the library's CompressedIO.obj too (and through it zlib's
+# deflate, unresolved); retail has no such member. dxguid.lib (DirectX
+# 8.1, @comp.id cl 13.00.9178: the header's one C++ object of that
+# compiler) is offered last; d3dguid.obj still defines the GUIDs the
+# renderer names, so nothing is drawn from it yet.
+#
+# Objects in the order the scoreboard's identical and near pairs place
+# them in the retail image (MS link lays objects out in command-line
+# order): each object by the median retail address of its identical
+# functions, else its nears, else its small ones; an object with no
+# evidence beside the one whose NOLF address (its file name) is nearest
+# its own, an _os/_o2 sibling beside its sibling; the rest, which have
+# neither, last. nolfsrc's files are split by Intel flag groups, not by
+# Primal Hunt's translation units, so this approximates retail's order
+# only. Objects not listed (new files) follow, sorted.
+D3D_LINK_ORDER := \
+    w6_10034f10_osoi w14_10008a40_qipni w2_10008da0 big8fd0 w57_10009860 w2_10009ae0 w64_10009f10_qip \
+    w2_1000a110 w2_1000a770 w3_1000a7d0_os w2_1000a8a0_os w54_1000ae20_osoiqip w2_1000d940_os \
+    w15_1000d9f0_os w2_10003a10 w14_10003bb0 big3c40 w9_1006f540_os w53_10070d10_os big729c0 big73140 \
+    w10_10073400_osoiqip w59_10073640_osoi w56_10073700_osoiqipsf w29_10073c00_osoiqip big051a0 \
+    w57_10053e20_os w57_100553d0_os w14_10006840 big7cc90 w22_1007dbd0_os w35_1007dc54_os w1_10001000 \
+    w44_10001670 w1_10002310 w44_10002d40 w57_100037f0 d3dr5c_o2 big24090 w54_1000daa0_qipsf \
+    w30_1000f020_osqipni w2_1000f2c0_os w14_10011980_osoiqip w56_1002ec60_osoiqipsf w28_1002ef30_osqipni \
+    w26_100371e0_osoi w12_374a0 w18_10037570 w25_10037bf0_qipni d3dbatchb_os w3_10014580_os \
+    w43_10017c10_osoiqipni d3dr2c d3dbatchb w24_10068c80_osqipni w17_10069a10_osoi w18_1001dc70_os \
+    w32_1001e210 w31_1001e360 w17_10023930 w13_1006c6e0_osoiqip w9_1006d210_osoi w48_1006d3e0_os \
+    w57_1006d500_os big6d910 w4_1001eb90_os big1ef30 d3dr2b d3dbatcha d3dbatcha_o2 d3dr5c \
+    w17_10020e80_osoi w26_10020fd0_osoiqip w12_21c50_osoi w4_10021cb0_os w34_10021dc0_ossf \
+    w15_10021e50_os w57_1003b1c0 w12_3b3d0_os big21f90 w15_10022e90_osoiqip big2b1b0 w57_1002db00 \
+    w5_1002e4c0 w4_10023c40_os d3dr3a w4_10023fb0 big24020 w4_100234d0 w15_100235d0 w8_10069ca0_osoiqip \
+    w8_10069ed0_osoi w8_1006a5f0_osoiqip w8_1006a860_os w4_1001e4a0_os d3dbatchd d3dbatchd_o2 \
+    w28_100256d0_qipni w26_100262f0 w4_100265a0_qip w29_10027f70 w38_10028030_qip d3dr4a d3dneutral \
+    w5_10033ba0 w53_10033f30_osoiqip d3dr2a d3dr2a_os d3ddraw d3ddraw_os w5_10030f30 w15_100316e0 \
+    w26_10031e10 w38_100322c0_qip w31_10032a00_qip w81_10034ed0_osg5 w4_1001cd40_osoi w18_1001d180_os \
+    w12_1d370 w45_1001d810_osoi d3dqip3 w18_10035a70_osoiqip w6_10035ab0_os w18_10035e20_osoi \
+    w12_36320_os d3dmisc w6_1003acf0 w57_1007e830_osoiqip d3dr4b d3dr4b_o2 d3dqip2 \
+    w6_10039730_qip w19_1003b6f0_osoiqip w6_1003b9c4_os w18_1003bb10_os w34_1003e620_osoiqipsf \
+    w7_10040cc0 big40e10 d3dr3b d3dr5a_o2 d3dr5a d3dqip d3dr4a_o2 w27_1005dae0 w16_10042e80 \
+    w35_10043e10_qip w31_10044ff0_qipni big47230 w7_10047d80_os w54_10048180_osoiqipsf w7_1004b5c0_os \
+    big4b720 d3dr2b_o2 d3dr2d d3dr2d_os w35_1004e360_os big4e3e4 w16_1004fea4_qip w7_100500a0_qip \
+    w19_10050450 d3dr5b w11_1007e9f0_osoi d3dr4c w17_1001c760_os w12_1c7e0_os w4_1001c8d0_os \
+    w27_10050900_os w19_10050e10_os w23_10050e60_os w23_100525b0_os w27_10056ab0_osqipni w24_10059380_os \
+    w24_10059980_osoi w27_10059c80_osoi w7_1005a550 w40_1005a960_qipni w8_1005d650 d3dr3c d3dr3c_os \
+    w19_1005db50 big5dca0 w17_1005f580 w8_1005f9a0 w8_1005fb70 w63_10060010_qip d3dr5b_o2 w16_10064720 \
+    w8_10064800 w31_10066d10_qipni d3dr3a_os d3dr3b_o2 w17_1006ad20_qip d3dr2c_os d3dbatchc_o2 \
+    w57_1007bb20_qipni w26_1007be90 w10_1007c250 w22_1007c580 w10_1007cab4_os d3dqip4 w49_1007a700 \
+    d3dblit d3dbatchc d3dhigh w12_15950_os w32_10015d60_osoi w27_10015e80_osoiqip w3_10016234_os \
+    w55_10016324_os w29_10079fd0_osoiqip w10_1007a280_os w22_1007a3f0_os w59_1007dd24_osoi \
+    w22_1007dde0_os d3d d3ddata d3dguid d3dinit d3dlow d3dmid d3dmid_os d3dopt2d d3dr3d d3dr5d d3dr5d_os \
+    wC1_r5c
+D3D_LINK_NOT := w12_7fae0
+D3D_LINK_OBJS := $(addsuffix .obj,$(D3D_LINK_ORDER)) \
+    $(sort $(filter-out $(addsuffix .obj,$(D3D_LINK_ORDER) $(D3D_LINK_NOT)),$(D3D_SRC:.cpp=.obj)))
+D3D_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib $(LS_D)\StdLith.lib dxguid.lib
+D3D_EXPORTS := FreeModeList GetSupportedModes RenderDLLSetup
+$(eval $(call tool,$(D3D)/Release/d3d.res,$(D3D)/d3d.rc | wine-drives,\
+    cd $(D3D) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /foRelease/d3d.res d3d.rc))
+$(eval $(call tool,$(D3D)/Release/d3d.ren,$(addprefix $(D3D)/Release/,$(D3D_LINK_OBJS) d3d.res) $(LDOUT)/StdLith.lib $(call nlink,$(V8966)) | wine-drives,\
+    cd $(D3D) && { printf '%s\n' $(call q,/nologo /dll /base:0x10000000 /nodefaultlib:libcmtd.lib /FORCE /OPT:NOREF /OPT:ICF /machine:I386 \
+    /out:Release\d3d.ren /map:Release\d3d.map $(addprefix /export:,$(D3D_EXPORTS)) \
+    $(addprefix Release\,$(D3D_LINK_OBJS) d3d.res) $(D3D_LINK_LIBS)) > $(ROOT)/$(D3D)/Release/d3d.ren.rsp; } && \
+    { $(call nlink_env,$(V8966)) $(WINE) $(ROOT)/$(call nlink,$(V8966)) '@$(call ws,$(ROOT)/$(D3D)/Release/d3d.ren).rsp' \
+      > $(ROOT)/$(D3D)/Release/d3d-link.txt 2>&1 || true; } && \
+    grep -c 'error LNK2001\|error LNK2019' $(ROOT)/$(D3D)/Release/d3d-link.txt | sed 's/^/   LINK d3d.ren: unresolved references: /' ; \
+    grep -c 'error LNK2005' $(ROOT)/$(D3D)/Release/d3d-link.txt | sed 's/^/   LINK d3d.ren: defined twice: /' ; \
+    test -f $(ROOT)/$(D3D)/Release/d3d.ren || { grep -i 'error\|fatal' $(ROOT)/$(D3D)/Release/d3d-link.txt | head -20 >&2; false; }))
+.PHONY: d3d-link
+d3d-link: $(D3D)/Release/d3d.ren
 
 # ---------------------------------------------------------------------------
 # cdaudio.dll

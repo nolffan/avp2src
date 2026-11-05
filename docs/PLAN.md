@@ -452,6 +452,14 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   (`lithtech.exe` shares 1,091 of ~2,900), so AvP2's renderer was largely
   rewritten after NOLF's, and nolfsrc's renderer source is a guide to it,
   not a base.
+- `d3d.ren` links (`d3d-link`, as `engine-link`: /FORCE, a response file
+  and a map), against the release's debug StdLith.lib, which retail links
+  after the DirectDraw thunks as server.dll does; 154 identical.
+  `docs/D3D_OBJECTS.md` maps its code into its translation units, in link
+  order: about two thirds of the renderer is `/O1` (packed, unaligned
+  functions), the rest `/O2`, no `/GX` anywhere -- where we build every
+  file `/O2` from nolfsrc's Intel flag-group splits. Next for it: rebuild
+  those translation units with their own flags.
 - Next: the near functions; the provisional calls against retail; the
   flags per binary (Primal Hunt's server.dll need not be /O1 as NOLF's
   was); the links (lithshared rebuilt, package 4), then the tables.

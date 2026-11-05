@@ -1,0 +1,47 @@
+start,end,object_guess,evidence
+0x10001000,0x10004620,TU01 model vertex-buffer/TnL renderer (e.g. d3d_modelvb.cpp),cvars ModelMinTri..ModelVBCacheDelay; vtables 0x10048140 (4 VB classes); 12 xc initialisers; strings: ModelMinTri | ModelDetailTextureScale | SpecularPowerTest | SpecularScaleTest
+0x10004620,0x10004656,"TU02 (2-function object, dead code)",42-43 unpadded and referenced by nothing: a non-COMDAT /Os .text; 0 xc initialisers; strings: 
+0x10004660,0x10007924,TU03 model TnL transforms / VB fill (continuation),44-59; 52-59 are inline/template (function-static arrays in COMDAT .bss); 0 xc initialisers; strings: 
+0x10007930,0x10008c72,TU04 drawmodel_clip.cpp (model clipping),vertex buffer overflow; ClipEdgeTop/RightA/Bottom; 0 xc initialisers; strings: Error: vertex buffer overflow
+0x10008c80,0x10009877,TU05 d3d_matrix.cpp (transform helpers),empty $E; MatMul; 1 xc initialisers; strings: 
+0x10009880,0x1000b2f9,"TU06 drawworld.cpp (world polys, lightmaps, detail textures)",cvars DetailTextures..LMAnim; 7 xc initialisers; strings: DetailTextures | DetailTextureAdd | DetailTextureAngle | FixSparkleys
+0x1000b2f9,0x1000f09f,TU07 drawmodel.cpp (models),cvars LightModelSprites..ModelUseTnL; may hold 2 objects; 16 xc initialisers; strings: LightModelSprites | ModelLODOffset | ModelZoomScale | ModelLODBlendEnable
+0x1000f09f,0x1000fef5,"TU08 (unknown, static helpers + 1 global)",$E at 269; 1 xc initialisers; strings: 
+0x1000ff00,0x10010138,TU09 (near-Z / view setup),"cvars NearZ, ReallyCloseNearZ; large bss 0x1005a328..0x1005b76x; 2 xc initialisers; strings: NearZ | ReallyCloseNearZ"
+0x10010140,0x100116e3,TU10 d3d_globals / common_draw.cpp (shared render globals),5 empty $E + 1; owns bss 0x1005b790..0x1005d240; 6 xc initialisers; strings: 
+0x100116e3,0x10011eec,TU11 common_init.cpp,"VisibleSet::Init failed, Using Direct3D Device, nullrender; 2 xc initialisers; strings: Device: %s | BACKBUFFER | LPDIRECTDRAW | VisibleSet::Init failed (inval"
+0x10011eec,0x10013c30,TU12 common_stuff.cpp (console variables + helpers),"88 cvars TableFog..Dither, '%s %f', out of memory; 88 xc initialisers; strings: TableFog | NoLMPages | ModelProfile | MaxModelLights"
+0x10013c30,0x10013f96,"TU13 (utility, unknown)",510 strupr-like; 512-517 cluster; 0 xc initialisers; strings: 
+0x10013f96,0x10014012,TU14 counter.cpp (QueryPerformanceCounter timers),"$E calls QueryPerformanceFrequency, .data 0x1004ac58; 1 xc initialisers; strings: "
+0x10014020,0x10019f51,"TU15 d3d_draw.cpp (world/BSP draw, frame stats)",cvars VFog*..RenderToFront; stats strings; 18 xc initialisers; strings: VFogMinY | VFogMaxY | VFogMinYVal | VFogMaxYVal
+0x10019f60,0x1001a71a,"TU16 (vertex/sky helper, unknown)","empty $E, vertex buffer overflow; 1 xc initialisers; strings: Error: vertex buffer overflow"
+0x1001a720,0x1001ca36,"TU17 d3d_init.cpp (device init, display modes, console cmds)",D3D error table; UseD3DClip..Anisotropic; PERMEDIA/POWERVR; 4 xc initialisers; strings: No error. | Unrecognized error value. | D3DERR_LIGHT_SET_FAILED | D3DERR_MATERIAL_SETDATA_FAILED
+0x1001ca40,0x1001e650,TU18 d3d_optimizedsurface.cpp,d3d_GetOptimized2DBlend/Color; 0 xc initialisers; strings: 
+0x1001e650,0x1001f273,"TU19 d3d_surface.cpp (surfaces, screenshot)",LockOnFlip; ScreenShot; 1 xc initialisers; strings: LockOnFlip | Warning: drawing a nonoptimize | ScreenShot: Created %s success | ScreenShot: fopen(%s) failed.
+0x1001f280,0x10022a44,TU20 d3d_texture.cpp,S3TCEnable; texture formats; texture upload; 6 xc initialisers; strings: S3TCEnable | [LIGHTMAP] -  | [INTERFACE] -  | [NORMAL] - 
+0x10022a50,0x10022dd1,TU21 (unknown),$E 0x10022a50; 1 xc initialisers; strings: 
+0x10022dd1,0x10023104,TU22 (unknown),3 globals; 3 xc initialisers; strings: 
+0x10023104,0x100238a6,TU23 draw_canvas.cpp,DrawCanvases; 2 xc initialisers; strings: DrawCanvases | Set '%s' overflowed
+0x100238a6,0x10024534,TU24 drawgouraud/multipass (unknown),MultipassGouraud; 1 xc initialisers; strings: MultipassGouraud | Error: vertex buffer overflow
+0x10024540,0x10024ebb,TU25 (sprites? unknown),Set '%s' overflowed; 0 xc initialisers; strings: Set '%s' overflowed
+0x10024ec0,0x10025e6c,"TU26 drawmodel_env.cpp? (ModelSpecular, ModelTexture)",; 2 xc initialisers; strings: ModelSpecular | ModelTexture
+0x10025e6c,0x1002938b,TU27 drawmodelshadows.cpp,ModelShadow*; 6 xc initialisers; strings: ModelShadowAlpha | ModelShadowOffset | ModelShadowProj | Error: vertex buffer overflow
+0x10029390,0x1002a479,TU28 drawobjects/sort (DrawSorted),"SortProfile, DrawSorted; 2 xc initialisers; strings: SortProfile | DrawSorted"
+0x1002a480,0x1002a70f,TU29 drawparticles.cpp,"PSSrcBlend, PSDestBlend; 2 xc initialisers; strings: PSSrcBlend | PSDestBlend"
+0x1002a70f,0x1002be3c,TU30 drawpolymgr.cpp,"DetailTextureScale, DrawPolyMgr, TestGouraud, TestLightmap; 5 xc initialisers; strings: DetailTextureScale | DrawPolyMgr | TEST_GOURAUD | TestGouraud"
+0x1002be40,0x1002ddb8,TU31 drawpolygrid.cpp,EnvMapPolyGrids; 1 xc initialisers; strings: EnvMapPolyGrids | Set '%s' overflowed
+0x1002ddc0,0x1002de3c,TU32 (portal cvars only),"PortalFlow, PortalGraph, PortalsOnly, BlockersOnly; code stripped; 4 xc initialisers; strings: PortalFlow | PortalGraph | PortalsOnly | BlockersOnly"
+0x1002de40,0x100300e9,TU33 d3d_drawsky.cpp,AllSkyPortals; counters; 5 xc initialisers; strings: AllSkyPortals | Set '%s' overflowed
+0x100300f0,0x10031a21,TU34 drawworldmodel.cpp,DrawWorldModels; 2 xc initialisers; strings: DrawWorldModels | Set '%s' overflowed | Error: vertex buffer overflow
+0x10031a30,0x100331d1,TU35 d3d_device enumeration (unknown),"DirectDrawEnumerateExA; 3 xc initialisers; strings: Unable to get ddraw.dll module | DirectDrawEnumerateExA failed, | DirectDrawEnumerateExA | DDRAW.DLL"
+0x100331d1,0x10033782,TU36 lightmap dynamic (unknown),LMDynamic*; 3 xc initialisers; strings: LMDynamic | LMDynamicScale | LMDynamicSize
+0x10033790,0x10034de7,TU37 lightanim (LMAnimStatic),LMAnimStatic; 1 xc initialisers; strings: LMAnimStatic
+0x10034df0,0x10035611,TU38 lightmap paging,Lightmaps paged in; LightAnim_BASE; 0 xc initialisers; strings: Unable to create (%dx%d) light | Lightmaps paged in %.1f second | LightAnim_BASE
+0x10035611,0x10035c7e,TU39 (unknown),; 3 xc initialisers; strings: 
+0x10035c7e,0x10036a96,TU40 (unknown),; 0 xc initialisers; strings: Error: vertex buffer overflow
+0x10036a96,0x100395de,"TU41 (dispatch tables, unknown)",tables 0x1004dfc8..; 4 xc initialisers; strings: 
+0x100395e0,0x1003b3d6,TU42 visible set / drawobjects (VS_*),"VS_CANVASES..., GetVisBSP; 1 xc initialisers; strings: VS_CANVASES_TRANSLUCENT | VS_CANVASES | VS_PARTICLESYSTEMS | VS_LINESYSTEMS"
+0x1003b3e0,0x1003c136,"TU43 (base classes, lists; unknown)",; 1 xc initialisers; strings: 
+0x1003c136,0x1003c148,IMP DirectX SDK import thunks (ddraw.lib etc.),three 6-byte jmp [__imp_] stubs; 0 xc initialisers; strings: 
+0x1003c150,0x1003c526,"LIB the cl 13.00.9178 object: StdLith l_allocator.cpp (LAlloc, g_DefAlloc 0x1009961c), built unoptimised","VC7 Debug shape (push ebp; sub esp,0x40; push ebx/esi/edi), CC-padded; its $E 0x1003c430 constructs 0x1009961c; 1 xc initialisers; strings: "
+0x1003c530,0x1003c5e5,CRT runtime,; 0 xc initialisers; strings: 
