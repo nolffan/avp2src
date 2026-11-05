@@ -30037,9 +30037,13 @@ WONAPI	_send_players
 WONAPI	_send_rules
 WONAPI	_swap_byte
 WONAPI	_value_for_key
+cdaudio.dll	sub_10001000
 cdaudio.dll	sub_10001010
+cdaudio.dll	sub_10001020
 cdaudio.dll	sub_10001030
+cdaudio.dll	sub_10001040
 cdaudio.dll	sub_10001050
+cdaudio.dll	sub_10001070
 cdaudio.dll	sub_10001080
 cdaudio.dll	sub_100010f0
 cdaudio.dll	sub_10001190
@@ -30069,6 +30073,7 @@ cdaudio.dll	sub_100019c0
 cdaudio.dll	sub_100019e0
 cdaudio.dll	sub_10001a00
 cdaudio.dll	sub_10001a10
+cdaudio.dll	sub_10001a50
 cdaudio.dll	sub_10001a60
 cdaudio.dll	sub_10001bb0
 cdaudio.dll	sub_10001bc0
@@ -30088,6 +30093,7 @@ cdaudio.dll	sub_10002240
 cdaudio.dll	sub_10002260
 cdaudio.dll	sub_10002290
 cdaudio.dll	sub_10002350
+cdaudio.dll	sub_10002390
 cdaudio.dll	sub_100023a0
 cdaudio.dll	sub_100024d0
 cdaudio.dll	sub_10002540
@@ -30101,6 +30107,10 @@ cdaudio.dll	sub_10002850
 cdaudio.dll	sub_100028a0
 cdaudio.dll	sub_100028e0
 cdaudio.dll	sub_10002920
+cdaudio.dll	sub_10002960
+cdaudio.dll	sub_10002970
+cdaudio.dll	sub_10002980
+cdaudio.dll	sub_10002990
 cdaudio.dll	sub_100029a0
 cdaudio.dll	sub_100029c0
 cdaudio.dll	sub_100029d0

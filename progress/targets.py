@@ -215,6 +215,16 @@ TARGETS = [
          # a response file and a map, so the scoreboard reads our image
          built="src/engine/cdaudio/Release/cdaudio.dll", optional=True,
          cites=True, cited_src=["src/engine"],
+         # our link lays the image out as the retail one (every function of
+         # cdaudio.obj and Redmgr.lib at its retail address; of StdLith's,
+         # DefStdlithFree and LAlloc::Alloc trade places at
+         # 0x100029c0/0x100029d0; .data and .bss with them). So its
+         # relocation-free short functions are compared byte for byte with
+         # our link, each only at its own address: the $E initializer thunks,
+         # whose `call _atexit` names the runtime (no proven code of the
+         # image's own names it), the empty ~CObject the unwind funclets
+         # jump to, and OutMCIErr's `ret 8`.
+         linked_oracle="same-address",
          # the libraries' blocks: Redmgr.lib (ours: src/lithshared/redmgr/)
          # from its OutMCIErr, then StdLith's l_allocator.obj (g_DefAlloc's
          # initializers) and dynarray.obj
