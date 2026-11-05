@@ -60,6 +60,10 @@ PacketReadFn32  g_pPacketRead32  = &CPacket::ReadType;
 // are exactly the template's.
 
 
+#ifndef PRIMAL_HUNT
+// AvP2 1.0.9.6 only. Primal Hunt's link workers, with the smart-link bodies
+// and type-3 links, are a translation unit of their own (interlink.cpp:
+// lithtech.exe 0x00447bc0..0x004480cb, server.dll 0x10018c25..0x100190e1).
 // *********************************************************************** //
 //  The inter-object link workers, 0x100139d0 and 0x10013b63.
 //
@@ -375,6 +379,7 @@ void sm_BreakAttachments(CLinkMgrView* pMgr, CLinkedObject* pObject,
 		pCur = pNext;
 	}
 }
+#endif // !PRIMAL_HUNT
 
 
 // *********************************************************************** //

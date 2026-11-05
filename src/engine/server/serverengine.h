@@ -19,31 +19,54 @@
 #include "de_error.h"
 #include "commonmodel.h"
 
+// The server's map of child-model names to the names that may stand in for
+// them: CLTServer's std::map<std::string, std::set<std::string> > at +0x280
+// (servermessage.cpp), which se_LoadModelData puts in the request's +0x0c
+// from the server interface (PH 0x0047f101; AvP2 1.0.9.6 0x00478618).
+// Declared, not defined, so that the eight files reading this header do not
+// see the STL: Model::LoadChildModels, the only reader, gives it its body
+// (commonmodel.cpp) (name ours).
+class CModelStringSetMapQ561;
+
 // What the model reader is handed: the stream to read, a callback for the
-// child models it names, and whatever the callback wants back. The two
-// counts at the end are what it reports about the child models it found
-// (names ours).
+// child models it names, and whatever the callback wants back. The flags at
+// the end are what it reports about the child models it found (names ours).
+//
+// AVP2: 0x24 bytes, not NOLF's 0x20. The name map comes in at +0x0c and
+// pushes the child name to +0x10 and the four flags to +0x14..+0x20: the
+// constructor stores the new word last, after the flags (server.dll
+// 0x10022f37, and expanded in lithtech.exe's Model::LoadChildModels at
+// 0x0045b49f..0x0045b4db); LoadChildModels reads the name at +0x10
+// (0x10022b83), the call flag at +0x14 (0x10022608) and clears +0x20
+// (0x10022bda); sub_1001c36c clears +0x1c (0x100223ae). AvP2 1.0.9.6 reads
+// the same offsets (server.dll 0x10021412, 0x100211db).
 class CModelLoadRequest
 {
 public:
-	CModelLoadRequest();                     // 0x1001cb33
+	CModelLoadRequest();                     // 0x10022f37
 
 	class ILTStream* m_pStream;              // 0x00
 	LTRESULT (*m_pfnLoadChild)(CModelLoadRequest* pReq,
 	                          class Model** ppModel);   // 0x04
 	class CModelLoadContext* m_pContext;     // 0x08
+	CModelStringSetMapQ561* m_pStringSets;   // 0x0c
 	// The child the reader is asking for, as the file named it — a bare
 	// name, resolved against the parent's own directory.
-	char*  m_pChildName;                     // 0x0c
+	char*  m_pChildName;                     // 0x10
 	// Four flags, and the constructor sets every one of them to 1: the
 	// reader clears the ones it cannot satisfy, so a request that comes
-	// back with a zero in it is a report of what went wrong. Only two are
-	// read anywhere we can see, and those two are named by the errors
-	// se_LoadModelData raises off them.
-	LTBOOL m_bUnknown10;                     // 0x10
-	LTBOOL m_bTreesValid;                    // 0x14
-	LTBOOL m_bUnknown18;                     // 0x18
-	LTBOOL m_bChildrenFound;                 // 0x1c
+	// back with a zero in it is a report of what went wrong. +0x18 and
+	// +0x20 are named by the errors se_LoadModelData raises off them.
+	//
+	// 0x14 — "call the callback": with it set the callback is mandatory,
+	// with it clear the callback is never reached (LoadChildModels answers
+	// LT_NOCHANGE for every child itself).
+	LTBOOL m_bUnknown14;                     // 0x14
+	LTBOOL m_bTreesValid;                    // 0x18
+	// 0x1c — cleared by the "AnimBindings" reader when a child's binding
+	// count or record disagrees with the child model it names.
+	LTBOOL m_bUnknown1C;                     // 0x1c
+	LTBOOL m_bChildrenFound;                 // 0x20
 };
 
 // 0x10016300 — the child-model callback a freshly constructed request starts
@@ -67,17 +90,20 @@ LTRESULT se_NoChildModel(CModelLoadRequest* pReq, class Model** ppModel);
 // both sites and calls out of line (0x1002b238 and 0x1001c615), which is
 // what a size-tuned build does with a caller the expansion grows.
 // Defined below se_NoChildModel because the body names it, and above every
-// caller because VC6's inliner is forward-only.
+// caller because VC6's inliner is forward-only. (Those addresses are NOLF's;
+// in Primal Hunt the out-of-line copy is server.dll 0x10022f37 and the
+// lithtech.exe expansion 0x0045b49f, both with the map pointer stored last.)
 inline CModelLoadRequest::CModelLoadRequest()
 {
 	m_pChildName     = LTNULL;
 	m_pStream        = LTNULL;
 	m_pfnLoadChild   = se_NoChildModel;
 	m_pContext       = LTNULL;
-	m_bUnknown10     = LTTRUE;
+	m_bUnknown14     = LTTRUE;
 	m_bTreesValid    = LTTRUE;
-	m_bUnknown18     = LTTRUE;
+	m_bUnknown1C     = LTTRUE;
 	m_bChildrenFound = LTTRUE;
+	m_pStringSets    = LTNULL;
 }
 
 // What the callback is given back: who is asking, and for which model.

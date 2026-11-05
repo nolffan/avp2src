@@ -1118,3 +1118,25 @@ template class CMoArray<CModelXform, NoCache>;
 //  rather than a source one.
 //
 // ======================================================================= //
+
+
+// 0x10016c95 — a socket's default state.
+//
+// Primal Hunt has it beside Model::Model (lithtech.exe 0x00453570, server.dll
+// 0x1001ca04) and in a DIFFERENT translation unit from LoadSockets: both
+// images' BaseNew<ModelSocket> (lithtech.exe 0x0045da10, server.dll
+// 0x10023f9f) carry /GX's placement-new frame around the constructor call,
+// which VC6 drops when the constructor's body is in the same TU (measured:
+// with this definition out of commonmodel.cpp both come out identical; moved
+// to the end of that file they do not). So it is here, with the model half
+// this file stages, and out of commonmodel.cpp.
+ModelSocket::ModelSocket()
+{
+	m_Name[0] = '\0';
+	m_iNode = 0;
+
+	m_vPos.Init();
+	m_rRot.Init();
+
+	m_Unknown30 = 0;
+}

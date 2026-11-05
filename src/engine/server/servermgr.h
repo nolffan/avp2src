@@ -2143,12 +2143,20 @@ public:
 	uint32    m_Type;                        // +0x00
 	LTObject* m_pOwner;                      // +0x04  the container end
 	LTObject* m_pLinked;                     // +0x08  the contained end
+	// The record's two list nodes, 0x14 bytes in all (the bank's record):
+	// what the breaks unthread (Primal Hunt lithtech.exe 0x00447db9,
+	// 0x00447ded). A type-2 or type-3 link has no node on the far end.
+	LTLink*   m_pOwnerLink;                  // +0x0c  in the owner's m_Links
+	LTLink*   m_pLinkedLink;                 // +0x10  in the linked end's
 };
 
+// The last arguments are the link type and the break's keep-going flag
+// (Primal Hunt's are interlink.cpp's: lithtech.exe 0x00447f70 / 0x00447d60,
+// server.dll 0x10018f02 / 0x10018d00).
 LTRESULT sm_CreateInterObjectLink(CServerMgr* pMgr, LTObject* pOwner,
-                                  LTObject* pLinked, int nFlags);       // 0x10013b63
+                                  LTObject* pLinked, int nType);        // 0x10013b63
 void     sm_BreakInterObjectLink(CServerMgr* pMgr, LTObject* pOwner,
-                                 LTObject* pLinked, int nFlags);        // 0x100139d0
+                                 LTObject* pLinked, int bAll);          // 0x100139d0
 
 // The named SetPortalFlags worker (0x10034985) and the console broadcast
 // BPrint rides (0x10034521; names ours).
@@ -2481,8 +2489,6 @@ void dsi_PrintString(char* pString);
 void dsi_PrintClassRow(char* pFormat, char* pName, uint32 nObjects,
                        uint32 nUpdated, uint32 nAvg, uint32 nMax, uint32 nTicks);
 void dsi_PrintFrameTotals(char* pFormat, int nObjects, int nUpdated, int nTicks);
-void sm_DetachSound(CServerMgr* pMgr, class LTObject* pObject,
-                    SoundInstance* pSound, int nFlag);
 
 // 0x100257f2 — tear down the object at 0x390.
 // int, not void: `xor %eax,%eax` sits inside the epilogue at 0x1002585b,

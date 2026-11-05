@@ -728,6 +728,9 @@ public:
 	// what named m_pChildModels/m_nChildModels below, and the walk over
 	// `this + 0x34` at 0x1001c758 is what proved m_Pieces is a collection
 	// rather than the flat m_pPieces/m_nPieces this header once named.
+	// AVP2: Primal Hunt's is server.dll 0x100225d0 / lithtech.exe 0x0045b470,
+	// reading the child models in three passes through std::vectors and
+	// answering a step number (commonmodel.cpp).
 	LTRESULT LoadChildModels(class CModelLoadRequest* pRequest);
 
 	// (declared below, inside this class)
@@ -935,9 +938,11 @@ public:
 	void   sub_10017add(float f1, float f2);
 
 	// 0x100173fa — take a name and answer the copy of it this model owns.
-	// Both callers hand it the name they already hold and store the answer
-	// straight back over it, so it re-homes a string onto the model rather
-	// than duplicating it. Named for its address (name ours).
+	// NOLF's two callers hand it the name they already hold and store the
+	// answer straight back over it, so it re-homes a string onto the model
+	// rather than duplicating it; Primal Hunt's LoadChildModels also hands it
+	// a child-model alias (server.dll 0x10022ae3). Named for its address
+	// (name ours).
 	char*  sub_100173fa(char* pName);
 
 	// 0x1001c325 — read one name off a stream (a kilobyte of stack, filled
@@ -1234,7 +1239,18 @@ public:
 	                                         //        come back world-relative
 	uint32     m_Unknown_f0;                 // 0x0f0
 	uint32     m_Unknown_f4;                 // 0x0f4
+#ifdef PRIMAL_HUNT
+	// PH: 0x2a8 bytes in all. The eight records are 0x24 each, which moves
+	// the fields above to 0x120..0x134, and the walker ends 0x20 further on
+	// than that alone accounts for: Model::sub_100176dc's frame is 0x17e8 in
+	// both images, the walker spanning 0x2a8 between the command parser and
+	// the property table (server.dll 0x1001d5aa/0x1001d5be, lithtech.exe
+	// 0x004544f6/0x0045450f); UpdateTransforms' walker is the same size
+	// (objbank.cpp's ModelWalkerQ521).
+	uint8      m_pad_0f8[0x2a8 - 0x138];
+#else
 	uint8      m_pad_0f8[0x248 - 0x0f8];
+#endif
 };
 
 // CommonModelLT's own vtable is not the one m_pModelLT points at. Reached

@@ -8,6 +8,12 @@
 // 0x1008ec84, atexit of the empty 0x1002eaeb; 0x1002162a, 0x10024249,
 // 0x10024546).
 #include <string>
+// Model::LoadChildModels' four vectors and the name map it is handed
+// (below): their members are this unit's (server.dll 0x10023073..0x10023904,
+// lithtech.exe 0x0045c450..0x0045d660).
+#include <vector>
+#include <map>
+#include <set>
 #endif
 #include <string.h>
 #include <stdlib.h>
@@ -3585,26 +3591,8 @@ void Model::sub_10017517()
 }
 
 
-// 0x10016c95 — a socket's default state.
-//
-// Primal Hunt has it beside Model::Model (lithtech.exe 0x00453570, server.dll
-// 0x1001ca04) and in a DIFFERENT translation unit from LoadSockets: both
-// images' BaseNew<ModelSocket> (lithtech.exe 0x0045da10, server.dll
-// 0x10023f9f) carry /GX's placement-new frame around the constructor call,
-// which VC6 drops when the constructor's body is in the same TU (measured:
-// with this definition out of commonmodel.cpp both come out identical; moved
-// to the end of this file they do not). It belongs with the model half that
-// modelnew.cpp stages.
-ModelSocket::ModelSocket()
-{
-	m_Name[0] = '\0';
-	m_iNode = 0;
-
-	m_vPos.Init();
-	m_rRot.Init();
-
-	m_Unknown30 = 0;
-}
+// ModelSocket::ModelSocket (lithtech.exe 0x00453570, server.dll 0x1001ca04)
+// is in modelnew.cpp: see the note there.
 
 
 // The Win32 import the child loop yields through. Declared rather than
@@ -3651,6 +3639,512 @@ extern "C" __declspec(dllimport) void __stdcall Sleep(unsigned long dwMs);
 // is left is mostly the out-of-line CMoArray<T,NoCache>::SetSize2 for
 // m_Pieces (0x0044dff6), which is the collection.h /Ob budget noted above
 // Model::Model, plus the merge loop's store at -0x1c(%edx,%eax,1).
+//
+// AVP2: that is NOLF's reader. Both AvP2 engines replace its child-model
+// half (below, Primal Hunt's); AvP2 1.0.9.6's (server.dll 0x100213fc) is the
+// same source over STLport and without /GX, which this build's AvP2 engine
+// does not have, so it keeps NOLF's body.
+#ifdef PRIMAL_HUNT
+
+// The request's name map (serverengine.h declares it, opaque): the server's
+// child-model names, each with the names that may be loaded in its place.
+// A class rather than a typedef only so that serverengine.h can declare it
+// (name ours).
+class CModelStringSetMapQ561 :
+	public std::map<std::string, std::set<std::string> >
+{
+};
+
+// server.dll 0x100225d0 / lithtech.exe 0x0045b470 -- Model::LoadChildModels.
+//
+// NOLF's reader with the child models read in three passes instead of one,
+// so that a name the server has an alias for can be swapped before anything
+// is loaded:
+//
+//   1. every child's name and record off the wire, into `names` and `recs`;
+//   2. each name looked up in the request's map; a hit loads the first
+//      alias in its place and sets m_Unknown190 (0x10022ace). The pairs to
+//      load go into `loadNames` and `loadRecs`;
+//   3. each pair loaded through the request's callback, its record copied
+//      into a fresh one off the model's allocator.
+//
+// The four vectors' construction order is their EH states 0..3 (server.dll
+// 0x1002286a..0x100228a5; lithtech.exe's 1..4 at 0x0045b85d, its BaseNew
+// <ModelPiece> expansion having taken 0); their frame slots -0x70, -0x48,
+// -0x58 and -0x38 hold char*, char*, record and record (0x10023155 and
+// 0x1002317e are the two push_backs).
+//
+// The answer is a step number, not an LTRESULT: every failure stores one
+// byte (`movb $N,0xb(%ebp)`) and the shared exit answers it zero-extended
+// (0x10022f1d). See RETAIL_BUGS.md for the two that answer 0.
+//
+// What the bytes fixed beyond the decode:
+//   * the pieces are sized through SetSizeInit4 (expanded) and not
+//     SetSizeInit3 (which /O1 then expands too, where both images call it);
+//   * the animation total is a statement before the SetSize2 (m_pAlloc is
+//     pushed after the add, 0x10022d61);
+//   * the callback's refusal is the `else` of a positive test, which makes
+//     its goto the last in the block and so the host of the shared unwind;
+//   * pass 1's name and record are scoped to its loop body (their slots,
+//     -0x14 and -0x24, are reused), the rest at function scope (0x118 of
+//     frame, as shipped).
+//
+// NEAR on server.dll: 749/749 instructions with no mnemonic difference but
+// one register rotation in the 0x8c read loop (0x100226ba); the rest is
+// frame-slot ORDER inside a frame of the right size (n38 and nPieceBase,
+// the three string temporaries, and the vectors against the scalars between
+// them each come out permuted). NEAR on lithtech.exe (3946 against 3792):
+// the same code with the inline budget spent differently -- shipped calls
+// the set's begin() (0x0045bbf9) and every vector _Destroy, and expands the
+// two record vectors' destructors at the block's end (0x0045c00f..), where
+// ours expands begin() and the first unwind's two _Destroys and calls all
+// four destructors; so its first unwind (steps 13/14) does not merge into
+// the step-21 host as shipped's does (0x0045b8d8 -> 0x0045bf19).
+LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
+{
+	CModelLoadRequest childReq;
+	CModelLoadState   state;
+	ILTStream*        pStream;
+	uint32            i;
+	uint16            nOOBB;
+	uint8             nSkip;
+	uint32            nSkipLeft;
+	uint32            n38;
+	uint32            nPieces;
+	ModelPiece*       pPiece;
+	uint32            nPieceBase;
+	uint32            nChildren;
+	uint32            nAnims;
+	uint32            nAnimTotal;
+	CUnknownD9E4*     pAnim;
+	uint32            nInner;
+	uint32            k;
+	uint8             nError;
+#ifdef AVP2_MODERN
+	// fixed: the pass-1 records leak on every failure (RETAIL_BUGS.md); at
+	// function scope here so that the shared failure path can free them.
+	std::vector<CModelSub1D4*> recs;
+#endif
+	CModelStringSetMapQ561* pStringSets;
+	uint32            nLoads;
+	char*             pName2;
+	CModelSub1D4*     pRec2;
+	std::set<std::string>::iterator it;
+	std::set<std::string>::iterator itEnd;
+	char*             pAlias;
+	Model*            pLoaded;
+	LTRESULT          dChild;
+	CModelSub1D4*     pRec3;
+	uint32            nOut;
+
+	if (!pRequest->m_pStream ||
+	    (pRequest->m_bUnknown14 && !pRequest->m_pfnLoadChild))
+		return LT_INVALIDPARAMS;
+
+	sub_10017016(0);
+
+	pStream = pRequest->m_pStream;
+
+	if (!LoadHeader(pStream, &state))
+	{
+		nError = 0;
+		goto fail;
+	}
+
+	if (!sub_1001c325(pStream, &m_pCommandString))
+	{
+		nError = 1;
+		goto fail;
+	}
+
+	pStream->Read(&m_f0a4, sizeof(m_f0a4));
+	pStream->Read(&nOOBB, sizeof(nOOBB));
+
+	// Sixty-two bytes discarded, not read into anything: the same scratch byte
+	// is passed every time round.
+	for (nSkipLeft = 62; nSkipLeft; nSkipLeft--)
+		pStream->Read(&nSkip, sizeof(nSkip));
+
+	// The one failure that answers LT_OK without even the release (0x100226ab
+	// jumps to the success return).
+	if (!m_Unknown08c.SetSize2(nOOBB, (LAlloc*)m_pDataBlock))
+#ifdef AVP2_MODERN
+	{
+		// fixed: a table that cannot be allocated loads as success
+		// (RETAIL_BUGS.md).
+		nError = 0;
+		goto fail;
+	}
+#else
+		goto done;
+#endif
+
+	for (i = 0; i < nOOBB; i++)
+		pStream->Read(&m_Unknown08c[i], 4);
+
+	if (!mod_FindChunk(pStream, "Pieces"))
+	{
+		nError = 2;
+		goto fail;
+	}
+
+	pStream->Read(&n38, sizeof(n38));
+
+	if (!m_Unknown054.SetSize2(n38, (LAlloc*)m_pDataBlock))
+	{
+		nError = 3;
+		goto fail;
+	}
+
+	pStream->Read(&nPieces, sizeof(nPieces));
+
+	// Sized and nulled in one call now, where NOLF's sized and then zeroed:
+	// SetSizeInit4 is expanded and the SetSizeInit3 it forwards to is called
+	// (server.dll 0x10024215, lithtech.exe 0x0045de60), its `val` a frame
+	// temporary passed by address (0x1002273e..0x10022745).
+	if (!m_Pieces.SetSizeInit4(nPieces, LTNULL, GetAlloc()))
+	{
+		nError = 4;
+		goto fail;
+	}
+
+	nPieceBase = 0;
+
+	for (i = 0; i < nPieces; i++)
+	{
+		pPiece = BaseNew(GetAlloc(), (ModelPiece*)0, 1, this);
+
+		if (!pPiece)
+		{
+			sub_10017016(0);
+			nError = 5;
+			goto fail;
+		}
+
+		m_Pieces.m_pArray[i] = pPiece;
+
+		if (!pPiece->sub_1001c1a5(pStream, &nPieceBase))
+		{
+			nError = 6;
+			goto fail;
+		}
+	}
+
+	if (!mod_FindChunk(pStream, "Nodes"))
+	{
+		nError = 7;
+		goto fail;
+	}
+
+	if (!m_pSub20c->sub_1001bd54(pStream))
+	{
+		nError = 8;
+		goto fail;
+	}
+
+	if (!sub_1001c560(pStream))
+	{
+		nError = 9;
+		goto fail;
+	}
+
+	if (!sub_100171f4(1))
+	{
+		nError = 10;
+		goto fail;
+	}
+
+	if (!mod_FindChunk(pStream, "ChildModels"))
+	{
+		nError = 11;
+		goto fail;
+	}
+
+	pStream->Read(&nChildren, sizeof(nChildren));
+
+	if (nChildren == 0 || nChildren > 16)
+	{
+		nError = 12;
+		goto fail;
+	}
+
+	{
+		std::vector<char*>         names;
+		std::vector<char*>         loadNames;
+#ifndef AVP2_MODERN
+		std::vector<CModelSub1D4*> recs;
+#endif
+		std::vector<CModelSub1D4*> loadRecs;
+
+		pStringSets = pRequest->m_pStringSets;
+		nLoads      = 0;
+
+		// Slot zero is the model itself, under the name the engine gives it
+		// rather than one off the wire -- and it is put there twice, the
+		// second time unchecked (0x100228f2).
+		if (!sub_10017b8a(0, &m_Sub1d4, this, "SELF"))
+		{
+			nError = 13;
+			goto fail;
+		}
+
+		if (!m_Sub1d4.sub_1001bf0d(pStream))
+		{
+			nError = 14;
+			goto fail;
+		}
+
+		sub_10017b8a(0, &m_Sub1d4, this, "SELF");
+
+		// Pass 1: what the file says.
+		for (i = 0; i < nChildren - 1; i++)
+		{
+			char* pName = LTNULL;
+
+			if (!sub_1001c325(pStream, &pName))
+			{
+				nError = 15;
+				goto fail;
+			}
+
+			names.push_back(pName);
+
+			CModelSub1D4* pRec = new CModelSub1D4;
+#ifdef AVP2_MODERN
+			// fixed: the record is used unchecked (RETAIL_BUGS.md).
+			if (!pRec)
+			{
+				nError = 16;
+				goto fail;
+			}
+#endif
+			pRec->m_pOwner24 = this;
+
+			if (!pRec->sub_1001bf0d(pStream))
+			{
+#ifdef AVP2_MODERN
+				delete pRec;
+#endif
+				nError = 16;
+				goto fail;
+			}
+
+			recs.push_back(pRec);
+		}
+
+		// Pass 2: what is to be loaded.
+		for (i = 0; i < nChildren - 1; i++)
+		{
+			pName2 = names[i];
+			pRec2  = recs[i];
+
+			if (pStringSets && pStringSets->find(pName2) != pStringSets->end())
+			{
+				// Only the first alias is used. The end iterator is taken
+				// and never compared, and the increment at the bottom is
+				// never read (0x10022a76..0x10022ac3, 0x10022b1b).
+				it    = (*pStringSets)[pName2].begin();
+				itEnd = (*pStringSets)[pName2].end();
+
+				m_Unknown190 = 1;
+
+				pAlias = sub_100173fa((char*)(*it).c_str());
+
+				loadNames.push_back(pAlias);
+				loadRecs.push_back(pRec2);
+				nLoads++;
+
+				it++;
+			}
+			else
+			{
+				loadNames.push_back(pName2);
+				loadRecs.push_back(pRec2);
+				nLoads++;
+			}
+		}
+
+		// Pass 3: load them.
+		for (i = 0; i < nLoads; i++)
+		{
+			childReq.m_pChildName   = loadNames[i];
+			childReq.m_pStream      = LTNULL;
+			childReq.m_pfnLoadChild = pRequest->m_pfnLoadChild;
+			childReq.m_pContext     = pRequest->m_pContext;
+			childReq.m_bUnknown14   = LTFALSE;
+
+			pLoaded = LTNULL;
+
+			if (pRequest->m_bUnknown14)
+				dChild = pRequest->m_pfnLoadChild(&childReq, &pLoaded);
+			else
+				dChild = LT_NOCHANGE;
+
+			// Refusal last: the step-21 failure is the host of the shared
+			// unwind every failure in this block reaches (0x10022cb4 falls
+			// into 0x10022cb8, and steps 18..20 jump back to it).
+			if (dChild == LT_OK || dChild == LT_NOCHANGE)
+			{
+				// A callback that answered without producing a model is not a
+				// failure; the request just records that not every child was found.
+				if (!pLoaded)
+					pRequest->m_bChildrenFound = LTFALSE;
+				else if (pLoaded->m_nChildModels > 1)
+				{
+					nError = 18;
+					goto fail;
+				}
+
+				pRec3 = BaseNew(GetAlloc(), (CModelSub1D4*)0, 1);
+
+				if (!pRec3)
+				{
+					nError = 19;
+					goto fail;
+				}
+
+				*pRec3 = *loadRecs[i];
+
+				if (!sub_10017b8a(i + 1, pRec3, pLoaded, childReq.m_pChildName))
+				{
+					nError = 20;
+					goto fail;
+				}
+
+				m_nChildModels++;
+
+				pRec3->m_Unknown2c = 0;
+
+				if (pRec3->m_pOwner28)
+					pRec3->m_Unknown2c = sub_10017b69(pRec3->m_pOwner28, &nOut);
+
+				// Every child is a file read, so give the rest of the machine a turn.
+				Sleep(0);
+			}
+			else
+			{
+				nError = 21;
+				goto fail;
+			}
+		}
+
+		// The records read in pass 1 were only templates.
+		for (i = 0; i < recs.size(); i++)
+			delete recs[i];
+#ifdef AVP2_MODERN
+		recs.clear();
+#endif
+	}
+
+	if (!mod_FindChunk(pStream, "Animation"))
+	{
+		nError = 22;
+		goto fail;
+	}
+
+	pStream->Read(&nAnims, sizeof(nAnims));
+
+	// The total is worked out before m_pAlloc is pushed (0x10022d59..
+	// 0x10022d61), so it is a statement of its own.
+	nAnimTotal = GetTotalAnimCount(0) + nAnims;
+
+	// The animation table is the one collection here sized out of m_pAlloc
+	// rather than the model's own data block.
+	if (!m_AnimArray.SetSize2(nAnimTotal, (LAlloc*)m_pAlloc))
+	{
+		nError = 23;
+		goto fail;
+	}
+
+	for (i = 0; i < nAnims; i++)
+	{
+		pAnim = BaseNew(GetAlloc(), (CUnknownD9E4*)0, 1, this);
+
+		if (!pAnim)
+		{
+			nError = 24;
+			goto fail;
+		}
+
+		m_AnimArray[i].m_pAnim       = (ModelAnim*)pAnim;
+		m_AnimArray[i].m_pChildModel = &m_Sub1d4;
+
+		if (!m_AnimArray[i].sub_1001bec9(pStream))
+		{
+			BaseDelete((LAlloc*)m_pDataBlock, pAnim, 1);
+			nError = 25;
+			goto fail;
+		}
+	}
+
+	// Every child model's animations are appended to ours, each one tagged
+	// with the child record it came in with, and each child told where in our
+	// table its own block begins.
+	nInner = nAnims;
+
+	for (i = 0; i < m_nChildModels; i++)
+	{
+		CModelSub1D4* pRec = m_pChildModels[i];
+
+		if (!pRec->m_pOwner28 || pRec->m_pOwner28 == this)
+			continue;
+
+		pRec->m_Unknown18 = nInner;
+
+		for (k = 0; k < pRec->m_pOwner28->m_AnimArray.m_nElements; k++)
+		{
+			m_AnimArray[nInner] = pRec->m_pOwner28->m_AnimArray[k];
+			m_AnimArray[nInner].m_pChildModel = pRec;
+			nInner++;
+		}
+	}
+
+	if (!sub_1001c36c(pRequest, pStream, 1))
+	{
+		nError = 26;
+		goto fail;
+	}
+
+	if (!LoadSockets(pStream))
+	{
+		nError = 27;
+		goto fail;
+	}
+
+	if (pStream->ErrorStatus() != LT_OK)
+	{
+		nError = 28;
+		goto fail;
+	}
+
+	if (!sub_100171f4(0))
+	{
+		nError = 29;
+		goto fail;
+	}
+
+	sub_100176dc();
+	sub_10017517();
+
+done:
+	return LT_OK;
+
+fail:
+	sub_10017016(0);
+#ifdef AVP2_MODERN
+	for (i = 0; i < recs.size(); i++)
+		delete recs[i];
+
+	// fixed: step 0 (the header) answers LT_OK after the model has been
+	// released (RETAIL_BUGS.md).
+	if (nError == 0)
+		return LT_ERROR;
+#endif
+	return nError;
+}
+
+#else // !PRIMAL_HUNT
+
 LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 {
 	CModelLoadRequest childReq;
@@ -3690,7 +4184,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 	// set it and the callback becomes mandatory, clear it and the callback is
 	// never reached (the loop below answers LT_NOCHANGE for every child).
 	if (!pRequest->m_pStream ||
-	    (pRequest->m_bUnknown10 && !pRequest->m_pfnLoadChild))
+	    (pRequest->m_bUnknown14 && !pRequest->m_pfnLoadChild))
 		return LT_INVALIDPARAMS;
 
 	sub_10017016(0);
@@ -3814,13 +4308,13 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 				goto fail;
 
 			childReq.m_pStream      = LTNULL;
-			childReq.m_bUnknown10   = LTFALSE;
+			childReq.m_bUnknown14   = LTFALSE;
 			childReq.m_pfnLoadChild = pRequest->m_pfnLoadChild;
 			childReq.m_pContext     = pRequest->m_pContext;
 
 			pLoaded = LTNULL;
 
-			if (pRequest->m_bUnknown10)
+			if (pRequest->m_bUnknown14)
 				dChild = pRequest->m_pfnLoadChild(&childReq, &pLoaded);
 			else
 				dChild = LT_NOCHANGE;
@@ -3941,6 +4435,8 @@ fail:
 	return dResult;
 }
 
+#endif // PRIMAL_HUNT
+
 
 
 
@@ -4052,11 +4548,11 @@ LTBOOL Model::sub_1001c36c(CModelLoadRequest* pRequest, ILTStream* pStream,
 			if (nAnims != ((CModelQ44C*)pRec->m_pOwner28)->sub_100176b7Q44C() ||
 			    pRec->m_Unknown20 != pRec->m_pOwner28->m_Sub1d4.m_Unknown20)
 			{
-				// AVP2: a binding mismatch fails the request's child flag
-				// (+0x1c), not NOLF's +0x18 (Primal Hunt lithtech.exe
+				// AVP2: a binding mismatch clears the request's +0x1c, the
+				// flag NOLF's request kept at +0x18 (Primal Hunt lithtech.exe
 				// 0x0045b101, server.dll 0x100223af; AvP2 1.0.9.6's
 				// 0x00456001, 0x100211db).
-				pRequest->m_bChildrenFound = LTFALSE;
+				pRequest->m_bUnknown1C = LTFALSE;
 			}
 		}
 
@@ -8367,7 +8863,7 @@ LTBOOL CMoArray<T, C>::SetSizeInit3( uint32 newSize, T &val, LAlloc *pAlloc )
 DYNA_TEMPLATE
 LTBOOL CMoArray<T, C>::SetSizeInit4( uint32 newSize, T val, LAlloc *pAlloc )
 {
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 	// PH: dynarray's own body. SetSizeInit3 is visible to Primal Hunt's
 	// client build (above), and this one level more is what leaves
 	// SetSize2 called inside the expansion in CModelSub20C::sub_1001bd54

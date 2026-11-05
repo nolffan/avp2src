@@ -425,7 +425,7 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp c
     serverengine.cpp ltobject.cpp lmessage.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
     genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
     savrest.cpp shade.cpp smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
-    svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp
+    svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp interlink.cpp
 SERVER_OS_SRC := localdriver.cpp
 # the segment-query module, unoptimised in Primal Hunt and AvP2 1.0.9.6
 # (server.dll 0x10012de7..0x10013ebf)
@@ -461,7 +461,7 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     ..\server\collection.cpp ..\server\fsstream.cpp ..\server\objbank.cpp ..\server\objtypes.cpp \
     ..\server\saveio.cpp ..\server\serverengine.cpp ..\server\streamsim.cpp ..\server\tcpdriver.cpp \
     ..\server\worldbsp.cpp ..\server\worldmodels.cpp ..\server\worldsim.cpp worldtree.cpp clientmusic.cpp \
-    ..\server\sweptsphere.cpp
+    ..\server\sweptsphere.cpp ..\server\interlink.cpp
 LITHTECH_OD_SRC := ..\server\localdriver.cpp
 # the segment-query module, unoptimised as in server.dll (lithtech.exe 0x0043b750..)
 LITHTECH_ODS_SRC := ..\server\worldisect.cpp

@@ -247,6 +247,61 @@ separating correction.
 
 Fixed in the modern build: commonphysics.cpp, `fMag < 0.0f`.
 
+The next three are in `Model::LoadChildModels` (Primal Hunt server.dll
+0x100225d0, lithtech.exe 0x0045b470; AvP2 1.0.9.6 server.dll 0x100213fc;
+src/engine/server/commonmodel.cpp). Our function is not yet byte-identical
+to the retail one (server.dll differs in frame-slot order and one register
+choice, lithtech.exe in which helpers are expanded), so each is cited by
+the retail instructions it is read from.
+
+### A model whose header will not read loads as a success
+
+The reader answers a step number, not an `LTRESULT`: each failure stores
+its step in a byte and the shared exit returns it. The first step, the
+"Header" chunk, is step 0 (server.dll 0x10022639, `and %al,0xb(%ebp)`
+with `%al` zero; lithtech.exe 0x0045b526; AvP2 1.0.9.6 0x1002145b), so a
+model file whose header is missing or of an unknown version is released
+and then reported as `LT_OK`. `se_LoadModelData` takes the zero as success
+and hands back the empty model. (The other steps, 1 to 29, come back as
+whatever `LTRESULT` has that number, which only muddles the "Error %d
+loading model" message.)
+
+Fixed in the modern build: commonmodel.cpp, step 0 answers `LT_ERROR`.
+
+### A model table that cannot be allocated loads as a success
+
+The same reader: when the table at `Model+0x8c` cannot be sized
+(server.dll 0x100226ab, lithtech.exe 0x0045b5f7; AvP2 1.0.9.6
+0x100214c7) it jumps straight to the success return, without reading the
+model's pieces, nodes, child models or animations and without the release
+every other failure gets.
+
+Fixed in the modern build: commonmodel.cpp, it fails like the others.
+
+### The child-model records leak when a model fails to load
+
+The same reader reads each child's record into a `new` object (server.dll
+0x1002292c), then deletes them all once the children are loaded
+(0x10022c7e..0x10022cb2). Every failure in between leaves through the
+unwind at 0x10022cb8, which frees the vectors and not the records in them,
+and a record whose own read fails (0x10022960) is not in the vector yet.
+The `new` is not checked for null either (0x1002294e stores through it).
+Only a malformed or truncated model file reaches these paths.
+
+Fixed in the modern build: commonmodel.cpp, the failure path deletes them.
+
+### Linking two objects when the link bank cannot grow writes through null
+
+`sm_CreateInterObjectLink` (Primal Hunt lithtech.exe 0x00447f70, server.dll
+0x10018f02; src/engine/server/interlink.cpp). The link record comes from
+`sb_Allocate` on the manager's bank, which answers null when the bank cannot
+grow (lithtech.exe 0x00447fd2 jumps past the free-list pop on null), and the
+type and both ends are stored through it unchecked; the node allocations
+after it are not checked either. Out of memory, `CreateInterObjectLink` or
+`GetSmartLinkBody` crashes instead of failing with `LT_ERROR`.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

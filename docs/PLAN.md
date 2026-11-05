@@ -416,6 +416,11 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   destructor inline; `CommonModelLT`'s 37-slot order and
   `SetCurAnimTime`'s third argument; `CSoundInstance::m_pFilter` at
   +0x4c; `worldsim.h`'s three changed signatures.
+- Open: interlink.cpp (Primal Hunt's inter-object link module, its own
+  translation unit) takes its list nodes from the shared 0xc-byte bank;
+  retail's workers use a bank of their own (lithtech.exe 0x005f3830,
+  server.dll 0x10110b38). Byte-identical code naming the wrong data:
+  recorded in progress/vtab-known.txt until the module has its bank.
 - Scored: `lithtech.exe` 24.3 % byte-identical (1,764 functions, 732
   near), `server.dll` 23.2 % (1,222, 391 near), `d3d.ren` 3.9 % (139, 70
   near).

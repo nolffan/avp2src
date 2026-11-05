@@ -2369,8 +2369,10 @@ void CServerMgr::RemoveDeadSounds()
 				if (pSound->GetObject())
 				{
 					LTObject* pObject = pSound->GetObject();
+					// The sound is the far end of a type-2 link off its
+					// object; break every such link between the two.
 					if (pObject)
-						sm_DetachSound(this, pObject, pSound, 1);
+						sm_BreakInterObjectLink(this, pObject, (LTObject*)pSound, 1);
 				}
 			}
 
@@ -5349,8 +5351,8 @@ void si_BreakInterObjectLink(LTObject* pOwner, LTObject* pLinked)
 
 // AVP2: the smart-link body an owner keeps, found or made by 0x00447c70
 // (a walk of the list at 0x004f5454 matching the owner at +0x0c, answering
-// the record's +0x08), and let go by 0x00447d00. Names ours; neither is
-// reconstructed yet.
+// the record's +0x08), and let go by 0x00447d00. Names ours; Primal Hunt's
+// are interlink.cpp's (server.dll 0x10018c6b / 0x10018cba).
 LTSmartLink_Body* sm_GetSmartLinkBodyQ502(LTObject* pOwner);         // 0x00447c70
 void              sm_ReleaseSmartLinkBodyQ502(LTSmartLink_Body* pBody);   // 0x00447d00
 
