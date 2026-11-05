@@ -222,11 +222,16 @@ nlink_env = $(call vc_env,$(1)) WINEPATH='$(call ws,$(ROOT)/$(call nlink_dir,$(1
 $(foreach v,$(V8168) $(V8966),$(eval $(call tool,$(call nlink,$(v)),$(v)/BIN/link.exe $(TC)/icl-5.0.1/BIN/Msvcrt.dll,\
     mkdir -p $(call nlink_dir,$(v)) && cp $(v)/BIN/link.exe $(v)/BIN/mspdb60.dll $(v)/BIN/cvtres.exe $(call nlink_dir,$(v))/ && \
     cp $(TC)/icl-5.0.1/BIN/Msvcrt.dll $(call nlink_dir,$(v))/msvcrt.dll)))
-# AvP2's client resources link so (its one source compiles as the rest do)
+# AvP2's client and server resources link so (the one source of each
+# compiles as the rest do)
 ENV_ClientRes       := $(call nlink_env,$(V8966))
 ENV_ClientRes__main := $(ENV_GAME)
 LINK_ClientRes      := $(ROOT)/$(call nlink,$(V8966))
 src/AVP2/ClientRes/Release/CRes.dll: $(call nlink,$(V8966))
+ENV_ServerRes       := $(call nlink_env,$(V8966))
+ENV_ServerRes__Main := $(ENV_GAME)
+LINK_ServerRes      := $(ROOT)/$(call nlink,$(V8966))
+src/AVP2/ServerRes/Release/SRes.dll: $(call nlink,$(V8966))
 
 # ---------------------------------------------------------------------------
 # The lithshared libraries, ours

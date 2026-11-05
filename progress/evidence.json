@@ -90,10 +90,10 @@
    "rsp": "12690cb33d0119c1333e24d04d21aa4b13043e760082d88e02f09836f3f54ae3"
   },
   "SRes.dll": {
-   "cmd": "bc9876f5124ba1af6aaa57b24d76f65e8746348e34a22e6ba53ad529bdba5a8d",
-   "image": "19243cff60c37659fb16f61677dde1efb0c063a99bf088529bf51851310a0784",
-   "link_command": "cd src/AVP2/ServerRes && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:release\\SRes.dll' '/map:s:\\AVP2\\ServerRes\\Release\\SRes.map' 'Release\\Main.obj' 'Release\\ServerRes.res' > /repo/out/release-tree/src/AVP2/ServerRes/Release/SRes.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\AVP2\\ServerRes\\Release\\SRes.dll.rsp'",
-   "map": "5bbab46813cd6a5743feb3ffb94e57f9d22af505f3fd343f4f5e69bb326d977f",
+   "cmd": "50de93c6a67cbfedda699935f25532a3db214e615a68b4a8599447f9d62cfd43",
+   "image": "8e4680d7885b83f54fddf3113b6367c197a472c4b4ed2e1cfd01d0a9323a6c06",
+   "link_command": "cd src/AVP2/ServerRes && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:release\\SRes.dll' '/map:s:\\AVP2\\ServerRes\\Release\\SRes.map' 'Release\\Main.obj' 'Release\\ServerRes.res' > /repo/out/release-tree/src/AVP2/ServerRes/Release/SRes.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' WINEPATH='z:\\repo\\out\\release-tree\\out\\native-link\\msvc-6.00-8966' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n' flock /repo/out/release-tree/out/native-link/.lock wine /repo/out/release-tree/out/native-link/msvc-6.00-8966/link.exe '@s:\\AVP2\\ServerRes\\Release\\SRes.dll.rsp'",
+   "map": "69c1a6cd6acc101235e868e0ad882359605f6b67e53adb9b9c70cb3912be7a79",
    "rsp": "44e856df34dd13569df51025c8c84d168ffd6f10d57a9bf833a9190ccd88c89e"
   },
   "cdaudio.dll": {
@@ -129,7 +129,7 @@
   "progress/COMPILERS.md": "fbcb3387ec8a6279f9b60cd3fc48ea2154a75cfac9edb7309f9a45526e9ed11c",
   "progress/Launch-screen-exclude.csv": "b6d59eeaa4e9bccaa00945839e951e1d443250bc8c6da1a65ce2ba390628f23e",
   "progress/PrimalHunt-screen-exclude.csv": "5d73ffa25c2f1ad79a364309e030ae916c2461c90d05d4567810a95253de08d7",
-  "progress/data-known.txt": "f7dfbd608df9689abf106185bac2c5e4b46e2eaaeb863377e6e8632f89d88ad3",
+  "progress/data-known.txt": "a08f6dbe429c0a1165a7739a94aea6d0a9633a4d51c4270446cf9e8d4b71438e",
   "progress/extent-splits.csv": "f837746f102cadc4844985d8999951c4e0535b3c0591c9a6f9b8ebe92abd0a46",
   "progress/lithtech-screen-exclude.csv": "7f9795aa9622a9ceec0fc4b08d7337ab402a89cc065f6bd40625d87f52bbd1b4",
   "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
@@ -170,7 +170,7 @@
  },
  "source": {
   "modified_files": 1,
-  "revision": "c8193b21b5fd4f3ac686b86d2cad7996c249a065",
+  "revision": "6057f28350f8bf690cad400dcffe2d766c09c604",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "5660aba9d377caa4799edfdb00a329dca5a51152"
