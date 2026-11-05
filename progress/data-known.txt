@@ -2,7 +2,6 @@
 ## <image><TAB><retail|ours><TAB><string>; `# ...` is the reason for the entries after it.
 
 # UNREVIEWED, recorded when Primal Hunt's game was first built (2026-11-02) from the release's AvP2 1.0.9.6 source unchanged: Third Law's changes are still to be reconstructed (docs/PLAN.md, package 5), and every entry here is one of them until shown otherwise
-PHCShell.dll	ours	Aliens vs. Predator 2
 PHCShell.dll	ours	Avp2Serv.exe
 PHCShell.dll	ours	Avp2Serv.exe -config %s
 PHCShell.dll	ours	Df3M6Z
@@ -45,7 +44,6 @@ PHCShell.dll	retail	.?AVout_of_range@std@@
 PHCShell.dll	retail	/Interface/StatusBar/Corporate/turret_gun_ammo2.pcx
 PHCShell.dll	retail	/Interface/StatusBar/Marine/turret_gun_ammo1.pcx
 PHCShell.dll	retail	AStat
-PHCShell.dll	retail	AVP2PH
 PHCShell.dll	retail	AddAction %s %i
 PHCShell.dll	retail	AddServerCtrl(): allowclasses %d
 PHCShell.dll	retail	AdditiveAlpha
@@ -97,7 +95,6 @@ PHCShell.dll	retail	Pistol
 PHCShell.dll	retail	Pistol_MP
 PHCShell.dll	retail	Predalien_AI
 PHCShell.dll	retail	Predalien_MP
-PHCShell.dll	retail	Primal Hunt
 PHCShell.dll	retail	RangeOffset
 PHCShell.dll	retail	RangeSmallOffset
 PHCShell.dll	retail	Remote Bomb
@@ -148,7 +145,6 @@ PHCShell.dll	retail	worlds\\exp\\exoutro
 # UNREVIEWED, recorded when Primal Hunt's game was first built (2026-11-02) from the release's AvP2 1.0.9.6 source unchanged: Third Law's changes are still to be reconstructed (docs/PLAN.md, package 5), and every entry here is one of them until shown otherwise
 PHObject.lto	ours	<default>
 PHObject.lto	ours	<none>
-PHObject.lto	ours	Aliens vs. Predator 2
 PHObject.lto	ours	Df3M6Z
 PHObject.lto	retail	  SVAR <server console var>
 PHObject.lto	retail	  SVAR <server console var> <value>
@@ -246,7 +242,6 @@ PHObject.lto	retail	.?AVVolumetricFog@@
 PHObject.lto	retail	.?AVlength_error@std@@
 PHObject.lto	retail	.?AVlogic_error@std@@
 PHObject.lto	retail	.?AVout_of_range@std@@
-PHObject.lto	retail	AVP2PH
 PHObject.lto	retail	AdditiveAlpha
 PHObject.lto	retail	Additive_With_Alpha
 PHObject.lto	retail	Alert
@@ -338,7 +333,6 @@ PHObject.lto	retail	Pain1
 PHObject.lto	retail	Pistol
 PHObject.lto	retail	Pistol_MP
 PHObject.lto	retail	Praetorian
-PHObject.lto	retail	Primal Hunt
 PHObject.lto	retail	Priority of this door.  Higher has more precedence.
 PHObject.lto	retail	Pushable
 PHObject.lto	retail	RotationY
