@@ -17,6 +17,9 @@
 #include "SelectConfigDlg.h"
 #include "GameType.h"
 #include "WinUtil.h"
+#ifdef PRIMAL_HUNT
+#include "regmgr32.h"
+#endif
 
 #define MIN_SERVER_UPDATE 33 // At least 33 ms between server updates = cap at 30fps
 
@@ -699,10 +702,14 @@ BOOL CServerDlg::OnInitDialog()
 	m_Levels.InsertColumn( 0, sColumnHeader );
 	m_Levels.SetColumnWidth( 0, LVSCW_AUTOSIZE_USEHEADER );
 
+#ifndef PRIMAL_HUNT
+	// PH: AVP2XServ.exe's OnInitDialog (0x403580) sets no icon: it ends
+	// with the world list's column (0x403a54)
 	// Set the icon.
 	HICON hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	SetIcon(hIcon, TRUE);
 	SetIcon(hIcon, FALSE);
+#endif
 
 	// All done...
 	return(TRUE);
@@ -1368,7 +1375,9 @@ BOOL CServerDlg::AddResources( )
 	int nRezIndex;
 	POSITION pos;
 	CButeMgr buteRez;
+#ifndef PRIMAL_HUNT
 	char chCdRom;
+#endif
 
 
 	// Make sure we have server interface.
@@ -1376,6 +1385,61 @@ BOOL CServerDlg::AddResources( )
 		return FALSE;
 
 
+#ifdef PRIMAL_HUNT
+	// PH: AVP2XServ.exe 0x405070. Primal Hunt installs beside AvP2, so
+	// AvP2's own rez files are named by AvP2's install directory, read
+	// from its registry key (HKLM\SOFTWARE\Monolith Productions\<AvP2's
+	// name>\<version>, the names string resources); the multiplayer rez
+	// is no longer looked for on the CD, and Primal Hunt's avp2x.rez and a
+	// "custom" directory join the list.
+	CRegMgr32 regMgr;
+	regMgr.Init( );
+
+	CString sAvP2Name;
+	sAvP2Name.LoadString( IDS_AVP2NAME );
+	CString sVersion;
+	sVersion.LoadString( IDS_APPVERSION );
+
+	if( !regMgr.OpenKey( HKEY_LOCAL_MACHINE, "SOFTWARE", "Monolith Productions",
+		( char* )( LPCTSTR )sAvP2Name, ( char* )( LPCTSTR )sVersion ))
+		return FALSE;
+
+	char szInstallDir[256];
+	DWORD dwSize = 255;
+	if( !regMgr.GetField( "InstallDir", szInstallDir, dwSize ) || !szInstallDir[0] )
+		return FALSE;
+
+	if( szInstallDir[strlen( szInstallDir ) - 1] != '\\' && szInstallDir[strlen( szInstallDir ) - 1] != '/' )
+		strcat( szInstallDir, "\\" );
+
+	char szRezFile[256];
+	sprintf( szRezFile, "%savp2.rez", szInstallDir );
+	lstRez.AddTail( szRezFile );
+	sprintf( szRezFile, "%ssounds.rez", szInstallDir );
+	lstRez.AddTail( szRezFile );
+	sprintf( szRezFile, "%salien.rez", szInstallDir );
+	lstRez.AddTail( szRezFile );
+	sprintf( szRezFile, "%smarine.rez", szInstallDir );
+	lstRez.AddTail( szRezFile );
+	sprintf( szRezFile, "%spredator.rez", szInstallDir );
+	lstRez.AddTail( szRezFile );
+
+	lstRez.AddTail( "multi.rez" );
+	lstRez.AddTail( "avp2dll.rez" );
+	lstRez.AddTail( "avp2l.rez" );
+	lstRez.AddTail( "dialogue.rez" );
+	lstRez.AddTail( "avp2p.rez" );
+	lstRez.AddTail( "avp2p1.rez" );
+	lstRez.AddTail( "avp2p2.rez" );
+	lstRez.AddTail( "avp2x.rez" );
+	lstRez.AddTail( "avp2p3.rez" );
+	lstRez.AddTail( "avp2p4.rez" );
+	lstRez.AddTail( "avp2p5.rez" );
+	lstRez.AddTail( "avp2p6.rez" );
+	lstRez.AddTail( "avp2p7.rez" );
+	lstRez.AddTail( "avp2p8.rez" );
+	lstRez.AddTail( "custom" );
+#else
 	// Add the stock rez files.
 
 	lstRez.AddTail( "avp2.rez" );
@@ -1407,6 +1471,7 @@ BOOL CServerDlg::AddResources( )
 	lstRez.AddTail( "avp2p6.rez" );
 	lstRez.AddTail( "avp2p7.rez" );
 	lstRez.AddTail( "avp2p8.rez" );
+#endif
 
 	// Check if there's a startup file specifying custom rez files.
 	if( buteRez.Parse( "customrez.txt" ))

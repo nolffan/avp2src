@@ -24,7 +24,7 @@ included, where 1.0.9.6's were the Processor Pack's and RTM's.
 | `ltmsg.dll` | 2002-03-26 | 8966 x1 | resources and `libcmt.lib` | -- |
 | `PrimalHunt.exe` | 2002-06-06 | **8966** x19 | MFC statically (`nafxcw.lib`, C++ 8569 x55), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id`; the wrapper's `.cms_t`/`.cms_d`, as `AVP2.exe` | as `AVP2.exe`, with cl 8966 (every readable function but one identical) |
 | `AVP2XUp.dll` | 2002-05-02 | 8966 x2 | resources and `libcmt.lib` | -- |
-| `AVP2XServ.exe` | 2002-06-21 | C++ **8168** x25, **8966** x17; C 8168 x1, 8447 x1 | MFC statically (C++ 8569 x86), `libcmt.lib` (C 8047 x167); 57 without a `@comp.id`; import libraries of `lib` 5.12.8022 and 8034 | -- |
+| `AVP2XServ.exe` | 2002-06-21 | **8966** x17; C++ 8168 x25 and C 8168 x1, 8447 x1 are SP5's own libraries' (our link has exactly those, its own objects all 8966) | MFC statically (C++ 8569 x86), `libcmt.lib` (C 8047 x167); 57 without a `@comp.id`; import libraries of `lib` 5.12.8022 and 8034 | `ServerApp_PH` (the server's Release with `PRIMAL_HUNT`): cl 8966, link 6.00.8447, SP5's MFC and `libcmt.lib`, the release's lithshared libraries and RegMgr32.lib (our link: 8966 x15) |
 | `PHCShell.dll` | 2002-06-21 | **8966** x244, C++ 8168 x21; C 8966 x6, 8168 x1 | `libcmt.lib` (C 8047 x176, C++ 8047 x16) | -- |
 | `PHObject.lto` | 2002-06-21 | **8966** x273, C++ 8168 x24; C 8168 x1 | `libcmt.lib` (C 8047 x153, C++ 8047 x16) | -- |
 | `PHCRes.dll`, `PHSRes.dll` | 2002-06-21, -20 | 8966 x1 | resources and `libcmt.lib` | -- |
@@ -45,7 +45,7 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
 | `Launch.dll` | 1999-08-16 | C++ 8168 x10 | NOLF's launcher DLL, a Debug build (`libcmtd.lib`: C 8168 x85); one object without a `@comp.id` | -- |
 | `AVP2.exe` | 2001-10-15 | **9044** x18, 8966 x1 | MFC statically (`nafxcw.lib`, C++ 8569 x55, SP5's MFC), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id` | cl 9044 for its 18 sources, with the precompiled header (all but `LauncherDlg.cpp`: proven, the inlined MFC destructors' unwind states differ without it); the 8966 object is RegMgr32's; link 6.00.8447, SP5's MFC and `libcmt.lib` (every readable function but two identical) |
 | `AVP2Up.dll` | 2001-08-17 | 8966 x2 | resources and `libcmt.lib` | -- |
-| `AVP2Serv.exe` | 2002-02-07 | 8168 x136 | MFC statically (8168's), `libcmt.lib` (C 8168 x169); 57 objects without a `@comp.id`; import libraries of `lib` 5.12.8022 as well as 8034 | cl, link and MFC 8168, Release (60 % identical as the release has it) |
+| `AVP2Serv.exe` | 2002-02-07 | 8168 x136 | MFC statically (8168's), `libcmt.lib` (C 8168 x169); 57 objects without a `@comp.id`; import libraries of `lib` 5.12.8022 as well as 8034 | cl, link and MFC 8168, Release; its butemgr.lib (MFC's build), cryptmgr.lib and StdLith.lib built with cl 8168 too, as the header's lack of any 8966 object says (our link: 8168 x136, as retail) |
 | `CShell.dll` | 2002-03-01 | **8168** x142, 8966 x114 | `libcmt.lib` (C 8047 x174), C 8168 x7 | cl 8168; link 6.00.8447, headers and `libcmt.lib` of msvc-6.00-8966; Final (62 % identical as the release has it) |
 | `Object.lto` | 2002-02-28 | **8168** x245, 8966 x12 | `libcmt.lib` (C 8047 x151), C 8168 x1 | as `CShell.dll` (89 % identical as the release has it) |
 | `CRes.dll`, `SRes.dll` | 2002-04-17 | **9044** x1 | resources and `libcmt.lib` | as `CShell.dll`, rc of msvc-6.00-9782 (every resource identical) |

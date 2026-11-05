@@ -24,8 +24,10 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 export RELEASESRC_VARIANTS="AVP2_MODERN AVP2_DEBUG"
 export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final primalhunt avp2release libs"
 # ... and Launch.dll's Debug build (not every Debug/: STLport has a source
-# directory of that name)
-export RELEASESRC_GENERATED='^launch/Debug/'
+# directory of that name), and the libraries build/build.mk puts in the
+# dedicated server's project directory (server.lib, and AVP2Serv.exe's own
+# builds of ButeMgr, CryptMgr and StdLith)
+export RELEASESRC_GENERATED='^(launch/Debug/|AVP2/AVP2Serv/[^/]+\.lib$)'
 export MKDEPS_PROJECT_INCLUDE=src/avp2src
 # ... and where the drives the compilers see are (build/build.mk: src/ is S:,
 # toolchains/ T:), for the /I directories the project files name on S:

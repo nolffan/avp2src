@@ -38,7 +38,20 @@ public:
 		m_dwUnknown2c = 0;
 	}
 
-	~CPlayList() { Term(); }
+	~CPlayList();
+
+	// Adds a track to the list: at its end, or at its front. (Only ever
+	// called for the end, 0x100014e0. The front's Insert, inlined and then
+	// thrown away as dead, still counts against cl's per-function inline
+	// budget in cdaudio_AddSongToList: that is why the retail build calls
+	// BaseNew (0x100019c0) and BaseDelete (0x100019a0) out of line there,
+	// where GenAppend (0x10001c10), the same Append on its own, inlines
+	// them. A plain m_Songs.Append inlines them too.)
+	BOOL AddSong(DWORD nTrack, BOOL bFront = FALSE)
+	{
+		if (bFront) return m_Songs.Insert(0, nTrack);
+		return m_Songs.Append(nTrack);
+	}
 
 	// (a call of its own in CreatePlayList, not the two stores written
 	// out: that is what leaves _InitArray and _DeleteAndDestroyArray
@@ -101,7 +114,9 @@ public:
 
 	// 0x10001a80. NEAR (304 bytes both): one register pair swapped in
 	// the inlined m_Songs.Term() (m_nElements and the cache size loaded
-	// into eax/edx the other way round); every cl revision held agrees.
+	// into eax/edx the other way round, 0x10001b69); every cl revision held
+	// agrees, and so do name/Reset/SetLoop wrappers, SetSize(0) or
+	// RemoveAll() for Term(), and ClearFlags() in the constructor.
 	CPlayList* CreatePlayList(const char *pName)
 	{
 		if (!pName) return NULL;
@@ -132,6 +147,16 @@ public:
 	LTLink      m_Head;             // 0x10015020
 	CPlayList*  m_pCurPlayList;     // 0x1001502c
 };
+
+
+// 0x10002290. Defined here, after CPlayListMgr: cl emits the inline
+// functions it defers in the order their definitions come, and the retail
+// object has ~CPlayList (and the ~CMoArray it brings in, 0x10002350) last,
+// after CreatePlayList and everything it needs.
+inline CPlayList::~CPlayList()
+{
+	Term();
+}
 
 
 

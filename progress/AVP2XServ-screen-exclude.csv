@@ -1,0 +1,2 @@
+addr,reason
+0x00401ee7,"NOT A FUNCTION: the last 10 bytes of CServerDlg::RunServer (0x00401bf0, 769 bytes to 0x00401ef1, as AVP2Serv.exe's 0x00401be0 is): pop %esi; mov %ecx,%fs:0x0; add $0x12c,%esp; ret. Its one 'call' is a false call target inside another instruction: the e8 of mov %eax,%ebp (8b e8) at 0x00403960, read as a call from 0x00403961"

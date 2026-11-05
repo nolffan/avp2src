@@ -277,6 +277,22 @@ with 2,302 and 1,794 more functions "near" (the same function, changed:
 Third Law's edits, or one of the objects still 8168's) and 1,109 and 61
 of ours unplaced (code Primal Hunt dropped or rewrote).
 
+The dedicated servers. `AVP2Serv.exe`'s Rich header has no object of cl
+8966: the butemgr.lib (MFC's build), cryptmgr.lib and StdLith.lib it links
+were 8168's, not the release's prebuilt ones, so `build/build.mk` ("The
+dedicated servers") builds them with 8168 into the project's directory;
+with them all of the server's own code is byte-identical, and what is left
+is ButeMgr's (the AvP2 version of it, as for ButeMgrNoMFC). `AVP2XServ.exe`
+is `ServerApp_PH.dsp` in `AVP2PH.dsw` (the server's Release configuration
+with `PRIMAL_HUNT`), cl 8966 against SP5's MFC and runtime, the release's
+libraries and RegMgr32.lib; its resources are all byte-identical (the
+splash read out of the retail image at build time). Reconstructed so far:
+`AddResources` (AvP2's rez files from AvP2's install directory, read from
+the registry), `OnInitDialog`, the default port (27890) and Primal Hunt's
+default names and passwords. Still to come: Third Law's class and weapon
+restrictions (`CServerOptions`, `MPGameInfo`: `progress/data-known.txt`),
+shared with `PHCShell.dll`'s copy of `ServerOptions.cpp`.
+
 ### 6. small
 
 `ltmsg.dll`, both releases': `src/engine/ltmsg/ltmsg.rc` is read out of the

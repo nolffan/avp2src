@@ -65,13 +65,14 @@ AVP2SRC_RCFLAGS ?=
 # optional until its workspace is here.
 #   src/AVP2/AVP2.dsw   AvP2's game DLLs, their resources and the dedicated
 #                       server (the source release's workspace)
-#   src/AVP2/AVP2PH.dsw Primal Hunt's game DLLs: the same sources, through
-#                       project files of their own (<name>_PH.dsp, first
-#                       made by build/phproject.py) whose Final defines
+#   src/AVP2/AVP2PH.dsw Primal Hunt's game DLLs and dedicated server: the
+#                       same sources, through project files of their own
+#                       (<name>_PH.dsp, first made by build/phproject.py)
+#                       whose Final (the server's: Release) defines
 #                       PRIMAL_HUNT and builds into PrimalHunt/
 WORKSPACES := \
     src/AVP2/AVP2.dsw:ClientShellDLL,Object,ClientRes,ServerRes,ServerApp \
-    src/AVP2/AVP2PH.dsw:ClientShellDLL_PH,Object_PH
+    src/AVP2/AVP2PH.dsw:ClientShellDLL_PH,Object_PH,ServerApp_PH
 
 # ---------------------------------------------------------------------------
 # Wine and the toolchains
@@ -113,6 +114,7 @@ ENV_GAME := $(call vc_env,$(V8966))
 # objects (progress/COMPILERS.md).
 CL_ClientShellDLL_PH := $(V8966)/BIN/cl.exe
 CL_Object_PH         := $(V8966)/BIN/cl.exe
+CL_ServerApp_PH      := $(V8966)/BIN/cl.exe
 CL_ServerApp   := $(V8168)/BIN/cl.exe
 LINK_ServerApp := $(V8168)/BIN/link.exe
 ENV_ServerApp  := $(call vc_env,$(V8168))
@@ -628,6 +630,51 @@ $(eval $(call tool,$(LAUNCHDLL)/Debug/Launch.dll,$(LAUNCHDLL_OBJS:%=$(LAUNCHDLL)
 .PHONY: launch-dll
 launch-dll: $(LAUNCHDLL)/Debug/Launch.dll
 
+# AVP2Up.dll and AVP2XUp.dll: the Sierra updater's resources for AvP2 and
+# Primal Hunt (src/AVP2/AVP2Up/), one project built twice: AvP2's into
+# Release/ from AVP2Up.rc, Primal Hunt's into PrimalHunt/ from AVP2XUp.rc.
+# A Visual C++ "simple DLL" project: StdAfx.cpp makes the precompiled
+# header (/Yc), AVP2Up.cpp's empty DllMain uses it (/Yu) -- the Rich
+# headers' two objects of C++ 8966, in both images (AvP2's of 2001-08,
+# Primal Hunt's of 2002-05), with SP5's libcmt.lib (C 8047) and cvtres
+# 5.00.1735. Linked as Developer Studio links, through a response file
+# and with a map.
+#
+# link.exe sorts each DLL's imports with the C runtime's qsort, among keys
+# that are all equal: Microsoft's qsort first swaps the middle element to
+# the front, Wine's builtin msvcrt.dll's keeps the order. So the retail
+# images' KERNEL32 thunks start with EnterCriticalSection, the 33rd
+# (0x10005000; GetCommandLineA at 0x10005080), where a link under Wine's
+# msvcrt starts with GetCommandLineA and moves EnterCriticalSection to
+# 0x10005080. These links run a copy of the linker beside a native
+# msvcrt.dll (the one icl-5.0.1 ships), loaded in the place of Wine's
+# (WINEDLLOVERRIDES msvcrt=n); cvtres.exe, which link.exe starts, beside
+# it too.
+AVP2UP := src/AVP2/AVP2Up
+AVP2UP_CL := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /D _USRDLL /D AVP2UP_EXPORTS /c
+AVP2UP_LIBS := kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib \
+    oleaut32.lib uuid.lib odbc32.lib odbccp32.lib
+AVP2UP_LINKDIR := out/avp2up-link
+$(eval $(call tool,$(AVP2UP_LINKDIR)/link.exe,$(V8966)/BIN/link.exe $(TC)/icl-5.0.1/BIN/Msvcrt.dll,\
+    mkdir -p $(AVP2UP_LINKDIR) && cp $(V8966)/BIN/link.exe $(V8966)/BIN/mspdb60.dll $(V8966)/BIN/cvtres.exe $(AVP2UP_LINKDIR)/ && \
+    cp $(TC)/icl-5.0.1/BIN/Msvcrt.dll $(AVP2UP_LINKDIR)/msvcrt.dll))
+AVP2UP_ENV := $(ENV_GAME) WINEPATH='$(call ws,$(ROOT)/$(AVP2UP_LINKDIR))' WINEDLLOVERRIDES='mscoree,mshtml=;msvcrt=n'
+# $(call avp2up_variant,<object dir>,<dll and script stem>)
+define avp2up_variant
+$(eval $(call compile,$(AVP2UP)/$(1)/StdAfx.obj,$(AVP2UP),StdAfx.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(AVP2UP_CL) /Ycstdafx.h /Fp$(1)/AVP2Up.pch /Fo$(1)/,wine-drives))
+$(eval $(call compile,$(AVP2UP)/$(1)/AVP2Up.obj,$(AVP2UP),AVP2Up.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(AVP2UP_CL) /Yustdafx.h /Fp$(1)/AVP2Up.pch /Fo$(1)/,wine-drives $(AVP2UP)/$(1)/StdAfx.obj))
+$(eval $(call rcfile,$(AVP2UP)/$(1)/$(2).res,$(AVP2UP),$(2).rc,$(AVP2UP)/$(2).rc,/l 0x409 /d NDEBUG /fo$(1)/$(2).res))
+$(eval $(call binary,$(AVP2UP)/$(1)/$(2).dll,$(AVP2UP),/nologo /subsystem:windows /dll /machine:I386 /out:$(1)\$(2).dll /implib:$(1)\$(2).lib,\
+    $(AVP2UP)/$(1)/AVP2Up.obj $(AVP2UP)/$(1)/StdAfx.obj $(AVP2UP)/$(1)/$(2).res $(AVP2UP_LINKDIR)/link.exe,\
+    $(AVP2UP_LIBS) $(1)/AVP2Up.obj $(1)/StdAfx.obj $(1)/$(2).res,,$(AVP2UP_ENV),$(ROOT)/$(AVP2UP_LINKDIR)/link.exe))
+endef
+$(eval $(call avp2up_variant,Release,AVP2Up))
+$(eval $(call avp2up_variant,PrimalHunt,AVP2XUp))
+.PHONY: avp2up
+avp2up: $(AVP2UP)/Release/AVP2Up.dll $(AVP2UP)/PrimalHunt/AVP2XUp.dll
+
 # The launchers, AVP2.exe and PrimalHunt.exe: an MFC application (src/launcher/,
 # the ancestor of the launcher in Monolith's NOLF2 source release, which it
 # is reconstructed from, with NOLF's display-mode code, nolfsrc's), built
@@ -825,15 +872,90 @@ CDAUDIO_CL := /nologo /MT /W3 /GX /O2 /YX /FpRelease/cdaudio.pch /D WIN32 /D NDE
     /I ..\..\LT2\lithshared\redmgr /I ..\..\LT2\lithshared\incs /I ..\..\LT2\lithshared\stdlith /I ..\..\LT2\sdk\inc /c
 $(eval $(call compile,$(CDAUDIO)/Release/cdaudio.obj,$(CDAUDIO),cdaudio.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
     $(CDAUDIO_CL) /FoRelease/,wine-drives))
-$(eval $(call tool,$(CDAUDIO)/Release/cdaudio.dll,$(CDAUDIO)/Release/cdaudio.obj $(REDMGR)/Release/Redmgr.lib $(LOUT)/StdLith.lib | wine-drives,\
+# StdLith's two members it links, built as the release's prebuilt
+# StdLith.lib was (Lib_StdLith.dsp: /YX): with the automatic precompiled
+# header cl puts l_allocator.obj's four initializers ahead of its inline
+# functions, as the image has them (0x10002960..0x10002990, then
+# DefStdlithAlloc), where our StdLith.lib, built without it, puts
+# LAlloc::Alloc/Free and the scalar deleting destructor between them.
+# Into a StdLith.lib of cdaudio's own, so that the map still names them
+# StdLith's; the game DLLs' links keep taking $(LOUT)/StdLith.lib.
+$(eval $(call compile,$(CDAUDIO)/Release/l_allocator.obj,src/lithshared/stdlith,l_allocator.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(LIB_CFLAGS) /YX /Fp..\..\engine\cdaudio\Release\l_allocator.pch /I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib \
+    /Fo..\..\engine\cdaudio\Release\l_allocator.obj,wine-drives))
+$(eval $(call tool,$(CDAUDIO)/Release/StdLith.lib,$(CDAUDIO)/Release/l_allocator.obj src/lithshared/stdlith/Release/dynarray.obj | wine-drives,\
+    cd $(CDAUDIO) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:Release\StdLith.lib' 'Release\l_allocator.obj' '..\..\lithshared\stdlith\Release\dynarray.obj'))
+$(eval $(call tool,$(CDAUDIO)/Release/cdaudio.dll,$(CDAUDIO)/Release/cdaudio.obj $(REDMGR)/Release/Redmgr.lib $(CDAUDIO)/Release/StdLith.lib | wine-drives,\
     cd $(CDAUDIO) && { printf '%s\n' /nologo /dll /subsystem:windows /machine:I386 /out:Release\\cdaudio.dll \
     /implib:Release\\cdaudio.lib /map:Release\\cdaudio.map Release\\cdaudio.obj \
-    ..\\..\\lithshared\\redmgr\\Release\\Redmgr.lib ..\\..\\LT2\\lithshared\\libs\\Release\\StdLith.lib \
+    ..\\..\\lithshared\\redmgr\\Release\\Redmgr.lib Release\\StdLith.lib \
     nafxcw.lib libcmt.lib user32.lib comctl32.lib winmm.lib > $(ROOT)/$(CDAUDIO)/Release/cdaudio.dll.rsp; } && \
     $(ENV_GAME) $(WINE) $(LINK) $(AVP2SRC_LDFLAGS) '@$(call ws,$(ROOT)/$(CDAUDIO)/Release/cdaudio.dll).rsp'))
 .PHONY: cdaudio
 cdaudio: $(CDAUDIO)/Release/cdaudio.dll
-all game: cdaudio launch-dll launchers
+all game: cdaudio avp2up launch-dll launchers
+
+# ---------------------------------------------------------------------------
+# The dedicated servers: AVP2Serv.exe's libraries, and AVP2XServ.exe's
+#
+# Both are the workspaces' ServerApp projects (ServerApp, ServerApp_PH);
+# what the project files cannot say is here.
+#
+# AVP2Serv.exe (AvP2 1.0.9.6, 2002-02-07) links butemgr.lib, cryptmgr.lib
+# and StdLith.lib, but not the release's builds of them: its Rich header
+# has no object of cl 8966 at all, only 8168 (C++ x136: its nine objects,
+# MFC's and the runtime's, and the four library members it takes --
+# butemgr.obj, cryptmgr.obj, struct_bank.obj, l_allocator.obj), where the
+# release's prebuilt libraries are all 8966. So they are built again here
+# with the server's own compiler: ButeMgr as MFC's build of it (the
+# release's prebuilt ButeMgr.lib is MFC's: it names nafxcw.lib and uses
+# CString), from the same sources and flags as ButeMgrNoMFC less _NOMFC,
+# and CryptMgr and StdLith from theirs, into the project's own directory,
+# where link.exe looks before the /libpath the project names (and where
+# server.lib is already). tools/progress.py looks there too.
+SVLIB_OUT := src/AVP2/AVP2Serv
+SV_LIBS :=
+# $(call svlib,<dir under src/lithshared>,<library>,<flags>,<sources>)
+define svlib
+$(foreach s,$(4),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/Release/ServerApp),src/lithshared/$(1),$(s),$(ENV_ServerApp),$(CL_ServerApp),$(LIB_CFLAGS) $(3) /FoRelease/ServerApp/,wine-drives)))
+SVOBJ_$(1) := $(foreach s,$(4),$(call c_obj,$(s),src/lithshared/$(1)/Release/ServerApp))
+$(call tool,$(SVLIB_OUT)/$(2).lib,$$(SVOBJ_$(1)) | wine-drives,cd src/lithshared/$(1) && $(ENV_ServerApp) $(WINE) $(V8168)/BIN/lib.exe /nologo '/out:$(call ws,$(ROOT)/$(SVLIB_OUT))\$(2).lib' $$(call q,$$(subst /,\,$$(patsubst src/lithshared/$(1)/%,%,$$(SVOBJ_$(1))))))
+SV_LIBS += $(SVLIB_OUT)/$(2).lib
+endef
+$(eval $(call svlib,ButeMgr,ButeMgr,/I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs,\
+    arange.cpp avector.cpp butemgr.cpp stdafx.cpp))
+$(eval $(call svlib,CryptMgr,CryptMgr,/I $(LT2LS2)\\cryptmgr /I $(LT2LS2)\\incs /I .,cryptmgr.cpp blowfish.cpp))
+$(eval $(call svlib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib,$(SL_SRCS)))
+src/AVP2/AVP2Serv/Release/AVP2Serv.exe: $(SV_LIBS)
+#
+# AVP2XServ.exe (Primal Hunt, 2002-06-21): ServerApp_PH, the server's
+# Release configuration with PRIMAL_HUNT, built as Primal Hunt's game DLLs
+# are -- cl 12.00.8966 (CL_ServerApp_PH, above: its Rich header's 8966 x17
+# are its own objects and the library members, of which ours has 15 so
+# far; its 8168 x25 are objects of SP5's own libraries, which our link
+# has as well), SP5's MFC (C++ 8569) and runtime, link 6.00.8447 --
+# against the release's lithshared libraries, and one more: RegMgr32.lib,
+# the registry class Primal Hunt's AddResources reads AvP2's install
+# directory with (its code, 0x410580..0x4108b0, follows ButeMgr's), built
+# as the launchers' is, into the directory the project names the libraries
+# in. (Its link order is not yet the retail one: there StdLith's and
+# CryptMgr's members lie above the runtime, at 0x429bf0..0x429dd0.)
+# AVP2Serv.exe's own builds of the libraries in the project directory
+# would be found first by this link too, so ServerApp_PH.dsp names the
+# release's by path, as source files of the project.
+$(eval $(call compile,src/lithshared/RegMgr32/Release/regmgr32.obj,$(REGMGR32),regmgr32.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /c /FoRelease/,wine-drives))
+$(eval $(call tool,$(LOUT)/RegMgr32.lib,src/lithshared/RegMgr32/Release/regmgr32.obj | wine-drives,\
+    cd $(REGMGR32) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\RegMgr32.lib' 'Release\regmgr32.obj'))
+# Its splash screen is Primal Hunt's (ServerApp.rc, PRIMAL_HUNT): read out
+# of the retail image (tools/rsrc2rc.py) into PrimalHunt/res/, not the tree.
+SVPH_REF := $(firstword $(wildcard $(ROOT)/out/reference $(ROOT)/../reference))
+$(eval $(call tool,src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp,$(SVPH_REF)/AVP2XServ.exe,\
+    python3 tools/rsrc2rc.py $(SVPH_REF)/AVP2XServ.exe src/AVP2/AVP2Serv/PrimalHunt/res/retail.rc --res-dir=. --name=retail >/dev/null && \
+    cp src/AVP2/AVP2Serv/PrimalHunt/res/retail_142.bmp src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp))
+src/AVP2/AVP2Serv/PrimalHunt/ServerApp.res: src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp
+.PHONY: servers
+servers: ServerApp ServerApp_PH
 
 # ---------------------------------------------------------------------------
 # The rules all compiles and tools share

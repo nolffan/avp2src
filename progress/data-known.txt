@@ -515,6 +515,21 @@ PHObject.lto	retail	EXPANSION
 PHObject.lto	retail	File "%s", line %d :  %s
 PHObject.lto	retail	Line %d :  %s
 
+# ButeMgr: AVP2Serv.exe links its own build of ButeMgr (MFC's, with cl 8168: build/build.mk, "The dedicated servers"), from the same NOLF2 source as ButeMgrNoMFC, whose parse errors are reported as 'ButeMgr (%s, %d):  %s'; AvP2's reports them as 'File "%s", line %d :  %s' and 'Line %d :  %s', has a formatting-error message and an EXPANSION keyword -- its error and parse paths are still to be reconstructed from the release's prebuilt build
+AVP2Serv.exe	ours	ButeMgr (%s, %d):  %s
+AVP2Serv.exe	retail	A formatting error in the attribute file was encountered.
+AVP2Serv.exe	retail	EXPANSION
+AVP2Serv.exe	retail	File "%s", line %d :  %s
+AVP2Serv.exe	retail	Line %d :  %s
+
+# Primal Hunt's server options: AVP2XServ.exe's CServerOptions::LoadFromBute (0x4069f0) reads per-class and per-weapon allow lists ("num_classes"/"num_weapons", "Class"/"Weapon" tags, "Name%i"/"Allowed%i" keys) into two 32-entry tables of the options (CServerOptions' constructor, 0x4066a0; the masks 0x408b60, 0x408ba0) that FillInHostInfo (0x408230) passes on in MPGameInfo (two uint16[32] tables and two masks: DoHost, 0x4022ab) -- Third Law's class and weapon restrictions, shared with PHCShell.dll's copy of ServerOptions.cpp; still to be reconstructed (docs/PLAN.md, package 5)
+AVP2XServ.exe	retail	Allowed%i
+AVP2XServ.exe	retail	Class
+AVP2XServ.exe	retail	Name%i
+AVP2XServ.exe	retail	Weapon
+AVP2XServ.exe	retail	num_classes
+AVP2XServ.exe	retail	num_weapons
+
 # Primal Hunt's engine, linked for the scoreboard only (build/build.mk, engine-link): /FORCE over an engine still missing much of its code (1,440 symbols unresolved in lithtech.exe, 320 in server.dll), and /OPT:NOREF, so its data holds every string of every object and lacks those of everything unwritten; not to be compared string by string until the engine links whole
 lithtech.exe	retail	*
 lithtech.exe	ours	*

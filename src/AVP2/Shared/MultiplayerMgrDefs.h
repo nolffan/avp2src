@@ -167,7 +167,13 @@
 // ----------------------------------------------------------------------- //
 // Default IP port for multiplayer games.
 
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's games are on a port of their own (AVP2XServ.exe
+// 0x40683d, CServerOptions' constructor; 0x401d26, RunServer)
+#define DEFAULT_PORT					27890
+#else
 #define DEFAULT_PORT					27888
+#endif
 #define DEFAULT_BANDWIDTH				16000
 
 // ----------------------------------------------------------------------- //
@@ -179,9 +185,17 @@ class MPGameInfo
 		MPGameInfo()
 		{
 			memset(this, 0, sizeof(MPGameInfo));
+#ifdef PRIMAL_HUNT
+			// PH: Primal Hunt's defaults (AVP2XServ.exe 0x4021ab, the
+			// copy of this constructor in CServerDlg::DoHost)
+			strcpy(m_szName, "Primal Hunt");
+			strcpy(m_szPassword, "AVP2PH");
+			strcpy(m_szSCPassword, "AVP2PH");
+#else
 			strcpy(m_szName, "Aliens vs. Predator 2");
 			strcpy(m_szPassword, "AVP2");
 			strcpy(m_szSCPassword, "AVP2");
+#endif
 			m_nPort = DEFAULT_PORT;
 			m_nBandwidth = DEFAULT_BANDWIDTH;
 

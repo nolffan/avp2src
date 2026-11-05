@@ -19,22 +19,38 @@
 //  Globals
 // ----------------------------------------------------------------------- //
 
-CRedMgr         g_RedMgr;               // 0x10015030
-CPlayListMgr    g_PlayLists;            // 0x10015020
-DWORD           g_nCurTrack;            // 0x10015088: the track playing
-LTBOOL          g_bRepeatTrack;         // 0x1001508c: cleared wherever a track
-                                        //   starts and never set; when set, a
-                                        //   finished track would start again
-LTBOOL          g_bPaused;              // 0x10015090
-DWORD           g_dwPausePos;           // 0x10015094: TMSF where Pause stopped
-SMusicMgr*      g_pMusicMgr;            // 0x100150a0
-HWND            g_hWnd;                 // 0x100150a4: the driver's own window
-HWND            g_hWndApp;              // 0x100150a8: the engine's (its parent)
-HINSTANCE       g_hInstance;            // 0x100150ac
+// .data: the window's class name and caption are arrays of their own, not
+// literals (which /GF would put after them, each in a COMDAT of its own),
+// and the 100 after them (0x100120a0, 0x100120a8, 0x100120b0).
 
-// 0x100120b0, in .data after the window class's two literals: initialised
-// to 100 and referenced by nothing in the image.
-DWORD           g_dwUnknown100120b0 = 100;
+static char     s_szWndClass[] = "CDAudio";
+static char     s_szWndCaption[] = "Caption";
+DWORD           g_dwUnknown100120b0 = 100;  // referenced by nothing
+
+
+// The two objects come first in .bss (cl puts the uninitialised ones
+// there ahead of the rest), the others in the order they are defined here:
+// they are initialised (to zero, which cl still puts in .bss), as the
+// retail object's layout of them shows.
+
+CRedMgr         g_RedMgr;                   // 0x10015030
+CPlayListMgr    g_PlayLists;                // 0x10015020
+DWORD           g_nCurTrack = 0;            // 0x10015088: the track playing
+LTBOOL          g_bRepeatTrack = FALSE;     // 0x1001508c: cleared wherever a
+                                            //   track starts and never set;
+                                            //   when set, a finished track
+                                            //   would start again
+LTBOOL          g_bPaused = FALSE;          // 0x10015090
+DWORD           g_dwPausePos = 0;           // 0x10015094: TMSF where Pause
+                                            //   stopped
+DWORD           g_dwUnknown10015098 = 0;    // 0x10015098 and 0x1001509c:
+DWORD           g_dwUnknown1001509c = 0;    //   referenced by nothing
+SMusicMgr*      g_pMusicMgr = NULL;         // 0x100150a0
+HWND            g_hWnd = NULL;              // 0x100150a4: the driver's own
+                                            //   window
+HWND            g_hWndApp = NULL;           // 0x100150a8: the engine's (its
+                                            //   parent)
+HINSTANCE       g_hInstance = NULL;         // 0x100150ac
 
 
 static void         cdaudio_Term();
@@ -162,7 +178,7 @@ static BOOL cdaudio_CreateWindow()
 {
 	WNDCLASS wc;
 
-	if (!GetClassInfo(g_hInstance, "CDAudio", &wc))
+	if (!GetClassInfo(g_hInstance, s_szWndClass, &wc))
 	{
 		wc.style         = 0;
 		wc.lpfnWndProc   = cdaudio_WndProc;
@@ -173,12 +189,12 @@ static BOOL cdaudio_CreateWindow()
 		wc.hCursor       = NULL;
 		wc.hbrBackground = NULL;
 		wc.lpszMenuName  = NULL;
-		wc.lpszClassName = "CDAudio";
+		wc.lpszClassName = s_szWndClass;
 
 		if (!RegisterClass(&wc)) return FALSE;
 	}
 
-	g_hWnd = CreateWindow("CDAudio", "Caption", WS_CHILD,
+	g_hWnd = CreateWindow(s_szWndClass, s_szWndCaption, WS_CHILD,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		g_hWndApp, NULL, g_hInstance, NULL);
 
@@ -271,17 +287,13 @@ static void* cdaudio_GetPlayList(const char *szPlayListName)
 
 
 // ---- 0x100014e0 ------------------------------------------------------- //
-// NEAR (275 bytes retail, 289 ours): the same code, but the retail build
-// stopped inlining one level sooner -- it calls BaseNew (0x100019c0) and
-// BaseDelete (0x100019a0) where this inlines them as g_DefAlloc.Alloc and
-// .Free. cl's per-function inline budget; no source shape tried (wrappers,
-// Add/Push/Insert, locals, separate tests) and no other cl revision moves it.
 
 static LTBOOL cdaudio_AddSongToList(void *pPlayList, void *pSong)
 {
 	if (pPlayList && pSong && g_pMusicMgr)
 	{
-		return ((CPlayList*)pPlayList)->m_Songs.Append((DWORD)pSong);
+		CPlayList *pList = (CPlayList*)pPlayList;
+		return pList->AddSong((DWORD)pSong);
 	}
 
 	return FALSE;
@@ -480,12 +492,8 @@ static void cdaudio_SetVolume(unsigned short vol)
 
 // ---- 0x100018f0 ------------------------------------------------------- //
 // MM_MCINOTIFY: a track has finished. Start the next of the current list,
-// or the list again from its start when it loops.
-//
-// NEAR (167 bytes both): block order only. The retail code keeps the
-// "no track: forget the list" store with its own return right after the
-// test and puts the start of the next track last, falling into the shared
-// epilogue; this compiles the reverse, whichever way the tests are written.
+// or the list again from its start when it loops; with no next track the
+// list is forgotten.
 
 static void cdaudio_OnMCINotify()
 {
@@ -503,29 +511,28 @@ static void cdaudio_OnMCINotify()
 	if (g_bPaused) return;
 	if (g_dwPausePos) return;
 
+	DWORD nTrack = 0;
 	DWORD iNext = pList->m_iCurSong + 1;
 	if (iNext < pList->m_Songs.GetSize())
 	{
 		pList->m_iCurSong = iNext;
-
-		DWORD nTrack = pList->m_Songs[iNext];
-		if (!nTrack)
-		{
-			g_PlayLists.m_pCurPlayList = NULL;
-			return;
-		}
-
-		g_nCurTrack = nTrack;
-		g_bRepeatTrack = FALSE;
-
-		if (g_pMusicMgr->m_bEnabled) g_RedMgr.PlayTrack(nTrack);
+		nTrack = pList->m_Songs[iNext];
 	}
 	else if (pList->m_bLoop)
 	{
 		cdaudio_PlayList(pList, NULL, TRUE, 0);
+		return;
 	}
-	else
+
+	if (!nTrack)
 	{
 		g_PlayLists.m_pCurPlayList = NULL;
+		return;
 	}
+
+	g_nCurTrack = nTrack;
+	g_bRepeatTrack = FALSE;
+
+	if (g_pMusicMgr->m_bEnabled) g_RedMgr.PlayTrack(nTrack);
 }
+

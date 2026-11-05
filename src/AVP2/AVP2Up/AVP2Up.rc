@@ -1,0 +1,157 @@
+//Microsoft Developer Studio generated resource script.
+//
+// AVP2Up.dll, AvP2's Sierra updater resources (AVP2XUp.rc is Primal
+// Hunt's). Read out of the retail DLL (tools/rsrc2rc.py), in the order
+// its resource data lie in it (the version first, then the bitmaps from
+// 4302 down, the icon, the strings). Two pictures, each used three times.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", ""
+            VALUE "CompanyName", "Monolith Productions\0"
+            VALUE "FileDescription", "AVP2 Customization DLL\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "AVP2UpDLL\0"
+            VALUE "LegalCopyright", "Copyright (C) 2001 Monolith Productions\0"
+            VALUE "LegalTrademarks", ""
+            VALUE "OriginalFilename", "AVP2Up.DLL\0"
+            VALUE "PrivateBuild", ""
+            VALUE "ProductName", "AVPUp Custom Resource DLL\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+            VALUE "SpecialBuild", ""
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 0x4b0
+    END
+END
+
+4302                    BITMAP  DISCARDABLE     "res\\AVP2Up_1902.bmp"
+3403                    BITMAP  DISCARDABLE     "res\\AVP2Up_1902.bmp"
+1602                    BITMAP  DISCARDABLE     "res\\AVP2Up_1302.bmp"
+1902                    BITMAP  DISCARDABLE     "res\\AVP2Up_1902.bmp"
+2202                    BITMAP  DISCARDABLE     "res\\AVP2Up_1302.bmp"
+1302                    BITMAP  DISCARDABLE     "res\\AVP2Up_1302.bmp"
+
+10000                   ICON    DISCARDABLE     "res\\AVP2Up.ico"
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    1200                            "255, 255, 255"
+    1201                            "  0,   0,   0"
+    1202                            "255, 255, 255"
+    1203                            "  0,   0,   0"
+    1204                            " 64,  64, 255"
+    1205                            " 16,  16, 255"
+    1206                            "215, 255,   0"
+    1207                            "215, 255,   0"
+    1208                            "215, 255,   0"
+    1209                            "215, 255,   0"
+    1211                            "215, 255,   0"
+    1212                            "  0, 131, 191"
+    1213                            "181, 214,   0"
+    1214                            "  0, 131, 191"
+    1215                            "181, 214,   0"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    1216                            "  0, 131, 191"
+    1217                            "181, 214,   0"
+    1218                            "  0, 131, 191"
+    1219                            "181, 214,   0"
+    1220                            "181, 214,   0"
+    1221                            "  0,   0,   0"
+    1222                            "  0, 131, 191"
+    1223                            "215, 255,   0"
+    1224                            "  0, 131, 191"
+    1225                            "215, 255,   0"
+    1226                            "  0, 131, 191"
+    1227                            "215, 255,   0"
+    1228                            "  0, 131, 191"
+    1229                            "215, 255,   0"
+    1230                            "215, 255,   0"
+    1231                            "  0,   0,   0"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    1232                            "131, 174,   0"
+    1233                            "  0, 131, 196"
+    1234                            "  0, 131, 196"
+    1235                            "128, 128, 255"
+    1236                            "128, 128, 255"
+    1237                            "128, 128, 255"
+    1238                            "128, 128, 255"
+    1239                            " 16,  16, 255"
+    1240                            " 16,  16, 255"
+    1241                            " 16,  16, 255"
+    1242                            " 16,  16, 255"
+    1243                            " 64,  64, 255"
+    1244                            "255, 255,   0"
+    1245                            "128, 128, 255"
+    1246                            "128, 128, 255"
+    1247                            "128, 128, 255"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    1248                            "128, 128, 255"
+    1249                            " 16,  16, 255"
+    1250                            " 16,  16, 255"
+    1251                            " 16,  16, 255"
+    1252                            " 16,  16, 255"
+    1253                            "192, 192, 255"
+    1254                            "  0,   0,   0"
+    1255                            " 16,  16, 255"
+    1256                            " 16,  16, 255"
+    1257                            " 16,  16, 255"
+    1258                            " 16,  16, 255"
+    1259                            "128, 128, 255"
+    1260                            "128, 128, 255"
+    1261                            "128, 128, 255"
+    1262                            "128, 128, 255"
+    1263                            " 56,  56, 255"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    1264                            "192, 192,   0"
+    1265                            "128, 128, 128"
+    1266                            "128, 128, 128"
+    1267                            "128, 128, 128"
+    1268                            "128, 128, 128"
+    1269                            "128, 128, 128"
+    1270                            "128, 128, 128"
+    1271                            "128, 128, 128"
+    1272                            "128, 128, 128"
+    1273                            "128, 128, 128"
+    1274                            "  0,   0,   0"
+    1275                            "255, 255, 255"
+    1276                            "  0,   0,   0"
+    1277                            "255, 255, 255"
+END
+
+#endif

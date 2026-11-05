@@ -281,16 +281,30 @@ TARGETS = [
          app=[(0x00401000, 0x0040d000)]),
     dict(label="AVP2XUp.dll", what="Primal Hunt's Sierra updater resources",
          kind="resources", shipped=REFERENCE + "/AVP2XUp.dll", stem="AVP2XUp",
+         # src/AVP2/AVP2Up/ (build/build.mk, "AVP2Up.dll and AVP2XUp.dll"):
+         # AVP2XUp.rc and an empty DllMain, linked with a response file and
+         # a map; the whole image is the retail one but for its time stamp
          built="src/AVP2/AVP2Up/PrimalHunt/AVP2XUp.dll", optional=True),
     dict(label="AVP2XServ.exe", what="Primal Hunt's dedicated server", kind="image",
          shipped=REFERENCE + "/AVP2XServ.exe", stem="AVP2XServ",
          built="src/AVP2/AVP2Serv/PrimalHunt/AVP2XServ.exe", optional=True,
-         # 2002-06-21: AVP2Serv.exe's shape, its own code C++ 8168 x25 and
-         # 8966 x17, MFC linked statically (C++ 8569 x86: SP5's nafxcw.lib,
-         # which places more members than 8168's). Provisional: nafxcw.lib
-         # from wincore.obj (0x4108d4) to 0x418916, libcmt.lib from
-         # 0x418920 to 0x4245ff, nafxcw.lib again from 0x429e4b
-         app=[(0x00401000, 0x004108d4)]),
+         # 2002-06-21: AVP2Serv.exe's shape, built as Primal Hunt's game
+         # DLLs are (build/build.mk, "The dedicated servers"): its own
+         # objects and the lithshared library members cl 8966 (x17; the
+         # 8168 x25 are objects of SP5's own libraries, which our link
+         # has too), MFC linked statically (C++ 8569 x86: SP5's
+         # nafxcw.lib). The release's ButeMgr.lib is prebuilt, not ours.
+         third_party=PREBUILT_LIBS,
+         # From our link's map: the server's nine objects, then ButeMgr.lib
+         # (from 0x4091c0) and RegMgr32.lib (0x410580..0x4108b0); MFC
+         # starts at 0x4108b0 with dlgcore.obj (AfxGetMainWnd, then the two
+         # 8-byte vcall thunks 0x4108c4 and 0x4108cc), wincore.obj at
+         # 0x4108d4, to 0x418916; libcmt.lib from 0x418920 to 0x4245ff.
+         # StdLith.lib (struct_bank.obj from 0x429bf0, l_allocator.obj) and
+         # CryptMgr.lib (0x429dc0, 0x429dd0) are linked above the runtime,
+         # just below nafxcw.lib's second run (from 0x429de0; libscan.py:
+         # from timecore.obj, 0x429e4b): code of the image's own
+         app=[(0x00401000, 0x004108b0), (0x00429bf0, 0x00429de0)]),
     # ---- Primal Hunt: the game -----------------------------------------
     # Third Law's, from Monolith's AvP2 1.0.9.6 code: no source was
     # released. Their own code is C++ 8966 (with 21 objects of 8168 in the
@@ -357,15 +371,23 @@ TARGETS = [
          app=[(0x00401000, 0x0040d40b)]),
     dict(label="AVP2Up.dll", what="AvP2's Sierra updater resources",
          kind="resources", shipped=REFERENCE + "/AVP2Up.dll", stem="AVP2Up",
+         # src/AVP2/AVP2Up/, AVP2Up.rc: as AVP2XUp.dll's, built into Release/
          built="src/AVP2/AVP2Up/Release/AVP2Up.dll", optional=True),
     dict(label="AVP2Serv.exe", what="AvP2's dedicated server", kind="image",
          shipped=REFERENCE + "/AVP2Serv.exe", stem="AVP2Serv",
          built="src/AVP2/AVP2Serv/Release/AVP2Serv.exe", optional=True,
-         third_party=PREBUILT_LIBS,
-         # MFC linked statically (msvc-6.00-8168's nafxcw.lib). Provisional:
-         # nafxcw.lib from wincore.obj (0x40ff04) to 0x417f46, libcmt.lib
-         # from 0x417f50 to 0x422e3f, nafxcw.lib again from 0x428492
-         app=[(0x00401000, 0x0040ff04)]),
+         # Its butemgr.lib, cryptmgr.lib and StdLith.lib are ours, built
+         # with its own cl 8168 (build/build.mk, "The dedicated servers"):
+         # ButeMgr.lib is not the release's prebuilt one here
+         third_party=[l for l in PREBUILT_LIBS if l.lower() != "butemgr.lib"],
+         # MFC linked statically (msvc-6.00-8168's nafxcw.lib). From our
+         # link's map: the server's nine objects, then ButeMgr (from
+         # 0x409b40), CryptMgr (0x40fcf0) and StdLith (0x40fd10..0x40fedc);
+         # MFC starts at 0x40fee0 with dlgcore.obj (AfxGetMainWnd, then the
+         # two 8-byte vcall thunks 0x40fef4 and 0x40fefc), wincore.obj at
+         # 0x40ff04, to 0x417f46; libcmt.lib from 0x417f50 to 0x422e3f,
+         # nafxcw.lib again from 0x428492
+         app=[(0x00401000, 0x0040fee0)]),
     # ---- AvP2 1.0.9.6: the game ----------------------------------------
     dict(label="CShell.dll", what="AvP2's game: client", kind="image",
          shipped=REFERENCE + "/CShell.dll", stem="CShell",

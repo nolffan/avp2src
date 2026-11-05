@@ -219,7 +219,14 @@ END
 // Bitmap
 //
 
+#ifdef PRIMAL_HUNT
+// PH: Primal Hunt's splash screen (AVP2XServ.exe's bitmap 142), which
+// build/build.mk reads out of the retail image into PrimalHunt\res\: it is
+// not in the tree
+IDB_SPLASH              BITMAP  DISCARDABLE     "PrimalHunt\\res\\splash.bmp"
+#else
 IDB_SPLASH              BITMAP  DISCARDABLE     "res\\splash.bmp"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -250,8 +257,14 @@ BEGIN
     IDS_NETERR_HOSTSESSION  "ERROR - Unable to host the game session."
     IDS_NETERR_INIT         "ERROR - Unable to initialize the networking system."
     IDS_NETERR_SETNETSERVICE "ERROR - Unable to set the network service."
+#ifdef PRIMAL_HUNT
+    // PH: AVP2XServ.exe's string table
+    IDS_APPREGNAME          "Alien vs. Predator 2:  Primal Hunt"
+    IDS_APPNAME             "AVP2XServ"
+#else
     IDS_APPREGNAME          "Alien vs. Predator 2"
     IDS_APPNAME             "AVP2Serv"
+#endif
     IDS_NETERR_NOCONFIGS    "ERROR - No server configuration file.  A configuration file must be setup inside the game menus and selected for the server."
     IDS_NETERR_CORRUPTCONFIG 
                             "ERROR - The config file could not be read properly. The file may be corrupt."
@@ -299,6 +312,16 @@ BEGIN
     IDS_GT_EVAC             "Evacuation"
     IDS_GT_UNKNOWN          "Unknown"
 END
+
+#ifdef PRIMAL_HUNT
+// PH: AvP2's registry key, which AVP2XServ.exe's AddResources reads
+// AvP2's install directory from
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_AVP2NAME            "Aliens vs. Predator 2"
+    IDS_APPVERSION          "1.0"
+END
+#endif
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////

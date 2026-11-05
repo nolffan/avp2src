@@ -33,9 +33,16 @@ CServerOptions::CServerOptions()
 
 
 	// Basic game information
+#ifdef PRIMAL_HUNT
+	// PH: Primal Hunt's defaults (AVP2XServ.exe 0x4067dd..0x40682a)
+	SAFE_STRCPY(szServerName, "Primal Hunt");
+	SAFE_STRCPY(szPassword, "AVP2PH");
+	SAFE_STRCPY(szSCPassword, "AVP2PH");
+#else
 	SAFE_STRCPY(szServerName, "Aliens vs. Predator 2");
 	SAFE_STRCPY(szPassword, "AVP2");
 	SAFE_STRCPY(szSCPassword, "AVP2");
+#endif
 
 	nGameType			= MP_DM;
 	nPortID				= DEFAULT_PORT;
@@ -581,8 +588,14 @@ void CServerOptions::FillInHostInfo(StartGameRequest &request, MPGameInfo &gi)
 	}
 	else
 	{
+#ifdef PRIMAL_HUNT
+		// PH: AVP2XServ.exe 0x4082f3
+		strncpy(gi.m_szName, "Primal Hunt", MAX_MP_HOST_NAME_LENGTH);
+		strncpy(request.m_HostInfo.m_sName, "Primal Hunt", MAX_MP_HOST_NAME_LENGTH);
+#else
 		strncpy(gi.m_szName, "Aliens vs. Predator 2", MAX_MP_HOST_NAME_LENGTH);
 		strncpy(request.m_HostInfo.m_sName, "Aliens vs. Predator 2", MAX_MP_HOST_NAME_LENGTH);
+#endif
 	}
 
 	if(strlen(szPassword) > 0)
@@ -592,8 +605,17 @@ void CServerOptions::FillInHostInfo(StartGameRequest &request, MPGameInfo &gi)
 	}
 	else
 	{
+#ifdef PRIMAL_HUNT
+		// PH: AVP2XServ.exe 0x408351, 0x408364.
+		// RETAIL BUG: Primal Hunt's default password is "AVP2PH" for the
+		// game info but still AvP2's "AVP2" for the host info the server
+		// is started with -- only one of the pair was changed
+		strncpy(gi.m_szPassword, "AVP2PH", MAX_MP_PASSWORD_LENGTH);
+		strncpy(request.m_HostInfo.m_sPassword, "AVP2", MAX_MP_PASSWORD_LENGTH);
+#else
 		strncpy(gi.m_szPassword, "AVP2", MAX_MP_PASSWORD_LENGTH);
 		strncpy(request.m_HostInfo.m_sPassword, "AVP2", MAX_MP_PASSWORD_LENGTH);
+#endif
 	}
 
 	if(strlen(szSCPassword) > 0)
@@ -602,7 +624,12 @@ void CServerOptions::FillInHostInfo(StartGameRequest &request, MPGameInfo &gi)
 	}
 	else
 	{
+#ifdef PRIMAL_HUNT
+		// PH: AVP2XServ.exe 0x408392
+		strncpy(gi.m_szSCPassword, "AVP2PH", MAX_MP_PASSWORD_LENGTH);
+#else
 		strncpy(gi.m_szSCPassword, "AVP2", MAX_MP_PASSWORD_LENGTH);
+#endif
 	}
 
 	gi.m_nPort = (uint16)nPortID;

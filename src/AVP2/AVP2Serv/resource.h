@@ -80,6 +80,8 @@
 #define IDS_GT_OVERRUN                  2004
 #define IDS_GT_EVAC                     2005
 #define IDS_GT_UNKNOWN                  2006
+#define IDS_AVP2NAME                    2007
+#define IDS_APPVERSION                  2008
 
 // Next default values for new objects
 // 
