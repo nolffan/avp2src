@@ -938,7 +938,23 @@ D3D_LINK_ORDER := \
     w22_1007dde0_os d3d d3ddata d3dguid d3dinit d3dlow d3dmid d3dmid_os d3dopt2d d3dr3d d3dr5d d3dr5d_os \
     wC1_r5c
 D3D_LINK_NOT := w12_7fae0
-D3D_LINK_OBJS := $(addsuffix .obj,$(D3D_LINK_ORDER)) \
+#
+# Primal Hunt's own translation units, src/engine/d3d/ph/: one file for
+# each object of the retail image (docs/D3D_OBJECTS.md, its TU numbers),
+# compiled with that object's own flags (retail's renderer is /O1 and
+# /O2 by file, without /GX). Each has a fragment ph/<name>.mk:
+#   D3D_PH += <name>
+#   D3D_PH_POS_<name> := <its TU number, two digits: its place in the link>
+#   D3D_PH_CL_<name>  := <its flags, e.g. /O1>
+# They link first, in TU order, ahead of nolfsrc's files. A function one of
+# them takes over stays in nolfsrc's file for AvP2 1.0.9.6's Intel build,
+# behind #ifndef PRIMAL_HUNT.
+D3D_PH :=
+include $(sort $(wildcard $(D3D)/ph/*.mk))
+D3D_PH_ORDER := $(foreach e,$(sort $(foreach n,$(D3D_PH),$(D3D_PH_POS_$(n)):$(n))),$(lastword $(subst :, ,$(e))))
+$(foreach n,$(D3D_PH),$(eval $(call compile,$(D3D)/Release/ph/$(n).obj,$(D3D),ph/$(n).cpp,$(ENG_PH_ENV),$(ENG_PH_CC),\
+    $(D3D_BASE) /D PRIMAL_HUNT $(D3D_PH_CL_$(n)) /FoRelease/ph/,wine-drives)))
+D3D_LINK_OBJS := $(D3D_PH_ORDER:%=ph/%.obj) $(addsuffix .obj,$(D3D_LINK_ORDER)) \
     $(sort $(filter-out $(addsuffix .obj,$(D3D_LINK_ORDER) $(D3D_LINK_NOT)),$(D3D_SRC:.cpp=.obj)))
 D3D_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib $(LS_D)\StdLith.lib dxguid.lib
 D3D_EXPORTS := FreeModeList GetSupportedModes RenderDLLSetup
@@ -947,7 +963,7 @@ $(eval $(call tool,$(D3D)/Release/d3d.res,$(D3D)/d3d.rc | wine-drives,\
 $(eval $(call tool,$(D3D)/Release/d3d.ren,$(addprefix $(D3D)/Release/,$(D3D_LINK_OBJS) d3d.res) $(LDOUT)/StdLith.lib $(call nlink,$(V8966)) | wine-drives,\
     cd $(D3D) && { printf '%s\n' $(call q,/nologo /dll /base:0x10000000 /nodefaultlib:libcmtd.lib /FORCE /OPT:NOREF /OPT:ICF /machine:I386 \
     /out:Release\d3d.ren /map:Release\d3d.map $(addprefix /export:,$(D3D_EXPORTS)) \
-    $(addprefix Release\,$(D3D_LINK_OBJS) d3d.res) $(D3D_LINK_LIBS)) > $(ROOT)/$(D3D)/Release/d3d.ren.rsp; } && \
+    $(subst /,\,$(addprefix Release/,$(D3D_LINK_OBJS) d3d.res)) $(D3D_LINK_LIBS)) > $(ROOT)/$(D3D)/Release/d3d.ren.rsp; } && \
     { $(call nlink_env,$(V8966)) $(WINE) $(ROOT)/$(call nlink,$(V8966)) '@$(call ws,$(ROOT)/$(D3D)/Release/d3d.ren).rsp' \
       > $(ROOT)/$(D3D)/Release/d3d-link.txt 2>&1 || true; } && \
     grep -c 'error LNK2001\|error LNK2019' $(ROOT)/$(D3D)/Release/d3d-link.txt | sed 's/^/   LINK d3d.ren: unresolved references: /' ; \
