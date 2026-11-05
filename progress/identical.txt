@@ -33672,6 +33672,7 @@ server.dll	sub_1000e1c4
 server.dll	sub_1000e30e
 server.dll	sub_1000e325
 server.dll	sub_1000e34b
+server.dll	sub_1000e358
 server.dll	sub_1000e35b
 server.dll	sub_1000e35f
 server.dll	sub_1000e369
@@ -33699,6 +33700,7 @@ server.dll	sub_1000e6e9
 server.dll	sub_1000e777
 server.dll	sub_1000e7ac
 server.dll	sub_1000e7c1
+server.dll	sub_1000e7d2
 server.dll	sub_1000e7df
 server.dll	sub_1000e893
 server.dll	sub_1000e954

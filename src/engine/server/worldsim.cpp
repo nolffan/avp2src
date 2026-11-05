@@ -1034,7 +1034,7 @@ void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
                                   int nMax, LTVector vPos,
                                   SphereHitQ553* pHits);
 // server.dll 0x10003cc0 / lithtech.exe 0x0041ca70: the FLAG2_ORIENTMOVEMENT
-// pass after a move (not reconstructed yet).
+// pass after a move (below the position gather).
 void ws_SphereOrientMoveQ553(CSphereMoveQ553* pMove);
 
 // sweptsphere.cpp's push-out and polygon sweep (0x10009413, 0x100095f4).
@@ -1499,6 +1499,171 @@ void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
 				}
 			}
 		}
+	}
+}
+
+// The list the orient pass gathers into: a .bss array of its own rather than
+// the mover's frame (server.dll 0x1008bbb8, 0x200 entries, which run up to
+// the next global the image references at 0x1008c3b8; name ours).
+WorldPolyOwner* g_SphereOrientPolysQ563[WS_SPHERE_MAX_POLYS];
+
+// sweptsphere.cpp's turn to a new up vector (0x100096a3).
+LTBOOL sp_SweptSphereOrientQ533(LTVector* pUp, LTObject* pObj);
+
+// How far below the sphere the settle probe reaches, as a fraction of the
+// radius (0x100742b4), how far each probe's hit is pulled back (0x100742ac),
+// how far along a contact normal the move is pushed (0x100742b0), and how
+// closely a surface must face the object's up vector to need no turn
+// (0x100742b8, a double).
+#define WS_ORIENT_PROBE     0.2f
+#define WS_ORIENT_BACKOFF   0.1f
+#define WS_ORIENT_PUSH      2.0f
+#define WS_ORIENT_ALIGNED   0.99
+
+// server.dll 0x10003cc0 (1291 bytes) / lithtech.exe 0x0041ca70 (1743) -- the
+// FLAG2_ORIENTMOVEMENT pass, run by the sphere move once its sweeps are done
+// (0x100037bc). The move is walked in steps of just under the sphere's
+// radius, and at each step a sweep from one up-vector above the path down
+// through two radii looks for a surface the sphere could stand on; the
+// first that faces somewhere other than up turns the object to it, and the
+// end is moved to where the sweep stopped, a little short. Then: a move that
+// made contacts turns the object to their average normal and pushes it off
+// along that normal; one that found nothing but had a hit turns it to the
+// best hit's plane; and otherwise a short probe below the new end turns it
+// to whatever it is about to settle on, or drops it there.
+//
+// The step count is (int)(length / (radius * 0.99)) + 2 -- 0.99 is a double
+// (0x100742b8), and the length is a named float (the shipped `fld %st(0)`
+// that keeps it across the divide, 0x10003d58). Load-bearing, all seen on
+// server.dll: bFound and nCount zeroed BEFORE the delta, which gives the
+// shipped `and $0,mem` stores (0x10003d24, 0x10003d34) -- after it they
+// share a zero register with i; the delta read off m_vEnd with pEnd taken
+// after it (pEnd in %esi, 0x10003d21); fT at function scope (it shares the
+// dead pMove slot, ebp+8, and the step-count temporary shares i's); and
+// both rotations ASSIGNED and the contacts' sum Init()ed, which with the
+// rest leaves the contact push's `operator*` expanded as shipped.
+//
+// NEAR in all three images, one residual and the same one: the lerp onto
+// the hit, `vStart + (vEnd - vStart) * fT`. Every image expands the
+// difference and the scale and calls the vector constructor for the sum
+// only (server.dll 0x10003f56..0x10003f9d, lithtech.exe 0x0041cdd3..
+// 0x0041ce16, AvP2 server.dll 0x10003f5c..0x10003fa9); ours spends VC6's
+// inline budget elsewhere first and calls the constructor for all three
+// (server 1341 of 1291, 4 blocks; lithtech 1788 of 1743, 1 block; AvP2
+// 1363 of 1315). Spellings that move the budget without changing the code (Dot
+// against VEC_DOT, Init() against the 3-float constructor, rotation copy
+// against assignment, member against pEnd) never give exactly that site.
+// A named `vDir = vEnd - vStart; vDir *= fT;` gets the calls right on
+// server.dll and lithtech.exe but stores and copies vDir (server 1297,
+// lithtech 1767), which the shipped code does not, so the single
+// expression stays.
+void ws_SphereOrientMoveQ553(CSphereMoveQ553* pMove)
+{
+	LTVector   vRight;
+	LTVector   vUp;
+	LTVector   vForward;
+	LTVector   vStart;
+	LTVector   vEnd;
+	LTVector   vHitNormal;
+	LTVector   vPlaneNormal;
+	LTBOOL     bOrient;
+	float      fT;
+	int        nCount;
+	int        nSteps;
+	int        i;
+	LTBOOL     bFound;
+	LTVector*  pEnd;
+
+	ILTMath    math;
+	LTRotation rRot;
+	rRot = pMove->m_pObject->m_Rotation;
+
+	math.GetRotationVectors(rRot, vRight, vUp, vForward);
+
+	bFound = 0;
+	nCount = 0;
+
+	LTVector vDelta = pMove->m_vEnd - pMove->m_vStart;
+
+	pEnd = &pMove->m_vEnd;
+
+	float fDist = vDelta.Mag();
+
+	nSteps = (int)(fDist / (pMove->m_fRadius * WS_ORIENT_ALIGNED)) + 2;
+
+	LTVector vStep = vDelta / (float)(nSteps - 1);
+
+	for (i = 0; i < nSteps; i++)
+	{
+		vStart = vUp + (pMove->m_vStart + vStep * (float)i);
+		vEnd   = vStart - vUp * (pMove->m_fRadius * 2.0f);
+
+		ws_GetSphereCollideTestPolysQ553(pMove, g_SphereOrientPolysQ563,
+		                                 &nCount, WS_SPHERE_MAX_POLYS,
+		                                 &vStart, &vEnd, LTNULL);
+
+		if (sp_SweptSphereToPolysQ533(&vStart, &vEnd, pMove->m_fRadius,
+		                              g_SphereOrientPolysQ563, nCount,
+		                              &vHitNormal, &vPlaneNormal, &fT,
+		                              &bOrient) &&
+		    bOrient && vHitNormal.Dot(vUp) <= WS_ORIENT_ALIGNED)
+		{
+			sp_SweptSphereOrientQ533(&vHitNormal, pMove->m_pObject);
+
+			rRot = pMove->m_pObject->m_Rotation;
+			math.GetRotationVectors(rRot, vRight, vUp, vForward);
+
+			fT -= WS_ORIENT_BACKOFF;
+			if (fT < 0.0f)
+				fT = 0.0f;
+
+			*pEnd = vStart + (vEnd - vStart) * fT;
+
+			bFound = 1;
+			break;
+		}
+	}
+
+	if (pMove->m_nIterations > 0 && !pMove->m_bContact && !bFound)
+	{
+		if (pMove->m_fFraction < 1.0f)
+			sp_SweptSphereOrientQ533(&pMove->m_vNormal, pMove->m_pObject);
+	}
+	else if (!pMove->m_bContact)
+	{
+		vStart = *pEnd;
+		vEnd   = *pEnd - vUp * (pMove->m_fRadius * WS_ORIENT_PROBE);
+
+		ws_GetSphereCollideTestPolysQ553(pMove, g_SphereOrientPolysQ563,
+		                                 &nCount, WS_SPHERE_MAX_POLYS,
+		                                 &vStart, &vEnd, LTNULL);
+
+		if (!sp_SweptSphereToPolysQ533(&vStart, &vEnd, pMove->m_fRadius,
+		                               g_SphereOrientPolysQ563, nCount,
+		                               &vHitNormal, &vPlaneNormal, &fT,
+		                               &bOrient))
+		{
+			*pEnd = vEnd;
+		}
+		else if (fT < 1.0f && vHitNormal.Dot(vUp) <= WS_ORIENT_ALIGNED)
+		{
+			sp_SweptSphereOrientQ533(&vPlaneNormal, pMove->m_pObject);
+		}
+	}
+	else
+	{
+		LTVector vAvg;
+		vAvg.Init();
+
+		for (i = 0; i < pMove->m_nContacts; i++)
+			vAvg += pMove->m_vContacts[i];
+
+		vAvg /= (float)pMove->m_nContacts;
+		vAvg.Norm();
+
+		sp_SweptSphereOrientQ533(&vAvg, pMove->m_pObject);
+
+		*pEnd += vAvg * WS_ORIENT_PUSH;
 	}
 }
 
@@ -2479,8 +2644,8 @@ void ws_GetPBlocksQ553(CPhysicsBlock** ppBlocks, int* pnBlocks, int nMax);
 int  ws_MoveBoxPassesQ544(uint16 nBlock, CBounceState* pState);    // 0x10004f9e
 
 // server.dll 0x100064fa: the "NewStairStep" step-up, which answers through
-// its third argument (not reconstructed yet; name ours).
-void ws_StairStepNewQ553(uint16 nBlock, CBounceState* pState, int* pbStepped);
+// its third argument (defined after ws_MoveCylinder, as shipped; name ours).
+void ws_StairStepNewQ553(uint16 nBlock, CBounceState* pState, int* pbNoStep);
 
 // The move, from the outside. Everything else in the module runs under this.
 // The state it is given is copied, because the module works on one global move
@@ -3077,9 +3242,12 @@ uint16 g_BlockStackQ534[WS_NODE_STACK];
 //
 // AVP2: Primal Hunt's copy is server.dll 0x10005ebc (1598
 // bytes, called from ws_MoveObject at 0x10004eed) and lithtech.exe
-// 0x0041fdb0 (its enumeration splits it at 0x00420062); the progress
-// pairing against 0x100064fa is the "NewStairStep" step-up, a different
-// function. The notes below were measured before that was known.
+// 0x0041fdb0 (its enumeration splits it at 0x00420062). 0x100064fa, which
+// progress used to pair this with, is the "NewStairStep" step-up below
+// (ws_StairStepNewQ553). This body is still NOLF's: the AvP2 copy opens an
+// exception frame (0x10005ebc) and makes fifteen calls this one does not
+// have, so the notes below were measured against the wrong function.
+// (AvP2 body not reconstructed yet: server.dll 0x10005ebc..0x100064f9.)
 //
 // NEAR on both images: server 1472 of 1472 bytes with 2 mnemonic blocks
 // left, lithtech 1987 of 1983 bytes with the same 502 instructions and 17
@@ -3440,6 +3608,300 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 	}
 
 	return 1;
+}
+
+// AVP2: the "NewStairStep" step-up (server.dll 0x100064fa, lithtech.exe
+// 0x004205d0; called from ws_MoveObject at 0x10004cc1). The same tree walk
+// as ws_StairStep, but what it steps onto is found from the polygon's own
+// clipped extent (w_IsPolyBlocking's bounds) and the swept box's lowest
+// corners, and the lift is taken against the move itself: the end is
+// nudged by the lift less the part of it along the move, the start by the
+// lift whenever that rises, and half the rise comes off the box's height.
+// A surface marked no-step is never stepped onto; meeting one is reported
+// through the third argument, and the walk goes on. A box whose height the
+// steps have used up ends the walk at once. (name ours)
+//
+// NEAR on server.dll (1574 of 1581, one block): shipped computes the lowest
+// corner's address, `lea 0x1008c418(,%eax,4),%eax` at 0x100068a2, right after
+// reading its y through the folded address (0x10006898), and never uses it --
+// %eax is overwritten by the fnstsw that follows. A pointer or reference to
+// the corner, named before or after the read, at block or function scope,
+// either folds away entirely or (when it carries the read) becomes the base
+// of `fadds 4(%eax)`, which is AvP2 1.0.9.6's shape (0x10006883) and not
+// this build's. Read off the shipped bytes, each of these moved it:
+//   * the pop of the node stack is its own `while`, re-testing the popped
+//     node (0x10006545 jumps back to the test), and the three descends are
+//     guarded `continue`s;
+//   * the sphere reject is pPlane->DistTo(g_BoxSphere.m_vPoint): its
+//     by-value copy is the movsl at 0x1000657a;
+//   * the move and its direction are built component-wise from the two
+//     globals (no operator- copy of g_vMoveStart, 0x10006626, 0x10006942);
+//   * the facing test is written out against a copy of the plane's normal,
+//     and the lift's dot product against the move is written out too: the
+//     term order and the operand loaded (0x1000666a, 0x10006986) come from
+//     these spellings only (48 and 24 spellings measured);
+//   * the plane copy is a function-scope local: block-scoped, VC6 hoists the
+//     slope load above the copy's last movsl (0x100066c3);
+//   * the no-step arm reads the child before the flag store, not after
+//     (0x100065fd);
+//   * the lift is `vNormal * fLift` with fLift named (`flds; fmul %st(1)`,
+//     0x10006867), and the base takes -fHalf away (`fchs; fsubr`, 0x10006aa9).
+// NEAR on lithtech.exe (2159 of 2841): shipped expands ws_NudgeQ516 at both
+// calls (0x00420d6b.., 0x00420f0f..) and calls operator+ out of line for the
+// first one's inner sum (0x00420e3c). Marking ws_NudgeQ516 `inline` (it is
+// defined above) reaches 2802 of 2841 with no change to any image's count,
+// its standalone copies included; it is left for a pass that owns that
+// part of the file. Beyond it, shipped reads g_vMoveStart in place in the
+// second expansion where ours copies it, keeps the lift's dot in a frame
+// slot (0x00420c77), and wants vMove.Dot(pPlane->m_Normal) for the facing
+// test -- the spelling server.dll does not take.
+void ws_StairStepNewQ553(uint16 nBlock, CBounceState* pState, int* pbNoStep)
+{
+	uint16*         pTop;
+	WorldPolyRef*   pRecs;
+	WSNode*         pNode;
+	WorldPolyRef*   pRec;
+	WorldPolyOwner* pOwner;
+	LTPlane*        pPlane;
+	float           fDist;
+	uint16          nChild;
+	LTPlane         plane;
+
+	pRecs = g_pMoveState->m_pWorldBsp->GetPolyRefs();
+
+	pTop = g_BlockStackQ534;
+
+	while (TRUE)
+	{
+		while (nBlock == WS_NODE_EMPTY || nBlock == WS_NODE_SOLID)
+		{
+			if (pTop == g_BlockStackQ534)
+				return;
+
+			pTop--;
+			nBlock = *pTop;
+		}
+
+		pNode  = &g_pPBlock->m_pNodes[nBlock];
+		pRec   = &pRecs[pNode->m_nPoly];
+		pOwner = pRec->m_pOwner;
+		pPlane = ws_GetPlaneQ506(pOwner);
+
+		fDist = pPlane->DistTo(g_BoxSphere.m_vPoint);
+
+		if (fDist > g_BoxSphere.m_fRadius)
+		{
+			nBlock = pNode->m_nChild[1];
+			continue;
+		}
+
+		if (fDist < -g_BoxSphere.m_fRadius)
+		{
+			nBlock = pNode->m_nChild[0];
+			continue;
+		}
+
+		if (pOwner->m_pSurface->m_Flags & WBSP_NOSTEP)
+		{
+			nChild = pNode->m_nChild[0];
+
+			if (nChild != WS_NODE_EMPTY && nChild != WS_NODE_SOLID)
+			{
+				*pTop = nChild;
+				pTop++;
+			}
+
+			nBlock = pNode->m_nChild[1];
+
+			*pbNoStep = 1;
+			continue;
+		}
+
+		if (pOwner && pPlane->m_Normal.y > g_fStepMinNormalY)
+		{
+			LTVector vMove(g_vMoveEnd.x - g_vMoveStart.x,
+			               g_vMoveEnd.y - g_vMoveStart.y,
+			               g_vMoveEnd.z - g_vMoveStart.z);
+
+			vMove.Norm();
+
+			LTVector vUp = pPlane->m_Normal;
+
+			if (vUp.x * vMove.x + vUp.z * vMove.z + vUp.y * vMove.y < 0.5f)
+			{
+				LTVector vMin;
+				LTVector vMax;
+
+				if (w_IsPolyBlocking(pRec->m_pOwner, &vMin, &vMax))
+				{
+					float   fBest;
+					float   fScale;
+					int     iBest;
+					int     i;
+
+					plane = *pPlane;
+
+					fBest = 5000.0f;
+
+					if (pPlane->m_Normal.y < g_fStepSlopeLimit)
+					{
+						plane.m_Normal.y = 0.0f;
+						plane.m_Normal.Norm();
+
+						fScale = -1.0f / plane.m_Normal.Dot(pPlane->m_Normal);
+
+						for (i = 0; i < 4; i++)
+						{
+							fDist = (plane.m_Dist -
+							         pPlane->m_Normal.Dot(g_SweepPoints[1][i])) *
+							        fScale;
+
+							if (fDist < fBest)
+							{
+								fBest = fDist;
+								iBest = i;
+							}
+						}
+					}
+					else
+					{
+						plane.m_Normal.Init(0.0f, 1.0f, 0.0f);
+
+						fScale = -1.0f / pPlane->m_Normal.y;
+
+						for (i = 0; i < 4; i++)
+						{
+							fDist = (plane.m_Dist -
+							         pPlane->m_Normal.Dot(g_SweepPoints[1][i])) *
+							        fScale;
+
+							if (fDist < fBest)
+							{
+								fBest = fDist;
+								iBest = i;
+							}
+						}
+					}
+
+					if (fBest < -0.0001f)
+					{
+						LTVector vNormal;
+						LTVector vSave;
+						LTVector vPush;
+						LTVector vStep;
+						float    fTop;
+						float    fAlong;
+						float    fLift;
+
+						g_pMoveState->m_pInfo->m_Plane = plane;
+						g_pMoveState->m_pInfo->m_hObject = g_pMoveState->m_hObject;
+						g_pMoveState->m_pInfo->m_hPoly =
+						    g_pMoveState->m_pWorldBsp->MakeHPoly((WorldPoly*)pRec);
+
+						vNormal = plane.m_Normal;
+
+						pState->m_nHits++;
+
+						vSave = pState->m_vVelocityAdd;
+
+						ws_HandleImpact(g_pMoveState->m_pInfo, pState,
+						                g_pMoveState->m_pObject,
+						                g_pMoveState->m_hObject,
+						                g_pMoveState->m_pWorldBsp,
+						                (WorldPoly*)pRec, &vNormal);
+
+						pState->m_vVelocityAdd = vSave;
+
+						fLift = -fBest;
+
+						vPush = vNormal * fLift;
+
+						vStep = vPush;
+
+						fTop = vPush.y + g_SweepPoints[1][iBest].y;
+
+						if (fTop > vMax.y)
+							vStep.y = vPush.y - (fTop - vMax.y);
+
+						if (vStep.x < 0.0f)
+						{
+							if (vMax.x < g_SweepPoints[1][2].x)
+								vStep.x = 0.0f;
+						}
+						else if (vStep.x > 0.0f)
+						{
+							if (vMin.x > g_SweepPoints[1][0].x)
+								vStep.x = 0.0f;
+						}
+
+						if (vStep.z < 0.0f)
+						{
+							if (vMax.z < g_SweepPoints[1][2].z)
+								vStep.z = 0.0f;
+						}
+						else if (vStep.z > 0.0f)
+						{
+							if (vMin.z > g_SweepPoints[1][0].z)
+								vStep.z = 0.0f;
+						}
+
+						LTVector vDir(g_vMoveEnd.x - g_vMoveStart.x,
+						              g_vMoveEnd.y - g_vMoveStart.y,
+						              g_vMoveEnd.z - g_vMoveStart.z);
+
+						vNormal = vStep;
+
+						vNormal.Norm();
+
+						fAlong = vNormal.x * vDir.x + vDir.y * vNormal.y +
+						         vDir.z * vNormal.z;
+
+						if (fAlong > 0.0f)
+							vStep -= vNormal * fAlong;
+
+						ws_NudgeQ516(&g_vMoveEnd, g_vMoveEnd, vStep);
+
+						vPush = vStep + vNormal * fAlong;
+
+						if (vPush.y > 0.0f)
+						{
+							LTVector vStart = g_vMoveStart;
+
+							ws_NudgeQ516(&vStart, g_vMoveStart, vPush);
+
+							g_vMoveStart.y = vStart.y;
+
+							float fHalf = vPush.y * 0.5f;
+
+							g_vMoveBase.y -= -fHalf;
+							g_pMoveState->m_vDims.y -= fHalf;
+						}
+
+						if (g_pMoveState->m_vDims.y < 0.0f)
+							return;
+
+						ws_SetupSweptBox(&g_vStepSweepMinQ553,
+						                 &g_vStepSweepMaxQ553);
+
+						g_pMoveResult->m_pStandingPoly = (WorldPoly*)pRec;
+					}
+
+					nBlock = pNode->m_nChild[1];
+					continue;
+				}
+			}
+		}
+
+		nChild = pNode->m_nChild[0];
+
+		if (nChild != WS_NODE_EMPTY && nChild != WS_NODE_SOLID)
+		{
+			*pTop = nChild;
+			pTop++;
+		}
+
+		nBlock = pNode->m_nChild[1];
+	}
 }
 
 // Can the object step up onto anything in this block? The same tree walk as
