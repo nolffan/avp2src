@@ -1,260 +1,556 @@
-// launcher.rc — NOLF.exe resources, reconstructed from the shipped
-// v1.003 launcher (all payloads verified byte-identical with rsrcdiff.py).
+// launcher.rc -- the launchers' resources, AVP2.exe's and PrimalHunt.exe's
+// (PRIMAL_HUNT): read out of the retail images by tools/rsrc2rc.py. The two
+// have the same dialogs and ids; Primal Hunt's strings differ where marked,
+// and its art throughout. The art itself (res\) is not in the tree: the
+// build reads it out of the retail image it builds against, into the
+// object directory, where this script is compiled.
+// Microsoft Visual C++ generated resource script.
+//
 
+#define APSTUDIO_READONLY_SYMBOLS
 #include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
 
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Cursor (image ordinals 1-2, shared counter with the icon images)
-//
+128                     ICON DISCARDABLE     "res\\launcher.ico"
 
-WEBHAND                 CURSOR  DISCARDABLE     "res\\webhand.cur"
-WEBCLICK                CURSOR  DISCARDABLE     "res\\webclick.cur"
+303                     ICON DISCARDABLE     "res\\launcher2.ico"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
+30977                   CURSOR DISCARDABLE     "res\\launcher.cur"
 
-ICON                    ICON    DISCARDABLE     "res\\nolf.ico"
+130                     BITMAP  DISCARDABLE     "res\\launcher_130.bmp"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap / Palette / Wave
-//
+164                     BITMAP  DISCARDABLE     "res\\launcher_164.bmp"
 
-GAME1                   BITMAP  DISCARDABLE     "res\\game1.bmp"
-GAME1                   PALETTE DISCARDABLE     "res\\game1.pal"
-GAME1                   WAVE    DISCARDABLE     "res\\game1.wav"
+219                     BITMAP  DISCARDABLE     "res\\launcher_219.bmp"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
+26567                   BITMAP  DISCARDABLE     "res\\launcher_26567.bmp"
 
-GAME DIALOGEX 0, 0, 276, 287
-STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | DS_CENTER | DS_SETFONT
-CAPTION "No One Lives Forever"
+283                     BITMAP  DISCARDABLE     "res\\launcher_283.bmp"
+
+284                     BITMAP  DISCARDABLE     "res\\launcher_284.bmp"
+
+296                     BITMAP  DISCARDABLE     "res\\launcher_296.bmp"
+
+297                     BITMAP  DISCARDABLE     "res\\launcher_297.bmp"
+
+298                     BITMAP  DISCARDABLE     "res\\launcher_298.bmp"
+
+30994                   BITMAP  DISCARDABLE     "res\\launcher_30994.bmp"
+
+30995                   BITMAP  DISCARDABLE     "res\\launcher_30995.bmp"
+
+30996                   BITMAP  DISCARDABLE     "res\\launcher_30996.bmp"
+
+ALWAYSSPECIFYC          BITMAP  DISCARDABLE     "res\\launcher_ALWAYSSPECIFYC.bmp"
+
+ALWAYSSPECIFYF          BITMAP  DISCARDABLE     "res\\launcher_ALWAYSSPECIFYF.bmp"
+
+ALWAYSSPECIFYN          BITMAP  DISCARDABLE     "res\\launcher_ALWAYSSPECIFYN.bmp"
+
+BACKD                   BITMAP  DISCARDABLE     "res\\launcher_BACKD.bmp"
+
+BACKF                   BITMAP  DISCARDABLE     "res\\launcher_BACKF.bmp"
+
+BACKU                   BITMAP  DISCARDABLE     "res\\launcher_BACKU.bmp"
+
+CANCELD                 BITMAP  DISCARDABLE     "res\\launcher_CANCELD.bmp"
+
+CANCELF                 BITMAP  DISCARDABLE     "res\\launcher_CANCELF.bmp"
+
+CANCELU                 BITMAP  DISCARDABLE     "res\\launcher_CANCELU.bmp"
+
+CLOSED                  BITMAP  DISCARDABLE     "res\\launcher_CLOSED.bmp"
+
+CLOSEU                  BITMAP  DISCARDABLE     "res\\launcher_CLOSEU.bmp"
+
+DISABLEANIMATEDLOADSCREENC BITMAP  DISCARDABLE     "res\\launcher_DISABLEANIMATEDLOADSCREENC.bmp"
+
+DISABLEANIMATEDLOADSCREENF BITMAP  DISCARDABLE     "res\\launcher_DISABLEANIMATEDLOADSCREENF.bmp"
+
+DISABLEANIMATEDLOADSCREENN BITMAP  DISCARDABLE     "res\\launcher_DISABLEANIMATEDLOADSCREENN.bmp"
+
+DISABLEFOGC             BITMAP  DISCARDABLE     "res\\launcher_DISABLEFOGC.bmp"
+
+DISABLEFOGF             BITMAP  DISCARDABLE     "res\\launcher_DISABLEFOGF.bmp"
+
+DISABLEFOGN             BITMAP  DISCARDABLE     "res\\launcher_DISABLEFOGN.bmp"
+
+DISABLEHARDWARECURSORC  BITMAP  DISCARDABLE     "res\\launcher_DISABLEHARDWARECURSORC.bmp"
+
+DISABLEHARDWARECURSORF  BITMAP  DISCARDABLE     "res\\launcher_DISABLEHARDWARECURSORF.bmp"
+
+DISABLEHARDWARECURSORN  BITMAP  DISCARDABLE     "res\\launcher_DISABLEHARDWARECURSORN.bmp"
+
+DISABLEJOYSTICKSC       BITMAP  DISCARDABLE     "res\\launcher_DISABLEJOYSTICKSC.bmp"
+
+DISABLEJOYSTICKSF       BITMAP  DISCARDABLE     "res\\launcher_DISABLEJOYSTICKSF.bmp"
+
+DISABLEJOYSTICKSN       BITMAP  DISCARDABLE     "res\\launcher_DISABLEJOYSTICKSN.bmp"
+
+DISABLEMOVIESC          BITMAP  DISCARDABLE     "res\\launcher_DISABLEMOVIESC.bmp"
+
+DISABLEMOVIESF          BITMAP  DISCARDABLE     "res\\launcher_DISABLEMOVIESF.bmp"
+
+DISABLEMOVIESN          BITMAP  DISCARDABLE     "res\\launcher_DISABLEMOVIESN.bmp"
+
+DISABLEMUSICC           BITMAP  DISCARDABLE     "res\\launcher_DISABLEMUSICC.bmp"
+
+DISABLEMUSICF           BITMAP  DISCARDABLE     "res\\launcher_DISABLEMUSICF.bmp"
+
+DISABLEMUSICN           BITMAP  DISCARDABLE     "res\\launcher_DISABLEMUSICN.bmp"
+
+DISABLESOUNDC           BITMAP  DISCARDABLE     "res\\launcher_DISABLESOUNDC.bmp"
+
+DISABLESOUNDF           BITMAP  DISCARDABLE     "res\\launcher_DISABLESOUNDF.bmp"
+
+DISABLESOUNDN           BITMAP  DISCARDABLE     "res\\launcher_DISABLESOUNDN.bmp"
+
+DISABLETRIPLEBUFFERINGC BITMAP  DISCARDABLE     "res\\launcher_DISABLETRIPLEBUFFERINGC.bmp"
+
+DISABLETRIPLEBUFFERINGF BITMAP  DISCARDABLE     "res\\launcher_DISABLETRIPLEBUFFERINGF.bmp"
+
+DISABLETRIPLEBUFFERINGN BITMAP  DISCARDABLE     "res\\launcher_DISABLETRIPLEBUFFERINGN.bmp"
+
+DISPLAYD                BITMAP  DISCARDABLE     "res\\launcher_DISPLAYD.bmp"
+
+DISPLAYF                BITMAP  DISCARDABLE     "res\\launcher_DISPLAYF.bmp"
+
+DISPLAYU                BITMAP  DISCARDABLE     "res\\launcher_DISPLAYU.bmp"
+
+DISPLAYX                BITMAP  DISCARDABLE     "res\\launcher_DISPLAYX.bmp"
+
+HELPD                   BITMAP  DISCARDABLE     "res\\launcher_HELPD.bmp"
+
+HELPF                   BITMAP  DISCARDABLE     "res\\launcher_HELPF.bmp"
+
+HELPU                   BITMAP  DISCARDABLE     "res\\launcher_HELPU.bmp"
+
+HIGHDETAILD             BITMAP  DISCARDABLE     "res\\launcher_HIGHDETAILD.bmp"
+
+HIGHDETAILF             BITMAP  DISCARDABLE     "res\\launcher_HIGHDETAILF.bmp"
+
+HIGHDETAILU             BITMAP  DISCARDABLE     "res\\launcher_HIGHDETAILU.bmp"
+
+INSTALLD                BITMAP  DISCARDABLE     "res\\launcher_INSTALLD.bmp"
+
+INSTALLF                BITMAP  DISCARDABLE     "res\\launcher_INSTALLF.bmp"
+
+INSTALLU                BITMAP  DISCARDABLE     "res\\launcher_INSTALLU.bmp"
+
+LOWDETAILD              BITMAP  DISCARDABLE     "res\\launcher_LOWDETAILD.bmp"
+
+LOWDETAILF              BITMAP  DISCARDABLE     "res\\launcher_LOWDETAILF.bmp"
+
+LOWDETAILU              BITMAP  DISCARDABLE     "res\\launcher_LOWDETAILU.bmp"
+
+MEDIUMDETAILD           BITMAP  DISCARDABLE     "res\\launcher_MEDIUMDETAILD.bmp"
+
+MEDIUMDETAILF           BITMAP  DISCARDABLE     "res\\launcher_MEDIUMDETAILF.bmp"
+
+MEDIUMDETAILU           BITMAP  DISCARDABLE     "res\\launcher_MEDIUMDETAILU.bmp"
+
+MINIMIZED               BITMAP  DISCARDABLE     "res\\launcher_MINIMIZED.bmp"
+
+MINIMIZEU               BITMAP  DISCARDABLE     "res\\launcher_MINIMIZEU.bmp"
+
+OKD                     BITMAP  DISCARDABLE     "res\\launcher_OKD.bmp"
+
+OKF                     BITMAP  DISCARDABLE     "res\\launcher_OKF.bmp"
+
+OKU                     BITMAP  DISCARDABLE     "res\\launcher_OKU.bmp"
+
+OPTIONSD                BITMAP  DISCARDABLE     "res\\launcher_OPTIONSD.bmp"
+
+OPTIONSF                BITMAP  DISCARDABLE     "res\\launcher_OPTIONSF.bmp"
+
+OPTIONSU                BITMAP  DISCARDABLE     "res\\launcher_OPTIONSU.bmp"
+
+OPTIONSX                BITMAP  DISCARDABLE     "res\\launcher_OPTIONSX.bmp"
+
+PLAYD                   BITMAP  DISCARDABLE     "res\\launcher_PLAYD.bmp"
+
+PLAYF                   BITMAP  DISCARDABLE     "res\\launcher_PLAYF.bmp"
+
+PLAYU                   BITMAP  DISCARDABLE     "res\\launcher_PLAYU.bmp"
+
+QUITD                   BITMAP  DISCARDABLE     "res\\launcher_QUITD.bmp"
+
+QUITF                   BITMAP  DISCARDABLE     "res\\launcher_QUITF.bmp"
+
+QUITU                   BITMAP  DISCARDABLE     "res\\launcher_QUITU.bmp"
+
+RESTOREDEFAULTSETTINGSC BITMAP  DISCARDABLE     "res\\launcher_RESTOREDEFAULTSETTINGSC.bmp"
+
+RESTOREDEFAULTSETTINGSF BITMAP  DISCARDABLE     "res\\launcher_RESTOREDEFAULTSETTINGSF.bmp"
+
+RESTOREDEFAULTSETTINGSN BITMAP  DISCARDABLE     "res\\launcher_RESTOREDEFAULTSETTINGSN.bmp"
+
+SERVERD                 BITMAP  DISCARDABLE     "res\\launcher_SERVERD.bmp"
+
+SERVERF                 BITMAP  DISCARDABLE     "res\\launcher_SERVERF.bmp"
+
+SERVERU                 BITMAP  DISCARDABLE     "res\\launcher_SERVERU.bmp"
+
+SERVERX                 BITMAP  DISCARDABLE     "res\\launcher_SERVERX.bmp"
+
+UNINSTALLD              BITMAP  DISCARDABLE     "res\\launcher_UNINSTALLD.bmp"
+
+UNINSTALLF              BITMAP  DISCARDABLE     "res\\launcher_UNINSTALLF.bmp"
+
+UNINSTALLU              BITMAP  DISCARDABLE     "res\\launcher_UNINSTALLU.bmp"
+
+UNINSTALLX              BITMAP  DISCARDABLE     "res\\launcher_UNINSTALLX.bmp"
+
+102 DIALOGEX 0, 0, 320, 240
+STYLE WS_POPUP | WS_VISIBLE | DS_3DLOOK | DS_SETFONT
+EXSTYLE WS_EX_APPWINDOW
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    CONTROL         "&Launch",1,"Button",0x10001,7,170,70,16
-    CONTROL         "&Display...",9,"Button",0x10000,87,170,56,16
-    CONTROL         "&Advanced...",1007,"Button",0x10000,151,170,62,16
-    CONTROL         "&Quit",2,"Button",0x10000,221,170,48,16
-    CONTROL         "LithTech Game Engine © 1998-2001 Monolith Productions, Inc. All rights reserved. Fox, Fox Interactive, No One Lives Forever, The Operative and their associated logos are registered trademarks or trademarks of Twentieth Century Fox Film Corporation.",IDC_STATIC,"Static",0x20001,13,241,248,33
-    CONTROL         "GAME1",1003,"Static",0xa0e,32,8,214,148,0x20
-    CONTROL         "http://www.lith.com",1011,"Static",0x20001,99,191,77,8
-    CONTROL         "",IDC_STATIC,"Static",0x4,8,224,260,1
-    CONTROL         "http://www.the-operative.com",1013,"Static",0x20001,78,201,119,8
-    CONTROL         "© 2000 Monolith Productions, Inc.",IDC_STATIC,"Static",0x20001,6,228,263,8
-    CONTROL         "http://www.nolfnews.com",1014,"Static",0x20001,78,212,119,8
+    CONTROL         "Minimize", 1004, "Button", WS_TABSTOP | BS_OWNERDRAW, 290, 3, 10, 10
+    CONTROL         "Close", 1003, "Button", WS_TABSTOP | BS_OWNERDRAW, 302, 3, 10, 10
+    CONTROL         "Display", 1007, "Button", WS_TABSTOP | BS_OWNERDRAW, 253, 98, 50, 14
+    CONTROL         "Quit", 1008, "Button", WS_TABSTOP | BS_OWNERDRAW, 253, 154, 50, 14
+    CONTROL         "Server", 1010, "Button", WS_TABSTOP | BS_OWNERDRAW, 253, 78, 50, 14
+    CONTROL         "Options", 1011, "Button", WS_TABSTOP | BS_OWNERDRAW, 253, 116, 50, 14
+    CONTROL         "Install", 1009, "Button", WS_TABSTOP | BS_OWNERDRAW, 253, 59, 50, 14
+    CONTROL         "Animate1", 1027, "SysAnimate32", WS_TABSTOP, 215, 46, 29, 105
 END
 
-DISPLAY DIALOG DISCARDABLE 0, 0, 240, 170
-STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_CENTER | DS_SETFONT
-CAPTION "NOLF - Display Settings"
+145 DIALOG 0, 0, 133, 147
+STYLE WS_POPUP | DS_SETFONT
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "",1034,"ListBox",0xa10101,7,18,226,50
-    CONTROL         "",1032,"ListBox",0xa10101,7,85,150,50
-    CONTROL         "",1033,"ListBox",0xa10101,163,85,70,50
-    CONTROL         "OK",1,"Button",0x10001,62,149,50,14
-    CONTROL         "&Cancel",2,"Button",0x10000,128,149,50,14
-    CONTROL         "Displays:",IDC_STATIC,"Static",0x20000,7,74,140,8
-    CONTROL         "Resolutions:",IDC_STATIC,"Static",0x20000,163,74,70,8
-    CONTROL         "Renderers:",IDC_STATIC,"Static",0x20000,7,7,140,8
+    CONTROL         "Host", 1001, "Button", WS_TABSTOP | BS_OWNERDRAW, 102, 20, 19, 14
+    CONTROL         "Join", 1002, "Button", WS_TABSTOP | BS_OWNERDRAW, 101, 43, 20, 14
+    CONTROL         "Find", 1003, "Button", WS_TABSTOP | BS_OWNERDRAW, 99, 66, 22, 14
+    CONTROL         "Server", 1004, "Button", WS_TABSTOP | BS_OWNERDRAW, 98, 89, 23, 14
+    CONTROL         "Back", 1005, "Button", WS_TABSTOP | BS_OWNERDRAW, 98, 112, 23, 14
+    CONTROL         "Close", 1006, "Button", WS_TABSTOP | BS_OWNERDRAW, 115, 4, 10, 10
 END
 
-DETAIL DIALOG DISCARDABLE 0, 0, 273, 257
-STYLE WS_POPUP | WS_CAPTION | DS_CENTER | DS_MODALFRAME | DS_SETFONT
-CAPTION "NOLF - Performance Settings"
+146 DIALOG 0, 0, 205, 181
+STYLE WS_POPUP | DS_SETFONT
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "Select &Average Performance",1047,"Button",0x30001,86,143,100,16
-    CONTROL         "Select High &Detail",1048,"Button",0x30000,86,209,100,16
-    CONTROL         "Cancel",2,"Button",0x30000,86,234,100,16
-    CONTROL         "Select High &Performance",1045,"Button",0x30000,86,75,100,16
-    CONTROL         "In order to get the best gameplay experience from NOLF, please select the initial performance setting you would like the game to use.  You can change this setting later using NOLF's in-game menus.",IDC_STATIC,"Static",0x20000,7,5,259,26
-    CONTROL         "High Performance",IDC_STATIC,"Button",0x7,7,34,259,64
-    CONTROL         "High performance will provide the best game performance at the sacrifice of visual quality.  The Recommended System Specs:  PII 300 MHz, 64MB Ram,  8MB Direct 3D Compatible Video Card.",IDC_STATIC,"Static",0x20000,15,47,250,25
-    CONTROL         "Average Performance",IDC_STATIC,"Button",0x7,7,102,259,62
-    CONTROL         "Average performance will provide a good trade-off between game performance and visual quality.  The Recommended System Specs:  PIII 500 MHz, 128MB RAM, 32MB Direct 3D Compatible Video Card.",IDC_STATIC,"Static",0x20000,12,114,250,26
-    CONTROL         "High Detail",IDC_STATIC,"Button",0x7,7,169,259,61
-    CONTROL         "High detail will provide the best visual quality, but game performance may suffer on slower systems.  The Recommended System Specs:  PIII 750 MHz, 256MB RAM, 64MB Direct 3D Compatible Video Card.",IDC_STATIC,"Static",0x20000,12,180,250,27
+    CONTROL         "Close", 1012, "Button", WS_TABSTOP | BS_OWNERDRAW, 181, 3, 10, 10
+    CONTROL         "DisableSound", 1014, "Button", WS_TABSTOP | BS_OWNERDRAW, 19, 21, 50, 10
+    CONTROL         "DisableMusic", 1015, "Button", WS_TABSTOP | BS_OWNERDRAW, 19, 35, 50, 10
+    CONTROL         "DisableMovies", 1016, "Button", WS_TABSTOP | BS_OWNERDRAW, 19, 49, 50, 10
+    CONTROL         "DisableTripleBuffering", 1019, "Button", WS_TABSTOP | BS_OWNERDRAW, 111, 21, 50, 10
+    CONTROL         "DisableJoysticks", 1020, "Button", WS_TABSTOP | BS_OWNERDRAW, 111, 35, 50, 10
+    CONTROL         "DisableHardwareCursor", 1021, "Button", WS_TABSTOP | BS_OWNERDRAW, 111, 49, 50, 10
+    CONTROL         "RestoreDefaultSettings", 1023, "Button", WS_TABSTOP | BS_OWNERDRAW, 30, 82, 50, 10
+    CONTROL         "AlwaysSpecify", 1024, "Button", WS_TABSTOP | BS_OWNERDRAW, 28, 122, 50, 10
+    CONTROL         "OK", 1030, "Button", WS_TABSTOP | BS_OWNERDRAW, 12, 161, 50, 14
+    CONTROL         "Cancel", 1031, "Button", WS_TABSTOP | BS_OWNERDRAW, 69, 161, 50, 14
+    EDITTEXT        1017, 15, 97, 166, 14, ES_AUTOHSCROLL | NOT WS_BORDER
+    LTEXT           "What the hell am I looking at here?!", 1047, 20, 140, 162, 8
 END
 
-#ifdef AVP2_MODERN
-// M-P1-29: a row more, for "Disable launcher sound"
-ADVANCED DIALOG DISCARDABLE 0, 0, 300, 229
-STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_CENTER | DS_MODALFRAME | DS_SETFONT
-CAPTION "NOLF - Advanced Options"
+147 DIALOG 0, 0, 205, 153
+STYLE WS_POPUP | DS_SETFONT
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "Disable sound",1050,"Button",0x10003,16,47,120,10
-    CONTROL         "Disable music",1051,"Button",0x10003,16,58,120,10
-    CONTROL         "Disable movies",1055,"Button",0x10003,16,69,120,10
-    CONTROL         "Disable fog",1057,"Button",0x10003,16,80,120,10
-    CONTROL         "Disable joysticks",1067,"Button",0x10003,164,47,120,10
-    CONTROL         "Disable triple buffering",1058,"Button",0x10003,164,58,120,10
-    CONTROL         "Restore  default settings",1054,"Button",0x10003,16,124,120,10
-    CONTROL         "",1042,"Edit",0x810080,15,165,270,14
-    CONTROL         "Always specify these command-line parameters",1043,"Button",0x10003,15,181,270,10
-    CONTROL         "OK",1,"Button",0x10001,16,208,45,14
-    CONTROL         "Cancel",2,"Button",0x10000,184,208,45,14
-    CONTROL         "&Help",1069,"Button",0x10000,241,208,45,14
-    CONTROL         "Disable",IDC_STATIC,"Button",0x7,7,32,286,72
-    CONTROL         "Command-Line",IDC_STATIC,"Button",0x7,7,150,286,45
-    CONTROL         "Restore",IDC_STATIC,"Button",0x7,7,111,286,31
-    CONTROL         "WARNING!  Some of the advanced options may cause the game to run worse (or not at all) on your particular system configuration.  Click the Help button for more info.",IDC_STATIC,"Static",0x20000,7,7,286,20
-    CONTROL         "Disable hardware cursor",1071,"Button",0x10003,164,69,120,10
-    CONTROL         "Disable animated load screen.",1073,"Button",0x10003,164,80,120,10
-    CONTROL         "Disable launcher sound",1090,"Button",0x10003,16,91,120,10
-    CONTROL         "&Customize",1070,"Button",0x10000,71,208,45,14
+    CONTROL         "Close", 1034, "Button", WS_TABSTOP | BS_OWNERDRAW, 181, 3, 10, 10
+    CONTROL         "OK", 1035, "Button", WS_TABSTOP | BS_OWNERDRAW, 49, 135, 50, 14
+    CONTROL         "Cancel", 1041, "Button", WS_TABSTOP | BS_OWNERDRAW, 106, 135, 50, 14
+    LISTBOX         1038, 15, 23, 48, 40, WS_VSCROLL | WS_TABSTOP | LBS_SORT | LBS_NOINTEGRALHEIGHT | NOT WS_BORDER
+    LISTBOX         1039, 113, 24, 48, 40, WS_VSCROLL | WS_TABSTOP | LBS_SORT | LBS_NOINTEGRALHEIGHT | NOT WS_BORDER
+    LISTBOX         1040, 64, 75, 48, 40, WS_VSCROLL | WS_TABSTOP | LBS_SORT | LBS_NOINTEGRALHEIGHT | NOT WS_BORDER
 END
+
+148 DIALOG 0, 0, 276, 102
+STYLE WS_POPUP | DS_SETFONT
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Close", 1045, "Button", WS_TABSTOP | BS_OWNERDRAW, 261, 4, 10, 10
+    CONTROL         "OK", 1043, "Button", WS_TABSTOP | BS_OWNERDRAW, 83, 79, 50, 14
+    CONTROL         "Cancel", 1044, "Button", WS_TABSTOP | BS_OWNERDRAW, 141, 79, 50, 14
+    CTEXT           "Caption", 1046, 0, 10, 275, 8
+    LTEXT           "Text", 1047, 0, 35, 275, 31
+END
+
+149 DIALOG 0, 0, 133, 147
+STYLE WS_POPUP | DS_SETFONT
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "HighDetail", 1049, "Button", WS_TABSTOP | BS_OWNERDRAW, 37, 90, 50, 14
+    CONTROL         "Cancel", 1048, "Button", WS_TABSTOP | BS_OWNERDRAW, 37, 122, 50, 14
+    CONTROL         "MediumDetail", 1050, "Button", WS_TABSTOP | BS_OWNERDRAW, 37, 63, 50, 14
+    CONTROL         "LowDetail", 1051, "Button", WS_TABSTOP | BS_OWNERDRAW, 37, 33, 50, 14
+    CONTROL         "Close", 1052, "Button", WS_TABSTOP | BS_OWNERDRAW, 119, 3, 10, 10
+    LTEXT           "Static", 1053, 9, 14, 114, 8
+    LTEXT           "Static", 1054, 7, 51, 114, 8
+    LTEXT           "Static", 1055, 5, 77, 114, 8
+    LTEXT           "Static", 1056, 4, 108, 114, 8
+END
+
+30721 DIALOG 9, 26, 183, 70
+STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_3DLOOK | DS_SETFONT | DS_MODALFRAME
+CAPTION "New"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "&New ", IDC_STATIC, 6, 5, 123, 8, NOT WS_GROUP
+    LISTBOX         100, 6, 15, 125, 49, WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "OK", IDOK, 137, 6, 40, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 137, 23, 40, 14
+    PUSHBUTTON      "&Help", 57670, 137, 43, 40, 14
+END
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", ""
+            VALUE "FileDescription", "Launcher MFC Application\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "Launcher\0"
+            VALUE "LegalCopyright", "Copyright (C) 2000\0"
+            VALUE "LegalTrademarks", ""
+            VALUE "OriginalFilename", "Launcher.EXE\0"
+            VALUE "ProductName", "Launcher Application\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 0x4b0
+    END
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+#ifdef PRIMAL_HUNT
+    1                               "Aliens versus Predator 2: Primal Hunt"
+    2                               "PrimalHunt.exe"
 #else
-ADVANCED DIALOG DISCARDABLE 0, 0, 300, 218
-STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_CENTER | DS_MODALFRAME | DS_SETFONT
-CAPTION "NOLF - Advanced Options"
-FONT 8, "MS Sans Serif"
-BEGIN
-    CONTROL         "Disable sound",1050,"Button",0x10003,16,47,120,10
-    CONTROL         "Disable music",1051,"Button",0x10003,16,58,120,10
-    CONTROL         "Disable movies",1055,"Button",0x10003,16,69,120,10
-    CONTROL         "Disable fog",1057,"Button",0x10003,16,80,120,10
-    CONTROL         "Disable joysticks",1067,"Button",0x10003,164,47,120,10
-    CONTROL         "Disable triple buffering",1058,"Button",0x10003,164,58,120,10
-    CONTROL         "Restore  default settings",1054,"Button",0x10003,16,113,120,10
-    CONTROL         "",1042,"Edit",0x810080,15,154,270,14
-    CONTROL         "Always specify these command-line parameters",1043,"Button",0x10003,15,170,270,10
-    CONTROL         "OK",1,"Button",0x10001,16,197,45,14
-    CONTROL         "Cancel",2,"Button",0x10000,184,197,45,14
-    CONTROL         "&Help",1069,"Button",0x10000,241,197,45,14
-    CONTROL         "Disable",IDC_STATIC,"Button",0x7,7,32,286,61
-    CONTROL         "Command-Line",IDC_STATIC,"Button",0x7,7,139,286,45
-    CONTROL         "Restore",IDC_STATIC,"Button",0x7,7,100,286,31
-    CONTROL         "WARNING!  Some of the advanced options may cause the game to run worse (or not at all) on your particular system configuration.  Click the Help button for more info.",IDC_STATIC,"Static",0x20000,7,7,286,20
-    CONTROL         "Disable hardware cursor",1071,"Button",0x10003,164,69,120,10
-    CONTROL         "Disable animated load screen.",1073,"Button",0x10003,164,80,120,10
-    CONTROL         "&Customize",1070,"Button",0x10000,71,197,45,14
-END
+    1                               "Aliens vs. Predator 2"
+    2                               "AVP2.exe"
 #endif
-
-ADV_CUSTOM DIALOG DISCARDABLE 0, 0, 292, 154
-STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_CENTER | DS_MODALFRAME | DS_SETFONT
-CAPTION "Advanced Options - Customize"
-FONT 8, "MS Sans Serif"
-BEGIN
-    CONTROL         "&OK",1,"Button",0x10001,93,133,50,14
-    CONTROL         "",1039,"ListBox",0xa10101,7,7,115,100
-    CONTROL         "Add >",1037,"Button",0x10000,127,44,38,14
-    CONTROL         "< Remove",1038,"Button",0x10000,127,63,38,14
-    CONTROL         "&Cancel",2,"Button",0x10000,149,133,50,14
-    CONTROL         "Always load these rez files",1043,"Button",0x10003,97,114,97,11
-    CONTROL         "",1040,"ListBox",0xa10101,170,7,115,100
+    3                               "The available display options on your system will now be enumerated.  This may take some time depending on what hardware is installed.\n\nIf nothing shows up in the display dialog, please verify that DirectX is installed properly on your system."
+    4                               "WARNING!  Tinkering with the advanced options can cause the game to run worse (or not at all) depending on your system configuration."
+#ifdef PRIMAL_HUNT
+    5                               "\\PrimalHunt.EXE"
+    6                               "\\DATA\\AVP2X.REZ"
+#else
+    5                               "\\AVP2.EXE"
+    6                               "\\DATA\\AVP22.REZ"
+#endif
+    7                               "AVP2"
+    8                               "SETUP.EXE"
+#ifdef PRIMAL_HUNT
+    9                               "AVP2XSERV.EXE"
+#else
+    9                               "AVP2SERV.EXE"
+#endif
+    10                              "English"
+#ifdef PRIMAL_HUNT
+    11                              "Please remove the Aliens versus Predator 2: Primal Hunt Disc 2 from your drive and replace it with the Aliens versus Predator 2: Primal Hunt Disc 1."
+    12                              "Please insert the Aliens versus Predator 2: Primal Hunt Disc into your drive."
+    13                              "ERROR - Unable to launch the setup program.  Please make sure that your Aliens versus Predator 2: Primal Hunt CD is in the drive and try again."
+#else
+    11                              "Please remove the Aliens vs. Predator 2 Disc 2 from your drive and replace it with the Aliens vs. Predator Disc 1."
+    12                              "Please insert the Aliens vs. Predator 2 Disc 1 into your drive."
+    13                              "ERROR - Unable to launch the setup program.  Please make sure that your AVP2 CD is in the drive and try again."
+#endif
+    14                              "No renderers were found.  This problem is usually due to DirectX not being properly installed.  Please verify that DirectX is installed and try again.."
+    15                              "This will disable all sound effects.  Use this for troubleshooting only."
 END
-
-ADV_HELP DIALOG DISCARDABLE 0, 0, 340, 222
-STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_CENTER | DS_MODALFRAME | DS_SETFONT
-CAPTION "Advanced Options - Help"
-FONT 8, "MS Sans Serif"
-BEGIN
-    CONTROL         "&Close",1,"Button",0x10001,145,201,50,14
-    CONTROL         "",1070,"Edit",0xa10804,133,50,200,100
-    CONTROL         "",1072,"ListBox",0xa10101,7,50,115,100
-    CONTROL         "Advanced Option:",IDC_STATIC,"Static",0x20000,7,38,90,8
-    CONTROL         "Information:",IDC_STATIC,"Static",0x20000,133,38,200,8
-    CONTROL         "Click on an advanced option for a more detailed description. For the latest information, please visit: \n\t http://www.the-operative.com/",IDC_STATIC,"Static",0x20000,7,7,326,24
-    CONTROL         "The Advanced Options are designed for advanced users and trouble-shooting only.  Some of the advanced options may cause the game to run worse (or not at all) on your particular system configuration.",IDC_STATIC,"Static",0x20000,7,159,326,30
-END
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// String Table
-//
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    1       "ERROR - Unable to run the installer.  Please make sure that your NOLF CD is in the CD-ROM drive and try again."
-    2       "ERROR - Unable to launch the game.  Please make sure that NOLF is installed properly."
-    3       "ERROR - Could not find resource name in CRes.dll.  Please make sure that NOLF is installed properly."
-    4       "ERROR - Unable to launch the setup program.  Please make sure that your NOLF CD is in the CD-ROM drive and try again."
-    5       "ERROR - Could not load CRes.dll.  Please make sure that NOLF is installed properly."
-    6       "ERROR - Could not launch LITHTECH.EXE.  Please make sure that NOLF is installed properly."
-    7       "ERROR - Unable to launch the uninstaller.  Please make sure that NOLF is installed properly."
-    8       "Please insert the No One Lives Forever Disc 2 CD-ROM into your CD-ROM drive."
-    9       "No One Lives Forever"
-    10      "ERROR - Can't access the game previews.  Please make sure that your NOLF Disc 2 CD is in the CD-ROM drive and try again."
-    11      "There are no games to preview on this CD."
-    12      "ERROR - Unable to launch the NOLF help file.  Please make sure that NOLF is installed properly."
-    13      "$(LT2_DIR)\\api"
-    14      "Please remove the No One Lives Forvever  Disc 1 CD-ROM from your CD-ROM drive and replace it with the No One Lives Forever Disc 2 CD-ROM."
-    16      "No additional NOLF .REZ files were found in the ""Custom"" folder.  NOLF add-on .REZ files must be placed in a folder called ""Custom""."
-    17      "ERROR - Unable to find the NOLF.rez file.  Please make sure that NOLF is installed properly and that your NOLF disc 2 CD is in the CD-ROM drive."
-    18      "The available display options on your system will now be enumerated.  This may take some time depending on what hardware is installed.\n\nIf nothing shows up in the display dialog, please verify that DirectX 7.0 is installed properly on your system."
-    19      "3DFX VooDoo Graphics (Voodoo1)\n\n3DFX Interactive - http://www.3dfx.com\n\nIn order to get the best performance from any 3DFX-based card, we STRONGLY recommend that you upgrade to the latest 3DFX reference drivers.\n\nYou can get the most recent reference drivers from the 3DFX website, or you card manufacturer's site. There are also 3DFX Voodoo-1 Reference Drivers contained in a ""3DFX"" directory on the NOLF CD.\n\nRecommended Display Settings:\nMedium\n\nRecommended Advanced Settings:\nNONE\n"
-    20      "3DFX VooDoo2\n\n3DFX Interactive - http://www.3dfx.com\n\nIn order to get the best performance from any 3DFX-based card, we STRONGLY recommend that you upgrade to the latest 3DFX reference drivers.\n\nWe have found that the latest 3DFX Voodoo2 reference drivers work fairly well under DX6. As of this version of NOLF, the latest 3DFX Voodoo2 DX6 Reference Drivers should be available from 3DFX or your card manufacturer.  There are also older 3DFX reference drivers contained in a ""3DFX"" directory on the NOLF CD.\n\nRecommended Display Settings:\n-HIGH\n\nRecommended Advanced Settings:\n-DISABLE TRIPLE BUFFERING ON THIS CARD.\n"
-    21      "3DFX Banshee\n\n3DFX Interactive - http://www.3dfx.com\n\nIn order to get the best performance from any 3DFX-based card, we STRONGLY recommend that you upgrade to the latest 3DFX reference drivers.\n\nRecommended Display Settings:\nHIGH\n"
-    22      "Intel i740\n\nhttp://drivers.lith.com\n"
-    23      "G200 Millenium and Mystique\n\nMatrox - http://www.matrox.com/mgaweb/drivers\n\nPlease check the Matrox website for drivers.lith.com for the most recently released drivers for all Matrox products.  D3D driver support is generally good.\n\nRecommended Display Settings:\n-MEDIUM\n"
-    24      "Riva TNT\n\nnVidia - http://www.nVidia.com\n\nBe sure to upgrade to the most recent drivers for all TNT cards.  Check your card manufacturer's site or the nVidia site for details.\n\nRecommended Display Settings:\nHIGH\n"
-    25      "Riva 128/128ZX\n \nnVidia - http://www.nVidia.com\n\nBe sure to upgrade to the most recent drivers from nVidia for these cards.\n\nRecommended Display Settings:\nWith drivers released after 9-15-98, MEDIUM\n\nWith drivers released before 9-15-98, LOW\n\nRunning in HIGH or MEDIUM with the currently drivers released before 9-15-98 will result in gray-shaded world polygons."
-    26      "Rage Pro\n\nATI - http://support.atitech.ca/drivers\n      \nPlease check the ATI website for the most up to date drivers avaiable.  This chipset was used and is used on many, many ATI cards.\n\nDoesn't bilinear filter the alpha channel so stuff with alpha looks all pixelated even though the RGB is all pixelated.\n\nRecommended Display Settings:\nLOW\n"
-    27      "Permedia2\n\n3DLabs - http://www.3dlabs.com/drivers\n\nWorks well, although no lightmapping.\n\nRecommended Display Settings:\nLOW or MEDIUM (lightmapping will automatically be turned off on this card)\n\nRecommended Advanced Settings:\nNONE"
-    28      "Rendition V2100/V2200\n\nRendition - http://www.rendition.com\n\nWorks well, supports all features in NOLF.\n\nRecommended Display Settings:\nLOW, or MEDIUM \nRecommended Advanced Settings:\nNONE\n"
-    29      "S3 Savage\n\nS3 - http://www.s3.com\n\nDISABLE FOG!  There may be problems with this card and the fog settings in NOLF.  Disabling fog will not provide a performance increase or decrease.\n\nRecommended Display Settings:\nHIGH\n\nRecommended Advanced Settings:\nCheck ""Disable Fog"" in the advanced options.\n"
-    30      "Virge (Diamond Stealth 3D Pro 2000, IMagic 3D)\n\nS3 - http://www.s3.com\n\nGet the most recent drivers from the S3 site.  This board was an OEM video card in many, many PC's.  The 3D hardware performance is questionable, but D3D will recognize this card as a 3D hardware accelerator.\n\nLightmapping and screen flash not supported.\n\nRecommended Display Settings:\nLOW,\nRecommended Advanced Settings:\nNONE\n"
-    31      "Matrox M3D\n\nMatrox - http://www.matrox.com/mgaweb/drivers\n\nPlease check the Matrox website for drivers.lith.com for the most recently released drivers for all Matrox products.  D3D driver support is generally good.\n\nThis card is based on a version of the NEC PowerVR chipset.\n\nYou may need to update your drivers through device manager instead of the setup program that comes with the driver set\n\nNOLF detects that this card can't do LightMapping or ""light add poly"" and disables both\n\nMay experience texture mipmapping glitches\n\nChromed models are REALLY slow, so enabling Environment Mapping through the menus is not recommended \n\nSome textures with alpha (4444) draw with alpha blending even if the alphablendenable state is off\n\nRecommended Display Settings:\nLOW\n\nRecommended Advanced Settings:\nNONE (NOLF detects this card automatically)\n"
-    32      "Matrox MGA-1064 (Millenium II and Mystique)\n\nMatrox - http://www.matrox.com/mgaweb/drivers\n\nPlease check the Matrox website for drivers.lith.com for the most recently released drivers for all Matrox products.  D3D driver support is generally good.\n\nRecommended Display Settings:\nLOW\n\nRecommended Advanced Settings:\nNONE\n"
-    33      "Rendition V1000\n\nRendition - http://www.rendition.com\n\nAn older card, but should work properly with NOLF.\n\nRecommended Display Settings:\nLOW.  512x384\n\nRecommended Advanced Settings:\nNONE\n"
-    34      "This will disable all sound effects in NOLF."
-    35      "This will disable NOLF's use of DirectMusic. Some sound cards may have incompatibilities with DirectMusic.  Use this for troubleshooting only."
-    36      "This will disable the logo and intro movies from playing every time."
-    38      "This will disable all atmospheric (not clipping plane) fog. There should be no performance increase nor decrease. However, this might possibly be useful on cards that ""almost"" support table fog."
-    42      "This will disable all joysticks and gamepads in NOLF.  Use this if your particular joystick is causing problems with NOLF at startup."
-    45      "This will disable a feature on some video cards that can improve performance, but uses more of the card's video memory as a result.  Most AGP video cards benefit from this feature being enabled.  However, this may cause lock-ups on a few PCI video cards."
-    46      "This will disable the use of a hardware cursor. Some older cards do not support the hardware cursor."
-    47      "This will disable the use of an animated loading screen. Use this for troubleshooting."
-    48      "This restores all configuration settings to the original defaults. This includes resetting the key configuration, detail level and sound options. This is useful if you've changed settings, and you just want things back the way they were. "
-    49      "This is for advanced users only. The command line is used for setting console variables at startup."
-    50      "WARNING!  Tinkering with the advanced options can cause the game to run worse (or not at all) depending on your system configuration.  Please click on the ""Help"" button for information on each advanced option before using them."
-    51      "No renderers were found.  This problem is usually due to DirectX 7.0 not being properly installed.  Please verify that DirectX 7.0 is installed and re-run the installer if necessary."
-    52      "ERROR - Unable to launch the web page.  Please make sure that your web browser and internet connection are configured properly."
-    53      "http://www.the-operative.com"
-    54      "NOLF.hlp"
-    55      "http://www.lith.com"
-    57      "No One Lives Forever"
-    58      "No One Lives Forever"
-    59      "\DATA\NOLF.REZ"
-    60      "\DATA\NOLF2.REZ"
-    61      "SETUP.EXE"
-    62      "NOLF"
-    63      "1"
-    64      "NOLF is already running."
-    65      "There are no 3D sound providers available on this system."
-    66      "No 3D sound"
-    67      "The 3D sound hardware on your system will now be queried.  This may take up to a minute and you may hear a few pops and clicks."
-    68      "No One Lives Forever"
-    72      "Rage 128\n\nATI - http://support.atitech.ca/drivers\n\nPlease check the ATI website for the most up to date drivers avaiable.\n\nRecommended Display Settings:\nHIGH\n"
-    73      "http://www.nolfnews.com"
-    74      "Disable sound"
-    75      "Disable music"
-    76      "Disable movies"
-    77      "Disable fog"
-    78      "Disable joysticks"
-    79      "Disable triple buffering"
-    80      "Disable hardware cursor"
-    81      "Disable animating loading screen"
-    82      "Restore defaults"
-    83      "Command-line"
-    84      "English"
+    16                              "This will disable the use of DirectMusic. Some sound cards may have incompatibilities with DirectMusic.  Use this for troubleshooting only."
+    17                              "This will disable the logo movies at the start of the game."
+    18                              "This will disable all atmospheric (not clipping plane) fog. There should be no performance increase or decrease. However, this might possibly be useful on cards that ""almost"" support table fog."
+    19                              "This will disable all joysticks and gamepads.  Use this if your particular joystick is causing problems when the game starts."
+    20                              "This will disable a feature on some video cards that can improve performance, but uses more of the card's video memory as a result.  Most AGP video cards benefit from this feature being enabled.  However, this may cause lock-ups on a few PCI video cards."
+    21                              "This will disable the use of a hardware cursor. Some older cards do not support the hardware cursor."
+    22                              "This will disable the use of an animated loading screen. Use this for troubleshooting."
+    23                              "This restores all configuration settings to the original defaults. This includes resetting the key configuration, detail level and sound options. This is useful if you've changed settings, and you just want things back the way they were. "
+    24                              "This is for advanced users only. The command line is used for setting console variables at startup."
+#ifdef PRIMAL_HUNT
+    25                              "ERROR - Unable to find the AVP2X.rez file.  Please make sure that Aliens versus Predator 2: Primal Hunt is installed properly and that your Aliens versus Predator 2: Primal Hunt disc is in the CD drive."
+    26                              "ERROR - Could not launch LITHTECH.EXE.  Please make sure that Aliens versus Predator 2: Primal Hunt is installed properly."
+    27                              "In order to get the best gameplay experience from Aliens versus Predator 2: Primal Hunt, please select the initial performance setting you would like the game to use.  You can change this setting later using the in-game menus."
+#else
+    25                              "ERROR - Unable to find the AVP2.rez file.  Please make sure that AVP2 is installed properly and that your AVP2 disc 1 CD is in the drive."
+    26                              "ERROR - Could not launch LITHTECH.EXE.  Please make sure that AVP2 is installed properly."
+    27                              "In order to get the best gameplay experience from AVP2, please select the initial performance setting you would like the game to use.  You can change this setting later using AVP2's in-game menus."
+#endif
+    28                              "Low detail will provide the best game performance at the sacrifice of visual quality.  The Recommended System Specs:  P3 450, 128 MB RAM, 16 MB Direct 3D Video Card, 16-bit sound card."
+    29                              "Medium detail will provide a good trade-off between game performance and visual quality.  The Recommended System Specs:  P3 700, 128 MB RAM, 32 MB Direct 3D Video Card, 16-bit sound card."
+    30                              "High detail will provide high visual quality, but game performance may suffer on slower systems.  The Recommended System Specs:  P3 700, 256 MB RAM, 32 MB Direct 3D Video Card, 16-bit sound card."
+#ifdef PRIMAL_HUNT
+    31                              "ERROR - Unable to launch the stand-alone server.  Please verify that Aliens versus Predator 2: Primal Hunt is properly installed on your machine and try again."
+#else
+    31                              "ERROR - Unable to launch the stand-alone server.  Please verify that AVP2 is properly installed on your machine and try again."
+#endif
 END
-#ifdef AVP2_MODERN
-// M-P1-29: Advanced options help
+
 STRINGTABLE DISCARDABLE
 BEGIN
-    85      "This turns off the sound the launcher plays as it opens."
-    86      "Disable launcher sound"
+    32                              "1.0"
+#ifdef PRIMAL_HUNT
+    33                              "ERROR - Unable to uninstall the game. If Aliens versus Predator 2: Primal Hunt is still installed, try using add/remove programs. To reinstall the game, run the Setup.exe program from the AVP2 Expansion Disc."
+    34                              "Alien versus Predator 2 must be installed for the Aliens versus Predator 2: Primal Hunt to work correctly!  If you uninstalled Alien versus Predator 2, you must reinstall it before you can run Primal Hunt."
+    35                              "Alien versus Predator 2 Not Found!"
+    36                              "Aliens vs. Predator 2"
+#else
+    33                              "ERROR - Unable to uninstall the game. If AVP2 is still installed, try using add/remove programs. To reinstall the game, run the Setup.exe program from the AVP2 Disc 1."
+#endif
 END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61440                           "Open"
+    61441                           "Save As"
+    61442                           "All Files (*.*)"
+    61443                           "Untitled"
+    61446                           "an unnamed file"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61457                           "&Hide"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61472                           "No error message is available."
+    61473                           "An unsupported operation was attempted."
+    61474                           "A required resource was unavailable."
+    61475                           "Out of memory."
+    61476                           "An unknown error has occurred."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61696                           "Invalid filename."
+    61697                           "Failed to open document."
+    61698                           "Failed to save document."
+    61699                           "Save changes to %1?"
+    61700                           "Failed to create empty document."
+    61701                           "The file is too large to open."
+    61702                           "Could not start print job."
+    61703                           "Failed to launch help."
+    61704                           "Internal application error."
+    61705                           "Command failed."
+    61706                           "Insufficient memory to perform operation."
+    61707                           "System registry entries have been removed and the INI file (if any) was deleted."
+    61708                           "Not all of the system registry entries (or INI file) were removed."
+    61709                           "This program requires the file %s, which was not found on this system."
+    61710                           "This program is linked to the missing export %s in the file %s. This machine may have an incompatible version of %s."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61712                           "Please enter an integer."
+    61713                           "Please enter a number."
+    61714                           "Please enter an integer between %1 and %2."
+    61715                           "Please enter a number between %1 and %2."
+    61716                           "Please enter no more than %1 characters."
+    61717                           "Please select a button."
+    61718                           "Please enter an integer between 0 and 255."
+    61719                           "Please enter a positive integer."
+    61720                           "Please enter a date and/or time."
+    61721                           "Please enter a currency."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61728                           "Unexpected file format."
+    61729                           "%1\nCannot find this file.\nPlease verify that the correct path and file name are given."
+    61730                           "Destination disk drive is full."
+    61731                           "Unable to read from %1, it is opened by someone else."
+    61732                           "Unable to write to %1, it is read-only or opened by someone else."
+    61733                           "An unexpected error occurred while reading %1."
+    61734                           "An unexpected error occurred while writing %1."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61836                           "Unable to read write-only property."
+    61837                           "Unable to write read-only property."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61840                           "Unable to load mail system support."
+    61841                           "Mail system DLL is invalid."
+    61842                           "Send Mail failed to send message."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61856                           "No error occurred."
+    61857                           "An unknown error occurred while accessing %1."
+    61858                           "%1 was not found."
+    61859                           "%1 contains an invalid path."
+    61860                           "%1 could not be opened because there are too many open files."
+    61861                           "Access to %1 was denied."
+    61862                           "An invalid file handle was associated with %1."
+    61863                           "%1 could not be removed because it is the current directory."
+    61864                           "%1 could not be created because the directory is full."
+    61865                           "Seek failed on %1"
+    61866                           "A hardware I/O error was reported while accessing %1."
+    61867                           "A sharing violation occurred while accessing %1."
+    61868                           "A locking violation occurred while accessing %1."
+    61869                           "Disk full while accessing %1."
+    61870                           "An attempt was made to access %1 past its end."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61872                           "No error occurred."
+    61873                           "An unknown error occurred while accessing %1."
+    61874                           "An attempt was made to write to the reading %1."
+    61875                           "An attempt was made to access %1 past its end."
+    61876                           "An attempt was made to read from the writing %1."
+    61877                           "%1 has a bad format."
+    61878                           "%1 contained an unexpected object."
+    61879                           "%1 contains an incorrect schema."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    61888                           "pixels"
+END
+
+221                     AVI DISCARDABLE "res\\launcher_AVI_221.bin"
+
+225                     WAVE DISCARDABLE "res\\launcher_WAVE_225.bin"
+
+226                     WAVE DISCARDABLE "res\\launcher_WAVE_226.bin"
+
+278                     WAVE DISCARDABLE "res\\launcher_WAVE_278.bin"
+
+279                     WAVE DISCARDABLE "res\\launcher_WAVE_279.bin"
+
+280                     WAVE DISCARDABLE "res\\launcher_WAVE_280.bin"
+
+281                     WAVE DISCARDABLE "res\\launcher_WAVE_281.bin"
+
+282                     WAVE DISCARDABLE "res\\launcher_WAVE_282.bin"
+
+294                     WAVE DISCARDABLE "res\\launcher_WAVE_294.bin"
+
+308                     WAVE DISCARDABLE "res\\launcher_WAVE_308.bin"
+
+309                     WAVE DISCARDABLE "res\\launcher_WAVE_309.bin"
+
 #endif

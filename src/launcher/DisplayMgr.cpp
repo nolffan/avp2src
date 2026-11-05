@@ -1,22 +1,23 @@
 // *********************************************************************** //
 //
-//	MODULE:		DLGDISPLAY (.CPP)
+//	MODULE:		DISPLAYMGR (.CPP)
 //
-//	PURPOSE:	The display-mode tree behind the DISPLAY dialog.  Every
+//	PURPOSE:	The display-mode tree behind the display dialog.  Every
 //				*.REN in the game directory is a renderer DLL; asking it
 //				for GetSupportedModes() yields a flat RMode list, which is
 //				folded into one CCard per video card and one CDisplayMode
 //				per resolution under it.
 //
-//				Shipped NOLF.exe v1.003: 0x401e10 - 0x403859.
+//				NOLF's launcher's (nolfsrc, from NOLF.exe v1.003:
+//				0x401e10 - 0x403859, its DisplayDlgProc left out),
+//				carried into AvP2's: AVP2.exe 0x402a20 - 0x4043d0.
 //
 // *********************************************************************** //
 
 #include "stdafx.h"
 #include "io.h"
 #include "stdio.h"
-#include "regmgr.h"
-#include "launcher.h"
+#include "DisplayMgr.h"
 
 
 // *********************************************************************** //
@@ -103,7 +104,7 @@ void CCard::Term()
 CString CCard::GetDisplayName()
 {
 	CString csName;
-	csName.Format("%s (%s)", GetName(), GetDesc());
+	csName.Format("%s (%s)", GetDesc(), GetName());
 
 	return(csName);
 }
@@ -636,7 +637,7 @@ CString CRenderer::GetListName()
 	}
 	else
 	{
-		csName.Format("%s (%s)", GetName(), GetDesc());
+		csName.Format("%s (%s)", GetDesc(), GetName());
 	}
 
 	return(csName);
@@ -1212,88 +1213,13 @@ CString CDisplayModes::GetCommands()
 		int nDepth = pMode->m_nDepth;
 		int nHeight = pMode->m_nHeight;
 		int nWidth = pMode->m_nWidth;
-		csMode.Format(" ++screenwidth %i ++screenheight %i ++bitdepth %i",
-			nWidth, nHeight, nDepth);
+		csMode.Format(" ++ScreenWidth %i ++ScreenHeight %i ++BitDepth %i ++GameScreenWidth %i ++GameScreenHeight %i ++GameBitDepth %i",
+			nWidth, nHeight, nDepth, nWidth, nHeight, nDepth);
 
 		csCommands += csMode;
 	}
 
 	return(csCommands);
-}
-
-
-// *********************************************************************** //
-//
-//	ROUTINE:	DisplayDlgProc   [0x405b10]
-//
-//	PURPOSE:	Dialog procedure for the DISPLAY dialog - three cascading
-//				list boxes over the renderer/card/mode tree
-//
-// *********************************************************************** //
-
-BOOL CALLBACK DisplayDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-		case WM_INITDIALOG:
-		{
-			HICON hIcon = LoadIcon(g_hInst, "ICON");
-			if (hIcon)
-			{
-				SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-			}
-
-			if (g_pDisplayModes)
-			{
-				g_pDisplayModes->FillLists(GetDlgItem(hWnd, 1034),
-					GetDlgItem(hWnd, 1032), GetDlgItem(hWnd, 1033));
-
-				g_pDisplayModes->UpdateLists(GetDlgItem(hWnd, 1034),
-					GetDlgItem(hWnd, 1032), GetDlgItem(hWnd, 1033));
-			}
-
-			return(TRUE);
-		}
-
-		case WM_COMMAND:
-		{
-			if (wParam == 1)
-			{
-				if (g_pDisplayModes)
-				{
-					g_pDisplayModes->UpdateLists(GetDlgItem(hWnd, 1034),
-						GetDlgItem(hWnd, 1032), GetDlgItem(hWnd, 1033));
-				}
-
-				EndDialog(hWnd, 1);
-				return(TRUE);
-			}
-
-			if (wParam == 2)
-			{
-				if (g_pDisplayModes)
-				{
-					g_pDisplayModes->m_pCurRenderer = NULL;
-				}
-
-				EndDialog(hWnd, 0);
-				return(TRUE);
-			}
-
-			if (HIWORD(wParam) == LBN_SELCHANGE)
-			{
-				if (g_pDisplayModes)
-				{
-					g_pDisplayModes->UpdateLists(GetDlgItem(hWnd, 1034),
-						GetDlgItem(hWnd, 1032), GetDlgItem(hWnd, 1033));
-				}
-			}
-
-			return(TRUE);
-		}
-	}
-
-	return(FALSE);
 }
 
 

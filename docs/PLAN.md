@@ -139,7 +139,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
 | 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | `ltmsg.dll` done (below) |
 | 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | started (below) |
-| 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | started (below) |
+| 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | linked (below) |
 | 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | |
 | 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | answered: not as shipped (package 7); 1.0.9.6's engine to be targeted |
 | 11 | `match`: byte-matching, module by module, ratcheted by `make progress` | 4-8 | |
@@ -442,13 +442,18 @@ addresses, so `make progress` scores the objects (`partial_objs`).
 
 ### 8. launcher
 
-Started. nolfsrc's NOLF launcher (`src/launcher/`, at nolfsrc's HEAD) is
-compiled as AvP2's (cl 9044, `Release/`) and Primal Hunt's (cl 8966,
-`PRIMAL_HUNT`, `PrimalHunt/`), against SP5's MFC, objects only
-(`partial_objs`): 38 functions of each are byte-identical already
-(`AVP2.exe` 11.3 %, `PrimalHunt.exe` 12.4 %); about 110 of nolfsrc's are in
-no form in either. To come: AvP2's dialogs and art (its resources), the
-rez stacks each builds, the links.
+Linked, both (`build/build.mk`, "The launchers' links": `compile.sh
+launchers`). `src/launcher/` is the MFC launcher of Monolith's NOLF2 source
+release brought back to the 2001 AvP2 one it descends from (with NOLF's
+display-mode code, nolfsrc's), compiled as AvP2's (cl 9044, `Release/`)
+and Primal Hunt's (cl 8966, `PRIMAL_HUNT`, `PrimalHunt/`) with the
+project's precompiled header, against SP5's MFC; their resources are
+byte-identical to the retail ones (the art read out of the retail images
+at build time). Every readable function of both is byte-identical but a
+few (`progress/targets.py`); five pages of each image's `.text` are kept
+encrypted by the protection wrapper (`encrypted`), and the functions in
+them (the rest of `RezFind.cpp`, `StaticEx.cpp`, `Utils.cpp`) are
+unverifiable. To come: the modern launchers (below).
 
 ### 12. modern
 

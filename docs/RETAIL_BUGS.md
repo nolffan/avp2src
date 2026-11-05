@@ -302,6 +302,109 @@ after it are not checked either. Out of memory, `CreateInterObjectLink` or
 
 Not fixed yet.
 
+### A command-line argument of 200 characters or more is left unterminated
+
+Launch.dll 0x10001820 (`GetLithTechCommandLine`, src/launch/launch.cpp),
+which AvP2 and Primal Hunt ship from NOLF unchanged. Every argument it
+hands the engine -- the real command line's, the rez files, and each word
+of the launcher's saved commands -- is copied with `strncpy(pArgs[n], s,
+nMaxArgLen)`, and lithtech.exe passes 200-byte slots and `nMaxArgLen` 200
+(src/engine/lithtech/clientwin.cpp). A string of 200 characters or more is
+copied without its terminator, and the engine reads it on into the next
+slot.
+
+Not fixed yet (Launch.dll has no modern build).
+
+### Every rez-file check leaks a find handle
+
+Launch.dll 0x100025c0 and 0x10002640 (`ExistRezFile`, `ExistRezDir`,
+src/launch/RezFind.cpp). Each asks `_findfirst` about the path and never
+gives the handle back with `_findclose`; `FindRezFiles` makes up to five
+such checks every time the engine asks for its command line. Harmless in
+practice (once per start), but a leak.
+
+Not fixed yet (Launch.dll has no modern build).
+
+### Starting a CD play list while a track plays can skip its first track
+
+cdaudio.dll 0x10001390 (the driver's window procedure;
+src/engine/cdaudio/cdaudio.cpp). Every `MM_MCINOTIFY` is taken as "the
+track finished" without checking wParam, so the notification for a play
+that was superseded or stopped also advances the list: starting a play
+list while a track is playing can skip to its second track.
+
+Not fixed yet.
+
+### The CD driver's GetSongFromList always answers nothing
+
+cdaudio.dll 0x10001600 (`GetSongFromList`, src/engine/cdaudio/cdaudio.cpp)
+returns NULL whatever it is asked.
+
+Not fixed yet.
+
+### Removing the playing CD list leaves a dangling pointer
+
+cdaudio.dll 0x10001610 (`RemoveList`, src/engine/cdaudio/cdaudio.cpp) does
+not clear the current-list pointer, so removing the list that is playing
+leaves a pointer that `OnMCINotify` and `Resume` read later.
+
+Not fixed yet.
+
+### The launcher's Low and High detail buttons give the opposite profile
+
+AVP2.exe 0x00406a40, PrimalHunt.exe 0x00406d70 (`CLauncherDlg::LaunchGame`,
+src/launcher/LauncherDlg.cpp). The detail dialog stores 0 for Low, 1 for
+Medium and 2 for High (`CDetailSettingsDlg`'s handlers, AVP2.exe 0x00402170,
+0x00402190, 0x00402150), and `LaunchGame` turns 0 into
+` ++PerformanceConfig .DefaultHigh` and 2 into `.DefaultLow`. On the first
+run (or after "restore defaults"), a player who picks Low detail starts with
+the high-detail profile, and High with the low one.
+
+Not fixed yet: the launchers have no modern build yet.
+
+### The launcher writes the command line as a format string
+
+AVP2.exe 0x00406a40, PrimalHunt.exe 0x00406d70 (`CLauncherDlg::LaunchGame`,
+src/launcher/LauncherDlg.cpp). The command line for lithtech.exe goes to
+avp2cmds.txt through `fprintf(pFile, sString)`, the command line itself as
+the format, so a `%` in it -- the user's own commands from the options
+dialog, the registry's update and content command lines -- is taken for a
+conversion and garbles the file, or reads arguments that were never passed.
+It should be `fputs` (or a `"%s"` format).
+
+Not fixed yet: the launchers have no modern build yet.
+
+### The display dialog's close button does nothing
+
+AVP2.exe, PrimalHunt.exe (`CDisplayDlg`, src/launcher/DisplayDlg.cpp). The
+dialog's message map (AVP2.exe 0x00422a00) has entries for OK (1035) and
+Cancel (1041) and none for its close button (1034), so clicking the "x" in
+the display dialog's corner is ignored; NOLF2's launcher, the same code a
+year on, adds `OnClose`.
+
+Not fixed yet: the launchers have no modern build yet.
+
+### A launcher string that will not load hides the message it was for
+
+AVP2.exe 0x00405970, PrimalHunt.exe 0x00405cc0 (`CLauncherApp::MessageBox`
+by string ids, src/launcher/Launcher.cpp). When the caption's string fails to
+load, the error is formatted into the text's `CString`, not the caption's, so
+the box that follows shows the caption error as its message, with an empty
+caption, and the message itself is lost.
+
+Not fixed yet: the launchers have no modern build yet.
+
+### The launcher's already-running checks ignore the directory they build
+
+AVP2.exe 0x00404f50, PrimalHunt.exe 0x004051a0 (`CLauncherApp::InitInstance`,
+src/launcher/Launcher.cpp). It gets the current directory and appends a
+backslash, then looks for running `LITHTECH.EXE` and `SETUP.EXE` by their
+bare names (`sprintf(sExe, "LITHTECH.EXE")`), never using it: any process of
+those names -- another LithTech game's included -- keeps the launcher from
+starting.
+
+Not fixed yet: the launchers have no modern build yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

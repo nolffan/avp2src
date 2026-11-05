@@ -103,6 +103,10 @@ LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
 # (VC6's STL, not STLport: lithtech.exe's partial_objs) library code there,
 # placed where it is linked and never unplaced where it is not.
 LIBS.append(("WONAPI", "src/LT2/lithshared/libs/Release/wonapi/WONAPI.lib"))
+# Redmgr.lib, reconstructed for cdaudio.dll (build/build.mk, "cdaudio.dll"):
+# scored against the release's prebuilt build; the game links the prebuilt
+# one still, so it stays in PREBUILT_LIBS.
+LIBS.append(("Redmgr", "src/lithshared/redmgr/Release/Redmgr.lib"))
 # The debug builds of StdLith and RezMgr (build/build.mk, "The debug
 # builds"), which Primal Hunt's server.dll links: each scored against the
 # release's prebuilt debug build of it (libs/debug/).
@@ -207,15 +211,24 @@ TARGETS = [
          built="src/engine/ltmsg/Release/ltmsg.dll", optional=True),
     dict(label="cdaudio.dll", what="the engine's CD-audio music driver", kind="image",
          shipped=REFERENCE + "/cdaudio.dll", stem="cdaudio",
+         # src/engine/cdaudio/ (build/build.mk, "cdaudio.dll"): linked with
+         # a response file and a map, so the scoreboard reads our image
          built="src/engine/cdaudio/Release/cdaudio.dll", optional=True,
          cites=True, cited_src=["src/engine"],
+         # the libraries' blocks: Redmgr.lib (ours: src/lithshared/redmgr/)
+         # from its OutMCIErr, then StdLith's l_allocator.obj (g_DefAlloc's
+         # initializers) and dynarray.obj
+         lib_range={"Redmgr": (0x10002390, 0x10002960),
+                    "StdLith": (0x10002960, 0x10002a50)},
          # 2002-05-07; MusicDLLSetup and CRedMgr (lithshared's redmgr.h),
-         # over MCI. MFC linked statically (nafxcw.lib, C++ 8569 x38).
-         # Provisional: nafxcw.lib from fixalloc.obj (0x10002aeb) to
-         # 0x10003107, libcmt.lib from onexit.obj (0x10003123) to
-         # 0x10008b45, nafxcw.lib again from 0x10008b5e; 155 bytes of packed
-         # code (7 functions) from 0x10002a50 below the first hit
-         app=[(0x10001000, 0x10002aeb)]),
+         # over MCI. MFC linked statically (nafxcw.lib, C++ 8569 x38). The
+         # image's own code is cdaudio.obj, redmgr.obj and StdLith's two
+         # members; it ends where nafxcw.lib's except.obj begins
+         # (0x10002a50, CMemoryException's constructor: our .map), whose
+         # packed inline members run to fixalloc.obj (0x10002aeb);
+         # libcmt.lib from onexit.obj (0x10003123) to 0x10008b45, nafxcw.lib
+         # again from 0x10008b5e
+         app=[(0x10001000, 0x10002a50)]),
     dict(label="Launch.dll", what="the engine's command-line helper", kind="image",
          shipped=REFERENCE + "/Launch.dll", stem="Launch",
          built="src/launch/Debug/Launch.dll", optional=True,
@@ -223,23 +236,49 @@ TARGETS = [
          # linked 1999-08-16), shipped again, by AvP2 and Primal Hunt alike
          # (the same file): a Debug build, linked with the debug CRT. The
          # engine loads it for GetLithTechCommandLine, its one export
-         # (nolfsrc's src/engine/lithtech/clientwin.cpp). Provisional:
-         # libcmtd.lib from mbscat.obj (0x10002bfc); its 242 members run to
+         # (nolfsrc's src/engine/lithtech/clientwin.cpp). Ours links it
+         # (build/build.mk, "Launch.dll") as Developer Studio linked a
+         # Debug DLL: incrementally, so it has no map. The image's own
+         # code is the three objects of src/launch/ (0x100010a0, after the
+         # incremental link's jump table of 14 `jmp rel32` at
+         # 0x10001005..0x1000104a, which the linker writes and orders by
+         # its own symbol table, not by anything in the source), and
+         # lithshared's CRegMgr (0x100026f0..0x10002bc7, a library's
+         # member, compiled by VC5: no @comp.id), with the six import
+         # thunks the objects' calls pulled in between (0x100026c0,
+         # `jmp [IAT]`, kernel32.lib and user32.lib's). The runtime starts
+         # at 0x10002bd0: strcpy, the first entry of libcmtd.lib's
+         # strcat.obj (strcat at 0x10002be0); its members run to
          # 0x1001809b, so nearly all of the image is the runtime
-         app=[(0x10001000, 0x10002bfc)]),
+         cites=True, cited_src=["src/launch"],
+         app=[(0x100010a0, 0x100026c0), (0x100026f0, 0x10002bd0)]),
     # ---- Primal Hunt: the launcher and the dedicated server ------------
     dict(label="PrimalHunt.exe", what="Primal Hunt's launcher", kind="image",
          shipped=REFERENCE + "/PrimalHunt.exe", stem="PrimalHunt",
          built="src/launcher/PrimalHunt/PrimalHunt.exe", optional=True,
-         # nolfsrc's NOLF launcher compiled for Primal Hunt, objects only
-         # until it links (build/build.mk, "The launchers")
-         partial_objs=["src/launcher/PrimalHunt/*.obj"],
+         # src/launcher/ compiled for Primal Hunt and linked (build/build.mk,
+         # "The launchers' links"); RegMgr32.lib, the registry class, lies
+         # outside the image's own code (as in AVP2.exe, below)
+         third_party=["RegMgr32.lib"],
          # 2002-06-06, the shape of AVP2.exe: MFC linked statically
          # (nafxcw.lib, C++ 8569 x55) and the same wrapper's .cms_t and
-         # .cms_d sections. Provisional: libcmt.lib from frame.obj
-         # (0x40d049), 151 members to 0x414a41, and nafxcw.lib from
-         # 0x418202 to 0x4211a6
-         app=[(0x00401000, 0x0040d049)]),
+         # .cms_d sections. The wrapper keeps the same five pages of .text
+         # encrypted as in AVP2.exe, 0x408000..0x40d000 (they disassemble
+         # to noise: (bad), in/out, iret by the dozen a page, where every
+         # other page of .text decodes cleanly), so their rows are listed
+         # and not counted: RezFind.cpp's (FindRezFiles at 0x4080a0, its
+         # seven getters 0x408910..0x408970), StaticEx.cpp's and Utils.cpp's
+         # are all in them, and the last of OptionsDlg.cpp (OnCtlColor,
+         # 0x407fb0, breaks off at 0x408000; OnMouseMove follows it). The
+         # plain code resuming at 0x40d000 is the C
+         # runtime's: the tail of an SEH function whose filter and handler
+         # funclets are the rows 0x40d038 (xor eax,eax; cmp [ebp+0xc],al;
+         # setne al; ret) and 0x40d041 (mov esp,[ebp-0x18]; jmp), just below
+         # libcmt.lib's first hit, frame.obj (0x40d049); 151 members to
+         # 0x414a41, and nafxcw.lib from 0x418202 to 0x4211a6
+         encrypted=[(0x00408000, 0x0040d000)],
+         unreadable=r"(?i)^((RezFind|StaticEx|Utils)\.obj:|OptionsDlg\.obj:\?OnMouseMove@)",
+         app=[(0x00401000, 0x0040d000)]),
     dict(label="AVP2XUp.dll", what="Primal Hunt's Sierra updater resources",
          kind="resources", shipped=REFERENCE + "/AVP2XUp.dll", stem="AVP2XUp",
          built="src/AVP2/AVP2Up/PrimalHunt/AVP2XUp.dll", optional=True),
@@ -291,17 +330,30 @@ TARGETS = [
     dict(label="AVP2.exe", what="AvP2's launcher", kind="image",
          shipped=REFERENCE + "/AVP2.exe", stem="AVP2",
          built="src/launcher/Release/AVP2.exe", optional=True,
-         # nolfsrc's NOLF launcher compiled for AvP2, objects only until it
-         # links (build/build.mk, "The launchers")
-         partial_objs=["src/launcher/Release/*.obj"],
+         # src/launcher/ compiled for AvP2 and linked (build/build.mk, "The
+         # launchers' links"). RegMgr32.lib, the registry class (the Rich
+         # header's one object of 8966), is linked between the C runtime
+         # and MFC, at 0x413d5c, outside the image's own code
+         third_party=["RegMgr32.lib"],
          # the disc's (2001-10-15; the patch does not replace it), MFC
          # linked statically (nafxcw.lib, C++ 8569 x55). Its entry point
          # (0x43f8c7) is in .cms_t (0x433000..0x448000), a section a
-         # protection wrapper added along with .cms_d; it is not encrypted
-         # (6.8 bits of entropy a byte, as .text). Provisional: libcmt.lib
-         # from output.obj (0x40d40b), 128 members to 0x413d5c, and
-         # nafxcw.lib from 0x417942 to 0x420880; 955 bytes of packed code
-         # from 0x40d050 below the first hit
+         # protection wrapper added along with .cms_d. The wrapper keeps
+         # five pages of .text encrypted, 0x408000..0x40d000: they
+         # disassemble to noise ((bad), in/out, iret by the dozen a page,
+         # where every other page decodes cleanly), the last of FindRezFiles
+         # (0x407ca0) breaks off mid-instruction at 0x408000, and the
+         # plain code resumes mid-function at 0x40d000. In them: the rest
+         # of RezFind.cpp, StaticEx.cpp and Utils.cpp (their functions'
+         # rows are known only from the calls into them: 0x408100..0x408150
+         # the six rez getters, 0x408220 CStaticEx's constructor, 0x4086f0
+         # ExistProcess) and the start of the C runtime. Listed, not
+         # counted; our functions of those files are set aside (unreadable).
+         # Provisional: libcmt.lib from output.obj (0x40d40b), 128 members to
+         # 0x413d5c, and nafxcw.lib from 0x417942 to 0x420880; 955 bytes of
+         # packed code from 0x40d050 below the first hit
+         encrypted=[(0x00408000, 0x0040d000)],
+         unreadable=r"(?i)^(RezFind\.obj:(?!\?FindRezFiles@)|StaticEx\.obj:|Utils\.obj:)",
          app=[(0x00401000, 0x0040d40b)]),
     dict(label="AVP2Up.dll", what="AvP2's Sierra updater resources",
          kind="resources", shipped=REFERENCE + "/AVP2Up.dll", stem="AVP2Up",

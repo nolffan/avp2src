@@ -42,8 +42,19 @@ BOOL	GetProcessModule(DWORD dwPID, DWORD dwModuleID, LPMODULEENTRY32 lpMe32, DWO
 //
 // ----------------------------------------------------------------------- //
 
+// AVP2.exe 0x4086f0 (encrypted by the protection wrapper: unverified)
 BOOL ExistProcess(const char* sExe, int thresh, HANDLE* phProcess)
 {
+	OSVERSIONINFO	osVer;
+	HINSTANCE		hInstLib;
+	PROCESSENTRY32	pe32 = {0};
+	LPDWORD			lpdwPIDs;
+	DWORD			dwSize, dwSize2, dwIndex;
+	HMODULE			hMod;
+	HANDLE			hProcess;
+	char			szFileName[ MAX_PATH ];
+	int				count = 0;
+
 	// Sanity checks..
 
 	ASSERT(sExe);
@@ -62,82 +73,244 @@ BOOL ExistProcess(const char* sExe, int thresh, HANDLE* phProcess)
 		bFullPath = TRUE;
 	}
 
+	// Toolhelp32 Pointers (Windows 9x)
+	CREATESNAPSHOT	pCreateToolhelp32Snapshot = NULL;
+	PROCESSWALK		pProcess32First = NULL;
+	PROCESSWALK		pProcess32Next  = NULL;
 
-	// Get the necessary toolhelp functions from the kernel...
+	// PSAPI Function Pointers (Windows 2000)
+	BOOL (WINAPI *pEnumProcesses)(DWORD *, DWORD cb, DWORD *);
+	BOOL (WINAPI *pEnumProcessModules)(HANDLE, HMODULE *, DWORD, LPDWORD);
+	DWORD (WINAPI *pGetModuleFileNameEx)(HANDLE, HMODULE, LPTSTR, DWORD);
+	DWORD (WINAPI *pGetModuleBaseName)(HANDLE, HMODULE, LPTSTR, DWORD);
 
-	HINSTANCE hInstLib = GetModuleHandleA("KERNEL32.DLL");
-	if (hInstLib == NULL) return(FALSE);
+////////////////////////////////////////////////////////////////
+// Windows 2k stuff
+////////////////////////////////////////////////////////////////
 
-	CREATESNAPSHOT pCreateToolhelp32Snapshot = (CREATESNAPSHOT)GetProcAddress(hInstLib, "CreateToolhelp32Snapshot");
-	if (pCreateToolhelp32Snapshot == NULL) return(FALSE);
-
-	PROCESSWALK pProcess32First = (PROCESSWALK)GetProcAddress(hInstLib, "Process32First");
-	if (pProcess32First == NULL) return(FALSE);
-
-	PROCESSWALK pProcess32Next = (PROCESSWALK)GetProcAddress(hInstLib, "Process32Next");
-	if (pProcess32Next == NULL) return(FALSE);
-
-
-	// Take a snapshot of the current processes...
-
-	HANDLE hSnapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	if (hSnapshot == (HANDLE)-1) return(FALSE);
-
-
-	// Walk the processes looking for the given exe...
-
-	int count = 0;
-
-	PROCESSENTRY32 pe32 = {0};
-	pe32.dwSize = sizeof(PROCESSENTRY32);
-
-	if (pProcess32First(hSnapshot, &pe32))
+	// Check to see if were running under Windows 9x or NT
+	osVer.dwOSVersionInfoSize = sizeof(osVer);
+	GetVersionEx(&osVer);
+	
+	// If Windows NT
+	if (osVer.dwPlatformId == VER_PLATFORM_WIN32_NT)
 	{
-		MODULEENTRY32 me32 = {0};
+		// Load library and get the procedures explicitly. We do this so that we 
+		// don't have to worry about modules using this code failing to load under 
+		// Windows 9x, because it can't resolve references to the PSAPI.DLL.
+		hInstLib = LoadLibraryA("PSAPI.DLL");
+		if (hInstLib == NULL)
+            return FALSE;
 
+		// Get procedure addresses.
+		pEnumProcesses = (BOOL(WINAPI *)(DWORD *,DWORD,DWORD*))
+			GetProcAddress( hInstLib, "EnumProcesses" );
+		pEnumProcessModules = (BOOL(WINAPI *)(HANDLE, HMODULE *, DWORD, LPDWORD))
+			GetProcAddress( hInstLib, "EnumProcessModules" );
+		pGetModuleFileNameEx =(DWORD (WINAPI *)(HANDLE, HMODULE, LPTSTR, DWORD )) 
+			GetProcAddress( hInstLib, "GetModuleFileNameExA" );
+		pGetModuleBaseName =(DWORD (WINAPI *)(HANDLE, HMODULE, LPTSTR, DWORD )) 
+			GetProcAddress( hInstLib, "GetModuleBaseNameA" );
+
+		if (pEnumProcesses == NULL ||
+            pEnumProcessModules == NULL ||
+            pGetModuleFileNameEx == NULL ||
+			pGetModuleBaseName == NULL )
+		{
+			FreeLibrary(hInstLib);
+			return FALSE;
+		}
+		
+		// Call the PSAPI function EnumProcesses to get all of the
+		// ProcID's currently in the system.
+		dwSize2 = 256 * sizeof(DWORD);
+		lpdwPIDs = NULL;
 		do
 		{
-			if (pe32.th32ProcessID != 0 && GetProcessModule(pe32.th32ProcessID, pe32.th32ModuleID, &me32, sizeof(MODULEENTRY32)))
-			{
-				if (bFullPath)
+            if(lpdwPIDs)
+            {
+				HeapFree(GetProcessHeap(), 0, lpdwPIDs);
+				dwSize2 *= 2;
+            }
+
+            lpdwPIDs = (LPDWORD)HeapAlloc(GetProcessHeap(), 0, dwSize2);
+            if (lpdwPIDs == NULL)
+            {
+				FreeLibrary(hInstLib);
+				return FALSE;
+            }
+
+            if (!pEnumProcesses(lpdwPIDs, dwSize2, &dwSize))
+            {
+				HeapFree(GetProcessHeap(), 0, lpdwPIDs);
+				FreeLibrary(hInstLib);
+				return FALSE;
+            }
+
+		} while (dwSize == dwSize2);
+		
+		// How many ProcID's did we get?
+		dwSize /= sizeof(DWORD);
+
+		// Loop through each ProcID.
+		for (dwIndex = 0; dwIndex < dwSize; dwIndex++)
+		{
+            szFileName[0] = 0;
+            // Open the process (if we can... security does not
+            // permit every process in the system).
+            hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+				FALSE, lpdwPIDs[ dwIndex ]);
+
+			if (hProcess != NULL)
+            {
+				// Here we call EnumProcessModules to get only the first module in 
+				// the process this is important, because this will be the .EXE module 
+				// for which we will retrieve the full path name in a second.
+				if (pEnumProcessModules(hProcess, &hMod,
+					sizeof(hMod), &dwSize2))
 				{
-					if (_stricmp(me32.szExePath, sExe) == 0)
+					// Get Full pathname:
+					if (bFullPath)
+					{
+						if (!pGetModuleFileNameEx(hProcess, hMod,
+							szFileName, sizeof(szFileName)))
+						{
+							szFileName[0] = 0;
+						}
+					}
+					else
+					{
+						if (!pGetModuleBaseName(hProcess, hMod, 
+							szFileName, sizeof(szFileName)))
+						{
+							szFileName[0] = 0;
+						}
+					}
+
+					if (stricmp(szFileName, sExe) == 0)
 					{
 						count++;
-
 						if (count == 1 && phProcess)
 						{
-							*phProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, me32.th32ProcessID);
+							*phProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, lpdwPIDs[dwIndex]);
 						}
 
-						if (count >= thresh) return(TRUE);
+						if (count >= thresh)
+						{
+				            FreeLibrary(hInstLib);
+							CloseHandle(hProcess);
+							return TRUE;
+						}
 					}
 				}
-				else
+				CloseHandle(hProcess);
+            }
+		
+		}
+
+		HeapFree(GetProcessHeap(), 0, lpdwPIDs);
+		FreeLibrary(hInstLib);
+		return FALSE;
+	}
+
+////////////////////////////////////////////////////////////////
+// Windows 9x section
+////////////////////////////////////////////////////////////////
+	else if( osVer.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
+	{
+		hInstLib = LoadLibraryA("KERNEL32.DLL");
+		if (hInstLib == NULL)
+            return FALSE;
+		
+		// Get procedure addresses.
+		// We are linking to these functions of Kernel32 explicitly, because otherwise 
+		// a module using this code would fail to load under Windows 2000, which does 
+		// not have the Toolhelp32 functions in the Kernel 32.
+
+		pCreateToolhelp32Snapshot = (CREATESNAPSHOT)GetProcAddress(hInstLib, "CreateToolhelp32Snapshot");
+		pProcess32First = (PROCESSWALK)GetProcAddress(hInstLib, "Process32First");
+		pProcess32Next = (PROCESSWALK)GetProcAddress(hInstLib, "Process32Next");
+
+		if (pProcess32Next == NULL ||
+            pProcess32First == NULL ||
+            pCreateToolhelp32Snapshot == NULL)
+		{
+            FreeLibrary(hInstLib);
+            return FALSE;
+		}
+		
+		// Get a handle to a Toolhelp snapshot of the systems
+		// processes.
+		hProcess = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) ;
+		if (hProcess == INVALID_HANDLE_VALUE)
+		{
+            FreeLibrary(hInstLib);
+            return FALSE;
+		}
+		
+		// Get the first process' information.
+		PROCESSENTRY32 pe32 = {0};
+		pe32.dwSize = sizeof(PROCESSENTRY32);
+		
+		if (pProcess32First(hProcess, &pe32))
+		{
+			MODULEENTRY32 me32 = {0};
+			do 
+			{
+				if (pe32.th32ProcessID == 0) 
+					continue;
+				
+				if (GetProcessModule(pe32.th32ProcessID, pe32.th32ModuleID, &me32, sizeof(MODULEENTRY32)))
 				{
-					if (_stricmp(me32.szModule, sExe) == 0)
+					if (bFullPath)
 					{
-						count++;
-
-						if (count == 1 && phProcess)
+						if (stricmp(me32.szExePath, sExe) == 0)
 						{
-							*phProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, me32.th32ProcessID);
+							count++;
+							if (count == 1 && phProcess)
+							{
+								*phProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, me32.th32ProcessID);
+							}
+							
+							if (count >= thresh)
+							{
+					            FreeLibrary(hInstLib);
+								return TRUE;
+							}
 						}
-
-						if (count >= thresh) return(TRUE);
+					}
+					else
+					{
+						if (stricmp(me32.szModule, sExe) == 0)
+						{
+							count++;
+							if (count == 1 && phProcess)
+							{
+								*phProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, me32.th32ProcessID);
+							}
+							
+							if (count >= thresh)
+							{
+					            FreeLibrary(hInstLib);
+								return TRUE;
+							}
+						}
 					}
 				}
 			}
+			
+			while (pProcess32Next(hProcess, &pe32));
 		}
-		while (pProcess32Next(hSnapshot, &pe32));
+
 	}
+	else
+		return FALSE;
+	
+	// Free the library.
+	FreeLibrary(hInstLib);
+	CloseHandle(hProcess);
 
-
-	// If we get here, we didn't find it...
-
-	CloseHandle(hSnapshot);
-
-	return(FALSE);
+	return FALSE;
 }
 
 
@@ -215,6 +388,3 @@ BOOL GetProcessModule(DWORD dwPID, DWORD dwModuleID, LPMODULEENTRY32 lpMe32, DWO
 
     return (bRet);
 }
-
-
-

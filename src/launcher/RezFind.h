@@ -17,9 +17,16 @@
 
 // Prototypes...
 
-BOOL	FindRezFiles(char chCdRom);
+BOOL	FindRezFiles(char chCdRom,CString& csRezBase);
 char*	GetGameRezFile();
 char*	GetSoundRezFile();
+char*	GetAlienRezFile();
+char*	GetMarineRezFile();
+char*	GetPredatorRezFile();
+char*	GetMultiRezFile();
+#ifdef PRIMAL_HUNT
+char*	GetAvP2XRezFile();
+#endif
 
 
 // EOF

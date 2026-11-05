@@ -22,7 +22,7 @@ included, where 1.0.9.6's were the Processor Pack's and RTM's.
 | `d3d.ren` | 2002-06-03 | **8966** x69 | `libcmt.lib` (C 8047 x121, C++ 8047 x8); one C++ object of cl 13.00.9178 and 3 import descriptors of implib 7.00.9210 | -- |
 | `cdaudio.dll` | 2002-05-07 | **8966** x4 | MFC statically (`nafxcw.lib`, C++ 8569 x38), `libcmt.lib` (C 8047 x76); 6 without a `@comp.id` | -- |
 | `ltmsg.dll` | 2002-03-26 | 8966 x1 | resources and `libcmt.lib` | -- |
-| `PrimalHunt.exe` | 2002-06-06 | **8966** x19 | MFC statically (`nafxcw.lib`, C++ 8569 x55), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id`; the wrapper's `.cms_t`/`.cms_d`, as `AVP2.exe` | -- |
+| `PrimalHunt.exe` | 2002-06-06 | **8966** x19 | MFC statically (`nafxcw.lib`, C++ 8569 x55), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id`; the wrapper's `.cms_t`/`.cms_d`, as `AVP2.exe` | as `AVP2.exe`, with cl 8966 (every readable function but one identical) |
 | `AVP2XUp.dll` | 2002-05-02 | 8966 x2 | resources and `libcmt.lib` | -- |
 | `AVP2XServ.exe` | 2002-06-21 | C++ **8168** x25, **8966** x17; C 8168 x1, 8447 x1 | MFC statically (C++ 8569 x86), `libcmt.lib` (C 8047 x167); 57 without a `@comp.id`; import libraries of `lib` 5.12.8022 and 8034 | -- |
 | `PHCShell.dll` | 2002-06-21 | **8966** x244, C++ 8168 x21; C 8966 x6, 8168 x1 | `libcmt.lib` (C 8047 x176, C++ 8047 x16) | -- |
@@ -43,7 +43,7 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
 | `d3d.ren` | 2002-02-07 | C++ 8168 x73 | C 8168 x120 (`libcmt.lib`, RTM's); 3 objects of tool 0x25 build 8755 and one C++ of cl 13.00.8830, both unidentified; `cvtres` 5.00.1720 | -- |
 | `ltmsg.dll` | 2001-02-05 | C++ 8168 x1, 8447 x1 | C 8168 x23 (`libcmt.lib`) | -- |
 | `Launch.dll` | 1999-08-16 | C++ 8168 x10 | NOLF's launcher DLL, a Debug build (`libcmtd.lib`: C 8168 x85); one object without a `@comp.id` | -- |
-| `AVP2.exe` | 2001-10-15 | **9044** x18, 8966 x1 | MFC statically (`nafxcw.lib`, C++ 8569 x55, SP5's MFC), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id` | -- |
+| `AVP2.exe` | 2001-10-15 | **9044** x18, 8966 x1 | MFC statically (`nafxcw.lib`, C++ 8569 x55, SP5's MFC), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id` | cl 9044 for its 18 sources, with the precompiled header (all but `LauncherDlg.cpp`: proven, the inlined MFC destructors' unwind states differ without it); the 8966 object is RegMgr32's; link 6.00.8447, SP5's MFC and `libcmt.lib` (every readable function but two identical) |
 | `AVP2Up.dll` | 2001-08-17 | 8966 x2 | resources and `libcmt.lib` | -- |
 | `AVP2Serv.exe` | 2002-02-07 | 8168 x136 | MFC statically (8168's), `libcmt.lib` (C 8168 x169); 57 objects without a `@comp.id`; import libraries of `lib` 5.12.8022 as well as 8034 | cl, link and MFC 8168, Release (60 % identical as the release has it) |
 | `CShell.dll` | 2002-03-01 | **8168** x142, 8966 x114 | `libcmt.lib` (C 8047 x174), C 8168 x7 | cl 8168; link 6.00.8447, headers and `libcmt.lib` of msvc-6.00-8966; Final (62 % identical as the release has it) |

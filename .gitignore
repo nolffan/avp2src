@@ -28,3 +28,4 @@ src/lithshared/**/[Dd]ebug/
 src/launcher/Release/
 src/launcher/PrimalHunt/
 src/engine/ltmsg/AvP2Release/
+src/launch/[Dd]ebug/

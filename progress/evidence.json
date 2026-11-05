@@ -1,5 +1,12 @@
 {
  "build": {
+  "AVP2.exe": {
+   "cmd": "20ca485bf3702e16271f6c87bc2ac504647cb99661380cfbdaeca379c665f880",
+   "image": "db5416eb2059df0e28efdb65d68913de98d86dd1910742f65b278de8e1ed4c9c",
+   "link_command": "cd src/launcher && { printf '%s\\n' '/nologo' '/subsystem:windows' '/machine:I386' '/out:Release\\AVP2.exe' '/map:Release\\AVP2.map' 'Release\\AnimDlg.obj' 'Release\\BitmapCheckButton.obj' 'Release\\ButtonEx.obj' 'Release\\DetailSettingsDlg.obj' 'Release\\DisplayDlg.obj' 'Release\\DisplayMgr.obj' 'Release\\DlgEx.obj' 'Release\\EditEx.obj' 'Release\\Launcher.obj' 'Release\\LauncherDlg.obj' 'Release\\MessageBoxDlg.obj' 'Release\\MoveDlg.obj' 'Release\\MultiplayerDlg.obj' 'Release\\OptionsDlg.obj' 'Release\\RezFind.obj' 'Release\\StaticEx.obj' 'Release\\StdAfx.obj' 'Release\\Utils.obj' 'Release\\launcher.res' 'Release\\regmgr32\\RegMgr32.lib' 'nafxcw.lib' 'libcmt.lib' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'advapi32.lib' 'shell32.lib' 'comctl32.lib' 'comdlg32.lib' 'winmm.lib' > /repo/out/release-tree/src/launcher/Release/AVP2.exe.rsp; } && { WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\launcher\\Release\\AVP2.exe.rsp' > /repo/out/release-tree/src/launcher/Release/AVP2-link.txt 2>&1 || { grep -i 'error\\|fatal' /repo/out/release-tree/src/launcher/Release/AVP2-link.txt | head -20 >&2; false; }; }",
+   "map": "4129d6e70b9f4ab6304c30ec5789f130ca618165bd6a3501bc6b74774a167549",
+   "rsp": "29333c239e98e1e953cf6a257bf38247db1a4daa750e406cfd13a2c8182f740c"
+  },
   "AVP2Serv.exe": {
    "cmd": "9e112448119d8c5c848d07a7d2cc2f47330d1aa43482fd9eade2ae0b43b328b6",
    "image": "47fd3a15fa8863a8ec08e9f7175c6463b9818289af024d38f1afef386ede9160",
@@ -27,6 +34,12 @@
    "map": "7dbf1342796480c8131c6214009ed41f627f317367719f757cace50f3ee67791",
    "rsp": "e313db9a9c7c58f4752876e5fc9f35d124f816d010653dd36745d0ad0a6c0c0a"
   },
+  "Launch.dll": {
+   "cmd": "7351f1f314ac8f2aa35b62632dc9cc2aa6c924f6e3fc7389bf7c56403d0d7722",
+   "image": "94f380f57c685589f91439aa638bb8726f26a9d27fbcee756541f09212fc54e2",
+   "link_command": "cd src/launch && { printf '%s\\n' '/nologo' '/subsystem:windows' '/dll' '/incremental:yes' '/pdb:Debug\\Launch.pdb' '/debug' '/machine:I386' '/out:Debug\\Launch.dll' '/implib:Debug\\Launch.lib' '/pdbtype:sept' 'Debug\\cdcheck.obj' 'Debug\\launch.obj' 'Debug\\RezFind.obj' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' 'Debug\\RegMgr.lib' > /repo/out/release-tree/src/launch/Debug/Launch.dll.rsp; } && rm -f Debug/Launch.ilk && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/out/launch-link/link.exe '@Debug\\Launch.dll.rsp'",
+   "rsp": "43cba97762f91572062d1ad745dd2dcb525c60ea34d883e03ea39699d3a4d9e3"
+  },
   "Object.lto": {
    "cmd": "f58a83c87c37e751e10b629a48962a9587d7f79112344088667bd9dbbc7c7542",
    "image": "d58c33bfba910f560d54e107ed2e43fe2b80a9c5ae397612a1414e4644a22ce9",
@@ -48,12 +61,26 @@
    "map": "6ad08bafda641343ba3a5ef8eca12f9ea14f62d6d702b8094b7c3b32160ca6eb",
    "rsp": "3dbdef4e8e47ac735116f5949e970eb67be50804069b2813f7d7a024669403fc"
   },
+  "PrimalHunt.exe": {
+   "cmd": "a62166b0e08dedfd8e046521298d359824c07e838067d8545af3bccf7b2f7df7",
+   "image": "404d8172be8e0eb3129c9baa5c17f5c7f5b09a754ad5b71376ce17e252df115f",
+   "link_command": "cd src/launcher && { printf '%s\\n' '/nologo' '/subsystem:windows' '/machine:I386' '/out:PrimalHunt\\PrimalHunt.exe' '/map:PrimalHunt\\PrimalHunt.map' 'PrimalHunt\\AnimDlg.obj' 'PrimalHunt\\BitmapCheckButton.obj' 'PrimalHunt\\ButtonEx.obj' 'PrimalHunt\\DetailSettingsDlg.obj' 'PrimalHunt\\DisplayDlg.obj' 'PrimalHunt\\DisplayMgr.obj' 'PrimalHunt\\DlgEx.obj' 'PrimalHunt\\EditEx.obj' 'PrimalHunt\\Launcher.obj' 'PrimalHunt\\LauncherDlg.obj' 'PrimalHunt\\MessageBoxDlg.obj' 'PrimalHunt\\MoveDlg.obj' 'PrimalHunt\\MultiplayerDlg.obj' 'PrimalHunt\\OptionsDlg.obj' 'PrimalHunt\\RezFind.obj' 'PrimalHunt\\StaticEx.obj' 'PrimalHunt\\StdAfx.obj' 'PrimalHunt\\Utils.obj' 'PrimalHunt\\launcher.res' 'PrimalHunt\\regmgr32\\RegMgr32.lib' 'nafxcw.lib' 'libcmt.lib' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'advapi32.lib' 'shell32.lib' 'comctl32.lib' 'comdlg32.lib' 'winmm.lib' > /repo/out/release-tree/src/launcher/PrimalHunt/PrimalHunt.exe.rsp; } && { WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\launcher\\PrimalHunt\\PrimalHunt.exe.rsp' > /repo/out/release-tree/src/launcher/PrimalHunt/PrimalHunt-link.txt 2>&1 || { grep -i 'error\\|fatal' /repo/out/release-tree/src/launcher/PrimalHunt/PrimalHunt-link.txt | head -20 >&2; false; }; }",
+   "map": "68ab828cc7a8cdbec7878cd5b0d400439bf98be5d4cb8dc4f1d7f47f9e864c39",
+   "rsp": "12690cb33d0119c1333e24d04d21aa4b13043e760082d88e02f09836f3f54ae3"
+  },
   "SRes.dll": {
    "cmd": "bc9876f5124ba1af6aaa57b24d76f65e8746348e34a22e6ba53ad529bdba5a8d",
    "image": "19243cff60c37659fb16f61677dde1efb0c063a99bf088529bf51851310a0784",
    "link_command": "cd src/AVP2/ServerRes && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:release\\SRes.dll' '/map:s:\\AVP2\\ServerRes\\Release\\SRes.map' 'Release\\Main.obj' 'Release\\ServerRes.res' > /repo/out/release-tree/src/AVP2/ServerRes/Release/SRes.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\AVP2\\ServerRes\\Release\\SRes.dll.rsp'",
    "map": "5bbab46813cd6a5743feb3ffb94e57f9d22af505f3fd343f4f5e69bb326d977f",
    "rsp": "44e856df34dd13569df51025c8c84d168ffd6f10d57a9bf833a9190ccd88c89e"
+  },
+  "cdaudio.dll": {
+   "cmd": "174f9740ef796ca9d0c765355ec38a56434ea1c8bdedb7f0c6c93acf547ff738",
+   "image": "a81c40a87e8b9c798350b4d0190a6f970357fe7a386e103664198e1dcb8aef29",
+   "link_command": "cd src/engine/cdaudio && { printf '%s\\n' /nologo /dll /subsystem:windows /machine:I386 /out:Release\\\\cdaudio.dll /implib:Release\\\\cdaudio.lib /map:Release\\\\cdaudio.map Release\\\\cdaudio.obj ..\\\\..\\\\lithshared\\\\redmgr\\\\Release\\\\Redmgr.lib ..\\\\..\\\\LT2\\\\lithshared\\\\libs\\\\Release\\\\StdLith.lib nafxcw.lib libcmt.lib user32.lib comctl32.lib winmm.lib > /repo/out/release-tree/src/engine/cdaudio/Release/cdaudio.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe  '@s:\\engine\\cdaudio\\Release\\cdaudio.dll.rsp'",
+   "map": "b256260995d2497098bb2934c9dbd816db452a403b584971c563f5aeadb6fce2",
+   "rsp": "eb425203eb90e4bb23706d7394cd4d7220c02a7e5982176defa1430bdbf66b26"
   },
   "lithtech.exe": {
    "cmd": "06326f1010f052d028de6b71b409bb354a87448cdcd78c80da8f93c9f51d9219",
@@ -70,21 +97,23 @@
   },
   "server.dll": {
    "cmd": "f9abb28d1db82b4a6b1f5f443beb0f4c39561517571d800d30bfab89615f2c56",
-   "image": "128ca0c454a2a8a2b46b553e4efb99b0cb6a9257c0d9f02607e919eeca2a2f1c",
+   "image": "e23f04e5c2b50eb03f748d35f83fc0449be3b49beb2c54d1a6740fd1ebf7bb7f",
    "link_command": "cd src/engine/server && { printf '%s\\n' '/nologo' '/dll' '/def:link\\server.def' '/nodefaultlib:libcmtd.lib' '/FORCE' '/OPT:NOREF' '/OPT:ICF' '/machine:I386' '/out:Release\\server.dll' '/map:Release\\server.map' 'Release\\basestream.obj' 'Release\\collection.obj' 'Release\\commonmodel.obj' 'Release\\commonphysics.obj' 'Release\\console.obj' 'Release\\counter.obj' 'Release\\csbase.obj' 'Release\\dalloc.obj' 'Release\\dhash.obj' 'Release\\dsi.obj' 'Release\\filemgr.obj' 'Release\\fsstream.obj' 'Release\\genericprop.obj' 'Release\\interlink.obj' 'Release\\lmessage.obj' 'Release\\localdriver.obj' 'Release\\lthread.obj' 'Release\\ltobject.obj' 'Release\\modelanim.obj' 'Release\\modelnew.obj' 'Release\\netmgr.obj' 'Release\\netobj.obj' 'Release\\objbank.obj' 'Release\\objmover.obj' 'Release\\objtypes.obj' 'Release\\packet.obj' 'Release\\saveio.obj' 'Release\\savrest.obj' 'Release\\sdkforce.obj' 'Release\\server.obj' 'Release\\servercommon.obj' 'Release\\serverengine.obj' 'Release\\serverlightanim.obj' 'Release\\servermath.obj' 'Release\\servermessage.obj' 'Release\\servermgr.obj' 'Release\\servermodel.obj' 'Release\\servermsg.obj' 'Release\\shade.obj' 'Release\\sharedcommon.obj' 'Release\\smgr.obj' 'Release\\smgrmisc.obj' 'Release\\smgrnew.obj' 'Release\\spritecontrol.obj' 'Release\\streamsim.obj' 'Release\\stringbank.obj' 'Release\\structbank.obj' 'Release\\svlast.obj' 'Release\\svnew.obj' 'Release\\svtiny.obj' 'Release\\sweptsphere.obj' 'Release\\tcpdriver.obj' 'Release\\worldbsp.obj' 'Release\\worldisect.obj' 'Release\\worldmodels.obj' 'Release\\worldsim.obj' 'Release\\worldtree.obj' '..\\..\\LT2\\lithshared\\libs\\Debug\\RezMgr.lib' '..\\..\\LT2\\lithshared\\libs\\Debug\\StdLith.lib' '..\\lithtech\\Release\\wonapi\\WONAPI.lib' 'winmm.lib' 'kernel32.lib' 'user32.lib' 'ole32.lib' 'wsock32.lib' > /repo/out/release-tree/src/engine/server/Release/server.dll.rsp; } && { WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8966\\BIN' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8966\\INCLUDE;t:\\msvc-6.00-8966\\MFC\\INCLUDE;s:\\avp2src' LIB='s:\\engine\\lithtech\\Release\\implib;t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8966\\LIB;t:\\msvc-6.00-8966\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8966/BIN/link.exe '@s:\\engine\\server\\Release\\server.dll.rsp' > /repo/out/release-tree/src/engine/server/Release/server-link.txt 2>&1 || true; } && grep -c 'error LNK2001\\|error LNK2019' /repo/out/release-tree/src/engine/server/Release/server-link.txt | sed 's/^/   LINK server.dll: unresolved references: /' ; grep -c 'error LNK2005' /repo/out/release-tree/src/engine/server/Release/server-link.txt | sed 's/^/   LINK server.dll: defined twice: /' ; test -f /repo/out/release-tree/src/engine/server/Release/server.dll || { grep -i 'error\\|fatal' /repo/out/release-tree/src/engine/server/Release/server-link.txt | head -20 >&2; false; }",
-   "map": "50aabbac4cc26fc381f31ac704581c278a15eb66dd3f14c62e4a243b653251a5",
+   "map": "56bc9638580e64f8d73d422753cb0d205f33ccb5cd1260d9025b1d4ed0d4023a",
    "rsp": "0fbbe7970cb2b228d6c946c76594bf4374702731a2ba37976dc7de795ffece4a"
   }
  },
  "config": {
-  "progress/COMPILERS.md": "4df10fbf55f0c53474a8279634778a701738584e8e8458b8084167c2d10a6da8",
-  "progress/data-known.txt": "600c6beb712f4ddb39a322f919ce2de80044b049a498273990734bb9c4370212",
+  "progress/COMPILERS.md": "4d1a8717f2b1b8c78091c40872686c105b0185d7b355a428a3f166d7f09363b9",
+  "progress/Launch-screen-exclude.csv": "b6d59eeaa4e9bccaa00945839e951e1d443250bc8c6da1a65ce2ba390628f23e",
+  "progress/PrimalHunt-screen-exclude.csv": "5d73ffa25c2f1ad79a364309e030ae916c2461c90d05d4567810a95253de08d7",
+  "progress/data-known.txt": "700ec52d42c9f5af19607724cecb8cba5b589a829f8c3b26b0745b02f44afc7d",
   "progress/extent-splits.csv": "f837746f102cadc4844985d8999951c4e0535b3c0591c9a6f9b8ebe92abd0a46",
   "progress/lithtech-screen-exclude.csv": "7f9795aa9622a9ceec0fc4b08d7337ab402a89cc065f6bd40625d87f52bbd1b4",
   "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
   "progress/server-screen-exclude.csv": "38af58795ae688e73414ba230a14e4324e0efcef25453a989f0ebb2bb74e7a65",
   "progress/shipped-libs.sha256": "67e76edfc9d6bd5f6cd55c1397f829260dbdb71729e2fe8dd508d7b3bcb94c59",
-  "progress/targets.py": "45e0328df0fadcae63de827663c99e63552efb46762f1b472d4a0b40cc2b287f",
+  "progress/targets.py": "5d78ae740df15b14e9a64566b4422cb7d42e5a6017a7f4ec69a2d5c78f9310c8",
   "progress/vtab-known.txt": "85bbb129311009863a8f445b17a841355ae0e8f91f11d4ee9b194c2e5cc937eb"
  },
  "reference": {
@@ -114,17 +143,22 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "47d1be630d610aa397abeaecd0ac0d3d979e86f28f2382821acbad387b2d8b9a",
-  "out/progress/summary.json": "91a284695ce8c5e5af76d8d2f5249be5f6263b23949cc9addba529449f154f95"
+  "out/progress/functions.csv": "9f71279a5732ce36fc25f03f0f507cf17eaccc1dd6a76dea5b78824d420bba75",
+  "out/progress/summary.json": "a15e4c2a552862c5c225cd29883ffe9b44777984f47860f85073a8300464a6b3"
  },
  "source": {
-  "modified_files": 1,
-  "revision": "fd02db31eaacf3d833ead2a30de6a8d743069fee",
+  "modified_files": 34,
+  "revision": "f15a93ba44cd19cd7de167bb3288095fd77b40c9",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "1b61dca55fbfa6344b7306aa445d2af689fb29b8"
  },
  "toolchains": {
+  "msvc-5.00-7303": {
+   "computed": "a9256c6db678444e64a0cd5dfe776fc2a1987d945e480585026e3b64e90f6f8c",
+   "matches": true,
+   "pinned": "a9256c6db678444e64a0cd5dfe776fc2a1987d945e480585026e3b64e90f6f8c"
+  },
   "msvc-6.00-8168": {
    "computed": "17b81cd04ffa07047450a2f6c706f51f76b1610f30835e12e25d0b742b2c986a",
    "matches": true,
@@ -134,6 +168,11 @@
    "computed": "43aa462a12e7dfc72055ee8253a11a995d8c092f61a2ccc2985bb1150d39a3ca",
    "matches": true,
    "pinned": "43aa462a12e7dfc72055ee8253a11a995d8c092f61a2ccc2985bb1150d39a3ca"
+  },
+  "msvc-6.00-9044": {
+   "computed": "41ba040bfa329c9d33d780b38cf99b2b976e05391961e702ff879c247ec59793",
+   "matches": true,
+   "pinned": "41ba040bfa329c9d33d780b38cf99b2b976e05391961e702ff879c247ec59793"
   },
   "msvc-6.00-9782": {
    "computed": "78ff2ccc2c2c5f9e38cb0155811672b0a4de56f1e673ef779442ce4e89d93edb",

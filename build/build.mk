@@ -560,27 +560,149 @@ $(eval $(call ltmsg_variant,AvP2Release,$(V8168)))
 .PHONY: ltmsg
 ltmsg: $(LTMSG)/Release/ltmsg.dll $(LTMSG)/AvP2Release/ltmsg.dll
 
-# The launchers, AVP2.exe and PrimalHunt.exe: nolfsrc's reconstruction of
-# NOLF's launcher (src/launcher/, from nolfsrc's src/engine/launcher), to be
-# brought to AvP2's, built twice from one source: AvP2's into Release/ with
-# cl 12.00.9044 (its Rich header: 9044 x18), Primal Hunt's into PrimalHunt/
-# with cl 12.00.8966 and PRIMAL_HUNT; both against SP5's MFC (nafxcw.lib,
-# C++ 8569 in both headers). nolfsrc's flags. Objects only, so far
-# (progress/targets.py, partial_objs): the links want the launchers'
-# resources and art, and their protection wrapper's sections are not ours.
+# Launch.dll
+#
+# NOLF's launcher DLL, which AvP2 and Primal Hunt ship unchanged and the
+# engine loads for GetLithTechCommandLine (src/launch/). A 1999 Debug
+# build of msvc-6.00-8168's (its Rich header: C++ 8168 x10, the debug
+# runtime's C 8168 x85, link 6.00.8168): the frames are /Od with /ZI's 64
+# bytes of edit-and-continue room and no /GZ fill, calls go through an
+# incremental link's jump table, functions are padded with int3.
+# cdcheck.cpp and RezFind.cpp are /GX (FindCdRom's CRegMgr has an
+# exception frame), launch.cpp is not (ReadSettings' CRegMgr has none).
+# /YX, as the project's Debug configuration had it: with it the compiler
+# emits the inline CRegMgr constructor and destructor after the last
+# function of cdcheck.cpp (0x100017c0, 0x100017f0), without it after the
+# first that uses them. Each object gets a program database and a
+# precompiled header of its own (/Fd, /Fp). CRegMgr's own members are
+# the release build of lithshared's RegMgr (0x100026f0..0x10002bc6, /O2,
+# placed after the objects and their import thunks, before the runtime: a
+# library's member), compiled by VC5's compiler (msvc-5.00-7303): its
+# object is the Rich header's one without a @comp.id, and 8168's orders
+# Init's `return TRUE` after the pops where the image has it before them.
+# Linked as Developer Studio's Debug DLL links, through a response file
+# (which the scoreboard reads).
+#
+# Not byte-identical as a whole, and cannot be: the retail image links a
+# libcmtd.lib none of the toolchains holds (its heap code has VC6's
+# __MSVCRT_HEAP_SELECT, which neither 8168's nor 8447's debug runtime
+# has; C 8168 x85 against our 83), names its program database by the
+# original machine's path, and orders the jump table by the original
+# symbol names. Every byte of the DLL's own code from 0x100010a0 to
+# 0x10002bd0 is the retail one but for relocated addresses and the calls'
+# displacements into that table; the data lie as retail's, 0x2688 bytes
+# lower (the runtime's are smaller).
+LAUNCHDLL := src/launch
+LAUNCHDLL_SRC := cdcheck.cpp launch.cpp RezFind.cpp
+LAUNCHDLL_NOGX := launch.cpp
+LAUNCHDLL_CL := /nologo /MTd /W3 /ZI /Od /D WIN32 /D _DEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\LT2\lithshared\incs /YX /FD /c
+LAUNCHDLL_ENV := $(call vc_env,$(V8168))
+$(foreach s,$(LAUNCHDLL_SRC),$(eval $(call compile,$(LAUNCHDLL)/Debug/$(s:.cpp=.obj),$(LAUNCHDLL),$(s),$(LAUNCHDLL_ENV),$(V8168)/BIN/cl.exe,\
+    $(LAUNCHDLL_CL) $(if $(filter $(s),$(LAUNCHDLL_NOGX)),,/GX) /FoDebug/ /FdDebug/$(s:.cpp=)-vc60.pdb /FpDebug/$(s:.cpp=.pch),wine-drives)))
+LAUNCHDLL_V5 := $(TC)/msvc-5.00-7303
+$(eval $(call compile,$(LAUNCHDLL)/Debug/regmgr/regmgr.obj,src/lithshared/RegMgr,regmgr.cpp,$(call vc_env,$(LAUNCHDLL_V5)),$(LAUNCHDLL_V5)/BIN/cl.exe,\
+    /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I $(LT2LS2)\\incs /I . /Fo..\..\launch\Debug\regmgr\ /c,wine-drives))
+$(eval $(call tool,$(LAUNCHDLL)/Debug/RegMgr.lib,$(LAUNCHDLL)/Debug/regmgr/regmgr.obj | wine-drives,\
+    cd $(LAUNCHDLL) && $(LAUNCHDLL_ENV) $(WINE) $(V8168)/BIN/lib.exe $(call q,/nologo /out:Debug\RegMgr.lib Debug\regmgr\regmgr.obj)))
+# The link is incremental, as Developer Studio's Debug links are: the jump
+# table at 0x10001005, the int3 padding after every function. link.exe maps
+# its incremental database (Debug/Launch.ilk) at 0x3fff0000, where Wine has
+# already put the first thread's TEB block (0x3fe00000..0x3fffffff), and
+# then links nonincrementally ("LNK4073: cannot create map for .ILK file").
+# So the link runs a copy of link.exe 6.00.8168 whose one 0x3fff0000 (the
+# base it answers for offset 0, file offset 0x34f79) reads 0x5fff0000: where
+# the database sits in the linker's memory changes nothing it writes. An
+# incremental link writes no map (LNK4073 again, with /map), so there is
+# none: the scoreboard places our functions by their objects.
+LAUNCHDLL_LINK := out/launch-link/link.exe
+$(eval $(call tool,$(LAUNCHDLL_LINK),$(V8168)/BIN/link.exe,\
+    od -An -tx1 -j216953 -N4 $(V8168)/BIN/link.exe | grep -q '00 00 ff 3f' && \
+    cp $(V8168)/BIN/link.exe $(LAUNCHDLL_LINK) && printf '\137' | dd of=$(LAUNCHDLL_LINK) bs=1 seek=216956 conv=notrunc 2>/dev/null))
+LAUNCHDLL_OBJS := $(LAUNCHDLL_SRC:%.cpp=Debug/%.obj)
+LAUNCHDLL_LIBS := kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib \
+    oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Debug/RegMgr.lib
+$(eval $(call tool,$(LAUNCHDLL)/Debug/Launch.dll,$(LAUNCHDLL_OBJS:%=$(LAUNCHDLL)/%) $(LAUNCHDLL)/Debug/RegMgr.lib $(LAUNCHDLL_LINK) | wine-drives,\
+    cd $(LAUNCHDLL) && { printf '%s\n' $(call q,$(AVP2SRC_LDFLAGS) /nologo /subsystem:windows /dll /incremental:yes \
+    /pdb:Debug\Launch.pdb /debug /machine:I386 /out:Debug\Launch.dll /implib:Debug\Launch.lib /pdbtype:sept $(subst /,\,$(LAUNCHDLL_OBJS) $(LAUNCHDLL_LIBS))) > $(ROOT)/$(LAUNCHDLL)/Debug/Launch.dll.rsp; } && \
+    rm -f Debug/Launch.ilk && $(LAUNCHDLL_ENV) $(WINE) $(ROOT)/$(LAUNCHDLL_LINK) '@Debug\Launch.dll.rsp'))
+.PHONY: launch-dll
+launch-dll: $(LAUNCHDLL)/Debug/Launch.dll
+
+# The launchers, AVP2.exe and PrimalHunt.exe: an MFC application (src/launcher/,
+# the ancestor of the launcher in Monolith's NOLF2 source release, which it
+# is reconstructed from, with NOLF's display-mode code, nolfsrc's), built
+# twice from one source: AvP2's into Release/ with cl 12.00.9044 (its Rich
+# header: 9044 x18), Primal Hunt's into PrimalHunt/ with cl 12.00.8966 and
+# PRIMAL_HUNT; both against SP5's MFC, linked statically (nafxcw.lib, C++
+# 8569 in both headers). The 18 are the 18 sources below; the header's one
+# object of 8966 is RegMgr32's (below). The protection wrapper's sections
+# (.cms_t, .cms_d) are not ours, nor the five pages of .text it encrypts.
 LAUNCHER := src/launcher
-LAUNCHER_SRC := stdafx.cpp launcher.cpp gamedlg.cpp gamehelp.cpp dlgconfig.cpp dlgcustom.cpp dlghelp.cpp dlgsound.cpp \
-    dlgdisplay.cpp preview.cpp cdcheck.cpp dib.cpp dibmgr.cpp dibpal.cpp RezFind.cpp Utils.cpp globals.cpp
-LAUNCHER_CL := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS /I ..\LT2\lithshared\incs /c
+LAUNCHER_SRC := AnimDlg.cpp BitmapCheckButton.cpp ButtonEx.cpp DetailSettingsDlg.cpp DisplayDlg.cpp DisplayMgr.cpp \
+    DlgEx.cpp EditEx.cpp Launcher.cpp LauncherDlg.cpp MessageBoxDlg.cpp MoveDlg.cpp MultiplayerDlg.cpp OptionsDlg.cpp \
+    RezFind.cpp StaticEx.cpp StdAfx.cpp Utils.cpp
+LAUNCHER_CL := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /I ..\lithshared\RegMgr32 /c
+# With the project's precompiled header, as the .dsp builds it (StdAfx.cpp
+# makes it, /Yc; the rest use it, /Yu): it decides how the destructors that
+# MFC's headers define inline are expanded into ours -- their unwind states
+# nest only with it (CBitmap's in every dialog's, AVP2.exe 0x401020). All
+# but LauncherDlg.cpp: its own (COptionsDlg's in OnOptions, 0x4066a0) are
+# expanded flat, as a compile without the header makes them.
+LAUNCHER_NOPCH := LauncherDlg.cpp
 # $(call launcher_variant,<object dir>,<cl>,<defines>)
 define launcher_variant
-$(foreach s,$(LAUNCHER_SRC),$(eval $(call compile,$(LAUNCHER)/$(1)/$(s:.cpp=.obj),$(LAUNCHER),$(s),$(ENV_GAME),$(2),\
-    $(LAUNCHER_CL) $(3) /Fo$(1)/,wine-drives)))
+$(eval $(call compile,$(LAUNCHER)/$(1)/StdAfx.obj,$(LAUNCHER),StdAfx.cpp,$(ENV_GAME),$(2),\
+    $(LAUNCHER_CL) $(3) /Ycstdafx.h /Fp$(1)/Launcher.pch /Fo$(1)/,wine-drives))
+$(foreach s,$(filter-out StdAfx.cpp,$(LAUNCHER_SRC)),$(eval $(call compile,$(LAUNCHER)/$(1)/$(s:.cpp=.obj),$(LAUNCHER),$(s),$(ENV_GAME),$(2),\
+    $(LAUNCHER_CL) $(3) $(if $(filter $(s),$(LAUNCHER_NOPCH)),,/Yustdafx.h /Fp$(1)/Launcher.pch) /Fo$(1)/,wine-drives $(LAUNCHER)/$(1)/StdAfx.obj)))
 endef
 $(eval $(call launcher_variant,Release,$(V9044)/BIN/cl.exe,))
 $(eval $(call launcher_variant,PrimalHunt,$(V8966)/BIN/cl.exe,/D PRIMAL_HUNT))
 .PHONY: launcher-objs
 launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/PrimalHunt/%.obj)
+
+# The launchers' links: AVP2.exe and PrimalHunt.exe, each through a response
+# file (<image>.rsp) with a map beside it, so that the scoreboard reads what
+# our link put where (progress/targets.py's `built`) and the small functions
+# verify by relocation. link 6.00.8447 (SP5's, $(LINK)) with the retail
+# link's defaults, /OPT:REF among them: nothing makes the multiplayer
+# dialog or its base class, so their constructors and vtables go, and only
+# the handlers their message maps reach stay, as in the retail images.
+#   - RegMgr32.lib: the registry class, from the NOLF2 release's libs
+#     (src/lithshared/RegMgr32/), compiled with 8966 (the Rich header's one
+#     object of it) into a library of its own; its code lies between the C
+#     runtime and MFC in the retail images, outside their own code
+#   - launcher.res: launcher.rc, with the art read out of the retail image
+#     the variant is built against (tools/rsrc2rc.py, into <dir>/res/: not in
+#     the tree), compiled in the object directory, where res\ is
+#   - the import libraries the retail import tables name, and MFC's and the
+#     C runtime's (SP5's, from the environment's LIB)
+REGMGR32 := src/lithshared/RegMgr32
+LAUNCHER_REF := $(firstword $(wildcard $(ROOT)/out/reference $(ROOT)/../reference))
+LAUNCHER_LIBS := nafxcw.lib libcmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib \
+    comctl32.lib comdlg32.lib winmm.lib
+# $(call launcher_link,<object dir>,<image>,<retail image>,<rc defines>)
+define launcher_link
+$(eval $(call compile,$(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,$(REGMGR32),regmgr32.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /c /Fo..\..\launcher\$(1)\regmgr32\regmgr32.obj,wine-drives))
+$(eval $(call library,$(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib,$(LAUNCHER)/$(1)/regmgr32,/nologo /out:RegMgr32.lib,\
+    $(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,regmgr32.obj,$(ENV_GAME),$(LIBEXE)))
+$(eval $(call tool,$(LAUNCHER)/$(1)/res/retail.rc,$(LAUNCHER_REF)/$(3),\
+    python3 tools/rsrc2rc.py $(LAUNCHER_REF)/$(3) $(LAUNCHER)/$(1)/res/retail.rc --res-dir=. --name=launcher >/dev/null))
+$(eval $(call tool,$(LAUNCHER)/$(1)/launcher.res,$(LAUNCHER)/launcher.rc $(LAUNCHER)/resource.h $(LAUNCHER)/$(1)/res/retail.rc | wine-drives,\
+    cd $(LAUNCHER)/$(1) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG $(4) /folauncher.res '..\launcher.rc'))
+$(eval $(call tool,$(LAUNCHER)/$(1)/$(2),$(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/$(1)/%.obj) $(LAUNCHER)/$(1)/launcher.res \
+    $(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib | wine-drives,\
+    cd $(LAUNCHER) && { printf '%s\n' $(call q,/nologo $(AVP2SRC_LDFLAGS) /subsystem:windows /machine:I386 /out:$(1)\$(2) \
+    /map:$(1)\$(basename $(2)).map $(addprefix $(1)\,$(LAUNCHER_SRC:.cpp=.obj)) $(1)\launcher.res $(1)\regmgr32\RegMgr32.lib $(LAUNCHER_LIBS)) \
+    > $(ROOT)/$(LAUNCHER)/$(1)/$(2).rsp; } && \
+    { $(ENV_GAME) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(LAUNCHER)/$(1)/$(2)).rsp' > $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt 2>&1 || \
+      { grep -i 'error\|fatal' $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt | head -20 >&2; false; }; }))
+endef
+$(eval $(call launcher_link,Release,AVP2.exe,AVP2.exe,))
+$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,PrimalHunt.exe,/d PRIMAL_HUNT))
+.PHONY: launchers
+launchers: $(LAUNCHER)/Release/AVP2.exe $(LAUNCHER)/PrimalHunt/PrimalHunt.exe
 
 .PHONY: engine-objs ph-engine-objs avp2-engine-objs
 ph-engine-objs: $(call eng_objs,Release) src/engine/lithtech/Release/wonapi/WONAPI.lib
@@ -666,6 +788,52 @@ $(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\ser
     $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(SERVER)/link/server.def))
 .PHONY: engine-link
 engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
+
+# ---------------------------------------------------------------------------
+# cdaudio.dll
+#
+# The engine's CD-audio music driver (2002-05-07): MusicDLLSetup's function
+# table over lithshared's CRedMgr, MFC linked statically. Its Rich header:
+# four C++ objects of cl 12.00.8966 -- cdaudio.cpp's own and the three
+# library members it links (Redmgr.lib's redmgr.obj, StdLith's
+# l_allocator.obj and dynarray.obj) -- MFC's nafxcw.lib (C++ 8569), SP5's
+# C runtime, link 6.00.8447. Its code, in link order: cdaudio.obj
+# (0x10001000), redmgr.obj (0x10002390), StdLith (0x10002960), nafxcw.lib.
+#
+# Redmgr.lib: the release ships it prebuilt only (libs/release/), so it is
+# reconstructed here (src/lithshared/redmgr/redmgr.cpp, against the
+# release's redmgr.h), with the lithshared libraries' flags and MFC's
+# headers (its object names nafxcw.lib), into Release/ beside its source --
+# not over the prebuilt copy the game links take.
+CDAUDIO := $(E)/cdaudio
+REDMGR  := src/lithshared/redmgr
+$(eval $(call compile,$(REDMGR)/Release/redmgr.obj,$(REDMGR),redmgr.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(LIB_CFLAGS) /I $(LT2LS)\redmgr /I $(LT2LS)\incs /FoRelease/,wine-drives))
+$(eval $(call tool,$(REDMGR)/Release/Redmgr.lib,$(REDMGR)/Release/redmgr.obj | wine-drives,\
+    cd $(REDMGR) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:Release\Redmgr.lib' 'Release\redmgr.obj'))
+# cdaudio.dll: cl 8966 /O2 /GX, static MFC and runtime, no _USRDLL (the
+# image has the runtime's default DllMain, not MFC's), and an automatic
+# precompiled header (/YX): through one, cl defers every inline function
+# and template instance of the headers to the end of the object, as the
+# retail one has them (src/engine/cdaudio/cdaudio.h). Linked through a
+# response file with a map (progress/targets.py reads both), against our
+# Redmgr.lib and StdLith.lib, then MFC, the runtime and the three import
+# libraries the code calls: in that order the import directory comes out
+# as the retail one's (USER32, COMCTL32, WINMM, then the runtime's
+# KERNEL32, GDI32, WINSPOOL), and so do the names /OPT:REF leaves behind.
+CDAUDIO_CL := /nologo /MT /W3 /GX /O2 /YX /FpRelease/cdaudio.pch /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGMA_LIBS \
+    /I ..\..\LT2\lithshared\redmgr /I ..\..\LT2\lithshared\incs /I ..\..\LT2\lithshared\stdlith /I ..\..\LT2\sdk\inc /c
+$(eval $(call compile,$(CDAUDIO)/Release/cdaudio.obj,$(CDAUDIO),cdaudio.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(CDAUDIO_CL) /FoRelease/,wine-drives))
+$(eval $(call tool,$(CDAUDIO)/Release/cdaudio.dll,$(CDAUDIO)/Release/cdaudio.obj $(REDMGR)/Release/Redmgr.lib $(LOUT)/StdLith.lib | wine-drives,\
+    cd $(CDAUDIO) && { printf '%s\n' /nologo /dll /subsystem:windows /machine:I386 /out:Release\\cdaudio.dll \
+    /implib:Release\\cdaudio.lib /map:Release\\cdaudio.map Release\\cdaudio.obj \
+    ..\\..\\lithshared\\redmgr\\Release\\Redmgr.lib ..\\..\\LT2\\lithshared\\libs\\Release\\StdLith.lib \
+    nafxcw.lib libcmt.lib user32.lib comctl32.lib winmm.lib > $(ROOT)/$(CDAUDIO)/Release/cdaudio.dll.rsp; } && \
+    $(ENV_GAME) $(WINE) $(LINK) $(AVP2SRC_LDFLAGS) '@$(call ws,$(ROOT)/$(CDAUDIO)/Release/cdaudio.dll).rsp'))
+.PHONY: cdaudio
+cdaudio: $(CDAUDIO)/Release/cdaudio.dll
+all game: cdaudio launch-dll launchers
 
 # ---------------------------------------------------------------------------
 # The rules all compiles and tools share

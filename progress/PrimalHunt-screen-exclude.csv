@@ -1,0 +1,2 @@
+addr,reason
+0x00407ffa,"NOT A FUNCTION: interior block of COptionsDlg::OnCtlColor (0x407fb0): the switch's default case, reached only by its own ja 0x407ffa at 0x407fb7 (enumerated from the gap after the case returns); the rest of the function is in the encrypted pages from 0x408000"

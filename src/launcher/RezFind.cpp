@@ -6,7 +6,7 @@
 ;
 ;	HISTORY:		08/11/98 [blg] This file was created
 ;
-;	COMMENT:		Copyright (c) 1998-2002, Monolith Productions Inc.
+;	COMMENT:		Copyright (c) 1998, Monolith Productions Inc.
 ;
 ****************************************************************************/
 
@@ -18,12 +18,17 @@
 #include "RezFind.h"
 
 
-// Globals...
+// Globals... (AVP2.exe 0x42dfa0 - 0x42e2a0)
 
 char	g_sGameRez[128] = { "" };
 char	g_sSoundRez[128] = { "" };
-
-extern CString g_csRezBase;
+char	g_sAlienRez[128] = { "" };
+char	g_sMarineRez[128] = { "" };
+char	g_sPredatorRez[128] = { "" };
+char	g_sMultiRez[128] = { "" };
+#ifdef PRIMAL_HUNT
+char	g_sAvP2XRez[128] = { "" };
+#endif
 
 
 // Prototypes...
@@ -36,23 +41,38 @@ BOOL ExistRezDir(const char* sDir);
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	FindRezFiles
+//	ROUTINE:	FindRezFiles (AVP2.exe 0x407ca0; its end lies in the pages
+//				the protection wrapper keeps encrypted, from 0x408000)
 //
 //	PURPOSE:	Looks for game and sound rez stuff
 //
 // ----------------------------------------------------------------------- //
 
-BOOL FindRezFiles(char chCdRom)
+BOOL FindRezFiles(char chCdRom, CString& csRezBase)
 {
 	// Clear the strings...
 
 	g_sGameRez[0] = '\0';
 	g_sSoundRez[0] = '\0';
+	g_sAlienRez[0] = '\0';
+	g_sMarineRez[0] = '\0';
+	g_sPredatorRez[0] = '\0';
+	g_sMultiRez[0] = '\0';
+#ifdef PRIMAL_HUNT
+	g_sAvP2XRez[0] = '\0';
+#endif
 
 
 	// Look for game rez file in the current directory and on the cd-rom drive...
 
-	CString sGameRezFile = g_csRezBase + ".rez";
+	CString sGameRezFile = csRezBase + ".rez";
+	CString sAlienRezFile = "Alien.rez";
+	CString sMarineRezFile = "Marine.rez";
+	CString sPredatorRezFile = "Predator.rez";
+	CString sMultiRezFile = "Multi.rez";
+#ifdef PRIMAL_HUNT
+	CString sAvP2XRezFile = "AVP2X.rez";
+#endif
 
 	if (ExistRezFile(sGameRezFile))
 	{
@@ -63,9 +83,9 @@ BOOL FindRezFiles(char chCdRom)
 
 	if (g_sGameRez[0] == '\0')
 	{
-		if (ExistRezDir(g_csRezBase))
+		if (ExistRezDir(csRezBase))
 		{
-			strcpy(g_sGameRez, g_csRezBase);
+			strcpy(g_sGameRez, csRezBase);
 		}
 	}
 
@@ -76,7 +96,7 @@ BOOL FindRezFiles(char chCdRom)
 		if (chCdRom > 0)
 		{
 			char sPath[256];
-			wsprintf(sPath, "%c:\\data\\%s.rez", chCdRom, (const char*)g_csRezBase);
+			wsprintf(sPath, "%c:\\data\\%s.rez", chCdRom, csRezBase);
 
 			if (ExistRezFile(sPath))
 			{
@@ -86,11 +106,91 @@ BOOL FindRezFiles(char chCdRom)
 	}
 
 
+	// Look for the campaigns' and multiplayer rez files in the current directory...
+
+	if (ExistRezFile(sAlienRezFile))
+	{
+		strcpy(g_sAlienRez, sAlienRezFile);
+	}
+
+	if (ExistRezFile(sMarineRezFile))
+	{
+		strcpy(g_sMarineRez, sMarineRezFile);
+	}
+
+	if (ExistRezFile(sPredatorRezFile))
+	{
+		strcpy(g_sPredatorRez, sPredatorRezFile);
+	}
+
+	if (ExistRezFile(sMultiRezFile))
+	{
+		strcpy(g_sMultiRez, sMultiRezFile);
+	}
+
+#ifdef PRIMAL_HUNT
+	// PH: Primal Hunt's own (its code is encrypted in the retail image:
+	// the string pool alone says it looks for it)
+	if (ExistRezFile(sAvP2XRezFile))
+	{
+		strcpy(g_sAvP2XRez, sAvP2XRezFile);
+	}
+#endif
+
+
+	// If necessary, look for them on the CD-ROM drive...
+
+	if (chCdRom > 0)
+	{
+		char sPath[256];
+
+		if (g_sAlienRez[0] == '\0')
+		{
+			wsprintf(sPath, "%c:\\%s", chCdRom, sAlienRezFile);
+
+			if (ExistRezFile(sPath))
+			{
+				strcpy(g_sAlienRez, sPath);
+			}
+		}
+
+		if (g_sMarineRez[0] == '\0')
+		{
+			wsprintf(sPath, "%c:\\%s", chCdRom, sMarineRezFile);
+
+			if (ExistRezFile(sPath))
+			{
+				strcpy(g_sMarineRez, sPath);
+			}
+		}
+
+		if (g_sPredatorRez[0] == '\0')
+		{
+			wsprintf(sPath, "%c:\\%s", chCdRom, sPredatorRezFile);
+
+			if (ExistRezFile(sPath))
+			{
+				strcpy(g_sPredatorRez, sPath);
+			}
+		}
+
+		if (g_sMultiRez[0] == '\0')
+		{
+			wsprintf(sPath, "%c:\\%s", chCdRom, sMultiRezFile);
+
+			if (ExistRezFile(sPath))
+			{
+				strcpy(g_sMultiRez, sPath);
+			}
+		}
+	}
+
+
 	// Look for sound rez file in the current directory...
 
-	if (ExistRezFile("sound.rez"))
+	if (ExistRezFile("sounds.rez"))
 	{
-		strcpy(g_sSoundRez, "sound.rez");
+		strcpy(g_sSoundRez, "sounds.rez");
 	}
 
 
@@ -98,14 +198,15 @@ BOOL FindRezFiles(char chCdRom)
 
 	if (g_sSoundRez[0] == '\0')
 	{
-		if (ExistRezDir("sound"))
+		if (ExistRezDir("sounds"))
 		{
-			strcpy(g_sSoundRez, "sound");
+			strcpy(g_sSoundRez, "sounds");
 		}
 	}
 
 
-	// Determine if we have both rez strings...
+	// Determine if we have both rez strings (from here on the code is
+	// encrypted in the retail image: NOLF2's)...
 
 	if (g_sGameRez[0] == '\0' || g_sSoundRez[0] == '\0')
 	{
@@ -118,6 +219,7 @@ BOOL FindRezFiles(char chCdRom)
 	return(TRUE);
 }
 
+// AVP2.exe 0x408100 - 0x408150 (encrypted)
 char* GetGameRezFile()
 {
 	return(g_sGameRez);
@@ -128,10 +230,38 @@ char* GetSoundRezFile()
 	return(g_sSoundRez);
 }
 
+char* GetAlienRezFile()
+{
+	return(g_sAlienRez);
+}
+
+char* GetMarineRezFile()
+{
+	return(g_sMarineRez);
+}
+
+char* GetPredatorRezFile()
+{
+	return(g_sPredatorRez);
+}
+
+char* GetMultiRezFile()
+{
+	return(g_sMultiRez);
+}
+
+#ifdef PRIMAL_HUNT
+// PrimalHunt.exe 0x408970 (encrypted)
+char* GetAvP2XRezFile()
+{
+	return(g_sAvP2XRez);
+}
+#endif
+
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	ExistRezFile
+//	ROUTINE:	ExistRezFile (AVP2.exe 0x408160, encrypted)
 //
 //	PURPOSE:	Determines if the given file exists
 //
@@ -167,7 +297,7 @@ BOOL ExistRezFile(const char* sFile)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	ExistRezDir
+//	ROUTINE:	ExistRezDir (AVP2.exe 0x4081c0, encrypted)
 //
 //	PURPOSE:	Determines if the given directory exists
 //
@@ -199,6 +329,3 @@ BOOL ExistRezDir(const char* sDir)
 
 	return(TRUE);
 }
-
-
-

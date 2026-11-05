@@ -1,0 +1,2 @@
+addr,reason
+0x100026bb,"NOT A FUNCTION: int3 padding after ExistRezDir (0x10002640..0x100026a6; cc from 0x100026a7 to the import thunks at 0x100026c0). Its only 'calls' (0x100208b2, 0x100208c5, 0x100208d8, ...: mov -0x10(%ebp),%ecx; call 0x100026bb; ret) are stale bytes in the incremental link's unused reserve above the runtime, unwind funclets of some other program that jump to 0xff3d340 and load 0x103727a8, both outside this image"

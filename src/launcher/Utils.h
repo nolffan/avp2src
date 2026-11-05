@@ -26,12 +26,6 @@
 BOOL	ExistProcess(const char* sExe, int thresh = 0, HANDLE* phProcess = NULL);
 
 
-// (The NOLF2 launcher's Utils.h also has <string> and a CaselessLesser
-// std::string comparator here. Neither is the shipped era's: nothing uses
-// the comparator, and <string> made every file including this header emit
-// std::ctype<unsigned short>::id's guarded initialiser and its atexit thunk
-// (Utils.obj, launcher.obj), which NOLF.exe does not have.)
-
 // EOF...
 
 #endif
