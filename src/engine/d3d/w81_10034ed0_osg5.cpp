@@ -56,12 +56,14 @@ extern uint32 g_Optimized2DBlend;
 //  GetOptimized2DColor below is the same nine instructions against a
 //  different global, byte for byte apart from the address.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_GetOptimized2DBlend(LTSurfaceBlend* pBlend)
 {
 	*pBlend = (LTSurfaceBlend)g_Optimized2DBlend;
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -78,9 +80,11 @@ LTBOOL d3d_GetOptimized2DBlend(LTSurfaceBlend* pBlend)
 // ---------------------------------------------------------------------- //
 extern uint32 g_Optimized2DColor;                       // 0x10089448
 
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_GetOptimized2DColor(HLTCOLOR* pColor)
 {
 	*pColor = g_Optimized2DColor;
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp

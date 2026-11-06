@@ -51,6 +51,7 @@
 //  New global: 0x10091a10 (defined here); g_vtbl_100899f0 referenced.
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 #include <stdlib.h>
 
@@ -299,3 +300,4 @@ C1007b980::C1007b980()
 }
 
 C1007b980 g_10091a10;                                   // 0x10091a10
+#endif // Primal Hunt: ph/tagnodes.cpp

@@ -53,6 +53,7 @@ extern int32 g_CV_UseDX6Commands;                       // 0x100893b4   UseDX6Co
 #define D3DRENDERSTATE_TEXTUREMAPBLEND      0x15
 #define D3DTBLEND_MODULATE                     4
 
+#ifndef PRIMAL_HUNT
 void sub_10023c40()
 {
 	if (g_CV_UseDX6Commands)
@@ -69,6 +70,7 @@ void sub_10023c40()
 		g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice, D3DRENDERSTATE_TEXTUREMAPBLEND, D3DTBLEND_MODULATE);
 	}
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //

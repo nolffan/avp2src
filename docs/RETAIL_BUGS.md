@@ -417,6 +417,20 @@ the sphere keep whatever the buffer held before. Probable: it rests on
 
 Not fixed yet (the renderer has no modern build).
 
+### Unsorted translucent world models lose their blend states before drawing
+
+d3d.ren 0x100318b0 (`d3d_DrawNoSortWorldModel`,
+src/engine/d3d/ph/drawworldmodel.cpp). The world models whose first
+surface is marked not to be sorted are queued last with this draw
+function, which picks additive blend states (SRCALPHA/ONE for
+`FLAG2_ADDITIVE` objects, ONE/ONE with a black fog colour otherwise) in
+`StateSet`s scoped to its `if`/`else` arms. The states are restored as the
+arms end, before the one draw call after them, so these world models are
+drawn with whatever blend was set already (the ordinary translucent one),
+not additively.
+
+Not fixed yet (the renderer has no modern build).
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

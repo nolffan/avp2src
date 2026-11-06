@@ -107,6 +107,7 @@ void sub_1000f630(uint32 nValue);                       // d3dneutral.cpp
 
 
 // 0x10023eb0 -- turn punch-through transparency ON.
+#ifndef PRIMAL_HUNT
 void sub_10023eb0()
 {
 	if (g_1008d5e4)
@@ -124,10 +125,12 @@ void sub_10023eb0()
 
 	sub_1000f630(1);
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // 0x10023f40 -- turn it OFF again.  Note that the "off" arm does NOT
 // restore ALPHAFUNC: the shipped code writes only the two enables.
+#ifndef PRIMAL_HUNT
 void sub_10023f40()
 {
 	if (g_1008d5e4)
@@ -143,6 +146,7 @@ void sub_10023f40()
 
 	sub_1000f630(0);
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ----------------------------------------------------------------------- //

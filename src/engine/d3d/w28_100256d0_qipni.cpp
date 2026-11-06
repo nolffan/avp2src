@@ -220,6 +220,7 @@ extern void     sub_1000f650(void* pPoly);              // 0x1000f650  w15_1000f
 // ======================================================================= //
 //  0x100256d0 -- 250 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 static void sub_100256d0(int32 nMode)
 {
 	DrawSlotFn pfn;
@@ -273,6 +274,9 @@ static void sub_100256d0(int32 nMode)
 	if (!g_1008beb8->m_p00)
 		g_1008cea0 = (DrawSlotFn)sub_1003dc80;
 }
+#else
+void sub_100256d0(int32 nMode);
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 void sub_10026480(int32 nMode)
@@ -554,6 +558,7 @@ inline void FillQuad25890(TLVert25890* pVerts, uint32 dwColor)
 // ======================================================================= //
 //  0x10025890 -- 1300 bytes.  The additive light pass.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 static void sub_10025890(void* pvColor)
 {
 	const LTVec* pColor = (const LTVec*)pvColor;
@@ -586,11 +591,15 @@ static void sub_10025890(void* pvColor)
 			D3DFVF_TLVERTEX, s_Verts, 4, 0);
 	}
 }
+#else
+void sub_10025890(void* pvColor);
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //
 //  0x10025db0 -- 1338 bytes.  The modulate-2x tint pass.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 static void sub_10025db0(void* pvColor)
 {
 	const LTVec* pColor = (const LTVec*)pvColor;
@@ -621,6 +630,9 @@ static void sub_10025db0(void* pvColor)
 			D3DFVF_TLVERTEX, s_Verts, 4, 0);
 	}
 }
+#else
+void sub_10025db0(void* pvColor);
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //
@@ -685,6 +697,7 @@ struct TreeNode1002d050
 // ======================================================================= //
 void sub_1002dd60(float* pMin, float* pMax, uint32 nColor);
 
+#ifndef PRIMAL_HUNT
 void sub_1002d050(void* pvNode, uint32 nDepth, uint32 nMaxDepth)
 {
 	TreeNode1002d050* pNode = (TreeNode1002d050*)pvNode;
@@ -701,6 +714,9 @@ void sub_1002d050(void* pvNode, uint32 nDepth, uint32 nMaxDepth)
 			sub_1002d050(pNode->m_pChildren[i], nDepth + 1, nMaxDepth);
 	}
 }
+#else
+void sub_1002d050(void* pvNode, uint32 nDepth, uint32 nMaxDepth);
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //
@@ -708,6 +724,7 @@ void sub_1002d050(void* pvNode, uint32 nDepth, uint32 nMaxDepth)
 //  The four edges of the bottom (min y) face, the four of the top face,
 //  then the four uprights.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_1002dd60(float* pMin, float* pMax, uint32 nColor)
 {
 	sub_1002b1b0(LTVec4_1002dd60(pMin[0], pMin[1], pMin[2]), LTVec4_1002dd60(pMax[0], pMin[1], pMin[2]), nColor, nColor);
@@ -725,6 +742,7 @@ void sub_1002dd60(float* pMin, float* pMax, uint32 nColor)
 	sub_1002b1b0(LTVec4_1002dd60(pMax[0], pMin[1], pMax[2]), LTVec4_1002dd60(pMax[0], pMax[1], pMax[2]), nColor, nColor);
 	sub_1002b1b0(LTVec4_1002dd60(pMin[0], pMin[1], pMax[2]), LTVec4_1002dd60(pMin[0], pMax[1], pMax[2]), nColor, nColor);
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //
@@ -4775,6 +4793,7 @@ public:
 	uint32  m_nOld;                                     // +0x04
 };
 
+#ifndef PRIMAL_HUNT
 void sub_1002e350(World2e350* pWorld)
 {
 	uint32          nStage;
@@ -4809,6 +4828,7 @@ void sub_1002e350(World2e350* pWorld)
 	}
 
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 

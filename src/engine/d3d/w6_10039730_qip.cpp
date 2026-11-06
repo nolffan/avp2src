@@ -341,6 +341,7 @@ static void sub_10039850(RTexture* pTex, uint32 bForce)
 //  each of its five lists.  0x10039850's first level inlined.
 //  The tie-off stores +0x04 then +0x00: `m_pPrev = m_pNext = head`.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10039730(LTLink* pList)
 {
 	LTLink*   pCur;
@@ -358,6 +359,7 @@ void sub_10039730(LTLink* pList)
 
 	pList->m_pPrev = pList->m_pNext = pList;
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //
@@ -366,6 +368,7 @@ void sub_10039730(LTLink* pList)
 //  at 0x1008e634, tie the head off (+0x00 stored first here), then have
 //  0x1006d3e0 flush the five deferred lists.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10039930()
 {
 	LTLink*   pCur;
@@ -385,6 +388,7 @@ void sub_10039930()
 
 	g_10091950.sub_1006d3e0();
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //
@@ -710,6 +714,7 @@ void sub_10039fe0(SharedTexture* pShared, LTBOOL bUpload)
 //  as /Qip does for the callers above.  Frame and
 //  padding are this file's /O2.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_1003aac0(SharedTexture* pShared)
 {
 	RTexture* pTex;
@@ -718,6 +723,7 @@ void sub_1003aac0(SharedTexture* pShared)
 	if (pTex)
 		sub_10039850(pTex, 0);
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 
@@ -765,6 +771,7 @@ extern "C" int __cdecl sprintf(char* pBuf, const char* pszFmt, ...);   // 0x1008
 //  name and followed by a space, into pszOut ("UNKNOWN " when none is).
 //  One flag only: every arm returns.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 static void sub_100375f0(uint32 dwFlags, char* pszOut)
 {
 	pszOut[0] = 0;
@@ -789,6 +796,7 @@ static void sub_100375f0(uint32 dwFlags, char* pszOut)
 	else if (dwFlags & 0x00002000)  { strcat(pszOut, "DDPF_ZPIXELS");           strcat(pszOut, " "); }
 	else                            { strcat(pszOut, "UNKNOWN");                strcat(pszOut, " "); }
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //
@@ -796,6 +804,7 @@ static void sub_100375f0(uint32 dwFlags, char* pszOut)
 //  its flags (or "FOURCC( xxxx )" for a FourCC format), its bit count,
 //  channel bit counts and masks; "%sNONE" for a missing one.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 static void sub_10037b10(const char* pszPrefix, D3DFormatRec* pRec)
 {
 	char szFlags[256];
@@ -824,6 +833,7 @@ static void sub_10037b10(const char* pszPrefix, D3DFormatRec* pRec)
 		pRec->m_dwRBitMask, pRec->m_dwGBitMask, pRec->m_dwBBitMask,
 		pRec->m_dwRGBAlphaBitMask);
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //
@@ -840,6 +850,7 @@ static void sub_10037b10(const char* pszPrefix, D3DFormatRec* pRec)
 // this function last, and dummy functions ahead (so not TU history).
 // A RenderStats local, szFourCC[5] and a dword FourCC store lose
 // 0x10037b10.
+#ifndef PRIMAL_HUNT
 void sub_10039a60()
 {
 	LTLink* pCur;
@@ -853,6 +864,7 @@ void sub_10039a60()
 	sub_10037b10("[INTERFACE] - ", g_1008e6b0[4]);
 	sub_10037b10("[LIGHTMAP] - ", g_1008e6b0[5]);
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //

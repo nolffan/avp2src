@@ -946,6 +946,8 @@ D3D_LINK_NOT := w12_7fae0
 #   D3D_PH += <name>
 #   D3D_PH_POS_<name> := <its TU number, two digits: its place in the link>
 #   D3D_PH_CL_<name>  := <its flags, e.g. /O1>
+#   D3D_PH_INC_<name> := <include paths it alone needs, ahead of the SDK's;
+#                         optional>
 # They link first, in TU order, ahead of nolfsrc's files. A function one of
 # them takes over stays in nolfsrc's file for AvP2 1.0.9.6's Intel build,
 # behind #ifndef PRIMAL_HUNT.
@@ -953,7 +955,7 @@ D3D_PH :=
 include $(sort $(wildcard $(D3D)/ph/*.mk))
 D3D_PH_ORDER := $(foreach e,$(sort $(foreach n,$(D3D_PH),$(D3D_PH_POS_$(n)):$(n))),$(lastword $(subst :, ,$(e))))
 $(foreach n,$(D3D_PH),$(eval $(call compile,$(D3D)/Release/ph/$(n).obj,$(D3D),ph/$(n).cpp,$(ENG_PH_ENV),$(ENG_PH_CC),\
-    $(D3D_BASE) /D PRIMAL_HUNT $(D3D_PH_CL_$(n)) /FoRelease/ph/,wine-drives)))
+    $(D3D_PH_INC_$(n)) $(D3D_BASE) /D PRIMAL_HUNT $(D3D_PH_CL_$(n)) /FoRelease/ph/,wine-drives)))
 D3D_LINK_OBJS := $(D3D_PH_ORDER:%=ph/%.obj) $(addsuffix .obj,$(D3D_LINK_ORDER)) \
     $(sort $(filter-out $(addsuffix .obj,$(D3D_LINK_ORDER) $(D3D_LINK_NOT)),$(D3D_SRC:.cpp=.obj)))
 D3D_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib $(LS_D)\StdLith.lib dxguid.lib

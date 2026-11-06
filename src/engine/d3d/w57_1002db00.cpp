@@ -24,6 +24,8 @@
 //  New globals (defined here): the fifteen records and 0x1008d528.
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 class CD3DConVar
@@ -72,3 +74,5 @@ CD3DConVar g_1008d574("PortalLightmap", 1.0f, LTNULL, LTNULL);      // 0x1008d57
 CD3DConVar g_1008d554("ShowTexInfo", 0.0f, LTNULL, LTNULL);         // 0x1008d554
 CD3DConVar g_1008d534("RenderToFront", 0.0f, LTNULL, LTNULL);       // 0x1008d534
 FVec3      g_1008d528(5.0f, 5.0f, 5.0f);                            // 0x1008d528
+
+#endif // Primal Hunt: ph/d3d_draw.cpp

@@ -144,12 +144,14 @@ extern uint32 g_Optimized2DColor;   // defined in d3ddraw.cpp
 // 0x10034eb0 -- RenderStruct +0xa8, 26 bytes. `g_pRenderSetOptimized2DColor`.
 // The alpha byte is forced to 0xff rather than taken from the caller, and the
 // answer is unconditional.
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_SetOptimized2DColor(uint32 hColor)
 {
 	g_Optimized2DColor = (hColor & 0x00ffffff) | 0xff000000;
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // 0x1008d7c4 -- non-zero while an Optimized2D batch is open.

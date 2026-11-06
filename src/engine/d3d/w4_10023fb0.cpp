@@ -30,6 +30,7 @@ struct PoolVert { uint32 m_d[8]; };                     // 0x20
 extern uint32    g_1008d51c;                            // 0x1008d51c  capacity
 extern PoolVert* g_1008d524;                            // 0x1008d524  the pool
 
+#ifndef PRIMAL_HUNT
 extern "C" int32 sub_10023fb0(uint32 nWanted)
 {
 	PoolVert* pNew;
@@ -46,6 +47,7 @@ extern "C" int32 sub_10023fb0(uint32 nWanted)
 	g_1008d51c = nWanted;
 	return 1;
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //

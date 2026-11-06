@@ -6,6 +6,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 #include "ltlink.h"
 
@@ -119,3 +120,4 @@ void sub_1007a700(LTLink* pHead, Item1007a700*** ppArray, uint32* pnCount)
 		(*ppArray)[nIndex] = pItem;
 	}
 }
+#endif // Primal Hunt: ph/tagnodes.cpp

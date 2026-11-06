@@ -172,6 +172,7 @@ struct Sub1000a700Geom
 
 extern LTBOOL g_bUseIndexPointer;                       // 0x1008cb84
 
+#ifndef PRIMAL_HUNT
 void sub_1000a700(Sub1000a700Geom* pGeom, void** ppOutData, uint32* pnOutCount)
 {
 	if (g_bUseIndexPointer)
@@ -185,6 +186,7 @@ void sub_1000a700(Sub1000a700Geom* pGeom, void** ppOutData, uint32* pnOutCount)
 		*pnOutCount = pGeom->m_nEmbeddedCount;
 	}
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -729,6 +731,7 @@ struct Sub100151b0Rot
 // 0x10073400 -- quaternion to matrix; __cdecl, (rotation, matrix).
 extern void sub_10073400(Sub100151b0Rot* pRot, LTMat* pMat);
 
+#ifndef PRIMAL_HUNT
 void sub_100151b0(LTVec* pPos, Sub100151b0Rot* pRot, LTVec* pScale,
                   LTMat* pMat)
 {
@@ -762,6 +765,7 @@ void sub_100151b0(LTVec* pPos, Sub100151b0Rot* pRot, LTVec* pScale,
 	pMat->m[1][3] = pPos->y;
 	pMat->m[2][3] = pPos->z;
 }
+#endif // Primal Hunt: ph/d3d_matrix.cpp
 
 
 // ---------------------------------------------------------------------- //

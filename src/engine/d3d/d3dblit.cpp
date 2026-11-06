@@ -1006,6 +1006,7 @@ void d3d_BlitFromScreen(RenderBlitRequest* pRequest)
 // with the argument in %eax.  That caller is now in this file (moved from
 // w26_10036e40_osoi.cpp, below), and with it both the stack entry
 // 0x10036df0 and the register body 0x10036df4 are byte-identical.
+#ifndef PRIMAL_HUNT
 void sub_10036df0(D3DRenderInfo* pInfo)
 {
 	extern uint32* g_pUnknown_1008bf2c;                 // 0x1008bf2c
@@ -1018,6 +1019,7 @@ void sub_10036df0(D3DRenderInfo* pInfo)
 	pInfo->m_Unknown18  = *(D3DBlock16*)g_Unknown_1008bf40;
 	pInfo->m_Unknown28  = *(D3DBlock16*)g_Unknown_1008bf50;
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -1138,6 +1140,7 @@ void    sub_10021d10(const char* pszFmt, ...);          // console print
 //  pixel count is a named local, so the bitmap size reuses it
 //  (`lea 0x36(%ebx,%ebx,2)`) and %ebx is taken for it all through.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10036e40(const char* pFilename)
 {
 	ConvertRequest      req;
@@ -1235,6 +1238,7 @@ void sub_10036e40(const char* pFilename)
 	fclose(fp);
 	sub_10021d10("ScreenShot: Created %s successfully.", pFilename);
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp
 
 
 // ---------------------------------------------------------------------- //

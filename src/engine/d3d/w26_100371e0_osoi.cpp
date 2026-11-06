@@ -189,6 +189,7 @@ void sub_1003b240()
 // ======================================================================= //
 //  0x100371e0  651 bytes.  FlipScreen(dwFlags).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_100371e0(uint32 dwFlags)
 {
 	W26Rect     rc;
@@ -268,3 +269,4 @@ void sub_100371e0(uint32 dwFlags)
 
 	sub_1003b3a0();
 }
+#endif // Primal Hunt: ph/d3d_surface.cpp

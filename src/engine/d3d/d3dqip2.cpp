@@ -399,6 +399,7 @@ extern DDraw10038f50*	g_1008bf74;                     // 0x1008bf74
 extern Fmt10038f50*		g_1008e6c4;                     // 0x1008e6c4
 extern uint32			g_1008d7cc;                     // 0x1008d7cc
 
+#ifndef PRIMAL_HUNT
 void* sub_10038f50(uint32 nWidth, uint32 nHeight, uint32 nCaps)
 {
 	DDSD10038f50	ddsd;
@@ -444,6 +445,7 @@ void* sub_10038f50(uint32 nWidth, uint32 nHeight, uint32 nCaps)
 
 	return pTex;
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //
@@ -607,6 +609,7 @@ extern void sub_10021010(const DDPixelFormat* pPF, PFormat* pFormat);
 #define DDSCAPS_TEXTURE                 0x00001000
 #define DDSCAPS2_40090                  0x00040090      // as shipped
 
+#ifndef PRIMAL_HUNT
 static IUnk10039420* sub_10039210(void* pBits, uint32 nWidth, uint32 nHeight,
                            uint32 nPitch)
 {
@@ -662,6 +665,7 @@ static IUnk10039420* sub_10039210(void* pBits, uint32 nWidth, uint32 nHeight,
 
 	return LTNULL;
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // The or-chain is emitted THREE times in the shipped code, and a plain
@@ -682,6 +686,7 @@ inline uint32 Gray10039420(int32 v)
 // epilogue, 10 lines off), an empty then-arm, goto forms, the definition
 // moved below 0x1003ad30.  A cold-named inline helper in the body (icl's
 // name-based prediction) made it worse, not better.
+#ifndef PRIMAL_HUNT
 void sub_10039420(float fGamma)
 {
 	uint32  nBuf[64][64];
@@ -721,6 +726,7 @@ void sub_10039420(float fGamma)
 
 	g_1008da74 = sub_10039210(nBuf, 64, 64, 0x100);
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //
@@ -845,6 +851,7 @@ extern void   sub_1006c4d0();                                  // 0x1006c4d0
 // `double` result locals, the conversion without the float cast, double
 // fX/fY, fY hoisted to the outer loop, a while inner loop, uint32 x/y --
 // all still no entry (and the same bytes).
+#ifndef PRIMAL_HUNT
 LTBOOL sub_1003ad30()
 {
 	ConvertRequest	req;
@@ -912,6 +919,7 @@ LTBOOL sub_1003ad30()
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //

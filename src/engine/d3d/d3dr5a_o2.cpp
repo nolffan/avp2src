@@ -998,6 +998,7 @@ struct C1007b520
 	float		m_f40;                                  // +0x40
 };
 
+#ifndef PRIMAL_HUNT
 int32 sub_1007b520(const C1007b520* pObj)
 {
 	float	fLimit = -pObj->m_f40;
@@ -1013,6 +1014,7 @@ int32 sub_1007b520(const C1007b520* pObj)
 
 	return 1;
 }
+#endif // Primal Hunt: ph/tagnodes.cpp
 
 
 // ======================================================================= //

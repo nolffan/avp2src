@@ -743,6 +743,7 @@ void sub_1001e920();
 void sub_1007fbe0(void* p);
 void sub_10021cb0(void* p);
 
+#ifndef PRIMAL_HUNT
 void sub_1002dab0()
 {
 	sub_1001e920();
@@ -757,6 +758,7 @@ void sub_1002dab0()
 		g_p1008d524 = LTNULL;
 	}
 }
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 
 // ======================================================================= //
@@ -808,6 +810,7 @@ extern uint32 g_1009110c;                               // 0x1009110c
 void* sub_1007b8d0();
 void sub_10067aa0(Ctx1007b8e0* pContext, Elem1007b8e0* pElem);
 
+#ifndef PRIMAL_HUNT
 void sub_10068890()
 {
 	C1007b8e0* pList;
@@ -822,3 +825,4 @@ void sub_10068890()
 
 	pList->sub_1007b8e0((Ctx1007b8e0*)g_1008b880, sub_10067aa0);
 }
+#endif // Primal Hunt: ph/drawworldmodel.cpp

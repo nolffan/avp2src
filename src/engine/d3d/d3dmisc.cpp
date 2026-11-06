@@ -60,10 +60,12 @@ extern LTBOOL g_bInOptimized2D;                         // 0x1008d7c4
 // slot is IsInOptimized2D, and it is the exact counterpart of IsIn3D at
 // +0x90. Nothing in lithtech.exe calls it, which is why the client side
 // could not name it.
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_IsInOptimized2D()
 {
 	return g_bInOptimized2D;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // 0x10032e40 -- RenderStruct slot +0xc0, three bytes: `xor %eax,%eax; ret`.

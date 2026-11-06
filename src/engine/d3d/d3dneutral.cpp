@@ -178,10 +178,12 @@ void* sub_10015470()
 // but nothing in this function proves they are one object -- kept separate.
 extern uint8 g_10091a10[];
 
+#ifndef PRIMAL_HUNT
 void* sub_1007b8d0()
 {
 	return g_10091a10;
 }
+#endif // Primal Hunt: ph/tagnodes.cpp
 
 
 // ----------------------------------------------------------------------- //

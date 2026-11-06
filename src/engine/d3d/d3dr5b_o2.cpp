@@ -120,6 +120,7 @@ struct Obj10064640
 	uint32 m_nFlags88;                                  // +0x88
 };
 
+#ifndef PRIMAL_HUNT
 void sub_10064640(Obj10064640* pObject)
 {
 	D3DContext* pContext;
@@ -144,6 +145,7 @@ void sub_10064640(Obj10064640* pObject)
 		sub_10021d60(1, "Set '%s' overflowed", *ppszName);
 	}
 }
+#endif // Primal Hunt: ph/drawsprite.cpp
 
 
 // ======================================================================= //

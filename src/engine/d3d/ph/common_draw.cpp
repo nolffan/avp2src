@@ -5,12 +5,16 @@
 //
 //  PURPOSE:  The renderer's shared draw state (the frame and view globals
 //            every drawing module reads) and the view/frustum set-up.
-//            Only the start of the object is written so far: its
-//            initialisers and the frame-code helpers.
+//            Written so far: its initialisers, the frame-code helpers,
+//            the dynamic light lists and the struct banks.  Not written:
+//            0x100101f8..0x10011162, among them the 2766-byte view set-up
+//            0x100104cb and the header COMDATs it calls out of line
+//            (0x10010f99, 0x10010fc2, 0x10011021).
 //
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#include "../../LT2/lithshared/stdlith/struct_bank.h"
 
 
 // Five globals of classes whose constructors do nothing (their
@@ -126,4 +130,94 @@ void d3d_ClearBlockFrameCodes(RenderBlock* pBlock)
 
 	for (i = 0; i < pBlock->m_nLeaves; i++)
 		pBlock->m_Leaves[i]->m_FrameCode = 0;
+}
+
+
+// ---------------------------------------------------------------------- //
+//  The dynamic lights touching the frame's objects.
+// ---------------------------------------------------------------------- //
+
+// A link from an object to a light touching it.
+struct LightLink
+{
+	LightLink*  m_pNext;                                    // +0x00
+	uint8       m_Reserved04[0x10];
+};
+
+struct LitObject
+{
+	uint8       m_Reserved00[0x30];
+	LightLink*  m_pLightLinks;                              // +0x30
+};
+
+// The frame's list of lit objects.
+struct LitObjectRef
+{
+	LitObject*      m_pObject;                              // +0x00
+	LitObjectRef*   m_pNext;                                // +0x04
+};
+
+StructBank      g_LightLinkBank;                            // 0x1005bcb8
+StructBank      g_LitObjectBank;                            // 0x1005bcd8
+StructBank      g_WorldPolyBank;                            // 0x1005d210
+LitObjectRef*   g_pLitObjects;                              // 0x1005d24c
+uint32          g_nLitObjects;                              // 0x1005bcac
+
+void d3d_FreeLightLinks(LitObjectRef* pRef);
+
+// 0x10011517
+void d3d_FreeLitObjects()
+{
+	LitObjectRef *pCur, *pNext;
+
+	g_nLitObjects = 0;
+	pCur = g_pLitObjects;
+	while (pCur)
+	{
+		g_nLitObjects++;
+		d3d_FreeLightLinks(pCur);
+		pNext = pCur->m_pNext;
+		sb_Free(&g_LitObjectBank, pCur);
+		pCur = pNext;
+	}
+
+	g_pLitObjects = LTNULL;
+}
+
+// 0x10011563
+void d3d_FreeLightLinks(LitObjectRef* pRef)
+{
+	LightLink *pCur, *pNext;
+
+	pCur = pRef->m_pObject->m_pLightLinks;
+	while (pCur)
+	{
+		pNext = pCur->m_pNext;
+		sb_Free(&g_LightLinkBank, pCur);
+		pCur = pNext;
+	}
+
+	pRef->m_pObject->m_pLightLinks = LTNULL;
+}
+
+// 0x1001159b -- at the start of a frame.
+void d3d_InitFrameState()
+{
+	d3d_FreeLitObjects();
+}
+
+// 0x100115a0
+void d3d_InitWorldBanks()
+{
+	sb_Init2(&g_LightLinkBank, sizeof(LightLink), 0x40, 0x40);
+	sb_Init2(&g_LitObjectBank, sizeof(LitObjectRef), 0x40, 0x40);
+	sb_Init2(&g_WorldPolyBank, 0xc, 0x200, 0x800);
+}
+
+// 0x100115da
+void d3d_TermWorldBanks()
+{
+	sb_Term(&g_LightLinkBank);
+	sb_Term(&g_LitObjectBank);
+	sb_Term(&g_WorldPolyBank);
 }

@@ -128,9 +128,8 @@ public:
 	uint32      m_nShifts[4];
 };
 
-class VisibleSet
+struct VisibleSet
 {
-public:
 	LTBOOL      Init();                                     // 0x10039aa0
 };
 
@@ -178,8 +177,9 @@ LTBOOL  d3d_SetOptimized2DBlend(LTSurfaceBlend blend);      // 0x1001d401
 LTBOOL  d3d_GetOptimized2DBlend(LTSurfaceBlend* pBlend);    // 0x1001d4da
 LTBOOL  d3d_SetOptimized2DColor(uint32 color);              // 0x1001d4c8
 LTBOOL  d3d_GetOptimized2DColor(uint32* pColor);            // 0x1001d4ea
-LTBOOL  d3d_OptimizeSurface(HLTBUFFER hSurf, uint32 transparentColor);  // 0x1001cff4
-void    d3d_UnoptimizeSurface(HLTBUFFER hSurf);             // 0x1001cfe2
+struct D3DRenderData;   // a surface's data (d3d_surface.cpp): an HLTBUFFER to the engine
+LTBOOL  d3d_OptimizeSurface(D3DRenderData* pData, uint32 transparentColor);  // 0x1001cff4
+void    d3d_UnoptimizeSurface(D3DRenderData* pData);        // 0x1001cfe2
 int     d3d_RenderScene(SceneDesc* pScene);                 // 0x10018520
 void    d3d_RenderCommand(int argc, char** argv);           // 0x1001c4b0
 void    d3d_SwapBuffers(uint32 flags);                      // 0x1001ed75
@@ -599,8 +599,8 @@ __declspec(dllexport) void RenderDLLSetup(RenderStruct* pStruct)
 	pStruct->SetOptimized2DColor    = d3d_SetOptimized2DColor;
 	pStruct->GetOptimized2DColor    = d3d_GetOptimized2DColor;
 	pStruct->IsInOptimized2D        = d3d_IsInOptimized2D;
-	pStruct->OptimizeSurface        = d3d_OptimizeSurface;
-	pStruct->UnoptimizeSurface      = d3d_UnoptimizeSurface;
+	pStruct->OptimizeSurface        = (LTBOOL (*)(HLTBUFFER, uint32))d3d_OptimizeSurface;
+	pStruct->UnoptimizeSurface      = (void (*)(HLTBUFFER))d3d_UnoptimizeSurface;
 	pStruct->RenderScene            = d3d_RenderScene;
 	pStruct->RenderCommand          = d3d_RenderCommand;
 	pStruct->GetHook                = d3d_GetRenderObject;

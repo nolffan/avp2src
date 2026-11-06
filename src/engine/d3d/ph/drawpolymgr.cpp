@@ -150,14 +150,43 @@ struct MaterialInst                                     // 0x59c bytes
 	PassState	m_Passes[3];                            // +0x008
 };
 
+// The element type has a constructor of its own (an empty one: BaseNew,
+// 0x1002be26, constructs nothing). That is what makes CMoArray's members
+// (0x1002ba2f..0x1002be26) come out as retail's at /O1: BaseNew's
+// construction loop costs the inliner before it is optimised away, so
+// SetSize2 expands _AllocateTArray and calls BaseNew, where a plain-data
+// element gets the reverse (TU07's 16-byte CMoArray, 0x1000e742, is one).
 struct PolyBatch16
 {
+	PolyBatch16() {}
+
 	uint32		m_Data[4];
 };
 
+// The bank's element: a list head and two links back to the node. Its
+// constructor (0x1002bb68) and destructor (0x1002bbad) are what the bank's
+// Allocate and Free (0x1002bb4c, 0x1002bb86) call.
 struct PolyNode                                         // 0x28 bytes
 {
-	uint32		m_Data[10];
+	PolyNode()
+	{
+		dl_TieOff(&m_Head);
+		dl_TieOff(&m_Link1);
+		m_Link1.m_pData = this;
+		dl_TieOff(&m_Link2);
+		m_Link2.m_pData = this;
+	}
+
+	~PolyNode()
+	{
+		dl_Remove(&m_Link1);
+		dl_Remove(&m_Link2);
+	}
+
+	LTLink		m_Head;                                 // +0x00
+	uint32		m_0c;                                   // +0x0c
+	LTLink		m_Link1;                                // +0x10
+	LTLink		m_Link2;                                // +0x1c
 };
 
 class DrawPolyMgr;

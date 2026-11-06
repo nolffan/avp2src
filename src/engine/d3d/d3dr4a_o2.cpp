@@ -856,6 +856,7 @@ struct C1007bae0
 	void		sub_1007bae0();
 };
 
+#ifndef PRIMAL_HUNT
 void C1007bae0::sub_1007bae0()
 {
 	Link1007bae0* pCur;
@@ -867,6 +868,7 @@ void C1007bae0::sub_1007bae0()
 	for(pCur=m_Head.m_pNext; pCur != &m_Head; pCur=pCur->m_pNext)
 		pCur->m_pData->m_pOwner = LTNULL;
 }
+#endif // Primal Hunt: ph/tagnodes.cpp
 
 
 // ---------------------------------------------------------------------- //

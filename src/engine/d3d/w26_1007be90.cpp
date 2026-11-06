@@ -29,6 +29,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
@@ -102,3 +103,4 @@ LTBOOL VisibleSet::sub_1007be90()
 
 	return !bFail;
 }
+#endif // Primal Hunt: ph/tagnodes.cpp

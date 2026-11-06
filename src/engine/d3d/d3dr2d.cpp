@@ -730,6 +730,7 @@ extern uint32        g_1009110c;
 extern Obj10091a10*  sub_1007b8d0();
 extern void          sub_10067aa0(void* pA, void* pB);
 
+#ifndef PRIMAL_HUNT
 void sub_10068840()
 {
 	Obj10091a10* pObj;
@@ -745,6 +746,7 @@ void sub_10068840()
 
 	pArr->sub_1007b8e0(g_1008b880, sub_10067aa0);
 }
+#endif // Primal Hunt: ph/drawworldmodel.cpp
 
 
 // ---------------------------------------------------------------------- //

@@ -982,6 +982,7 @@ LTBOOL sub_1006be50(void* pCtxArg, void* pPolyArg, uint32 bForce)
 //  0x1006b500 index with a channel + 0xff: 256 zeros, the identity, 256
 //  x 0xff.  Called once from d3dqip2.cpp's 0x1003ad30.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_1006c4d0()
 {
 	int32	i;
@@ -993,3 +994,4 @@ void sub_1006c4d0()
 		g_10091340[0x200 + i] = 0xff;
 	}
 }
+#endif // Primal Hunt: ph/lightanim.cpp

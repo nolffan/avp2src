@@ -303,6 +303,7 @@ void* sub_1006a710(uint32 nA, uint32 nB)
 extern uint32 g_nCaps_1008d938;                         // 0x1008d938
 extern int32  g_nMaxAspect1008cbc4;                     // 0x1008cbc4
 
+#ifndef PRIMAL_HUNT
 void sub_10038560(uint32 nWidth, uint32 nHeight, uint32* pWidthOut,
                   uint32* pHeightOut)
 {
@@ -329,6 +330,7 @@ void sub_10038560(uint32 nWidth, uint32 nHeight, uint32* pWidthOut,
 	*pWidthOut  = nWidth;
 	*pHeightOut = nHeight;
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //

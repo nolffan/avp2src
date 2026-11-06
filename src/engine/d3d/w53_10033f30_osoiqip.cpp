@@ -591,6 +591,7 @@ static inline void FreeOptimized(D3DRenderData* pData)
 	}
 }
 
+#ifndef PRIMAL_HUNT
 void d3d_UnoptimizeSurface(D3DRenderData* pData)
 {
 	if (!pData)
@@ -601,6 +602,7 @@ void d3d_UnoptimizeSurface(D3DRenderData* pData)
 	// early, and the texture pointer is re-read for the Release.
 	FreeOptimized(pData);
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -662,6 +664,7 @@ static inline uint32 GetTextureSize(uint32 nSize)
 	return g_TextureSizes[5];
 }
 
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_OptimizeSurface(D3DRenderData* pData, uint32 nColorKey)
 {
 	void*          pFormat;
@@ -752,4 +755,5 @@ LTBOOL d3d_OptimizeSurface(D3DRenderData* pData, uint32 nColorKey)
 
 	return LTFALSE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 

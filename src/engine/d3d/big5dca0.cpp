@@ -733,6 +733,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 // Round to nearest in the current FPU mode: w1_10001000.cpp's helper
@@ -1915,3 +1916,4 @@ LTBOOL sub_1005dca0(void)
 //  section 3 -- 98.6% of the bytes are call-free and this figure
 //  witnesses almost none of them.
 // *********************************************************************** //
+#endif // Primal Hunt: ph/d3d_drawsky.cpp

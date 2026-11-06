@@ -813,6 +813,7 @@ Plane10027eb0 Mat10027eb0::sub_10027eb0(Plane10027eb0 &thePlane)
 
 	return ret;
 }
+#ifndef PRIMAL_HUNT
 void sub_1006c510(float fScale)
 {
 	uint16 i;
@@ -832,3 +833,4 @@ void sub_1006c510(float fScale)
 		g_nRamp10091240[i] = (int32)(fVal * 65536.0f);
 	}
 }
+#endif // Primal Hunt: ph/lightanim.cpp

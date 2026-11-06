@@ -50,6 +50,7 @@ public:
 	const char*		m_pszName18;                        // +0x18
 };
 
+#ifndef PRIMAL_HUNT
 LTBOOL C1007c140::sub_1007c250(void* pOwner, const char* pszVarName)
 {
 	if (pOwner)
@@ -66,6 +67,7 @@ LTBOOL C1007c140::sub_1007c250(void* pOwner, const char* pszVarName)
 	m_pszName18 = pszVarName;
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/tagnodes.cpp
 
 
 // ======================================================================= //

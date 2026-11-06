@@ -286,6 +286,7 @@ public:
 	int32   m_nCount14;                                 // +0x14
 };
 
+#ifndef PRIMAL_HUNT
 LTBOOL C1007c140::sub_1007c140(void* pOwner, const char* pszVarName,
                                int32 nDefaultCount)
 {
@@ -319,6 +320,7 @@ LTBOOL C1007c140::sub_1007c140(void* pOwner, const char* pszVarName,
 	m_nCount14 = nCount;
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/tagnodes.cpp
 
 
 // ======================================================================= //
@@ -393,6 +395,7 @@ public:
 	uint32         m_nCount;                            // +0x04
 };
 
+#ifndef PRIMAL_HUNT
 void C1007b8e0::sub_1007b8e0(Ctx1007b8e0* pContext, Fn1007b8e0 pfn)
 {
 	uint32        i;
@@ -416,6 +419,7 @@ void C1007b8e0::sub_1007b8e0(Ctx1007b8e0* pContext, Fn1007b8e0 pfn)
 		pfn(pContext, pElem);
 	}
 }
+#endif // Primal Hunt: ph/tagnodes.cpp
 
 
 // ======================================================================= //

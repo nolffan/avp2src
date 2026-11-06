@@ -32,6 +32,7 @@
 //  pointer: same; its result passed on to 0x1001ef30: worse).
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 struct LTVec
@@ -115,3 +116,4 @@ void sub_1005f580()
 
 	sub_10030a60();
 }
+#endif // Primal Hunt: ph/d3d_drawsky.cpp

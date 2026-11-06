@@ -889,9 +889,11 @@ void sub_100733a0()
 // `add $0x0,%esp` anywhere; no flag or callee declaration removes it (see
 // d3dlow.cpp 0x100157e0 for the sweep), and /O2 turns the pushes into
 // stores (41 -> 72 bytes differ).
+#ifndef PRIMAL_HUNT
 void sub_1001ead0()
 {
 	sub_1007fb70(&g_1008bef4, 0x14, 0x40, 0x40);
 	sub_1007fb70(&g_1008bed8, 8, 0x40, 0x40);
 	sub_1007fb70(&g_1008bebc, 0xc, 0x200, 0x800);
 }
+#endif // Primal Hunt: ph/common_draw.cpp

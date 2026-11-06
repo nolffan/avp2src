@@ -245,6 +245,7 @@ extern void d3d_SetTextureModulate();
 //  filter test laid out AFTER the return paths (0x10034a61 onwards) and
 //  jumping back.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_StartOptimized2D()
 {
 	// Two tests, and already-in-2D answers TRUE up front: nested under
@@ -304,6 +305,7 @@ LTBOOL d3d_StartOptimized2D()
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -333,6 +335,7 @@ LTBOOL d3d_StartOptimized2D()
 //    * The modulate stage setup and the SRCBLEND/DESTBLEND pair are left
 //      exactly as they were; only ALPHABLENDENABLE is cleared.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT
 void d3d_EndOptimized2D()
 {
 	if (!g_pD3DDevice || !g_bIn3D)
@@ -366,6 +369,7 @@ void d3d_EndOptimized2D()
 
 	g_bInOptimized2D = LTFALSE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ---------------------------------------------------------------------- //
@@ -406,6 +410,7 @@ void d3d_EndOptimized2D()
 //  jumping back to the shared `xor %eax,%eax; inc %eax` at 0x10034cfb. That
 //  is a codegen choice, not a source one -- written as a switch here.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT
 LTBOOL d3d_SetOptimized2DBlend(LTSurfaceBlend nBlend)
 {
 	// Recorded first, and unconditionally -- see the note above.
@@ -468,6 +473,7 @@ LTBOOL d3d_SetOptimized2DBlend(LTSurfaceBlend nBlend)
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ---------------------------------------------------------------------- //

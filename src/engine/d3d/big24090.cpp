@@ -492,6 +492,7 @@ inline void* sb_Allocate124a4(Pool124a4* pBank)
 	return pRet;
 }
 
+#ifndef PRIMAL_HUNT
 extern "C" void sub_10024020(Obj24090* pObj)
 {
 	Elem24024* pElem;
@@ -502,6 +503,9 @@ extern "C" void sub_10024020(Obj24090* pObj)
 	pElem->m_nClipFlags10 = g_1008b874;
 	g_1008d4bc            = pElem;
 }
+#else
+extern "C" void sub_10024020(Obj24090* pObj);
+#endif // Primal Hunt: ph/d3d_draw.cpp
 
 // 0x10025640 -- TWICE the signed area of the triangle (a, b, c), read
 // straight off 0x1002564c..0x10025674 (defined at the end of the file, in

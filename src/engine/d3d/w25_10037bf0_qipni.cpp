@@ -56,6 +56,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 #include <string.h>
@@ -404,3 +406,5 @@ LTBOOL sub_10037f30()
 
 	return LTTRUE;
 }
+
+#endif // Primal Hunt: ph/d3d_texture.cpp

@@ -34,6 +34,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
@@ -846,3 +847,4 @@ void sub_1007b880()
 	else
 		sub_1007b580(LTTRUE);
 }
+#endif // Primal Hunt: ph/tagnodes.cpp

@@ -88,6 +88,7 @@ struct C1008beb0Thing
 
 extern C1008beb0Thing *g_1008beb0;                      // 0x1008beb0
 
+#ifndef PRIMAL_HUNT
 void sub_10064720()
 {
 	C1007b8e0* pList;
@@ -110,3 +111,4 @@ void sub_10064720()
 
 	g_1008beb0->m_p0c->m_pA = g_1008beb0->m_p0c->m_pB;
 }
+#endif // Primal Hunt: ph/drawsprite.cpp
