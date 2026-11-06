@@ -4943,15 +4943,7 @@ void si_SetupInterface(CLTServer* pServer)
 	pServer->GetAnimName                = ci_GetAnimName;
 	pServer->SetModelPlaying            = si_SetModelPlaying;
 	pServer->GetModelPlaying            = si_GetModelPlaying;
-#ifdef PRIMAL_HUNT
-	// PH: the engine's GetModelFilenames takes the third buffer pair
-	// (see si_GetModelFilenames); iltserver.h still has AvP2's five-argument
-	// slot type.
-	pServer->GetModelFilenames          =
-		(LTBOOL (*)(HOBJECT, char*, int, char*, int))si_GetModelFilenames;
-#else
-	pServer->GetModelFilenames          = si_GetModelFilenames;
-#endif
+	pServer->GetModelFilenames          = si_GetModelFilenames;  // PH: with the third buffer pair (iltserver.h)
 	pServer->GetModelFilenames2         = si_GetModelFilenames2;   // AVP2: new, to be reconstructed
 	pServer->Parse                      = si_Parse;
 	pServer->GetObjectContainers        = si_GetObjectContainers;

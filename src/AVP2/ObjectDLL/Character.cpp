@@ -106,6 +106,11 @@ CVarTrack	g_cvarNetTime;
 CVarTrack	g_cvarBlinkMinDelay;
 CVarTrack	g_cvarBlinkMaxDelay;
 CVarTrack	g_cvarBlinkOnDelay;
+#ifdef PRIMAL_HUNT
+// PH: the cloak as AvP2 had it (UpdateCloakEffect, PHObject.lto 0x100be532;
+// the SVAR command passes it on to the clients)
+CVarTrack	g_cvarOldCloak;
+#endif
 
 
 #ifdef _DEBUG
@@ -537,7 +542,12 @@ CCharacter::CCharacter()
 
 	m_hHead				= LTNULL;
 	m_bForceCrawl		= LTFALSE;
+#ifdef PRIMAL_HUNT
+	// PH: so the cloak's delay has run out at the start (0x100b40aa)
+	m_fCloakDelayTime	= -10.0f;
+#else
 	m_fCloakDelayTime	= 0.0f;
+#endif
 	m_fCloakEnergyUsed	= 0.0f;
 
 	m_nPreCreateClientID = 0;
@@ -1542,7 +1552,12 @@ void CCharacter::ProcessDamageMsg(const DamageStruct & damage)
 				{
 					LTFLOAT fRecoilDelay = GetRandom(GetButes()->m_fMinRecoilDelay, GetButes()->m_fMaxRecoilDelay);
 
+#ifdef PRIMAL_HUNT
+					// PH: a backhand always recoils (0x100b5d33)
+					if( GetRandom(0.0f,1.0f) < GetButes()->m_fRecoilChance || damage.eType == DT_BACKHAND )
+#else
 					if( GetRandom(0.0f,1.0f) < GetButes()->m_fRecoilChance )
+#endif
 					{
 						pInfo->m_nIndex = (int)GetModelNodeLastHit();
 
@@ -2392,6 +2407,11 @@ void CCharacter::InitialUpdate(int nInfo)
 		g_cvarBlinkMaxDelay.Init(g_pLTServer, "BlinkMaxDelay", NULL, 10.0f);
 	if(!g_cvarBlinkOnDelay.IsInitted())
 		g_cvarBlinkOnDelay.Init(g_pLTServer, "BlinkOnDelay", NULL, 0.1f);
+#ifdef PRIMAL_HUNT
+	// PH: 0x100b7bb4
+	if(!g_cvarOldCloak.IsInitted())
+		g_cvarOldCloak.Init(g_pLTServer, "OldCloak", NULL, 0.0f);
+#endif
 
 
 #ifdef PROF_CHARACTER_UPDATE
@@ -2702,7 +2722,11 @@ LTVector	CCharacter::HandHeldWeaponFirePos(const CWeapon *pWeapon) const
 	if (!g_pLTServer || !pWeapon || !g_pWeaponMgr) return vPos;
 
 	char szModelFilename[256];
+#ifdef PRIMAL_HUNT
+	g_pLTServer->GetModelFilenames( pWeapon->GetModelObject(), szModelFilename, 256, LTNULL, 0, LTNULL, 0);
+#else
 	g_pLTServer->GetModelFilenames( pWeapon->GetModelObject(), szModelFilename, 256, LTNULL, 0);
+#endif
 
 	if( strstr(szModelFilename,"Dummy") == LTNULL )
 	{
@@ -4420,6 +4444,13 @@ HOBJECT CCharacter::CreateBody(LTBOOL bCarryOverAttachments)
 	// Setup the file names.
 	g_pCharacterButeMgr->GetDefaultFilenames(m_nCharacterSet, theStruct);
 
+#ifdef PRIMAL_HUNT
+	// PH: and the character's environment map (0x100bb826)
+	const char* szEnvMap = g_pCharacterButeMgr->GetCharacterButes(m_nCharacterSet).m_szDefaultEnvMap;
+	if(szEnvMap)
+		SAFE_STRCPY(theStruct.m_ExtraTextureName, szEnvMap);
+#endif
+
 	// Setup the head skin...
 
 	g_pLTServer->GetObjectPos(m_hObject, &theStruct.m_Pos);
@@ -5511,8 +5542,14 @@ void CCharacter::HandleEMPEffect()
 
 	if(!m_bEMPEffect && (nEMPFlags & EMP_FLAG_STUN))
 	{
-		m_cmMovement.AllowMovement(LTFALSE);
-		m_cmMovement.AllowRotation(LTFALSE);
+#ifdef PRIMAL_HUNT
+		// PH: players keep moving (0x100bd8d5)
+		if(!IsPlayer(m_hObject))
+#endif
+		{
+			m_cmMovement.AllowMovement(LTFALSE);
+			m_cmMovement.AllowRotation(LTFALSE);
+		}
 		m_bEMPEffect = LTTRUE;
 	}
 
@@ -5538,8 +5575,14 @@ void CCharacter::HandleStunEffect()
 { 
 	if(!m_bStunEffect)
 	{
-		m_cmMovement.AllowMovement(LTFALSE);
-		m_cmMovement.AllowRotation(LTFALSE);
+#ifdef PRIMAL_HUNT
+		// PH: players keep moving (0x100bd94d)
+		if(!IsPlayer(m_hObject))
+#endif
+		{
+			m_cmMovement.AllowMovement(LTFALSE);
+			m_cmMovement.AllowRotation(LTFALSE);
+		}
 		m_bStunEffect = LTTRUE;
 	}
 }
@@ -7792,8 +7835,11 @@ void CCharacter::CheckMissionFailed(HOBJECT hDamager)
 			CharacterClass cVictim	= pChar->GetCharacterClass();
 			CharacterClass cLocal	= GetCharacterClass();
 
+#ifndef PRIMAL_HUNT
 			// See if we are incognito...
+			// (PH: Third Law dropped this, 0x100c172c)
 			cLocal = cLocal == CORPORATE?MARINE:cLocal;
+#endif
 
 			// If we killed our own kind then you know what you have to do!
 			if(cLocal == cVictim)

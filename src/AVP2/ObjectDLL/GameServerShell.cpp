@@ -2733,7 +2733,11 @@ void CGameServerShell::HandleConsoleTriggerMsg(HCLIENT hSender, HMESSAGEREAD hMe
 
 					if( !szClassName[0] )
 					{
+#ifdef PRIMAL_HUNT
+						g_pLTServer->GetModelFilenames(hObj, szClassName, nClassNameSize, szScratch, nScratchSize, LTNULL, 0);
+#else
 						g_pLTServer->GetModelFilenames(hObj, szClassName, nClassNameSize, szScratch, nScratchSize);
+#endif
 					}
 
 					g_pLTServer->CPrint("%s [%s] (active)", g_pLTServer->GetObjectName(hObj), szClassName );
@@ -2753,7 +2757,11 @@ void CGameServerShell::HandleConsoleTriggerMsg(HCLIENT hSender, HMESSAGEREAD hMe
 
 					if( !szClassName[0] )
 					{
+#ifdef PRIMAL_HUNT
+						g_pLTServer->GetModelFilenames(hObj, szClassName, nClassNameSize, szScratch, nScratchSize, LTNULL, 0);
+#else
 						g_pLTServer->GetModelFilenames(hObj, szClassName, nClassNameSize, szScratch, nScratchSize);
+#endif
 					}
 
 					g_pLTServer->CPrint("%s [%s] (inactive)", g_pLTServer->GetObjectName(hObj), szClassName);

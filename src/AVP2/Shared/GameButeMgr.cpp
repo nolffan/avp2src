@@ -190,3 +190,26 @@ LTBOOL CGameButeMgr::Parse(ILTCSBase *pInterface, const char* sButeFile)
 
 	return(TRUE);
 }
+
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameButeMgr::WriteCache() / ReadCache()
+//
+//	PURPOSE:	Primal Hunt's bute cache (MultiFile.h): a manager without
+//				one keeps these
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CGameButeMgr::WriteCache(const char* szFile, CMultiFile* pFile)
+{
+	return LTFALSE;
+}
+
+LTBOOL CGameButeMgr::ReadCache(const char* szFile, CMultiFile* pFile)
+{
+	return LTFALSE;
+}
+
+#endif // PRIMAL_HUNT

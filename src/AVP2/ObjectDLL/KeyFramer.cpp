@@ -767,9 +767,17 @@ LTBOOL KeyFramer::CreateKeyList()
                 g_pLTServer->AddObjectToList(m_pObjectList, hObject);
                 g_pLTServer->CreateInterObjectLink(m_hObject, hObject);
 
+#ifdef PRIMAL_HUNT
+				// PH: no longer flagged for the motion detector; all that
+				// is left is a read of the object's second flags, unused
+				// (PHObject.lto 0x1005ebd2).
+				uint32 dwFlags2;
+				g_pLTServer->Common()->GetObjectFlags(hObject, OFT_Flags2, dwFlags2);
+#else
 				// Set the flag so the motion detector will go off...
 				uint32 dwUsrFlags = g_pServerDE->GetObjectUserFlags(hObject);
 				g_pServerDE->SetObjectUserFlags(hObject, dwUsrFlags | USRFLG_KEYFRAMED_MOVEMENT);
+#endif
 			}
 		}
 	}

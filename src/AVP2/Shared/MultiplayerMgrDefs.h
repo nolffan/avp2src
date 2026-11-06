@@ -41,6 +41,9 @@
 
 #define MAX_MP_LEVELS					32
 #define MAX_MP_SCORING_CLASSES			32
+#ifdef PRIMAL_HUNT
+#define MAX_MP_RESTRICTIONS				32
+#endif
 
 // ----------------------------------------------------------------------- //
 
@@ -275,6 +278,20 @@ class MPGameInfo
 		// Scoring
 		uint32		m_nScoreClasses[MAX_MP_SCORING_CLASSES];
 		uint8		m_nScoreValues[MAX_MP_SCORING_CLASSES];
+
+#ifdef PRIMAL_HUNT
+		// PH: Third Law's class and weapon restrictions, appended to the
+		// structure (0x9f4 bytes: AVP2XServ.exe 0x402198, CServerDlg::DoHost).
+		// CServerOptions::FillInHostInfo (AVP2XServ.exe 0x40897d) fills each
+		// table with the IDs of its "Class" or "Weapon" bute list (0xFFFF
+		// past the end of it), and each mask with a bit per allowed entry
+		// (0x408b60, 0x408ba0). The server passes them on in SendGameInfo
+		// (PHObject.lto 0x1006906b) and OnInfoQuery (0x100688f7).
+		uint16		m_nClasses[MAX_MP_RESTRICTIONS];		// The class ID of each entry of the class list
+		uint16		m_nWeapons[MAX_MP_RESTRICTIONS];		// The weapon ID of each entry of the weapon list
+		uint32		m_nAllowedClasses;						// A bit for each allowed entry of m_nClasses
+		uint32		m_nAllowedWeapons;						// A bit for each allowed entry of m_nWeapons
+#endif
 };
 
 // ----------------------------------------------------------------------- //

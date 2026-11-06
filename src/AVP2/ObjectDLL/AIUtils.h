@@ -67,6 +67,22 @@ const LTFLOAT c_fCos5	= 0.996194498f;
 const LTFLOAT c_fCos2	= 0.999390827f;
 
 const LTFLOAT c_fSin90	= 1.0f;
+#ifdef PRIMAL_HUNT
+// PH: the other sines are defined once, in AIUtilsConstants.cpp: Primal
+// Hunt initialises them a single time (0x1021a530..0x1021a66a, after
+// SimpleNodeMgr's code), where AvP2 initialises a copy in every file that
+// includes this header.
+extern const LTFLOAT c_fSin80;
+extern const LTFLOAT c_fSin70;
+extern const LTFLOAT c_fSin60;
+extern const LTFLOAT c_fSin45;
+extern const LTFLOAT c_fSin35;
+extern const LTFLOAT c_fSin30;
+extern const LTFLOAT c_fSin15;
+extern const LTFLOAT c_fSin10;
+extern const LTFLOAT c_fSin5;
+extern const LTFLOAT c_fSin2;
+#else
 const LTFLOAT c_fSin80	= c_fCos10;
 const LTFLOAT c_fSin70	= c_fCos20;
 const LTFLOAT c_fSin60	= c_fCos30;
@@ -77,6 +93,7 @@ const LTFLOAT c_fSin15	= c_fCos75;
 const LTFLOAT c_fSin10	= c_fCos80;
 const LTFLOAT c_fSin5	= c_fCos85;
 const LTFLOAT c_fSin2	= c_fCos88;
+#endif
 
 LTFLOAT GetAIUpdateDelta();
 extern const LTFLOAT c_fAIDeactivationTime;

@@ -137,6 +137,9 @@ class Turret : public Prop
 		void	SetupFSM();
 
 		void	FirstUpdate();
+#ifdef PRIMAL_HUNT
+		void	SendAmmoMessage(int nAmmo);
+#endif
 
 		typedef FiniteStateMachine<Root::State,Root::Message> RootFSM;
 		typedef FiniteStateMachine<Sweep::State,Sweep::Message> SweepFSM;
@@ -248,7 +251,13 @@ class Turret : public Prop
 
 		LTFLOAT  m_fMaxIdleTime;
 
+#ifdef PRIMAL_HUNT
+		// PH: one for each CharacterClass, the exosuits and the synthetic
+		// too (Turret::ReadProp, PHObject.lto 0x1008b8c0..0x1008ba07)
+		ObjectiveType m_aClassTypes[8]; // List of objective type for each class
+#else
 		ObjectiveType m_aClassTypes[5]; // List of objective type for each class
+#endif
 
 		std::string m_OpeningAnimName;
 		std::string m_ClosingAnimName;
@@ -290,6 +299,23 @@ class Turret : public Prop
 		CTimer	m_tmrBurstDelay;
 
 		LTBOOL	m_bCanDamage;
+
+#ifdef PRIMAL_HUNT
+		// PH: Primal Hunt's carried turrets (the class is 0x13ac bytes:
+		// its constructor, PHObject.lto 0x100886e0; Save 0x100906a0 and
+		// Load 0x10090e70 keep them all but m_nAmmoId and
+		// m_bSpawnerNotified).
+		LTFLOAT		m_fNextAmmoMsgTime;	// Update, 0x1008d2d4
+		LTFLOAT		m_fHeat;			// 0..100: Update, 0x1008d138
+		int			m_nLastAmmo;
+		int			m_nAmmoId;			// InitialUpdate, 0x1008c782
+		LTBOOL		m_bTripod;			// AttributeName "tripod": ReadProp, 0x1008b503
+		int			m_nMaxAmmo;			// InitialUpdate, 0x1008c7b5
+		LTSmartLink	m_hSpawner;			// told "DESTROYED": Destroyed, 0x1008a9e4
+		LTSmartLink	m_hOwner;			// the player carrying it
+		LTFLOAT		m_fNextPickupTime;	// a second after a DROP: ObjectMessageFn, 0x1008a426
+		LTBOOL		m_bSpawnerNotified;	// Destroyed, 0x1008a9cb
+#endif
 };
 
 

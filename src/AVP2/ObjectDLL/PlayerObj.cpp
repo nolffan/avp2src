@@ -50,6 +50,9 @@
 #include "Prop.h"
 #include "Camera.h"
 #include "CinematicTrigger.h"
+#ifdef PRIMAL_HUNT
+#include "Turret.h"
+#endif
 
 static 	LTBOOL g_bShowNodes = LTFALSE;
 static  LTBOOL g_bShowSimple = LTFALSE;
@@ -2473,6 +2476,19 @@ LTBOOL ActivateFilterFn(HOBJECT hObj, void *pUserData)
 	// If we're a player object... ignore it (this doesn't need to be in the InterfaceMgr copy)
 	if(IsPlayer(hObj)) return LTFALSE;
 
+#ifdef PRIMAL_HUNT
+	// PH: a turret can be activated while it is visible (0x101101ef)
+	if(IsTurret(hObj) == LTTRUE)
+	{
+		uint32 dwFlags;
+		g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
+
+		if( !(dwFlags & FLAG_VISIBLE) )
+			return LTFALSE;
+
+		return GetActivateType(hObj) != AT_NOT_ACTIVATABLE;
+	}
+#endif
 
 	// Ignore non-solid, non-activatable objects.
 	if( GetActivateType(hObj) == AT_NOT_ACTIVATABLE )
@@ -2643,6 +2659,11 @@ DBOOL CPlayerObj::PlayingCinematic(DBOOL bStopCinematic)
 void CPlayerObj::ProcessDamageMsg(const DamageStruct & damage_msg)
 {
 	if (!m_hClient) return;
+
+#ifdef PRIMAL_HUNT
+	// PH: a turret does not crush the player using it (0x1011065c)
+	if (damage_msg.eType == DT_CRUSH && IsTurret(damage_msg.hDamager) == LTTRUE) return;
+#endif
 
 	CCharacter::ProcessDamageMsg(damage_msg);
 
@@ -5417,8 +5438,16 @@ WEAPON* CPlayerObj::GetPlayerWeapon()
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
 
 	// Make sure we're displaying the default weapon...
+#ifdef PRIMAL_HUNT
+	// PH: Third Law's fix (0x10115d70): the weapons are the attachments'
+	if (pPlayerAttachments)
+		pWeapons = pPlayerAttachments->GetWeapons();
+#else
+	// RETAIL BUG: this declares a second pWeapons, local to the if, so the
+	// one tested below is always LTNULL and this always returns LTNULL
 	if (pPlayerAttachments)
 		CWeapons* pWeapons = pPlayerAttachments->GetWeapons();
+#endif
 
 	if(pWeapons)
 	{
@@ -5736,3 +5765,56 @@ void CPlayerObj::SendMPInterfaceUpdate(HMESSAGEWRITE hMessage)
 	g_pLTServer->WriteToMessageFloat(hMessage, m_fBatteryChargeLevel);
 }
 
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::RemoveTurret()
+//
+//	PURPOSE:	PH: take a turret off the carried list (PHObject.lto
+//				0x10116ac0)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::RemoveTurret(HOBJECT hTurret)
+{
+	if (m_nNumTurrets <= 0) return;
+
+	int nIndex = -1;
+	int i;
+
+	for (i = 0; i < m_nNumTurrets; i++)
+	{
+		if (m_hTurrets[i] == hTurret)
+		{
+			nIndex = i;
+			break;
+		}
+	}
+
+	if (nIndex < 0) return;
+
+	m_nNumTurrets--;
+	m_hTurrets[nIndex] = LTNULL;
+
+	// RETAIL BUG: the count is lowered first, so the loop stops one short:
+	// the last turret is never moved down and falls off the end of the list
+	// (removing the first of two leaves the list holding only the empty slot)
+	for (i = nIndex; i < m_nNumTurrets - 1; i++)
+		m_hTurrets[i] = m_hTurrets[i + 1];
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::TurretDestroyed()
+//
+//	PURPOSE:	PH: a carried turret is destroyed (PHObject.lto 0x10116bb0;
+//				Turret::Destroyed): remove it, and an empty slot
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::TurretDestroyed(HOBJECT hTurret)
+{
+	RemoveTurret(hTurret);
+	RemoveTurret(LTNULL);
+}
+#endif

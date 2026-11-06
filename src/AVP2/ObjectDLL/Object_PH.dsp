@@ -476,6 +476,10 @@ SOURCE=.\AIUtils.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\Shared\MultiFile.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIVolume.cpp
 # End Source File
 # Begin Source File
@@ -521,6 +525,10 @@ SOURCE=.\SimpleNode.cpp
 # Begin Source File
 
 SOURCE=.\SimpleNodeMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIUtilsConstants.cpp
 # End Source File
 # End Group
 # Begin Group "ButeMgr Source"

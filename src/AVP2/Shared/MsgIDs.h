@@ -118,6 +118,12 @@
 
 #define MID_DISPLAY_TIMER					220	// Server to client	
 #define MID_SPEED_CHEAT						221	// Server to client	
+#ifdef PRIMAL_HUNT
+// PH: the player's carried turrets (names ours)
+#define MID_PLAYER_TURRETS					223	// Server to client: the number carried (CPlayerObj, PHObject.lto 0x1010f57e)
+#define MID_TURRET_AMMO						224	// Server to client: a turret's ammo
+#define MID_TURRET_USE						225	// The turret being used (0x10116884), also sent to the turret itself (0x1015a20e)
+#endif
 
 #define MID_CMD_ID_CLOAK					230	// Client to server
 #define MID_CMD_ID_DISC_RETRIEVE			231	// Client to server

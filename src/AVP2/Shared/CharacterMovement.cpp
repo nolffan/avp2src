@@ -826,6 +826,14 @@ void CharacterMovement::UpdateAllowMovement()
 	{
 		m_Vars.m_dwCtrl &= ~(CM_FLAG_FORWARD | CM_FLAG_BACKWARD | CM_FLAG_STRAFELEFT | CM_FLAG_STRAFERIGHT | CM_FLAG_JUMP | CM_FLAG_DUCK | CM_FLAG_WALLWALK);
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: a stunned character cannot crouch (PHObject.lto 0x10045da4)
+	if(m_Vars.m_dwUserFlags & USRFLG_CHAR_STUNNED)
+	{
+		m_Vars.m_dwCtrl &= ~CM_FLAG_DUCK;
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //

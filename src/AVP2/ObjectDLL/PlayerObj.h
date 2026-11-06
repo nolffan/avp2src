@@ -42,6 +42,12 @@ typedef struct tagTimeStamp
 class CPlayerObj : public CCharacter
 {
 public :
+
+#ifdef PRIMAL_HUNT
+	// PH: a carried turret is gone (Turret::Destroyed; names ours)
+	void		TurretDestroyed(HOBJECT hTurret);
+	void		RemoveTurret(HOBJECT hTurret);
+#endif
 	
 	CPlayerObj();
 	~CPlayerObj();

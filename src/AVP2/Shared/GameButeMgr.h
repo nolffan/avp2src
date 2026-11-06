@@ -73,8 +73,11 @@ class CGameButeMgr
 		// vtable has these two slots after the destructor; a manager
 		// without a cache keeps these (both PHCShell.dll 0x100d3d50, the
 		// linker folded them: CDebrisMgr's vtable, 0x101b0110). Names ours.
-		virtual LTBOOL WriteCache(const char* szFile, CMultiFile* pFile) { return LTFALSE; }
-		virtual LTBOOL ReadCache(const char* szFile, CMultiFile* pFile) { return LTFALSE; }
+		// Not inline: CCharacterButeMgr's call them (PHObject.lto
+		// 0x1000e50f, 0x101518b0), and they always fail, so no cache is
+		// ever written or read.
+		virtual LTBOOL WriteCache(const char* szFile, CMultiFile* pFile);
+		virtual LTBOOL ReadCache(const char* szFile, CMultiFile* pFile);
 #endif
 
 		CString GetErrorString() { return m_buteMgr.GetErrorString(); }

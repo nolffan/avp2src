@@ -4492,6 +4492,11 @@ BOOL MultiplayerMgr::OnInfoQuery()
 	SendResponseInfo("lock", m_GameInfo.m_bLocked);
 	SendResponseInfo("ded", m_GameInfo.m_bDedicated);
 	SendResponseInfo("bandwidth", m_GameInfo.m_nBandwidth);
+#ifdef PRIMAL_HUNT
+	// PH: 0x100688f7
+	SendResponseInfo("allowedclasses", m_GameInfo.m_nAllowedClasses);
+	SendResponseInfo("allowedweapons", m_GameInfo.m_nAllowedWeapons);
+#endif
 
 	if(hDesc)
 	{
@@ -4764,6 +4769,18 @@ void MultiplayerMgr::SendGameInfo(HCLIENT hClient)
 
 		*hWrite << bCustom;									// Is there custom scoring?		
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: the class and weapon restrictions (0x1006906b)
+	for(i = 0; i < MAX_MP_RESTRICTIONS; i++)
+		hWrite->WriteWord(m_GameInfo.m_nClasses[i]);
+
+	for(i = 0; i < MAX_MP_RESTRICTIONS; i++)
+		hWrite->WriteWord(m_GameInfo.m_nWeapons[i]);
+
+	hWrite->WriteDWord(m_GameInfo.m_nAllowedClasses);
+	hWrite->WriteDWord(m_GameInfo.m_nAllowedWeapons);
+#endif
 
 	// Send it!
 	g_pLTServer->EndMessage(hWrite);

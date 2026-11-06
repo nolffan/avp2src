@@ -18,6 +18,9 @@
 #include "HierarchicalButeMgr.h"
 #include "CharacterMovementDefs.h"
 #include "CharacterAlignment.h"
+#ifdef PRIMAL_HUNT
+#include "MPRestrictList.h"
+#endif
 
 //*********************************************************************************
 
@@ -46,6 +49,12 @@ typedef struct t_CharacterButes
 	// Loading and saving the character bute information
 	void	Write(HMESSAGEWRITE hWrite);
 	void	Read(HMESSAGEREAD hRead);
+
+#ifdef PRIMAL_HUNT
+	// PH: the bute cache (MultiFile.h)
+	LTBOOL	Write(CMultiFile* pFile);
+	LTBOOL	Read(CMultiFile* pFile);
+#endif
 
 	void	Copy(const t_CharacterButes &cb);
 	void	operator=(const t_CharacterButes &cb)			{ this->Copy(cb); }
@@ -231,6 +240,12 @@ class CCharacterButeMgr : public CHierarchicalButeMgr
 		virtual ~CCharacterButeMgr();
 
 		LTBOOL		Init(ILTCSBase *pInterface, const char* szAttributeFile = CHARACTER_BUTES_DEFAULT_FILE);
+
+#ifdef PRIMAL_HUNT
+		// PH: the bute cache (PHObject.lto 0x1000e4f0, 0x1000e580)
+		virtual LTBOOL WriteCache(const char* szFile, CMultiFile* pFile);
+		virtual LTBOOL ReadCache(const char* szFile, CMultiFile* pFile);
+#endif
 		void		Term();
 
 		LTBOOL		WriteFile()						{ return m_buteMgr.Save(); }
@@ -365,6 +380,11 @@ class CCharacterButeMgr : public CHierarchicalButeMgr
 		// Character attribute set variables
 		int				m_nNumSets;
 		CharacterButes	*m_pButeSets;
+
+#ifdef PRIMAL_HUNT
+		// PH: the "_MP" character sets a server can restrict (MPRestrictList.h)
+		CMPRestrictList	m_MPClasses;
+#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////

@@ -51,6 +51,9 @@ enum DamageType
 	DT_PRED_HOTBOMB,	// Predator Hotbomb weapon
 	DT_SHOTGUN,			// Predator Hotbomb weapon
 	DT_BULLET_NOGIB,	// Bullets that don't create GIBs
+#ifdef PRIMAL_HUNT
+	DT_BACKHAND,		// PH: always recoils (CCharacter::ProcessDamageMsg, PHObject.lto 0x100b5d33)
+#endif
 
 	DT_MAX,				// Leave this here for looping purposes
 };

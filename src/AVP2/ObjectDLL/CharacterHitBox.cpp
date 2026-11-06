@@ -458,7 +458,11 @@ void CCharacterHitBox::ResetSkeleton()
 #ifndef _FINAL
 						char model_filename[256];
 						char junk[1];
+#ifdef PRIMAL_HUNT
+						g_pLTServer->GetModelFilenames(m_hModel,model_filename,256,junk,1,LTNULL,0);
+#else
 						g_pLTServer->GetModelFilenames(m_hModel,model_filename,256,junk,1);
+#endif
 
 						g_pLTServer->CPrint(
 							"CCharacterHitBox : Model %s, set to skeleton %s,",

@@ -331,9 +331,18 @@ Still to do:
   handle (decided: it goes in, as a game string).
 - The scorer's vtable-vote tie (a table that ties gets no placement).
 - The PHObject rows the enumeration splits.
-- The server-side layouts still open: MPGameInfo's class and weapon
-  tables, the WeaponMgr structs, PickupButes, and Door's size.
-- ILTServer's extra model file-name argument.
+- Door's size (the other server-side layouts are in: MPGameInfo's class
+  and weapon tables, the "_MP" restriction lists of CWeaponMgr and
+  CCharacterButeMgr (`Shared/MPRestrictList.h`), PickupButes' WeaponRef,
+  DT_BACKHAND, and ILTServer's extra model file-name argument).
+- The bute cache's readers and writers of the other managers (FXButeMgr's
+  Init, ReadCache and WriteCache); `Shared/MultiFile.cpp` and
+  CCharacterButeMgr's are in.
+- CServerOptions' class and weapon lists (PHCShell.dll's ServerOptions.cpp,
+  AVP2XServ.exe): CMPRestrictList is the layout.
+- Primal Hunt's player turrets (CTurretGun, MID_PLAYER_TURRETS and
+  MID_TURRET_USE: StartDeath, the turret's use), and the footstep listeners
+  (CCharacter::HandleFootstepKey, 0x1014baa0).
 
 ### 6. small
 

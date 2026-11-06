@@ -785,7 +785,14 @@
 		// Returns LTFALSE if the object is not a model.
 		// Initializes pFilename or pSkinName to zero length if the model doesn't have
 		// a filename or skin.
+#ifdef PRIMAL_HUNT
+		// PH: a third name, the model's extra texture (ObjectCreateStruct's
+		// m_ExtraTextureName); PHObject.lto's callers pass LTNULL, 0 for it
+		// unless they want it (0x100b8b1a, 0x1005adb7)
+		LTBOOL	(*GetModelFilenames)(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen, char *pExtraName, int extraBufLen);
+#else
 		LTBOOL	(*GetModelFilenames)(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen);
+#endif
 		LTBOOL	(*GetModelFilenames2)(HOBJECT hObj, ObjectCreateStruct *pStruct);
 
 		// OBSOLETE: use ILTCommon::SetObjectFilenames.

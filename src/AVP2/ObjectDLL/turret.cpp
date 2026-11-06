@@ -556,6 +556,9 @@ Turret::Turret()
 	  // m_tmrBurstDelay
 
 	  m_bCanDamage(LTTRUE)
+#ifdef PRIMAL_HUNT
+	  , m_bTripod(LTFALSE)
+#endif
 {
 	AddAggregate(&m_TurretVision);
 	AddAggregate(&m_GunMgr);
@@ -563,6 +566,14 @@ Turret::Turret()
 	SetupFSM();
 
 	m_TurretVision.SetFullCallback( m_TurretVision.MakeCallback(*this,&Turret::SeeCharacter) );
+
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x10088cdb
+	m_nMaxAmmo = 300;
+	m_nLastAmmo = 0;
+	m_fNextPickupTime = 0.0f;
+	m_bSpawnerNotified = LTFALSE;
+#endif
 }
 
 
@@ -992,7 +1003,15 @@ LTBOOL Turret::ReadProp(ObjectCreateStruct *pInfo)
 
 	GenericProp genProp;
 
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x1008b4e9
+	const std::string strAttributeName = GetStringProp( genProp, "AttributeName" );
+	const char * szAttributeName = strAttributeName.c_str();
+	ReadButes( szAttributeName );
+	m_bTripod = (0 == stricmp(szAttributeName, "tripod"));
+#else
 	ReadButes( GetStringProp( genProp, "AttributeName" ).c_str() );
+#endif
 
 	m_fMaxYaw = (LTFLOAT)GetDoubleProp(genProp,"MaxYaw");
 	m_fMinYaw = (LTFLOAT)GetDoubleProp(genProp,"MinYaw");
@@ -1033,6 +1052,12 @@ LTBOOL Turret::ReadProp(ObjectCreateStruct *pInfo)
 	m_aClassTypes[CORPORATE] = GetObjectiveType( GetStringProp(genProp, "Corporate").c_str() );
 	m_aClassTypes[PREDATOR] = GetObjectiveType( GetStringProp(genProp, "Predator").c_str() );
 	m_aClassTypes[ALIEN] = GetObjectiveType( GetStringProp(genProp, "Alien").c_str() );
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x1008b8c0
+	m_aClassTypes[MARINE_EXOSUIT] = GetObjectiveType( GetStringProp(genProp, "MarineExo").c_str() );
+	m_aClassTypes[CORPORATE_EXOSUIT] = GetObjectiveType( GetStringProp(genProp, "CorpExo").c_str() );
+	m_aClassTypes[SYNTHETIC] = GetObjectiveType( GetStringProp(genProp, "Synthetic").c_str() );
+#endif
 
 	m_TurretVision.SetRanks(m_aClassTypes[MARINE],m_aClassTypes[CORPORATE],m_aClassTypes[PREDATOR],m_aClassTypes[ALIEN]);
 
@@ -1161,8 +1186,21 @@ LTBOOL Turret::InitialUpdate()
 
 	g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags | dwSTFlag);
 
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x1008c0df. A tripod turret can be picked up; its
+	// activate type is 9, after AT_EXO_PICKUP (Shared/ClientServerShared.h
+	// does not name it yet).
+	if( m_bTripod )
+		SetActivateType(m_hObject, (ActivateType)9);
+
+	// A turret can be pushed now, by anything heavier than its blocking
+	// priority.
+	m_damage.SetMass(30.0f);
+	g_pLTServer->SetBlockingPriority(m_hObject, 64);
+#else
 	// Make sure the base cannot be moved.
 	m_damage.SetMass(INFINITE_MASS);
+#endif
 
 	// Record our can damage property.
 	m_bCanDamage = m_damage.GetCanDamage();
@@ -1241,6 +1279,13 @@ LTBOOL Turret::InitialUpdate()
 			// Store gun handle.
 			m_hGunHandle = pGunModel->m_hObject;
 
+#ifdef PRIMAL_HUNT
+			// PH: PHObject.lto 0x1008c49c
+			uint32 dwGunFlags;
+			g_pLTServer->Common()->GetObjectFlags(m_hGunHandle, OFT_Flags, dwGunFlags);
+			g_pLTServer->Common()->SetObjectFlags(m_hGunHandle, OFT_Flags, dwGunFlags | FLAG_FORCECLIENTUPDATE);
+#endif
+
 			// Determine offset.
 			if( !m_strGunBaseSocket.empty() )
 			{
@@ -1278,7 +1323,12 @@ LTBOOL Turret::InitialUpdate()
 	// Set up the Weapon Manager
 	//
 	m_GunMgr.Init(m_hObject);
+#ifdef PRIMAL_HUNT
+	// PH: 500 rounds (PHObject.lto 0x1008c708)
+	m_GunMgr.ObtainWeapon(m_nWeaponId, BARREL_DEFAULT_ID, AMMO_DEFAULT_ID, 500);
+#else
 	m_GunMgr.ObtainWeapon(m_nWeaponId);
+#endif
 	m_GunMgr.ChangeWeapon(m_nWeaponId);
 
 	// Do set-up stuff for the weapon.
@@ -1288,6 +1338,14 @@ LTBOOL Turret::InitialUpdate()
 //		LTVector vGunPos;
 //		g_pLTServer->GetObjectPos(m_hGunHandle, &vGunPos);
 		
+#ifdef PRIMAL_HUNT
+		// PH: PHObject.lto 0x1008c779
+		const int nAmmoId = pWeapon->GetAmmoId();
+		m_nAmmoId = g_pWeaponMgr->GetPoolId(nAmmoId);
+		m_GunMgr.SetInfinitePool(m_nAmmoId);
+		m_nMaxAmmo = m_GunMgr.GetAmmoCount(nAmmoId);
+
+#endif
 		// Cache the weapon stuff.
 		pWeapon->CacheFiles();
 
@@ -1348,6 +1406,13 @@ LTBOOL Turret::InitialUpdate()
 
 	// Get the updates going.
 	SetNextUpdate(m_bOn ? UPDATE_DELTA : 0.0f, UPDATE_DELTA + 1.0f);
+
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x1008cbfb
+	m_fNextAmmoMsgTime = UPDATE_DELTA;
+	m_nLastAmmo = -1;
+	m_fHeat = 0.0f;
+#endif
 
 	return LTTRUE;
 }
@@ -1554,6 +1619,14 @@ void Turret::FirstUpdate()
 		m_RootFSM.AddMessage(Root::eTurnOff);
 		m_bOn = LTFALSE;
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: tell the clients how much ammo we have (PHObject.lto 0x1008d944)
+	if( CWeapon * pWeapon = m_GunMgr.GetCurWeapon() )
+	{
+		SendAmmoMessage( m_GunMgr.GetAmmoCount(pWeapon->GetAmmoId()) );
+	}
+#endif
 }
 
 
@@ -2464,6 +2537,18 @@ void Turret::Save(HMESSAGEWRITE hWrite)
 	*hWrite << m_tmrBurstDelay;
 
 	*hWrite << m_bCanDamage;
+
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x10090db0
+	g_pLTServer->WriteToMessageFloat(hWrite, m_fNextAmmoMsgTime);
+	g_pLTServer->WriteToMessageFloat(hWrite, m_fHeat);
+	g_pLTServer->WriteToMessageFloat(hWrite, (LTFLOAT)m_nLastAmmo);
+	g_pLTServer->WriteToMessageByte(hWrite, m_bTripod);
+	g_pLTServer->WriteToMessageFloat(hWrite, (LTFLOAT)m_nMaxAmmo);
+	g_pLTServer->WriteToLoadSaveMessageObject(hWrite, m_hSpawner);
+	g_pLTServer->WriteToLoadSaveMessageObject(hWrite, m_hOwner);
+	g_pLTServer->WriteToMessageFloat(hWrite, m_fNextPickupTime);
+#endif
 }
 
 
@@ -2614,6 +2699,23 @@ void Turret::Load(HMESSAGEREAD hRead)
 	*hRead >> m_tmrBurstDelay;
 
 	*hRead >> m_bCanDamage;
+
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x10091783
+	m_fNextAmmoMsgTime = g_pLTServer->ReadFromMessageFloat(hRead);
+	m_fHeat = g_pLTServer->ReadFromMessageFloat(hRead);
+	m_nLastAmmo = (int)g_pLTServer->ReadFromMessageFloat(hRead);
+	m_bTripod = g_pLTServer->ReadFromMessageByte(hRead);
+	m_nMaxAmmo = (int)g_pLTServer->ReadFromMessageFloat(hRead);
+
+	HOBJECT hObj;
+	g_pLTServer->ReadFromLoadSaveMessageObject(hRead, &hObj);
+	m_hSpawner = hObj;
+	g_pLTServer->ReadFromLoadSaveMessageObject(hRead, &hObj);
+	m_hOwner = hObj;
+
+	m_fNextPickupTime = g_pLTServer->ReadFromMessageFloat(hRead);
+#endif
 }
 
 
@@ -2640,6 +2742,14 @@ uint32 TurretWeapon::ObjectMessageFn( HOBJECT hSender, uint32 messageID, HMESSAG
 	{
 		case MID_DAMAGE:
 		{
+#ifdef PRIMAL_HUNT
+			// PH: an invisible gun takes no damage (PHObject.lto 0x10091a82)
+			uint32 dwFlags;
+			g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+			if( !(dwFlags & FLAG_VISIBLE) )
+				return 0;
+#endif
+
 			// Let our damage aggregate process the message first...
 
 			uint32 dwRet = Prop::ObjectMessageFn(hSender, messageID, hRead);
@@ -2787,5 +2897,31 @@ void Turret::PrintRootFSMState(const RootFSM & fsm, Root::State state)
 		g_pLTServer->GetTime(),
 		g_pLTServer->GetObjectName(m_hObject),
 		szMessage );
+}
+#endif
+
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Turret::SendAmmoMessage()
+//
+//	PURPOSE:	PH: tell every client the ammo left, as a percentage, and
+//				the heat (PHObject.lto 0x10092ca0). The message is
+//				Primal Hunt's 0xe0, which Shared/MsgIDs.h does not name
+//				yet.
+//
+// ----------------------------------------------------------------------- //
+
+void Turret::SendAmmoMessage(int nAmmo)
+{
+	HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(LTNULL, 0xe0);
+	const int nAmmoPercent = (uint8)((LTFLOAT)nAmmo / m_nMaxAmmo * 100.0f);
+	g_pLTServer->WriteToMessageObject(hMessage, m_hObject);
+	g_pLTServer->WriteToMessageByte(hMessage, nAmmoPercent);
+	g_pLTServer->WriteToMessageByte(hMessage, (uint8)m_fHeat);
+	g_pLTServer->EndMessage(hMessage);
+
+	m_nLastAmmo = nAmmo;
 }
 #endif

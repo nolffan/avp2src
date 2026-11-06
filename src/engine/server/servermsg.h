@@ -950,7 +950,12 @@ public:
 	const char *(*GetAnimName)(HOBJECT hObject, HMODELANIM hAnim);                                     // 0x200
 	void (*SetModelPlaying)(HOBJECT hObj, LTBOOL bPlaying);                                            // 0x204
 	LTBOOL (*GetModelPlaying)(HOBJECT hObj);                                                           // 0x208
+#ifdef PRIMAL_HUNT
+	// PH: a third name pair, the model's extra texture (iltserver.h)
+	LTBOOL (*GetModelFilenames)(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen, char *pExtraName, int extraBufLen);// 0x20c
+#else
 	LTBOOL (*GetModelFilenames)(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen);// 0x20c
+#endif
 	LTBOOL (*GetModelFilenames2)(HOBJECT hObj, ObjectCreateStruct *pStruct);                           // 0x210  AVP2: new
 	uint32 (*GetObjectContainers)(HOBJECT hObj, HOBJECT *pContainerList, uint32 *pFlagList, uint32 maxListSize);// 0x214
 	uint32 (*GetContainedObjects)(HOBJECT hContainer, HOBJECT *pObjectList, uint32 *pFlagList, uint32 maxListSize);// 0x218

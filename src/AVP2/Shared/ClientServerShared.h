@@ -147,6 +147,9 @@ enum ActivateType
 	AT_PRED_PICKUP,
 	AT_MARINE_PICKUP,
 	AT_EXO_PICKUP,
+#ifdef PRIMAL_HUNT
+	AT_TRIPOD_PICKUP,	// PH: a carried turret's tripod (9; name ours)
+#endif
 	AT_BITSHIFT = 19, //this must match the number of bits USRFLG_ACTIVATE0 is shifted
 };
 

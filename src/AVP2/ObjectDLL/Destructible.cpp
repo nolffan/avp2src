@@ -25,6 +25,9 @@
 #include "iltphysics.h"
 #include "AIUtils.h"
 #include "MultiplayerMgr.h"
+#ifdef PRIMAL_HUNT
+#include "Turret.h"
+#endif
 
 #define TRIGGER_MSG_DESTROY	"DESTROY"
 #define TRIGGER_MSG_DAMAGE	"DAMAGE"
@@ -1361,7 +1364,12 @@ void CDestructible::SetCanDamage(LTBOOL bCanDamage, LTFLOAT fMin)
 			{
 				LTFLOAT r, g, b, a;
 				g_pLTServer->GetObjectColor(m_hObject, &r, &g, &b, &a);
+#ifdef PRIMAL_HUNT
+				// PH: half, as the comment says (PHObject.lto 0x100d6e4a)
+				g_pLTServer->SetObjectColor(m_hObject, r, g, b, m_bCanDamage ? 1.0f : 0.5f);
+#else
 				g_pLTServer->SetObjectColor(m_hObject, r, g, b, m_bCanDamage ? 1.0f : 0.1f);
+#endif
 			}
 
 
@@ -1669,6 +1677,11 @@ void CDestructible::HandleCrush(LPBASECLASS pObject, HOBJECT hSender)
 
     uint32 dwUsrFlg = g_pLTServer->GetObjectUserFlags(hSender);
 	if (dwUsrFlg & USRFLG_CANT_CRUSH) return;
+
+#ifdef PRIMAL_HUNT
+	// PH: turrets don't crush (PHObject.lto 0x100d76e0)
+	if (IsTurret(hSender) == LTTRUE) return;
+#endif
 
 	// If the other guy is not more than 15% bigger, don't crush.
 	float fMassRatio = fHisMass / ( fMyMass + 0.0001f );

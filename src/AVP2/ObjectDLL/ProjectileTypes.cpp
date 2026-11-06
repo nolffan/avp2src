@@ -925,7 +925,11 @@ void CProxGrenade::Detonate(HOBJECT hObj, LTBOOL bDidProjectileImpact)
 		else
 			hDamager = m_hObject;
 
+#ifdef PRIMAL_HUNT
+		ImpactDamageObject(hDamager, hObj, vPos);	// PH: the position hit
+#else
 		ImpactDamageObject(hDamager, hObj);
+#endif
 	}
 
 	AddImpact(hObj, LTVector(0,0,0), vPos, vNormal, eType);
@@ -2394,7 +2398,11 @@ void CSpear::HandleImpact(HOBJECT hObj)
 				if(CreateHeadObject(pCharacter))
 				{
 					AdjustDamage(*pCharacter, pCharacter->GetModelNodeLastHit());
+#ifdef PRIMAL_HUNT
+					ImpactDamageObject(GetFiredFrom(), pCharacter->m_hObject, vPos);	// PH: 0x1007deba
+#else
 					ImpactDamageObject(GetFiredFrom(), pCharacter->m_hObject);
+#endif
 					//don't stop for anything but walls
 					g_pLTServer->SetObjectFlags(m_hObject, g_pLTServer->GetObjectFlags(m_hObject) & ~FLAG_SOLID);
 
@@ -3501,7 +3509,11 @@ void CStickyHotbomb::Detonate(HOBJECT hObj, LTBOOL bDidProjectileImpact)
 		else
 			hDamager = m_hObject;
 
+#ifdef PRIMAL_HUNT
+		ImpactDamageObject(hDamager, hObj, vPos);	// PH: the position hit
+#else
 		ImpactDamageObject(hDamager, hObj);
+#endif
 	}
 
 	AddImpact(hObj, LTVector(0,0,0), vPos, vNormal, eType);

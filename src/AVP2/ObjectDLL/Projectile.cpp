@@ -539,7 +539,11 @@ LTBOOL CProjectile::TestInsideObject(HOBJECT hTestObj, AmmoType eAmmoType)
 	{
 		if (eAmmoType == VECTOR)
 		{
+#ifdef PRIMAL_HUNT
+			ImpactDamageObject(m_hFiredFrom, hTestObj, vTestPos);	// PH: 0x100757a4
+#else
 			ImpactDamageObject(m_hFiredFrom, hTestObj);
+#endif
 		}
 
 		LTVector vNormal(0, 1, 0);
@@ -628,6 +632,9 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 	 // Let it get out of our bounding box...
 
 	if (hObj == m_hFiredFrom) return;
+#ifdef PRIMAL_HUNT
+	if (hObj == m_hIgnoreObj) return;	// PH: PHObject.lto 0x100759c1
+#endif
 
 	CCharacterHitBox* pHitBox = LTNULL;
 	if (IsCharacterHitBox(hObj))
@@ -857,7 +864,11 @@ void CProjectile::Detonate(HOBJECT hObj, LTBOOL bDidProjectileImpact)
 		else
 			hDamager = m_hObject;
 
+#ifdef PRIMAL_HUNT
+		ImpactDamageObject(hDamager, hObj, vPos);	// PH: 0x10076021
+#else
 		ImpactDamageObject(hDamager, hObj);
+#endif
 	}
 
 	AddImpact(hObj, m_vFlashPos, vPos, vNormal, eType);
@@ -1585,7 +1596,11 @@ void CProjectile::DoForcedHit(HOBJECT hVictim, ModelNode eNodeHit)
 void CProjectile::HandleForcedImpact( HOBJECT hVictim, LTVector& vNodePos)
 {
 	// Do the damage
+#ifdef PRIMAL_HUNT
+	ImpactDamageObject(m_hFiredFrom, hVictim, vNodePos);	// PH: 0x10077661
+#else
 	ImpactDamageObject(m_hFiredFrom, hVictim);
+#endif
 
 	// Do the FX
 	uint32 dwUsrFlags = g_pLTServer->GetObjectUserFlags(hVictim);
@@ -1621,7 +1636,13 @@ LTBOOL CProjectile::HandleVectorImpact( const IntersectInfo & iInfo, LTVector * 
 
 	if (!bHitWorld && eSurfType != ST_LIQUID)
 	{
+#ifdef PRIMAL_HUNT
+		// PH: PHObject.lto 0x1007775f
+		LTVector vPos = iInfo.m_Point;
+		ImpactDamageObject(m_hFiredFrom, iInfo.m_hObject, vPos);
+#else
 		ImpactDamageObject(m_hFiredFrom, iInfo.m_hObject);
+#endif
 	}
 
 
@@ -1816,10 +1837,19 @@ void CProjectile::AdjustDamage(const BodyProp & damagee, ModelNode eModelNode)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+void CProjectile::ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj, const LTVector & vPos)
+#else
 void CProjectile::ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj)
+#endif
 {
 	DamageStruct damage;
 
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x10077d58
+	damage.Clear();
+	damage.vPos		= vPos;
+#endif
 	damage.hDamager = hDamager;
 	damage.vDir		= m_vDir;
 

@@ -64,6 +64,10 @@ static dt_to_flag_struct DamageTypeInfoArray[] =
 	dt_to_flag_struct((1<<DT_PRED_HOTBOMB),	"Hotbomb",		0.0f, 1.0f,		LTFALSE),
 	dt_to_flag_struct((1<<DT_SHOTGUN),		"Shotgun",		0.0f, 1.0f,		LTTRUE),
 	dt_to_flag_struct((1<<DT_BULLET_NOGIB),	"Bullet No Gib",0.0f, 1.0f,		LTTRUE),
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x10053179, the table's initializer
+	dt_to_flag_struct((1<<DT_BACKHAND),		"Backhand",		0.0f, 1.0f,		LTTRUE),
+#endif
 };
 
 // ----------------------------------------------------------------------- //

@@ -354,6 +354,16 @@ bool CWeaponMgr::LoadWeaponButes(const char *szTagName, void *pData)
 			pButeMgr->m_pWeapons[ pButeMgr->m_nNumWeapons ].nId = pButeMgr->m_nNumWeapons;
 			++pButeMgr->m_nNumWeapons;
 		}
+
+#ifdef PRIMAL_HUNT
+		// PH: list the multiplayer weapons a server can restrict, but the
+		// melee ones every class keeps (0x100329a4)
+		if( strstr(szTagName, "_MP") && _stricmp(szTagName, "Knife_MP") && _stricmp(szTagName, "Wristblades_MP") )
+		{
+			const int nWeapon = pButeMgr->m_nNumWeapons - 1;
+			pButeMgr->m_MPWeapons.Add(pButeMgr->m_pWeapons[nWeapon].nId, pButeMgr->m_pWeapons[nWeapon].szName);
+		}
+#endif
 	}
 
 	return true;
@@ -461,6 +471,10 @@ DBOOL CWeaponMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
 	// Read weapons...
 	if( m_nNumWeapons > 0 )
 	{
+#ifdef PRIMAL_HUNT
+		// PH: 0x10032e18
+		m_MPWeapons.Clear();
+#endif
 		m_pWeapons = new WEAPON[m_nNumWeapons];
 
 		m_nNumWeapons = 0;

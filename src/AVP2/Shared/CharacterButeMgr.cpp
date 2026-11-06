@@ -12,6 +12,9 @@
 
 #include "stdafx.h"
 #include "CharacterButeMgr.h"
+#ifdef PRIMAL_HUNT
+#include "MultiFileImpl.h"
+#endif
 #include "ModelButeMgr.h"
 #include "SurfaceMgr.h"
 #include "WeaponMgr.h"
@@ -275,6 +278,10 @@ void t_CharacterButes::Write(HMESSAGEWRITE hWrite)
 	g_pInterface->WriteToMessageByte(hWrite, m_bCanClimb);
 	g_pInterface->WriteToMessageByte(hWrite, m_bCanPounce);
 	g_pInterface->WriteToMessageDWord(hWrite, m_nPounceDamage);
+#ifdef PRIMAL_HUNT
+	// PH: 0x1000a582
+	g_pInterface->WriteToMessageString(hWrite, m_szDefaultEnvMap);
+#endif
 }
 
 //*********************************************************************************
@@ -400,7 +407,277 @@ void t_CharacterButes::Read(HMESSAGEREAD hRead)
 	m_bCanClimb = g_pInterface->ReadFromMessageByte(hRead);
 	m_bCanPounce = g_pInterface->ReadFromMessageByte(hRead);
 	m_nPounceDamage = g_pInterface->ReadFromMessageDWord(hRead);
+#ifdef PRIMAL_HUNT
+	// PH: 0x1000abc3
+	hRead->ReadStringFL(m_szDefaultEnvMap, sizeof(m_szDefaultEnvMap));
+#endif
 }
+
+//*********************************************************************************
+// PH: the bute cache (MultiFile.h): the same as the message's Write and Read
+// (PHObject.lto 0x1000abe0, 0x1000b0c0)
+
+#ifdef PRIMAL_HUNT
+
+LTBOOL t_CharacterButes::Write(CMultiFile* pFile)
+{
+	if(!pFile) return LTFALSE;
+
+	int i = 0;
+
+	pFile->WriteDWord(m_nId);
+
+	pFile->WriteByte(m_eCharacterClass);
+	pFile->WriteString(m_szParent);
+
+	pFile->WriteString(m_szModelDir);
+	pFile->WriteString(m_szSkinDir);
+
+	pFile->WriteString(m_szName);
+	pFile->WriteString(m_szModel);
+
+	for(i = 0; i < MAX_MODEL_TEXTURES; i++)
+		pFile->WriteString(m_szSkins[i]);
+
+	pFile->WriteString(m_szWeaponSkinType);
+
+	for(i = 0; i < MAX_ANIM_LAYERS; i++)
+	{
+		pFile->WriteString(m_szAnimLayers[i]);
+		pFile->WriteString(m_szMPAnimLayers[i]);
+	}
+
+	pFile->WriteVector(m_vDims);
+	pFile->WriteFloat(m_fMass);
+	pFile->WriteFloat(m_fCameraHeightPercent);
+	pFile->WriteByte(m_nSurfaceType);
+	pFile->WriteDWord(m_nSkeleton);
+	pFile->WriteDWord(m_nWeaponSet);
+	pFile->WriteDWord(m_nMPWeaponSet);
+	pFile->WriteDWord(m_nMPClassWeaponSet);
+	pFile->WriteDWord(m_nMPWeaponStringRes);
+	pFile->WriteString(m_szVisionSet);
+	pFile->WriteDWord(m_nHUDType);
+	pFile->WriteVector(m_vPouncingDims);
+
+	pFile->WriteFloat(m_fChestOffsetPercent);
+	pFile->WriteFloat(m_fHeadOffsetPercent);
+
+	pFile->WriteDWord(m_ptFOV.x);
+	pFile->WriteDWord(m_ptFOV.y);
+	pFile->WriteDWord(m_ptAimRange.x);
+	pFile->WriteDWord(m_ptAimRange.y);
+	pFile->WriteFloat(m_fHeadTiltAngle);
+	pFile->WriteFloat(m_fHeadTiltSpeed);
+
+	pFile->WriteFloat(m_fBaseWalkSpeed);
+	pFile->WriteFloat(m_fBaseRunSpeed);
+	pFile->WriteFloat(m_fBaseJumpSpeed);
+	pFile->WriteFloat(m_fBaseRunJumpSpeed);
+	pFile->WriteFloat(m_fBaseSpringJumpSpeed);
+	pFile->WriteFloat(m_fBasePounceSpeed);
+	pFile->WriteFloat(m_fBaseCrouchSpeed);
+	pFile->WriteFloat(m_fBaseLiquidSpeed);
+	pFile->WriteFloat(m_fBaseLadderSpeed);
+
+	pFile->WriteFloat(m_fFallDistanceSafe);
+	pFile->WriteFloat(m_fFallDistanceDeath);
+
+	pFile->WriteFloat(m_fWalkingTurnRate);
+	pFile->WriteFloat(m_fRunningTurnRate);
+
+	pFile->WriteFloat(m_fWalkingAimRate);
+	pFile->WriteFloat(m_fRunningAimRate);
+
+	pFile->WriteFloat(m_fBaseGroundAccel);
+	pFile->WriteFloat(m_fBaseAirAccel);
+	pFile->WriteFloat(m_fBaseLiquidAccel);
+
+	pFile->WriteFloat(m_fMaxAIPopDist);
+
+	pFile->WriteVector(m_vJumpDirection);
+
+	pFile->WriteByte(m_bWallWalk);
+	pFile->WriteByte(m_bCanBeNetted);
+	pFile->WriteByte(m_bCanBeOnFire);
+	pFile->WriteByte(m_bCanBeFacehugged);
+	pFile->WriteByte(m_bCanUseLookAt);
+
+	pFile->WriteFloat(m_fActivateDist);
+	pFile->WriteDWord(m_nEMPFlags);
+	pFile->WriteFloat(m_fWalkingKickBack);
+	pFile->WriteFloat(m_fRunningKickBack);
+
+	pFile->WriteFloat(m_fBaseStunChance);
+
+	pFile->WriteFloat(m_fDefaultHitPoints);
+	pFile->WriteFloat(m_fMaxHitPoints);
+	pFile->WriteFloat(m_fDefaultArmorPoints);
+	pFile->WriteFloat(m_fMaxArmorPoints);
+	pFile->WriteFloat(m_fDamageResistance);
+
+	pFile->WriteFloat(m_fHeadBiteHealPoints);
+	pFile->WriteFloat(m_fClawHealPoints);
+
+	pFile->WriteFloat(m_fAirSupplyTime);
+
+	pFile->WriteFloat(m_fMinRecoilDamage);
+	pFile->WriteFloat(m_fRecoilChance);
+	pFile->WriteFloat(m_fMinRecoilDelay);
+	pFile->WriteFloat(m_fMaxRecoilDelay);
+
+	pFile->WriteFloat(m_fHitBoxScale);
+
+	for(i=0 ; i<MAX_ZOOM_LEVELS ; i++)
+		pFile->WriteFloat(m_fZoomLevels[i]);
+
+	pFile->WriteFloat(m_fBaseFootStepVolume);
+	pFile->WriteString(m_szFootStepSoundDir);
+	pFile->WriteString(m_szGeneralSoundDir);
+	pFile->WriteString(m_szAIAnimType);
+
+	pFile->WriteString(m_szPounceWeapon);
+	pFile->WriteByte(m_bCanLoseLimb);
+	pFile->WriteByte(m_bCanClimb);
+	pFile->WriteByte(m_bCanPounce);
+	pFile->WriteDWord(m_nPounceDamage);
+	pFile->WriteString(m_szDefaultEnvMap);
+
+	return LTTRUE;
+}
+
+//*********************************************************************************
+
+LTBOOL t_CharacterButes::Read(CMultiFile* pFile)
+{
+	if(!pFile) return LTFALSE;
+
+	int i = 0;
+
+	m_nId = pFile->ReadDWord();
+
+	m_eCharacterClass = CharacterClass(pFile->ReadByte());
+	pFile->ReadString(m_szParent, sizeof(m_szParent));
+
+	pFile->ReadString(m_szModelDir, sizeof(m_szModelDir));
+	pFile->ReadString(m_szSkinDir, sizeof(m_szSkinDir));
+
+	pFile->ReadString(m_szName, sizeof(m_szName));
+	pFile->ReadString(m_szModel, sizeof(m_szModel));
+
+	for(i = 0; i < MAX_MODEL_TEXTURES; i++)
+		pFile->ReadString(m_szSkins[i], sizeof(m_szSkins[i]));
+
+	pFile->ReadString(m_szWeaponSkinType, sizeof(m_szModel));
+
+	for(i = 0; i < MAX_ANIM_LAYERS; i++)
+	{
+		pFile->ReadString(m_szAnimLayers[i], sizeof(m_szAnimLayers[i]));
+		pFile->ReadString(m_szMPAnimLayers[i], sizeof(m_szMPAnimLayers[i]));
+	}
+
+	pFile->ReadVector(&m_vDims);
+	m_fMass = pFile->ReadFloat();
+	m_fCameraHeightPercent = pFile->ReadFloat();
+	m_nSurfaceType = pFile->ReadByte();
+	m_nSkeleton = pFile->ReadDWord();
+	m_nWeaponSet = pFile->ReadDWord();
+	m_nMPWeaponSet = pFile->ReadDWord();
+	m_nMPClassWeaponSet = pFile->ReadDWord();
+	m_nMPWeaponStringRes = pFile->ReadDWord();
+	pFile->ReadString(m_szVisionSet, sizeof(m_szVisionSet));
+	m_nHUDType = pFile->ReadDWord();
+	pFile->ReadVector(&m_vPouncingDims);
+
+	m_fChestOffsetPercent = pFile->ReadFloat();
+	m_fHeadOffsetPercent = pFile->ReadFloat();
+
+	m_ptFOV.x = pFile->ReadDWord();
+	m_ptFOV.y = pFile->ReadDWord();
+	m_ptAimRange.x = pFile->ReadDWord();
+	m_ptAimRange.y = pFile->ReadDWord();
+	m_fHeadTiltAngle = pFile->ReadFloat();
+	m_fHeadTiltSpeed = pFile->ReadFloat();
+
+	m_fBaseWalkSpeed = pFile->ReadFloat();
+	m_fBaseRunSpeed = pFile->ReadFloat();
+	m_fBaseJumpSpeed = pFile->ReadFloat();
+	m_fBaseRunJumpSpeed = pFile->ReadFloat();
+	m_fBaseSpringJumpSpeed = pFile->ReadFloat();
+	m_fBasePounceSpeed = pFile->ReadFloat();
+	m_fBaseCrouchSpeed = pFile->ReadFloat();
+	m_fBaseLiquidSpeed = pFile->ReadFloat();
+	m_fBaseLadderSpeed = pFile->ReadFloat();
+
+	m_fFallDistanceSafe = pFile->ReadFloat();
+	m_fFallDistanceDeath = pFile->ReadFloat();
+
+	m_fWalkingTurnRate = pFile->ReadFloat();
+	m_fRunningTurnRate = pFile->ReadFloat();
+
+	m_fWalkingAimRate = pFile->ReadFloat();
+	m_fRunningAimRate = pFile->ReadFloat();
+
+	m_fBaseGroundAccel = pFile->ReadFloat();
+	m_fBaseAirAccel = pFile->ReadFloat();
+	m_fBaseLiquidAccel = pFile->ReadFloat();
+
+	m_fMaxAIPopDist = pFile->ReadFloat();
+
+	pFile->ReadVector(&m_vJumpDirection);
+
+	m_bWallWalk = pFile->ReadByte();
+	m_bCanBeNetted = pFile->ReadByte();
+	m_bCanBeOnFire = pFile->ReadByte();
+	m_bCanBeFacehugged = pFile->ReadByte();
+	m_bCanUseLookAt = pFile->ReadByte();
+
+	m_fActivateDist = pFile->ReadFloat();
+	m_nEMPFlags = pFile->ReadDWord();
+	m_fWalkingKickBack = pFile->ReadFloat();
+	m_fRunningKickBack = pFile->ReadFloat();
+
+	m_fBaseStunChance = pFile->ReadFloat();
+
+	m_fDefaultHitPoints = pFile->ReadFloat();
+	m_fMaxHitPoints = pFile->ReadFloat();
+	m_fDefaultArmorPoints = pFile->ReadFloat();
+	m_fMaxArmorPoints = pFile->ReadFloat();
+	m_fDamageResistance = pFile->ReadFloat();
+
+	m_fHeadBiteHealPoints = pFile->ReadFloat();
+	m_fClawHealPoints = pFile->ReadFloat();
+
+	m_fAirSupplyTime = pFile->ReadFloat();
+
+	m_fMinRecoilDamage = pFile->ReadFloat();
+	m_fRecoilChance = pFile->ReadFloat();
+	m_fMinRecoilDelay = pFile->ReadFloat();
+	m_fMaxRecoilDelay = pFile->ReadFloat();
+
+	m_fHitBoxScale = pFile->ReadFloat();
+
+	for(i=0 ; i<MAX_ZOOM_LEVELS ; i++)
+		m_fZoomLevels[i] = pFile->ReadFloat();
+
+	m_fBaseFootStepVolume = pFile->ReadFloat();
+
+	pFile->ReadString(m_szFootStepSoundDir, sizeof(m_szFootStepSoundDir));
+	pFile->ReadString(m_szGeneralSoundDir, sizeof(m_szGeneralSoundDir));
+	pFile->ReadString(m_szAIAnimType, sizeof(m_szAIAnimType));
+
+	pFile->ReadString(m_szPounceWeapon, sizeof(m_szPounceWeapon));
+	m_bCanLoseLimb = pFile->ReadByte();
+	m_bCanClimb = pFile->ReadByte();
+	m_bCanPounce = pFile->ReadByte();
+	m_nPounceDamage = pFile->ReadDWord();
+	pFile->ReadString(m_szDefaultEnvMap, sizeof(m_szDefaultEnvMap));
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 
 //*********************************************************************************
 
@@ -621,6 +898,18 @@ bool CCharacterButeMgr::LoadButes(const char *szTagName, void *pData)
 		++pButeMgr->m_nNumSets;
 	}
 
+#ifdef PRIMAL_HUNT
+	// PH: list the multiplayer character sets a server can restrict, but
+	// the two an alien only grows out of (0x1000be2b)
+	if( strstr(szTagName, "_MP") )
+	{
+		CharacterButes butes = pButeMgr->GetCharacterButes(szTagName);
+
+		if( !strstr(butes.m_szName, "Facehugger") && !strstr(butes.m_szName, "Chestburster") )
+			pButeMgr->m_MPClasses.Add(butes.m_nId, butes.m_szName);
+	}
+#endif
+
 	// Keep iterating.
 	return true;
 }
@@ -637,6 +926,16 @@ LTBOOL CCharacterButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFil
 #ifndef __LINUX
 	ASSERT( g_pModelButeMgr );
 	ASSERT( g_pSurfaceMgr );
+#endif
+
+#ifdef PRIMAL_HUNT
+	// PH: read the bute cache instead, if there is one (0x1000c4f6)
+	CMultiFile_LITH cacheFile;
+	if( ReadCache(szAttributeFile, &cacheFile) == LTTRUE )
+	{
+		g_pCharacterButeMgr = this;
+		return LTTRUE;
+	}
 #endif
 
 	if (g_pCharacterButeMgr || !szAttributeFile) return DFALSE;
@@ -676,8 +975,79 @@ LTBOOL CCharacterButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFil
 
 	m_buteMgr.Term();
 
+#ifdef PRIMAL_HUNT
+	// PH: and write the bute cache (0x1000c62f)
+	CMultiFile_FILE cacheOut;
+	WriteCache(szAttributeFile, &cacheOut);
+#endif
+
 	return (m_pButeSets != LTNULL);
 }
+
+#ifdef PRIMAL_HUNT
+
+//*********************************************************************************
+//
+//	ROUTINE:	CCharacterButeMgr::WriteCache()
+//	PURPOSE:	Write the character sets to the bute cache
+//
+//*********************************************************************************
+
+LTBOOL CCharacterButeMgr::WriteCache(const char* szFile, CMultiFile* pFile)
+{
+	if(!g_pInterface || !pFile || !szFile) return LTFALSE;
+
+	// The base class's comes back LTFALSE, so the cache is never written
+	if(!CHierarchicalButeMgr::WriteCache(szFile, pFile))
+	{
+		pFile->Close();
+		return LTFALSE;
+	}
+
+	pFile->WriteInt(m_nNumSets);
+
+	for(int i = 0; i < m_nNumSets; i++)
+	{
+		CharacterButes *pButes = &m_pButeSets[i];
+		if(pButes) pButes->Write(pFile);
+	}
+
+	pFile->Close();
+	return LTTRUE;
+}
+
+//*********************************************************************************
+//
+//	ROUTINE:	CCharacterButeMgr::ReadCache()
+//	PURPOSE:	Read the character sets from the bute cache
+//
+//*********************************************************************************
+
+LTBOOL CCharacterButeMgr::ReadCache(const char* szFile, CMultiFile* pFile)
+{
+	if(!g_pInterface || !pFile || !szFile) return LTFALSE;
+
+	// The base class's comes back LTFALSE, so the cache is never read
+	if(!CHierarchicalButeMgr::ReadCache(szFile, pFile))
+	{
+		pFile->Close();
+		return LTFALSE;
+	}
+
+	m_nNumSets = pFile->ReadInt();
+	m_pButeSets = new CharacterButes[m_nNumSets];
+
+	for(int i = 0; i < m_nNumSets; i++)
+	{
+		CharacterButes *pButes = &m_pButeSets[i];
+		if(pButes) pButes->Read(pFile);
+	}
+
+	pFile->Close();
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 
 //*********************************************************************************

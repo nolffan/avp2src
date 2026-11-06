@@ -14,6 +14,9 @@
 #include "HierarchicalButeMgr.h"
 #include "DamageTypes.h"
 #include "CommandIDs.h"
+#ifdef PRIMAL_HUNT
+#include "MPRestrictList.h"
+#endif
 
 
 struct PROJECTILEFX;
@@ -436,6 +439,11 @@ class CWeaponMgr : public CHierarchicalButeMgr
 		WEAPON_SET*			m_pWeaponSets;	// All weapon sets
 
 		CPlayerStats*		m_pPlayerStats;		// pointer to player stats class
+
+#ifdef PRIMAL_HUNT
+		// PH: the "_MP" weapons a server can restrict (MPRestrictList.h)
+		CMPRestrictList		m_MPWeapons;
+#endif
 };
 
 

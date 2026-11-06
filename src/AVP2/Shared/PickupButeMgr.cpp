@@ -46,6 +46,9 @@
 
 #define PICKUP_BUTE_PICKUP_SOUND			"PickupSound"
 #define PICKUP_BUTE_RESPAWN_SOUND			"RespawnSound"
+#ifdef PRIMAL_HUNT
+#define PICKUP_BUTE_WEAPON_REF				"WeaponRef"
+#endif
 #define PICKUP_BUTE_MOVETOGROUND			"MoveToGround"
 #define PICKUP_BUTE_SOLID					"Solid"
 
@@ -423,6 +426,9 @@ void CPickupButeMgr::LoadPickupButes(int nSet, PickupButes &butes)
 
 	SAFE_STRCPY(butes.m_szPickupSound, GetStringAttrib(nSet, PICKUP_BUTE_PICKUP_SOUND));
 	SAFE_STRCPY(butes.m_szRespawnSound, GetStringAttrib(nSet, PICKUP_BUTE_RESPAWN_SOUND));
+#ifdef PRIMAL_HUNT
+	SAFE_STRCPY(butes.m_szWeaponRef, GetStringAttrib(nSet, PICKUP_BUTE_WEAPON_REF));
+#endif
 	butes.m_bMoveToGround = (LTBOOL)GetIntAttrib(nSet, PICKUP_BUTE_MOVETOGROUND);
 	butes.m_bSolid = (LTBOOL)GetIntAttrib(nSet, PICKUP_BUTE_SOLID);
 	butes.m_nType = GetIntAttrib(nSet, PICKUP_BUTE_TYPE);

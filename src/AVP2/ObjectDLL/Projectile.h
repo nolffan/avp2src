@@ -86,7 +86,13 @@ class CProjectile : public GameBase
 		virtual void RemoveObject();
 
 		virtual void HandleImpact(HOBJECT hObj);
+#ifdef PRIMAL_HUNT
+		// PH: the damage carries the position hit (DamageStruct::vPos;
+		// PHObject.lto 0x10077d10)
+		virtual void ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj, const LTVector & vPos);
+#else
 		virtual void ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj);
+#endif
 
 		virtual void Save(HMESSAGEWRITE hWrite, uint32 dwSaveFlags);
 		virtual void Load(HMESSAGEREAD hRead, uint32 dwLoadFlags);

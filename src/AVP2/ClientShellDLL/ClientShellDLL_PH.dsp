@@ -610,6 +610,10 @@ SOURCE=.\MPClientMgrChart.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\Shared\MultiFile.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\MultiplayerClientMgr.cpp
 # End Source File
 # Begin Source File

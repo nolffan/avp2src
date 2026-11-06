@@ -78,6 +78,12 @@ typedef struct t_PickupButes
 	LTBOOL		m_bMoveToGround;							// Should the object be moved to the gound
 	LTBOOL		m_bSolid;									// Is the object solid
 	uint32		m_nType;								// The type of pickup 
+
+#ifdef PRIMAL_HUNT
+	// PH: the weapon this pickup refers to, read last (PHObject.lto
+	// 0x1002a67b, LoadPickupButes); Write and Read leave it out
+	char		m_szWeaponRef[PICKUP_BUTES_STRING_SIZE];
+#endif
 }	PickupButes;
 
 inline t_PickupButes::t_PickupButes()

@@ -589,6 +589,43 @@ three-identifier writer (0x10029087) had the same asymmetry.
 Fixed in the modern build: servercommon.cpp, a missing model file sends
 0xffff as a missing skin does.
 
+### Inserting into a restriction list smears one entry and drops another
+
+PHObject.lto 0x10032a9d (`CWeaponMgr::LoadWeaponButes`) and 0x1000bee5
+(`CCharacterButeMgr::LoadButes`), the inlined `CMPRestrictList::Insert`
+(src/AVP2/Shared/MPRestrictList.h). The lists of multiplayer classes and
+weapons a server can restrict are kept sorted by ID; to make room for an
+entry it moves the entries up from the bottom (`entries[j + 1] =
+entries[j]` for j counting up), which copies the entry at the insertion
+point over every entry above it, and it never raises the count, so the
+last entry is lost. Only a bute file that lists the "_MP" sets or weapons
+out of ID order is affected.
+
+Not fixed yet (Primal Hunt's lists, MPRestrictList.h).
+
+### A cached string longer than its buffer throws every later read off
+
+PHObject.lto 0x10154d00 and 0x101550f0 (`CMultiFile_FILE::ReadString`,
+`CMultiFile_LITH::ReadString`, src/AVP2/Shared/MultiFile.cpp). A string
+longer than the buffer is cut to fit, but the rest of it is left unread,
+so everything read after it from the bute cache comes from the wrong
+place. CCharacterButeMgr never reads its cache (its ReadCache, 0x1000e580,
+first calls the base class's, which always fails); whether another manager
+does is not checked yet.
+
+Not fixed yet.
+
+### Losing a carried turret drops the player's last one too
+
+PHObject.lto 0x10116ac0 (`CPlayerObj::RemoveTurret`, called twice by
+`TurretDestroyed`, 0x10116bb0; src/AVP2/ObjectDLL/PlayerObj.cpp). The
+turret's slot is emptied and the count lowered before the slots above it
+are moved down, and the move stops at the new count less one, so the last
+turret is never moved down and falls off the list: a player carrying two
+whose first is destroyed is left carrying none.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)
