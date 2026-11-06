@@ -1785,10 +1785,20 @@ public:
 	// AVP2: the main tracker is at +0x1d4 (Primal Hunt 0x00428f65 reads its
 	// model at +0x1fc, 0x00428f7b/0x00428f8c its two animations at +0x20c
 	// and +0x200), the tracker list at +0x224 (0x00494b17).
+	// PH: the model's extra texture at +0x1d0 puts both 4 further on than
+	// AvP2 1.0.9.6's: its tracker at +0x1d0 (the model at +0x1f8, 0x00426784)
+	// and the list at +0x220 (0x0048b257).
+#ifdef PRIMAL_HUNT
 	uint8   m_pad_1c8[0x1d4 - 0x1c8];
-	CUpdRecQ478 m_AnimTracker;               // 0x1d4  (the first of m_pUpdRecs)
+#else
+	uint8   m_pad_1c8[0x1d0 - 0x1c8];
+#endif
+	CUpdRecQ478 m_AnimTracker;               // 0x1d4  (the first of m_pUpdRecs; AvP2 0x1d0)
 	uint8   m_pad_218[0x224 - 0x218];
-	class CUpdRecQ478* m_pUpdRecs;           // 0x224  (NOLF 0x004789dc: 0x200)
+	class CUpdRecQ478* m_pUpdRecs;           // 0x224  (NOLF 0x004789dc: 0x200; AvP2 0x220)
+#ifndef PRIMAL_HUNT
+	uint8   m_pad_224[4];
+#endif
 	// AVP2: a model's trailing dword is at +0x260 (Primal Hunt 0x00495369,
 	// AvP2 1.0.9.6 the same), behind the model's per-type fields.
 	uint8   m_pad_228[0x260 - 0x228];

@@ -284,31 +284,11 @@ void CWarpClipTopQ438::InterpolateQ438(LTWarpPtQ438* pPrev,
 // into the range, the call at 0x0040eb19 to the entry; every other branch
 // is an internal short jump and the last instruction (`ret` at 0x0043a0d3)
 // ends on the boundary.
+// Defined after ci_FillRectQ40E, its one caller (below): cl 9044 allocates
+// a caller's registers around a callee already compiled in the translation
+// unit, and AvP2's ci_FillRect (0x0040ed30) has no such knowledge of it.
 LTBOOL rect_IntersectQ438(LTRectQ438* pOut, LTRectQ438* pRect1,
-                          LTRectQ438* pRect2)
-{
-	pOut->left   = LTMAX(pRect1->left,   pRect2->left);      // 0x0043a08c
-	pOut->top    = LTMAX(pRect1->top,    pRect2->top);       // 0x0043a09c
-	pOut->right  = LTMIN(pRect1->right,  pRect2->right);     // 0x0043a0ab
-	pOut->bottom = LTMIN(pRect1->bottom, pRect2->bottom);    // 0x0043a0bc
-
-	// 0x0043a0ba / 0x0043a0cb -- both read back from the registers the
-	// stores above left behind, which is store-to-load forwarding on one
-	// pointer, not a source difference.  COIN-FLIP: four locals assigned
-	// first and stored afterwards give the same four comparisons; the
-	// interleaving of `mov 0x14(%esp),%eax` at 0x0043a088 with the FIRST
-	// LTMAX is what argues for the field form written here.
-	// NOT one `&&`. 0x0043a0bf `jl` jumps FORWARD over an inline
-	// `return LTFALSE`, so the first test is an EARLY RETURN with its own
-	// epilogue and the second is a trailing relational return -- which is
-	// why 0x0043a0d0 is `setl %al` and not a branch. The `&&` form costs
-	// two bytes: two conditional jumps plus `mov $1,%eax` instead of one
-	// jump plus `setl`.
-	if (pOut->left >= pOut->right)
-		return LTFALSE;
-
-	return pOut->top < pOut->bottom;
-}
+                          LTRectQ438* pRect2);
 
 
 // ======================================================================= //
@@ -1043,6 +1023,34 @@ LTRESULTQ40E ci_FillRectQ40E(CSurfaceQ40E* hDest, LTRectQ438* pRect,
 	}
 
 	Q40E_RETURN_ERROR(1, "FillRect", 1);
+}
+
+
+// 0x0043a070 (declared and described above).
+LTBOOL rect_IntersectQ438(LTRectQ438* pOut, LTRectQ438* pRect1,
+                          LTRectQ438* pRect2)
+{
+	pOut->left   = LTMAX(pRect1->left,   pRect2->left);      // 0x0043a08c
+	pOut->top    = LTMAX(pRect1->top,    pRect2->top);       // 0x0043a09c
+	pOut->right  = LTMIN(pRect1->right,  pRect2->right);     // 0x0043a0ab
+	pOut->bottom = LTMIN(pRect1->bottom, pRect2->bottom);    // 0x0043a0bc
+
+	// 0x0043a0ba / 0x0043a0cb -- both read back from the registers the
+	// stores above left behind, which is store-to-load forwarding on one
+	// pointer, not a source difference.  COIN-FLIP: four locals assigned
+	// first and stored afterwards give the same four comparisons; the
+	// interleaving of `mov 0x14(%esp),%eax` at 0x0043a088 with the FIRST
+	// LTMAX is what argues for the field form written here.
+	// NOT one `&&`. 0x0043a0bf `jl` jumps FORWARD over an inline
+	// `return LTFALSE`, so the first test is an EARLY RETURN with its own
+	// epilogue and the second is a trailing relational return -- which is
+	// why 0x0043a0d0 is `setl %al` and not a branch. The `&&` form costs
+	// two bytes: two conditional jumps plus `mov $1,%eax` instead of one
+	// jump plus `setl`.
+	if (pOut->left >= pOut->right)
+		return LTFALSE;
+
+	return pOut->top < pOut->bottom;
 }
 
 

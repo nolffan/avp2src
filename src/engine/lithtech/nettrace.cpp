@@ -897,7 +897,12 @@ inline void CServerMessageQ18::Init(uint16 nMaxDataLen, uint16 nGrowSize)
 // IDENTICAL, 215 b.
 CServerMessageQ18::CServerMessageQ18()
 {
+#ifdef PRIMAL_HUNT
 	Init(0x1000, 0x1000);
+#else
+	// AvP2 1.0.9.6: the packet size, 0x44c (0x00463e6a).
+	Init(0x44c, 0x44c);
+#endif
 }
 
 

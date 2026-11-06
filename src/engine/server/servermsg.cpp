@@ -1182,9 +1182,13 @@ void sub_1001307f(LTRotation* pRot, uint8* pOut)
 
 		fDot = vCheck.z * vUp.z + vCheck.y * vUp.y + vCheck.x * vUp.x;
 
-		if (fDot <= 0.999f)
+		// AVP2: the tests are written negated. cl 8966 compiles `x <= c`
+		// and `!(x > c)` alike, but 9044 (AvP2 1.0.9.6's) keeps the NaN
+		// case apart, and its server.dll (0x100177ef `test $0x41; je`,
+		// 0x100177fc `test $0x5; jp`) is the negated form.
+		if (!(fDot > 0.999f))
 		{
-			if (fDot >= -0.999f)
+			if (!(fDot < -0.999f))
 				return;
 
 			pOut[1] = (uint8)(pOut[1] == 0 ? -1 : -(char)pOut[1]);

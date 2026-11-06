@@ -326,12 +326,6 @@ void ci_DeleteColor(HLTCOLOR hColor)
 }
 
 
-ILTClientSoundMgr* ci_GetSoundMgr()
-{
-	return (ILTClientSoundMgr*)&g_pClientMgr->m_SoundMgr;
-}
-
-
 void ci_PauseSounds()
 {
 	ci_GetSoundMgr()->PauseSounds();
@@ -787,13 +781,12 @@ LTRESULT ci_EnableDevice(char* strDeviceName)
 //
 // Every entry refuses when no music DLL is loaded, and every one of them asks
 // for the manager again rather than keeping it: the shipped code calls the
-// getter once per use, which is what says the source did too.
-
-CClientMusicMgr* ci_GetMusicMgr()
-{
-	return (CClientMusicMgr*)&g_pClientMgr->m_MusicMgr;
-}
-
+// getter once per use, which is what says the source did too. The getter
+// and ci_GetSoundMgr are clientmgr2.cpp's (AvP2 0x0040fba0/0x0040fbb0, in
+// that translation unit's run before r_GetRequestedMode): cl 9044 allocates
+// a caller's registers around a callee it has already compiled in the same
+// translation unit, and AvP2's ci_PlayBreak, ci_PlayList, ci_IsDone ... keep
+// their values in callee-saved registers across the getter.
 
 void ci_DestroyAllSongs()
 {
@@ -1793,20 +1786,24 @@ RMode* ci_GetRenderModes()
 
 	hFind = _findfirst("*.ren", &findData);
 
-	if (hFind == -1)
-		return pModeList;
-
-	do
+	// The loop inside the test, not an early return: cl 9044 threads an
+	// early return's test into the do-while's own exit test (`jmp` to the
+	// `jne`), where AvP2's 0x00434936 keeps `je` to the return.
+	if (hFind != -1)
 	{
-		if (!(findData.attrib & _A_SUBDIR))
-			sub_42de60(findData.name, &pModeList);
-	}
-	while (_findnext(hFind, &findData) != -1);
+		do
+		{
+			if (!(findData.attrib & _A_SUBDIR))
+				sub_42de60(findData.name, &pModeList);
+		}
+		while (_findnext(hFind, &findData) != -1);
 
 #ifdef AVP2_MODERN
-	// fixed: the find handle is closed (RETAIL_BUGS.md)
-	_findclose(hFind);
+		// fixed: the find handle is closed (RETAIL_BUGS.md)
+		_findclose(hFind);
 #endif
+	}
+
 	return pModeList;
 }
 

@@ -227,6 +227,14 @@ public:
 	ServerCommonLT    m_CommonLT;            // 0x234
 	SPhysicsLT        m_PhysicsLT;           // 0x248
 	ServerLightAnimLT m_LightAnimLT;         // 0x258
+#ifndef PRIMAL_HUNT
+	// AVP2 1.0.9.6: twelve bytes more -- 0x1002d355's `new` asks for 0x28c
+	// (server.dll 0x100366b0) -- which are the string-set map
+	// servermessage.cpp's Primal Hunt view keeps at +0x280, built here by
+	// the constructor (0x1003674d.., a call through 0x1003f87d). Opaque
+	// until AvP2's map and its three ILTServer slots are written.
+	uint8             m_StringSets[0x0c];    // 0x280
+#endif
 };
 
 // Expanded into CLTServer's constructor below. The world simulation the
@@ -1178,14 +1186,18 @@ void wm_ResizeAxis(WMMoveState* pState, int nAxis, float* pfWanted)
 int wm_BoxesOverlap(LTVector* pMin1, LTVector* pMax1,
                     LTVector* pMin2, LTVector* pMax2, float fTolerance)
 {
-	if (pMin1->x - pMax2->x < -fTolerance && pMax1->x - pMin2->x > fTolerance &&
-	    pMin1->y - pMax2->y < -fTolerance && pMax1->y - pMin2->y > fTolerance &&
-	    pMin1->z - pMax2->z < -fTolerance && pMax1->z - pMin2->z > fTolerance)
+	// AVP2: the test for NOT overlapping. cl 8966 compiles it and its
+	// negation alike; 9044 keeps NaN apart, and AvP2 1.0.9.6's server.dll
+	// (0x10026428 `test $0x1; je`, 0x1002643c `test $0x41; jnp`) answers 0
+	// only on an ordered comparison.
+	if (pMin1->x - pMax2->x >= -fTolerance || pMax1->x - pMin2->x <= fTolerance ||
+	    pMin1->y - pMax2->y >= -fTolerance || pMax1->y - pMin2->y <= fTolerance ||
+	    pMin1->z - pMax2->z >= -fTolerance || pMax1->z - pMin2->z <= fTolerance)
 	{
-		return 1;
+		return 0;
 	}
 
-	return 0;
+	return 1;
 }
 
 
@@ -3071,7 +3083,13 @@ void obj_RetransformWorldModelDims(LTObject* pObj)
 // wm_UpdateDimsFromGeometry). The min side has not been shown to be
 // LTMIN(vMin, pt): written that way the lithtech copy reschedules the
 // inlined MatVMul_InPlace_H (server unchanged), so WM_MIN stays.
-#define WM_MIN(a, b) ((a) <= (b) ? (a) : (b))
+// AVP2: and it is the candidate unless the candidate is GREATER: cl 9044
+// keeps NaN apart where 8966 does not, and AvP2 1.0.9.6's server.dll stores
+// the candidate on an unordered compare (0x10025d45 `test $0x41; je` past
+// the store). Spelled as the negated test with the candidate's arm first:
+// `(a) > (b) ? (b) : (a)` matches AvP2 too but loses Primal Hunt's
+// lithtech.exe (0x00462270), whose /O2 sees the arm order.
+#define WM_MIN(a, b) (!((a) > (b)) ? (a) : (b))
 
 // 0x1001e8c8 — the world model's dims, from its geometry as transformed.
 //

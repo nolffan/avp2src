@@ -1584,7 +1584,12 @@ public:
 		m_Unknown3a = 1;
 		m_MsgFlags  = 0;
 
+#ifdef PRIMAL_HUNT
 		Init(0x1000, 0x1000);
+#else
+		// AvP2 1.0.9.6: the packet size, 0x44c (0x00465f0d).
+		Init(0x44c, 0x44c);
+#endif
 	}
 
 	virtual void _v00();

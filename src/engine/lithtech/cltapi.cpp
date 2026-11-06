@@ -139,13 +139,15 @@ class CClientMgr
 {
 public:
 	uint8              m_pad_00[0x6c];
-	uint8              m_World[0x774 - 0x6c];              // 0x06c
-	uint8              m_SoundMgr[4];                      // 0x774
-	// 0x00404c81 `mov 0x21b0(%edi)` is the only CClientMgr field past
-	// m_SoundMgr this file reads, so everything between is padding.
-	// (clientmgr3.cpp names +0x21b0 m_pMusicMgr.)
-	uint8              m_pad_778[0x21b0 - 0x778];
-	CCmgMusicMgrQ404*  m_pMusicMgr;                        // 0x21b0
+	// AVP2: the sound manager at 0x784 and the music manager at 0x22c0
+	// (clientmgr.h's layout; AvP2 1.0.9.6 0x00404bb1/0x00404bb7, NOLF's
+	// were 0x21b0 and 0x774).
+	uint8              m_World[0x784 - 0x6c];              // 0x06c
+	uint8              m_SoundMgr[4];                      // 0x784
+	// `mov 0x22c0(%edi)` is the only CClientMgr field past m_SoundMgr this
+	// file reads, so everything between is padding.
+	uint8              m_pad_788[0x22c0 - 0x788];
+	CCmgMusicMgrQ404*  m_pMusicMgr;                        // 0x22c0
 };
 
 struct WMMoveState
@@ -971,22 +973,26 @@ public:
 		}
 	}
 
-	uint8                  m_pad_20[0x360 - 0x20];
-	LVideoMgrQ404*         m_pVideoMgr;      // 0x360
-	CUnknown3b0Q404*       m_p364;           // 0x364
-	CUnknown3b8Q404*       m_p368;           // 0x368
-	CCmgMusicMgrQ404*      m_pMusicMgr;      // 0x36c
-	ClientCommonLTQ404     m_CommonLT;       // 0x370
-	CPhysicsLTQ404         m_PhysicsLT;      // 0x384
-	LVideoMgrQ404          m_VideoMgr;       // 0x394
-	ClientModelLTQ404      m_ModelLT;        // 0x39c
-	ILTTransformQ404       m_TransformLT;    // 0x3a4
-	ClientLightAnimLTQ404  m_LightAnimLT;    // 0x3a8
-	CUnknown3b0Q404        m_Unknown3b0;     // 0x3b0
-	CUnknown3b8Q404        m_Unknown3b8;     // 0x3b8
-	CClientMgr*            m_pClientMgr;     // 0x3c0
-	uint32                 m_hVideo;         // 0x3c4
-};                                           //      = 0x3c8
+	// AVP2: the SDK's entry table is four entries longer than NOLF's, so
+	// everything from here on is 0x10 further on: the object is 0x3d8 bytes
+	// (`push $0x3d8`, AvP2 1.0.9.6 0x00404ac1, Primal Hunt 0x004051f8) and
+	// the client manager at 0x3d0, as cltnew.cpp's CLTClient has it.
+	uint8                  m_pad_20[0x370 - 0x20];
+	LVideoMgrQ404*         m_pVideoMgr;      // 0x370
+	CUnknown3b0Q404*       m_p364;           // 0x374
+	CUnknown3b8Q404*       m_p368;           // 0x378
+	CCmgMusicMgrQ404*      m_pMusicMgr;      // 0x37c
+	ClientCommonLTQ404     m_CommonLT;       // 0x380
+	CPhysicsLTQ404         m_PhysicsLT;      // 0x394
+	LVideoMgrQ404          m_VideoMgr;       // 0x3a4
+	ClientModelLTQ404      m_ModelLT;        // 0x3ac
+	ILTTransformQ404       m_TransformLT;    // 0x3b4
+	ClientLightAnimLTQ404  m_LightAnimLT;    // 0x3b8
+	CUnknown3b0Q404        m_Unknown3b0;     // 0x3c0
+	CUnknown3b8Q404        m_Unknown3b8;     // 0x3c8
+	CClientMgr*            m_pClientMgr;     // 0x3d0
+	uint32                 m_hVideo;         // 0x3d4
+};                                           //      = 0x3d8
 
 // 0x00408510 (name ours) -- __cdecl (CLTClient*), and all it does is store a
 // run of function-pointer constants from 0x00408b60 upwards into the

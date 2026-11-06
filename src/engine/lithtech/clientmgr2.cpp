@@ -1221,9 +1221,14 @@ class CModelObjQ411
 public:
 	uint8       m_pad_000[0xb8];
 	uint16      m_nServerID;                        // 0x0b8
-	// AVP2: 0x1fc (NOLF's was 0x1dc).
+	// AVP2: 0x1fc (NOLF's was 0x1dc). PH: the model's extra texture at
+	// +0x1d0 puts it 4 further on than AvP2 1.0.9.6's 0x1f8 (0x00411d6e).
+#ifdef PRIMAL_HUNT
 	uint8       m_pad_0ba[0x1fc - 0xba];
-	CModelQ411* m_pModel;                           // 0x1fc
+#else
+	uint8       m_pad_0ba[0x1f8 - 0xba];
+#endif
+	CModelQ411* m_pModel;                           // 0x1fc (AvP2 0x1f8)
 };
 
 LTRESULT CClientMgrView::FreeUnusedModels()
@@ -1580,10 +1585,16 @@ public:
 class CClientCreateRequestQ5
 {
 public:
-	// The file refs; AvP2's take 0x48 bytes (every shipped read of the
-	// create struct is `mov 0x48(%reg)`).
+	// The file refs: the object and its four skins, 0x3c bytes (AvP2
+	// 1.0.9.6 reads the create struct at `mov 0x3c(%reg)`, 0x004126c0);
+	// PH: and the model's extra texture, 0x48 (cltapi.cpp's
+	// CClientCreateRequest).
+#ifdef PRIMAL_HUNT
 	uint8               m_pad_00[0x48];
-	ObjectCreateStruct* m_pStruct;                 // 0x48
+#else
+	uint8               m_pad_00[0x3c];
+#endif
+	ObjectCreateStruct* m_pStruct;                 // 0x48 (AvP2 0x3c)
 };
 
 LTRESULT om_AllocObjectQ5(void* pObjectMgr, ObjectCreateStruct* pStruct,
@@ -3164,6 +3175,24 @@ LTCommandVarQ40F* con_FindVarQ40F(ConsoleStateRef* pState,
 extern int g_CV_ScreenWidth;                         // 0x004a9f08
 extern int g_CV_ScreenHeight;                        // 0x004a9f0c
 extern int g_CV_BitDepth;                            // 0x004a9f04
+
+// The client interface's sound and music managers, CClientMgr's members
+// (clientmgr.h: m_SoundMgr at 0x784, m_MusicMgr at 0x1094). AvP2 0x0040fba0
+// and 0x0040fbb0 (Primal Hunt 0x00410980, 0x00410990): this translation
+// unit's, not clientinterface.cpp's (whose callers, compiled by cl 9044,
+// would otherwise know which registers they leave alone).
+class ILTClientSoundMgr;
+class CClientMusicMgr;
+
+ILTClientSoundMgr* ci_GetSoundMgr()
+{
+	return (ILTClientSoundMgr*)((uint8*)g_pClientMgr + 0x784);
+}
+
+CClientMusicMgr* ci_GetMusicMgr()
+{
+	return (CClientMusicMgr*)((uint8*)g_pClientMgr + 0x1094);
+}
 
 void r_GetRequestedMode(RMode* pMode)
 {

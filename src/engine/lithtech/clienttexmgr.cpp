@@ -374,10 +374,10 @@ void sub_4628e0(SharedTextureView* pTexture, int nUnknown);
 // that is left of it. /OPT:ICF has folded it with every other empty function
 // in lithtech.exe, which is why it cannot be named from its body. Written
 // as exactly that: an empty body (defined out of line, so /Ob1 leaves both
-// calls as calls).
-void sub_490200(CClientMgrTexBankView* pClientMgr)
-{
-}
+// calls as calls), at the end of this file: cl 9044 drops a call to an
+// empty function it has already compiled in the translation unit, and AvP2
+// 1.0.9.6's two callers below keep theirs (0x0042601f, 0x004263da).
+void sub_490200(CClientMgrTexBankView* pClientMgr);
 
 // 0x004200f0 -- mark every texture something currently in use refers to
 // (written below, after tm_MarkSkinTextures).
@@ -409,10 +409,9 @@ CFileIdentifierView* fm_GetFileRec(CClientFileMgrView* pMgr, CClientFileRefView*
 // it is declared after the first statement, and that is what puts it there
 // -- at the top of the function VC6 gives it a frame slot of its own (a
 // `push %ecx`/`pop %ecx` pair). IDENTICAL on PH (182 of 182).
-// NEAR on AvP2 1.0.9.6 (215 of 221): without /GX VC6 drops the call to
-// sub_490200, whose empty body is defined in this file; the shipped one is
-// 0x00473ac0, in another translation unit (PH's is 0x00429410, also past
-// this TU's end at 0x004292cb), so the definition belongs elsewhere.
+// On AvP2 1.0.9.6, cl 9044 dropped the call to sub_490200 while its empty
+// body was defined above (the shipped one, folded with every other empty
+// function, is 0x00473ac0; PH's 0x00429410): it is defined at the end.
 LTRESULT cm_AddSharedTextureIdent(CClientMgrTexBankView* pClientMgr,
                                   CFileIdentifierView* pIdent,
                                   SharedTextureView*& pTexture)
@@ -1466,3 +1465,10 @@ void sub_4209b0(CModeRecord9b0View* pRec, CModeTarget9b0View* pTarget)
 //      guess, and so does this file.
 //
 // *********************************************************************** //
+
+
+// 0x00490200 (above): defined after its callers, where cl 9044 does not yet
+// know it is empty.
+void sub_490200(CClientMgrTexBankView* pClientMgr)
+{
+}

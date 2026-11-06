@@ -1165,18 +1165,28 @@ class ModelInstance : public LTObject
 public:
 	// (LTObject runs to 0x1b4 now that m_pWMIface is named)
 	ModelInstanceHookFn m_HookFn;            // 0x1bc
-	// AVP2: twelve bytes more before the tracker than NOLF's, as CObjModel's
+	// AVP2: more before the tracker than NOLF's, as CObjModel's
 	// (objbank.cpp): GetMainTracker and RemoveTracker reach the tracker at
-	// +0x1d4 (Primal Hunt server.dll 0x100258ba, 0x100253f1).
+	// +0x1d4 in Primal Hunt (server.dll 0x100258ba, 0x100253f1), at +0x1d0
+	// in AvP2 1.0.9.6 (0x10024000, 0x10023b46).
+#ifdef PRIMAL_HUNT
 	uint8               m_pad_1c0[0x1d4 - 0x1c0];
-	LTAnimTracker       m_AnimTracker;       // 0x1d4  (AvP2's SDK's tracker, 0x50 bytes)
-	LTAnimTracker*      m_pTrackerList;      // 0x224  extra trackers, singly linked
-	// AVP2: 0x30 bytes NOLF's engine had not after the tracker list, as
-	// CObjModel's: Get/SetPieceHideStatus reach m_HiddenPieces at +0x260
-	// (0x1002494c, 0x100249b3).
+#else
+	uint8               m_pad_1c0[0x1d0 - 0x1c0];
+#endif
+	LTAnimTracker       m_AnimTracker;       // 0x1d4 (AvP2 0x1d0)  the SDK's tracker, 0x50 bytes
+	LTAnimTracker*      m_pTrackerList;      // 0x224 (AvP2 0x220)  extra trackers, singly linked
+	// AVP2: the node-transform cache NOLF's engine had not after the tracker
+	// list, as CObjModel's: Get/SetPieceHideStatus reach m_HiddenPieces at
+	// +0x260 in Primal Hunt (0x1002494c, 0x100249b3), +0x24c in AvP2 1.0.9.6
+	// (0x1002308e, 0x10023104), which has one array fewer.
+#ifdef PRIMAL_HUNT
 	uint8               m_Unknown228[0x30];  // 0x228
-	uint8               m_pad_258[0x260 - 0x258];
-	uint32              m_HiddenPieces;      // 0x260  one bit per piece
+#else
+	uint8               m_Unknown228[0x20];  // 0x224
+#endif
+	uint8               m_Unknown258[8];     // 0x258 (AvP2 0x244)
+	uint32              m_HiddenPieces;      // 0x260 (AvP2 0x24c)  one bit per piece
 };
 
 // The engine's own ILTModel vtable carries one slot the public SDK header

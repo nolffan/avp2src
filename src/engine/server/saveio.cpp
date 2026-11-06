@@ -1057,20 +1057,26 @@ CSaveXlatInit::~CSaveXlatInit()
 static CSaveXlatInit g_SaveXlatInit;
 
 
-#ifdef PRIMAL_HUNT
-// PH: what sm_RestoreNextObject restores of a model before the object's own
-// data (lithtech.exe 0x0043e7b3..0x0043e7e7, server.dll 0x10015570): its
-// hidden-piece bits and its main animation tracker. The model's layout is
-// objbank.cpp's ModelInstance (tracker 0x1d4, hidden pieces 0x260).
+// What sm_RestoreNextObject restores of a model before the object's own
+// data (lithtech.exe 0x0043e7b3..0x0043e7e7, server.dll 0x10015570; AvP2
+// 1.0.9.6's server.dll 0x10014ae9): its hidden-piece bits and its main
+// animation tracker. The model's layout is objbank.cpp's CObjModel (tracker
+// 0x1d4, hidden pieces 0x260; AvP2 0x1d0 and 0x24c).
 #define SAV_OT_MODEL 1
 
 class SavModelQ535
 {
 public:
+#ifdef PRIMAL_HUNT
 	uint8  m_pad_00[0x1d4];
 	uint8  m_AnimTracker[0x50];              // 0x1d4  the SDK's LTAnimTracker
 	uint8  m_pad_224[0x260 - 0x224];
-	uint32 m_HiddenPieces;                   // 0x260
+#else
+	uint8  m_pad_00[0x1d0];
+	uint8  m_AnimTracker[0x50];              // 0x1d0
+	uint8  m_pad_220[0x24c - 0x220];
+#endif
+	uint32 m_HiddenPieces;                   // 0x260 (AvP2 0x24c)
 };
 
 // ILTModel (iltmodel.h) up to ReadTracker, its slot 16 (`call *0x40(%edx)`
@@ -1104,7 +1110,6 @@ public:
 	uint8           m_pad_00[0x10];
 	SavModelLTQ535* m_pModelLT;              // 0x10
 };
-#endif
 
 // The object the engine hands MID_LOADOBJECT. Its vtable (0x1004d660) puts
 // CSaveIO::ReadChecked in slot 8, so in the original this and CSaveIO are one
@@ -1192,7 +1197,6 @@ LTRESULT sm_RestoreNextObject(SavServerMgr* pMgr, ILTStream* pStream,
 	pStream->ReadString(szName, sizeof(szName));
 	pStream->SeekTo(nStart);
 
-#ifdef PRIMAL_HUNT
 	if (pObject->m_ObjectType == SAV_OT_MODEL)
 	{
 		SavModelQ535* pModel = (SavModelQ535*)pObject;
@@ -1202,7 +1206,6 @@ LTRESULT sm_RestoreNextObject(SavServerMgr* pMgr, ILTStream* pStream,
 		if (pMgr->m_pServerLT->m_pModelLT)
 			pMgr->m_pServerLT->m_pModelLT->ReadTracker(&pModel->m_AnimTracker, &msg);
 	}
-#endif
 
 	pObject->m_pSData->m_pObject->EngineMessageFn(SAV_MID_LOADOBJECT, &msg,
 	                                              (float)dwParam);

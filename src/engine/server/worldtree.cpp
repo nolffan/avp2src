@@ -1712,9 +1712,13 @@ void wt_FindObjectsInBox_D(CWTNode_D *pNode, WTFindInfo_D *pInfo, uint32 nLevel)
 			if (vMin.z > pInfo->m_vBoxMax.z) continue;
 			if (vMax.x < pInfo->m_vBoxMin.x) continue;
 			if (vMax.y < pInfo->m_vBoxMin.y) continue;
-			if (vMax.z < pInfo->m_vBoxMin.z) continue;
 
-			pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
+			// AVP2: the last test is the positive one around the call: cl
+			// 9044 keeps NaN apart where 8966 does not, and AvP2 1.0.9.6's
+			// server.dll (0x10044ada / 0x1004540b `test $0x1; jne`) skips
+			// the call on an unordered compare.
+			if (vMax.z >= pInfo->m_vBoxMin.z)
+				pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
 		}
 	}
 
@@ -2243,7 +2247,10 @@ void wt_InsertObject_E(CWTNode_E *pNode, WTInsertInfo_E *pInfo)
 	if (pNode->m_Objects[2].m_pNext != (LTLink*)&pNode->m_Objects[2])
 		((CWTObj_E*)pNode->m_Objects[2].m_pNext->m_pData)->NotifyInserted(pInfo->m_pObject);
 
-	if (pNode->m_fSmallestDim * 0.5f > pInfo->m_fMaxDim && pNode->m_Children[0])
+	// AVP2: negated -- an unordered size recurses. cl 9044 keeps NaN apart
+	// where 8966 does not (AvP2 1.0.9.6's server.dll 0x100451af `test
+	// $0x41; jnp` to the link).
+	if (!(pNode->m_fSmallestDim * 0.5f <= pInfo->m_fMaxDim) && pNode->m_Children[0])
 	{
 		wt_ForEachChildInBox_E(&pInfo->m_vBoxMin, &pInfo->m_vBoxMax, pNode,
 		                       (WTNodeCallback_E)wt_InsertObject_E, pInfo);
@@ -2535,9 +2542,13 @@ void wt_FindInRect_F(CWTNode_F* pNode, WTRectInfo_F* pInfo)
 			if (vMin.z > pMax->z) continue;
 			if (vMax.x < pMin->x) continue;
 			if (vMax.y < pMin->y) continue;
-			if (vMax.z < pMin->z) continue;
 
-			pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
+			// AVP2: the last test is the positive one around the call: cl
+			// 9044 keeps NaN apart where 8966 does not, and AvP2 1.0.9.6's
+			// server.dll (0x10044ada / 0x1004540b `test $0x1; jne`) skips
+			// the call on an unordered compare.
+			if (vMax.z >= pMin->z)
+				pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
 		}
 	}
 

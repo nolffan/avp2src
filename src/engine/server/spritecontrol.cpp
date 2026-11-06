@@ -728,17 +728,18 @@ int CObjectMover::ObjectBlocks(CMoveRequest* pRequest, void* pUnused,
 //     SObjData+0x24, reached with three loads and pushed straight through.
 void CObjectMover::CheckMaxPos(CMoveRequest* pRequest, LTVector* pPos)
 {
-	if (g_CV_DebugMaxPos <= 0.0f)
-		return;
+	// AVP2: the tests are the positive ones. cl 9044 keeps NaN apart where
+	// 8966 does not, and AvP2 1.0.9.6's server.dll (0x1004098b `test $0x41;
+	// jne`, 0x100409ab `test $0x5; jp`) returns on an unordered compare.
+	if (g_CV_DebugMaxPos > 0.0f &&
+	    pPos->MagSqr() > g_CV_DebugMaxPos * g_CV_DebugMaxPos)
+	{
+		dsi_ServerError("Server: position larger than 'DebugMaxPos'");
 
-	if (pPos->MagSqr() <= g_CV_DebugMaxPos * g_CV_DebugMaxPos)
-		return;
-
-	dsi_ServerError("Server: position larger than 'DebugMaxPos'");
-
-	dsi_ServerError("Object class: %s, position (%.2f, %.2f, %.2f)",
-		pRequest->m_pObject->m_pSData->m_pClass->m_pClassName,
-		pPos->x, pPos->y, pPos->z);
+		dsi_ServerError("Object class: %s, position (%.2f, %.2f, %.2f)",
+			pRequest->m_pObject->m_pSData->m_pClass->m_pClassName,
+			pPos->x, pPos->y, pPos->z);
+	}
 }
 
 

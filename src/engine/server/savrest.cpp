@@ -231,13 +231,16 @@ public:
 	SavLinkQ4S       m_Links;                // 0x00
 	void*            m_hIdentifier;          // 0x0c
 	float            m_NextUpdate;           // 0x10
-	uint8            m_pad_14[0x1c - 0x14];
+	float            m_DeactivationTime;     // 0x14
+	float            m_UpdateTimer;          // 0x18
 	SavClientQ4S*    m_pOwningClient;        // 0x1c
 	SavBaseClassQ4S* m_pBaseClass;           // 0x20
 	SavClassDefQ4S*  m_pClass;               // 0x24
 	uint8            m_pad_28[0x2c - 0x28];
 	SavMessageQ4S*   m_pSaveData;            // 0x2c  (CMessageRef::m_pMsg)
-	void*            m_hFiles[3];            // 0x30
+	// AVP2: the model file and its four skins (ltobject_internal.h's
+	// m_pModelFile and m_pSkinFiles), not NOLF's model and one skin.
+	void*            m_hFiles[1 + 4];        // 0x30
 };
 
 // worldbsp.h's world, at the one field the save reads: the name, inline at
@@ -271,6 +274,9 @@ public:
 	uint8            m_pad_0be[0x0c4 - 0x0be];
 	float            m_Velocity[3];          // 0x0c4
 	float            m_Acceleration[3];      // 0x0d0
+	// AVP2: ltobject_internal.h's m_Unknowndc, saved one byte wide (AvP2
+	// 1.0.9.6's server.dll 0x10013a84).
+	uint8            m_Unknowndc[4];         // 0x0dc
 	float            m_FrictionCoefficient;  // 0x0e0
 	float            m_Mass;                 // 0x0e4
 	float            m_ForceIgnoreLimitSqr;  // 0x0e8
@@ -309,12 +315,54 @@ public:
 // sm_RestoreNextObject does (0x10010e29).  m_SkyObjects is servermgr.h's
 // name for the thirty ids at 0x95c (0x1000ff3c adds 0x95c and 0x1000ff4f
 // compares the index against 0x1e).
+#ifndef PRIMAL_HUNT
+// AVP2 1.0.9.6: the model's layout as objbank.cpp's CObjModel (tracker
+// 0x1d0, hidden pieces 0x24c), and the server interface's ILTModel up to
+// WriteTracker, its slot 17 (`call *0x44(%eax)` at 0x10013bcf).
+class SavModelSaveQ4S
+{
+public:
+	uint8  m_pad_00[0x1d0];
+	uint8  m_AnimTracker[0x50];              // 0x1d0
+	uint8  m_pad_220[0x24c - 0x220];
+	uint32 m_HiddenPieces;                   // 0x24c
+};
+
+class SavModelLTSaveQ4S
+{
+public:
+	virtual LTRESULT _v00() = 0; virtual LTRESULT _v04() = 0;
+	virtual LTRESULT _v08() = 0; virtual LTRESULT _v0c() = 0;
+	virtual LTRESULT _v10() = 0; virtual LTRESULT _v14() = 0;
+	virtual LTRESULT _v18() = 0; virtual LTRESULT _v1c() = 0;
+	virtual LTRESULT _v20() = 0; virtual LTRESULT _v24() = 0;
+	virtual LTRESULT _v28() = 0; virtual LTRESULT _v2c() = 0;
+	virtual LTRESULT _v30() = 0; virtual LTRESULT _v34() = 0;
+	virtual LTRESULT _v38() = 0; virtual LTRESULT _v3c() = 0;
+	virtual LTRESULT _v40() = 0;
+	virtual LTRESULT WriteTracker(void* pTracker, void* hWrite) = 0;
+};
+
+class SavServerLTSaveQ4S
+{
+public:
+	uint8               m_pad_00[0x10];
+	SavModelLTSaveQ4S*  m_pModelLT;          // 0x10
+};
+#endif
+
 class SavServerMgrQ4S
 {
 public:
 	uint8         m_pad_000[0xc14];
 	void*         m_pClassMgr;               // 0xc14
+#ifndef PRIMAL_HUNT
+	uint8         m_pad_c18[0xd38 - 0xc18];
+	SavServerLTSaveQ4S* m_pServerLT;         // 0xd38  (servermgr.h's m_pUnknown928)
+	uint8         m_pad_d3c[0xd6c - 0xd3c];
+#else
 	uint8         m_pad_c18[0xd6c - 0xc18];
+#endif
 	uint16        m_SkyObjects[30];          // 0xd6c
 	uint8         m_pad_da8[0xe3c - 0xda8];
 	SavFileMgrQ4S m_FileMgr;                 // 0xe3c
@@ -492,7 +540,9 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 		{
 			uint16 i;
 
-			for (i = 1; i < 3; i++)                      // 0x1000fd7c..0x1000fdb4
+			// AVP2: four skins (AvP2 1.0.9.6's server.dll 0x10013902..
+			// 0x10013936, counted down from four).
+			for (i = 1; i < 1 + 4; i++)                  // 0x1000fd7c..0x1000fdb4
 			{
 				pName = fs_GetFileName(&pMgr->m_FileMgr, pObj->m_pSData->m_hFiles[i]);
 				pStream->WriteString(pName);
@@ -511,6 +561,12 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 			pStream->Write(&pObj->m_Container270, 2);    // 0x1000fe06
 
 		pStream->Write(&pObj->m_pSData->m_NextUpdate, 4);    // 0x1000fe18
+#ifndef PRIMAL_HUNT
+		// AVP2 1.0.9.6 (server.dll 0x1001398d..0x100139be): the
+		// deactivation time and the update timer after it.
+		pStream->Write(&pObj->m_pSData->m_DeactivationTime, 4);
+		pStream->Write(&pObj->m_pSData->m_UpdateTimer, 4);
+#endif
 		pStream->Write(&pObj->m_BlockingPriority, 1);    // 0x1000fe28
 
 		bHasSaveData = (pObj->m_pSData->m_pSaveData != LTNULL);  // 0x1000fe37 setne
@@ -531,6 +587,7 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 
 		pStream->Write(pObj->m_Velocity, 0x0c);          // 0x1000fec9
 		pStream->Write(pObj->m_Acceleration, 0x0c);      // 0x1000fed9
+		pStream->Write(pObj->m_Unknowndc, 1);
 		pStream->Write(&pObj->m_FrictionCoefficient, 4); // 0x1000fee8
 		pStream->Write(&pObj->m_Mass, 4);                // 0x1000fef7
 		pStream->Write(&pObj->m_ForceIgnoreLimitSqr, 4); // 0x1000ff06
@@ -568,6 +625,7 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 			pStream->Write(&nSkyIndex, 2);               // 0x1000ff5f
 		}
 
+#ifdef PRIMAL_HUNT
 		if (pObj->m_ObjectType == SAV_OT_MODEL)          // 0x1000ff62
 		{
 			// 0x1000ff6b `movzx eax,WORD PTR [edi+0x1e8]` into a dword
@@ -579,6 +637,7 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 			pStream->Write(&pObj->m_Model1ec, 4);        // 0x1000ff8d
 			pStream->Write(&pObj->m_Model1d8, 2);        // 0x1000ff9d
 		}
+#endif
 
 		bHasClient = (pObj->m_pSData->m_pOwningClient != LTNULL);   // 0x1000ffac
 
@@ -606,6 +665,21 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 			pStream->SeekTo(nValue);                     // 0x1001001f
 		}
 	}
+
+#ifndef PRIMAL_HUNT
+	// AVP2 1.0.9.6 (server.dll 0x10013b9a..0x10013bcf): a model's hidden
+	// pieces and its main tracker go out ahead of the object's own data,
+	// where sm_RestoreNextObject (saveio.cpp) reads them back.
+	if (pObj->m_ObjectType == SAV_OT_MODEL)
+	{
+		SavModelSaveQ4S* pModel = (SavModelSaveQ4S*)pObj;
+
+		pStream->Write(&pModel->m_HiddenPieces, 4);
+
+		if (pMgr->m_pServerLT->m_pModelLT)
+			pMgr->m_pServerLT->m_pModelLT->WriteTracker(&pModel->m_AnimTracker, &msg);
+	}
+#endif
 
 	{
 		uint32 nPos;
@@ -656,6 +730,7 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 #include "objtypes.h"
 #include "ltobject_internal.h"
 #include "ltengineobjects.h"
+#include "servermodel.h"        // sm_SetObjectChangeFlag (inline)
 
 // commonmodel.cpp's w_ReadVector.  CALLED at /O1, at both sites
 // (0x100107bb and 0x10010b45); lithtech's /O2 expands both.  Declared and
@@ -799,6 +874,11 @@ public:
 // marks the object with (0x10010d53 `or BYTE PTR [eax+0x120],0x80`).
 #define SAVCHANGE_SKYOBJECT 0x100
 #define SAVCHANGE_HADCLIENT 0x80
+// AVP2: an object saved with this bit has its client change flag 0x100
+// raised again once restored (AvP2 1.0.9.6's server.dll 0x1001484e `testb
+// $0x4,-0xb(%ebp)`, then the out-of-line sm_SetObjectChangeFlag 0x1001499b;
+// Primal Hunt's lithtech.exe 0x0043e511; name ours).
+#define SAVCHANGE_RESEND    0x400
 
 // The mask sm_SetObjectState is handed (0x10010c85 `and eax,0x38`): the
 // three state bits servermgr.h documents on 0x1002ade4 (8, 0x10, 0x20).
@@ -985,8 +1065,18 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		pStream->Read(&createStruct.m_ContainerCode, 2);   // 0x10010901 (+0x02)
 
 	pStream->Read(&sData.m_NextUpdate, 4);        // 0x1001090e
+#ifndef PRIMAL_HUNT
+	// AVP2 1.0.9.6: the deactivation time and the update timer follow it
+	// (server.dll 0x10014488, 0x10014495), and the first goes into the
+	// create struct beside the next update (0x100144ac).
+	pStream->Read(&sData.m_DeactivationTime, 4);
+	pStream->Read(&sData.m_UpdateTimer, 4);
+#endif
 
 	createStruct.m_NextUpdate = sData.m_NextUpdate;    // 0x10010914 (+0x27c)
+#ifndef PRIMAL_HUNT
+	createStruct.m_fDeactivationTime = sData.m_DeactivationTime;
+#endif
 
 	// CALLED at /O1 (0x10010920); lithtech's /O2 carries the whole body at
 	// 0x00432b7f-0x00432bc4.  Do NOT make it `inline` for this build.
@@ -1015,6 +1105,13 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 	if (pNewObject->m_ObjectType == OT_LIGHT)                 // 0x1001099c
 		pNewObject->m_LightRadius = fLightRadius;             // 0x100109a8
+
+#ifndef PRIMAL_HUNT
+	// AVP2 1.0.9.6 (0x10014549..0x1001455f): the saved timer comes back only
+	// when the object kept the saved deactivation time.
+	if (pNewObject->m_pSData->m_DeactivationTime == sData.m_DeactivationTime)
+		pNewObject->m_pSData->m_UpdateTimer = sData.m_UpdateTimer;
+#endif
 
 	pStream->Read(&pNewObject->m_BlockingPriority, 1);        // 0x100109bf (+0xbd)
 	pStream->Read(&bHasSaveData, 1);                          // 0x100109cb
@@ -1057,6 +1154,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 	pStream->Read(&pNewObject->m_Velocity, 0x0c);             // 0x10010af1 (+0xc4)
 	pStream->Read(&pNewObject->m_Acceleration, 0x0c);         // 0x10010b04 (+0xd0)
+	// AVP2: the byte NOLF's engine had not before the friction (AvP2
+	// 1.0.9.6's server.dll 0x100146c1, Primal Hunt's lithtech.exe 0x0043e2fe).
+	pStream->Read(&pNewObject->m_Unknowndc, 1);
 	pStream->Read(&pNewObject->m_FrictionCoefficient, 4);     // 0x10010b17 (+0xdc)
 	pStream->Read(&pNewObject->m_Mass, 4);                    // 0x10010b2a (+0xe0)
 	pStream->Read(&pNewObject->m_ForceIgnoreLimitSqr, 4);     // 0x10010b3d (+0xe4)
@@ -1080,6 +1180,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		}
 	}
 
+#ifdef PRIMAL_HUNT
+	// (AvP2 1.0.9.6 restores a model's tracker in sm_RestoreNextObject
+	// instead, saveio.cpp, and has none of this here.)
 	if (pNewObject->m_ObjectType == OT_MODEL)                 // 0x10010bdb
 	{
 		SavModelObjQ4S* pModel = (SavModelObjQ4S*)pNewObject;
@@ -1094,6 +1197,7 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 		pStream->Read(&pModel->m_n1d8, 2);                    // 0x10010c2c
 	}
+#endif
 
 	// The six-field fill (0x10010c32..0x10010c77), interleaved by the
 	// scheduler with wm_SetObjectDims' argument pushes; see
@@ -1117,6 +1221,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 		sm_MarkSkyChanged(g_pServerMgr);                      // 0x10010cd5
 	}
+
+	if (nChangeFlags & SAVCHANGE_RESEND)
+		sm_SetObjectChangeFlag(pMgr, pNewObject, 0x100);
 
 	pStream->Read(&bHasClient, 1);                            // 0x10010ce5
 

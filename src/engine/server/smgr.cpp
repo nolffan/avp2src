@@ -150,6 +150,14 @@ PacketHandlerFn g_PacketHandlers[256];
 int             g_FindSphereCount;       // 0x10058be4
 int             g_FindSphereTicks;       // 0x10058be8
 uint32          g_Unknown58bec;          // 0x10058bec
+// What each world object adds to it: 0x210 in Primal Hunt (lithtech
+// 0x0048c626 `sub $0x210` in the removal), 0x20c in AvP2 1.0.9.6 (server.dll
+// 0x1003d6d6 / 0x1003d85b); NOLF's engine counted 0x1fc.
+#ifdef PRIMAL_HUNT
+#define SM_OBJECT_MEMORY 0x210
+#else
+#define SM_OBJECT_MEMORY 0x20c
+#endif
 // AVP2: si_FindPoliesTouchingBox's two stats beside the sphere query's,
 // cleared by Update and printed under "ShowPolyFindTicks" (Primal Hunt
 // lithtech.exe 0x004f6f90 ticks, 0x004f6f7c count; the cvar's record at
@@ -3150,7 +3158,7 @@ LTRESULT sm_RemoveObjectFromWorld(CServerMgr* pMgr, BaseClass* pClass)
 	}
 
 	sm_RemoveFromWorldTree(pMgr, pObject);
-	g_Unknown58bec -= 0x210;
+	g_Unknown58bec -= SM_OBJECT_MEMORY;
 
 	return un390_RemoveObject(&pMgr->m_Unknown390, pObject);
 }
@@ -5620,7 +5628,13 @@ LTObject* si_GetNextObject(LTObject* hObj)
 	}
 
 	LTObject* pObj = (LTObject*)pLink->m_pData;
+#ifdef PRIMAL_HUNT
 	return (pObj->m_ChangeFlags & 0x38) ? LTNULL : pObj;
+#else
+	// AvP2 1.0.9.6 tests the low byte alone (server.dll 0x1003acae /
+	// 0x1003acf6 `mov 0x124(%eax),%cl`).
+	return ((uint8)pObj->m_ChangeFlags & 0x38) ? LTNULL : pObj;
+#endif
 }
 
 LTObject* si_GetNextInactiveObject(LTObject* hObj)
@@ -5641,7 +5655,13 @@ LTObject* si_GetNextInactiveObject(LTObject* hObj)
 	}
 
 	LTObject* pObj = (LTObject*)pLink->m_pData;
+#ifdef PRIMAL_HUNT
 	return (pObj->m_ChangeFlags & 0x38) ? pObj : LTNULL;
+#else
+	// AvP2 1.0.9.6 tests the low byte alone (server.dll 0x1003acae /
+	// 0x1003acf6 `mov 0x124(%eax),%cl`).
+	return ((uint8)pObj->m_ChangeFlags & 0x38) ? pObj : LTNULL;
+#endif
 }
 
 void si_SetNextUpdate(LTObject* hObj, LTFLOAT nextUpdate)
@@ -6380,10 +6400,15 @@ void sm_DropConnection(CServerMgr* pMgr, NetConnection* pConn)
 class CModelInstView
 {
 public:
-	// AvP2's tracker sits twelve bytes further in (commonmodel.h's
-	// ModelInstance), so its model is at +0x1fc (lithtech 0x004793b0).
+	// AvP2's tracker sits further in (commonmodel.h's ModelInstance), so
+	// its model is at +0x1fc in Primal Hunt (lithtech 0x004793b0), +0x1f8
+	// in AvP2 1.0.9.6 (server.dll 0x10030668).
+#ifdef PRIMAL_HUNT
 	uint8        m_pad_00[0x1fc];
-	class Model* m_pModel;                   // +0x1fc
+#else
+	uint8        m_pad_00[0x1f8];
+#endif
+	class Model* m_pModel;                   // +0x1fc (AvP2 +0x1f8)
 };
 
 // 0x10027be0 — does this object owe the clients an update at all? Change
@@ -9014,9 +9039,16 @@ class CObjectModelView
 public:
 	// AVP2: +0x1fc, as CModelInstView has it (Primal Hunt server.dll
 	// 0x10041185 reads it there); NOLF's was +0x1f0.
+	// AvP2 1.0.9.6: +0x1f8 and +0x24c (server.dll 0x100330dd).
+#ifdef PRIMAL_HUNT
 	uint8        m_pad_00[0x1fc];
 	class Model* m_pModel;                   // +0x1fc
 	uint8        m_pad_200[0x260 - 0x200];
+#else
+	uint8        m_pad_00[0x1f8];
+	class Model* m_pModel;                   // +0x1f8
+	uint8        m_pad_1fc[0x24c - 0x1fc];
+#endif
 	// +0x204 — only ever read as "does this container-type object have one";
 	// nonzero makes the change-flag reader set the attachment bit even with
 	// no attachment list (name ours).
@@ -9055,7 +9087,7 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 
 	pHead = pMgr->ObjectListHead();
 
-	for (pCur = pMgr->ObjectListHead()->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+	for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
 	{
 		LTObject* pObj = (LTObject*)pCur->m_pData;
 
@@ -9067,12 +9099,12 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 					fs_GetFilename(&pMgr->m_FileMgr, pObj->m_pSData->m_pModelFile));
 			}
 
-#ifdef PRIMAL_HUNT
-			// PH: Primal Hunt's object data has four skins and an extra
-			// texture after them (ltobject_internal.h's SObjData). Every skin is
-			// cached (server.dll 0x100411bd..0x100411ec), then the first
-			// again, and then the extra one with no test at all
-			// (0x10041214): fs_GetFilename is handed whatever is there.
+			// AVP2: the object data has four skins (ltobject_internal.h's
+			// SObjData), and Primal Hunt's an extra texture after them.
+			// Every skin is cached (server.dll 0x100411bd..0x100411ec;
+			// AvP2 1.0.9.6's 0x1003d94f..0x1003d97e), then the first
+			// again, and in Primal Hunt then the extra one with no test at
+			// all (0x10041214): fs_GetFilename is handed whatever is there.
 			{
 				int i;
 
@@ -9094,15 +9126,10 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 						pObj->m_pSData->m_pSkinFiles[0]));
 			}
 
+#ifdef PRIMAL_HUNT
 			sm_CacheFile(pMgr, 2,
 				fs_GetFilename(&pMgr->m_FileMgr,
 					pObj->m_pSData->m_pFile44));
-#else
-			if (pObj->m_pSData->m_pSkinFiles[0])
-			{
-				sm_CacheFile(pMgr, 2,
-					fs_GetFilename(&pMgr->m_FileMgr, pObj->m_pSData->m_pSkinFiles[0]));
-			}
 #endif
 		}
 	}
@@ -9524,9 +9551,7 @@ LTRESULT sm_CreateObjectInWorld(CServerMgr* pMgr, LPBASECLASS pObject,
 	sm_SetObjectChangeFlag(pMgr, pLTObject,
 		sm_GetObjectChangeFlags2(pMgr, pLTObject));
 
-	// AvP2 counts 0x210 a world object where NOLF counted 0x1fc
-	// (lithtech 0x0048c626 `sub $0x210` in the removal).
-	g_Unknown58bec += 0x210;
+	g_Unknown58bec += SM_OBJECT_MEMORY;
 
 	*ppObject = pLTObject;
 
@@ -10448,8 +10473,12 @@ public:
 	uint32 GetTrackerCount();                // 0x100250a4 / 0x0045b430
 	char*  GetFilename();                    // 0x100250b7 / 0x0045b450
 
+#ifdef PRIMAL_HUNT
 	uint8          m_pad_000[0x224];
-	LTAnimTracker* m_pTrackerList;           // 0x224  (0x004672a3)
+#else
+	uint8          m_pad_000[0x220];         // AvP2 1.0.9.6 (0x10031b9a)
+#endif
+	LTAnimTracker* m_pTrackerList;           // 0x224 (AvP2 0x220)  (0x004672a3)
 };
 
 // 0x10013585 — the full rotation, written as whatever its four floats decode
@@ -11302,10 +11331,14 @@ void sm_WriteRemovedObjects(CUpdateContext* pCtx, ServerMessage* pMsg)
 				float fRangeSqr = ((CSoundRangeView*)pSound)->m_fRadius *
 					((CSoundRangeView*)pSound)->m_fRadius * 4.0f;
 
-				if (((CSoundRangeView*)pSound)->m_vPos.DistSqr(
-						pCtx->m_pClient->m_pUnknown3AC->m_Pos) >= fRangeSqr &&
+				// AVP2: written as the in-range test, negated: cl 9044 keeps
+				// NaN apart where 8966 does not, and AvP2 1.0.9.6's server.dll
+				// (0x10030f29 `test $0x5; jnp`, 0x10030f44 `test $0x5; jp`)
+				// skips a sound whose distance is unordered.
+				if (!(((CSoundRangeView*)pSound)->m_vPos.DistSqr(
+						pCtx->m_pClient->m_pUnknown3AC->m_Pos) < fRangeSqr ||
 					((CSoundRangeView*)pSound)->m_vPos.DistSqr(
-						pCtx->m_pClient->m_Position) >= fRangeSqr)
+						pCtx->m_pClient->m_Position) < fRangeSqr))
 				{
 					continue;
 				}
@@ -12928,10 +12961,7 @@ void sm_WriteQueuedMessageBody(SoundRecord* pRec, Client* pClient,
 // lithtech.exe reaches the same definitions: 0x004670a0, 0x004358d0,
 // 0x00435960, 0x00435ad0, 0x00435d00, 0x00435d60 (the call sequence over
 // 0x00467540..0x00467eec).
-void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg);      // 0x10029087
-#ifdef PRIMAL_HUNT
-void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize);  // PH: 0x1003448c (servercommon.cpp)
-#endif
+void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize);  // 0x1003448c (servercommon.cpp)
 void lmsg_CompressPos(uint8* pOut, LTVector* pVec, CPosRef* pRef);  // 0x10012ec5
 void lmsg_WriteCompPosWords(IMessageWrite* pMsg, uint8* pData);     // 0x10012f49
 void sub_1001307f(LTRotation* pRot, uint8* pOut);                   // 0x1001307f
@@ -12960,8 +12990,12 @@ public:
 class CObjModelQ291
 {
 public:
+#ifdef PRIMAL_HUNT
 	uint8  m_pad_000[0x260];
-	uint32 m_Unknown204;                     // 0x260
+#else
+	uint8  m_pad_000[0x24c];                 // AvP2 1.0.9.6
+#endif
+	uint32 m_Unknown204;                     // 0x260 (AvP2 0x24c)
 };
 
 // A container's code at 0x270 is objtypes.h's CObjContainer::m_ContainerCode;
@@ -13249,18 +13283,8 @@ int sub_100291c7(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 		}
 		else if (pObject->m_ObjectType == OT_MODEL)
 		{
-#ifdef PRIMAL_HUNT
+			// AvP2 1.0.9.6 passes the size too (0x10031eb0).
 			sm_WriteObjectFiles(pObject, pMsg, pSize);
-#else
-			// AVP2: 1.0.9.6 passes the size too (0x10031eb0); servercommon.cpp
-			// has the three-argument writer under PRIMAL_HUNT only, so this
-			// build measures by hand: three identifiers.
-			if (pMsg)
-				sm_WriteObjectFiles(pObject, pMsg);
-
-			if (pSize)
-				*pSize += 6;
-#endif
 		}
 		else if (pObject->m_ObjectType == OT_SPRITE)
 		{

@@ -577,6 +577,18 @@ held, not `defVal`.
 
 Fixed in the modern build: butemgr.cpp copies `defVal`.
 
+### A model with no model file crashes the server when its files are sent
+
+server.dll 0x1003448c, AvP2 1.0.9.6 server.dll 0x10031aa9
+(`sm_WriteObjectFiles`, src/engine/server/servercommon.cpp). The writer
+sends each of an object's file identifiers, sending 0xffff for a missing
+skin, but reads the model file's identifier through its pointer with no
+null test: an object whose model file is missing dereferences null. NOLF's
+three-identifier writer (0x10029087) had the same asymmetry.
+
+Fixed in the modern build: servercommon.cpp, a missing model file sends
+0xffff as a missing skin does.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

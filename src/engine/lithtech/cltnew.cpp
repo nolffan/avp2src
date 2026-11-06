@@ -86,12 +86,18 @@ public:
 	uint16 m_nServerID;                      // 0x0b8
 	uint8  m_pad_ba[0xbc - 0xba];
 	char   m_ObjectType;                     // 0x0bc  OT_*
-	uint8  m_pad_bd[0x258 - 0xbd];
 	// 0x258/0x25c -- the model node hook and its user pointer.  Written
 	// only by ModelNodeControl, and only for OT_MODEL.  (NOLF's were at
-	// 0x1fc/0x200; AvP2's model object is longer.)
-	NodeControlFn m_NodeControlFn;           // 0x258
-	void*         m_pNodeControlUser;        // 0x25c
+	// 0x1fc/0x200; AvP2's model object is longer.)  PH: the model's extra
+	// texture and what follows it put them 0x14 further on than AvP2
+	// 1.0.9.6's 0x244/0x248 (0x00407119).
+#ifdef PRIMAL_HUNT
+	uint8  m_pad_bd[0x258 - 0xbd];
+#else
+	uint8  m_pad_bd[0x244 - 0xbd];
+#endif
+	NodeControlFn m_NodeControlFn;           // 0x258 (AvP2 0x244)
+	void*         m_pNodeControlUser;        // 0x25c (AvP2 0x248)
 };
 
 // A container's code is a uint16.  NOLF's was at 0x270; AVP2: 0x278 in

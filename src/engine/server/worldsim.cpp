@@ -682,7 +682,10 @@ void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 
 	*pOut = vStart;
 
-	if ((fMag = vStep.Mag()) >= 1.192092896e-07f)
+	// AVP2: negated: cl 9044 keeps NaN apart where 8966 does not, and AvP2
+	// 1.0.9.6's server.dll (0x100059a9 `test $0x5; jnp`) nudges on an
+	// unordered magnitude.
+	if (!((fMag = vStep.Mag()) < 1.192092896e-07f))
 	{
 		*pOut += vStep;
 
@@ -1132,7 +1135,10 @@ LTBOOL ws_MoveSphereQ553(CSphereMoveQ553* pMove)
 		                               &bOrient))
 			break;
 
-		if (vHitNormal.MagSqr() <= 0.001f)
+		// AVP2: negated -- a NaN normal stops the move too. cl 9044 keeps
+		// NaN apart where 8966 does not (AvP2 1.0.9.6's server.dll
+		// 0x10003581 `test $0x41; jne`).
+		if (!(vHitNormal.MagSqr() > 0.001f))
 		{
 			*pEnd = *pStart;
 
@@ -3330,9 +3336,14 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 
 	// FIX (a): four nested positive guards, one shared `return 1` below.
 	// 0x004199ac / 0x004199c4 / 0x00419aab / 0x00419bc1 all jne 0x0041a0d1.
-	if (sim.m_fRadius >= 0.01f)
+	// AVP2: each guard is the negated failure test. cl 8966 compiles the two
+	// alike; 9044 keeps NaN apart, and AvP2 1.0.9.6's server.dll takes the
+	// guarded path on an unordered compare (0x10005f31 / 0x10005f42 `test
+	// $0x5; jnp`, 0x100060ed `test $0x41; jnp`, and the loop's 0x1000643d
+	// `test $0x41; je`, as the size test at 0x10006061).
+	if (!(sim.m_fRadius < 0.01f))
 	{
-	if (sim.m_fHeight >= 0.01f)
+	if (!(sim.m_fHeight < 0.01f))
 	{
 		vFrom.x = g_vMoveBase.x + g_vMoveStart.x;
 		vFrom.y = g_vMoveBase.y + g_vMoveStart.y;
@@ -3366,7 +3377,7 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 		vDir.y = fSide * vDir.y;
 		vDir.z = fSide * vDir.z;
 
-		if (fAbsY <= sim.m_fHeight * 1.8f && sim.m_fRadius * 0.9f >= fFlat)
+		if (!(fAbsY > sim.m_fHeight * 1.8f) && !(sim.m_fRadius * 0.9f < fFlat))
 		{
 			fStepShort = fRemaining;
 			fStepLong  = fRemaining;
@@ -3391,13 +3402,13 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 			fStepLong  = fDiag * 0.9f;
 		}
 
-	if (fStepShort > 0.001f)
+	if (!(fStepShort <= 0.001f))
 	{
 		sim.m_vDest = vTo;
 
 		for (;;)
 		{
-			if (fRemaining <= 0.0f)
+			if (!(fRemaining > 0.0f))
 				break;
 
 			if (nHitsAtStart == pState->m_nHits)

@@ -217,12 +217,15 @@ static LTBOOL sp_SweptSphereToEdge(LTVector* pStart, LTVector* pEnd, float fRadi
 	float fT = (fT1 < fT2) ? fT1 : fT2;
 	*pT = fT;
 
-	if (0.0f > fT || fT > 1.0f)
+	// AVP2: "unless in range": cl 9044 keeps NaN apart where 8966 does
+	// not, and AvP2 1.0.9.6's server.dll (`test $0x41; jp` twice, 0x10009368
+	// / 0x10009375) rejects an unordered t.
+	if (!(0.0f <= fT && fT <= 1.0f))
 		return LTFALSE;
 
 	float fDistOnLine = fT * fDirDot + fRelDot;
 
-	if (0.0f > fDistOnLine || fDistOnLine > fEdgeLen)
+	if (!(0.0f <= fDistOnLine && fDistOnLine <= fEdgeLen))
 		return LTFALSE;
 
 	LTVector vCenter = vDir * fT + vRel;
@@ -262,7 +265,10 @@ static LTBOOL sp_SweptSphereToPoint(LTVector* pStart, LTVector* pEnd, float fRad
 	float fT = (fT1 < fT2) ? fT1 : fT2;
 	*pT = fT;
 
-	if (0.0f > fT || fT > 1.0f)
+	// AVP2: "unless in range": cl 9044 keeps NaN apart where 8966 does
+	// not, and AvP2 1.0.9.6's server.dll (`test $0x41; jp` twice, 0x10009368
+	// / 0x10009375) rejects an unordered t.
+	if (!(0.0f <= fT && fT <= 1.0f))
 		return LTFALSE;
 
 	*pNormal = vDir * fT + vRel;

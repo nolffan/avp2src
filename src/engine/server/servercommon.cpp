@@ -365,25 +365,19 @@ struct CSavedFileStateLT
 // w_SaveObjectFileState); servercommon.h's CSavedFileState is NOLF's.
 struct CSavedFileStateSvQ508
 {
-#ifdef PRIMAL_HUNT
-	// PH: the tracker's time reference sits twelve bytes further in, at
-	// +0x28: SetObjectFilenames constructs it at -0x4c(%ebp) with the
-	// record at -0x74 (server.dll 0x10039b57, 0x10039bcb).
+	// The tracker's time reference sits twelve bytes further in, at +0x28:
+	// SetObjectFilenames constructs it at -0x4c(%ebp) with the record at
+	// -0x74 (server.dll 0x10039b57, 0x10039bcb; AvP2 1.0.9.6's -0x40 and
+	// -0x68, 0x10036bd7 and 0x10036c45).
 	uint8         m_pad_00[0x28];
 	CAnimTimeRef  m_TimeRef;                 // 0x28
 	uint8         m_pad_44[0x50 - 0x44];
-#else
-	CSavedTracker m_Tracker;                 // 0x00
-	uint8         m_pad_38[0x50 - 0x38];
-#endif
 	void*         m_pModelFile;              // 0x50
 	void*         m_pSkinFile;               // 0x54
 };
 #endif
 
-#ifdef PRIMAL_HUNT
-void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize);  // PH: 0x1003448c
-#endif
+void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize);  // 0x1003448c (AvP2 0x10031aa9)
 
 LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pStruct)
 {
@@ -432,13 +426,9 @@ LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 		pMsg->m_Unknown34 = 1;
 	}
 	msg.m_pMsg->WriteWord(pObj->m_ObjectID);
-#ifdef PRIMAL_HUNT
-	// PH: the writer takes a third argument, a running size, passed as
-	// zero here (server.dll 0x10039c33 `push 0`, lithtech.exe 0x0048104a).
+	// The writer takes a third argument, a running size, passed as zero here
+	// (server.dll 0x10039c33 `push 0`, lithtech.exe 0x0048104a).
 	sm_WriteObjectFiles(pObj, msg.m_pMsg, LTNULL);
-#else
-	sm_WriteObjectFiles(pObj, msg.m_pMsg);
-#endif
 
 	// Every client whose table already carries the object learns the names.
 	LTLink* pListHead = &m_pServerMgr->m_ClientList.m_Head;
@@ -616,54 +606,37 @@ LTRESULT w_RestoreObjectFileState(LTObject* pObj, CSavedFileState* pState)
 }
 
 
-// 0x10029087 — the three file identifiers an object carries, as three words.
-//
-// Three things the bytes settle:
-//
-//   * the first identifier is dereferenced without a null check and the other
-//     two are not (0x10029092 goes straight through; 0x100290b4 tests). A
-//     missing model or skin sends 0xffff; a missing first one faults. That
-//     asymmetry is shipped and is reproduced as shipped.
-//   * the counter is sixteen bits. With `uint32 i` VC6 drops the trip counter
-//     and compares the reduced byte offset against 0x3c instead, which is
-//     three bytes shorter than the shipped `push $2; pop ebx` / `dec ebx`
-//     pair; a `uint16` counter is what keeps the separate down-counter.
-//   * the identifier goes through a `uint16` local, not a ternary. The
-//     shipped true arm is `mov 0x8(%eax),%ax` — a 16-bit load — where an
-//     int-typed `?:` widens it with `movzwl`.
-//
-// The loop reloads m_pSData every iteration and keeps only the byte offset in
-// a register, which is what indexing off the member gives you once a call
-// stands between two reads of it.
-//
-// lithtech.exe 0x004670a0 is the same source at /O2 with both writes
-// expanded: the "CPacket::WriteType" overrun report and the Append loop
-// through 0x00412f50 appear twice, so both sites are WriteType<uint16>
-// there. server.dll calls ServerMessage::WriteWord (0x10014a53) at both.
-void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg)
+// Server.dll 0x1003448c (lithtech.exe 0x0047a7e0); AvP2 1.0.9.6's
+// server.dll 0x10031aa9 -- the writer for an object's files. Not NOLF's
+// three identifiers (0x10029087): the model at +0x30 (still dereferenced
+// without a null test), four skins at +0x34..+0x40 in a loop counted down
+// from four, and in Primal Hunt one more at +0x44. Either half is optional:
+// with no message nothing is written, and with a size every identifier adds
+// its two bytes to it -- the same walk both writes a message and measures
+// one. The counter is sixteen bits and the identifier goes through a
+// `uint16` local, as NOLF's had them. Names ours.
+class CObjFilesPHQ532
+{
+public:
+	uint8                  m_pad_00[0x30];
+	class CFileIdentifier* m_pModelFile;     // +0x30
+	class CFileIdentifier* m_pSkins[4];      // +0x34
+#ifdef PRIMAL_HUNT
+	class CFileIdentifier* m_pFile44;        // +0x44
+#endif
+};
+
+void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
 {
 	uint16 i;
 
+	// RETAIL BUG: the model file is dereferenced without the null test the
+	// skins get (RETAIL_BUGS.md).
+	if (pMsg)
 #ifdef AVP2_MODERN
-	// fixed: a missing first file sends 0xffff, as the other two do (RETAIL_BUGS.md)
-	for (i = 0; i < 3; i++)
-#else
-#ifdef LT_SERVER_BUILD
-	pMsg->WriteWord(((CObjFiles*)pObj->m_pSData)->m_pFiles[0]->m_FileID);
-#else
-	((CPacket*)pMsg)->WriteType(((CObjFiles*)pObj->m_pSData)->m_pFiles[0]->m_FileID);
-#endif
-
-	for (i = 1; i < 3; i++)
-#endif
 	{
-		CFileIdentifier* pFile = ((CObjFiles*)pObj->m_pSData)->m_pFiles[i];
-		uint16 nFileID;
-
-		if (pFile)
-			nFileID = pFile->m_FileID;
-		else
-			nFileID = 0xffff;
+		CFileIdentifier* pFile = ((CObjFilesPHQ532*)pObj->m_pSData)->m_pModelFile;
+		uint16 nFileID = pFile ? pFile->m_FileID : (uint16)0xffff;
 
 #ifdef LT_SERVER_BUILD
 		pMsg->WriteWord(nFileID);
@@ -671,35 +644,12 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg)
 		((CPacket*)pMsg)->WriteType(nFileID);
 #endif
 	}
-}
-
-
-#ifdef PRIMAL_HUNT
-// PH: server.dll 0x1003448c (lithtech.exe 0x0047a7e0) -- Primal Hunt's
-// writer for an object's files. Six identifiers now, not three: the model
-// at +0x30 (still dereferenced without a null test), four skins at
-// +0x34..+0x40 in a loop counted down from four, and one more at +0x44.
-// Either half is optional: with no message nothing is written, and with a
-// size every identifier adds its two bytes to it -- the same walk both
-// writes a message and measures one. Names ours.
-class CObjFilesPHQ532
-{
-public:
-	uint8                  m_pad_00[0x30];
-	class CFileIdentifier* m_pModelFile;     // +0x30
-	class CFileIdentifier* m_pSkins[4];      // +0x34
-	class CFileIdentifier* m_pFile44;        // +0x44
-};
-
-void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
-{
-	uint16 i;
-
-	if (pMsg)
+#else
 #ifdef LT_SERVER_BUILD
 		pMsg->WriteWord(((CObjFilesPHQ532*)pObj->m_pSData)->m_pModelFile->m_FileID);
 #else
 		((CPacket*)pMsg)->WriteType(((CObjFilesPHQ532*)pObj->m_pSData)->m_pModelFile->m_FileID);
+#endif
 #endif
 	if (pnSize)
 		*pnSize += 2;
@@ -731,6 +681,7 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
 			*pnSize += 2;
 	}
 
+#ifdef PRIMAL_HUNT
 	if (pMsg)
 	{
 		CFileIdentifier* pFile = ((CObjFilesPHQ532*)pObj->m_pSData)->m_pFile44;
@@ -750,8 +701,8 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
 
 	if (pnSize)
 		*pnSize += 2;
-}
 #endif
+}
 
 
 

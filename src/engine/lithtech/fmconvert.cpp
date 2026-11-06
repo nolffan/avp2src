@@ -196,6 +196,11 @@ public:
 	uint8  Convert8Inline (PValue* pValue);
 	uint16 Convert16Inline(PValue* pValue);
 	PValue Convert32Inline(PValue* pValue);
+	// The same, reading the value where it lies (AvP2 1.0.9.6's out-of-line
+	// converters and the pixel writers); the blits convert a value they hold.
+	uint8  Convert8Direct (PValue* pValue);
+	uint16 Convert16Direct(PValue* pValue);
+	PValue Convert32Direct(PValue* pValue);
 
 public:
 	uint8*    m_pTables[NUM_COLORPLANES];    // 0x00
@@ -351,6 +356,11 @@ void FMFormatRead::Init(FMConvertMgr* pMgr, FMFormat* pFormat)
 
 // ----------------------------------------------------------------------- //
 //  0x0045d580 (94 bytes)
+//  Two forms of each: the blits convert a copy held in a register, the
+//  out-of-line converters and the pixel writers read the planes through
+//  the pointer. The same code to cl 8966, but cl 9044 turns each
+//  shift-and-mask of *pValue into a byte load, as AvP2 1.0.9.6's 0x0046a630
+//  does (`mov 0x2(%ebp),%al`), where its blits (0x0046aae0) keep the copy.
 // ----------------------------------------------------------------------- //
 inline uint8 FMFormatConvert::Convert8Inline(PValue* pValue)
 {
@@ -362,6 +372,14 @@ inline uint8 FMFormatConvert::Convert8Inline(PValue* pValue)
 	               (m_pTables[CP_BLUE][PValue_GetB(value)]  << m_pFormat->m_nShifts[CP_BLUE]));
 }
 
+inline uint8 FMFormatConvert::Convert8Direct(PValue* pValue)
+{
+	return (uint8)((m_pTables[CP_ALPHA][PValue_GetA(*pValue)] << m_pFormat->m_nShifts[CP_ALPHA]) |
+	               (m_pTables[CP_RED][PValue_GetR(*pValue)]   << m_pFormat->m_nShifts[CP_RED])   |
+	               (m_pTables[CP_GREEN][PValue_GetG(*pValue)] << m_pFormat->m_nShifts[CP_GREEN]) |
+	               (m_pTables[CP_BLUE][PValue_GetB(*pValue)]  << m_pFormat->m_nShifts[CP_BLUE]));
+}
+
 // The result is NAMED in the two narrow wrappers: `return Convert8Inline()`
 // compiles the whole chain at 32 bits (108 bytes, a relocation-masked copy of
 // 0x0045d9c0, which is how it matched before); with the uint8 /
@@ -369,7 +387,7 @@ inline uint8 FMFormatConvert::Convert8Inline(PValue* pValue)
 // 0x0045d760 (`movzbw`) do.
 uint8 FMFormatConvert::Convert8(PValue* pValue)
 {
-	uint8 nColor = Convert8Inline(pValue);
+	uint8 nColor = Convert8Direct(pValue);
 
 	return nColor;
 }
@@ -388,9 +406,17 @@ inline uint16 FMFormatConvert::Convert16Inline(PValue* pValue)
 	                (m_pTables[CP_BLUE][PValue_GetB(value)]  << m_pFormat->m_nShifts[CP_BLUE]));
 }
 
+inline uint16 FMFormatConvert::Convert16Direct(PValue* pValue)
+{
+	return (uint16)((m_pTables[CP_ALPHA][PValue_GetA(*pValue)] << m_pFormat->m_nShifts[CP_ALPHA]) |
+	                (m_pTables[CP_RED][PValue_GetR(*pValue)]   << m_pFormat->m_nShifts[CP_RED])   |
+	                (m_pTables[CP_GREEN][PValue_GetG(*pValue)] << m_pFormat->m_nShifts[CP_GREEN]) |
+	                (m_pTables[CP_BLUE][PValue_GetB(*pValue)]  << m_pFormat->m_nShifts[CP_BLUE]));
+}
+
 uint16 FMFormatConvert::Convert16(PValue* pValue)
 {
-	uint16 nColor = Convert16Inline(pValue);
+	uint16 nColor = Convert16Direct(pValue);
 
 	return nColor;
 }
@@ -409,9 +435,17 @@ inline PValue FMFormatConvert::Convert32Inline(PValue* pValue)
 	       (m_pTables[CP_BLUE][PValue_GetB(value)]  << m_pFormat->m_nShifts[CP_BLUE]);
 }
 
+inline PValue FMFormatConvert::Convert32Direct(PValue* pValue)
+{
+	return (m_pTables[CP_ALPHA][PValue_GetA(*pValue)] << m_pFormat->m_nShifts[CP_ALPHA]) |
+	       (m_pTables[CP_RED][PValue_GetR(*pValue)]   << m_pFormat->m_nShifts[CP_RED])   |
+	       (m_pTables[CP_GREEN][PValue_GetG(*pValue)] << m_pFormat->m_nShifts[CP_GREEN]) |
+	       (m_pTables[CP_BLUE][PValue_GetB(*pValue)]  << m_pFormat->m_nShifts[CP_BLUE]);
+}
+
 PValue FMFormatConvert::Convert32(PValue* pValue)
 {
-	return Convert32Inline(pValue);
+	return Convert32Direct(pValue);
 }
 
 
@@ -584,7 +618,7 @@ void fm_WritePixel8(FMConvertMgr* pMgr, FMFormat* pFormat, void* pValue, void* p
 
 	convert.InitInline(pMgr, pFormat);
 
-	*((uint8*)pDest) = convert.Convert8Inline((PValue*)pValue);
+	*((uint8*)pDest) = convert.Convert8Direct((PValue*)pValue);
 }
 
 
@@ -597,7 +631,7 @@ void fm_WritePixel16(FMConvertMgr* pMgr, FMFormat* pFormat, void* pValue, void* 
 
 	convert.InitInline(pMgr, pFormat);
 
-	*((uint16*)pDest) = convert.Convert16Inline((PValue*)pValue);
+	*((uint16*)pDest) = convert.Convert16Direct((PValue*)pValue);
 }
 
 
@@ -610,7 +644,7 @@ void fm_WritePixel32(FMConvertMgr* pMgr, FMFormat* pFormat, void* pValue, void* 
 
 	convert.InitInline(pMgr, pFormat);
 
-	*((PValue*)pDest) = convert.Convert32Inline((PValue*)pValue);
+	*((PValue*)pDest) = convert.Convert32Direct((PValue*)pValue);
 }
 
 

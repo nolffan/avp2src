@@ -2071,10 +2071,13 @@ LTBOOL CAnimTimeRefView::IsValid()
 		return LTFALSE;
 	}
 
-	if (m_Percent < 0.0f || m_Percent > 1.0f)
-		return LTFALSE;
+	// AVP2: cl 9044 keeps NaN apart where 8966 does not, and AvP2 1.0.9.6's
+	// server.dll (0x1001b1e4 `test $0x1; jne`, 0x1001b1f4 `test $0x41; jp`)
+	// is a range test that passes only an ordered percent.
+	if (m_Percent >= 0.0f && m_Percent <= 1.0f)
+		return LTTRUE;
 
-	return LTTRUE;
+	return LTFALSE;
 }
 
 
