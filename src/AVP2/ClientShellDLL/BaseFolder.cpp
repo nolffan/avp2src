@@ -82,6 +82,9 @@ CBaseFolder::CBaseFolder()
     m_pFolderMgr = LTNULL;
 
     m_hTitleString = LTNULL;
+#ifdef PRIMAL_HUNT
+    m_hSubTitleString = LTNULL;
+#endif
 
 	m_hTransparentColor = SETRGB_T(0,0,0);
     m_hTitleColor = kWhite;
@@ -89,6 +92,11 @@ CBaseFolder::CBaseFolder()
 	m_titlePos.x = 0;
 	m_titlePos.y = 0;
 	m_nTitleAlign = LTF_JUSTIFY_LEFT;
+#ifdef PRIMAL_HUNT
+	m_subTitlePos.x = 0;
+	m_subTitlePos.y = 64;
+	m_nSubTitleAlign = LTF_JUSTIFY_LEFT;
+#endif
 
 	m_nFolderID = FOLDER_ID_NONE;
 	m_nContinueID = FOLDER_ID_NONE;
@@ -209,6 +217,11 @@ LTBOOL CBaseFolder::Init(int nFolderID)
 	SetTitlePos(tpos.x,tpos.y);
 
 	SetTitleAlignment(g_pLayoutMgr->GetFolderTitleAlign((eFolderID)nFolderID));
+#ifdef PRIMAL_HUNT
+	// the subtitle goes a line under the title (PHCShell 0x10001810)
+	SetSubTitlePos(tpos.x,tpos.y+32);
+	SetSubTitleAlignment(g_pLayoutMgr->GetFolderTitleAlign((eFolderID)nFolderID));
+#endif
 
 	m_PageRect  = g_pLayoutMgr->GetFolderPageRect((eFolderID)nFolderID);
 
@@ -275,6 +288,13 @@ void CBaseFolder::Term()
         g_pLTClient->FreeString(m_hTitleString);
         m_hTitleString=LTNULL;
 	}
+#ifdef PRIMAL_HUNT
+	if (m_hSubTitleString)
+	{
+        g_pLTClient->FreeString(m_hSubTitleString);
+        m_hSubTitleString=LTNULL;
+	}
+#endif
 
 	if (m_hHelpSurf)
 	{
@@ -364,6 +384,30 @@ LTBOOL CBaseFolder::Render(HSURFACE hDestSurf)
 		}
 //		pTitleFont->Draw(m_hTitleString, hDestSurf, xPos+2, yPos+2, LTF_JUSTIFY_LEFT,kBlack);
 		pTitleFont->Draw(m_hTitleString, hDestSurf, xPos, yPos, LTF_JUSTIFY_LEFT,m_hTitleColor);
+
+#ifdef PRIMAL_HUNT
+		// Render the subtitle (PHCShell 0x10001d5a)
+		if (m_hSubTitleString)
+		{
+			xPos=m_subTitlePos.x + xo;
+			yPos=m_subTitlePos.y + yo;
+
+			switch (m_nSubTitleAlign)
+			{
+			case LTF_JUSTIFY_CENTER:
+				{
+					LTIntPt size=pTitleFont->GetTextExtents(m_hSubTitleString);
+					xPos-=size.x/2;
+				} break;
+			case LTF_JUSTIFY_RIGHT:
+				{
+					LTIntPt size=pTitleFont->GetTextExtents(m_hSubTitleString);
+					xPos-=size.x;
+				} break;
+			}
+			pTitleFont->Draw(m_hSubTitleString, hDestSurf, xPos, yPos, LTF_JUSTIFY_LEFT,m_hTitleColor);
+		}
+#endif
 	}
 
 
@@ -507,6 +551,45 @@ LTBOOL CBaseFolder::CreateTitle(int nStringID)
     g_pLTClient->FreeString(hString);
 	return created;
 }
+
+#ifdef PRIMAL_HUNT
+LTBOOL CBaseFolder::CreateSubTitle(HSTRING hString)
+{
+	if (!hString)
+        return LTFALSE;
+
+	if (m_hSubTitleString)
+	{
+        g_pLTClient->FreeString(m_hSubTitleString);
+        m_hSubTitleString=LTNULL;
+	}
+
+    m_hSubTitleString=g_pLTClient->CopyString(hString);
+
+
+    return LTTRUE;
+}
+
+LTBOOL CBaseFolder::CreateSubTitle(char *lpszTitle)
+{
+    HSTRING hString=g_pLTClient->CreateString(lpszTitle);
+
+    LTBOOL created = CreateSubTitle(hString);
+
+    g_pLTClient->FreeString(hString);
+	return created;
+}
+
+LTBOOL CBaseFolder::CreateSubTitle(int nStringID)
+{
+    HSTRING hString=g_pLTClient->FormatString(nStringID);
+
+    LTBOOL created = CreateSubTitle(hString);
+
+    g_pLTClient->FreeString(hString);
+	return created;
+}
+#endif
 
 
 // ----------------------------------------------------------------------- //

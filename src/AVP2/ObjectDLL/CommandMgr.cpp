@@ -13,6 +13,9 @@
 #include "stdafx.h"
 #include "CommandMgr.h"
 #include "ServerUtilities.h"
+#ifdef PRIMAL_HUNT
+#include "MsgIDs.h"
+#endif
 
 CCommandMgr* g_pCmdMgr = DNULL;
 
@@ -127,6 +130,15 @@ static DBOOL cmdmgr_Abort(CCommandMgr *pCmdMgr, const ConParse & parse, int nCmd
 	return DFALSE;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: PHObject.lto 0x10050d20
+static DBOOL cmdmgr_SVar(CCommandMgr *pCmdMgr, const ConParse & parse, int nCmdIndex)
+{
+	if (pCmdMgr) return pCmdMgr->ProcessSVar(parse, nCmdIndex);
+	return DFALSE;
+}
+#endif
+
 static CMD_PROCESS_STRUCT s_ValidCmds[] =
 {
 	CMD_PROCESS_STRUCT("LISTCOMMANDS", 1, cmdmgr_ListCommands, "Available Object Commands:"),
@@ -146,6 +158,11 @@ static CMD_PROCESS_STRUCT s_ValidCmds[] =
 	CMD_PROCESS_STRUCT("LOOP", 4, cmdmgr_Loop, "  LOOP <min delay> <max delay> <cmd>"),
 	CMD_PROCESS_STRUCT("LOOPID", 5, cmdmgr_LoopId, "  LOOPID <cmd id> <min delay> <max delay> <cmd>"),
 	CMD_PROCESS_STRUCT("ABORT", 2, cmdmgr_Abort, "  ABORT <cmd id>")
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto's s_ValidCmds (its initializer, 0x10050830)
+	, CMD_PROCESS_STRUCT("SVAR", 2, cmdmgr_SVar, "SVAR <server console var>"),
+	CMD_PROCESS_STRUCT("SVAR", 3, cmdmgr_SVar, "SVAR <server console var> <value>")
+#endif
 };
 
 const int c_nNumValidCmds = sizeof(s_ValidCmds)/sizeof(s_ValidCmds[0]);
@@ -571,6 +588,59 @@ DBOOL CCommandMgr::ProcessAbort(const ConParse & parse, int nCmdIndex)
 #endif
 	return DFALSE;
 }
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCommandMgr::ProcessSVar()
+//
+//	PURPOSE:	PH: show or set a server console variable (PHObject.lto
+//				0x10051a20); setting OldCloak tells every client
+//
+// ----------------------------------------------------------------------- //
+
+DBOOL CCommandMgr::ProcessSVar(const ConParse & parse, int nCmdIndex)
+{
+	if (parse.m_nArgs < 2 || parse.m_nArgs > 3)
+	{
+		g_pLTServer->CPrint("USAGE:");
+		g_pLTServer->CPrint("  SVAR <server console var>");
+		g_pLTServer->CPrint("  SVAR <server console var> <value>");
+		return DFALSE;
+	}
+
+	if (parse.m_nArgs == 2)
+	{
+		HCONVAR hVar = g_pLTServer->GetGameConVar(parse.m_Args[1]);
+		if (!hVar)
+		{
+			g_pLTServer->CPrint("Variable \"%s\" not found.", parse.m_Args[1]);
+			return DFALSE;
+		}
+
+		char* pValue = g_pLTServer->GetVarValueString(hVar);
+		g_pLTServer->CPrint("%s = %s", parse.m_Args[1], pValue);
+		return DTRUE;
+	}
+
+	g_pLTServer->SetGameConVar(parse.m_Args[1], parse.m_Args[2]);
+
+	if (!_stricmp(parse.m_Args[1], "OldCloak"))
+	{
+		LTFLOAT fValue = (LTFLOAT)atof(parse.m_Args[2]);
+
+		// RETAIL BUG: CreateMessage's result is not checked, so a message
+		// that cannot be made is written through a null pointer.
+		ILTMessage* pMsg = LTNULL;
+		g_pLTServer->Common()->CreateMessage(pMsg);
+		pMsg->WriteFloat(fValue);
+		g_pLTServer->SendToClient(*pMsg, MID_CONSOLE_COMMAND, LTNULL, MESSAGE_GUARANTEED);
+		pMsg->Release();
+	}
+
+	return DTRUE;
+}
+#endif
 
 
 // ----------------------------------------------------------------------- //

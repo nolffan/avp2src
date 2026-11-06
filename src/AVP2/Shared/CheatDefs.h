@@ -58,6 +58,14 @@ enum CheatCode
 	// Easter egg cheats
 	CHEAT_MILLERTIME,
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: two more codes after mpmillertime in CheatMgr's table
+	// (PHCShell.dll's strings "OCgRIOQMU" and "OCKLJ", 0x101d6a7c and
+	// 0x101d6a70); the second's name is ours
+	CHEAT_NEXTLEVEL,
+	CHEAT_PH30,
+#endif
+
 	// Must exist for array size information
 	CHEAT_MAX
 };

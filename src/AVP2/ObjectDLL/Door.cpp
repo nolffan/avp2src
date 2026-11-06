@@ -108,6 +108,11 @@ BEGIN_CLASS(Door)
 	ADD_BOOLPROP_FLAG(AICanShootThrough, LTFALSE, 0)
 	ADD_BOOLPROP_FLAG(AICanSeeThrough, LTFALSE, 0)
 	ADD_STRINGPROP_FLAG_HELP(TearSound, "", PF_STATICLIST, "Not used.")
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto's Door class (its initializer, 0x100d9730)
+	ADD_BOOLPROP_FLAG_HELP(Use_Blocking_Priority, LTFALSE, 0, "TRUE if you want the doors blocking priority to be set.")
+	ADD_LONGINTPROP_FLAG_HELP(Blocking_Priority, 255, 0, "Priority of this door.  Higher has more precedence.")
+#endif
 END_CLASS_DEFAULT_FLAGS_PLUGIN(Door, GameBase, NULL, NULL, 0, CDoorPlugin)
 
 BEGIN_CLASS(AlienTearDoor)
@@ -866,6 +871,19 @@ LTBOOL Door::ReadProp(ObjectCreateStruct *)
          m_bCanSeeThrough = genProp.m_Bool;
 	}
 
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x100de019
+    if (g_pLTServer->GetPropGeneric("Use_Blocking_Priority", &genProp) == LT_OK)
+	{
+         m_bUseBlockingPriority = genProp.m_Bool;
+	}
+
+    if (g_pLTServer->GetPropGeneric("Blocking_Priority", &genProp) == LT_OK)
+	{
+         m_nBlockingPriority = genProp.m_Long;
+	}
+#endif
+
     return LTTRUE;
 }
 
@@ -1192,6 +1210,13 @@ LTBOOL Door::InitialUpdate(int nInfo)
 
     SetNextUpdate(0.001f, 1.001f);
 
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x100de76f
+	if (m_bUseBlockingPriority == LTTRUE)
+	{
+		g_pLTServer->SetBlockingPriority(m_hObject, (uint8)m_nBlockingPriority);
+	}
+#endif
 
     return LTTRUE;
 }

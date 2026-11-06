@@ -88,6 +88,10 @@ struct DamageStruct
         hDamager    = LTNULL;
         hContainer  = LTNULL;
 		bIgnoreFF	= LTFALSE;
+#ifdef PRIMAL_HUNT
+		// PH: PHObject.lto 0x1004ba40 also clears the new position
+		vPos.Init();
+#endif
 	}
 
     void Save(HMESSAGEWRITE hWrite)
@@ -101,6 +105,9 @@ struct DamageStruct
 
 		*hWrite << hDamager;
 		*hWrite << hContainer;
+#ifdef PRIMAL_HUNT
+		g_pLTServer->WriteToMessageVector(hWrite, &vPos);	// PH: PHObject.lto 0x100d7c2b
+#endif
 	}
 
     void Load(HMESSAGEREAD hRead)
@@ -114,6 +121,9 @@ struct DamageStruct
 
 		*hRead >> hDamager;
 		*hRead >> hContainer;
+#ifdef PRIMAL_HUNT
+		g_pLTServer->ReadFromMessageVector(hRead, &vPos);
+#endif
 	}
 
     const static LTFLOAT kInfiniteDamage;
@@ -128,6 +138,11 @@ struct DamageStruct
     LTFLOAT      fDamage;
     LTFLOAT      fDuration;  // Progressive damage only...
     LTBOOL      bIgnoreFF;		// no need for load/save
+#ifdef PRIMAL_HUNT
+	// PH: a position carried in the MID_DAMAGE message after bIgnoreFF
+	// (DamageStruct::InitFromMessage, PHObject.lto 0x100d4940)
+	LTVector	vPos;
+#endif
 };
 
 

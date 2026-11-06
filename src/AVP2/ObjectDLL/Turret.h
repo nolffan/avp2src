@@ -24,6 +24,10 @@
 
 class CCharacter;
 
+#ifdef PRIMAL_HUNT
+LTBOOL IsTurret(HOBJECT hObj);
+#endif
+
 class Turret : public Prop
 {
 	public :

@@ -115,6 +115,34 @@ ENV_GAME := $(call vc_env,$(V8966))
 CL_ClientShellDLL_PH := $(V8966)/BIN/cl.exe
 CL_Object_PH         := $(V8966)/BIN/cl.exe
 CL_ServerApp_PH      := $(V8966)/BIN/cl.exe
+# AvP2's CShell.dll is not 8168's throughout: its Rich header has C++ 8168
+# x142 and 8966 x114, and the 8966 objects are not only the libraries'.
+# Monolith moved to SP5 during 1.0.9.6, and the files rebuilt after that
+# are 8966's. Each source was compiled with both revisions and compared
+# with retail function by function: these have functions identical only
+# under 8966 and none (bar a few under 64 bytes, and static names) only
+# under 8168. The SFX files among them show it in their factory
+# registration initializers (_$E..., 411 bytes under 8966, 290 under
+# 8168); CWeaponFX::CreateBulletTrail is identical with 8966 (one inline
+# Init more expanded), in no form with 8168. SoundButeMgr is undecided (its
+# destructor is 8966's code, GetSoundSetFromName 8168's) and stays 8168's.
+CSHELL_8966 := AutoTargetMgr BaseFolder BaseScaleFX BodyPropFX CameraMgrFX \
+    CharacterButeMgr CharacterFX CharacterMovement CheatMgr ClientUtilities \
+    ClientWeaponUtils DeathFX DebrisFX DebrisMgr ExplosionFX FireFX FlashLight \
+    FolderCampaignLevel FolderCustomControls FolderCustomLevel FolderDisplay \
+    FolderHost FolderHostConfig FolderHostMaps FolderJoin FolderJoinInfo \
+    FolderLoad FolderMain FolderMulti FolderPerformance FolderPlayer \
+    FolderPlayerJoin FolderProfile FolderSave FolderSingle FXButeMgr \
+    GameClientShell GameSettings GibFX GraphFX HeadBobMgr HudMgr InterfaceMgr \
+    InterfaceResMgr InterfaceTimer LensFlareFX LightningFX LTDialogueWnd \
+    MarkSFX MessageMgr MotionDetector MultiDebrisFX MultiplayerClientMgr \
+    MuzzleFlashFX NodeController NodeLinesFX OverlayMGR ParticleSystemFX \
+    ParticleTrailFX ParticleTrailSegmentFX PerformanceMgr PlayerMovement \
+    PolyDebrisFX PolyGridFX PolyLineFX PredTargetFx ProfileMgr ProjectileFX \
+    SearchLightFX ServerOptions SFXMgr ShellCasingFX StarLightViewerFX SteamFX \
+    Subtitle TracerFX ViewModeMGR WeaponFX WeaponMgr WeaponModel WeaponSoundFX \
+    WeatherFX
+$(foreach s,$(CSHELL_8966),$(eval CL_ClientShellDLL__$(s) := $(V8966)/BIN/cl.exe))
 CL_ServerApp   := $(V8168)/BIN/cl.exe
 LINK_ServerApp := $(V8168)/BIN/link.exe
 ENV_ServerApp  := $(call vc_env,$(V8168))
@@ -356,6 +384,42 @@ $(eval $(call lsdlib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /
 $(eval $(call lsdlib,rezmgr,RezMgr,/D REZMGRLITE /I $(LT2LS2)\\incs /I .,$(RM_SRCS)))
 .PHONY: debuglibs
 debuglibs: $(LS_DEBUG:%=$(LDOUT)/%.lib)
+
+# ---------------------------------------------------------------------------
+# The game DLLs' libraries, ours: LTGUIMgr, LithFontMgr and WONAPI
+#
+# ltguimgr_LT2.lib and LithFontMgr_LT2.lib: AvP2's builds of NOLF's GUI and
+# font libraries, which the release ships prebuilt only. Ours are nolfsrc's
+# sources (src/lithshared/ltguimgr, lithfontmgr) brought to the release's
+# prebuilt builds (progress/targets.py, LIBS, scores them against those):
+# a menu font of three faces, normal, selected and disabled (CLTGUIFont's
+# second Init, DrawMenu, DrawMenuFormat), which every control draws its
+# text with when its font is one; word-wrapped columns; an edit control's
+# input modes; the previous string a CString (LITHFONTSAVEDATA), a system
+# font's default colour. nolfsrc's flags, as the libraries above.
+LTGUI_SRCS := ltguibitmapctrl.cpp ltguicolumntextctrl.cpp ltguicommandhandler.cpp ltguictrl.cpp ltguicyclectrl.cpp \
+    ltguieditctrl.cpp ltguifadecolorctrl.cpp ltguifadeitemctrl.cpp ltguifont.cpp ltguilistctrl.cpp ltguimessagebox.cpp \
+    ltguimgr.cpp ltguionoffctrl.cpp ltguiscrollbarctrl.cpp ltguisliderctrl.cpp ltguitextitemctrl.cpp
+$(eval $(call lslib,ltguimgr,ltguimgr_LT2,/D _NOMFC /D _LITHTECH2 /I $(LT2LS)\ltguimgr /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs \
+    /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTGUI_SRCS)))
+$(eval $(call lslib,lithfontmgr,LithFontMgr_LT2,/D _LITHTECH2 /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs /I $(LT2LS)\mfcstub \
+    /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,lithbitmapfont.cpp lithcursor.cpp lithfont.cpp lithfontmgr.cpp lithsystemfont.cpp))
+#
+# WONAPI.lib, as the game DLLs link it ($(LT2_DIR)\lithshared\libs\Release\
+# WONAPI.lib in the project files): the release's STLport build (above,
+# "WONAPI.lib"), so the links take a copy of ours of it. AvP2 1.0.9.6's
+# game DLLs hold that build. Primal Hunt's hold Third Law's build of the
+# same source with VC6's own STL, as Primal Hunt's engine's
+# (tools/libscan.py: PHObject.lto holds 657 of the functions of our VC6-STL
+# build and 317 of the STLport one's, PHCShell.dll 722 against 205, the
+# latter above its runtime), but the _PH projects cannot link that build
+# yet: the release's prebuilt GameSpyMgr.lib and GameSpyClientMgr.lib call
+# WONAPI with STLport strings and lists (unresolved against VC6's), so
+# Third Law rebuilt those too. Until they are ours, both games link this.
+$(eval $(call tool,$(LOUT)/WONAPI.lib,$(LOUT)/wonapi/WONAPI.lib,cp $(LOUT)/wonapi/WONAPI.lib $(LOUT)/WONAPI.lib))
+LS_OURS += WONAPI
+.PHONY: gamelibs
+gamelibs: $(LOUT)/ltguimgr_LT2.lib $(LOUT)/LithFontMgr_LT2.lib $(LOUT)/WONAPI.lib
 
 # ---------------------------------------------------------------------------
 # The prebuilt libraries

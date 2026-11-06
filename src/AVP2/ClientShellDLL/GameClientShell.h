@@ -360,6 +360,10 @@ class CGameClientShell : public CClientShellDE
 		void	HandleMediComp();
 		void	HandleEnergySift();
 		void	HandlePounceJump();
+#ifdef PRIMAL_HUNT
+		void	HandleBackhand();
+		void	SetBackhand(LTBOOL bOn);
+#endif
 		void	HandleRespawn();
 
 		// Level and game setup functions
@@ -426,6 +430,12 @@ class CGameClientShell : public CClientShellDE
 
 		LTFLOAT					m_fEarliestRespawnTime;
 		LTFLOAT					m_fForceRespawnTime;
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: the predalien's backhand (PHCShell 0x100868c0)
+		LTFLOAT					m_fBackhandTime;			// When the backhand ends (negative when not backhanding)
+		LTFLOAT					m_fNextBackhandTime;		// The earliest time of the next backhand
+#endif
 
 
 		// Client and game information
@@ -504,6 +514,10 @@ class CGameClientShell : public CClientShellDE
 		LTFLOAT					m_fInitialServerTime;
 		LTFLOAT					m_fInitialLocalTime;
 		uint8					m_nSpeedCheatCounter;
+
+#ifdef PRIMAL_HUNT
+		uint32					m_nRestoreWeaponId;			// PHCShell 0x10080e62
+#endif
 };
 
 // ----------------------------------------------------------------------- //

@@ -105,6 +105,9 @@ char *CMSNames[CMS_MAX] =
 	"Facehug",			// CMS_FACEHUG,			
 	"Facehug Attached",	// CMS_FACEHUG_ATTACH,		
 	"Observing",		// CMS_OBSERVING,
+#ifdef PRIMAL_HUNT
+	"Using Turret",		// CMS_TURRET,
+#endif
 };
 
 
@@ -410,6 +413,12 @@ LTBOOL CharacterMovement::Init(INTERFACE *pInterface, HOBJECT hObj, CharacterAni
 	SetHandleStateFunc(CMS_OBSERVING,		CharacterMovementState_Observing);
 	SetMaxSpeedFunc(CMS_OBSERVING,			CharacterMovementState_Observing_MaxSpeed);
 	SetMaxAccelFunc(CMS_OBSERVING,			CharacterMovementState_Observing_MaxAccel);
+
+#ifdef PRIMAL_HUNT
+	SetHandleStateFunc(CMS_TURRET,			CharacterMovementState_Turret);
+	SetMaxSpeedFunc(CMS_TURRET,				CharacterMovementState_Turret_MaxSpeed);
+	SetMaxAccelFunc(CMS_TURRET,				CharacterMovementState_Turret_MaxAccel);
+#endif
 
 
 #ifdef _CLIENTBUILD
@@ -4720,4 +4729,31 @@ LTFLOAT CharacterMovementState_Observing_MaxAccel(const CharacterMovement *pMove
 {
 	return 0.0f;
 }
+
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------- //
+// ----------------------------------------------------------------------- //
+// ----------------------------------------------------------------------- //
+
+// Primal Hunt: the turret state does nothing itself (Init hands
+// SetHandleStateFunc an empty function, PHCShell.dll 0x10006080, and a
+// zero speed and acceleration, 0x10070b80: the linker folded them with
+// others of the same code)
+
+void CharacterMovementState_Turret(CharacterMovement *pMovement)
+{
+}
+
+LTFLOAT CharacterMovementState_Turret_MaxSpeed(const CharacterMovement *pMovement)
+{
+	return 0.0f;
+}
+
+LTFLOAT CharacterMovementState_Turret_MaxAccel(const CharacterMovement *pMovement)
+{
+	return 0.0f;
+}
+
+#endif
 

@@ -40,7 +40,14 @@ class CSpecialFX
 			Term();
 		}
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: virtual, the slot after the destructor (every
+		// CSpecialFX vtable: CFogVolumeFX's, PHCShell.dll 0x101b0aa0, has
+		// 0x10007640 there)
+		virtual void Term()
+#else
 		void Term()
+#endif
 		{
 			if (m_pClientDE && m_hObject)
 			{

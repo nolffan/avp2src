@@ -53,8 +53,8 @@ const DWORD dwMask2 = 0x18923D01;
 const DWORD dwMask3 = 0x1C1EAD4D;
 
 
-#ifdef _DEMO
-	// Globals for demo use only
+#if defined(_DEMO) || defined(PRIMAL_HUNT)
+	// Globals for demo use only (and Primal Hunt's splash screen sequence)
 	uint8 g_nSplashCount;
 #endif
 
@@ -200,7 +200,7 @@ CInterfaceMgr::CInterfaceMgr()
 
 	memset(&m_rcMenuRestoreCamera, 0, sizeof(m_rcMenuRestoreCamera));
 
-#ifdef _DEMO
+#if defined(_DEMO) || defined(PRIMAL_HUNT)
 	memset(m_hScreenShow, 0, 5*sizeof(HSURFACE));
 #endif
 
@@ -268,7 +268,7 @@ CInterfaceMgr::~CInterfaceMgr()
 		m_hFailBack = DNULL;
 	}
 
-#ifdef _DEMO
+#if defined(_DEMO) || defined(PRIMAL_HUNT)
 	if(m_hScreenShow[0]) g_pClientDE->DeleteSurface(m_hScreenShow[0]);
 	if(m_hScreenShow[1]) g_pClientDE->DeleteSurface(m_hScreenShow[1]);
 	if(m_hScreenShow[2]) g_pClientDE->DeleteSurface(m_hScreenShow[2]);
@@ -313,6 +313,17 @@ CInterfaceMgr::~CInterfaceMgr()
 
 	//clean up any objective stuff that may be hanging around
 	ClearObjectiveDisplay();
+
+#ifdef PRIMAL_HUNT
+	// PHCShell 0x1003ee15; RETAIL BUG: as in Term(), CServerOptionMgr::Term()
+	// clears g_pServerOptionMgr, so the manager is never deleted
+	if( g_pServerOptionMgr )
+	{
+		g_pServerOptionMgr->Term();
+		delete g_pServerOptionMgr;
+		g_pServerOptionMgr = NULL;
+	}
+#endif
 }
 	
 
@@ -567,6 +578,19 @@ void CInterfaceMgr::Term()
 		g_pLTClient->DeleteSurface(m_hBackground);
 		m_hBackground = LTNULL;
 	}
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt cleans up the server option manager too (PHCShell
+	// 0x1003fedb).  RETAIL BUG: CServerOptionMgr::Term() clears
+	// g_pServerOptionMgr itself, so the delete below never happens and the
+	// manager still leaks.
+	if( g_pServerOptionMgr )
+	{
+		g_pServerOptionMgr->Term();
+		delete g_pServerOptionMgr;
+		g_pServerOptionMgr = NULL;
+	}
+#endif
 }
 
 
@@ -3472,6 +3496,10 @@ DBOOL CInterfaceMgr::PreSplashScreenState(GameState eCurState)
 	g_nSplashCount = 0;
 	g_hSplash = g_pClientDE->CreateSurfaceFromBitmap("Interface\\fox_logo.pcx");
 #else
+#ifdef PRIMAL_HUNT
+	// Set the global counter... (PHCShell 0x10043989)
+	g_nSplashCount = 0;
+#endif
 	// Create the splash screen...
 	g_hSplash = g_pClientDE->CreateSurfaceFromBitmap(IM_SPLASH_SCREEN);
 	g_pClientSoundMgr->PlaySoundLocal(IM_SPLASH_SOUND, SOUNDPRIORITY_MISC_LOW);

@@ -151,9 +151,15 @@ void CLTGUISliderCtrl::RenderSliderText(HSURFACE hDestSurf)
 	if (m_nAlignment == LTF_JUSTIFY_RIGHT)
 		x = m_nSliderOffset + m_pos.x - 25;
 
-	HLTCOLOR color = GetCurrentColor();
-
-	m_pFont->Draw(m_hText, hDestSurf, x, y, m_nAlignment, color);
+	if (m_pFont->IsMenuFriendly())
+	{
+		m_pFont->DrawMenu(m_hText, hDestSurf, x, y, m_nAlignment, GetState());
+	}
+	else
+	{
+		HLTCOLOR color = GetCurrentColor();
+		m_pFont->Draw(m_hText, hDestSurf, x, y, m_nAlignment, color);
+	}
 
 	if (m_bNumDisplay)
 		DrawNumDisplay(hDestSurf);
@@ -168,9 +174,15 @@ void CLTGUISliderCtrl::DrawNumDisplay(HSURFACE hDestSurf)
 	char szStr[8] = "";
 	sprintf(szStr, "%d", m_nSliderPos);
 
-	HLTCOLOR color = GetCurrentColor();
-
-	m_pFont->Draw(szStr, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+	if (m_pFont->IsMenuFriendly())
+	{
+		m_pFont->DrawMenu(szStr, hDestSurf, x, y, LTF_JUSTIFY_LEFT, GetState());
+	}
+	else
+	{
+		HLTCOLOR color = GetCurrentColor();
+		m_pFont->Draw(szStr, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+	}
 }
 
 // Render the slider bar

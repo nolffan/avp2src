@@ -907,6 +907,12 @@ CGameClientShell::CGameClientShell()
 	m_fInitialLocalTime			= 0;
 	m_nSpeedCheatCounter		= 0;
 
+#ifdef PRIMAL_HUNT
+	m_fBackhandTime				= -1.0f;
+	m_fNextBackhandTime			= 0.0f;
+	m_nRestoreWeaponId			= 0;
+#endif
+
 
 	// FOX CODES TO PREVENT OPTIMIZING OUT THE VARIABLES
 	iIdentCode0 = iIdentCode0;
@@ -7145,6 +7151,57 @@ void CGameClientShell::HandlePounceJump()
 		}
 	}
 }
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameClientShell::HandleBackhand()
+//
+//	PURPOSE:	Primal Hunt: the predalien's backhand (PHCShell 0x100868c0)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameClientShell::HandleBackhand()
+{
+	if(m_InterfaceMgr.GetGameState() == GS_PLAYING && g_pLTClient->GetTime() >= m_fNextBackhandTime)
+	{
+		// Now force the weapon...
+		WEAPON* pWep = g_pWeaponMgr->GetWeapon("Backhand_Predalien");
+
+		if(pWep)
+		{
+			m_weaponModel.ForceChangeWeapon(pWep->nId, LTFALSE);
+
+			if(m_fBackhandTime < 0.0f)
+			{
+				SetBackhand(LTTRUE);
+				m_fNextBackhandTime = 1.0f + g_pLTClient->GetTime();
+			}
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameClientShell::SetBackhand()
+//
+//	PURPOSE:	Primal Hunt: start or end the backhand (PHCShell 0x10086950)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameClientShell::SetBackhand(LTBOOL bOn)
+{
+	if(bOn == LTTRUE)
+	{
+		if(m_fBackhandTime < 0.0f)
+			m_fBackhandTime = g_pLTClient->GetTime() + 0.5f;
+	}
+	else
+	{
+		m_fBackhandTime = -1.0f;
+	}
+}
+#endif
 
 
 // ----------------------------------------------------------------------- //

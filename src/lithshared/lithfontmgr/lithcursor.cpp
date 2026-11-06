@@ -57,7 +57,7 @@ LTBOOL LithCursor::Init(ILTClient *pClient, LITHCURSORCREATESTRUCT *lcCS)
 
 void LithCursor::Free()
 {
-	m_lfSD.szPrevString = LTNULL;
+	m_lfSD.sPrevString.Empty();
 
 	m_pClient = LTNULL;
 	m_pFont = LTNULL;

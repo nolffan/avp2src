@@ -19,6 +19,10 @@
 #include "SurfaceDefs.h"
 #include "ContainerCodes.h"
 
+#ifdef PRIMAL_HUNT
+#include "MultiFile.h"
+#endif
+
 #ifdef  _CLIENTBUILD
 
 class CSpecialFX;
@@ -56,12 +60,70 @@ extern CFXButeMgr* g_pFXButeMgr;
 #define PV_MAX_SOUNDFX_TYPES	10
 
 
-struct PROJECTILECLASSDATA
+#ifdef PRIMAL_HUNT
+// Primal Hunt: the projectile class data are written to and read from the
+// bute cache through a common base, which carries the kind of class data
+// (1 PROJECTILECLASSDATA, 2 PROXCLASSDATA, 3 SPIDERCLASSDATA,
+// 4 TRACKINGSADARCLASSDATA, 5 PREDDISKCLASSDATA: the constructors at
+// PHCShell.dll 0x100c59c7..0x100cb1a0). The member's name is ours.
+struct PROJBASEFX
 {
+	PROJBASEFX(int nType = 0)
+	{
+		nClassType = nType;
+	}
+
+	virtual LTBOOL	Write(CMultiFile* pFile)
+	{
+		if (!pFile) return LTFALSE;
+		pFile->WriteByte(nClassType);
+		return LTTRUE;
+	}
+
+	// Reads only the kind: PROJECTILEFX::Read reads one to know which
+	// class data to make (PHCShell.dll 0x100cf1f0, called from the
+	// FXButeMgr's cache reading)
+	virtual LTBOOL	Read(CMultiFile* pFile)
+	{
+		if (!pFile) return LTFALSE;
+		nClassType = pFile->ReadByte();
+		return LTTRUE;
+	}
+
+	int		nClassType;
+};
+
+struct PROJECTILECLASSDATA : public PROJBASEFX
+#else
+struct PROJECTILECLASSDATA
+#endif
+{
+#ifdef PRIMAL_HUNT
+	PROJECTILECLASSDATA(int nType = 1) : PROJBASEFX(nType)
+#else
 	PROJECTILECLASSDATA()
+#endif
 	{
 		szName[0] = '\0';
 	}
+
+#ifdef PRIMAL_HUNT
+	// The kind, then the name; Read leaves the kind to its caller
+	// (PHCShell.dll 0x100c5b10, 0x100c5b50)
+	virtual LTBOOL	Write(CMultiFile* pFile)
+	{
+		if (!PROJBASEFX::Write(pFile)) return LTFALSE;
+		pFile->WriteString(szName);
+		return LTTRUE;
+	}
+
+	virtual LTBOOL	Read(CMultiFile* pFile)
+	{
+		if (!pFile) return LTFALSE;
+		pFile->ReadString(szName, FXBMGR_MAX_NAME_LENGTH);
+		return LTTRUE;
+	}
+#endif
 
     virtual LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	virtual void	Cache(CFXButeMgr* pFXButeMgr) {}
@@ -75,6 +137,11 @@ typedef CTList<PROJECTILECLASSDATA*> ProjClassDataList;
 struct PROXCLASSDATA : public PROJECTILECLASSDATA
 {
 	PROXCLASSDATA();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -95,6 +162,11 @@ struct SPIDERCLASSDATA : public PROJECTILECLASSDATA
 {
 	SPIDERCLASSDATA();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
 
@@ -114,6 +186,11 @@ struct TRACKINGSADARCLASSDATA : public PROJECTILECLASSDATA
 {
 	TRACKINGSADARCLASSDATA();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 
 	LTFLOAT	fTurnRadius;
@@ -123,6 +200,11 @@ struct TRACKINGSADARCLASSDATA : public PROJECTILECLASSDATA
 struct PREDDISKCLASSDATA : public PROJECTILECLASSDATA
 {
 	PREDDISKCLASSDATA();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 
@@ -134,6 +216,11 @@ struct PREDDISKCLASSDATA : public PROJECTILECLASSDATA
 struct PARTICLETRAILFX
 {
 	PARTICLETRAILFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
 	LTBOOL	Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -170,6 +257,18 @@ typedef CTList<PARTICLETRAILFX*> ParticleTrailFXList;
 struct PROJECTILEFX
 {
 	PROJECTILEFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: set when Read built the structures this one points to
+	// (PROJECTILEFX::Read, PHCShell.dll 0x100c5adb); the constructor clears
+	// it. Its name is ours.
+	LTBOOL		bFromFile;
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -214,6 +313,18 @@ struct PUSHERFX;
 struct IMPACTFX
 {
 	IMPACTFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: set when Read built the structures this one points to
+	// (PROJECTILEFX::Read, PHCShell.dll 0x100c5adb); the constructor clears
+	// it. Its name is ours.
+	LTBOOL		bFromFile;
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -291,6 +402,18 @@ struct FIREFX
 {
 	FIREFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: set when Read built the structures this one points to
+	// (PROJECTILEFX::Read, PHCShell.dll 0x100c5adb); the constructor clears
+	// it. Its name is ours.
+	LTBOOL		bFromFile;
+#endif
+
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	 Cache(CFXButeMgr* pFXButeMgr);
 
@@ -313,6 +436,11 @@ typedef CTList<FIREFX*> FireFXList;
 struct PEXPLFX
 {
 	PEXPLFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -351,6 +479,11 @@ struct DLIGHTFX
 {
 	DLIGHTFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
 
@@ -374,6 +507,11 @@ typedef CTList<DLIGHTFX*> DLightFXList;
 struct PVFX
 {
 	PVFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -399,6 +537,11 @@ typedef CTList<PVFX*> PVFXList;
 struct CParticleMuzzleFX
 {
 	CParticleMuzzleFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
@@ -431,6 +574,18 @@ struct CMuzzleFX
 {
 	CMuzzleFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: set when Read built the structures this one points to
+	// (PROJECTILEFX::Read, PHCShell.dll 0x100c5adb); the constructor clears
+	// it. Its name is ours.
+	LTBOOL		bFromFile;
+#endif
+
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
 
@@ -449,6 +604,11 @@ typedef CTList<CMuzzleFX*> MuzzleFXList;
 struct TRACERFX
 {
 	TRACERFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
@@ -472,6 +632,11 @@ typedef CTList<TRACERFX*> TracerFXList;
 struct BEAMFX
 {
 	BEAMFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
@@ -497,6 +662,11 @@ struct SOUNDFX
 {
 	SOUNDFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
 
@@ -517,6 +687,11 @@ struct PUSHERFX
 {
 	PUSHERFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
 
@@ -536,6 +711,11 @@ typedef CTList<PUSHERFX*> PusherFXList;
 struct SMOKEFX
 {
 	SMOKEFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
@@ -575,6 +755,11 @@ struct STEAMFX
 {
 	STEAMFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
 
@@ -595,6 +780,11 @@ typedef CTList<STEAMFX*> SteamFXList;
 struct FIREOBJFX
 {
 	FIREOBJFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);
@@ -626,6 +816,11 @@ typedef CTList<FIREOBJFX*> FireObjFXList;
 struct DRIPPEROBJFX
 {
 	DRIPPEROBJFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL      Init(CButeMgr & buteMgr, char* aTagName);
 	void		Cache(CFXButeMgr* pFXButeMgr);

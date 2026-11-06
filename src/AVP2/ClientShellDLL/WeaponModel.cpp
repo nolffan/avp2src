@@ -123,12 +123,26 @@ CWeaponModel::CWeaponModel()
 
 	m_fBobHeight		= 0.0f;
 	m_fBobWidth			= 0.0f;
+#ifdef PRIMAL_HUNT
+	// PHCShell.dll 0x100b3048
+	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+	{
+		m_fFlashStartTime[nMuzzle] = 0.0f;
+
+		m_vFlashPos[nMuzzle].Init();
+		m_vFlashOffset[nMuzzle].Init();
+
+		m_pMuzzleFlash[nMuzzle] = LTNULL;
+		m_bNewShot[nMuzzle] = LTFALSE;
+	}
+#else
 	m_fFlashStartTime	= 0.0f;
 
 	m_vFlashPos.Init();
 	m_vFlashOffset.Init();
 
 	m_pMuzzleFlash = LTNULL;
+#endif
 
 	m_eState				= W_IDLE;
 	m_eLastWeaponState		= W_IDLE;
@@ -214,7 +228,13 @@ CWeaponModel::CWeaponModel()
 	m_fLastFOVX		= 0.0f;
 	m_fLastFOVY		= 0.0f;
 
+#ifndef PRIMAL_HUNT
+#ifdef PRIMAL_HUNT
+	m_bNewShot[0]		= LTTRUE;
+#else
 	m_bNewShot		= LTTRUE;
+#endif
+#endif
 	m_hHotbombTarget= LTNULL;
 	m_bAutoSpinOn	= LTFALSE;
 
@@ -226,6 +246,13 @@ CWeaponModel::CWeaponModel()
 
 	m_nLoopKeyId		= 0xff;
 	m_hLoopFireSound	= LTNULL;
+
+#ifdef PRIMAL_HUNT
+	m_bAltSkins		= LTFALSE;
+	m_nSkinMode		= 0;
+	m_nPHByte		= 0;
+	m_nShotCount	= 0;
+#endif
 }
 
 
@@ -238,8 +265,16 @@ CWeaponModel::CWeaponModel()
 // ----------------------------------------------------------------------- //
 CWeaponModel::~CWeaponModel()
 {
+#ifdef PRIMAL_HUNT
+	for (int i = 0; i < WM_MAX_MUZZLES; i++)
+	{
+		delete m_pMuzzleFlash[i];
+		m_pMuzzleFlash[i] = LTNULL;
+	}
+#else
 	delete m_pMuzzleFlash;
 	m_pMuzzleFlash = LTNULL;
+#endif
 
 	//free our object
 	if (m_hObject) 
@@ -397,10 +432,20 @@ void CWeaponModel::ResetWeaponData()
 
 	m_fBobHeight		= 0.0f;
 	m_fBobWidth			= 0.0f;
+#ifdef PRIMAL_HUNT
+	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+	{
+		m_fFlashStartTime[nMuzzle] = 0.0f;
+
+		m_vFlashPos[nMuzzle].Init();
+		m_vFlashOffset[nMuzzle].Init();
+	}
+#else
 	m_fFlashStartTime	= 0.0f;
 
 	m_vFlashPos.Init();
 	m_vFlashOffset.Init();
+#endif
 
 	m_eState				= W_IDLE;
 	m_eLastWeaponState		= W_IDLE;
@@ -568,8 +613,16 @@ void CWeaponModel::Reset()
 	}
 
 	//terminate the special effects
+#ifdef PRIMAL_HUNT
+	for (int i = 0; i < WM_MAX_MUZZLES; i++)
+	{
+		delete m_pMuzzleFlash[i];
+		m_pMuzzleFlash[i] = LTNULL;
+	}
+#else
 	delete m_pMuzzleFlash;
 	m_pMuzzleFlash = LTNULL;
+#endif
 
 
 	m_PVFXMgr.Term();
@@ -813,24 +866,64 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	vNewPos += vU * (vOffset.y + m_fBobHeight);
 	vNewPos += vF * vOffset.z;
 
+#ifdef PRIMAL_HUNT
+	m_vFlashOffset[0].Init();
+#else
 	m_vFlashOffset.Init();
+#endif
 
+#ifdef PRIMAL_HUNT
+	m_vFlashOffset[0].x = (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
+#else
 	m_vFlashOffset.x = (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
+#endif
+#ifdef PRIMAL_HUNT
+	m_vFlashOffset[0].y = (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
+#else
 	m_vFlashOffset.y = (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
+#endif
+#ifdef PRIMAL_HUNT
+	m_vFlashOffset[0].z = (vOffset.z + vMuzzleOffset.z);
+#else
 	m_vFlashOffset.z = (vOffset.z + vMuzzleOffset.z);
+#endif
 
 	//calculate new position for muzzle flash
+#ifdef PRIMAL_HUNT
+	m_vFlashPos[0] = vPos;
+#else
 	m_vFlashPos = vPos;
+#endif
+#ifdef PRIMAL_HUNT
+	m_vFlashPos[0] += vFlashR * (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
+#else
 	m_vFlashPos += vFlashR * (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
+#endif
+#ifdef PRIMAL_HUNT
+	m_vFlashPos[0] += vFlashU * (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
+#else
 	m_vFlashPos += vFlashU * (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
+#endif
+#ifdef PRIMAL_HUNT
+	m_vFlashPos[0] += vFlashF * (vOffset.z + vMuzzleOffset.z);
+#else
 	m_vFlashPos += vFlashF * (vOffset.z + vMuzzleOffset.z);
+#endif
 
 	if (FiredWeapon(eState))
 	{
 		//start muzzle flash effects
+#ifdef PRIMAL_HUNT
+		m_fFlashStartTime[0] = g_pInterface->GetTime();
+#else
 		m_fFlashStartTime = g_pInterface->GetTime();
+#endif
 
+#ifdef PRIMAL_HUNT
+		m_bNewShot[0] = LTTRUE;
+#else
 		m_bNewShot = LTTRUE;
+#endif
 		
 		//send message to server telling player to fire...
 		SendFireMsg();
@@ -1007,8 +1100,16 @@ void CWeaponModel::SetVisible(LTBOOL bVis)
 	
 
 	// Always hide the flash (it will be shown when needed)...
+#ifdef PRIMAL_HUNT
+	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+	{
+		if( m_pMuzzleFlash[nMuzzle] )
+			m_pMuzzleFlash[nMuzzle]->Hide();
+	}
+#else
 	if( m_pMuzzleFlash )
 		m_pMuzzleFlash->Hide();
+#endif
 
 	m_PVFXMgr.SetVisible(bVis);
 
@@ -1058,7 +1159,12 @@ void CWeaponModel::CreateFlash()
 {
 	if (!m_pWeapon || !m_pBarrel) return;
 
+#ifdef PRIMAL_HUNT
+	m_fFlashStartTime[0] = 0.0f;
+	m_fFlashStartTime[1] = 0.0f;
+#else
 	m_fFlashStartTime = 0.0f;
+#endif
 
 	// Setup Breach socket (if it exists)...
 	m_hBreachSocket = INVALID_MODEL_SOCKET;
@@ -1086,6 +1192,22 @@ void CWeaponModel::CreateFlash()
 	mf.rRot			= rRot;
 	mf.nFlashSocket = 0;
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: a flash for each muzzle (PHCShell.dll 0x100b4b4b)
+	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+	{
+		delete m_pMuzzleFlash[nMuzzle];
+		m_pMuzzleFlash[nMuzzle] = new CMuzzleFlashFX();
+
+		ASSERT( m_pMuzzleFlash[nMuzzle] );
+		if( m_pMuzzleFlash[nMuzzle] )
+		{
+			mf.nMuzzle = nMuzzle;
+			m_pMuzzleFlash[nMuzzle]->Setup(mf);
+			m_pMuzzleFlash[nMuzzle]->Hide();
+		}
+	}
+#else
 	//set up muzzle flash member and hide
 	delete m_pMuzzleFlash;
 	m_pMuzzleFlash = new CMuzzleFlashFX();
@@ -1096,6 +1218,7 @@ void CWeaponModel::CreateFlash()
 		m_pMuzzleFlash->Setup(mf);
 		m_pMuzzleFlash->Hide();
 	}
+#endif
 }
 
 
@@ -1295,6 +1418,84 @@ void CWeaponModel::CreateAttachments()
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+// Primal Hunt: a flash for each muzzle, each timed by its own start
+// (PHCShell.dll 0x100b5720); the muzzle fx is the barrel's dual one for
+// the second.
+void CWeaponModel::UpdateFlash(CMuzzleFlashFX* pFlash, int nMuzzle, WeaponState eState)
+{
+	//sanity check
+	if(!g_pInterface || !m_pBarrel || !g_pGameClientShell) return;
+	
+	uint32 dwFlags = g_pInterface->GetObjectFlags(m_hObject);
+
+	CMuzzleFX* pMuzzleFX = (nMuzzle == 0) ? m_pBarrel->pPVMuzzleFX : m_pBarrel->pDualPVMuzzleFX;
+
+	//if we have a muzzle flash and it's not visible, hide it
+	if (!(dwFlags & FLAG_VISIBLE) || !pMuzzleFX)
+	{
+		if( pFlash )
+			pFlash->Hide();
+		return;
+	}
+
+	LTFLOAT fCurTime			= g_pInterface->GetTime();
+	LTFLOAT fFlashDuration	= pMuzzleFX->fDuration;
+
+	//hide the flash if
+	// 1) we are past the flash duration
+	// 2) the player is dead
+	// 3) we are in liquid
+
+	HCAMERA hCamera = g_pGameClientShell->GetPlayerCamera();
+
+	//otherwise, update the flash
+	if(	fCurTime >= m_fFlashStartTime[nMuzzle] + fFlashDuration ||
+		g_pGameClientShell->GetPlayerState() != PS_ALIVE ||
+		CameraMgrFX_VolumeBrushInLiquid(hCamera))
+	{
+		if( pFlash )
+			pFlash->Hide();
+	}	
+	else
+	{
+		LTVector vDir = m_vPath; // Old way...
+
+		LTVector vU, vR;
+		LTRotation rRot;
+
+		HOBJECT hCamera = g_pGameClientShell->GetCameraMgr()->GetCameraObject(g_pGameClientShell->GetPlayerCamera());
+
+		if (!hCamera) return;
+
+		g_pInterface->GetObjectRotation(hCamera, &rRot);
+		g_pInterface->GetRotationVectors(&rRot, &vU, &vR, &vDir);
+		
+		g_pInterface->AlignRotation(&rRot, &vDir, DNULL);
+
+		if( pFlash )
+		{
+			pFlash->Show(m_bNewShot[nMuzzle]);
+			pFlash->SetPos(m_vFlashPos[nMuzzle], m_vFlashOffset[nMuzzle]);
+			pFlash->SetRot(rRot);
+			pFlash->Update();
+		}
+
+		m_bNewShot[nMuzzle] = LTFALSE;
+	}
+}
+
+// PHCShell.dll 0x100b5940
+void CWeaponModel::UpdateFlash(WeaponState eState)
+{
+	if (!m_pBarrel) return;
+
+	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+	{
+		UpdateFlash(m_pMuzzleFlash[nMuzzle], nMuzzle, eState);
+	}
+}
+#else
 void CWeaponModel::UpdateFlash(WeaponState eState)
 {
 	//sanity check
@@ -1355,6 +1556,7 @@ void CWeaponModel::UpdateFlash(WeaponState eState)
 		m_bNewShot = LTFALSE;
 	}
 }
+#endif
 
 // ----------------------------------------------------------------------- //
 //
@@ -1924,7 +2126,11 @@ WeaponState CWeaponModel::Fire(LTBOOL bUpdateAmmo)
 		g_pInterface->WriteToMessageByte(hWrite, m_nWeaponId);
 		g_pInterface->WriteToMessageByte(hWrite, (uint8)-1);
 		g_pInterface->WriteToMessageByte(hWrite, (uint8)dwId);
+#ifdef PRIMAL_HUNT
+		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+#else
 		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
+#endif
 		g_pInterface->EndMessage2(hWrite, MESSAGE_NAGGLEFAST);
 	}
 
@@ -3775,7 +3981,11 @@ void CWeaponModel::SendFireMsg()
 		CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
 
 		HMESSAGEWRITE hWrite = g_pInterface->StartMessage(MID_WEAPON_FIRE);
+#ifdef PRIMAL_HUNT
+		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+#else
 		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
+#endif
 		g_pInterface->WriteToMessageVector(hWrite, &vFirePos);
 		g_pInterface->WriteToMessageVector(hWrite, &vF);
 		g_pInterface->WriteToMessageByte(hWrite, nRandomSeed);
@@ -4102,7 +4312,11 @@ void CWeaponModel::HandleGadgetImpact(HOBJECT hObj)
 	CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
 
 	HMESSAGEWRITE hWrite = g_pInterface->StartMessage(MID_WEAPON_FIRE);
+#ifdef PRIMAL_HUNT
+	g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+#else
 	g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
+#endif
 	g_pInterface->WriteToMessageVector(hWrite, &vFirePos);
 	g_pInterface->WriteToMessageVector(hWrite, &vF);
 	g_pInterface->WriteToMessageByte(hWrite, 0);
@@ -5941,7 +6155,11 @@ LTBOOL CWeaponModel::ClientHitDetection(WeaponPath& wp, LTVector& vFirePos)
 					CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
 
 					HMESSAGEWRITE hWrite = g_pInterface->StartMessage(MID_WEAPON_HIT);
+#ifdef PRIMAL_HUNT
+					g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+#else
 					g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
+#endif
 					g_pInterface->WriteToMessageVector(hWrite, &vFirePos);
 					g_pInterface->WriteToMessageVector(hWrite, &wp.vPath);
 					g_pInterface->WriteToMessageByte(hWrite, m_nWeaponId);

@@ -35,6 +35,10 @@ typedef struct tagTimeStamp
 	LTVector	vPos;
 } HistoryStamp, *pHistoryStamp;
 
+#ifdef PRIMAL_HUNT
+#define MAX_PLAYER_TURRETS	4
+#endif
+
 class CPlayerObj : public CCharacter
 {
 public :
@@ -286,6 +290,16 @@ private :
 	LTBOOL		m_bNewGame;		//does not need save/load
 	LTBOOL		m_bPlayingLoopFireSound; //does not need save/load
 	DBYTE		m_nLoopKeyId; //does not need save/load
+
+#ifdef PRIMAL_HUNT
+	// PH: the sentry turrets a player picks up and carries, and the turret
+	// he is using (CPlayerObj +0x1e80..+0x1eb0; the turret pickup in
+	// EngineMessageFn, PHObject.lto 0x1010bb2b)
+	LTFLOAT		m_fNextTurretTime;
+	int			m_nNumTurrets;
+	LTSmartLink	m_hTurrets[MAX_PLAYER_TURRETS];
+	LTSmartLink	m_hUsingTurret;
+#endif
 };
 
 

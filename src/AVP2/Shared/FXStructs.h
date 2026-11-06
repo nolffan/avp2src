@@ -17,6 +17,10 @@
 #include "GameButeMgr.h"
 #include "butemgr.h"
 
+#ifdef PRIMAL_HUNT
+#include "MultiFile.h"
+#endif
+
 // ScaleFX struct...
 
 enum ScaleFXType { SCALEFX_MODEL=0, SCALEFX_SPRITE=1, };
@@ -28,6 +32,11 @@ struct CScaleFX
 {
 	CScaleFX();
 
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
+
     LTBOOL Init(CButeMgr & buteMgr, char* aTagName);
 	void  Cache();
 
@@ -37,6 +46,17 @@ struct CScaleFX
 	char		szName[FXSTRUCT_MAX_NAME_LENGTH];
 	char		szFile[FXSTRUCT_MAX_FILE_PATH];
 	char		szSkin[FXSTRUCT_MAX_FILE_PATH];
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: three more skins, a rotation about the up axis and
+	// FLAG2_ADDITIVEALPHA (CScaleFX is 0x1fc bytes; Init, PHCShell.dll
+	// 0x10108b50, reads them as "Skin1".."Skin3", "RotationY" and
+	// "AdditiveAlpha")
+	char		szSkin1[FXSTRUCT_MAX_FILE_PATH];
+	char		szSkin2[FXSTRUCT_MAX_FILE_PATH];
+	char		szSkin3[FXSTRUCT_MAX_FILE_PATH];
+	LTFLOAT		fRotationY;
+	LTBOOL		bAdditiveAlpha;
+#endif
     LTVector    vInitialScale;
     LTVector    vFinalScale;
     LTBOOL      bUseColors;
@@ -71,6 +91,11 @@ typedef std::vector<CScaleFX*> ScaleFXList;
 struct CPShowerFX
 {
 	CPShowerFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL Init(CButeMgr & buteMgr, char* aTagName);
 	void  Cache();
@@ -107,6 +132,11 @@ typedef CTList<CPShowerFX*> PShowerFXList;
 struct CPolyDebrisFX
 {
 	CPolyDebrisFX();
+
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	Write(CMultiFile* pFile);
+	virtual LTBOOL	Read(CMultiFile* pFile);
+#endif
 
     LTBOOL Init(CButeMgr & buteMgr, char* aTagName);
 	void  Cache();

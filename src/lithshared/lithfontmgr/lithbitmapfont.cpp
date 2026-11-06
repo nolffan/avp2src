@@ -123,7 +123,7 @@ void LithBitmapFont::Free()
 			m_pFont = LTNULL;
 		}
 
-		m_temp_lfSD.szPrevString = LTNULL;
+		m_temp_lfSD.sPrevString.Empty();
 
 		m_pClient = LTNULL;
 	}
@@ -266,9 +266,10 @@ void LithBitmapFont::SetDrawData(HSURFACE pDest, char *szString, LITHFONTDRAWDAT
 	}
 
 	// Only reformat the string if something has changed
-	if (m_lfDD->bForceFormat || !m_lfSD->szPrevString || m_lfSD->szPrevString != szString)
+	if (m_lfDD->bForceFormat || m_lfSD->sPrevString.IsEmpty() || m_lfSD->sPrevString.Compare(szString))
 	{
-		m_lfSD->szPrevString = szString;
+		if (!m_lfDD->bForceFormat)
+			m_lfSD->sPrevString = szString;
 
 		m_nExtraLetterSpace = m_lfDD->nLetterSpace;
 

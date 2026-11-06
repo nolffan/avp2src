@@ -909,6 +909,389 @@ LTBOOL CFXButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
     return LTTRUE;
 }
 
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------- //
+//
+//	Primal Hunt: the bute cache (MultiFile.h). These structures point to
+//	others, and write them after themselves, each behind a byte saying
+//	whether it is there (PHCShell.dll 0x100c5680..0x100c64ad).
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL PROJECTILEFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteString(szName);
+	pFile->WriteString(szFlareSprite);
+	pFile->WriteString(szSound);
+	pFile->WriteString(szClass);
+	pFile->WriteString(szModel);
+	pFile->WriteString(szSkin);
+	pFile->WriteString(szToggleScaleFX);
+	pFile->WriteString(szSocket);
+	pFile->WriteBool(bNoLighting);
+	pFile->WriteFloat(fModelAlpha);
+	pFile->WriteInt(nAltVelocity);
+	pFile->WriteInt(nVelocity);
+	pFile->WriteFloat(fLifeTime);
+	pFile->WriteInt(nFlags);
+	pFile->WriteInt(nParticleTrail);
+	pFile->WriteInt(nUWParticleTrail);
+	pFile->WriteVector(vLightColor);
+	pFile->WriteInt(nLightRadius);
+	pFile->WriteInt(nSoundRadius);
+	pFile->WriteFloat(fFlareScale);
+	pFile->WriteDWord(dwObjectFlags);
+	pFile->WriteVector(vModelScale);
+
+	if (!pClassData)
+	{
+		pFile->WriteByte(LTFALSE);
+	}
+	else
+	{
+		pFile->WriteByte(LTTRUE);
+		pClassData->Write(pFile);
+	}
+
+	return LTTRUE;
+}
+
+LTBOOL PROJECTILEFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szFlareSprite, ARRAY_LEN(szFlareSprite));
+	pFile->ReadString(szSound, ARRAY_LEN(szSound));
+	pFile->ReadString(szClass, ARRAY_LEN(szClass));
+	pFile->ReadString(szModel, ARRAY_LEN(szModel));
+	pFile->ReadString(szSkin, ARRAY_LEN(szSkin));
+	pFile->ReadString(szToggleScaleFX, ARRAY_LEN(szToggleScaleFX));
+	pFile->ReadString(szSocket, ARRAY_LEN(szSocket));
+	pFile->ReadBool(&bNoLighting);
+	pFile->ReadFloat(&fModelAlpha);
+	pFile->ReadInt(&nAltVelocity);
+	pFile->ReadInt(&nVelocity);
+	pFile->ReadFloat(&fLifeTime);
+	pFile->ReadInt(&nFlags);
+	pFile->ReadInt(&nParticleTrail);
+	pFile->ReadInt(&nUWParticleTrail);
+	pFile->ReadVector(&vLightColor);
+	pFile->ReadInt(&nLightRadius);
+	pFile->ReadInt(&nSoundRadius);
+	pFile->ReadFloat(&fFlareScale);
+	pFile->ReadDWord(&dwObjectFlags);
+	pFile->ReadVector(&vModelScale);
+
+	pClassData = LTNULL;
+
+	LTBOOL bClassData = pFile->ReadByte();
+	if (bClassData)
+	{
+		// RETAIL BUG: a class type of 0 leaves pClassData null, and it is
+		// read through all the same.
+		switch (pFile->ReadByte())
+		{
+			case 0:
+			break;
+
+			case 1:
+				pClassData = new PROJECTILECLASSDATA;
+			break;
+
+			case 2:
+				pClassData = new PROXCLASSDATA;
+			break;
+
+			case 3:
+				pClassData = new SPIDERCLASSDATA;
+			break;
+
+			case 4:
+				pClassData = new TRACKINGSADARCLASSDATA;
+			break;
+
+			case 5:
+				pClassData = new PREDDISKCLASSDATA;
+			break;
+
+			default:
+				pClassData = LTNULL;
+			break;
+		}
+
+		pClassData->Read(pFile);
+	}
+
+	bFromFile = LTTRUE;
+
+	return LTTRUE;
+}
+
+LTBOOL IMPACTFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	int i;
+
+	pFile->WriteString(szName);
+	pFile->WriteString(szSound);
+	pFile->WriteString(szMark);
+	pFile->WriteString(szSoundDir);
+	pFile->WriteInt(nSoundRadius);
+	pFile->WriteInt(nSoundBute);
+	pFile->WriteInt(nAISoundRadius);
+	pFile->WriteInt(nFlags);
+	pFile->WriteFloat(fMarkScale);
+	pFile->WriteVector(vTintColor);
+	pFile->WriteFloat(fTintRampUp);
+	pFile->WriteFloat(fTintRampDown);
+	pFile->WriteFloat(fTintMaxTime);
+	pFile->WriteFloat(fTintRadius);
+	pFile->WriteBool(bDoSurfaceFX);
+
+	if (!pPusherFX)
+	{
+		pFile->WriteByte(LTFALSE);
+	}
+	else
+	{
+		pFile->WriteByte(LTTRUE);
+		pPusherFX->Write(pFile);
+	}
+
+	pFile->WriteInt(nNumDebrisFXTypes);
+	for (i=0; i < nNumDebrisFXTypes; i++)
+	{
+		pFile->WriteInt(aDebrisFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumScaleFXTypes);
+	for (i=0; i < nNumScaleFXTypes; i++)
+	{
+		pFile->WriteInt(aScaleFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumPExplFX);
+	for (i=0; i < nNumPExplFX; i++)
+	{
+		pFile->WriteInt(aPExplFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumDLightFX);
+	for (i=0; i < nNumDLightFX; i++)
+	{
+		pFile->WriteInt(aDLightFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumPolyDebrisFX);
+	for (i=0; i < nNumPolyDebrisFX; i++)
+	{
+		pFile->WriteInt(aPolyDebrisFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumPShowerFX);
+	for (i=0; i < nNumPShowerFX; i++)
+	{
+		pFile->WriteInt(aPShowerFXTypes[i]);
+	}
+
+	return LTTRUE;
+}
+
+LTBOOL IMPACTFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	int i = 0;
+
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szSound, ARRAY_LEN(szSound));
+	pFile->ReadString(szMark, ARRAY_LEN(szMark));
+	pFile->ReadString(szSoundDir, ARRAY_LEN(szSoundDir));
+	pFile->ReadInt(&nSoundRadius);
+	pFile->ReadInt(&nSoundBute);
+	pFile->ReadInt(&nAISoundRadius);
+	pFile->ReadInt(&nFlags);
+	pFile->ReadFloat(&fMarkScale);
+	pFile->ReadVector(&vTintColor);
+	pFile->ReadFloat(&fTintRampUp);
+	pFile->ReadFloat(&fTintRampDown);
+	pFile->ReadFloat(&fTintMaxTime);
+	pFile->ReadFloat(&fTintRadius);
+	pFile->ReadBool(&bDoSurfaceFX);
+
+	pPusherFX = LTNULL;
+	if (pFile->ReadByte() == LTTRUE)
+	{
+		pPusherFX = new PUSHERFX;
+		pPusherFX->Read(pFile);
+	}
+
+	pFile->ReadInt(&nNumDebrisFXTypes);
+	for (i=0; i < nNumDebrisFXTypes; i++)
+	{
+		pFile->ReadInt(&aDebrisFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumScaleFXTypes);
+	for (i=0; i < nNumScaleFXTypes; i++)
+	{
+		pFile->ReadInt(&aScaleFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumPExplFX);
+	for (i=0; i < nNumPExplFX; i++)
+	{
+		pFile->ReadInt(&aPExplFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumDLightFX);
+	for (i=0; i < nNumDLightFX; i++)
+	{
+		pFile->ReadInt(&aDLightFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumPolyDebrisFX);
+	for (i=0; i < nNumPolyDebrisFX; i++)
+	{
+		pFile->ReadInt(&aPolyDebrisFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumPShowerFX);
+	for (i=0; i < nNumPShowerFX; i++)
+	{
+		pFile->ReadInt(&aPShowerFXTypes[i]);
+	}
+
+	bFromFile = LTTRUE;
+
+	return LTTRUE;
+}
+
+LTBOOL FIREFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szShellModel);
+	pFile->WriteString(szShellSkin);
+	pFile->WriteInt(nFlags);
+	pFile->WriteVector(vShellScale);
+
+	pFile->WriteInt(nNumBeamFX);
+	for (int i=0; i < nNumBeamFX; i++)
+	{
+		pBeamFX[i]->Write(pFile);
+	}
+
+	return LTTRUE;
+}
+
+LTBOOL FIREFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szShellModel, ARRAY_LEN(szShellModel));
+	pFile->ReadString(szShellSkin, ARRAY_LEN(szShellSkin));
+	pFile->ReadInt(&nFlags);
+	pFile->ReadVector(&vShellScale);
+
+	pFile->ReadInt(&nNumBeamFX);
+	memset(pBeamFX, 0, sizeof(pBeamFX));
+	for (int i=0; i < nNumBeamFX; i++)
+	{
+		pBeamFX[i] = new BEAMFX;
+		pBeamFX[i]->Read(pFile);
+	}
+
+	bFromFile = LTTRUE;
+
+	return LTTRUE;
+}
+
+LTBOOL CMuzzleFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteFloat(fDuration);
+
+	if (!pPMuzzleFX)
+	{
+		pFile->WriteByte(LTFALSE);
+		pPMuzzleFX = LTNULL;
+	}
+	else
+	{
+		pFile->WriteByte(LTTRUE);
+		pPMuzzleFX->Write(pFile);
+	}
+
+	if (!pScaleFX)
+	{
+		pFile->WriteByte(LTFALSE);
+		pScaleFX = LTNULL;
+	}
+	else
+	{
+		pFile->WriteByte(LTTRUE);
+		pScaleFX->Write(pFile);
+	}
+
+	if (!pDLightFX)
+	{
+		pFile->WriteByte(LTFALSE);
+		pDLightFX = LTNULL;
+	}
+	else
+	{
+		pFile->WriteByte(LTTRUE);
+		pDLightFX->Write(pFile);
+	}
+
+	return LTTRUE;
+}
+
+LTBOOL CMuzzleFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadFloat(&fDuration);
+
+	if (pFile->ReadByte() == LTTRUE)
+	{
+		pPMuzzleFX = new CParticleMuzzleFX;
+		pPMuzzleFX->Read(pFile);
+	}
+
+	if (pFile->ReadByte() == LTTRUE)
+	{
+		pScaleFX = new CScaleFX;
+		pScaleFX->Read(pFile);
+	}
+
+	if (pFile->ReadByte() == LTTRUE)
+	{
+		pDLightFX = new DLIGHTFX;
+		pDLightFX->Read(pFile);
+	}
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
+
 
 // ----------------------------------------------------------------------- //
 //
@@ -2193,6 +2576,76 @@ PEXPLFX::PEXPLFX()
 	vMaxDriftVel.Init();
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL PEXPLFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szFile);
+	pFile->WriteVector(vPosOffset);
+	pFile->WriteInt(nNumPerPuff);
+	pFile->WriteInt(nNumEmitters);
+	pFile->WriteInt(nNumSteps);
+	pFile->WriteBool(bCreateDebris);
+	pFile->WriteBool(bRotateDebris);
+	pFile->WriteBool(bIgnoreWind);
+	pFile->WriteBool(bDoBubbles);
+	pFile->WriteBool(bAdditive);
+	pFile->WriteBool(bMultiply);
+	pFile->WriteVector(vColor1);
+	pFile->WriteVector(vColor2);
+	pFile->WriteVector(vMinVel);
+	pFile->WriteVector(vMaxVel);
+	pFile->WriteVector(vMinDriftVel);
+	pFile->WriteVector(vMaxDriftVel);
+	pFile->WriteFloat(fLifeTime);
+	pFile->WriteFloat(fFadeTime);
+	pFile->WriteFloat(fOffsetTime);
+	pFile->WriteFloat(fRadius);
+	pFile->WriteFloat(fGravity);
+
+	return LTTRUE;
+}
+
+LTBOOL PEXPLFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szFile, ARRAY_LEN(szFile));
+	pFile->ReadVector(&vPosOffset);
+	pFile->ReadInt(&nNumPerPuff);
+	pFile->ReadInt(&nNumEmitters);
+	pFile->ReadInt(&nNumSteps);
+	pFile->ReadBool(&bCreateDebris);
+	pFile->ReadBool(&bRotateDebris);
+	pFile->ReadBool(&bIgnoreWind);
+	pFile->ReadBool(&bDoBubbles);
+	pFile->ReadBool(&bAdditive);
+	pFile->ReadBool(&bMultiply);
+	pFile->ReadVector(&vColor1);
+	pFile->ReadVector(&vColor2);
+	pFile->ReadVector(&vMinVel);
+	pFile->ReadVector(&vMaxVel);
+	pFile->ReadVector(&vMinDriftVel);
+	pFile->ReadVector(&vMaxDriftVel);
+	pFile->ReadFloat(&fLifeTime);
+	pFile->ReadFloat(&fFadeTime);
+	pFile->ReadFloat(&fOffsetTime);
+	pFile->ReadFloat(&fRadius);
+	pFile->ReadFloat(&fGravity);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	PEXPLFX::Init
@@ -2319,6 +2772,48 @@ DLIGHTFX::DLIGHTFX()
 	fRampDownTime	= 0.0f;
 	fWashoutAmount	= 0.0f;
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL DLIGHTFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteVector(vColor);
+	pFile->WriteFloat(fMinRadius);
+	pFile->WriteFloat(fMaxRadius);
+	pFile->WriteFloat(fMinTime);
+	pFile->WriteFloat(fMaxTime);
+	pFile->WriteFloat(fRampUpTime);
+	pFile->WriteFloat(fRampDownTime);
+	pFile->WriteFloat(fWashoutAmount);
+
+	return LTTRUE;
+}
+
+LTBOOL DLIGHTFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadVector(&vColor);
+	pFile->ReadFloat(&fMinRadius);
+	pFile->ReadFloat(&fMaxRadius);
+	pFile->ReadFloat(&fMinTime);
+	pFile->ReadFloat(&fMaxTime);
+	pFile->ReadFloat(&fRampUpTime);
+	pFile->ReadFloat(&fRampDownTime);
+	pFile->ReadFloat(&fWashoutAmount);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -2447,6 +2942,10 @@ IMPACTFX::IMPACTFX()
 	{
 		aPShowerFXTypes[i] = FXBMGR_INVALID_ID;
 	}
+
+#ifdef PRIMAL_HUNT
+	bFromFile	= LTFALSE;
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -2982,6 +3481,70 @@ PARTICLETRAILFX::PARTICLETRAILFX()
 	bIgnorWind			= LTFALSE;
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL PARTICLETRAILFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteString(szName);
+	pFile->WriteString(szTexture);
+	pFile->WriteVector(vMinColor);
+	pFile->WriteVector(vMaxColor);
+	pFile->WriteVector(vMinDrift);
+	pFile->WriteVector(vMaxDrift);
+	pFile->WriteFloat(fLifetime);
+	pFile->WriteFloat(fFadetime);
+	pFile->WriteVector(vMinEmitRange);
+	pFile->WriteVector(vMaxEmitRange);
+	pFile->WriteFloat(fEmitDistance);
+	pFile->WriteInt(nEmitAmount);
+	pFile->WriteFloat(fStartScale);
+	pFile->WriteFloat(fEndScale);
+	pFile->WriteFloat(fStartAlpha);
+	pFile->WriteFloat(fEndAlpha);
+	pFile->WriteFloat(fRadius);
+	pFile->WriteFloat(fGravity);
+	pFile->WriteBool(bAdditive);
+	pFile->WriteBool(bMultiply);
+	pFile->WriteBool(bIgnorWind);
+
+	return LTTRUE;
+}
+
+LTBOOL PARTICLETRAILFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szTexture, ARRAY_LEN(szTexture));
+	pFile->ReadVector(&vMinColor);
+	pFile->ReadVector(&vMaxColor);
+	pFile->ReadVector(&vMinDrift);
+	pFile->ReadVector(&vMaxDrift);
+	pFile->ReadFloat(&fLifetime);
+	pFile->ReadFloat(&fFadetime);
+	pFile->ReadVector(&vMinEmitRange);
+	pFile->ReadVector(&vMaxEmitRange);
+	pFile->ReadFloat(&fEmitDistance);
+	pFile->ReadInt(&nEmitAmount);
+	pFile->ReadFloat(&fStartScale);
+	pFile->ReadFloat(&fEndScale);
+	pFile->ReadFloat(&fStartAlpha);
+	pFile->ReadFloat(&fEndAlpha);
+	pFile->ReadFloat(&fRadius);
+	pFile->ReadFloat(&fGravity);
+	pFile->ReadBool(&bAdditive);
+	pFile->ReadBool(&bMultiply);
+	pFile->ReadBool(&bIgnorWind);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	PARTICLETRAILFX::Init
@@ -3113,6 +3676,10 @@ PROJECTILEFX::PROJECTILEFX()
 
 	vLightColor.Init();
 	vModelScale.Init();
+
+#ifdef PRIMAL_HUNT
+	bFromFile	= LTFALSE;
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -3340,7 +3907,11 @@ LTBOOL PROJECTILECLASSDATA::Init(CButeMgr & buteMgr, char* aTagName)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+PROXCLASSDATA::PROXCLASSDATA() : PROJECTILECLASSDATA(2)
+#else
 PROXCLASSDATA::PROXCLASSDATA()
+#endif
 {
 	nActivateRadius		= 0;
 	nArmSndRadius		= 0;
@@ -3352,6 +3923,42 @@ PROXCLASSDATA::PROXCLASSDATA()
 	szArmSound[0]		= '\0';
 	szActivateSound[0]	= '\0';
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL PROXCLASSDATA::Write(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Write(pFile)) return LTFALSE;
+
+	pFile->WriteString(szArmSound);
+	pFile->WriteString(szActivateSound);
+	pFile->WriteInt(nActivateRadius);
+	pFile->WriteInt(nArmSndRadius);
+	pFile->WriteInt(nActivateSndRadius);
+	pFile->WriteFloat(fArmDelay);
+	pFile->WriteFloat(fActivateDelay);
+
+	return LTTRUE;
+}
+
+LTBOOL PROXCLASSDATA::Read(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Read(pFile)) return LTFALSE;
+
+	pFile->ReadString(szArmSound, ARRAY_LEN(szArmSound));
+	pFile->ReadString(szActivateSound, ARRAY_LEN(szActivateSound));
+	pFile->ReadInt(&nActivateRadius);
+	pFile->ReadInt(&nArmSndRadius);
+	pFile->ReadInt(&nActivateSndRadius);
+	pFile->ReadFloat(&fArmDelay);
+	pFile->ReadFloat(&fActivateDelay);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -3431,7 +4038,11 @@ void PROXCLASSDATA::Cache(CFXButeMgr* pFXButeMgr)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+SPIDERCLASSDATA::SPIDERCLASSDATA() : PROJECTILECLASSDATA(3)
+#else
 SPIDERCLASSDATA::SPIDERCLASSDATA()
+#endif
 {
 	nActivateRadius		= 0;
 	nDetonateRadius		= 0;
@@ -3443,6 +4054,42 @@ SPIDERCLASSDATA::SPIDERCLASSDATA()
 	szArmSound[0]		= '\0';
 	szActivateSound[0]	= '\0';
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL SPIDERCLASSDATA::Write(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Write(pFile)) return LTFALSE;
+
+	pFile->WriteString(szArmSound);
+	pFile->WriteString(szActivateSound);
+	pFile->WriteInt(nActivateSndRadius);
+	pFile->WriteInt(nActivateRadius);
+	pFile->WriteInt(nDetonateRadius);
+	pFile->WriteInt(nArmSndRadius);
+	pFile->WriteFloat(fArmDelay);
+
+	return LTTRUE;
+}
+
+LTBOOL SPIDERCLASSDATA::Read(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Read(pFile)) return LTFALSE;
+
+	pFile->ReadString(szArmSound, ARRAY_LEN(szArmSound));
+	pFile->ReadString(szActivateSound, ARRAY_LEN(szActivateSound));
+	pFile->ReadInt(&nActivateSndRadius);
+	pFile->ReadInt(&nActivateRadius);
+	pFile->ReadInt(&nDetonateRadius);
+	pFile->ReadInt(&nArmSndRadius);
+	pFile->ReadFloat(&fArmDelay);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -3521,10 +4168,38 @@ void SPIDERCLASSDATA::Cache(CFXButeMgr* pFXButeMgr)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+TRACKINGSADARCLASSDATA::TRACKINGSADARCLASSDATA() : PROJECTILECLASSDATA(4)
+#else
 TRACKINGSADARCLASSDATA::TRACKINGSADARCLASSDATA()
+#endif
 {
 	fTurnRadius		= 0.0f;
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL TRACKINGSADARCLASSDATA::Write(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Write(pFile)) return LTFALSE;
+
+	pFile->WriteFloat(fTurnRadius);
+
+	return LTTRUE;
+}
+
+LTBOOL TRACKINGSADARCLASSDATA::Read(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Read(pFile)) return LTFALSE;
+
+	pFile->ReadFloat(&fTurnRadius);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -3559,11 +4234,41 @@ LTBOOL TRACKINGSADARCLASSDATA::Init(CButeMgr & buteMgr, char* aTagName)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+PREDDISKCLASSDATA::PREDDISKCLASSDATA() : PROJECTILECLASSDATA(5)
+#else
 PREDDISKCLASSDATA::PREDDISKCLASSDATA()
+#endif
 {
     nNormRetrieveCost = 0;
     nTeleRetrieveCost = 0;
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL PREDDISKCLASSDATA::Write(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Write(pFile)) return LTFALSE;
+
+	pFile->WriteInt(nNormRetrieveCost);
+	pFile->WriteInt(nTeleRetrieveCost);
+
+	return LTTRUE;
+}
+
+LTBOOL PREDDISKCLASSDATA::Read(CMultiFile* pFile)
+{
+	if (!PROJECTILECLASSDATA::Read(pFile)) return LTFALSE;
+
+	pFile->ReadInt(&nNormRetrieveCost);
+	pFile->ReadInt(&nTeleRetrieveCost);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -3626,6 +4331,77 @@ PVFX::PVFX()
 		aSoundFXTypes[i] = FXBMGR_INVALID_ID;
 	}
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h; PHCShell.dll 0x100cb300,
+// 0x100cb3c0)
+
+LTBOOL PVFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	int i;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szSocket);
+
+	// RETAIL BUG: each of these loops has a stray semicolon, so it writes
+	// one type, the one after the last (and reads it back the same way).
+	pFile->WriteInt(nNumScaleFXTypes);
+	for (i=0; i < nNumScaleFXTypes; i++);
+	{
+		pFile->WriteInt(aScaleFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumDLightFX);
+	for (i=0; i < nNumDLightFX; i++);
+	{
+		pFile->WriteInt(aDLightFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumSoundFX);
+	for (i=0; i < nNumSoundFX; i++);
+	{
+		pFile->WriteInt(aSoundFXTypes[i]);
+	}
+
+	return LTTRUE;
+}
+
+LTBOOL PVFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	int i;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szSocket, ARRAY_LEN(szSocket));
+
+	pFile->ReadInt(&nNumScaleFXTypes);
+	for (i=0; i < nNumScaleFXTypes; i++);
+	{
+		pFile->ReadInt(&aScaleFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumDLightFX);
+	for (i=0; i < nNumDLightFX; i++);
+	{
+		pFile->ReadInt(&aDLightFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumSoundFX);
+	for (i=0; i < nNumSoundFX; i++);
+	{
+		pFile->ReadInt(&aSoundFXTypes[i]);
+	}
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -3810,6 +4586,66 @@ CParticleMuzzleFX::CParticleMuzzleFX()
 	fMaxHorizVel	= 0.0f;
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL CParticleMuzzleFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szFile);
+	pFile->WriteFloat(fStartScale);
+	pFile->WriteFloat(fEndScale);
+	pFile->WriteFloat(fRadius);
+	pFile->WriteFloat(fLength);
+	pFile->WriteFloat(fDuration);
+	pFile->WriteInt(nNumParticles);
+	pFile->WriteVector(vStartColor);
+	pFile->WriteVector(vEndColor);
+	pFile->WriteFloat(fStartAlpha);
+	pFile->WriteFloat(fEndAlpha);
+	pFile->WriteBool(bAdditive);
+	pFile->WriteBool(bMultiply);
+	pFile->WriteFloat(fMinVertVel);
+	pFile->WriteFloat(fMaxVertVel);
+	pFile->WriteFloat(fMinHorizVel);
+	pFile->WriteFloat(fMaxHorizVel);
+
+	return LTTRUE;
+}
+
+LTBOOL CParticleMuzzleFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szFile, ARRAY_LEN(szFile));
+	pFile->ReadFloat(&fStartScale);
+	pFile->ReadFloat(&fEndScale);
+	pFile->ReadFloat(&fRadius);
+	pFile->ReadFloat(&fLength);
+	pFile->ReadFloat(&fDuration);
+	pFile->ReadInt(&nNumParticles);
+	pFile->ReadVector(&vStartColor);
+	pFile->ReadVector(&vEndColor);
+	pFile->ReadFloat(&fStartAlpha);
+	pFile->ReadFloat(&fEndAlpha);
+	pFile->ReadBool(&bAdditive);
+	pFile->ReadBool(&bMultiply);
+	pFile->ReadFloat(&fMinVertVel);
+	pFile->ReadFloat(&fMaxVertVel);
+	pFile->ReadFloat(&fMinHorizVel);
+	pFile->ReadFloat(&fMaxHorizVel);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CParticleMuzzleFX::Init
@@ -3916,6 +4752,10 @@ CMuzzleFX::CMuzzleFX()
     pPMuzzleFX      = LTNULL;
     pScaleFX        = LTNULL;
     pDLightFX       = LTNULL;
+
+#ifdef PRIMAL_HUNT
+	bFromFile	= LTFALSE;
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -4019,6 +4859,46 @@ TRACERFX::TRACERFX()
 	vColor.Init();
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL TRACERFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szTexture);
+	pFile->WriteInt(nFrequency);
+	pFile->WriteFloat(fVelocity);
+	pFile->WriteFloat(fWidth);
+	pFile->WriteFloat(fInitialAlpha);
+	pFile->WriteFloat(fFinalAlpha);
+	pFile->WriteVector(vColor);
+
+	return LTTRUE;
+}
+
+LTBOOL TRACERFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szTexture, ARRAY_LEN(szTexture));
+	pFile->ReadInt(&nFrequency);
+	pFile->ReadFloat(&fVelocity);
+	pFile->ReadFloat(&fWidth);
+	pFile->ReadFloat(&fInitialAlpha);
+	pFile->ReadFloat(&fFinalAlpha);
+	pFile->ReadVector(&vColor);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	TRACERFX::Init
@@ -4105,6 +4985,48 @@ BEAMFX::BEAMFX()
 	bAlignFlat		= LTFALSE;
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL BEAMFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szTexture);
+	pFile->WriteFloat(fDuration);
+	pFile->WriteFloat(fWidth);
+	pFile->WriteFloat(fInitialAlpha);
+	pFile->WriteFloat(fFinalAlpha);
+	pFile->WriteVector(vColor);
+	pFile->WriteBool(bAlignUp);
+	pFile->WriteBool(bAlignFlat);
+
+	return LTTRUE;
+}
+
+LTBOOL BEAMFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szTexture, ARRAY_LEN(szTexture));
+	pFile->ReadFloat(&fDuration);
+	pFile->ReadFloat(&fWidth);
+	pFile->ReadFloat(&fInitialAlpha);
+	pFile->ReadFloat(&fFinalAlpha);
+	pFile->ReadVector(&vColor);
+	pFile->ReadBool(&bAlignUp);
+	pFile->ReadBool(&bAlignFlat);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	BEAMFX::Init
@@ -4189,6 +5111,40 @@ SOUNDFX::SOUNDFX()
 	bLoop			= LTFALSE;
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL SOUNDFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szFile);
+	pFile->WriteBool(bLoop);
+	pFile->WriteFloat(fRadius);
+	pFile->WriteFloat(fPitchShift);
+
+	return LTTRUE;
+}
+
+LTBOOL SOUNDFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szFile, ARRAY_LEN(szFile));
+	pFile->ReadBool(&bLoop);
+	pFile->ReadFloat(&fRadius);
+	pFile->ReadFloat(&fPitchShift);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	SOUNDFX::Init
@@ -4265,6 +5221,40 @@ PUSHERFX::PUSHERFX()
 	fDuration		= 0.0f;
 	fStrength		= 0.0f;
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL PUSHERFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteFloat(fRadius);
+	pFile->WriteFloat(fStartDelay);
+	pFile->WriteFloat(fDuration);
+	pFile->WriteFloat(fStrength);
+
+	return LTTRUE;
+}
+
+LTBOOL PUSHERFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadFloat(&fRadius);
+	pFile->ReadFloat(&fStartDelay);
+	pFile->ReadFloat(&fDuration);
+	pFile->ReadFloat(&fStrength);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -4350,6 +5340,76 @@ SMOKEFX::SMOKEFX()
 	bIgnorWind			= 0;
 	bUpdatePos			= 0;
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL SMOKEFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szFile);
+	pFile->WriteVector(vColor1);
+	pFile->WriteVector(vColor2);
+	pFile->WriteVector(vMinDrift);
+	pFile->WriteVector(vMaxDrift);
+	pFile->WriteFloat(fLifetime);
+	pFile->WriteFloat(fEmitRadius);
+	pFile->WriteFloat(fRadius);
+	pFile->WriteFloat(fCreateDelta);
+	pFile->WriteBool(bAdjustAlpha);
+	pFile->WriteFloat(fStartAlpha);
+	pFile->WriteFloat(fEndAlpha);
+	pFile->WriteBool(bAdjustScale);
+	pFile->WriteFloat(fStartScale);
+	pFile->WriteFloat(fEndScale);
+	pFile->WriteFloat(fMinParticleLife);
+	pFile->WriteFloat(fMaxParticleLife);
+	pFile->WriteByte(nNumParticles);
+	pFile->WriteBool(bAdditive);
+	pFile->WriteBool(bMultiply);
+	pFile->WriteBool(bIgnorWind);
+	pFile->WriteBool(bUpdatePos);
+
+	return LTTRUE;
+}
+
+LTBOOL SMOKEFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szFile, ARRAY_LEN(szFile));
+	pFile->ReadVector(&vColor1);
+	pFile->ReadVector(&vColor2);
+	pFile->ReadVector(&vMinDrift);
+	pFile->ReadVector(&vMaxDrift);
+	pFile->ReadFloat(&fLifetime);
+	pFile->ReadFloat(&fEmitRadius);
+	pFile->ReadFloat(&fRadius);
+	pFile->ReadFloat(&fCreateDelta);
+	pFile->ReadBool(&bAdjustAlpha);
+	pFile->ReadFloat(&fStartAlpha);
+	pFile->ReadFloat(&fEndAlpha);
+	pFile->ReadBool(&bAdjustScale);
+	pFile->ReadFloat(&fStartScale);
+	pFile->ReadFloat(&fEndScale);
+	pFile->ReadFloat(&fMinParticleLife);
+	pFile->ReadFloat(&fMaxParticleLife);
+	pFile->ReadByte(&nNumParticles);
+	pFile->ReadBool(&bAdditive);
+	pFile->ReadBool(&bMultiply);
+	pFile->ReadBool(&bIgnorWind);
+	pFile->ReadBool(&bUpdatePos);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -4464,6 +5524,40 @@ STEAMFX::STEAMFX()
 	fDamage				= 0.0f;
 }
 
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL STEAMFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteInt(nSmokeFX);
+	pFile->WriteInt(nSoundFX);
+	pFile->WriteFloat(fDamageDist);
+	pFile->WriteFloat(fDamage);
+
+	return LTTRUE;
+}
+
+LTBOOL STEAMFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadInt(&nSmokeFX);
+	pFile->ReadInt(&nSoundFX);
+	pFile->ReadFloat(&fDamageDist);
+	pFile->ReadFloat(&fDamage);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	STEAMFX::Init
@@ -4557,6 +5651,56 @@ FIREOBJFX::FIREOBJFX()
 
 	bCreateSparks		= LTFALSE;
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL FIREOBJFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteInt(nInnerFireFX);
+	pFile->WriteInt(nOuterFireFX);
+	pFile->WriteInt(nSmokeFX);
+	pFile->WriteInt(nSoundFX);
+	pFile->WriteFloat(fSizeRadiusScale);
+	pFile->WriteBool(bCreateLight);
+	pFile->WriteVector(vLightColor);
+	pFile->WriteFloat(fLightRadius);
+	pFile->WriteFloat(fLightPhase);
+	pFile->WriteFloat(fLightFreq);
+	pFile->WriteVector(vLightOffset);
+	pFile->WriteBool(bCreateSparks);
+
+	return LTTRUE;
+}
+
+LTBOOL FIREOBJFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadInt(&nInnerFireFX);
+	pFile->ReadInt(&nOuterFireFX);
+	pFile->ReadInt(&nSmokeFX);
+	pFile->ReadInt(&nSoundFX);
+	pFile->ReadFloat(&fSizeRadiusScale);
+	pFile->ReadBool(&bCreateLight);
+	pFile->ReadVector(&vLightColor);
+	pFile->ReadFloat(&fLightRadius);
+	pFile->ReadFloat(&fLightPhase);
+	pFile->ReadFloat(&fLightFreq);
+	pFile->ReadVector(&vLightOffset);
+	pFile->ReadBool(&bCreateSparks);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -4699,6 +5843,80 @@ DRIPPEROBJFX::DRIPPEROBJFX()
 	nImpactFX = 0;
 
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: the bute cache (MultiFile.h)
+
+LTBOOL DRIPPEROBJFX::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(nId);
+	pFile->WriteString(szName);
+	pFile->WriteString(szFile);
+	pFile->WriteVector(vMinColor);
+	pFile->WriteVector(vMaxColor);
+	pFile->WriteFloat(fAlpha);
+	pFile->WriteBool(bAdditive);
+	pFile->WriteBool(bMultiply);
+	pFile->WriteFloat(fMinSize);
+	pFile->WriteFloat(fMaxSize);
+	pFile->WriteInt(nMinDripAmount);
+	pFile->WriteInt(nMaxDripAmount);
+	pFile->WriteFloat(fMinDripFrequency);
+	pFile->WriteFloat(fMaxDripFrequency);
+	pFile->WriteFloat(fMinDripTime);
+	pFile->WriteFloat(fMaxDripTime);
+	pFile->WriteFloat(fDripDistance);
+	pFile->WriteFloat(fDripSpeed);
+	pFile->WriteFloat(fAccelerateTime);
+	pFile->WriteFloat(fDripTrailLength);
+	pFile->WriteFloat(fDripTrailDensity);
+	pFile->WriteFloat(fWiggleAmount);
+	pFile->WriteFloat(fWiggleFrequency);
+	pFile->WriteBool(bCylinderShape);
+	pFile->WriteFloat(fImpactFXPercent);
+	pFile->WriteInt(nImpactFX);
+
+	return LTTRUE;
+}
+
+LTBOOL DRIPPEROBJFX::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadInt(&nId);
+	pFile->ReadString(szName, ARRAY_LEN(szName));
+	pFile->ReadString(szFile, ARRAY_LEN(szFile));
+	pFile->ReadVector(&vMinColor);
+	pFile->ReadVector(&vMaxColor);
+	pFile->ReadFloat(&fAlpha);
+	pFile->ReadBool(&bAdditive);
+	pFile->ReadBool(&bMultiply);
+	pFile->ReadFloat(&fMinSize);
+	pFile->ReadFloat(&fMaxSize);
+	pFile->ReadInt(&nMinDripAmount);
+	pFile->ReadInt(&nMaxDripAmount);
+	pFile->ReadFloat(&fMinDripFrequency);
+	pFile->ReadFloat(&fMaxDripFrequency);
+	pFile->ReadFloat(&fMinDripTime);
+	pFile->ReadFloat(&fMaxDripTime);
+	pFile->ReadFloat(&fDripDistance);
+	pFile->ReadFloat(&fDripSpeed);
+	pFile->ReadFloat(&fAccelerateTime);
+	pFile->ReadFloat(&fDripTrailLength);
+	pFile->ReadFloat(&fDripTrailDensity);
+	pFile->ReadFloat(&fWiggleAmount);
+	pFile->ReadFloat(&fWiggleFrequency);
+	pFile->ReadBool(&bCylinderShape);
+	pFile->ReadFloat(&fImpactFXPercent);
+	pFile->ReadInt(&nImpactFX);
+
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 // ----------------------------------------------------------------------- //
 //
@@ -4903,6 +6121,21 @@ CSpecialFX* CFXButeMgr::CreateScaleFX(CScaleFX* pScaleFX, LTVector vPos,
 
 	scale.Filename			= pScaleFX->szFile;
 	scale.Skins[0]			= pScaleFX->szSkin;
+#ifdef PRIMAL_HUNT
+	scale.Skins[1]			= pScaleFX->szSkin1;
+	scale.Skins[2]			= pScaleFX->szSkin2;
+	scale.Skins[3]			= pScaleFX->szSkin3;
+
+	// PHCShell.dll 0x100cf7dc
+	LTFLOAT fRotationY = pScaleFX->fRotationY;
+	if (fRotationY > 0.0f)
+	{
+		LTVector vUp(0.0f, 1.0f, 0.0f);
+		g_pLTClient->RotateAroundAxis(&(scale.rRot), &vUp, fRotationY);
+	}
+
+	scale.bAdditiveAlpha	= pScaleFX->bAdditiveAlpha;
+#endif
 	scale.vVel				= pScaleFX->vVel;
 	scale.vInitialScale		= pScaleFX->vInitialScale;
 	scale.vFinalScale		= pScaleFX->vFinalScale;

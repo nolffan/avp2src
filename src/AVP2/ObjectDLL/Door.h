@@ -239,6 +239,14 @@ class Door : public GameBase
 		LTBOOL		m_bCanShootThrough;
 		LTBOOL		m_bCanSeeThrough;
 
+#ifdef PRIMAL_HUNT
+		// PH: the Use_Blocking_Priority and Blocking_Priority properties
+		// (Door::ReadProp, PHObject.lto 0x100dd750), applied in
+		// Door::InitialUpdate (0x100de76f)
+		LTBOOL		m_bUseBlockingPriority;
+		uint32		m_nBlockingPriority;
+#endif
+
 	private :
 
         LTBOOL   ReadProp(ObjectCreateStruct *pStruct);

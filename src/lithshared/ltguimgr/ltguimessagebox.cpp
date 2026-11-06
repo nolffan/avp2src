@@ -44,7 +44,15 @@ LTBOOL CLTGUIMessageBox::Create(ILTClient *pClientDE, char *lpszBackground, CLTG
 
 	HSURFACE hSurf = pClientDE->CreateSurfaceFromBitmap(lpszBackground);
 	if (!hSurf)
-		return LTFALSE;
+	{
+		// No background: a plain magenta one instead
+		HLTCOLOR hColor = pClientDE->SetupColor1(1.0f, 0.0f, 1.0f, LTFALSE);
+		hSurf = pClientDE->CreateSurface(320, 240);
+		pClientDE->FillRect(hSurf, LTNULL, hColor);
+
+		if (!hSurf)
+			return LTFALSE;
+	}
 
 	return Create(pClientDE, hSurf, pFont, hText, pCommandHandler, bSolid);
 }
@@ -106,8 +114,7 @@ void CLTGUIMessageBox::Render(HSURFACE hDestSurf)
 	// Draw the text
 	if (m_pFont && m_hText)
 	{
-		LTIntPt pt;
-		pt = m_pFont->GetTextExtentsFormat(m_hText, GetWidth()-40);
+		LTIntPt pt = m_pFont->GetTextExtentsFormat(m_hText, GetWidth()-40);
 
 		int x = GetWidth()/2 - pt.x/2 + m_screenPos.x;
 		int y = GetHeight()/2 - pt.y/2 + m_screenPos.y;
@@ -127,17 +134,27 @@ void CLTGUIMessageBox::Render(HSURFACE hDestSurf)
 	{
 		for (uint32 i = 0; i < m_textButtonArray.GetSize(); i++)
 		{
-			LTRect rect;
-			rect = GetTextButtonRect(i);
+			LTRect rect = GetTextButtonRect(i);
 
 			int x = m_screenPos.x + rect.left;
 			int y = m_screenPos.y + rect.top;
 
-			HLTCOLOR color = m_textButtonColor;
-			if ((int)i == m_nSelection)
-				color = m_textButtonHighlightColor;
+			if (m_pFont->IsMenuFriendly())
+			{
+				int state = LGFI_NORMAL;
+				if ((int)i == m_nSelection)
+					state = LGFI_SELECTED;
 
-			m_pFont->Draw(m_textButtonArray[i].m_hString, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+				m_pFont->DrawMenu(m_textButtonArray[i].m_hString, hDestSurf, x, y, LTF_JUSTIFY_LEFT, state);
+			}
+			else
+			{
+				HLTCOLOR color = m_textButtonColor;
+				if ((int)i == m_nSelection)
+					color = m_textButtonHighlightColor;
+
+				m_pFont->Draw(m_textButtonArray[i].m_hString, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+			}
 		}
 	}
 }
@@ -365,8 +382,7 @@ int CLTGUIMessageBox::GetButtonFromPoint(int x, int y)
 {
 	for (int i = 0; i < (int)m_textButtonArray.GetSize(); i++)
 	{
-		LTRect rect;
-		rect = GetTextButtonRect(i);
+		LTRect rect = GetTextButtonRect(i);
 
 		if (x >= m_screenPos.x + rect.left && y >= m_screenPos.y + rect.top &&
 			x <= m_screenPos.x + rect.right && y <= m_screenPos.y + rect.bottom)

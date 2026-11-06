@@ -70,6 +70,12 @@ private:
 	CPlayerStats*	m_pPlayerStats;		//pointer to player stats class
 	MDBlip			m_pBlipArray[MAX_BLIPS]; //array of motion detector blips
 	MDDispBlipList	m_BlipDispList;	//array of motion detector blips for display
+#ifdef PRIMAL_HUNT
+	// Primal Hunt (CMotionDetector is 0x14 bytes bigger): Init sets this
+	// when the player's character class is 2 (PHCShell.dll 0x100545d8);
+	// the name is ours
+	LTBOOL			m_bAltDisplay;
+#endif
 
 	//private utility functions
 	LTBOOL		TestObjectForType	(HOBJECT hObj, LTBOOL bKeyFramed);
@@ -111,6 +117,12 @@ private:
 	DDWORD		m_nBlipSurfaces;//number of blip surfaces
 	DDWORD		m_nBlipIndex;	//index into array of blips
 	LTBOOL		m_bFirstUpdate;	//first up date flag
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: two more layout points LoadImages reads
+	// (PHCShell.dll 0x10054756, 0x1005477f); names ours
+	DIntPt		m_ptExtraDest;
+	DIntPt		m_ptExtraOffset;
+#endif
 };
 
 #endif

@@ -41,6 +41,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define KEY_FOOTSTEP_SOUND		"FOOTSTEP_KEY"
 #define MAX_BOSS_SMOKE_INTENSITY 8
 
+
 VarTrack g_vtMinFootstepTime;
 VarTrack g_vtPushBack;
 VarTrack g_vtElecUpdateTime;
@@ -577,6 +578,22 @@ LTBOOL CCharacterFX::Update()
 	// Update any Boss FX we may have
 	if(m_hBossSmokeSystem)
 		UpdateBossFX();
+
+#ifdef PRIMAL_HUNT
+	// Update the self-destruct countdown (PHCShell 0x100f211b)
+	if(m_fSelfDestructTime)
+	{
+		if(g_pLTClient->GetTime() >= m_fSelfDestructTime)
+		{
+			StopSelfDestructFX();
+			return LTTRUE;
+		}
+
+		LTVector vSoundPos;
+		g_pLTClient->GetObjectPos(m_hServerObject, &vSoundPos);
+		g_pLTClient->SetSoundPosition(m_hSelfDestructSound, &vSoundPos);
+	}
+#endif
 
 	return LTTRUE;
 }
@@ -1446,7 +1463,26 @@ LTBOOL CCharacterFX::OnServerMessage(HMESSAGEREAD hMessage)
 		{
 			CreateChestBurstFX();
 		}
+#ifdef PRIMAL_HUNT
+		// RETAIL BUG: Primal Hunt has no break here (PHCShell 0x100f4083),
+		// so a chest burst starts the self-destruct countdown too
+#else
 		break;
+#endif
+
+#ifdef PRIMAL_HUNT
+		case CFX_SELF_DESTRUCT_START:
+		{
+			StartSelfDestructFX();
+		}
+		break;
+
+		case CFX_SELF_DESTRUCT_STOP:
+		{
+			StopSelfDestructFX();
+		}
+		break;
+#endif
 
 		default : break;
 	}
@@ -1462,6 +1498,43 @@ void CCharacterFX::OnObjectRemove(HOBJECT hObj)
 
 	CSpecialFX::OnObjectRemove(hObj);
 }
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterFX::StartSelfDestructFX
+//
+//	PURPOSE:	Primal Hunt: start the self-destruct countdown
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::StartSelfDestructFX()
+{
+	m_fSelfDestructTime = g_pLTClient->GetTime() + 3.0f;
+	m_hSelfDestructSound = g_pClientSoundMgr->PlaySoundFromObject(m_hServerObject, "Sounds\\Ambients\\countdwn.wav", 1000.0f, SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
+
+	g_pClientSoundMgr->PlaySoundFromObject(m_hServerObject, (rand() % 3) ? "Sounds\\Characters\\Predator\\PredLaugh1.wav" : "Sounds\\Characters\\Predator\\PredLaugh2.wav", 1000.0f, SOUNDPRIORITY_MISC_HIGH);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterFX::StopSelfDestructFX
+//
+//	PURPOSE:	Primal Hunt: stop the self-destruct countdown
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::StopSelfDestructFX()
+{
+	if(m_hSelfDestructSound)
+	{
+		g_pLTClient->KillSound(m_hSelfDestructSound);
+		m_hSelfDestructSound = LTNULL;
+	}
+
+	m_fSelfDestructTime = 0.0f;
+}
+#endif
 
 // ----------------------------------------------------------------------- //
 //

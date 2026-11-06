@@ -240,6 +240,17 @@ struct BARREL
 	uint8		nNumFlashSockets;
 	char		szFlashSocket[WMGR_MAX_FLASH_SOCKETS][WMGR_MAX_NAME_LENGTH];
 	LTBOOL		bSave;
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: a second muzzle, fired in turn with the first (BARREL is
+	// 0x3e4 bytes; Init, PHCShell.dll 0x100e841f, reads "DualMuzzle",
+	// "DualMuzzlePos" and "DualPVMuzzleFXName"; CWeaponModel's
+	// UpdateWeaponModel, 0x100b47f2, flips nCurMuzzle after each shot)
+	LTBOOL		bDualMuzzle;
+	LTVector	vDualMuzzlePos;
+	CMuzzleFX*	pDualPVMuzzleFX;
+	uint8		nCurMuzzle;
+#endif
 };
 
 
@@ -293,6 +304,14 @@ struct WEAPON
 	uint8	nAimingPitchSet;
 	LTFLOAT fSpeedMod;
 	LTBOOL		bSave;
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt (WEAPON is 0x500 bytes; Init, PHCShell.dll 0x100e6ca1,
+	// reads "MultiSelect" and "MultiSelectNext"; the constructor clears
+	// them last)
+	int		nMultiSelect;
+	char	szMultiSelectNext[WMGR_MAX_NAME_LENGTH];
+#endif
 };
 
 

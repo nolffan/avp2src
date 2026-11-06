@@ -21,6 +21,7 @@
 LithSystemFont::LithSystemFont()
 {
 	m_pFont = LTNULL;
+	m_hDefaultColor = LTNULL;
 	m_pStringSurf = LTNULL;
 
 	m_pDest = LTNULL;
@@ -60,6 +61,7 @@ LTBOOL LithSystemFont::Init(ILTClient *pClient, LITHFONTCREATESTRUCT *lfCS)
 		return LTFALSE;
 
 	m_nHeight = lfCS->nHeight;
+	m_hDefaultColor = lfCS->hDefaultColor;
 
 	return LTTRUE;
 }
@@ -68,19 +70,24 @@ LTBOOL LithSystemFont::Init(ILTClient *pClient, LITHFONTCREATESTRUCT *lfCS)
 
 void LithSystemFont::Free()
 {
-	if (m_pFont)
+	if (m_pClient)
 	{
-		m_pClient->DeleteFont(m_pFont);
-		m_pFont = LTNULL;
-	}
+		if (m_pFont)
+		{
+			m_pClient->DeleteFont(m_pFont);
+			m_pFont = LTNULL;
+		}
 
-	if (m_pStringSurf)
-	{
-		m_pClient->DeleteSurface(m_pStringSurf);
-		m_pStringSurf = LTNULL;
-	}
+		m_temp_lfSD.sPrevString.Empty();
 
-	m_temp_lfSD.szPrevString = LTNULL;
+		if (m_pStringSurf)
+		{
+			m_pClient->DeleteSurface(m_pStringSurf);
+			m_pStringSurf = LTNULL;
+		}
+
+		m_pClient = LTNULL;
+	}
 }
 
 //*********************************************************************************
@@ -220,10 +227,11 @@ void LithSystemFont::SetDrawData(HSURFACE pDest, char *szString, LITHFONTDRAWDAT
 	}
 
 	// Only reformat the string if something has changed
-	if (m_lfDD->bForceFormat || !m_lfSD->szPrevString || m_lfSD->szPrevString != szString ||
+	if (m_lfDD->bForceFormat || m_lfSD->sPrevString.IsEmpty() || m_lfSD->sPrevString.Compare(szString) ||
 		m_lfDD->nLetterSpace != m_lfSD->nLastLetterSpace)
 	{
-		m_lfSD->szPrevString = szString;
+		if (!m_lfDD->bForceFormat)
+			m_lfSD->sPrevString = szString;
 		m_lfSD->nLastLetterSpace = m_lfDD->nLetterSpace;
 
 		m_nExtraLetterSpace = m_lfDD->nLetterSpace;
@@ -364,7 +372,7 @@ void LithSystemFont::Draw_Method_Normal()
 	if (!m_lfFD)
 		return;
 
-	HLTCOLOR hColor = m_lfDD->hColor;
+	HLTCOLOR hColor = m_hDefaultColor;
 	HLTCOLOR hTransColor = m_pClient->SetupColor2(1.0f, 0.0f, 1.0f, LTFALSE);
 
 	int nLineHeight = m_lfDD->nLineSpace + m_nHeight;
@@ -418,7 +426,7 @@ void LithSystemFont::Draw_Method_Timed()
 		return;
 
 	int nCurLine = m_lfFD->nNumLines;
-	HLTCOLOR hColor = m_lfDD->hColor;
+	HLTCOLOR hColor = m_hDefaultColor;
 	HLTCOLOR hTransColor = m_pClient->SetupColor2(1.0f, 0.0f, 1.0f, LTFALSE);
 
 	int nLineHeight = m_lfDD->nLineSpace + m_nHeight;

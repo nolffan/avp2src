@@ -6,6 +6,10 @@
 #include "ltguicolumntextctrl.h"
 #include "ltguifont.h"
 
+// A column's justification when it word-wraps its text to its width
+// (AddWordWrapColumn)
+#define LTGUI_COLUMN_WORDWRAP	0xFF
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -53,11 +57,13 @@ LTBOOL CLTGUIColumnTextCtrl::AddColumn(HSTRING hString, int nWidth, short nJusti
 
 	LTGUIColumn *pColumn = new LTGUIColumn;
 
-	m_dwWidth += nWidth;
-
 	pColumn->m_nWidth = nWidth;
 	pColumn->m_hString = m_pClientDE->CopyString(hString);
 	pColumn->m_nJustify = nJustify;
+	pColumn->m_nHeight = m_pFont->GetHeight();
+
+	m_dwWidth += nWidth;
+	m_dwHeight = LTMAX((int)m_dwHeight, pColumn->m_nHeight);
 
 	m_columnArray.Append(pColumn);
 
@@ -76,6 +82,42 @@ LTBOOL CLTGUIColumnTextCtrl::AddColumn(int messageCode, int nWidth, short nJusti
 	return bResult;
 }
 
+// Adds a column whose text is word-wrapped to its width
+LTBOOL CLTGUIColumnTextCtrl::AddWordWrapColumn(HSTRING hString, int nWidth)
+{
+	if (!hString)
+		return LTFALSE;
+
+	LTGUIColumn *pColumn = new LTGUIColumn;
+
+	m_dwWidth += nWidth;
+
+	pColumn->m_nWidth = nWidth;
+	pColumn->m_hString = m_pClientDE->CopyString(hString);
+	pColumn->m_nJustify = LTGUI_COLUMN_WORDWRAP;
+
+	LTIntPt pt = m_pFont->GetTextExtentsFormat(hString, nWidth);
+	pColumn->m_nHeight = pt.y;
+
+	m_dwHeight = LTMAX((int)m_dwHeight, pt.y);
+
+	m_columnArray.Append(pColumn);
+
+	return LTTRUE;
+}
+
+LTBOOL CLTGUIColumnTextCtrl::AddWordWrapColumn(int messageCode, int nWidth)
+{
+	if (!messageCode)
+		return LTFALSE;
+
+	HSTRING hString = m_pClientDE->FormatString(messageCode);
+	LTBOOL bResult = AddWordWrapColumn(hString, nWidth);
+	m_pClientDE->FreeString(hString);
+
+	return bResult;
+}
+
 // Gets a string at a specific column index.  This returns a copy (new handle).
 HSTRING CLTGUIColumnTextCtrl::GetString(int nColumnIndex)
 {
@@ -87,6 +129,14 @@ void CLTGUIColumnTextCtrl::SetString(int nColumnIndex, HSTRING hString)
 {
 	m_pClientDE->FreeString(m_columnArray[nColumnIndex]->m_hString);
 	m_columnArray[nColumnIndex]->m_hString = m_pClientDE->CopyString(hString);
+
+	if (m_columnArray[nColumnIndex]->m_nJustify == LTGUI_COLUMN_WORDWRAP)
+	{
+		LTIntPt pt = m_pFont->GetTextExtentsFormat(hString, m_columnArray[nColumnIndex]->m_nWidth);
+		m_columnArray[nColumnIndex]->m_nHeight = pt.y;
+
+		m_dwHeight = LTMAX((int)m_dwHeight, pt.y);
+	}
 }
 
 void CLTGUIColumnTextCtrl::SetString(int nColumnIndex, int messageCode)
@@ -127,9 +177,6 @@ void CLTGUIColumnTextCtrl::RemoveAllColumns()
 }
 
 // Render the control
-// m_pos.y is named in a local right after the column pointer: the shipped
-// code loads it at that point of each iteration (into ebp), and reading it at
-// the call instead makes VC6 hoist hDestSurf into ebp before the loop.
 void CLTGUIColumnTextCtrl::Render(HSURFACE hDestSurf)
 {
 	if (!m_pFont)
@@ -148,7 +195,29 @@ void CLTGUIColumnTextCtrl::Render(HSURFACE hDestSurf)
 		if (nJustify == LTF_JUSTIFY_RIGHT)
 			nX = pColumn->m_nWidth + x;
 
-		m_pFont->Draw(pColumn->m_hString, hDestSurf, nX, y, nJustify, color);
+		if (nJustify == LTGUI_COLUMN_WORDWRAP)
+		{
+			if (m_pFont->IsMenuFriendly())
+				m_pFont->DrawMenuFormat(m_columnArray[i]->m_hString, hDestSurf, x, y, m_columnArray[i]->m_nWidth, GetState());
+			else
+				m_pFont->DrawFormat(pColumn->m_hString, hDestSurf, x, y, pColumn->m_nWidth, color);
+		}
+		else
+		{
+			if (m_pFont->IsMenuFriendly())
+			{
+				// RETAIL BUG: the column's width is passed where its
+				// justification belongs, so a menu font always draws the
+				// column left-justified (from nX)
+#ifdef AVP2_MODERN
+				m_pFont->DrawMenu(m_columnArray[i]->m_hString, hDestSurf, nX, y, m_columnArray[i]->m_nJustify, GetState());
+#else
+				m_pFont->DrawMenu(m_columnArray[i]->m_hString, hDestSurf, nX, y, m_columnArray[i]->m_nWidth, GetState());
+#endif
+			}
+			else
+				m_pFont->Draw(pColumn->m_hString, hDestSurf, nX, y, nJustify, color);
+		}
 
 		x += m_columnArray[i]->m_nWidth;
 	}
@@ -159,10 +228,14 @@ void CLTGUIColumnTextCtrl::SetFont(CLTGUIFont *pFont)
 {
 	m_pFont = pFont;
 
+	m_dwHeight = 0;
 	if (pFont)
-		m_dwHeight = m_pFont->GetHeight();
-	else
-		m_dwHeight = 0;
+	{
+		for (int i = 0; i < (int)m_columnArray.GetSize(); i++)
+		{
+			m_dwHeight = LTMAX((int)m_dwHeight, m_columnArray[i]->m_nHeight);
+		}
+	}
 
 	m_dwWidth = 0;
 	for (int i = 0; i < (int)m_columnArray.GetSize(); i++)

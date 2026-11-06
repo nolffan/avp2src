@@ -32,6 +32,10 @@ BEGIN_CLASS(TranslucentWorldModel)
 	ADD_BOOLPROP(LensFlare, DFALSE)
     ADD_BOOLPROP(AICanShootThrough, LTFALSE)
     ADD_BOOLPROP(AICanSeeThrough, LTFALSE)
+#ifdef PRIMAL_HUNT
+	// PH: additive blending (PHObject.lto 0x101345c0)
+	ADD_BOOLPROP(Additive, LTFALSE)
+#endif
 END_CLASS_DEFAULT_FLAGS_PLUGIN(TranslucentWorldModel, GameBase, NULL, NULL, 0, CTranslucentWorldModelPlugin)
 
 DRESULT	CTranslucentWorldModelPlugin::PreHook_EditStringList(
@@ -244,6 +248,17 @@ DBOOL TranslucentWorldModel::ReadProp(ObjectCreateStruct *pStruct)
 	{
 		 m_bCanSeeThrough = gProp.m_Bool;
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: additive blending (PHObject.lto 0x10135c33)
+	if (g_pLTServer->GetPropGeneric("Additive", &gProp) == LT_OK)
+	{
+		if (gProp.m_Bool == LTTRUE)
+		{
+			pStruct->m_Flags2 |= FLAG2_ADDITIVE;
+		}
+	}
+#endif
 
 	return DTRUE;
 }

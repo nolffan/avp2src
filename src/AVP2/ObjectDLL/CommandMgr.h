@@ -129,6 +129,9 @@ class CCommandMgr
 		DBOOL	ProcessLoop(const ConParse & parse, int nCmdIndex);
 		DBOOL	ProcessLoopId(const ConParse & parse, int nCmdIndex);
 		DBOOL	ProcessAbort(const ConParse & parse, int nCmdIndex);
+#ifdef PRIMAL_HUNT
+		DBOOL	ProcessSVar(const ConParse & parse, int nCmdIndex);	// PH: PHObject.lto 0x10051a20
+#endif
 	
 	private :
 

@@ -141,6 +141,10 @@ const char *  CHARACTER_BUTE_POUNCE_WEAPON_DAMAGE		= "PounceWeaponDamage";
 
 const char *  CHARACTER_BUTE_HIT_BOX_SCALE				= "HitBoxScale";
 
+#ifdef PRIMAL_HUNT
+const char *  CHARACTER_BUTE_DEFAULT_ENV_MAP			= "DefaultEnvMap";
+#endif
+
 //*********************************************************************************
 
 CCharacterButeMgr* g_pCharacterButeMgr = DNULL;
@@ -523,6 +527,10 @@ void t_CharacterButes::Copy(const t_CharacterButes &cb)
 	m_bCanClimb = cb.m_bCanClimb;
 	m_bCanPounce = cb.m_bCanPounce;
 	m_nPounceDamage = cb.m_nPounceDamage;
+
+#ifdef PRIMAL_HUNT
+	SAFE_STRCPY(m_szDefaultEnvMap, cb.m_szDefaultEnvMap);
+#endif
 }
 
 //*********************************************************************************
@@ -551,6 +559,18 @@ void t_CharacterButes::FillInObjectCreateStruct(ObjectCreateStruct &ocs, LTBOOL 
 			ocs.m_SkinNames[i][0] = 0;
 		}
 	}
+
+#ifdef PRIMAL_HUNT
+	// PHCShell.dll 0x100bd0b2: the environment map is the extra texture
+	if( m_szDefaultEnvMap[0] )
+	{
+		SAFE_STRCPY(ocs.m_ExtraTextureName, m_szDefaultEnvMap);
+	}
+	else
+	{
+		ocs.m_ExtraTextureName[0] = 0;
+	}
+#endif
 }
 
 //*********************************************************************************
@@ -988,6 +1008,11 @@ void CCharacterButeMgr::LoadCharacterButes(const char * szTagName, CharacterBute
 	butes.m_bCanClimb		= (LTBOOL)GetInt(szTagName, CHARACTER_BUTE_CAN_CLIMB);
 	butes.m_bCanPounce		= (LTBOOL)GetInt(szTagName, CHARACTER_BUTE_CAN_POUNCE);
 	butes.m_nPounceDamage	= GetInt(szTagName, CHARACTER_BUTE_POUNCE_WEAPON_DAMAGE);
+
+#ifdef PRIMAL_HUNT
+	// PHCShell.dll 0x100bf741
+	SAFE_STRCPY(butes.m_szDefaultEnvMap, GetString(szTagName, CHARACTER_BUTE_DEFAULT_ENV_MAP));
+#endif
 }
 
 

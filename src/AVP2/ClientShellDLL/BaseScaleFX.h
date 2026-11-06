@@ -21,6 +21,15 @@
 
 extern enum FRState;
 
+#ifdef PRIMAL_HUNT
+// Primal Hunt's engine blends a sprite or model additively by its alpha
+// with this flag (d3d.ren's drawsprite.cpp, PHFLAG2_ADDITIVEALPHA); the
+// SDK's header does not name it.
+#ifndef FLAG2_ADDITIVEALPHA
+#define FLAG2_ADDITIVEALPHA		(1<<14)
+#endif
+#endif
+
 enum BSPriority
 {
 	BS_PRIORITY_HIGH = 0,
@@ -59,6 +68,9 @@ struct BSCREATESTRUCT : public SFXCREATESTRUCT
     uint8			nType;
     LTFLOAT			fFadeOutTime;
 	BSPriority		ePriority;
+#ifdef PRIMAL_HUNT
+	LTBOOL			bAdditiveAlpha;	// Primal Hunt: FLAG2_ADDITIVEALPHA (PHCShell 0x100eaf20)
+#endif
 };
 
 inline BSCREATESTRUCT::BSCREATESTRUCT()
@@ -129,6 +141,9 @@ public :
 		m_bWantRemove	= LTFALSE;
 		m_ePriority		= BS_PRIORITY_HIGH;
 		m_FRState		= FR_EXCELLENT;
+#ifdef PRIMAL_HUNT
+		m_bAdditiveAlpha = LTFALSE;
+#endif
 	}
 
     virtual LTBOOL Init(SFXCREATESTRUCT* psfxCreateStruct);
@@ -185,6 +200,9 @@ protected :
 	MovingObject	m_movingObj;
 	BSPriority		m_ePriority;
 	FRState			m_FRState;
+#ifdef PRIMAL_HUNT
+	LTBOOL			m_bAdditiveAlpha;	// PHCShell 0x100eb1e0
+#endif
 
     virtual void UpdateAlpha(LTFLOAT fTimeDelta);
     virtual void UpdateScale(LTFLOAT fTimeDelta);

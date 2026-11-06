@@ -24,6 +24,11 @@
 #include "PlayerObj.h"
 #include "CommandMgr.h"
 
+#ifdef PRIMAL_HUNT
+// PH's engine: additive blending with the alpha kept (Prop's Additive_With_Alpha)
+#define FLAG2_ADDITIVE_WITH_ALPHA	(1<<14)
+#endif
+
 BEGIN_CLASS(Prop)
 	ADD_DESTRUCTIBLE_MODEL_AGGREGATE(PF_GROUP1, 0)
 	ADD_STRINGPROP_FLAG(Filename, "", PF_DIMS | PF_LOCALDIMS | PF_FILENAME)
@@ -49,6 +54,10 @@ BEGIN_CLASS(Prop)
 	ADD_STRINGPROP_FLAG(DetailLevel, "Low", PF_STATICLIST)
     ADD_BOOLPROP(AICanShootThrough, LTFALSE)
     ADD_BOOLPROP(AICanSeeThrough, LTFALSE)
+#ifdef PRIMAL_HUNT
+	// PH (PHObject.lto 0x101175b0)
+	ADD_BOOLPROP(Additive_With_Alpha, LTFALSE)
+#endif
 END_CLASS_DEFAULT_FLAGS_PLUGIN(Prop, GameBase, NULL, NULL, 0, CPropPlugin)
 
 
@@ -338,6 +347,18 @@ void Prop::ReadProp(ObjectCreateStruct *pData)
 		}
 	}
 
+#ifdef PRIMAL_HUNT
+	// PH: additive blending that keeps the alpha (PHObject.lto 0x10118d76)
+    if (g_pLTServer->GetPropGeneric("Additive_With_Alpha", &genProp) == LT_OK)
+	{
+		if (genProp.m_Bool)
+		{
+			m_dwFlags2 |= FLAG2_ADDITIVE_WITH_ALPHA;
+			m_dwFlags  |= FLAG_FOGDISABLE;
+		}
+	}
+
+#endif
     if (g_pLTServer->GetPropGeneric("Multiply", &genProp) == LT_OK)
 	{
 		if (genProp.m_Bool)

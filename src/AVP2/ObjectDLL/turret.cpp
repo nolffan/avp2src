@@ -36,6 +36,21 @@
 //#define TURRET_DEBUG
 #endif
 
+#ifdef PRIMAL_HUNT
+// PH: is the object a Turret? (PHObject.lto 0x100874a0; called by
+// CDestructible::HandleCrush)
+LTBOOL IsTurret(HOBJECT hObj)
+{
+	HCLASS hTurret = g_pLTServer->GetClass("Turret");
+	if (!hTurret) return LTFALSE;
+
+	HCLASS hClass = g_pLTServer->GetObjectClass(hObj);
+	if (!hClass) return LTFALSE;
+
+	return g_pLTServer->IsKindOf(hClass, hTurret) == LTTRUE;
+}
+#endif
+
 ILTMessage & operator<<(ILTMessage & out, Turret::ObjectiveType & x)
 {
 	out.WriteDWord( uint32(x) );

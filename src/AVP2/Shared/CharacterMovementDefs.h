@@ -52,6 +52,9 @@ enum CharacterMovementState
 	CMS_FACEHUG,						// During the facehug attack
 	CMS_FACEHUG_ATTACH,					// During the facehug implantation
 	CMS_OBSERVING,						// The observation mode state
+#ifdef PRIMAL_HUNT
+	CMS_TURRET,							// Primal Hunt: using a turret ("Using Turret"; PHCShell.dll 0x1006d9f1)
+#endif
 	CMS_MAX,
 };
 

@@ -1298,6 +1298,11 @@
 												// only render it when processing sky objects.
 	#define FLAG2_SPRITE_TROTATE	(1<<9)		// For sprites - use the object rotation as a texture rotation
 	#define FLAG2_SEMISOLID			(1<<10)		// A semi-solid object is non-solid to other semi-solid objects, but solid to all else.
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's renderer draws a translucent model with this flag
+	// SRCALPHA/ONE (d3d.ren 0x10025c72; name ours).
+	#define FLAG2_ADDITIVEALPHA		(1<<14)
+#endif
 
 
 

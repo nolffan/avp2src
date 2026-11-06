@@ -74,8 +74,14 @@ CCrosshairMgr::~CCrosshairMgr()
 LTBOOL CCrosshairMgr::Init()
 {
 	//load up the activate and targeting crosshairs
+#ifdef PRIMAL_HUNT
+	// Primal Hunt loads the targeting crosshair first (PHCShell 0x10037790)
+	LoadCrosshair("Interface\\StatusBar\\Marine\\Xhair_normal.pcx", 4.0f);
+	SetActivateCrosshair(XHM_DEFAULT_ACTIVATE);
+#else
 	SetActivateCrosshair(XHM_DEFAULT_ACTIVATE);
 	LoadCrosshair("Interface\\StatusBar\\Marine\\Xhair_normal.pcx", 4.0f);
+#endif
 
 	return DTRUE;
 }
@@ -406,6 +412,16 @@ void CCrosshairMgr::SetActivateCrosshair(XHairMode eMode)
 		m_hActivateCrosshair = g_pInterfaceResMgr->GetSharedSurface("Interface\\StatusBar\\predator\\Xhair_predbomb.pcx");
 		m_fActScale = 1.0f;
 		break;
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the minigun's crosshair (PHCShell 0x10037fea)
+	case (XHM_EXOSUIT_MINIGUN):
+		m_hActivateCrosshair = m_hCrosshair;
+		m_hHeatEmpty = g_pInterfaceResMgr->GetSharedSurface("Interface\\StatusBar\\marine\\ammo_heat_empty.pcx");
+		m_hHeatFull = g_pInterfaceResMgr->GetSharedSurface("Interface\\StatusBar\\marine\\heatbar_full.pcx");
+		m_hAmmoFull = g_pInterfaceResMgr->GetSharedSurface("Interface\\StatusBar\\marine\\ammobar_full.pcx");
+		m_fActScale = 1.0f;
+		break;
+#endif
 	default: return;
 	}
 

@@ -54,6 +54,10 @@ CMotionDetector::CMotionDetector()
 	
 	memset(m_pBlipArray,0, MAX_BLIPS * sizeof(MDBlip));
 	memset(&m_BlipDispList,0, sizeof(MDDispBlipList));
+
+#ifdef PRIMAL_HUNT
+	m_bAltDisplay		= LTFALSE;
+#endif
 }
 
 // -----------------------------------------------/

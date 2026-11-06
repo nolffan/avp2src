@@ -100,6 +100,13 @@ CVarTrack	g_InvulnerableLeash;
 
 CVarTrack	g_PounceStunRatio;
 
+#ifdef PRIMAL_HUNT
+// PH: the object the player last activated (CPlayerObj::Activate; read by
+// EngineMessageFn's turret pickup, PHObject.lto 0x1010baec)
+static HOBJECT s_hLastActivated = LTNULL;
+static HOBJECT GetLastActivatedObject();
+#endif
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPlayerObj::CPlayerObj
@@ -174,6 +181,15 @@ CPlayerObj::CPlayerObj() : CCharacter()
 	m_bPlayingLoopFireSound	= LTFALSE;
 	m_nLoopKeyId		= 0xff;
 	m_bSpawnInState		= LTFALSE;
+
+#ifdef PRIMAL_HUNT
+	m_nNumTurrets		= 0;
+	for (int i = 0; i < MAX_PLAYER_TURRETS; i++)
+	{
+		m_hTurrets[i] = LTNULL;
+	}
+	m_hUsingTurret		= LTNULL;
+#endif
 }
 
 
@@ -2481,6 +2497,10 @@ LTBOOL ActivateFilterFn(HOBJECT hObj, void *pUserData)
 
 DBOOL CPlayerObj::Activate(LTVector vPos, LTVector vDir)
 {
+#ifdef PRIMAL_HUNT
+	s_hLastActivated = LTNULL;
+#endif
+
 	// First see if a cinematic is running...If so, try and stop it...
 
 	if (PlayingCinematic(LTTRUE))
@@ -2495,6 +2515,20 @@ DBOOL CPlayerObj::Activate(LTVector vPos, LTVector vDir)
 
 		return LTFALSE;
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: a player using a turret activates the turret (PHObject.lto
+	// 0x101102c3)
+	if (m_hUsingTurret)
+	{
+		HSTRING hStr = g_pLTServer->CreateString("ACTIVATE");
+		SendTriggerMsgToObject(this, m_hUsingTurret, hStr);
+		g_pLTServer->FreeString(hStr);
+
+		return LTTRUE;
+	}
+#endif
+
 	// Cast ray to see if there is an object to activate...
 			
 	LTVector vDims, vTemp, vPos2;
@@ -2543,12 +2577,23 @@ DBOOL CPlayerObj::Activate(LTVector vPos, LTVector vDir)
 			SendTriggerMsgToObject(this, IInfo.m_hObject, hStr);
 			g_pLTServer->FreeString(hStr);
 
+#ifdef PRIMAL_HUNT
+			s_hLastActivated = IInfo.m_hObject;
+#endif
 			return LTTRUE;
 		}
 	}
 
 	return DFALSE;
 }
+
+#ifdef PRIMAL_HUNT
+// PH (PHObject.lto 0x101105b0)
+static HOBJECT GetLastActivatedObject()
+{
+	return s_hLastActivated;
+}
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -3364,6 +3409,10 @@ void CPlayerObj::HandleMessage_UpdateClient(HMESSAGEREAD hRead)
 		g_pLTServer->ReadFromMessageVector(hRead, &vVel);
 
 		// Update to the new velocity
+#ifdef PRIMAL_HUNT
+		// PH: not while using a turret (PHObject.lto 0x101122f1)
+		if (!m_hUsingTurret)
+#endif
 		m_cmMovement.SetVelocity(vVel, LTFALSE);
 	}
 
@@ -4780,6 +4829,16 @@ void CPlayerObj::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 	*hWrite << m_fOldBatteryLevel;
 	hWrite->WriteFloat(m_fIdleTime);
 	*hWrite << m_bResetHealthAndArmor;
+
+#ifdef PRIMAL_HUNT
+	SAVE_FLOAT(m_fNextTurretTime);
+	SAVE_INT(m_nNumTurrets);
+	for (int i = 0; i < MAX_PLAYER_TURRETS; i++)
+	{
+		SAVE_HOBJECT(m_hTurrets[i]);
+	}
+	SAVE_HOBJECT(m_hUsingTurret);
+#endif
 }
 
 
@@ -4860,6 +4919,20 @@ void CPlayerObj::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 		g_pLTServer->EndMessage(hMessage);
 	}
 	*hRead >> m_bResetHealthAndArmor;
+
+#ifdef PRIMAL_HUNT
+	LOAD_FLOAT(m_fNextTurretTime);
+	LOAD_INT(m_nNumTurrets);
+
+	HOBJECT hObj = LTNULL;
+	for (int i = 0; i < MAX_PLAYER_TURRETS; i++)
+	{
+		LOAD_HOBJECT(hObj);
+		m_hTurrets[i] = hObj;
+	}
+	LOAD_HOBJECT(hObj);
+	m_hUsingTurret = hObj;
+#endif
 }
 
 // --------------------------------------------------------------------------- //

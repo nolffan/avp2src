@@ -527,6 +527,16 @@ void CameraMgr::UpdateCameraEffects(HCAMERA hCamera)
 
 	while(pEffect)
 	{
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: an effect whose user data is a cleared flag is
+		// paused (PHCShell 0x100639b5)
+		if(pEffect->ceCS.pUserData && !*((uint8*)pEffect->ceCS.pUserData))
+		{
+			pEffect = pEffect->pNext;
+			continue;
+		}
+#endif
+
 		// Check to see if this effect has expired
 		if(pEffect->ceCS.fTime && (fTime > pEffect->fStartTime + pEffect->ceCS.fTime))
 		{

@@ -182,6 +182,10 @@ LTBOOL CheatMgr::Init()
 	// Create the debug font
 	LITHFONTCREATESTRUCT lfCS;
 	lfCS.bChromaKey = LTTRUE;
+#ifdef PRIMAL_HUNT
+	// PHCShell 0x100749e5
+	lfCS.hDefaultColor = g_pLTClient->SetupColor1(1.0f, 1.0f, 1.0f, LTFALSE);
+#endif
 	m_pFont = CreateLithFont(g_pLTClient, &lfCS);
 
 	// Create the cursor for debug output
@@ -222,9 +226,15 @@ LTBOOL CheatMgr::HandleCheat(int argc, char **argv)
 	// Copy their text
 	strncpy(buf, argv[0], sizeof(buf)-1);
 
+#ifdef PRIMAL_HUNT
+	// It should start with "MP", or Primal Hunt's "NE" (PHCShell 0x10074c0e)
+	if ( strncmp(buf, "mp", 2) != 0 && strncmp(buf, "ne", 2) != 0 )
+		return LTFALSE;
+#else
 	// It should start with "MP"
 	if ( strncmp(buf, "mp", 2) != 0 )
 		return LTFALSE;
+#endif
 
 	// Convert it to cheat compatible text
 	for ( unsigned i = 0; i < strlen(argv[0]); i++ )

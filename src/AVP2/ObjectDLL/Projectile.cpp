@@ -53,6 +53,28 @@ extern uint8  g_nRandomWeaponSeed;
 
 static LTBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData);
 
+#ifdef PRIMAL_HUNT
+// PH: DoVectorFilterFn's user data, the objects a vector passes through
+// (CProjectile::DoVector, PHObject.lto 0x10077277)
+struct VectorFilterData
+{
+	VectorFilterData()
+	{
+		hObjs[0] = LTNULL;
+		hObjs[1] = LTNULL;
+		nNumObjs = 0;
+		nPad = 0;
+		nNumObjs = 0;
+	}
+
+	HOBJECT GetObj(int i) const { return (i >= nNumObjs) ? LTNULL : hObjs[i]; }
+
+	HOBJECT	hObjs[2];
+	int		nNumObjs;
+	int		nPad;
+};
+#endif
+
 #define MAX_MODEL_NODES			9999
 #define MAX_VECTOR_LOOP			20
 
@@ -113,6 +135,9 @@ CProjectile::CProjectile(uint8 nType /*= OT_MODEL*/, uint32 add_flags /*= 0*/, u
 	m_pWeapon				= LTNULL;
 
 	m_fDeadTime				= 0.0f;
+#ifdef PRIMAL_HUNT
+	m_hIgnoreObj			= LTNULL;
+#endif
 	m_fDeadDelay			= 0.2f;
 
 }
@@ -250,6 +275,9 @@ void CProjectile::Setup(const ProjectileSetup & projectile_setup, const WFireInf
 	m_nBarrelId			= projectile_setup.nBarrelId;
 	m_nAmmoId			= projectile_setup.nAmmoId;
 	m_fLifeTime			= projectile_setup.fLifeTime;
+#ifdef PRIMAL_HUNT
+	m_hIgnoreObj		= info.hIgnoreObj;
+#endif
 
 	m_pWeaponData		= g_pWeaponMgr->GetWeapon(m_nWeaponId);
 	if (!m_pWeaponData) return;
@@ -390,6 +418,9 @@ void CProjectile::ForcedHitSetup(const CWeapon &  weapon, const WFireInfo & info
 	m_vFirePos			= info.vFirePos;
 	m_vFlashPos			= info.vFlashPos;
 	m_nFlashSocket		= info.nFlashSocket;
+#ifdef PRIMAL_HUNT
+	m_hIgnoreObj		= info.hIgnoreObj;
+#endif
 
 	m_nWeaponId			= weapon.GetId();
 	m_nBarrelId			= weapon.GetBarrelId();
@@ -447,6 +478,9 @@ void CProjectile::ForcedHitSetup(const CWeapon &  weapon, const WFireInfo & info
 LTBOOL CProjectile::TestInsideObject(HOBJECT hTestObj, AmmoType eAmmoType)
 {
 	if (!hTestObj) return LTFALSE;
+#ifdef PRIMAL_HUNT
+	if (hTestObj == m_hIgnoreObj) return LTFALSE;
+#endif
 
 	// TO DO???
 	// NOTE:  This code may need to be updated to use test the dims
@@ -1123,6 +1157,47 @@ void CProjectile::RemoveObject()
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+// PH: the user data is the list of objects the vector passes through, the
+// shooter and WFireInfo's hIgnoreObj (PHObject.lto 0x10077480)
+LTBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData)
+{
+	const VectorFilterData* pData = (const VectorFilterData*)pUserData;
+
+	// We're not attacking our self...
+
+	for (int i = 0; i < pData->nNumObjs; i++)
+	{
+		if (pData->hObjs[i] == hObj) return LTFALSE;
+	}
+
+	// CharacterHitBox objects are used for vector impacts, don't
+	// impact on the character/body prop object itself....
+
+	if (IsCharacter(hObj) || IsBodyProp(hObj))
+	{
+		return LTFALSE;
+	}
+
+	if (!IsCharacterHitBox(hObj)) return LTTRUE;
+
+	CCharacterHitBox *pCharHitBox = (CCharacterHitBox*) g_pLTServer->HandleToObject(hObj);
+	if (!pCharHitBox) return LTTRUE;
+
+	// No character can hit its own hit box.
+	for (i = 0; i < pData->nNumObjs; i++)
+	{
+		HOBJECT hUs = pData->GetObj(i);
+		if (IsCharacter(hUs) == LTTRUE)
+		{
+			if (pCharHitBox->GetModelObject() == hUs)
+				return LTFALSE;
+		}
+	}
+
+	return LTTRUE;
+}
+#else
 LTBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData)
 {
 	// We're not attacking our self...
@@ -1180,6 +1255,7 @@ LTBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData)
 
 	return LTFALSE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -1324,8 +1400,21 @@ void CProjectile::DoVector()
 		ObjectLink* pLink = pList->m_pFirstLink;
 		while (pLink)
 		{
+#ifdef PRIMAL_HUNT
+			// PH: pass through the object we ignore (PHObject.lto 0x10077054)
+			if (pLink->m_hObject == m_hIgnoreObj)
+			{
+				pLink = pLink->m_pNext;
+				continue;
+			}
+
+			// see if this object is a character hit box and not our own!
+			if(IsCharacterHitBox(pLink->m_hObject) == LTTRUE && !TestForShooterHitBox(pLink->m_hObject, m_hFiredFrom)
+				&& !TestForShooterHitBox(pLink->m_hObject, m_hIgnoreObj))
+#else
 			// see if this object is a character hit box and not our own!
 			if(IsCharacterHitBox(pLink->m_hObject) && !TestForShooterHitBox(pLink->m_hObject, m_hFiredFrom))
+#endif
 			{
 				iInfo.m_hObject = pLink->m_hObject;
 				LTVector vTempFrom  = iInfo.m_Point	= m_vFirePos + m_vDir;
@@ -1374,7 +1463,15 @@ void CProjectile::DoVector()
 	while (!bDone)
 	{
 		qInfo.m_FilterFn	 = DoVectorFilterFn;
+#ifdef PRIMAL_HUNT
+		VectorFilterData filterData;
+		filterData.hObjs[0] = m_hFiredFrom;
+		filterData.hObjs[1] = m_hIgnoreObj;
+		filterData.nNumObjs = 2;
+		qInfo.m_pUserData	 = &filterData;
+#else
 		qInfo.m_pUserData	 = m_hFiredFrom;
+#endif
 
 		qInfo.m_From = vFrom;
 		qInfo.m_To   = vTo;
@@ -1639,7 +1736,17 @@ LTBOOL CProjectile::CalcInvisibleImpact(IntersectInfo * piInfo, SurfaceType * pe
 	qTestInfo.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY;
 
 	qTestInfo.m_FilterFn  = DoVectorFilterFn;
+#ifdef PRIMAL_HUNT
+	// (not in PHObject.lto: nothing calls it there; kept in step with the
+	// filter's user data)
+	VectorFilterData filterData;
+	filterData.hObjs[0] = m_hFiredFrom;
+	filterData.hObjs[1] = m_hIgnoreObj;
+	filterData.nNumObjs = 2;
+	qTestInfo.m_pUserData = &filterData;
+#else
 	qTestInfo.m_pUserData = m_hFiredFrom;
+#endif
 
 	++g_cIntersectSegmentCalls;
 	if (g_pLTServer->IntersectSegment(&qTestInfo, &iTestInfo))

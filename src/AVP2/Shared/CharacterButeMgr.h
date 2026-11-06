@@ -195,6 +195,13 @@ typedef struct t_CharacterButes
 	// Hit box
 	LTFLOAT				m_fHitBoxScale;				// Scale the x-z dims of the hit box by this amount.
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the model's environment map, handed to the engine as the
+	// object's extra texture (t_CharacterButes is 0x7d8 bytes: Copy,
+	// PHCShell.dll 0x100bca70, copies it last, from +0x798)
+	char	m_szDefaultEnvMap[CHARACTER_BUTES_STRING_SIZE];
+#endif
+
 }	CharacterButes;
 
 inline t_CharacterButes::t_CharacterButes()

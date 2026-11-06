@@ -100,10 +100,18 @@ void CLTGUICycleCtrl::Render(HSURFACE hDestSurf)
 		break;
 	}
 
-	HLTCOLOR color = GetCurrentColor();
+	if (m_pFont->IsMenuFriendly())
+	{
+		m_pFont->DrawMenu(m_hHeaderText, hDestSurf, nHeaderX, m_pos.y, nHeaderJustify, GetState());
+		m_pFont->DrawMenu(m_stringArray[m_nSelIndex], hDestSurf, nStringX, m_pos.y, nStringJustify, GetState());
+	}
+	else
+	{
+		HLTCOLOR color = GetCurrentColor();
 
-	m_pFont->Draw(m_hHeaderText, hDestSurf, nHeaderX, m_pos.y, nHeaderJustify, color);
-	m_pFont->Draw(m_stringArray[m_nSelIndex], hDestSurf, nStringX, m_pos.y, nStringJustify, color);
+		m_pFont->Draw(m_hHeaderText, hDestSurf, nHeaderX, m_pos.y, nHeaderJustify, color);
+		m_pFont->Draw(m_stringArray[m_nSelIndex], hDestSurf, nStringX, m_pos.y, nStringJustify, color);
+	}
 }
 
 // Width/Height calculations
@@ -137,8 +145,7 @@ void CLTGUICycleCtrl::CalculateSize()
 	}
 	else
 	{
-		LTIntPt pt;
-		pt = m_pFont->GetTextExtents(m_hHeaderText);
+		LTIntPt pt = m_pFont->GetTextExtents(m_hHeaderText);
 		m_dwWidth = pt.x;
 		m_dwHeight = pt.y;
 	}

@@ -26,6 +26,9 @@ class CMuzzleFlashFX;
 #define WM_MAX_FIRE_ANIS		3
 #define WM_MAX_ALTFIRE_ANIS		3
 #define WM_MAX_IDLE_ANIS		3
+#ifdef PRIMAL_HUNT
+#define WM_MAX_MUZZLES			2	// Primal Hunt: dual muzzles (BARREL::bDualMuzzle)
+#endif
 #define WM_MAX_ALTIDLE_ANIS		3
 
 enum FireType
@@ -80,7 +83,13 @@ class CWeaponModel
 
 		void KillLoopSound();
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: two muzzles; the barrel says which is current
+		// (ShellCasingFX.cpp's use, PHCShell.dll 0x10127852)
+		LTVector GetFlashPos() const { return m_vFlashPos[m_pBarrel->nCurMuzzle]; }
+#else
 		LTVector GetFlashPos() const { return m_vFlashPos; }
+#endif
 		LTVector GetModelPos() const;
 
 		void SetWeaponOffset(LTVector v);
@@ -128,6 +137,9 @@ class CWeaponModel
 		void CreateFlash();
 		void RemoveModel();
 		void UpdateFlash(WeaponState eState);
+#ifdef PRIMAL_HUNT
+		void UpdateFlash(CMuzzleFlashFX* pFlash, int nMuzzle, WeaponState eState);
+#endif
 		
 		void CreateAttachments();
 		void RemoveAttachments();
@@ -267,11 +279,22 @@ class CWeaponModel
 		BARREL*		m_pOldBarrel;		//For switching weapons
 		AMMO*		m_pAmmo;			//Current Ammo
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: a muzzle flash for each of two muzzles (the
+		// constructor, PHCShell.dll 0x100b2ff0, clears them in a loop of
+		// two; Reset, 0x100b3e20, deletes both)
+		LTVector	m_vFlashPos[WM_MAX_MUZZLES];
+		LTVector	m_vFlashOffset[WM_MAX_MUZZLES];
+		LTFLOAT		m_fFlashStartTime[WM_MAX_MUZZLES];	// When did flash start
+
+		CMuzzleFlashFX * m_pMuzzleFlash[WM_MAX_MUZZLES];
+#else
 		LTVector	m_vFlashPos;
 		LTVector	m_vFlashOffset;
 		LTFLOAT		m_fFlashStartTime;	// When did flash start
 
 		CMuzzleFlashFX * m_pMuzzleFlash;
+#endif
 
 		LTFLOAT		m_fBobHeight;
 		LTFLOAT		m_fBobWidth;
@@ -342,7 +365,11 @@ class CWeaponModel
 
 		LTFLOAT			m_fLastFOVX, m_fLastFOVY;
 
+#ifdef PRIMAL_HUNT
+		LTBOOL			m_bNewShot[WM_MAX_MUZZLES];
+#else
 		LTBOOL			m_bNewShot;
+#endif
 		HOBJECT			m_hHotbombTarget;
 		LTBOOL			m_bAutoSpinOn;
 
@@ -354,6 +381,18 @@ class CWeaponModel
 
 		DBYTE			m_nLoopKeyId;
 		HLTSOUND		m_hLoopFireSound;
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt (CWeaponModel is 0x1b18 bytes; the constructor clears
+		// these last). The names are ours: m_nSkinMode is tested against 1
+		// by ResetModelSkins (0x100bb25c) and CreateModelObject; UpdateWeaponModel
+		// sets m_bAltSkins from a model flag (0x100b4760) and counts the
+		// shots in m_nShotCount (0x100b4815).
+		uint32			m_nSkinMode;
+		LTBOOL			m_bAltSkins;
+		uint8			m_nPHByte;
+		uint32			m_nShotCount;
+#endif
 };
 
 #endif // __WEAPON_MODEL_H__

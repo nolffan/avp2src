@@ -110,6 +110,11 @@
 #define CFX_SUBTITLES					25
 #define CFX_PLAY_LOOP_FIRE				26
 #define CFX_KILL_LOOP_FIRE				27
+#ifdef PRIMAL_HUNT
+// Primal Hunt: the self-destruct (CharacterFX's message handler; names ours)
+#define CFX_SELF_DESTRUCT_START			28
+#define CFX_SELF_DESTRUCT_STOP			29
+#endif
 
 // BodyPropFX messages...
 

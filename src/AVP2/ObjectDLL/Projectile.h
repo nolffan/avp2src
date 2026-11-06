@@ -161,6 +161,11 @@ class CProjectile : public GameBase
 		LTFLOAT			m_fDeadTime;			// Time that we took enough damage to die
 		LTFLOAT			m_fDeadDelay;			// The amount of time after dying that we should detonate
 
+#ifdef PRIMAL_HUNT
+		// PH: WFireInfo's hIgnoreObj, never hit (CProjectile +0xc0)
+		HOBJECT			m_hIgnoreObj;
+#endif
+
 
 
 	// NOTE:  The following data members do not need to be saved / loaded

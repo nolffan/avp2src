@@ -482,6 +482,101 @@ more than 64 vertices overruns the stack.
 
 Not fixed yet (the renderer has no modern build).
 
+### SVAR OldCloak writes through a null message if one cannot be made
+
+PHObject.lto 0x10051a20 (`CCommandMgr::ProcessSVar`,
+src/AVP2/ObjectDLL/CommandMgr.cpp). Setting the `OldCloak` server variable
+with the `SVAR` object command sends its value to the clients: the message
+pointer starts null and `CreateMessage`'s result is not checked, so if no
+message can be made the float is written, and the message sent and
+released, through a null pointer. It should give up when `CreateMessage`
+fails.
+
+Not fixed yet (Primal Hunt's game DLLs have no modern build yet).
+
+### The player-view fx cache writes and reads one type, past the end of each list
+
+PHCShell.dll 0x100cb300 and 0x100cb3c0 (`PVFX::Write`, `PVFX::Read`,
+src/AVP2/Shared/FXButeMgr.cpp). Primal Hunt's bute cache writes each
+player-view fx's scale, dynamic light and sound fx types; each of the three
+loops has a stray semicolon (`for (...);`), so it runs empty and then
+writes the one entry indexed by the count -- one past the last type, and
+past the end of the ten-entry array when the list is full. Reading back
+does the same, so a PVFX loaded from the cache keeps only that one
+(garbage) entry.
+
+Not fixed yet.
+
+### A scale fx loaded from the bute cache has an undefined additive-alpha flag
+
+PHCShell.dll 0x10108670, 0x10108780, 0x10108960 (`CScaleFX::CScaleFX`,
+`CScaleFX::Write`, `CScaleFX::Read`, src/AVP2/Shared/FXStructs.cpp).
+Primal Hunt added `bAdditiveAlpha` ("AdditiveAlpha") to the scale fx
+attributes; `Init` reads it, but the constructor does not clear it and the
+cache's `Write`/`Read` leave it out, so a scale fx read from the cache
+renders with additive alpha or not depending on what the allocation held.
+
+Not fixed yet.
+
+### A cached projectile fx with class data of kind 0 crashes on load
+
+PHCShell.dll 0x100c5800 (`PROJECTILEFX::Read`,
+src/AVP2/Shared/FXButeMgr.cpp). Reading a projectile fx from Primal Hunt's
+bute cache, a flag byte says class data follows and a second byte gives its
+kind; the switch makes nothing for kind 0 (and a null pointer for an
+unknown kind) and then calls `Read` through the pointer regardless. A cache
+holding such a record dereferences null. (`Write` never writes kind 0 for a
+real class, so it takes a damaged cache file.)
+
+Not fixed yet.
+
+### A menu font draws every column of a column control left-justified
+
+CShell.dll 0x10129d10 (`CLTGUIColumnTextCtrl::Render`,
+src/lithshared/ltguimgr/ltguicolumntextctrl.cpp; LTGUIMgr, the release's
+prebuilt `ltguimgr_LT2.lib`). With a menu font (three faces) the column is
+drawn through `CLTGUIFont::DrawMenu`, which is passed the column's width
+where its justification belongs; `DrawMenu` treats any value above 2 as
+left, so a right- or centre-justified column draws left-justified from its
+right-justify x.
+
+Fixed in the modern build: ltguicolumntextctrl.cpp passes the column's
+justification.
+
+### Setting an attribute that only an expansion tag holds does not take
+
+CShell.dll 0x1012e240, PHCShell.dll 0x10150850
+(`CButeMgr::GetSymTabItem`, src/lithshared/ButeMgr/butemgr.cpp; the
+release's prebuilt `ButeMgrNoMFC.lib`). AvP2's ButeMgr keeps the tags whose
+names hold "EXPANSION" in a second tag table. When the main table has the
+tag but not the attribute, `GetSymTabItem` (behind every `Set*`) finds the
+second table's TableOfItems but searches the main table's again, twice,
+and so creates the attribute in the auxiliary table; `FindSymTabItem`
+(behind every `Get*`) looks in the second table before the auxiliary one,
+so it keeps returning the old value.
+
+Not fixed yet.
+
+### The attribute tables leak on every Term
+
+CShell.dll 0x1012bb10, PHCShell.dll 0x1014e1d0, Object.lto 0x10202320,
+PHObject.lto 0x10221e20 (`CButeMgr::Term`, src/lithshared/ButeMgr/
+butemgr.cpp). Term frees each tag's items and clears the four tag tables,
+but never deletes the TableOfItems each tag owns. NOLF2's ButeMgr deletes
+them.
+
+Not fixed yet.
+
+### GetString into a buffer leaves the buffer untouched when the symbol is missing
+
+PHCShell.dll 0x101511b0 (`CButeMgr::GetString(tag, att, defVal, szResult,
+maxLen)`, src/lithshared/ButeMgr/butemgr.cpp). When the attribute is not
+found the default is returned in a CString and then dropped: only a found
+string is copied into `szResult`, so the caller's buffer keeps whatever it
+held, not `defVal`.
+
+Fixed in the modern build: butemgr.cpp copies `defVal`.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

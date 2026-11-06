@@ -102,6 +102,9 @@ LTBOOL DamageStruct::InitFromMessage(HMESSAGEREAD hRead)
     hDamager   = g_pLTServer->ReadFromMessageObject(hRead);
     hContainer = g_pLTServer->ReadFromMessageObject(hRead);
     bIgnoreFF = g_pLTServer->ReadFromMessageByte(hRead);
+#ifdef PRIMAL_HUNT
+    g_pLTServer->ReadFromMessageVector(hRead, &vPos);	// PH: 0x100d4a7f
+#endif
 
 #ifndef _FINAL
 	fDamage *= g_DamageScale.GetFloat(1.0f);
@@ -132,6 +135,9 @@ LTBOOL DamageStruct::DoDamage(LPBASECLASS pDamager, HOBJECT hVictim, HOBJECT hCo
     g_pLTServer->WriteToMessageObject(hWrite, hDamager);
     g_pLTServer->WriteToMessageObject(hWrite, hContainer);
     g_pLTServer->WriteToMessageByte(hWrite, bIgnoreFF);
+#ifdef PRIMAL_HUNT
+    g_pLTServer->WriteToMessageVector(hWrite, &vPos);	// PH: 0x100d4b59
+#endif
    g_pLTServer->EndMessage(hWrite);
 
     return LTTRUE;

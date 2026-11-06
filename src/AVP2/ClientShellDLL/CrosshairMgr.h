@@ -24,6 +24,9 @@ enum XHairMode
 	XHM_MARINE_CUT,
 	XHM_MARINE_HACK,
 	XHM_PRED_DETONATE,
+#ifdef PRIMAL_HUNT
+	XHM_EXOSUIT_MINIGUN,	// Primal Hunt: the minigun's heat and ammo bars
+#endif
 };
 
 class CCrosshairMgr
@@ -61,6 +64,13 @@ private:
 	void		SetActivateCrosshair(XHairMode eMode);
 	void		DrawTargetingCrosshair();
 	void		DrawActivateCrosshair();
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the minigun crosshair's bars (PHCShell 0x10037fea)
+	HSURFACE	m_hHeatEmpty;
+	HSURFACE	m_hHeatFull;
+	HSURFACE	m_hAmmoFull;
+#endif
 
 	// common members
 	LTBOOL		m_bCrosshairEnabled;

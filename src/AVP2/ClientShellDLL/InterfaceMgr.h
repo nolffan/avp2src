@@ -339,6 +339,10 @@ class CInterfaceMgr
 #ifdef _DEMO
 		HSURFACE	m_hScreenShow[5];			// Our Demo screen show
 		void		NextSplashScreen();			// Change up the splash screen
+#elif defined(PRIMAL_HUNT)
+		// Primal Hunt keeps the demo's screen show surfaces (PHCShell
+		// 0x1003e380 clears them), though not the screen show itself
+		HSURFACE	m_hScreenShow[5];
 #endif
 
 		HSOUNDDE	m_hScubaSound;				// sound looping while scuba gear is on

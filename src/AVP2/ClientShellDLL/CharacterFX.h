@@ -177,6 +177,10 @@ class CCharacterFX : public CSpecialFX
 			m_vLastBossSmokePos.Init();
 			m_fLastSparkTime	= 0.0f;
 			m_hWeaponLoopSound	= LTNULL;
+#ifdef PRIMAL_HUNT
+			m_fSelfDestructTime	= 0.0f;
+			m_hSelfDestructSound= LTNULL;
+#endif
 		}
 
 		~CCharacterFX();
@@ -327,6 +331,15 @@ class CCharacterFX : public CSpecialFX
 		void CreateBossFX();
 		void UpdateBossFX();
 		void AddBossSmokeParticles();
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: a self-destruct countdown (PHCShell 0x100f4160)
+		LTFLOAT				m_fSelfDestructTime;	// When the countdown ends
+		HLTSOUND			m_hSelfDestructSound;	// The countdown's sound
+
+		void StartSelfDestructFX();
+		void StopSelfDestructFX();
+#endif
 };
 
 //-------------------------------------------------------------------------------------------------

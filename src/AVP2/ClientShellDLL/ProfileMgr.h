@@ -25,7 +25,13 @@ extern CProfileMgr* g_pProfileMgr;
 
 
 const int NUM_DEVICES = 3;
+#ifdef PRIMAL_HUNT
+// Primal Hunt: room for 32 commands a species (CUserProfile::FindBinding,
+// PHCShell.dll 0x100514e0: a species' bindings are 0x3180 bytes)
+const int MAX_NUM_COMMANDS = 32;
+#else
 const int MAX_NUM_COMMANDS = 25;
+#endif
 const int kMaxDeviceAxis = 10;
 
 #define RESTORE_BINDINGS			0x01
@@ -160,6 +166,14 @@ public:
 
 	// Level completion status
 	LevelStatus		m_LevelStatus;
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: three more numbers a profile keeps, as "AStat", "HStat"
+	// and "PStat" (Init and Save, PHCShell.dll; the names are ours)
+	int				m_nAStat;
+	int				m_nHStat;
+	int				m_nPStat;
+#endif
 
 private:
 

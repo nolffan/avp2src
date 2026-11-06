@@ -189,15 +189,29 @@ void CLTGUITextItemCtrl::Render(HSURFACE hDestSurf)
 	if (m_stringArray.GetSize() == 0)
 		return;
 
-	HLTCOLOR color = GetCurrentColor();
-
-	if (m_bFixedWidth)
+	if (m_pFont->IsMenuFriendly())
 	{
-		m_pFont->DrawFormat(m_stringArray[m_nSelIndex], hDestSurf, m_pos.x, m_pos.y, m_dwWidth, color);
+		if (m_bFixedWidth)
+		{
+			m_pFont->DrawMenuFormat(m_stringArray[m_nSelIndex], hDestSurf, m_pos.x, m_pos.y, m_dwWidth, GetState());
+		}
+		else
+		{
+			m_pFont->DrawMenu(m_stringArray[m_nSelIndex], hDestSurf, m_pos.x, m_pos.y, LTF_JUSTIFY_LEFT, GetState());
+		}
 	}
 	else
 	{
-		m_pFont->Draw(m_stringArray[m_nSelIndex], hDestSurf, m_pos.x, m_pos.y, LTF_JUSTIFY_LEFT, color);
+		HLTCOLOR color = GetCurrentColor();
+
+		if (m_bFixedWidth)
+		{
+			m_pFont->DrawFormat(m_stringArray[m_nSelIndex], hDestSurf, m_pos.x, m_pos.y, m_dwWidth, color);
+		}
+		else
+		{
+			m_pFont->Draw(m_stringArray[m_nSelIndex], hDestSurf, m_pos.x, m_pos.y, LTF_JUSTIFY_LEFT, color);
+		}
 	}
 }
 

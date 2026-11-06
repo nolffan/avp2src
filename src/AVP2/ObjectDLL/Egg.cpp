@@ -77,6 +77,10 @@ BEGIN_CLASS(Egg)
 	ADD_STRINGPROP_FLAG(DetailLevel, "Low", PF_STATICLIST)
 
 	ADD_BOOLPROP_FLAG(NeverDestroy, LTFALSE, PF_GROUP1)
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto's Egg class (its initializer, 0x100e17b0)
+	ADD_BOOLPROP_FLAG_HELP(Pushable, LTFALSE, 0, "If TRUE, player can push the egg around.  That has clipping issues, however.")
+#endif
 
 END_CLASS_DEFAULT(Egg, Prop, NULL, NULL)
 
@@ -171,6 +175,12 @@ DDWORD Egg::EngineMessageFn(DDWORD messageID, void *pData, LTFLOAT fData)
 			g_pInterface->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
 			g_pInterface->Common()->SetObjectFlags(m_hObject, OFT_Flags2, dwFlags2 | FLAG2_SEMISOLID);
 
+#ifdef PRIMAL_HUNT
+			// PH: PHObject.lto 0x100e2a7d
+			if (!m_bPushable)
+				g_pLTServer->SetBlockingPriority(m_hObject, 255);
+#endif
+
 			CacheFiles();
 			return dwRet;
 		}
@@ -256,6 +266,11 @@ LTBOOL Egg::ReadProp(ObjectCreateStruct *pInfo)
 	
 	if ( g_pLTServer->GetPropGeneric("PlayerUsable", &genProp ) == LT_OK )
 		m_bPlayerUsable = genProp.m_Bool;
+
+#ifdef PRIMAL_HUNT
+	if ( g_pLTServer->GetPropGeneric("Pushable", &genProp ) == LT_OK )
+		m_bPushable = genProp.m_Bool;
+#endif
 
 	return LTTRUE;
 }
@@ -651,6 +666,9 @@ void Egg::Save(HMESSAGEWRITE hWrite)
 	*hWrite << m_hTarget;
 	*hWrite << m_strOpenSound;
 	*hWrite << m_strWarningSound;
+#ifdef PRIMAL_HUNT
+	*hWrite << m_bPushable;		// PH: 0x100e40d4
+#endif
 }
 
 
@@ -681,6 +699,9 @@ void Egg::Load(HMESSAGEREAD hRead)
 	*hRead >> m_hTarget;
 	*hRead >> m_strOpenSound;
 	*hRead >> m_strWarningSound;
+#ifdef PRIMAL_HUNT
+	*hRead >> m_bPushable;		// PH: 0x100e4306
+#endif
 }
 
 

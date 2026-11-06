@@ -68,6 +68,9 @@ LTBOOL CBaseScaleFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	m_nRotationAxis		= pBaseScale->nRotationAxis;
 	m_fFadeOutTime		= pBaseScale->fFadeOutTime;
 	m_ePriority			= pBaseScale->ePriority;
+#ifdef PRIMAL_HUNT
+	m_bAdditiveAlpha	= pBaseScale->bAdditiveAlpha;
+#endif
 
     return LTTRUE;
 }
@@ -155,6 +158,13 @@ LTBOOL CBaseScaleFX::CreateObject(ILTClient *pClientDE)
 		dwFlags |= FLAG2_MULTIPLY;
         bFog = LTFALSE;
 	}
+#ifdef PRIMAL_HUNT
+	// PHCShell 0x100eb48f
+	if (m_bAdditiveAlpha == LTTRUE)
+	{
+		dwFlags |= FLAG2_ADDITIVEALPHA;
+	}
+#endif
     g_pLTClient->Common()->SetObjectFlags(m_hObject, OFT_Flags2, dwFlags);
 
 

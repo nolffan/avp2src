@@ -331,8 +331,22 @@ void CFolderCustomControls::SetFilter(CommandType comType)
 void CFolderCustomControls::BuildList()
 {
 	HSTRING hEmpty = g_pLTClient->CreateString(" ");
+#ifdef PRIMAL_HUNT
+	// Primal Hunt lists the commands that cannot be bound after the
+	// others (PHCShell 0x1000ae00)
+	for (int nPass = 0; nPass < 2; nPass++)
+	{
 	for (int c = 0; c < g_kNumCommands; c++)
 	{
+		if (g_CommandArray[c].nCommandID == -1 && !nPass)
+			continue;
+		if (g_CommandArray[c].nCommandID >= 0 && nPass > 0)
+			continue;
+
+#else
+	for (int c = 0; c < g_kNumCommands; c++)
+	{
+#endif
 		if (g_CommandArray[c].nType == m_filterType)
 		{
 			// The initial column (contains the action)
@@ -358,6 +372,9 @@ void CFolderCustomControls::BuildList()
 
 		}
 	}
+#ifdef PRIMAL_HUNT
+	}
+#endif
 	g_pLTClient->FreeString(hEmpty);
 }
 

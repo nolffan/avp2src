@@ -103,10 +103,27 @@ public:
     virtual LTBOOL   Render(HSURFACE hDestSurf);
 	virtual void	UpdateInterfaceSFX();
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: is the profile's character allowed by the server's class
+	// restrictions?  Its OnCommand refuses with "The class you've chosen is
+	// locked out of this server." when it is not (PHCShell 0x100053d6).
+	// The retail body (PHCShell 0x10005aa0) looks the character up in
+	// g_pServerOptionMgr->GetCurrentCfg()'s class list, which waits for
+	// Primal Hunt's CServerOptions (Shared/ServerOptions.h); until then
+	// this placeholder keeps the vtable's layout (slot 9).
+	virtual LTBOOL	IsCharacterAllowed()	{ return LTTRUE; }
+#endif
+
 	// Creates the title for the folder
     LTBOOL           CreateTitle(HSTRING hString);
     LTBOOL           CreateTitle(int nStringID);
     LTBOOL           CreateTitle(char *lpszTitle);
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: a second line under the title (PHCShell 0x10002190)
+    LTBOOL           CreateSubTitle(HSTRING hString);
+    LTBOOL           CreateSubTitle(int nStringID);
+    LTBOOL           CreateSubTitle(char *lpszTitle);
+#endif
 
 	// Logo information
 	void		SetLogo(int nLogo);
@@ -269,6 +286,10 @@ protected:
 	inline void		SetTitlePos(int x, int y)				{ m_titlePos.x=x; m_titlePos.y=y; }
     inline void     SetTitlePos(LTIntPt pt)                  { SetTitlePos(pt.x, pt.y); }
 	inline void		SetTitleAlignment(int nAlignment)		{ m_nTitleAlign = nAlignment; }
+#ifdef PRIMAL_HUNT
+	inline void		SetSubTitlePos(int x, int y)			{ m_subTitlePos.x=x; m_subTitlePos.y=y; }
+	inline void		SetSubTitleAlignment(int nAlignment)	{ m_nSubTitleAlign = nAlignment; }
+#endif
 
 	// Gets the index of the control that is under the specific screen point.
 	// Returns FALSE if there isn't one under the specified point.
@@ -324,9 +345,16 @@ protected:
 	int				m_nContinueID;		// The ID of the folder to show when continue is clicked
 
 	HSTRING			m_hTitleString;		// The title string
+#ifdef PRIMAL_HUNT
+	HSTRING			m_hSubTitleString;	// The subtitle string
+#endif
 
     LTIntPt         m_titlePos;         // The title position
 	int				m_nTitleAlign;		// the title alignment
+#ifdef PRIMAL_HUNT
+    LTIntPt         m_subTitlePos;      // The subtitle position
+	int				m_nSubTitleAlign;	// the subtitle alignment
+#endif
 
 	typedef std::vector<CLTGUICtrl*>	ControlArray;
 	// Array of SFX owned by this folder

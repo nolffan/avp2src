@@ -125,10 +125,15 @@ public:
 
     CReservedWord const* Lookup( char const* pszName )
     {
+		return Lookup( CString( pszName ));
+    }
+
+    CReservedWord const* Lookup( CString const& sName )
+    {
 		CReservedWord const* pReservedWord = NULL;
 
 		// Find the item in the table of items.
-		ReservedWordMap::iterator iter = m_reservedWords.find( pszName );
+		ReservedWordMap::iterator iter = m_reservedWords.find( sName );
 
 		// Check if item was found.
 		if( iter != m_reservedWords.end( ))
@@ -363,74 +368,23 @@ void CButeMgr::Init(void (*pF)(const char* szMsg))
 void CButeMgr::Term( )
 {
 	// Traverse the items of the tags and delete them.
+	// RETAIL BUG: the tables of items themselves are never deleted, only
+	// their items: every TableOfItems of every tag leaks
 	TraverseTableOfTags( m_tagTab, TraverseTableOfTagsDeleteSymTab, this );
-
-	// Remove all the tableofitems from the tag table
-	{ 
-		TableOfTags::iterator iter = m_tagTab.begin( );
-		while( iter != m_tagTab.end( ) )
-		{
-			// Get the tag data.
-			TableOfItems* pTableOfItems = (*iter).second;
-			if( pTableOfItems )
-			{
-				delete pTableOfItems;
-			}
-
-			iter++;
-		}
-	}
-
-	m_tagTab.clear();
-
+	TraverseTableOfTags( m_tagTab2, TraverseTableOfTagsDeleteSymTab, this );
 	TraverseTableOfTags( m_auxTagTab, TraverseTableOfTagsDeleteSymTab, this );
-
-	// Remove all the tableofitems from the aux tag table
-	{
-		TableOfTags::iterator iter = m_auxTagTab.begin( );
-		while( iter != m_auxTagTab.end( ) )
-		{
-			// Get the tag data.
-			TableOfItems* pTableOfItems = (*iter).second;
-			if( pTableOfItems )
-			{
-				delete pTableOfItems;
-			}
-
-			iter++;
-		}
-	}
-
-	m_auxTagTab.clear();
-
 	TraverseTableOfTags( m_newTagTab, TraverseTableOfTagsDeleteSymTab, this );
-
-	// Remove all the tableofitems from the new tag table
-	{
-		TableOfTags::iterator iter = m_newTagTab.begin( );
-		while( iter != m_newTagTab.end( ) )
-		{
-			// Get the tag data.
-			TableOfItems* pTableOfItems = (*iter).second;
-			if( pTableOfItems )
-			{
-				delete pTableOfItems;
-			}
-
-			iter++;
-		}
-	}
-
+	m_tagTab.clear();
+	m_tagTab2.clear();
+	m_auxTagTab.clear();
 	m_newTagTab.clear();
+	m_stringHolder.clear();
 
 	m_RectBank.Init( 8, 0 );
 	m_PointBank.Init( 8, 0 );
 	m_AVectorBank.Init( 8, 0 );
 	m_ARangeBank.Init( 8, 0 );
 	m_SymTabItemBank.Init( 64, 0 );
-
-
-	m_stringHolder.clear();
 
 	delete[] m_szLineBuffer;
 	m_szLineBuffer = 0;
@@ -613,9 +567,12 @@ void CButeMgr::DisplayMessage(const char* szMsg, ...)
 {
 	va_list v;
 	va_start(v, szMsg);
-	char aMsgBuffer[2048];
-	_vsnprintf(aMsgBuffer, sizeof(aMsgBuffer), szMsg, v);
-	m_sErrorString.Format("ButeMgr (%s, %d):  %s", m_sAttributeFilename, m_lineNumber, aMsgBuffer);
+	CString sTmp;
+	sTmp.FormatV(szMsg, v);
+	if (!m_sAttributeFilename.IsEmpty())
+		m_sErrorString.Format("File \"%s\", line %d :  %s", m_sAttributeFilename.GetBuffer(0), m_lineNumber, sTmp.GetBuffer(0));
+	else
+		m_sErrorString.Format("Line %d :  %s", m_lineNumber, sTmp.GetBuffer(0));
 
 	TRACE("%s\n", m_sErrorString.GetBuffer(0));
 	if (m_pDisplayFunc)
@@ -883,7 +840,7 @@ bool CButeMgr::Statement()
 				{
 					CSymTabItem* pSymTabItem = CreateSymTabItem( *m_pCurrTabOfItems, m_sAttribute );
 					if( pSymTabItem )
-						pSymTabItem->Init( *this, StringType, m_szTokenString );
+						pSymTabItem->Init( *this, StringType, CString(m_szTokenString) );
 				}
 			}
 			else
@@ -918,7 +875,10 @@ bool CButeMgr::StatementList()
 		if (m_token == TagBegTok || m_token == EofTok)
 			return true;
 		else if (m_token != IdTok)
+		{
+			DisplayMessage("A formatting error in the attribute file was encountered.");
 			return false;
+		}
 	}
 	return true;
 }
@@ -932,13 +892,17 @@ bool CButeMgr::Tag()
 	m_sTagName = m_szTokenString;
 	if (!m_pSaveData)
 	{
-		if( FindTableOfItems( m_tagTab, m_szTokenString ))
+		if( FindTableOfItems( m_tagTab, m_szTokenString ) || FindTableOfItems( m_tagTab2, m_szTokenString ))
 		{
 			DisplayMessage("Duplicate tag encountered - %s", m_szTokenString);
 			return false;
 		}
 
-		m_pCurrTabOfItems = CreateTableOfItems( m_tagTab, m_szTokenString );
+		// An expansion's tags go in the second tag table.
+		if( strstr( m_szTokenString, "EXPANSION" ))
+			m_pCurrTabOfItems = CreateTableOfItems( m_tagTab2, m_szTokenString );
+		else
+			m_pCurrTabOfItems = CreateTableOfItems( m_tagTab, m_szTokenString );
 	}
 	if (!Match(TagEndTok))
 		return false;
@@ -1086,9 +1050,6 @@ bool CButeMgr::Save(const char* szNewFileName)
 		nFileLength = is.tellg();
 	}
 
-	if (nFileLength==0)
-		nFileLength = 1;
-
 	is.clear();
 	is.seekg(0);
 
@@ -1145,9 +1106,15 @@ bool CButeMgr::Save(const char* szNewFileName)
 	if (m_bCrypt)
 	{
 		if (szNewFileName)
-			m_cryptMgr.Encrypt(*m_pSaveData, ofstream(szNewFileName, ios::binary));
+		{
+			ofstream os(szNewFileName, ios::binary);
+			m_cryptMgr.Encrypt(*m_pSaveData, os);
+		}
 		else
-			m_cryptMgr.Encrypt(*m_pSaveData, ofstream(m_sAttributeFilename, ios::binary));
+		{
+			ofstream os(m_sAttributeFilename, ios::binary);
+			m_cryptMgr.Encrypt(*m_pSaveData, os);
+		}
 	}
 
 	delete ss.str();
@@ -1197,6 +1164,22 @@ bool CButeMgr::Exist(const char* szTagName, const char* szAttName)
 			return true;
 	}
 
+	// Find the table of items in the second tag table.
+	pTabOfItems = FindTableOfItems( m_tagTab2, szTagName );
+
+	// Check if we found the table of items.
+	if( pTabOfItems )
+	{
+		// If no attribute name is provided, then we're just checking the tag.
+		if (!szAttName)
+			return true;
+
+		// Find the symtabitem.
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, szAttName );
+		if (pItem)
+			return true;
+	}
+
 	// Find the table of items in the new tag table.
 	pTabOfItems = FindTableOfItems( m_newTagTab, szTagName );
 
@@ -1231,6 +1214,7 @@ void CButeMgr::GetTags( GetTagsCallback pCallback, void* pContext )
 {
 	GetTagsData data( pCallback, pContext );
 	TraverseTableOfTags( m_tagTab, GetTagsTraverseFunc, &data );
+	TraverseTableOfTags( m_tagTab2, GetTagsTraverseFunc, &data );
 	TraverseTableOfTags( m_auxTagTab, GetTagsTraverseFunc, &data );
 	TraverseTableOfTags( m_newTagTab, GetTagsTraverseFunc, &data );
 }
@@ -1252,6 +1236,9 @@ void CButeMgr::GetKeys( const char* pszTagName, GetKeysCallback pCallback, void*
 	GetKeysData data( pCallback, pContext );
 
 	pTableOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	if( pTableOfItems )
+		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
+	pTableOfItems = FindTableOfItems( m_tagTab2, pszTagName );
 	if( pTableOfItems )
 		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
 	pTableOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
@@ -1310,46 +1297,20 @@ CString const& CButeMgr::AddString( char const* pszString )
 	return AddString( CString( pszString ));
 }
 
-// AVP2: the CString forms AvP2's header declares; provisional, forwarding to
-// NOLF2's char* ones, until compared with the release's prebuilt build.
-CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, CString const& sTagName )
-{
-	return CreateTableOfItems( tableOfTags, ( char const* )sTagName );
-}
-
-CButeMgr::TableOfItems* CButeMgr::FindTableOfItems( TableOfTags& tableOfTags, CString const& sTagName )
-{
-	return FindTableOfItems( tableOfTags, ( char const* )sTagName );
-}
-
-CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, CString const& sAttName )
-{
-	return CreateSymTabItem( tableOfItems, ( char const* )sAttName );
-}
-
-CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( TableOfItems& tableOfItems, CString const& sAttName )
-{
-	return FindSymTabItem( tableOfItems, ( char const* )sAttName );
-}
-
-
 ////////////////////////////////////////////////////////////////////////
 //
 // CButeMgr::CreateTableOfItems
 //
 // Return:		CButeMgr::TableOfItems*	- New table of items.
 // Argument:	TableOfTags& tableOfTags	- table of tags to add to.
-// Argument:	const char* szTagName	- Tag name to add.
+// Argument:	CString const& sTagName	- Tag name to add.
 //
-// Description:	Adds a new TableOfItems to a TableOfTags.
+// Description:	Adds a new TableOfItems to a TableOfTags.  AvP2's: the
+//				CString forms do the work and the char* ones wrap them.
 //
 ////////////////////////////////////////////////////////////////////////
-CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, char const* pszTagName )
+CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, CString const& sTagName )
 {
-	// Check inputs.
-	if( !pszTagName )
-		return NULL;
-	
 	// Create a new table of items.
 	TableOfItems* pTableOfItems = new TableOfItems;
 	if( !pTableOfItems )
@@ -1357,7 +1318,7 @@ CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, 
 
 	// Add the string to the string list and use it with the tableOfTags map.  This string pointer
 	// will persist for the life of this ButeMgr object.
-	char const* pszTagString = AddString( pszTagName );
+	char const* pszTagString = AddString( sTagName );
 
 	// Add the table of items to the table of tags.
 	tableOfTags[pszTagString] = pTableOfItems;
@@ -1366,13 +1327,22 @@ CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, 
 	return pTableOfItems;
 }
 
+CButeMgr::TableOfItems* CButeMgr::CreateTableOfItems( TableOfTags& tableOfTags, char const* pszTagName )
+{
+	// Check inputs.
+	if( !pszTagName )
+		return NULL;
+
+	return CreateTableOfItems( tableOfTags, CString( pszTagName ));
+}
+
 ////////////////////////////////////////////////////////////////////////
 //
 // CButeMgr::FindTableOfItems
 //
 // Return:		CButeMgr::TableOfItems*	- Found TableOfItems
 // Argument:	TableOfTags& tableOfTags - table of tags to look in.
-// Argument:	const char* pszTagName - Tag to search with.
+// Argument:	CString const& sTagName - Tag to search with.
 //
 // Description:	Finds a pre-existing TableOfItems in a TableOfTags
 //
@@ -1383,11 +1353,16 @@ CButeMgr::TableOfItems* CButeMgr::FindTableOfItems( TableOfTags& tableOfTags, ch
 	if( !pszTagName )
 		return NULL;
 
+	return FindTableOfItems( tableOfTags, CString( pszTagName ));
+}
+
+CButeMgr::TableOfItems* CButeMgr::FindTableOfItems( TableOfTags& tableOfTags, CString const& sTagName )
+{
 	// Assume table not found.
 	TableOfItems* pTableOfItems = NULL;
 
 	// Find the item in the table of items.
-	TableOfTags::iterator iter = tableOfTags.find( pszTagName );
+	TableOfTags::iterator iter = tableOfTags.find( sTagName );
 
 	// Check if item was found.
 	if( iter != tableOfTags.end( ))
@@ -1405,17 +1380,13 @@ CButeMgr::TableOfItems* CButeMgr::FindTableOfItems( TableOfTags& tableOfTags, ch
 //
 // Return:		CButeMgr::CSymTabItem*	- New symtabitem.
 // Argument:	TableOfItems& tableOfItems	- table of items to add to.
-// Argument:	const char* pszAttName - Attribute name to add.
+// Argument:	CString const& sAttName - Attribute name to add.
 //
 // Description:	Adds a new CSymTablItem to a TableOfItems.
 //
 ////////////////////////////////////////////////////////////////////////
-CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, char const* pszAttName )
+CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, CString const& sAttName )
 {
-	// Check inputs.
-	if( !pszAttName )
-		return NULL;
-
 	// Create a new symtab.
 	CSymTabItem* pSymTabItem = m_SymTabItemBank.Allocate( );
 	if( !pSymTabItem )
@@ -1423,7 +1394,7 @@ CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, c
 
 	// Add the string to the string list and use it with the tableOfItems map.  This string pointer
 	// will persist for the life of this ButeMgr object.
-	char const* pszItemString = AddString( pszAttName );
+	char const* pszItemString = AddString( sAttName );
 
 	// Add the symtab to the table of tags.
 	tableOfItems[pszItemString] = pSymTabItem;
@@ -1432,13 +1403,22 @@ CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, c
 	return pSymTabItem;
 }
 
+CButeMgr::CSymTabItem* CButeMgr::CreateSymTabItem( TableOfItems& tableOfItems, char const* pszAttName )
+{
+	// Check inputs.
+	if( !pszAttName )
+		return NULL;
+
+	return CreateSymTabItem( tableOfItems, CString( pszAttName ));
+}
+
 ////////////////////////////////////////////////////////////////////////
 //
 // CButeMgr::FindSymTabItem
 //
 // Return:		CButeMgr::CSymTabItem*	- Found symtabitem.
 // Argument:	TableOfItems& tableOfItems	- table of items to look in.
-// Argument:	const char* pszAttName - Attribute name to search with.
+// Argument:	CString const& sAttName - Attribute name to search with.
 //
 // Description:	Finds a pre-existing CSymTabItem in a TableOfItems
 //
@@ -1449,11 +1429,16 @@ CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( TableOfItems& tableOfItems, cha
 	if( !pszAttName )
 		return NULL;
 
+	return FindSymTabItem( tableOfItems, CString( pszAttName ));
+}
+
+CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( TableOfItems& tableOfItems, CString const& sAttName )
+{
 	// Assume item not found.
 	CSymTabItem* pItem = NULL;
 
 	// Find the item in the table of items.
-	TableOfItems::iterator iter = tableOfItems.find( pszAttName );
+	TableOfItems::iterator iter = tableOfItems.find( sAttName );
 
 	// Check if item was found.
 	if( iter != tableOfItems.end( ))
@@ -1470,8 +1455,8 @@ CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( TableOfItems& tableOfItems, cha
 // CButeMgr::FindSymTabItem
 //
 // Return:		CButeMgr::CSymTabItem*	- Found symtabitem.
-// Argument:	const char* pszTagName	- Tag to find.
-// Argument:	const char* pszAttName - Attribute name to search with.
+// Argument:	CString const& sTagName	- Tag to find.
+// Argument:	CString const& sAttName - Attribute name to search with.
 //
 // Description:	Finds a pre-existing CSymTabItem in any of the table of tags.
 //
@@ -1480,31 +1465,40 @@ CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( char const* pszTagName, char co
 {
 	// Check inputs.
 	if( !pszTagName || !pszAttName )
-	{
-		ASSERT( FALSE );
 		return NULL;
-	}
 
+	return FindSymTabItem( CString( pszTagName ), CString( pszAttName ));
+}
+
+CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( CString const& sTagName, CString const& sAttName )
+{
 	TableOfItems* pTabOfItems;
 
-	pTabOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	pTabOfItems = FindTableOfItems( m_tagTab, sTagName );
 	if( pTabOfItems )
 	{
-		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, sAttName );
 		if (pItem)
 			return pItem;
 	}
-	pTabOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+	pTabOfItems = FindTableOfItems( m_tagTab2, sTagName );
 	if( pTabOfItems )
 	{
-		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, sAttName );
 		if (pItem)
 			return pItem;
 	}
-	pTabOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+	pTabOfItems = FindTableOfItems( m_auxTagTab, sTagName );
 	if( pTabOfItems )
 	{
-		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, sAttName );
+		if (pItem)
+			return pItem;
+	}
+	pTabOfItems = FindTableOfItems( m_newTagTab, sTagName );
+	if( pTabOfItems )
+	{
+		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, sAttName );
 		if (pItem)
 			return pItem;
 	}
@@ -1518,9 +1512,9 @@ CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( char const* pszTagName, char co
 //
 // CButeMgr::GetSymTabItem
 //
-// Return:		CButeMgr::CSymTabItem* - Item associated with szTagName & szAttName
-// Argument:	const char* szTagName - Tag name to find.
-// Argument:	const char* szAttName - Attribute in szTagName to find.
+// Return:		CButeMgr::CSymTabItem* - Item associated with sTagName & sAttName
+// Argument:	CString const& sTagName - Tag name to find.
+// Argument:	CString const& sAttName - Attribute in sTagName to find.
 //
 // Description:	Looks through the main table of tags.  If tag is found, then
 //				looks for attribute.  If attribute found, then returns CSymTabItem.
@@ -1531,87 +1525,107 @@ CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( char const* pszTagName, char co
 //				if not found there.
 //
 ////////////////////////////////////////////////////////////////////////
-CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const char* pszAttName ) 
+CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( CString const& sTagName, CString const& sAttName ) 
 {
-	// Check inputs.
-	if( !pszTagName || !pszAttName )
-		return NULL;
-
 	// Default to not finding or creating the item.
 	CSymTabItem* pItem = NULL;
 
 	// Find table of items in main tag table.
-	TableOfItems* pTabOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	TableOfItems* pTabOfItems = FindTableOfItems( m_tagTab, sTagName );
 	if( pTabOfItems )
 	{
 		// Find attribute in table of items.
-		pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+		pItem = FindSymTabItem( *pTabOfItems, sAttName );
+		if( pItem )
+			return pItem;
 
-		// If not found, then create or find it in the auxiliary table.
-		if( !pItem )
+		// Then in the second tag table.
+		// RETAIL BUG: the second tag table's TableOfItems is found but
+		// never searched (the main one is searched again, twice), so an
+		// attribute that only it holds is set in the auxiliary table,
+		// where FindSymTabItem, which looks in the second tag table first,
+		// never sees it
+		if( FindTableOfItems( m_tagTab2, sTagName ))
 		{
-			// Find table of items in auxiliary table.
-			pTabOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+			pItem = FindSymTabItem( *pTabOfItems, sAttName );
+			if( pItem )
+				return pItem;
+		}
 
-			// Check if we found the table of items.
-			if( pTabOfItems )
+		pItem = FindSymTabItem( *pTabOfItems, sAttName );
+		if( pItem )
+			return pItem;
+
+		// Find table of items in auxiliary table.
+		pTabOfItems = FindTableOfItems( m_auxTagTab, sTagName );
+
+		// Check if we found the table of items.
+		if( pTabOfItems )
+		{
+			// Find the attribute in the table of items.
+			pItem = FindSymTabItem( *pTabOfItems, sAttName );
+
+			// If we didn't find the attribute, then we need to add it here.
+			if( !pItem )
 			{
-				// Find the attribute in the table of items.
-				pItem = FindSymTabItem( *pTabOfItems, pszAttName );
-
-				// If we didn't find the attribute, then we need to add it here.
-				if( !pItem )
-				{
-					pItem = CreateSymTabItem( *pTabOfItems, pszAttName );
-				}
+				pItem = CreateSymTabItem( *pTabOfItems, sAttName );
 			}
-			// We didn't find the TableOfItems in the auxiliary table.  We need to make
-			// a new TableOfItems and a CSymTabItem.
-			else
-			{
-				// Create the new TableOfItems.
-				TableOfItems* pTableOfItems = CreateTableOfItems( m_auxTagTab, pszTagName );
-				if( !pTableOfItems )
-					return NULL;
+		}
+		// We didn't find the TableOfItems in the auxiliary table.  We need to make
+		// a new TableOfItems and a CSymTabItem.
+		else
+		{
+			// Create the new TableOfItems.
+			TableOfItems* pTableOfItems = CreateTableOfItems( m_auxTagTab, sTagName );
+			if( !pTableOfItems )
+				return NULL;
 
-				// Create the new CSymTabItem.
-				pItem = CreateSymTabItem( *pTableOfItems, pszAttName );
-			}
+			// Create the new CSymTabItem.
+			pItem = CreateSymTabItem( *pTableOfItems, sAttName );
 		}
 	}
 	// TableOfItems didn't exist in the main TableOfTags.  Now check the new tag table.
 	else
 	{
 		// Find the TableOfItems in the new tag table.
-		pTabOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+		pTabOfItems = FindTableOfItems( m_newTagTab, sTagName );
 
 		// Check if we found the TableOfItems.
 		if( pTabOfItems )
 		{
 			// Find the CSymTabItem in the TableOfItems.
-			pItem = FindSymTabItem( *pTabOfItems, pszAttName );
+			pItem = FindSymTabItem( *pTabOfItems, sAttName );
 
 			// If we didn't find the item, we need to add it.
 			if( !pItem )
 			{
 				// Create a new CSymTabItem.
-				pItem = CreateSymTabItem( *pTabOfItems, pszAttName );
+				pItem = CreateSymTabItem( *pTabOfItems, sAttName );
 			}
 		}
 		// We didn't find the TableOfItems, so we need to add a new one and then add a new CSymTabItem to it.
 		else
 		{
-			TableOfItems* pTableOfItems = CreateTableOfItems( m_newTagTab, pszTagName );
+			TableOfItems* pTableOfItems = CreateTableOfItems( m_newTagTab, sTagName );
 			if( !pTableOfItems )
 				return NULL;
 
 			// Create the new SymTabItem.
-			pItem = CreateSymTabItem( *pTableOfItems, pszAttName );
+			pItem = CreateSymTabItem( *pTableOfItems, sAttName );
 		}
 	}
 
 	// Return the found or newly created item.
 	return pItem;
+}
+
+CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( char const* pszTagName, char const* pszAttName )
+{
+	// Check inputs.
+	if( !pszTagName || !pszAttName )
+		return NULL;
+
+	return GetSymTabItem( CString( pszTagName ), CString( pszAttName ));
 }
 
 
@@ -1967,17 +1981,20 @@ void CButeMgr::GetString(const char* szTagName, const char* szAttName, const cha
 	if( !m_bSuccess && !defVal )
 		DisplayMessage("Symbol not found - [%s]:%s", szTagName, szAttName);
 
+	// RETAIL BUG: a symbol that is not found leaves szResult as it was:
+	// the default is never copied into it
 	if( m_bSuccess )
 	{
-		DWORD nLength = sRet.GetLength();
-		if ( nLength < maxLen )
-			maxLen = nLength + 1;
+		if ( sRet.GetLength() < maxLen )
+			maxLen = sRet.GetLength() + 1;
 		strncpy(szResult, (const char*)sRet, maxLen);
 	}
+#ifdef AVP2_MODERN
 	else if (defVal)
 	{
 		strncpy(szResult, defVal, maxLen);
 	}
+#endif
 }
 
 void CButeMgr::GetString(const char* szTagName, const char* szAttName, char *szResult, DWORD maxLen)
@@ -2208,6 +2225,13 @@ bool CButeMgr::AddTag(const char *szTagName)
 
 	// See if the tag exists in the main tag table.
 	pTabOfItems = FindTableOfItems( m_tagTab, szTagName );
+	if( pTabOfItems )
+	{
+		return true;		
+	}
+
+	// See if the tag exists in the second tag table.
+	pTabOfItems = FindTableOfItems( m_tagTab2, szTagName );
 	if( pTabOfItems )
 	{
 		return true;		

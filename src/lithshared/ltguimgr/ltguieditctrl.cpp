@@ -3,10 +3,27 @@
 //////////////////////////////////////////////////////////////////////
 
 #include <string.h>
+#include <ctype.h>
 #include "ltguimgr.h"
 #include "ltguieditctrl.h"
 #include "ltguifont.h"
 #include "vkdefs.h"
+
+namespace
+{
+	// Letters, digits, and a space or underscore anywhere but first
+	LTBOOL IsFileFriendly(char c, bool bFirstChar)
+	{
+		if (isalnum(c))
+			return LTTRUE;
+
+		static const char* const pszOKChars = " _";
+		if (strchr(pszOKChars, c) && !bFirstChar)
+			return LTTRUE;
+
+		return LTFALSE;
+	}
+}
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -25,6 +42,7 @@ CLTGUIEditCtrl::CLTGUIEditCtrl()
 	m_bCursorEnabled	= LTFALSE;
 	m_hCursorColor	= 0;
 	m_nCursorPos	= 0;
+	m_eInputMode	= kInputAll;
 }
 
 CLTGUIEditCtrl::~CLTGUIEditCtrl()
@@ -120,21 +138,26 @@ void CLTGUIEditCtrl::Render(HSURFACE hDestSurf)
 		if (m_nAlignment == LTF_JUSTIFY_RIGHT)
 			x = m_nTextOffset + m_pos.x - 25;
 
-		m_pFont->Draw(m_hDescription, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+		if (m_pFont->IsMenuFriendly())
+			m_pFont->DrawMenu(m_hDescription, hDestSurf, x, y, LTF_JUSTIFY_LEFT, GetState());
+		else
+			m_pFont->Draw(m_hDescription, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
 	}
 
 	// Draw the edit string
 	if (m_lpszString)
 	{
-		m_pFont->Draw(m_lpszString, hDestSurf, m_nTextOffset + m_pos.x, m_pos.y, LTF_JUSTIFY_LEFT, color);
+		if (m_pFont->IsMenuFriendly())
+			m_pFont->DrawMenu(m_lpszString, hDestSurf, m_nTextOffset + m_pos.x, m_pos.y, LTF_JUSTIFY_LEFT, GetState());
+		else
+			m_pFont->Draw(m_lpszString, hDestSurf, m_nTextOffset + m_pos.x, m_pos.y, LTF_JUSTIFY_LEFT, color);
 
 		// Draw the cursor
 		if (IsCursorOn() && m_bSelected)
 		{
 			HSTRING hString = m_pClientDE->CreateString(m_lpszString);
 
-			LTIntPt pt;
-			pt = m_pFont->GetPositionFromIndex(hString, m_nCursorPos, -1);
+			LTIntPt pt = m_pFont->GetPositionFromIndex(hString, m_nCursorPos, -1);
 
 			m_pClientDE->FreeString(hString);
 
@@ -208,8 +231,7 @@ int CLTGUIEditCtrl::GetWidth()
 
 	HSTRING hString = m_pClientDE->CreateString(m_lpszString);
 
-	LTIntPt pt;
-	pt = m_pFont->GetTextExtents(hString);
+	LTIntPt pt = m_pFont->GetTextExtents(hString);
 
 	m_pClientDE->FreeString(hString);
 
@@ -316,6 +338,26 @@ LTBOOL CLTGUIEditCtrl::HandleChar(char c)
 
 	if (c < ' ')
 		return LTFALSE;
+
+	switch (m_eInputMode)
+	{
+	case kInputAlphaNumeric:
+		if (!isalnum(c))
+			return LTFALSE;
+		break;
+	case kInputAlphaOnly:
+		if (!isalpha(c))
+			return LTFALSE;
+		break;
+	case kInputNumberOnly:
+		if (!isdigit(c))
+			return LTFALSE;
+		break;
+	case kInputFileFriendly:
+		if (!IsFileFriendly(c, m_nCursorPos == 0))
+			return LTFALSE;
+		break;
+	}
 
 	AddCharacter(c);
 

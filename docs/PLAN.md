@@ -225,6 +225,18 @@ and `OverlayMGR::GetRailMode` -- the release's source is dated July 2002,
 retail 1.0.9.6's `CShell.dll` March 2002, so the release may be a little
 newer than what shipped.
 
+`CShell.dll` is two compilers' (progress/COMPILERS.md): 83 of its sources
+were rebuilt with SP5's cl 8966 after Monolith moved to it, the other 105
+are RTM's 8168, each proven by compiling it both ways (`build/build.mk`,
+`CSHELL_8966`). With them every function of the client's own code that the
+scorer can verify (all but the short relocation-only ones it scores small) is
+identical but CSoundButeMgr's destructor (8966's code, in an 8168 object,
+as in `Object.lto`), 4,412 -> 4,782 in all. Neither unplaced function was
+missing: `CreateBulletTrail` is 8966's code (one inline Init more), and
+`OverlayMGR::GetRailMode` is reached only by a tail jump, so the
+enumeration had merged it into the function before it
+(`progress/extent-splits.csv`).
+
 ### 4. game: the lithshared libraries
 
 Six of the libraries are built from nolfsrc's sources (`src/lithshared/`),
@@ -292,6 +304,36 @@ the registry), `OnInitDialog`, the default port (27890) and Primal Hunt's
 default names and passwords. Still to come: Third Law's class and weapon
 restrictions (`CServerOptions`, `MPGameInfo`: `progress/data-known.txt`),
 shared with `PHCShell.dll`'s copy of `ServerOptions.cpp`.
+
+Round of 2026-11 (six agents): Third Law's layout changes reconstructed
+behind `PRIMAL_HUNT`:
+- GameBase's ten new virtual message handlers;
+- DamageStruct's position;
+- CSpecialFX::Term made virtual;
+- CharacterButes' DefaultEnvMap;
+- the CMS_TURRET state;
+- the bute cache (`Shared/MultiFile.h`, every FX struct's Write and Read);
+- the dual-muzzle weapons, the subtitle and self-destruct FX, carried
+  turrets, and the CLTGUICtrl fields.
+The game libraries are ours: WONAPI from the release's source, LTGUIMgr,
+LithFontMgr and ButeMgr. CShell.dll's sources are split between cl 8168
+and cl 8966 (`CSHELL_8966`). Scores: PHCShell.dll 4,090, PHObject.lto
+7,712, CShell.dll 5,748, Object.lto 8,513 identical.
+
+Still to do:
+- Find which file defines AIUtils.h's sine/cosine constants: Primal Hunt
+  initialises them once, at 0x1021a540 after SimpleNodeMgr, and they
+  account for about 1,070 of PHObject's unplaced functions.
+- A `PRIMAL_HUNT` build of LTGUIMgr.
+- Primal Hunt's WONAPI (the VC6-STL build), which needs its GameSpy
+  managers rebuilt.
+- The splash-screen skip and cheat that compare against a developer's
+  handle (decided: it goes in, as a game string).
+- The scorer's vtable-vote tie (a table that ties gets no placement).
+- The PHObject rows the enumeration splits.
+- The server-side layouts still open: MPGameInfo's class and weapon
+  tables, the WeaponMgr structs, PickupButes, and Door's size.
+- ILTServer's extra model file-name argument.
 
 ### 6. small
 

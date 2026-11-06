@@ -94,14 +94,18 @@ CITED_SRC = []
 # scored object by object against the release's prebuilt build of it
 # (progress/reference/, checked against shipped-libs.sha256), which holds
 # more than any one image takes from it.
-OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeMgrNoMFC"]
+OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeMgrNoMFC",
+            # AvP2's GUI and font libraries (build/build.mk, "The game
+            # DLLs' libraries, ours"), which the game DLLs link
+            "ltguimgr_LT2", "LithFontMgr_LT2"]
 LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
 # WONAPI.lib, built from the release's own source (build/build.mk,
-# "WONAPI.lib"): the release's prebuilt build of it, scored against that,
-# beside the copy the game DLLs still link (so it stays in PREBUILT_LIBS
-# below). Being a LIBS label also makes Primal Hunt's engine's build of it
-# (VC6's STL, not STLport: lithtech.exe's partial_objs) library code there,
-# placed where it is linked and never unplaced where it is not.
+# "WONAPI.lib"): the release's prebuilt build of it, scored against that.
+# The game DLLs link ours (build/build.mk, "The game DLLs' libraries,
+# ours"), a copy of this build, so it is off PREBUILT_LIBS below. Being
+# a LIBS label also makes Primal Hunt's engine's build of it (VC6's STL,
+# not STLport: lithtech.exe's partial_objs) library code there, placed
+# where it is linked and never unplaced where it is not.
 LIBS.append(("WONAPI", "src/LT2/lithshared/libs/Release/wonapi/WONAPI.lib"))
 # Redmgr.lib, reconstructed for cdaudio.dll (build/build.mk, "cdaudio.dll"):
 # scored against the release's prebuilt build; the game links the prebuilt
@@ -126,7 +130,7 @@ DRIVER_OBJS = {"sdkforce.obj"}
 # as ours. A library comes off this list when we build it.
 PREBUILT_LIBS = sorted(f for f in os.listdir(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "reference/LT2/lithshared/libs/release"))
-    if f[:-4] not in OUR_LIBS) + ["server.lib"]
+    if f[:-4] not in OUR_LIBS + ["WONAPI"]) + ["server.lib"]
 
 TARGETS = [
     # ---- the engine: Primal Hunt's ---------------------------------------

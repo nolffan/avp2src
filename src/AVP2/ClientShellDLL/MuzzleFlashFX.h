@@ -30,6 +30,9 @@ struct MUZZLEFLASHCREATESTRUCT : public SFXCREATESTRUCT
     LTVector     vPos;           // Initial pos
     LTRotation   rRot;           // Initial rotation
     LTBOOL       bPlayerView;    // Is this fx tied to the client-side player view
+#ifdef PRIMAL_HUNT
+	uint8		nMuzzle;		// Primal Hunt: which of a dual barrel's muzzles (CWeaponModel::CreateFlash, PHCShell.dll 0x100b4c55)
+#endif
 };
 
 inline MUZZLEFLASHCREATESTRUCT::MUZZLEFLASHCREATESTRUCT()
@@ -40,6 +43,9 @@ inline MUZZLEFLASHCREATESTRUCT::MUZZLEFLASHCREATESTRUCT()
     hParent     = LTNULL;
 	pBarrel		= LTNULL;
     bPlayerView = LTFALSE;
+#ifdef PRIMAL_HUNT
+	nMuzzle		= 0;
+#endif
 }
 
 

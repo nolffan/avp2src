@@ -13,6 +13,10 @@
 
 #include "butemgr.h"
 
+#ifdef PRIMAL_HUNT
+#include "MultiFile.h"
+#endif
+
 void GBM_DisplayError(const char* szMsg);
 
 // ----------------------------------------------------------------------- //
@@ -62,6 +66,16 @@ class CGameButeMgr
 		}
 
 		virtual ~CGameButeMgr() { m_buteMgr.Term(); }
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: write what Init parsed to the bute cache, and read
+		// it back instead of parsing (MultiFile.h). Every bute manager's
+		// vtable has these two slots after the destructor; a manager
+		// without a cache keeps these (both PHCShell.dll 0x100d3d50, the
+		// linker folded them: CDebrisMgr's vtable, 0x101b0110). Names ours.
+		virtual LTBOOL WriteCache(const char* szFile, CMultiFile* pFile) { return LTFALSE; }
+		virtual LTBOOL ReadCache(const char* szFile, CMultiFile* pFile) { return LTFALSE; }
+#endif
 
 		CString GetErrorString() { return m_buteMgr.GetErrorString(); }
         inline void SetInRezFile(LTBOOL bInRezFile) { m_bInRezFile = bInRezFile; }

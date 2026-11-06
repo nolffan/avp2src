@@ -151,7 +151,11 @@ uint32 GameBase::ObjectMessageFn(HOBJECT hSender, uint32 messageID, HMESSAGEREAD
 		case MID_TRIGGER:
 		{
 			HSTRING hStr = g_pLTServer->ReadFromMessageHString(hRead);
+#ifdef PRIMAL_HUNT
+			OnTrigger(hSender, g_pLTServer->GetStringData(hStr));	// PH: 0x100ec6b6
+#else
 			TriggerMsg(hSender, g_pLTServer->GetStringData(hStr));
+#endif
 			g_pLTServer->FreeString(hStr);
 
 			// Make sure other people can read it...
@@ -582,6 +586,52 @@ uint32 GameBase::EngineMessageFn(uint32 messageID, void *pData, DFLOAT fData)
 {
 	uint32 dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
 
+#ifdef PRIMAL_HUNT
+	// PH: PHObject.lto 0x100ecc50 hands each message to its handler (below)
+	switch(messageID)
+	{
+		case MID_PRECREATE:
+			OnPrecreate(pData, (uint32)fData);
+		break;
+
+		case MID_INITIALUPDATE:
+			dwRet = OnInitialUpdate((uint32)fData);
+		break;
+
+		case MID_UPDATE:
+		{
+			LTFLOAT fFrameTime = g_pLTServer->GetFrameTime();
+			OnUpdate(fFrameTime);
+		}
+		break;
+
+		case MID_SAVEOBJECT:
+			OnSave((HMESSAGEWRITE)pData);
+		break;
+
+		case MID_LOADOBJECT:
+			OnLoad((HMESSAGEREAD)pData);
+		break;
+
+		case MID_ACTIVATING:
+			OnActivating();
+		break;
+
+		case MID_DEACTIVATING:
+			OnDeactivating();
+		break;
+
+		case MID_TOUCHNOTIFY:
+			dwRet = OnTouchNotify(pData, fData);
+		break;
+
+		case MID_MODELSTRINGKEY:
+			dwRet = OnModelStringKey(pData);
+		break;
+
+		default : break;
+	}
+#else
 	switch(messageID)
 	{
 		case MID_PRECREATE:
@@ -657,6 +707,7 @@ uint32 GameBase::EngineMessageFn(uint32 messageID, void *pData, DFLOAT fData)
 
 		default : break;
 	}
+#endif
 
 	return dwRet;
 }
@@ -941,3 +992,112 @@ LTRESULT CGameBasePlugin::PreHook_EditStringList(
 	return LT_UNSUPPORTED;
 }
 
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	PH: Third Law's engine-message handlers (GameBase.h), with what
+//	GameBase::EngineMessageFn did for each message in AvP2
+//
+// ----------------------------------------------------------------------- //
+
+// PH: PHObject.lto 0x100ed290
+uint32 GameBase::OnPrecreate(void *pData, uint32 nInfo)
+{
+	if (nInfo == PRECREATE_WORLDFILE || nInfo == PRECREATE_STRINGPROP)
+	{
+		ReadProp((ObjectCreateStruct*)pData);
+	}
+
+	return LTTRUE;
+}
+
+// PH: PHObject.lto 0x100ed2e0
+uint32 GameBase::OnInitialUpdate(uint32 nInfo)
+{
+	if(nInfo == INITIALUPDATE_WORLDFILE)
+	{
+		if(!AllowInGameType())
+		{
+			g_pLTServer->RemoveObject(m_hObject);
+			return LTFALSE;
+		}
+
+		if(m_bStartHidden)
+		{
+			TriggerMsg(LTNULL, "hidden 1");
+		}
+	}
+
+	return LTTRUE;
+}
+
+// PH: PHObject.lto 0x100ed350
+uint32 GameBase::OnActivating()
+{
+	// Flag the object as activated.
+	uint32 dwUsrFlags = g_pLTServer->GetObjectUserFlags( m_hObject );
+	g_pLTServer->SetObjectUserFlags( m_hObject, dwUsrFlags & ~USRFLG_DEACTIVATED );
+
+	return LTTRUE;
+}
+
+// PH: PHObject.lto 0x100ed390
+uint32 GameBase::OnDeactivating()
+{
+	uint32 dwUsrFlags = g_pLTServer->GetObjectUserFlags( m_hObject );
+
+	if (IsPlayer(m_hObject) && g_pGameServerShell->GetGameType().IsMultiplayer())
+	{
+		// Force the flag to active in multiplayer to ensure that we don't send
+		// down an object update everytime players go in/out of the vis...
+		g_pLTServer->SetObjectUserFlags( m_hObject, dwUsrFlags & ~USRFLG_DEACTIVATED );
+	}
+	else
+	{
+		// Flag the object as deactivated.
+		g_pLTServer->SetObjectUserFlags( m_hObject, dwUsrFlags | USRFLG_DEACTIVATED );
+	}
+
+	return LTTRUE;
+}
+
+// PH: PHObject.lto 0x100ed420
+uint32 GameBase::OnUpdate(LTFLOAT fFrameTime)
+{
+	Update( );
+
+	return 0;
+}
+
+// PH: PHObject.lto 0x100ed430
+uint32 GameBase::OnTrigger(HOBJECT hSender, const char* szMsg)
+{
+	TriggerMsg(hSender, szMsg);
+
+	return 0;
+}
+
+// PH: PHObject.lto's GameBase vtable slots 10 and 11 (0x101518b0,
+// 0x101524a0): nothing to do by default, the linker's one copy of each
+uint32 GameBase::OnTouchNotify(void *pData, LTFLOAT fData)
+{
+	return 0;
+}
+
+uint32 GameBase::OnModelStringKey(void *pData)
+{
+	return 0;
+}
+
+// PH: PHObject.lto 0x100ed450
+void GameBase::OnSave(HMESSAGEWRITE hWrite)
+{
+	Save(hWrite);
+}
+
+// PH: PHObject.lto 0x100ed460
+void GameBase::OnLoad(HMESSAGEREAD hRead)
+{
+	Load(hRead);
+}
+#endif

@@ -236,9 +236,15 @@ void CLTGUIBitmapCtrl::RenderText(HSURFACE hDestSurf)
 	int x = m_pos.x + m_ptOffset.x;
 	int y = m_pos.y + m_ptOffset.y;
 
-	HLTCOLOR color = GetCurrentColor();
-
-	m_pFont->Draw(m_hText, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+	if (m_pFont->IsMenuFriendly())
+	{
+		m_pFont->DrawMenu(m_hText, hDestSurf, x, y, LTF_JUSTIFY_LEFT, GetState());
+	}
+	else
+	{
+		HLTCOLOR color = GetCurrentColor();
+		m_pFont->Draw(m_hText, hDestSurf, x, y, LTF_JUSTIFY_LEFT, color);
+	}
 }
 
 // Width/Height calculations

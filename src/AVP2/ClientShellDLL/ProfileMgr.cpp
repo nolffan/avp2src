@@ -65,6 +65,12 @@ CUserProfile::CUserProfile()
 	m_LevelStatus.Alien = 0;
 
 	m_nConnection = 0;
+
+#ifdef PRIMAL_HUNT
+	m_nAStat = 0;
+	m_nHStat = 0;
+	m_nPStat = 0;
+#endif
 }
 
 
@@ -128,6 +134,11 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 	m_bHints = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"Hints",1);
 	m_bSubtitles = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"Subtitles",1);
 	m_bOrientOverlay = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"OrientOverlay",1);
+#ifdef PRIMAL_HUNT
+	m_nAStat = m_buteMgr.GetInt(s_aTagName,"AStat",0);
+	m_nHStat = m_buteMgr.GetInt(s_aTagName,"HStat",0);
+	m_nPStat = m_buteMgr.GetInt(s_aTagName,"PStat",0);
+#endif
 
 
 	// Multiplayer options
@@ -260,6 +271,11 @@ void CUserProfile::Save()
 	m_buteMgr.SetInt(s_aTagName,"Hints",m_bHints);
 	m_buteMgr.SetInt(s_aTagName,"Subtitles",m_bSubtitles);
 	m_buteMgr.SetInt(s_aTagName,"OrientOverlay",m_bOrientOverlay);
+#ifdef PRIMAL_HUNT
+	m_buteMgr.SetInt(s_aTagName,"AStat",m_nAStat);
+	m_buteMgr.SetInt(s_aTagName,"HStat",m_nHStat);
+	m_buteMgr.SetInt(s_aTagName,"PStat",m_nPStat);
+#endif
 
 
 	// Multiplayer options

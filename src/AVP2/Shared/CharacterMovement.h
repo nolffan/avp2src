@@ -367,5 +367,11 @@ void CharacterMovementState_Observing(CharacterMovement *pMovement);
 LTFLOAT CharacterMovementState_Observing_MaxSpeed(const CharacterMovement *pMovement);
 LTFLOAT CharacterMovementState_Observing_MaxAccel(const CharacterMovement *pMovement);
 
+#ifdef PRIMAL_HUNT
+void CharacterMovementState_Turret(CharacterMovement *pMovement);
+LTFLOAT CharacterMovementState_Turret_MaxSpeed(const CharacterMovement *pMovement);
+LTFLOAT CharacterMovementState_Turret_MaxAccel(const CharacterMovement *pMovement);
+#endif
+
 #endif //__CHARACTER_MOVEMENT_H__
 

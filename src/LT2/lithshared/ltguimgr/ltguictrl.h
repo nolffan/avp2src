@@ -71,6 +71,10 @@ public:
 						m_dwCommandID = dwCommandID;
 						m_dwParam1 = dwParam1;
 						m_dwParam2 = dwParam2;
+#ifdef PRIMAL_HUNT
+						m_dwParam3 = 0;
+						m_dwParam4 = 0;
+#endif
 					}
 
 	// Handle a command
@@ -128,6 +132,12 @@ protected:
     uint32          m_dwCommandID;          // The command which is sent when "enter" is pressed
     uint32          m_dwParam1;             // Extra params
     uint32          m_dwParam2;             // Extra params
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's controls carry two more, cleared by Create (PHCShell
+	// 0x10006c10); what reads them is not yet identified
+    uint32          m_dwParam3;
+    uint32          m_dwParam4;
+#endif
     LTBOOL           m_bCreated;
     LTIntPt          m_pos;
     LTBOOL           m_bSelected;

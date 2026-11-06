@@ -102,6 +102,12 @@ class Egg : public Prop
 		std::string m_strWarningSound;
 		
 		HLTSOUND	m_hWarningSound;
+
+#ifdef PRIMAL_HUNT
+		// PH: the Pushable property (Egg::ReadProp, PHObject.lto 0x100e2cf3);
+		// an egg that is not pushable gets the highest blocking priority
+		LTBOOL		m_bPushable;
+#endif
 };
 
 #endif // __EGG_H__

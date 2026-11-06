@@ -322,6 +322,23 @@ void CGlobalMgr::Term()
 		m_pObjectiveButeMgr = LTNULL;
 	}
 
+#if defined(PRIMAL_HUNT) && defined(_CLIENTBUILD)
+	// Primal Hunt's client also terminates these (PHCShell.dll 0x100d473e)
+	if( m_pPickupButeMgr )
+	{
+		m_pPickupButeMgr->Term();
+		delete m_pPickupButeMgr;
+		m_pPickupButeMgr = LTNULL;
+	}
+
+	if( m_pDebrisMgr )
+	{
+		m_pDebrisMgr->Term();
+		delete m_pDebrisMgr;
+		m_pDebrisMgr = LTNULL;
+	}
+#endif
+
 #ifdef _CLIENTBUILD
 
 	if( m_pClientButeMgr )

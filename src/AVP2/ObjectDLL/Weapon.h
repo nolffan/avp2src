@@ -43,6 +43,9 @@ struct WFireInfo
 		fDamageMultiplier = 1.0f;
 		eNodeHit = eModelNodeInvalid;
 		bIgnoreImpactSound = LTFALSE;
+#ifdef PRIMAL_HUNT
+		hIgnoreObj = DNULL;
+#endif
 	}
 
 	HOBJECT		hFiredFrom;  // object firing weapon
@@ -58,6 +61,11 @@ struct WFireInfo
 	DFLOAT		fDamageMultiplier; // Over-all multiplier for damage (used by AI's).
 	ModelNode	eNodeHit;	// The node claimed hit, multiplayer only
 	DBOOL		bIgnoreImpactSound;    // Should we not make an impact sound?
+#ifdef PRIMAL_HUNT
+	// PH: a second object the shot passes through, beside hFiredFrom
+	// (WFireInfo +0x48: CProjectile::Setup, PHObject.lto 0x10075052)
+	HOBJECT		hIgnoreObj;
+#endif
 };
 
 class CWeapon
