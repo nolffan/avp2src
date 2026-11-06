@@ -5,11 +5,15 @@
 //
 //  Models: the model drawer (CD3DModelDraw, one global instance), the
 //  model console variables LightModelSprites..ModelUseTnL, and the
-//  per-frame model setup.
+//  per-frame model setup.  /O1 without /Ob2: retail calls the empty
+//  ModelLight constructor in CD3DModelDraw's array loop, which /Ob2 would
+//  inline away.  The three CMoArray members instantiate the template
+//  COMDATs 0x1000e008..0x1000f089.
 //
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#include "../../LT2/lithshared/stdlith/dynarray.h"
 #include <math.h>
 
 
@@ -89,17 +93,133 @@ void d3d_InitModelVBs();                                    // 0x10001230
 void d3d_TermModelVBs();                                    // 0x10001340
 
 
+// What the model drawer reads of the frame's scene (the engine's
+// SceneDesc).
+struct SceneDesc
+{
+	uint8       m_pad_000[0xfc];
+	ModelHookFn m_ModelHookFn;                              // +0xfc
+	void*       m_ModelHookUser;                            // +0x100
+};
+
+extern SceneDesc*   g_pSceneDesc;                           // 0x1005c14c
+
+// What the model drawer reads of a model's geometry (the current LOD).
+struct ModelLOD
+{
+	uint8       m_pad_00[0x64];
+	uint32      m_nVerts;                                   // +0x64
+	uint8       m_pad_68[0x78 - 0x68];
+	uint32      m_nTris;                                    // +0x78
+};
+
+// A light the model is lit by.
+struct ModelLight
+{
+	ModelLight();                                           // 0x1000b981
+
+	uint8       m_Data[0x28];
+};
+
+// One texture pass of the model's render state.
+struct ModelPass
+{
+	ModelPass()
+	{
+		m_iTexture = -1;
+		m_iStage = -1;
+		m_pNext = LTNULL;
+		Clear();
+	}
+
+	void    Clear()                                         // 0x1000b961
+	{
+		m_pTexture = LTNULL;
+		m_nBlendSrc = 0;
+		m_nBlendDest = 0;
+		m_pEffect = LTNULL;
+		m_nAddress = 0;
+		m_nFilter = 0;
+		m_nFlags = 0;
+		m_fScale = 0.0f;
+	}
+
+	void*       m_pTexture;                                 // +0x00
+	uint16      m_nBlendSrc;                                // +0x04
+	uint16      m_nBlendDest;                               // +0x06
+	void*       m_pEffect;                                  // +0x08
+	int32       m_iTexture;                                 // +0x0c
+	uint16      m_nAddress;                                 // +0x10
+	uint16      m_nFilter;                                  // +0x12
+	uint32      m_nFlags;                                   // +0x14
+	int32       m_iStage;                                   // +0x18
+	float       m_fScale;                                   // +0x1c
+	ModelPass*  m_pNext;                                    // +0x20
+};
+
+// The model's render state: its texture passes and texture transform.
+struct ModelRenderState
+{
+	ModelRenderState()                                      // 0x1000b841
+	{
+		m_nPasses = 0;
+		m_iCurPass = 0;
+		m_mTexture.Identity();
+		m_pEnvMap = LTNULL;
+		m_bEnabled = LTTRUE;
+	}
+
+	ModelPass   m_Passes[8];                                // +0x000
+	LTBOOL      m_bEnabled;                                 // +0x120
+	uint32      m_nPasses;                                  // +0x124
+	uint32      m_iCurPass;                                 // +0x128
+	LTMatrix    m_mTexture;                                 // +0x12c
+	void*       m_pEnvMap;                                  // +0x16c
+};
+
+// A transformed and lit vertex, and a clipped one.
+struct ModelTLVert
+{
+	uint8       m_Data[0x20];
+};
+
+struct ModelClipVert
+{
+	uint8       m_Data[0x40];
+};
+
+
 class CD3DModelDraw
 {
 public:
 	CD3DModelDraw();                                        // 0x1000b75f
 	~CD3DModelDraw();                                       // 0x1000b984
 
+	LTBOOL      AllocVerts();                               // 0x1000b9cc
+	void        CallModelHook();                            // 0x1000ba1e
 	void        DrawModel(ModelInstance* pInstance);        // 0x1000d2d6
 
-	uint8       m_pad_000[0x634];
+	ModelLOD*   m_pLOD;                                     // +0x000
+	ModelInstance* m_pInstance;                             // +0x004
+	uint8       m_pad_008[0x38 - 0x08];
+	int32       m_iLastLOD;                                 // +0x038
+	ModelLight  m_Lights[16];                               // +0x03c
+	uint8       m_pad_2bc[0x634 - 0x2bc];
 	float       m_fRadius;                                  // +0x634
-	uint8       m_pad_638[0x8b4 - 0x638];
+	uint8       m_pad_638[0x644 - 0x638];
+	LTVector    m_vLightDir;                                // +0x644
+	LTVector    m_vShadowDir;                               // +0x650
+	LTVector    m_vSpecularLight;                           // +0x65c
+	uint8       m_pad_668[0x6a4 - 0x668];
+	ModelRenderState m_RenderState;                         // +0x6a4
+	CMoArray<uint16>        m_Indices;                      // +0x814
+	CMoArray<ModelTLVert>   m_TLVerts;                      // +0x828
+	CMoArray<ModelClipVert> m_ClipVerts;                    // +0x83c
+	LTVector    m_vLightAdd;                                // +0x850
+	LTVector    m_vObjectColor;                             // +0x85c
+	uint8       m_pad_868[0x890 - 0x868];
+	ModelHookData m_HookData;                               // +0x890
+	uint8       m_pad_8a4[0x8b4 - 0x8a4];
 };
 
 
@@ -208,7 +328,8 @@ void d3d_InitModels()
 	d3d_InitModelSun();
 	g_fModelShadows = 0.0f;
 	g_fModelLights = 0.0f;
-	d3d_InitModelLists();
+	g_ModelShadows.TieOff();
+	g_ModelLights.TieOff();
 	d3d_InitModelVBs();
 }
 
@@ -216,4 +337,150 @@ void d3d_InitModels()
 void d3d_TermModels()
 {
 	d3d_TermModelVBs();
+}
+
+
+// 0x1000b75f
+CD3DModelDraw::CD3DModelDraw()
+{
+	m_iLastLOD = -1;
+
+	m_HookData.m_hObject = LTNULL;
+	m_HookData.m_Flags = 0;
+	m_HookData.m_ObjectFlags = 0;
+	m_HookData.m_LightAdd = &m_vLightAdd;
+	m_HookData.m_ObjectColor = &m_vObjectColor;
+
+	m_vLightDir.Init(0.0f, -1.0f, 0.0f);
+	m_vShadowDir.Init(-2.0f, -2.0f, -2.0f);
+	m_vSpecularLight.Init(2.0f, -2.0f, -1.0f);
+	m_vLightDir.Norm();
+	m_vShadowDir.Norm();
+	m_vSpecularLight.Norm();
+}
+
+// 0x1000b981
+ModelLight::ModelLight()
+{
+}
+
+// 0x1000b984
+CD3DModelDraw::~CD3DModelDraw()
+{
+}
+
+// 0x1000b9cc -- room for the LOD's vertices.
+LTBOOL CD3DModelDraw::AllocVerts()
+{
+	if (m_pLOD->m_nVerts > m_TLVerts.GetSize())
+	{
+		if (!m_TLVerts.SetSize2(m_pLOD->m_nVerts + 32, &g_DefAlloc))
+			return LTFALSE;
+	}
+
+	if (m_pLOD->m_nTris > m_ClipVerts.GetSize())
+	{
+		if (!m_ClipVerts.SetSize2(m_pLOD->m_nTris, &g_DefAlloc))
+			return LTFALSE;
+	}
+
+	return LTTRUE;
+}
+
+// 0x1000ba1e -- let the game adjust the model before it's drawn.
+void CD3DModelDraw::CallModelHook()
+{
+	ModelInstance* pInstance = m_pInstance;
+	ModelHookData* pData = &m_HookData;
+
+	pData->m_Flags = MHF_USETEXTURE;
+	pData->m_ObjectFlags = pInstance->m_Flags;
+	pData->m_hObject = (HLOCALOBJ)pInstance;
+
+	if (g_pSceneDesc->m_ModelHookFn)
+		g_pSceneDesc->m_ModelHookFn(pData, g_pSceneDesc->m_ModelHookUser);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  Ray tests against the world.
+// ---------------------------------------------------------------------- //
+
+struct ModelWorldSurface
+{
+	uint8       m_pad_00[0x30];
+	uint8       m_Flags;                                    // +0x30
+};
+
+#define SURFFLAG_SKY    0x10
+
+struct ModelWorldPoly
+{
+	uint8       m_pad_00[0x2c];
+	ModelWorldSurface* m_pSurface;                          // +0x2c
+};
+
+class ModelWorldBsp
+{
+public:
+	virtual void        Slot00();
+	virtual void        Slot04();
+	virtual void        Slot08();
+	virtual ModelWorldPoly* GetPolyFromHPoly(HPOLY hPoly);  // +0x0c
+};
+
+struct ModelWorldModel
+{
+	uint8       m_pad_00[0x04];
+	ModelWorldBsp* m_pBsp;                                  // +0x04
+};
+
+struct ModelSceneWorld
+{
+	ModelWorldPoly* GetPolyFromHPoly(HPOLY hPoly)           // 0x1000be09
+	{
+		uint32 iWorld;
+		ModelWorldModel* pModel;
+
+		iWorld = hPoly >> 16;
+		if (iWorld >= m_nWorldModels)
+			return LTNULL;
+
+		pModel = m_WorldModels[iWorld];
+		if (!pModel)
+			return LTNULL;
+
+		return pModel->m_pBsp->GetPolyFromHPoly(hPoly);
+	}
+
+	uint8       m_pad_000[0x6c];
+	uint8       m_WorldTree[0x18c - 0x6c];                  // +0x06c
+	ModelWorldModel** m_WorldModels;                        // +0x18c
+	uint32      m_nWorldModels;                             // +0x190
+};
+
+extern ModelSceneWorld* g_pSceneWorld;                      // 0x1005c208
+
+LTBOOL  i_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo,
+                           void* pWorldTree, void* pUser);  // 0x10031a5d
+
+// 0x1000bcff -- does the segment from pPos along pDir end on the sky?
+LTBOOL d3d_SegmentHitsSky(LTVector* pPos, LTVector* pDir)
+{
+	IntersectQuery iQuery;
+	IntersectInfo iInfo;
+	ModelWorldPoly* pPoly;
+
+	iQuery.m_From = *pPos;
+	iQuery.m_To = *pPos + *pDir;
+	iQuery.m_Flags = INTERSECT_HPOLY;
+
+	if (i_IntersectSegment(&iQuery, &iInfo, g_pSceneWorld->m_WorldTree, LTNULL))
+	{
+		pPoly = g_pSceneWorld->GetPolyFromHPoly(iInfo.m_hPoly);
+		if (pPoly)
+			return (pPoly->m_pSurface->m_Flags & SURFFLAG_SKY) ? LTTRUE : LTFALSE;
+	}
+
+	return LTFALSE;
 }

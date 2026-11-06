@@ -78,7 +78,7 @@ void sub_100265a0(const LTMat* pIn, D3DMatrix* pOut)
 //  D3DTRANSFORMSTATE_WORLD (1), VIEW (2) and PROJECTION (3).  The device
 //  global is reloaded for each call.
 // ======================================================================= //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -87,7 +87,7 @@ struct D3DDevice7Vtbl
 	                               D3DMatrix* pMatrix);   // +0x2c
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

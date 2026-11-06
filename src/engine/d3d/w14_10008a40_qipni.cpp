@@ -49,6 +49,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
@@ -58,13 +59,13 @@ struct Vert3c40;
 struct Vert051a0;
 
 // The Direct3D device (w2_10011620_os.cpp's view): SetRenderState only.
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 struct D3DDeviceVtbl
 {
 	uint8   m_pad_00[0x50];
 	long (__stdcall* SetRenderState)(D3DDevice*, uint32, uint32);   // +0x50
 };
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl* lpVtbl;
 };
@@ -379,3 +380,5 @@ void CD3DModelDraw::sub_10008da0(unsigned long nValue)
 
 	sub_10008a40(pfnSetup, nValue);
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

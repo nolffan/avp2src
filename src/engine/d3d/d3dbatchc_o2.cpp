@@ -74,7 +74,7 @@ extern RenderStructCallbacks* g_pStruct;                // 0x1008cbcc
 //  two files agree on the one slot this file needs (+0x50 SetRenderState).
 // ======================================================================= //
 
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -84,7 +84,7 @@ struct D3DDevice7Vtbl
 	                                 uint32 dwValue);
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

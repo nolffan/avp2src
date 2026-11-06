@@ -106,7 +106,7 @@ struct DDSurf6d210
 	DDSurf6d210Vtbl*	lpVtbl;
 };
 
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -119,7 +119,7 @@ struct D3DDeviceVtbl
 	                       DDRect6d210*, uint32);
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*	lpVtbl;
 };

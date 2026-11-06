@@ -19,16 +19,36 @@
 //  vtables -- two vertex formats, each pre-transformed and TnL -- share
 //  the folded slots 0x10006140..0x10006230), and the clippers' plane
 //  functions (0x100063e0..0x10007924, with function-static arrays in
-//  COMDAT .bss). Between them still unwritten: 0x10004660, 0x10005700
-//  and 0x100062e0.
+//  COMDAT .bss). Between them the out-of-line copy of ProjectVertPushed
+//  (0x100062e0), which DrawTLVertsReallyClose's clip loop calls. Still
+//  unwritten: 0x10004660 (4241 bytes, the drawer's vertex transform and
+//  lighting, called through 0x10005700) and 0x10005700 (2612 bytes).
 //
 //  /O2 /Ob2: the global objects' initialisers are single functions (with
 //  /Ob1 each is a `jmp` stub over a body, and the banks' a call pair).
+//  /Ob2's inlining budget is visible in the drawers: retail expands every
+//  helper of DrawTLVertsClipped but calls DrawTLVertsReallyClose's last
+//  ProjectVertPushed, so the projections and the classification are
+//  shaped (inline function or macro) to land the same way.
+//
+//  Near, and why:
+//    * 0x10001420 (d3d_GenUVEnvMap), 0x100036d0, 0x10002bc0: the order of
+//      the terms in the transform sums, which cl 8966 picks itself (every
+//      source order of the terms was measured, with no effect).
+//    * 0x10002050 (DrawTLVertsReallyClose): retail calls only its clip
+//      loop's ProjectVertPushed out of line; here the budget runs out
+//      earlier (ProjFacing and the flush helpers too). 2655 against 2915.
+//    * 0x10004270 (DrawVerts): the store of m_iCurTexture and the cache's
+//      vertex size are scheduled differently (size-exact).
+//    * 0x10006900, 0x100073b0, 0x10007670: ClipEdgeBottom's numerator
+//      operand order inlined into ClipBottom, and LerpClipVert's last byte
+//      lerp's load order, both cl 8966's choice (size-exact).
 //
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
 #include <d3d.h>
+#include "../../LT2/lithshared/stdlith/dynarray.h"
 
 
 // A console variable (common_stuff.cpp's registrar, 0x10011f36).
@@ -68,6 +88,20 @@ public:
 	virtual uint32  GetVertexSize() = 0;
 	virtual LTBOOL  CreateBuffers(IDirect3D7* pD3D) = 0;
 
+	// The last slot of the locked buffer.
+	uint8* GetLastVert()
+	{
+		uint32 nLeft = m_nVerts - m_nUsed - 1;
+		uint8* pBase = (uint8*)Lock();
+		return pBase + nLeft * GetVertexSize();
+	}
+
+	// The vertices written between the locked buffer's start and pEnd.
+	uint32 GetVertCount(uint8* pEnd)
+	{
+		return (pEnd - (uint8*)Lock()) / GetVertexSize();
+	}
+
 	void            NextBuffer();                           // 0x1003b4cc
 	void            Flush();                                // 0x1003b557
 	void            ReleaseBuffers();                       // 0x1003b66f
@@ -94,7 +128,10 @@ public:
 	virtual uint32  GetVertexSize();
 	virtual LTBOOL  CreateBuffers(IDirect3D7* pD3D);
 
-	uint8       m_Cache[0x60 - 0x3c];                       // +0x3c
+	uint8       m_pad_3c[0x54 - 0x3c];                      // +0x3c
+	uint32      m_nVertSize;                                // +0x54
+	uint32      m_nFVF;                                     // +0x58
+	uint8       m_pad_5c[0x60 - 0x5c];                      // +0x5c
 	uint32      m_nCacheDelay;                              // +0x60
 };
 
@@ -125,8 +162,8 @@ public:
 		return m_bTnL ? sizeof(TVert) - sizeof(float) : sizeof(TVert);
 	}
 
-	// NEAR (0x10006180, 0x10006230): retail pushes ebp in the prologue,
-	// cl 8966 here shrink-wraps it into the loop.
+	// 0x10006180 (one texture stage), 0x10006230 (two): the pre-transformed
+	// and TnL banks' copies fold.
 	virtual LTBOOL CreateBuffers(IDirect3D7* pD3D)
 	{
 		D3DVERTEXBUFFERDESC desc;
@@ -145,13 +182,13 @@ public:
 		bOK = LTTRUE;
 		for (i = 0; i < m_nBuffers; i++)
 		{
-			if (bOK)
-			{
-				if (pD3D->CreateVertexBuffer(&desc, &pVB, 0) >= 0)
-					m_pBuffers[i] = pVB;
-				else
-					bOK = LTFALSE;
-			}
+			if (!bOK)
+				break;
+
+			if (pD3D->CreateVertexBuffer(&desc, &pVB, 0) >= 0)
+				m_pBuffers[i] = pVB;
+			else
+				bOK = LTFALSE;
 		}
 
 		if (!bOK)
@@ -273,53 +310,207 @@ void __fastcall d3d_GenUVVert2(UVVert* pOut, UVVert* pSrc, float* pUV)
 
 
 // The model drawer, CD3DModelDraw: only what this file reads.
+
+// A transformed model vertex (0x20 bytes): the drawer's work array.
 struct ModelVert
 {
-	uint8       m_pad_00[0x14];                             // +0x00
+	LTVector    m_vPos;                                     // +0x00
+	float       m_fRHW;                                     // +0x0c
+	uint32      m_nColor;                                   // +0x10
 	LTVector    m_vNormal;                                  // +0x14
 };
 
-struct ModelVertSet;
-struct ModelInstanceFlags
+// One model triangle (0x20 bytes): three vertex indices and a uv pair
+// per corner.
+struct ModelTri
 {
-	uint8       m_pad_00[0x88];
-	uint32      m_Flags;                                    // +0x88
+	uint16      m_Indices[3];                               // +0x00
+	uint16      m_pad_06;                                   // +0x06
+	float       m_UV[3][2];                                 // +0x08
 };
 
-class CD3DModelDraw;
-typedef LTBOOL (CD3DModelDraw::*DrawVertsFn)(ModelVertSet* pSet);
+// One vertex run of a piece.
+struct ModelVertSet
+{
+	uint8       m_pad_00[0x08];                             // +0x00
+	uint32      m_nVerts;                                   // +0x08
+	uint8       m_pad_0c[0x14 - 0x0c];                      // +0x0c
+	ModelTri*   m_pTris;                                    // +0x14
+	uint32      m_nTris;                                    // +0x18
+	uint8       m_pad_1c[0x24 - 0x1c];                      // +0x1c
+};
 
-extern uint32   g_ClipFlags;                                // 0x1005bd0c
+// A bank vertex, pre-transformed (FVF 0x1c4 / 0x2c4): the first 0x18
+// bytes; the uv generator writes the rest.
+struct TLVert
+{
+	LTVector    m_vPos;                                     // +0x00
+	float       m_fRHW;                                     // +0x0c
+	uint32      m_nDiffuse;                                 // +0x10
+	uint32      m_nSpecular;                                // +0x14
+};
+
+// A bank vertex the device transforms (FVF 0x1c2 / 0x2c2): no rhw.
+struct LVert
+{
+	LTVector    m_vPos;                                     // +0x00
+	uint32      m_nDiffuse;                                 // +0x0c
+	uint32      m_nSpecular;                                // +0x10
+};
+
+// A model piece: its full-detail vertex run, then its lower LODs.
+struct ModelPiece : public ModelVertSet
+{
+	uint32      m_iTexture;                                 // +0x24
+	uint8       m_pad_28[0x2c - 0x28];                      // +0x28
+	float       m_fSpecularPower;                           // +0x2c
+	float       m_fSpecularScale;                           // +0x30
+	uint8       m_pad_34[0x38 - 0x34];                      // +0x34
+	ModelVertSet* m_LODs;                                   // +0x38
+	uint32      m_nLODs;                                    // +0x3c
+
+	ModelVertSet* GetLOD(uint32 iLOD)
+	{
+		if (iLOD == 0)
+			return this;
+		iLOD--;
+		if (iLOD >= m_nLODs)
+			return LTNULL;
+		return &m_LODs[iLOD];
+	}
+};
+
+struct Model
+{
+	uint8       m_pad_00[0x34];                             // +0x00
+	CMoArray<ModelPiece*> m_Pieces;                         // +0x34
+
+	uint32      NumPieces()             { return m_Pieces.GetSize(); }
+	ModelPiece* GetPiece(uint32 i)      { return m_Pieces[i]; }
+};
+
+// The render-state list a skin carries (TU21, d3d_statelist.cpp).
+class CRenderStateList
+{
+public:
+	void        Restore();                                  // 0x10022a86
+	void        Apply(CRenderStateList* pList, uint32 iStage); // 0x10022a97
+};
+
+extern CRenderStateList g_SavedStates;                      // 0x10069728
+
+struct RenderTexture
+{
+	uint8       m_pad_00[0x34];                             // +0x00
+	CRenderStateList* m_pRenderStates;                      // +0x34
+};
+
+struct ModelInstance
+{
+	uint8       m_pad_000[0x88];                            // +0x000
+	uint32      m_Flags;                                    // +0x088
+	uint8       m_pad_08c[0x1c0 - 0x08c];                   // +0x08c
+	RenderTexture* m_pSkins[0x28];                          // +0x1c0
+	uint32      m_HiddenPieces;                             // +0x260
+};
+
+void d3d_SetGammaTexture(float gamma);                      // 0x1001f5f0
+
+class CD3DModelDraw;
+typedef LTBOOL (CD3DModelDraw::*DrawVertsFn)(ModelVertSet* pSet, ModelVert* pVerts);
+
+// The drawer's per-vertex hooks: the uv generator (the bank vertex, the
+// model vertex, the corner's uv pair), the bank-vertex copy and the
+// polygon clipper.
+typedef void (__fastcall *GenUVFn)(void* pOut, ModelVert* pVert, float* pUV);
+typedef void (__fastcall *CopyVertFn)(void* pDst, void* pSrc);
+typedef LTBOOL (__fastcall *ClipPolyFn)(uint32 nClipFlags, void** ppVerts, int32* pnVerts);
+typedef void (__fastcall *GenSpecularFn)(CD3DModelDraw* pDraw, ModelVert* pVert, struct UVVert* pOut);
+
+extern uint32       g_ClipFlags;                            // 0x1005bd0c
+extern int32        g_nModelTriangles;                      // 0x1005bd04
+extern LTBOOL       g_bMirrorView;                          // 0x1005bc5c
+extern LPDIRECT3DDEVICE7 g_pD3DDevice;                      // 0x100638c8
 
 class CD3DModelDraw
 {
 public:
-	LTBOOL      DrawTLVertsReallyClose(ModelVertSet* pSet); // 0x10002050
-	LTBOOL      DrawTLVertsClipped(ModelVertSet* pSet);     // 0x10002bc0
-	LTBOOL      DrawTLVertsClipped2(ModelVertSet* pSet);    // 0x100036d0
-	LTBOOL      DrawTLVerts(ModelVertSet* pSet);            // 0x10003b60
-	LTBOOL      DrawTnLVerts(ModelVertSet* pSet);           // 0x10003e00
-	LTBOOL      DrawCachedVerts(ModelVertSet* pSet);        // 0x10004230
+	LTBOOL      DrawTLVertsReallyClose(ModelVertSet* pSet, ModelVert* pVerts); // 0x10002050
+	LTBOOL      DrawTLVertsClipped(ModelVertSet* pSet, ModelVert* pVerts);     // 0x10002bc0
+	LTBOOL      DrawTLVertsNoClip(ModelVertSet* pSet, ModelVert* pVerts);    // 0x100036d0
+	LTBOOL      DrawTLVerts(ModelVertSet* pSet, ModelVert* pVerts);            // 0x10003b60
+	LTBOOL      DrawTnLVerts(ModelVertSet* pSet, ModelVert* pVerts);           // 0x10003e00
+	LTBOOL      DrawCachedVerts(ModelVertSet* pSet, ModelVert* pVerts);        // 0x10004230
 	void        DrawVerts(DrawVertsFn fn, DrawVertsFn fn2,
-	                      ModelVertSet* pSet);              // 0x10004270
-	void        DrawPiece(ModelVertSet* pSet);              // 0x100045a0
+	                      uint32 nValue);                   // 0x10004270
+	void        DrawPiece(uint32 nValue);                   // 0x100045a0
+	void        SetupTextureStages(uint32* pnValue);        // 0x10025193
 
-	uint8       m_pad_000[0x4];                             // +0x000
-	ModelInstanceFlags* m_pInstance;                        // +0x004
-	uint8       m_pad_008[0x590 - 0x8];                     // +0x008
+	// Send the vertices through the model cache, which keeps them in the
+	// bank's format, less the rhw: the device transforms them.
+	void        UseModelVBCache(uint32 nFVF, uint32 nVertSize)
+	{
+		m_pVB = &g_ModelVBCache;
+		g_ModelVBCache.m_nFVF = (nFVF & ~D3DFVF_XYZRHW) | D3DFVF_XYZ;
+		g_ModelVBCache.m_nVertSize = nVertSize - sizeof(float);
+	}
+	void        SetupTexture(uint32 iTexture);              // 0x10025269
+
+	// Draw the bank's vertices up to pOut.
+	void        FlushVerts(uint8* pOut)
+	{
+		uint32 nVerts = m_pVB->GetVertCount(pOut);
+		g_nModelTriangles += nVerts / 3;
+		m_pVB->DrawPrimitive(g_pD3DDevice, D3DPT_TRIANGLELIST, nVerts);
+	}
+
+	// Draw the full bank (the next triangle does not fit).
+	void        FlushFullVB()
+	{
+		g_nModelTriangles += (m_pVB->m_nVerts - m_pVB->m_nUsed) / 3;
+		m_pVB->DrawPrimitive(g_pD3DDevice, D3DPT_TRIANGLELIST,
+			m_pVB->m_nVerts - m_pVB->m_nUsed);
+	}
+
+	Model*      m_pModel;                                   // +0x000
+	ModelInstance* m_pInstance;                             // +0x004
+	uint8       m_pad_008[0x34 - 0x8];                      // +0x008
+	uint32      m_iStage;                                   // +0x034
+	uint8       m_pad_038[0x2c4 - 0x38];                    // +0x038
+	uint8       m_bPieceHidden[0x100];                      // +0x2c4
+	uint8       m_bPieceClipped[0x100];                     // +0x3c4
+	uint8       m_pad_4c4[0x4cc - 0x4c4];                   // +0x4c4
+	uint32      m_iCurTexture;                              // +0x4cc
+	uint8       m_pad_4d0[0x590 - 0x4d0];                   // +0x4d0
 	LTMatrix    m_mEnvMap;                                  // +0x590
-	uint8       m_pad_5d0[0x61c - 0x5d0];                   // +0x5d0
+	uint8       m_pad_5d0[0x5e8 - 0x5d0];                   // +0x5d0
+	uint32      m_nVertFormat;                              // +0x5e8
+	GenSpecularFn m_pfnGenSpecular;                         // +0x5ec
+	uint32      m_nValue;                                   // +0x5f0
+	GenUVFn     m_pfnGenUV;                                 // +0x5f4
+	uint32      m_nVertSize;                                // +0x5f8
+	CopyVertFn  m_pfnCopyVert;                              // +0x5fc
+	ClipPolyFn  m_pfnClipPoly;                              // +0x600
+	uint32      m_nFVF;                                     // +0x604
+	CVertexBufferController* m_pVB;                         // +0x608
+	uint32      m_iLOD;                                     // +0x60c
+	uint8       m_pad_610[0x61c - 0x610];                   // +0x610
 	float       m_fEnvOffsetU;                              // +0x61c
 	float       m_fEnvOffsetV;                              // +0x620
 	float       m_fEnvScaleU;                               // +0x624
 	float       m_fEnvScaleV;                               // +0x628
-	uint8       m_pad_62c[0x630 - 0x62c];                   // +0x62c
+	float       m_fSpecularPower;                           // +0x62c
 	float       m_fSpecularScale;                           // +0x630
-	uint8       m_pad_634[0x874 - 0x634];                   // +0x634
+	uint8       m_pad_634[0x640 - 0x634];                   // +0x634
+	uint32      m_nSpecular;                                // +0x640
+	uint8       m_pad_644[0x82c - 0x644];                   // +0x644
+	ModelVert*  m_pVerts;                                   // +0x82c
+	uint8       m_pad_830[0x874 - 0x830];                   // +0x830
 	LTVector    m_vSpecularDir;                             // +0x874
 	uint8       m_pad_880[0x8ac - 0x880];                   // +0x880
 	uint32      m_nVertMode;                                // +0x8ac
 	LTBOOL      m_bTnL;                                     // +0x8b0
+	LTBOOL      m_bBackfaceCull;                            // +0x8b4
 };
 
 // 0x10001410 -- no texture coordinates.
@@ -382,9 +573,697 @@ void __fastcall d3d_CopyVert2(BankVert2* pDst, BankVert2* pSrc)
 	*pDst = *pSrc;
 }
 
+// ======================================================================= //
+//  The polygon clippers (the drawer's +0x440), 0x10001530..0x1000204a, and
+//  their plane functions (ph/d3d_clip.h). ClipTop..ClipFar are templates
+//  over the vertex, so they follow this file's last function
+//  (0x100063e0..0x10007924).
+// ======================================================================= //
+
+#include "d3d_clip.h"
+
+extern LTMatrix g_mModelTransform;                          // 0x1005b92c
+extern float    g_fReallyClosePushZ;                        // 0x1005b74c
+
+// 0x10001530 -- the drawer's clipper for the one-stage vertex. The driver
+// is an inline under it: written in the function itself, cl 8966 inlines
+// ClipTop as well (one inline level more), where retail calls it.
+LTBOOL __fastcall d3d_ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts)
+{
+	return ClipPoly(nClipFlags, ppVerts, pnVerts);
+}
+
+// 0x10001b30 -- the same, two texture stages.
+LTBOOL __fastcall d3d_ClipPoly2(uint32 nClipFlags, ClipVert2** ppVerts, int32* pnVerts)
+{
+	return ClipPoly(nClipFlags, ppVerts, pnVerts);
+}
+
+// The screen-space facing of a triangle, sign-flipped for a mirrored view.
+inline float TriFacing(ModelVert* pV0, ModelVert* pV1, ModelVert* pV2)
+{
+	float fCross = (pV1->m_vPos.x - pV0->m_vPos.x) * (pV2->m_vPos.y - pV0->m_vPos.y)
+	             - (pV2->m_vPos.x - pV0->m_vPos.x) * (pV1->m_vPos.y - pV0->m_vPos.y);
+	if (g_bMirrorView)
+		fCross = -fCross;
+	return fCross;
+}
+
+// The planes ClassifyTri tests, in its order, and the planes still to
+// clip against once a triangle straddles one of them.
+// The most vertices a clipped model triangle is fanned from.
+#define MODEL_CLIP_VERTS    32
+
+#define CPLANE_NEAR     0x01
+#define CPLANE_FAR      0x02
+#define CPLANE_LEFT     0x04
+#define CPLANE_TOP      0x08
+#define CPLANE_RIGHT    0x10
+#define CPLANE_BOTTOM   0x20
+
+#define CLASSIFY_PLANE(PLANE, INSIDE, REST) \
+	if (nFlags & PLANE) \
+	{ \
+		n = INSIDE(pV0) + INSIDE(pV1) + INSIDE(pV2); \
+		if (n == 0) \
+			return 1; \
+		if (n != 3) \
+		{ \
+			*pnClip = nFlags & (REST); \
+			return 2; \
+		} \
+	}
+
+#define INSIDE_LEFT(v)      (-(v)->m_vPos.z < (v)->m_vPos.x)
+#define INSIDE_RIGHT(v)     ((v)->m_vPos.x < (v)->m_vPos.z)
+#define INSIDE_TOP(v)       ((v)->m_vPos.y < (v)->m_vPos.z)
+#define INSIDE_BOTTOM(v)    (-(v)->m_vPos.z < (v)->m_vPos.y)
+#define INSIDE_NEAR(v)      ((v)->m_vPos.z >= g_fNearZ)
+#define INSIDE_FAR(v)       ((v)->m_vPos.z <= g_fFarZ)
+
+// Classify a view-space triangle against the planes in nFlags: 0 wholly
+// inside, 1 wholly outside one of them, 2 straddling one, *pnClip then
+// holding that plane and those still to test.
+inline uint32 ClassifyTri(ModelVert* pV0, ModelVert* pV1, ModelVert* pV2,
+                          uint32 nFlags, uint32* pnClip)
+{
+	uint32 n;
+
+	CLASSIFY_PLANE(CPLANE_LEFT, INSIDE_LEFT,
+		CPLANE_LEFT | CPLANE_RIGHT | CPLANE_TOP | CPLANE_BOTTOM | CPLANE_NEAR | CPLANE_FAR)
+	CLASSIFY_PLANE(CPLANE_RIGHT, INSIDE_RIGHT,
+		CPLANE_RIGHT | CPLANE_TOP | CPLANE_BOTTOM | CPLANE_NEAR | CPLANE_FAR)
+	CLASSIFY_PLANE(CPLANE_TOP, INSIDE_TOP,
+		CPLANE_TOP | CPLANE_BOTTOM | CPLANE_NEAR | CPLANE_FAR)
+	CLASSIFY_PLANE(CPLANE_BOTTOM, INSIDE_BOTTOM,
+		CPLANE_BOTTOM | CPLANE_NEAR | CPLANE_FAR)
+	CLASSIFY_PLANE(CPLANE_NEAR, INSIDE_NEAR,
+		CPLANE_NEAR | CPLANE_FAR)
+	CLASSIFY_PLANE(CPLANE_FAR, INSIDE_FAR,
+		CPLANE_FAR)
+
+	return 0;
+}
+
+// The facing of a triangle after the divide by z, sign-flipped for a
+// mirrored view.
+inline float ProjFacing(TLVert* pV0, TLVert* pV1, TLVert* pV2)
+{
+	float fRHW[3];
+	fRHW[0] = 1.0f / pV0->m_vPos.z;
+	fRHW[1] = 1.0f / pV1->m_vPos.z;
+	fRHW[2] = 1.0f / pV2->m_vPos.z;
+
+	LTVector v0, v1, v2;
+	v0.x = pV0->m_vPos.x * fRHW[0];
+	v0.y = pV0->m_vPos.y * fRHW[0];
+	v1.x = pV1->m_vPos.x * fRHW[1] - v0.x;
+	v1.y = pV1->m_vPos.y * fRHW[1] - v0.y;
+	v2.x = pV2->m_vPos.x * fRHW[2] - v0.x;
+	v2.y = pV2->m_vPos.y * fRHW[2] - v0.y;
+
+	float fCross = v2.x * v1.y - v2.y * v1.x;
+	if (g_bMirrorView)
+		fCross = -fCross;
+	return fCross;
+}
+
+// Project a view-space vertex into a bank vertex.
+#define PROJECT_VERT(pOut, pIn) \
+{ \
+	float fRHW = 1.0f / (g_mModelTransform.m[3][0] * (pIn)->m_vPos.x \
+	                   + g_mModelTransform.m[3][1] * (pIn)->m_vPos.y \
+	                   + g_mModelTransform.m[3][2] * (pIn)->m_vPos.z \
+	                   + g_mModelTransform.m[3][3]); \
+	(pOut)->m_vPos.x = (g_mModelTransform.m[0][0] * (pIn)->m_vPos.x \
+	                  + g_mModelTransform.m[0][1] * (pIn)->m_vPos.y \
+	                  + g_mModelTransform.m[0][2] * (pIn)->m_vPos.z \
+	                  + g_mModelTransform.m[0][3]) * fRHW; \
+	(pOut)->m_vPos.y = (g_mModelTransform.m[1][0] * (pIn)->m_vPos.x \
+	                  + g_mModelTransform.m[1][1] * (pIn)->m_vPos.y \
+	                  + g_mModelTransform.m[1][2] * (pIn)->m_vPos.z \
+	                  + g_mModelTransform.m[1][3]) * fRHW; \
+	(pOut)->m_vPos.z = (g_mModelTransform.m[2][0] * (pIn)->m_vPos.x \
+	                  + g_mModelTransform.m[2][1] * (pIn)->m_vPos.y \
+	                  + g_mModelTransform.m[2][2] * (pIn)->m_vPos.z \
+	                  + g_mModelTransform.m[2][3]) * fRHW; \
+	(pOut)->m_fRHW = fRHW; \
+}
+
+// Project a clipped vertex where it is.
+inline void ProjectVertInPlace(TLVert* pVert)
+{
+	LTVector vPos;
+	float fRHW;
+
+	fRHW = 1.0f / (g_mModelTransform.m[3][0] * pVert->m_vPos.x
+	             + g_mModelTransform.m[3][1] * pVert->m_vPos.y
+	             + g_mModelTransform.m[3][2] * pVert->m_vPos.z
+	             + g_mModelTransform.m[3][3]);
+	vPos.x = (g_mModelTransform.m[0][0] * pVert->m_vPos.x
+	        + g_mModelTransform.m[0][1] * pVert->m_vPos.y
+	        + g_mModelTransform.m[0][2] * pVert->m_vPos.z
+	        + g_mModelTransform.m[0][3]) * fRHW;
+	vPos.y = (g_mModelTransform.m[1][0] * pVert->m_vPos.x
+	        + g_mModelTransform.m[1][1] * pVert->m_vPos.y
+	        + g_mModelTransform.m[1][2] * pVert->m_vPos.z
+	        + g_mModelTransform.m[1][3]) * fRHW;
+	vPos.z = (g_mModelTransform.m[2][0] * pVert->m_vPos.x
+	        + g_mModelTransform.m[2][1] * pVert->m_vPos.y
+	        + g_mModelTransform.m[2][2] * pVert->m_vPos.z
+	        + g_mModelTransform.m[2][3]) * fRHW;
+	pVert->m_fRHW = fRHW;
+	pVert->m_vPos = vPos;
+}
+
+// Project a view-space position, its depth pushed back by fPushZ: x and y
+// are projected from where it is, z and rhw from fPushZ further away.
+inline void ProjectVertPushed(TLVert* pOut, LTVector* pIn, float fPushZ)
+{
+	LTVector vPos;
+	float fRHW;
+	float fZ;
+
+	fRHW = 1.0f / (g_mModelTransform.m[3][0] * pIn->x
+	             + g_mModelTransform.m[3][1] * pIn->y
+	             + g_mModelTransform.m[3][2] * pIn->z
+	             + g_mModelTransform.m[3][3]);
+	vPos.x = (g_mModelTransform.m[0][0] * pIn->x
+	        + g_mModelTransform.m[0][1] * pIn->y
+	        + g_mModelTransform.m[0][2] * pIn->z
+	        + g_mModelTransform.m[0][3]) * fRHW;
+	vPos.y = (g_mModelTransform.m[1][0] * pIn->x
+	        + g_mModelTransform.m[1][1] * pIn->y
+	        + g_mModelTransform.m[1][2] * pIn->z
+	        + g_mModelTransform.m[1][3]) * fRHW;
+	fZ = fPushZ + pIn->z;
+	fRHW = 1.0f / (g_mModelTransform.m[3][0] * pIn->x
+	             + g_mModelTransform.m[3][1] * pIn->y
+	             + g_mModelTransform.m[3][2] * fZ
+	             + g_mModelTransform.m[3][3]);
+	vPos.z = (g_mModelTransform.m[2][0] * pIn->x
+	        + g_mModelTransform.m[2][1] * pIn->y
+	        + g_mModelTransform.m[2][2] * fZ
+	        + g_mModelTransform.m[2][3]) * fRHW;
+	pOut->m_fRHW = fRHW;
+	pOut->m_vPos = vPos;
+}
+
+// One corner into a bank vertex: its colour, the drawer's specular and
+// the uv generator's coordinates.
+#define SETUP_TL_VERT(p, v, i) \
+	((TLVert*)(p))->m_nDiffuse = (v)->m_nColor; \
+	((TLVert*)(p))->m_nSpecular = m_nSpecular; \
+	m_pfnGenUV((p), (v), pTri->m_UV[i]);
+
+// 0x10002050 -- as DrawTLVertsClipped, for a model drawn really close to
+// the camera (the weapon in view): its depth is projected pushed back by
+// g_fReallyClosePushZ, so it is not cut by the near plane.
+LTBOOL CD3DModelDraw::DrawTLVertsReallyClose(ModelVertSet* pSet, ModelVert* pVerts)
+{
+	uint8* pOut = (uint8*)m_pVB->Lock();
+	uint8* pLast = m_pVB->GetLastVert();
+	ModelTri* pTri = pSet->m_pTris;
+	int32 nTris = pSet->m_nTris;
+
+	for (; nTris; nTris--, pTri++)
+	{
+		ModelVert* pV0 = &pVerts[pTri->m_Indices[0]];
+		ModelVert* pV1 = &pVerts[pTri->m_Indices[1]];
+		ModelVert* pV2 = &pVerts[pTri->m_Indices[2]];
+		uint32 nClip;
+		uint32 nClass;
+
+		nClass = ClassifyTri(pV0, pV1, pV2, g_ClipFlags, &nClip);
+		if (nClass == 0)
+		{
+			if (ProjFacing((TLVert*)pV0, (TLVert*)pV1, (TLVert*)pV2) <= 0.0f)
+				continue;
+
+			ProjectVertPushed((TLVert*)pOut, &pV0->m_vPos, g_fReallyClosePushZ);
+			SETUP_TL_VERT(pOut, pV0, 0)
+			pOut += m_nVertSize;
+			ProjectVertPushed((TLVert*)pOut, &pV1->m_vPos, g_fReallyClosePushZ);
+			SETUP_TL_VERT(pOut, pV1, 1)
+			pOut += m_nVertSize;
+			ProjectVertPushed((TLVert*)pOut, &pV2->m_vPos, g_fReallyClosePushZ);
+			SETUP_TL_VERT(pOut, pV2, 2)
+			pOut += m_nVertSize;
+
+			if (pOut > pLast && nTris > 1)
+			{
+				FlushFullVB();
+				pOut = (uint8*)m_pVB->Lock();
+				pLast = m_pVB->GetLastVert();
+			}
+		}
+		else if (nClass == 2)
+		{
+			uint8 aClip[MODEL_CLIP_VERTS * sizeof(ClipVert2)];
+			uint8* pClip = aClip;
+			int32 nVerts = 3;
+			uint8* p;
+			int32 i;
+
+			p = aClip;
+			((TLVert*)p)->m_vPos = pV0->m_vPos;
+			SETUP_TL_VERT(p, pV0, 0)
+			p += m_nVertSize;
+			((TLVert*)p)->m_vPos = pV1->m_vPos;
+			SETUP_TL_VERT(p, pV1, 1)
+			p += m_nVertSize;
+			((TLVert*)p)->m_vPos = pV2->m_vPos;
+			SETUP_TL_VERT(p, pV2, 2)
+
+			if (!m_pfnClipPoly(nClip, (void**)&pClip, &nVerts))
+				continue;
+
+			if (ProjFacing((TLVert*)pClip, (TLVert*)(pClip + m_nVertSize),
+			               (TLVert*)(pClip + m_nVertSize * 2)) <= 0.0f)
+				continue;
+
+			uint8* pEnd = pClip + nVerts * m_nVertSize;
+			for (p = pClip; p < pEnd; p += m_nVertSize)
+			{
+				LTVector vPos = ((TLVert*)p)->m_vPos;
+				ProjectVertPushed((TLVert*)p, &vPos, g_fReallyClosePushZ);
+			}
+
+			// Not enough room for the fan: draw what there is and go on
+			// in the next buffer.
+			if (pOut + (nVerts - 2) * 3 * m_nVertSize > pLast)
+			{
+				FlushVerts(pOut);
+				m_pVB->Flush();
+				pOut = (uint8*)m_pVB->Lock();
+				pLast = m_pVB->GetLastVert();
+			}
+
+			nVerts--;
+			for (i = 1; i < nVerts; )
+			{
+				m_pfnCopyVert(pOut, pClip);
+				pOut += m_nVertSize;
+				m_pfnCopyVert(pOut, pClip + i * m_nVertSize);
+				pOut += m_nVertSize;
+				i++;
+				m_pfnCopyVert(pOut, pClip + i * m_nVertSize);
+				pOut += m_nVertSize;
+			}
+		}
+	}
+
+	FlushVerts(pOut);
+	return LTTRUE;
+}
+
+// 0x10002bc0 -- view-space triangles against the clip planes: inside,
+// projected straight into the bank; straddling, clipped as a polygon,
+// projected and fanned into the bank.
+LTBOOL CD3DModelDraw::DrawTLVertsClipped(ModelVertSet* pSet, ModelVert* pVerts)
+{
+	uint8* pOut = (uint8*)m_pVB->Lock();
+	uint8* pLast = m_pVB->GetLastVert();
+	ModelTri* pTri = pSet->m_pTris;
+	int32 nTris = pSet->m_nTris;
+
+	for (; nTris; nTris--, pTri++)
+	{
+		ModelVert* pV0 = &pVerts[pTri->m_Indices[0]];
+		ModelVert* pV1 = &pVerts[pTri->m_Indices[1]];
+		ModelVert* pV2 = &pVerts[pTri->m_Indices[2]];
+		uint32 nClip;
+		uint32 nClass;
+
+		nClass = ClassifyTri(pV0, pV1, pV2, g_ClipFlags, &nClip);
+		if (nClass == 0)
+		{
+			if (ProjFacing((TLVert*)pV0, (TLVert*)pV1, (TLVert*)pV2) <= 0.0f)
+				continue;
+
+			PROJECT_VERT((TLVert*)pOut, pV0)
+			SETUP_TL_VERT(pOut, pV0, 0)
+			pOut += m_nVertSize;
+			PROJECT_VERT((TLVert*)pOut, pV1)
+			SETUP_TL_VERT(pOut, pV1, 1)
+			pOut += m_nVertSize;
+			PROJECT_VERT((TLVert*)pOut, pV2)
+			SETUP_TL_VERT(pOut, pV2, 2)
+			pOut += m_nVertSize;
+
+			if (pOut > pLast && nTris > 1)
+			{
+				FlushFullVB();
+				pOut = (uint8*)m_pVB->Lock();
+				pLast = m_pVB->GetLastVert();
+			}
+		}
+		else if (nClass == 2)
+		{
+			uint8 aClip[MODEL_CLIP_VERTS * sizeof(ClipVert2)];
+			uint8* pClip = aClip;
+			int32 nVerts = 3;
+			uint8* p;
+			int32 i;
+
+			p = aClip;
+			((TLVert*)p)->m_vPos = pV0->m_vPos;
+			SETUP_TL_VERT(p, pV0, 0)
+			p += m_nVertSize;
+			((TLVert*)p)->m_vPos = pV1->m_vPos;
+			SETUP_TL_VERT(p, pV1, 1)
+			p += m_nVertSize;
+			((TLVert*)p)->m_vPos = pV2->m_vPos;
+			SETUP_TL_VERT(p, pV2, 2)
+
+			if (!m_pfnClipPoly(nClip, (void**)&pClip, &nVerts))
+				continue;
+
+			if (ProjFacing((TLVert*)pClip, (TLVert*)(pClip + m_nVertSize),
+			               (TLVert*)(pClip + m_nVertSize * 2)) <= 0.0f)
+				continue;
+
+			uint8* pEnd = pClip + nVerts * m_nVertSize;
+			for (p = pClip; p < pEnd; p += m_nVertSize)
+				ProjectVertInPlace((TLVert*)p);
+
+			// Not enough room for the fan: draw what there is and go on
+			// in the next buffer.
+			if (pOut + (nVerts - 2) * 3 * m_nVertSize > pLast)
+			{
+				FlushVerts(pOut);
+				m_pVB->Flush();
+				pOut = (uint8*)m_pVB->Lock();
+				pLast = m_pVB->GetLastVert();
+			}
+
+			nVerts--;
+			for (i = 1; i < nVerts; )
+			{
+				m_pfnCopyVert(pOut, pClip);
+				pOut += m_nVertSize;
+				m_pfnCopyVert(pOut, pClip + i * m_nVertSize);
+				pOut += m_nVertSize;
+				i++;
+				m_pfnCopyVert(pOut, pClip + i * m_nVertSize);
+				pOut += m_nVertSize;
+			}
+		}
+	}
+
+	FlushVerts(pOut);
+	return LTTRUE;
+}
+
+
+// 0x100036d0 -- view-space triangles of a piece wholly inside the clip
+// planes: projected straight into the bank.
+LTBOOL CD3DModelDraw::DrawTLVertsNoClip(ModelVertSet* pSet, ModelVert* pVerts)
+{
+	uint8* pOut = (uint8*)m_pVB->Lock();
+	uint8* pLast = m_pVB->GetLastVert();
+	ModelTri* pTri = pSet->m_pTris;
+	int32 nTris = pSet->m_nTris;
+
+	for (; nTris; nTris--, pTri++)
+	{
+		ModelVert* pV0 = &pVerts[pTri->m_Indices[0]];
+		ModelVert* pV1 = &pVerts[pTri->m_Indices[1]];
+		ModelVert* pV2 = &pVerts[pTri->m_Indices[2]];
+
+		if (m_bBackfaceCull &&
+		    ProjFacing((TLVert*)pV0, (TLVert*)pV1, (TLVert*)pV2) <= 0.0f)
+			continue;
+
+		PROJECT_VERT((TLVert*)pOut, pV0)
+		SETUP_TL_VERT(pOut, pV0, 0)
+		pOut += m_nVertSize;
+		PROJECT_VERT((TLVert*)pOut, pV1)
+		SETUP_TL_VERT(pOut, pV1, 1)
+		pOut += m_nVertSize;
+		PROJECT_VERT((TLVert*)pOut, pV2)
+		SETUP_TL_VERT(pOut, pV2, 2)
+		pOut += m_nVertSize;
+
+		if (pOut > pLast && nTris > 1)
+		{
+			FlushFullVB();
+			pOut = (uint8*)m_pVB->Lock();
+			pLast = m_pVB->GetLastVert();
+		}
+	}
+
+	FlushVerts(pOut);
+	return LTTRUE;
+}
+
+// 0x10003b60 -- pre-transformed (XYZRHW) triangles, culled when they face
+// away or are smaller than ModelMinTri.
+LTBOOL CD3DModelDraw::DrawTLVerts(ModelVertSet* pSet, ModelVert* pVerts)
+{
+	uint8* pOut = (uint8*)m_pVB->Lock();
+	uint8* pLast = m_pVB->GetLastVert();
+
+	ModelTri* pTri = pSet->m_pTris;
+	int32 nTris = pSet->m_nTris;
+	for (; nTris; nTris--, pTri++)
+	{
+		ModelVert* pV[3];
+		pV[0] = &pVerts[pTri->m_Indices[0]];
+		pV[1] = &pVerts[pTri->m_Indices[1]];
+		pV[2] = &pVerts[pTri->m_Indices[2]];
+
+		if (m_bBackfaceCull && TriFacing(pV[0], pV[1], pV[2]) <= g_CV_ModelMinTri.m_fValue)
+			continue;
+
+		TLVert* pT;
+
+		pT = (TLVert*)pOut;
+		pT->m_vPos = pV[0]->m_vPos;
+		pT->m_fRHW = pV[0]->m_fRHW;
+		pT->m_nDiffuse = pV[0]->m_nColor;
+		pT->m_nSpecular = m_nSpecular;
+		m_pfnGenUV(pOut, pV[0], pTri->m_UV[0]);
+		pOut += m_nVertSize;
+
+		pT = (TLVert*)pOut;
+		pT->m_vPos = pV[1]->m_vPos;
+		pT->m_fRHW = pV[1]->m_fRHW;
+		pT->m_nDiffuse = pV[1]->m_nColor;
+		pT->m_nSpecular = m_nSpecular;
+		m_pfnGenUV(pOut, pV[1], pTri->m_UV[1]);
+		pOut += m_nVertSize;
+
+		pT = (TLVert*)pOut;
+		pT->m_vPos = pV[2]->m_vPos;
+		pT->m_fRHW = pV[2]->m_fRHW;
+		pT->m_nDiffuse = pV[2]->m_nColor;
+		pT->m_nSpecular = m_nSpecular;
+		m_pfnGenUV(pOut, pV[2], pTri->m_UV[2]);
+		pOut += m_nVertSize;
+
+		if (pOut > pLast && nTris > 1)
+		{
+			FlushFullVB();
+			pOut = (uint8*)m_pVB->Lock();
+			pLast = m_pVB->GetLastVert();
+		}
+	}
+
+	FlushVerts(pOut);
+	return LTTRUE;
+}
+
+// One corner into a bank vertex the device transforms: it has no rhw, so
+// the rest of it, and the uv generator, which write the pre-transformed
+// layout, are handed the vertex four bytes early.
+#define SETUP_TNL_VERT(i) \
+	((LVert*)pOut)->m_vPos = pV[i]->m_vPos; \
+	pOut -= sizeof(float); \
+	((TLVert*)pOut)->m_nDiffuse = pV[i]->m_nColor; \
+	((TLVert*)pOut)->m_nSpecular = m_nSpecular; \
+	m_pfnGenUV(pOut, pV[i], pTri->m_UV[i]); \
+	pOut += m_nVertSize;
+
+// 0x10003e00 -- triangles the device transforms (TnL).
+LTBOOL CD3DModelDraw::DrawTnLVerts(ModelVertSet* pSet, ModelVert* pVerts)
+{
+	uint8* pOut = (uint8*)m_pVB->Lock();
+	uint8* pLast = m_pVB->GetLastVert();
+	ModelTri* pTri = pSet->m_pTris;
+	int32 nTris = pSet->m_nTris;
+	ModelVert* pV[3];
+
+	if (m_bBackfaceCull)
+	{
+		for (; nTris; nTris--, pTri++)
+		{
+			pV[0] = &pVerts[pTri->m_Indices[0]];
+			pV[1] = &pVerts[pTri->m_Indices[1]];
+			pV[2] = &pVerts[pTri->m_Indices[2]];
+
+			if (TriFacing(pV[0], pV[1], pV[2]) <= g_CV_ModelMinTri.m_fValue)
+				continue;
+
+			SETUP_TNL_VERT(0)
+			SETUP_TNL_VERT(1)
+			SETUP_TNL_VERT(2)
+
+			if (pOut > pLast && nTris > 1)
+			{
+				FlushFullVB();
+				pOut = (uint8*)m_pVB->Lock();
+				pLast = m_pVB->GetLastVert();
+			}
+		}
+	}
+	else
+	{
+		for (; nTris; nTris--, pTri++)
+		{
+			pV[0] = &pVerts[pTri->m_Indices[0]];
+			pV[1] = &pVerts[pTri->m_Indices[1]];
+			pV[2] = &pVerts[pTri->m_Indices[2]];
+
+			SETUP_TNL_VERT(0)
+			SETUP_TNL_VERT(1)
+			SETUP_TNL_VERT(2)
+
+			if (pOut > pLast && nTris > 1)
+			{
+				FlushFullVB();
+				pOut = (uint8*)m_pVB->Lock();
+				pLast = m_pVB->GetLastVert();
+			}
+		}
+	}
+
+	FlushVerts(pOut);
+	return LTTRUE;
+}
+
+// 0x10004230 -- the cached path: the piece's vertices are already in the
+// bank, so only the draw.
+LTBOOL CD3DModelDraw::DrawCachedVerts(ModelVertSet* pSet, ModelVert* pVerts)
+{
+	uint32 nVerts = pSet->m_nTris * 3;
+	g_nModelTriangles += nVerts / 3;
+	m_pVB->DrawPrimitive(g_pD3DDevice, D3DPT_TRIANGLELIST, nVerts);
+	return LTTRUE;
+}
+
+// 0x10004270 -- set the drawer up for the bank's vertex format and draw
+// each visible piece with fn, or fnClip where the piece needs clipping.
+// NEAR (808 bytes, size-exact): cl 8966 here sinks the store of
+// m_iCurTexture below the loop set-up and schedules the cache's vertex
+// size as `add -4` before the store of m_pVB.
+void CD3DModelDraw::DrawVerts(DrawVertsFn fn, DrawVertsFn fnClip, uint32 nValue)
+{
+	m_nValue = nValue;
+
+	if (m_nVertFormat == 1)
+	{
+		m_nVertSize = sizeof(ClipVert);
+		m_pfnCopyVert = (CopyVertFn)d3d_CopyVert;
+		m_pfnClipPoly = (ClipPolyFn)d3d_ClipPoly;
+		m_nFVF = D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1;
+		if (m_bTnL)
+			m_pVB = &g_ModelVBTnL;
+		else
+			m_pVB = &g_ModelVB;
+	}
+	else
+	{
+		m_nVertSize = sizeof(ClipVert2);
+		m_pfnCopyVert = (CopyVertFn)d3d_CopyVert2;
+		m_pfnClipPoly = (ClipPolyFn)d3d_ClipPoly2;
+		m_nFVF = D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX2;
+		if (m_bTnL)
+			m_pVB = &g_ModelVB2TnL;
+		else
+			m_pVB = &g_ModelVB2;
+	}
+
+	// The console changed the bank sizes: reallocate.
+	if (m_pVB->m_nVerts != (uint32)g_CV_ModelVBSize.m_nValue ||
+	    m_pVB->m_nBuffers != (uint32)g_CV_ModelVBCount.m_nValue)
+	{
+		d3d_TermModelVBs();
+		d3d_InitModelVBs();
+	}
+
+	if (m_bTnL)
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_CULLMODE, D3DCULL_CCW);
+
+	// Cached: the vertices go to (or already are in) the model cache.
+	if (m_nVertMode)
+	{
+		UseModelVBCache(m_nFVF, m_nVertSize);
+	}
+
+	m_bBackfaceCull = (m_nVertMode != 1 && !m_bTnL);
+	m_iCurTexture = (uint32)-1;
+
+	ModelVert* pVerts = m_pVerts;
+	for (uint32 i = 0; i < m_pModel->NumPieces(); i++)
+	{
+		ModelPiece* pPiece = m_pModel->GetPiece(i);
+		ModelVertSet* pSet = pPiece->GetLOD(m_iLOD);
+		if (!pSet)
+			continue;
+
+		if ((1 << i) & m_pInstance->m_HiddenPieces)
+			continue;
+
+		if (m_bPieceHidden[i])
+			continue;
+
+		if (pPiece->m_iTexture != m_iCurTexture)
+		{
+			SetupTexture(pPiece->m_iTexture);
+			SetupTextureStages(&m_nValue);
+
+			RenderTexture* pTexture = m_pInstance->m_pSkins[pPiece->m_iTexture];
+			if (pTexture)
+			{
+				CRenderStateList* pStates = pTexture->m_pRenderStates;
+				if (pStates)
+				{
+					g_SavedStates.Restore();
+					g_SavedStates.Apply(pStates, m_iStage);
+				}
+			}
+		}
+
+		m_fSpecularPower = pPiece->m_fSpecularPower;
+		m_fSpecularScale = pPiece->m_fSpecularScale;
+		if (g_CV_SpecularPowerTest.m_fValue != 0.0f)
+			m_fSpecularPower = g_CV_SpecularPowerTest.m_fValue;
+		if (g_CV_SpecularScaleTest.m_fValue != 0.0f)
+			m_fSpecularScale = g_CV_SpecularScaleTest.m_fValue;
+
+		if (m_fSpecularScale != 0.0f && m_pfnGenSpecular == (GenSpecularFn)d3d_GenUVSpecular)
+			d3d_SetGammaTexture(m_fSpecularPower);
+
+		if (m_bPieceClipped[i])
+			(this->*fnClip)(pSet, pVerts);
+		else
+			(this->*fn)(pSet, pVerts);
+
+		pVerts += pSet->m_nVerts;
+	}
+
+	if (m_bTnL)
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_CULLMODE, D3DCULL_NONE);
+
+	g_SavedStates.Restore();
+}
+
+//@@DRAWFUNCS@@
+
 // 0x100045a0 -- set up and draw one piece's vertices, by how they get to
 // the screen.
-void CD3DModelDraw::DrawPiece(ModelVertSet* pSet)
+void CD3DModelDraw::DrawPiece(uint32 nValue)
 {
 	DrawVertsFn fnClipped, fnUnclipped;
 
@@ -403,409 +1282,12 @@ void CD3DModelDraw::DrawPiece(ModelVertSet* pSet)
 	else if (g_ClipFlags & 0x3f)
 	{
 		fnUnclipped = &CD3DModelDraw::DrawTLVertsClipped;
-		fnClipped = &CD3DModelDraw::DrawTLVertsClipped2;
+		fnClipped = &CD3DModelDraw::DrawTLVertsNoClip;
 	}
 	else
 	{
 		fnUnclipped = fnClipped = &CD3DModelDraw::DrawTLVerts;
 	}
 
-	DrawVerts(fnClipped, fnUnclipped, pSet);
+	DrawVerts(fnClipped, fnUnclipped, nValue);
 }
-
-// ======================================================================= //
-//  The polygon clippers (the drawer's +0x440), 0x10001530..0x1000204a, and
-//  their plane functions. ClipTop..ClipFar are templates over the vertex,
-//  so they follow this file's last function (0x100063e0..0x10007924).
-// ======================================================================= //
-
-#define CLIP_EPSILON    0.00001f
-#define CLIP_MAX_VERTS  50
-
-// Round to nearest in the FPU's mode. Every colour byte the clippers
-// interpolate is `fstp t ; fld t ; fistp n`, a float parameter stored and
-// reloaded for an x87 store: the original's assembly helper, which no
-// C spelling under cl 8966 gives (a cast calls _ftol).
-inline int32 RoundF(float f)
-{
-	int32 n;
-	__asm fld f
-	__asm fistp n
-	return n;
-}
-
-union VColor
-{
-	uint32      m_n;
-	uint8       m_b[4];
-};
-
-// The 32-byte bank vertex (FVF 0x1c4) as the clippers see it.
-struct ClipVert
-{
-	LTVector    m_vPos;                                     // +0x00
-	float       m_fRHW;                                     // +0x0c
-	VColor      m_Diffuse;                                  // +0x10
-	VColor      m_Specular;                                 // +0x14
-	float       m_fU;                                       // +0x18
-	float       m_fV;                                       // +0x1c
-};
-
-// The 40-byte bank vertex (FVF 0x2c4): two texture coordinate pairs.
-struct ClipVert2
-{
-	LTVector    m_vPos;                                     // +0x00
-	float       m_fRHW;                                     // +0x0c
-	VColor      m_Diffuse;                                  // +0x10
-	VColor      m_Specular;                                 // +0x14
-	float       m_fU;                                       // +0x18
-	float       m_fV;                                       // +0x1c
-	float       m_fU2;                                      // +0x20
-	float       m_fV2;                                      // +0x24
-};
-
-extern uint32   g_nClipPasses;                              // 0x1005c124
-extern int32    g_bUseD3DClip;                              // 0x100622b0
-extern void*    g_pClipScratch;                             // 0x1005bd14                              // 0x1005c124
-extern float    g_fNearZ;                                   // 0x1005b818
-extern float    g_fFarZ;                                    // 0x1005b820
-
-inline void LerpClipVert(ClipVert* a, ClipVert* b, ClipVert* dst, float t)
-{
-	dst->m_fU = (b->m_fU - a->m_fU) * t + a->m_fU;
-	dst->m_fV = (b->m_fV - a->m_fV) * t + a->m_fV;
-	dst->m_Diffuse.m_b[2]  = (uint8)RoundF((b->m_Diffuse.m_b[2]  - a->m_Diffuse.m_b[2])  * t + a->m_Diffuse.m_b[2]);
-	dst->m_Diffuse.m_b[1]  = (uint8)RoundF((b->m_Diffuse.m_b[1]  - a->m_Diffuse.m_b[1])  * t + a->m_Diffuse.m_b[1]);
-	dst->m_Diffuse.m_b[0]  = (uint8)RoundF((b->m_Diffuse.m_b[0]  - a->m_Diffuse.m_b[0])  * t + a->m_Diffuse.m_b[0]);
-	dst->m_Diffuse.m_b[3]  = (uint8)RoundF((b->m_Diffuse.m_b[3]  - a->m_Diffuse.m_b[3])  * t + a->m_Diffuse.m_b[3]);
-	dst->m_Specular.m_b[3] = (uint8)RoundF((b->m_Specular.m_b[3] - a->m_Specular.m_b[3]) * t + a->m_Specular.m_b[3]);
-}
-
-inline void LerpClipVert(ClipVert2* a, ClipVert2* b, ClipVert2* dst, float t)
-{
-	dst->m_fU = (b->m_fU - a->m_fU) * t + a->m_fU;
-	dst->m_fV = (b->m_fV - a->m_fV) * t + a->m_fV;
-	dst->m_fU2 = (b->m_fU2 - a->m_fU2) * t + a->m_fU2;
-	dst->m_fV2 = (b->m_fV2 - a->m_fV2) * t + a->m_fV2;
-	dst->m_Diffuse.m_b[2]  = (uint8)RoundF((b->m_Diffuse.m_b[2]  - a->m_Diffuse.m_b[2])  * t + a->m_Diffuse.m_b[2]);
-	dst->m_Diffuse.m_b[1]  = (uint8)RoundF((b->m_Diffuse.m_b[1]  - a->m_Diffuse.m_b[1])  * t + a->m_Diffuse.m_b[1]);
-	dst->m_Diffuse.m_b[0]  = (uint8)RoundF((b->m_Diffuse.m_b[0]  - a->m_Diffuse.m_b[0])  * t + a->m_Diffuse.m_b[0]);
-	dst->m_Diffuse.m_b[3]  = (uint8)RoundF((b->m_Diffuse.m_b[3]  - a->m_Diffuse.m_b[3])  * t + a->m_Diffuse.m_b[3]);
-	dst->m_Specular.m_b[3] = (uint8)RoundF((b->m_Specular.m_b[3] - a->m_Specular.m_b[3]) * t + a->m_Specular.m_b[3]);
-}
-
-inline float ClipEdgeNear(LTVector* a, LTVector* b, LTVector* dst)
-{
-	float fDenom = b->z - a->z;
-	float t;
-
-	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = (g_fNearZ - a->z) / fDenom;
-	else
-		t = 0.0f;
-
-	dst->x = (b->x - a->x) * t + a->x;
-	dst->y = (b->y - a->y) * t + a->y;
-	dst->z = g_fNearZ;
-
-	return t;
-}
-
-inline float ClipEdgeLeft(LTVector* a, LTVector* b, LTVector* dst)
-{
-	float fDenom = (b->x - a->x) + b->z - a->z;
-	float t;
-	float fZ;
-
-	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = -(a->x + a->z) / fDenom;
-	else
-		t = 0.0f;
-
-	dst->y = (b->y - a->y) * t + a->y;
-	fZ = (b->z - a->z) * t + a->z;
-	dst->z = fZ;
-	dst->x = -fZ;
-
-	return t;
-}
-
-inline float ClipEdgeTop(LTVector* a, LTVector* b, LTVector* dst)
-{
-	float fDenom = (b->y - a->y) - b->z + a->z;
-	float t;
-	float fZ;
-
-	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = -(a->y - a->z) / fDenom;
-	else
-		t = 0.0f;
-
-	dst->x = (b->x - a->x) * t + a->x;
-	fZ = (b->z - a->z) * t + a->z;
-	dst->z = fZ;
-	dst->y = fZ;
-
-	return t;
-}
-
-inline float ClipEdgeRight(LTVector* a, LTVector* b, LTVector* dst)
-{
-	float fDenom = (b->x - a->x) - b->z + a->z;
-	float t;
-	float fZ;
-
-	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = -(a->x - a->z) / fDenom;
-	else
-		t = 0.0f;
-
-	dst->y = (b->y - a->y) * t + a->y;
-	fZ = (b->z - a->z) * t + a->z;
-	dst->z = fZ;
-	dst->x = fZ;
-
-	return t;
-}
-
-inline float ClipEdgeBottom(LTVector* a, LTVector* b, LTVector* dst)
-{
-	float fDenom = (b->y - a->y) + b->z - a->z;
-	float t;
-	float fZ;
-
-	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = -(a->y + a->z) / fDenom;
-	else
-		t = 0.0f;
-
-	dst->x = (b->x - a->x) * t + a->x;
-	fZ = (b->z - a->z) * t + a->z;
-	dst->z = fZ;
-	dst->y = -fZ;
-
-	return t;
-}
-
-inline float ClipEdgeFar(LTVector* a, LTVector* b, LTVector* dst)
-{
-	float fDenom = b->z - a->z;
-	float t;
-
-	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = (g_fFarZ - a->z) / fDenom;
-	else
-		t = 0.0f;
-
-	dst->x = (b->x - a->x) * t + a->x;
-	dst->y = (b->y - a->y) * t + a->y;
-	dst->z = g_fFarZ;
-
-	return t;
-}
-
-
-#define CLIP_PLANE(NAME, INSIDE, EDGE) \
-template<class V> \
-LTBOOL NAME(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut) \
-{ \
-	static uint32 anInside[CLIP_MAX_VERTS]; \
-	V *pV, *pEnd, *pPrev, *pCur, *pOutStart; \
-	uint32* pFlag; \
-	int32 nInside, i, iPrev; \
-	float t; \
- \
-	nInside = 0; \
-	++g_nClipPasses; \
- \
-	pFlag = anInside; \
-	pV = *ppVerts; \
-	pEnd = pV + *pnVerts; \
-	for (; pV != pEnd; ++pV) \
-	{ \
-		uint32 bIn = INSIDE; \
- \
-		*pFlag = bIn; \
-		nInside += bIn; \
-		pFlag++; \
-	} \
- \
-	if (nInside == 0) \
-		return LTFALSE; \
- \
-	if (nInside != *pnVerts) \
-	{ \
-		pOutStart = *ppOut; \
-		iPrev = *pnVerts - 1; \
-		pPrev = &(*ppVerts)[iPrev]; \
-		for (i = 0; i < *pnVerts; i++) \
-		{ \
-			pCur = &(*ppVerts)[i]; \
- \
-			if (anInside[iPrev]) \
-			{ \
-				**ppOut = *pPrev; \
-				++(*ppOut); \
-			} \
- \
-			if (anInside[iPrev] != anInside[i]) \
-			{ \
-				t = EDGE(&pPrev->m_vPos, &pCur->m_vPos, &(*ppOut)->m_vPos); \
-				LerpClipVert(pPrev, pCur, *ppOut, t); \
-				++(*ppOut); \
-			} \
- \
-			iPrev = i; \
-			pPrev = pCur; \
-		} \
- \
-		*pnVerts = *ppOut - pOutStart; \
-		*ppVerts = pOutStart; \
-		*ppOut += *pnVerts; \
-	} \
- \
-	return LTTRUE; \
-}
-
-#define CLIP_PLANE_V(NAME, V, INSIDE, EDGE) \
-inline LTBOOL NAME(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut) \
-{ \
-	static uint32 anInside[CLIP_MAX_VERTS]; \
-	V *pV, *pEnd, *pPrev, *pCur, *pOutStart; \
-	uint32* pFlag; \
-	int32 nInside, i, iPrev; \
-	float t; \
- \
-	nInside = 0; \
-	++g_nClipPasses; \
- \
-	pFlag = anInside; \
-	pV = *ppVerts; \
-	pEnd = pV + *pnVerts; \
-	for (; pV != pEnd; ++pV) \
-	{ \
-		uint32 bIn = INSIDE; \
- \
-		*pFlag = bIn; \
-		nInside += bIn; \
-		pFlag++; \
-	} \
- \
-	if (nInside == 0) \
-		return LTFALSE; \
- \
-	if (nInside != *pnVerts) \
-	{ \
-		pOutStart = *ppOut; \
-		iPrev = *pnVerts - 1; \
-		pPrev = &(*ppVerts)[iPrev]; \
-		for (i = 0; i < *pnVerts; i++) \
-		{ \
-			pCur = &(*ppVerts)[i]; \
- \
-			if (anInside[iPrev]) \
-			{ \
-				**ppOut = *pPrev; \
-				++(*ppOut); \
-			} \
- \
-			if (anInside[iPrev] != anInside[i]) \
-			{ \
-				t = EDGE(&pPrev->m_vPos, &pCur->m_vPos, &(*ppOut)->m_vPos); \
-				LerpClipVert(pPrev, pCur, *ppOut, t); \
-				++(*ppOut); \
-			} \
- \
-			iPrev = i; \
-			pPrev = pCur; \
-		} \
- \
-		*pnVerts = *ppOut - pOutStart; \
-		*ppVerts = pOutStart; \
-		*ppOut += *pnVerts; \
-	} \
- \
-	return LTTRUE; \
-}
-
-CLIP_PLANE_V(ClipNear, ClipVert, (pV->m_vPos.z >= g_fNearZ), ClipEdgeNear)
-CLIP_PLANE_V(ClipLeft, ClipVert, (-pV->m_vPos.z < pV->m_vPos.x), ClipEdgeLeft)
-CLIP_PLANE_V(ClipNear, ClipVert2, (pV->m_vPos.z >= g_fNearZ), ClipEdgeNear)
-CLIP_PLANE_V(ClipLeft, ClipVert2, (-pV->m_vPos.z < pV->m_vPos.x), ClipEdgeLeft)
-template<class V> LTBOOL ClipTop(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipRight(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipBottom(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipFar(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-
-
-// Clip a polygon against the planes in nClipFlags, into the clip scratch
-// buffer. FALSE when nothing is left.
-#define CLIP_POLY(NAME, V) \
-LTBOOL __fastcall NAME(uint32 nClipFlags, V** ppVerts, int32* pnVerts) \
-{ \
-	V* pOut; \
-	V* pVerts; \
-	int32 nVerts; \
-	uint32 anUnused[6]; \
- \
-	if (g_bUseD3DClip) \
-	{ \
-		nClipFlags &= 1; \
-		if (!nClipFlags) \
-			return LTTRUE; \
-	} \
- \
-	pOut = (V*)g_pClipScratch; \
-	pVerts = *ppVerts; \
-	nVerts = *pnVerts; \
- \
-	if (nClipFlags & 0x01) \
-	{ \
-		if (!ClipNear(&anUnused[0], &pVerts, &nVerts, &pOut)) \
-			return LTFALSE; \
-	} \
-	if (nClipFlags & 0x04) \
-	{ \
-		if (!ClipLeft(&anUnused[1], &pVerts, &nVerts, &pOut)) \
-			return LTFALSE; \
-	} \
-	if (nClipFlags & 0x08) \
-	{ \
-		if (!ClipTop(&anUnused[2], &pVerts, &nVerts, &pOut)) \
-			return LTFALSE; \
-	} \
-	if (nClipFlags & 0x10) \
-	{ \
-		if (!ClipRight(&anUnused[3], &pVerts, &nVerts, &pOut)) \
-			return LTFALSE; \
-	} \
-	if (nClipFlags & 0x20) \
-	{ \
-		if (!ClipBottom(&anUnused[4], &pVerts, &nVerts, &pOut)) \
-			return LTFALSE; \
-	} \
-	if (!(nClipFlags & 0x02) || \
-	    ClipFar(&anUnused[5], &pVerts, &nVerts, &pOut)) \
-	{ \
-		*ppVerts = pVerts; \
-		*pnVerts = nVerts; \
-		return LTTRUE; \
-	} \
-	return LTFALSE; \
-}
-
-// 0x10001530 / 0x10001b30 -- NEAR: retail inlines ClipNear and ClipLeft
-// and calls ClipTop; cl 8966 here inlines ClipTop as well (1335 bytes
-// against 1032; 1321 against 1001).
-CLIP_POLY(d3d_ClipPoly, ClipVert)
-CLIP_POLY(d3d_ClipPoly2, ClipVert2)
-
-CLIP_PLANE(ClipTop,    (pV->m_vPos.y < pV->m_vPos.z),  ClipEdgeTop)
-CLIP_PLANE(ClipRight,  (pV->m_vPos.x < pV->m_vPos.z),  ClipEdgeRight)
-CLIP_PLANE(ClipBottom, (-pV->m_vPos.z < pV->m_vPos.y), ClipEdgeBottom)
-CLIP_PLANE(ClipFar,    (pV->m_vPos.z <= g_fFarZ),      ClipEdgeFar)
-
-// ClipTop's own instances (0x100063e0, 0x10006e40), which the drivers
-// above call in retail and inline here.
-template LTBOOL ClipTop<ClipVert>(uint32*, ClipVert**, int32*, ClipVert**);
-template LTBOOL ClipTop<ClipVert2>(uint32*, ClipVert2**, int32*, ClipVert2**);

@@ -431,6 +431,35 @@ not additively.
 
 Not fixed yet (the renderer has no modern build).
 
+### The renderer's box test builds three of a box's six faces at the wrong place
+
+d3d.ren 0x10031fc5 (`i_BoundingBoxTest`,
+src/engine/d3d/ph/fullintersectline.cpp). The segment-against-box test
+takes every face's plane distance from the box's minimum corner, so the
+planes of the +X, +Y and +Z faces are wrong. A segment through one of
+those faces gets an intersection point and plane that are off. NOLF2's
+engine still has the same code.
+
+Not fixed yet (the renderer has no modern build).
+
+### A lightmap page leaks its allocation bitmap when there is no lightmap format
+
+d3d.ren 0x10034f32 (the lightmap pager's page allocator,
+src/engine/d3d/ph/lmpaging.cpp). When the device offers no lightmap
+texture format, the new page is freed but its allocation bitmap is not.
+The surface-creation failure path just below frees both.
+
+Not fixed yet (the renderer has no modern build).
+
+### A dynamic-lightmap texture whose surface cannot be made locks a null surface
+
+d3d.ren 0x1001ddea (`CD3DLMTexture::Init`,
+src/engine/d3d/ph/d3d_optimizedsurface.cpp). When DirectDraw's
+`CreateSurface` fails, Init carries on and locks the surface it never got,
+calling through a null pointer.
+
+Not fixed yet (the renderer has no modern build).
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

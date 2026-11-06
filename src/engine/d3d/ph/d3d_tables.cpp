@@ -4,9 +4,9 @@
 //
 //  Three lookup tables with constructors, nothing else (whatever code this
 //  object had, /OPT:REF removed).  It is not pixelformat.cpp: its
-//  initialisers have no /Os jmp stub (each is `mov ecx,obj; jmp ctor`), and
-//  its memset is the intrinsic `rep stosd` where pixelformat.cpp's /O1
-//  calls the CRT -- this object is built with intrinsics.  The world draw
+//  initialisers have no /Os jmp stub (each is `mov ecx,obj; jmp ctor`).
+//  Its `rep stosd` is no intrinsic memset: VC6's loop optimiser makes it
+//  of a byte-fill loop (CIdentTable's constructor).  The world draw
 //  (TU15), DrawWorldModels (TU34) and the lightmap code (TU36, TU37) read
 //  the tables.
 // *********************************************************************** //
@@ -64,7 +64,8 @@ CIdentTable::CIdentTable()
 	for(i=0; i < 256; i++)
 		m_Ident[i] = (uint8)i;
 
-	memset(m_Full, 0xFF, sizeof(m_Full));
+	for(i=0; i < 256; i++)
+		m_Full[i] = 0xFF;
 }
 
 // 0x10036acd

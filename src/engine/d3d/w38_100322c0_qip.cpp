@@ -198,7 +198,7 @@ struct DDSurface7Vtbl
 };
 struct DDSurface7 { DDSurface7Vtbl* lpVtbl; };
 
-struct DDraw7;
+typedef struct IDirectDraw7 DDraw7;	// g_pDirectDraw's real type, for its link name
 struct DDraw7Vtbl
 {
 	long (__stdcall* QueryInterface)(DDraw7*, const D3DGuid* riid,
@@ -226,9 +226,9 @@ struct DDraw7Vtbl
 	                                     uint32* lpdwTotal,
 	                                     uint32* lpdwFree);          // +0x5c
 };
-struct DDraw7 { DDraw7Vtbl* lpVtbl; };
+struct IDirectDraw7 { DDraw7Vtbl* lpVtbl; };
 
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 struct D3DDevice7Vtbl
 {
 	void* m_pad_00[3];                                  // +0x00..+0x08
@@ -240,7 +240,7 @@ struct D3DDevice7Vtbl
 	long (__stdcall* ValidateDevice)(D3DDevice7*, uint32* lpdwPasses);
 	                                                    // +0x98
 };
-struct D3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
 
 struct D3D7 { void* lpVtbl; };
 
@@ -252,7 +252,8 @@ struct D3D7 { void* lpVtbl; };
 // (0x10033316), +0x18 with "NullRender" (0x100333ae) and +0x1c with the
 // answer (0x100333c4, whose result is compared with `fcomps` against the
 // 0.0f at 0x100a8800).
-struct RenderStructCB
+typedef struct RenderStruct RenderStructCB;	// g_pStruct's real type, for its link name
+struct RenderStruct
 {
 	uint8    m_Reserved00[0x14];                        // +0x00..+0x13
 	void    (*ConsolePrintf)(const char* pszMsg, ...);  // +0x14

@@ -56,7 +56,8 @@ struct DDBltFx26
 	uint32  m_Reserved04[0x18];                         // +0x04..+0x63
 };                                                      // 0x64
 
-struct D3DDevice7
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 	virtual long __stdcall Slot00() = 0;  virtual long __stdcall Slot04() = 0;
 	virtual long __stdcall Slot08() = 0;  virtual long __stdcall Slot0c() = 0;

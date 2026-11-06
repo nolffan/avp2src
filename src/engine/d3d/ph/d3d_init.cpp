@@ -8,6 +8,11 @@
 //            the device creation, the world create/destroy and 3D-frame
 //            entry points and the renderer's console commands.
 //
+//  Not yet written here: d3d_InitDevice (0x1001b8d0) and RenderCommand
+//  (0x1001c4b0).  Near: 0x1001b4c0 (the card detection: ours keeps the
+//  constant 1 in %edi for the whole function where retail pushes %edi only
+//  around the identifier's memset), 0x1001b010.
+//
 // *********************************************************************** //
 
 #include <windows.h>
@@ -56,8 +61,8 @@ extern int32 g_CV_NoLMPages;                                // 0x1005d42c
 extern LPDIRECTDRAWSURFACE7 g_pPrimarySurface;              // 0x1005d2b0 (common_init.cpp)
 extern LPDIRECTDRAWSURFACE7 g_pBackBuffer;                  // 0x1005d2b4
 extern LPDIRECTDRAWSURFACE7 g_pZBuffer;                     // 0x1005d2b8
-extern LPDIRECT3D7          g_100638d0;                     // 0x100638d0
-extern LPDIRECTDRAWSURFACE7 g_100638cc;                     // 0x100638cc
+extern LPDIRECTDRAW7        g_pDirectDraw;                  // 0x1005d2a8 (common_init.cpp)
+extern uint32               g_1005d2c0;                     // 0x1005d2c0 (common_init.cpp: the surfaces' memory caps)
 extern LTBOOL g_bInOptimized2D;                             // 0x100638dc
 
 LTBOOL  d3d_CreateLightmapPages(void* pWorld);              // 0x10035389
@@ -74,21 +79,22 @@ void    sub_10030120();
 void    sub_10029400();
 void    sub_100293d0();
 
-class CRenderSubsystem
+// The dynamic lightmap texture allocator (d3d_optimizedsurface.cpp's).
+class CLMAllocator
 {
 public:
-	virtual ~CRenderSubsystem();
+	virtual ~CLMAllocator();
 };
-CRenderSubsystem* sub_100331d1();
 
-class C1001e4ef
+class CD3DLMAllocator : public CLMAllocator
 {
 public:
-	C1001e4ef();                                            // 0x1001e4ef
+	CD3DLMAllocator();                                      // 0x1001e4ef
 
-	void*       m_pVTable;
-	uint32      m_04;
+	void*       m_pHead;                                    // +0x04
 };
+
+CLMAllocator* d3d_GetLMAllocator();                         // 0x100331d1 (lmdynamic.cpp)
 
 // The world the engine hands the renderer.
 struct RenderWorld
@@ -100,8 +106,40 @@ struct RenderWorld
 };
 
 
+// The engine's RenderStruct, as far as this file reaches into it.
+typedef void* HLTPARAM;
+
+struct RenderStruct
+{
+	uint8       m_Reserved00[0x14];
+	void      (*ConsolePrint)(char* pMsg, ...);             // +0x14
+	HLTPARAM  (*GetParameter)(char* pName);                 // +0x18
+	float     (*GetParameterValueFloat)(HLTPARAM hParam);   // +0x1c
+	char*     (*GetParameterValueString)(HLTPARAM hParam);  // +0x20
+};
+
+extern RenderStruct* g_pStruct;                             // 0x1005df08 (common_stuff.cpp)
+
+struct RenderStructInit
+{
+	int         m_RendererVersion;                          // +0x000
+	RMode       m_Mode;                                     // +0x004
+	void*       m_hWnd;                                     // +0x218
+};
+
+void    d3d_FreeDevice();                                   // 0x10011800 (common_init.cpp)
+
+
 // The device.
 LPDIRECT3DDEVICE7   g_pD3DDevice;                           // 0x100638c8
+LPDIRECT3D7         g_pD3D;                                 // 0x100638cc
+LPDIRECTDRAWCLIPPER g_pClipper;                             // 0x100638d0
+
+// What the card detection found.
+LTBOOL              g_bCanDoShadows;                        // 0x100622a8
+LTBOOL              g_bNoFullbrites;                        // 0x100622ac
+LTBOOL              g_bRage128;                             // 0x100638d4
+LTBOOL              g_100638c4;                             // 0x100638c4
 LTBOOL              g_bIn3D;                                // 0x100638d8
 LTBOOL              g_bLightmapPages;                       // 0x100638b8
 
@@ -512,6 +550,150 @@ HRESULT CALLBACK d3d_EnumZBufferFormatsCallback(DDPIXELFORMAT* pFormat, void* pC
 }
 
 
+// 0x1001b4c0 -- turn off what the card cannot do.  The ForceMode game
+// variable can name the card instead.
+void d3d_DetectCard()
+{
+	DDDEVICEIDENTIFIER2 id;
+	HLTPARAM hParam;
+
+	if (!g_pDirectDraw || !g_pStruct)
+		return;
+
+	memset(&id, 0, sizeof(id));
+	g_bCanDoShadows = LTTRUE;
+	g_bNoFullbrites = LTFALSE;
+
+	if (g_pDirectDraw->GetDeviceIdentifier(&id, 0) != DD_OK)
+		return;
+
+	hParam = g_pStruct->GetParameter("ForceMode");
+	if (hParam && stricmp(g_pStruct->GetParameterValueString(hParam), "PowerVR") == 0)
+		goto PowerVR;
+
+	hParam = g_pStruct->GetParameter("ForceMode");
+	if (hParam && stricmp(g_pStruct->GetParameterValueString(hParam), "Permedia2") == 0)
+		goto Permedia2;
+
+	hParam = g_pStruct->GetParameter("ForceMode");
+	if (hParam && stricmp(g_pStruct->GetParameterValueString(hParam), "Rage128") == 0)
+		goto Rage128;
+
+	if (id.dwVendorId == 0x104C)
+	{
+Permedia2:
+		g_pStruct->ConsolePrint("PERMEDIA 2 DETECTED: disabling lightmapping and shadows");
+		g_bLightmapPages = LTFALSE;
+		g_bCanDoShadows = LTFALSE;
+	}
+	else if (id.dwVendorId == 0x1033)
+	{
+		if (id.dwDeviceId == 0x46 || id.dwDeviceId == 0x2A)
+		{
+PowerVR:
+			g_pStruct->ConsolePrint("POWERVR DETECTED: disabling shadows and fullbrites");
+			g_bCanDoShadows = LTFALSE;
+			g_bNoFullbrites = LTTRUE;
+		}
+	}
+	else if (id.dwVendorId == 0x1002)
+	{
+		if (id.dwDeviceId == 0x5246)
+		{
+Rage128:
+			g_bRage128 = LTTRUE;
+		}
+	}
+	else if (id.dwVendorId == 0x121A)
+	{
+		if (id.dwDeviceId == 5)
+			g_100638c4 = LTFALSE;
+	}
+}
+
+
+// 0x1001b680 -- make the z-buffer and the device on it: the formats with a
+// stencil first, each tried until one works.
+LTBOOL d3d_CreateZBufferAndDevice(RenderStructInit* pInit, GUID guid)
+{
+	uint32 bTried[MAX_ZFORMATS];
+	uint32 nZFormats;
+	DDPIXELFORMAT zFormats[MAX_ZFORMATS];
+	DDPIXELFORMAT* pFormat;
+	DDSURFACEDESC2 ddsd;
+	uint32 i, iBest;
+
+	memset(bTried, 0, sizeof(bTried));
+
+	nZFormats = 0;
+	g_pZFormats = zFormats;
+	g_pnZFormats = &nZFormats;
+
+	if (g_pD3D->EnumZBufferFormats(guid, d3d_EnumZBufferFormatsCallback, LTNULL) != D3D_OK || !nZFormats)
+	{
+		AddDebugMessage(1, "Unable to find an acceptable z-buffer format.");
+		return LTFALSE;
+	}
+
+	while (nZFormats > 0)
+	{
+		iBest = (uint32)-1;
+		for (i = 0; i < nZFormats; i++)
+		{
+			if (!bTried[i])
+			{
+				if (iBest == (uint32)-1)
+					iBest = i;
+				else if (zFormats[iBest].dwStencilBitMask == 0 && zFormats[i].dwStencilBitMask != 0)
+					iBest = i;
+			}
+		}
+
+		if (iBest >= MAX_ZFORMATS)
+			return LTFALSE;
+
+		pFormat = &zFormats[iBest];
+
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT;
+		ddsd.dwWidth = pInit->m_Mode.m_Width;
+		ddsd.dwHeight = pInit->m_Mode.m_Height;
+		ddsd.ddsCaps.dwCaps = g_1005d2c0 | DDSCAPS_ZBUFFER;
+		ddsd.ddpfPixelFormat = *pFormat;
+
+		if (g_pDirectDraw->CreateSurface(&ddsd, &g_pZBuffer, LTNULL) != DD_OK)
+		{
+			AddDebugMessage(1, "Failed to make z-buffer.");
+			d3d_FreeDevice();
+			return LTFALSE;
+		}
+
+		if (FAILED(g_pBackBuffer->AddAttachedSurface(g_pZBuffer)))
+		{
+			g_pZBuffer->Release();
+			return LTFALSE;
+		}
+
+		if (SUCCEEDED(g_pD3D->CreateDevice(guid, g_pBackBuffer, &g_pD3DDevice)))
+		{
+			g_ZBufferFormat = *pFormat;
+			AddDebugMessage(1, "ZBuffer: Z Mask: %d, Stencil mask: %d",
+				pFormat->dwRGBZBitMask, pFormat->dwStencilBitMask);
+			return LTTRUE;
+		}
+
+		g_pBackBuffer->DeleteAttachedSurface(0, g_pZBuffer);
+		g_pZBuffer->Release();
+		g_pZBuffer = LTNULL;
+
+		bTried[iBest] = LTTRUE;
+	}
+
+	return LTFALSE;
+}
+
+
 // 0x1001c300 -- the attached back buffer's enumeration callback.
 HRESULT WINAPI d3d_EnumAttachedCallback(LPDIRECTDRAWSURFACE7 pSurface,
 	LPDDSURFACEDESC2 pDesc, LPVOID pContext)
@@ -586,10 +768,10 @@ void d3d_ReleaseDevice()
 {
 	d3d_UnoptimizeAll();
 
-	if (g_100638d0)
+	if (g_pClipper)
 	{
-		g_100638d0->Release();
-		g_100638d0 = LTNULL;
+		g_pClipper->Release();
+		g_pClipper = LTNULL;
 	}
 
 	if (g_pD3DDevice)
@@ -604,10 +786,10 @@ void d3d_ReleaseDevice()
 		g_pZBuffer = LTNULL;
 	}
 
-	if (g_100638cc)
+	if (g_pD3D)
 	{
-		g_100638cc->Release();
-		g_100638cc = LTNULL;
+		g_pD3D->Release();
+		g_pD3D = LTNULL;
 	}
 }
 
@@ -619,7 +801,7 @@ void d3d_TermSubsystems()
 	sub_10030120();
 	sub_10029400();
 
-	delete sub_100331d1();
+	delete d3d_GetLMAllocator();
 }
 
 // 0x1001c480
@@ -629,7 +811,7 @@ LTBOOL d3d_InitSubsystems()
 	sub_10030120();
 	sub_100293d0();
 
-	new C1001e4ef;
+	new CD3DLMAllocator;
 
 	return LTTRUE;
 }

@@ -40,7 +40,7 @@ T100506f0 Arr100506f0::sub_100506f0(GenListPos& pos) const
 // ---- 0x10037470 -- vptr to 0x100894c0, then operator delete if bit 0.
 extern void __cdecl sub_10080479(void* pMem);
 
-extern void* const g_vtbl_100894c0[];                   // 0x100894c0
+extern void* g_vtbl_100894c0[];                         // 0x100894c0 (d3ddata.cpp)
 
 struct C10037470
 {

@@ -401,7 +401,7 @@ struct Statse0e0
 	uint32		m_nBytes48;                             // +0x48
 };
 
-struct D3DDeve0e0;
+typedef struct IDirect3DDevice7 D3DDeve0e0;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeve0e0Vtbl
 {
@@ -418,7 +418,7 @@ struct D3DDeve0e0Vtbl
 	                             DDSurfe0e0* lpTex);             // +0x8c
 };
 
-struct D3DDeve0e0
+struct IDirect3DDevice7
 {
 	D3DDeve0e0Vtbl*	lpVtbl;
 };

@@ -382,6 +382,7 @@ typedef long (__stdcall* PFnDDEnumerateExA)(void* lpCallback, void* lpContext,
 // _NONDISPLAYDEVICES
 #define DDENUM_ALL_10069e40                  7
 
+#ifndef PRIMAL_HUNT
 LTBOOL sub_10069e40()
 {
 	void*             hDDraw;
@@ -417,6 +418,7 @@ LTBOOL sub_10069e40()
 	sub_10020f30();
 	return (DirectDrawEnumerateA((void*)sub_10069ca0, LTNULL) == D3D_OK);
 }
+#endif // Primal Hunt: ph/gdenum.cpp
 
 
 // ======================================================================= //

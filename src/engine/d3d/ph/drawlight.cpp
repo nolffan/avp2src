@@ -8,6 +8,9 @@
 //  draw.
 // *********************************************************************** //
 
+#include <windows.h>
+#include <ddraw.h>
+#include <d3d.h>
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
 
@@ -16,7 +19,7 @@ struct LTObject;
 struct SceneContext;
 typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
 
-extern void		AddDebugMessage(int level, const char* pMsg, ...);  // 0x10013b13
+extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 
 class BaseObjectSet
 {
@@ -253,9 +256,130 @@ void d3d_LightWorldModelCB(LTObject* pWorldModel, LTObject* pLight)
 
 
 // ---------------------------------------------------------------------- //
+//  0x10024800 -- one visible light: list it for the models, and hang it
+//  on the world models its box reaches.
+// ---------------------------------------------------------------------- //
+
+// The profiling counters (TU14: 0x10013fb7, 0x10013fd5, 0x10013fe0).
+#define CSTART_NONE			0
+
+class CounterFinal
+{
+public:
+					CounterFinal(unsigned long startMode=CSTART_NONE);
+	unsigned long	m_Data[2];
+};
+
+typedef CounterFinal Counter;
+
+void			cnt_StartCounterFinal(CounterFinal &cCounter);
+unsigned long	cnt_EndCounterFinal(CounterFinal &cCounter);
+
+inline void cnt_StartCounter(Counter &cCounter) { cnt_StartCounterFinal(cCounter); }
+inline unsigned long cnt_EndCounter(Counter &cCounter) { return cnt_EndCounterFinal(cCounter); }
+
+class CountAdder
+{
+	public:
+		CountAdder(uint32 *pNum)
+		{
+			m_pNum = pNum;
+			cnt_StartCounter(m_Counter);
+		}
+		~CountAdder()
+		{
+			*m_pNum += cnt_EndCounter(m_Counter);
+		}
+		Counter m_Counter;
+		uint32 *m_pNum;
+};
+
+struct FrameCounters
+{
+	uint8		m_pad_00[0x18];
+	uint32*		m_pLightTicks;                          // +0x18
+};
+
+// The world tree's box query.
+typedef void (*WTObjCallback)(LTObject *pObj, LTObject *pUser);
+
+class FindBoxInfo
+{
+public:
+				FindBoxInfo()
+				{
+					m_pTree = LTNULL;
+					m_iObjArray = 0;
+					m_Min.Init();
+					m_Max.Init();
+					m_Pos.Init();
+					m_CB = LTNULL;
+					m_pCBUser = LTNULL;
+				}
+
+	void*			m_pTree;                            // +0x00
+	uint32			m_iObjArray;                        // +0x04
+	LTVector		m_Min;                              // +0x08
+	LTVector		m_Max;                              // +0x14
+	LTVector		m_Pos;                              // +0x20
+	WTObjCallback	m_CB;                               // +0x2c
+	LTObject*		m_pCBUser;                          // +0x30
+};
+
+class WorldTree
+{
+public:
+	virtual void	Slot00();
+	virtual void	Slot04();
+	virtual void	FindObjectsInBox(FindBoxInfo *pInfo);   // +0x08
+};
+
+class SceneWorld
+{
+public:
+	uint8		m_pad_00[0x6c];
+	WorldTree	m_WorldTree;                            // +0x6c
+};
+
+#define MAX_VISIBLE_LIGHTS	40
+#define FLAG_DONTLIGHTWORLD	0x80
+
+extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
+extern LTObject*		g_DynamicLights[];              // 0x1005c168
+extern uint32			g_nDynamicLights;               // 0x1005bcb0
+
+void d3d_ProcessLightSet(SceneContext* pContext, LTObject* pLight)
+{
+	FindBoxInfo info;
+	CountAdder cntAdd(g_pFrameCounters->m_pLightTicks);
+
+	if (!(pLight->m_Flags & FLAG_ONLYLIGHTWORLD))
+	{
+		if (g_nDynamicLights < MAX_VISIBLE_LIGHTS)
+		{
+			g_DynamicLights[g_nDynamicLights] = pLight;
+			g_nDynamicLights++;
+		}
+	}
+
+	if (pLight->m_Flags & FLAG_DONTLIGHTWORLD)
+		return;
+
+	if (g_pSceneWorld)
+	{
+		info.m_Min = pLight->m_Pos - LTVector(pLight->m_LightRadius, pLight->m_LightRadius, pLight->m_LightRadius);
+		info.m_Max = pLight->m_Pos + LTVector(pLight->m_LightRadius, pLight->m_LightRadius, pLight->m_LightRadius);
+		info.m_CB = d3d_LightWorldModelCB;
+		info.m_pCBUser = pLight;
+		g_pSceneWorld->m_WorldTree.FindObjectsInBox(&info);
+	}
+}
+
+
+// ---------------------------------------------------------------------- //
 //  0x10024990 -- light everything the visible lights reach.
 // ---------------------------------------------------------------------- //
-extern void d3d_ProcessLightSet(SceneContext* pContext, LTObject* pLight);  // 0x10024800
 
 void d3d_ProcessLights()
 {
@@ -289,7 +413,7 @@ void d3d_DrawLineSystems()
 }
 
 
-extern void d3d_DrawLineSystem(SceneContext* pContext, LTObject* pObject);  // 0x10024a60
+void d3d_DrawLineSystem(SceneContext* pContext, LTObject* pObject);
 
 // ---------------------------------------------------------------------- //
 //  0x10024a40
@@ -297,4 +421,172 @@ extern void d3d_DrawLineSystem(SceneContext* pContext, LTObject* pObject);  // 0
 static void d3d_QueueLineSystem(SceneContext* pContext, LTObject* pObject)
 {
 	g_pObjectDrawList->Add(pObject, d3d_DrawLineSystem);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x10024a60 -- draw one line system: every line transformed, clipped
+//  and projected here, then drawn as a TL line list.
+// ---------------------------------------------------------------------- //
+struct TLVertex
+{
+	LTVector	m_Vec;                                  // +0x00
+	float		rhw;                                    // +0x0c
+	uint8		m_Color[4];                             // +0x10 (b, g, r, a)
+	uint32		specular;                               // +0x14
+	float		tu, tv;                                 // +0x18
+};
+
+struct ViewParams
+{
+	uint8		m_pad_000[0x15c];
+	LTMatrix	m_mWorldToCamera;                      // +0x15c
+};
+
+// The engine's rotation, as the transform reads it.
+struct Rotation
+{
+	float		x, y, z, w;
+};
+
+struct LSLinePoint
+{
+	LTVector	m_Pos;
+	float		r, g, b, a;
+};
+
+struct LSLine
+{
+	LSLinePoint	m_Points[2];                            // +0x00
+	void*		m_pSystem;                              // +0x38
+	LSLine		*m_pPrev, *m_pNext;                     // +0x3c
+};
+
+struct LineSystem
+{
+	uint8		m_pad_000[0x97];
+	uint8		m_ColorA;                               // +0x097
+	uint8		m_pad_098[0x9c - 0x98];
+	Rotation	m_Rotation;                             // +0x09c
+	LTVector	m_Scale;                                // +0x0ac
+	uint8		m_pad_0b8[0x194 - 0xb8];
+	LTVector	m_Pos;                                  // +0x194
+	uint8		m_pad_1a0[0x1b8 - 0x1a0];
+	LSLine		m_LineHead;                             // +0x1b8
+};
+
+#define CLIPFLAGS_ALL		0x3f
+
+class RTexture;
+
+extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
+extern ViewParams			g_ViewParams;               // 0x1005b790
+extern int32				g_CV_FogEnable;             // 0x1005df34
+extern uint32				g_BindTextureStage;         // 0x100638c0
+extern RTexture*			g_pCurTextures[];           // 0x10067270
+
+extern LTBOOL	d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags);          // 0x10016c60
+extern void		d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);   // 0x1002739d
+extern void		d3d_RotationToMatrix(Rotation* pRot, LTMatrix* pMat);      // 0x1003655d
+
+// Round to nearest in the current FPU mode (LithTech's RoundFloatToInt).
+inline int32 RoundFloatToInt(float f)
+{
+	int32 n;
+	__asm fld f
+	__asm fistp n
+	return n;
+}
+
+// Unbind a stage's texture (TU06's 0x1000a22b, expanded here).
+inline void d3d_DisableTexture(uint32 iStage)
+{
+	if (g_pCurTextures[iStage])
+	{
+		g_pD3DDevice->SetTexture(iStage, LTNULL);
+		g_pCurTextures[iStage] = LTNULL;
+	}
+}
+
+// TU05's 0x100091f0, expanded here.
+inline void d3d_SetupTransformation(LTVector* pPos, Rotation* pRot, LTVector* pScale, LTMatrix* pMat)
+{
+	if (pRot->x > 100000.0f || pRot->x < -100000.0f)
+		pRot->x = 0.0f;
+
+	if (pRot->y > 100000.0f || pRot->y < -100000.0f)
+		pRot->y = 0.0f;
+
+	if (pRot->z > 100000.0f || pRot->z < -100000.0f)
+		pRot->z = 0.0f;
+
+	if (pRot->w > 100000.0f || pRot->w < -100000.0f)
+		pRot->w = 1.0f;
+
+	d3d_RotationToMatrix(pRot, pMat);
+
+	pMat->m[0][0] *= pScale->x;
+	pMat->m[1][0] *= pScale->x;
+	pMat->m[2][0] *= pScale->x;
+
+	pMat->m[0][1] *= pScale->y;
+	pMat->m[1][1] *= pScale->y;
+	pMat->m[2][1] *= pScale->y;
+
+	pMat->m[0][2] *= pScale->z;
+	pMat->m[1][2] *= pScale->z;
+	pMat->m[2][2] *= pScale->z;
+
+	pMat->m[0][3] = pPos->x;
+	pMat->m[1][3] = pPos->y;
+	pMat->m[2][3] = pPos->z;
+}
+
+void d3d_DrawLineSystem(SceneContext* pContext, LTObject* pObject)
+{
+	LineSystem* pSystem;
+	LSLine* pLine;
+	TLVertex verts[2];
+	LTMatrix mSystem, mFull;
+	float fAlphaScale;
+
+	if (g_CV_FogEnable)
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGENABLE, FALSE);
+
+	d3d_DisableTexture(g_BindTextureStage);
+
+	pSystem = (LineSystem*)pObject;
+
+	d3d_SetupTransformation(&pSystem->m_Pos, &pSystem->m_Rotation, &pSystem->m_Scale, &mSystem);
+	MatMul(&mFull, &g_ViewParams.m_mWorldToCamera, &mSystem);
+
+	fAlphaScale = (float)pSystem->m_ColorA;
+
+	pLine = pSystem->m_LineHead.m_pNext;
+	while (pLine != &pSystem->m_LineHead)
+	{
+		verts[0].rhw = MatVMul_H(&verts[0].m_Vec, &mFull, &pLine->m_Points[0].m_Pos);
+		verts[0].m_Color[2] = (uint8)RoundFloatToInt(pLine->m_Points[0].r * 255.0f);
+		verts[0].m_Color[1] = (uint8)RoundFloatToInt(pLine->m_Points[0].g * 255.0f);
+		verts[0].m_Color[0] = (uint8)RoundFloatToInt(pLine->m_Points[0].b * 255.0f);
+		verts[0].m_Color[3] = (uint8)RoundFloatToInt(pLine->m_Points[0].a * fAlphaScale);
+
+		verts[1].rhw = MatVMul_H(&verts[1].m_Vec, &mFull, &pLine->m_Points[1].m_Pos);
+		verts[1].m_Color[2] = (uint8)RoundFloatToInt(pLine->m_Points[1].r * 255.0f);
+		verts[1].m_Color[1] = (uint8)RoundFloatToInt(pLine->m_Points[1].g * 255.0f);
+		verts[1].m_Color[0] = (uint8)RoundFloatToInt(pLine->m_Points[1].b * 255.0f);
+		verts[1].m_Color[3] = (uint8)RoundFloatToInt(pLine->m_Points[1].a * fAlphaScale);
+
+		if (d3d_ClipLine(verts, CLIPFLAGS_ALL))
+		{
+			d3d_ProjectTLVert(&verts[0], &g_ViewParams);
+			d3d_ProjectTLVert(&verts[1], &g_ViewParams);
+			g_pD3DDevice->DrawPrimitive(D3DPT_LINELIST, D3DFVF_TLVERTEX, verts, 2, 0);
+		}
+
+		pLine = pLine->m_pNext;
+	}
+
+	if (g_CV_FogEnable)
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGENABLE, TRUE);
 }

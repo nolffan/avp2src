@@ -79,7 +79,7 @@ struct LTMat
 };
 
 // IDirect3DDevice7 -- DrawPrimitive, +0x64.
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 struct D3DDevice7Vtbl
 {
 	void*	m_pad_00[25];                                   // +0x00..+0x60
@@ -87,7 +87,7 @@ struct D3DDevice7Vtbl
 	                                   uint32 dwFVF, void* pVerts,
 	                                   uint32 nVerts, uint32 dwFlags);// +0x64
 };
-struct D3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
 
 extern D3DDevice7*		g_pD3DDevice;                   // 0x1008d988
 

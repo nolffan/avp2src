@@ -60,7 +60,7 @@ struct DDSurface
 	DDSurfaceVtbl* lpVtbl;
 };
 
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 struct D3DDeviceVtbl
 {
 	uint8   m_pad_00[0x50];
@@ -79,7 +79,7 @@ struct D3DDeviceVtbl
 	long (__stdcall* SetTextureStageState)(D3DDevice*, uint32, uint32,
 	                                       uint32);                   // +0x94
 };
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*  lpVtbl;
 };

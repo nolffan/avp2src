@@ -106,7 +106,7 @@ extern IAllocator g_10091df0;
 //  Repeated here rather than shared because these are separate translation
 //  units; the slot evidence is in that file's header and is not repeated.
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -120,7 +120,7 @@ struct D3DDevice7Vtbl
 	                                       uint32 dwState, uint32 dwValue);
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

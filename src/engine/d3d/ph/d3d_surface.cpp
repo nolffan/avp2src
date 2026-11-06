@@ -35,7 +35,8 @@ public:
 };
 
 // IDirect3DDevice7's BeginScene and EndScene.
-class CD3DDevice
+typedef struct IDirect3DDevice7 CD3DDevice;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 public:
 	virtual long __stdcall QueryInterface(void*, void**) = 0;
@@ -50,12 +51,12 @@ public:
 extern CD3DDevice*				g_pD3DDevice;           // 0x100638c8
 extern LPDIRECTDRAW7			g_pDirectDraw;          // 0x1005d2a8
 extern LPDIRECTDRAWSURFACE7		g_pBackBuffer;          // 0x1005d2b4
-extern uint32					g_bIn3D;                // 0x100638d8
+extern LTBOOL					g_bIn3D;                // 0x100638d8
 extern uint32					g_bOptimizeSurfaces;    // 0x100638dc
 
 extern void*	dalloc_z(uint32 size);                  // 0x10013a7f (common_stuff.cpp)
 extern void		dfree(void* ptr);                       // 0x10013ac5
-extern void		AddDebugMessage(int level, const char* pMsg, ...);  // 0x10013b13
+extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 extern void		InvalidateRect(LTRect *pRect);          // 0x10022e31
 extern void		dd_ConsolePrint(const char *pMsg, ...);  // 0x10013ade
 extern void		DirtyRectSwap();                        // 0x100230a8 (dirtyrect.cpp)
@@ -98,7 +99,7 @@ struct RenderBlitRequest
 #define BLIT_TRANSPARENT	1
 
 extern void		d3d_FreeOptimizedSurface(D3DRenderData *pData);                     // 0x1001cb20 (d3d_optimizedsurface.cpp)
-extern void		d3d_OptimizeSurface(D3DRenderData *pData, uint32 transparentColor);  // 0x1001cff4
+extern LTBOOL	d3d_OptimizeSurface(D3DRenderData *pData, uint32 transparentColor);  // 0x1001cff4
 extern void		d3d_BlitOptimized(RenderBlitRequest *pRequest);                      // 0x1001d4fa
 extern void		d3d_WarpOptimized(RenderBlitRequest *pRequest);                      // 0x1001d890
 

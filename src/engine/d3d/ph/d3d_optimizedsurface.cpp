@@ -10,11 +10,12 @@
 //  mode, and the Optimized2D render state (blend and colour).  NOLF's d3dopt2d.cpp, w53_10033f30_osoiqip.cpp and
 //  w81_10034ed0_osg5.cpp hold the same code a version earlier.
 //
+//  Then the dynamic lightmap textures and their allocator (0x1001dda5..
+//  0x1001e64d: the texture, vtables 0x100482f0/0x10048310, and the
+//  allocator, vtables 0x10048330/0x1004833c, singleton 0x1007c1e4).
+//
 //  Not yet written here: the colour-key mask (0x1001cbc4), the tile fill
-//  (0x1001cd43), the optimised blit and warp (0x1001d4fa, 0x1001d890),
-//  and the classes after them (0x1001dda5..0x1001e64d: a surface object,
-//  vtables 0x100482f0/0x10048310, and a list manager, vtable 0x10048330,
-//  singleton 0x1007c1e4).
+//  (0x1001cd43), the optimised blit and warp (0x1001d4fa, 0x1001d890).
 //
 //  Near: 0x1001cb73 -- retail keeps the 16-bit OR value in its own
 //  register (movzx) and the row count in memory; ours reuses the 32-bit
@@ -135,7 +136,7 @@ extern LPDIRECTDRAW7			g_pDirectDraw;          // 0x1005d2a8
 extern LPDIRECTDRAWSURFACE7		g_pFrontBuffer;         // 0x1005d2ac
 extern LPDIRECTDRAWSURFACE7		g_pPrimarySurface;      // 0x1005d2b0
 extern LTBOOL					g_bRunWindowed;         // 0x1005d538
-extern uint32					g_bIn3D;                // 0x100638d8
+extern LTBOOL					g_bIn3D;                // 0x100638d8
 extern LTBOOL					g_bInOptimized2D;       // 0x100638dc
 extern int32					g_CV_OptimizeSurfaces;  // 0x1005d750
 extern int32					g_CV_Bilinear;          // 0x1005dbb0
@@ -506,4 +507,445 @@ LTBOOL d3d_GetOptimized2DColor(uint32 *pColor)
 {
 	*pColor = g_Optimized2DColor;
 	return LTTRUE;
+}
+
+
+// ------------------------------------------------------------------------------ //
+// The dynamic lightmap textures (0x1001dda5..0x1001e64d): a texture filled
+// with a radial falloff when it is made, that can also be copied from or to
+// the back buffer and drawn over the screen as a quad.  The allocator keeps
+// them in a list behind a list head node; it is a singleton (lmdynamic.cpp's
+// g_pLMAllocator, 0x1007c1e4), made by d3d_InitSubsystems (0x1001c480).
+// ------------------------------------------------------------------------------ //
+extern LPDIRECTDRAWSURFACE7		g_pBackBuffer;          // 0x1005d2b4
+
+char*	d3d_GetErrorString(HRESULT hResult);            // 0x1001a720 (d3d_init.cpp)
+
+static char*		g_pLastLMTextureError;           // 0x10066168
+static D3DTLVERTEX	g_LMTextureVerts[4];             // 0x100650e8
+
+class CLMTexture
+{
+public:
+	virtual			~CLMTexture() {}
+
+	virtual bool	Init(uint32 width, uint32 height) = 0;
+	virtual void	GetDims(uint32 *pWidth, uint32 *pHeight) = 0;
+	virtual bool	SetStates() = 0;
+	virtual bool	DrawToScreen(uint32 x, uint32 y, uint32 color, bool bBlend) = 0;
+	virtual bool	CopyToScreen(uint32 x, uint32 y) = 0;
+	virtual bool	CopyFromScreen(uint32 x, uint32 y) = 0;
+};
+
+class CD3DLMTexture : public CLMTexture
+{
+public:
+					CD3DLMTexture()
+					{
+						m_Width = 0;
+						m_Height = 0;
+						m_pSurface = LTNULL;
+					}
+
+	virtual			~CD3DLMTexture() { Term(); }
+
+	virtual bool	Init(uint32 width, uint32 height);
+	virtual void	GetDims(uint32 *pWidth, uint32 *pHeight);
+	virtual bool	SetStates();
+	virtual bool	DrawToScreen(uint32 x, uint32 y, uint32 color, bool bBlend);
+	virtual bool	CopyToScreen(uint32 x, uint32 y);
+	virtual bool	CopyFromScreen(uint32 x, uint32 y);
+	virtual void	Term();
+
+	uint32					m_Width;                    // +0x04
+	uint32					m_Height;                   // +0x08
+	LPDIRECTDRAWSURFACE7	m_pSurface;                 // +0x0c
+};
+
+
+inline bool d3d_IsPowerOfTwo(uint32 size)
+{
+	return !(size & (size - 1));
+}
+
+// The largest power of two in size, up to 256.
+inline uint32 d3d_PowerOfTwoBelow(uint32 size)
+{
+	uint32 bit;
+
+	for (bit = 256; !(bit & size); bit >>= 1)
+		;
+
+	return bit;
+}
+
+
+// 0x1001ddea -- make the texture, a radial falloff from the centre: white
+// at the edges, a quarter grey in the middle.
+//
+// RETAIL BUG: when CreateSurface fails it still locks the (null) surface.
+bool CD3DLMTexture::Init(uint32 width, uint32 height)
+{
+	DDPIXELFORMAT pf;
+	DDSURFACEDESC2 ddsd;
+	LPDIRECTDRAWSURFACE7 pSurface;
+	HRESULT hResult;
+	RECT rect;
+	uint32 bytesPerPixel, rowSkip, x, y, i;
+	float fCenterX, fCenterY, fInvRadiusSqr, fDistX, fDistY, fDist, fValue;
+	uint8 *pBits, value;
+	bool bWidthOk, bHeightOk;
+
+	bWidthOk = d3d_IsPowerOfTwo(width);
+	bHeightOk = d3d_IsPowerOfTwo(height);
+
+	if (!bWidthOk)
+		width = d3d_PowerOfTwoBelow(width);
+
+	if (!bHeightOk)
+		height = d3d_PowerOfTwoBelow(height);
+
+	Term();
+
+	memset(&pf, 0, sizeof(pf));
+	pf.dwSize = sizeof(pf);
+	g_pLastLMTextureError = d3d_GetErrorString(g_pBackBuffer->GetPixelFormat(&pf));
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_TEXTURE;
+	ddsd.ddsCaps.dwCaps2 = DDSCAPS2_TEXTUREMANAGE;
+	ddsd.dwWidth = width;
+	ddsd.dwHeight = height;
+	memcpy(&ddsd.ddpfPixelFormat, &pf, sizeof(pf));
+
+	pSurface = LTNULL;
+	hResult = g_pDirectDraw->CreateSurface(&ddsd, &pSurface, LTNULL);
+	g_pLastLMTextureError = d3d_GetErrorString(hResult);
+	if (hResult == DD_OK)
+	{
+		m_Width = width;
+		m_Height = height;
+		m_pSurface = pSurface;
+	}
+
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = width;
+	rect.bottom = height;
+	hResult = pSurface->Lock(&rect, &ddsd, DDLOCK_WAIT | DDLOCK_NOSYSLOCK, LTNULL);
+	if (hResult == DD_OK)
+	{
+		bytesPerPixel = ddsd.ddpfPixelFormat.dwRGBBitCount >> 3;
+		rowSkip = (ddsd.lPitch / bytesPerPixel - width) * bytesPerPixel;
+		fCenterX = (float)width * 0.5f;
+		fCenterY = (float)height * 0.5f;
+		pBits = (uint8*)ddsd.lpSurface;
+		fInvRadiusSqr = 1.0f / (fCenterX * fCenterX + fCenterY * fCenterY);
+
+		for (y = 0; y < height; y++)
+		{
+			for (x = 0; x < width; x++)
+			{
+				fDistX = (float)x - fCenterX;
+				fDistY = (float)y - fCenterY;
+				fDist = (fDistX * fDistX + fDistY * fDistY) * fInvRadiusSqr * 2.0f;
+				fValue = fDist + 0.25f - fDist * 0.25f;
+				if (fValue > 1.0f)
+					fValue = 1.0f;
+
+				value = (uint8)(fValue * 255.0f);
+				for (i = 0; i < bytesPerPixel; i++)
+					pBits[i] = value;
+
+				pBits += bytesPerPixel;
+			}
+
+			pBits += rowSkip;
+		}
+
+		pSurface->Unlock(&rect);
+	}
+
+	return hResult == DD_OK;
+}
+
+
+// 0x1001e068 -- free the texture.
+void CD3DLMTexture::Term()
+{
+	if (m_pSurface)
+	{
+		m_pSurface->Release();
+		m_pSurface = LTNULL;
+	}
+
+	m_Width = 0;
+	m_Height = 0;
+}
+
+
+// 0x1001e086
+void CD3DLMTexture::GetDims(uint32 *pWidth, uint32 *pHeight)
+{
+	*pWidth = m_Width;
+	*pHeight = m_Height;
+}
+
+
+// 0x1001e09b -- the texture on stage 0, blended with the diffuse alpha,
+// multiplied into the screen.
+bool CD3DLMTexture::SetStates()
+{
+	LPDIRECTDRAWSURFACE7 pSurface;
+	int i;
+
+	pSurface = m_pSurface;
+
+	for (i = 0; i < 8; i++)
+	{
+		g_pD3DDevice->SetTexture(i, LTNULL);
+		g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLOROP, D3DTOP_DISABLE);
+		g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+	}
+
+	g_pD3DDevice->SetTexture(0, pSurface);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_CLAMP);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_BLENDDIFFUSEALPHA);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ZERO);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_SRCCOLOR);
+
+	return true;
+}
+
+
+// 0x1001e1a5 -- draw the texture over the screen at (x, y).
+bool CD3DLMTexture::DrawToScreen(uint32 x, uint32 y, uint32 color, bool bBlend)
+{
+	DWORD oldStates[5];
+	float fLeft, fTop, fRight, fBottom;
+	int i;
+
+	SetStates();
+
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_ZENABLE, &oldStates[0]);
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_ZWRITEENABLE, &oldStates[1]);
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, &oldStates[2]);
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_SRCBLEND, &oldStates[3]);
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_DESTBLEND, &oldStates[4]);
+
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, FALSE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, FALSE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, bBlend != false);
+	if (!bBlend)
+	{
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	}
+
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_CLAMP);
+
+	for (i = 0; i < 4; i++)
+	{
+		g_LMTextureVerts[i].sz = 0.0f;
+		g_LMTextureVerts[i].rhw = 1.0f;
+		g_LMTextureVerts[i].color = color;
+		g_LMTextureVerts[i].specular = 0;
+	}
+
+	fLeft = (float)x;
+	fTop = (float)y;
+	fRight = fLeft + (float)m_Width;
+	fBottom = fTop + (float)m_Height;
+
+	g_LMTextureVerts[0].sx = fLeft;
+	g_LMTextureVerts[0].sy = fTop;
+	g_LMTextureVerts[0].tu = 0.0f;
+	g_LMTextureVerts[0].tv = 0.0f;
+
+	g_LMTextureVerts[1].sx = fLeft;
+	g_LMTextureVerts[1].sy = fBottom;
+	g_LMTextureVerts[1].tu = 0.0f;
+	g_LMTextureVerts[1].tv = 1.0f;
+
+	g_LMTextureVerts[2].sx = fRight;
+	g_LMTextureVerts[2].sy = fBottom;
+	g_LMTextureVerts[2].tu = 1.0f;
+	g_LMTextureVerts[2].tv = 1.0f;
+
+	g_LMTextureVerts[3].sx = fRight;
+	g_LMTextureVerts[3].sy = fTop;
+	g_LMTextureVerts[3].tu = 1.0f;
+	g_LMTextureVerts[3].tv = 0.0f;
+
+	g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, g_LMTextureVerts, 4, 0);
+
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, oldStates[0]);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, oldStates[1]);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, oldStates[2]);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, oldStates[3]);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, oldStates[4]);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_WRAP);
+
+	return true;
+}
+
+
+// 0x1001e3d6 -- copy the texture to the back buffer at (x, y).
+bool CD3DLMTexture::CopyToScreen(uint32 x, uint32 y)
+{
+	RECT rect;
+	HRESULT hResult;
+	LPDIRECTDRAWSURFACE7 pSurface = m_pSurface;
+
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = m_Width;
+	rect.bottom = m_Height;
+
+	hResult = g_pBackBuffer->BltFast(x, y, pSurface, &rect, DDBLTFAST_WAIT);
+	g_pLastLMTextureError = d3d_GetErrorString(hResult);
+	return hResult == DD_OK;
+}
+
+
+// 0x1001e426 -- copy the back buffer at (x, y) into the texture.
+bool CD3DLMTexture::CopyFromScreen(uint32 x, uint32 y)
+{
+	RECT rect;
+	HRESULT hResult;
+	LPDIRECTDRAWSURFACE7 pSurface = m_pSurface;
+
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = m_Width;
+	rect.bottom = m_Height;
+
+	hResult = pSurface->BltFast(x, y, g_pBackBuffer, &rect, DDBLTFAST_WAIT);
+	g_pLastLMTextureError = d3d_GetErrorString(hResult);
+	return hResult == DD_OK;
+}
+
+
+// One render target in the manager's list.
+class CLMTextureNode
+{
+public:
+					CLMTextureNode(CLMTextureNode *pPrev, CLMTextureNode *pNext);
+					~CLMTextureNode();
+
+	CLMTextureNode*	Find(CLMTexture *pTexture)
+	{
+		if (pTexture == m_pTexture)
+			return this;
+
+		if (m_pNext)
+			return m_pNext->Find(pTexture);
+
+		return LTNULL;
+	}
+
+	CLMTexture*		m_pTexture;                      // +0x00
+	CLMTextureNode*	m_pPrev;                        // +0x04
+	CLMTextureNode*	m_pNext;                        // +0x08
+};
+
+// 0x1001e476
+CLMTextureNode::CLMTextureNode(CLMTextureNode *pPrev, CLMTextureNode *pNext)
+{
+	m_pTexture = new CD3DLMTexture;
+	m_pPrev = pPrev;
+	m_pNext = pNext;
+}
+
+// 0x1001e4b0
+CLMTextureNode::~CLMTextureNode()
+{
+	if (m_pTexture)
+		delete m_pTexture;
+
+	if (m_pPrev)
+		m_pPrev->m_pNext = m_pNext;
+
+	if (m_pNext)
+		m_pNext->m_pPrev = m_pPrev;
+}
+
+
+class CLMAllocator
+{
+public:
+	virtual					~CLMAllocator() {}
+
+	virtual CLMTexture*	Alloc(uint32 width, uint32 height) = 0;
+	virtual void			Free(CLMTexture *pTexture) = 0;
+};
+
+class CD3DLMAllocator : public CLMAllocator
+{
+public:
+							CD3DLMAllocator();
+	virtual					~CD3DLMAllocator();
+
+	virtual CLMTexture*	Alloc(uint32 width, uint32 height);
+	virtual void			Free(CLMTexture *pTexture);
+
+	CLMTextureNode*		m_pHead;                    // +0x04
+};
+
+extern CLMAllocator*	g_pLMAllocator;         // 0x1007c1e4
+
+// 0x1001e4ef
+CD3DLMAllocator::CD3DLMAllocator()
+{
+	if (!g_pLMAllocator)
+		g_pLMAllocator = this;
+
+	m_pHead = new CLMTextureNode(LTNULL, LTNULL);
+}
+
+// 0x1001e545
+CD3DLMAllocator::~CD3DLMAllocator()
+{
+	CLMTextureNode *pNext;
+
+	if (g_pLMAllocator == this)
+		g_pLMAllocator = LTNULL;
+
+	while (m_pHead)
+	{
+		pNext = m_pHead->m_pNext;
+		delete m_pHead;
+		m_pHead = pNext;
+	}
+}
+
+// 0x1001e5ad
+CLMTexture* CD3DLMAllocator::Alloc(uint32 width, uint32 height)
+{
+	CLMTexture *pTexture;
+
+	m_pHead->m_pNext = new CLMTextureNode(m_pHead, m_pHead->m_pNext);
+	pTexture = m_pHead->m_pNext ? m_pHead->m_pNext->m_pTexture : LTNULL;
+
+	if (!pTexture->Init(width, height))
+	{
+		delete m_pHead->m_pNext;
+		pTexture = LTNULL;
+	}
+
+	return pTexture;
+}
+
+// 0x1001e619
+void CD3DLMAllocator::Free(CLMTexture *pTexture)
+{
+	delete m_pHead->Find(pTexture);
 }

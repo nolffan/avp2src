@@ -8,12 +8,15 @@
 //  (0x1004dbe8..0x1004dc84) point at -- texture coordinate generators,
 //  texture binders and colour sources.
 //
-//  Not yet written here: the global's construction and destruction
-//  (0x1002a751..0x1002a931) and the larger members (0x1002aa7b,
-//  0x1002ab18, 0x1002acef, 0x1002adba).
+//  Still near: SetPassStates (0x1002adba: the stage pointer's bias),
+//  the two pass draws (0x1002b22f, 0x1002b4b3: register allocation) and
+//  DrawNodeFlat (0x1002b6dc: loop shape).
 // *********************************************************************** //
 
 #include <string.h>
+#include <windows.h>
+#include <ddraw.h>
+#include <d3d.h>
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "../../LT2/lithshared/stdlith/object_bank.h"
@@ -57,10 +60,22 @@ struct Surface
 	uint32			m_Flags;                            // +0x48
 };
 
+struct PolyVert;
+
 struct WorldPoly
 {
-	uint8			m_pad_00[0x2c];
+	CheapLTLink		m_Link;                             // +0x00
+	uint32			m_BatchInfo;                        // +0x08 (first stored vertex << 16 | count)
+	uint8			m_pad_0c[0x14 - 0x0c];
+	uint16			m_ClipFlags;                        // +0x14
+	uint8			m_pad_16[0x2c - 0x16];
 	Surface*		m_pSurface;                         // +0x2c
+	void*			m_pLights;                          // +0x30
+	uint8			m_pad_34[0x50 - 0x34];
+	PolyVert*		m_pTJuncVerts;                      // +0x50
+	uint16			m_nVerts;                           // +0x54
+	uint16			m_nTJuncVerts;                      // +0x56
+	uint8			m_Verts[1];                         // +0x58 (PolyVert)
 };
 
 struct PolyVert
@@ -122,6 +137,17 @@ struct TexStage                                         // 0x18 bytes
 {
 	TexStage()	{ m_ColorOp = 1; m_AlphaOp = 1; }
 
+	void		Set(uint32 colorOp, uint32 colorArg1, uint32 colorArg2,
+					uint32 alphaOp, uint32 alphaArg1, uint32 alphaArg2)
+	{
+		m_ColorOp = colorOp;
+		m_ColorArg1 = colorArg1;
+		m_ColorArg2 = colorArg2;
+		m_AlphaOp = alphaOp;
+		m_AlphaArg1 = alphaArg1;
+		m_AlphaArg2 = alphaArg2;
+	}
+
 	uint32		m_ColorOp;                              // +0x00
 	uint32		m_ColorArg1;                            // +0x04
 	uint32		m_ColorArg2;                            // +0x08
@@ -146,7 +172,7 @@ struct MaterialInst                                     // 0x59c bytes
 	MaterialInst();
 
 	Material*	m_pMaterial;                            // +0x000
-	uint32		m_04;                                   // +0x004
+	MaterialInst*	m_pNext;                            // +0x004
 	PassState	m_Passes[3];                            // +0x008
 };
 
@@ -213,6 +239,15 @@ public:
 	void		SetColor_Lightmap(PolyVert* pSrc, uint8* pDest);
 	void		SetColor_Scaled(PolyVert* pSrc, uint8* pDest);
 
+	void		AddPoly(WorldPoly* pPoly, uint32 iPass);
+	void		SetPassStates(PassDesc* pDesc, PassState* pState);
+	void		Flush();
+	void		DrawPolyFirstPass(WorldPoly* pPoly, PassDesc* pDesc, uint32 iNextPass);
+	void		DrawPolyAdditionalPass(WorldPoly* pPoly, PassDesc* pDesc, uint32 iNextPass);
+	void		DrawNodeFlat(PolyNode* pNode);
+	void		DrawNone(struct PolyBatch* pBatch);
+	void		DrawBatch(struct PolyBatch* pBatch);
+
 	DrawPolyMgr();
 	~DrawPolyMgr();
 
@@ -231,13 +266,13 @@ public:
 	float		m_DetailSizeV;                          // +0x79c
 	float		m_ColorScale[3];                        // +0x7a0
 	TexCoordFn	m_GenTexCoords[3];                      // +0x7ac
-	uint32		m_7b8;                                  // +0x7b8
+	TexCoordFn	m_GenTexCoordsAll;                      // +0x7b8
 	CMoArray<PolyBatch16>			m_Batches;          // +0x7bc
 	uint32		m_7d0;                                  // +0x7d0
 	ObjectBank<PolyNode, NullCS>	m_NodeBank;         // +0x7d4
 };
 
-extern uint32	d3d_GetTextureScale(SharedTexture* pTexture, uint32 iStage, float* pU, float* pV);  // 0x10022760
+extern LTBOOL	d3d_GetTextureScale(SharedTexture* pTexture, uint32 iStage, float* pU, float* pV);  // 0x10022760
 extern void		d3d_DisableTexture(uint32 iStage);      // 0x1000a22b
 extern TexPair	g_TexelSize[];                          // 0x100672a8
 extern uint8	g_LightTableR[256];                     // 0x1005fa9c
@@ -288,7 +323,7 @@ PassDesc::PassDesc()
 MaterialInst::MaterialInst()
 {
 	m_pMaterial = LTNULL;
-	m_04 = 0;
+	m_pNext = LTNULL;
 }
 
 PassState::PassState()
@@ -320,7 +355,7 @@ void DrawPolyMgr::Init()
 	m_Material.m_Passes[0].m_Stages[0].m_18 = 0;
 	m_Material.m_Passes[0].m_Stages[0].m_1c = 0;
 	m_Inst.m_pMaterial = &m_Material;
-	m_Inst.m_04 = 0;
+	m_Inst.m_pNext = LTNULL;
 	m_pInst = &m_Inst;
 }
 
@@ -559,24 +594,102 @@ int __fastcall d3d_ClipNone(uint32 clipFlags, void* ppVerts, void* pnVerts)
 	return 0;
 }
 
-// 0x1002acd4
-void __fastcall d3d_DrawNone(uint32 a, void* b, void* pList)
-{
-}
+// A polygon's vertices as a pass draws them, and what its stages bound.
+#define MAX_PASS_VERTS		128
 
 struct PolyBatch
 {
-	void*		m_pList;                                // +0x00
-	uint8		m_pad_04[0x10 - 0x04];
-	uint32		m_nVerts;                               // +0x10
-	uint8		m_pad_14[0x18 - 0x14];
-	uint8		m_Verts[1];                             // +0x18
+	WorldPoly*	m_pList;                                // +0x00
+	uint32		m_TexResult[3];                         // +0x04
+	int			m_nVerts;                               // +0x10
+	uint32		m_VertSize;                             // +0x14
+	uint8		m_Verts[MAX_PASS_VERTS * 0x28];         // +0x18
 };
 
+// 0x1002acd4
+void DrawPolyMgr::DrawNone(PolyBatch* pBatch)
+{
+}
+
 // 0x1002acd7
-void __fastcall d3d_DrawBatch(uint32 a, void* b, PolyBatch* pBatch)
+void DrawPolyMgr::DrawBatch(PolyBatch* pBatch)
 {
 	d3d_DrawPolyList(pBatch->m_pList, pBatch->m_Verts, pBatch->m_nVerts);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x1002acef -- put a polygon on a pass's list: on the node for its
+//  texture, made when there is none yet.
+// ---------------------------------------------------------------------- //
+typedef void (*GetFlagsFn)(WorldPoly* pPoly, uint32* pType, uint32* pFlags);
+extern GetFlagsFn g_GetFlagsFns[];
+
+void DrawPolyMgr::AddPoly(WorldPoly* pPoly, uint32 iPass)
+{
+	MaterialInst* pInst;
+	LTLink* pList;
+	LTLink* pCur;
+	PolyNode* pNode;
+	uint32 type, flags;
+
+	pInst = m_Material.m_pInst;
+	g_GetFlagsFns[m_Material.m_Passes[iPass].m_18](pPoly, &type, &flags);
+
+	pList = &pInst->m_Passes[iPass].m_Lists[type];
+	for (pCur = pList->m_pNext; pCur != pList; pCur = pCur->m_pNext)
+	{
+		pNode = (PolyNode*)pCur->m_pData;
+		if (pNode->m_0c == flags)
+		{
+			dl_Insert(&pNode->m_Head, &pPoly->m_Link);
+			return;
+		}
+	}
+
+	pNode = m_NodeBank.Allocate();
+	if (!pNode)
+		return;
+
+	pNode->m_0c = flags;
+	dl_Insert(pList, &pNode->m_Link1);
+	dl_Insert(&pInst->m_Passes[iPass].m_Pending, &pNode->m_Link2);
+	dl_Insert(&pNode->m_Head, &pPoly->m_Link);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x1002adba -- a pass's blend and texture stage states.
+// ---------------------------------------------------------------------- //
+extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
+
+void DrawPolyMgr::SetPassStates(PassDesc* pDesc, PassState* pState)
+{
+	uint32 i;
+
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, pDesc->m_00);
+	if (pDesc->m_00)
+	{
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, pState->m_180);
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, pState->m_184);
+	}
+
+	for (i=0; i < pDesc->m_1c; i++)
+	{
+		g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLOROP, pState->m_Stages[i].m_ColorOp);
+		if (pState->m_Stages[i].m_ColorOp != D3DTOP_DISABLE)
+		{
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLORARG1, pState->m_Stages[i].m_ColorArg1);
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLORARG2, pState->m_Stages[i].m_ColorArg2);
+		}
+
+		g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAOP, pState->m_Stages[i].m_AlphaOp);
+		if (pState->m_Stages[i].m_AlphaOp != D3DTOP_DISABLE)
+		{
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAARG1, pState->m_Stages[i].m_AlphaArg1);
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAARG2, pState->m_Stages[i].m_AlphaArg2);
+		}
+	}
 }
 
 
@@ -586,3 +699,505 @@ void __fastcall d3d_DrawBatch(uint32 a, void* b, PolyBatch* pBatch)
 // ---------------------------------------------------------------------- //
 CD3DConVar	g_CV_TestGouraud("TestGouraud", 0.0f, LTNULL, LTNULL);	// 0x10074298  $E 0x1002aea4/0x1002aea9
 CD3DConVar	g_CV_TestLightmap("TestLightmap", 1.0f, LTNULL, LTNULL);	// 0x10074278  $E 0x1002aec3/0x1002aec8
+
+
+// ---------------------------------------------------------------------- //
+//  The per-pass function tables (0x1004dbe8..0x1004dc90).
+// ---------------------------------------------------------------------- //
+struct TLVertex;
+typedef uint32 (DrawPolyMgr::*SetTextureFn)(WorldPoly* pPoly, uint32 iStage);
+typedef uint32 (DrawPolyMgr::*SetTextureFn2)(WorldPoly* pPoly, uint32 iStage, uint32 flags);
+typedef void (DrawPolyMgr::*SetColorFn)(PolyVert* pSrc, uint8* pDest);
+typedef void (__fastcall *SpecularFn)(TLVertex* pVert, uint32* pSpecular);
+typedef int (__fastcall *ClipFn)(uint32 clipFlags, void* ppVerts, void* pnVerts);
+typedef void (DrawPolyMgr::*DrawBatchFn)(PolyBatch* pBatch);
+
+extern SpecularFn	g_pfnSetupSpecular;                 // 0x1005e1c4
+extern SpecularFn	g_pfnSetupFogSpecular;              // 0x1005e6d8
+
+GetFlagsFn g_GetFlagsFns[2] =                           // 0x1004dbe8
+{
+	d3d_GetTextureFlags,
+	(GetFlagsFn)d3d_GetSurfaceFlags,
+};
+
+TexCoordFn g_TexCoordFns[4] =                           // 0x1004dbf0
+{
+	&DrawPolyMgr::GenTexCoords_Base,
+	&DrawPolyMgr::GenTexCoords_Lightmap,
+	&DrawPolyMgr::GenTexCoords_Detail,
+	&DrawPolyMgr::GenTexCoords_Scaled,
+};
+
+TexCoordFn g_MultiTexCoordFns[4] =                      // 0x1004dc00
+{
+	LTNULL,
+	LTNULL,
+	(TexCoordFn)&DrawPolyMgr::GenTexCoords2,
+	(TexCoordFn)&DrawPolyMgr::GenTexCoords3,
+};
+
+SetTextureFn g_SetTextureFns[4] =                       // 0x1004dc10
+{
+	&DrawPolyMgr::SetTexture_Base,
+	&DrawPolyMgr::SetTexture_None,
+	&DrawPolyMgr::SetTexture_DetailScale,
+	&DrawPolyMgr::SetTexture_Disable,
+};
+
+SetTextureFn2 g_SetTextureFns2[4] =                     // 0x1004dc20
+{
+	&DrawPolyMgr::SetTexture_Shared,
+	&DrawPolyMgr::SetTexture_Lightmap,
+	&DrawPolyMgr::SetTexture_Detail,
+	&DrawPolyMgr::SetTexture_None2,
+};
+
+SetColorFn g_SetColorFns[3] =                           // 0x1004dc30
+{
+	(SetColorFn)&DrawPolyMgr::SetColor_None,
+	&DrawPolyMgr::SetColor_Lightmap,
+	&DrawPolyMgr::SetColor_Scaled,
+};
+
+SpecularFn* g_SpecularFns[3] =                          // 0x1004dc3c
+{
+	&g_pfnSetupSpecular,
+	&g_pfnSetupFogSpecular,
+};
+
+// The rest by stage count (1..3).
+uint32 g_PassVertSizes[4] = { 0x20, 0x28, 0x30 };       // 0x1004dc48
+
+ClipFn g_ClipFns[4] =                                   // 0x1004dc58
+{
+	d3d_ClipTL,
+	d3d_ClipLM,
+	d3d_ClipNone,
+};
+
+ClipFn g_ClipFnsRC[4] =                                 // 0x1004dc68
+{
+	d3d_ClipTLRC,
+	d3d_ClipLMRC,
+	d3d_ClipNone,
+};
+
+DrawBatchFn g_DrawBatchFns[4] =                         // 0x1004dc78
+{
+	&DrawPolyMgr::DrawNone,
+	&DrawPolyMgr::DrawBatch,
+	&DrawPolyMgr::DrawNone,
+};
+
+uint32 g_PassFVFs[3] = { 0x1c4, 0x2c4, 0x3c4 };         // 0x1004dc88
+
+
+// ---------------------------------------------------------------------- //
+//  0x1002aee2 -- draw everything queued, a material, a pass and a
+//  texture at a time.
+// ---------------------------------------------------------------------- //
+struct RenderWorld
+{
+	uint8		m_pad_00[0x0c];
+	uint16		m_FrameCode;                            // +0x0c
+};
+
+extern RenderWorld*	g_pRenderWorld;                     // 0x1005bd1c
+extern int32		g_CV_FixTJunc;                      // 0x1005dbb4
+extern void		AddDebugMessage(int level, const char* pMsg, ...);  // 0x10013b13
+extern void		dd_ConsolePrint(const char* pMsg, ...); // 0x10013ade
+
+void DrawPolyMgr::Flush()
+{
+	MaterialInst* pInst;
+	Material* pMaterial;
+	PassDesc* pDesc;
+	PassState* pState;
+	LTLink* pPending;
+	LTLink* pLink;
+	LTLink* pNextLink;
+	PolyNode* pNode;
+	WorldPoly* pFirst;
+	CheapLTLink* pCur;
+	CheapLTLink* pNext;
+	uint32 iPass, iStage, iNextPass;
+	uint32 oldAlphaBlend, oldSrcBlend, oldDestBlend;
+
+	m_768 = g_pRenderWorld->m_FrameCode;
+
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, (unsigned long*)&oldAlphaBlend);
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_SRCBLEND, (unsigned long*)&oldSrcBlend);
+	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_DESTBLEND, (unsigned long*)&oldDestBlend);
+
+	if (g_CV_TestGouraud.m_nValue)
+	{
+		m_Material.m_Passes[0].m_00 = 0;
+		m_Material.m_Passes[0].m_14 = 0;
+		m_Material.m_nPasses = 1;
+		m_Material.m_Passes[0].m_10 = 1;
+		m_Material.m_Passes[0].m_18 = 0;
+		m_Material.m_Passes[0].m_1c = 1;
+		m_Material.m_Passes[0].m_Stages[0].m_18 = 0;
+		m_Material.m_Passes[0].m_Stages[0].m_1c = 0;
+	}
+	else if (g_CV_TestLightmap.m_nValue)
+	{
+		m_Material.m_nPasses = 2;
+		m_Material.m_Passes[0].m_00 = 0;
+		m_Material.m_Passes[0].m_10 = 0;
+		m_Material.m_Passes[0].m_14 = 0;
+		m_Material.m_Passes[0].m_18 = 0;
+		m_Material.m_Passes[0].m_1c = 1;
+		m_Material.m_Passes[0].m_Stages[0].m_18 = 0;
+		m_Material.m_Passes[0].m_Stages[0].m_1c = 0;
+
+		m_Material.m_Passes[1].m_00 = 1;
+		m_Inst.m_Passes[1].m_180 = D3DBLEND_DESTCOLOR;
+		m_Inst.m_Passes[1].m_184 = D3DBLEND_SRCCOLOR;
+		m_Material.m_Passes[1].m_10 = 0;
+		m_Material.m_Passes[1].m_14 = 0;
+		m_Material.m_Passes[1].m_18 = 1;
+		m_Material.m_Passes[1].m_1c = 1;
+		m_Material.m_Passes[1].m_Stages[0].m_18 = 1;
+		m_Material.m_Passes[1].m_Stages[0].m_1c = 1;
+	}
+	else
+	{
+		m_Material.m_Passes[0].m_00 = 0;
+		m_Material.m_nPasses = 1;
+		m_Material.m_Passes[0].m_10 = 0;
+		m_Material.m_Passes[0].m_14 = 0;
+		m_Material.m_Passes[0].m_1c = 2;
+		m_Material.m_Passes[0].m_Stages[0].m_18 = 0;
+		m_Material.m_Passes[0].m_Stages[0].m_1c = 0;
+		m_Material.m_Passes[0].m_18 = 0;
+
+		m_Inst.m_Passes[0].m_Stages[0].Set(D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE,
+			D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE);
+
+		m_Material.m_Passes[0].m_Stages[1].m_18 = 1;
+		m_Material.m_Passes[0].m_Stages[1].m_1c = 1;
+
+		m_Inst.m_Passes[0].m_Stages[1].Set(D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_CURRENT,
+			D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_CURRENT);
+	}
+
+	m_7d0 = 0;
+
+	pInst = m_pInst;
+	while (pInst)
+	{
+		pMaterial = pInst->m_pMaterial;
+		for (iPass=0; iPass < pMaterial->m_nPasses; iPass++)
+		{
+			pDesc = &pMaterial->m_Passes[iPass];
+			pState = &pInst->m_Passes[iPass];
+			pPending = &pState->m_Pending;
+			if (pState->m_Pending.m_pNext == pPending)
+				break;
+
+			SetPassStates(pDesc, pState);
+
+			if (pDesc->m_1c == 1)
+			{
+				m_GenTexCoordsAll = g_TexCoordFns[pDesc->m_Stages[0].m_18];
+			}
+			else
+			{
+				for (iStage=0; iStage < pDesc->m_1c; iStage++)
+					m_GenTexCoords[iStage] = g_TexCoordFns[pDesc->m_Stages[iStage].m_18];
+
+				m_GenTexCoordsAll = g_MultiTexCoordFns[pDesc->m_1c];
+			}
+
+			for (pLink = pPending->m_pNext; pLink != pPending; pLink = pNextLink)
+			{
+				pNextLink = pLink->m_pNext;
+				pNode = (PolyNode*)pLink->m_pData;
+
+				pFirst = (WorldPoly*)pNode->m_Head.m_pNext;
+				if ((LTLink*)pFirst != &pNode->m_Head)
+				{
+					for (iStage=0; iStage < pDesc->m_1c; iStage++)
+					{
+						if (!(this->*g_SetTextureFns[pDesc->m_Stages[iStage].m_1c])(pFirst, iStage))
+						{
+							AddDebugMessage(1, "Material '%s', pass %d, stage %d: TextureSrcInitFn failed.",
+								pMaterial, iPass, iStage);
+
+							if (iPass == 0)
+								DrawNodeFlat(pNode);
+
+							goto NextNode;
+						}
+					}
+
+					if (iPass == pMaterial->m_nPasses - 1)
+						iNextPass = 0;
+					else
+						iNextPass = iPass + 1;
+
+					if (iPass == 0)
+					{
+						for (pCur = pNode->m_Head.m_pNext; pCur != &pNode->m_Head; pCur = pNext)
+						{
+							pNext = pCur->m_pNext;
+							DrawPolyFirstPass((WorldPoly*)pCur, pDesc, iNextPass);
+						}
+					}
+					else
+					{
+						for (pCur = pNode->m_Head.m_pNext; pCur != &pNode->m_Head; pCur = pNext)
+						{
+							pNext = pCur->m_pNext;
+							DrawPolyAdditionalPass((WorldPoly*)pCur, pDesc, iNextPass);
+						}
+					}
+				}
+
+NextNode:
+				m_NodeBank.Free(pNode);
+			}
+		}
+
+		pInst = pInst->m_pNext;
+	}
+
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, oldAlphaBlend);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, oldSrcBlend);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, oldDestBlend);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x1002b22f -- a polygon's first pass: build its vertices, clip them,
+//  draw, and keep the projected positions for the passes after.
+// ---------------------------------------------------------------------- //
+inline void d3d_GetPolyVerts(WorldPoly* pPoly, PolyVert** ppVerts, int* pnVerts)
+{
+	if (g_CV_FixTJunc)
+	{
+		*ppVerts = pPoly->m_pTJuncVerts;
+		*pnVerts = pPoly->m_nTJuncVerts;
+	}
+	else
+	{
+		*ppVerts = (PolyVert*)pPoly->m_Verts;
+		*pnVerts = pPoly->m_nVerts;
+	}
+}
+
+struct StoredVert
+{
+	LTVector	m_Vec;                                  // +0x00
+	float		m_RHW;                                  // +0x0c
+};
+
+void DrawPolyMgr::DrawPolyFirstPass(WorldPoly* pPoly, PassDesc* pDesc, uint32 iNextPass)
+{
+	PolyBatch batch;
+	PolyVert* pPolyVerts;
+	uint8* pOut;
+	uint8* pVerts;
+	StoredVert* pStored;
+	int i;
+	uint32 iStage;
+	SetColorFn pSetColor;
+	SpecularFn pSpecular;
+
+	batch.m_pList = pPoly;
+	d3d_GetPolyVerts(pPoly, &pPolyVerts, &batch.m_nVerts);
+
+	batch.m_VertSize = g_PassVertSizes[pDesc->m_1c - 1];
+	pSetColor = g_SetColorFns[pDesc->m_10];
+	pSpecular = *g_SpecularFns[pDesc->m_14];
+
+	pOut = batch.m_Verts;
+	for (i=0; i < batch.m_nVerts; i++)
+	{
+		*(LTVector*)pOut = *pPolyVerts->m_pVec;
+		(this->*pSetColor)(pPolyVerts, pOut);
+		pSpecular((TLVertex*)pOut, (uint32*)(pOut + 0x14));
+		(this->*m_GenTexCoordsAll)(pPolyVerts, (TexPair*)(pOut + 0x18), 0);
+		pPolyVerts++;
+		pOut += batch.m_VertSize;
+	}
+
+	batch.m_TexResult[2] = 0;
+	batch.m_TexResult[1] = 0;
+	batch.m_TexResult[0] = 0;
+
+	if (pPoly->m_pLights && pDesc->m_0c)
+	{
+		for (iStage=0; iStage < pDesc->m_1c; iStage++)
+			(this->*g_DrawBatchFns[pDesc->m_Stages[iStage].m_20])(&batch);
+	}
+
+	pVerts = batch.m_Verts;
+	if (!g_ClipFns[pDesc->m_1c - 1](pPoly->m_ClipFlags & 0x3f, &pVerts, &batch.m_nVerts))
+		return;
+
+	for (iStage=0; iStage < pDesc->m_1c; iStage++)
+		(this->*g_SetTextureFns2[pDesc->m_Stages[iStage].m_1c])(pPoly, iStage, batch.m_TexResult[iStage]);
+
+	g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, g_PassFVFs[pDesc->m_1c - 1], pVerts, batch.m_nVerts, 0);
+
+	if (!iNextPass)
+		return;
+
+	if (m_Batches.GetSize() - m_7d0 < (uint32)batch.m_nVerts)
+	{
+		if (!m_Batches.NiceSetSize(m_Batches.GetSize() + 0x100))
+			return;
+	}
+
+	pPoly->m_BatchInfo = (m_7d0 << 16) | (batch.m_nVerts & 0xFFFF);
+	if (pVerts == batch.m_Verts)
+		pPoly->m_ClipFlags &= ~0x3f;
+
+	pStored = (StoredVert*)&m_Batches[m_7d0];
+	for (i=0; i < batch.m_nVerts; i++)
+	{
+		pStored->m_Vec = *(LTVector*)pVerts;
+		pStored->m_RHW = ((float*)pVerts)[3];
+		pVerts += batch.m_VertSize;
+		pStored++;
+	}
+
+	m_7d0 += batch.m_nVerts;
+	AddPoly(pPoly, iNextPass);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x1002b4b3 -- a later pass: the first pass's projected positions with
+//  this pass's colours and coordinates.
+// ---------------------------------------------------------------------- //
+void DrawPolyMgr::DrawPolyAdditionalPass(WorldPoly* pPoly, PassDesc* pDesc, uint32 iNextPass)
+{
+	uint8 verts[MAX_PASS_VERTS * 0x28];
+	PolyVert* pPolyVerts;
+	uint8* pOut;
+	uint8* pVerts;
+	StoredVert* pStored;
+	int nVerts, nStored, i;
+	uint32 iStage, vertSize;
+	SetColorFn pSetColor;
+	SpecularFn pSpecular;
+
+	vertSize = g_PassVertSizes[pDesc->m_1c - 1];
+	pSetColor = g_SetColorFns[pDesc->m_10];
+	pSpecular = *g_SpecularFns[pDesc->m_14];
+
+	d3d_GetPolyVerts(pPoly, &pPolyVerts, &nVerts);
+
+	nStored = (uint16)pPoly->m_BatchInfo;
+	pStored = (StoredVert*)&m_Batches.GetArray()[pPoly->m_BatchInfo >> 16];
+	pVerts = verts;
+
+	if (pPoly->m_ClipFlags & 0x3f)
+	{
+		for (i=0; i < nVerts; i++)
+		{
+			*(LTVector*)pVerts = *pPolyVerts->m_pVec;
+			(this->*pSetColor)(pPolyVerts, pVerts);
+			pSpecular((TLVertex*)pVerts, (uint32*)(pVerts + 0x14));
+			(this->*m_GenTexCoordsAll)(pPolyVerts, (TexPair*)(pVerts + 0x18), 0);
+			pPolyVerts++;
+			pVerts += vertSize;
+		}
+
+		pVerts = verts;
+		if (!g_ClipFns[pDesc->m_1c - 1](pPoly->m_ClipFlags & 0x3f, &pVerts, &nVerts))
+			return;
+
+		if (nStored != nVerts)
+		{
+			dd_ConsolePrint("DrawPolyMgr::DrawPolyAdditionalPass: nQVerts != nVertices");
+			return;
+		}
+
+		pOut = verts;
+		for (i=0; i < nVerts; i++)
+		{
+			*(LTVector*)pOut = pStored->m_Vec;
+			((float*)pOut)[3] = pStored->m_RHW;
+			pStored++;
+			pOut += vertSize;
+		}
+	}
+	else
+	{
+		pOut = verts;
+		for (i=0; i < nVerts; i++)
+		{
+			*(LTVector*)pOut = pStored->m_Vec;
+			((float*)pOut)[3] = pStored->m_RHW;
+			(this->*pSetColor)(pPolyVerts, pOut);
+			pSpecular((TLVertex*)pOut, (uint32*)(pOut + 0x14));
+			(this->*m_GenTexCoordsAll)(pPolyVerts, (TexPair*)(pOut + 0x18), 0);
+			pStored++;
+			pOut += vertSize;
+			pPolyVerts++;
+		}
+	}
+
+	for (iStage=0; iStage < pDesc->m_1c; iStage++)
+		(this->*g_SetTextureFns2[pDesc->m_Stages[iStage].m_1c])(pPoly, iStage, 0);
+
+	g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, g_PassFVFs[pDesc->m_1c - 1], pVerts, nVerts, 0);
+
+	if (iNextPass)
+		AddPoly(pPoly, iNextPass);
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x1002b6dc -- a node whose texture would not bind: its polygons
+//  untextured, each in a colour of its own.
+// ---------------------------------------------------------------------- //
+struct FlatVert
+{
+	LTVector	m_Vec;                                  // +0x00
+	float		rhw;                                    // +0x0c
+	uint32		color;                                  // +0x10
+	uint32		specular;                               // +0x14
+	float		tu, tv;                                 // +0x18
+};
+
+void DrawPolyMgr::DrawNodeFlat(PolyNode* pNode)
+{
+	FlatVert verts[MAX_PASS_VERTS];
+	int nVerts, i;
+	FlatVert* pVerts;
+	PolyVert* pPolyVerts;
+	WorldPoly* pPoly;
+
+	d3d_DisableTexture(0);
+
+	pPoly = (WorldPoly*)pNode->m_Head.m_pNext;
+	while ((LTLink*)pPoly != &pNode->m_Head)
+	{
+		d3d_GetPolyVerts(pPoly, &pPolyVerts, &nVerts);
+		if (nVerts > MAX_PASS_VERTS)
+		{
+			dd_ConsolePrint("Error: vertex buffer overflow");
+			return;
+		}
+
+		pVerts = verts;
+		for (i=0; i < nVerts; i++)
+		{
+			pVerts[i].m_Vec = *pPolyVerts->m_pVec;
+			pVerts[i].color = (uint32)pPoly;
+			pPolyVerts++;
+		}
+
+		g_ClipFlags = 0x3f;
+		if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_SceneContext, 0))
+			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, 0x1c4, pVerts, nVerts, 0);
+
+		pPoly = (WorldPoly*)pPoly->m_Link.m_pNext;
+	}
+}

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 
 
 // The engine's RenderStruct, as far as the renderer calls into it here.

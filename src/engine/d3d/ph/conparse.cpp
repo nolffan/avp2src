@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 
 
 #define GNT_NOTOKEN         0

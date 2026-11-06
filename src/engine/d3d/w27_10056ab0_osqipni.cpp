@@ -502,14 +502,14 @@ public:
 
 // IDirect3DDevice7, under the tag and name big44ff4.cpp and others give
 // 0x1008d988; only DrawPrimitive (+0x64) is used here.
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 struct D3DDevice7Vtbl
 {
 	void*	m_Slots00[25];                                                  // +0x00
 	long (__stdcall* DrawPrimitive)(D3DDevice7*, uint32 nType, uint32 nFVF,
 	                                void* pVerts, uint32 nVerts, uint32 nFlags); // +0x64
 };
-struct D3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
 
 extern D3DDevice7*		g_pD3DDevice;                   // 0x1008d988
 extern int32			g_CV_FixTJunc;                  // 0x1008cb84  FixTJunc

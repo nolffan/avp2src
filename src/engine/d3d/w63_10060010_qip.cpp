@@ -639,7 +639,7 @@
 // ---------------------------------------------------------------------- //
 //  The D3D7 device, exactly as d3dbatcha.cpp declares it.
 // ---------------------------------------------------------------------- //
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -653,7 +653,7 @@ struct D3DDeviceVtbl
 	long (__stdcall* SetTexture)(D3DDevice*, uint32, void*);              // +0x8c
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*	lpVtbl;
 };

@@ -74,7 +74,15 @@ extern float    g_CV_SkyFogNearZ;                           // 0x1005d8b8
 extern float    g_CV_SkyFogFarZ;                            // 0x1005d7d8
 extern float    g_fFogScale;                                // 0x1005d428
 extern int32    g_CV_UseDX6Commands;                        // 0x1004a740
-extern uint8    g_GammaTable[256];                          // 0x10087b00
+class CGammaTable
+{
+public:
+	CGammaTable();
+
+	uint8   m_Table[256];
+};
+
+extern CGammaTable g_GammaTable;                            // 0x10087b00
 extern void*    dalloc(uint32 size);                        // 0x10013a66
 extern void     dfree(void* ptr);                           // 0x10013ac5
 
@@ -163,7 +171,7 @@ void __fastcall d3d_CalcSkyFog(const LTVector* pPos, uint32* pSpecular)
 // 0x10014340 -- a colour through the gamma table.
 uint32 d3d_GammaRGB(uint8 r, uint8 g, uint8 b)
 {
-	return RGB_MAKE(g_GammaTable[r], g_GammaTable[g], g_GammaTable[b]);
+	return RGB_MAKE(g_GammaTable.m_Table[r], g_GammaTable.m_Table[g], g_GammaTable.m_Table[b]);
 }
 
 // 0x10014380
@@ -290,7 +298,7 @@ void d3d_SetTranslucentObjectStates(LTBOOL bAdditive)
 }
 
 // 0x10014870
-void d3d_UnsetTranslucentObjectStates()
+void d3d_UnsetTranslucentObjectStates(LTBOOL bChangeZ)
 {
 	g_TranslucentStates.Restore();
 }
@@ -599,17 +607,28 @@ void d3d_FreeDeferredPolies(DeferredPoly* pList)
 #define CLEARSCREEN_RENDER  2
 
 class PFormat;
+
+union GenericColor
+{
+	uint32	dwVal;
+	uint16	wVal;
+	uint8	bVal;
+};
+
 class FormatMgr
 {
 public:
-	LTRESULT    PValueFromFormatColor(PFormat* pFormat, uint32 in, uint32& out);   // 0x10037780
+	LTRESULT    PValueFromFormatColor(PFormat* pFormat, GenericColor in, uint32& out);   // 0x10037780
 };
 
-struct ScreenFormat
+// pixelformat.cpp's, as far as this file reads it.
+class PFormat
 {
+public:
 	void*       m_pVTable;
 	uint32      m_eType;                                    // +0x04
 };
+typedef PFormat ScreenFormat;
 
 #define BPP_16  2
 
@@ -678,7 +697,7 @@ void d3d_Clear(LTRect* pRect, uint32 flags, LTVector* pClearColor)
 			fx.dwSize = sizeof(fx);
 			if (g_ScreenFormat.m_eType == BPP_16)
 			{
-				g_FormatMgr.PValueFromFormatColor((PFormat*)&g_ScreenFormat, dwColor, fillColor);
+				g_FormatMgr.PValueFromFormatColor((PFormat*)&g_ScreenFormat, *(GenericColor*)&dwColor, fillColor);
 				fx.dwFillColor = (uint16)fillColor;
 			}
 			else
@@ -728,7 +747,8 @@ struct RenderContext
 	void*       m_pMainWorld;                               // +0x00
 };
 
-struct SceneWorldFlags
+typedef struct SceneWorld SceneWorldFlags;  // common_draw.cpp's
+struct SceneWorld
 {
 	uint8       m_Reserved000[0x180];
 	uint32      m_Flags;                                    // +0x180
@@ -743,7 +763,7 @@ extern RenderContext*   g_pRenderContext;                   // 0x1005b778
 extern LTBOOL           g_bMultiPass;                       // 0x10062278
 extern LTBOOL           g_bFogCapable;                      // 0x10062888
 
-void    d3d_QueueGouraudPoly(RenderPoly* pPoly);            // 0x100238c5
+void    d3d_QueueGouraudPoly(void* pPoly);                  // 0x100238c5 (drawgouraud.cpp)
 void    d3d_DrawLightmapPoly(RenderPoly* pPoly);            // 0x100083bf
 void    d3d_DrawMultiPassPoly(RenderPoly* pPoly);           // 0x1003647b
 void    d3d_DrawTexturedPoly(RenderPoly* pPoly);            // 0x1000a11b
@@ -1125,9 +1145,8 @@ struct ObjectHandler
 	uint8           m_Reserved08[0x0c];
 };
 
-class VisibleSet
+struct VisibleSet
 {
-public:
 	void    ClearSets();                                    // 0x10039e80
 };
 
@@ -1603,7 +1622,15 @@ struct LitVertex
 	uint8       m_Color[4];                                 // +0x14 (b, g, r, a)
 };
 
-extern uint8    g_MulTable[256][256];                       // 0x10087c00
+class CMulTable
+{
+public:
+	CMulTable();
+
+	uint8   m_Table[256][256];
+};
+
+extern CMulTable g_MulTable;                                // 0x10087c00
 extern uint8    g_SatTable[512];                            // 0x10097c00
 
 // 0x10019040 -- add a light animation's blended frame to the vertices'
@@ -1645,9 +1672,9 @@ LTBOOL d3d_AddLightAnim(LitVertex* pVerts, uint32 nVerts, LightAnim* pAnim, Ligh
 		invBlend = 255 - blend;
 		for (i = 0; i < nVerts; i++)
 		{
-			pVerts[i].m_Color[2] = g_SatTable[g_SatTable[g_MulTable[pFrame2->m_R[i]][blend] + g_MulTable[pFrame1->m_R[i]][invBlend]] + pVerts[i].m_Color[2]];
-			pVerts[i].m_Color[1] = g_SatTable[g_SatTable[g_MulTable[pFrame2->m_G[i]][blend] + g_MulTable[pFrame1->m_G[i]][invBlend]] + pVerts[i].m_Color[1]];
-			pVerts[i].m_Color[0] = g_SatTable[g_SatTable[g_MulTable[pFrame2->m_B[i]][blend] + g_MulTable[pFrame1->m_B[i]][invBlend]] + pVerts[i].m_Color[0]];
+			pVerts[i].m_Color[2] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_R[i]][blend] + g_MulTable.m_Table[pFrame1->m_R[i]][invBlend]] + pVerts[i].m_Color[2]];
+			pVerts[i].m_Color[1] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_G[i]][blend] + g_MulTable.m_Table[pFrame1->m_G[i]][invBlend]] + pVerts[i].m_Color[1]];
+			pVerts[i].m_Color[0] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_B[i]][blend] + g_MulTable.m_Table[pFrame1->m_B[i]][invBlend]] + pVerts[i].m_Color[0]];
 		}
 	}
 

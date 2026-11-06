@@ -346,7 +346,7 @@ extern DDClipper* g_pClipper;                           // 0x1008d97c
 
 extern LTBOOL     g_bInOptimized2D;                     // 0x1008d7c4
 extern LTBOOL     g_bIn3D;                              // 0x1008d7c8
-struct  D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 extern D3DDevice* g_pD3DDevice;                         // 0x1008d988
 
 // 0x1008da40 and the RECT at 0x1008da44 -- the state LockScreen keeps so
@@ -385,7 +385,7 @@ struct D3DDeviceVtbl
 	long (__stdcall* EndScene)(D3DDevice*);             // +0x18
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl* lpVtbl;
 };

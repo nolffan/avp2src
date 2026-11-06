@@ -132,7 +132,7 @@
       "unwritten_bytes": 0
     },
     "AvP2 d3d.ren": {
-      "attempted": 106,
+      "attempted": 114,
       "bytes_identical": 124,
       "bytes_total": 236591,
       "crt": 296,
@@ -149,7 +149,7 @@
       "near": 4,
       "small": 16,
       "started": false,
-      "todo": 1150,
+      "todo": 1142,
       "unlinked": 0,
       "unlinked_bytes": 0,
       "unplaced": 1275,
@@ -782,8 +782,8 @@
       "unwritten_bytes": 0
     },
     "d3d.ren": {
-      "attempted": 100,
-      "bytes_identical": 72955,
+      "attempted": 60,
+      "bytes_identical": 104696,
       "bytes_total": 240249,
       "crt": 334,
       "crt_bytes": 45354,
@@ -791,21 +791,21 @@
       "driver_bytes": 0,
       "encrypted": 0,
       "encrypted_bytes": 0,
-      "funcs": 1287,
-      "identical": 850,
+      "funcs": 1288,
+      "identical": 1027,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 152,
-      "small": 60,
+      "near": 125,
+      "small": 62,
       "started": true,
-      "todo": 125,
-      "unlinked": 34,
-      "unlinked_bytes": 3389,
-      "unplaced": 688,
-      "unplaced_bytes": 283422,
-      "unwritten": 225,
-      "unwritten_bytes": 109330
+      "todo": 14,
+      "unlinked": 57,
+      "unlinked_bytes": 5519,
+      "unplaced": 731,
+      "unplaced_bytes": 282217,
+      "unwritten": 74,
+      "unwritten_bytes": 76644
     },
     "lith": {
       "attempted": 0,
@@ -913,17 +913,17 @@
     }
   },
   "total": {
-    "attempted": 325,
-    "bytes_identical": 6858670,
+    "attempted": 293,
+    "bytes_identical": 6890411,
     "bytes_total": 10779204,
-    "funcs": 55440,
-    "identical": 37262,
-    "near": 4562,
-    "small": 5278,
-    "todo": 8013,
-    "unplaced": 5425,
-    "unplaced_bytes": 1300409,
-    "unwritten": 8338,
-    "unwritten_bytes": 1786377
+    "funcs": 55441,
+    "identical": 37439,
+    "near": 4535,
+    "small": 5280,
+    "todo": 7894,
+    "unplaced": 5468,
+    "unplaced_bytes": 1299204,
+    "unwritten": 8187,
+    "unwritten_bytes": 1753691
   }
 }

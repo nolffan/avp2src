@@ -11,11 +11,13 @@
 
 #include <windows.h>
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 #include "ltrect.h"
 
 
 // IDirectDrawSurface7, through Blt (index 5).
-class CDDSurface
+typedef struct IDirectDrawSurface7 CDDSurface;	// g_pBackBuffer's real type, for its link name
+struct IDirectDrawSurface7
 {
 public:
 	virtual long __stdcall QueryInterface(void*, void**) = 0;
@@ -29,8 +31,8 @@ public:
 
 #define DDBLT_WAIT		0x01000000L
 
-extern CDDSurface*	g_pWindowedPrimary;                 // 0x1005d2ac
-extern CDDSurface*	g_pFrontBuffer;                     // 0x1005d2b0
+extern CDDSurface*	g_pFrontBuffer;                     // 0x1005d2ac (common_init.cpp)
+extern CDDSurface*	g_pPrimarySurface;                  // 0x1005d2b0
 extern CDDSurface*	g_pBackBuffer;                      // 0x1005d2b4
 extern HWND			g_hWnd;                             // 0x1005d430
 extern uint32		g_ScreenWidth;                      // 0x1005d8cc
@@ -163,7 +165,7 @@ void DirtyRectSwapWindowed()
 	RECT rcClient, rcDest;
 	uint32 i;
 
-	if (!g_pWindowedPrimary)
+	if (!g_pFrontBuffer)
 		return;
 
 	GetClientRect(g_hWnd, &rcClient);
@@ -177,7 +179,7 @@ void DirtyRectSwapWindowed()
 		rcDest.right	= g_invalidRect[i].right + rcClient.left;
 		rcDest.bottom	= g_invalidRect[i].bottom + rcClient.top;
 
-		g_pWindowedPrimary->Blt(&rcDest, g_pBackBuffer, (RECT*)&g_invalidRect[i], DDBLT_WAIT, NULL);
+		g_pFrontBuffer->Blt(&rcDest, g_pBackBuffer, (RECT*)&g_invalidRect[i], DDBLT_WAIT, NULL);
 	}
 
 	g_invalidRectCount = 0;
@@ -193,14 +195,14 @@ void DirtyRectSwap()
 
 	if (g_invalidRectCount==0) return;	// nothing to draw!
 
-	if (g_pWindowedPrimary)
+	if (g_pFrontBuffer)
 	{
 		DirtyRectSwapWindowed();
 		return;
 	}
 
 	for (i=0; i < g_invalidRectCount; i++)
-		g_pFrontBuffer->Blt((RECT*)&g_invalidRect[i], g_pBackBuffer, (RECT*)&g_invalidRect[i], DDBLT_WAIT, NULL);
+		g_pPrimarySurface->Blt((RECT*)&g_invalidRect[i], g_pBackBuffer, (RECT*)&g_invalidRect[i], DDBLT_WAIT, NULL);
 
 	g_invalidRectCount = 0;
 }

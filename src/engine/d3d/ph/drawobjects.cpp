@@ -273,8 +273,15 @@ void d3d_InitObjectQueues()
 // ---------------------------------------------------------------------- //
 //  The sorted draw list.
 // ---------------------------------------------------------------------- //
+// The element's (empty) constructor is what brings GenAppend and
+// GenRemoveAt (0x10029aa0, 0x10029c20) out as retail's, as in TU30.
+// Still near: d3d_FlushObjectQueues, Sort and Add, where retail calls
+// CMoArray's Clear/Init/Insert2 and _CVector's constructor out of line
+// and cl 8966 expands them (the inliner budget, as tagnodes.cpp).
 struct ObjectDrawEntry
 {
+	ObjectDrawEntry() {}
+
 	LTObject*		m_pObject;                          // +0x00
 	DrawObjectFn	m_Fn;                               // +0x04
 	float			m_fDistSqr;                         // +0x08

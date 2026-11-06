@@ -121,7 +121,7 @@ public:
 class CLightmapPages
 {
 public:
-	void		Reset();                                // 0x10035c00
+	void		Reset();                                // 0x10035c00 (lmsurfaces.cpp; its body overwrites ecx, never reads this)
 	void		Term();                                 // 0x10035c24
 	void		SetAllocator(void* (*fn)(uint32 width, uint32 height, uint32 caps));  // 0x10035b7b
 };
@@ -293,7 +293,7 @@ extern int32				g_CV_32BitLightMaps;        // 0x1005da0c
 extern uint32				g_TextureStage;             // 0x100622d0
 extern LTBOOL				g_bLightmapPages;           // 0x100638b8
 extern CLightmapPages		g_LightmapPages;            // 0x1008067c
-extern uint32				g_CV_MaxTextureSize;        // 0x1005d998
+extern int32				g_CV_MaxTextureSize;        // 0x1005d998 (common_stuff.cpp)
 extern uint32				g_MaxTextureWidth;          // 0x10062394
 extern uint32				g_MaxTextureHeight;         // 0x10062398
 extern LTBOOL				g_bWindowedTextures;        // 0x1006230c
@@ -306,7 +306,7 @@ extern int32				g_CV_MaxAspectRatio;        // 0x1005d4f4
 void*	dalloc(uint32 size);                            // 0x10013a66
 void	dfree(void* ptr);                               // 0x10013ac5
 void	AddDebugMessage(int32 debugLevel, const char* pMsg, ...);  // 0x10013b13
-uint16	CountBits(uint32 val);                          // 0x10013c60
+uint32	CountBits(uint32 val);                          // 0x10013c60
 void	r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat);  // 0x10011794
 void	d3d_InitLightmapTables();                       // 0x10033810
 

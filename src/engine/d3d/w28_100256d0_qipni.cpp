@@ -67,9 +67,9 @@
 //  first stack argument is the function-pointer-struct model the rest of
 //  src/engine/d3d uses for COM.
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
-struct DDSurface;
+typedef struct IDirectDrawSurface7 DDSurface;	// g_pPrimarySurface's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -90,7 +90,7 @@ struct D3DDevice7Vtbl
 	                             void* lpTexture);                    // +0x8c
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };
@@ -4503,7 +4503,8 @@ struct FVec3                                            // a bare float x/y/z
 	float z;
 };
 
-struct RenderStructCallbacks
+typedef struct RenderStruct RenderStructCallbacks;	// g_pStruct's real type, for its link name
+struct RenderStruct
 {
 	uint8    m_Reserved00[0x14];                        // +0x00..+0x13
 	void   (*ConsolePrintf)(const char* pszFormat, ...);// +0x14
@@ -4527,7 +4528,6 @@ extern RenderStructCallbacks* g_pStruct;                // 0x1008cbcc
 //  vtable as Restore (index 27).
 // ======================================================================= //
 
-struct DDSurface;
 
 struct DDSurfaceVtbl
 {
@@ -4541,7 +4541,7 @@ struct DDSurfaceVtbl
 	                                        DDSurface* pAttach);
 };
 
-struct DDSurface { DDSurfaceVtbl* lpVtbl; };
+struct IDirectDrawSurface7 { DDSurfaceVtbl* lpVtbl; };
 
 // (D3DDevice7 is the one at the top of this file; SetRenderTarget added there.)
 
@@ -4549,7 +4549,7 @@ extern DDSurface*  g_pPrimarySurface;                   // 0x1008bf6c
 extern DDSurface*  g_pBackSurface;                      // 0x1008bf68
 extern DDSurface*  g_pZBuffer;                          // 0x1008bf64
 
-struct DDraw7;
+typedef struct IDirectDraw7 DDraw7;
 extern DDraw7*     g_pDirectDraw;                       // 0x1008bf74
 
 // D3DRENDERSTATETYPE 8 with values 2 and 3.  The state number and the two

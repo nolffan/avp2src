@@ -1159,7 +1159,7 @@ struct Obj3e620
 //  Same declaration big2ef34.cpp, big61a30.cpp, big6d910.cpp and
 //  big3dd50.cpp use.
 // ---------------------------------------------------------------------- //
-struct D3DDevice3e620;
+typedef struct IDirect3DDevice7 D3DDevice3e620;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl3e620
 {
@@ -1177,7 +1177,7 @@ struct D3DDeviceVtbl3e620
 	                                       uint32);                     // +0x94 (0x1003dd50)
 };
 
-struct D3DDevice3e620
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl3e620*	lpVtbl;
 };

@@ -991,7 +991,7 @@ struct Vert2b1b0                                            // 0x20 bytes
 //  IDirect3DDevice7 -- ONE slot used, +0x64 / 4 == 25 == DrawPrimitive.
 //  big0ae20.cpp / big124a4.cpp / big44ff4.cpp all model the same slice.
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -1001,7 +1001,7 @@ struct D3DDevice7Vtbl
 	                                uint32 dwFlags);        // +0x64
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl*	lpVtbl;
 };

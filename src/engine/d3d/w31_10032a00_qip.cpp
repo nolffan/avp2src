@@ -29,7 +29,8 @@
 //  the console print: one pushed string, the CALLER pops it (`add $0x8,
 //  %esp` after an 8-byte outgoing area), so it is __cdecl.
 // ---------------------------------------------------------------------- //
-struct RenderStructCallbacks
+typedef struct RenderStruct RenderStructCallbacks;	// g_pStruct's real type, for its link name
+struct RenderStruct
 {
 	uint8    m_Reserved00[0x14];                        // +0x00..+0x13
 	void    (*ConsolePrint)(const char* pszMsg, ...);   // +0x14
@@ -60,14 +61,14 @@ struct DDDevId10032a50
 	uint32 dwWHQLLevel;                                 // +0x428
 };
 
-struct DDraw7;
+typedef struct IDirectDraw7 DDraw7;	// g_pDirectDraw's real type, for its link name
 struct DDraw7Vtbl
 {
 	void* m_pad_00[27];                                 // +0x00..+0x68
 	long (__stdcall* GetDeviceIdentifier)(DDraw7*, DDDevId10032a50* pId,
 	                                      uint32 dwFlags);           // +0x6c
 };
-struct DDraw7 { DDraw7Vtbl* lpVtbl; };
+struct IDirectDraw7 { DDraw7Vtbl* lpVtbl; };
 
 extern DDraw7* g_pDirectDraw;                           // 0x1008bf74
 
@@ -209,7 +210,8 @@ struct UnkVtbl10032c30
 	uint32 (__stdcall* Release)(void*);                               // +0x08
 };
 struct DDClipper  { UnkVtbl10032c30* lpVtbl; };
-struct D3DDevice7 { UnkVtbl10032c30* lpVtbl; };
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7 { UnkVtbl10032c30* lpVtbl; };
 struct DDSurface  { UnkVtbl10032c30* lpVtbl; };
 struct D3D7       { UnkVtbl10032c30* lpVtbl; };
 

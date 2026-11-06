@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 #include "iltcustomdraw.h"
 
 
@@ -36,7 +37,8 @@ public:
 
 
 // IDirect3DDevice7, the slots used here.
-class CD3DDevice
+typedef struct IDirect3DDevice7 CD3DDevice;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 public:
 	virtual long __stdcall QueryInterface(void*, void**) = 0;
@@ -153,7 +155,7 @@ struct RenderStruct
 
 extern RenderStruct*	g_pStruct;                      // 0x1005df08
 
-extern void		AddDebugMessage(int level, const char* pMsg, ...);  // 0x10013b13
+extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 
 typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
 
@@ -225,15 +227,15 @@ public:
 	void	Add(LTObject* pObject, DrawObjectFn fn);    // 0x10029980
 };
 
-// TU21's render-state block (0x10069728).
-class CRenderStateBlock
+// TU21's render-state list (d3d_statelist.cpp, d3d_savedstates.cpp).
+class CRenderStateList
 {
 public:
-	void	Flush();                                    // 0x10022a86
-	void	Apply(RenderTexture* pTexture, uint32 iStage);  // 0x10022a97
+	void	Restore();                                  // 0x10022a86
+	void	Apply(CRenderStateList* pList, uint32 iStage);  // 0x10022a97
 };
 
-extern CRenderStateBlock	g_RenderStateBlock;         // 0x10069728
+extern CRenderStateList	g_SavedStates;              // 0x10069728
 extern ObjectDrawList*	g_pObjectDrawList;           // 0x100713cc
 extern SceneContext			g_SceneContext;             // 0x1005b790
 extern uint32				g_iCanvasTexStage;          // 0x100638c0
@@ -307,7 +309,7 @@ void CustomDrawMgr::DrawCanvas(Canvas *pCanvas)
 {
 	if (pCanvas->m_Fn)
 	{
-		g_RenderStateBlock.Flush();
+		g_SavedStates.Restore();
 		SaveStates(pCanvas);
 		pCanvas->m_Fn(this, pCanvas, pCanvas->m_pFnUserData);
 		RestoreStates();
@@ -573,10 +575,10 @@ LTRESULT CustomDrawMgr::SetTexture(const char *pTexture)
 		return LT_ERROR;
 	}
 
-	g_RenderStateBlock.Flush();
+	g_SavedStates.Restore();
 	pRenderTexture = pShared->m_pRenderData;
 	if (pRenderTexture)
-		g_RenderStateBlock.Apply(pRenderTexture, g_iCanvasTexStage);
+		g_SavedStates.Apply((CRenderStateList*)pRenderTexture, g_iCanvasTexStage);
 
 	return LT_OK;
 }

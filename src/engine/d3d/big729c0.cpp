@@ -441,7 +441,8 @@ struct Cur729c0
 //  THE DEVICE AND THE SURFACE.  The five slots are pinned in the banner;
 //  the shapes are big0ae20.cpp's, unchanged.
 // ======================================================================= //
-class D3DDevice1003d350
+typedef struct IDirect3DDevice7 D3DDevice1003d350;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 public:
 	virtual long __stdcall _v00() = 0;

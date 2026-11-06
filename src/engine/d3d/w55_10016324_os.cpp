@@ -302,7 +302,7 @@ struct SModel
 //  IDirect3DDevice7, anchored by the project's +0x50 SetRenderState (20)
 //  and +0x8c SetTexture (35); +0x64 is 25, DrawPrimitive.
 // ======================================================================= //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -312,7 +312,7 @@ struct D3DDevice7Vtbl
 	                                uint32 nFlags);      // +0x64
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

@@ -363,7 +363,7 @@ struct LTMat44ff4
 //  IDirect3DDevice7 -- two slots: +0x50 SetRenderState (index 20) and
 //  +0x64 DrawPrimitive (index 25).
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -376,7 +376,7 @@ struct D3DDevice7Vtbl
 	                                uint32 dwFlags);        // +0x64
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl*	lpVtbl;
 };

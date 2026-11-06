@@ -327,7 +327,7 @@ struct SrcVert                                          // 0x28 bytes
 //  SetRenderState (20), +0x54 GetRenderState (21), +0x64 DrawPrimitive
 //  (25), +0x88 GetTexture (34) and +0x8c SetTexture (35).
 // ======================================================================= //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -347,7 +347,7 @@ struct D3DDevice7Vtbl
 	                             void* pTexture);       // +0x8c
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

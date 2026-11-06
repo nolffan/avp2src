@@ -304,7 +304,7 @@
 //  surface by value).
 // ======================================================================= //
 
-struct D3DDev440e3;
+typedef struct IDirect3DDevice7 D3DDev440e3;	// g_pD3DDevice's real type, for its link name
 struct DDSurface440e3;
 
 struct DDSurface440e3Vtbl
@@ -338,7 +338,7 @@ struct D3DDev440e3Vtbl
 	                                       uint32 dwValue);      // +0x94
 };
 
-struct D3DDev440e3
+struct IDirect3DDevice7
 {
 	D3DDev440e3Vtbl*	lpVtbl;
 };

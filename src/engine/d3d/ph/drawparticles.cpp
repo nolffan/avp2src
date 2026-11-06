@@ -29,7 +29,8 @@ public:
 
 
 // IDirect3DDevice7, the two slots used here (index 20 and 21).
-class CD3DDevice
+typedef struct IDirect3DDevice7 CD3DDevice;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 public:
 	virtual long __stdcall QueryInterface(void*, void**) = 0;

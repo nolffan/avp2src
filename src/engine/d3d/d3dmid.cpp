@@ -61,7 +61,8 @@
 //  outgoing area itself.
 // ----------------------------------------------------------------------- //
 
-struct RenderStructCallbacks
+typedef struct RenderStruct RenderStructCallbacks;	// g_pStruct's real type, for its link name
+struct RenderStruct
 {
 	uint8   m_Reserved00[0x34];                         // +0x00..+0x33
 	void* (*dalloc)(uint32 nSize);                      // +0x34

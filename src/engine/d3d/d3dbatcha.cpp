@@ -39,7 +39,7 @@
 // d3dblit.cpp model.  Four slots are used here and all four are already
 // pinned by the project: +0x50 SetRenderState, +0x54 GetRenderState,
 // +0x8c SetTexture, +0x94 SetTextureStageState.
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -53,7 +53,7 @@ struct D3DDeviceVtbl
 	                                       uint32);     // +0x94
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl* lpVtbl;
 };

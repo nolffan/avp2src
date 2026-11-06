@@ -70,16 +70,16 @@ struct DDSurfaceVtbl
 };
 struct DDSurface { DDSurfaceVtbl* lpVtbl; };
 
-struct DDraw7;
+typedef struct IDirectDraw7 DDraw7;	// g_pDirectDraw's real type, for its link name
 struct DDraw7Vtbl
 {
 	void* m_pad_00[6];                                  // +0x00..+0x14
 	long (__stdcall* CreateSurface)(DDraw7*, DDSurfDesc10033ba0* pDesc,
 	                                DDSurface** ppSurface, void* pUnkOuter);   // +0x18
 };
-struct DDraw7 { DDraw7Vtbl* lpVtbl; };
+struct IDirectDraw7 { DDraw7Vtbl* lpVtbl; };
 
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 typedef long (__stdcall* ZEnumFn10033ba0)(DDPixFmt10033ba0* pFmt, void* pContext);
 
@@ -187,6 +187,7 @@ long __stdcall sub_100329a0(DDPixFmt10033ba0* pFmt, void* pContext)
 //   * success copies the format out and logs its z and stencil masks.
 //  The GUID is taken BY VALUE (`lea 0xc(%ebp)` is passed as the REFCLSID).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 LTBOOL sub_10033ba0(RenderStructInit* pInit, D3DGuid guid)
 {
 	uint32              bTried[MAX_ZFORMATS_10033BA0];
@@ -271,3 +272,4 @@ LTBOOL sub_10033ba0(RenderStructInit* pInit, D3DGuid guid)
 
 	return LTFALSE;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp

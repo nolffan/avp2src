@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 
 
 #define LTRENDER_VERSION    3421
@@ -36,8 +37,9 @@ struct RenderStructInit
 class PFormat;
 struct SharedTexture;
 struct SceneDesc;
-struct BlitRequest;
-typedef void* HLTBUFFER;
+typedef struct RenderBlitRequest BlitRequest;   // d3d_surface.cpp's
+struct D3DRenderData;   // a surface's data (d3d_surface.cpp): an HLTBUFFER to the engine
+typedef D3DRenderData* HLTBUFFER;
 
 struct RenderStruct
 {
@@ -56,10 +58,10 @@ struct RenderStruct
 	void        (*Term)();                                  // +0x74
 	void        (*BindTexture)(SharedTexture* pTexture, LTBOOL bTextureChanged);  // +0x78
 	void        (*UnbindTexture)(SharedTexture* pTexture);  // +0x7c
-	LTBOOL      (*LoadWorldData)(void* pWorldData);         // +0x80
+	void        (*RebindWorld)(void* pWorld);               // +0x80
 	void*       (*CreateWorld)(void** pWorldData);          // +0x84
 	void        (*DestroyWorld)(void* pWorld);              // +0x88
-	void        (*Clear)(LTRect* pRect, uint32 flags);      // +0x8c
+	void        (*Clear)(LTRect* pRect, uint32 flags, LTVector* pClearColor);  // +0x8c
 	LTBOOL      (*Start3D)();                               // +0x90
 	LTBOOL      (*End3D)();                                 // +0x94
 	LTBOOL      (*IsIn3D)();                                // +0x98
@@ -70,15 +72,15 @@ struct RenderStruct
 	LTBOOL      (*GetOptimized2DBlend)(LTSurfaceBlend* pBlend); // +0xac
 	LTBOOL      (*SetOptimized2DColor)(uint32 color);       // +0xb0
 	LTBOOL      (*GetOptimized2DColor)(uint32* pColor);     // +0xb4
-	int         (*RenderScene)(SceneDesc* pScene);          // +0xb8
+	LTBOOL      (*RenderScene)(SceneDesc* pScene);          // +0xb8
 	void        (*RenderCommand)(int argc, char** argv);    // +0xbc
 	void*       (*GetHook)(char* pName);                    // +0xc0
 	void        (*SwapBuffers)(uint32 flags);               // +0xc4
 	uint32      (*GetInfoFlags)();                          // +0xc8
-	LTBOOL      (*GetScreenFormat)(PFormat* pFormat);       // +0xcc
+	void        (*GetScreenFormat)(PFormat* pFormat);       // +0xcc
 	HLTBUFFER   (*CreateSurface)(int width, int height);    // +0xd0
 	void        (*DeleteSurface)(HLTBUFFER hSurf);          // +0xd4
-	void        (*GetSurfaceInfo)(HLTBUFFER hSurf, uint32* pWidth, uint32* pHeight, int* pPitch);  // +0xd8
+	void        (*GetSurfaceInfo)(HLTBUFFER hSurf, uint32* pWidth, uint32* pHeight, long* pPitch);  // +0xd8
 	void*       (*LockSurface)(HLTBUFFER hSurf);            // +0xdc
 	void        (*UnlockSurface)(HLTBUFFER hSurf);          // +0xe0
 	LTBOOL      (*OptimizeSurface)(HLTBUFFER hSurf, uint32 transparentColor);  // +0xe4
@@ -155,18 +157,18 @@ void    MyStrUpr(char* pStr);                               // 0x10013c30
 LTBOOL  d3d_EnumDevices();                                  // 0x10032af0
 LTBOOL  d3d_InitDevice(D3DDeviceInfo* pDevice, RenderStructInit* pInit);  // 0x1001b8d0
 void    d3d_ReleaseDevice();                        // 0x1001c3f0
-void    sub_1001c450();                                     // 0x1001c450
-void    sub_1001c480();                                     // 0x1001c480
-void    sub_10014550();                                     // 0x10014550
+void    d3d_TermSubsystems();                               // 0x1001c450 (d3d_init.cpp)
+LTBOOL  d3d_InitSubsystems();                               // 0x1001c480 (d3d_init.cpp)
+void    d3d_TermTranslucentStates();                        // 0x10014550 (d3d_draw.cpp)
 VisibleSet* d3d_GetVisibleSet();                            // 0x1003abb0
 
 // The RenderStruct functions in other modules.
 void    BindTexture(SharedTexture* pTexture, LTBOOL bTextureChanged);   // 0x10022830
 void    UnbindTexture(SharedTexture* pTexture);             // 0x10022940
-LTBOOL  d3d_LoadWorldData(void* pWorldData);                // 0x1001c3a0
+void    d3d_RebindWorld(void* pWorld);                      // 0x1001c3a0 (d3d_init.cpp)
 void*   d3d_CreateWorld(void** pWorldData);                 // 0x1001c310
 void    d3d_DestroyWorld(void* pWorld);                     // 0x1001c380
-void    d3d_Clear(LTRect* pRect, uint32 flags);             // 0x10014d70
+void    d3d_Clear(LTRect* pRect, uint32 flags, LTVector* pClearColor);  // 0x10014d70
 LTBOOL  d3d_Start3D();                                      // 0x1001c990
 LTBOOL  d3d_End3D();                                        // 0x1001c9c0
 LTBOOL  d3d_IsIn3D();                                       // 0x1001ca30
@@ -177,17 +179,16 @@ LTBOOL  d3d_SetOptimized2DBlend(LTSurfaceBlend blend);      // 0x1001d401
 LTBOOL  d3d_GetOptimized2DBlend(LTSurfaceBlend* pBlend);    // 0x1001d4da
 LTBOOL  d3d_SetOptimized2DColor(uint32 color);              // 0x1001d4c8
 LTBOOL  d3d_GetOptimized2DColor(uint32* pColor);            // 0x1001d4ea
-struct D3DRenderData;   // a surface's data (d3d_surface.cpp): an HLTBUFFER to the engine
 LTBOOL  d3d_OptimizeSurface(D3DRenderData* pData, uint32 transparentColor);  // 0x1001cff4
 void    d3d_UnoptimizeSurface(D3DRenderData* pData);        // 0x1001cfe2
-int     d3d_RenderScene(SceneDesc* pScene);                 // 0x10018520
+LTBOOL  d3d_RenderScene(SceneDesc* pScene);                 // 0x10018520
 void    d3d_RenderCommand(int argc, char** argv);           // 0x1001c4b0
 void    d3d_SwapBuffers(uint32 flags);                      // 0x1001ed75
 uint32  d3d_GetInfoFlags();                                 // 0x1001c980
-LTBOOL  d3d_GetScreenFormat(PFormat* pFormat);              // 0x1001eab3
+void    d3d_GetScreenFormat(PFormat* pFormat);              // 0x1001eab3
 HLTBUFFER d3d_CreateSurface(int width, int height);         // 0x1001e66f
 void    d3d_DeleteSurface(HLTBUFFER hSurf);                 // 0x1001e71d
-void    d3d_GetSurfaceInfo(HLTBUFFER hSurf, uint32* pWidth, uint32* pHeight, int* pPitch);  // 0x1001e73e
+void    d3d_GetSurfaceInfo(HLTBUFFER hSurf, uint32* pWidth, uint32* pHeight, long* pPitch);  // 0x1001e73e
 void*   d3d_LockSurface(HLTBUFFER hSurf);                   // 0x1001e76e
 void    d3d_UnlockSurface(HLTBUFFER hSurf);                 // 0x1001e7a4
 LTBOOL  d3d_LockScreen(int left, int top, int right, int bottom, void** pData, long* pPitch);  // 0x1001e7ba
@@ -206,10 +207,10 @@ PFormat g_ScreenFormat;                                     // 0x1005d260
 
 RMode*          g_pModeList;                                // 0x1005d258
 D3DDeviceInfo*  g_pCurDevice;                               // 0x1005d2a4
-LPDIRECTDRAW4           g_pDirectDraw;                      // 0x1005d2a8
-LPDIRECTDRAWSURFACE4    g_pFrontBuffer;                     // 0x1005d2ac
-LPDIRECTDRAWSURFACE4    g_pPrimarySurface;                  // 0x1005d2b0
-LPDIRECTDRAWSURFACE4    g_pBackBuffer;                      // 0x1005d2b4
+LPDIRECTDRAW7           g_pDirectDraw;                      // 0x1005d2a8
+LPDIRECTDRAWSURFACE7    g_pFrontBuffer;                     // 0x1005d2ac
+LPDIRECTDRAWSURFACE7    g_pPrimarySurface;                  // 0x1005d2b0
+LPDIRECTDRAWSURFACE7    g_pBackBuffer;                      // 0x1005d2b4
 
 
 // 0x100116fe
@@ -264,7 +265,7 @@ void r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat)
 }
 
 // 0x100117bb
-LTBOOL r_GetBufferFormatOfSurface(LPDIRECTDRAWSURFACE4 pSurface, PFormat* pFormat)
+LTBOOL r_GetBufferFormatOfSurface(LPDIRECTDRAWSURFACE7 pSurface, PFormat* pFormat)
 {
 	DDPIXELFORMAT pf;
 
@@ -327,9 +328,9 @@ void d3d_FreeDevice()
 void d3d_Term()
 {
 	d3d_FreeDeviceList();
-	sub_1001c450();
+	d3d_TermSubsystems();
 	d3d_FreeDevice();
-	sub_10014550();
+	d3d_TermTranslucentStates();
 }
 
 static LTBOOL d3d_IsNullRenderOn();
@@ -455,7 +456,7 @@ DEVICE_OK:
 		return RENDER_ERROR;
 	}
 
-	sub_1001c480();
+	d3d_InitSubsystems();
 
 	g_pStruct->m_Width /= g_1005d8bc;
 	g_pStruct->m_Height /= g_1005d8c0;
@@ -585,7 +586,7 @@ __declspec(dllexport) void RenderDLLSetup(RenderStruct* pStruct)
 	pStruct->Term                   = d3d_Term;
 	pStruct->BindTexture            = BindTexture;
 	pStruct->UnbindTexture          = UnbindTexture;
-	pStruct->LoadWorldData          = d3d_LoadWorldData;
+	pStruct->RebindWorld            = d3d_RebindWorld;
 	pStruct->CreateWorld            = d3d_CreateWorld;
 	pStruct->DestroyWorld           = d3d_DestroyWorld;
 	pStruct->Clear                  = d3d_Clear;

@@ -45,10 +45,11 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 // 0x1008d988 -- the Direct3D device.
 extern D3DDevice*   g_pD3DDevice;                           // 0x1008d988
@@ -765,3 +766,5 @@ LTBOOL CD3DModelDraw::sub_100086f0(ModelVertSet* pSet, RVert* pVerts)
 	m_pBank448->Draw(g_pD3DDevice, 4, nVerts);
 	return 1;
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

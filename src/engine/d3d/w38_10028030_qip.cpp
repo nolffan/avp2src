@@ -863,7 +863,7 @@ struct Obj28030
 //  Unlike every sibling in this family the function touches no render
 //  state at all, so +0x50 does not appear.
 // ======================================================================= //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -873,7 +873,7 @@ struct D3DDevice7Vtbl
 	                                uint32 nFlags);     // +0x64
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

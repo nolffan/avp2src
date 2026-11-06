@@ -546,6 +546,7 @@
 
 // Only ltbasedefs.h, exactly as d3dr4b.cpp, big5a960.cpp and
 // big70d10.cpp have it.
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 // Round to nearest in the current FPU mode: w1_10001000.cpp's helper
@@ -1245,3 +1246,5 @@ LTBOOL __fastcall sub_100051a0(uint32 nClipFlags, Vert051a0** ppVerts,
 	return ClipPoly051a0(nClipFlags, ppVerts, pnVerts);
 
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

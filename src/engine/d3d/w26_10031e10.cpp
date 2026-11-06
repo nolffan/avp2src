@@ -60,7 +60,8 @@ struct DDDeviceIdentifier26
 	uint32  dwWHQLLevel;                                // +0x428
 };                                                      // 0x430
 
-struct DDraw
+typedef struct IDirectDraw7 DDraw;	// g_pDirectDraw's real type, for its link name
+struct IDirectDraw7
 {
 	virtual long __stdcall Slot00() = 0;  virtual long __stdcall Slot04() = 0;
 	virtual long __stdcall Slot08() = 0;  virtual long __stdcall Slot0c() = 0;

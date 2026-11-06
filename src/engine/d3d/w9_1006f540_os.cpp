@@ -87,7 +87,7 @@ inline int32 RoundF(float f)
 // ---------------------------------------------------------------------- //
 //  The D3D7 device: only +0x64 DrawPrimitive.
 // ---------------------------------------------------------------------- //
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -96,7 +96,7 @@ struct D3DDeviceVtbl
 	                                uint32, uint32);                // +0x64
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*	lpVtbl;
 };

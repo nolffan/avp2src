@@ -48,7 +48,7 @@
 //  reached from this file.  Copied verbatim from d3dopt2d.cpp so the two
 //  files cannot disagree about the shape of the call.
 // ----------------------------------------------------------------------- //
-struct D3DDevA;
+typedef struct IDirect3DDevice7 D3DDevA;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevAVtbl
 {
@@ -58,7 +58,7 @@ struct D3DDevAVtbl
 	                                 uint32 dwValue);
 };
 
-struct D3DDevA
+struct IDirect3DDevice7
 {
 	D3DDevAVtbl* lpVtbl;
 };

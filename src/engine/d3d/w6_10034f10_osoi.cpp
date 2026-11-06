@@ -25,7 +25,8 @@
 // Written as the C++ interface: in a COM call the object expression is
 // evaluated before the arguments, which is why the shipped 0x10035450
 // loads g_pD3DDevice BEFORE it evaluates SetRenderState's third argument.
-struct D3DDevice7
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 	virtual void __stdcall v00() = 0;
 	virtual void __stdcall v01() = 0;

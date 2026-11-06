@@ -119,7 +119,7 @@ struct DDSurface { DDSurfaceVtbl* lpVtbl; };
 extern DDSurface* g_pOffscreen;                         // 0x1008bf68
 
 // IDirect3DDevice7 -- SetTexture (+0x8c) and SetTextureStageState (+0x94).
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 struct D3DDeviceVtbl
 {
 	void* m_pad_00[35];                                 // +0x00 .. +0x88
@@ -129,7 +129,7 @@ struct D3DDeviceVtbl
 	                                       uint32 nState,
 	                                       uint32 nValue);// +0x94
 };
-struct D3DDevice { D3DDeviceVtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDeviceVtbl* lpVtbl; };
 
 extern D3DDevice* g_pD3DDevice;                         // 0x1008d988
 

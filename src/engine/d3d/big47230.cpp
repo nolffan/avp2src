@@ -469,7 +469,7 @@ struct Stats47230
 //  NO indirect call here is followed by an `add $N,%esp`, so all five are
 //  __stdcall.
 // ======================================================================= //
-struct D3DDevice47230;
+typedef struct IDirect3DDevice7 D3DDevice47230;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice47230Vtbl
 {
@@ -485,7 +485,7 @@ struct D3DDevice47230Vtbl
 	                                       uint32);     // +0x94
 };
 
-struct D3DDevice47230
+struct IDirect3DDevice7
 {
 	D3DDevice47230Vtbl* lpVtbl;
 };

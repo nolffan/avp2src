@@ -181,7 +181,7 @@ inline void d3d_MatVMulH(LTVec *pDest, LTMat *pMat, const LTVec *pSrc)
 //  the slot in the call's displacement, the COM shape, so this is NOT
 //  spelled `virtual`.
 // ======================================================================= //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -196,7 +196,7 @@ struct D3DDevice7Vtbl
 	                                uint32 nFlags);      // +0x64
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

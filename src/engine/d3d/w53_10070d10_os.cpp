@@ -577,7 +577,7 @@
 //  (0x10072773), +0x64 DrawPrimitive (0x1007282d) and +0x8c SetTexture
 //  (0x10072748).  Same declaration big61a30.cpp and big6d910.cpp use.
 // ---------------------------------------------------------------------- //
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -590,7 +590,7 @@ struct D3DDeviceVtbl
 	long (__stdcall* SetTexture)(D3DDevice*, uint32, void*);        // +0x8c
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*	lpVtbl;
 };

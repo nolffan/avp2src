@@ -495,7 +495,7 @@
 //                               0x1000b414)
 //  Same declaration big2ef34.cpp, big61a30.cpp and big6d910.cpp use.
 // ======================================================================= //
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -513,7 +513,7 @@ struct D3DDeviceVtbl
 	                                       uint32);                 // +0x94
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*	lpVtbl;
 };
@@ -1598,7 +1598,7 @@ extern uint32		g_nLMDynamic;                       // 0x10091200
 
 // 0x1008cb98 -- big21f90.cpp's g_CV_Saturate, the int32 backing store of
 // the "Saturate" console variable.
-extern uint32		g_CV_Saturate;                      // 0x1008cb98
+extern int32		g_CV_Saturate;                      // 0x1008cb98
 
 // The shared draw-vertex buffer: 0x1008d51c the capacity, 0x1008d520 the
 // used count, 0x1008d524 the base.  d3dr2c.cpp's 0x1000f270 / 0x10023fb0.

@@ -24,6 +24,7 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 
 
@@ -272,7 +273,7 @@ public:
 	virtual void	FindObjectsInFrustum(FindObjInfo *pInfo);  // +0x14
 };
 
-class SceneWorld
+struct SceneWorld
 {
 public:
 	virtual void		Slot00();

@@ -7,10 +7,10 @@
 //  32-bit lightmap; and the two scratch-buffer caches the lightmap code
 //  (TU37, TU38) draws into.  .bss 0x1007c1e4..0x1007c640.
 //
-//  Not written: the two lightmap decompressors 0x10033277 (32-bit runs) and
-//  0x100332db (alternating 0/0xFF byte runs).  Both fill with inline
-//  `rep stos` (a dword fill in the first, the intrinsic memset in the
-//  second) in an object that otherwise calls the CRT's memset.
+//  The two lightmap decompressors (0x10033277, 0x100332db) fill with
+//  `rep stos` in an object that otherwise calls the CRT's memset: VC6's
+//  loop optimiser turns `for(; n != 0; n--) *p++ = v;` into a dword fill,
+//  or, for bytes, the intrinsic memset's sequence.
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
@@ -44,11 +44,19 @@ public:
 };
 
 // pixelformat.cpp's PFormat, as far as it is used here.
+enum BPPIdent
+{
+	BPP_8P=0,
+	BPP_8,
+	BPP_16,
+	BPP_32
+};
+
 class PFormat
 {
 public:
 	virtual void	Init(uint32 Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
-	uint32			GetType();
+	BPPIdent		GetType();
 
 	uint32			m_eType;
 	uint32			m_Masks[4];
@@ -171,6 +179,83 @@ void* d3d_GetLMBuffer2(uint32 width, uint32 height)
 	return g_pLMBuffer2;
 }
 
+
+// 0x10033277 -- a 32-bit lightmap's runs: each dword is a colour, and one
+// with the top bit set is followed by a byte count of it.  At most 0x400
+// texels.
+LTBOOL d3d_DecompressLM32(uint8 *pIn, uint32 dataLen, uint32 *pOut)
+{
+	uint8 *pCur, *pEnd;
+	uint32 color;
+	uint8 count;
+	int32 nLeft;
+
+	if(!pIn)
+		return LTFALSE;
+
+	nLeft = 0x400;
+	pCur = pIn;
+	pEnd = pIn + dataLen;
+	while(pCur < pEnd)
+	{
+		color = *(uint32*)pCur;
+		pCur += 4;
+
+		if(color & 0x80000000)
+		{
+			count = *pCur;
+			color &= 0x7FFFFFFF;
+			pCur++;
+		}
+		else
+		{
+			count = 1;
+		}
+
+		nLeft -= count;
+		if(nLeft < 0)
+			return LTFALSE;
+
+		for(; count != 0; count--)
+			*pOut++ = color;
+	}
+
+	return LTTRUE;
+}
+
+// 0x100332db -- a byte mask's runs: each byte is a run length, the runs
+// alternately 0 and 0xFF, starting with 0.  At most 0x400 bytes.
+LTBOOL d3d_DecompressLMMask(uint8 *pIn, uint32 dataLen, uint8 *pOut)
+{
+	uint8 vals[2], val;
+	uint8 *pNext, *pEnd;
+	uint32 iVal, count, i;
+
+	if(!pIn)
+		return LTFALSE;
+
+	vals[1] = 0xFF;
+	vals[0] = 0;
+	pEnd = pOut + 0x400;
+	iVal = 0;
+	while(dataLen)
+	{
+		dataLen--;
+		count = *pIn++;
+
+		pNext = pOut + count;
+		if(pNext > pEnd)
+			return LTFALSE;
+
+		val = vals[iVal];
+		for(i=count; i != 0; i--)
+			*pOut++ = val;
+
+		iVal = !iVal;
+	}
+
+	return LTTRUE;
+}
 
 CD3DConVar g_CV_LMDynamic("LMDynamic", 1.0f, LTNULL, LTNULL);				// 0x1007c220
 CD3DConVar g_CV_LMDynamicScale("LMDynamicScale", 2.5f, LTNULL, LTNULL);	// 0x1007c200

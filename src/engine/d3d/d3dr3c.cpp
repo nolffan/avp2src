@@ -97,7 +97,7 @@ extern RenderStructCallbacks* g_pStruct;                // 0x1008cbcc
 //  field it skips is at +0x04 -- dwApproxBytesDownloaded, exactly the
 //  second member of that structure.
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -115,7 +115,7 @@ struct D3DDevice7Vtbl
 	                          void* pDevInfoStruct, uint32 dwSize); // +0xc0
 };
 
-struct D3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
 
 extern D3DDevice7* g_pD3DDevice;                        // 0x1008d988
 
@@ -162,7 +162,7 @@ struct DDSurfaceVtbl
 };
 struct DDSurface { DDSurfaceVtbl* lpVtbl; };
 
-struct DDraw;
+typedef struct IDirectDraw7 DDraw;	// g_pDirectDraw's real type, for its link name
 struct DDrawVtbl
 {
 	void* m_pad_00[6];                                  // +0x00..+0x17
@@ -170,7 +170,7 @@ struct DDrawVtbl
 	                                 DDSurface** ppSurface,
 	                                 void* pUnkOuter);  // +0x18
 };
-struct DDraw { DDrawVtbl* lpVtbl; };
+struct IDirectDraw7 { DDrawVtbl* lpVtbl; };
 
 extern DDraw* g_pDirectDraw;                            // 0x1008bf74
 

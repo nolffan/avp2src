@@ -105,7 +105,7 @@ extern void sub_10021d10(const char* pszMsg, ...);  // 0x10021d10 (was d3d_Warn/
 // call sites here confirm the arity from the other side: three pushed
 // dwords and the callee pops all three (the frame is only restored by the
 // following `mov (%esp),%ebx` if the callee cleaned up).
-struct D3DDev7;
+typedef struct IDirect3DDevice7 D3DDev7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDev7Vtbl
 {
@@ -115,7 +115,7 @@ struct D3DDev7Vtbl
 	long (__stdcall* SetTexture)(D3DDev7*, uint32, void*);        // +0x8c
 };
 
-struct D3DDev7
+struct IDirect3DDevice7
 {
 	D3DDev7Vtbl* lpVtbl;
 };

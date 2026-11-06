@@ -462,15 +462,20 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   units are being rebuilt in `src/engine/d3d/ph/`, one file each with its
   own flags (`ph/<name>.mk`), the nolfsrc originals kept for AvP2's Intel
   build behind `#ifndef PRIMAL_HUNT`. Round one wrote 28 of them, which
-  took d3d.ren to 730 identical; round two 13 more (850). Two of the map's
+  took d3d.ren to 730 identical; round two 13 more (850); round three
+  ten more and much of the rest (1,027). Two of the map's
   TUs (TU21, TU33) are two objects each: two files share the position, in
   name order. There is no StdLith header difference: where retail calls
   CMoArray's or _CVector's small members out of line, it is VC6's
   inliner (in TU30, an element type's constructor), not the header. Retail is /Ob2 where a file's
-  initialisers show it. Still open: TU08, TU16, TU35 (NOLF2's fullintersectline.cpp maps
-  onto it), TU39, TU40, the large unwritten draw functions, and 124
-  references the files declare under another signature than they are
-  defined with.
+  initialisers show it. TU35 is four objects (fullintersectline, gdenum, geomroutines,
+  intersect_line). `ph/ph_decls.h` holds the cross-file declarations
+  proven against their definitions. Still open: the large unwritten draw
+  functions (TU01/TU03's transform and lighting, TU06, TU07's DrawModel,
+  TU10's d3d_InitSceneContext, TU15's RenderScene and its two big
+  helpers, TU17's d3d_InitDevice, TU27's shadow draws, TU31's polygrid
+  draw, TU33/TU34/TU37), and about 80 references that nolfsrc files
+  still declare under NOLF's placeholder names.
 - Next: the near functions; the provisional calls against retail; the
   flags per binary (Primal Hunt's server.dll need not be /O1 as NOLF's
   was); the links (lithshared rebuilt, package 4), then the tables.

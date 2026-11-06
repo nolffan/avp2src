@@ -51,7 +51,7 @@ inline int32 RoundF(float f)
 }
 
 
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -73,7 +73,7 @@ struct D3DDevice7Vtbl
 	                                       uint32 nValue);   // +0x94
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

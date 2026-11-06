@@ -106,7 +106,7 @@ struct DDSurface7Vtbl
 };
 struct DDSurface7 { DDSurface7Vtbl* lpVtbl; };
 
-struct DDraw7;
+typedef struct IDirectDraw7 DDraw7;	// g_pDirectDraw's real type, for its link name
 struct DDraw7Vtbl
 {
 	void*	m_pad_00[6];                                    // +0x00..+0x14
@@ -114,9 +114,9 @@ struct DDraw7Vtbl
 	                                   DDSurface7** ppSurf,
 	                                   void* pOuter);        // +0x18
 };
-struct DDraw7 { DDraw7Vtbl* lpVtbl; };
+struct IDirectDraw7 { DDraw7Vtbl* lpVtbl; };
 
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 struct D3DDevice7Vtbl
 {
 	void*	m_pad_00[20];                                   // +0x00..+0x4c
@@ -133,7 +133,7 @@ struct D3DDevice7Vtbl
 	                                          uint32 nState,
 	                                          uint32 nValue);// +0x94
 };
-struct D3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
 
 extern DDraw7*     g_pDirectDraw;                       // 0x1008bf74
 extern DDSurface7* g_pOffscreen;                        // 0x1008bf68

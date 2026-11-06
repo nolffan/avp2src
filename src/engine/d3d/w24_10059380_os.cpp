@@ -73,7 +73,8 @@ struct DDSurface59380
 // spelling): SetTexture's stage is evaluated BEFORE the device pointer is
 // loaded (`movzwl 0x42(%ebx),%eax` then `mov 0x1008d988,%edx`), the order
 // a C++ method call gives and a C `lpVtbl` call does not.
-class D3DDevice1003d350
+typedef struct IDirect3DDevice7 D3DDevice1003d350;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 public:
 	virtual long __stdcall _v00() = 0;

@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "ltbasedefs.h"
+#include "ph_decls.h"
 
 
 extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8

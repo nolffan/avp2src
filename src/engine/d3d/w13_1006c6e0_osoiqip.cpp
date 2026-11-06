@@ -84,14 +84,14 @@ struct DDSurfaceDesc13                                  // DDSURFACEDESC2
 	uint32	dwTextureStage;                             // +0x78
 };
 
-struct DDraw13;
+typedef struct IDirectDraw7 DDraw13;	// g_pDirectDraw's real type, for its link name
 struct DDraw13Vtbl
 {
 	void*	m_pad_00[6];
 	long	(__stdcall* CreateSurface)(DDraw13* pThis, DDSurfaceDesc13* pDesc,
 	                                   DDSurface13** ppSurf, void* pOuter);  // +0x18
 };
-struct DDraw13 { DDraw13Vtbl* lpVtbl; };
+struct IDirectDraw7 { DDraw13Vtbl* lpVtbl; };
 
 struct DDSurface13Vtbl
 {
@@ -104,7 +104,8 @@ extern DDraw13*	g_pDirectDraw;                          // 0x1008bf74
 extern uint32	g_1008d7cc;                             // 0x1008d7cc  the texture stage
 extern uint32	g_1008e6c4;                             // 0x1008e6c4  format record; DDPIXELFORMAT at +0x0c
 
-struct RenderStruct6d130
+typedef struct RenderStruct RenderStruct6d130;	// g_pStruct's real type, for its link name
+struct RenderStruct
 {
 	uint8	m_pad_00[0x50];
 	uint32	m_SystemTextureMemory;                      // +0x50

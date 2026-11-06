@@ -17,7 +17,7 @@
 
 // The Direct3D 7 device at 0x1008d988 -- only SetRenderState (+0x50) is
 // reached from here.  Same layout as d3dbatcha.cpp's.
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -25,7 +25,7 @@ struct D3DDeviceVtbl
 	long (__stdcall* SetRenderState)(D3DDevice*, uint32, uint32);        // +0x50
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl* lpVtbl;
 };

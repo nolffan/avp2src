@@ -108,6 +108,7 @@ struct DDDevice10069ca0
 //  0x10069ca0  360 bytes (12-byte stack entry + 348-byte register entry
 //  at 0x10069cac), `ret $0x10`.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 extern "C" LTBOOL __stdcall sub_10069ca0(GUID10069ca0* pGuid, char* pDesc,
                                           char* pName, void* pContext)
 {
@@ -169,3 +170,4 @@ extern "C" LTBOOL __stdcall sub_10069e10(GUID10069ca0* pGuid, char* pDesc,
 	sub_10069ca0(pGuid, pDesc, pName, pContext);
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/gdenum.cpp

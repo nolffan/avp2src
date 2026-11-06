@@ -61,7 +61,7 @@
 //  Only the four slots this file needs are named.
 // ======================================================================= //
 
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -81,7 +81,7 @@ struct D3DDevice7Vtbl
 	long (__stdcall* ValidateDevice)(D3DDevice7*, uint32* lpdwNumPasses);
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

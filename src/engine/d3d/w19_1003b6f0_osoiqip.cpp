@@ -49,7 +49,8 @@ struct DDSurface1003d5f0
 // SetTextureStageState.  Declared as the C++ interface: the state setter
 // evaluates the device pointer BEFORE the argument that calls 0x1003b6f0
 // (0x1003d3e0 loads and spills it first), which is `this` going first.
-class D3DDevice1003d350
+typedef struct IDirect3DDevice7 D3DDevice1003d350;	// g_pD3DDevice's real type, for its link name
+struct IDirect3DDevice7
 {
 public:
 	virtual long __stdcall _v00() = 0;

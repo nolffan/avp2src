@@ -1141,7 +1141,7 @@ struct DDSurf7TVtbl
 };
 struct DDSurf7T { DDSurf7TVtbl* lpVtbl; };
 
-struct DDraw7;
+typedef struct IDirectDraw7 DDraw7;	// g_pDirectDraw's real type, for its link name
 struct DDraw7Vtbl
 {
 	void* m_pad_00[6];                                  // +0x00..+0x14
@@ -1150,7 +1150,7 @@ struct DDraw7Vtbl
 	                                DDSurf7T** lplpDDSurface,
 	                                void* pUnkOuter);   // +0x18
 };
-struct DDraw7 { DDraw7Vtbl* lpVtbl; };
+struct IDirectDraw7 { DDraw7Vtbl* lpVtbl; };
 
 // 0x1008bf74.  d3dbatcha.cpp already names this one g_pDirectDraw.
 extern DDraw7* g_pDirectDraw;                           // 0x1008bf74

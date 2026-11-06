@@ -699,6 +699,7 @@
 
 // Only ltbasedefs.h, exactly as big051a0.cpp, big5a960.cpp and
 // big70d10.cpp have it.
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 
 
@@ -1019,3 +1020,5 @@ LTBOOL __fastcall sub_10003c40(uint32 nClip, Vert3c40** ppVerts,
 {
 	return ClipAll3c40(nClip, ppVerts, pnVerts);
 }
+
+#endif // Primal Hunt: ph/d3d_modelvb.cpp

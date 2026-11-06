@@ -43,7 +43,7 @@
 
 // IDirect3DDevice7, C-style: +0x50 SetRenderState, +0x54 GetRenderState,
 // +0x8c SetTexture, +0x90 GetTextureStageState, +0x94 SetTextureStageState.
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -63,7 +63,7 @@ struct D3DDevice7Vtbl
 	                                          uint32 nValue);   // +0x94
 };
 
-struct D3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
+struct IDirect3DDevice7 { D3DDevice7Vtbl* lpVtbl; };
 
 extern D3DDevice7* g_pD3DDevice;                            // 0x1008d988
 

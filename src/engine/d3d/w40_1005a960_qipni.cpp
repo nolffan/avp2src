@@ -432,7 +432,7 @@
 //  counts (six dwords at 0x1005caf0, eight at 0x1005cc6b/0x1005ce7b).
 //  d3dbatcha.cpp fixes +0x50 and +0x64 already.
 // ---------------------------------------------------------------------- //
-struct D3DDevice;
+typedef struct IDirect3DDevice7 D3DDevice;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDeviceVtbl
 {
@@ -446,7 +446,7 @@ struct D3DDeviceVtbl
 	                                       uint32, uint32);               // +0x68
 };
 
-struct D3DDevice
+struct IDirect3DDevice7
 {
 	D3DDeviceVtbl*	lpVtbl;
 };

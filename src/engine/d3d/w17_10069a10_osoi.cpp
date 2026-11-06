@@ -140,6 +140,7 @@ extern uint32			g_10091194;                     // 0x10091194
 //  aggregate initialiser `= { pFrom, pTo, pIPoint, g_10091150, pCaster,
 //  LTNULL }` copies through a template-like sequence (189 off).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10069060(CCaster10069060* pCaster, void** ppHit, D3DVec3* pIPoint,
                   float* pfDistSqr, int32* pnIndex, D3DVec3* pFrom,
                   D3DVec3* pTo)
@@ -255,3 +256,4 @@ extern "C" LTBOOL sub_10069a10(IntersectQuery* pQuery, IntersectInfo* pInfo,
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/fullintersectline.cpp

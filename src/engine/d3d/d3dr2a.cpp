@@ -86,7 +86,7 @@ extern RenderStructCallbacks* g_pStruct;                // 0x1008cbcc
 
 // The Direct3D 7 device, +0x94 SetTextureStageState, as d3dbatchb.cpp and
 // d3dopt2d.cpp model it.
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -95,7 +95,7 @@ struct D3DDevice7Vtbl
 	                                          uint32 dwState, uint32 dwValue);
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

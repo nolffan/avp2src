@@ -172,7 +172,7 @@ struct Arr4b720
 //      +0x64 (25) DrawPrimitive           +0x90 (36) GetTextureStageState
 //                                         +0x94 (37) SetTextureStageState
 // ======================================================================= //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -192,7 +192,7 @@ struct D3DDevice7Vtbl
 	                                       uint32);     // +0x94
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };
@@ -224,7 +224,8 @@ extern D3DDevice7* g_pD3DDevice;                        // 0x1008d988
 // model it.  Only +0x14 is used here, twice, and both sites are __cdecl
 // with the caller restoring the outgoing area (`add $0x8,%esp` at
 // 0x1004baa1, `add $0x18,%esp` at 0x1004e269) -- a varargs console printer.
-struct RenderStructCallbacks
+typedef struct RenderStruct RenderStructCallbacks;	// g_pStruct's real type, for its link name
+struct RenderStruct
 {
 	uint8   m_Reserved00[0x14];                         // +0x00 .. +0x13
 	void  (*ConsolePrint)(const char* pszFormat, ...);  // +0x14

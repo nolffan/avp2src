@@ -180,7 +180,7 @@ extern ObjectDrawList*		g_pObjectDrawList;          // 0x100713cc
 extern SceneContext			g_SceneContext;             // 0x1005b790
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
-extern void			d3d_ProcessPortalObject(LTObject *pObject);         // 0x1000fc52
+extern LTBOOL			d3d_ProcessPortalObject(LTObject *pObject);         // 0x1000fc52 (fogvolume.cpp)
 
 extern void			d3d_DrawWorldModel(SceneContext *pContext, LTObject *pObject);            // 0x10030860
 extern void			d3d_DrawTranslucentWorldModel(SceneContext *pContext, LTObject *pObject); // 0x10030e50

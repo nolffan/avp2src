@@ -50,7 +50,7 @@ struct SceneContext
 
 typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
 
-extern void		AddDebugMessage(int level, const char* pMsg, ...);  // 0x10013b13
+extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 
 class BaseObjectSet
 {

@@ -91,7 +91,7 @@ extern IAllocator g_10091df0;
 //  The Direct3D 7 device, exactly as d3dopt2d.cpp / d3dbatchb.cpp model it.
 //  Only +0x94 is needed here.
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -101,7 +101,7 @@ struct D3DDevice7Vtbl
 	                                       uint32 dwState, uint32 dwValue);
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };

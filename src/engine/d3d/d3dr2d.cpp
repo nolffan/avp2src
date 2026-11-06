@@ -155,7 +155,7 @@ extern void dl_Remove_1000a6e0(CheapLink* pLink);
 //  first stack argument is the function-pointer-struct model the rest of
 //  src/engine/d3d uses for COM.
 // ---------------------------------------------------------------------- //
-struct D3DDevice7;
+typedef struct IDirect3DDevice7 D3DDevice7;	// g_pD3DDevice's real type, for its link name
 
 struct D3DDevice7Vtbl
 {
@@ -164,7 +164,7 @@ struct D3DDevice7Vtbl
 	                             void* lpTexture);
 };
 
-struct D3DDevice7
+struct IDirect3DDevice7
 {
 	D3DDevice7Vtbl* lpVtbl;
 };
