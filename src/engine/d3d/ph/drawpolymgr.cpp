@@ -8,8 +8,7 @@
 //  (0x1004dbe8..0x1004dc84) point at -- texture coordinate generators,
 //  texture binders and colour sources.
 //
-//  Still near: SetPassStates (0x1002adba: the stage pointer's bias),
-//  the two pass draws (0x1002b22f, 0x1002b4b3: register allocation) and
+//  Still near: the two pass draws (0x1002b22f, 0x1002b4b3: register allocation) and
 //  DrawNodeFlat (0x1002b6dc: loop shape).
 // *********************************************************************** //
 
@@ -20,6 +19,7 @@
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "../../LT2/lithshared/stdlith/object_bank.h"
+#include "d3d_clip.h"
 
 
 // The renderer's console variable (TU12's, constructor 0x10011f36).
@@ -552,28 +552,28 @@ void d3d_GetSurfaceFlags(Surface* pSurface, uint32* pType, uint32* pFlags)
 // ---------------------------------------------------------------------- //
 //  The clippers (0x1004dc58..0x1004dc84).
 // ---------------------------------------------------------------------- //
-struct SceneContext;
-extern SceneContext	g_SceneContext;                     // 0x1005b790
+struct ViewParams;
+extern ViewParams	g_ViewParams;                     // 0x1005b790
 extern uint32		g_ClipFlags;                        // 0x1005bd0c
 
-extern int	d3d_ClipTLVerts(void* ppVerts, void* pnVerts, SceneContext* pContext, uint32 flags);     // 0x1000aec6
-extern int	d3d_ClipLMVerts(void* ppVerts, void* pnVerts, SceneContext* pContext, uint32 flags);     // 0x100085f2
+extern int	d3d_ClipTLVerts(void* ppVerts, void* pnVerts, ViewParams* pContext, uint32 flags);     // 0x1000aec6
+struct RenderPoly;
+extern LTBOOL	d3d_ClipLMVerts(ClipVert2** ppVerts, int32* pnVerts, ViewParams* pContext, uint32 flags);  // 0x100085f2 (drawmodel_clip.cpp)
 extern int	d3d_ClipTLVertsRC(uint32 clipFlags, void* ppVerts, void* pnVerts);    // 0x1000af61
-extern int	d3d_ClipLMVertsRC(uint32 clipFlags, void* ppVerts, void* pnVerts);    // 0x10008779
-extern void	d3d_DrawPolyList(void* pList, void* pVerts, uint32 nVerts);           // 0x100083ec
+extern void	d3d_LightLMPoly(RenderPoly* pPoly, ClipVert2* pVerts, uint32 nVerts);  // 0x100083ec (drawmodel_clip.cpp)
 
 // 0x1002ac73
 int __fastcall d3d_ClipTL(uint32 clipFlags, void* ppVerts, void* pnVerts)
 {
 	g_ClipFlags = clipFlags;
-	return d3d_ClipTLVerts(ppVerts, pnVerts, &g_SceneContext, 0);
+	return d3d_ClipTLVerts(ppVerts, pnVerts, &g_ViewParams, 0);
 }
 
 // 0x1002ac90
 int __fastcall d3d_ClipLM(uint32 clipFlags, void* ppVerts, void* pnVerts)
 {
 	g_ClipFlags = clipFlags;
-	return d3d_ClipLMVerts(ppVerts, pnVerts, &g_SceneContext, 0);
+	return d3d_ClipLMVerts((ClipVert2**)ppVerts, (int32*)pnVerts, &g_ViewParams, 0);
 }
 
 // 0x1002acad
@@ -582,10 +582,11 @@ int __fastcall d3d_ClipTLRC(uint32 clipFlags, void* ppVerts, void* pnVerts)
 	return d3d_ClipTLVertsRC(clipFlags, ppVerts, pnVerts);
 }
 
-// 0x1002acbe
+// 0x1002acbe -- ClipPoly<ClipVert2> (d3d_clip.h; its copy is TU04's
+// 0x10008779).
 int __fastcall d3d_ClipLMRC(uint32 clipFlags, void* ppVerts, void* pnVerts)
 {
-	return d3d_ClipLMVertsRC(clipFlags, ppVerts, pnVerts);
+	return ClipPoly(clipFlags, (ClipVert2**)ppVerts, (int32*)pnVerts);
 }
 
 // 0x1002accf
@@ -614,7 +615,7 @@ void DrawPolyMgr::DrawNone(PolyBatch* pBatch)
 // 0x1002acd7
 void DrawPolyMgr::DrawBatch(PolyBatch* pBatch)
 {
-	d3d_DrawPolyList(pBatch->m_pList, pBatch->m_Verts, pBatch->m_nVerts);
+	d3d_LightLMPoly((RenderPoly*)pBatch->m_pList, (ClipVert2*)pBatch->m_Verts, pBatch->m_nVerts);
 }
 
 
@@ -665,6 +666,7 @@ extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
 
 void DrawPolyMgr::SetPassStates(PassDesc* pDesc, PassState* pState)
 {
+	TexStage* pStage;
 	uint32 i;
 
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, pDesc->m_00);
@@ -676,18 +678,20 @@ void DrawPolyMgr::SetPassStates(PassDesc* pDesc, PassState* pState)
 
 	for (i=0; i < pDesc->m_1c; i++)
 	{
-		g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLOROP, pState->m_Stages[i].m_ColorOp);
-		if (pState->m_Stages[i].m_ColorOp != D3DTOP_DISABLE)
+		pStage = &pState->m_Stages[i];
+
+		g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLOROP, pStage->m_ColorOp);
+		if (pStage->m_ColorOp != D3DTOP_DISABLE)
 		{
-			g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLORARG1, pState->m_Stages[i].m_ColorArg1);
-			g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLORARG2, pState->m_Stages[i].m_ColorArg2);
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLORARG1, pStage->m_ColorArg1);
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_COLORARG2, pStage->m_ColorArg2);
 		}
 
-		g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAOP, pState->m_Stages[i].m_AlphaOp);
-		if (pState->m_Stages[i].m_AlphaOp != D3DTOP_DISABLE)
+		g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAOP, pStage->m_AlphaOp);
+		if (pStage->m_AlphaOp != D3DTOP_DISABLE)
 		{
-			g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAARG1, pState->m_Stages[i].m_AlphaArg1);
-			g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAARG2, pState->m_Stages[i].m_AlphaArg2);
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAARG1, pStage->m_AlphaArg1);
+			g_pD3DDevice->SetTextureStageState(i, D3DTSS_ALPHAARG2, pStage->m_AlphaArg2);
 		}
 	}
 }
@@ -1195,7 +1199,7 @@ void DrawPolyMgr::DrawNodeFlat(PolyNode* pNode)
 		}
 
 		g_ClipFlags = 0x3f;
-		if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_SceneContext, 0))
+		if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
 			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, 0x1c4, pVerts, nVerts, 0);
 
 		pPoly = (WorldPoly*)pPoly->m_Link.m_pNext;

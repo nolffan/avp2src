@@ -11,13 +11,19 @@
 //  draw.  The queues' CMoArray members are instantiated here first
 //  (0x1003abc0..0x1003b3c0).
 //
-//  Still near: VisibleSet's constructor, which needs CMoArray's Clear and
-//  Init out of line as Primal Hunt's StdLith has them (0x1002a040,
-//  0x1003b040); and the three polygon walks (0x10039eb0, 0x1003a2f0,
-//  0x1003a890), where retail inlines d3d_QueuePoly and calls CMoArray's
-//  Insert2 (0x1003b290) while cl 8966 with this dynarray.h inlines Insert2
-//  instead and so declines d3d_QueuePoly, then folds 0x10039eb0 into its
-//  caller.
+//  Still near: VisibleSet's constructor (0x10039910); CMoArray's Init
+//  (0x1003b040) is not emitted here at all.  Retail expands each queue's
+//  CMoArray constructor one level, calling Clear (0x1002a040) and
+//  Init(0, 0) out of line; cl 8966
+//  /Ob2 here calls the whole constructor (with Clear and Init expanded in
+//  its own COMDAT).  Neither an explicit PolyQueue constructor, a cache-
+//  size constructor, nor writing ClearSet out moves it; it looks like the
+//  constructor budget of guide 09 (Model::Model), one unit short.  The
+//  global's initialiser 0x100395e0 follows the constructor.
+//
+//  The walk: d3d_QueueAllObjects has external linkage, which is what keeps
+//  /Ob2 from folding it into d3d_TagVisibleLeaves (a static one is
+//  expanded there, and then d3d_QueuePoly is not).
 //
 //  The AvP2 1.0.9.6 counterparts (icl) are in d3dqip4.cpp, w49_1007a700.cpp,
 //  d3dr5a_o2.cpp, d3dr4a_o2.cpp, d3dbatchc_o2.cpp and w57_1007bb20_qipni.cpp.
@@ -95,7 +101,7 @@ struct LTObject
 // visitor, never through the object visitor).
 #define OT_LEAFOBJECT			7
 
-struct SceneContext
+struct ViewParams
 {
 	uint8		m_pad_000[0x21c];
 	LTMatrix	m_mWorld;                               // +0x21c
@@ -110,7 +116,7 @@ struct SceneContext
 	uint32		m_CurObjectFrameCode;                   // +0x4f8
 };
 
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 // The renderer's view of the engine's RenderStruct.
 struct RenderStruct
@@ -239,16 +245,18 @@ struct FindObjInfo
 					{
 						m_Pos.Init();
 						m_MaxDist = 0.0f;
-						m_ObjectCB = (VisFn)DoNothing;
+						m_ObjectCB = (VisFn)DefaultObjectCB;
 						m_ObjListCB = LTNULL;
 						m_pUser = LTNULL;
-						m_LeafCB = (VisFn)DoNothing;
+						m_LeafCB = (VisFn)DefaultLeafCB;
+						m_Flags = 0;
 						m_NodeFilterCB = (VisFn)ReturnTrue;
 						m_PortalFilterCB = LTNULL;
-						m_Flags = 0;
 					}
 
-	static void		DoNothing();                        // 0x1003530c
+	// Two do-nothing defaults, which the link folds (0x1003530c).
+	static void		DefaultObjectCB(LTObject *pObject);
+	static void		DefaultLeafCB(WorldLeaf *pLeaf);
 	static int		ReturnTrue();                       // 0x1003530d
 
 	uint32		m_Flags;                                // +0x00
@@ -260,6 +268,7 @@ struct FindObjInfo
 	VisFn		m_LeafCB;                               // +0x20
 	VisFn		m_NodeFilterCB;                         // +0x24
 	VisFn		m_PortalFilterCB;                       // +0x28
+	uint8		m_pad_2c[0x48 - 0x2c];                  // the walk's own state
 };
 
 class WorldTree
@@ -291,7 +300,7 @@ public:
 #define WORLD_HASPVS			2
 
 extern RenderStruct*	g_pStruct;                      // 0x1005df08
-extern SceneContext		g_SceneContext;                 // 0x1005b790
+extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
 extern uint16			g_CurFrameCode;                 // 0x1005d238
 extern uint32			g_ClipFlags;                    // 0x1005bd0c
@@ -343,7 +352,7 @@ public:
 		m_nObjects = 0;
 	}
 
-	void		Draw(SceneContext *pContext, DrawObjectFn fn);
+	void		Draw(ViewParams *pContext, DrawObjectFn fn);
 
 public:
 
@@ -378,15 +387,15 @@ struct PolyQueue
 {
 	void		Add(WorldPoly *pPoly)
 	{
-		if(m_nUsed < m_Polies.GetSize())
-		{
-			m_Polies[m_nUsed] = pPoly;
-			m_nUsed++;
-		}
-		else
+		if(m_nUsed >= m_Polies.GetSize())
 		{
 			if(m_Polies.Insert2(m_Polies.GetSize(), pPoly, &g_DefAlloc))
 				m_nUsed++;
+		}
+		else
+		{
+			m_Polies[m_nUsed] = pPoly;
+			m_nUsed++;
 		}
 	}
 
@@ -410,6 +419,26 @@ struct VisibleSet
 	void					Term();
 
 	void					ClearSet();
+
+	void					AddLMAnimPoly(WorldPoly *pPoly, LTMatrix *pTransform)
+	{
+		uint32 i;
+		LMAnimEntry *pEntry;
+
+		if(m_nLMAnimPolies >= MAX_LMANIM_POLIES)
+			return;
+
+		for(i=0; i < m_nLMAnimPolies; i++)
+		{
+			if(m_LMAnimPolies[i].m_pPoly == pPoly)
+				return;
+		}
+
+		pEntry = &m_LMAnimPolies[m_nLMAnimPolies];
+		pEntry->m_pPoly = pPoly;
+		pEntry->m_pTransform = pTransform;
+		m_nLMAnimPolies++;
+	}
 
 	// The list of sets.
 	LTLink					m_Sets;                     // +0x000
@@ -463,7 +492,6 @@ VisibleSet g_VisibleSet;                                // 0x10099240  $E 0x1003
 static inline void d3d_QueuePoly(WorldPoly *pPoly)
 {
 	WorldSurface *pSurface;
-	uint32 i;
 
 	if(pPoly->m_FrameCode == g_CurFrameCode)
 		return;
@@ -481,21 +509,7 @@ static inline void d3d_QueuePoly(WorldPoly *pPoly)
 		}
 		else if(g_bAnimateLightmaps)
 		{
-			if(g_VisibleSet.m_nLMAnimPolies < MAX_LMANIM_POLIES)
-			{
-				for(i=0; i < g_VisibleSet.m_nLMAnimPolies; i++)
-				{
-					if(g_VisibleSet.m_LMAnimPolies[i].m_pPoly == pPoly)
-						break;
-				}
-
-				if(i >= g_VisibleSet.m_nLMAnimPolies)
-				{
-					g_VisibleSet.m_LMAnimPolies[g_VisibleSet.m_nLMAnimPolies].m_pPoly = pPoly;
-					g_VisibleSet.m_LMAnimPolies[g_VisibleSet.m_nLMAnimPolies].m_pTransform = &g_SceneContext.m_mWorld;
-					g_VisibleSet.m_nLMAnimPolies++;
-				}
-			}
+			g_VisibleSet.AddLMAnimPoly(pPoly, &g_ViewParams.m_mWorld);
 		}
 		else
 		{
@@ -526,7 +540,7 @@ LTBOOL BaseObjectSet::Init(VisibleSet *pVisibleSet, const char *pSetName)
 
 
 // 0x100397e0
-void BaseObjectSet::Draw(SceneContext *pContext, DrawObjectFn fn)
+void BaseObjectSet::Draw(ViewParams *pContext, DrawObjectFn fn)
 {
 	uint32 i;
 	LTObject *pObj;
@@ -699,8 +713,8 @@ static inline LTBOOL d3d_ShouldProcessObject(LTObject *pObject)
 		pObject->m_ObjectType != OT_LEAFOBJECT &&
 		!(pObject->m_Flags2 & FLAG2_SKYOBJECT) &&
 		(((pObject->m_Flags & FLAG_VISIBLE) &&
-			(!g_SceneContext.m_bDrawHidden || !(pObject->m_Flags2 & 1))) ||
-		 (!(pObject->m_Flags & FLAG_VISIBLE) && g_SceneContext.m_bDrawHidden &&
+			(!g_ViewParams.m_bDrawHidden || !(pObject->m_Flags2 & 1))) ||
+		 (!(pObject->m_Flags & FLAG_VISIBLE) && g_ViewParams.m_bDrawHidden &&
 			(pObject->m_Flags & 0x400)));
 }
 
@@ -709,7 +723,7 @@ static inline LTBOOL d3d_ShouldProcessObject(LTObject *pObject)
 static void d3d_ProcessAttachments(LTObject *pObject, uint32 depth);
 
 // 0x10039eb0 -- no PVS: every object in every leaf, then every polygon.
-static void d3d_QueueAllObjects(WorldBsp *pBsp)
+void d3d_QueueAllObjects(WorldBsp *pBsp)
 {
 	uint32 i;
 	LTLink *pListHead, *pCur;
@@ -727,7 +741,7 @@ static void d3d_QueueAllObjects(WorldBsp *pBsp)
 			if(!d3d_ShouldProcessObject(pObject))
 				continue;
 
-			pObject->m_WTFrameCode = g_SceneContext.m_CurObjectFrameCode;
+			pObject->m_WTFrameCode = g_ViewParams.m_CurObjectFrameCode;
 			g_ObjectHandlers[pObject->m_ObjectType].m_ProcessObjectFn(pObject);
 
 			if(pObject->m_Attachments)
@@ -756,7 +770,7 @@ static void d3d_ProcessAttachments(LTObject *pObject, uint32 depth)
 	{
 		pAttachedObject = g_pStruct->ProcessAttachment(pObject, pCur);
 
-		if(pAttachedObject && (pAttachedObject->m_WTFrameCode != g_SceneContext.m_CurObjectFrameCode))
+		if(pAttachedObject && (pAttachedObject->m_WTFrameCode != g_ViewParams.m_CurObjectFrameCode))
 		{
 			// Allow it to recursively process attachments.
 			d3d_ProcessAttachments(pAttachedObject, depth+1);
@@ -764,7 +778,7 @@ static void d3d_ProcessAttachments(LTObject *pObject, uint32 depth)
 			if(d3d_ShouldProcessObject(pAttachedObject))
 			{
 				g_ObjectHandlers[pAttachedObject->m_ObjectType].m_ProcessObjectFn(pAttachedObject);
-				pAttachedObject->m_WTFrameCode = g_SceneContext.m_CurObjectFrameCode;
+				pAttachedObject->m_WTFrameCode = g_ViewParams.m_CurObjectFrameCode;
 			}
 		}
 	}
@@ -802,6 +816,9 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 	float fDist;
 	WorldLight *pLight;
 	uint32 iLight;
+	SceneWorld *pWorld;
+	uint32 iPlane;
+	LTPlane *pPlane;
 
 	if((g_VisibleSet.m_Flags & VSFLAG_REBUILD) && !g_CV_LockPVS)
 	{
@@ -821,7 +838,7 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 			CountAdder cntAdd(&g_pStruct->m_VisTicks);
 
 			info.m_Flags = 0;
-			info.m_Pos = g_SceneContext.m_bDrawHidden ? g_SceneContext.m_PortalPos : g_SceneContext.m_Pos;
+			info.m_Pos = g_ViewParams.m_bDrawHidden ? g_ViewParams.m_PortalPos : g_ViewParams.m_Pos;
 
 			info.m_MaxDist = 10000.0f;
 			info.m_ObjectCB = (VisFn)d3d_ObjectCB;
@@ -846,18 +863,19 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 	{
 		pPoly = *ppPoly;
 
-		if(pPoly->m_pPlane->DistTo(g_SceneContext.m_Pos) <= 0.01f)
+		if(pPoly->m_pPlane->DistTo(g_ViewParams.m_Pos) <= 0.01f)
 			continue;
 
 		g_ClipFlags = 0x3f;
-		for(i=0; i < 6; i++)
+		pPlane = g_ViewParams.m_ClipPlanes;
+		for(iPlane=0; iPlane < 6; pPlane++, iPlane++)
 		{
-			fDist = g_SceneContext.m_ClipPlanes[i].DistTo(pPoly->m_vCenter);
+			fDist = pPlane->DistTo(pPoly->m_vCenter);
 			if(fDist < -pPoly->m_fRadius)
 				goto NextPoly;
 
 			if(fDist > pPoly->m_fRadius)
-				g_ClipFlags &= ~(1 << i);
+				g_ClipFlags &= ~(1 << iPlane);
 		}
 
 		g_nWorldPoliesDrawn++;
@@ -867,18 +885,18 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 		if(flags & PHSURF_INVISIBLE)
 			continue;
 
-		if(!pSurface->m_pTexture)
+		if(pSurface->m_pTexture)
 		{
-			g_pDrawUntexturedPolyFn(pPoly);
-		}
-		else if(flags & PHSURF_SKY)
-		{
-			g_pDrawSkyPolyFn(pPoly);
-		}
-		else
-		{
+			if(flags & PHSURF_SKY)
+			{
+				g_pDrawSkyPolyFn(pPoly);
+				continue;
+			}
+
 			if(pPoly->m_Flags & WPF_DYNAMICLIGHT)
 			{
+				pWorld = g_pSceneWorld;
+
 				if(g_CV_FixTJunc)
 				{
 					pVerts = pPoly->m_pFixedVerts;
@@ -896,9 +914,9 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 				for(i=0; i < pPoly->m_nLightIndices; i++)
 				{
 					iLight = (uint16)pPoly->m_pLightIndices[i];
-					if(iLight < g_pSceneWorld->m_nLights)
+					if(iLight < pWorld->m_nLights)
 					{
-						pLight = &g_pSceneWorld->m_Lights[iLight];
+						pLight = &pWorld->m_Lights[iLight];
 						if(pLight->m_iFrame != -1 && pLight->m_fBrightness >= 0.02f)
 							d3d_LightPolyVerts(pVerts, nVerts, pLight, &pPoly->m_pLightIndices[i]);
 					}
@@ -911,6 +929,10 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 				g_pDrawFlashPolyFn(pPoly);
 			else
 				g_pDrawPolyFn(pPoly);
+		}
+		else
+		{
+			g_pDrawUntexturedPolyFn(pPoly);
 		}
 
 NextPoly:;
@@ -971,9 +993,9 @@ static void d3d_LeafCB(WorldLeaf *pLeaf)
 		pObject = ((LeafObjRef*)pCur->m_pData)->m_pObject;
 
 		if(pObject->m_ObjectType == OT_LEAFOBJECT && (pObject->m_Flags & FLAG_VISIBLE) &&
-			pObject->m_WTFrameCode != g_SceneContext.m_CurObjectFrameCode)
+			pObject->m_WTFrameCode != g_ViewParams.m_CurObjectFrameCode)
 		{
-			pObject->m_WTFrameCode = g_SceneContext.m_CurObjectFrameCode;
+			pObject->m_WTFrameCode = g_ViewParams.m_CurObjectFrameCode;
 			g_ObjectHandlers[OT_LEAFOBJECT].m_ProcessObjectFn(pObject);
 
 			if(pObject->m_Attachments)
@@ -983,7 +1005,7 @@ static void d3d_LeafCB(WorldLeaf *pLeaf)
 
 	ppPoly = pLeaf->m_pPolies;
 	ppEnd = &ppPoly[pLeaf->m_nPolies];
-	for(; ppPoly != ppEnd; ppPoly++)
+	for(; ppEnd != ppPoly; ppPoly++)
 	{
 		d3d_QueuePoly(*ppPoly);
 	}
@@ -998,7 +1020,7 @@ static int d3d_PortalFilterCB(VisNode *pNode)
 
 	for(i=0; i < 6; i++)
 	{
-		if(g_SceneContext.m_ClipPlanes[i].DistTo(pNode->m_vCenter) < -pNode->m_fRadius)
+		if(g_ViewParams.m_ClipPlanes[i].DistTo(pNode->m_vCenter) < -pNode->m_fRadius)
 			return LTFALSE;
 	}
 

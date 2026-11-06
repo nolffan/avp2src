@@ -28,6 +28,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT
 #include "ltbasedefs.h"
 #include <string.h>
 
@@ -198,3 +199,5 @@ void sub_10031e10()
 	g_pStruct->ConsolePrintf("Surfaces larger than screen: %s",
 		YESNO26(g_n1008d828));
 }
+
+#endif // Primal Hunt: ph/d3d_init.cpp

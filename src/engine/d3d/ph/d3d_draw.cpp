@@ -15,8 +15,14 @@
 //  (lithshared/stl) ahead of VC6's headers: the state blocks are STLport
 //  vectors with the node allocator.
 //
-//  Not written: 0x10016030 (a textured polygon with a state backup),
-//  0x100162a0 (the portals, 2365 bytes) and 0x10016c40 after it,
+//  0x10016030 (d3d_DrawPortalPoly, a portal's polygon blended through the
+//  portal's transform) is near: the inline texture bind keeps no zero
+//  register where retail keeps 0 in %ebx, the transform's terms come out
+//  in another order, and the inliner expands ~vector<StageState> one level
+//  where retail calls it (0x10019550: ~vector, not ~_Vector_base -- its
+//  dead `mov %esi,(%esp)` is _Destroy's first argument).
+//
+//  Not written: 0x100162a0 (the portals, 2365 bytes) and 0x10016c40 after it,
 //  0x10016c60 (the line clipper, 3949 bytes), 0x10018520 (RenderScene,
 //  2671 bytes).  Near, all from VC6's inlining choices or scheduling
 //  rather than a known source difference: 0x10014550 (register choice),
@@ -203,16 +209,16 @@ void d3d_SetDefaultBlend()
 // ---------------------------------------------------------------------- //
 //  Render state blocks (the class's members are TU21's).
 // ---------------------------------------------------------------------- //
-struct RSState
+struct RenderState
 {
-	RSState() {}
-	RSState(uint32 state, uint32 val) { m_State = state; m_Val = val; }
+	RenderState() {}
+	RenderState(uint32 state, uint32 val) { m_State = state; m_Val = val; }
 
 	uint32  m_State;
 	uint32  m_Val;
 };
 
-struct TSSState
+struct StageState
 {
 	uint32  m_Stage;
 	uint32  m_State;
@@ -224,26 +230,29 @@ class RenderStateSet
 {
 public:
 	RenderStateSet() {}
-	RenderStateSet(const RSState& first) : m_RenderStates(1, first) {}
+	RenderStateSet(const RenderState& first) : m_RenderStates(1, first) {}
 
-	std::vector<RSState>    m_RenderStates;                 // +0x00
-	std::vector<TSSState>   m_StageStates;                  // +0x0c
+	std::vector<RenderState>    m_RenderStates;             // +0x00
+	std::vector<StageState>     m_StageStates;              // +0x0c
 };
 
-// The states it replaced, put back by Restore() or when it goes.
-class RenderStateBackup
+// The states it replaced, put back by Restore() or when it goes (TU21's
+// CRenderStateList: the names are its, so the calls resolve; Apply still
+// takes this file's RenderStateSet).
+class CRenderStateList
 {
 public:
-	~RenderStateBackup() { Restore(); }
+	~CRenderStateList() { Restore(); }
 
-	std::vector<RSState>    m_RenderStates;                 // +0x00
-	std::vector<TSSState>   m_StageStates;                  // +0x0c
+	std::vector<RenderState>    m_RenderStates;             // +0x00
+	std::vector<StageState>     m_StageStates;              // +0x0c
 
 	void    Restore();                                      // 0x10022a86
 	void    Apply(RenderStateSet* pSet, uint32 iStage);     // 0x10022a97
+	void    SetState(RenderState* pState);                  // 0x10022b08
 };
 
-RenderStateBackup   g_TranslucentStates;                    // 0x1005e6c0
+CRenderStateList    g_TranslucentStates;                    // 0x1005e6c0
 
 static RenderStateSet*  g_pAdditiveSet;                     // 0x1005fe04
 static RenderStateSet*  g_pTranslucentSet;                  // 0x1005fe08
@@ -273,10 +282,10 @@ void d3d_SetTranslucentObjectStates(LTBOOL bAdditive)
 	{
 		if (!g_pAdditiveSet)
 		{
-			g_pAdditiveSet = new RenderStateSet(RSState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE));
-			g_pAdditiveSet->m_RenderStates.push_back(RSState(D3DRENDERSTATE_ZWRITEENABLE, FALSE));
-			g_pAdditiveSet->m_RenderStates.push_back(RSState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE));
-			g_pAdditiveSet->m_RenderStates.push_back(RSState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE));
+			g_pAdditiveSet = new RenderStateSet(RenderState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE));
+			g_pAdditiveSet->m_RenderStates.push_back(RenderState(D3DRENDERSTATE_ZWRITEENABLE, FALSE));
+			g_pAdditiveSet->m_RenderStates.push_back(RenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE));
+			g_pAdditiveSet->m_RenderStates.push_back(RenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE));
 		}
 
 		if (g_pAdditiveSet)
@@ -286,10 +295,10 @@ void d3d_SetTranslucentObjectStates(LTBOOL bAdditive)
 	{
 		if (!g_pTranslucentSet)
 		{
-			g_pTranslucentSet = new RenderStateSet(RSState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE));
-			g_pTranslucentSet->m_RenderStates.push_back(RSState(D3DRENDERSTATE_ZWRITEENABLE, FALSE));
-			g_pTranslucentSet->m_RenderStates.push_back(RSState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA));
-			g_pTranslucentSet->m_RenderStates.push_back(RSState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA));
+			g_pTranslucentSet = new RenderStateSet(RenderState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE));
+			g_pTranslucentSet->m_RenderStates.push_back(RenderState(D3DRENDERSTATE_ZWRITEENABLE, FALSE));
+			g_pTranslucentSet->m_RenderStates.push_back(RenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA));
+			g_pTranslucentSet->m_RenderStates.push_back(RenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA));
 		}
 
 		if (g_pTranslucentSet)
@@ -350,6 +359,8 @@ struct TLVertex
 	uint32      color;                                      // +0x10
 	uint32      specular;                                   // +0x14
 	float       tu, tv;                                     // +0x18
+
+	void        SetTexCoords(float u, float v) { tu = u; tv = v; }
 };
 
 uint32      g_nTLVertPool;                                  // 0x1005fe00
@@ -434,13 +445,17 @@ struct RenderVertex
 struct RenderPolyVert
 {
 	RenderVertex*   m_pVert;                                // +0x00
-	uint8           m_Reserved04[0x14];
+	float           tu, tv;                                 // +0x04
+	uint8           m_Reserved0c[0x0c];
 };
+
+struct SharedTexture;
 
 struct RenderSurface
 {
-	uint8       m_Reserved00[0x30];
-	uint32      m_Flags;                                    // +0x30
+	uint8           m_Reserved00[0x2c];
+	SharedTexture*  m_pTexture;                             // +0x2c
+	uint32          m_Flags;                                // +0x30
 };
 
 struct RenderPoly
@@ -1371,6 +1386,137 @@ void d3d_DrawLightScalePoly(const LTVector* pScale)
 	StateSet ssDestBlend(D3DRENDERSTATE_DESTBLEND, g_CV_InvertHack ? D3DBLEND_ZERO : D3DBLEND_SRCCOLOR);
 
 	g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, verts, 4, 0);
+}
+
+
+
+// ---------------------------------------------------------------------- //
+//  The portals' polygons.
+// ---------------------------------------------------------------------- //
+
+// A texture in video memory (d3d_texture.cpp's), with what binding reads.
+class RTexture
+{
+public:
+	uint8                   m_Reserved00[0x0c];
+	LPDIRECTDRAWSURFACE7    m_pSurface;                     // +0x0c
+	uint8                   m_Reserved10[0x30 - 0x10];
+	RTexture*               m_pNext;                        // +0x30
+	uint8                   m_Reserved34[0x42 - 0x34];
+	uint16                  m_Stage;                        // +0x42
+	uint16                  m_LOD;                          // +0x44
+};
+
+struct SharedTexture
+{
+	uint8       m_Reserved00[0x0c];
+	RTexture*   m_pRenderData;                              // +0x0c
+	uint8       m_Reserved10[0x30 - 0x10];
+	uint16      m_FrameCode;                                // +0x30
+};
+
+extern RTexture*    g_pCurTextures[];                       // 0x10067270
+extern uint16       g_CurTextureFrameCode;                  // 0x1005d250
+extern float        g_fTexelSizeU;                          // 0x100672a8
+extern float        g_fTexelSizeV;                          // 0x100672ac
+extern void         (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4
+
+RTexture*   d3d_CreateRenderTexture(SharedTexture* pTexture, uint32 iStage, LTBOOL bStageCopy);  // 0x10020cd0
+void        d3d_SetTextureDirect(RTexture* pTexture);       // 0x10007a89
+
+// Bind a shared texture to a stage at a mip level (drawmodel_clip.cpp's
+// d3d_SetTexture, 0x100079e4, spelt inline).
+inline int d3d_BindTexture(SharedTexture* pTexture, uint32 iStage, uint32 iLOD)
+{
+	RTexture *pRenderData, *pCur;
+
+	if (!pTexture)
+		return LTFALSE;
+
+	pRenderData = pTexture->m_pRenderData;
+	pTexture->m_FrameCode = g_CurTextureFrameCode;
+
+	for (pCur = pRenderData; pCur; pCur = pCur->m_pNext)
+	{
+		if (pCur->m_Stage == (uint16)(uint8)iStage)
+			break;
+	}
+
+	if (pCur)
+	{
+		if (pCur != g_pCurTextures[iStage])
+			d3d_SetTextureDirect(pCur);
+	}
+	else if (pRenderData)
+	{
+		pCur = d3d_CreateRenderTexture(pTexture, iStage, LTTRUE);
+		if (!pCur)
+			return LTFALSE;
+
+		pCur->m_pNext = pRenderData->m_pNext;
+		pRenderData->m_pNext = pCur;
+		d3d_SetTextureDirect(pCur);
+	}
+	else
+	{
+		pCur = d3d_CreateRenderTexture(pTexture, iStage, LTFALSE);
+		if (!pCur)
+			return LTFALSE;
+
+		d3d_SetTextureDirect(pCur);
+	}
+
+	if (pCur->m_LOD != iLOD)
+	{
+		pCur->m_pSurface->SetLOD(iLOD);
+		pCur->m_LOD = (uint16)iLOD;
+	}
+
+	return LTTRUE;
+}
+
+#define MAX_PORTALPOLY_VERTS    128
+
+// 0x10016030 -- draw a portal's polygon blended over the scene, its
+// vertices through the portal's transform.
+void d3d_DrawPortalPoly(RenderPoly* pPoly, LTMatrix* pTransform)
+{
+	TLVertex verts[MAX_PORTALPOLY_VERTS];
+	TLVertex *pVerts, *pVert;
+	RenderPolyVert* pPolyVerts;
+	int nVerts;
+	uint32 i;
+	RenderState state;
+
+	if (!d3d_BindTexture(pPoly->m_pSurface->m_pTexture, g_iCurTextureStage, 0))
+		return;
+
+	CRenderStateList states;
+
+	state.m_State = D3DRENDERSTATE_ALPHABLENDENABLE;
+	state.m_Val = TRUE;
+	states.SetState(&state);
+
+	d3d_GetPolyVerts(pPoly, &pPolyVerts, &nVerts);
+
+	pVert = verts;
+	for (i = nVerts; i; i--)
+	{
+		MatVMul_H(&pVert->m_Vec, pTransform, &pPolyVerts->m_pVert->m_Vec);
+		pVert->color = 0xFFFFFFFF;
+		pVert->SetTexCoords(pPolyVerts->tu * g_fTexelSizeU, pPolyVerts->tv * g_fTexelSizeV);
+		g_pfnCalcFog(&pPolyVerts->m_pVert->m_Vec, &pVert->specular);
+		pVert++;
+		pPolyVerts++;
+	}
+
+	g_ClipFlags = 0x3F;
+	pVerts = verts;
+	if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+	{
+		g_nTrianglesDrawn += nVerts - 2;
+		g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
+	}
 }
 
 

@@ -782,8 +782,8 @@
       "unwritten_bytes": 0
     },
     "d3d.ren": {
-      "attempted": 60,
-      "bytes_identical": 104696,
+      "attempted": 32,
+      "bytes_identical": 123838,
       "bytes_total": 240249,
       "crt": 334,
       "crt_bytes": 45354,
@@ -792,20 +792,20 @@
       "encrypted": 0,
       "encrypted_bytes": 0,
       "funcs": 1288,
-      "identical": 1027,
+      "identical": 1071,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 125,
-      "small": 62,
+      "near": 123,
+      "small": 55,
       "started": true,
-      "todo": 14,
-      "unlinked": 57,
-      "unlinked_bytes": 5519,
-      "unplaced": 731,
-      "unplaced_bytes": 282217,
-      "unwritten": 74,
-      "unwritten_bytes": 76644
+      "todo": 7,
+      "unlinked": 73,
+      "unlinked_bytes": 9848,
+      "unplaced": 727,
+      "unplaced_bytes": 272222,
+      "unwritten": 39,
+      "unwritten_bytes": 52700
     },
     "lith": {
       "attempted": 0,
@@ -913,17 +913,17 @@
     }
   },
   "total": {
-    "attempted": 293,
-    "bytes_identical": 6890411,
+    "attempted": 265,
+    "bytes_identical": 6909553,
     "bytes_total": 10779204,
     "funcs": 55441,
-    "identical": 37439,
-    "near": 4535,
-    "small": 5280,
-    "todo": 7894,
-    "unplaced": 5468,
-    "unplaced_bytes": 1299204,
-    "unwritten": 8187,
-    "unwritten_bytes": 1753691
+    "identical": 37483,
+    "near": 4533,
+    "small": 5273,
+    "todo": 7887,
+    "unplaced": 5464,
+    "unplaced_bytes": 1289209,
+    "unwritten": 8152,
+    "unwritten_bytes": 1729747
   }
 }

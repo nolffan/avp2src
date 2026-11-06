@@ -2218,6 +2218,7 @@ static inline LTBOOL ClipPoly49bb0(uint32 nClipFlags, Vert49bb0** ppVerts,
 //  __thiscall with two stack arguments (`ret $0x8` at 0x1004b4cf, the
 //  arguments read at 0x8(%ebp) and 0xc(%ebp)).  `this` is NEVER READ.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void C10048180::sub_10049bb0(Shadow49bb0* pShadow, Item49bb0* pItem)
 {
 	// ------------------------------------------------------------------ //
@@ -2580,6 +2581,7 @@ void C10048180::sub_10049bb0(Shadow49bb0* pShadow, Item49bb0* pItem)
 	g_p1008d988->m_pVtbl->DrawPrimitive(g_p1008d988, 6, 0x1c4, aOut,
 	                                    nVerts, 0);
 }
+#endif // Primal Hunt: ph/drawmodelshadows.cpp
 
 
 // *********************************************************************** //

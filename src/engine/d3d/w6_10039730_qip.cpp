@@ -494,6 +494,7 @@ static inline LTBOOL LockSurf10039d70(DDSurface7* pDDS, DDSD2* pDesc)
 	return LTTRUE;
 }
 
+#ifndef PRIMAL_HUNT
 long sub_10039d70(void* pPoly, long bToSurface)
 {
 	Surf0ae20*      pSurf;
@@ -560,6 +561,7 @@ long sub_10039d70(void* pPoly, long bToSurface)
 
 	return desc.sub_1006d210((void*)nMap) && nMap;
 }
+#endif // Primal Hunt: ph/d3d_texture.cpp
 
 
 // ======================================================================= //

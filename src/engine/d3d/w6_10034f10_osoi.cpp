@@ -166,6 +166,7 @@ extern void d3d_AddDirtyRect(LTRect* pRect);                // 0x1003b3d0
 //      blocks; the shipped code builds the row base first);
 //    * the pairs of each chained vertex store in the shipped order.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10034f10(RenderBlitRequest* pRequest)
 {
 	D3DOptSurface* pOpt;
@@ -258,6 +259,7 @@ void sub_10034f10(RenderBlitRequest* pRequest)
 
 	d3d_AddDirtyRect(pDest);
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ======================================================================= //
@@ -315,6 +317,7 @@ struct W6TLVertV
 #define W6_D3DRS_ALPHABLENDENABLE   27
 
 
+#ifndef PRIMAL_HUNT
 void sub_10035450(RenderBlitRequest* pRequest)
 {
 	D3DOptSurface* pOpt;
@@ -407,3 +410,4 @@ void sub_10035450(RenderBlitRequest* pRequest)
 
 	g_pD3DDevice->SetTexture(0, pOldTexture);
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp

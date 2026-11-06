@@ -55,7 +55,7 @@ enum BPPIdent
 class PFormat
 {
 public:
-	virtual void	Init(uint32 Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
+	virtual void	Init(BPPIdent Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
 	BPPIdent		GetType();
 
 	uint32			m_eType;

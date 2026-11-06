@@ -5,11 +5,11 @@
 //  the environment-map stage, the OT_MODEL ProcessObject handler, the
 //  solid/chromakey/translucent model passes and the blend states shared
 //  with the particle systems (0x10025de5).
-//
-//  Not yet written here: the model pass 0x100254d8.
+
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#include <math.h>
 
 
 // The renderer's console variable (TU12's, constructor 0x10011f36).
@@ -28,6 +28,10 @@ public:
 	CD3DConVar*	m_pNext;
 };
 
+
+// The bump environment map's rotation, from the camera's heading.
+float		g_fBumpMat00 = 0.5f;                        // 0x1004d9ac
+float		g_fBumpMat11 = 0.5f;                        // 0x1004d9b0
 
 CD3DConVar	g_CV_ModelSpecular("ModelSpecular", 1.0f, LTNULL, LTNULL);	// 0x1006d6a8  $E 0x10024ec0/0x10024ec5
 CD3DConVar	g_CV_ModelTexture("ModelTexture", 1.0f, LTNULL, LTNULL);	// 0x1006d688  $E 0x10024edf/0x10024ee4
@@ -132,14 +136,14 @@ struct LTObject
 	uint8		m_ObjectType;                           // +0x0bc
 };
 
-struct SceneContext;
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+struct ViewParams;
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 class BaseObjectSet
 {
 public:
 	void		Add(LTObject *pObject);                 // 0x10023797
-	void		Draw(SceneContext* pContext, DrawObjectFn fn);  // 0x100397e0
+	void		Draw(ViewParams* pContext, DrawObjectFn fn);  // 0x100397e0
 
 	LTObject	**m_pObjects;                           // +0x00
 	uint32		m_nObjects;                             // +0x04
@@ -161,7 +165,7 @@ public:
 };
 
 extern ObjectDrawList*	g_pObjectDrawList;              // 0x100713cc
-extern SceneContext		g_SceneContext;                 // 0x1005b790
+extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern int32			g_CV_DrawModels;                // 0x1004a788
 extern uint32			g_FillMode;                     // 0x1006dac8
 extern uint32			g_EnvMapColorOp;                // 0x1006d680
@@ -193,6 +197,8 @@ struct ViewParams
 {
 	uint8		m_pad_000[0x15c];
 	LTMatrix	m_mWorldToCamera;                      // +0x15c
+	uint8		m_pad_19c[0x4a8 - 0x19c];
+	LTVector	m_Forward;                              // +0x4a8
 };
 
 struct SharedTexture
@@ -216,11 +222,14 @@ struct Model
 
 struct ModelInstance
 {
-	uint8			m_pad_000[0x194];
+	uint8			m_pad_000[0x8c];
+	uint32			m_Flags2;                           // +0x08c
+	uint8			m_pad_090[0x194 - 0x90];
 	LTVector		m_Pos;                              // +0x194
 	uint8			m_pad_1a0[0x1c0 - 0x1a0];
 	SharedTexture*	m_pSkins[4];                        // +0x1c0
-	uint8			m_pad_1d0[0x1fc - 0x1d0];
+	SharedTexture*	m_pEnvMap;                          // +0x1d0
+	uint8			m_pad_1d4[0x1fc - 0x1d4];
 	Model*			m_pModel;                           // +0x1fc
 	uint8			m_pad_200[0x20c - 0x200];
 	uint16			m_iCurAnim;                         // +0x20c
@@ -251,10 +260,18 @@ public:
 	virtual LTBOOL	IsTranslucent();                    // +0x08
 };
 
+struct ModelDrawParams
+{
+	uint8		m_pad_000[0x14c];
+	uint32		m_bSpecular;                            // +0x14c
+};
+
 class CD3DModelDraw
 {
 public:
 	void		DrawModelBox();                         // 0x10024efe
+	void		DrawPasses();                           // 0x100254d8
+	void		DrawShadow();                           // 0x1002611f (drawmodelshadows.cpp)
 	void		SetupModelStates(LTBOOL* pTranslucent); // 0x10025193
 	void		SetupSkin(uint32 iSkin);                // 0x10025269
 	void		DrawPieces(uint32 a, uint32 b, LTBOOL bLOD);  // 0x10025acf
@@ -262,13 +279,15 @@ public:
 	void		DrawLOD();                              // 0x10005700
 	void		DrawPiece(struct ModelVertSet* pSet);   // 0x100045a0 (d3d_modelvb.cpp)
 
-	uint8			m_pad_000[0x4];
+	ModelDrawParams*	m_pParams;                      // +0x000
 	ModelInstance*	m_pInstance;                        // +0x004
 	uint8			m_pad_008[0x30 - 0x8];
 	uint32			m_bEnvMap;                          // +0x030
 	uint32			m_iSkinStage;                       // +0x034
 	uint32			m_iDetailStage;                     // +0x038
-	uint8			m_pad_03c[0x4c4 - 0x3c];
+	uint8			m_pad_03c[0x2c4 - 0x3c];
+	uint8			m_2c4[256];                         // +0x2c4
+	uint8			m_3c4[256];                         // +0x3c4
 	uint32			m_bSetupSkins;                      // +0x4c4
 	uint32			m_bTextured;                        // +0x4c8
 	uint32			m_iCurSkin;                         // +0x4cc
@@ -279,7 +298,8 @@ public:
 	uint32			m_5ec;                              // +0x5ec
 	uint8			m_pad_5f0[0x5f4 - 0x5f0];
 	uint32			m_5f4;                              // +0x5f4
-	uint8			m_pad_5f8[0x61c - 0x5f8];
+	uint8			m_pad_5f8[0x618 - 0x5f8];
+	uint32			m_bEnvMapAll;                       // +0x618
 	float			m_fEnvOffsetU;                      // +0x61c
 	float			m_fEnvOffsetV;                      // +0x620
 	float			m_fEnvScaleU;                       // +0x624
@@ -289,7 +309,10 @@ public:
 	uint32			m_ModelFlags2;                      // +0x898
 	uint8			m_pad_89c[0x8a4 - 0x89c];
 	uint32			m_TextureFlags;                     // +0x8a4
-	uint8			m_pad_8a8[0x8b4 - 0x8a8];
+	uint8			m_Alpha;                            // +0x8a8
+	uint8			m_pad_8a9[0x8b8 - 0x8a9];
+	uint8			m_ObjectAlpha;                      // +0x8b8
+	uint8			m_pad_8b9[0x8bc - 0x8b9];
 };
 
 extern ViewParams	g_ViewParams;                       // 0x1005b790
@@ -515,6 +538,251 @@ void __fastcall d3d_GenUVEnvMapOffset(CD3DModelDraw* pDraw, ModelVert* pVert, UV
 
 
 // ---------------------------------------------------------------------- //
+//  0x100254d8 -- the model's passes: the environment map over everything
+//  (EnvMapAll), then the bump-mapped specular pass, the specular pass,
+//  the environment map pass or the plain one; then its shadow and box.
+// ---------------------------------------------------------------------- //
+#define D3DTSS_ALPHAOP			4
+#define D3DTSS_BUMPENVMAT00		7
+#define D3DTSS_BUMPENVMAT01		8
+#define D3DTSS_BUMPENVMAT10		9
+#define D3DTSS_BUMPENVMAT11		10
+#define D3DTSS_TEXCOORDINDEX	11
+#define D3DTSS_MAGFILTER		16
+#define D3DTSS_MINFILTER		17
+#define D3DTOP_SELECTARG1		2
+#define D3DTOP_ADDSIGNED		8
+#define D3DTOP_BUMPENVMAP		22
+#define D3DTFG_LINEAR			2
+#define D3DTFN_LINEAR			2
+
+// Save a texture stage state, set it, and put it back when the scope closes
+// (drawworld.cpp's, 0x1000a48c and 0x1000a4d1, out of line).
+enum _D3DTEXTURESTAGESTATETYPE { D3DTSS_FORCE_DWORD = 0x7fffffff };
+typedef enum _D3DTEXTURESTAGESTATETYPE D3DTEXTURESTAGESTATETYPE;
+
+class StageStateSet
+{
+public:
+	StageStateSet(uint32 stage, D3DTEXTURESTAGESTATETYPE state, uint32 val);
+	~StageStateSet();
+
+	uint32						m_Stage;
+	D3DTEXTURESTAGESTATETYPE	m_State;
+	uint32						m_OldVal;
+};
+
+#define TSS(x)	((D3DTEXTURESTAGESTATETYPE)(x))
+
+inline uint32 F2DW(float f)
+{
+	return *((uint32*)&f);
+}
+
+struct IDirectDrawSurface7;
+
+extern int32				g_CV_EnvMapAll;             // 0x1005d868 (common_stuff.cpp)
+extern int32				g_CV_ModelBoxes;            // 0x1005df68 (common_stuff.cpp)
+extern uint32				g_bCanBumpMap;              // 0x1006eacc (drawmodelshadows.cpp)
+extern float				g_fBumpMat01;               // 0x1006ead0 (drawmodelshadows.cpp)
+extern float				g_fBumpMat10;               // 0x1006ead4 (drawmodelshadows.cpp)
+extern uint32				g_bCanSpecular;             // 0x100622a4
+extern IDirectDrawSurface7*	g_pGammaTexture;            // 0x10068318 (d3d_texture.cpp)
+extern float				g_fReallyClosePushZ;        // 0x1005b74c
+extern float				g_fNearZ;                   // 0x1005b818
+
+struct RenderStruct
+{
+	uint8			m_pad_000[0x10c];
+	SharedTexture*	m_pEnvMap;                          // +0x10c
+};
+extern RenderStruct*		g_pStruct;                  // 0x1005df08
+
+struct UVVert;
+struct ModelVert;
+void __fastcall d3d_GenUV(UVVert* pOut, UVVert* pSrc, float* pUV);                // 0x10001370
+void __fastcall d3d_GenUVDetail(UVVert* pOut, UVVert* pSrc, float* pUV);          // 0x10001390
+void __fastcall d3d_GenUVVert(UVVert* pOut, UVVert* pSrc, float* pUV);            // 0x100013d0
+void __fastcall d3d_GenUVVert2(UVVert* pOut, UVVert* pSrc, float* pUV);           // 0x100013e0
+void __fastcall d3d_GenUVNone(CD3DModelDraw* pDraw, ModelVert* pVert, UVVert* pOut);     // 0x10001410
+void __fastcall d3d_GenUVEnvMap(CD3DModelDraw* pDraw, ModelVert* pVert, UVVert* pOut);   // 0x10001420
+void __fastcall d3d_GenUVSpecular(CD3DModelDraw* pDraw, ModelVert* pVert, UVVert* pOut); // 0x10001490
+void __fastcall d3d_GenUVQuarter(UVVert* pOut, UVVert* pSrc, float* pUV);         // 0x1002544b
+void __fastcall d3d_GenUVEnvMapOffset(CD3DModelDraw* pDraw, ModelVert* pVert, UVVert* pOut);  // 0x10025469
+
+void CD3DModelDraw::DrawPasses()
+{
+	uint32 oldAlphaBlend;
+	uint8 oldAlpha;
+	LTBOOL bLOD;
+	void* pOldTexture;
+	uint32 i;
+	double fAngle;
+
+	for (i=0; i < 256; i++)
+		m_2c4[i] = m_3c4[i] = 0;
+
+	m_iDetailStage = (uint32)-1;
+	m_iSkinStage = 0;
+	m_nEnvMapPasses = 1;
+
+	g_pD3DDevice->GetRenderState(D3DRS_ALPHABLENDENABLE, &oldAlphaBlend);
+
+	oldAlpha = m_Alpha;
+	if (m_pInstance->m_Flags2 & 0x800)
+	{
+		m_Alpha = m_ObjectAlpha;
+		if (m_Alpha >= 0xFF)
+		{
+			g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTFALSE);
+			g_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, LTTRUE);
+		}
+		else
+		{
+			g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
+			g_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, LTFALSE);
+		}
+	}
+
+	bLOD = LTTRUE;
+
+	if ((g_CV_EnvMapAll || m_bEnvMapAll) && (g_pStruct->m_pEnvMap || m_pInstance->m_pEnvMap))
+	{
+		if (m_pInstance->m_Flags2 & 0x1000)
+		{
+			m_5f4 = (uint32)d3d_GenUVVert;
+			m_5ec = (uint32)d3d_GenUVEnvMapOffset;
+		}
+		else if (m_pInstance->m_Flags2 & 0x800)
+		{
+			m_5f4 = (uint32)d3d_GenUVQuarter;
+			m_5ec = (uint32)d3d_GenUVNone;
+		}
+		else
+		{
+			m_5f4 = (uint32)d3d_GenUVVert;
+			m_5ec = (uint32)d3d_GenUVEnvMap;
+		}
+
+		DrawLOD();
+		if (m_pInstance->m_pEnvMap)
+			d3d_SetTexture(m_pInstance->m_pEnvMap, g_BindTextureStage, 0);
+		else
+			d3d_SetTexture(g_pStruct->m_pEnvMap, g_BindTextureStage, 0);
+		m_bSetupSkins = LTFALSE;
+		DrawPiece(LTNULL);
+		bLOD = LTFALSE;
+		g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
+	}
+
+	if (m_pInstance->m_Flags2 & 0x800)
+	{
+		bLOD = LTTRUE;
+		m_Alpha = oldAlpha;
+		if (m_Alpha >= 0xFF)
+		{
+			g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTFALSE);
+			g_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, LTTRUE);
+		}
+		else
+		{
+			g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
+			g_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, LTFALSE);
+		}
+	}
+
+	if (!g_CV_EnvMapAll)
+	{
+		if (g_bCanBumpMap)
+		{
+			m_nEnvMapPasses = 2;
+			m_iDetailStage = 0x101;
+
+			g_pD3DDevice->GetTexture(2, &pOldTexture);
+			g_pD3DDevice->SetTexture(2, g_pGammaTexture);
+
+			StageStateSet ssTexCoord1(1, TSS(D3DTSS_TEXCOORDINDEX), 0);
+			StageStateSet ssColorOp1(1, TSS(D3DTSS_COLOROP), D3DTOP_BUMPENVMAP);
+			StageStateSet ssColorArg11(1, TSS(D3DTSS_COLORARG1), D3DTA_TEXTURE);
+			StageStateSet ssColorArg21(1, TSS(D3DTSS_COLORARG2), D3DTA_CURRENT);
+
+			fAngle = atan2(g_ViewParams.m_Forward.x, g_ViewParams.m_Forward.z);
+			g_fBumpMat00 = (float)cos(fAngle);
+			g_fBumpMat01 = -(float)sin(fAngle);
+			g_fBumpMat10 = (float)sin(fAngle);
+			g_fBumpMat11 = (float)cos(fAngle);
+
+			StageStateSet ssBumpMat00(1, TSS(D3DTSS_BUMPENVMAT00), F2DW(g_fBumpMat00));
+			StageStateSet ssBumpMat01(1, TSS(D3DTSS_BUMPENVMAT01), F2DW(g_fBumpMat01));
+			StageStateSet ssBumpMat10(1, TSS(D3DTSS_BUMPENVMAT10), F2DW(g_fBumpMat10));
+			StageStateSet ssBumpMat11(1, TSS(D3DTSS_BUMPENVMAT11), F2DW(g_fBumpMat11));
+			StageStateSet ssMagFilter1(1, TSS(D3DTSS_MAGFILTER), D3DTFG_LINEAR);
+			StageStateSet ssMinFilter1(1, TSS(D3DTSS_MINFILTER), D3DTFN_LINEAR);
+
+			StageStateSet ssTexCoord2(2, TSS(D3DTSS_TEXCOORDINDEX), 1);
+			StageStateSet ssColorOp2(2, TSS(D3DTSS_COLOROP), D3DTOP_ADD);
+			StageStateSet ssColorArg12(2, TSS(D3DTSS_COLORARG1), D3DTA_TEXTURE);
+			StageStateSet ssColorArg22(2, TSS(D3DTSS_COLORARG2), D3DTA_CURRENT);
+			StageStateSet ssAddress2(2, TSS(D3DTSS_ADDRESS), D3DTADDRESS_CLAMP);
+			StageStateSet ssMagFilter2(2, TSS(D3DTSS_MAGFILTER), D3DTFG_LINEAR);
+			StageStateSet ssMinFilter2(2, TSS(D3DTSS_MINFILTER), D3DTFN_LINEAR);
+
+			DrawPieces((uint32)d3d_GenUVVert2, (uint32)d3d_GenUVSpecular, LTTRUE);
+
+			g_pD3DDevice->SetTexture(2, pOldTexture);
+		}
+		else if (g_CV_ModelSpecular.m_nValue && g_bCanSpecular && m_pParams->m_bSpecular && g_pGammaTexture)
+		{
+			m_nEnvMapPasses = 2;
+
+			g_pD3DDevice->GetTexture(1, &pOldTexture);
+			g_pD3DDevice->SetTexture(1, g_pGammaTexture);
+
+			// RETAIL BUG: each of these is a temporary, so it puts its
+			// state back as soon as it has set it.
+			StageStateSet(1, TSS(D3DTSS_COLOROP), D3DTOP_ADD);
+			StageStateSet(1, TSS(D3DTSS_COLORARG1), D3DTA_TEXTURE);
+			StageStateSet(1, TSS(D3DTSS_COLORARG2), D3DTA_CURRENT);
+			StageStateSet(1, TSS(D3DTSS_ADDRESS), D3DTADDRESS_CLAMP);
+
+			DrawPieces((uint32)d3d_GenUVVert2, (uint32)d3d_GenUVSpecular, LTTRUE);
+
+			g_pD3DDevice->SetTexture(1, pOldTexture);
+		}
+		else if (m_bEnvMap)
+		{
+			m_nEnvMapPasses = 2;
+
+			g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_ADDSIGNED);
+			g_pD3DDevice->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+			g_EnvMapColorOp = D3DTOP_ADDSIGNED;
+
+			DrawPieces((uint32)d3d_GenUVDetail, (uint32)d3d_GenUVNone, LTTRUE);
+
+			g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+			g_pD3DDevice->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+		}
+		else
+		{
+			g_EnvMapColorOp = D3DTOP_DISABLE;
+			DrawPieces((uint32)d3d_GenUV, (uint32)d3d_GenUVNone, bLOD);
+		}
+	}
+
+	g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlend);
+
+	if (m_ModelFlags2 & 2)
+		DrawShadow();
+
+	if (g_CV_ModelBoxes)
+		DrawModelBox();
+
+	if (m_ModelFlags2 & 0x40)
+		g_fNearZ = g_fReallyClosePushZ;
+}
+
+
+// ---------------------------------------------------------------------- //
 //  0x10025acf -- set up the states and skins, then draw the pieces.
 // ---------------------------------------------------------------------- //
 void CD3DModelDraw::DrawPieces(uint32 a, uint32 b, LTBOOL bLOD)
@@ -574,7 +842,7 @@ void d3d_DrawSolidModels()
 			g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 			g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 			g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_CURRENT);
-			pSet->Draw(&g_SceneContext, (DrawObjectFn)d3d_DrawModel);
+			pSet->Draw(&g_ViewParams, (DrawObjectFn)d3d_DrawModel);
 			g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		}
 	}
@@ -590,12 +858,12 @@ void d3d_DrawChromakeyModels()
 	{
 		BaseObjectSet* pSet = &d3d_GetVisibleSet()->m_ChromakeyModels;
 		if (pSet->m_nObjects)
-			pSet->Draw(&g_SceneContext, (DrawObjectFn)d3d_DrawModel);
+			pSet->Draw(&g_ViewParams, (DrawObjectFn)d3d_DrawModel);
 	}
 }
 
 
-static void d3d_DrawTranslucentModel(SceneContext* pContext, LTObject* pObject);
+static void d3d_DrawTranslucentModel(ViewParams* pContext, LTObject* pObject);
 
 // ---------------------------------------------------------------------- //
 //  0x10025c2f
@@ -622,7 +890,7 @@ void d3d_GetBlendStates(LTObject* pObject, uint32* pSrcBlend, uint32* pDestBlend
 // ---------------------------------------------------------------------- //
 //  0x10025c72
 // ---------------------------------------------------------------------- //
-static void d3d_DrawTranslucentModel(SceneContext* pContext, LTObject* pObject)
+static void d3d_DrawTranslucentModel(ViewParams* pContext, LTObject* pObject)
 {
 	uint32 srcBlend, destBlend, fogEnable, fogColor;
 
@@ -642,7 +910,7 @@ static void d3d_DrawTranslucentModel(SceneContext* pContext, LTObject* pObject)
 	StateSet ssFogEnable(D3DRS_FOGENABLE, fogEnable);
 	StateSet ssFogColor(D3DRS_FOGCOLOR, fogColor);
 
-	d3d_DrawModel(&g_SceneContext, (ModelInstance*)pObject);
+	d3d_DrawModel(&g_ViewParams, (ModelInstance*)pObject);
 	g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 }
 

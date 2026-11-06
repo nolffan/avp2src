@@ -3,12 +3,18 @@
 //  MODULE:   COMMON_DRAW (.CPP) -- Primal Hunt's d3d.ren, TU10
 //            (0x10010140..0x100116e3, docs/D3D_OBJECTS.md)
 //
-//  PURPOSE:  The renderer's shared draw state (the frame and view globals
-//            every drawing module reads) and the view/frustum set-up.
+//  PURPOSE:  The renderer's shared draw state (g_ViewParams and the frame
+//            and view globals every drawing module reads), the frame set-up
+//            d3d_InitFrame and the view/frustum helpers.
 //            Not written: the view set-up d3d_InitSceneContext 0x100104cb
 //            (2766 bytes) with the ltmatrix.h COMDATs it calls out of line
 //            (0x10010f99 MatTranspose3x3, 0x10010fc2
-//            MatVMul_InPlace_Transposed3x3), and d3d_InitFrame 0x10011162.
+//            MatVMul_InPlace_Transposed3x3).
+//            Near: d3d_InitFrame 0x10011162 -- every instruction agrees,
+//            but the frame's locals sit elsewhere (retail: the view box
+//            lowest at -0x88, the camera matrix at -0x6c, the four rect
+//            floats at -0x2c..-0x20; cl here puts the matrix lowest and the
+//            box at -0x2c, whatever the declaration order).
 //
 // *********************************************************************** //
 
@@ -17,18 +23,13 @@
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
 
 
-// Five globals of classes whose constructors do nothing (their
-// initialisers are a bare `ret`, 0x10010140..0x10010144).
-struct CEmptyInit
-{
-	CEmptyInit() {}
-};
-
-CEmptyInit g_10010140;
-CEmptyInit g_10010141;
-CEmptyInit g_10010142;
-CEmptyInit g_10010143;
-CEmptyInit g_10010144;
+// The frame's colours, set by d3d_InitFrame: their (empty) constructors
+// are the bare `ret` initialisers 0x10010140..0x10010144.
+LTVector        g_vLightAdd;                                // 0x1005bc90
+LTVector        g_vLightAdd255;                             // 0x1005bca0
+LTVector        g_vFogColor;                                // 0x1005bcf8
+LTVector        g_1005c138;                                 // 0x1005c138
+LTVector        g_vLightAddScale;                           // 0x1005c158
 
 
 // The view box: the centre of projection and the view window around it.
@@ -44,9 +45,9 @@ struct ViewBox
 };
 
 // The view state shared by the drawing modules (the engine's ViewParams).
-struct SceneContext
+struct ViewParams
 {
-	SceneContext();                                         // 0x1001014f
+	ViewParams();                                         // 0x1001014f
 
 	ViewBox     m_ViewBox;                                  // +0x00
 	int32       m_Left;                                     // +0x1c
@@ -62,14 +63,17 @@ struct SceneContext
 	float       m_fProjYZ;                                  // +0x328
 	float       m_fProjZ;                                   // +0x32c
 	float       m_fProjZW;                                  // +0x330
-	uint8       m_pad_334[0x4b4 - 0x334];
+	uint8       m_pad_334[0x3d0 - 0x334];
+	LTPlane     m_ClipPlanes[6];                            // +0x3d0
+	LTPlane     m_ReallyClosePlanes[6];                     // +0x430
+	uint8       m_pad_490[0x4b4 - 0x490];
 	LTVector    m_Pos;                                      // +0x4b4
 	LTVector    m_SkyViewPos;                               // +0x4c0
 };
 
-SceneContext g_SceneContext;                                // 0x1005b790
+ViewParams g_ViewParams;                                // 0x1005b790
 
-SceneContext::SceneContext()
+ViewParams::ViewParams()
 {
 	m_Left = 0;
 	m_Top = 0;
@@ -120,10 +124,22 @@ struct SceneWorld
 
 struct RenderWorld
 {
-	uint8       m_Reserved00[0x0c];
+	uint8       m_Reserved00[0x08];
+	SceneWorld* m_pSceneWorld;                              // +0x08
 	uint16      m_FrameCode;                                // +0x0c
 };
 
+class LTObject;
+struct SceneDesc;
+
+uint32      g_nDynamicLights;                               // 0x1005bcb0
+uint32      g_ClipFlags;                                    // 0x1005bd0c
+void*       g_pClipScratch;                                 // 0x1005bd14
+uint32      g_nClipPasses;                                  // 0x1005c124
+SceneDesc*  g_pSceneDesc;                                   // 0x1005c14c
+uint32      g_WorldColor;                                   // 0x1005c154
+uint16      g_CurFrameCode;                                 // 0x1005d238
+LTObject*   g_DynamicLights[40];                            // 0x1005c168
 SceneWorld* g_pSceneWorld;                                  // 0x1005c208
 
 void d3d_ClearBlockFrameCodes(RenderBlock* pBlock);
@@ -167,14 +183,13 @@ struct VisNode
 	LTVector    m_vHalfDims;                                // +0x18
 };
 
-extern LTPlane  g_ViewPlanes[6];                            // 0x1005bb60
 
 // 0x100101f8 -- is any of the node's box in front of every view plane?
 int d3d_NodeFilter(VisNode *pNode)
 {
 	LTVector vCorners[8];
 	LTPlane *pPlane;
-	int i;
+	int iPlane, i;
 
 	vCorners[0].Init(pNode->m_vCenter.x + pNode->m_vHalfDims.x, pNode->m_vCenter.y + pNode->m_vHalfDims.y, pNode->m_vCenter.z + pNode->m_vHalfDims.z);
 	vCorners[1].Init(pNode->m_vCenter.x + pNode->m_vHalfDims.x, pNode->m_vCenter.y - pNode->m_vHalfDims.y, pNode->m_vCenter.z + pNode->m_vHalfDims.z);
@@ -185,16 +200,18 @@ int d3d_NodeFilter(VisNode *pNode)
 	vCorners[6].Init(pNode->m_vCenter.x - pNode->m_vHalfDims.x, pNode->m_vCenter.y + pNode->m_vHalfDims.y, pNode->m_vCenter.z - pNode->m_vHalfDims.z);
 	vCorners[7].Init(pNode->m_vCenter.x - pNode->m_vHalfDims.x, pNode->m_vCenter.y - pNode->m_vHalfDims.y, pNode->m_vCenter.z - pNode->m_vHalfDims.z);
 
-	for (pPlane = g_ViewPlanes; pPlane < &g_ViewPlanes[6]; pPlane++)
+	for (iPlane = 0; iPlane < 6; iPlane++)
 	{
+		pPlane = &g_ViewParams.m_ClipPlanes[iPlane];
 		for (i = 0; i < 8; i++)
 		{
 			if (pPlane->DistTo(vCorners[i]) > 0.0f)
-				break;
+				goto NextPlane;
 		}
 
-		if (i >= 8)
-			return 0;
+		return 0;
+
+	NextPlane:;
 	}
 
 	return 1;
@@ -220,7 +237,7 @@ void d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, float xFov, float
 }
 
 // 0x10010383 -- a view box for a rectangle of a previous view's screen.
-void d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, SceneContext *pPrev,
+void d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, ViewParams *pPrev,
 	float fMinX, float fMinY, float fMaxX, float fMaxY)
 {
 	float xMinPrev, yMinPrev, xMaxPrev, yMaxPrev;
@@ -254,7 +271,7 @@ void d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, SceneContext *pPr
 
 // 0x1001047e -- the full transform's non-zero projection terms, for the
 // hand-written vertex transforms.
-void d3d_SetupProjectionTerms(SceneContext *pContext)
+void d3d_SetupProjectionTerms(ViewParams *pContext)
 {
 	pContext->m_fProjX = pContext->m_mFullTransform.m[0][0];
 	pContext->m_fProjXZ = pContext->m_mFullTransform.m[0][2];
@@ -279,23 +296,36 @@ void d3d_SetupPerspectiveMatrix(LTMatrix *pMatrix, float nearZ, float farZ)
 struct SceneDesc
 {
 	int32       m_DrawMode;                                 // +0x00
-	uint8       m_pad_04[0x84 - 0x04];
+	uint8       m_pad_04[0x34 - 0x04];
+	RenderWorld* m_pRenderWorld;                            // +0x34
+	LTVector    m_v38;                                      // +0x38
+	LTVector    m_v44;                                      // +0x44
+	LTVector    m_GlobalLightAdd;                           // +0x50
+	LTVector    m_GlobalLightColor;                         // +0x5c
+	LTVector    m_FogColor;                                 // +0x68
+	uint8       m_pad_74[0x84 - 0x74];
 	SkyDef      m_SkyDef;                                   // +0x84 (its view box +0x9c)
+	uint8       m_pad_b4[0xbc - 0xb4];
+	LTRect      m_Rect;                                     // +0xbc
+	float       m_xFov;                                     // +0xcc
+	float       m_yFov;                                     // +0xd0
+	float       m_FarZ;                                     // +0xd4
+	LTVector    m_Pos;                                      // +0xd8
+	LTRotation  m_Rotation;                                 // +0xe4
 };
 
 #define DRAWMODE_NORMAL     1
 
-extern SceneDesc*   g_pSceneDesc;                           // 0x1005c14c
 
 // 0x10011059 -- where the sky is seen from: the camera's place in the
 // world's extents, mapped into the sky's.
 void d3d_SetupSkyStuff()
 {
-	LTVector percents, v;
+	LTVector percents;
 
 	if (g_pSceneDesc->m_DrawMode == DRAWMODE_NORMAL)
 	{
-		percents = (g_SceneContext.m_Pos - g_pSceneWorld->m_ExtentsMin) /
+		percents = (g_ViewParams.m_Pos - g_pSceneWorld->m_ExtentsMin) /
 			(g_pSceneWorld->m_ExtentsMax - g_pSceneWorld->m_ExtentsMin);
 	}
 	else
@@ -305,8 +335,210 @@ void d3d_SetupSkyStuff()
 
 	const SkyDef& Def = g_pSceneDesc->m_SkyDef;
 
-	v = Def.m_ViewMax - Def.m_ViewMin;
-	g_SceneContext.m_SkyViewPos = Def.m_ViewMin + v * percents;
+	g_ViewParams.m_SkyViewPos = Def.m_ViewMin + (Def.m_ViewMax - Def.m_ViewMin) * percents;
+}
+
+
+
+// ---------------------------------------------------------------------- //
+//  The frame's set-up.
+// ---------------------------------------------------------------------- //
+
+// The engine's render structure, as the frame set-up reads it.
+struct RenderContext;
+
+struct RenderStruct
+{
+	uint8       m_pad_000[0x28];
+	uint32      (*m_GetTime)();                             // +0x28
+	uint8       m_pad_02c[0x30 - 0x2c];
+	uint32      (*m_GetTextureFrameCode)();                 // +0x30
+	uint8       m_pad_034[0x110 - 0x34];
+	uint8       m_Context[4];                               // +0x110
+};
+
+extern RenderStruct*    g_pStruct;                          // 0x1005df08 (common_stuff.cpp)
+extern uint32           g_1005d5f0;                         // 0x1005d5f0: the frames begun
+
+class CD3DConVar
+{
+public:
+	CD3DConVar(const char* pName, float fDefault, int32* pnValue, float* pfValue);
+
+	int32       m_nValue;                                   // +0x00
+	float       m_fValue;                                   // +0x04
+	float       m_fDefault;                                 // +0x08
+	int32*      m_pnValue;                                  // +0x0c
+	float*      m_pfValue;                                  // +0x10
+	const char* m_pName;                                    // +0x14
+	void*       m_hParam;                                   // +0x18
+	CD3DConVar* m_pNext;                                    // +0x1c
+};
+
+extern CD3DConVar       g_CV_NearZ;                         // 0x1005b748 (d3d_viewparams.cpp)
+
+// A colour's bytes.
+struct ColorBytes
+{
+	uint8       b, g, r, a;
+};
+
+#define COLORBYTES(c)   (*(ColorBytes*)&(c))
+
+uint32          g_1005bcf4;                                 // 0x1005bcf4
+RenderContext*  g_pRenderContext;                           // 0x1005b778
+RenderWorld*    g_pRenderWorld;                             // 0x1005bd1c
+uint32          g_nFrameTime;                               // 0x1005bc88
+uint16          g_CurTextureFrameCode;                      // 0x1005d250
+extern LTVector g_1005d240;                                 // 0x1005d240 (common_init.cpp's range)
+uint32          g_LightAddColor;                            // 0x1005c130
+uint8           g_VertexAlpha;                              // 0x1005d20c
+extern LTVector g_vGlobalLightColor;                        // 0x1005b780 (d3d_viewparams.cpp's range)
+uint32          g_FogColorRGB;                              // 0x1005d230
+float           g_fFillArea;                                // 0x1005c12c
+uint32          g_nWorldPoliesDrawn;                        // 0x1005c120
+uint32          g_nDrawPrimCalls;                           // 0x1005c144
+uint32          g_1005b770;                                 // 0x1005b770
+int32           g_nModelTriangles;                          // 0x1005bd04
+uint32          g_1005d234;                                 // 0x1005d234
+uint32          g_nSkyLightsApplied;                        // 0x1005c164
+uint32          g_nLightPolyRejects;                        // 0x1005c128
+uint32          g_nSkyPortalPoliesDrawn;                    // 0x1005c150
+uint32          g_1005bd08;                                 // 0x1005bd08
+uint32          g_nTrianglesDrawn;                          // 0x1005c148
+uint32          g_nVisibleLeaves;                           // 0x1005b78c
+uint32          g_1005bd18;                                 // 0x1005bd18
+uint32          g_nTextureChanges;                          // 0x1005d22c
+uint32          g_1005bd10;                                 // 0x1005bd10
+uint32          g_1005b774;                                 // 0x1005b774
+
+// Round to nearest in the current FPU mode (LithTech's RoundFloatToInt).
+inline int32 RoundFloatToInt(float f)
+{
+	int32 n;
+	__asm fld f
+	__asm fistp n
+	return n;
+}
+
+void    d3d_ReadConsoleVariables();                         // 0x10013bcd (common_stuff.cpp)
+void    d3d_RotationToMatrix(LTRotation* pRot, LTMatrix* pMat); // 0x1003655d
+int32   d3d_InitSceneContext(ViewParams* pParams, ViewBox* pBox,
+	float fMinX, float fMinY, float fMaxX, float fMaxY,
+	LTMatrix* pCamera, LTVector vScale);                    // 0x100104cb
+
+// 0x10011162 -- the frame's state from the scene: the world, the global
+// light and fog colours, the counters cleared, and the view.
+int32 d3d_InitFrame(SceneDesc* pDesc, void* pClipScratch, uint32 param3)
+{
+	ViewBox box;
+	LTMatrix mCamera;
+	LTVector vPos;
+	RenderWorld* pWorld;
+	float fMinX, fMinY, fMaxX, fMaxY;
+	float fNearZ, fFarZ, xFov, yFov;
+	short cw;
+
+	// Single precision.
+	__asm
+	{
+		fstcw   cw
+		and     cw, 0xFCFF
+		fldcw   cw
+	}
+
+	d3d_ReadConsoleVariables();
+
+	g_1005d5f0++;
+	g_pClipScratch = pClipScratch;
+	g_pSceneDesc = pDesc;
+	g_1005bcf4 = param3;
+	g_pRenderContext = (RenderContext*)g_pStruct->m_Context;
+
+	pWorld = pDesc->m_pRenderWorld;
+	if (pDesc->m_DrawMode == DRAWMODE_NORMAL)
+	{
+		if (!pWorld)
+			return LTFALSE;
+
+		g_pSceneWorld = pWorld->m_pSceneWorld;
+		g_pRenderWorld = pWorld;
+		d3d_IncFrameCode(pWorld);
+		g_CurFrameCode = pWorld->m_FrameCode;
+	}
+	else
+	{
+		g_pRenderWorld = LTNULL;
+		g_pSceneWorld = LTNULL;
+	}
+
+	g_nFrameTime = g_pStruct->m_GetTime();
+	g_CurTextureFrameCode = (uint16)g_pStruct->m_GetTextureFrameCode();
+	g_ClipFlags = 0x3F;
+
+	g_1005d240 = pDesc->m_v38;
+	g_1005c138 = pDesc->m_v44;
+
+	g_vLightAdd = pDesc->m_GlobalLightAdd;
+	g_vLightAdd255 = g_vLightAdd * 255.0f;
+	g_vLightAddScale = LTVector(g_vLightAdd.x, g_vLightAdd.y, g_vLightAdd.z) / 255.0f;
+	COLORBYTES(g_LightAddColor).r = (uint8)RoundFloatToInt(g_vLightAdd.x * 255.0f);
+	COLORBYTES(g_LightAddColor).g = (uint8)RoundFloatToInt(g_vLightAdd.y * 255.0f);
+	COLORBYTES(g_LightAddColor).b = (uint8)RoundFloatToInt(g_vLightAdd.z * 255.0f);
+	COLORBYTES(g_LightAddColor).a = 0xFF;
+	g_VertexAlpha = 0xFF;
+
+	g_vGlobalLightColor = pDesc->m_GlobalLightColor;
+	COLORBYTES(g_WorldColor).r = (uint8)RoundFloatToInt(g_vGlobalLightColor.x * 255.0f);
+	COLORBYTES(g_WorldColor).g = (uint8)RoundFloatToInt(g_vGlobalLightColor.y * 255.0f);
+	COLORBYTES(g_WorldColor).b = (uint8)RoundFloatToInt(g_vGlobalLightColor.z * 255.0f);
+	COLORBYTES(g_WorldColor).a = 0xFF;
+
+	g_vFogColor = pDesc->m_FogColor;
+	COLORBYTES(g_FogColorRGB).r = (uint8)RoundFloatToInt(g_vFogColor.x);
+	COLORBYTES(g_FogColorRGB).g = (uint8)RoundFloatToInt(g_vFogColor.y);
+	COLORBYTES(g_FogColorRGB).b = (uint8)RoundFloatToInt(g_vFogColor.z);
+	COLORBYTES(g_FogColorRGB).a = 0xFF;
+
+	g_fFillArea = 0.0f;
+	g_nWorldPoliesDrawn = 0;
+	g_nDrawPrimCalls = 0;
+	g_1005b770 = 0;
+	g_nModelTriangles = 0;
+	g_1005d234 = 0;
+	g_nSkyLightsApplied = 0;
+	g_nClipPasses = 0;
+	g_nLightPolyRejects = 0;
+	g_nSkyPortalPoliesDrawn = 0;
+	g_1005bd08 = 0;
+	g_nDynamicLights = 0;
+	g_nTrianglesDrawn = 0;
+	g_nVisibleLeaves = 0;
+	g_1005bd18 = 0;
+	g_nTextureChanges = 0;
+	g_1005bd10 = 0;
+	g_1005b774 = 0;
+
+	// The view.
+	fFarZ = pDesc->m_FarZ;
+	fNearZ = g_CV_NearZ.m_fValue;
+	yFov = pDesc->m_yFov;
+	xFov = pDesc->m_xFov;
+	fMaxY = (float)pDesc->m_Rect.bottom - 0.1f;
+	fMaxX = (float)pDesc->m_Rect.right - 0.1f;
+	fMinY = (float)pDesc->m_Rect.top;
+	fMinX = (float)pDesc->m_Rect.left;
+	d3d_RotationToMatrix(&pDesc->m_Rotation, &mCamera);
+
+	vPos = pDesc->m_Pos;
+	mCamera.m[0][3] = vPos.x;
+	mCamera.m[1][3] = vPos.y;
+	mCamera.m[2][3] = vPos.z;
+
+	d3d_InitViewBox(&box, fNearZ, fFarZ, xFov, yFov);
+
+	return d3d_InitSceneContext(&g_ViewParams, &box, fMinX, fMinY, fMaxX, fMaxY,
+		&mCamera, LTVector(1.0f, 1.0f, 1.0f));
 }
 
 

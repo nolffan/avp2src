@@ -2029,6 +2029,7 @@ void sub_10066f00(XForm66f08* pXForm, Object66f08* pObject)
 //      0x1006864c, 3 + 3 for the outgoing copy, `mov %esp,%eax` and the
 //      `this` at 0x1006879d.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10067aa0(XForm66f08* pXForm, Object66f08* pObject)
 {
 	uint32           nOldFog;                            // -0xa8
@@ -2125,6 +2126,7 @@ void sub_10067aa0(XForm66f08* pXForm, Object66f08* pObject)
 	g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice,
 	                                     D3DRENDERSTATE_FOGENABLE, nOldFog);
 }
+#endif // Primal Hunt: ph/drawworldmodel.cpp (d3d_DrawWorldModel, 0x10030860)
 
 
 // *********************************************************************** //

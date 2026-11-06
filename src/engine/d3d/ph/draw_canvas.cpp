@@ -119,7 +119,7 @@ extern CD3DDevice*	g_pD3DDevice;                       // 0x100638c8
 
 struct SharedTexture;
 struct RenderTexture;
-struct SceneContext;
+struct ViewParams;
 
 struct LTObject
 {
@@ -135,7 +135,7 @@ struct LTObject
 
 typedef LTObject Canvas;
 
-struct SceneContext
+struct ViewParams
 {
 	uint8		m_pad_000[0x4d4];
 	uint32		m_bDrawHidden;                          // +0x4d4
@@ -157,7 +157,7 @@ extern RenderStruct*	g_pStruct;                      // 0x1005df08
 
 extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 class BaseObjectSet
 {
@@ -175,10 +175,10 @@ public:
 		}
 	}
 
-	void		Draw(SceneContext* pContext, DrawObjectFn fn);  // 0x100397e0
+	void		Draw(ViewParams* pContext, DrawObjectFn fn);  // 0x100397e0
 
 	template<class T>
-	void		DrawFiltered(SceneContext* pContext, DrawObjectFn fn, T* pTester, BaseObjectSet* pRejects)
+	void		DrawFiltered(ViewParams* pContext, DrawObjectFn fn, T* pTester, BaseObjectSet* pRejects)
 	{
 		uint32 i;
 		LTObject* pObject;
@@ -237,7 +237,7 @@ public:
 
 extern CRenderStateList	g_SavedStates;              // 0x10069728
 extern ObjectDrawList*	g_pObjectDrawList;           // 0x100713cc
-extern SceneContext			g_SceneContext;             // 0x1005b790
+extern ViewParams			g_ViewParams;             // 0x1005b790
 extern uint32				g_iCanvasTexStage;          // 0x100638c0
 extern float				g_fTexelSizeU;              // 0x100672a8
 extern float				g_fTexelSizeV;              // 0x100672ac
@@ -250,7 +250,7 @@ extern float				g_1005b74c;                 // 0x1005b74c
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 extern void			d3d_DisableTexture(uint32 iStage);  // 0x1000a22b
 extern int			d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
-extern int			d3d_ClipCanvasVerts(LTVertex** ppVerts, int* pnVerts, SceneContext* pContext, uint32 flags);  // 0x1000aec6
+extern int			d3d_ClipCanvasVerts(LTVertex** ppVerts, int* pnVerts, ViewParams* pContext, uint32 flags);  // 0x1000aec6
 extern void			d3d_TransformCanvasVert(LTVertex* pVert, void* pMat);  // 0x10008719
 extern int			d3d_ClipCanvasVertsRC(uint32 clipFlags, LTVertex** ppVerts, int* pnVerts);  // 0x1000af61
 extern void			d3d_ProjectCanvasVert(LTVertex* pOut, LTVertex* pIn, float f);  // 0x100062e0
@@ -404,7 +404,7 @@ LTRESULT CustomDrawMgr::DrawPrimitive(LTVertex *pVerts, uint32 nVerts, uint32 fl
 
 	if (!m_bReallyClose && !(flags & 0x40))
 	{
-		if (d3d_ClipCanvasVerts(&pClipped, &nClipped, &g_SceneContext, 0))
+		if (d3d_ClipCanvasVerts(&pClipped, &nClipped, &g_ViewParams, 0))
 		{
 			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, CANVASVERTEX_FORMAT,
 				pClipped, nClipped, 0);
@@ -606,7 +606,7 @@ public:
 };
 
 // 0x10023770
-void d3d_DrawCanvasCB(SceneContext* pContext, LTObject *pCanvas)
+void d3d_DrawCanvasCB(ViewParams* pContext, LTObject *pCanvas)
 {
 	g_CustomDrawMgr.DrawCanvas(pCanvas);
 }
@@ -630,22 +630,22 @@ void d3d_DrawSolidCanvases()
 		VisibleSet* pSet = d3d_GetVisibleSet();
 		Tester_Canvas tester;
 
-		pSet->m_SolidCanvases.DrawFiltered(&g_SceneContext, d3d_DrawCanvasCB, &tester,
+		pSet->m_SolidCanvases.DrawFiltered(&g_ViewParams, d3d_DrawCanvasCB, &tester,
 			&pSet->m_TranslucentCanvases);
 	}
 }
 
-static void d3d_QueueCanvas(SceneContext* pContext, LTObject* pCanvas);
+static void d3d_QueueCanvas(ViewParams* pContext, LTObject* pCanvas);
 
 // 0x100237f6
 void d3d_DrawTranslucentCanvases()
 {
 	if (g_CV_DrawCanvases.m_nValue)
-		d3d_GetVisibleSet()->m_TranslucentCanvases.Draw(&g_SceneContext, d3d_QueueCanvas);
+		d3d_GetVisibleSet()->m_TranslucentCanvases.Draw(&g_ViewParams, d3d_QueueCanvas);
 }
 
 // 0x1002381c
-static void d3d_QueueCanvas(SceneContext* pContext, LTObject* pCanvas)
+static void d3d_QueueCanvas(ViewParams* pContext, LTObject* pCanvas)
 {
 	g_pObjectDrawList->Add(pCanvas, d3d_DrawCanvasCB);
 }

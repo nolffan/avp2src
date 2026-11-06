@@ -99,15 +99,15 @@ struct LTObject
 };
 
 struct ViewParams;
-struct SceneContext;
+struct ViewParams;
 struct VisibleSet;
 
 class BaseObjectSet
 {
 public:
 	void	Add(LTObject* pObject);                                 // 0x10023797
-	void	Draw(SceneContext* pContext,
-		         void (*pDrawFn)(SceneContext* pContext, LTObject* pObject)); // 0x100397e0
+	void	Draw(ViewParams* pContext,
+		         void (*pDrawFn)(ViewParams* pContext, LTObject* pObject)); // 0x100397e0
 };
 
 struct VisibleSet
@@ -120,11 +120,11 @@ class ObjectDrawList
 {
 public:
 	void	Add(LTObject* pObject,
-		        void (*pDrawFn)(SceneContext* pContext, LTObject* pObject)); // 0x10029980
+		        void (*pDrawFn)(ViewParams* pContext, LTObject* pObject)); // 0x10029980
 };
 
 extern ObjectDrawList*	g_pObjectDrawList;           // 0x100713cc
-extern SceneContext			g_SceneContext;             // 0x1005b790
+extern ViewParams			g_ViewParams;             // 0x1005b790
 extern ViewParams			g_ViewParams;               // 0x1005bb60
 extern ViewParams			g_ReallyCloseParams;        // 0x1005bbc0
 extern int32				g_CV_DrawParticles;         // 0x1004a784
@@ -199,7 +199,7 @@ void d3d_ProcessParticles(LTObject* pObject)
 // ---------------------------------------------------------------------- //
 //  0x1002a52e -- draw one particle system, with its blend and fog states.
 // ---------------------------------------------------------------------- //
-static void d3d_DrawParticleSystem(SceneContext* pContext, LTObject* pSystem)
+static void d3d_DrawParticleSystem(ViewParams* pContext, LTObject* pSystem)
 {
 	float fRadius;
 	uint32 visOut;
@@ -223,7 +223,7 @@ static void d3d_DrawParticleSystem(SceneContext* pContext, LTObject* pSystem)
 }
 
 
-static void d3d_QueueParticleSystem(SceneContext* pContext, LTObject* pSystem);
+static void d3d_QueueParticleSystem(ViewParams* pContext, LTObject* pSystem);
 
 // ---------------------------------------------------------------------- //
 //  0x1002a6d6 -- queue every visible particle system for the sorted draw.
@@ -233,7 +233,7 @@ void d3d_DrawParticleSystems()
 	if (g_CV_DrawParticles)
 	{
 		VisibleSet* pVisibleSet = d3d_GetVisibleSet();
-		pVisibleSet->m_ParticleSystems.Draw(&g_SceneContext, d3d_QueueParticleSystem);
+		pVisibleSet->m_ParticleSystems.Draw(&g_ViewParams, d3d_QueueParticleSystem);
 	}
 }
 
@@ -241,7 +241,7 @@ void d3d_DrawParticleSystems()
 // ---------------------------------------------------------------------- //
 //  0x1002a6fa
 // ---------------------------------------------------------------------- //
-static void d3d_QueueParticleSystem(SceneContext* pContext, LTObject* pSystem)
+static void d3d_QueueParticleSystem(ViewParams* pContext, LTObject* pSystem)
 {
 	g_pObjectDrawList->Add(pSystem, d3d_DrawParticleSystem);
 }

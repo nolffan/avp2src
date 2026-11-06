@@ -18,19 +18,19 @@
 
 
 // A console variable (common_stuff.cpp's registrar, 0x10011f36).
-struct CConVar
+class CD3DConVar
 {
-	CConVar(const char* pszName, float fDefault, int32* pnValue,
-	        float* pfValue);                                // 0x10011f36
+public:
+	CD3DConVar(const char* pName, float fDefault, int32* pnValue, float* pfValue);
 
 	int32       m_nValue;                                   // +0x00
 	float       m_fValue;                                   // +0x04
 	float       m_fDefault;                                 // +0x08
 	int32*      m_pnValue;                                  // +0x0c
 	float*      m_pfValue;                                  // +0x10
-	const char* m_pszName;                                  // +0x14
-	void*       m_hVar;                                     // +0x18
-	CConVar*    m_pNext;                                    // +0x1c
+	const char* m_pName;                                    // +0x14
+	void*       m_hParam;                                   // +0x18
+	CD3DConVar* m_pNext;                                    // +0x1c
 };
 
 
@@ -81,12 +81,17 @@ struct ModelInstance
 	Model*      GetModel() { return m_AnimTracker.m_pModel; }
 };
 
-struct ViewParams;
+// The view (common_draw.cpp's): the view frustum's six planes, and a set
+// for the really close view.
+struct ViewParams
+{
+	uint8       m_pad_000[0x3d0];
+	LTPlane     m_ClipPlanes[6];                            // +0x3d0
+	LTPlane     m_ReallyClosePlanes[6];                     // +0x430
+};
 
-// The view frustum's six planes, and a set for the really close view.
-extern LTPlane  g_ViewPlanes[6];                            // 0x1005bb60
-extern LTPlane  g_ReallyClosePlanes[6];                     // 0x1005bbc0
-extern ViewParams g_ViewParams;                             // 0x1005bd0c
+extern ViewParams g_ViewParams;                             // 0x1005b790
+extern uint32   g_ClipFlags;                                // 0x1005bd0c
 extern float    g_CV_ModelSunVarianceClamp;                 // 0x1005d8b4
 
 void d3d_InitModelVBs();                                    // 0x10001230
@@ -225,20 +230,20 @@ public:
 
 CD3DModelDraw   g_ModelDraw;                                                       // 0x100569b0
 LTVector        g_vModelSunDir;
-CConVar         g_CV_LightModelSprites("LightModelSprites", 0.0f, LTNULL, LTNULL); // 0x100572c8
-CConVar         g_CV_ModelLODOffset("ModelLODOffset", 0.0f, LTNULL, LTNULL);       // 0x10057708
-CConVar         g_CV_ModelZoomScale("ModelZoomScale", 1.0f, LTNULL, LTNULL);       // 0x10057868
-CConVar         g_CV_ModelLODBlendEnable("ModelLODBlendEnable", 1.0f, LTNULL, LTNULL); // 0x10057848
-CConVar         g_CV_ModelLODBlendDist("ModelLODBlendDist", 60.0f, LTNULL, LTNULL); // 0x10057828
-CConVar         g_CV_ExtraFOVXOffset("ExtraFOVXOffset", 0.0f, LTNULL, LTNULL);     // 0x10057748
-CConVar         g_CV_ExtraFOVYOffset("ExtraFOVYOffset", 0.0f, LTNULL, LTNULL);     // 0x10057270
-CConVar         g_CV_ModelFovTest("ModelFovTest", 0.0f, LTNULL, LTNULL);           // 0x100577e8
-CConVar         g_CV_ModelSunVariance("ModelSunVariance", 0.05f, LTNULL, LTNULL);  // 0x10058888
-CConVar         g_CV_ModelApplySun("ModelApplySun", 1.0f, LTNULL, LTNULL);         // 0x10057808
-CConVar         g_CV_ModelSaturation("ModelSaturation", 2.0f, LTNULL, LTNULL);     // 0x10057290
-CConVar         g_CV_DrawModelsRigid("DrawModelsRigid", 1.0f, LTNULL, LTNULL);     // 0x10057728
-CConVar         g_CV_ModelCacheRigid("ModelCacheRigid", 0.0f, LTNULL, LTNULL);     // 0x100572e8
-CConVar         g_CV_ModelUseTnL("ModelUseTnL", 0.0f, LTNULL, LTNULL);             // 0x10056910
+CD3DConVar         g_CV_LightModelSprites("LightModelSprites", 0.0f, LTNULL, LTNULL); // 0x100572c8
+CD3DConVar         g_CV_ModelLODOffset("ModelLODOffset", 0.0f, LTNULL, LTNULL);       // 0x10057708
+CD3DConVar         g_CV_ModelZoomScale("ModelZoomScale", 1.0f, LTNULL, LTNULL);       // 0x10057868
+CD3DConVar         g_CV_ModelLODBlendEnable("ModelLODBlendEnable", 1.0f, LTNULL, LTNULL); // 0x10057848
+CD3DConVar         g_CV_ModelLODBlendDist("ModelLODBlendDist", 60.0f, LTNULL, LTNULL); // 0x10057828
+CD3DConVar         g_CV_ExtraFOVXOffset("ExtraFOVXOffset", 0.0f, LTNULL, LTNULL);     // 0x10057748
+CD3DConVar         g_CV_ExtraFOVYOffset("ExtraFOVYOffset", 0.0f, LTNULL, LTNULL);     // 0x10057270
+CD3DConVar         g_CV_ModelFovTest("ModelFovTest", 0.0f, LTNULL, LTNULL);           // 0x100577e8
+CD3DConVar         g_CV_ModelSunVariance("ModelSunVariance", 0.05f, LTNULL, LTNULL);  // 0x10058888
+CD3DConVar         g_CV_ModelApplySun("ModelApplySun", 1.0f, LTNULL, LTNULL);         // 0x10057808
+CD3DConVar         g_CV_ModelSaturation("ModelSaturation", 2.0f, LTNULL, LTNULL);     // 0x10057290
+CD3DConVar         g_CV_DrawModelsRigid("DrawModelsRigid", 1.0f, LTNULL, LTNULL);     // 0x10057728
+CD3DConVar         g_CV_ModelCacheRigid("ModelCacheRigid", 0.0f, LTNULL, LTNULL);     // 0x100572e8
+CD3DConVar         g_CV_ModelUseTnL("ModelUseTnL", 0.0f, LTNULL, LTNULL);             // 0x10056910
 
 static float    g_fModelLights;                             // 0x100572b0
 static CheapLTLink g_ModelLights;                              // 0x100572b8
@@ -272,15 +277,15 @@ inline LTBOOL d3d_ClipSphere(LTVector* pPos, float fRadius, LTPlane* pPlanes,
 }
 
 inline LTBOOL d3d_SetupModel(CD3DModelDraw* pDraw, ModelInstance* pInstance,
-                             ViewParams* pParams)
+                             uint32* pClipFlags)
 {
 	pDraw->m_fRadius = pInstance->GetModel()->m_fRadius;
 	pDraw->m_fRadius *= LTMAX(pInstance->m_Scale.x,
 		LTMAX(pInstance->m_Scale.y, pInstance->m_Scale.z));
 
 	return d3d_ClipSphere(&pInstance->m_Pos, pDraw->m_fRadius,
-		(pInstance->m_Flags & 0x40) ? g_ReallyClosePlanes : g_ViewPlanes,
-		(uint32*)pParams) != 0;
+		(pInstance->m_Flags & 0x40) ? g_ViewParams.m_ReallyClosePlanes : g_ViewParams.m_ClipPlanes,
+		pClipFlags) != 0;
 }
 
 // 0x1000b4d8
@@ -291,7 +296,7 @@ void d3d_DrawModel(void* pParams, ModelInstance* pInstance)
 	if (pInstance->m_AnimTracker.IsValid())
 	{
 		pDraw = &g_ModelDraw;
-		if (d3d_SetupModel(pDraw, pInstance, &g_ViewParams))
+		if (d3d_SetupModel(pDraw, pInstance, &g_ClipFlags))
 			pDraw->DrawModel(pInstance);
 	}
 }
@@ -435,7 +440,7 @@ struct ModelWorldModel
 	ModelWorldBsp* m_pBsp;                                  // +0x04
 };
 
-struct ModelSceneWorld
+struct SceneWorld
 {
 	ModelWorldPoly* GetPolyFromHPoly(HPOLY hPoly)           // 0x1000be09
 	{
@@ -459,7 +464,7 @@ struct ModelSceneWorld
 	uint32      m_nWorldModels;                             // +0x190
 };
 
-extern ModelSceneWorld* g_pSceneWorld;                      // 0x1005c208
+extern SceneWorld* g_pSceneWorld;                      // 0x1005c208
 
 LTBOOL  i_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo,
                            void* pWorldTree, void* pUser);  // 0x10031a5d

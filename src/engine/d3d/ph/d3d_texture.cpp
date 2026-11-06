@@ -17,7 +17,7 @@
 //  RTexture maker for a shared texture (0x10020cd0, which emits
 //  RTextureHandle's destructor 0x10021030), r_TransferTexture
 //  (0x10021040), the mipmap copy (0x10021790), RTextureHandle::operator=
-//  (0x10021c90), 0x10021cd0 and d3d_CreateRTexture (0x10021f70).
+//  (0x10021c90) and d3d_CreateRTexture (0x10021f70).
 //
 //  Near:
 //    * 0x1001f430: retail calls RTextureHandle's implicit constructor out
@@ -78,6 +78,7 @@ public:
 	virtual void	Init(BPPIdent Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
 
 	void			InitPValueFormat();                 // 0x100374a6
+	BPPIdent		GetType();                          // 0x100374cc
 
 	BPPIdent	m_eType;
 	uint32		m_Masks[4];
@@ -540,7 +541,7 @@ LPDIRECTDRAWSURFACE7 d3d_CreateTextureFromData(uint32 *pData, uint32 width, uint
 // ------------------------------------------------------------------------------ //
 // 0x1001f860 -- reset the lightmap pages and their scratch surface.
 // ------------------------------------------------------------------------------ //
-static void d3d_FreeLightmapScratch()
+void d3d_FreeLightmapPages()
 {
 	if (g_pLightmapScratch)
 	{
@@ -554,7 +555,7 @@ static void d3d_CreateLightmapScratch()
 	D3DTextureFormat *pFormat;
 	DDSURFACEDESC2 ddsd;
 
-	d3d_FreeLightmapScratch();
+	d3d_FreeLightmapPages();
 
 	pFormat = d3d_GetLightmapFormat();
 	if (pFormat)
@@ -571,7 +572,7 @@ static void d3d_CreateLightmapScratch()
 
 void d3d_ResetLightmapPages()
 {
-	d3d_FreeLightmapScratch();
+	d3d_FreeLightmapPages();
 	g_LightmapPages.Term();
 	g_LightmapPages.SetAllocator((void* (*)(uint32, uint32, uint32))d3d_CreateLightmapTexture);
 	d3d_CreateLightmapScratch();
@@ -1157,6 +1158,122 @@ int32 d3d_GetFirstUsableMipmap(TextureData *pTexture)
 	}
 
 	return -1;
+}
+
+
+// ------------------------------------------------------------------------------ //
+// 0x10021cd0 -- draw a polygon's animated lightmap: straight into the
+// texture bound on the current stage, or into a scratch lightmap texture
+// (lmsurfaces.cpp's LMDrawDesc) that is then loaded and bound.
+// ------------------------------------------------------------------------------ //
+typedef CounterFinal Counter;
+
+void			cnt_StartCounterFinal(CounterFinal &cCounter);  // 0x10013fd5
+unsigned long	cnt_EndCounterFinal(CounterFinal &cCounter);    // 0x10013fe0
+
+inline void cnt_StartCounter(Counter &cCounter) { cnt_StartCounterFinal(cCounter); }
+inline unsigned long cnt_EndCounter(Counter &cCounter) { return cnt_EndCounterFinal(cCounter); }
+
+class CountAdder
+{
+	public:
+		CountAdder(uint32 *pNum)
+		{
+			m_pNum = pNum;
+			cnt_StartCounter(m_Counter);
+		}
+		~CountAdder()
+		{
+			*m_pNum += cnt_EndCounter(m_Counter);
+		}
+		Counter m_Counter;
+		uint32 *m_pNum;
+};
+
+struct FrameCounters
+{
+	uint8		m_pad_00[0x18];
+	uint32*		m_pLightmapTicks;                       // +0x18
+};
+
+struct SceneWorld;
+struct WorldPoly
+{
+	uint8		m_Pad[0x4c];
+	uint8		m_LMWidth;                              // +0x4c
+	uint8		m_LMHeight;                             // +0x4d
+};
+
+// A lightmap being drawn (lmsurfaces.cpp).
+struct LMTextureList;
+struct LMDrawDesc
+{
+	LTBOOL		Begin(WorldPoly *pPoly, LTBOOL bCopy, uint32 width, uint32 height);   // 0x100358b3
+	LTBOOL		End(LTBOOL bChanged);                   // 0x10035a3f
+
+	void		*m_pData;                               // +0x00
+	uint32		m_Pitch;                                // +0x04
+	uint32		m_iSize;                                // +0x08
+	PFormat		m_Format;                               // +0x0c
+	uint32		m_Width;                                // +0x44
+	uint32		m_Height;                               // +0x48
+	LMTextureList	*m_pList;                           // +0x4c
+	RTexture	*m_pScratch;                            // +0x50
+};
+
+extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
+extern uint32			g_nLitPolysUploaded;            // 0x1005bd10
+extern uint32			g_nLightmapUploadSaves;         // 0x1005b774
+
+// Draw the polygon's animated lightmap into the data, 16-bit or 32-bit; 0
+// when nothing was drawn (lightanim.cpp).
+uint32	d3d_DrawAnimatedLightmap(SceneWorld *pWorld, WorldPoly *pPoly, void *pData, long pitch,
+		uint32 width, uint32 height, bool b16Bit);      // 0x10033a20
+
+LTBOOL d3d_DrawPolyLightmap(WorldPoly *pPoly, LTBOOL bToTexture)
+{
+	CountAdder cntLightmap(g_pFrameCounters->m_pLightmapTicks);
+
+	if (bToTexture)
+	{
+		RTexture *pTexture = g_pCurTextures[g_TextureStage];
+		if (!pTexture)
+			return LTTRUE;
+
+		LPDIRECTDRAWSURFACE7 pSurface = pTexture->m_Handle.m_pSurface;
+		if (!pSurface)
+			return LTTRUE;
+
+		DDSURFACEDESC2 ddsd;
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		if (pSurface->Lock(LTNULL, &ddsd, DDLOCK_WAIT | DDLOCK_NOSYSLOCK, LTNULL) < 0)
+			return LTTRUE;
+
+		d3d_DrawAnimatedLightmap(g_pSceneWorld, pPoly, ddsd.lpSurface, ddsd.lPitch,
+			ddsd.dwWidth, ddsd.dwHeight, ddsd.ddpfPixelFormat.dwRGBBitCount != 32);
+
+		pSurface->Unlock(LTNULL);
+		return LTTRUE;
+	}
+	else
+	{
+		LMDrawDesc desc;
+		if (!desc.Begin(pPoly, LTTRUE, 0, 0))
+			return LTFALSE;
+
+		g_nLitPolysUploaded++;
+
+		uint32 pitch = desc.m_Pitch;
+		void *pData = desc.m_pData;
+		uint32 bDrawn = d3d_DrawAnimatedLightmap(g_pSceneWorld, pPoly, pData, pitch,
+			pPoly->m_LMWidth, pPoly->m_LMHeight, desc.m_Format.GetType() != BPP_32);
+		if (!bDrawn)
+			g_nLightmapUploadSaves++;
+
+		return desc.End(bDrawn) && bDrawn;
+	}
 }
 
 

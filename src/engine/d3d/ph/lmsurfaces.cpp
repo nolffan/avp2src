@@ -30,10 +30,24 @@
 #define NUM_LMSIZES		5
 
 // pixelformat.cpp's PFormat, as far as it is used here.
+// pixelformat.cpp's (TU41)
+enum BPPIdent
+{
+	BPP_8P=0,
+	BPP_8,
+	BPP_16,
+	BPP_32,
+	BPP_S3TC_DXT1,
+	BPP_S3TC_DXT3,
+	BPP_S3TC_DXT5,
+	BPP_32P,
+	NUM_BIT_TYPES
+};
+
 class PFormat
 {
 public:
-	virtual void	Init(uint32 Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
+	virtual void	Init(BPPIdent Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
 
 	uint32			m_eType;
 	uint32			m_Masks[4];

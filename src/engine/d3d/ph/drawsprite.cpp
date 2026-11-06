@@ -7,6 +7,13 @@
 //  drawn last with the Z buffer off), and the draw itself, which sets the
 //  object's blend states and draws it flat or rotatable.  Its two empty
 //  initialisers (0x1002e400, 0x1002e410) mark the start of the object.
+//
+//  Not yet written: d3d_DrawFlatSprite 0x1002e630 (2715 bytes),
+//  d3d_DrawRotatableSprite 0x1002f0d0 (1749) and 0x1002f970 (1105).
+//  Near: 0x1002fdd0, the clip and projection with the Z bias: the first
+//  term of the camera transform's x row loads its operands the other way
+//  round, and retail CSEs m[3][0]*x and m[3][1]*y between the two 1/w
+//  where cl 8966 here recomputes them (791 bytes against 793).
 // *********************************************************************** //
 
 #include <d3d.h>
@@ -36,8 +43,15 @@ struct SpriteEntry
 	void*		m_pTex;                                 // +0x00
 };
 
-struct SceneContext;
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+// The view being drawn (common_draw.cpp's g_ViewParams).
+struct ViewParams
+{
+	uint8		m_pad_000[0x15c];
+	LTMatrix	m_mWorldToCamera;                       // +0x15c
+	LTMatrix	m_mProjection;                          // +0x19c
+};
+
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 extern void		AddDebugMessage(int32 debugLevel, const char* pMsg, ...);  // 0x10013b13
 
@@ -57,7 +71,7 @@ public:
 		}
 	}
 
-	void		Draw(SceneContext* pContext, DrawObjectFn fn);  // 0x100397e0
+	void		Draw(ViewParams* pContext, DrawObjectFn fn);  // 0x100397e0
 
 	LTObject	**m_pObjects;                           // +0x00
 	uint32		m_nObjects;                             // +0x04
@@ -84,14 +98,14 @@ extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
 extern uint32				g_ZBufferState;             // 0x10062438
 extern uint32				g_ClipFlags;                // 0x1005bd0c
 extern ObjectDrawList*		g_pObjectDrawList;          // 0x100713cc
-extern SceneContext			g_SceneContext;             // 0x1005b790
+extern ViewParams			g_ViewParams;             // 0x1005b790
 extern int32				g_CV_DrawSprites;           // 0x1004a764
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 
-extern void		d3d_DrawFlatSprite(SceneContext *pContext, LTObject *pObject, LTVector *pPos,
+extern void		d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 					float scaleX, float scaleY, void *pTex);    // 0x1002e630
-extern void		d3d_DrawRotatableSprite(SceneContext *pContext, LTObject *pObject, LTVector *pPos,
+extern void		d3d_DrawRotatableSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 					float scaleX, float scaleY, void *pTex);    // 0x1002f0d0
 
 
@@ -183,7 +197,7 @@ LTVector	g_vSpriteUp;                                // $E 0x1002e410
 // ---------------------------------------------------------------------- //
 //  0x1002e420
 // ---------------------------------------------------------------------- //
-void d3d_DrawSprite(SceneContext *pContext, LTObject *pObject)
+void d3d_DrawSprite(ViewParams *pContext, LTObject *pObject)
 {
 	SpriteEntry *pSe;
 	void *pAnim;
@@ -234,7 +248,7 @@ void d3d_ProcessSprite(LTObject *pObject)
 }
 
 
-static void d3d_QueueSprite(SceneContext *pContext, LTObject *pObject);
+static void d3d_QueueSprite(ViewParams *pContext, LTObject *pObject);
 
 // 0x1002f800 -- translucent sprites go on the sorted list.
 void d3d_QueueTranslucentSprites()
@@ -244,13 +258,13 @@ void d3d_QueueTranslucentSprites()
 	if (g_CV_DrawSprites)
 	{
 		pSet = &d3d_GetVisibleSet()->m_TranslucentSprites;
-		pSet->Draw(&g_SceneContext, d3d_QueueSprite);
+		pSet->Draw(&g_ViewParams, d3d_QueueSprite);
 	}
 }
 
 
 // 0x1002f830
-static void d3d_QueueSprite(SceneContext *pContext, LTObject *pObject)
+static void d3d_QueueSprite(ViewParams *pContext, LTObject *pObject)
 {
 	g_pObjectDrawList->Add(pObject, d3d_DrawSprite);
 }
@@ -272,7 +286,7 @@ void d3d_DrawNoZSprites()
 	if (pSet->m_nObjects > 0)
 	{
 		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, FALSE);
-		pSet->Draw(&g_SceneContext, d3d_DrawSprite);
+		pSet->Draw(&g_ViewParams, d3d_DrawSprite);
 		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, g_ZBufferState);
 	}
 }
@@ -290,4 +304,132 @@ void d3d_TransformSpriteVerts(SpriteVert *pVerts, uint32 nVerts, LTMatrix *pMat)
 }
 
 
-// 0x1002f970 (1105 bytes) and 0x1002fdd0 (793 bytes) are not written yet.
+// 0x1002f970 (1105 bytes) is not written yet.
+
+
+// 0x1002fdd0 -- the sprite's vertices to camera space, clipped, and
+// projected with the Z bias (held off the near plane).
+extern float			g_fSpriteNearZ;                 // 0x1005b74c
+
+// The clip vertex, and the clip planes (TU06's ClipNear 0x1000b07d and
+// ClipLeft 0x1000b1bc, TU03's ClipTop 0x100063e0, ClipRight 0x10006670,
+// ClipBottom 0x10006900, ClipFar 0x10006ba0).
+struct ClipVert
+{
+	LTVector	m_vPos;                                 // +0x00
+	float		m_fRHW;                                 // +0x0c
+	uint32		m_Diffuse;                              // +0x10
+	uint32		m_Specular;                             // +0x14
+	float		m_fU;                                   // +0x18
+	float		m_fV;                                   // +0x1c
+};
+
+template<class V> LTBOOL ClipNear(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipLeft(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipTop(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipRight(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipBottom(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipFar(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+
+extern int32			g_bUseD3DClip;                  // 0x100622b0
+extern void*			g_pClipScratch;                 // 0x1005bd14
+
+// Clip a polygon against the planes in nClipFlags, into the clip scratch
+// buffer. FALSE when nothing is left.
+inline LTBOOL d3d_ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts)
+{
+	ClipVert* pOut;
+	ClipVert* pVerts;
+	int32 nVerts;
+	uint8 nearPlane, leftPlane, topPlane, rightPlane, bottomPlane, farPlane;
+
+	if (g_bUseD3DClip)
+	{
+		nClipFlags &= 1;
+		if (!nClipFlags)
+			return LTTRUE;
+	}
+
+	pOut = (ClipVert*)g_pClipScratch;
+	pVerts = *ppVerts;
+	nVerts = *pnVerts;
+
+	if (nClipFlags & 0x01)
+	{
+		if (!ClipNear(&nearPlane, &pVerts, &nVerts, &pOut))
+			return LTFALSE;
+	}
+	if (nClipFlags & 0x04)
+	{
+		if (!ClipLeft(&leftPlane, &pVerts, &nVerts, &pOut))
+			return LTFALSE;
+	}
+	if (nClipFlags & 0x08)
+	{
+		if (!ClipTop(&topPlane, &pVerts, &nVerts, &pOut))
+			return LTFALSE;
+	}
+	if (nClipFlags & 0x10)
+	{
+		if (!ClipRight(&rightPlane, &pVerts, &nVerts, &pOut))
+			return LTFALSE;
+	}
+	if (nClipFlags & 0x20)
+	{
+		if (!ClipBottom(&bottomPlane, &pVerts, &nVerts, &pOut))
+			return LTFALSE;
+	}
+	if (nClipFlags & 0x02)
+	{
+		if (!ClipFar(&farPlane, &pVerts, &nVerts, &pOut))
+			return LTFALSE;
+	}
+
+	*ppVerts = pVerts;
+	*pnVerts = nVerts;
+	return LTTRUE;
+}
+
+LTBOOL d3d_ClipSpriteVerts(ClipVert **ppVerts, int32 *pnVerts, ViewParams *pParams, float fZBias)
+{
+	ClipVert *pVert;
+	LTMatrix *pMat;
+	float x, y, z, rhw, bias;
+	int32 i;
+
+	pVert = *ppVerts;
+	for (i=*pnVerts; i; i--)
+	{
+		pMat = &pParams->m_mWorldToCamera;
+		z = pMat->m[2][0]*pVert->m_vPos.x + pMat->m[2][1]*pVert->m_vPos.y + pMat->m[2][2]*pVert->m_vPos.z + pMat->m[2][3];
+		x = pVert->m_vPos.x*pMat->m[0][0] + pMat->m[0][1]*pVert->m_vPos.y + pMat->m[0][2]*pVert->m_vPos.z + pMat->m[0][3];
+		y = pMat->m[1][0]*pVert->m_vPos.x + pMat->m[1][1]*pVert->m_vPos.y + pMat->m[1][2]*pVert->m_vPos.z + pMat->m[1][3];
+		pVert->m_vPos.z = z;
+		pVert->m_vPos.x = x;
+		pVert->m_vPos.y = y;
+		pVert++;
+	}
+
+	if (g_ClipFlags && !d3d_ClipPoly(g_ClipFlags, ppVerts, pnVerts))
+		return LTFALSE;
+
+	pMat = &g_ViewParams.m_mProjection;
+	pVert = *ppVerts;
+	for (i=*pnVerts; i; i--)
+	{
+		bias = (fZBias + pVert->m_vPos.z < g_fSpriteNearZ) ? g_fSpriteNearZ - pVert->m_vPos.z : fZBias;
+		rhw = 1.0f / (pMat->m[3][0]*pVert->m_vPos.x + pMat->m[3][1]*pVert->m_vPos.y + pMat->m[3][2]*pVert->m_vPos.z + pMat->m[3][3]);
+		x = rhw * (pMat->m[0][0]*pVert->m_vPos.x + pMat->m[0][1]*pVert->m_vPos.y + pMat->m[0][2]*pVert->m_vPos.z + pMat->m[0][3]);
+		y = rhw * (pMat->m[1][0]*pVert->m_vPos.x + pMat->m[1][1]*pVert->m_vPos.y + pMat->m[1][2]*pVert->m_vPos.z + pMat->m[1][3]);
+		z = pVert->m_vPos.z + bias;
+		rhw = 1.0f / (pMat->m[3][0]*pVert->m_vPos.x + pMat->m[3][1]*pVert->m_vPos.y + pMat->m[3][2]*z + pMat->m[3][3]);
+		z = rhw * (pMat->m[2][0]*pVert->m_vPos.x + pMat->m[2][1]*pVert->m_vPos.y + pMat->m[2][2]*z + pMat->m[2][3]);
+		pVert->m_vPos.x = x;
+		pVert->m_vPos.y = y;
+		pVert->m_vPos.z = z;
+		pVert->m_fRHW = rhw;
+		pVert++;
+	}
+
+	return LTTRUE;
+}

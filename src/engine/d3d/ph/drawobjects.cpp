@@ -74,7 +74,7 @@ struct LTObject
 	LTVector	m_Pos;                                  // +0x194
 };
 
-struct SceneContext
+struct ViewParams
 {
 	uint8		m_pad_000[0x4b4];
 	LTVector	m_Pos;                                  // +0x4b4
@@ -82,7 +82,7 @@ struct SceneContext
 	uint32		m_bDrawHidden;                          // +0x4d4
 };
 
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 // The renderer's view of the engine's RenderStruct.
 struct RenderStruct
@@ -126,7 +126,7 @@ struct VisibleSet
 
 extern RenderStruct*	g_pStruct;                      // 0x1005df08
 extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
-extern SceneContext		g_SceneContext;                 // 0x1005b790
+extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern void				(*g_pfnPostQueueHook)();        // 0x10072808
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
@@ -299,7 +299,7 @@ public:
 		g_pObjectDrawList = this;
 	}
 
-	void	Sort(SceneContext* pContext);
+	void	Sort(ViewParams* pContext);
 	void	Add(LTObject* pObject, DrawObjectFn fn);
 
 	uint32	m_nUsed;                                    // +0x14
@@ -376,21 +376,21 @@ void d3d_FlushObjectQueues()
 
 	if (s_DrawList.m_nUsed)
 	{
-		s_DrawList.Sort(&g_SceneContext);
+		s_DrawList.Sort(&g_ViewParams);
 
 		for (i=0; i < s_DrawList.m_nUsed; i++)
 		{
 			ObjectDrawEntry* pEntry = &s_DrawList[i];
 
-			if (g_SceneContext.m_bDrawHidden)
+			if (g_ViewParams.m_bDrawHidden)
 			{
 				if (pEntry->m_pObject->m_Flags2 & 1)
 					continue;
 			}
 
 			if ((pEntry->m_pObject->m_Flags & FLAG_VISIBLE) ||
-			    (g_SceneContext.m_bDrawHidden && (pEntry->m_pObject->m_Flags & 0x400)))
-				pEntry->m_Fn(&g_SceneContext, pEntry->m_pObject);
+			    (g_ViewParams.m_bDrawHidden && (pEntry->m_pObject->m_Flags & 0x400)))
+				pEntry->m_Fn(&g_ViewParams, pEntry->m_pObject);
 		}
 	}
 
@@ -405,7 +405,7 @@ void d3d_FlushObjectQueues()
 //  0x100297a0 -- distance to the camera, then a shell sort, far first;
 //  really-close objects sort after the rest.
 // ---------------------------------------------------------------------- //
-void ObjectDrawList::Sort(SceneContext* pContext)
+void ObjectDrawList::Sort(ViewParams* pContext)
 {
 	uint32 i, k;
 	int j, n, a;
@@ -472,7 +472,7 @@ void ObjectDrawList::Add(LTObject* pObject, DrawObjectFn fn)
 {
 	if (!g_CV_DrawSorted.m_nValue)
 	{
-		fn(&g_SceneContext, pObject);
+		fn(&g_ViewParams, pObject);
 		return;
 	}
 

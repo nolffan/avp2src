@@ -45,9 +45,34 @@ struct FogColor
 	uint8   r, g, b;
 };
 
-extern LTPlane              g_ViewPlanes[6];                // 0x1005bb60
-extern LTVector             g_vCameraPos;                   // 0x1005bc44
-extern float                g_fFogVolumeDensity;            // 0x1005e09c
+// The view (common_draw.cpp's): its frustum planes and the camera
+// position.
+struct ViewParams
+{
+	uint8       m_pad_000[0x3d0];
+	LTPlane     m_ClipPlanes[6];                            // +0x3d0
+	uint8       m_pad_430[0x4b4 - 0x430];
+	LTVector    m_Pos;                                      // +0x4b4
+};
+
+// A console variable (common_stuff.cpp's registrar, 0x10011f36).
+class CD3DConVar
+{
+public:
+	CD3DConVar(const char* pName, float fDefault, int32* pnValue, float* pfValue);
+
+	int32       m_nValue;                                   // +0x00
+	float       m_fValue;                                   // +0x04
+	float       m_fDefault;                                 // +0x08
+	int32*      m_pnValue;                                  // +0x0c
+	float*      m_pfValue;                                  // +0x10
+	const char* m_pName;                                    // +0x14
+	void*       m_hParam;                                   // +0x18
+	CD3DConVar* m_pNext;                                    // +0x1c
+};
+
+extern ViewParams           g_ViewParams;                   // 0x1005b790
+extern CD3DConVar           g_CV_VFogDensity;               // 0x1005e098 (d3d_draw.cpp)
 extern FogColor             g_FogColor;                     // 0x1005dad8
 extern int32                g_LastFogR, g_LastFogG, g_LastFogB; // 0x1005dadc..
 extern LPDIRECT3DDEVICE7    g_pD3DDevice;                   // 0x100638c8
@@ -353,7 +378,7 @@ void __fastcall d3d_CalcFogVolume(const LTVector* pPos, uint32* pSpecular)
 	for (i = 0; i < g_nFogVolumes; i++)
 	{
 		pBox = &g_FogVolumes[i].m_Box;
-		if (d3d_SegmentTouchesBox(&g_vCameraPos, pPos, pBox) == 1)
+		if (d3d_SegmentTouchesBox(&g_ViewParams.m_Pos, pPos, pBox) == 1)
 		{
 			pObject = g_FogVolumes[i].m_pObject;
 			break;
@@ -363,7 +388,7 @@ void __fastcall d3d_CalcFogVolume(const LTVector* pPos, uint32* pSpecular)
 	if (i >= g_nFogVolumes)
 		return;
 
-	bCameraIn = d3d_PointInBox(&g_vCameraPos, &pBox->m_vMin, &pBox->m_vMax);
+	bCameraIn = d3d_PointInBox(&g_ViewParams.m_Pos, &pBox->m_vMin, &pBox->m_vMax);
 	bPosIn = d3d_PointInBox(pPos, &pBox->m_vMin, &pBox->m_vMax);
 
 	if (pObject->m_FogFlags & FOGFLAG_DENSITY)
@@ -375,16 +400,16 @@ void __fastcall d3d_CalcFogVolume(const LTVector* pPos, uint32* pSpecular)
 	}
 	else
 	{
-		fDepth = g_fFogVolumeDensity;
+		fDepth = g_CV_VFogDensity.m_fValue;
 	}
 
 	if (bCameraIn == 1 && bPosIn == 1)
 	{
-		fFog = d3d_FogVolumeAmount(&g_vCameraPos, pPos, fDepth);
+		fFog = d3d_FogVolumeAmount(&g_ViewParams.m_Pos, pPos, fDepth);
 	}
 	else if (bCameraIn == 0 && bPosIn == 1)
 	{
-		if (pBox->IntersectSegment(&g_vCameraPos, pPos,
+		if (pBox->IntersectSegment(&g_ViewParams.m_Pos, pPos,
 			&vHit1, &vHit2, &fTEnter, &fTExit) == 1)
 			fFog = d3d_FogVolumeAmount(&vHit1, pPos, fDepth);
 		else
@@ -392,15 +417,15 @@ void __fastcall d3d_CalcFogVolume(const LTVector* pPos, uint32* pSpecular)
 	}
 	else if (bCameraIn == 1 && bPosIn == 0)
 	{
-		if (pBox->IntersectSegment(&g_vCameraPos, pPos,
+		if (pBox->IntersectSegment(&g_ViewParams.m_Pos, pPos,
 			&vHit1, &vHit2, &fTEnter, &fTExit) == 1)
-			fFog = d3d_FogVolumeAmount(&g_vCameraPos, &vHit1, fDepth);
+			fFog = d3d_FogVolumeAmount(&g_ViewParams.m_Pos, &vHit1, fDepth);
 		else
 			fFog = d3d_FogVolumeAmount(&vHit1, &vHit2, fDepth);
 	}
 	else
 	{
-		pBox->IntersectSegment(&g_vCameraPos, pPos,
+		pBox->IntersectSegment(&g_ViewParams.m_Pos, pPos,
 			&vHit1, &vHit2, &fTEnter, &fTExit);
 		fFog = d3d_FogVolumeAmount(&vHit1, &vHit2, fDepth);
 	}
@@ -433,7 +458,7 @@ void d3d_ClearFogVolumes()
 // is room for it.
 //
 // RETAIL BUG: the view test classifies the box six times against the
-// first view plane (g_ViewPlanes, not &g_ViewPlanes[i]), so a volume is
+// first view plane (m_ClipPlanes, not &m_ClipPlanes[i]), so a volume is
 // only culled by the near plane.
 LTBOOL d3d_ProcessPortalObject(LTObject* pObject)
 {
@@ -460,7 +485,7 @@ LTBOOL d3d_ProcessPortalObject(LTObject* pObject)
 		bVisible = LTTRUE;
 		for (i = 0; i < 6; i++)
 		{
-			if (!volume.m_Box.ClassifyPlane(g_ViewPlanes, 0.001f))
+			if (!volume.m_Box.ClassifyPlane(g_ViewParams.m_ClipPlanes, 0.001f))
 				bVisible = LTFALSE;
 		}
 

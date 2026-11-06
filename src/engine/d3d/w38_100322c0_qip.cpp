@@ -480,6 +480,7 @@ inline int32 BitsFromDDBD100322c0(uint32 dwDepth)
 	       (dwDepth == 0x100) ? 32 : -1;
 }
 
+#ifndef PRIMAL_HUNT
 static void sub_100322c0(D3DDevice7* pDevice, D3DCapsBlock* pCaps)
 {
 	DDCaps100322c0      drvCaps;
@@ -532,10 +533,12 @@ static void sub_100322c0(D3DDevice7* pDevice, D3DCapsBlock* pCaps)
 
 	pCaps->m_bZEnable = 1;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 // ======================================================================= //
 //  0x10032d00  306 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 void sub_10032d00(int argc, char** argv)
 {
 	if (argc > 0)
@@ -572,6 +575,7 @@ void sub_10032d00(int argc, char** argv)
 		}
 	}
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 // ======================================================================= //
 //  0x10032f30 / 0x10032f34   310 bytes.  LOAD A GAMMA RAMP FROM A FILE.
@@ -660,6 +664,7 @@ struct DDGammaControl
 extern "C" const uint8 IID_IDirectDrawGammaControl[16];  // 0x10088188
 
 
+#ifndef PRIMAL_HUNT
 LTBOOL sub_10032f30(const char* pszFileName)
 {
 	DDGammaControl* pGamma;
@@ -703,6 +708,7 @@ LTBOOL sub_10032f30(const char* pszFileName)
 
 	return LTTRUE;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 // ======================================================================= //
 //  CONSTANTS -- every one of these is the literal in the shipped bytes; the
@@ -778,6 +784,7 @@ LTBOOL sub_10032f30(const char* pszFileName)
 //  spelling).  The callers null-test it.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT
 LTBOOL sub_100331e0(D3DDeviceRec* pDev, RenderStructInit* pInit)
 {
 	uint32         nPasses;                             // -0x008
@@ -1179,6 +1186,7 @@ LTBOOL sub_100331e0(D3DDeviceRec* pDev, RenderStructInit* pInit)
 	sub_100210d0();
 	return LTFALSE;
 }
+#endif // Primal Hunt: ph/d3d_init.cpp
 
 
 // ======================================================================= //

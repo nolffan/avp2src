@@ -16,8 +16,8 @@
 
 
 struct LTObject;
-struct SceneContext;
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+struct ViewParams;
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 
@@ -37,7 +37,7 @@ public:
 		}
 	}
 
-	void		Draw(SceneContext* pContext, DrawObjectFn fn);  // 0x100397e0
+	void		Draw(ViewParams* pContext, DrawObjectFn fn);  // 0x100397e0
 
 	LTObject	**m_pObjects;                           // +0x00
 	uint32		m_nObjects;                             // +0x04
@@ -61,7 +61,7 @@ public:
 };
 
 extern ObjectDrawList*	g_pObjectDrawList;              // 0x100713cc
-extern SceneContext		g_SceneContext;                 // 0x1005b790
+extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern int32			g_CV_DynamicLight;              // 0x1004a76c
 extern int32			g_CV_DrawLineSystems;           // 0x1004a78c
 
@@ -349,7 +349,7 @@ extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
 extern LTObject*		g_DynamicLights[];              // 0x1005c168
 extern uint32			g_nDynamicLights;               // 0x1005bcb0
 
-void d3d_ProcessLightSet(SceneContext* pContext, LTObject* pLight)
+void d3d_ProcessLightSet(ViewParams* pContext, LTObject* pLight)
 {
 	FindBoxInfo info;
 	CountAdder cntAdd(g_pFrameCounters->m_pLightTicks);
@@ -384,7 +384,7 @@ void d3d_ProcessLightSet(SceneContext* pContext, LTObject* pLight)
 void d3d_ProcessLights()
 {
 	if (g_CV_DynamicLight)
-		d3d_GetVisibleSet()->m_Lights.Draw(&g_SceneContext, d3d_ProcessLightSet);
+		d3d_GetVisibleSet()->m_Lights.Draw(&g_ViewParams, d3d_ProcessLightSet);
 }
 
 
@@ -397,7 +397,7 @@ void d3d_ProcessLineSystem(LTObject *pObject)
 }
 
 
-static void d3d_QueueLineSystem(SceneContext* pContext, LTObject* pObject);
+static void d3d_QueueLineSystem(ViewParams* pContext, LTObject* pObject);
 
 // ---------------------------------------------------------------------- //
 //  0x10024a10
@@ -408,17 +408,17 @@ void d3d_DrawLineSystems()
 	{
 		BaseObjectSet* pSet = &d3d_GetVisibleSet()->m_LineSystems;
 		if (pSet->m_nObjects)
-			pSet->Draw(&g_SceneContext, d3d_QueueLineSystem);
+			pSet->Draw(&g_ViewParams, d3d_QueueLineSystem);
 	}
 }
 
 
-void d3d_DrawLineSystem(SceneContext* pContext, LTObject* pObject);
+void d3d_DrawLineSystem(ViewParams* pContext, LTObject* pObject);
 
 // ---------------------------------------------------------------------- //
 //  0x10024a40
 // ---------------------------------------------------------------------- //
-static void d3d_QueueLineSystem(SceneContext* pContext, LTObject* pObject)
+static void d3d_QueueLineSystem(ViewParams* pContext, LTObject* pObject)
 {
 	g_pObjectDrawList->Add(pObject, d3d_DrawLineSystem);
 }
@@ -542,7 +542,7 @@ inline void d3d_SetupTransformation(LTVector* pPos, Rotation* pRot, LTVector* pS
 	pMat->m[2][3] = pPos->z;
 }
 
-void d3d_DrawLineSystem(SceneContext* pContext, LTObject* pObject)
+void d3d_DrawLineSystem(ViewParams* pContext, LTObject* pObject)
 {
 	LineSystem* pSystem;
 	LSLine* pLine;

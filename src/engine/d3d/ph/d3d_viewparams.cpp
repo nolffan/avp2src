@@ -13,31 +13,30 @@
 
 
 // A console variable (common_stuff.cpp's registrar, 0x10011f36).
-struct CConVar
+class CD3DConVar
 {
-	CConVar(const char* pszName, float fDefault, int32* pnValue,
-	        float* pfValue);                                // 0x10011f36
+public:
+	CD3DConVar(const char* pName, float fDefault, int32* pnValue, float* pfValue);
 
 	int32       m_nValue;                                   // +0x00
 	float       m_fValue;                                   // +0x04
 	float       m_fDefault;                                 // +0x08
 	int32*      m_pnValue;                                  // +0x0c
 	float*      m_pfValue;                                  // +0x10
-	const char* m_pszName;                                  // +0x14
-	void*       m_hVar;                                     // +0x18
-	CConVar*    m_pNext;                                    // +0x1c
+	const char* m_pName;                                    // +0x14
+	void*       m_hParam;                                   // +0x18
+	CD3DConVar* m_pNext;                                    // +0x1c
 };
 
-CConVar     g_CV_NearZ("NearZ", 7.0f, LTNULL, LTNULL);                       // 0x1005b748
-CConVar     g_CV_ReallyCloseNearZ("ReallyCloseNearZ", 0.01f, LTNULL, LTNULL);  // 0x1005a328
+CD3DConVar     g_CV_NearZ("NearZ", 7.0f, LTNULL, LTNULL);                       // 0x1005b748
+CD3DConVar     g_CV_ReallyCloseNearZ("ReallyCloseNearZ", 0.01f, LTNULL, LTNULL);  // 0x1005a328
 
 
-// The camera position, and the vertical fog console variables.
-extern LTVector g_vCameraPos;                               // 0x1005bc44
-extern float    g_CV_VFogMinY;                              // 0x1005fde4
-extern float    g_CV_VFogMaxY;                              // 0x1005fdac
-extern float    g_CV_VFogMinYVal;                           // 0x1005e1d4
-extern float    g_CV_VFogMaxYVal;                           // 0x1005e07c
+// The vertical fog console variables (d3d_draw.cpp's).
+extern CD3DConVar g_CV_VFogMinY;                            // 0x1005fde0
+extern CD3DConVar g_CV_VFogMaxY;                            // 0x1005fda8
+extern CD3DConVar g_CV_VFogMinYVal;                         // 0x1005e1d0
+extern CD3DConVar g_CV_VFogMaxYVal;                         // 0x1005e078
 extern float    g_fVFogRangeScale;                          // 0x1005e210
 extern float    g_fVFogValScale;                            // 0x1005df90
 
@@ -45,11 +44,15 @@ struct ViewParams
 {
 	void    SetCameraPos(LTVector vPos);                    // 0x1000ff40
 
-	uint8   m_pad_000[0x4e4];
+	uint8   m_pad_000[0x4b4];
+	LTVector m_Pos;                                         // +0x4b4
+	uint8   m_pad_4c0[0x4e4 - 0x4c0];
 	LTVector m_vCameraPos;                                  // +0x4e4
 	float   m_fVFog;                                        // +0x4f0
 	uint32  m_nVFogMode;                                    // +0x4f4
 };
+
+extern ViewParams g_ViewParams;                             // 0x1005b790 (common_draw.cpp)
 
 // 0x1000ff40 -- the camera position, and how far into the vertical fog
 // it is: 0 below it, 1 above it, 2 inside it.
@@ -60,19 +63,19 @@ void ViewParams::SetCameraPos(LTVector vPos)
 
 	m_vCameraPos = vPos;
 
-	if (g_vCameraPos.y <= g_CV_VFogMinY)
-		fVFog = g_CV_VFogMinYVal;
-	else if (g_vCameraPos.y >= g_CV_VFogMaxY)
-		fVFog = g_CV_VFogMaxYVal;
+	if (g_ViewParams.m_Pos.y <= g_CV_VFogMinY.m_fValue)
+		fVFog = g_CV_VFogMinYVal.m_fValue;
+	else if (g_ViewParams.m_Pos.y >= g_CV_VFogMaxY.m_fValue)
+		fVFog = g_CV_VFogMaxYVal.m_fValue;
 	else
-		fVFog = (g_vCameraPos.y - g_CV_VFogMinY) * g_fVFogRangeScale
-			* g_fVFogValScale + g_CV_VFogMinYVal;
+		fVFog = (g_ViewParams.m_Pos.y - g_CV_VFogMinY.m_fValue) * g_fVFogRangeScale
+			* g_fVFogValScale + g_CV_VFogMinYVal.m_fValue;
 
 	m_fVFog = fVFog;
 
-	if (g_vCameraPos.y >= g_CV_VFogMaxY)
+	if (g_ViewParams.m_Pos.y >= g_CV_VFogMaxY.m_fValue)
 		nVFogMode = 1;
-	else if (g_vCameraPos.y <= g_CV_VFogMinY)
+	else if (g_ViewParams.m_Pos.y <= g_CV_VFogMinY.m_fValue)
 		nVFogMode = 0;
 	else
 		nVFogMode = 2;
@@ -101,7 +104,8 @@ struct ModelInstance
 };
 
 extern int32         g_bDynamicLightModels;                 // 0x1004a770
-extern DynamicLight* g_DynamicLights[];                     // 0x1005c168
+class LTObject;
+extern LTObject*     g_DynamicLights[];                     // 0x1005c168
 extern uint32        g_nDynamicLights;                      // 0x1005bcb0
 
 // 0x10010010 -- NEAR (the y and z squares are added in the other order).
@@ -120,7 +124,7 @@ void d3d_GetDynamicLightAdd(ModelInstance* pInstance, LTVector* pAdd)
 
 	for (i = 0; i < g_nDynamicLights; i++)
 	{
-		pLight = g_DynamicLights[i];
+		pLight = (DynamicLight*)g_DynamicLights[i];
 
 		vDelta = pLight->m_Pos - pInstance->m_Pos;
 		fDistSqr = (vDelta.x * vDelta.x + vDelta.y * vDelta.y) + vDelta.z * vDelta.z;

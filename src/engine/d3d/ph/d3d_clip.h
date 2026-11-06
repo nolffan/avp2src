@@ -53,6 +53,8 @@ struct ClipVert
 // The 40-byte bank vertex (FVF 0x2c4): two texture coordinate pairs.
 struct ClipVert2
 {
+	void        SetUV(float u, float v) { m_fU = u; m_fV = v; }
+
 	LTVector    m_vPos;                                     // +0x00
 	float       m_fRHW;                                     // +0x0c
 	VColor      m_Diffuse;                                  // +0x10

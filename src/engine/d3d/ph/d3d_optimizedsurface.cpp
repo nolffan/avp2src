@@ -14,12 +14,14 @@
 //  0x1001e64d: the texture, vtables 0x100482f0/0x10048310, and the
 //  allocator, vtables 0x10048330/0x1004833c, singleton 0x1007c1e4).
 //
-//  Not yet written here: the colour-key mask (0x1001cbc4), the tile fill
-//  (0x1001cd43), the optimised blit and warp (0x1001d4fa, 0x1001d890).
+//  The tile fill, its alpha passes, the blit and the warp follow NOLF2's
+//  d3d_optimizedsurface.cpp (render_a), this version's DirectDraw 7 form.
 //
-//  Near: 0x1001cb73 -- retail keeps the 16-bit OR value in its own
-//  register (movzx) and the row count in memory; ours reuses the 32-bit
-//  value's low word.
+//  Near: 0x1001d890 (the warp) -- three spill reloads after the inner
+//  loop come back in another order (register allocation).  Its inline
+//  budget is NOLF2's d3d_GetTextureDirect/d3d_SetTextureDirect wrappers:
+//  without them cl 8966 expands two more _CVector constructors than
+//  retail does.
 // *********************************************************************** //
 
 #include <windows.h>
@@ -49,8 +51,8 @@ class PFormat
 public:
 	virtual void	Init(BPPIdent Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
 
-	BPPIdent		GetType();                          // 0x10037506
 	uint32			GetBPPShift();                      // 0x100374c1
+	uint32			GetBytesPerPixel();                 // 0x10037506
 
 	BPPIdent	m_eType;
 	uint32		m_Masks[4];
@@ -81,18 +83,18 @@ public:
 	PFormat			m_DefaultDestFormat;
 };
 
-class FormatMgr
-{
-public:
-	LTRESULT		ConvertPixels(FMConvertRequest *pRequest);  // 0x1003764c
-	LTRESULT		PValueToFormatColor(PFormat *pFormat, PValue in, uint32 &out);  // 0x10037780
-};
-
 union GenericColor
 {
 	uint32	dwVal;
 	uint16	wVal;
 	uint8	bVal;
+};
+
+class FormatMgr
+{
+public:
+	LTRESULT		ConvertPixels(FMConvertRequest *pRequest);  // 0x1003764c
+	LTRESULT		PValueToFormatColor(PFormat *pFormat, PValue in, GenericColor &out);  // 0x10037780
 };
 
 // One texture format the device offers (d3d_texture.cpp).
@@ -162,6 +164,10 @@ void	r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat);  // 0x10011794
 uint32			g_TileSizes[NUM_TILE_SIZES] = {2, 4, 8, 16, 32, 64};   // 0x1004d4d0
 uint32			g_Optimized2DColor = 0xFFFFFFFF;        // 0x1004d4e8
 
+// Taken off the screen coordinates of each tile drawn, so they meet the
+// rasteriser's fill convention.
+float			g_fBlitFillBias = 0.51f;                // 0x1004d4ec
+
 uint32			g_SavedFogEnable;                       // 0x100638e0
 LTSurfaceBlend	g_Optimized2DBlend;                     // 0x10064ce4
 
@@ -191,39 +197,188 @@ void d3d_FreeOptimizedSurface(D3DRenderData *pData)
 
 
 // ------------------------------------------------------------------------------ //
-// 0x1001cb73 -- OR a value into every pixel converted into a tile.
+// 0x1001cb73 -- set solid alpha on every pixel converted into a tile.
 // ------------------------------------------------------------------------------ //
-void d3d_OrPixels(FMConvertRequest *pRequest, GenericColor value, GenericColor *pKey)
+void d3d_SetSolidAlpha(FMConvertRequest *pRequest, uint32 destAlpha32, GenericColor &tColor)
 {
-	uint8 *pLine;
-	uint16 *pDest16;
-	uint32 *pDest32;
-	uint32 x, y;
+	uint8 *pDestLine = pRequest->m_pDest;
+	uint32 destAlpha16 = (uint16)destAlpha32;
 
-	pLine = pRequest->m_pDest;
-
-	for (y = pRequest->m_Height; y; y--)
+	uint32 yCounter = pRequest->m_Height;
+	while (yCounter)
 	{
+		--yCounter;
+
+		uint32 xCounter = pRequest->m_Width;
 		if (pRequest->m_pDestFormat->m_eType == BPP_16)
 		{
-			pDest16 = (uint16*)pLine;
-			for (x = pRequest->m_Width; x; x--)
+			uint16 *pDest16 = (uint16*)pDestLine;
+			while (xCounter)
 			{
-				*pDest16 |= value.wVal;
-				pDest16++;
+				xCounter--;
+				*pDest16 |= destAlpha16;
+				++pDest16;
 			}
 		}
 		else
 		{
-			pDest32 = (uint32*)pLine;
-			for (x = pRequest->m_Width; x; x--)
+			uint32 *pDest32 = (uint32*)pDestLine;
+			while (xCounter)
 			{
-				*pDest32 |= value.dwVal;
-				pDest32++;
+				--xCounter;
+				*pDest32 |= destAlpha32;
+				++pDest32;
 			}
 		}
 
-		pLine += pRequest->m_DestPitch;
+		pDestLine += pRequest->m_DestPitch;
+	}
+}
+
+
+// ------------------------------------------------------------------------------ //
+// 0x1001cbc4 -- give the converted pixels the destination alpha, except
+// where the source pixel (its alpha bits ignored) is the colour key, whose
+// alpha is cleared.
+// ------------------------------------------------------------------------------ //
+#define DO_MASK_LOOP(srcType, destType, srcIt, destIt, srcTColor, srcAlphaMask, destAlphaMask)	\
+	{																				\
+		xCounter = pRequest->m_Width;												\
+		srcType tKey = srcTColor;													\
+		srcIt = (srcType*)pSrcLine;													\
+		destIt = (destType*)pDestLine;												\
+		while (xCounter)															\
+		{																			\
+			if ((*srcIt & ~srcAlphaMask) != tKey)									\
+				*destIt |= destAlphaMask;											\
+			else																	\
+				*destIt &= ~destAlphaMask;											\
+			srcIt++; destIt++; xCounter--;											\
+		}																			\
+	}
+
+void d3d_DoAlphaFromColorKey(FMConvertRequest *pRequest, uint32 srcAlpha32, uint32 destAlpha32, GenericColor &tColor)
+{
+	uint32 *pSrc32, *pDest32;
+	uint16 *pSrc16, *pDest16;
+	uint32 xCounter;
+	uint8 *pSrcLine = pRequest->m_pSrc;
+	uint8 *pDestLine = pRequest->m_pDest;
+	uint32 y;
+
+	for (y = pRequest->m_Height; y; y--)
+	{
+		if (pRequest->m_pSrcFormat->m_eType == BPP_16)
+		{
+			if (pRequest->m_pDestFormat->m_eType == BPP_16)
+				DO_MASK_LOOP(uint16, uint16, pSrc16, pDest16, tColor.wVal, (uint16)srcAlpha32, (uint16)destAlpha32)
+			else if (pRequest->m_pDestFormat->m_eType == BPP_32)
+				DO_MASK_LOOP(uint16, uint32, pSrc16, pDest32, tColor.wVal, (uint16)srcAlpha32, destAlpha32)
+		}
+		else
+		{
+			if (pRequest->m_pDestFormat->m_eType == BPP_16)
+				DO_MASK_LOOP(uint32, uint16, pSrc32, pDest16, tColor.dwVal, srcAlpha32, (uint16)destAlpha32)
+			else if (pRequest->m_pDestFormat->m_eType == BPP_32)
+				DO_MASK_LOOP(uint32, uint32, pSrc32, pDest32, tColor.dwVal, srcAlpha32, destAlpha32)
+		}
+
+		pSrcLine += pRequest->m_SrcPitch;
+		pDestLine += pRequest->m_DestPitch;
+	}
+}
+
+
+// ------------------------------------------------------------------------------ //
+// 0x1001cd43 -- convert the surface into its tiles.
+// ------------------------------------------------------------------------------ //
+LTBOOL d3d_FillOptimizedSurface(D3DRenderData *pData, D3DTextureFormat *pFormat, uint32 transparentColor)
+{
+	LTRect rect;
+	FMConvertRequest cRequest;
+	PFormat srcFormat, destFormat;
+	GenericColor tColor;
+	DDSURFACEDESC2 ddsd, tileDesc;
+	OptimizedTile *pTile;
+	uint8 *pSrcData;
+	uint32 x, y;
+
+	d3d_GetScreenFormat(&srcFormat);
+	r_SetPFormat(&pFormat->m_PF, &destFormat);
+
+	g_FormatMgr.PValueToFormatColor(&srcFormat, transparentColor, tColor);
+
+	// Take the alpha bits out of the colour key.
+	if (srcFormat.GetBytesPerPixel() == 4)
+		tColor.dwVal &= ~srcFormat.m_Masks[0];
+	else
+		tColor.wVal &= ~srcFormat.m_Masks[0];
+
+	cRequest.m_pSrcFormat = &srcFormat;
+	cRequest.m_pDestFormat = &destFormat;
+	cRequest.m_Flags = 0;
+	pData->m_bTransparent = transparentColor != 0xFFFFFFFF;
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	if (pData->m_pSurface->Lock(LTNULL, &ddsd, DDLOCK_WAIT | DDLOCK_READONLY, LTNULL) == DD_OK)
+	{
+		pSrcData = (uint8*)ddsd.lpSurface;
+
+		for (x = 0; x < pData->m_pOptimized->m_nTilesX; x++)
+		{
+			for (y = 0; y < pData->m_pOptimized->m_nTilesY; y++)
+			{
+				pTile = &pData->m_pOptimized->m_Tiles[y * pData->m_pOptimized->m_nTilesX + x];
+
+				memset(&tileDesc, 0, sizeof(tileDesc));
+				tileDesc.dwSize = sizeof(tileDesc);
+				if (pTile->m_pSurface->Lock(LTNULL, &tileDesc, DDLOCK_WAIT | DDLOCK_WRITEONLY, LTNULL) == DD_OK)
+				{
+					rect.left = x * OPTIMIZED_TILE_SIZE;
+					rect.right = rect.left + OPTIMIZED_TILE_SIZE;
+					if (rect.right > (int)pData->m_Desc.dwWidth)
+						rect.right = pData->m_Desc.dwWidth;
+
+					rect.top = y * OPTIMIZED_TILE_SIZE;
+					rect.bottom = rect.top + OPTIMIZED_TILE_SIZE;
+					if (rect.bottom > (int)pData->m_Desc.dwHeight)
+						rect.bottom = pData->m_Desc.dwHeight;
+
+					pTile->m_Rect = rect;
+
+					cRequest.m_pSrc = &pSrcData[rect.top * ddsd.lPitch];
+					cRequest.m_pSrc += rect.left << srcFormat.GetBPPShift();
+					cRequest.m_SrcPitch = ddsd.lPitch;
+					cRequest.m_pDest = (uint8*)tileDesc.lpSurface;
+					cRequest.m_DestPitch = tileDesc.lPitch;
+					cRequest.m_Width = rect.right - rect.left;
+					cRequest.m_Height = rect.bottom - rect.top;
+
+					if (g_FormatMgr.ConvertPixels(&cRequest) == LT_OK)
+					{
+						if (transparentColor == 0xFFFFFFFF)
+							d3d_SetSolidAlpha(&cRequest, destFormat.m_Masks[0], tColor);
+						else
+							d3d_DoAlphaFromColorKey(&cRequest, srcFormat.m_Masks[0], destFormat.m_Masks[0], tColor);
+					}
+
+					pTile->m_pSurface->Unlock(LTNULL);
+				}
+				else
+				{
+					pData->m_pSurface->Unlock(LTNULL);
+					return LTFALSE;
+				}
+			}
+		}
+
+		pData->m_pSurface->Unlock(LTNULL);
+		return LTTRUE;
+	}
+	else
+	{
+		return LTFALSE;
 	}
 }
 
@@ -242,7 +397,6 @@ void d3d_UnoptimizeSurface(D3DRenderData *pData)
 // 0x1001cff4 -- RenderStruct::OptimizeSurface: cut the surface into
 // textures of up to 64x64.
 // ------------------------------------------------------------------------------ //
-LTBOOL d3d_FillOptimizedSurface(D3DRenderData *pData, D3DTextureFormat *pFormat, uint32 transparentColor);  // 0x1001cd43
 
 // The smallest tile size bigger than size.
 inline uint32 d3d_GetTileSize(uint32 size)
@@ -507,6 +661,216 @@ LTBOOL d3d_GetOptimized2DColor(uint32 *pColor)
 {
 	*pColor = g_Optimized2DColor;
 	return LTTRUE;
+}
+
+
+// ------------------------------------------------------------------------------ //
+// The blits of an optimised surface: one textured quad per tile.
+// ------------------------------------------------------------------------------ //
+struct RenderBlitRequest
+{
+	D3DRenderData*	m_pSurface;                         // +0x00
+	uint32			m_BlitOptions;                      // +0x04
+	uint32			m_TransparentColor;                 // +0x08
+	LTRect*			m_pSrcRect;                         // +0x0c
+	LTRect*			m_pDestRect;                        // +0x10
+	float			m_Alpha;                            // +0x14
+	LTWarpPt*		m_pWarpPts;                         // +0x18
+	int				m_nWarpPts;                         // +0x1c
+};
+
+struct TLVertex
+{
+	LTVector	m_Vec;                                  // +0x00
+	float		rhw;                                    // +0x0c
+	union
+	{
+		uint32	color;                                  // +0x10
+		struct { uint8 b, g, r, a; } rgb;
+	};
+	uint32		specular;                               // +0x14
+	float		tu, tv;                                 // +0x18
+
+	void		SetTCoords(float u, float v)
+	{
+		tu = u;
+		tv = v;
+	}
+};
+
+void	InvalidateRect(LTRect *pRect);                  // 0x10022e31 (dirtyrect.cpp)
+
+inline void d3d_GetTextureDirect(LPDIRECTDRAWSURFACE7 *ppTexture, uint32 iStage)
+{
+	g_pD3DDevice->GetTexture(iStage, ppTexture);
+}
+
+inline void d3d_SetTextureDirect(LPDIRECTDRAWSURFACE7 pTexture, uint32 iStage)
+{
+	g_pD3DDevice->SetTexture(iStage, pTexture);
+}
+
+
+// 0x1001d4fa -- RenderStruct::BlitToScreen for an optimised surface: the
+// source rectangle, tile by tile, scaled into the destination rectangle.
+void d3d_BlitOptimized(RenderBlitRequest *pRequest)
+{
+	D3DRenderData *pData;
+	OptimizedSurface *pTiles;
+	OptimizedTile *pTile;
+	LTRect *pSrcRect, *pDestRect;
+	float srcRectWidth, srcRectHeight, destRectWidth, destRectHeight;
+	float destLeft, destRight, destTop, destBottom;
+	float tLeft, tRight, tTop, tBottom;
+	TLVertex verts[4];
+	LPDIRECTDRAWSURFACE7 pOldTexture;
+	int x, y, xEnd, yEnd, nXTile, nYTile;
+
+	pData = pRequest->m_pSurface;
+	if (pRequest->m_TransparentColor != pData->m_ColorKey)
+		d3d_OptimizeSurface(pData, pRequest->m_TransparentColor);
+
+	pTiles = pData->m_pOptimized;
+	if (!pTiles)
+		return;
+
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, g_Optimized2DBlend != LTSURFACEBLEND_SOLID);
+
+	pSrcRect = pRequest->m_pSrcRect;
+	pDestRect = pRequest->m_pDestRect;
+	srcRectWidth = (float)(pSrcRect->right - pSrcRect->left);
+	srcRectHeight = (float)(pSrcRect->bottom - pSrcRect->top);
+	destRectWidth = (float)(pDestRect->right - pDestRect->left);
+	destRectHeight = (float)(pDestRect->bottom - pDestRect->top);
+
+	verts[0].color = verts[1].color = verts[2].color = verts[3].color = g_Optimized2DColor;
+	verts[0].rgb.a = verts[1].rgb.a = verts[2].rgb.a = verts[3].rgb.a = (uint8)(pRequest->m_Alpha * 255.0f);
+	verts[0].rhw = verts[1].rhw = verts[2].rhw = verts[3].rhw = 1.0f;
+
+	pOldTexture = LTNULL;
+	g_pD3DDevice->GetTexture(0, &pOldTexture);
+
+	for (x = pSrcRect->left; x < pSrcRect->right; x = xEnd)
+	{
+		nXTile = x / OPTIMIZED_TILE_SIZE;
+		pTile = &pTiles->m_Tiles[nXTile];
+		xEnd = x + OPTIMIZED_TILE_SIZE;
+		xEnd = LTMIN(pTile->m_Rect.right, LTMIN(xEnd, pSrcRect->right));
+
+		for (y = pSrcRect->top; y < pSrcRect->bottom; y = yEnd)
+		{
+			nYTile = y / OPTIMIZED_TILE_SIZE;
+			pTile = &pTiles->m_Tiles[nYTile * pTiles->m_nTilesX + nXTile];
+			yEnd = y + OPTIMIZED_TILE_SIZE;
+			yEnd = LTMIN(pTile->m_Rect.bottom, LTMIN(yEnd, pSrcRect->bottom));
+
+			destLeft = (float)pDestRect->left + ((x - pSrcRect->left) / srcRectWidth) * destRectWidth;
+			destRight = (float)pDestRect->left + ((xEnd - pSrcRect->left) / srcRectWidth) * destRectWidth;
+			destTop = (float)pDestRect->top + ((y - pSrcRect->top) / srcRectHeight) * destRectHeight;
+			destBottom = (float)pDestRect->top + ((yEnd - pSrcRect->top) / srcRectHeight) * destRectHeight;
+
+			tLeft = (x - pTile->m_Rect.left) / (float)pTile->m_Width;
+			tRight = (xEnd - pTile->m_Rect.left) / (float)pTile->m_Width;
+			tTop = (y - pTile->m_Rect.top) / (float)pTile->m_Height;
+			tBottom = (yEnd - pTile->m_Rect.top) / (float)pTile->m_Height;
+
+			destLeft = LTMAX(0.0f, destLeft - g_fBlitFillBias);
+			destTop = LTMAX(0.0f, destTop - g_fBlitFillBias);
+			destRight = LTMAX(0.0f, destRight - g_fBlitFillBias);
+			destBottom = LTMAX(0.0f, destBottom - g_fBlitFillBias);
+
+			verts[0].m_Vec.Init(destLeft, destTop, 1.0f);
+			verts[1].m_Vec.Init(destRight, destTop, 1.0f);
+			verts[2].m_Vec.Init(destRight, destBottom, 1.0f);
+			verts[3].m_Vec.Init(destLeft, destBottom, 1.0f);
+
+			verts[0].SetTCoords(tLeft, tTop);
+			verts[1].SetTCoords(tRight, tTop);
+			verts[2].SetTCoords(tRight, tBottom);
+			verts[3].SetTCoords(tLeft, tBottom);
+
+			g_pD3DDevice->SetTexture(0, pTile->m_pSurface);
+			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, verts, 4, 0);
+		}
+	}
+
+	g_pD3DDevice->SetTexture(0, pOldTexture);
+	InvalidateRect(pDestRect);
+}
+
+
+// 0x1001d890 -- RenderStruct::WarpToScreen for an optimised surface: the
+// whole surface, tile by tile, onto the parallelogram the first, second and
+// fourth warp points span.
+void d3d_WarpOptimized(RenderBlitRequest *pRequest)
+{
+	LTWarpPt *pWarpPts = pRequest->m_pWarpPts;
+	LPDIRECTDRAWSURFACE7 pOldTexture = LTNULL;
+
+	D3DRenderData *pData = pRequest->m_pSurface;
+	OptimizedSurface *pTiles = pData->m_pOptimized;
+	OptimizedTile *pTile;
+
+	if (!pTiles)
+		return;
+
+	uint32 nXTiles = pTiles->m_nTilesX;
+	uint32 nYTiles = pTiles->m_nTilesY;
+
+	float srcRectWidth = (float)(pRequest->m_pSrcRect->right - pRequest->m_pSrcRect->left);
+	float srcRectHeight = (float)(pRequest->m_pSrcRect->bottom - pRequest->m_pSrcRect->top);
+
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, pData->m_bTransparent || (pRequest->m_Alpha != 1.0f));
+
+	d3d_GetTextureDirect(&pOldTexture, 0);
+
+	TLVertex verts[12];
+	verts[0].color = verts[1].color = verts[2].color = verts[3].color = g_Optimized2DColor;
+	verts[0].rgb.a = verts[1].rgb.a = verts[2].rgb.a = verts[3].rgb.a = (uint8)(pRequest->m_Alpha * 255.0f);
+	verts[0].rhw = verts[1].rhw = verts[2].rhw = verts[3].rhw = 1.0f;
+
+	LTVector vWarpStart(pWarpPts[0].dest_x, pWarpPts[0].dest_y, 1.0f);
+	LTVector vWarpDirX, vWarpDirY;
+	vWarpDirX = LTVector(pWarpPts[1].dest_x, pWarpPts[1].dest_y, 1.0f) - vWarpStart;
+	vWarpDirY = LTVector(pWarpPts[3].dest_x, pWarpPts[3].dest_y, 1.0f) - vWarpStart;
+
+	float fScaleX = VEC_MAG(vWarpDirX) / srcRectWidth;
+	float fScaleY = VEC_MAG(vWarpDirY) / srcRectHeight;
+
+	vWarpDirX.Norm(fScaleX);
+	vWarpDirY.Norm(fScaleY);
+
+	uint32 xPos, yPos = 0;
+	uint32 i, j;
+
+	for (i = 0; i < nYTiles; i++)
+	{
+		xPos = 0;
+
+		for (j = 0; j < nXTiles; j++)
+		{
+			pTile = &pTiles->m_Tiles[i * nXTiles + j];
+
+			verts[0].m_Vec = vWarpStart + (vWarpDirX * (float)xPos) + (vWarpDirY * (float)yPos);
+			verts[1].m_Vec = verts[0].m_Vec + (vWarpDirX * (float)pTile->m_Width);
+			verts[2].m_Vec = verts[0].m_Vec + (vWarpDirX * (float)pTile->m_Width) + (vWarpDirY * (float)pTile->m_Height);
+			verts[3].m_Vec = verts[0].m_Vec + (vWarpDirY * (float)pTile->m_Height);
+
+			verts[0].SetTCoords(0.0f, 0.0f);
+			verts[1].SetTCoords(1.0f, 0.0f);
+			verts[2].SetTCoords(1.0f, 1.0f);
+			verts[3].SetTCoords(0.0f, 1.0f);
+
+			d3d_SetTextureDirect(pTile->m_pSurface, 0);
+			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, verts, 4, 0);
+
+			xPos += pTile->m_Width;
+		}
+
+		yPos += pTiles->m_Tiles[i * nXTiles].m_Height;
+	}
+
+	d3d_SetTextureDirect(pOldTexture, 0);
 }
 
 

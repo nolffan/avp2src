@@ -7,10 +7,7 @@
 //  TL vertices with the gamma-corrected vertex colours, and the blend
 //  setup.
 //
-//  Not yet written here: the dynamic-light pass 0x10023c66.
-//  Still near: 0x100238e2 (the fog colour's bytes load as a word, and
-//  esi/edi swap), 0x10024079 (where the shared `pop ecx` tail lands) and
-//  0x1002426c (the texel-size products' operand order).
+//  Still near: 0x10024079 (where the shared `pop ecx` tail lands).
 // *********************************************************************** //
 
 #include <windows.h>
@@ -101,12 +98,20 @@ struct Surface
 	SharedTexture*	m_pTexture;                         // +0x2c
 };
 
+struct LMDynamicLight;
+
 struct RenderPoly
 {
-	uint8			m_pad_00[0x2c];
+	uint8			m_pad_00[0x14];
+	uint16			m_PageFlags;                        // +0x14
+	uint8			m_pad_16[0x28 - 0x16];
+	LTVector*		m_pNormal;                          // +0x28
 	Surface*		m_pSurface;                         // +0x2c
-	void*			m_pLights;                          // +0x30
-	uint8			m_pad_34[0x50 - 0x34];
+	LMDynamicLight*	m_pLights;                          // +0x30
+	uint8			m_pad_34[0x4c - 0x34];
+	uint8			m_LMWidth;                          // +0x4c
+	uint8			m_LMHeight;                         // +0x4d
+	uint8			m_pad_4e[0x50 - 0x4e];
 	SPolyVertex*	m_pTJuncVerts;                      // +0x50
 	uint16			m_nVerts;                           // +0x54
 	uint16			m_nTJuncVerts;                      // +0x56
@@ -169,7 +174,7 @@ extern CD3DConVar		g_CV_LMDynamic;                 // 0x1007c220
 
 struct FogColor
 {
-	uint8	r, g, b;
+	uint8	m_Color[3];                                 // r, g, b
 };
 extern FogColor			g_FogColor;                     // 0x1005dad8
 
@@ -338,7 +343,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 
 	if (!g_CV_LMFullBright.m_nValue)
 	{
-		fogColor = d3d_GammaRGB(g_FogColor.r, g_FogColor.g, g_FogColor.b);
+		fogColor = d3d_GammaRGB(g_FogColor.m_Color[0], g_FogColor.m_Color[1], g_FogColor.m_Color[2]);
 		StateSet fogState(D3DRENDERSTATE_FOGCOLOR, fogColor);
 
 		d3d_DisableTexture(g_BindTextureStage);
@@ -367,7 +372,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 		pQueued->m_iFirstVert = g_nTLVertsUsed;
 		pQueued->m_nVerts = nVerts;
 		pQueued->m_ClipFlags = g_ClipFlags;
-		pQueued->m_Type = bLightmap ? 3 : 1;
+		pQueued->m_Type = (bLightmap ? 2 : 0) | 1;
 
 		if (g_CV_FixSparkleys.m_nValue)
 			d3d_FlushWorldPieces();
@@ -375,6 +380,206 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 
 	g_nTLVertsUsed += nVerts;
 	g_nDrawPrimCalls++;
+}
+
+
+// ---------------------------------------------------------------------- //
+//  0x10023c66 -- the dynamic lights on a gouraud polygon: for each, a
+//  lightmap drawn into a scratch texture (lmdynamic.cpp) and added over
+//  the polygon, its texture coordinates the vertices' world positions
+//  projected onto the polygon's lightmap axes.
+// ---------------------------------------------------------------------- //
+
+// The profiling counters (TU14: 0x10013fb7, 0x10013fd5, 0x10013fe0).
+#define CSTART_NONE			0
+
+class CounterFinal
+{
+public:
+					CounterFinal(unsigned long startMode=CSTART_NONE);
+	unsigned long	m_Data[2];
+};
+
+typedef CounterFinal Counter;
+
+void			cnt_StartCounterFinal(CounterFinal &cCounter);
+unsigned long	cnt_EndCounterFinal(CounterFinal &cCounter);
+
+inline void cnt_StartCounter(Counter &cCounter) { cnt_StartCounterFinal(cCounter); }
+inline unsigned long cnt_EndCounter(Counter &cCounter) { return cnt_EndCounterFinal(cCounter); }
+
+class CountAdder
+{
+	public:
+		CountAdder(uint32 *pNum)
+		{
+			m_pNum = pNum;
+			cnt_StartCounter(m_Counter);
+		}
+		~CountAdder()
+		{
+			*m_pNum += cnt_EndCounter(m_Counter);
+		}
+		Counter m_Counter;
+		uint32 *m_pNum;
+};
+
+struct FrameCounters
+{
+	uint8		m_pad_00[0x18];
+	uint32*		m_pLightTicks;                          // +0x18
+};
+
+extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+
+// Save a texture stage state, set it, and put it back when the scope closes
+// (drawworld.cpp's, 0x1000a48c and 0x1000a4d1, out of line).
+class StageStateSet
+{
+public:
+	StageStateSet(uint32 stage, D3DTEXTURESTAGESTATETYPE state, uint32 val);
+	~StageStateSet();
+
+	uint32						m_Stage;
+	D3DTEXTURESTAGESTATETYPE	m_State;
+	uint32						m_OldVal;
+};
+
+struct ViewParams
+{
+	uint8		m_pad_000[0x1dc];
+	LTMatrix	m_mFullTransform;                       // +0x1dc
+};
+
+// ph/pixelformat.cpp's PFormat, for its size and vtable.
+enum BPPIdent
+{
+	BPP_8P=0,
+	BPP_8,
+	BPP_16,
+	BPP_32
+};
+
+class PFormat
+{
+public:
+	virtual void	Init(BPPIdent Type, uint32 aMask, uint32 rMask, uint32 gMask, uint32 bMask);
+
+	BPPIdent	m_eType;
+	uint32		m_Masks[4];
+	uint32		m_nBits[4];
+	uint32		m_FirstBits[4];
+};
+
+// lmsurfaces.cpp and lmdynamic.cpp's.
+struct WorldPoly;
+struct LMPoly;
+struct LMTextureList;
+
+struct LMDrawDesc
+{
+	LTBOOL		Begin(WorldPoly *pPoly, LTBOOL bCopy, uint32 width, uint32 height);   // 0x100358b3
+	LTBOOL		End(LTBOOL bChanged);                   // 0x10035a3f
+
+	void		*m_pData;                               // +0x00
+	uint32		m_Pitch;                                // +0x04
+	uint32		m_iSize;                                // +0x08
+	PFormat		m_Format;                               // +0x0c
+	uint32		m_Width;                                // +0x44
+	uint32		m_Height;                               // +0x48
+	LMTextureList	*m_pList;                           // +0x4c
+	RTexture	*m_pScratch;                            // +0x50
+};
+
+class LMLightObject
+{
+public:
+	virtual void	Slot00();
+	virtual void	Slot04();
+	virtual void	Slot08();
+	virtual void	Slot0c();
+	virtual void	Slot10();
+	virtual void	Slot14();
+	virtual void	Slot18();
+	virtual void	Slot1c();
+	virtual void	Slot20();
+	virtual void	Slot24();
+	virtual void	Slot28();
+	virtual void	Slot2c();
+	virtual void	Slot30();
+	virtual void	Slot34();
+	virtual float	GetRadius(LMLightObject *pObj);
+};
+
+struct LMDynamicLight
+{
+	LMDynamicLight	*m_pNext;
+	LMLightObject	*m_pObject;                         // +0x04
+	LTVector		m_Pos;                              // +0x08
+};
+
+extern CD3DConVar	g_CV_LMDynamicScale;                // 0x1007c200
+extern CD3DConVar	g_CV_LMDynamicSize;                 // 0x1007c640
+
+void	d3d_GetLMAxes(int iBasis, LTVector *pNormal, LTVector *pRight, LTVector *pUp);  // 0x10035860
+LTBOOL	d3d_DrawDynamicLM(LMDrawDesc *pDesc, LMPoly *pPoly, LMDynamicLight *pLight, float fScale);  // 0x100333c0
+
+void d3d_DrawPolyLights(RenderPoly* pPoly, TLVertex* pVerts, int nVerts)
+{
+	LMDynamicLight *pLight;
+	TLVertex *pVert;
+	LTVector right, up, vWorld, vDelta;
+	float fInvSize;
+	LTBOOL bDrawn;
+	int i;
+
+	if (!g_CV_LMDynamic.m_nValue)
+		return;
+
+	CountAdder cntLights(g_pFrameCounters->m_pLightTicks);
+
+	pPoly->m_LMWidth = (uint8)g_CV_LMDynamicSize.m_nValue;
+	pPoly->m_LMHeight = (uint8)g_CV_LMDynamicSize.m_nValue;
+
+	d3d_GetLMAxes((pPoly->m_PageFlags >> 11) & 7, pPoly->m_pNormal, &right, &up);
+
+	StateSet alphaBlendState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE);
+	StateSet srcBlendState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE);
+	StateSet destBlendState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE);
+	StateSet fogColorState(D3DRENDERSTATE_FOGCOLOR, 0);
+	StageStateSet addressState(0, D3DTSS_ADDRESS, D3DTADDRESS_CLAMP);
+	StageStateSet colorOpState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+
+	LTMatrix mInvTransform = g_ViewParams.m_mFullTransform.MakeInverse();
+
+	for (pLight = pPoly->m_pLights; pLight; pLight = pLight->m_pNext)
+	{
+		LMDrawDesc desc;
+
+		if (!desc.Begin((WorldPoly*)pPoly, LTTRUE, 0, 0))
+			continue;
+
+		bDrawn = d3d_DrawDynamicLM(&desc, (LMPoly*)pPoly, pLight, g_CV_MultipassGouraud.m_nValue ? 1.0f : 2.0f);
+		if (!desc.End(bDrawn) || !bDrawn)
+			continue;
+
+		fInvSize = 1.0f / (pLight->m_pObject->GetRadius(pLight->m_pObject) * g_CV_LMDynamicScale.m_fValue);
+
+		pVert = pVerts;
+		for (i = nVerts; i; i--)
+		{
+			mInvTransform.Apply4x4(pVert->m_Vec, vWorld);
+			vDelta = vWorld - pLight->m_Pos;
+
+			pVert->m_TU = right.Dot(vDelta) * fInvSize + 0.5f;
+			pVert->m_TV = up.Dot(vDelta) * fInvSize + 0.5f;
+			pVert++;
+		}
+
+		g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, FVF_TLVERTEX, pVerts, nVerts, 0);
+		if (g_CV_Saturate)
+			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, FVF_TLVERTEX, pVerts, nVerts, 0);
+	}
 }
 
 
@@ -512,9 +717,13 @@ void d3d_DrawGouraudPoly(RenderPoly* pPoly)
 // ---------------------------------------------------------------------- //
 void d3d_ScaleTexCoords(TLVertex* pVerts, uint32 nVerts)
 {
+	float tu, tv;
+
 	while (nVerts--)
 	{
-		pVerts->SetUV(pVerts->m_TU * g_fTexelSizeU, pVerts->m_TV * g_fTexelSizeV);
+		tu = pVerts->m_TU;
+		tv = pVerts->m_TV;
+		pVerts->SetUV(tu * g_fTexelSizeU, tv * g_fTexelSizeV);
 		pVerts++;
 	}
 }

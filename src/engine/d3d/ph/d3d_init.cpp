@@ -1,17 +1,30 @@
 // *********************************************************************** //
 //
 //  MODULE:   D3D_INIT (.CPP) -- Primal Hunt's d3d.ren, TU17
-//            (0x1001a720..0x1001ca36, docs/D3D_OBJECTS.md)
+//            (0x1001a720..0x1001cb13, docs/D3D_OBJECTS.md)
 //
 //  PURPOSE:  Device start-up: the DirectDraw/Direct3D error strings, the
 //            device's console variables, card detection, the z-buffer and
 //            the device creation, the world create/destroy and 3D-frame
 //            entry points and the renderer's console commands.
 //
-//  Not yet written here: d3d_InitDevice (0x1001b8d0) and RenderCommand
-//  (0x1001c4b0).  Near: 0x1001b4c0 (the card detection: ours keeps the
-//  constant 1 in %edi for the whole function where retail pushes %edi only
-//  around the identifier's memset), 0x1001b010.
+//  The device bring-up (d3d_InitDevice), the console commands
+//  (d3d_RenderCommand, LISTDEVICECAPS inline) and the gamma ramp loader
+//  (0x1001ca40, after the TU's last function: /O2 code padded to 16)
+//  follow AvP2 1.0.9.6's (w38_100322c0_qip.cpp, w26_10031e10.cpp),
+//  Primal Hunt's evolution of them.  The fog, dither and filter states'
+//  "last set" globals are common_stuff.cpp's (TU12's .bss), so this file
+//  reads them as externs.
+//
+//  Flags: /O2 (so /Ob1), not /Ob2: under /Ob2 the gamma ramp loader is
+//  expanded into both its callers, which retail calls.  The render-state
+//  helpers of d3d_ReadExtraConsoleVariables are `inline`.
+//
+//  Near: 0x1001b4c0 (the card detection): every instruction matches but
+//  the blocks after the vendor tests are laid out differently -- retail's
+//  shared epilogue follows the Rage128 block, with the 0x121A test and the
+//  Permedia block (each with its own `ret`) after it; ours ends on the
+//  Permedia block.  No if/else or goto arrangement tried reproduces it.
 //
 // *********************************************************************** //
 
@@ -19,6 +32,7 @@
 #include <ddraw.h>
 #include <d3d.h>
 #include <math.h>
+#include <stdio.h>
 #include "ltbasedefs.h"
 
 
@@ -64,20 +78,38 @@ extern LPDIRECTDRAWSURFACE7 g_pZBuffer;                     // 0x1005d2b8
 extern LPDIRECTDRAW7        g_pDirectDraw;                  // 0x1005d2a8 (common_init.cpp)
 extern uint32               g_1005d2c0;                     // 0x1005d2c0 (common_init.cpp: the surfaces' memory caps)
 extern LTBOOL g_bInOptimized2D;                             // 0x100638dc
+extern uint32               g_ScreenWidth;                  // 0x1005d8cc (common_init.cpp)
+extern uint32               g_ScreenHeight;                 // 0x1005d9c0
+
+// The screen's pixel format (pixelformat.cpp's PFormat).
+class PFormat
+{
+public:
+	void*       m_pVTable;
+	uint32      m_eType;                                    // +0x04
+};
+
+#define BPP_16  2
+
+extern PFormat              g_ScreenFormat;                 // 0x1005d260 (common_init.cpp)
 
 LTBOOL  d3d_CreateLightmapPages(void* pWorld);              // 0x10035389
 void    d3d_TermRenderWorld(void* pWorld);                  // 0x1003559e
 void    d3d_FreeLightmapPages();                            // 0x1001f860
 void    d3d_EndOptimized2D();                               // 0x1001d335
-void    d3d_OnSurfacesRestored();                           // 0x10020640
-void    d3d_UnoptimizeAll();                                // 0x10020450
+void    d3d_FreeAllTextures();                              // 0x10020640 (d3d_texture.cpp)
+void    d3d_TermTextures();                                 // 0x10020450 (d3d_texture.cpp)
 
-void    sub_1002377f();
-void    sub_10018ff0();                                     // d3d_draw.cpp
-void    sub_10018f90();                                     // d3d_draw.cpp
-void    sub_10030120();
-void    sub_10029400();
-void    sub_100293d0();
+// The subsystems' start-up and shut-down.  Two of them are empty and the
+// link folded them into other empty functions (/OPT:ICF), so retail
+// calls those: 0x1002377f (draw_canvas.cpp) and 0x10030120
+// (drawworldmodel.cpp).
+void    d3d_CanvasPreFrame();                               // 0x1002377f (draw_canvas.cpp)
+void    d3d_NullPreFrame();                                 // 0x10030120 (drawworldmodel.cpp)
+void    d3d_InitDraw();                                     // 0x10018f90 (d3d_draw.cpp)
+void    d3d_TermDraw();                                     // 0x10018ff0 (d3d_draw.cpp)
+void    d3d_InitObjectModules();                            // 0x100293d0 (drawobjects.cpp)
+void    d3d_TermObjectModules();                            // 0x10029400 (drawobjects.cpp)
 
 // The dynamic lightmap texture allocator (d3d_optimizedsurface.cpp's).
 class CLMAllocator
@@ -150,24 +182,52 @@ uint32*             g_pnZFormats;                           // 0x10062434
 DDPIXELFORMAT*      g_pZFormats;                            // 0x100638bc
 D3DDEVICEDESC7      g_DeviceDesc;                           // 0x100623c0
 
-// The render states as they were last set.
-LTBOOL      g_bFogStatesSet;                                // 0x1005df80
-LTBOOL      g_bDitherStateSet;                              // 0x1005df84
-LTBOOL      g_bFilterStatesSet;                             // 0x1005df88
-int32       g_LastFogEnable;                                // 0x1005d560
-int32       g_LastFogR, g_LastFogG, g_LastFogB;             // 0x1005dadc..
-float       g_LastFogNearZ;                                 // 0x1005db68
-float       g_LastFogFarZ;                                  // 0x1005d380
-int32       g_LastTableFog;                                 // 0x1005dd78
-int32       g_LastDither;                                   // 0x1005d970
-int32       g_LastBilinear;                                 // 0x1005d484
+// What the device can do, read when it is created (d3d_InitDevice).
+struct D3DCaps
+{
+	LTBOOL          m_bSrcBlendSrcColor;                    // +0x000 0x100622d8
+	LTBOOL          m_bDestBlendSrcAlpha;                   // +0x004
+	LTBOOL          m_bTBlendAdd;                           // +0x008
+	LTBOOL          m_bTBlendModulate;                      // +0x00c
+	LTBOOL          m_bDither;                              // +0x010
+	LTBOOL          m_bDrawPrim;                            // +0x014
+	LTBOOL          m_bVidMemTextures;                      // +0x018
+	LTBOOL          m_bSysMemTextures;                      // +0x01c
+	LTBOOL          m_bAGPTextures;                         // +0x020
+	int32           m_nZBufferBits;                         // +0x024
+	int32           m_nDeviceBits;                          // +0x028
+	uint32          m_dwTextureMem;                         // +0x02c
+	uint32          m_dwVideoMem;                           // +0x030
+	LTBOOL          m_bSurfacesLargerThanScreen;            // +0x034
+	D3DDEVICEDESC7  m_Desc;                                 // +0x038
+	D3DPRIMCAPS     m_TriCaps;                              // +0x124
+};
+
+D3DCaps             g_D3DCaps;                              // 0x100622d8
+uint32              g_ZBufferState;                         // 0x10062438
+
+LTBOOL              g_bFullbriteCapable;                    // 0x100622a0
+LTBOOL              g_bLightAddPolyCapable;                 // 0x10062860
+LTBOOL              g_bFogCapable;                          // 0x10062888
+
+// The render states as they were last set (common_stuff.cpp's .bss).
+extern LTBOOL   g_bFogStatesSet;                            // 0x1005df80
+extern LTBOOL   g_bDitherStateSet;                          // 0x1005df84
+extern LTBOOL   g_bFilterStatesSet;                         // 0x1005df88
+extern int32    g_LastFogEnable;                            // 0x1005d560
+extern int32    g_LastFogR, g_LastFogG, g_LastFogB;         // 0x1005dadc..
+extern float    g_LastFogNearZ;                             // 0x1005db68
+extern float    g_LastFogFarZ;                              // 0x1005d380
+extern int32    g_LastTableFog;                             // 0x1005dd78
+extern int32    g_LastDither;                               // 0x1005d970
+extern int32    g_LastBilinear;                             // 0x1005d484
 
 struct FogColor
 {
 	uint8   r, g, b;
 };
-FogColor    g_FogColor;                                     // 0x1005dad8
-float       g_FogColorR, g_FogColorG, g_FogColorB;          // 0x1005d478..
+extern FogColor g_FogColor;                                 // 0x1005dad8
+extern float    g_FogColorR, g_FogColorG, g_FogColorB;      // 0x1005d478..
 
 
 // 0x1001a720 -- a DirectDraw/Direct3D error's description.
@@ -422,11 +482,8 @@ CD3DConVar g_CV_Anisotropic("Anisotropic", 0.0f, LTNULL, LTNULL);    // 0x100624
 
 
 // The fog render states, when the console variables have changed them.
-static void d3d_SetFogStates()
+inline void d3d_SetFogStates()
 {
-	if (!g_pD3DDevice)
-		return;
-
 	// No table fog without the hardware, nor with an empty range.
 	if (!(g_DeviceDesc.dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE))
 		g_CV_FogEnable = 0;
@@ -477,7 +534,7 @@ static void d3d_SetFogStates()
 }
 
 // The dither render state, when it has changed.
-static void d3d_SetDitherState()
+inline void d3d_SetDitherState()
 {
 	if (g_bDitherStateSet && g_LastDither == g_CV_Dither)
 		return;
@@ -491,7 +548,7 @@ static void d3d_SetDitherState()
 }
 
 // The texture filters on both stages.
-static void d3d_SetFilterStates()
+inline void d3d_SetFilterStates()
 {
 	if (!g_pD3DDevice)
 		return;
@@ -525,6 +582,9 @@ static void d3d_SetFilterStates()
 // 0x1001b010 -- the render states the console variables control.
 void d3d_ReadExtraConsoleVariables()
 {
+	if (!g_pD3DDevice)
+		return;
+
 	d3d_SetFogStates();
 	d3d_SetDitherState();
 	d3d_SetFilterStates();
@@ -560,9 +620,9 @@ void d3d_DetectCard()
 	if (!g_pDirectDraw || !g_pStruct)
 		return;
 
-	memset(&id, 0, sizeof(id));
 	g_bCanDoShadows = LTTRUE;
 	g_bNoFullbrites = LTFALSE;
+	memset(&id, 0, sizeof(id));
 
 	if (g_pDirectDraw->GetDeviceIdentifier(&id, 0) != DD_OK)
 		return;
@@ -579,35 +639,38 @@ void d3d_DetectCard()
 	if (hParam && stricmp(g_pStruct->GetParameterValueString(hParam), "Rage128") == 0)
 		goto Rage128;
 
-	if (id.dwVendorId == 0x104C)
+	if (id.dwVendorId != 0x104C)
+	{
+		if (id.dwVendorId == 0x1033)
+		{
+			if (id.dwDeviceId == 0x46 || id.dwDeviceId == 0x2A)
+			{
+PowerVR:
+				g_pStruct->ConsolePrint("POWERVR DETECTED: disabling shadows and fullbrites");
+				g_bCanDoShadows = LTFALSE;
+				g_bNoFullbrites = LTTRUE;
+			}
+		}
+		else if (id.dwVendorId == 0x1002)
+		{
+			if (id.dwDeviceId == 0x5246)
+			{
+Rage128:
+				g_bRage128 = LTTRUE;
+			}
+		}
+		else if (id.dwVendorId == 0x121A)
+		{
+			if (id.dwDeviceId == 5)
+				g_100638c4 = LTFALSE;
+		}
+	}
+	else
 	{
 Permedia2:
 		g_pStruct->ConsolePrint("PERMEDIA 2 DETECTED: disabling lightmapping and shadows");
 		g_bLightmapPages = LTFALSE;
 		g_bCanDoShadows = LTFALSE;
-	}
-	else if (id.dwVendorId == 0x1033)
-	{
-		if (id.dwDeviceId == 0x46 || id.dwDeviceId == 0x2A)
-		{
-PowerVR:
-			g_pStruct->ConsolePrint("POWERVR DETECTED: disabling shadows and fullbrites");
-			g_bCanDoShadows = LTFALSE;
-			g_bNoFullbrites = LTTRUE;
-		}
-	}
-	else if (id.dwVendorId == 0x1002)
-	{
-		if (id.dwDeviceId == 0x5246)
-		{
-Rage128:
-			g_bRage128 = LTTRUE;
-		}
-	}
-	else if (id.dwVendorId == 0x121A)
-	{
-		if (id.dwDeviceId == 5)
-			g_100638c4 = LTFALSE;
 	}
 }
 
@@ -694,6 +757,378 @@ LTBOOL d3d_CreateZBufferAndDevice(RenderStructInit* pInit, GUID guid)
 }
 
 
+// The rest of the device start-up (the other files').
+struct D3DDeviceInfo
+{
+	uint8       m_Reserved00[0x20];
+	GUID*       m_pDriverGUID;                              // +0x20
+};
+
+extern LTBOOL               g_bRunWindowed;                 // 0x1005d538 (common_init.cpp)
+extern int32                g_1005d4a8;                     // 0x1005d4a8 (common_stuff.cpp: blit, not flip)
+extern IDirectDrawSurface7* g_pFrontBuffer;                 // 0x1005d2ac (common_init.cpp)
+extern int32                g_CV_TripleBuffer;              // 0x1005df10 (common_stuff.cpp)
+extern int32                g_CV_Force1Pass;                // 0x1005df18
+extern int32                g_CV_RGBRast;                   // 0x1005df20
+extern int32                g_CV_RefRast;                   // 0x1005df24
+extern int32                g_CV_MMXRast;                   // 0x1005df28
+extern int32                g_CV_TnLRast;                   // 0x1005df2c
+extern LTBOOL               g_bMultiPass;                   // 0x10062278
+
+void    d3d_SetDefaultBlend();                              // 0x100143a0 (d3d_draw.cpp)
+void    d3d_SetEnvMapStage(uint32* pSaved);                 // 0x10025397 (drawmodel_env.cpp)
+void    d3d_UnsetEnvMapStage(uint32* pSaved);               // 0x1002541b
+void    d3d_SetDetailTextureOp();                           // 0x1000a1ea (drawworld.cpp)
+void    d3d_UnsetDetailTextureOp();                         // 0x1000a20e
+void    d3d_SetLightmapStages();                            // 0x10036498 (drawlightmaps.cpp)
+LTBOOL  d3d_InitTextures();                                 // 0x1001f930 (d3d_texture.cpp)
+HRESULT WINAPI d3d_EnumAttachedCallback(LPDIRECTDRAWSURFACE7 pSurface,
+	LPDDSURFACEDESC2 pDesc, LPVOID pContext);               // 0x1001c300
+
+LTBOOL  d3d_LoadGammaRamp(const char* pFilename);           // 0x1001ca40
+
+LTBOOL              g_bCanValidateEnvMap;                   // 0x100622a4
+uint32              g_TextureStage;                         // 0x100622d0
+uint32              g_iCurTextureStage;                     // 0x100638c0
+float               g_fLightmapOffset;                      // 0x100638b4
+
+// A DDBD_ depth as bits.
+#define DDBD_TO_BITS(dst, depth) \
+	if ((depth) == DDBD_8) \
+		(dst) = 8; \
+	else if ((depth) == DDBD_16) \
+		(dst) = 16; \
+	else if ((depth) == DDBD_24) \
+		(dst) = 24; \
+	else \
+		(dst) = ((depth) == DDBD_32) ? 32 : -1;
+
+// What the device and DirectDraw can do, into g_D3DCaps.
+inline void d3d_ReadDeviceCaps(LPDIRECT3DDEVICE7 pDevice)
+{
+	DDCAPS drvCaps, helCaps;
+	D3DDEVICEDESC7 desc;
+	DDSCAPS2 ddsCaps;
+	DWORD dwTexTotal, dwTexFree;
+	DWORD dwVidTotal, dwVidFree;
+
+	memset(&helCaps, 0, sizeof(helCaps));
+	memset(&drvCaps, 0, sizeof(drvCaps));
+	drvCaps.dwSize = sizeof(drvCaps);
+	helCaps.dwSize = sizeof(helCaps);
+	g_pDirectDraw->GetCaps(&drvCaps, &helCaps);
+
+	g_D3DCaps.m_bSurfacesLargerThanScreen = (drvCaps.dwCaps2 & DDCAPS2_WIDESURFACES) != 0;
+
+	memset(&desc, 0, sizeof(desc));
+	pDevice->GetCaps(&desc);
+
+	memset(&ddsCaps, 0, sizeof(ddsCaps));
+	ddsCaps.dwCaps = DDSCAPS_TEXTURE;
+	g_pDirectDraw->GetAvailableVidMem(&ddsCaps, &dwTexTotal, &dwTexFree);
+
+	memset(&ddsCaps, 0, sizeof(ddsCaps));
+	ddsCaps.dwCaps = DDSCAPS_VIDEOMEMORY;
+	g_pDirectDraw->GetAvailableVidMem(&ddsCaps, &dwVidTotal, &dwVidFree);
+
+	g_D3DCaps.m_bDrawPrim = (desc.dwDevCaps & D3DDEVCAPS_DRAWPRIMTLVERTEX) != 0;
+	g_D3DCaps.m_bVidMemTextures = (desc.dwDevCaps & D3DDEVCAPS_TEXTUREVIDEOMEMORY) != 0;
+	g_D3DCaps.m_bSysMemTextures = (desc.dwDevCaps & D3DDEVCAPS_TEXTURESYSTEMMEMORY) != 0;
+	g_D3DCaps.m_bAGPTextures = (desc.dwDevCaps & D3DDEVCAPS_TEXTURENONLOCALVIDMEM) != 0;
+
+	DDBD_TO_BITS(g_D3DCaps.m_nZBufferBits, desc.dwDeviceZBufferBitDepth)
+	DDBD_TO_BITS(g_D3DCaps.m_nDeviceBits, desc.dwDeviceRenderBitDepth)
+
+	g_D3DCaps.m_bDither = (desc.dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_DITHER) != 0;
+	g_D3DCaps.m_bSrcBlendSrcColor = (desc.dpcTriCaps.dwSrcBlendCaps & D3DPBLENDCAPS_SRCCOLOR) != 0;
+	g_D3DCaps.m_bDestBlendSrcAlpha = (desc.dpcTriCaps.dwDestBlendCaps & D3DPBLENDCAPS_SRCALPHA) != 0;
+	g_D3DCaps.m_bTBlendAdd = (desc.dpcTriCaps.dwTextureBlendCaps & D3DPTBLENDCAPS_ADD) != 0;
+	g_D3DCaps.m_bTBlendModulate = (desc.dpcTriCaps.dwTextureBlendCaps & D3DPTBLENDCAPS_MODULATE) != 0;
+
+	g_D3DCaps.m_dwTextureMem = dwTexTotal;
+	g_D3DCaps.m_dwVideoMem = dwVidTotal;
+
+	g_ZBufferState = D3DZB_TRUE;
+
+	g_D3DCaps.m_Desc = desc;
+	g_D3DCaps.m_TriCaps = desc.dpcTriCaps;
+}
+
+// Can the device add the environment map, and modulate the detail
+// texture, in one pass?
+inline void d3d_TestMultiTexture()
+{
+	uint32 savedStates[2];
+	DWORD nPasses;
+
+	d3d_SetEnvMapStage(savedStates);
+	g_bCanValidateEnvMap = g_pD3DDevice->ValidateDevice(&nPasses) == D3D_OK;
+	d3d_UnsetEnvMapStage(savedStates);
+
+	d3d_SetDetailTextureOp();
+	g_100638c4 = g_pD3DDevice->ValidateDevice(&nPasses) == D3D_OK;
+	if (g_D3DCaps.m_Desc.wMaxSimultaneousTextures < 2)
+		g_100638c4 = LTFALSE;
+	d3d_UnsetDetailTextureOp();
+}
+
+// 0x1001b8d0 -- bring DirectDraw and the Direct3D device up on a driver:
+// the rasterizer, the cooperative level and mode, the surfaces, the
+// device, the viewport, what the device can do and its default states.
+LTBOOL d3d_InitDevice(D3DDeviceInfo* pDevice, RenderStructInit* pInit)
+{
+	GUID deviceGuid;
+	DWORD flags;
+	HLTPARAM hParam;
+	DDSURFACEDESC2 ddsd;
+	DDBLTFX bltFx;
+	D3DVIEWPORT7 viewport;
+	DWORD nLightmapPasses;
+	int i;
+
+	ShowCursor(FALSE);
+
+	if (g_CV_RefRast)
+	{
+		g_pStruct->ConsolePrint("USING DIRECT3D REFERENCE RASTERIZER (SLOOOOOOOW!)");
+		g_1005d2c0 = DDSCAPS_SYSTEMMEMORY;
+		deviceGuid = IID_IDirect3DRefDevice;
+	}
+	else if (g_CV_RGBRast)
+	{
+		g_1005d2c0 = DDSCAPS_SYSTEMMEMORY;
+		deviceGuid = IID_IDirect3DRGBDevice;
+	}
+	else if (g_CV_MMXRast)
+	{
+		g_1005d2c0 = DDSCAPS_SYSTEMMEMORY;
+		deviceGuid = IID_IDirect3DMMXDevice;
+	}
+	else if (g_CV_TnLRast)
+	{
+		deviceGuid = IID_IDirect3DTnLHalDevice;
+	}
+	else
+	{
+		deviceGuid = IID_IDirect3DHALDevice;
+	}
+
+	g_pDirectDraw = LTNULL;
+	if (DirectDrawCreateEx(pDevice->m_pDriverGUID, (void**)&g_pDirectDraw, IID_IDirectDraw7, LTNULL) != DD_OK)
+	{
+		AddDebugMessage(1, "DirectDrawCreateEx failed.");
+		d3d_FreeDevice();
+		return LTFALSE;
+	}
+
+	flags = g_bRunWindowed ? DDSCL_NORMAL : (DDSCL_EXCLUSIVE | DDSCL_ALLOWREBOOT | DDSCL_FULLSCREEN);
+	hParam = g_pStruct->GetParameter("NullRender");
+	if (hParam && g_pStruct->GetParameterValueFloat(hParam) != 0.0f)
+		flags |= DDSCL_NOWINDOWCHANGES;
+
+	if (g_pDirectDraw->SetCooperativeLevel((HWND)pInit->m_hWnd, flags) != DD_OK)
+	{
+		AddDebugMessage(1, "SetCooperativeLevel failed.");
+		d3d_FreeDevice();
+		return LTFALSE;
+	}
+
+	if (!g_bRunWindowed)
+	{
+		if (g_pDirectDraw->SetDisplayMode(pInit->m_Mode.m_Width, pInit->m_Mode.m_Height, pInit->m_Mode.m_BitDepth, 0, 0) != DD_OK)
+		{
+			AddDebugMessage(1, "SetDisplayMode failed.");
+			d3d_FreeDevice();
+			return LTFALSE;
+		}
+	}
+
+	if (g_pDirectDraw->QueryInterface(IID_IDirect3D7, (void**)&g_pD3D) != DD_OK)
+	{
+		AddDebugMessage(1, "QueryInterface(IID_IDirect3D7) failed.. are you running NT 4.0?");
+		d3d_FreeDevice();
+		return LTFALSE;
+	}
+
+	if (g_bRunWindowed || g_1005d4a8)
+	{
+		// A plain primary, a separate 3D render surface and a clipper.
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+		if (g_pDirectDraw->CreateSurface(&ddsd, &g_pFrontBuffer, LTNULL) != DD_OK)
+		{
+			AddDebugMessage(1, "Unable to create a primary surface.");
+			d3d_FreeDevice();
+			return LTFALSE;
+		}
+
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+		ddsd.ddsCaps.dwCaps = g_1005d2c0 | DDSCAPS_3DDEVICE;
+		ddsd.dwBackBufferCount = 0;
+		ddsd.dwWidth = pInit->m_Mode.m_Width;
+		ddsd.dwHeight = pInit->m_Mode.m_Height;
+		if (g_pDirectDraw->CreateSurface(&ddsd, &g_pPrimarySurface, LTNULL) != DD_OK)
+		{
+			AddDebugMessage(1, "Failed to make rendering surface.");
+			d3d_FreeDevice();
+			return LTFALSE;
+		}
+
+		g_pBackBuffer = g_pPrimarySurface;
+
+		if (g_pDirectDraw->CreateClipper(0, &g_pClipper, LTNULL) == DD_OK)
+		{
+			g_pClipper->SetHWnd(0, (HWND)pInit->m_hWnd);
+			g_pFrontBuffer->SetClipper(g_pClipper);
+		}
+	}
+	else
+	{
+		// A flipping chain.
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX | DDSCAPS_3DDEVICE;
+		ddsd.dwBackBufferCount = g_CV_TripleBuffer ? 2 : 1;
+		if (g_pDirectDraw->CreateSurface(&ddsd, &g_pPrimarySurface, LTNULL) != DD_OK)
+		{
+			if (ddsd.dwBackBufferCount == 2)
+			{
+				AddDebugMessage(0, "Unable to use triple buffering.");
+				ddsd.dwBackBufferCount = 1;
+				if (g_pDirectDraw->CreateSurface(&ddsd, &g_pPrimarySurface, LTNULL) != DD_OK)
+				{
+					AddDebugMessage(1, "Unable to create a primary surface.");
+					d3d_FreeDevice();
+					return LTFALSE;
+				}
+			}
+			else
+			{
+				AddDebugMessage(1, "Unable to create a primary surface.");
+				d3d_FreeDevice();
+				return LTFALSE;
+			}
+		}
+
+		g_pBackBuffer = LTNULL;
+		g_pPrimarySurface->EnumAttachedSurfaces(LTNULL, d3d_EnumAttachedCallback);
+		if (!g_pBackBuffer)
+		{
+			AddDebugMessage(1, "Couldn't get pointer to offscreen surface.");
+			d3d_FreeDevice();
+			return LTFALSE;
+		}
+	}
+
+	// Clear the chain.
+	memset(&bltFx, 0, sizeof(bltFx));
+	bltFx.dwSize = sizeof(bltFx);
+	for (i = 0; i < 4; i++)
+	{
+		g_pBackBuffer->Blt(LTNULL, LTNULL, LTNULL, DDBLT_COLORFILL | DDBLT_WAIT, &bltFx);
+		g_pPrimarySurface->Flip(LTNULL, DDFLIP_WAIT);
+	}
+
+	if (!d3d_CreateZBufferAndDevice(pInit, deviceGuid))
+	{
+		AddDebugMessage(1, "Failed to create device.");
+		d3d_FreeDevice();
+		g_CV_TnLRast = 0;
+		return LTFALSE;
+	}
+
+	memset(&viewport, 0, sizeof(viewport));
+	viewport.dwX = 0;
+	viewport.dwY = 0;
+	viewport.dwWidth = pInit->m_Mode.m_Width;
+	viewport.dwHeight = pInit->m_Mode.m_Height;
+	viewport.dvMinZ = 0.0f;
+	viewport.dvMaxZ = 1.0f;
+	if (g_pD3DDevice->SetViewport(&viewport) != D3D_OK)
+	{
+		AddDebugMessage(1, "IDirect3DDevice::SetCurrentViewport failed.");
+		d3d_FreeDevice();
+		return LTFALSE;
+	}
+
+	d3d_ReadDeviceCaps(g_pD3DDevice);
+
+	// The default states.
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+	g_pD3DDevice->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 1);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGTABLEMODE, D3DFOG_LINEAR);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGENABLE, FALSE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ANTIALIAS, D3DANTIALIAS_NONE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_CULLMODE, D3DCULL_NONE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_COLORKEYENABLE, FALSE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, g_ZBufferState);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, TRUE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZFUNC, D3DCMP_LESSEQUAL);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SPECULARENABLE, FALSE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SHADEMODE, D3DSHADE_GOURAUD);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_TEXTUREPERSPECTIVE, TRUE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DITHERENABLE, TRUE);
+	d3d_SetDefaultBlend();
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FILLMODE, D3DFILL_SOLID);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_CLIPPING, g_CV_UseD3DClip.m_nValue != 0);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_LIGHTING, FALSE);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_EXTENTS, FALSE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_CURRENT);
+
+	d3d_TestMultiTexture();
+
+	g_bFullbriteCapable = !(g_D3DCaps.m_TriCaps.dwRasterCaps & D3DPRASTERCAPS_ZBUFFERLESSHSR);
+	g_bFogCapable = g_bFullbriteCapable && (g_D3DCaps.m_TriCaps.dwSrcBlendCaps & D3DPBLENDCAPS_SRCALPHA);
+	g_bLightmapPages = (g_D3DCaps.m_TriCaps.dwSrcBlendCaps & D3DPBLENDCAPS_ZERO) &&
+		(g_D3DCaps.m_TriCaps.dwDestBlendCaps & D3DPBLENDCAPS_SRCCOLOR);
+	g_bLightAddPolyCapable = (g_D3DCaps.m_TriCaps.dwSrcBlendCaps & D3DPBLENDCAPS_ONE) &&
+		(g_D3DCaps.m_TriCaps.dwDestBlendCaps & D3DPBLENDCAPS_ONE);
+
+	// One or two passes for the lightmaps.
+	g_TextureStage = 0;
+	g_iCurTextureStage = 0;
+	g_bMultiPass = g_CV_Force1Pass;
+	if (g_bMultiPass)
+	{
+		d3d_SetLightmapStages();
+		if (g_pD3DDevice->ValidateDevice(&nLightmapPasses) == D3D_OK &&
+			g_D3DCaps.m_Desc.wMaxSimultaneousTextures > 1)
+		{
+			g_TextureStage = 1;
+			AddDebugMessage(0, "Using 1 pass lightmapping!");
+		}
+		else
+		{
+			g_bMultiPass = LTFALSE;
+			AddDebugMessage(0, "Force1Pass doesn't work on this card.  Using 2 pass lightmapping.");
+		}
+	}
+	else
+	{
+		AddDebugMessage(0, "Using 2 pass lightmapping.");
+	}
+
+	d3d_DetectCard();
+	d3d_LoadGammaRamp("lithtech.gam");
+
+	if (!d3d_InitTextures())
+	{
+		d3d_FreeDevice();
+		return LTFALSE;
+	}
+
+	g_fLightmapOffset = 0.5f;
+	return LTTRUE;
+}
+
+
 // 0x1001c300 -- the attached back buffer's enumeration callback.
 HRESULT WINAPI d3d_EnumAttachedCallback(LPDIRECTDRAWSURFACE7 pSurface,
 	LPDDSURFACEDESC2 pDesc, LPVOID pContext)
@@ -766,7 +1201,7 @@ void d3d_RebindWorld(void* pWorld)
 // 0x1001c3f0
 void d3d_ReleaseDevice()
 {
-	d3d_UnoptimizeAll();
+	d3d_TermTextures();
 
 	if (g_pClipper)
 	{
@@ -796,10 +1231,10 @@ void d3d_ReleaseDevice()
 // 0x1001c450
 void d3d_TermSubsystems()
 {
-	sub_1002377f();
-	sub_10018ff0();
-	sub_10030120();
-	sub_10029400();
+	d3d_CanvasPreFrame();
+	d3d_TermDraw();
+	d3d_NullPreFrame();
+	d3d_TermObjectModules();
 
 	delete d3d_GetLMAllocator();
 }
@@ -807,13 +1242,114 @@ void d3d_TermSubsystems()
 // 0x1001c480
 LTBOOL d3d_InitSubsystems()
 {
-	sub_10018f90();
-	sub_10030120();
-	sub_100293d0();
+	d3d_InitDraw();
+	d3d_NullPreFrame();
+	d3d_InitObjectModules();
 
 	new CD3DLMAllocator;
 
 	return LTTRUE;
+}
+
+// The console commands' handlers in the other files.
+void    d3d_ListDevices();                                  // 0x1001172f (common_init.cpp)
+void    d3d_ListTextureFormats();                           // 0x10020690 (d3d_texture.cpp)
+void    d3d_LoadPortalFile(const char* pFilename);          // 0x100442c3
+void    d3d_UnloadPortalFile();                             // 0x1002377f (empty: folded)
+
+#define YESNO(x)    ((x) ? "Yes" : "No")
+
+// LISTDEVICECAPS: the driver and what the device can do.
+inline void d3d_ListDeviceCaps()
+{
+	DDDEVICEIDENTIFIER2 id;
+
+	if (g_pDirectDraw)
+	{
+		memset(&id, 0, sizeof(id));
+		if (g_pDirectDraw->GetDeviceIdentifier(&id, 0) == DD_OK)
+		{
+			g_pStruct->ConsolePrint("---------------------------------------------------------------");
+			g_pStruct->ConsolePrint("Driver: %s", id.szDriver);
+			g_pStruct->ConsolePrint("Description: %s", id.szDescription);
+			g_pStruct->ConsolePrint("Product: 0x%x, Version: 0x%x, SubVersion: 0x%x, Build: 0x%x",
+				HIWORD(id.liDriverVersion.HighPart), LOWORD(id.liDriverVersion.HighPart),
+				HIWORD(id.liDriverVersion.LowPart), LOWORD(id.liDriverVersion.LowPart));
+			g_pStruct->ConsolePrint("VendorID: 0x%x, DeviceID: 0x%x, SubSysID: 0x%x, Revision: 0x%x",
+				id.dwVendorId, id.dwDeviceId, id.dwSubSysId, id.dwRevision);
+			g_pStruct->ConsolePrint("Width: %d, Height: %d, BitDepth: %d",
+				g_ScreenWidth, g_ScreenHeight, g_ScreenFormat.m_eType == BPP_16 ? 16 : 32);
+			g_pStruct->ConsolePrint("---------------------------------------------------------------");
+		}
+	}
+
+	g_pStruct->ConsolePrint("Portals: %s", YESNO(g_ZBufferFormat.dwStencilBitDepth > 0));
+	g_pStruct->ConsolePrint("Model fullbrites: %s, Gouraud fullbrites: %s",
+		YESNO(g_bFullbriteCapable), YESNO(g_bFogCapable));
+	g_pStruct->ConsolePrint("Lightmap capable: %s, Light add poly: %s",
+		YESNO(g_bLightmapPages), YESNO(g_bLightAddPolyCapable));
+	g_pStruct->ConsolePrint("DrawPrim: %s, Dither: %s",
+		YESNO(g_D3DCaps.m_bDrawPrim), YESNO(g_D3DCaps.m_bDither));
+	g_pStruct->ConsolePrint("Src blend SRCCOLOR: %s, Dest blend SRCALPHA: %s",
+		YESNO(g_D3DCaps.m_bSrcBlendSrcColor), YESNO(g_D3DCaps.m_bDestBlendSrcAlpha));
+	g_pStruct->ConsolePrint("TBlend Add: %s, TBlend Modulate (gouraud): %s",
+		YESNO(g_D3DCaps.m_bTBlendAdd), YESNO(g_D3DCaps.m_bTBlendModulate));
+	g_pStruct->ConsolePrint("LINEARMIPNEAREST supported: %s",
+		YESNO(g_D3DCaps.m_TriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_LINEARMIPNEAREST));
+	g_pStruct->ConsolePrint("Square textures only: %s, Vid mem textures: %s",
+		YESNO(g_D3DCaps.m_TriCaps.dwTextureCaps & D3DPTEXTURECAPS_SQUAREONLY), YESNO(g_D3DCaps.m_bVidMemTextures));
+	g_pStruct->ConsolePrint("System mem textures: %s, AGP mem textures: %s",
+		YESNO(g_D3DCaps.m_bSysMemTextures), YESNO(g_D3DCaps.m_bAGPTextures));
+	g_pStruct->ConsolePrint("Texture Memory: %d, Video Memory: %d",
+		g_D3DCaps.m_dwTextureMem, g_D3DCaps.m_dwVideoMem);
+	g_pStruct->ConsolePrint("ZBuffer Depth: %d, Device Depth: %d",
+		g_D3DCaps.m_nZBufferBits, g_D3DCaps.m_nDeviceBits);
+	g_pStruct->ConsolePrint("Z-test: %s, Table fog: %s, Palette alpha: %s",
+		YESNO(g_D3DCaps.m_TriCaps.dwRasterCaps & D3DPRASTERCAPS_ZTEST),
+		YESNO(g_D3DCaps.m_TriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE),
+		YESNO(g_D3DCaps.m_TriCaps.dwTextureCaps & D3DPTEXTURECAPS_ALPHAPALETTE));
+	g_pStruct->ConsolePrint("Max texture size: (%d x %d)",
+		g_D3DCaps.m_Desc.dwMaxTextureWidth, g_D3DCaps.m_Desc.dwMaxTextureHeight);
+	g_pStruct->ConsolePrint("Surfaces larger than screen: %s",
+		YESNO(g_D3DCaps.m_bSurfacesLargerThanScreen));
+}
+
+// 0x1001c4b0 -- the renderer's console commands.
+void d3d_RenderCommand(int argc, char** argv)
+{
+	if (argc <= 0)
+		return;
+
+	if (stricmp(argv[0], "LISTDEVICES") == 0)
+	{
+		d3d_ListDevices();
+	}
+	else if (stricmp(argv[0], "LISTTEXTUREFORMATS") == 0)
+	{
+		d3d_ListTextureFormats();
+	}
+	else if (stricmp(argv[0], "LISTDEVICECAPS") == 0)
+	{
+		d3d_ListDeviceCaps();
+	}
+	else if (stricmp(argv[0], "FREETEXTURES") == 0)
+	{
+		d3d_FreeAllTextures();
+	}
+	else if (stricmp(argv[0], "LOADGAMMA") == 0)
+	{
+		if (argc != 2)
+			g_pStruct->ConsolePrint("Usage: loadgamma <filename>");
+		else
+			d3d_LoadGammaRamp(argv[1]);
+	}
+	else if (stricmp(argv[0], "PortalFile") == 0)
+	{
+		if (argc >= 2)
+			d3d_LoadPortalFile(argv[1]);
+		else
+			d3d_UnloadPortalFile();
+	}
 }
 
 // 0x1001c980
@@ -852,7 +1388,7 @@ LTBOOL d3d_End3D()
 		{
 			g_pBackBuffer->Restore();
 			g_pZBuffer->Restore();
-			d3d_OnSurfacesRestored();
+			d3d_FreeAllTextures();
 		}
 	}
 
@@ -863,4 +1399,41 @@ LTBOOL d3d_End3D()
 LTBOOL d3d_IsIn3D()
 {
 	return g_bIn3D;
+}
+
+// 0x1001ca40 -- LOADGAMMA: set the primary surface's gamma ramp from a
+// file (the three 256-entry tables of a DDGAMMARAMP, as written).
+LTBOOL d3d_LoadGammaRamp(const char* pFilename)
+{
+	DDGAMMARAMP ramp;
+	LPDIRECTDRAWGAMMACONTROL pGamma;
+	FILE* fp;
+
+	if (!pFilename)
+		return LTFALSE;
+
+	fp = fopen(pFilename, "r");
+	if (!fp)
+		return LTFALSE;
+
+	if (fread(&ramp, sizeof(ramp), 1, fp) != 1)
+	{
+		fclose(fp);
+		return LTFALSE;
+	}
+
+	fclose(fp);
+
+	if (g_bRunWindowed)
+	{
+		if (g_pFrontBuffer->QueryInterface(IID_IDirectDrawGammaControl, (void**)&pGamma) != DD_OK)
+			return LTFALSE;
+	}
+	else
+	{
+		if (g_pPrimarySurface->QueryInterface(IID_IDirectDrawGammaControl, (void**)&pGamma) != DD_OK)
+			return LTFALSE;
+	}
+
+	return pGamma->SetGammaRamp(0, &ramp) == DD_OK;
 }

@@ -64,7 +64,7 @@ those functions make up.
 |---|---|--:|--:|---|--:|--:|
 | `lithtech.exe` | the engine | 3,837 / 4,389 | 577,173 / 748,207 bytes | `███████████████░░░░░` 77.1% | 47 | 566 |
 | `server.dll` | the server | 2,751 / 3,144 | 315,532 / 389,286 bytes | `████████████████░░░░` 81.0% | 45 | 402 |
-| `d3d.ren` | the Direct3D renderer | 1,027 / 1,288 | 104,696 / 240,249 bytes | `████████░░░░░░░░░░░░` 43.5% | 74 | 731 |
+| `d3d.ren` | the Direct3D renderer | 1,071 / 1,288 | 123,838 / 240,249 bytes | `██████████░░░░░░░░░░` 51.5% | 39 | 727 |
 | `cdaudio.dll` | the engine's CD-audio music driver | 80 / 81 | 5,890 / 6,194 bytes | `███████████████████░` 95.0% | 0 | 0 |
 | `Launch.dll` | the engine's command-line helper | 28 / 28 | 5,599 / 5,599 bytes | `████████████████████` 100.0% | 0 | 0 |
 | `PrimalHunt.exe` | Primal Hunt's launcher | 175 / 195 | 27,068 / 27,317 bytes | `███████████████████░` 99.0% | 0 | 0 |
@@ -87,7 +87,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **37,439 / 55,441** | **6,890,411 / 10,779,204 bytes** | `████████████░░░░░░░░` **63.9%** | **8,187** | **5,468** |
+| **All** | | **37,483 / 55,441** | **6,909,553 / 10,779,204 bytes** | `████████████░░░░░░░░` **64.1%** | **8,152** | **5,464** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

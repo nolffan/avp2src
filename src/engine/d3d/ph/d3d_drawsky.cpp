@@ -71,7 +71,7 @@ class CountAdder
 // ---------------------------------------------------------------------- //
 //  The structures, as this file reads them.
 // ---------------------------------------------------------------------- //
-struct SceneContext
+struct ViewParams
 {
 	uint8		m_pad_000[0x9c];
 	LTMatrix	m_mCamera;                              // +0x09c
@@ -161,7 +161,7 @@ struct RenderStruct
 };
 
 extern RenderStruct*	g_pStruct;                      // 0x1005df08
-extern SceneContext		g_SceneContext;                 // 0x1005b790
+extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
 extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
 extern int32			g_bUseD3DClip;                  // 0x100622b0
@@ -173,9 +173,9 @@ extern int32			g_CV_EnableSky;                 // 0x1004a75c
 extern float			g_CV_SkyScale;                  // 0x1004a738
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
-extern void		d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, SceneContext *pContext,
+extern void		d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, ViewParams *pContext,
 					float fMinX, float fMinY, float fMaxX, float fMaxY);  // 0x10010383
-extern int32	d3d_InitSceneContext(SceneContext *pContext, ViewBox *pBox,
+extern int32	d3d_InitSceneContext(ViewParams *pContext, ViewBox *pBox,
 					float fMinX, float fMinY, float fMaxX, float fMaxY,
 					LTMatrix *pCamera, LTVector vScale);         // 0x100104cb
 extern void		d3d_DrawSkyObjects();                   // 0x1001a2a1
@@ -211,7 +211,7 @@ float			g_SkyMinX;                              // 0x1007944c
 float			g_SkyMaxY;                              // 0x100787a0
 float			g_SkyMaxX;                              // 0x100787a4
 
-SceneContext	g_SkyContext;                           // 0x10079450
+ViewParams	g_SkyContext;                           // 0x10079450
 
 
 // Clip a polygon against the planes in nClipFlags, into the clip scratch
@@ -310,7 +310,7 @@ LTBOOL d3d_GetSkyPortalExtents()
 		pPoly = ppPoly[iPoly];
 
 		for (i=0; i < pPoly->m_nVerts; i++)
-			MatVMul_H(&verts[i].m_vPos, &g_SceneContext.m_mWorldToCamera, pPoly->m_Verts[i].m_Vec);
+			MatVMul_H(&verts[i].m_vPos, &g_ViewParams.m_mWorldToCamera, pPoly->m_Verts[i].m_Vec);
 
 		pVerts = verts;
 		nVerts = pPoly->m_nVerts;
@@ -320,7 +320,7 @@ LTBOOL d3d_GetSkyPortalExtents()
 		pEnd = &pVerts[nVerts];
 		for (pVert=pVerts; pVert != pEnd; pVert++)
 		{
-			MatVMul_H(&vScreen, &g_SceneContext.m_mFullTransform, &pVert->m_vPos);
+			MatVMul_H(&vScreen, &g_ViewParams.m_mFullTransform, &pVert->m_vPos);
 
 			if (g_SkyMinX >= vScreen.x)
 				g_SkyMinX = vScreen.x;
@@ -363,11 +363,11 @@ void d3d_DrawSky()
 	if (!d3d_GetSkyPortalExtents())
 		return;
 
-	d3d_InitViewBox(&box, 0.01f, g_pFrameCounters->m_fSkyFarZ, &g_SceneContext,
+	d3d_InitViewBox(&box, 0.01f, g_pFrameCounters->m_fSkyFarZ, &g_ViewParams,
 		g_SkyMinX, g_SkyMinY, g_SkyMaxX, g_SkyMaxY);
 
-	mCamera = g_SceneContext.m_mCamera;
-	vPos = g_SceneContext.m_SkyViewPos;
+	mCamera = g_ViewParams.m_mCamera;
+	vPos = g_ViewParams.m_SkyViewPos;
 	mCamera.m[0][3] = vPos.x;
 	mCamera.m[1][3] = vPos.y;
 	mCamera.m[2][3] = vPos.z;

@@ -460,6 +460,28 @@ calling through a null pointer.
 
 Not fixed yet (the renderer has no modern build).
 
+### The models' specular pass sets its texture-stage states and undoes them at once
+
+d3d.ren 0x100254d8 (`CD3DModelDraw::DrawPasses`,
+src/engine/d3d/ph/drawmodel_env.cpp). The specular pass writes its
+stage-1 states (colour op ADD, texture and current arguments, clamp
+addressing) as unnamed `StageStateSet` temporaries. Each one restores the
+state it set as soon as it is made, so the pass draws with stage 1 as it
+was before. These should be named objects that live until the draw is
+done.
+
+Not fixed yet (the renderer has no modern build).
+
+### A screen-space lightmap polygon is copied without checking its vertex count
+
+d3d.ren 0x10036282 (`d3d_DrawScreenLMPoly`,
+src/engine/d3d/ph/drawlightmaps.cpp). The polygon's vertices are copied
+into a 64-entry stack buffer without testing the count. The world-space
+lightmap draw beside it (0x10035e34) does test its count. A polygon of
+more than 64 vertices overruns the stack.
+
+Not fixed yet (the renderer has no modern build).
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

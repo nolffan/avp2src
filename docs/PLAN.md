@@ -463,13 +463,15 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   own flags (`ph/<name>.mk`), the nolfsrc originals kept for AvP2's Intel
   build behind `#ifndef PRIMAL_HUNT`. Round one wrote 28 of them, which
   took d3d.ren to 730 identical; round two 13 more (850); round three
-  ten more and much of the rest (1,027). Two of the map's
+  ten more and much of the rest (1,027); round four the big device and
+  draw functions it could reach (1,071). Two of the map's
   TUs (TU21, TU33) are two objects each: two files share the position, in
   name order. There is no StdLith header difference: where retail calls
   CMoArray's or _CVector's small members out of line, it is VC6's
   inliner (in TU30, an element type's constructor), not the header. Retail is /Ob2 where a file's
   initialisers show it. TU35 is four objects (fullintersectline, gdenum, geomroutines,
-  intersect_line). `ph/ph_decls.h` holds the cross-file declarations
+  intersect_line). The renderer's shared draw state (0x1005b790) is
+  `ViewParams g_ViewParams` in every file. `ph/ph_decls.h` holds the cross-file declarations
   proven against their definitions. Still open: the large unwritten draw
   functions (TU01/TU03's transform and lighting, TU06, TU07's DrawModel,
   TU10's d3d_InitSceneContext, TU15's RenderScene and its two big

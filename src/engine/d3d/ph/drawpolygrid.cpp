@@ -9,8 +9,15 @@
 //  /Ob2: the console variable's initialiser is one function (0x1002be40),
 //  not a jmp thunk and its body.
 //
-//  Not yet written here: the polygrid draw (0x1002be60, 5,473 bytes) and
-//  0x1002d6b0.
+//  Not yet written here: the polygrid draw (0x1002be60, 5,473 bytes; AvP2
+//  1.0.9.6's 0x1005a960, w40_1005a960_qipni.cpp, with Primal Hunt's
+//  EnvMapPolyGrids pass added).
+//
+//  Near: 0x1002d6b0, the environment map normals (AvP2's identical
+//  0x1005a630, in the same file).  Ours expands _CVector::Norm (and its
+//  Mag) where retail calls it (0x1000e62a): the /Ob2 budget, which also
+//  leaves ours a 0xb0 frame against retail's 0xa0 and a different
+//  register for the grid object.
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
@@ -40,15 +47,22 @@ struct LTObject
 	uint32		m_Flags2;                               // +0x08c
 	uint8		m_pad_090[0x97 - 0x90];
 	uint8		m_ColorA;                               // +0x097
+	uint8		m_pad_098[0x1b0 - 0x98];
+	int8*		m_Data;                                 // +0x1b0 the heights
+	uint8		m_pad_1b4[0x1f8 - 0x1b4];
+	uint32		m_Width;                                // +0x1f8
+	uint32		m_Height;                               // +0x1fc
 };
 
-struct SceneContext
+struct ViewParams
 {
-	uint8		m_pad_000[0x4d4];
+	uint8		m_pad_000[0x4b4];
+	LTVector	m_Pos;                                  // +0x4b4
+	uint8		m_pad_4c0[0x4d4 - 0x4c0];
 	uint32		m_bDrawHidden;                          // +0x4d4
 };
 
-typedef void (*DrawObjectFn)(SceneContext* pContext, LTObject* pObject);
+typedef void (*DrawObjectFn)(ViewParams* pContext, LTObject* pObject);
 
 extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13
 
@@ -68,10 +82,10 @@ public:
 		}
 	}
 
-	void		Draw(SceneContext* pContext, DrawObjectFn fn);  // 0x100397e0
+	void		Draw(ViewParams* pContext, DrawObjectFn fn);  // 0x100397e0
 
 	template<class T>
-	void		DrawFiltered(SceneContext* pContext, DrawObjectFn fn, T* pTester, BaseObjectSet* pRejects)
+	void		DrawFiltered(ViewParams* pContext, DrawObjectFn fn, T* pTester, BaseObjectSet* pRejects)
 	{
 		uint32 i;
 		LTObject* pObject;
@@ -121,14 +135,31 @@ public:
 };
 
 extern ObjectDrawList*	g_pObjectDrawList;              // 0x100713cc
-extern SceneContext		g_SceneContext;                 // 0x1005b790
+extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern int32			g_CV_DrawPolyGrids;             // 0x1004a768
 extern LTMatrix			g_mFullTransform;               // 0x1005b92c
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 extern void			dfree(void* ptr);                   // 0x10013ac5
 
-extern void d3d_DrawPolyGrid(SceneContext* pContext, LTObject* pObject);  // 0x1002be60
+extern void d3d_DrawPolyGrid(ViewParams* pContext, LTObject* pObject);  // 0x1002be60
+
+
+// A polygrid vertex (FVF 0x2c4, two texture coordinate pairs).
+struct PolyGridVert                                     // 0x28 bytes
+{
+	LTVector	m_Vec;                                  // +0x00
+	float		m_RHW;                                  // +0x0c
+	uint32		m_Color;                                // +0x10
+	uint32		m_Specular;                             // +0x14
+	float		m_TU1, m_TV1;                           // +0x18 the environment map's
+	float		m_TU2, m_TV2;                           // +0x20
+};
+
+extern void		d3d_CalcEnvMapUV(const LTVector* pEye, const LTVector* pPos,
+					const LTVector* pNormal, float* pU, float* pV);  // 0x100115fe
+
+extern PolyGridVert*	g_pPolyGridVerts;               // 0x100762e8
 
 
 // ---------------------------------------------------------------------- //
@@ -187,6 +218,81 @@ int d3d_ClassifyTriangle(uint32 nClipMask, uint32* pOutMask,
 
 
 // ---------------------------------------------------------------------- //
+//  0x1002d6b0 -- the grid's normals, from its heights, and their
+//  environment map coordinates.  Each vertex's height (signed, a byte)
+//  gives two central differences, along the row and down the column (one
+//  sided on the edges), which tilt pUp by pRight and pForward.
+//
+//  RETAIL BUG: the interior differences are previous minus next
+//  (h[-W] - h[W], h[-1] - h[1]), and so is the last row's and column's
+//  (h[-W] - h[0], h[-1] - h[0]), but the first row's and column's are next
+//  minus this (h[W] - h[0], h[1] - h[0]): the wrong sign, so the edge
+//  normals there tilt the wrong way.  AvP2 1.0.9.6 has the same code.
+// ---------------------------------------------------------------------- //
+void d3d_SetupPolyGridEnvMap(LTObject* pObject, LTVector* pUp, LTVector* pRight, LTVector* pForward)
+{
+	PolyGridVert *pRowV, *pV;
+	int8 *pRowH, *pH;
+	uint32 x, y;
+	float fUp, fInvForward, fInvRight;
+	LTVector vF, vR, vN;
+
+	pRowV = g_pPolyGridVerts;
+	pRowH = pObject->m_Data;
+
+	fUp = pUp->MagSqr() / 128.0f;
+	fInvForward = 1.0f / pForward->Mag();
+	fInvRight = 1.0f / pRight->Mag();
+
+	y = pObject->m_Height;
+	while (y--)
+	{
+		pV = pRowV;
+		pH = pRowH;
+
+		x = pObject->m_Width;
+		while (x--)
+		{
+			if (y < pObject->m_Height - 1)
+			{
+				if (y > 0)
+					vF = *pForward * ((pH[-(int32)pObject->m_Width] - pH[pObject->m_Width]) * fInvForward * fUp * 0.5f);
+				else
+					vF = *pForward * ((pH[-(int32)pObject->m_Width] - pH[0]) * fInvForward * fUp * 0.5f);
+			}
+			else
+			{
+				vF = *pForward * ((pH[pObject->m_Width] - pH[0]) * fInvForward * fUp * 0.5f);
+			}
+
+			if (x < pObject->m_Width - 1)
+			{
+				if (x > 0)
+					vR = *pRight * ((pH[-1] - pH[1]) * fInvRight * fUp * 0.5f);
+				else
+					vR = *pRight * ((pH[-1] - pH[0]) * fInvRight * fUp * 0.5f);
+			}
+			else
+			{
+				vR = *pRight * ((pH[1] - pH[0]) * fInvRight * fUp * 0.5f);
+			}
+
+			vN = vF + (vR + *pUp);
+			vN.Norm();
+
+			d3d_CalcEnvMapUV(&g_ViewParams.m_Pos, &pV->m_Vec, &vN, &pV->m_TU1, &pV->m_TV1);
+
+			pV++;
+			pH++;
+		}
+
+		pRowV += pObject->m_Width;
+		pRowH += pObject->m_Width;
+	}
+}
+
+
+// ---------------------------------------------------------------------- //
 //  0x1002daf0 -- the OT_POLYGRID ProcessObject handler.
 // ---------------------------------------------------------------------- //
 void d3d_ProcessPolyGrid(LTObject *pObject)
@@ -212,13 +318,13 @@ void d3d_DrawSolidPolyGrids()
 		VisibleSet* pSet = d3d_GetVisibleSet();
 		Tester_PolyGrid tester;
 
-		pSet->m_SolidPolyGrids.DrawFiltered(&g_SceneContext, d3d_DrawPolyGrid, &tester,
+		pSet->m_SolidPolyGrids.DrawFiltered(&g_ViewParams, d3d_DrawPolyGrid, &tester,
 			&pSet->m_TranslucentPolyGrids);
 	}
 }
 
 
-static void d3d_QueuePolyGrid(SceneContext* pContext, LTObject* pObject);
+static void d3d_QueuePolyGrid(ViewParams* pContext, LTObject* pObject);
 
 // ---------------------------------------------------------------------- //
 //  0x1002dc20
@@ -226,11 +332,11 @@ static void d3d_QueuePolyGrid(SceneContext* pContext, LTObject* pObject);
 void d3d_DrawTranslucentPolyGrids()
 {
 	if (g_CV_DrawPolyGrids)
-		d3d_GetVisibleSet()->m_TranslucentPolyGrids.Draw(&g_SceneContext, d3d_QueuePolyGrid);
+		d3d_GetVisibleSet()->m_TranslucentPolyGrids.Draw(&g_ViewParams, d3d_QueuePolyGrid);
 }
 
 // 0x1002dc50
-static void d3d_QueuePolyGrid(SceneContext* pContext, LTObject* pObject)
+static void d3d_QueuePolyGrid(ViewParams* pContext, LTObject* pObject)
 {
 	g_pObjectDrawList->Add(pObject, d3d_DrawPolyGrid);
 }
@@ -240,7 +346,7 @@ static void d3d_QueuePolyGrid(SceneContext* pContext, LTObject* pObject)
 //  0x1002dc70 / 0x1002dc90 -- the module's init and term: the shared
 //  vertex and index buffers.
 // ---------------------------------------------------------------------- //
-void*	g_pPolyGridVerts;                               // 0x100762e8
+PolyGridVert*	g_pPolyGridVerts;                       // 0x100762e8
 uint32	g_nPolyGridVerts;                               // 0x10075ee0
 void*	g_pPolyGridIndices;                             // 0x100762f0
 uint32	g_nPolyGridIndices;                             // 0x10075ee4
@@ -267,13 +373,6 @@ void d3d_PolyGridModuleTerm()
 // ---------------------------------------------------------------------- //
 //  0x1002dcd0 -- project polygrid vertices (0x28 bytes apart) in place.
 // ---------------------------------------------------------------------- //
-struct PolyGridVert
-{
-	LTVector	m_Vec;                                  // +0x00
-	float		m_RHW;                                  // +0x0c
-	uint8		m_pad_10[0x28 - 0x10];
-};
-
 void d3d_TransformPolyGridVerts(PolyGridVert* pVerts, uint32 nVerts)
 {
 	for (; nVerts; nVerts--)

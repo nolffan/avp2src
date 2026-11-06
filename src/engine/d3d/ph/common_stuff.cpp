@@ -159,6 +159,25 @@ int32 g_CV_DrawFlat;                             // 0x1005df74
 int32 g_CV_LightmapsOnly;                        // 0x1005df78
 int32 g_CV_GroupOffset[10];                      // 0x1005d7dc
 
+// The render states d3d_ReadExtraConsoleVariables (d3d_init.cpp) last set.
+struct FogColor
+{
+	uint8   r, g, b;
+};
+
+LTBOOL   g_bFogStatesSet;                        // 0x1005df80
+LTBOOL   g_bDitherStateSet;                      // 0x1005df84
+LTBOOL   g_bFilterStatesSet;                     // 0x1005df88
+int32    g_LastFogEnable;                        // 0x1005d560
+int32    g_LastFogR, g_LastFogG, g_LastFogB;     // 0x1005dadc..
+float    g_LastFogNearZ;                         // 0x1005db68
+float    g_LastFogFarZ;                          // 0x1005d380
+int32    g_LastTableFog;                         // 0x1005dd78
+int32    g_LastDither;                           // 0x1005d970
+int32    g_LastBilinear;                         // 0x1005d484
+FogColor g_FogColor;                             // 0x1005dad8
+float    g_FogColorR, g_FogColorG, g_FogColorB;  // 0x1005d478..
+
 
 // ======================================================================= //
 //  The console variables, in the order of their initialisers.

@@ -236,7 +236,7 @@ struct FrameCounters
 };
 
 // The sky's view (TU33's).
-struct SceneContext
+struct ViewParams
 {
 	uint8		m_pad_000[0x15c];
 	LTMatrix	m_mWorldToCamera;                       // +0x15c
@@ -257,19 +257,19 @@ extern float		g_CV_SkyFogFarZ;                    // 0x1005d7d8
 extern uint32		g_nSkyLightsApplied;                // 0x1005c164
 extern LTVector		g_vGlobalLightColor;                // 0x1005b780
 extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
-extern SceneContext	g_SkyContext;                       // 0x10079450
+extern ViewParams	g_SkyContext;                       // 0x10079450
 extern void			(__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e6d8
 
 extern void		dd_ConsolePrint(const char* pMsg, ...);  // 0x10013ade
 extern void		d3d_TransformToCamera(TLVertex* pVert, LTMatrix* pMat);  // 0x10008719
 extern LTBOOL	d3d_ClipTLVertsRC(uint32 clipFlags, TLVertex** ppVerts, int* pnVerts);  // 0x1000af61
-extern void		d3d_ProjectTLVert(TLVertex* pVert, SceneContext* pContext);  // 0x1002739d
+extern void		d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pContext);  // 0x1002739d
 extern int		d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
 extern void		d3d_DisableTexture(uint32 iStage);      // 0x1000a22b
 extern void		d3d_SetTranslucentObjectStates(LTBOOL bAdditive);  // 0x10014620
 extern void		d3d_UnsetTranslucentObjectStates(LTBOOL bChangeZ);  // 0x10014870
-extern void		d3d_DrawPolyGrid(SceneContext* pContext, LTObject* pObject);  // 0x1002be60
-extern void		d3d_DrawSprite(SceneContext* pContext, LTObject* pObject);  // 0x1002e420
+extern void		d3d_DrawPolyGrid(ViewParams* pContext, LTObject* pObject);  // 0x1002be60
+extern void		d3d_DrawSprite(ViewParams* pContext, LTObject* pObject);  // 0x1002e420
 
 void		d3d_LightSkyPoly(RenderPoly* pPoly, TLVertex* pVerts, uint32 nVerts);
 

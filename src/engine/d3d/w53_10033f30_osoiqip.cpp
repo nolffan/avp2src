@@ -348,6 +348,7 @@ void sub_10033f30(D3DRenderData* pData)
 //     the source type tested first;
 //   * the tile loop re-reads pData->m_pOptimized each time round.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT
 LTBOOL sub_10033fa0(D3DRenderData* pData, void* pUnknown, uint32 nColorKey)
 {
 	LTRect          rc;
@@ -553,6 +554,7 @@ LTBOOL sub_10033fa0(D3DRenderData* pData, void* pUnknown, uint32 nColorKey)
 
 	return LTFALSE;
 }
+#endif // Primal Hunt: ph/d3d_optimizedsurface.cpp
 
 
 // ---------------------------------------------------------------------- //
