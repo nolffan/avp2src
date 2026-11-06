@@ -69,7 +69,11 @@ END
 // TEXT
 //
 
+#ifdef PRIMAL_HUNT
+CREDITS                 TEXT    DISCARDABLE     "phcredits.txt"
+#else
 CREDITS                 TEXT    DISCARDABLE     "credits.txt"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -85,8 +89,16 @@ IDC_POINTER             CURSOR  DISCARDABLE     "arrow.cur"
 
 STRINGTABLE DISCARDABLE 
 BEGIN
+#ifdef PRIMAL_HUNT
+    IDS_VERSION             "1.0.2.2"
+#else
     IDS_VERSION             "1.0.9.6"
+#endif
+#ifdef PRIMAL_HUNT
+    IDS_TITLE_MAINMENU      "Aliens vs. Predator 2: Primal Hunt"
+#else
     IDS_TITLE_MAINMENU      "Aliens vs. Predator 2"
+#endif
     IDS_TITLE_SINGLE        "Single Player"
     IDS_TITLE_OPTIONS       "Options"
     IDS_TITLE_LOADGAME      "Load Game"
@@ -1714,7 +1726,11 @@ BEGIN
     IDS_MOTD_SYS_TITLE      "--- System Message of the Day ---"
     IDS_MOTD_GAME_TITLE     "--- Game Message of the Day ---"
     IDS_VERSION_CHECK_TITLE "--- Checking Game Version ---"
+#ifdef PRIMAL_HUNT
+    IDS_VERSION_CHECK_DESC  "   There may be an updated version of Primal Hunt that is required for internet play. If a new version is found, you'll be asked if you would like to update."
+#else
     IDS_VERSION_CHECK_DESC  "   There may be an updated version of AVP2 that is required for internet play. If a new version is found, you'll be asked if you would like to update."
+#endif
     IDS_VC_FAILED_TITLE     "--- Failed Version Check ---"
     IDS_VC_FAILED_DESC      "   The version checking process has failed. Your internet connection may be down, or there may be a problem with our verification servers. Please make sure you are connected to the internet and try again.\n   If the problem persists, please try again later. For now you will be limited to play over a LAN connection."
     IDS_VC_RPATCH_TITLE     "--- Required Game Update ---"
@@ -2778,7 +2794,11 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_DIALOGUE_10736      "I like brave men."
     IDS_DIALOGUE_10737      "Really?"
+#ifdef PRIMAL_HUNT
+    IDS_DIALOGUE_10738      "Men like my fiance, Dimitri."
+#else
     IDS_DIALOGUE_10738      "Men like my fiance, Dimetri."
+#endif
     IDS_DIALOGUE_10739      "Your fiance? Man, my luck never changes."
     IDS_DIALOGUE_10740      "Don't worry. He is gone. He was outside the Pods when the system went down. A casualty."
     IDS_DIALOGUE_10741      "Oh. --- I'm sorry to hear that."
@@ -4134,7 +4154,11 @@ BEGIN
     IDS_UNKNOWN             "{Unknown}"
     IDS_HOSTCONFIRM         "More than 8 players is recommend for dedicated servers only. Would you still like to host this game?"
     IDS_DIRSERVER_TITLE     "--- Registering with Servers ---"
+#ifdef PRIMAL_HUNT
+    IDS_DIRSERVER_TEXT      "   Aliens vs. Predator 2: Primal Hunt is now registering with the multiplayer directory servers... this may take several minutes depending on connection speeds and the amount of network traffic.\n\n   The longest delays may occur if your internet connection is not responding. If an error occurs, please make sure you are connected to the internet."
+#else
     IDS_DIRSERVER_TEXT      "   Aliens vs. Predator 2 is now registering with the multiplayer directory servers... this may take several minutes depending on connection speeds and the amount of network traffic.\n\n   The longest delays may occur if your internet connection is not responding. If an error occurs, please make sure you are connected to the internet."
+#endif
     IDS_LOWVIOLENCE         "Off"
     IDS_UNNAMED             "unnamed"
     IDS_HELP_SCPASSWORD     "Set the Server Control Password"
@@ -4336,6 +4360,368 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_MP_QUEEN_DEATH      "%1!s! has been killed.  The Queen is dead!"
 END
+
+#ifdef PRIMAL_HUNT
+/////////////////////////////////////////////////////////////////////////////
+//
+// Primal Hunt's own strings (Third Law's, from 29506: their names in the
+// header are not known, so they are given by number)
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29506                   "***THIS IS THE START OF ALL EXPANSION TEXT***"
+    29507                   "**BLANK**"
+    29508                   "Self Destruct"
+    29509                   "Destruct"
+    29510                   "Choose a corporate mission."
+    29511                   "Pickup/Deploy Sentry Gun"
+    29512                   "SentryGun"
+    29513                   "Energy Flechette"
+    29514                   "FIXME: you should never see this text!"
+    29515                   "Weyland-Yutani Debriefing, The Incident, Appendix E - Archeological Studies.\n\nA specific anomaly is apparent in the archeological data recovered from LV-1201.  Of the 13 digs started by the expedition, only one shows any signs of significant divergence.  Dig site #6, often referred to as Zeta Site, exhibits unquestionable evidence of habitation by something other than the Pilot race.  It's likely that this unknown species was the direct inspiration for some of the advancements made by Dr. Eisenberg's expedition."
+    29516                   "Weyland-Yutani Debriefing, The Incident, Appendix D -Dissenting Analysis.\n\nThe data pertaining to Zeta site that has been recovered has been shown to have remarkable similarities to the technology possessed by Rykov's extraordinary ""Predator"" specimens.  Very little of the data concerning these specimens appears to have survived the Incident intact.  That which we do have access to, however, only gives rise to more questions.  What was this third species' relationship to the Pilot ruins in Zeta site?  Why do we find evidence of them at Zeta site rather than one of the more easily accessible, not to mention, defendable, ruins sites on LV-1201?  And perhaps most notable to the investigation at hand, why do they appear to act only after the human expedition defiled Zeta site?"
+    29517                   "Weyland-Yutani Debriefing, The Incident, Appendix M - Rykov's Journal.\n\nThe markings are unmistakable.  Dunya's excursion deeper into Zeta site leaves me with little doubt that Predators once inhabited those ruins.  I find myself impressed that they could build anything so far into bug-infested territory.  Perhaps the bugs weren't there yet.  Or were the Aliens too much even for the Predator's technology to overcome?  It's comforting to be reassured that they make mistakes, too.  After all, they did leave me alive…"
+    29518                   "Weyland-Yutani Debriefing, The Incident, Appendix M - Rykov's Journals.\n\nEisenberg is a fool.  He is so obsessed with his Alien studies that he has completely disregarded the relics at Zeta site.  There's no question about which is more important.  We are hunted.  Deciphering the Alien biology will not save us from what is coming.  If Eisenberg won't use his resources to research Zeta site, I will find someone who will."
+    29519                   "Weyland-Yutani Debriefing, The Incident, Appendix D - Dissenting Analysis.\n\nData recovered from Pod 5, as well as a review of the outpost's communication logs, clearly indicate that an unauthorized message was broadcast over the POC's subspace array on the morning of September 22nd, just hours after Pod 5 was compromised.  While the content of the message remains unknown, it was clearly directed towards the Nodus Secundus system - approximately nine weeks travel time from LV-1201."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29520                   "Weyland-Yutani Debriefing, The Incident, Appendix K - Expeditionary Logs.\n\nAt approximately 12:38am, Survey 12 reported their first significant contact with Aliens from the Zeta hive.  Though resistance had been less than expected during the initial descent, the team was literally within a few dozen feet of Zeta site's central chamber when they were overwhelmed by multiple Praetorians.  Such coordinated resistance would seem to indicate that the Zeta hive Aliens possess an uncharacteristic attachment to Zeta site's central chamber."
+    29521                   "Weyland-Yutani Debriefing, The Incident, Appendix L - LV-1201 Database.\n\nThe Alien hives were able to thrive on LV-1201 for thousands of years by exploiting the planet's indigenous life forms as both carriers and a source of food.  The implications of this are subtle, but staggering nonetheless.  How is it that the Alien lust for victims hasn't managed to destroy the ecosystem completely?  If humans had been the dominant species on LV-1201, it is doubtful the indigenous life would have faired so well."
+    29522                   "Weyland-Yutani Debriefing, The Incident, Appendix A -Summary.\n\nThough the events surrounding Pod 5 certainly cannot be viewed in total isolation from those of the Incident, it is unlikely that they could be directly related to the loss of the POC nine weeks later.  The facts only tell us that the start of Pod 5 events occurred shortly after an unexplained loss of relics from Zeta site, and that after control was regained there were no extraordinary happenings on LV-1201 right up until the Incident occurred."
+    29523                   "Weyland-Yutani Debriefing, The Incident, Appendix M - Rykov's Journals.\n\nIt's unclear exactly why the Zeta hive has shown so little activity compared to the other hives known to exist on LV-1201.  Gagarin has noted that secretion samples collected from the edge of the Zeta hive seem brittle and weak, suggesting that the hive has seen very little activity over the last several centuries."
+    29524                   "Weyland-Yutani Debriefing, The Incident, Appendix I - Scientific Journals.\n\nTests have so far seemed to validate Dr. Stalker's quadruped theory of Alien embryo development - that impregnation of a quadruped, whether an earth or indigenous species, results in the development of the ""runner"" type.  While the mechanism for this change has yet to be identified, it's likely that some host gene segments are capable of exerting greater influence over the Alien development process than others.  It is likely that a sufficiently divergent genetic code would cause significant variations in development of the Alien embryo.  More tests should be conducted."
+    29525                   "Weyland-Yutani Debriefing, The Incident, Appendix J - Security Logs.\n\nSeptember 22nd, 8:40 pm:  Despite repeated attempts, we've been unable to get Pod 5's failsafe system to respond to any type of query, and we must assume that it was disabled in one of the explosions that occurred after the breach.  We have little choice now, teams must be sent in to arm the system manually.  If we're lucky, they'll be able to bring some survivors out with them.  If anyone's still alive up there."
+    29526                   "Weyland-Yutani Debriefing, The Incident, Appendix M - Rykov's Journals.\n\nChekov has taken two teams into Pod 5 in an attempt to locate the Predator and it's prize.  They may think they hunt us, but I intend to find them first.  Recovering the Artifact is only a secondary concern - it is the long-awaited taste of revenge that the Iron Bears hunt now."
+    29527                   "Hunt."
+    29528                   "Follow the Alien prey to discover the location of the hive."
+    29529                   "Pursue the Aliens into the ruins."
+    29530                   "Pursue the Aliens into the hive."
+    29531                   "Hunt the Aliens."
+    29532                   "Activate the Artifact."
+    29533                   "Make your way deeper into the Pilot ruins in the hunt for the Alien Queen."
+    29534                   "Return to the Artifact chamber and defend the outpost."
+    29535                   "Find the egg chambers and reinstate the stasis fields."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29536                   "Return to the Artifact chamber."
+    29537                   "Track the human who stole the Artifact."
+    29538                   "Find the Artifact."
+    29539                   "Hack into the Pod's systems to learn the location of the Artifact."
+    29540                   "Find Storage Area C and retrieve the Artifact."
+    29541                   "You have regained the Artifact.  Find a communications room from which to broadcast a message to any Predator ships that may be in range."
+    29542                   "Proceed into Zeta site and locate the Artifact."
+    29543                   "Place the disruption device into the proper receptacle to disable the Artifact."
+    29544                   "Find an alternate route to the surface."
+    29545                   "Make your way to the extraction zone."
+    29546                   "Proceed to Storage Area C and retrieve the Artifact."
+    29547                   "Proceed to the cargo bay and assist with the evacuation of Pod 5."
+    29548                   "Defend the cargo bay until Dimitri arrives."
+    29549                   "Find a solitary Predator to facehug."
+    29550                   "In order to grow into a drone, a chestburster must eat.  Find a secluded spot with an ample food supply."
+    29551                   "Find the morgue and eat the bodies there."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29552                   "Find the Artifact and return it to the hive."
+    29553                   "Abandon the Artifact and escape Pod 5 before it falls."
+    29554                   "Disable the electricity to the girders and escape."
+    29555                   "Legend"
+    29556                   "Stasis"
+    29557                   "Honor and Death"
+    29558                   "Zeta Site"
+    29559                   "Artifact"
+    29560                   "Severance"
+    29561                   "New Hosts"
+    29562                   "Body Bags"
+    29563                   "Freefall"
+    29564                   "Date: Approximately 500 years prior to the Incident.\nLocation: Somewhere on LV-1201.\n"
+    29565                   "Date: Approximately 8 months later.\nLocation: The Artifact Chamber."
+    29566                   "Date: September 22, 2230.\nTime: 7:32 a.m.\nLocation: Zeta hive egg chamber."
+    29567                   "Date: September 22, 2230.\nTime: 9 weeks prior to the Incident.\nLocation: Nodus Secundus System."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29568                   "Date: September 21, 2230.\nTime: 7:06 p.m.\nLocation: LV-1201, Forward Observation Pod 5."
+    29569                   "Date: September 21, 2230.\nTime: 11:40 p.m.\nLocation: Zeta Site."
+    29570                   "Date: September 22, 2230.\nTime: 7:46 a.m.\nLocation: The Artifact Chamber"
+    29571                   "Date: September 22, 2230.\nTime: 9:34 a.m.\nLocation: Unknown exit from Zeta hive."
+    29572                   "Date: September 22, 2230.\nTime: 11:16 a.m.\nLocation: The walkway connecting Pod 5 to the water pumping station."
+    29573                   "Date: September 22, 2230.\nTime: 11:19 a.m.\nLocation: Crater floor below Pod 5."
+    29574                   "Date: September 23, 2230.\nTime: 7:02 a.m.\nLocation: Beneath the Forward Observation Pods."
+    29575                   "Date: Approximately 500 years prior to the Incident.\nLocation: Zeta hive."
+    29576                   "Date: September 22, 2230.\nTime: 12:05 p.m.\nLocation: Communications room aboard Pod 5."
+    29577                   "Date: September 23, 2230.\nTime: 3:28 a.m.\nLocation: Pod 5 morgue."
+    29578                   "Date: September 23, 2230.\nTime: 7:02 a.m.\nLocation: Somewhere aboard Pod 5."
+    29579                   "Date: October 12, 2230.\nLocation: Gateway Station, Earth.\nWeyland-Yutani Weapons Division, Oversight Committee\nSummary of Meeting Concerning the Loss of Pod 5"
+    29580                   "Date: November 23, 2230.\nTime: 10:18 p.m\nIncident: -1 day, 7 hours.\nLocation: Primary Operations Complex, LV-1201."
+    29581                   "Date: November 26, 2230\nTime: 3:55 p.m., Incident: +1 day, 11 hours.\nLocation: Somewhere near the Primary Operations Complex, LV-1201."
+    29582                   "The loss of Pod 5 is a significant setback for operations on LV-1201.  Though the pod contained only secondary systems, crew quarters and recreation facilities, its loss serves to justify the concerns some committee members have long felt regarding Dr. Eisenberg's oversight of the project."
+    29583                   "Rather than wait for an official explanation from Dr. Eisenberg, the committee has authorized the immediate departure of a class 2 investigative team and auditor for LV-1201 with the intention of conducting an independent investigation into the events leading to the severing of Pod 5.  Until more data is available the priority must be stabilizing the situation on LV-1201 before any more mistakes are made."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29584                   "Find an interface panel to acclimate your charge emitter to the human technology."
+    29585                   "You hear what happened to Garibaldi?"
+    29586                   "Yeah... Blaney's been trying to keep it quiet, but I hear they had to check the dental records."
+    29587                   "I wish.  They found him hanging upside down with no skin left on him."
+    29588                   "Damn..."
+    29589                   "You got that right.  Markinson said his skull was gone.  Like somebody took it for a trophy."
+    29590                   "All right, all right.  You can stop now.  I'm freaked out enough as it is."
+    29591                   "What the hell was that?"
+    29592                   "Holy..."
+    29593                   "Ah...  Dimitri.  Have Dunya come to my office immediately.  It is a matter of urgency."
+    29594                   "Yes, sir, General Rykov."
+    29595                   "Dun, that was the General.  He wants to see you in his office right away."
+    29596                   "Oh?"
+    29597                   "He says it's urgent."
+    29598                   "Then it must be, my love.  This will have to wait for another time."
+    29599                   "(sigh of disappointment)"
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29600                   "We have a buyer."
+    29601                   "It's about time."
+    29602                   "Our precautions have made things proceed much more slowly than I had originally anticipated.  It is unfortunate we have had to wait before obtaining the Artifact, but it was necessary."
+    29603                   "So this is our next step."
+    29604                   "You should get your gear together and leave tonight while the opportunity remains.  When you arrive at Zeta site there will be no one but Iron Bears there to greet you.  "
+    29605                   "I assume the Iron Bears won't be blamed for this breach?"
+    29606                   "Hmmph.  Of course not.  Ivan has taken care of the details.  Once you're ready to go, meet Chekov in the cargo bay.  He has one final piece of equipment you will be needing."
+    29607                   "Yes, sir, General."
+    29608                   "Dunya."
+    29609                   "The artifact is several levels below the guard station and Eisenberg has already lost a team of synthetics attempting to retrieve it.  Be… careful, Dunya."
+    29610                   "Yes, General."
+    29611                   "Everything ready?"
+    29612                   "Yeah, Xavier will have quite a hangover in the morning.  He might even think he stole the Artifact himself."
+    29613                   "Good.  I doubt the Major would approve of the General's methods."
+    29614                   "Hmmph... Well, she didn't serve on Korari, now did she?"
+    29615                   "Yeah... and I'd stow it if I were you.  You don't want to see her pissed off."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29616                   "Major."
+    29617                   "Is everything ready?"
+    29618                   "Uh...  Yes, sir."
+    29619                   "Then lets proceed.  Becker, Serge, you're with me.  Popov, I want you here in the APC.  Chances are we'll be coming out hot."
+    29620                   "You got it."
+    29621                   "Sir, are you listening?"
+    29622                   "Sir..."
+    29623                   "You took ... than expected.  I trust you have arrived ... chamber?"
+    29624                   "I believe so, sir.  Is this channel secure?"
+    29625                   "Yes.  Quite.  The others - they are with you?"
+    29626                   "No, sir.  They... are not."
+    29627                   "They... knew the risks.  And the reward.  Let us make sure their efforts are not wasted.  What do you see?"
+    29628                   "I am in a large chamber.  It appears different from the ruins I've been in before.  I see... the Artifact.  It appears to be floating... no suspended... in some sort of field."
+    29629                   "That's as we expected.  Eisenberg's synthetics made it almost this far.  They just didn't make it back.  We do have some poor quality transmissions of what they saw there, however."
+    29630                   "Dunya, that was Dr. Post.  He is going to give you instructions on using the device."
+    29631                   "I doubt you're going to like this very much..."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29632                   "What I like is of little concern, Doctor."
+    29633                   "No... I suppose not.  If you look at the back of the device, you can see it has a peculiarly shaped extrusion."
+    29634                   "Yes... with 4 prongs coming out of it."
+    29635                   "Yes, that's it.  What you have is called a worm device. As far as we can tell, this is fairly standard interface for Pilot computer tech.  Once you plug the device in, it should interface with the Pilot systems that are still on line and start shutting them down one by one.  "
+    29636                   "How long will that take?"
+    29637                   "Ah... well, that's the tricky part.    There's no telling how much of the tech there is still functioning correctly.  Our tests show it could take several hours if things are really bad."
+    29638                   "That could be a problem, Doctor.  You told me this would take only minutes."
+    29639                   "Well... it would.  If everything were..."
+    29640                   "Dunya, you cannot spend several hours down there alone."
+    29641                   "That's just it, sir.  I was fighting for my life up until the moment I entered the chamber.  When I did... the Aliens just...  they just stopped."
+    29642                   "It's likely they have some aversion to this area.  After all, it was obviously an important place when the Pilots built it.  Dr. Maurita once speculated that the Aliens might have a hive memory, which allowed..."
+    29643                   "Dunya, once you activate the device, be prepared to get out as quickly as possible.  If there is any trouble, leave the Artifact.  It can be retrieved later once the device has managed to disable the Pilot tech."
+    29644                   "Just the same, sir, I'd prefer not to have to come down here a second time if I can avoid it.  So that's it.  Just plug it in and this thing starts shutting systems down at random?"
+    29645                   "That's it.  The Pilot systems are remarkably intelligent and robust.  It's only a matter of time before the surviving systems figure out how to turn everything back on again, so you must retrieve the artifact quickly."
+    29646                   "Dunya, keep your comlink open and inform us as soon as anything changes.  Good luck."
+    29647                   "Yes, sir."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29648                   "General?"
+    29649                   "Go ahead."
+    29650                   "I've inserted the device."
+    29651                   "Good.  Now we wait."
+    29652                   "Shit."
+    29653                   "Dunya?  What has happened?"
+    29654                   "I think I'm in trouble. It looks like turning off the Artifact has caused a cascade of other failures.  The entrance to the chamber has collapsed."
+    29655                   "Can you find another way out?"
+    29656                   "There are other exits.  Hopefully one will lead to the surface."
+    29657                   "Then waste no time.  Take the Artifact and radio when you're out.  We'll have a team standing by."
+    29658                   "I'm on it."
+    29659                   "General, I've reached the surface."
+    29660                   "We've located you.  There's an APC just a few clicks away.  They're turning on their transponder now.  You should be able to get a bearing on them with your motion tracker."
+    29661                   "Yes, sir.  I'll see you at the Pods."
+    29662                   "Major."
+    29663                   "I'll drive."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29664                   "I have the Artifact, General."
+    29665                   "Excellent work, Dunya.  Ivan will be waiting when you arrive at Pod 5.  He will handle it from there."
+    29666                   "As you say, sir."
+    29667                   "Sir?"
+    29668                   "Yes, Major?"
+    29669                   "Zeta site.  It was just as you suspected.  It's not purely Pilot technology.  Someone or something else has been there before us."
+    29670                   "Hmmph."
+    29671                   "I'll expect a full report tomorrow.  No details are to be left out."
+    29672                   "Yes, sir, General."
+    29673                   "Damn, I hate pulling lift duty."
+    29674                   "You and me both."
+    29675                   "Hey... you mind if I take a smoke?"
+    29676                   "You can do whatever you want, Jerry.  Just make sure you do it where I can smell it."
+    29677                   "Yeah, yeah... all right.  I'll be back in a minute."
+    29678                   "Hey, Jerry..."
+    29679                   "Yeah?"
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29680                   "Be careful... those things will kill ya."
+    29681                   "Heh."
+    29682                   "What the..."
+    29683                   "Perhaps it was just the room they were afraid of."
+    29684                   "Do you hear what you're saying?  They aren't afraid of anything."
+    29685                   "No.  Not normally."
+    29686                   "Dunya, we're showing a breach at the water walk.  Aliens have entered Pod 5."
+    29687                   "There's no response from the guards there, sir. "
+    29688                   "Sir, you don't think this has anything to do with the Artifact?"
+    29689                   "I don't know yet, but I want you to go to storage C and get the Artifact.  It must be moved off of Pod 5 and secured.  Is Dimitri there?"
+    29690                   "Dimitri, I want you to meet Chekov at the waterwalk, on the double.  Dunya, contact me the moment you have the Artifact."
+    29691                   "Yes, sir."
+    29692                   "Another time, then?"
+    29693                   "Another time, love."
+    29694                   "General."
+    29695                   "Go ahead, Dunya."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29696                   "The Artifact... it is gone, sir."
+    29697                   "Gone? What are you saying, Dunya?  Someone took it?"
+    29698                   "Something took it.  Not an Alien, sir - something I've never seen before.  It was standing there.  And then it just... disappeared.  The air seemed to shimmer where it had been standing."
+    29699                   "Dunya, get out of there.  Now!"
+    29700                   "But, General, it could not have taken the Artifact very far.  I can follow it with the motion tracker -"
+    29701                   "No!  The Artifact is of no importance now!"
+    29702                   "Dunya.  Eisenberg's men have blown the walks to Pods 2 and 4. Get down to the cargo lift.  This is an order.  We are evacuating the pod."
+    29703                   "I want the turrets armed for anything - inside or outside of the perimeter - that doesn't respond to IFF."
+    29704                   "There will be hell to pay if one of the technical staff forgets his badge."
+    29705                   "We'll worry about that IF it happens.  For now - "
+    29706                   "Good.  Dunya, we're leaving the pod."
+    29707                   "Yes, sir.  And Dimitri?  He's already evacuated?"
+    29708                   "No.  We'll reassess once we're off the pod."
+    29709                   "But Dimitri!"
+    29710                   "Hasn't been heard from since he was sent to secure the breach!  Aliens are still flooding into the pod.  We have no choice but to assume that he has failed."
+    29711                   "Chekov!  He was supposed to be with you!"
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29712                   "He... never arrived, Dunya."
+    29713                   "General, we cannot just leave him!"
+    29714                   "Dunya!  You have your orders!  I will not allow you nor anyone else to sacrifice -"
+    29715                   "What the hell?"
+    29716                   " ...secured, General. ... coming ... core lift."
+    29717                   "Dimitri!  Proceed to the cargo bay.  We're evacuating Pod 5."
+    29718                   "Already... way.  ETA 2 minutes.  Request you secure the area until I arrive."
+    29719                   "The cargo bay will be secured."
+    29720                   "Very well.  Dimitri, Dunya will hold the bay until you arrive.  "
+    29721                   "I will see you both on the ground."
+    29722                   "You have my word on it, General."
+    29723                   "You should have reported in sooner!  The General assumed..."
+    29724                   "Believe me, I tried.  I made a detour through excavation storage before going to the walkway.  I must have just missed Chekov."
+    29725                   "Excavation?  The explosion?"
+    29726                   "I sealed the breach.  Permanently.  "
+    29727                   "Looks like our scientist friends will be bringing water up the lifts from now on.  Rykov told Eisenberg connecting to the pumping station was a risk.  As usual, he would not listen."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29728                   "Sounds like someone else I know..."
+    29729                   "Lucky for you.  Now lets get the hell off of this pod.  I have a promise to keep."
+    29730                   "Yes, SIR.  "
+    29731                   "There is no way to save it, General?"
+    29732                   "We have done all we can.  Once the lift broke away, we lost all hope of regaining the pod.  We must cut our losses before the Aliens find a way to spread to the other pods."
+    29733                   "And what of the - creature - I saw?"
+    29734                   "It would seem that... it found what it was looking for."
+    29735                   "What about those remaining in the pod?"
+    29736                   "They are already dead.  Sever the pod, General."
+    29737                   "What the...?"
+    29738                   "Sarge, you copy?"
+    29739                   "Go ahead, Carter."
+    29740                   "Looks like I found the source of that unauthorized broadcast."
+    29741                   "And?  Who was it?"
+    29742                   "Uh... more like WHAT is it, sir.  It's not human, but it's dead.  Looks like it's been chest bursted.  And it's holding some sort of object."
+    29743                   "Damn... don't touch anything.  I'll get a decon team up there and try to raise Rykov.  You just get back down here, ASAP.  There's no telling if there's more of those things around here."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29744                   "You got it."
+    29745                   "Olmy!?  Nuen!? This is Winter.  Anyone copy?"
+    29746                   "Damnit.  Beta team, this is Gamma. Copy."
+    29747                   "Beta here.  Go ahead."
+    29748                   "We've taken heavy casualties.  I'm holed up in the morgue, but the halls are crawling.  Requesting assistance.  Over."
+    29749                   "Roger.  We're just below you.  ETA 60 seconds."
+    29750                   "Shit.  Make it 30 and I might still be breathing."
+    29751                   "We're on it."
+    29752                   "I shoulda taken mom's advice and been a programmer."
+    29753                   "Holy shit!"
+    29754                   "We have the target in sight. We need fire team support in bio 2.  "
+    29755                   "Got it.  We're on our way."
+    29756                   "We're falling back to bio 2.  Richter's team's got the relic locked in."
+    29757                   "'bout time.  I was getting tired of turning over dead bugs."
+    29758                   "Damnit, Richter!  The pod's about to go!"
+    29759                   "I've got it.  Let's get the hell out of here."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29760                   "Chekov, do you copy? Chekov?"
+    29761                   "Go ahead."
+    29762                   "I can't raise Rykov.  There's some kind of interference here."
+    29763                   "You are barely audible here."
+    29764                   "Tell Rykov we have the Artifact..."
+    29765                   "Oh, man.  Not again."
+    29766                   "...and are on our way down to the extraction point."
+    29767                   "Make it fast.  The first charges will be going off any second now."
+    29768                   "Shit!  Everybody out!  Double time to the lines!"
+    29769                   "You don't have to ask me twice, baby!"
+    29770                   "I'm not about to let this project get away from me. File that in your report."
+    29771                   "You should be careful that it's not taken away from you, doctor.  Aside from the loss of Pod 5, there are disturbing rumors of potentially valuable relics turning up missing from the Zeta dig site."
+    29772                   "I can assure you, nothing of value has gone missing on my watch.  The ""relic"" you have heard about - via rumor and innuendo, no doubt - was certainly of little consequence compared to the knowledge we are gaining from our xenomorph studies."
+    29773                   "I hope for your sake you are right, Doctor.  The committee would not be pleased to know you allowed a potentially important discovery to slip through your fingers."
+    29774                   "Ancient Predator"
+    29775                   "Classes"
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29776                   "Select classes allowed to play."
+    29777                   "Weapons"
+    29778                   "Select weapons allowed in game."
+    29779                   "Class"
+    29780                   "Sort by servers that allow your current class."
+    29781                   "Aliens vs. Predator 2:"
+    29782                   "Primal Hunt"
+    29783                   "From: Peter Graves\nTo: Dr. Betheny Clements\n\nHey, Doc,\n\nYou're not still mad at me are you?  I know I got a little upset last night -- okay, maybe more than a little -- but it's frustrating to be completely ignored simply because I don't have the credentials of some of the other people around here.\nSharpe and Post are just ignoring the obvious!  Zeta site is obviously Pilot ruins that someone else set up shop in.  Even if the tech weren't distinctly different, the scale is completely wrong for Pilots.\n\nI wish you would support me on this.  I know you're new here, but I can tell they respect your opinions.  And you know I'm right.  Don't you?\n\nPete\n\nPS.  You should be more careful around those specimens… I heard this other guy, Maurita or something, got himself hugged by one of those things a year ago.  I don't think there's a fix for that."
+    29784                   "From: Ivan Hushvatov\nTo: Cmdr. Markinson, Pod Security\n\n> ridiculous accusations!\n\nGetting upset about it won't change anything.  The General was very clear - artifacts have gone missing with your men on watch and we're going to plug the leak by putting people we can trust in the hole.\n\nUntil we're convinced you can lock your people down, Zeta site security will be handled by the people on this list - paired with Iron Bears to decrease any likelihood of foul play:\n\nMartin Xavier\nJason Blair\nStephen Krueger\nKelly Simons\n\nThat is all.  The General appreciates your cooperation\n\nIvan"
+    29785                   "From: Dell Walters\nTo: Jan Simmons\n\nIt was actually kind of funny in a sick sort of way.  Nelson was kneeling down at the perimeter splicing a split cable when that bhulagh came charging right for him.  The dummy didn't even notice until it was right on top of him.\n\nPoor thing hit the fence and went off like fireworks.  I felt sorry for it, but damn if Nelson didn't have to change his underwear after that! :)\nI guess you just had to be there...\n\nDell"
+    29786                   "From: Jill Masters\nTo: Evan Williams\n\n> think you're right though\n\nOf course I'm right! This place is hazardous to our health and if you were smart you'd request a transfer, too.\n\n\nDid you here what happened to that guard this morning?  Just taking a smoke break under the pods and wham!  Some piece of debris falls off and flattens him.  It's bad enough we've got pets with acid blood, but this place just has bad karma...\n\nDo it... you'll thank me.\n\nJill"
+    29787                   "From: Andrew W.\nTo: Matthew G.\n\n> ended up all I had to do was select ""Open Personal Folders File"" from the menu!\n\nAre you serious?  Nobody could be dumb enough to leave their .ESP file on the network like that!\n\nI'd be careful about reading Eisenberg's email, though...  I don't think he'd take too kindly to that sort of thing.  You might end up at the bottom of a hive somewhere..."
+    29788                   "To Whom It May Concern:\n\nIf you're the jerk that keeps leaving half-eaten donuts lying around can you _please_ grow up!  Yesterday I found one in maintenance under the roof leak.\n"
+    29789                   "Implantation Lab\nSpecimen Logs\n\nSpecimen #318:\nType: Quadruped, Buhlagh\nOrigin: LV-1201\n\n3/14/2230, 11:43 a.m.\n\nImplantation.\n\n3/15/2230, 5:14 p.m.\nChestbursted.  Alien larva exhibits no peculiarities.  Weight: 3.36 kg.  Length: 68.58 cm.\n\n3/15/2230, 5:36 p.m.\nFirst feeding, 6 kg. raw meat.\n\n3/15/2230, 8:17 p.m.\nWeight: 8.62 kg.  Length: 1.32 m.\n\n3/16/2230, 3:06 a.m.\nWeight: 47.22 kg.  Length: 1.9 m est. Specimen was too violent to measure safely.\n\n3/16/2230, 6:35 a.m.\nFinal molting complete.  Alien is of runner type.  Weight: 96.68 kg.  Length: 2.5 m est."
+    29790                   "Data obtained from the implantation experiments seems to confirm Eisenberg's theory of host genetics affecting Alien larvae development.\n\nThe smaller, faster ""runners"" found on LV-1201 develop only from quadruped hosts, while the larger drones result from the impregnation of bipedal hosts.  The DNA sequencing of LV-1201's indigenous creatures bears remarkable similarity to native Earth life - the peculiarity of which is a topic of much debate here - and that may explain why there is not more variation between the larvae spawned from LV-1201 hosts versus those spawned from specimens of Earth origin.\n\nSo far, we have only witnessed these two variations, but it is conceivable that a radically divergent host DNA might yield greater developmental divergence in Alien larvae.\n\nDr. Courie\n3/24/2230"
+    29791                   "LV-1201 Forward Pods - Quarterly Research Briefing\n\nPod 4 Research\nAlien / Host Interactions\n\nAs noted by Dr. James in his early experiments, drones do not seem to readily attack implanted hosts. There was hope that this might be an exploitable weakness in the Alien psyche. Initial tests appeared promising: Alien specimens did not attack impregnated lab animals. However, later experiments proved less successful. The Aliens appeared to be capable, at least on a rudimentary level, of evaluating the threat posed by any carrier and acting when an undetermined threshold was reached. Any threatening move could provoke an attack, and the act of a host attacking any Alien ensured one.\n\nIt is still possible that this data could be of some use, however. We are now concentrating our efforts on synthesizing the pheromones associated with larvae growth.  The use of such synthesized pheromones might prove useful as a last resort when confronted with an Alien infestation."
+END
+STRINGTABLE DISCARDABLE 
+BEGIN
+    29792                   "Survive!"
+    29793                   "Survive until you can grow into a drone."
+    29794                   "The class you've chosen is locked out of this server."
+    29795                   "Predalien"
+    29796                   "Error: No directory servers were found.  Please make sure Sierraup.cfg exists and contains valid server entries."
+    29797                   "..."
+    29798                   "v%1!s!F"
+    29799                   "v%1!s!D"
+    29800                   "Multiplayer classes cannot be restricted when hosting Evac,  Overrun, Survivor or Hunt games, or when Life Cycle mode is enabled."
+    29801                   "The combination of class and team restrictions you have chosen disables all possible players.  Please correct these settings before starting a server."
+END
+#endif // PRIMAL_HUNT
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////

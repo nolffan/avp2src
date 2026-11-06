@@ -3,6 +3,18 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
+Project: "ClientRes_PH"=.\ClientRes\ClientRes_PH.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "ClientShellDLL_PH"=.\ClientShellDLL\ClientShellDLL_PH.dsp - Package Owner=<4>
 
 Package=<5>
@@ -28,6 +40,18 @@ Package=<4>
 ###############################################################################
 
 Project: "ServerApp_PH"=.\AVP2Serv\ServerApp_PH.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "ServerRes_PH"=.\ServerRes\ServerRes_PH.dsp - Package Owner=<4>
 
 Package=<5>
 {{{

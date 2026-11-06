@@ -1,0 +1,195 @@
+Aliens versus Predator 2: Primal Hunt
+
+Developed by
+Third Law Interactive
+>TIME:5.0
+>BIG
+##
+
+Aliens vs. Predator 2
+is powered by LithTech
+>TIME:3.0
+>BIG
+##
+
+Fox Interactive:
+>TIME:2.0
+>BIG
+##
+David Stalker, Producer
+Paul Pawlicki, Associate Producer
+Michael Heilemann, Director of Technology
+Kristian Davila, Localization Manager
+Igor Krinitskiy, Assistant Quality Assurance Manager
+Glenn Dphrepaulezz, Lead Tester
+>TIME:5.0
+## 
+Testers:
+Ken Anderson 
+Francis Choi 
+David Farkas
+Mike Graham 
+Joseph Lamas 
+Cris Lee
+Aaron Minjares
+Arabian Nazel
+Billy Pamier
+David Taylor
+>TIME:3.0
+## 
+Special Thanks:
+>TIME:3.0
+>BIG
+##
+Steven Bersch
+Lindsey Fischer
+Tom Gastall
+Ivo Gerscovich
+Michael Heilemann
+>TIME:3.0
+##
+Luke Letizia
+Blake McCallister
+Dan MacKechnie
+Kimberlee MacMullan
+Chris Miller
+Megan O'Brien
+>TIME:3.0
+##
+Michael Pole
+Jamie Samson
+Kristin Sutter
+Mark Vu
+>TIME:3.0
+##
+Ben "Sadogoat" Bradbury 
+Christoffer "Eldritch" Lundberg
+>TIME:3.0
+##
+Thanks to all the filmmakers and storytellers 
+who created, and contributed to, the legend.
+A very special thanks to all the hardy souls at Monolith.
+>TIME:5.0
+##
+
+Third Law Interactive:
+>TIME:3.0
+>BIG
+##
+Jonathan Wright, Game Design / Technical Lead
+Mike Maynard, Programmer / Biz
+David Namaksy, Level Designer / Producer
+Mark Morgan, 2D / 3D Artist
+>TIME:5.0
+##
+Ronn Harbin, 3D Animator
+Matt Hooper, Level Designer
+Steve Rescoe, Level Designer / 2D/3D Artist
+Larry Herring, Level Designer
+>TIME:5.0
+##
+Dave Cash, 2D Artist
+Anthony D'Antonio, Level Designer
+Will Loconto, Sound Designer / Original Music
+>TIME:5.0
+##
+Additional Development:
+Brian Waite, 3D Animation
+>TIME:3.0
+##
+Special Thanks:
+>TIME:3.0
+>BIG
+##
+Monolith Productions,
+for the everything that went into the original game.
+Our family and friends, 
+whose support made this possible.
+>TIME:5.0
+##
+Voice Actors:
+>TIME:3.0
+>BIG
+##
+Aliens versus Predator 2
+-----
+John Armstrong - Duke, Blackwell, Dimitri and Various
+Jock Blaney - McCain and Various
+Andromeda Dunker - Dunya and Various
+Kit Harris - Various
+Turner Heidi - Various
+Todd Licea - Harrison and Various
+Gary Schwartz - Eisenberg and Various
+David Scully - Jones, Ivan and Various
+Jeff Steitzer - Rykov and Various
+Jen Taylor - Tomiko and Various
+>TIME:6.0
+##
+Aliens versus Predator 2: Primal Hunt
+-----
+Candace Evans - Dunya and Various
+Sean Hennigan - Various
+Gary Shwartz - Eisenberg and Various
+Jeff Steitzer - Rykov and Various
+>TIME:3.0
+##
+Sierra / Vivendi:
+>TIME:3.0
+>BIG
+##
+Marketing & PR:
+Koren Buckner
+Sarita Churchill
+Simon Etchells
+Nicholas Longano
+Laurel Moen
+Rozita Tolouey
+>TIME:5.0
+##
+Product Certification:
+Richard Benavides
+Ben Chan
+Trent Cline
+Randy Linch
+Chris Rooker
+Cyra Talton
+Brandon Valdez 
+>TIME:5.0
+##
+Creative Services:
+Kathy Carter
+Jessica Drossin
+Mary Moffitt
+Kyle Craig
+Blue Spark Studios
+>TIME:5.0
+
+Uses Miles Sound System
+Copyright (c) 1991-2001 by RAD Game Tools, Inc.
+MPEG Layer-3 playback supplied with the Miles Sound System
+from RAD Game Tools, Inc. MPEG-3 audio compression
+technology licensed by Fraunhofer IIS and THOMPSON Multimedia.
+Sampled Instruments by Sonic Implants: www.sonicimplants.com
+GameSpy Arcade is (c) 1994-2001 GameSpy Industries, Ltd. The GameSpy logo
+and "GameSpy" are the trademarks of GameSpy Industries, Ltd.
+
+>TIME:10.0
+##
+(c) 2001-2002 Twentieth Century Fox Film Corporation.  
+All Rights Reserved.
+LithTech (TM) Game Engine © 1998-1999 Monolith Productions, Inc. 
+All rights reserved. 
+Fox, Fox Interactive, Aliens vs. Predator 2 and 
+their associated logos are registered trademarks or 
+trademarks of Twentieth Century Fox Film Corporation. 
+LithTech is a trademark of Lithtech, Inc. 
+Windows is a registered trademark or trademark of Microsoft 
+Corporation in the United States and/or other countries. 
+The ratings icon is a trademark of the Interactive 
+Digital Software Association.
+>TIME:10.0
+##
+>TIME:15.0
+##
+>END
+##

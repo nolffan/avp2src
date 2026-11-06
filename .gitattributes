@@ -1,4 +1,6 @@
-# Every text file in this tree uses LF line endings, except this one: it is
-# embedded byte for byte in CRes.dll (the TEXT resource CREDITS, read by the
-# game at run time) and keeps the CRLF endings it shipped with.
+# Every text file in this tree uses LF line endings, except these: they are
+# embedded byte for byte in CRes.dll and Primal Hunt's (the TEXT resource
+# CREDITS, read by the game at run time) and keep the CRLF endings they
+# shipped with.
 src/AVP2/ClientRes/credits.txt -text
+src/AVP2/ClientRes/phcredits.txt -text

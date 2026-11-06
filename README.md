@@ -81,8 +81,8 @@ those functions make up.
 | libraries | the shared libraries | 3,711 / 3,743 | 535,505 / 542,444 bytes | `███████████████████░` 98.7% | 22 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AVP2XUp.dll` | Primal Hunt's Sierra updater resources, not in the total | 14 / 14 resources | 585,762 / 585,762 bytes | `████████████████████` 100.0% | 0 | -- |
-| `PHCRes.dll` | Primal Hunt's client resources, not in the total | 0 / 295 resources | 0 / 440,287 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 295 | -- |
-| `PHSRes.dll` | Primal Hunt's server resources, not in the total | 0 / 1 resources | 0 / 156 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 1 | -- |
+| `PHCRes.dll` | Primal Hunt's client resources, not in the total | 295 / 295 resources | 440,287 / 440,287 bytes | `████████████████████` 100.0% | 0 | -- |
+| `PHSRes.dll` | Primal Hunt's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AVP2Up.dll` | AvP2's Sierra updater resources, not in the total | 15 / 15 resources | 207,412 / 207,412 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |

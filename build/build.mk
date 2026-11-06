@@ -65,14 +65,15 @@ AVP2SRC_RCFLAGS ?=
 # optional until its workspace is here.
 #   src/AVP2/AVP2.dsw   AvP2's game DLLs, their resources and the dedicated
 #                       server (the source release's workspace)
-#   src/AVP2/AVP2PH.dsw Primal Hunt's game DLLs and dedicated server: the
-#                       same sources, through project files of their own
-#                       (<name>_PH.dsp, first made by build/phproject.py)
-#                       whose Final (the server's: Release) defines
-#                       PRIMAL_HUNT and builds into PrimalHunt/
+#   src/AVP2/AVP2PH.dsw Primal Hunt's game DLLs, their resources and the
+#                       dedicated server: the same sources, through project
+#                       files of their own (<name>_PH.dsp, first made by
+#                       build/phproject.py) whose Final (the server's and
+#                       the resources': Release) defines PRIMAL_HUNT (the
+#                       resources' also to rc) and builds into PrimalHunt/
 WORKSPACES := \
     src/AVP2/AVP2.dsw:ClientShellDLL,Object,ClientRes,ServerRes,ServerApp \
-    src/AVP2/AVP2PH.dsw:ClientShellDLL_PH,Object_PH,ServerApp_PH
+    src/AVP2/AVP2PH.dsw:ClientShellDLL_PH,Object_PH,ClientRes_PH,ServerRes_PH,ServerApp_PH
 
 # ---------------------------------------------------------------------------
 # Wine and the toolchains
@@ -260,6 +261,22 @@ ENV_ServerRes       := $(call nlink_env,$(V8966))
 ENV_ServerRes__Main := $(ENV_GAME)
 LINK_ServerRes      := $(ROOT)/$(call nlink,$(V8966))
 src/AVP2/ServerRes/Release/SRes.dll: $(call nlink,$(V8966))
+# and Primal Hunt's (PHCRes.dll, PHSRes.dll: the same projects, through
+# ClientRes_PH.dsp and ServerRes_PH.dsp, their resource scripts compiled
+# with PRIMAL_HUNT, into PrimalHunt/), whose one object is cl 8966's (the
+# Rich headers' C++ 8966 x1: progress/COMPILERS.md). Here, not with the
+# other Primal Hunt sections below: the workspaces' rules read these as
+# they are included.
+CL_ClientRes_PH        := $(V8966)/BIN/cl.exe
+ENV_ClientRes_PH       := $(call nlink_env,$(V8966))
+ENV_ClientRes_PH__main := $(ENV_GAME)
+LINK_ClientRes_PH      := $(ROOT)/$(call nlink,$(V8966))
+src/AVP2/ClientRes/PrimalHunt/CRes.dll: $(call nlink,$(V8966))
+CL_ServerRes_PH        := $(V8966)/BIN/cl.exe
+ENV_ServerRes_PH       := $(call nlink_env,$(V8966))
+ENV_ServerRes_PH__Main := $(ENV_GAME)
+LINK_ServerRes_PH      := $(ROOT)/$(call nlink,$(V8966))
+src/AVP2/ServerRes/PrimalHunt/SRes.dll: $(call nlink,$(V8966))
 
 # ---------------------------------------------------------------------------
 # The lithshared libraries, ours
