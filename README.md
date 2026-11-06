@@ -75,8 +75,8 @@ those functions make up.
 | `AVP2Serv.exe` | AvP2's dedicated server | 303 / 320 | 58,786 / 58,920 bytes | `███████████████████░` 99.7% | 1 | 0 |
 | `CShell.dll` | AvP2's game: client | 5,748 / 6,643 | 1,391,422 / 1,463,972 bytes | `███████████████████░` 95.0% | 399 | 1 |
 | `Object.lto` | AvP2's game: server objects | 8,513 / 10,724 | 2,162,586 / 2,237,255 bytes | `███████████████████░` 96.6% | 152 | 0 |
-| `AvP2 lithtech.exe` | AvP2's engine | 2,832 / 4,082 | 393,758 / 704,805 bytes | `███████████░░░░░░░░░` 55.8% | 765 | 781 |
-| `AvP2 server.dll` | AvP2's server | 1,811 / 2,872 | 167,432 / 351,917 bytes | `█████████░░░░░░░░░░░` 47.5% | 710 | 534 |
+| `AvP2 lithtech.exe` | AvP2's engine | 3,335 / 4,043 | 466,176 / 704,734 bytes | `█████████████░░░░░░░` 66.1% | 144 | 547 |
+| `AvP2 server.dll` | AvP2's server | 2,283 / 2,852 | 238,256 / 351,844 bytes | `█████████████░░░░░░░` 67.7% | 101 | 374 |
 | `AvP2 d3d.ren` | AvP2's Direct3D renderer | 857 / 1,276 | 117,244 / 236,606 bytes | `█████████░░░░░░░░░░░` 49.5% | 123 | 103 |
 | libraries | the shared libraries | 3,711 / 3,743 | 535,505 / 542,444 bytes | `███████████████████░` 98.7% | 22 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
@@ -87,7 +87,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **43,868 / 55,643** | **8,650,644 / 10,824,773 bytes** | `███████████████░░░░░` **79.9%** | **4,570** | **4,304** |
+| **All** | | **44,843 / 55,584** | **8,793,886 / 10,824,629 bytes** | `████████████████░░░░` **81.2%** | **3,340** | **3,910** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

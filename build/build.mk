@@ -402,6 +402,33 @@ $(eval $(call lsdlib,rezmgr,RezMgr,/D REZMGRLITE /I $(LT2LS2)\\incs /I .,$(RM_SR
 .PHONY: debuglibs
 debuglibs: $(LS_DEBUG:%=$(LDOUT)/%.lib)
 
+# AvP2 1.0.9.6's engine's builds of lith, RezMgr and StdLith: the same
+# sources and flags as the release builds above, compiled with the engine's
+# own cl 12.00.9044 (the Processor Pack's) into <dir>/AvP2Release/ and
+# $(LAOUT), which avp2-engine-link links. Its lithtech.exe and server.dll
+# hold neither the release's prebuilt builds (8966) nor the debug ones:
+# CRezItm::InitRezItm (lithtech.exe 0x004afd00, server.dll 0x10045a30)
+# copies its name with VC6's /O2 strcpy under 9044 -- byte-identical --
+# where 8966 /O2 inlines it as rep movs and /O1 under either is shorter.
+# Their Rich headers agree: of 165 and 104 objects of C++ 12.00 beside
+# the runtime's, 157 and 96 are 9044's, which leaves 8 of 8966 in each for
+# WON's prebuilt members (below, avp2-engine-link).
+V9044L := $(TC)/msvc-6.00-9044
+LAOUT  := src/LT2/lithshared/libs/AvP2Release
+LS_AVP :=
+# $(call lsalib,<dir>,<library>,<incs>,<sources>)
+define lsalib
+$(foreach s,$(4),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/AvP2Release),src/lithshared/$(1),$(s),$(call vc_env,$(V9044L)),$(V9044L)/BIN/cl.exe,$(LIB_CFLAGS) $(3) /FoAvP2Release/,wine-drives)))
+LSAOBJ_$(1) := $(foreach s,$(4),$(call c_obj,$(s),src/lithshared/$(1)/AvP2Release))
+$(call tool,$(LAOUT)/$(2).lib,$$(LSAOBJ_$(1)) | wine-drives,cd src/lithshared/$(1) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LAOUT))\$(2).lib' $$(call q,$$(subst /,\,$$(patsubst src/lithshared/$(1)/%,%,$$(LSAOBJ_$(1))))))
+LS_AVP += $(2)
+endef
+$(eval $(call lsalib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I sys\win /I ..\zlib,$(SL_SRCS)))
+$(eval $(call lsalib,lith,lith,/I .,basehash.cpp baselist.cpp virtlist.cpp))
+$(eval $(call lsalib,rezmgr,RezMgr,/D REZMGRLITE /I $(LT2LS2)\\incs /I .,$(RM_SRCS)))
+.PHONY: avp2libs
+avp2libs: $(LS_AVP:%=$(LAOUT)/%.lib)
+
 # ---------------------------------------------------------------------------
 # The game DLLs' libraries, ours: LTGUIMgr, LithFontMgr and WONAPI
 #
@@ -904,12 +931,12 @@ $(eval $(call tool,$(ENG_IMPLIB)/mss32dec.lib,$(MSS32_DEF),\
     python3 tools/mkimplib.py --keep-decoration $(ENG_IMPLIB)/mss32dec.lib mss32.dll $$(MSS32_DECORATED) >/dev/null))
 ENG_LINK_ENV := $(subst LIB=',LIB='$(call ws,$(ROOT)/$(ENG_IMPLIB));,$(ENG_PH_ENV))
 
-# $(call eng_link,<image>,<link dir>,<flags>,<inputs as the link dir sees them>,<prerequisites>)
+# $(call eng_link,<image>,<link dir>,<flags>,<inputs as the link dir sees them>,<prerequisites>[,<env>])
 define eng_link
 $(call tool,$(1),$(5) | wine-drives,\
     cd $(2) && { printf '%s\n' $(call q,/nologo $(3) /FORCE /OPT:NOREF /OPT:ICF /machine:I386 /out:$(subst /,\,$(patsubst $(2)/%,%,$(1))) \
     /map:$(subst /,\,$(patsubst $(2)/%,%,$(basename $(1)))).map $(subst /,\,$(4))) > $(1:%=$(ROOT)/%).rsp; } && \
-    { $(ENG_LINK_ENV) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(1)).rsp' > $(basename $(1:%=$(ROOT)/%))-link.txt 2>&1 || true; } && \
+    { $(or $(6),$(ENG_LINK_ENV)) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(1)).rsp' > $(basename $(1:%=$(ROOT)/%))-link.txt 2>&1 || true; } && \
     grep -c 'error LNK2001\|error LNK2019' $(basename $(1:%=$(ROOT)/%))-link.txt | sed 's/^/   LINK $(notdir $(1)): unresolved references: /' ; \
     grep -c 'error LNK2005' $(basename $(1:%=$(ROOT)/%))-link.txt | sed 's/^/   LINK $(notdir $(1)): defined twice: /' ; \
     test -f $(1:%=$(ROOT)/%) || { grep -i 'error\|fatal' $(basename $(1:%=$(ROOT)/%))-link.txt | head -20 >&2; false; })
@@ -939,6 +966,88 @@ $(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\ser
     $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(SERVER)/link/server.def))
 .PHONY: engine-link
 engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
+
+# AvP2 1.0.9.6's lithtech.exe and server.dll, linked as Primal Hunt's are
+# (above): /FORCE /OPT:NOREF /OPT:ICF, a response file and a map, for the
+# scoreboard. From AvP2Release/'s objects (cl 9044) in the order the
+# scoreboard's placed functions put them in the retail images (each object
+# by the median retail address of the functions placed from it; the
+# objects with none follow, sorted), approximately retail's. Their Rich
+# headers name link 6.00.8447 (SP5's, as msvc-6.00-9044's link.exe is,
+# byte for byte), the same DirectX 8.1 import libraries as Primal Hunt's
+# (implib 7.00.9210 x4: dinput.lib's import descriptors; cl 13.00.9178,
+# one C++ and one C object: dxguid.lib's and, by the data formats it puts
+# in .text, dinput.lib's) and SP5's libcmt.lib (C 8047), and their
+# import tables are Primal Hunt's: the same import libraries, Miles' from
+# Release/implib/. The libraries are release configurations (tools/libscan.py
+# finds none of the debug builds' functions in either image, where Primal
+# Hunt's server.dll links them), built with cl 9044 as the engine is
+# ($(LAOUT), above: "AvP2 1.0.9.6's engine's builds"); and WON is the
+# release's STLport build ($(LOUT)/wonapi/, 8966's), not Primal Hunt's
+# VC6-STL one: it places 840 of its functions in lithtech.exe and 777 in
+# server.dll, against 689 and 594 for the same source built STLport with
+# cl 9044. In the retail images, as the libraries are laid out:
+#   lithtech.exe  the objects to 0x004a04f3; WON 0x004a0500..0x004af948;
+#                 the DINPUT thunk and dinput.lib's object data formats
+#                 (0x004af950, 0x004af960: in .text), an initialiser
+#                 that registers AIL_shutdown with atexit (0x004afc20:
+#                 no object of ours; Miles' mss32.lib's?); lith's
+#                 baselist 0x004afc50; RezMgr 0x004afce0; StdLith from
+#                 0x004b26b0; then controlfile.cpp's code (0x004b3490..
+#                 0x004b42d9), after the libraries as a library's member
+#                 would be (here the last object); the C runtime from
+#                 0x004b42e0 (fpinit.obj), lith's basehash and virtlist
+#                 inside it (0x004c31a0..0x004c33d4: loaded on the library
+#                 search's second pass, for RezMgr)
+#   server.dll    the objects to 0x10045a06; RezMgr 0x10045a10; StdLith
+#                 0x10048410..0x100490e3; WON 0x10049210..0x10057b48; the
+#                 C runtime from 0x10057b50 (fpinit.obj), all of lith
+#                 inside it (0x10066a50..0x10066cf4: second pass, for
+#                 RezMgr)
+# So lith comes before RezMgr on both command lines, and in lithtech.exe
+# after the import libraries.
+LT_AVP_ORDER := \
+    modelanim binkvideo counter clientwin clientphysics cltapi lvideomgr cltnew cltrest clientinterface \
+    clientworldinfo cissurf clientblit clientmgr2 cmgrinit clientmgr3 startload csvis worldsim ltnew2 \
+    sweptsphere console conline clientconsole ccline lt2new4 ccclient servermsg csbase clienttexmgr fsstream \
+    worldmodels worldbsp dalloc ltobject dsi cmgsurf collelem dhash objbank clientshell clientworld demodtx \
+    clientdsi packet ccobj worldisect wgrid savobj saveio genericprop basestream servermath sharedcommon \
+    filemgr warpblit clientinput diblit lmessage localdriver cltcursor clientmusic dmextra ltnew1 dmgrow \
+    lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel collection modchunk commonphysics wmrotate \
+    msgterm netmgr nettrace netobj objtypes lt2new3 partfm fmconvert fmcvt32 lttexmod predobj clientrender \
+    serverengine serverlightanim smgrmisc servercommon servermodel servermessage smgr smgrnew cmodelload \
+    cchandler objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound spritecontrol \
+    streamsim clientstreams stringbank tcpdriver tcpqarray transform fntdraw smackvideo worldtree2 worldtree \
+    stdlithalloc
+SV_AVP_ORDER := \
+    modelanim counter structbank worldsim console csbase sweptsphere fsstream worldmodels servermsg worldbsp \
+    dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath svnew sharedcommon \
+    lmessage localdriver lthread modelnew collection commonmodel sdkforce commonphysics netmgr packet \
+    serverengine netobj objtypes objbank serverlightanim smgrmisc filemgr servermgr server servercommon \
+    servermodel servermessage smgr smgrnew objmover spritecontrol streamsim stringbank tcpdriver worldtree
+LT_AVP_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),AvP2Release)))
+LT_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER))) \
+    $(filter-out $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER) controlfile)),$(LT_AVP_OBJS)) AvP2Release/controlfile.obj
+SV_AVP_OBJS := $(sort $(patsubst %.cpp,AvP2Release/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC)))
+SV_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(SV_AVP_ORDER))) \
+    $(filter-out $(addprefix AvP2Release/,$(addsuffix .obj,$(SV_AVP_ORDER))),$(SV_AVP_OBJS))
+LS_A := ..\..\LT2\lithshared\libs\AvP2Release
+ENG_AVP_LINK_ENV := $(subst LIB=',LIB='$(call ws,$(ROOT)/$(ENG_IMPLIB));,$(ENG_AVP_ENV))
+$(eval $(call eng_link,$(LITHTECH)/AvP2Release/lithtech.exe,$(LITHTECH),/subsystem:windows,\
+    $(LT_AVP_LINK) ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
+    winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib \
+    $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib wsock32.lib,\
+    $(addprefix $(LITHTECH)/,$(LT_AVP_LINK)) $(LOUT)/wonapi/WONAPI.lib $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib \
+    $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib,$(ENG_AVP_LINK_ENV)))
+$(eval $(call eng_link,$(SERVER)/AvP2Release/server.dll,$(SERVER),/dll /def:link\server.def,\
+    $(SV_AVP_LINK) $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
+    winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib,\
+    $(addprefix $(SERVER)/,$(SV_AVP_LINK)) $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib $(LOUT)/wonapi/WONAPI.lib \
+    $(SERVER)/link/server.def,$(ENG_AVP_LINK_ENV)))
+.PHONY: avp2-engine-link
+avp2-engine-link: $(LITHTECH)/AvP2Release/lithtech.exe $(SERVER)/AvP2Release/server.dll
+# ... and engine-link links both engines
+engine-link: avp2-engine-link
 
 # Primal Hunt's d3d.ren, linked from our objects as lithtech.exe and
 # server.dll are (engine-link, above): for the scoreboard, not to run, with

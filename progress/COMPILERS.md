@@ -33,13 +33,14 @@ included, where 1.0.9.6's were the Processor Pack's and RTM's.
 
 ## Aliens versus Predator 2 1.0.9.6
 
-Its engine (`lithtech.exe`, `server.dll`, `d3d.ren`, `ltmsg.dll`) is
-superseded by Primal Hunt's and not a target; its rows stay as a witness.
+Its engine (`lithtech.exe`, `server.dll`, `d3d.ren`, `ltmsg.dll`) is a
+target again: AvP2's game DLLs cannot run on Primal Hunt's (docs/PLAN.md,
+package 7).
 
 | Binary | Link date | Monolith's objects (C++ unless said) | Also | Built here with |
 |---|---|---|---|---|
-| `lithtech.exe` | 2002-04-17 | **9044** x157, 8966 x8 | `libcmt.lib` (C 8047 x173, C++ 8047 x12, masm 6.13 x37); one C object of **8799**; one C++ and one C object of cl 13.00.9178 and 4 import descriptors of lib 7.00.9210 (a DirectX SDK's libraries); 4 without a `@comp.id` | -- (no build yet) |
-| `server.dll` | 2002-04-17 | **9044** x96, 8966 x8 | `libcmt.lib` (C 8047 x163, C++ 8047 x12) | -- |
+| `lithtech.exe` | 2002-04-17 | **9044** x157, 8966 x8 | `libcmt.lib` (C 8047 x173, C++ 8047 x12, masm 6.13 x37); one C object of **8799**; one C++ and one C object of cl 13.00.9178 and 4 import descriptors of lib 7.00.9210 (a DirectX SDK's libraries); 4 without a `@comp.id` | cl 9044 for the engine and for lith, RezMgr and StdLith (their release flags); the release's STLport `WONAPI.lib` (8966); link 6.00.8447 with `/FORCE` (`avp2-engine-link`) |
+| `server.dll` | 2002-04-17 | **9044** x96, 8966 x8 | `libcmt.lib` (C 8047 x163, C++ 8047 x12) | as `lithtech.exe` (release lith, RezMgr and StdLith, not the debug builds Primal Hunt's links) |
 | `d3d.ren` | 2002-02-07 | C++ 8168 x73 | C 8168 x120 (`libcmt.lib`, RTM's); 3 objects of tool 0x25 build 8755 and one C++ of cl 13.00.8830 (the DirectX 8.0 SDK's ddraw.lib and dxguid.lib, by analogy); `cvtres` 5.00.1720 | Primal Hunt's `src/engine/d3d/ph/` with cl 8168, its files' own flags, without `PRIMAL_HUNT` or `fogvolume.cpp` (`avp2-d3d`) |
 | `ltmsg.dll` | 2001-02-05 | C++ 8168 x1, 8447 x1 | C 8168 x23 (`libcmt.lib`) | -- |
 | `Launch.dll` | 1999-08-16 | C++ 8168 x10 | NOLF's launcher DLL, a Debug build (`libcmtd.lib`: C 8168 x85); one object without a `@comp.id` | -- |
@@ -76,7 +77,15 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
   `server.dll` are mostly 9044 objects, the compiler of the AvP2 "Talon"
   DEdit and ModelEdit (`toolchains/COMPILERS.md`). The stray C object of
   8799 in `lithtech.exe` is the one NOLF's engine has too, for which no
-  compiler is held. The 8966 objects are likely `lithshared` again.
+  compiler is held. Its lithshared libraries are 9044 builds too: lith,
+  RezMgr and StdLith compiled with 9044 and their release flags are
+  byte-identical in both images (`CRezItm::InitRezItm`, lithtech.exe
+  0x004afd00, inlines its `strcpy` as 9044 does at /O2, not as 8966 does),
+  where the release's prebuilt (8966) builds are not. The 8 objects of
+  8966 are WON's: the release's prebuilt STLport `WONAPI.lib` places more
+  of its functions in both images than the same source built with 9044
+  (840 against 689 in lithtech.exe); Primal Hunt's images have the same
+  totals (165 and 104 C++ objects, all 8966).
 * **Primal Hunt's engine is built with `/GX`; AvP2 1.0.9.6's is not.**
   Primal Hunt's `lithtech.exe` and `server.dll` carry exception frames on
   functions with destructible locals where AvP2's same functions have none

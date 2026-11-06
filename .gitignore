@@ -25,6 +25,7 @@ src/engine/*/[Rr]elease/
 src/engine/*/AvP2Release/
 src/lithshared/**/[Rr]elease/
 src/lithshared/**/[Dd]ebug/
+src/lithshared/**/AvP2Release/
 src/launcher/Release/
 src/launcher/PrimalHunt/
 src/engine/ltmsg/AvP2Release/

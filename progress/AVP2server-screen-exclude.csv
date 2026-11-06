@@ -1,0 +1,2 @@
+addr,reason
+0x10001ec0,"NOT A FUNCTION: interior block of w_IsPolyBlocking (0x10001d4e): 0x10001ebf is `jmp 0x10001ec5` (eb 04), so 0x10001ec0 is its displacement byte; the 'call' that enumerated it is an e8 operand byte at 0x10001eba (`mov dword ptr [ebp-0x18],1`, an ebp-0x18 displacement), not a call instruction"

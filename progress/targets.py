@@ -457,22 +457,61 @@ TARGETS = [
     # as Primal Hunt's, without PRIMAL_HUNT (build/build.mk, "The engine").
     dict(label="AvP2 lithtech.exe", what="AvP2's engine", kind="image",
          shipped=REFERENCE + "/avp2/lithtech.exe", stem="AVP2lithtech",
+         # linked with /FORCE for the scoreboard as Primal Hunt's is
+         # (build/build.mk, avp2-engine-link: `built`, its .rsp and .map);
+         # its objects alone (partial_objs) until that link has been made
          built="src/engine/lithtech/AvP2Release/lithtech.exe", optional=True,
-         partial_objs=["src/engine/lithtech/AvP2Release/*.obj"],
+         partial_objs=["src/engine/lithtech/AvP2Release/*.obj",
+                       # and the libraries it links: WON (the release's
+                       # STLport build), then lith, RezMgr and StdLith
+                       # (cl 9044's, build/build.mk, "AvP2 1.0.9.6's
+                       # engine's builds")
+                       "src/LT2/lithshared/libs/Release/wonapi/WONAPI.lib",
+                       "src/LT2/lithshared/libs/AvP2Release/lith.lib",
+                       "src/LT2/lithshared/libs/AvP2Release/RezMgr.lib",
+                       "src/LT2/lithshared/libs/AvP2Release/StdLith.lib"],
+         # each library's block (tools/libscan.py): WON, then from the
+         # DINPUT thunk (dinput.lib's data formats and an atexit
+         # initialiser of AIL_shutdown after it) lith's baselist, RezMgr and
+         # StdLith, up to controlfile.cpp's code (0x004b3490: ours)
+         lib_range={"WONAPI": (0x004a0500, 0x004af950),
+                    "lith": (0x004af950, 0x004b3490),
+                    "RezMgr": (0x004af950, 0x004b3490),
+                    "StdLith": (0x004af950, 0x004b3490)},
          cites=True, cited_src=["src/engine"],
-         # provisional: libcmt.lib from ftol.obj's __ftol (0x4b4330), 350
-         # of its members placed in one run to initcon.obj (0x4c3675), as
-         # NOLF's engine's CRT begins at _ftol; 80 bytes of packed code
-         # from 0x4b42e0 sit just below it
-         app=[(0x00401000, 0x004b4330)]),
+         # libcmt.lib (SP5's: the Rich header's C 8047) from fpinit.obj's
+         # __fpmath (0x4b42e0; __cfltcvt_init 0x4b42f8, then ftol.obj's
+         # __ftol 0x4b4330), 486 of its members placed in one run to
+         # initcon.obj (0x4c3675; tools/libscan.py --min=1), lith's
+         # basehash and virtlist inside it
+         app=[(0x00401000, 0x004b42e0)]),
     dict(label="AvP2 server.dll", what="AvP2's server", kind="image",
          shipped=REFERENCE + "/avp2/server.dll", stem="AVP2server",
+         # linked with /FORCE for the scoreboard as Primal Hunt's is
+         # (build/build.mk, avp2-engine-link: `built`, its .rsp and .map);
+         # its objects alone (partial_objs) until that link has been made
          built="src/engine/server/AvP2Release/server.dll", optional=True,
-         partial_objs=["src/engine/server/AvP2Release/*.obj"],
+         partial_objs=["src/engine/server/AvP2Release/*.obj",
+                       # and lith, RezMgr and StdLith (release
+                       # configurations, not the debug builds Primal
+                       # Hunt's links; cl 9044's, build/build.mk, "AvP2
+                       # 1.0.9.6's engine's builds"), then WON (the
+                       # release's STLport build)
+                       "src/LT2/lithshared/libs/AvP2Release/lith.lib",
+                       "src/LT2/lithshared/libs/AvP2Release/RezMgr.lib",
+                       "src/LT2/lithshared/libs/AvP2Release/StdLith.lib",
+                       "src/LT2/lithshared/libs/Release/wonapi/WONAPI.lib"],
+         # RezMgr and StdLith in one block, then WON up to the runtime's
+         # helpers; lith is all inside the C runtime (0x10066a50, loaded
+         # on the library search's second pass), outside `app`
+         lib_range={"RezMgr": (0x10045a10, 0x10049210),
+                    "StdLith": (0x10045a10, 0x10049210),
+                    "WONAPI": (0x10049210, 0x10057b50)},
          cites=True, cited_src=["src/engine"],
-         # provisional: libcmt.lib from __ftol (0x10057ba0), 346 members to
-         # initcon.obj; 80 bytes of packed code from 0x10057b50 below it
-         app=[(0x10001000, 0x10057ba0)]),
+         # libcmt.lib from fpinit.obj's __fpmath (0x10057b50; __ftol
+         # 0x10057ba0), 467 of its members placed in one run to initcon.obj
+         # (0x10066f95; tools/libscan.py --min=1), lith inside it
+         app=[(0x10001000, 0x10057b50)]),
     dict(label="AvP2 d3d.ren", what="AvP2's Direct3D renderer", kind="image",
          shipped=REFERENCE + "/avp2/d3d.ren", stem="AVP2d3d",
          built="src/engine/d3d/AvP2Release/d3d.ren", optional=True,

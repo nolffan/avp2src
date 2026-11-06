@@ -503,6 +503,19 @@ addresses, so `make progress` scores the objects (`partial_objs`).
     ConvertDXTGeneric's type;
   - AvP2's own 0x100135c0 (a polygon splitter Primal Hunt dropped);
   - its link.
+- AvP2 1.0.9.6's `lithtech.exe` and `server.dll` link too
+  (`avp2-engine-link`, part of `engine-link`): the AvP2Release objects in
+  the order their placed functions lie in retail, the release's STLport
+  WON, and lith, RezMgr and StdLith built with cl 9044 (`$(LAOUT)`: the
+  release's prebuilt 8966 builds are not what retail holds;
+  progress/COMPILERS.md). 2,832 -> 3,335 and 1,811 -> 2,283 identical,
+  every lith, RezMgr and StdLith function in them identical but the short
+  ones. Retail's engine objects also hold STLport template code
+  (commonmodel.obj's range, lithtech.exe 0x00457af0..0x00459162:
+  `set<string>` members WON's build matches byte for byte, as it does
+  WON's `SmartPtr` and `RefCount` members at 0x00413b90 and 0x004872f0);
+  ours have none, and WON's block (`lib_range`) no longer stands in for
+  them.
 - `d3d.ren` links (`d3d-link`, as `engine-link`: /FORCE, a response file
   and a map), against the release's debug StdLith.lib, which retail links
   after the DirectDraw thunks as server.dll does; 154 identical.

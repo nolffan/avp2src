@@ -529,6 +529,12 @@ lithtech.exe	retail	*
 lithtech.exe	ours	*
 server.dll	retail	*
 server.dll	ours	*
+
+# AvP2 1.0.9.6's engine, linked for the scoreboard only as Primal Hunt's is (build/build.mk, avp2-engine-link): /FORCE over an engine still missing much of its code (1,667 symbols unresolved in lithtech.exe, 424 in server.dll), and /OPT:NOREF, so its data holds every string of every object and lacks those of everything unwritten; not to be compared string by string until the engine links whole
+AvP2 lithtech.exe	retail	*
+AvP2 lithtech.exe	ours	*
+AvP2 server.dll	retail	*
+AvP2 server.dll	ours	*
 # Primal Hunt's renderer, linked the same way (build/build.mk, d3d-link): /FORCE over nolfsrc's NOLF renderer with 1,594 symbols unresolved, and /OPT:NOREF; not to be compared string by string until it links whole
 d3d.ren	retail	*
 d3d.ren	ours	*
