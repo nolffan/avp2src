@@ -956,6 +956,20 @@ include $(sort $(wildcard $(D3D)/ph/*.mk))
 D3D_PH_ORDER := $(foreach e,$(sort $(foreach n,$(D3D_PH),$(D3D_PH_POS_$(n)):$(n))),$(lastword $(subst :, ,$(e))))
 $(foreach n,$(D3D_PH),$(eval $(call compile,$(D3D)/Release/ph/$(n).obj,$(D3D),ph/$(n).cpp,$(ENG_PH_ENV),$(ENG_PH_CC),\
     $(D3D_PH_INC_$(n)) $(D3D_BASE) /D PRIMAL_HUNT $(D3D_PH_CL_$(n)) /FoRelease/ph/,wine-drives)))
+#
+# AvP2 1.0.9.6's renderer is the same source one compiler earlier: cl
+# 12.00.8168 (VC6 RTM; its Rich header's 73 C++ objects), not Intel C/C++
+# as NOLF's was -- none of Intel's padding, and the same objects in the same
+# link order as Primal Hunt's, without the fog volumes (fogvolume.cpp is
+# Primal Hunt's). So the ph/ files are compiled a second time, with 8168,
+# their own flags and without PRIMAL_HUNT, into AvP2Release/ph/
+# (docs/AVP2_D3D_OBJECTS.md has the map). Objects only, for
+# now: the scoreboard scores them as they are (targets.py, partial_objs).
+D3D_AVP_PH := $(filter-out fogvolume,$(D3D_PH))
+$(foreach n,$(D3D_AVP_PH),$(eval $(call compile,$(D3D)/AvP2Release/ph/$(n).obj,$(D3D),ph/$(n).cpp,$(call vc_env,$(V8168)),$(V8168)/BIN/cl.exe,\
+    $(D3D_PH_INC_$(n)) $(D3D_BASE) $(D3D_PH_CL_$(n)) /FoAvP2Release/ph/,wine-drives)))
+.PHONY: avp2-d3d
+avp2-d3d: $(D3D_AVP_PH:%=$(D3D)/AvP2Release/ph/%.obj)
 D3D_LINK_OBJS := $(D3D_PH_ORDER:%=ph/%.obj) $(addsuffix .obj,$(D3D_LINK_ORDER)) \
     $(sort $(filter-out $(addsuffix .obj,$(D3D_LINK_ORDER) $(D3D_LINK_NOT)),$(D3D_SRC:.cpp=.obj)))
 D3D_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib $(LS_D)\StdLith.lib dxguid.lib

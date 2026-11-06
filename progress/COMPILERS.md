@@ -40,7 +40,7 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
 |---|---|---|---|---|
 | `lithtech.exe` | 2002-04-17 | **9044** x157, 8966 x8 | `libcmt.lib` (C 8047 x173, C++ 8047 x12, masm 6.13 x37); one C object of **8799**; one C++ and one C object of cl 13.00.9178 and 4 import descriptors of lib 7.00.9210 (a DirectX SDK's libraries); 4 without a `@comp.id` | -- (no build yet) |
 | `server.dll` | 2002-04-17 | **9044** x96, 8966 x8 | `libcmt.lib` (C 8047 x163, C++ 8047 x12) | -- |
-| `d3d.ren` | 2002-02-07 | C++ 8168 x73 | C 8168 x120 (`libcmt.lib`, RTM's); 3 objects of tool 0x25 build 8755 and one C++ of cl 13.00.8830, both unidentified; `cvtres` 5.00.1720 | -- |
+| `d3d.ren` | 2002-02-07 | C++ 8168 x73 | C 8168 x120 (`libcmt.lib`, RTM's); 3 objects of tool 0x25 build 8755 and one C++ of cl 13.00.8830 (the DirectX 8.0 SDK's ddraw.lib and dxguid.lib, by analogy); `cvtres` 5.00.1720 | Primal Hunt's `src/engine/d3d/ph/` with cl 8168, its files' own flags, without `PRIMAL_HUNT` or `fogvolume.cpp` (`avp2-d3d`) |
 | `ltmsg.dll` | 2001-02-05 | C++ 8168 x1, 8447 x1 | C 8168 x23 (`libcmt.lib`) | -- |
 | `Launch.dll` | 1999-08-16 | C++ 8168 x10 | NOLF's launcher DLL, a Debug build (`libcmtd.lib`: C 8168 x85); one object without a `@comp.id` | -- |
 | `AVP2.exe` | 2001-10-15 | **9044** x18, 8966 x1 | MFC statically (`nafxcw.lib`, C++ 8569 x55, SP5's MFC), `libcmt.lib` (C 8047 x134); 18 without a `@comp.id` | cl 9044 for its 18 sources, with the precompiled header (all but `LauncherDlg.cpp`: proven, the inlined MFC destructors' unwind states differ without it); the 8966 object is RegMgr32's; link 6.00.8447, SP5's MFC and `libcmt.lib` (every readable function but two identical) |
@@ -91,9 +91,16 @@ superseded by Primal Hunt's and not a target; its rows stay as a witness.
   older one, Primal Hunt this one), `AVP2Up.dll` and the launcher are the
   discs' own, the same in the European and USA releases; the patch replaced
   only the engine, the renderer, the dedicated server and the game DLLs.
-* `d3d.ren`'s header is the shape of NOLF's renderer's, which nolfsrc
-  proved to be Intel C/C++ 4.0 (a Rich header records only Microsoft
-  tools); the 0x25/8755 and 13.00.8830 rows are to be identified.
+* AvP2 1.0.9.6's `d3d.ren` is Microsoft's, cl 8168, not Intel C/C++ as
+  NOLF's renderer was. It has none of Intel's lea padding (2 such
+  sequences against NOLF's 313). Its C++ 8168 x73 are its own objects;
+  NOLF's header has an unstamped row of 80 for its Intel objects, and
+  AvP2's has none. It is Primal Hunt's renderer's source a few months
+  earlier: the same objects in the same link order, without the fog
+  volumes, and 1,180 functions byte-identical between the two images. The
+  0x25/8755 x3 and 13.00.8830 x1 rows are, by analogy with Primal Hunt's
+  DirectX 8.1 rows, the DirectX 8.0 SDK's `ddraw.lib` import objects and
+  `dxguid.lib`. The 8.0 SDK isn't here to confirm it.
 * nolfsrc's codegen lore (its `guides/`, and `toolchains/COMPILERS.md`'s
   NOLF map: 8168, 8447, Intel 4.0) is the nearest; NOLF2's (8966) covers
   the libraries. Neither carries over unchecked.

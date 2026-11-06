@@ -472,14 +472,24 @@ TARGETS = [
     dict(label="AvP2 d3d.ren", what="AvP2's Direct3D renderer", kind="image",
          shipped=REFERENCE + "/avp2/d3d.ren", stem="AVP2d3d",
          built="src/engine/d3d/AvP2Release/d3d.ren", optional=True,
-         partial_objs=["src/engine/d3d/AvP2Release/*.obj"],
+         # Primal Hunt's renderer source (src/engine/d3d/ph/) compiled with
+         # cl 8168 and without PRIMAL_HUNT (build/build.mk, avp2-d3d)
+         # and the release StdLith.lib it links after the DirectDraw thunks
+         # (struct_bank, l_allocator, dynarray at 0x1003b520..0x1003b707)
+         partial_objs=["src/engine/d3d/AvP2Release/ph/*.obj",
+                       "src/LT2/lithshared/libs/Release/StdLith.lib"],
+         lib_range={"StdLith": (0x1003b520, 0x1003b70a)},
          cites=True, cited_src=["src/engine"],
-         # built by Intel C/C++ 4.0, as nolfsrc's: its padding and /Qip names
-         icl=True,
-         # 2002-02-07, older than the patch's engine. Its Rich header is
-         # NOLF's renderer's shape (C 8168 x120, C++ 8168 x73, and three
-         # objects of an unknown tool 0x25/8755): NOLF's was Intel C/C++
-         # 4.0 (nolfsrc), whose objects a Rich header does not record.
+         # 2002-02-07, older than the patch's engine. Microsoft's, not Intel
+         # C/C++ as NOLF's renderer was: none of Intel's lea padding (2
+         # sequences against NOLF's 313), and its Rich header's C++ 8168 x73
+         # are its own objects (NOLF's has an unstamped row of 80 for its
+         # Intel ones). The same objects in the same link order as Primal
+         # Hunt's, without fogvolume.cpp; 1,180 of its functions are
+         # byte-identical to Primal Hunt's (docs/AVP2_D3D_OBJECTS.md). The tool
+         # 0x25/8755 x3 and C++ 13.00.8830 x1 rows are, by analogy with
+         # Primal Hunt's DirectX 8.1 ones, the DirectX 8.0 SDK's ddraw.lib
+         # import objects and dxguid.lib.
          # Provisional: a packed `push [esp+4]; call; pop; ret` thunk at
          # 0x1003b710 after padding, then msvc-6.00-8168's libcmt.lib from
          # onexit.obj (0x1003b76a), 237 members

@@ -444,14 +444,23 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   server.dll`, `AvP2 d3d.ren`, `AvP2 ltmsg.dll`; retail images in
   `out/reference/avp2/`), built from the same source without
   `PRIMAL_HUNT` into `<binary>/AvP2Release/`: the engine and server with
-  cl 9044, as their Rich headers say, the renderer with Intel C/C++ 4.0 and
-  nolfsrc's flag groups (its header is NOLF's renderer's shape). It starts
-  closer to nolfsrc than Primal Hunt's does: `lithtech.exe` 28.1 %,
-  `server.dll` 26.9 %. Its renderer is 0.1 %: retail against retail, it
-  shares 142 of NOLF's renderer's ~950 function bodies of 32 bytes or more
-  (`lithtech.exe` shares 1,091 of ~2,900), so AvP2's renderer was largely
-  rewritten after NOLF's, and nolfsrc's renderer source is a guide to it,
-  not a base.
+  cl 9044, as their Rich headers say. It starts closer to nolfsrc than
+  Primal Hunt's does: `lithtech.exe` 28.1 %, `server.dll` 26.9 %. Its
+  renderer is NOT Intel C/C++ as NOLF's was (this plan said so at first;
+  `progress/COMPILERS.md`): it is cl 8168, Primal Hunt's renderer's source
+  four months earlier. It has the same objects in the same link order,
+  without the fog volumes, and 1,180 functions byte-identical between the
+  two images (docs/AVP2_D3D_OBJECTS.md). So it is built from Primal Hunt's
+  `src/engine/d3d/ph/` with 8168, without `PRIMAL_HUNT` (`avp2-d3d`),
+  which took it from 10 identical to 857, objects only. Still to do:
+  - Primal Hunt's changes, each behind `#ifdef PRIMAL_HUNT`: the fog
+    volumes, the StageState vector, two UV generators and DrawPasses, the
+    CD3DModelDraw layout, d3d_InitDevice, d3d_RenderCommand,
+    d3d_InitTextures and the texture uploader, the warp, the sprite Z bias,
+    DrawNoSortWorldModel, the intersection structures, and
+    ConvertDXTGeneric's type;
+  - AvP2's own 0x100135c0 (a polygon splitter Primal Hunt dropped);
+  - its link.
 - `d3d.ren` links (`d3d-link`, as `engine-link`: /FORCE, a response file
   and a map), against the release's debug StdLith.lib, which retail links
   after the DirectDraw thunks as server.dll does; 154 identical.

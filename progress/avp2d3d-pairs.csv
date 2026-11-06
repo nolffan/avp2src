@@ -1,0 +1,1272 @@
+avp2_addr,size,ph_addr,ph_symbol,ph_file,evidence,confidence
+0x10001000,42,0x10001000,??_H@YGXPAXIHP6EX0@Z@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10001030,25,0x10001030,_$E2,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10001050,42,0x10001050,_$E12,d3d_modelvb,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10001080,10,0x10001080,_$E10,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10001090,42,0x10001090,_$E12,d3d_modelvb,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100010c0,10,0x100010c0,_$E10,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100010d0,42,0x100010d0,_$E17,d3d_modelvb,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10001100,10,0x10001100,_$E10,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10001110,42,0x10001110,_$E17,d3d_modelvb,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10001140,10,0x10001140,_$E10,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10001150,25,0x10001150,_$E25,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10001170,22,0x10001170,_$E28,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10001190,22,0x10001190,_$E28,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100011b0,25,0x100011b0,_$E34,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100011d0,25,0x100011d0,_$E37,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100011f0,25,0x100011f0,_$E40,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10001210,25,0x10001210,_$E43,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10001230,261,0x10001230,?d3d_InitModelVBs@@YAXXZ,d3d_modelvb,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10001340,33,0x10001340,?d3d_TermModelVBs@@YAXXZ,d3d_modelvb,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10001370,30,0x10001370,?d3d_GenUV@@YIXPAUUVVert@@0PAM@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001390,54,0x10001390,?d3d_GenUVDetail@@YIXPAUUVVert@@0PAM@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x100013d0,15,0x100013d0,?d3d_GenUVVert@@YIXPAUUVVert@@0PAM@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x100013e0,42,0x100013e0,?d3d_GenUVVert2@@YIXPAUUVVert@@0PAM@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001410,3,0x10001410,?d3d_GenUVNone@@YIXPAVCD3DModelDraw@@PAUModelVert@@PAUUVVert@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001420,99,0x10001420,?d3d_GenUVEnvMap@@YIXPAVCD3DModelDraw@@PAUModelVert@@PAUUVVert@@@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001490,113,0x10001490,?d3d_GenUVSpecular@@YIXPAVCD3DModelDraw@@PAUModelVert@@PAUUVVert@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001510,16,0x10001510,?d3d_CopyVert@@YIXPAUBankVert@@0@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001520,16,0x10001520,?d3d_CopyVert2@@YIXPAUBankVert2@@0@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001530,1032,0x10001530,?d3d_ClipPoly@@YIIKPAPAUClipVert@@PAJ@Z,d3d_modelvb,identical bytes (relocations masked); in link order; callees 8/8,high
+0x10001940,268,0x10001940,?LerpClipVert@@YAXPAUClipVert@@00M@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001a50,99,0x10001a50,?ClipEdgeNear@@YAMPAV?$_CVector@M@@00@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001ac0,100,0x10001ac0,?ClipEdgeLeft@@YAMPAV?$_CVector@M@@00@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10001b30,1001,0x10001b30,?d3d_ClipPoly2@@YIIKPAPAUClipVert2@@PAJ@Z,d3d_modelvb,identical bytes (relocations masked); in link order; callees 8/8,high
+0x10001f20,298,0x10001f20,?LerpClipVert@@YAXPAUClipVert2@@00M@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10002050,2915,0x10002050,?DrawTLVertsReallyClose@CD3DModelDraw@@QAEIPAUModelVertSet@@PAUModelVert@@@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10002bc0,2827,0x10002bc0,?DrawTLVertsClipped@CD3DModelDraw@@QAEIPAUModelVertSet@@PAUModelVert@@@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100036d0,1160,0x100036d0,?DrawTLVertsNoClip@CD3DModelDraw@@QAEIPAUModelVertSet@@PAUModelVert@@@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10003b60,658,0x10003b60,?DrawTLVerts@CD3DModelDraw@@QAEIPAUModelVertSet@@PAUModelVert@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10003e00,1057,0x10003e00,?DrawTnLVerts@CD3DModelDraw@@QAEIPAUModelVertSet@@PAUModelVert@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10004230,61,0x10004230,?DrawCachedVerts@CD3DModelDraw@@QAEIPAUModelVertSet@@PAUModelVert@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10004270,808,0x10004270,?DrawVerts@CD3DModelDraw@@QAEXP81@AEIPAUModelVertSet@@PAUModelVert@@@Z2K@Z [near],d3d_modelvb,similar 1.00; size 808 vs 808; in link order; callees 9/9,high
+0x100045a0,128,0x100045a0,?DrawPiece@CD3DModelDraw@@QAEXK@Z,d3d_modelvb,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10004620,27,0x10004620,,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000463b,27,0x1000463b,,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10004660,4246,0x10004660,,d3d_modelvb,similar 1.00; size 4246 vs 4241; in link order,high
+0x10005700,2612,0x10005700,,d3d_modelvb,similar 1.00; size 2612 vs 2612; in link order; callees 1/1,high
+0x10006140,13,0x10006140,?GetVertexSize@?$CModelVB@UModelVBVert2@@$00@@UAEKXZ,d3d_modelvb,similar 1.00; size 13 vs 13; in link order,high
+0x10006150,13,0x10006150,?GetVertexSize@?$CModelVB@UModelVBVert@@$00@@UAEKXZ,d3d_modelvb,similar 1.00; size 13 vs 13; in link order,high
+0x10006160,30,0x10006160,??_G?$CModelVB@UModelVBVert2@@$00@@UAEPAXI@Z,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/2,high
+0x10006180,175,0x10006180,?CreateBuffers@?$CModelVB@UModelVBVert@@$00@@UAEIPAUIDirect3D7@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10006230,175,0x10006230,?CreateBuffers@?$CModelVB@UModelVBVert2@@$00@@UAEIPAUIDirect3D7@@@Z,d3d_modelvb,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100062e0,252,0x100062e0,?ProjectVertPushed@@YAXPAUTLVert@@PAV?$_CVector@M@@M@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x100063e0,655,0x100063e0,?ClipTop@@YAIPAEPAPAUClipVert@@PAJ1@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10006670,654,0x10006670,?ClipRight@@YAIPAEPAPAUClipVert@@PAJ1@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10006900,659,0x10006900,?ClipBottom@@YAIPAEPAPAUClipVert@@PAJ1@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10006ba0,658,0x10006ba0,?ClipFar@@YAIPAEPAPAUClipVert@@PAJ1@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10006e40,689,0x10006e40,?ClipTop@@YAIPAEPAPAUClipVert2@@PAJ1@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10007100,688,0x10007100,?ClipRight@@YAIPAEPAPAUClipVert2@@PAJ1@Z,d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x100073b0,693,0x100073b0,?ClipBottom@@YAIPAEPAPAUClipVert2@@PAJ1@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10007670,692,0x10007670,?ClipFar@@YAIPAEPAPAUClipVert2@@PAJ1@Z [near],d3d_modelvb,identical bytes (relocations masked); in link order,high
+0x10007930,70,0x10007930,?d3d_SetupScreenScale@@YAXXZ,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10007976,110,0x10007976,?d3d_DrawDeferredPieces@@YAXXZ,drawmodel_clip,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100079e4,165,0x100079e4,?d3d_SetTexture@@YAHPAUSharedTexture@@KK@Z [near],drawmodel_clip,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10007a89,184,0x10007a89,?d3d_SetTextureDirect@@YAXPAVRTexture@@@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10007b41,666,0x10007b41,?d3d_DrawDeferredPiece@@YAXPAURenderPoly@@@Z [near],drawmodel_clip,identical bytes (relocations masked); in link order; callees 11/11; strings agree,high
+0x10007ddb,91,0x10007ddb,?d3d_QueuePoly@@YAPAUQueuedPoly@@PAX0K@Z,drawmodel_clip,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10007e36,39,0x10007e36,?sb_Allocate@@YAPAXPAUStructBank_t@@@Z,drawmodel_clip,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10007e5d,826,0x10007e5d,?d3d_DrawLMPolyLights@@YAXPAURenderPoly@@PAUTLVertex@@K@Z [near],drawmodel_clip,similar 1.00; size 826 vs 826; in link order; callees 10/10,high
+0x10008197,407,0x10008197,?Inverse@LTMatrix@@QAEIXZ,drawmodel_clip,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000832e,128,0x1000832e,?Apply4x4@LTMatrix@@QAEXABV?$_CVector@M@@AAV2@@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x100083ae,62,0x100083ae,??1CountAdder@@QAE@XZ,drawmodel_clip,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100083ec,487,0x100083ec,?d3d_LightSkyPoly@@YAXPAURenderPoly@@PAUTLVertex@@K@Z [near],d3d_skyobjects,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100085d3,31,0x100085d3,?MagSqr@?$_CVector@M@@QBEMXZ,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x100085f2,155,0x100085f2,?d3d_ClipLMVerts@@YAIPAPAUClipVert2@@PAJPAUViewParams@@K@Z,drawmodel_clip,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1000868d,140,0x1000868d,?MatVMul_InPlace_H@@YAMPAVLTMatrix@@PAV?$_CVector@M@@@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10008719,96,0x10008719,?d3d_TransformToCamera@@YAXPAUTLVertex@@PAVLTMatrix@@@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10008779,284,0x10008779,?ClipPoly@@YAIKPAPAUClipVert2@@PAJ@Z,drawmodel_clip,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10008895,87,0x1002739d,?d3d_ProjectTLVert@@YAXPAUTLVertex@@PAUViewParams@@@Z,drawmodelshadows,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",medium
+0x100088ec,311,0x10008895,?ClipNear@@YAIPAEPAPAUClipVert2@@PAJ1@Z,drawmodel_clip,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10008a23,309,0x100089cc,?ClipLeft@@YAIPAEPAPAUClipVert2@@PAJ1@Z,drawmodel_clip,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10008b58,92,0x10008b01,?ClipEdgeTop@@YAMPAV?$_CVector@M@@00@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10008bb4,92,0x10008b5d,?ClipEdgeRight@@YAMPAV?$_CVector@M@@00@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10008c10,94,0x10008bb9,?ClipEdgeBottom@@YAMPAV?$_CVector@M@@00@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10008c6e,91,0x10008c17,?ClipEdgeFar@@YAMPAV?$_CVector@M@@00@Z,drawmodel_clip,identical bytes (relocations masked); in link order,high
+0x10008cd0,1,0x10008c80,_$E2,d3d_matrix,identical bytes (relocations masked); in link order,high
+0x10008ce0,832,0x10008c90,?d3d_DrawParticles@@YAXPAVLTObject@@@Z [near],d3d_matrix,identical bytes (relocations masked); in link order; callees 16/16,high
+0x10009020,532,0x10008fd0,?MatMul@@YAXPAVLTMatrix@@00@Z,d3d_matrix,identical bytes (relocations masked); in link order,high
+0x10009240,265,0x100091f0,?d3d_SetupTransformation@@YAXPAV?$_CVector@M@@PAURotation@@0PAVLTMatrix@@@Z,d3d_matrix,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10009350,30,0x10009300,?d3d_GetStageTexture@@YAPAVRTexture@@PAV1@E@Z,d3d_matrix,identical bytes (relocations masked); in link order,high
+0x10009370,1337,0x10009320,?d3d_DrawParticleBatch@@YAPAUPSParticle@@PAVLTObject@@PAU1@JPAVLTMatrix@@IM@Z [near],d3d_matrix,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100098b0,23,0x10009860,?Init@?$_CVector@M@@QAEXMMM@Z,drawlight,identical bytes (relocations masked); in link order,high
+0x100098d0,5,0x10009880,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100098d5,26,0x10009885,_$E1,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100098ef,5,0x1000989f,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100098f4,26,0x100098a4,_$E1,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000990e,5,0x100098be,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10009913,26,0x100098c3,_$E10,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000992d,5,0x100098dd,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10009932,26,0x100098e2,_$E10,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000994c,5,0x100098fc,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10009951,26,0x10009901,_$E10,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000996b,5,0x1000991b,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10009970,26,0x10009920,_$E1,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000998a,5,0x1000993a,_$E11,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000998f,26,0x1000993f,_$E1,drawworld,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100099a9,10,0x10009959,?d3d_SetWorldFlags@@YAXK@Z,drawworld,identical bytes (relocations masked); in link order,high
+0x100099b3,6,0x10009963,?d3d_GetWorldFlags@@YAKXZ,drawworld,identical bytes (relocations masked); in link order,high
+0x100099b9,1223,0x10009969,?d3d_DrawLightmappedPoly@@YAXPAURenderPoly@@@Z [near],drawworld,identical bytes (relocations masked); in link order; callees 19/19; strings agree,high
+0x10009e80,37,0x10009e30,?d3d_CheckLightmap@@YAXPAUSceneWorld@@PAUWorldPoly@@@Z,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10009ea5,102,0x10009e55,?d3d_SetLightmapTexture@@YAKPAUWorldPoly@@K@Z [near],drawworld,identical bytes (relocations masked); in link order,high
+0x10009f0b,97,0x10009ebb,?d3d_SetupLMVerts@@YAXKPAULMVertex@@PAUWorldVertex@@H@Z,drawworld,identical bytes (relocations masked); in link order,high
+0x10009f6c,250,0x10009f1c,?d3d_SetupLMVertsCalc@@YAXKPAUWorldPoly@@PAULMVertex@@PAUWorldVertex@@H@Z,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000a066,206,0x1000a016,?d3d_SetupLMUVs@@YAXPAUWorldPoly@@PAULMVertex@@PAUWorldVertex@@H@Z,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000a134,55,0x1000a0e4,?d3d_GetTLVerts@@YAPAUTLVertex@@K@Z,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000a16b,87,0x1000a11b,?d3d_DrawTexturedPoly@@YAXPAURenderPoly@@@Z,drawworld,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000a1c2,79,0x1000a172,?d3d_SetDetailTextureStage@@YAXH@Z,drawworld,identical bytes (relocations masked); in link order,high
+0x1000a211,41,0x1000a1c1,?d3d_UnsetDetailTextureStage@@YAXXZ,drawworld,identical bytes (relocations masked); in link order,high
+0x1000a23a,36,0x1000a1ea,?d3d_SetDetailTextureOp@@YAXXZ,drawworld,identical bytes (relocations masked); in link order,high
+0x1000a25e,29,0x1000a20e,?d3d_UnsetDetailTextureOp@@YAXXZ,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000a27b,44,0x1000a22b,?d3d_DisableTexture@@YAXK@Z,drawworld,identical bytes (relocations masked); in link order,high
+0x1000a2a7,565,0x1000a257,?d3d_DrawLMPieces@@YAXXZ,drawworld,identical bytes (relocations masked); in link order; callees 10/10,high
+0x1000a4dc,69,0x1000a48c,??0StageStateSet@@QAE@KW4_D3DTEXTURESTAGESTATETYPE@@K@Z,drawworld,identical bytes (relocations masked); in link order,high
+0x1000a521,23,0x1000a4d1,??1StageStateSet@@QAE@XZ,drawworld,identical bytes (relocations masked); in link order,high
+0x1000a538,469,0x1000a4e8,?d3d_DrawPieceQueue@@YAXPAUTexQueue@@PAUSharedTexture@@II@Z,drawworld,identical bytes (relocations masked); in link order; callees 16/16,high
+0x1000a70d,435,0x1000a6bd,?d3d_DrawPieceList@@YAXPAUTexQueue@@II@Z,drawworld,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1000a8c0,955,0x1000a870,?d3d_DrawDetailPieces@@YAXPAUTexQueue@@II@Z [near],drawworld,identical bytes (relocations masked); in link order; callees 5/5,high
+0x1000ac7b,15,0x1000ac2b,?d3d_FlushWorldPieces@@YAXXZ,drawworld,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000ac8a,190,0x1000ac3a,?d3d_DrawWorldPieces@@YAXXZ,drawworld,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000ad48,231,0x1000acf8,?d3d_DrawTLPolyTris@@YAXPAUTLVertex@@HPAUViewParams@@K@Z [near],drawworld,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000ae2f,231,0x1000addf,?d3d_DrawLMPolyTris@@YAXPAULMVertex@@HPAUViewParams@@K@Z [near],drawworld,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000af16,155,0x1000aec6,?d3d_ClipTLVerts@@YAIPAPAUTLVertex@@PAHPAUViewParams@@K@Z,drawworld,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1000afb1,284,0x1000af61,?ClipPoly@@YAIKPAPAUClipVert@@PAJ@Z,drawworld,identical bytes (relocations masked); in link order; callees 6/6,high
+0x1000b0cd,319,0x1000b07d,?ClipNear@@YAIPAEPAPAUClipVert@@PAJ1@Z,drawworld,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000b20c,317,0x1000b1bc,?ClipLeft@@YAIPAEPAPAUClipVert@@PAJ1@Z,drawworld,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000b349,22,0x1000b2f9,_$E6,d3d_savedstates,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000b35f,10,0x1000b30f,_$E1,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b369,1,0x1000b319,_$E6,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b36a,5,0x1000b31a,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b36f,26,0x1000b31f,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b389,5,0x1000b339,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b38e,26,0x1000b33e,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b3a8,5,0x1000b358,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b3ad,26,0x1000b35d,_$E15,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b3c7,5,0x1000b377,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b3cc,26,0x1000b37c,_$E15,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b3e6,5,0x1000b396,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b3eb,30,0x1000b39b,_$E21,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b409,5,0x1000b3b9,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b40e,26,0x1000b3be,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b428,5,0x1000b3d8,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b42d,26,0x1000b3dd,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b447,5,0x1000b3f7,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b44c,26,0x1000b3fc,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b466,5,0x1000b416,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b46b,30,0x1000b41b,_$E21,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b489,5,0x1000b439,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b48e,26,0x1000b43e,_$E15,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b4a8,5,0x1000b458,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b4ad,30,0x1000b45d,_$E21,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b4cb,5,0x1000b47b,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b4d0,26,0x1000b480,_$E15,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b4ea,5,0x1000b49a,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b4ef,26,0x1000b49f,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b509,5,0x1000b4b9,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b50e,26,0x1000b4be,_$E12,drawmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000b528,56,0x1000b4d8,?d3d_DrawModel@@YAXPAXPAUModelInstance@@@Z,drawmodel,similar 1.00; size 56 vs 56; in link order; callees 3/3,high
+0x1000b560,36,0x1000b510,?IsValid@AnimTracker@@QAEIXZ,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b584,183,0x1000b534,?d3d_SetupModel@@YAIPAVCD3DModelDraw@@PAUModelInstance@@PAK@Z,drawmodel,similar 1.00; size 183 vs 183; in link order; callees 1/1,high
+0x1000b63b,115,0x1000b5eb,?d3d_ClipSphere@@YAIPAV?$_CVector@M@@MPAVLTPlane@@PAK@Z [near],drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b6ae,31,0x1000b65e,?d3d_InitModelLists@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b6cd,165,0x1000b67d,?d3d_InitModelSun@@YAXXZ [near],drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b772,56,0x1000b722,?d3d_InitModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000b7aa,5,0x1000b75a,?d3d_TermModels@@YAXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b7af,226,0x1000b75f,??0CD3DModelDraw@@QAE@XZ [near],drawmodel,identical bytes (relocations masked); in link order; callees 8/8,high
+0x1000b891,84,0x1000b841,??0ModelRenderState@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000b8e5,102,0x1000b895,?Identity@LTMatrix@@QAEXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000b94b,102,0x1000b8fb,?Init@LTMatrix@@QAEXMMMMMMMMMMMMMMMM@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b9b1,32,0x1000b961,?Clear@ModelPass@@QAEXXZ,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b9d1,3,0x1000b981,??0ModelLight@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000b9d4,72,0x1000b984,??1CD3DModelDraw@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1000ba1c,82,0x1000b9cc,?AllocVerts@CD3DModelDraw@@QAEIXZ,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000ba6e,54,0x1000ba1e,?CallModelHook@CD3DModelDraw@@QAEXXZ [near],drawmodel,identical bytes (relocations masked); in link order,high
+0x1000baa4,90,0x1000ba54,?sub_100149a0@@YAMPAVMat10027eb0@@PAVVec10027eb0@@@Z [near],nolf:w3_10014580_os,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000bafe,501,0x1000baae,,drawmodel,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1000bcf3,92,0x1000bca3,_sub_10014940,nolf:w3_10014580_os,identical bytes (relocations masked); in link order,high
+0x1000bd4f,156,0x1000bcff,?d3d_SegmentHitsSky@@YAIPAV?$_CVector@M@@0@Z [near],drawmodel,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1000bdeb,61,0x1000bd9b,??0IntersectQuery@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000be28,49,0x1000bdd8,??0IntersectInfo@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000be59,47,0x1000be09,?GetPolyFromHPoly@SceneWorld@@QAEPAUModelWorldPoly@@K@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000be88,567,0x1000be38,,drawmodel,similar 0.85; size 567 vs 519; in link order; callees 6/6,medium
+0x1000c0bf,65,0x1000c03f,?sub_1001e4d0@Mat1001e480@@QAEXPAVVec1004b6f0@@00@Z [near],nolf:d3dr2a,identical bytes (relocations masked); in link order,high
+0x1000c100,1597,0x1000c080,,drawmodel,similar 0.98; size 1597 vs 1653; in link order; callees 14/16; float constants differ: AvP2 [] PH [255.0],high
+0x1000c73d,83,0x1000c6f5,?sub_10014a50@@YAXPAVVec10027eb0@@PAVMat10027eb0@@0@Z,nolf:w3_10014580_os,identical bytes (relocations masked); in link order,high
+0x1000c790,147,0x1000c748,_sub_10014ab0 [near],nolf:w3_10014580_os,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000c823,61,0x1000c7db,,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000c860,1145,0x1000c818,,drawmodel,identical bytes (relocations masked); in link order; callees 9/9,high
+0x1000ccd9,1639,0x1000cc91,?sub_10014b60@@YAXPAXPAULTVec@@PAE@Z [near],nolf:w3_10014580_os,similar 0.69; size 1639 vs 1502; in link order; callees 24/25,medium
+0x1000d340,31,0x1000d26f,?sub_10015480@LTVec@@QAEPAU1@MMM@Z [near],nolf:w3_10014580_os,identical bytes (relocations masked); in link order,high
+0x1000d35f,72,0x1000d28e,?sub_100156e0@LTMat@@QAEXXZ [near],nolf:w3_10014580_os,identical bytes (relocations masked); in link order,high
+0x1000d3a7,2129,0x1000d2d6,,drawmodel,"similar 0.95; size 2129 vs 2266; in link order; callees 33/35; float constants differ: AvP2 [] PH [0.025, 0.025, 1.5708, 6.28319]",high
+0x1000dbf8,117,0x1000dbb0,@sub_100159d0@12 [near],nolf:w3_10014580_os,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000dc6d,90,0x1000dc25,?sub_10015770@LTMat@@QAEXPBULTVec@@PAU2@@Z,nolf:w3_10014580_os,identical bytes (relocations masked); in link order,high
+0x1000dcc7,109,0x1000dc7f,?MatVMul_3x3@@YAXPAV?$_CVector@M@@PAVLTMatrix@@0@Z [near],fullintersectline,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000dd34,145,0x1000dcec,?MatVMul_H@@YAMPAV?$_CVector@M@@PAVLTMatrix@@0@Z [near],fullintersectline,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000ddc5,90,0x1000dd7d,?sub_1001b840@CD3DModelDraw@@QAEXPAULTMat@@@Z [near],nolf:w43_10017c10_osoiqipni,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000de1f,55,0x1000ddd7,?sub_10015e30@@YAKKK@Z,nolf:w43_10017c10_osoiqipni,identical bytes (relocations masked); in link order,high
+0x1000de56,292,0x1000de0e,_sub_1001be00 [near],nolf:w43_10017c10_osoiqipni,identical bytes (relocations masked); in link order,high
+0x1000df7a,60,0x1000df32,?sub_1001bf30@CD3DModelDraw@@QAEKXZ [near],nolf:w43_10017c10_osoiqipni,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000dfb6,25,0x1000df6e,??0?$_CVector@M@@QAE@MMM@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1000dfcf,66,0x1000df87,??0CLightmapPages@@QAE@XZ [near],lmsurfaces,similar 0.91; size 66 vs 57; in link order; callees 1/1,high
+0x1000e011,43,0x1000dfc0,?Mag@?$_CVector@M@@QBEMXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e03c,48,0x1000dfeb,?sub_10023350@LTVecC@@QBE?AV1@XZ,nolf:d3dr2c,callgraph 3/3; size 48 vs 29; in link order,medium
+0x1000e06c,51,0x10019270,??G?$_CVector@M@@QBE?AV0@V0@@Z,nolf:w24_10068c80_osqipni,callgraph 5/7; size 51 vs 35; in link order,medium
+0x1000e09f,34,0x1000e008,??0?$CMoArray@GVDefaultCache@@@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e0c1,22,,,,no Primal Hunt counterpart,none
+0x1000e0d7,21,0x1000e02a,?GenGetNext@?$CMoArray@GVDefaultCache@@@@UBEGAAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e0ec,16,0x1000e03f,?GenGetAt@?$CMoArray@GVDefaultCache@@@@UBEGAAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e0fc,21,0x1000e04f,?GenAppend@?$CMoArray@GVDefaultCache@@@@UAEHAAG@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e111,17,0x1000e064,?GenRemoveAt@?$CMoArray@GVDefaultCache@@@@UAEXVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e122,13,0x1000e075,?GenRemoveAll@?$CMoArray@GVDefaultCache@@@@UAEXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e12f,138,0x1000e082,?GenCopyList@?$CMoArray@GVDefaultCache@@@@UAEHABV?$GenList@G@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e1b9,143,0x1000e10c,?GenAppendList@?$CMoArray@GVDefaultCache@@@@UAEHABV?$GenList@G@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e248,39,0x1000e19b,?GenFindElement@?$CMoArray@GVDefaultCache@@@@UBEHABGAAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e26f,34,0x1000e1cc,??0?$CMoArray@GVDefaultCache@@@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e291,16,0x1000e1c2,?GenSetCacheSize@?$CMoArray@GVDefaultCache@@@@UAEXK@Z,drawmodel,similar 0.67; size 16 vs 10; in link order,medium
+0x1000e2a1,35,0x1000e1ee,?GenGetNext@?$CMoArray@UModelTLVert@@VDefaultCache@@@@UBE?AUModelTLVert@@AAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e2c4,30,0x1000e211,?GenGetAt@?$CMoArray@UModelTLVert@@VDefaultCache@@@@UBE?AUModelTLVert@@AAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e2e2,21,0x1000e22f,?GenAppend@?$CMoArray@GVDefaultCache@@@@UAEHAAG@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e2f7,17,0x1000e244,?GenRemoveAt@?$CMoArray@GVDefaultCache@@@@UAEXVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e308,13,0x1000e255,?GenRemoveAll@?$CMoArray@GVDefaultCache@@@@UAEXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e315,180,0x1000e266,?GenCopyList@?$CMoArray@UModelTLVert@@VDefaultCache@@@@UAEHABV?$GenList@UModelTLVert@@@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e3c9,188,0x1000e31a,?GenAppendList@?$CMoArray@UModelTLVert@@VDefaultCache@@@@UAEHABV?$GenList@UModelTLVert@@@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e485,39,0x1000e3d6,?GenFindElement@?$CMoArray@UModelTLVert@@VDefaultCache@@@@UBEHABUModelTLVert@@AAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e4ac,34,0x1000e3fd,??0?$CMoArray@GVDefaultCache@@@@QAE@XZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e4ce,35,0x1000e41f,?GenGetNext@?$CMoArray@UModelClipVert@@VDefaultCache@@@@UBE?AUModelClipVert@@AAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e4f1,30,0x1000e442,?GenGetAt@?$CMoArray@UModelClipVert@@VDefaultCache@@@@UBE?AUModelClipVert@@AAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e50f,21,0x1000e460,?GenAppend@?$CMoArray@GVDefaultCache@@@@UAEHAAG@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e524,17,0x1000e475,?GenRemoveAt@?$CMoArray@GVDefaultCache@@@@UAEXVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e535,13,0x1000e486,?GenRemoveAll@?$CMoArray@GVDefaultCache@@@@UAEXXZ,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e542,180,0x1000e493,?GenCopyList@?$CMoArray@UModelClipVert@@VDefaultCache@@@@UAEHABV?$GenList@UModelClipVert@@@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e5f6,188,0x1000e547,?GenAppendList@?$CMoArray@UModelClipVert@@VDefaultCache@@@@UAEHABV?$GenList@UModelClipVert@@@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e6b2,39,0x1000e603,?GenFindElement@?$CMoArray@UModelClipVert@@VDefaultCache@@@@UBEHABUModelClipVert@@AAVGenListPos@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e6d9,51,0x1000e62a,?Norm@?$_CVector@M@@QAEXM@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000e70c,74,0x1000e65d,?Cross@?$_CVector@M@@QBE?AV1@V1@@Z,intersect_line,similar 0.61; size 74 vs 58; in link order,low
+0x1000e756,118,0x1000e697,,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000e7cc,53,0x1000e70d,?Init@?$CMoArray@GVDefaultCache@@@@QAEHKK@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e801,95,0x1000e742,?SetSize2@?$CMoArray@GVDefaultCache@@@@QAEHKPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000e860,175,0x1000e7a1,?InternalNiceSetSize@?$CMoArray@GVDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/3,high
+0x1000e90f,53,0x1000e850,?Init@?$CMoArray@GVDefaultCache@@@@QAEHKK@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000e944,98,0x1000e885,?SetSize2@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@QAEHKPAVLAlloc@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000e9a6,188,0x1000e8e7,?InternalNiceSetSize@?$CMoArray@UModelTLVert@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z [near],drawmodel,identical bytes (relocations masked); in link order; callees 2/3,high
+0x1000ea62,53,0x1000e9a3,?Init@?$CMoArray@GVDefaultCache@@@@QAEHKK@Z,drawmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1000ea97,95,0x1000e9d8,?SetSize2@?$CMoArray@GVDefaultCache@@@@QAEHKPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000eaf6,188,0x1000ea37,?InternalNiceSetSize@?$CMoArray@UModelClipVert@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 5/5,high
+0x1000ebb2,200,0x1000eaf3,?Insert2@?$CMoArray@GVDefaultCache@@@@QAEHKABGPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000ec7a,187,0x1000ebbb,?Remove2@?$CMoArray@GVDefaultCache@@@@QAEXKPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000ed35,23,0x1000ec76,?_AllocateTArray@?$CMoArray@GVDefaultCache@@@@AAEPAGKPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000ed4c,267,0x1000ec8d,?Insert2@?$CMoArray@UModelTLVert@@VDefaultCache@@@@QAEHKABUModelTLVert@@PAVLAlloc@@@Z [near],drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000ee57,234,0x1000ed98,?Remove2@?$CMoArray@UModelTLVert@@VDefaultCache@@@@QAEXKPAVLAlloc@@@Z [near],drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000ef41,264,0x1000ee82,?Insert2@?$CMoArray@UModelClipVert@@VDefaultCache@@@@QAEHKABUModelClipVert@@PAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000f049,231,0x1000ef8a,?Remove2@?$CMoArray@UModelClipVert@@VDefaultCache@@@@QAEXKPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1000f130,24,0x1000f071,?_AllocateTArray@?$CMoArray@UModelClipVert@@VDefaultCache@@@@AAEPAUModelClipVert@@KPAVLAlloc@@@Z,drawmodel,identical bytes (relocations masked); in link order,high
+0x1000f148,22,0x1000f089,?BaseNew@@YAPAUElem32_19874@@PAVLAlloc@@PAU1@K@Z,nolf:w43_10017c10_osoiqipni,identical bytes (relocations masked); in link order,high
+0x1000f160,25,0x1000ff00,_$E2,d3d_viewparams,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000f180,25,0x1000ff20,_$E5,d3d_viewparams,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1000f1a0,197,0x1000ff40,?SetCameraPos@ViewParams@@QAEXV?$_CVector@M@@@Z,d3d_viewparams,identical bytes (relocations masked); in link order,high
+0x1000f270,298,0x10010010,?d3d_GetDynamicLightAdd@@YAXPAUModelInstance@@PAV?$_CVector@M@@@Z [near],d3d_viewparams,similar 0.59; size 298 vs 296; in link order; strings differ: - +333?; float constants differ: AvP2 [0.7] PH [],low
+0x1000f3a0,1,0x10010140,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f3a1,1,0x10010141,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f3a2,1,0x10010142,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f3a3,1,0x10010143,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f3a4,1,0x10010144,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f3a5,10,0x10010145,_$E17,common_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000f3af,17,0x1001014f,??0ViewParams@@QAE@XZ,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f3c0,74,0x10010160,?d3d_IncFrameCode@@YAXPAURenderWorld@@@Z,common_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1000f40a,78,0x100101aa,?d3d_ClearBlockFrameCodes@@YAXPAURenderBlock@@@Z,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f458,249,0x100101f8,?d3d_NodeFilter@@YAHPAUVisNode@@@Z,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f551,146,0x100102f1,?d3d_InitViewBox@@YAXPAUViewBox@@MMMM@Z,common_draw,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1000f5e3,251,0x10010383,?d3d_InitViewBox@@YAXPAUViewBox@@MMPAUViewParams@@MMMM@Z,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f6de,77,0x1001047e,?d3d_SetupProjectionTerms@@YAXPAUViewParams@@@Z,common_draw,identical bytes (relocations masked); in link order,high
+0x1000f72b,2766,0x100104cb,,common_draw,identical bytes (relocations masked); in link order; callees 37/37,high
+0x100101f9,41,0x10010f99,,common_draw,identical bytes (relocations masked); in link order,high
+0x10010222,95,0x10010fc2,,common_draw,identical bytes (relocations masked); in link order,high
+0x10010281,56,0x10011021,?d3d_SetupPerspectiveMatrix@@YAXPAVLTMatrix@@MM@Z,common_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100102b9,265,0x10011059,?d3d_SetupSkyStuff@@YAXXZ,common_draw,identical bytes (relocations masked); in link order,high
+0x100103c2,949,0x10011162,?d3d_InitFrame@@YAJPAUSceneDesc@@PAXK@Z [near],common_draw,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10010777,76,0x10011517,?d3d_FreeLitObjects@@YAXXZ,common_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100107c3,56,0x10011563,?d3d_FreeLightLinks@@YAXPAULitObjectRef@@@Z,common_draw,identical bytes (relocations masked); in link order,high
+0x100107fb,5,0x1001159b,?d3d_InitFrameState@@YAXXZ,common_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10010800,58,0x100115a0,?d3d_InitWorldBanks@@YAXXZ,common_draw,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1001083a,36,0x100115da,?d3d_TermWorldBanks@@YAXXZ,common_draw,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1001085e,238,0x100115fe,?d3d_CalcEnvMapUV@@YAXPBV?$_CVector@M@@00PAM1@Z,common_draw,similar 0.97; size 238 vs 229; in link order; callees 1/1,high
+0x1001094c,16,0x100116e3,_$E2,common_init,identical bytes (relocations masked); in link order,high
+0x1001095c,11,0x100116f3,_$E5,common_init,identical bytes (relocations masked); in link order,high
+0x10010967,49,0x100116fe,?d3d_FreeDeviceList@@YAXXZ,common_init,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10010998,46,0x1001172f,?d3d_ListDevices@@YAXXZ,common_init,identical bytes (relocations masked); in link order; strings agree,high
+0x100109c6,55,0x1001175d,?d3d_GetRenderObject@@YAPAXPAD@Z,common_init,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x100109fd,39,0x10011794,?r_SetPFormat@@YAXPAU_DDPIXELFORMAT@@PAVPFormat@@@Z,common_init,identical bytes (relocations masked); in link order,high
+0x10010a24,69,0x100117bb,?r_GetBufferFormatOfSurface@@YAIPAUIDirectDrawSurface7@@PAVPFormat@@@Z,common_init,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10010a69,170,0x10011800,?d3d_FreeDevice@@YAXXZ,common_init,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10010b13,15,0x100118aa,?d3d_Term@@YAXXZ,common_init,similar 0.86; size 15 vs 20; in link order; callees 3/4,medium
+0x10010b22,747,0x100118be,?d3d_Init@@YAHPAURenderStructInit@@@Z [near],common_init,similar 0.99; size 747 vs 720; in link order; callees 15/27; strings agree,high
+0x10010e0d,41,0x10011b8e,?d3d_IsNullRenderOn@@YAIXZ,common_init,identical bytes (relocations masked); in link order; strings agree,high
+0x10010e36,125,0x10011bb7,?d3d_FindDevice@@YAPAUD3DDeviceInfo@@PAD@Z,common_init,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10010eb3,145,0x10011c34,?d3d_EnumModesCallback@@YGJPAU_DDSURFACEDESC2@@PAX@Z,common_init,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10010f44,143,0x10011cc5,_GetSupportedModes,common_init,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10010fd3,30,0x10011d54,_FreeModeList,common_init,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10010ff1,378,0x10011d72,_RenderDLLSetup,common_init,identical bytes (relocations masked); in link order,high
+0x1001116b,5,0x10011eec,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011170,69,0x10011ef1,_$E1,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100111b5,59,0x10011f36,??0CD3DConVar@@QAE@PBDMPAJPAM@Z,common_stuff,identical bytes (relocations masked); in link order,high
+0x100111f0,5,0x10011f71,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100111f5,74,0x10011f76,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001123f,5,0x10011fc0,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011244,74,0x10011fc5,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001128e,5,0x1001200f,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011293,76,0x10012014,_$E10,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100112df,5,0x10012060,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100112e4,76,0x10012065,_$E13,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011330,5,0x100120b1,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011335,74,0x100120b6,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001137f,5,0x10012100,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011384,74,0x10012105,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100113ce,5,0x1001214f,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100113d3,76,0x10012154,_$E22,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001141f,5,0x100121a0,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011424,74,0x100121a5,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001146e,5,0x100121ef,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011473,74,0x100121f4,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100114bd,5,0x1001223e,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100114c2,74,0x10012243,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001150c,5,0x1001228d,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011511,74,0x10012292,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001155b,5,0x100122dc,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011560,74,0x100122e1,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100115aa,5,0x1001232b,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100115af,74,0x10012330,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100115f9,5,0x1001237a,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100115fe,74,0x1001237f,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011648,5,0x100123c9,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001164d,74,0x100123ce,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011697,5,0x10012418,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001169c,74,0x1001241d,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100116e6,5,0x10012467,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100116eb,74,0x1001246c,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011735,5,0x100124b6,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001173a,76,0x100124bb,_$E55,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011786,5,0x10012507,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001178b,76,0x1001250c,_$E58,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100117d7,5,0x10012558,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100117dc,74,0x1001255d,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011826,5,0x100125a7,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001182b,76,0x100125ac,_$E64,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011877,5,0x100125f8,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001187c,74,0x100125fd,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100118c6,5,0x10012647,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100118cb,74,0x1001264c,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011915,5,0x10012696,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001191a,76,0x1001269b,_$E73,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011966,5,0x100126e7,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001196b,74,0x100126ec,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100119b5,5,0x10012736,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100119ba,76,0x1001273b,_$E229,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011a06,5,0x10012787,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011a0b,74,0x1001278c,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011a55,5,0x100127d6,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011a5a,74,0x100127db,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011aa4,5,0x10012825,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011aa9,74,0x1001282a,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011af3,5,0x10012874,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011af8,74,0x10012879,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011b42,5,0x100128c3,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011b47,74,0x100128c8,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011b91,5,0x10012912,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011b96,74,0x10012917,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011be0,5,0x10012961,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011be5,74,0x10012966,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011c2f,5,0x100129b0,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011c34,74,0x100129b5,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011c7e,5,0x100129ff,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011c83,74,0x10012a04,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011ccd,5,0x10012a4e,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011cd2,74,0x10012a53,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011d1c,5,0x10012a9d,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011d21,74,0x10012aa2,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011d6b,5,0x10012aec,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011d70,74,0x10012af1,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011dba,5,0x10012b3b,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011dbf,74,0x10012b40,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011e09,5,0x10012b8a,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011e0e,74,0x10012b8f,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011e58,5,0x10012bd9,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011e5d,74,0x10012bde,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011ea7,5,0x10012c28,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011eac,74,0x10012c2d,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011ef6,5,0x10012c77,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011efb,74,0x10012c7c,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011f45,5,0x10012cc6,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011f4a,74,0x10012ccb,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011f94,5,0x10012d15,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011f99,74,0x10012d1a,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10011fe3,5,0x10012d64,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10011fe8,74,0x10012d69,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012032,5,0x10012db3,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012037,74,0x10012db8,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012081,5,0x10012e02,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012086,74,0x10012e07,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100120d0,5,0x10012e51,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100120d5,76,0x10012e56,_$E148,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012121,5,0x10012ea2,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012126,76,0x10012ea7,_$E148,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012172,5,0x10012ef3,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012177,76,0x10012ef8,_$E148,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100121c3,5,0x10012f44,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100121c8,74,0x10012f49,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012212,5,0x10012f93,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012217,76,0x10012f98,_$E160,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012263,5,0x10012fe4,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012268,74,0x10012fe9,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100122b2,5,0x10013033,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100122b7,76,0x10013038,_$E160,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012303,5,0x10013084,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012308,74,0x10013089,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012352,5,0x100130d3,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012357,74,0x100130d8,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100123a1,5,0x10013122,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100123a6,74,0x10013127,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100123f0,5,0x10013171,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100123f5,74,0x10013176,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001243f,5,0x100131c0,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012444,74,0x100131c5,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001248e,5,0x1001320f,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012493,74,0x10013214,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100124dd,5,0x1001325e,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100124e2,74,0x10013263,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001252c,5,0x100132ad,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012531,74,0x100132b2,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001257b,5,0x100132fc,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012580,74,0x10013301,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100125ca,5,0x1001334b,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100125cf,74,0x10013350,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012619,5,0x1001339a,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001261e,74,0x1001339f,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012668,5,0x100133e9,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001266d,74,0x100133ee,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100126b7,5,0x10013438,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100126bc,74,0x1001343d,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012706,5,0x10013487,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001270b,74,0x1001348c,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012755,5,0x100134d6,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001275a,74,0x100134db,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100127a4,5,0x10013525,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100127a9,74,0x1001352a,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100127f3,5,0x10013574,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100127f8,74,0x10013579,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012842,5,0x100135c3,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012847,74,0x100135c8,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012891,5,0x10013612,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012896,74,0x10013617,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100128e0,5,0x10013661,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100128e5,74,0x10013666,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x1001292f,5,0x100136b0,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012934,76,0x100136b5,_$E229,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012980,5,0x10013701,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012985,74,0x10013706,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x100129cf,5,0x10013750,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100129d4,74,0x10013755,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012a1e,5,0x1001379f,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012a23,74,0x100137a4,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012a6d,5,0x100137ee,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012a72,74,0x100137f3,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012abc,5,0x1001383d,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012ac1,74,0x10013842,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012b0b,5,0x1001388c,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012b10,74,0x10013891,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012b5a,5,0x100138db,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012b5f,74,0x100138e0,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012ba9,5,0x1001392a,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012bae,74,0x1001392f,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012bf8,5,0x10013979,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012bfd,74,0x1001397e,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012c47,5,0x100139c8,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012c4c,74,0x100139cd,_$E100,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012c96,5,0x10013a17,_$E101,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012c9b,74,0x10013a1c,_$E115,common_stuff,identical bytes (relocations masked); in link order; strings agree,high
+0x10012ce5,25,0x10013a66,?dalloc@@YAPAXK@Z,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012cfe,70,0x10013a7f,?dalloc_z@@YAPAXK@Z,common_stuff,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x10012d44,25,0x10013ac5,?dfree@@YAXPAX@Z,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012d5d,53,0x10013ade,?dd_ConsolePrint@@YAXPBDZZ,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012d92,64,0x10013b13,?AddDebugMessage@@YAXJPBDZZ,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012dd2,84,0x10013b53,?d3d_MaybeCreateCVar@@YAPAXPBDM@Z,common_stuff,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10012e26,38,0x10013ba7,?d3d_CreateConsoleVariables@@YAXXZ,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012e4c,99,0x10013bcd,?d3d_ReadConsoleVariables@@YAXXZ,common_stuff,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012eaf,48,0x10013c30,?MyStrUpr@@YAXPAD@Z,conparse,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10012edf,21,0x10013c60,?CountBits@@YAKK@Z,conparse,identical bytes (relocations masked); in link order,high
+0x10012ef4,55,0x10013c75,?Parse@ConParse@@QAEIXZ,conparse,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012f2b,82,0x10013cac,?ParseFind@ConParse@@QAEIPADIK@Z,conparse,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10012f7d,92,0x10013cfe,?cp_Parse@@YAHPADPAPAD01PAH@Z,conparse,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10012fd9,221,0x10013d5a,?cp_GetNewToken@@YAHPAPAD0@Z,conparse,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100130b6,201,0x10013e37,?cp_ParseParenPhrase@@YAHPAPAD0PAD@Z,conparse,identical bytes (relocations masked); in link order,high
+0x1001317f,150,0x10013f00,?cp_ParseQuotePhrase@@YAHPAPAD0PAD@Z [near],conparse,identical bytes (relocations masked); in link order,high
+0x10013215,33,0x10013f96,_$E2,counter,identical bytes (relocations masked); in link order,high
+0x10013236,30,0x10013fb7,??0CounterFinal@@QAE@K@Z,counter,identical bytes (relocations masked); in link order,high
+0x10013254,11,0x10013fd5,?cnt_StartCounterFinal@@YAXAAVCounterFinal@@@Z,counter,identical bytes (relocations masked); in link order,high
+0x1001325f,50,0x10013fe0,?cnt_EndCounterFinal@@YAKAAVCounterFinal@@@Z,counter,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100132a0,22,0x10014020,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100132c0,25,0x10014040,_$E7,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100132e0,25,0x10014060,_$E10,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013300,22,0x10014080,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013320,25,0x100140a0,_$E16,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013340,25,0x100140c0,_$E19,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013360,22,0x100140e0,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013380,25,0x10014100,_$E25,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100133a0,22,0x10014120,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100133c0,25,0x10014140,_$E31,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100133e0,25,0x10014160,_$E31,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013400,22,0x10014180,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013420,25,0x100141a0,_$E31,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013440,22,0x100141c0,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013460,22,0x100141e0,_$E13,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10013480,31,0x10014200,_$E49,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100134a0,1,0x10014220,_$E52,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100134b0,165,0x10014230,?d3d_CalcFog@@YIXPBV?$_CVector@M@@PAK@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10013560,92,0x100142e0,?d3d_CalcSkyFog@@YIXPBV?$_CVector@M@@PAK@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100135c0,961,,,,no Primal Hunt counterpart,none
+0x10013990,58,0x10014340,?d3d_GammaRGB@@YAKEEE@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100139d0,26,0x10014380,?d3d_MakeRGB@@YAKEEE@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100139f0,137,0x100143a0,?d3d_SetDefaultBlend@@YAXXZ,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10013a80,76,0x10014430,_$E57,d3d_draw,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10013ad0,206,0x10014480,_$E55,d3d_draw,similar 0.64; size 206 vs 411; in link order; callees 3/11,low
+0x10013ba0,588,0x10014620,?d3d_SetTranslucentObjectStates@@YAXI@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 17/17,high
+0x10013df0,10,0x10014870,?d3d_UnsetTranslucentObjectStates@@YAXI@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10013e00,63,0x10014880,?d3d_EnablePunchThrough@@YAXXZ,d3d_draw,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10013e40,52,0x100148c0,?d3d_DisablePunchThrough@@YAXXZ,d3d_draw,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10013e80,102,0x10014900,?d3d_GrowTLVertPool@@YAIK@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10013ef0,75,0x10014970,?d3d_DeferPoly@@YAXPAURenderPoly@@@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10013f40,439,0x100149c0,?d3d_DrawPolyFillInfo@@YAXPAURenderPoly@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10014100,431,0x10014b80,?d3d_DrawPolyFlat@@YAIPAURenderPoly@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100142b0,49,0x10014d30,?d3d_FreeDeferredPolies@@YAXPAUDeferredPoly@@@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100142f0,442,0x10014d70,?d3d_Clear@@YAXPAVLTRect@@KPAV?$_CVector@M@@@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 6/6,high
+0x100144b0,312,0x10014f30,?d3d_SetDrawMode@@YAXJ@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 1/2,high
+0x100145f0,444,0x10015070,?d3d_FlushDeferredPolies@@YAXI@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 13/15,high
+0x100147b0,57,0x10015230,?d3d_GetPolyVerts@@YAXPAURenderPoly@@PAPAURenderPolyVert@@PAH@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100147f0,396,0x10015270,?d3d_DrawTLPoly@@YAIPAPAUTLVertex@@PAH@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10014980,179,0x10015400,?d3d_SetD3DMat@@YAXPAVLTMatrix@@PAU_D3DMATRIX@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order,high
+0x10014a40,672,0x100154c0,?d3d_FullDrawScene@@YAXPAUSceneDesc@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 34/37,high
+0x10014ce0,345,0x10015760,?d3d_TermTranslucentStates@@YAXXZ [near],d3d_draw,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10014e40,220,0x100158c0,?d3d_SetDrawFunctions@@YAXJ@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10014f20,777,0x100159a0,?d3d_DrawLightAddPoly@@YAXPBV?$_CVector@M@@@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10015230,1,0x10015cb0,_$E52,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10015240,856,0x10015cc0,?d3d_DrawLightScalePoly@@YAXPBV?$_CVector@M@@@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 4/4,high
+0x100155a0,1,0x10016020,_$E52,d3d_draw,identical bytes (relocations masked); in link order,high
+0x100155b0,609,0x10016030,?d3d_DrawPortalPoly@@YAXPAURenderPoly@@PAVLTMatrix@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 11/11,high
+0x10015820,2346,0x100162a0,,d3d_draw,similar 0.99; size 2346 vs 2365; in link order; callees 27/28,high
+0x10016150,3,0x10019260,??0ModelLight@@QAE@XZ,drawmodel,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x10016160,24,0x10016be0,?sub_1001e4a0@LTMat@@QAEXMMM@Z,nolf:w4_1001e4a0_os,identical bytes (relocations masked); in link order,high
+0x10016180,85,0x10016c00,?sub_10015800@LTMat@@QAE?AV1@AAV1@@Z,nolf:d3dbatchd,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100161e0,3949,0x10016c60,?sub_10026720@@YAXPAUSink26728@@PAUMgr26728@@@Z [near],nolf:w28_100256d0_qipni,identical bytes (relocations masked); in link order,high
+0x10017150,652,0x10017bd0,?d3d_DrawLine@@YAXV?$_CVector@M@@0KK@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100173e0,1358,0x10017e60,?d3d_DrawWireframeBox@@YAXPBV?$_CVector@M@@0K@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 16/16,high
+0x10017930,80,0x100183b0,?d3d_DrawWorldTree_R@@YAXPAUWorldTreeNode@@KK@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10017980,281,0x10018400,?d3d_DrawTerrainSections@@YAXPAUTerrainWorld@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10017aa0,2639,0x10018520,?d3d_RenderScene@@YAIPAUSceneDesc@@@Z [near],nolf:w28_100256d0_qipni,similar 0.96; size 2639 vs 2671; in link order; callees 34/37; strings agree,high
+0x100184f0,92,0x10018f90,?d3d_InitDraw@@YAXXZ,d3d_draw,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10018550,67,0x10018ff0,?d3d_TermDraw@@YAXXZ,d3d_draw,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100185a0,536,0x10019040,?d3d_AddLightAnim@@YAIPAULitVertex@@KPAULightAnim@@PAULightAnimRef@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order,high
+0x100187c0,27,0x1000fe94,?Dot@?$_CVector@M@@QBEMV1@@Z,fogvolume,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",medium
+0x100187e0,253,0x100192a0,??0?$vector@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@QAE@IABURenderState@@ABV?$allocator@URenderState@@@1@@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100188e0,87,0x100193a0,??1?$vector@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@QAE@XZ,d3d_draw,identical bytes (relocations masked); in link order; callees 1/2,high
+0x10018940,333,0x10019400,?push_back@?$vector@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@QAEXABURenderState@@@Z [near],d3d_statelist,identical bytes (relocations masked); in link order,high
+0x10018a90,15,0x100195c0,??0?$_Vector_base@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@QAE@ABV?$allocator@URenderState@@@1@@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10018aa0,103,0x10019550,?d3d_DrawDeferredList@@YAXPAUDeferredPoly@@@Z [near],d3d_draw,identical bytes (relocations masked); in link order; callees 1/2,high
+0x10018b10,11,0x100195d0,??0?$_STL_alloc_proxy@PAURenderState@@U1@V?$allocator@URenderState@@@_STL@@@_STL@@QAE@ABV?$allocator@URenderState@@@1@PAURenderState@@@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10018b20,239,0x10019730,?_M_do_lock@?$_STL_mutex_spin@$0A@@_STL@@SAXPCK@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10018c10,407,0x10019820,?_M_insert_overflow@?$vector@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@IAEXPAURenderState@@ABU3@I@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 4/5,high
+0x10018db0,23,0x100199c0,?_Construct@_STL@@YAXPAURenderState@@ABU2@@Z,d3d_draw,identical bytes (relocations masked); in link order,high
+0x10018dd0,428,0x100199e0,?allocate@?$__node_alloc@$00$0A@@_STL@@SAPAXI@Z [near],d3d_statelist,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10018f80,311,0x10019b90,?deallocate@?$__node_alloc@$00$0A@@_STL@@SAXPAXI@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 0/1,high
+0x100190c0,350,0x10019cd0,?_S_refill@?$__node_alloc@$00$0A@@_STL@@CAPAXI@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10019220,289,0x10019e30,?_S_chunk_alloc@?$__node_alloc@$00$0A@@_STL@@CAPADIAAH@Z,d3d_draw,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10019350,1,0x10019f60,_$E4,d3d_skyobjects,identical bytes (relocations masked); in link order,high
+0x10019351,524,0x10019f61,?d3d_DrawSkyPoly@@YAXPAURenderPoly@@@Z [near],d3d_skyobjects,identical bytes (relocations masked); in link order; callees 11/11; strings agree,high
+0x1001955d,1,0x1001a16d,_$E4,d3d_skyobjects,identical bytes (relocations masked); in link order,high
+0x1001955e,307,0x1001a16e,?d3d_DrawSkyWorldModel@@YAXPAVLTObject@@@Z,d3d_skyobjects,identical bytes (relocations masked); in link order,high
+0x10019691,495,0x1001a2a1,?d3d_DrawSkyObjects@@YAXXZ [near],d3d_skyobjects,identical bytes (relocations masked); in link order; callees 20/21,high
+0x10019880,60,0x1001a490,?d3d_GetWorldModelSurfaceFlags@@YAKPAVLTObject@@@Z,d3d_skyobjects,identical bytes (relocations masked); in link order,high
+0x100198bc,41,0x1001a4cc,??1CRenderStateList@@QAE@XZ,d3d_skyobjects,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100198e5,27,0x1001a4f5,??1?$_Vector_base@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@QAE@XZ,d3d_skyobjects,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10019900,35,0x1001a510,??1?$_Vector_base@UStageState@@V?$allocator@UStageState@@@_STL@@@_STL@@QAE@XZ,d3d_skyobjects,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10019923,487,0x1001a533,?d3d_LightLMPoly@@YAXPAURenderPoly@@PAUClipVert2@@K@Z [near],drawmodel_clip,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10019b10,2147,0x1001a720,?d3d_GetErrorString@@YAPADJ@Z,d3d_init,identical bytes (relocations masked); in link order; callees 1/3; strings agree,high
+0x1001a380,22,0x1001af90,_$E1,d3d_init,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001a3a0,22,0x1001afb0,_$E1,d3d_init,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001a3c0,22,0x1001afd0,_$E1,d3d_init,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001a3e0,22,0x1001aff0,_$E1,d3d_init,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001a400,1089,0x1001b010,?d3d_ReadExtraConsoleVariables@@YAXXZ,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001a850,15,0x1001b460,?d3d_HasStencil@@YAIXZ,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001a860,65,0x1001b470,?d3d_EnumZBufferFormatsCallback@@YGJPAU_DDPIXELFORMAT@@PAX@Z,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001a8b0,436,0x1001b4c0,?d3d_DetectCard@@YAXXZ [near],d3d_init,identical bytes (relocations masked); in link order; callees 3/3; strings agree,high
+0x1001aa70,590,0x1001b680,?d3d_CreateZBufferAndDevice@@YAIPAURenderStructInit@@U_GUID@@@Z,d3d_init,identical bytes (relocations masked); in link order; callees 4/4; strings agree,high
+0x1001acc0,2597,0x1001b8d0,?d3d_InitDevice@@YAIPAUD3DDeviceInfo@@PAURenderStructInit@@@Z,d3d_init,callgraph 2/2; similar 0.67; size 2597 vs 2597; in link order; callees 16/18; strings differ: -DirectDrawCreateEx failed.|NullRender|QueryInterface(IID_IDirect3D7) failed.. ar +,medium
+0x1001b6f0,14,0x1001c300,?d3d_EnumAttachedCallback@@YGJPAUIDirectDrawSurface7@@PAU_DDSURFACEDESC2@@PAX@Z,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001b700,110,0x1001c310,?d3d_CreateWorld@@YAPAXPAPAX@Z,d3d_init,identical bytes (relocations masked); in link order; callees 4/4; strings agree,high
+0x1001b770,26,0x1001c380,?d3d_DestroyWorld@@YAXPAX@Z,d3d_init,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001b790,75,0x1001c3a0,?d3d_RebindWorld@@YAXPAX@Z,d3d_init,identical bytes (relocations masked); in link order; callees 4/4; strings agree,high
+0x1001b7e0,94,0x1001c3f0,?d3d_ReleaseDevice@@YAXXZ,d3d_init,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001b840,38,0x1001c450,?d3d_TermSubsystems@@YAXXZ,d3d_init,identical bytes (relocations masked); in link order; callees 3/5,high
+0x1001b870,42,0x1001c480,?d3d_InitSubsystems@@YAIXZ,d3d_init,identical bytes (relocations masked); in link order; callees 4/5,high
+0x1001b8a0,1221,0x1001c4b0,?d3d_RenderCommand@@YAXHPAPAD@Z,d3d_init,identical bytes (relocations masked); in link order; callees 5/12; strings differ: - +FREETEXTURES|LOADGAMMA|Max texture size: (%d x %d)|PortalFile|Square textures on,high
+0x1001bd70,3,0x1001c980,?d3d_GetInfoFlags@@YAKXZ,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001bd80,42,0x1001c990,?d3d_Start3D@@YAIXZ,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001bdb0,112,0x1001c9c0,?d3d_End3D@@YAIXZ,d3d_init,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001be20,6,0x1001ca30,?d3d_IsIn3D@@YAIXZ,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001be30,181,0x1001ca40,?d3d_LoadGammaRamp@@YAIPBD@Z,d3d_init,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1001bee5,30,0x1001caf5,,d3d_init,identical bytes (relocations masked); in link order,high
+0x1001bf10,83,0x1001cb20,?d3d_FreeOptimizedSurface@@YAXPAUD3DRenderData@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001bf63,81,0x1001cb73,?d3d_SetSolidAlpha@@YAXPAVFMConvertRequest@@KAATGenericColor@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001bfb4,383,0x1001cbc4,?d3d_DoAlphaFromColorKey@@YAXPAVFMConvertRequest@@KKAATGenericColor@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c133,671,0x1001cd43,?d3d_FillOptimizedSurface@@YAIPAUD3DRenderData@@PAUD3DTextureFormat@@K@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 11/11,high
+0x1001c3d2,18,0x1001cfe2,?d3d_UnoptimizeSurface@@YAXPAUD3DRenderData@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001c3e4,579,0x1001cff4,?d3d_OptimizeSurface@@YAIPAUD3DRenderData@@K@Z,d3d_optimizedsurface,similar 0.99; size 579 vs 579; in link order; callees 5/5,high
+0x1001c627,254,0x1001d237,?d3d_StartOptimized2D@@YAIXZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001c725,198,0x1001d335,?d3d_EndOptimized2D@@YAXXZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c7eb,6,0x1001d3fb,?d3d_IsInOptimized2D@@YAIXZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c7f1,199,0x1001d401,?d3d_SetOptimized2DBlend@@YAIW4LTSurfaceBlend@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c8b8,18,0x1001d4c8,?d3d_SetOptimized2DColor@@YAIK@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c8ca,16,0x1001d4da,?d3d_GetOptimized2DBlend@@YAIPAW4LTSurfaceBlend@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c8da,16,0x1001d4ea,?d3d_GetOptimized2DBlend@@YAIPAW4LTSurfaceBlend@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001c8ea,918,0x1001d4fa,?d3d_BlitOptimized@@YAXPAURenderBlitRequest@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1001cc80,1333,0x1001d890,?d3d_WarpOptimized@@YAXPAURenderBlitRequest@@@Z [near],d3d_optimizedsurface,similar 0.81; size 1333 vs 1301; in link order; callees 12/12,medium
+0x1001d1b5,40,0x1001dda5,??_GCD3DLMTexture@@UAEPAXI@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1001d1dd,29,0x1001ddcd,??_GCLMAllocator@@UAEPAXI@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1001d1fa,638,0x1001ddea,?Init@CD3DLMTexture@@UAE_NKK@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 6/6,high
+0x1001d478,30,0x1001e068,?Term@CD3DLMTexture@@UAEXXZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001d496,21,0x1001e086,?GetDims@CD3DLMTexture@@UAEXPAK0@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001d4ab,266,0x1001e09b,?SetStates@CD3DLMTexture@@UAE_NXZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001d5b5,561,0x1001e1a5,?DrawToScreen@CD3DLMTexture@@UAE_NKKK_N@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001d7e6,80,0x1001e3d6,?CopyToScreen@CD3DLMTexture@@UAE_NKK@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001d836,80,0x1001e426,?CopyFromScreen@CD3DLMTexture@@UAE_NKK@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001d886,58,0x1001e476,??0CLMTextureNode@@QAE@PAV0@0@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001d8c0,43,0x1001e4b0,??1CLMTextureNode@@QAE@XZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001d8eb,20,0x1001e4db,?Find@CLMTextureNode@@QAEPAV1@PAVCLMTexture@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order,high
+0x1001d8ff,58,0x1001e4ef,??0CD3DLMAllocator@@QAE@XZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001d939,28,0x1001e529,??_GCD3DLMAllocator@@UAEPAXI@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1001d955,75,0x1001e545,??1CD3DLMAllocator@@UAE@XZ,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1001d9a0,29,0x1001e590,??_GCLMAllocator@@UAEPAXI@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1001d9bd,108,0x1001e5ad,?Alloc@CD3DLMAllocator@@UAEPAVCLMTexture@@KK@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 3/4,high
+0x1001da29,55,0x1001e619,?Free@CD3DLMAllocator@@UAEXPAVCLMTexture@@@Z,d3d_optimizedsurface,identical bytes (relocations masked); in link order; callees 2/3,high
+0x1001da60,5,0x1001e650,_$E2,d3d_surface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001da65,26,0x1001e655,_$E1,d3d_surface,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001da7f,174,0x1001e66f,?d3d_CreateSurface@@YAPAUD3DRenderData@@HH@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1001db2d,33,0x1001e71d,?d3d_DeleteSurface@@YAXPAUD3DRenderData@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001db4e,48,0x1001e73e,?d3d_GetSurfaceInfo@@YAXPAUD3DRenderData@@PAK1PAJ@Z,d3d_surface,identical bytes (relocations masked); in link order,high
+0x1001db7e,54,0x1001e76e,?d3d_LockSurface@@YAPAXPAUD3DRenderData@@@Z,d3d_surface,identical bytes (relocations masked); in link order,high
+0x1001dbb4,22,0x1001e7a4,?d3d_UnlockSurface@@YAXPAUD3DRenderData@@@Z,d3d_surface,identical bytes (relocations masked); in link order,high
+0x1001dbca,133,0x1001e7ba,?d3d_LockScreen@@YAIHHHHPAPAXPAJ@Z,d3d_surface,identical bytes (relocations masked); in link order,high
+0x1001dc4f,50,0x1001e83f,?d3d_UnlockScreen@@YAXXZ,d3d_surface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001dc81,175,0x1001e871,?d3d_BlitFromScreen@@YAXPAURenderBlitRequest@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001dd30,236,0x1001e920,?d3d_BlitToScreen_NonOptimized@@YAXPAURenderBlitRequest@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x1001de1c,105,0x1001ea0c,?d3d_BlitToScreen@@YAXPAURenderBlitRequest@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1001de85,62,0x1001ea75,?d3d_WarpToScreen@@YAIPAURenderBlitRequest@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001dec3,15,0x1001eab3,?d3d_GetScreenFormat@@YAXPAVPFormat@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001ded2,71,0x1001eac2,??4PFormat@@QAEAAV0@ABV0@@Z,d3d_surface,identical bytes (relocations masked); in link order,high
+0x1001df19,624,0x1001eb09,?d3d_MakeScreenShot@@YAXPBD@Z,d3d_surface,similar 0.99; size 624 vs 620; in link order; callees 13/16; strings agree,high
+0x1001e189,531,0x1001ed75,?d3d_SwapBuffers@@YAXK@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1001e39c,34,0x1001ef88,??0?$CMoArray@KVDefaultCache@@@@QAE@XZ,d3d_surface,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1001e3be,20,0x1003abc0,?GenGetNext@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UBEPAUWorldPoly@@AAVGenListPos@@@Z,tagnodes,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x1001e3d2,4,0x1000e262,?GenGetSize@?$CMoArray@GVDefaultCache@@@@UBEKXZ,drawmodel,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x1001e3d6,39,0x1001f059,?Init@?$CMoArray@KVDefaultCache@@@@QAEHKK@Z,d3d_surface,similar 0.56; size 39 vs 53; in link order; callees 0/2,low
+0x1001e3fd,10,0x1002a030,?GenSetCacheSize@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UAEXK@Z,drawobjects,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x1001e407,191,0x1001f19c,?Insert2@?$CMoArray@KVDefaultCache@@@@QAEHKABKPAVLAlloc@@@Z,d3d_surface,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1001e4c6,182,0x1001f08e,?SetSize2@?$CMoArray@KVDefaultCache@@@@QAEHKPAVLAlloc@@@Z,d3d_surface,callgraph 1/1; similar 0.52; size 182 vs 95; in link order; callees 1/3,medium
+0x1001e57c,32,0x1002be06,?_DeleteAndDestroyArray@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@AAEXPAVLAlloc@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x1001e5a0,16,0x1001f280,_$E13,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e5b0,26,0x1001f290,_$E5,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e5d0,38,0x1001f2b0,_$E10,d3d_texture,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001e600,36,0x1001f2e0,_$E8,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001e630,32,0x1001f310,??_GBaseObjectBank@@UAEPAXI@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1001e650,16,0x1001f330,_$E13,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e660,10,0x1001f340,_$E16,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001e670,25,0x1001f350,_$E19,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1001e690,64,0x1001f370,??0RTexture@@QAE@XZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e6d0,32,0x1001f3b0,??_GBaseObjectBank@@UAEPAXI@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1001e6f0,6,0x1001f3d0,?IsValid@RTextureHandle@@UAEIXZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e700,12,0x1001f3e0,?GetFlags@RTextureHandle@@UAEKXZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e710,12,0x1001f3f0,?GetWidth@RTextureHandle@@UAEKXZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e720,12,0x1001f400,?GetHeight@RTextureHandle@@UAEKXZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e730,24,0x1001f410,?d3d_GetLightmapFormat@@YAPAUD3DTextureFormat@@XZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e750,420,0x1001f430,?d3d_CreateLightmapTexture@@YAPAVRTexture@@KKK@Z [near],d3d_texture,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001e900,9,0x1001f5e0,,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001e910,215,0x1001f5f0,?d3d_SetGammaTexture@@YAXM@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1001e9f0,399,0x1001f6d0,?d3d_CreateTextureFromData@@YAPAUIDirectDrawSurface7@@PAKKKJ@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1001eb80,202,0x1001f860,?d3d_ResetLightmapPages@@YAXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1001ec50,1151,0x1001f930,?d3d_InitTextures@@YAIXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 15/18; strings agree,high
+0x1001f0d0,1130,0x1001fdb0,?d3d_EnumTextureFormatsCB@@YGJPAU_DDPIXELFORMAT@@PAX@Z [near],d3d_texture,identical bytes (relocations masked); in link order; callees 24/24,high
+0x1001f540,70,0x10020220,?d3d_GetMaskRange@@YAXKPAK0@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001f590,100,0x10020270,?d3d_FindTextureFormat@@YAPAUD3DTextureFormat@@PAUFormatSpec@@K@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001f600,103,0x100202e0,?d3d_CheckS3TCFormats@@YAXXZ,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001f670,245,0x10020350,?d3d_CreateFalloffTexture@@YAXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1001f770,212,0x10020450,?d3d_TermTextures@@YAXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 4/4,high
+0x1001f850,195,0x10020530,?d3d_FreeTexture@@YAXPAVRTexture@@I@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001f920,51,0x10020600,?d3d_FreeTextureList@@YAXPAVLTLink@@@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001f960,68,0x10020640,?d3d_FreeAllTextures@@YAXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1001f9b0,132,0x10020690,?d3d_ListTextureFormats@@YAXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 6/6; strings agree,high
+0x1001fa40,1334,0x10020720,?d3d_PrintTextureFormat@@YAXPBDPAUD3DTextureFormat@@@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x1001ff80,106,0x10020c60,?d3d_AddFlagName@@YAPADPADPBD@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x1001fff0,824,0x10020cd0,?sub_1003d350@C10089530@@QAEKKK@Z [near],nolf:w19_1003b6f0_osoiqip,identical bytes (relocations masked); in link order; callees 15/16; strings agree,high
+0x10020330,22,0x10021010,?AddAfter@Link1003d5f0@@QAEXPAU1@@Z,nolf:w19_1003b6f0_osoiqip,identical bytes (relocations masked); in link order,high
+0x10020350,7,0x10021030,,d3d_texture,identical bytes (relocations masked); in link order,high
+0x10020360,1871,0x10021040,,d3d_texture,callgraph 5/5; size 1871 vs 1871; in link order; strings agree,medium
+0x10020ab0,1132,0x10021790,,d3d_texture,identical bytes (relocations masked); in link order; callees 11/11; strings agree,high
+0x10020f20,129,0x10021c00,?d3d_GetFirstUsableMipmap@@YAJPAVTextureData@@@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x10020fb0,55,0x10021c90,,d3d_texture,identical bytes (relocations masked); in link order,high
+0x10020ff0,465,0x10021cd0,?d3d_DrawPolyLightmap@@YAIPAUWorldPoly@@I@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 10/10,high
+0x100211d0,184,0x10021eb0,?d3d_GetTextureFlags@@YAKPAUSharedTexture@@K@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 5/6; strings agree,high
+0x10021290,1731,0x10021f70,,d3d_texture,identical bytes (relocations masked); in link order; callees 18/18; strings agree,high
+0x10021960,70,0x10022640,?d3d_GetS3TCFourCC@@YAIW4BPPIdent@@PAK@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x100219b0,148,0x10022690,?d3d_AdjustAspectRatio@@YAXKKPAK0@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x10021a50,43,0x10022730,?d3d_IsS3TCSupported@@YAKW4BPPIdent@@@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x10021a80,201,0x10022760,?d3d_GetTextureScale@@YAIPAUSharedTexture@@KPAM1@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 5/6; strings agree,high
+0x10021b50,258,0x10022830,?d3d_BindTexture@@YAXPAUSharedTexture@@I@Z [near],d3d_texture,identical bytes (relocations masked); in link order; callees 6/8; strings agree,high
+0x10021c60,23,0x10022940,?d3d_UnbindTexture@@YAXPAUSharedTexture@@@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021c80,110,0x10022960,?AllocVoid@?$ObjectBank@VRTexture@@VNullCS@@@@UAEPAXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021cf0,32,0x100229d0,?FreeVoid@?$ObjectBank@VRTexture@@VNullCS@@@@UAEXPAX@Z,d3d_texture,identical bytes (relocations masked); in link order,high
+0x10021d10,27,0x100229f0,?Term@?$ObjectBank@VRTexture@@VNullCS@@@@UAEXXZ,d3d_texture,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10021d30,52,0x10022a10,??_G?$ObjectBank@VRTexture@@VNullCS@@@@UAEPAXI@Z,d3d_texture,identical bytes (relocations masked); in link order; callees 1/2,high
+0x10021d70,22,0x10022a50,_$E6,d3d_savedstates,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10021d86,22,0x10022a66,??0CRenderStateList@@QAE@XZ,d3d_savedstates,identical bytes (relocations masked); in link order,high
+0x10021d9c,10,0x10022a7c,_$E4,d3d_savedstates,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021da6,17,0x10022a86,?Restore@CRenderStateList@@QAEXXZ,d3d_statelist,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10021db7,70,0x10022a97,?Apply@CRenderStateList@@QAEXPAV1@K@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10021dfd,43,0x10022add,?SetStageState@CRenderStateList@@QAEXPAUStageState@@K@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021e28,31,0x10022b08,?SetState@CRenderStateList@@QAEXPAURenderState@@@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021e47,57,0x10022b27,?SaveState@CRenderStateList@@QAEXPAURenderState@@@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021e80,73,0x10022b60,?SaveStageState@CRenderStateList@@QAEXPAUStageState@@K@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021ec9,64,0x10022ba9,?RestoreStates@CRenderStateList@@QAEXXZ,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021f09,72,0x10022be9,?RestoreStageStates@CRenderStateList@@QAEXXZ,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021f51,44,0x10022c31,?push_back@?$vector@UStageState@@V?$allocator@UStageState@@@_STL@@@_STL@@QAEXABUStageState@@@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10021f7d,54,0x10022c5d,?erase@?$vector@URenderState@@V?$allocator@URenderState@@@_STL@@@_STL@@QAEPAURenderState@@PAU3@0@Z,d3d_statelist,identical bytes (relocations masked); in link order,high
+0x10021fb3,57,0x10022c93,?erase@?$vector@UStageState@@V?$allocator@UStageState@@@_STL@@@_STL@@QAEPAUStageState@@PAU3@0@Z,d3d_statelist,identical bytes (relocations masked); in link order,high
+0x10021fec,261,0x10022ccc,?_M_insert_overflow@?$vector@UStageState@@V?$allocator@UStageState@@@_STL@@@_STL@@IAEXPAUStageState@@ABU3@I@Z,d3d_statelist,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100220f1,13,0x10022dd1,_$E2,dirtyrect,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100220fe,37,0x10022dde,?Init@CRenderList@@QAEXE@Z,dirtyrect,identical bytes (relocations masked); in link order,high
+0x10022123,13,0x10022e03,_$E5,dirtyrect,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022130,5,0x10022e10,_$E8,dirtyrect,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022135,28,0x10022e15,_$E7,dirtyrect,identical bytes (relocations masked); in link order,high
+0x10022151,367,0x10022e31,?InvalidateRect@@YAXPAVLTRect@@@Z,dirtyrect,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100222c0,92,0x10022fa0,?RectangleCombine@@YA?AVLTRect@@PAV1@0@Z,dirtyrect,identical bytes (relocations masked); in link order,high
+0x1002231c,172,0x10022ffc,?DirtyRectSwapWindowed@@YAXXZ,dirtyrect,identical bytes (relocations masked); in link order,high
+0x100223c8,84,0x100230a8,?DirtyRectSwap@@YAXXZ,dirtyrect,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002241c,8,0x100230fc,?ClearDirtyRects@@YAXXZ,dirtyrect,identical bytes (relocations masked); in link order,high
+0x10022424,10,0x10023104,_$E2,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002242e,5,0x1002310e,_$E5,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022433,26,0x10023113,_$E4,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002244d,33,0x1002312d,??0CustomDrawMgr@@QAE@XZ,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002246e,64,0x1002314e,?DrawCanvas@CustomDrawMgr@@QAEXPAVLTObject@@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100224ae,407,0x1002318e,?SaveStates@CustomDrawMgr@@QAEXPAVLTObject@@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022645,164,0x10023325,?RestoreStates@CustomDrawMgr@@QAEXXZ,draw_canvas,identical bytes (relocations masked); in link order,high
+0x100226e9,282,0x100233c9,?DrawPrimitive@CustomDrawMgr@@UAEKPAVLTVertex@@KK@Z [near],draw_canvas,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10022803,47,0x100234e3,?ConvertBlend@@YAKK@Z,draw_canvas,identical bytes (relocations masked); in link order,high
+0x10022832,374,0x10023512,?SetState@CustomDrawMgr@@UAEKW4LTRState@@K@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100229a8,45,0x10023688,?ConvertOp@@YAKKK@Z,draw_canvas,identical bytes (relocations masked); in link order,high
+0x100229d5,29,0x100236b5,?GetState@CustomDrawMgr@@UAEKW4LTRState@@AAK@Z,draw_canvas,identical bytes (relocations masked); in link order,high
+0x100229f2,129,0x100236d2,?SetTexture@CustomDrawMgr@@UAEKPBD@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10022a73,29,0x10023753,?GetTexelSize@CustomDrawMgr@@UAEKAAM0@Z,draw_canvas,identical bytes (relocations masked); in link order,high
+0x10022a90,15,0x10023770,?d3d_DrawCanvasCB@@YAXPAUViewParams@@PAVLTObject@@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022a9f,23,0x10023780,?d3d_ProcessCanvas@@YAXPAVLTObject@@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10022ab6,45,0x10023797,?Add@BaseObjectSet@@QAEXPAVLTObject@@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10022ae3,50,0x100237c4,?d3d_DrawSolidCanvases@@YAXXZ,draw_canvas,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10022b15,38,0x100237f6,?d3d_DrawTranslucentCanvases@@YAXXZ,draw_canvas,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10022b3b,21,0x1002381c,?d3d_QueueCanvas@@YAXPAUViewParams@@PAVLTObject@@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022b50,117,0x10023831,?DrawFiltered@BaseObjectSet@@QAEXPAUViewParams@@P6AX0PAVLTObject@@@ZPAVTester_Canvas@@PAV1@@Z,draw_canvas,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022bc5,5,0x100238a6,_$E2,drawgouraud,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10022bca,55,0x100238ab,_$E1,drawgouraud,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x10022c01,900,0x100238e2,?d3d_DrawMultipassGouraud@@YAXPAURenderPoly@@I@Z,drawgouraud,identical bytes (relocations masked); in link order; callees 19/19; strings agree,high
+0x10022f85,794,0x10023c66,?d3d_DrawPolyLights@@YAXPAURenderPoly@@PAUTLVertex@@H@Z,drawgouraud,identical bytes (relocations masked); in link order; callees 13/13,high
+0x1002329f,124,0x10023f80,?d3d_SetupGouraudVerts@@YAXPAUTLVertex@@PAUSPolyVertex@@H@Z,drawgouraud,identical bytes (relocations masked); in link order,high
+0x1002331b,124,0x10023ffc,?d3d_SetupGouraudVerts@@YAXPAUTLVertex@@PAUSPolyVertex@@H@Z,drawgouraud,identical bytes (relocations masked); in link order,high
+0x10023397,1,0x10024078,_$E5,drawgouraud,identical bytes (relocations masked); in link order,high
+0x10023398,499,0x10024079,?d3d_DrawGouraudPoly@@YAXPAURenderPoly@@@Z [near],drawgouraud,identical bytes (relocations masked); in link order; callees 11/11; strings agree,high
+0x1002358b,48,0x1002426c,?d3d_ScaleTexCoords@@YAXPAUTLVertex@@K@Z,drawgouraud,identical bytes (relocations masked); in link order,high
+0x100235bb,38,0x1002429c,?d3d_SetGouraudBlend@@YAXI@Z,drawgouraud,identical bytes (relocations masked); in link order,high
+0x100235e1,1,0x1002377f,?d3d_CanvasPreFrame@@YAXXZ,draw_canvas,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x100235e2,72,0x100242c2,?d3d_FlushGouraudPolies@@YAXXZ,drawgouraud,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002362a,132,0x1002430a,?d3d_DrawGouraudList@@YAXPAUQueuedPoly@@@Z,drawgouraud,identical bytes (relocations masked); in link order; callees 4/4,high
+0x100236ae,181,0x1002438e,?d3d_DrawGouraudEnvMap@@YAXPAURenderPoly@@@Z,drawgouraud,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10023763,241,0x10024443,?d3d_DrawGouraudDetail@@YAXPAURenderPoly@@@Z,drawgouraud,identical bytes (relocations masked); in link order; callees 8/8,high
+0x10023860,74,0x10024540,?d3d_ProcessLight@@YAXPAVLTObject@@@Z,drawlight,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x100238b0,592,0x10024590,?d3d_LightWorldModel@@YAXPAVLTObject@@0@Z [near],drawlight,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10023b00,28,0x100247e0,?d3d_LightWorldModelCB@@YAXPAVLTObject@@0@Z,drawlight,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10023b20,399,0x10024800,?d3d_ProcessLightSet@@YAXPAUViewParams@@PAVLTObject@@@Z [near],drawlight,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10023cb0,38,0x10024990,?d3d_ProcessLights@@YAXXZ,drawlight,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10023ce0,65,0x100249c0,?d3d_ProcessLineSystem@@YAXPAVLTObject@@@Z,drawlight,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x10023d30,47,0x10024a10,?d3d_DrawLineSystems@@YAXXZ,drawlight,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10023d60,22,0x10024a40,?d3d_QueueLineSystem@@YAXPAUViewParams@@PAVLTObject@@@Z,drawlight,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10023d80,1115,0x10024a60,?d3d_DrawLineSystem@@YAXPAUViewParams@@PAVLTObject@@@Z [near],drawlight,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100241e0,5,0x10024ec0,_$E2,drawmodel_env,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100241e5,26,0x10024ec5,_$E1,drawmodel_env,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100241ff,5,0x10024edf,_$E2,drawmodel_env,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10024204,26,0x10024ee4,_$E1,drawmodel_env,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002421e,521,0x10024efe,?DrawModelBox@CD3DModelDraw@@QAEXXZ,drawmodel_env,similar 1.00; size 521 vs 521; in link order; callees 4/4,high
+0x10024427,140,0x10025107,?d3d_DrawLine3D@@YAXPAV?$_CVector@M@@0K@Z,drawmodel_env,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100244b3,214,0x10025193,?SetupModelStates@CD3DModelDraw@@QAEXPAI@Z,drawmodel_env,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10024589,302,0x10025269,?SetupSkin@CD3DModelDraw@@QAEXK@Z,drawmodel_env,identical bytes (relocations masked); in link order; callees 6/6,high
+0x100246b7,132,0x10025397,?d3d_SetEnvMapStage@@YAXPAK@Z,drawmodel_env,identical bytes (relocations masked); in link order,high
+0x1002473b,48,0x1002541b,?d3d_UnsetEnvMapStage@@YAXPAK@Z,drawmodel_env,identical bytes (relocations masked); in link order,high
+0x1002476b,1312,0x100254d8,?DrawPasses@CD3DModelDraw@@QAEXXZ,drawmodel_env,similar 0.90; size 1312 vs 1527; in link order; callees 56/56; float constants differ: AvP2 [255.0] PH [],medium
+0x10024c8b,76,0x10025acf,?DrawPieces@CD3DModelDraw@@QAEXKKI@Z,drawmodel_env,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10024cd7,20,0x10025b1b,?d3d_ResetFillMode@@YAXXZ,drawmodel_env,identical bytes (relocations masked); in link order,high
+0x10024ceb,55,0x10025b2f,?d3d_ProcessModel@@YAXPAVLTObject@@@Z,drawmodel_env,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10024d22,158,0x10025b66,?d3d_DrawSolidModels@@YAXXZ,drawmodel_env,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10024dc0,43,0x10025c04,?d3d_DrawChromakeyModels@@YAXXZ,drawmodel_env,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10024deb,67,0x10025c2f,?d3d_QueueTranslucentModels@@YAXXZ,drawmodel_env,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10024e2e,350,0x10025c72,?d3d_DrawTranslucentModel@@YAXPAUViewParams@@PAVLTObject@@@Z,drawmodel_env,similar 0.94; size 350 vs 371; in link order; callees 2/2,high
+0x10024f8c,135,0x10025de5,?d3d_GetBlendStates@@YAXPAVLTObject@@PAK111@Z,drawmodel_env,identical bytes (relocations masked); in link order,high
+0x10025013,5,0x10025e6c,_$E11,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10025018,30,0x10025e71,_$E1,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10025036,5,0x10025e8f,_$E11,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002503b,30,0x10025e94,_$E1,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10025059,5,0x10025eb2,_$E11,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002505e,26,0x10025eb7,_$E16,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10025078,590,0x10025ed1,?DrawShadowPoly@CD3DModelDraw@@QAEXPAUModelShadowInfo@@PAUWorldPoly@@@Z [near],drawmodelshadows,similar 1.00; size 590 vs 590; in link order; callees 5/5; strings agree,high
+0x100252c6,3395,0x1002611f,,drawmodelshadows,similar 0.89; size 3395 vs 3262; in link order; callees 44/46,medium
+0x10026009,196,0x10026ddd,?SetupPlanar@ShadowProjection@@QAEXV?$_CVector@M@@VLTPlane@@@Z [near],drawmodelshadows,identical bytes (relocations masked); in link order,high
+0x100260cd,1,0x10026ea1,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x100260ce,299,0x10026ea2,?d3d_ClipToPlane@@YAIPAVShadowClipPlane@@PAPAUShadowVert@@PAJ1@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100261f9,263,0x10026fcd,?LerpShadowVert@@YAXPAUShadowVert@@00M@Z,drawmodelshadows,identical bytes (relocations masked); in link order,high
+0x10026300,67,0x100270d4,?Inside@ShadowClipPlane@@QAEIABV?$_CVector@M@@@Z,drawmodelshadows,identical bytes (relocations masked); in link order,high
+0x10026343,207,0x10027117,?Intersect@ShadowClipPlane@@QAEMABV?$_CVector@M@@0AAV2@@Z,drawmodelshadows,identical bytes (relocations masked); in link order,high
+0x10026412,155,0x100271e6,?d3d_TransformShadowPoly@@YAIPAPAUShadowVert@@PAJPAUViewParams@@K@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 4/4,high
+0x100264ad,284,0x10027281,?d3d_ClipShadowPoly@@YAIKPAPAUShadowVert@@PAJ@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 6/6,high
+0x100265c9,311,0x100273f4,?d3d_ClipToPlane@@YAIPAUClipPlaneNear@@PAPAUShadowVert@@PAJ1@Z [near],drawmodelshadows,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10026700,309,0x1002752b,?d3d_ClipToPlane@@YAIPAUClipPlaneLeft@@PAPAUShadowVert@@PAJ1@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10026835,308,0x10027660,?d3d_ClipToPlane@@YAIPAUClipPlaneTop@@PAPAUShadowVert@@PAJ1@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10026969,307,0x10027794,?d3d_ClipToPlane@@YAIPAUClipPlaneRight@@PAPAUShadowVert@@PAJ1@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10026a9c,310,0x100278c7,?d3d_ClipToPlane@@YAIPAUClipPlaneBottom@@PAPAUShadowVert@@PAJ1@Z,drawmodelshadows,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10026bd2,311,0x100279fd,?d3d_ClipToPlane@@YAIPAUClipPlaneFar@@PAPAUShadowVert@@PAJ1@Z [near],drawmodelshadows,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10026d09,5,0x10027b34,_$E11,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10026d0e,30,0x10027b39,_$E1,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10026d2c,5,0x10027b57,_$E11,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10026d31,26,0x10027b5c,_$E13,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10026d4b,5,0x10027b76,_$E11,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10026d50,26,0x10027b7b,_$E16,drawmodelshadows,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10026d6a,692,0x10027b95,?DrawProjShadowPoly@CD3DModelDraw@@QAEXPAUModelShadowInfo@@PAUWorldPoly@@M@Z [near],drawmodelshadows,similar 0.99; size 692 vs 683; in link order; callees 7/7; strings agree,high
+0x1002701e,5492,0x10027e40,,drawmodelshadows,similar 0.99; size 5492 vs 5451; in link order; callees 37/38; strings agree,high
+0x100285a0,22,0x10029390,_$E2,drawobjects,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100285c0,25,0x100293b0,_$E5,drawobjects,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100285e0,34,0x100293d0,?d3d_InitObjectModules@@YAXXZ,drawobjects,similar 0.92; size 34 vs 34; in link order,high
+0x10028610,39,0x10029400,?d3d_TermObjectModules@@YAXXZ,drawobjects,similar 0.93; size 39 vs 39; in link order,high
+0x10028640,27,0x10029430,?d3d_InitObjectQueues@@YAXXZ,drawobjects,identical bytes (relocations masked); in link order,high
+0x10028660,761,0x10029450,?d3d_FlushObjectQueues@@YAXXZ [near],drawobjects,identical bytes (relocations masked); in link order; callees 42/42,high
+0x10028960,76,0x10029750,_$E8,drawobjects,similar 0.95; size 76 vs 76; in link order,high
+0x100289b0,490,0x100297a0,?Add@ObjectDrawList@@QAEXPAVLTObject@@P6AXPAUViewParams@@0@Z@Z [near],drawobjects,similar 0.94; size 490 vs 467; in link order; callees 1/1,high
+0x10028ba0,133,0x10029980,,drawobjects,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10028c30,45,0x10029a40,?GenGetNext@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UBE?AUObjectDrawEntry@@AAVGenListPos@@@Z,drawobjects,identical bytes (relocations masked); in link order,high
+0x10028c60,42,0x10029a70,?GenGetAt@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UBE?AUObjectDrawEntry@@AAVGenListPos@@@Z,drawobjects,identical bytes (relocations masked); in link order,high
+0x10028c90,377,0x10029aa0,?GenAppend@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UAEHAAUObjectDrawEntry@@@Z,drawobjects,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10028e10,328,0x10029c20,?GenRemoveAt@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UAEXVGenListPos@@@Z,drawobjects,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10028f60,58,0x10029d70,?GenRemoveAll@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UAEXXZ,drawobjects,identical bytes (relocations masked); in link order,high
+0x10028fa0,4,,,,no Primal Hunt counterpart,none
+0x10028fb0,323,0x10029db0,?GenCopyList@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UAEHABV?$GenList@UObjectDrawEntry@@@@@Z,drawobjects,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10029100,250,0x10029f00,?GenAppendList@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UAEHABV?$GenList@UObjectDrawEntry@@@@@Z,drawobjects,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10029200,42,0x1002a000,?GenFindElement@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UBEHABUObjectDrawEntry@@AAVGenListPos@@@Z,drawobjects,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029230,170,0x1002a050,?sub_100598f0@CTexStage@@QAEXPBUColor100598f0@@PAUVertex100598f0@@@Z [near],nolf:d3dr5b,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100292e0,133,0x1002a100,?SetSize2@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@QAEHKPAVLAlloc@@@Z,drawobjects,identical bytes (relocations masked); in link order,high
+0x10029370,302,0x1002a190,?InternalNiceSetSize@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,drawobjects,identical bytes (relocations masked); in link order,high
+0x100294a0,408,0x1002a2c0,?sub_1007f150@Arr1007e9f0@@QAEJKABUElem1007e9f0@@PAVIAllocator@@@Z [near],nolf:w11_1007e9f0_osoi,identical bytes (relocations masked); in link order,high
+0x10029640,25,0x1002a460,?BaseNew@@YAPAUObjectDrawEntry@@PAVLAlloc@@PAU1@K@Z,drawobjects,identical bytes (relocations masked); in link order,high
+0x10029660,5,0x1002a480,_$E2,drawparticles,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029665,30,0x1002a485,_$E1,drawparticles,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10029683,5,0x1002a4a3,_$E2,drawparticles,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029688,30,0x1002a4a8,_$E1,drawparticles,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100296a6,81,0x1002a4c6,?d3d_ParticlePreFrame@@YAXXZ,drawparticles,identical bytes (relocations masked); in link order,high
+0x100296f7,23,0x1002a517,?d3d_ProcessParticles@@YAXPAVLTObject@@@Z,drawparticles,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002970e,424,0x1002a52e,?d3d_DrawParticleSystem@@YAXPAUViewParams@@PAVLTObject@@@Z,drawparticles,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100298b6,36,0x1002a6d6,?d3d_DrawParticleSystems@@YAXXZ,drawparticles,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100298da,21,0x1002a6fa,?d3d_QueueParticleSystem@@YAXPAUViewParams@@PAVLTObject@@@Z,drawparticles,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100298ef,5,0x1002a70f,?AllocVoid@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEPAXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100298f4,30,0x1002a714,_$E1,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10029912,5,0x1002a732,?AllocVoid@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEPAXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029917,26,0x1002a737,_$E12,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10029931,22,0x1002a751,_$E10,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10029947,78,0x1002a767,??0DrawPolyMgr@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10029995,46,0x1002a7b5,??0Material@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100299c3,50,0x1002a7e3,??0PassDesc@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x100299f5,40,0x1002a815,??0MaterialInst@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029a1d,99,0x1002a83d,??0PassState@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029a80,70,0x1002a8a0,?Init@DrawPolyMgr@@QAEXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x10029ac6,10,0x1002a8e6,_$E8,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029ad0,66,0x1002a8f0,??1DrawPolyMgr@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10029b12,42,0x1002a932,?GenTexCoords_Base@DrawPolyMgr@@QAEXPAUPolyVert@@PAUTexPair@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029b3c,22,0x1002a95c,?GenTexCoords_Lightmap@DrawPolyMgr@@QAEXPAUPolyVert@@PAUTexPair@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029b52,77,0x1002a972,?GenTexCoords_Detail@DrawPolyMgr@@QAEXPAUPolyVert@@PAUTexPair@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029b9f,34,0x1002a9bf,?GenTexCoords_Scaled@DrawPolyMgr@@QAEXPAUPolyVert@@PAUTexPair@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029bc1,44,0x1002a9e1,?GenTexCoords2@DrawPolyMgr@@QAEXPAXPAUTexPair@@0@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029bed,62,0x1002aa0d,?GenTexCoords3@DrawPolyMgr@@QAEXPAXPAUTexPair@@0@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029c2b,42,0x1002aa4b,?SetTexture_Base@DrawPolyMgr@@QAEKPAUWorldPoly@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029c55,6,0x1002aa75,?SetTexture_None@DrawPolyMgr@@QAEKPAUWorldPoly@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029c5b,96,0x1002aa7b,?SetTexture_DetailScale@DrawPolyMgr@@QAEKPAUWorldPoly@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029cbb,16,0x1002aadb,?SetTexture_Disable@DrawPolyMgr@@QAEKPAUWorldPoly@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029ccb,27,0x1002aaeb,?SetTexture_Shared@DrawPolyMgr@@QAEKPAUWorldPoly@@KK@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029ce6,18,0x1002ab06,?SetTexture_Lightmap@DrawPolyMgr@@QAEKPAUWorldPoly@@KK@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029cf8,98,0x1002ab18,?SetTexture_Detail@DrawPolyMgr@@QAEKPAUWorldPoly@@KK@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029d5a,6,0x1002ab7a,?SetTexture_None2@DrawPolyMgr@@QAEKPAUWorldPoly@@KK@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029d60,11,0x1002ab80,?SetColor_None@DrawPolyMgr@@QAEXPAUWorldPoly@@PAK@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029d6b,59,0x1002ab8b,?SetColor_Lightmap@DrawPolyMgr@@QAEXPAUPolyVert@@PAE@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029da6,118,0x1002abc6,?SetColor_Scaled@DrawPolyMgr@@QAEXPAUPolyVert@@PAE@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029e1c,29,0x1002ac3c,?d3d_GetTextureFlags@@YAXPAUWorldPoly@@PAK1@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029e39,26,0x1002ac59,?d3d_GetSurfaceFlags@@YAXPAUSurface@@PAK1@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029e53,29,0x1002ac73,?d3d_ClipLM@@YIHKPAX0@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029e70,29,0x1002ac90,?d3d_ClipLM@@YIHKPAX0@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029e8d,17,0x1002acad,?d3d_ClipLMRC@@YIHKPAX0@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029e9e,17,0x1002acbe,?d3d_ClipLMRC@@YIHKPAX0@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029eaf,5,0x1002accf,?d3d_ClipNone@@YIHKPAX0@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029eb4,24,0x1002acd7,?DrawBatch@DrawPolyMgr@@QAEXPAUPolyBatch@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029ecc,3,0x1002acd4,?DrawNone@DrawPolyMgr@@QAEXPAUPolyBatch@@@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x10029ecf,203,0x1002acef,?AddPoly@DrawPolyMgr@@QAEXPAUWorldPoly@@K@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10029f9a,234,0x1002adba,?SetPassStates@DrawPolyMgr@@QAEXPAUPassDesc@@PAUPassState@@@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x1002a084,5,0x1002aea4,?AllocVoid@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEPAXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002a089,26,0x1002aea9,_$E12,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002a0a3,5,0x1002aec3,?AllocVoid@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEPAXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002a0a8,26,0x1002aec8,_$E15,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002a0c2,845,0x1002aee2,?Flush@DrawPolyMgr@@QAEXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 6/6; strings agree,high
+0x1002a40f,644,0x1002b22f,?DrawPolyFirstPass@DrawPolyMgr@@QAEXPAUWorldPoly@@PAUPassDesc@@K@Z [near],drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002a693,553,0x1002b4b3,?DrawPolyAdditionalPass@DrawPolyMgr@@QAEXPAUWorldPoly@@PAUPassDesc@@K@Z [near],drawpolymgr,identical bytes (relocations masked); in link order; callees 3/3; strings agree,high
+0x1002a8bc,212,0x1002b6dc,?DrawNodeFlat@DrawPolyMgr@@QAEXPAUPolyNode@@@Z [near],drawpolymgr,identical bytes (relocations masked); in link order; callees 4/4; strings agree,high
+0x1002a990,34,0x1002b7b0,??0?$CMoArray@UPolyBatch16@@VDefaultCache@@@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002a9b2,34,0x1002b7e2,?GenGetNext@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UBE?AUPolyBatch16@@AAVGenListPos@@@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x1002a9d4,21,0x1002b821,?GenAppend@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UAEHAAUPolyBatch16@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002a9e9,17,0x1002b836,?GenRemoveAt@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UAEXVGenListPos@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002a9fa,13,0x1002b847,?GenRemoveAll@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UAEXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002aa07,179,0x1002b854,?GenCopyList@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UAEHABV?$GenList@UPolyBatch16@@@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002aaba,187,0x1002b907,?GenAppendList@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UAEHABV?$GenList@UPolyBatch16@@@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002ab75,39,0x1002b9c2,?GenFindElement@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UBEHABUPolyBatch16@@AAVGenListPos@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002ab9c,5,0x1002b9e9,?AllocVoid@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEPAXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002aba1,12,0x1002b9ee,?FreeVoid@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEXPAX@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002abad,53,0x1002b9fa,?Init@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@QAEHKK@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002abe2,98,0x1002ba2f,?SetSize2@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@QAEHKPAVLAlloc@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1002ac44,187,0x1002ba91,?InternalNiceSetSize@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/3,high
+0x1002acff,28,0x1002bb4c,?Allocate@?$ObjectBank@UPolyNode@@VNullCS@@@@QAEPAUPolyNode@@XZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002ad1b,30,0x1002bb68,??0PolyNode@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x1002ad39,39,0x1002bb86,?Free@?$ObjectBank@UPolyNode@@VNullCS@@@@QAEXPAUPolyNode@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002ad60,50,0x1002bbad,??1PolyNode@@QAE@XZ,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x1002ad92,27,0x1002bbdf,?Term@?$ObjectBank@UPolyNode@@VNullCS@@@@UAEXXZ,drawpolymgr,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002adad,48,0x1002bbfa,??_G?$ObjectBank@UPolyNode@@VNullCS@@@@UAEPAXI@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1002addd,257,0x1002bc2a,?Insert2@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@QAEHKABUPolyBatch16@@PAVLAlloc@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1002aede,219,0x1002bd2b,?Remove2@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@QAEXKPAVLAlloc@@@Z,drawpolymgr,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1002afb9,22,0x1002be26,?BaseNew@@YAPAUPolyBatch16@@PAVLAlloc@@PAU1@K@Z,drawpolymgr,identical bytes (relocations masked); in link order,high
+0x1002afd0,25,0x1002be40,_$E2,drawpolygrid,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002aff0,5473,0x1002be60,,drawpolygrid,identical bytes (relocations masked); in link order; callees 36/40,high
+0x1002c560,726,0x1002d3d0,?d3d_ClassifyTriangle@@YAHKPAKPAUClipVert@@11@Z,drawpolygrid,identical bytes (relocations masked); in link order,high
+0x1002c840,1074,0x1002d6b0,?d3d_SetupPolyGridEnvMap@@YAXPAVLTObject@@PAV?$_CVector@M@@11@Z [near],drawpolygrid,similar 1.00; size 1074 vs 1074; in link order; callees 2/2,high
+0x1002cc80,1,0x10030120,?d3d_NullPreFrame@@YAXXZ,drawworldmodel,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x1002cc90,65,0x1002daf0,?d3d_ProcessPolyGrid@@YAXPAVLTObject@@@Z,drawpolygrid,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x1002cce0,209,0x1002db40,?d3d_DrawSolidPolyGrids@@YAXXZ,drawpolygrid,identical bytes (relocations masked); in link order; callees 3/3; strings agree,high
+0x1002cdc0,38,0x1002dc20,?d3d_DrawTranslucentPolyGrids@@YAXXZ,drawpolygrid,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002cdf0,22,0x1002dc50,?d3d_QueuePolyGrid@@YAXPAUViewParams@@PAVLTObject@@@Z,drawpolygrid,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002ce10,23,0x1002dc70,?d3d_PolyGridModuleInit@@YAXXZ,drawpolygrid,identical bytes (relocations masked); in link order,high
+0x1002ce30,49,0x1002dc90,?d3d_PolyGridModuleTerm@@YAXXZ,drawpolygrid,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002ce70,67,0x1000feaf,??H?$_CVector@M@@QBE?AV0@V0@@Z,fogvolume,callgraph 6/6; size 67 vs 35; in link order,medium
+0x1002cec0,67,0x1000fed2,??D?$_CVector@M@@QBE?AV0@M@Z,fogvolume,callgraph 2/2; size 67 vs 35; in link order,medium
+0x1002cf10,232,0x1002dcd0,?d3d_TransformPolyGridVerts@@YAXPAUPolyGridVert@@K@Z,drawpolygrid,identical bytes (relocations masked); in link order,high
+0x1002d000,5,0x1002ddc0,_$E11,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002d005,26,0x1002ddc5,_$E1,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002d01f,5,0x1002dddf,_$E11,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002d024,26,0x1002dde4,_$E1,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002d03e,5,0x1002ddfe,_$E11,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002d043,26,0x1002de03,_$E1,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002d05d,5,0x1002de1d,_$E11,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002d062,26,0x1002de22,_$E1,d3d_portal,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002d07c,3,0x10035069,?GetData@CLMPage@@UAEKXZ,lmpaging,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x1002d080,1,0x1002de40,_$E11,d3d_drawsky,identical bytes (relocations masked); in link order,high
+0x1002d090,23,0x1002de50,_$E5,d3d_drawsky,identical bytes (relocations masked); in link order,high
+0x1002d0b0,22,0x1002de70,_$E8,d3d_drawsky,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002d0d0,1002,0x1002de90,?d3d_GetSkyPortalExtents@@YAIXZ,d3d_drawsky,identical bytes (relocations masked); in link order; callees 7/7; strings agree,high
+0x1002d4c0,382,0x1002e280,?d3d_DrawSky@@YAXXZ,d3d_drawsky,identical bytes (relocations masked); in link order; callees 8/8,high
+0x1002d640,1,0x1002e400,_$E2,drawsprite,identical bytes (relocations masked); in link order,high
+0x1002d650,1,0x1002e410,_$E2,drawsprite,identical bytes (relocations masked); in link order,high
+0x1002d660,502,0x1002e420,?d3d_DrawSprite@@YAXPAUViewParams@@PAVLTObject@@@Z,drawsprite,similar 0.99; size 502 vs 517; in link order; callees 2/2,high
+0x1002d860,2732,0x1002e630,,drawsprite,"similar 0.77; size 2732 vs 2715; in link order; callees 8/17; float constants differ: AvP2 [] PH [-20.0, -20.0, 1.0, 1.0, 1.0, 1.0]",medium
+0x1002e310,1749,0x1002f0d0,,drawsprite,identical bytes (relocations masked); in link order; callees 16/18,high
+0x1002e9f0,74,0x1002f7b0,?d3d_ProcessSprite@@YAXPAVLTObject@@@Z,drawsprite,identical bytes (relocations masked); in link order; callees 2/2; strings agree,high
+0x1002ea40,37,0x1002f800,?d3d_QueueTranslucentSprites@@YAXXZ,drawsprite,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002ea70,22,0x1002f830,?d3d_QueueSprite@@YAXPAUViewParams@@PAVLTObject@@@Z,drawsprite,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1002ea90,87,0x1002f850,?d3d_DrawNoZSprites@@YAXXZ,drawsprite,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002eaf0,187,0x1002f8b0,?d3d_TransformSpriteVerts@@YAXPAUSpriteVert@@KPAVLTMatrix@@@Z,drawsprite,identical bytes (relocations masked); in link order,high
+0x1002ebb0,1105,0x1002f970,,drawsprite,identical bytes (relocations masked); in link order,high
+0x1002f010,793,0x1002fdd0,?d3d_ClipSpriteVerts@@YAIPAPAUClipVert@@PAJPAUViewParams@@M@Z [near],drawsprite,identical bytes (relocations masked); in link order; callees 6/6,high
+0x1002f330,25,0x100300f0,_$E2,drawworldmodel,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x1002f350,1,0x10030110,?d3d_NullPreFrame@@YAXXZ,drawworldmodel,identical bytes (relocations masked); in link order,high
+0x1002f360,214,0x10030130,?d3d_ProcessWorldModel@@YAXPAVLTObject@@@Z,drawworldmodel,similar 0.97; size 214 vs 236; in link order; callees 4/5; strings agree,high
+0x1002f440,822,0x10030220,,drawworldmodel,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1002f780,716,0x10030560,,drawworldmodel,identical bytes (relocations masked); in link order,high
+0x1002fa50,47,0x10030830,?d3d_DrawSolidWorldModels@@YAXXZ,drawworldmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002fa80,1092,0x10030860,?d3d_DrawWorldModel@@YAXPAUViewParams@@PAVLTObject@@@Z [near],drawworldmodel,identical bytes (relocations masked); in link order; callees 7/7,high
+0x1002fed0,47,0x10030cb0,?d3d_DrawChromakeyWorldModels@@YAXXZ,drawworldmodel,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1002ff00,355,0x10030ce0,?d3d_QueueTranslucentWorldModels@@YAXXZ,drawworldmodel,identical bytes (relocations masked); in link order; callees 5/5; strings agree,high
+0x10030070,764,0x10030e50,,drawworldmodel,identical bytes (relocations masked); in link order; callees 7/7,high
+0x10030370,1888,0x10031150,,drawworldmodel,identical bytes (relocations masked); in link order; callees 28/28; strings agree,high
+0x10030ad0,211,0x100318b0,?d3d_DrawNoSortWorldModel@@YAXPAUViewParams@@PAVLTObject@@@Z,drawworldmodel,similar 0.67; size 211 vs 369; in link order; callees 1/2,medium
+0x10030bb0,10,0x10031a30,_$E2,fullintersectline,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10030bba,5,0x10031a3a,_$E1,fullintersectline,identical bytes (relocations masked); in link order,high
+0x10030bbf,10,0x10031a3f,_$E2,fullintersectline,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10030bc9,5,0x10031a49,_$E1,fullintersectline,identical bytes (relocations masked); in link order,high
+0x10030bce,10,0x10031a4e,_$E2,fullintersectline,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10030bd8,5,0x10031a58,_$E1,fullintersectline,identical bytes (relocations masked); in link order,high
+0x10030bdd,756,0x10031a5d,?i_IntersectSegment@@YAIPAVIntersectQuery@@PAUIntersectInfo@@PAVWorldTree@@@Z,fullintersectline,similar 0.97; size 756 vs 690; in link order; callees 4/4,high
+0x10030ed1,135,0x10031d0f,?i_FindIntersectionsHPoly@@YAXPAVWorldBsp@@PAPAUNode@@PAV?$_CVector@M@@PAMPAK22E@Z,fullintersectline,similar 1.00; size 135 vs 135; in link order; callees 3/3,high
+0x10030f58,53,0x10031d96,??0IntersectRequest@@QAE@XZ,fullintersectline,identical bytes (relocations masked); in link order,high
+0x10030f8d,76,0x10031dcb,?i_FindIntersections@@YAXPAVWorldBsp@@PAPAUNode@@PAV?$_CVector@M@@PAMPAK22E@Z,fullintersectline,similar 1.00; size 76 vs 76; in link order; callees 2/2,high
+0x10030fd9,104,0x10031e17,?i_ISCallback@@YAIPAVLTObject@@PAX@Z,fullintersectline,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10031041,326,0x10031e7f,?i_HandlePossibleIntersection@@YA_NABV?$_CVector@M@@0PAVLTObject@@@Z,fullintersectline,similar 1.00; size 326 vs 326; in link order; callees 4/4,high
+0x10031187,1752,0x10031fc5,?i_BoundingBoxTest@@YA_NABV?$_CVector@M@@0PAVLTObject@@PAV1@PAVLTPlane@@@Z,fullintersectline,identical bytes (relocations masked); in link order,high
+0x1003185f,455,0x1003269d,?i_QuickSphereTest@@YA_NABV?$_CVector@M@@0PAVLTObject@@@Z,fullintersectline,similar 0.94; size 455 vs 389; in link order; callees 1/1,high
+0x10031a26,661,0x10032822,?i_TestWorldModel@@YA_NPAVWorldModelInstance@@@Z,fullintersectline,similar 0.99; size 661 vs 634; in link order; callees 5/5,high
+0x10031cbb,93,0x10032a9c,?DistSqr@?$_CVector@M@@QBEMABV1@@Z,fullintersectline,similar 0.93; size 93 vs 84; in link order; callees 1/1,high
+0x10031d18,106,0x10032af0,?d3d_EnumDevices@@YAIXZ,gdenum,identical bytes (relocations masked); in link order; callees 4/4; strings agree,high
+0x10031d82,250,0x10032b5a,?d3d_EnumDDrawCallback@@YGHPAU_GUID@@PAD1PAX@Z,gdenum,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10031e7c,24,0x10032c54,?d3d_EnumDDrawCallbackEx@@YGHPAU_GUID@@PAD1PAXPAUHMONITOR__@@@Z,gdenum,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10031e94,413,0x10032c6c,?gr_GetPerpendicularVector@@YAXPAV?$_CVector@M@@00@Z,geomroutines,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10032031,522,0x10032e09,?InternalIntersectLineNode@@YAIPAUNode@@PAUIntersectRequest@@PAV?$_CVector@M@@2@Z,intersect_line,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003223b,329,0x10033013,?InsideConvex@@YAIPAUWorldPoly@@PAV?$_CVector@M@@@Z [near],intersect_line,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10032384,23,0x1003315c,?IntersectLineNode@@YAIPAUNode@@PAUIntersectRequest@@@Z,intersect_line,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003239b,94,0x10033173,?IntersectLine@@YAPAUNode@@PAU1@PAV?$_CVector@M@@11PAVLTPlane@@@Z,intersect_line,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100323f9,6,0x100331d1,?d3d_GetLMAllocator@@YAPAVCLMAllocator@@XZ,lmdynamic,identical bytes (relocations masked); in link order,high
+0x100323ff,80,0x100331d7,?d3d_GetLMBuffer2@@YAPAXKK@Z,lmdynamic,identical bytes (relocations masked); in link order,high
+0x1003244f,80,0x10033227,?d3d_GetLMBuffer2@@YAPAXKK@Z,lmdynamic,identical bytes (relocations masked); in link order,high
+0x1003249f,100,0x10033277,?d3d_DecompressLM32@@YAIPAEKPAK@Z,lmdynamic,identical bytes (relocations masked); in link order,high
+0x10032503,128,0x100332db,?d3d_DecompressLMMask@@YAIPAEK0@Z,lmdynamic,identical bytes (relocations masked); in link order,high
+0x10032583,5,0x1003335b,_$E2,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10032588,26,0x10033360,_$E1,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100325a2,5,0x1003337a,_$E2,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100325a7,30,0x1003337f,_$E4,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100325c5,5,0x1003339d,_$E2,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100325ca,30,0x100333a2,_$E4,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100325e8,338,0x100333c0,?d3d_DrawDynamicLM@@YAIPAULMDrawDesc@@PAULMPoly@@PAULMDynamicLight@@M@Z [near],lmdynamic,identical bytes (relocations masked); in link order; callees 6/6,high
+0x1003273a,235,0x10033512,?d3d_FillDynamicLM16@@YAXPAGPAULMDrawDesc@@MPAULMColor@@K@Z,lmdynamic,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10032825,85,0x100335fd,?d3d_LitPixel16@@YAGMPAULMColor@@@Z,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003287a,236,0x10033652,?d3d_FillDynamicLM32@@YAXPAKPAULMDrawDesc@@MPAULMColor@@K@Z,lmdynamic,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10032966,68,0x1003373e,?d3d_LitPixel32@@YAKMPAULMColor@@@Z,lmdynamic,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100329b0,22,0x10033790,_$E2,lightanim,identical bytes (relocations masked); in link order; callees 1/1; strings agree,high
+0x100329d0,88,0x100337b0,?d3d_InitLMAnimRamp@@YAXM@Z,lightanim,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10032a30,43,0x10033810,?d3d_InitLMClampTable@@YAXXZ,lightanim,identical bytes (relocations masked); in link order,high
+0x10032a60,477,0x10033840,,lightanim,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10032c40,1280,0x10033a20,,lightanim,similar 1.00; size 1280 vs 1293; in link order; callees 7/14,high
+0x10033140,208,0x10033f30,?sub_10033f30@@YAXPAUD3DRenderData@@@Z [near],nolf:w53_10033f30_osoiqip,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10033210,1720,0x10034000,,lightanim,identical bytes (relocations masked); in link order; callees 12/12,high
+0x100338d0,811,0x100346c0,,lightanim,identical bytes (relocations masked); in link order; callees 8/9,high
+0x10033c00,502,0x100349f0,,lightanim,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10033e00,503,0x10034bf0,,lightanim,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10034000,322,0x10034df0,?d3d_FindLMSpace@@YAIPAPAVCLMPage@@KKPAH10@Z [near],lmpaging,identical bytes (relocations masked); in link order,high
+0x10034142,267,0x10034f32,?d3d_AddLMPage@@YAPAVCLMPage@@PAULMPager@@@Z,lmpaging,similar 0.99; size 267 vs 269; in link order; callees 10/10; strings agree,high
+0x1003424d,42,0x1003503f,??0CLMPage@@QAE@XZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x10034277,3,0x10035069,?GetData@CLMPage@@UAEKXZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x1003427a,4,0x1003506c,?GetHeight@CLMPage@@UAEKXZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x1003427e,29,0x10035070,??_GCLMPage@@UAEPAXI@Z,lmpaging,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1003429b,533,0x1003508d,?d3d_PageInPolyLM@@YAIPAULMPager@@PAUWorldPoly@@@Z [near],lmpaging,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100344b0,24,0x100352a2,?GetNumVertices@WorldPoly@@QAEKXZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x100344c8,45,0x100352ba,?d3d_PageInWorldLMs@@YAXPAVWorldBsp@@@Z,lmpaging,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100344f5,37,0x100352e7,??0LMPagerHooks@@QAE@XZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x1003451a,1,0x1003530c,?LMPager_End@@YAXXZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x1003451b,4,0x1003530d,?LMPager_True@@YAIXZ,lmpaging,identical bytes (relocations masked); in link order,high
+0x1003451f,36,0x10035311,?d3d_FreeLMPageBits@@YAXPAPAVCLMPage@@@Z,lmpaging,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10034543,84,0x10035335,?d3d_ResetLMPaging@@YAXPAVWorldBsp@@@Z,lmpaging,identical bytes (relocations masked); in link order,high
+0x10034597,492,0x10035389,?d3d_CreateLightmapPages@@YAIPAX@Z [near],lmpaging,identical bytes (relocations masked); in link order; callees 7/7; strings agree,high
+0x10034783,41,0x10035575,?d3d_ClearLMPages@@YAXPAVWorldBsp@@@Z,lmpaging,identical bytes (relocations masked); in link order,high
+0x100347ac,115,0x1003559e,?d3d_TermRenderWorld@@YAXPAX@Z,lmpaging,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003481f,5,0x10035611,_$E2,lmsurfaces,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10034824,595,0x10035616,_$E1,lmsurfaces,similar 0.84; size 595 vs 548; in link order; callees 6/6,medium
+0x10034a77,38,0x1003583a,??0LMBasis@@QAE@V?$_CVector@M@@00@Z,lmsurfaces,identical bytes (relocations masked); in link order,high
+0x10034a9d,83,0x10035860,?d3d_GetLMAxes@@YAXHPAV?$_CVector@M@@00@Z,lmsurfaces,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10034af0,396,0x100358b3,?Begin@LMDrawDesc@@QAEIPAUWorldPoly@@IKK@Z [near],lmsurfaces,similar 0.99; size 396 vs 396; in link order; callees 3/3,high
+0x10034c7c,262,0x10035a3f,?End@LMDrawDesc@@QAEII@Z,lmsurfaces,identical bytes (relocations masked); in link order,high
+0x10034d82,5,0x10035b45,_$E2,lmsurfaces,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10034d87,1,0x10035b4a,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x10034d88,10,0x10035b4b,_$E4,lmsurfaces,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10034d92,38,0x10035b55,?sub_1005a310@Arr1005a@@QBE?AUT1005a@@AAUGenListPos@@@Z [near],nolf:d3dr4a,similar 0.94; size 38 vs 38; in link order,high
+0x10034db8,133,0x10035b7b,?SetAllocator@CLightmapPages@@QAEXP6APAXKKK@Z@Z,lmsurfaces,similar 0.98; size 133 vs 133; in link order,high
+0x10034e3d,36,0x10035c00,?Reset@CLightmapPages@@QAEXXZ [near],lmsurfaces,similar 0.94; size 36 vs 36; in link order,high
+0x10034e61,90,0x10035c24,?Term@CLightmapPages@@QAEXXZ,lmsurfaces,similar 0.97; size 90 vs 90; in link order; callees 1/1,high
+0x10034ebb,438,0x10035c7e,?d3d_MultiPassFlush@@YAXXZ,drawlightmaps,identical bytes (relocations masked); in link order; callees 9/9,high
+0x10035071,474,0x10035e34,?d3d_DrawLightmapPoly@@YAIPAUWorldPoly@@@Z,drawlightmaps,identical bytes (relocations masked); in link order; callees 13/13; strings agree,high
+0x1003524b,253,0x1003600e,?d3d_SetupLMPolyVerts@@YAXPAUWorldPoly@@PAULMTLVertex@@PAUSPolyVertex@@H@Z,drawlightmaps,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035348,206,0x1003610b,?d3d_SetupLMPolyCoords@@YAXPAUWorldPoly@@PAULMTLVertex@@PAUSPolyVertex@@H@Z,drawlightmaps,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035416,169,0x100361d9,?d3d_DrawLightmapOnly@@YAIPAUWorldPoly@@@Z [near],drawlightmaps,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100354bf,362,0x10036282,?d3d_DrawScreenLMPoly@@YAIPAUWorldPoly@@@Z,drawlightmaps,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10035629,172,0x100363ec,?d3d_FlushPolyQueue@@YAIPAUQueuedPoly@@P6AIPAUWorldPoly@@@ZIPAPAU1@@Z,drawlightmaps,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100356d5,156,0x10036498,?d3d_SetLightmapStages@@YAXXZ [near],drawlightmaps,identical bytes (relocations masked); in link order,high
+0x10035771,41,0x10036534,?d3d_ResetLightmapStages@@YAXXZ,drawlightmaps,identical bytes (relocations masked); in link order,high
+0x1003579a,381,0x1003655d,?d3d_RotationToMatrix@@YAXPAURotation@@PAVLTMatrix@@@Z,drawlightmaps,identical bytes (relocations masked); in link order,high
+0x10035917,975,0x100366da,?d3d_GetSegmentPolies@@YAXPAUSegmentObject@@PAUSegmentQuery@@@Z [near],drawlightmaps,similar 0.60; size 975 vs 956; in link order; callees 3/3; strings differ: - +333?; float constants differ: AvP2 [0.7] PH [],low
+0x10035ce6,1,0x10036a96,_$E11,common_draw,identical bytes (relocations masked); in link order,high
+0x10035ce7,10,0x10036a97,_$E1,d3d_tables,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035cf1,34,0x10036aa1,??0CIdentTable@@QAE@XZ,d3d_tables,identical bytes (relocations masked); in link order,high
+0x10035d13,10,0x10036ac3,_$E1,d3d_tables,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035d1d,88,0x10036acd,??0CMulTable@@QAE@XZ,d3d_tables,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035d75,10,0x10036b25,_$E1,d3d_tables,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035d7f,104,0x10036b2f,??0CGammaTable@@QAE@XZ,d3d_tables,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10035de7,5,0x10036b97,_$E2,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10035dec,158,0x10036b9c,_$E1,pixelformat,identical bytes (relocations masked); in link order,high
+0x10035e8a,349,0x10036c3a,?GenericCopy@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z [near],pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10035fe7,69,0x10036d97,?or_cpy@@YAXPAE0KKK@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x1003602c,21,0x10036ddc,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10036041,21,0x10036df1,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10036056,55,0x10036e06,?Convert16to32@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1003608d,52,0x10036e3d,?Convert16to16@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100360c1,21,0x10036e71,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100360d6,55,0x10036e86,?Convert16to32@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1003610d,21,0x10036ebd,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10036122,52,0x10036ed2,?Convert16to16@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10036156,55,0x10036f06,?Convert16to32@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1003618d,54,0x10036f3d,?Convert32to16@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100361c3,54,0x10036f73,?Convert32to16@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100361f9,54,0x10036fa9,?Convert32to32@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1003622f,21,0x10036fdf,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10036244,21,0x10036ff4,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10036259,21,0x10037009,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003626e,21,0x1003701e,?Convert16to8@@YAKPAVFormatMgr@@PAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10036283,38,0x10037033,?CPV_BFto8@@YAXPAVFormatMgr@@PAVPFormat@@PAE2@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100362a9,67,0x10037059,?Init@BaseBFToAny@@QAEXPAVFormatMgr@@PAVPFormat@@@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x100362ec,95,0x1003709c,?DoConvert@CC_BFto8@@QAEEPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x1003634b,39,0x100370fb,?CPV_BFto16@@YAXPAVFormatMgr@@PAVPFormat@@PAE2@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10036372,103,0x10037122,?DoConvert@CC_BFto16@@QAEGPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x100363d9,38,0x10037189,?CPV_16toBF@@YAXPAVFormatMgr@@PAVPFormat@@PAE2@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x100363ff,99,0x100371af,?DoConvert@CC_BFto32@@QAEKPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036462,38,0x10037212,?CPV_16toBF@@YAXPAVFormatMgr@@PAVPFormat@@PAE2@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10036488,67,0x10037238,?Init@BaseAnyToBF@@QAEXPAVFormatMgr@@PAVPFormat@@@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x100364cb,119,0x1003727b,?DoConvert@CC_8toBF@@QAEKPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036542,38,0x100372f2,?CPV_16toBF@@YAXPAVFormatMgr@@PAVPFormat@@PAE2@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10036568,119,0x10037318,?DoConvert@CC_16toBF@@QAEKPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x100365df,38,0x1003738f,?CPV_16toBF@@YAXPAVFormatMgr@@PAVPFormat@@PAE2@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10036605,73,0x100373b5,?DoConvert@CC_32toBF@@QAEKPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x1003664e,60,0x100373fe,?Init@PFormat@@UAEXW4BPPIdent@@KKKK@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003668a,51,0x1003743a,?SetBitCountAndRightShift@@YAXPAVPFormat@@K@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100366bd,57,0x1003746d,?GetMaskBounds@@YAXKPAK0@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x100366f6,27,0x100374a6,?InitPValueFormat@PFormat@@QAEXXZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036711,11,0x100374c1,?GetBPPShift@PFormat@@QAEKXZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x1003671c,4,0x100374cc,?GetType@PFormat@@QAE?AW4BPPIdent@@XZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036720,54,0x100374d0,?IsSameFormat@PFormat@@QAEIPAV1@@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036756,11,0x10037506,?GetBPPShift@PFormat@@QAEKXZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036761,54,0x10037511,??0FMConvertRequest@@QAE@XZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036797,185,0x10037547,?IsValid@FMConvertRequest@@QAEIXZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036850,76,0x10037600,??0FormatMgr@@QAE@XZ,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003689c,64,0x1003764c,?ConvertPixels@FormatMgr@@QAEKPAVFMConvertRequest@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 1/1,high
+0x100368dc,244,0x1003768c,?InitScaleTables@FormatMgr@@IAEXXZ,pixelformat,identical bytes (relocations masked); in link order,high
+0x100369d0,46,0x10037780,?PValueFromFormatColor@FormatMgr@@QAEKPAVPFormat@@TGenericColor@@AAK@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x100369fe,54,0x100377ae,?CalcImageSize@@YAKW4BPPIdent@@KK@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036a34,206,0x100377e4,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_8PtoBF@@PAVCC_BFto8@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10036b02,32,0x100378b2,?DoConvert@CC_8PtoBF@@QAEKPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x10036b22,181,0x100378d2,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32PtoBF@@PAVCC_BFto16@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10036bd7,137,0x10037987,?Convert1Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_8PtoBF@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10036c60,181,0x10037a10,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32PtoBF@@PAVCC_BFto32@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10036d15,213,0x10037ac5,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_8toBF@@PAVCC_BFto8@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10036dea,188,0x10037b9a,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_8toBF@@PAVCC_BFto16@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10036ea6,144,0x10037c56,?Convert1Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_8toBF@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10036f36,188,0x10037ce6,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_8toBF@@PAVCC_BFto32@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10036ff2,186,0x10037da2,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_16toBF@@PAVCC_BFto8@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x100370ac,217,0x10037e5c,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_16toBF@@PAVCC_BFto16@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10037185,146,0x10037f35,?Convert1Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_16toBF@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10037217,194,0x10037fc7,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_16toBF@@PAVCC_BFto32@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x100372d9,143,0x10038089,?Convert1Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_BFto8@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x10037368,186,0x10038118,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32toBF@@PAVCC_BFto8@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10037422,147,0x100381d2,?Convert1Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_BFto16@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 3/3,high
+0x100374b5,194,0x10038265,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32toBF@@PAVCC_BFto16@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x10037577,216,0x10038327,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32toBF@@PAVCC_BFto32@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 6/6,high
+0x1003764f,181,0x100383ff,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32PtoBF@@PAVCC_BFto16@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 5/5,high
+0x10037704,41,0x100384b4,?DoConvert@CC_32PtoBF@@QAEKPAE@Z,pixelformat,identical bytes (relocations masked); in link order,high
+0x1003772d,181,0x100384dd,?Convert2Pass@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_32PtoBF@@PAVCC_BFto32@@@Z,pixelformat,identical bytes (relocations masked); in link order; callees 5/5,high
+0x100377e2,2095,0x10038592,?ConvertDXTGeneric@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_BFto16@@PAVAbstract_Word@@@Z,pixelformat,similar 1.00; size 2095 vs 2095; in link order; callees 9/9,high
+0x10038011,2077,0x10038dc1,?ConvertDXTGeneric@@YAKPAVFormatMgr@@PAVFMConvertRequest@@PAVCC_BFto32@@PAVAbstract_DWord@@@Z,pixelformat,similar 1.00; size 2077 vs 2077; in link order; callees 9/9,high
+0x10038830,22,0x100395e0,_$E4,tagnodes,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10038850,415,0x10039600,_$E2,tagnodes,identical bytes (relocations masked); in link order,high
+0x100389f0,58,0x100397a0,?Init@BaseObjectSet@@QAEIPAUVisibleSet@@PBD@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10038a30,97,0x100397e0,?Draw@BaseObjectSet@@QAEXPAUViewParams@@P6AX0PAVLTObject@@@Z@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10038aa0,156,0x10039850,?Init@AllocSet@@QAEIPAUVisibleSet@@PBDK@Z,tagnodes,identical bytes (relocations masked); in link order; callees 2/3,high
+0x10038b40,32,0x100398f0,?Term@AllocSet@@QAEXXZ,tagnodes,identical bytes (relocations masked); in link order; callees 0/1,high
+0x10038b60,363,0x10039910,??0VisibleSet@@QAE@XZ [near],tagnodes,identical bytes (relocations masked); in link order; callees 11/11,high
+0x10038cd0,23,0x10039a80,??0AllocSet@@QAE@XZ,tagnodes,identical bytes (relocations masked); in link order,high
+0x10038cf0,977,0x10039aa0,?Init@VisibleSet@@QAEIXZ,tagnodes,identical bytes (relocations masked); in link order; strings agree,high
+0x100390d0,37,0x10039e80,?ClearSet@VisibleSet@@QAEXXZ,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039100,820,0x10039eb0,?d3d_QueueAllObjects@@YAXPAUWorldBsp@@@Z,tagnodes,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10039440,196,0x1003a1f0,?d3d_ProcessAttachments@@YAXPAVLTObject@@K@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039510,43,0x1003a2c0,?d3d_QueueVisibleObjects@@YAXXZ,tagnodes,identical bytes (relocations masked); in link order; callees 2/2,high
+0x10039540,953,0x1003a2f0,?d3d_TagVisibleLeaves@@YAXI@Z,tagnodes,identical bytes (relocations masked); in link order; callees 8/8; strings agree,high
+0x10039900,314,0x1003a6b0,?d3d_ObjectCB@@YAXPAVLTObject@@@Z,tagnodes,identical bytes (relocations masked); in link order; callees 1/1,high
+0x10039a40,155,0x1003a7f0,?d3d_ObjListCB@@YAXPAVLTLink@@PAPAPAVLTObject@@PAK@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039ae0,685,0x1003a890,?d3d_LeafCB@@YAXPAUWorldLeaf@@@Z,tagnodes,identical bytes (relocations masked); in link order; callees 4/4,high
+0x10039d90,108,0x1003ab40,?d3d_PortalFilterCB@@YAHPAUVisNode@@@Z,tagnodes,similar 0.97; size 108 vs 108; in link order,high
+0x10039e00,6,0x1003abb0,?d3d_GetVisibleSet@@YAPAUVisibleSet@@XZ,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039e10,24,,,,no Primal Hunt counterpart,none
+0x10039e30,18,0x10029a20,?GenIsValid@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@UBEHABVGenListPos@@@Z,drawobjects,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x10039e50,20,0x1003abc0,?GenGetNext@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UBEPAUWorldPoly@@AAVGenListPos@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039e70,15,0x1003abe0,?GenGetAt@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UBEPAUWorldPoly@@AAVGenListPos@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039e80,262,0x1003abf0,?GenAppend@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UAEHAAPAUWorldPoly@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x10039f90,269,0x1003ad00,?GenRemoveAt@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UAEXVGenListPos@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x1003a0a0,285,0x1003ae20,?GenCopyList@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UAEHABV?$GenList@PAUWorldPoly@@@@@Z,tagnodes,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1003a1c0,205,0x1003af40,?GenAppendList@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UAEHABV?$GenList@PAUWorldPoly@@@@@Z,tagnodes,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003a290,42,0x1003b010,?GenFindElement@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UBEHABQAUWorldPoly@@AAVGenListPos@@@Z,tagnodes,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a2c0,10,0x1003ae10,?GenGetSize@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@UBEKXZ,tagnodes,similar 0.80; size 10 vs 4; in link order,medium
+0x1003a2d0,15,0x1002a040,?_InitArray@?$CMoArray@UObjectDrawEntry@@VDefaultCache@@@@AAEXK@Z [near],drawobjects,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",low
+0x1003a2e0,183,0x1003b040,??0?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@QAE@XZ [near],tagnodes,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a3a0,134,0x1003b100,?SetSize2@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@QAEHKPAVLAlloc@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x1003a430,249,0x1003b190,?InternalNiceSetSize@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x1003a530,265,0x1003b290,?Insert2@?$CMoArray@PAUWorldPoly@@VDefaultCache@@@@QAEHKABQAUWorldPoly@@PAVLAlloc@@@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x1003a640,19,0x1003b3a0,?BaseDelete@@YAXPAVLAlloc@@PAPAUWorldPoly@@K@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x1003a660,22,0x1003b3c0,?BaseNew@@YAPAPAUWorldPoly@@PAVLAlloc@@PAPAU1@K@Z,tagnodes,identical bytes (relocations masked); in link order,high
+0x1003a680,58,0x1003b3e0,??0CVertexBuffer@@QAE@XZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a6ba,28,0x1003b41a,??_GCVertexBuffer@@UAEPAXI@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1003a6d6,37,0x1003b436,??1CVertexBuffer@@UAE@XZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1003a6fb,113,0x1003b45b,?Flush@CVertexBuffer@@UAEJPAUIDirect3DDevice7@@W4_D3DPRIMITIVETYPE@@K@Z [near],vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a76c,16,0x1003b4cc,?NextVB@CVertexBuffer@@QAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order,high
+0x1003a77c,123,0x1003b4dc,?FlushIndexed@CVertexBuffer@@UAEJPAUIDirect3DDevice7@@W4_D3DPRIMITIVETYPE@@KPAGK@Z [near],vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a7f7,14,0x1003b557,?Discard@CVertexBuffer@@QAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a805,56,0x1003b565,?Term@CVertexBuffer@@UAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a83d,116,0x1003b59d,?Init@CVertexBuffer@@UAEIPAUIDirect3D7@@KKKK@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1003a8b1,94,0x1003b611,?Lock@CVertexBuffer@@UAEPAXXZ [near],vertexbuffer,identical bytes (relocations masked); in link order,high
+0x1003a90f,51,0x1003b66f,?ReleaseVBs@CVertexBuffer@@IAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1003a942,22,0x1003b6a2,_$E6,d3d_savedstates,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003a958,27,0x1003b6b8,,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003a973,33,0x1003b6d3,??1CVertexBufferCache@@UAE@XZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003a994,60,0x1003b6f4,??0CVertexBufferCache@@QAE@XZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003a9d0,4,0x1003b730,?GetVertexSize@CVertexBufferCache@@UAEKXZ,vertexbuffer,identical bytes (relocations masked); in link order,high
+0x1003a9d4,28,0x1003b734,??_GCVertexBuffer@@UAEPAXI@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/2,high
+0x1003a9f0,125,0x1003b750,?Lock@CVertexBufferCache@@UAEPAXXZ [near],vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003aa6d,78,0x1003b7cd,?CreateVBs@CVertexBufferCache@@UAEIPAUIDirect3D7@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003aabb,71,0x1003b81b,?Find@CVertexBufferCache@@QAEIKK@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003ab02,275,0x1003b862,?Alloc@CVertexBufferCache@@QAEIKKKI@Z [near],vertexbuffer,identical bytes (relocations masked); in link order; callees 3/3,high
+0x1003ac15,25,0x1003b975,?Optimize@CVertexBufferCache@@QAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order,high
+0x1003ac2e,97,0x1003b98e,?Flush@CVertexBufferCache@@UAEJPAUIDirect3DDevice7@@W4_D3DPRIMITIVETYPE@@K@Z [near],vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003ac8f,33,0x1003b9ef,?Term@CVertexBufferCache@@UAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003acb0,41,0x1003ba10,?AgeCache@CVertexBufferCache@@QAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order,high
+0x1003acd9,34,0x1003ba39,??0?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@QAE@XZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1003acfb,15,0x1003ba79,?GenGetAt@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UBEPAUIDirect3DVertexBuffer7@@AAVGenListPos@@@Z,vertexbuffer,identical bytes (relocations masked); in link order,high
+0x1003ad0a,21,0x1003bb6c,?GenAppend@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UAEHAAPAUIDirect3DVertexBuffer7@@@Z,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 0/1",low
+0x1003ad1f,17,,,,no Primal Hunt counterpart,none
+0x1003ad30,13,0x1003ba88,?GenRemoveAll@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UAEXXZ,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 0/1",low
+0x1003ad3d,137,0x1001efd0,?GenCopyList@?$CMoArray@KVDefaultCache@@@@UAEHABV?$GenList@K@@@Z,d3d_surface,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 0/2",medium
+0x1003adc6,142,0x1003ba95,?GenAppendList@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UAEHABV?$GenList@PAUIDirect3DVertexBuffer7@@@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 0/2,high
+0x1003ae54,34,0x1003bb4a,??0?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@QAE@XZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 0/1,high
+0x1003ae76,29,0x1002b804,?GenGetAt@?$CMoArray@UPolyBatch16@@VDefaultCache@@@@UBE?AUPolyBatch16@@AAVGenListPos@@@Z,drawpolymgr,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",medium
+0x1003ae93,21,0x1003bb6c,?GenAppend@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UAEHAAPAUIDirect3DVertexBuffer7@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003aea8,17,0x1003bb81,?GenRemoveAt@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UAEXVGenListPos@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003aeb9,13,0x1003bb92,?GenRemoveAll@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@UAEXXZ,vertexbuffer,identical bytes (relocations masked); in link order; callees 1/1,high
+0x1003aec6,179,0x1003bb9f,?GenCopyList@?$CMoArray@UVBCacheEntry@@VDefaultCache@@@@UAEHABV?$GenList@UVBCacheEntry@@@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003af79,187,0x1003bc52,?GenAppendList@?$CMoArray@UVBCacheEntry@@VDefaultCache@@@@UAEHABV?$GenList@UVBCacheEntry@@@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003b034,53,0x1003bd0d,?Init@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@QAEHKK@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/2,high
+0x1003b069,95,,,,no Primal Hunt counterpart,none
+0x1003b0c8,175,0x1001f0ed,?InternalNiceSetSize@?$CMoArray@KVDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,d3d_surface,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 1/3",medium
+0x1003b177,53,0x1003bd0d,?Init@?$CMoArray@PAUIDirect3DVertexBuffer7@@VDefaultCache@@@@QAEHKK@Z,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 0/2",medium
+0x1003b1ac,98,0x1003bd42,?SetSize2@?$CMoArray@UVBCacheEntry@@VDefaultCache@@@@QAEHKPAVLAlloc@@@Z,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 1/2",medium
+0x1003b20e,187,0x1003bda4,?InternalNiceSetSize@?$CMoArray@UVBCacheEntry@@VDefaultCache@@@@AAEHKHPAVLAlloc@@@Z,vertexbuffer,identical bytes (relocations masked); in link order; callees 2/3,high
+0x1003b2c9,24,0x1001f25b,?_AllocateTArray@?$CMoArray@KVDefaultCache@@@@AAEPAKKPAVLAlloc@@@Z,d3d_surface,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",medium
+0x1003b2e1,257,0x1003bf15,?Insert2@?$CMoArray@UVBCacheEntry@@VDefaultCache@@@@QAEHKABUVBCacheEntry@@PAVLAlloc@@@Z,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 1/2",medium
+0x1003b3e2,219,0x1003c016,?Remove2@?$CMoArray@UVBCacheEntry@@VDefaultCache@@@@QAEXKPAVLAlloc@@@Z,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH; callees 1/2",medium
+0x1003b4bd,69,0x1003c0f1,?BaseNew@@YAPAUVBCacheEntry@@PAVLAlloc@@PAU1@K@Z,vertexbuffer,"identical bytes (relocations masked); ICF-folded twin, placed elsewhere in PH",medium
+0x1003b502,6,0x1003c136,DirectDrawCreate (import thunk),ddraw.lib,"import thunk, same IAT slot order",high
+0x1003b508,6,0x1003c13c,DirectDrawCreateEx (import thunk),ddraw.lib,"import thunk, same IAT slot order",high
+0x1003b50e,6,0x1003c142,DirectDrawEnumerateA (import thunk),ddraw.lib,"import thunk, same IAT slot order",high
+0x1003b520,65,0x1003c150,?sb_Init@@YAXPAUStructBank_t@@KK@Z,StdLith struct_bank.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b570,37,0x1003c1f0,?sb_Init2@@YAHPAUStructBank_t@@KKK@Z,StdLith struct_bank.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b5a0,49,0x1003c240,?sb_Term2@@YAXPAUStructBank_t@@H@Z,StdLith struct_bank.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b5e0,16,0x1003c2e0,?sb_Term@@YAXPAUStructBank_t@@@Z,StdLith struct_bank.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b5f0,94,0x1003c300,?sb_AllocateNewStructPage@@YAHPAUStructBank_t@@K@Z,StdLith struct_bank.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b650,10,0x1003c430,_$E4 (g_DefAlloc initialiser),StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",medium
+0x1003b660,11,0x1003c450,g_DefAlloc constructor $E (LAlloc::LAlloc inlined in release),StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",medium
+0x1003b670,12,0x1003c470,_$E3 (atexit registration),StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",medium
+0x1003b680,11,0x1003c490,g_DefAlloc destructor $E (LAlloc::~LAlloc inlined in release),StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",medium
+0x1003b690,16,0x1003c3d0,?Alloc@LAlloc@@UAEPAXK@Z,StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b6a0,14,0x1003c400,?Free@LAlloc@@UAEXPAX@Z,StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
+0x1003b6b0,32,0x1003c4f0,??_GLAlloc@@UAEPAXI@Z,StdLith l_allocator.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",medium
+0x1003b6d0,55,0x1003c530,?MoArray_FindElementMemcmp@@YAKPBX0KK@Z,StdLith dynarray.obj,"StdLith.lib: AvP2 links its release build (tools/libscan.py: identical to progress/reference release StdLith.lib where named), PH its debug build",high
