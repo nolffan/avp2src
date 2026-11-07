@@ -4224,6 +4224,22 @@ void CInterfaceMgr::OnLButtonDown(int x, int y)
 		{
 #ifdef _DEMO
 			NextSplashScreen();
+#elif defined(PRIMAL_HUNT)
+			// PH: on to the next intro screen once the lock time is up --
+			// or at once, for one developer's login (PHCShell.dll 0x10044797)
+			if(g_pLTClient->GetTime() - m_fSplashStartTime > g_vtSplashLockTime.GetFloat())
+			{
+				NextSplashScreen();
+			}
+			else
+			{
+				char szUserName[256];
+				DWORD dwSize = 255;
+				GetUserName(szUserName, &dwSize);
+
+				if (!_stricmp(szUserName, "nelno"))
+					NextSplashScreen();
+			}
 #else
 			if(g_pLTClient->GetTime() - m_fSplashStartTime > g_vtSplashLockTime.GetFloat())
 			{
@@ -5976,7 +5992,7 @@ LTVector CInterfaceMgr::GetDamageTintColor(DamageType dt)
 }
 
 
-#ifdef _DEMO
+#if defined(_DEMO) || defined(PRIMAL_HUNT)
 
 // ----------------------------------------------------------------------- //
 //
@@ -5996,6 +6012,44 @@ void CInterfaceMgr::NextSplashScreen()
 		g_hSplash = DNULL;
 	}
 
+#ifdef PRIMAL_HUNT
+	// PH: Primal Hunt's intro splash screens (PHCShell.dll 0x10046cc0),
+	// shown only with movies on, and skipped for one developer's login
+	if (!(m_dwAdvancedOptions & AO_MOVIES))
+	{
+		g_nSplashCount = 4;
+	}
+	else
+	{
+		char szUserName[256];
+		DWORD dwSize = 255;
+		GetUserName(szUserName, &dwSize);
+
+		if (!_stricmp(szUserName, "nelno"))
+			g_nSplashCount = 4;
+	}
+
+	switch ((const uint8)g_nSplashCount)
+	{
+	case (0):
+		g_hSplash = g_pClientDE->CreateSurfaceFromBitmap("Interface\\intro_fox.pcx");
+		break;
+	case (1):
+		g_hSplash = g_pClientDE->CreateSurfaceFromBitmap("Interface\\intro_sierra.pcx");
+		break;
+	case (2):
+		g_hSplash = g_pClientDE->CreateSurfaceFromBitmap("Interface\\intro_lithtech.pcx");
+		break;
+	case (3):
+		g_hSplash = g_pClientDE->CreateSurfaceFromBitmap("Interface\\intro_thirdlaw.pcx");
+		break;
+	default:
+		SwitchToFolder(FOLDER_ID_MAIN);
+		ChangeState(GS_FOLDER);
+		StartScreenFadeIn(0.5f);
+		return;
+	}
+#else
 	switch ((const uint8)g_nSplashCount)
 	{
 	case (0):
@@ -6013,6 +6067,7 @@ void CInterfaceMgr::NextSplashScreen()
 		StartScreenFadeIn(0.5f);
 		return;
 	}
+#endif
 
 	// Increment the counter
 	++g_nSplashCount;

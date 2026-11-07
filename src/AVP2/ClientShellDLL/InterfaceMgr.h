@@ -343,6 +343,7 @@ class CInterfaceMgr
 		// Primal Hunt keeps the demo's screen show surfaces (PHCShell
 		// 0x1003e380 clears them), though not the screen show itself
 		HSURFACE	m_hScreenShow[5];
+		void		NextSplashScreen();			// PH: the intro splash screens (0x10046cc0)
 #endif
 
 		HSOUNDDE	m_hScubaSound;				// sound looping while scuba gear is on
