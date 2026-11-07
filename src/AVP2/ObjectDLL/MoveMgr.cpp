@@ -215,6 +215,24 @@ void CMoveMgr::UpdateWalk(HOBJECT hObj, LTFLOAT fTime)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CMoveMgr::UpdateFly / UpdateSwim (0x101547e0, folded)
+//
+//	PURPOSE:	Neither is written: the AI just stops standing on anything
+//
+// ----------------------------------------------------------------------- //
+
+void CMoveMgr::UpdateFly(HOBJECT hObj, LTFLOAT fFrameTime)
+{
+	m_bMoving = LTFALSE;
+}
+
+void CMoveMgr::UpdateSwim(HOBJECT hObj, LTFLOAT fFrameTime)
+{
+	m_bMoving = LTFALSE;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CMoveMgr::GetPos (0x101547f0)
 //
 // ----------------------------------------------------------------------- //

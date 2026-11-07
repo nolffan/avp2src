@@ -219,6 +219,12 @@ int CTurretSpawner::GetTurretCount()
 	return s_nTurretCount;
 }
 
+// PH: 0x1015abc0
+void CTurretSpawner::ResetTurretCount()
+{
+	s_nTurretCount = 0;
+}
+
 int CTurretSpawner::s_nTurretCount = 0;
 
 #endif // PRIMAL_HUNT

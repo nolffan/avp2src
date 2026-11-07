@@ -110,6 +110,9 @@ CVarTrack	g_cvarBlinkOnDelay;
 // PH: the cloak as AvP2 had it (UpdateCloakEffect, PHObject.lto 0x100be532;
 // the SVAR command passes it on to the clients)
 CVarTrack	g_cvarOldCloak;
+
+// PH: Third Law's AIs hear footsteps too (AILeash.cpp)
+void	AIBaseList_HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime);
 #endif
 
 
@@ -2030,6 +2033,10 @@ LTBOOL CCharacter::HandlePickup(char **pToks, int nToks, HOBJECT hSender, uint32
 				{
 					WEAPON *pWeap = g_pWeaponMgr->GetWeapon(szWep);
 					if(!pWeap) return LTFALSE;
+#ifdef PRIMAL_HUNT
+					// PH: not a weapon the server forbids (PHObject.lto 0x100b6bb8)
+					if(!g_pGameServerShell->IsWeaponAllowed(pWeap->nId)) return LTFALSE;
+#endif
 
 					AMMO *pAmmo = g_pWeaponMgr->GetAmmo(szAmmo);
 					if(!pAmmo) return LTFALSE;
@@ -3601,6 +3608,12 @@ void CCharacter::HandleFootstepKey()
 			(*iter)->GetSenseMgr().Footstep(m_LastFootstepSoundInfo,this);
 		}
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: and Third Law's AIs, in any game (PHObject.lto 0x100b9d50)
+	AIBaseList_HandleSound(m_hObject, m_LastFootstepSoundInfo.vLocation, m_LastFootstepSoundInfo.fVolume,
+						   m_LastFootstepSoundInfo.eSurfaceType, m_LastFootstepSoundInfo.fTime);
+#endif
 }
 
 // ----------------------------------------------------------------------- //

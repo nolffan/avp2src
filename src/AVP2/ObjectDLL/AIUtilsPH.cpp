@@ -329,4 +329,38 @@ LTBOOL CAIAnimator::IsLooping(int nTracker)
 	return g_pModelLT->GetLooping(pTracker->m_pTracker) == LT_YES;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIAnimator::Save() / Load()
+//
+//	PURPOSE:	Nothing: the trackers are set up again by the AI. Both are
+//				empty, and folded with the other empty one-argument
+//				functions (CAIBase::OnSave calls Save at 0x10143709,
+//				OnLoad calls Load at 0x10143249)
+//
+// ----------------------------------------------------------------------- //
+
+void CAIAnimator::Save(HMESSAGEWRITE hWrite)
+{
+}
+
+void CAIAnimator::Load(HMESSAGEREAD hRead)
+{
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AIDebugPoint()
+//
+//	PURPOSE:	The AI's debugging hook: compiled out, it does nothing
+//				(folded with the other "xor eax,eax; ret" functions, at
+//				0x10153e40)
+//
+// ----------------------------------------------------------------------- //
+
+int AIDebugPoint(int nType, const LTVector& vPos, const AIDebugColor& color, LTFLOAT fSize)
+{
+	return 0;
+}
+
 #endif // PRIMAL_HUNT

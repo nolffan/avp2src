@@ -63,6 +63,13 @@ class CGameServerShell : public IServerShell
 		GameType		GetGameType() const;
 		MultiplayerMgr*	GetMultiplayerMgr()		{ return m_pMPMgr; }
 
+#ifdef PRIMAL_HUNT
+		// PH: the server's weapon restrictions (0x1005b4f0), and the weapon
+		// a pickup's message gives (0x1005b560)
+		LTBOOL			IsWeaponAllowed(int nWeaponId);
+		int				GetPickupWeaponId(const char* szMessage);
+#endif
+
 		uint32			GetLastSaveLoadVersion() const { return m_nLastSaveLoadVersion; }
 		uint32			GetCurrentSaveLoadVersion() const { return m_nCurrentSaveLoadVersion; }
 

@@ -38,6 +38,9 @@
 
 #include "AIUtils.h"
 #include "GameServerShell.h"
+#ifdef PRIMAL_HUNT
+#include "AIBase.h"
+#endif
 
 BEGIN_CLASS(CProjectile)
 END_CLASS_DEFAULT_FLAGS(CProjectile, GameBase, NULL, NULL, CF_HIDDEN)
@@ -660,6 +663,20 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 		pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(hHitBox);
 		if (!pHitBox) return;
 	}
+#ifdef PRIMAL_HUNT
+	// PH: Third Law's AIs and tentacles (PHObject.lto 0x10075b05)
+	else if (IsAIBaseOrTentacle(hObj) == LTTRUE)
+	{
+		CAIBase* pAI = GetAIBase(hObj);
+		if (pAI && pAI->CanShootThrough() == LTTRUE) return;
+
+		uint32 dwFlags;
+		g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
+
+		if(!(dwFlags & FLAG_SOLID) && !(dwFlags & FLAG_RAYHIT))
+			return;
+	}
+#endif
 	else
 	{
 		uint32 dwFlags = g_pLTServer->GetObjectFlags(hObj);

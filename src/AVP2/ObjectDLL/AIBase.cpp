@@ -29,6 +29,7 @@
 #include "LTString.h"
 #include "ParseUtils.h"
 #include "ClientServerShared.h"
+#include "Tokenizer.h"
 
 // PH: 0x10316310, set by a cheat in CGameServerShell
 extern LTBOOL g_bGodMode;
@@ -1142,7 +1143,7 @@ void CAIBase::HandleFootstep(HOBJECT hObj, LTBOOL bLoud, LTFLOAT fVolume)
 //
 // ----------------------------------------------------------------------- //
 
-void CAIBase::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, LTFLOAT fRange, uint32 nType)
+void CAIBase::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime)
 {
 	if (!IsPlayer(hObj)) return;
 
@@ -1468,30 +1469,30 @@ LTBOOL CAIBase::HandleTrigger(const char* szMsg)
 {
 	if (!szMsg) return LTFALSE;
 
-	CCommandParser parser;
+	CTokenizer parser;
 	parser.Parse(szMsg, ";=");
 
-	if (!parser.m_nArgs) return LTFALSE;
+	if (!parser.m_nNumTokens) return LTFALSE;
 
-	if (stricmp(parser.m_szArgs[0], "DAMAGE") == 0)
+	if (stricmp(parser.m_szTokens[0], "DAMAGE") == 0)
 	{
-		if (parser.m_nArgs < 2) return LTFALSE;
+		if (parser.m_nNumTokens < 2) return LTFALSE;
 
 		DamageStruct damage;
 		damage.hDamager = LTNULL;
-		damage.fDamage = (LTFLOAT)atof(parser.m_szArgs[1]);
+		damage.fDamage = (LTFLOAT)atof(parser.m_szTokens[1]);
 		damage.vDir = LTVector(0.0f, 0.0f, 0.0f);
 		g_pLTServer->GetObjectPos(m_hObject, &damage.vPos);
 
 		HandleDamage(damage);
 		return LTTRUE;
 	}
-	else if (stricmp(parser.m_szArgs[0], "ATTACK") == 0)
+	else if (stricmp(parser.m_szTokens[0], "ATTACK") == 0)
 	{
-		if (parser.m_nArgs < 2) return LTFALSE;
+		if (parser.m_nNumTokens < 2) return LTFALSE;
 
 		ObjArray<HOBJECT, 1> objArray;
-		g_pLTServer->FindNamedObjects(parser.m_szArgs[1], objArray);
+		g_pLTServer->FindNamedObjects(parser.m_szTokens[1], objArray);
 		if (!objArray.NumObjects()) return LTFALSE;
 
 		HOBJECT hObj = objArray.GetObject(0);

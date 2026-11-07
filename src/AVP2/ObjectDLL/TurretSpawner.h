@@ -31,6 +31,7 @@ class CTurretSpawner : public GameBase
 		static void	DecTurretCount();
 		static void	IncTurretCount();
 		static int	GetTurretCount();
+		static void	ResetTurretCount();		// a new world (CGameServerShell::PreStartWorld)
 
 	protected :
 

@@ -600,6 +600,9 @@ entries[j]` for j counting up), which copies the entry at the insertion
 point over every entry above it, and it never raises the count, so the
 last entry is lost. Only a bute file that lists the "_MP" sets or weapons
 out of ID order is affected.
+The server's own copies have it too: PHObject.lto 0x10155bc0 and
+0x10155cf0 (`MPRestrict_AddClass`, `MPRestrict_AddWeapon`,
+src/AVP2/ObjectDLL/MPRestrictions.cpp), filled from the game info.
 
 Not fixed yet (Primal Hunt's lists, MPRestrictList.h).
 
@@ -654,6 +657,17 @@ PHObject.lto 0x1015a340 (`CTurretGun::Rotate`,
 src/AVP2/ObjectDLL/TurretGun.cpp). With a Yaw Range of a full turn the
 yaw is meant to be wrapped into one turn, but the ceil() that would do it
 has its result thrown away, so the yaw grows without bound.
+
+Not fixed yet.
+
+### A restriction list's "allowed" check reads one past its last entry
+
+PHObject.lto 0x10155e20 and 0x10155e40 (`MPRestrict_IsClassAllowed`,
+`MPRestrict_IsWeaponAllowed`, src/AVP2/ObjectDLL/MPRestrictions.cpp).
+The index is checked with `i > count` instead of `i >= count`, so the
+entry just past the list is read; it is always cleared, so it reads as
+not allowed. Harmless with the callers' indices (from the Find
+functions), but wrong.
 
 Not fixed yet.
 

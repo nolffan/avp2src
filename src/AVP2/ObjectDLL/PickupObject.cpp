@@ -359,6 +359,30 @@ LTBOOL PickupObject::ReadProp(ObjectCreateStruct *pData)
 
 LTBOOL PickupObject::InitialUpdate()
 {
+#ifdef PRIMAL_HUNT
+	// PH: a weapon the server forbids is not in the multiplayer game
+	// (PHObject.lto 0x10103d84)
+	if(g_pGameServerShell->GetGameType() != SP_STORY)
+	{
+		int nWeaponId = g_pGameServerShell->GetPickupWeaponId(m_puButes.m_szMessage);
+		if((nWeaponId >= 0) && !g_pGameServerShell->IsWeaponAllowed(nWeaponId))
+		{
+			g_pLTServer->RemoveObject(m_hObject);
+			return LTTRUE;
+		}
+
+		if(m_puButes.m_szWeaponRef[0])
+		{
+			WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(m_puButes.m_szWeaponRef);
+			if(pWeapon && (pWeapon->nId > 0) && !g_pGameServerShell->IsWeaponAllowed(pWeapon->nId))
+			{
+				g_pLTServer->RemoveObject(m_hObject);
+				return LTTRUE;
+			}
+		}
+	}
+#endif
+
 	// Set the next update to almost immediately
 	g_pLTServer->SetNextUpdate(m_hObject, 0.001f);
 

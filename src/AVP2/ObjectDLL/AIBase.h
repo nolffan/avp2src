@@ -34,24 +34,8 @@ class CPlayerObj;
 //	only what CAIBase's code needs of them is declared here.
 // ----------------------------------------------------------------------- //
 
-// PH: CAISight::m_Target (0x28 bytes); its constructor is 0x101447e0
-struct CAISightTarget
-{
-	CAISightTarget()
-	{
-		m_dw0 = 0; m_dw1 = 0; m_dw2 = 0; m_dw3 = 0;
-		m_dw4 = 0; m_dw5 = 0; m_dw6 = 0; m_dw7 = 0;
-		m_nIndex = -1;
-		m_dw9 = 0;
-	}
-
-	uint32	m_dw0, m_dw1, m_dw2, m_dw3, m_dw4, m_dw5, m_dw6, m_dw7;
-	int		m_nIndex;
-	uint32	m_dw9;
-};
-
-// PH: CAIBase::m_Sight (0x50, 0x44 bytes); Save 0x1015b390, Load 0x1015b430,
-// CanSee 0x1015af50
+// PH: CAIBase::m_Sight (0x50, 0x44 bytes); its code is AISight.cpp's
+// (CanSee 0x1015af50, Save 0x1015b390, Load 0x1015b430)
 class CAISight
 {
 	public :
@@ -67,14 +51,20 @@ class CAISight
 			m_fNextUpdate	= g_pLTServer->GetTime() + 0.25f;
 		}
 
+		// PH: it has one, empty: CAIBase's destructor (0x10142840)
+		// counts it among the members it unwinds
+		~CAISight() {}
+
 		void	SetFOV(LTFLOAT fFOV)
 		{
 			m_fFOV			= fFOV;
 			m_fCosHalfFOV	= (LTFLOAT)cos(MATH_DEGREES_TO_RADIANS(m_fFOV) * 0.5f);
 		}
 
+		// nFlags is unused: the ray always hits objects and skips the
+		// non-solid ones
 		LTBOOL	CanSee(HOBJECT hObj, const LTVector& vPos, const LTVector& vForward, int nFlags,
-					   uint32 dw1, uint32 dw2, uint32 dw3, LTFLOAT* pfDist);
+					   ObjectFilterFn fnFilter, PolyFilterFn fnPolyFilter, void* pUserData, LTFLOAT* pfDist);
 
 		void	Save(HMESSAGEWRITE hWrite);
 		void	Load(HMESSAGEREAD hRead);
@@ -85,7 +75,7 @@ class CAISight
 		LTFLOAT			m_fCosHalfFOV;		// 0x5c
 		LTBOOL			m_bEnabled;			// 0x60
 		LTFLOAT			m_fRange;			// 0x64
-		CAISightTarget	m_Target;			// 0x68
+		IntersectInfo	m_Target;			// 0x68, what the last look hit (its constructor, 0x101447e0, is out of line)
 		LTFLOAT			m_fFudge;			// 0x90
 };
 
@@ -152,8 +142,8 @@ class CMoveMgr
 
 		virtual void	Update(HOBJECT hObj, LTFLOAT fFrameTime);		// 0x101541b0
 		virtual void	UpdateWalk(HOBJECT hObj, LTFLOAT fFrameTime);	// 0x10154490
-		virtual void	UpdateFly(HOBJECT hObj, LTFLOAT fFrameTime) {}	// 0x101547e0 (folded)
-		virtual void	UpdateSwim(HOBJECT hObj, LTFLOAT fFrameTime) {}	// 0x101547e0 (folded)
+		virtual void	UpdateFly(HOBJECT hObj, LTFLOAT fFrameTime);	// 0x101547e0 (folded)
+		virtual void	UpdateSwim(HOBJECT hObj, LTFLOAT fFrameTime);	// 0x101547e0 (folded)
 
 		void		Accelerate(const LTVector& vDesired, const LTVector& vVel, LTVector* pvNewVel,
 						LTFLOAT fSpeed, LTFLOAT fAccel, LTFLOAT fTime);		// 0x10154200
@@ -338,8 +328,8 @@ struct CStuckCheck
 	uint8		m_nAxes;		// 0x20
 };
 
-// PH: CAIBase::m_Avoid (0x248, 0x3c bytes); Update 0x1015abd0,
-// CheckBlocked 0x1015acd0
+// PH: CAIBase::m_Avoid (0x248, 0x3c bytes); its code is AISight.cpp's
+// (Update 0x1015abd0, CheckBlocked 0x1015acd0, Steer 0x1015ad10)
 class CAvoidance
 {
 	public :
@@ -367,6 +357,7 @@ class CAvoidance
 
 		void	Update();
 		LTBOOL	CheckBlocked(HOBJECT hObj, CMoveMgr* pMoveMgr);
+		void	Steer(HOBJECT hObj, CMoveMgr* pMoveMgr, LTFLOAT fTime);
 
 		int			m_nState;		// 0x00
 		LTVector	m_vDir;			// 0x04
@@ -420,6 +411,7 @@ struct SpearInfo
 {
 	SpearInfo()
 	{
+		hSpear = LTNULL;
 		rRot.Init();
 		vPos.Init(0.0f, 0.0f, 0.0f);
 		nNode = -1;
@@ -447,23 +439,6 @@ class CSpearList : public TLinkList<SpearInfo*>
 		void	Save(HMESSAGEWRITE hWrite);
 		void	Load(HMESSAGEREAD hRead);
 		void	RemoveDead();
-};
-
-// PH: Third Law's command parser (constructor 0x101586d0, Parse 0x10158890)
-class CCommandParser
-{
-	public :
-
-		CCommandParser();
-		void	Parse(const char* szString, const char* szSeparators);
-
-		int		m_nArgs;
-		char	m_szArgs[32][32];
-		uint32	m_dw404;
-		uint32	m_dw408;
-		char	m_szWhite[16];
-		char	m_szSep[16];
-		char	m_szQuote[16];
 };
 
 // PH: the state a CAIBase is told to go to (CAIBase::SetState, slot 38)
@@ -517,7 +492,7 @@ class CAIBase : public GameBase
 		// CAIBase (slots 18..55)
 		virtual void	SetVisionMode(int nMode) {}										// 18
 		virtual void	HandleFootstep(HOBJECT hObj, LTBOOL bLoud, LTFLOAT fVolume);			// 19
-		virtual void	HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, LTFLOAT fRange, uint32 nType); // 20
+		virtual void	HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime); // 20
 		virtual LTBOOL	IsDead();															// 21
 		virtual LTBOOL	ChooseTarget();														// 22
 		virtual LTBOOL	CheckForPlayer();													// 23
@@ -646,7 +621,7 @@ void		AIBaseList_Add(CAIBase* pAI);
 CAIBase*	AIBaseList_GetFirst();
 CAIBase*	AIBaseList_GetNext();
 void		AIBaseList_SetVisionMode(int nMode);
-void		AIBaseList_HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, LTFLOAT fRange, uint32 nType);
+void		AIBaseList_HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime);
 
 #endif // PRIMAL_HUNT
 

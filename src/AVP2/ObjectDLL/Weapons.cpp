@@ -542,6 +542,11 @@ void CWeapons::ObtainWeapon( DBYTE nWeaponId,
 {
 	if (!m_pWeapons || !IsValidIndex(nWeaponId)) return;
 
+#ifdef PRIMAL_HUNT
+	// PH: not a weapon the server forbids (PHObject.lto 0x1009d258)
+	if (!g_pGameServerShell->IsWeaponAllowed(nWeaponId)) return;
+#endif
+
 	// If necessary set the ammo type based on the weapon's default
 	// ammo...
 

@@ -5792,6 +5792,49 @@ void MultiplayerMgr::SetGameInfoChanged()
 }
 
 
+#ifdef PRIMAL_HUNT
+// PH: the restriction lists' entry points (MPRestrictions.cpp)
+void	MPRestrict_Clear();
+void	MPRestrict_AddClass(int nId, LTBOOL bAllowed, const char* szName);
+void	MPRestrict_AddWeapon(int nId, LTBOOL bAllowed, const char* szName);
+
+// -------------------------------------------------------------------- //
+//
+// FUNCTION:	MultiplayerMgr::UpdateRestrictions()
+//
+// PURPOSE:		PH: list the game's classes and weapons, and which are
+//				allowed, for the server's checks (0x1006a480)
+//
+// -------------------------------------------------------------------- //
+
+void MultiplayerMgr::UpdateRestrictions()
+{
+	MPGameInfo *pInfo = g_pGameServerShell->GetGameInfo();
+
+	MPRestrict_Clear();
+
+	for(int i = 0; i < MAX_MP_RESTRICTIONS; i++)
+	{
+		uint32 nBit = (1 << i);
+
+		if(g_pCharacterButeMgr && (pInfo->m_nClasses[i] >= 0))
+		{
+			CharacterButes butes = g_pCharacterButeMgr->GetCharacterButes(pInfo->m_nClasses[i]);
+			MPRestrict_AddClass(butes.m_nId, (pInfo->m_nAllowedClasses & nBit) != 0, butes.m_szName);
+		}
+
+		if(g_pWeaponMgr && (pInfo->m_nWeapons[i] >= 0))
+		{
+			WEAPON *pWeapon = g_pWeaponMgr->GetWeapon(pInfo->m_nWeapons[i]);
+
+			if(pWeapon)
+				MPRestrict_AddWeapon(pWeapon->nId, (pInfo->m_nAllowedWeapons & nBit) != 0, pWeapon->szName);
+		}
+	}
+}
+#endif
+
+
 // -------------------------------------------------------------------- //
 //
 // FUNCTION:	MultiplayerMgr::ResetQueen()

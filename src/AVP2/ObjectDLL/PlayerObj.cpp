@@ -52,6 +52,7 @@
 #include "CinematicTrigger.h"
 #ifdef PRIMAL_HUNT
 #include "Turret.h"
+#include "TurretGun.h"
 #endif
 
 static 	LTBOOL g_bShowNodes = LTFALSE;
@@ -1793,11 +1794,20 @@ int CPlayerObj::AquireDefaultWeapon(LTBOOL bChangeWeapon)
 	if (pPlayerAttachments)
 		pWeapons = pPlayerAttachments->GetWeapons();
 
+#ifdef PRIMAL_HUNT
+	// PH: the weapon we'd change to (PHObject.lto 0x1010ee0c)
+	int nWeaponId = 0;
+#endif
+
 	for(i=0 ; i<pWeaponSet->nNumWeapons ; i++)
 	{
 		WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(pWeaponSet->szWeaponName[i]);
 
 		if(!pWeapon) break;
+
+#ifdef PRIMAL_HUNT
+		nWeaponId = pWeapon->nId;
+#endif
 
 		BARREL* pBarrel = g_pWeaponMgr->GetBarrel(pWeapon->aBarrelTypes[PRIMARY_BARREL]);
 
@@ -1937,7 +1947,12 @@ int CPlayerObj::AquireDefaultWeapon(LTBOOL bChangeWeapon)
 	}
 
 	
+#ifdef PRIMAL_HUNT
+	// PH: not to a weapon the server forbids (PHObject.lto 0x1010f2b4)
+	if(bChangeWeapon && g_pGameServerShell->IsWeaponAllowed(nWeaponId))
+#else
 	if(bChangeWeapon)
+#endif
 		ChangeWeapon(g_pWeaponMgr->GetCommandId(i), LTFALSE, LTFALSE);
 
 	return i;
@@ -2006,6 +2021,40 @@ void CPlayerObj::StartDeath()
 
 	// Play music to accompany player's death.
 	g_pMusicMgr->PlayPlayerDeathEvent( );
+
+#ifdef PRIMAL_HUNT
+	// PH: let go of the mounted turret, and lose the carried ones
+	// (PHObject.lto 0x1010f484)
+	if (m_hUsingTurret)
+	{
+		if (GetTurretGun(m_hUsingTurret))
+		{
+			HSTRING hStr = g_pLTServer->CreateString("ACTIVATE");
+			SendTriggerMsgToObject(this, m_hUsingTurret, hStr);
+			g_pLTServer->FreeString(hStr);
+		}
+
+		StopUsingTurret();
+	}
+
+	if (m_nNumTurrets > 0)
+	{
+		for (int i = 0; i < m_nNumTurrets; i++)
+		{
+			if (m_hTurrets[i])
+			{
+				g_pLTServer->RemoveObject(m_hTurrets[i]);
+				m_hTurrets[i] = LTNULL;
+			}
+		}
+
+		m_nNumTurrets = 0;
+
+		HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+		g_pLTServer->WriteToMessageByte(hMessage, 0);
+		g_pLTServer->EndMessage(hMessage);
+	}
+#endif
 }
 
 
@@ -5766,6 +5815,93 @@ void CPlayerObj::SendMPInterfaceUpdate(HMESSAGEWRITE hMessage)
 }
 
 #ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::StopUsingTurret()
+//
+//	PURPOSE:	PH: let go of the mounted turret, and tell every client
+//				(PHObject.lto 0x10116880; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::StopUsingTurret()
+{
+	HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(LTNULL, MID_TURRET_USE);
+	g_pLTServer->WriteToMessageByte(hMessage, 1);
+	g_pLTServer->WriteToMessageByte(hMessage, LTFALSE);
+	g_pLTServer->WriteToMessageObject(hMessage, m_hUsingTurret);
+	g_pLTServer->EndMessage(hMessage);
+
+	m_hUsingTurret = LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::StartUsingTurret()
+//
+//	PURPOSE:	PH: take a mounted turret, and tell every client who has
+//				it, how far it turns and its ammo (PHObject.lto
+//				0x10116930; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::StartUsingTurret(HOBJECT hTurret)
+{
+	m_hUsingTurret = hTurret;
+
+	HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(LTNULL, MID_TURRET_USE);
+	g_pLTServer->WriteToMessageByte(hMessage, 1);
+	g_pLTServer->WriteToMessageByte(hMessage, LTTRUE);
+	g_pLTServer->WriteToMessageObject(hMessage, m_hUsingTurret);
+	g_pLTServer->WriteToMessageObject(hMessage, m_hObject);
+
+	CTurretGun* pGun = GetTurretGun(m_hUsingTurret);
+	if (pGun)
+	{
+		g_pLTServer->WriteToMessageFloat(hMessage, pGun->GetPitchRange());
+		g_pLTServer->WriteToMessageFloat(hMessage, pGun->GetYawRange());
+		g_pLTServer->WriteToMessageWord(hMessage, pGun->GetAmmoCount());
+	}
+
+	g_pLTServer->EndMessage(hMessage);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::SetTurretControls()
+//
+//	PURPOSE:	PH: work the fire and spin controls of the mounted turret
+//				we're using: bits 0 and 1 start and stop firing, 2 and 3
+//				spinning (PHObject.lto 0x10116a40; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::SetTurretControls(uint8 nControls)
+{
+	if (!m_hUsingTurret) return;
+
+	CTurretGun* pGun = GetTurretGun(m_hUsingTurret);
+	if (!pGun) return;
+
+	if (nControls & 0x01)
+	{
+		pGun->SetFiring(LTTRUE);
+	}
+	else if (nControls & 0x02)
+	{
+		pGun->SetFiring(LTFALSE);
+	}
+
+	if (nControls & 0x04)
+	{
+		pGun->SetSpinning(LTTRUE);
+	}
+	else if (nControls & 0x08)
+	{
+		pGun->SetSpinning(LTFALSE);
+	}
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPlayerObj::RemoveTurret()

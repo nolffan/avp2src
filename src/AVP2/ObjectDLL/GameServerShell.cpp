@@ -44,6 +44,10 @@
 #include "StarlightView.h"
 #include "Weapons.h"
 #include "ServerAssetMgr.h"
+#ifdef PRIMAL_HUNT
+#include "TurretSpawner.h"
+#include "TurretGun.h"
+#endif
 
 #include "ServerRes.h"
 
@@ -72,6 +76,22 @@ CDialogueWindow		g_DialogueWindow;
 LTBOOL	LeashMgr_Init();
 void	LeashMgr_Clear();
 void	AIBaseList_Clear();	// AILeash.cpp
+void	AIBaseList_SetVisionMode(int nMode);
+
+// PH: the class and weapon restrictions (MPRestrictions.cpp)
+int		MPRestrict_FindClass(int nId);
+int		MPRestrict_FindWeapon(int nId);
+LTBOOL	MPRestrict_IsClassAllowed(int i);
+LTBOOL	MPRestrict_IsWeaponAllowed(int i);
+
+// PH: the client messages for the carried and mounted turrets and the
+// vision modes (names ours; MsgIDs.h names 223 and 225)
+#define MID_PH_PLAYER_222		222
+#define MID_PH_VISIONMODE		226
+
+// PH: what MID_TURRET_USE tells a mounted turret (names ours)
+#define TURRET_USE_AIM			2
+#define TURRET_USE_CONTROLS		3
 #endif
 
 #ifndef _FINAL
@@ -87,6 +107,12 @@ CVarTrack			g_ShowAIVolTrack;
 CVarTrack			g_EE_MillerTime;
 
 CVarTrack			g_vtLowViolence;
+
+#ifdef PRIMAL_HUNT
+// PH: CHEAT_PH30 sets it for the local player; Third Law's AI is easier
+// for it (GetDifficultyDamageFactor, AIBase.cpp)
+LTBOOL				g_bGodMode;
+#endif
 
 // ----------------------------------------------------------------------- //
 
@@ -402,6 +428,19 @@ void CGameServerShell::VerifyClient(HCLIENT hClient, void *pClientData, uint32 &
 		MPClientData *pData = (MPClientData*)pClientData;
 		MPGameInfo *pInfo = GetGameInfo();
 
+#ifdef PRIMAL_HUNT
+		// PH: turn away a client whose character the server does not
+		// allow (0x10057c05)
+		m_pMPMgr->UpdateRestrictions();
+
+		int nIndex = MPRestrict_FindClass(pData->m_nCharacterSet[pData->m_nCharacterClass]);
+		if((nIndex >= 0) && !MPRestrict_IsClassAllowed(nIndex))
+		{
+			nVerifyCode = 0x10001;
+			return;
+		}
+#endif
+
 		if(pInfo)
 		{
 			// Use g_nNumClients instead of the value from MPMgr because it'll be
@@ -626,11 +665,12 @@ void CGameServerShell::PreStartWorld(LTBOOL bSwitchingWorlds)
 	}
 
 #ifdef PRIMAL_HUNT
-	// PH: forget the last world's leash groups (0x10057f79) and AIs.
-	// Retail then calls 0x1015abc0 and 0x1006a480 (m_pMPMgr's), not yet
-	// written.
+	// PH: forget the last world's leash groups (0x10057f79), AIs and
+	// spawned turrets, and list the restrictions again
 	LeashMgr_Clear();
 	AIBaseList_Clear();
+	CTurretSpawner::ResetTurretCount();
+	m_pMPMgr->UpdateRestrictions();
 #endif
 }
 
@@ -1058,6 +1098,95 @@ void CGameServerShell::OnMessage(HCLIENT hSender, uint8 messageID, HMESSAGEREAD 
 		}
 		break;
 
+#ifdef PRIMAL_HUNT
+		// PH: passed on to the player object (0x100586fa)
+		case MID_PH_PLAYER_222:
+		{
+			CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+			if (!pPlayer) break;
+
+			HMESSAGEWRITE hWrite = g_pLTServer->StartMessageToObject(LTNULL, pPlayer->m_hObject, MID_PH_PLAYER_222);
+			g_pLTServer->EndMessage(hWrite);
+		}
+		break;
+
+		// PH: three vectors, passed on to the player object (0x1005873f)
+		case MID_PLAYER_TURRETS:
+		{
+			LTVector vPos, vDir, vNormal;
+			g_pLTServer->ReadFromMessageVector(hMessage, &vPos);
+			g_pLTServer->ReadFromMessageVector(hMessage, &vDir);
+			g_pLTServer->ReadFromMessageVector(hMessage, &vNormal);
+
+			CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+			if (!pPlayer) break;
+
+			HMESSAGEWRITE hWrite = g_pLTServer->StartMessageToObject(LTNULL, pPlayer->m_hObject, MID_PLAYER_TURRETS);
+			g_pLTServer->WriteToMessageVector(hWrite, &vPos);
+			g_pLTServer->WriteToMessageVector(hWrite, &vDir);
+			g_pLTServer->WriteToMessageVector(hWrite, &vNormal);
+			g_pLTServer->EndMessage(hWrite);
+		}
+		break;
+
+		// PH: the player at a mounted turret aims it or works its
+		// controls; every client is told (0x100587eb)
+		case MID_TURRET_USE:
+		{
+			switch (g_pLTServer->ReadFromMessageByte(hMessage))
+			{
+				case TURRET_USE_AIM:
+				{
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+					if (!pPlayer) break;
+
+					LTFLOAT fYaw = g_pLTServer->ReadFromMessageFloat(hMessage);
+					LTFLOAT fPitch = g_pLTServer->ReadFromMessageFloat(hMessage);
+
+					HMESSAGEWRITE hWrite = g_pLTServer->StartMessage(LTNULL, MID_TURRET_USE);
+					g_pLTServer->WriteToMessageByte(hWrite, TURRET_USE_AIM);
+					g_pLTServer->WriteToMessageObject(hWrite, pPlayer->m_hObject);
+					g_pLTServer->WriteToMessageFloat(hWrite, fYaw);
+					g_pLTServer->WriteToMessageFloat(hWrite, fPitch);
+					g_pLTServer->EndMessage(hWrite);
+
+					CTurretGun* pGun = dynamic_cast<CTurretGun*>(g_pLTServer->HandleToObject(pPlayer->GetUsingTurret()));
+					if (pGun)
+					{
+						pGun->Rotate(fYaw, fPitch);
+					}
+				}
+				break;
+
+				case TURRET_USE_CONTROLS:
+				{
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+					if (!pPlayer) break;
+
+					uint8 nControls = g_pLTServer->ReadFromMessageByte(hMessage);
+
+					HMESSAGEWRITE hWrite = g_pLTServer->StartMessage(LTNULL, MID_TURRET_USE);
+					g_pLTServer->WriteToMessageByte(hWrite, TURRET_USE_CONTROLS);
+					g_pLTServer->WriteToMessageObject(hWrite, pPlayer->m_hObject);
+					g_pLTServer->WriteToMessageByte(hWrite, nControls);
+					g_pLTServer->EndMessage(hWrite);
+
+					pPlayer->SetTurretControls(nControls);
+				}
+				break;
+			}
+		}
+		break;
+
+		// PH: the player's vision mode, which Third Law's AI notices
+		// (0x1005897d)
+		case MID_PH_VISIONMODE:
+		{
+			AIBaseList_SetVisionMode(g_pLTServer->ReadFromMessageByte(hMessage));
+		}
+		break;
+#endif
+
 		default :
 		break;
 	}
@@ -1193,6 +1322,54 @@ void CGameServerShell::HandleCheatCode(CPlayerObj* pPlayer, int nCheatCode, uint
 			g_EE_MillerTime.SetFloat(nData ? 1.0f : 0.0f);
 		}
 		break;
+
+#ifdef PRIMAL_HUNT
+		// PH: the local player triggers the level's ExitTrigger: the first
+		// active one gets an empty message, else the first inactive one
+		// is triggered (0x10058e11)
+		case CHEAT_NEXTLEVEL:
+		{
+			if (!(g_pLTServer->GetClientInfoFlags(pPlayer->GetClient()) & CIF_LOCAL)) break;
+
+			HCLASS hClass = g_pLTServer->GetClass("ExitTrigger");
+			if (!hClass) break;
+
+			HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+			while (hObj)
+			{
+				if (g_pLTServer->GetObjectClass(hObj) == hClass)
+				{
+					SendTriggerMsgToObject(pPlayer, hObj, "");
+					break;
+				}
+
+				hObj = g_pLTServer->GetNextObject(hObj);
+			}
+
+			hObj = g_pLTServer->GetNextInactiveObject(LTNULL);
+			while (hObj)
+			{
+				if (g_pLTServer->GetObjectClass(hObj) == hClass)
+				{
+					SendTriggerMsgToObject(pPlayer, hObj, "TRIGGER");
+					return;
+				}
+
+				hObj = g_pLTServer->GetNextInactiveObject(hObj);
+			}
+		}
+		break;
+
+		// PH: the AI god mode, for the local player only (0x10058f00)
+		case CHEAT_PH30:
+		{
+			if (g_pLTServer->GetClientInfoFlags(pPlayer->GetClient()) & CIF_LOCAL)
+			{
+				g_bGodMode = (nData != 0);
+			}
+		}
+		break;
+#endif
 
 		default:
 		break;
@@ -3178,3 +3355,99 @@ void CGameServerShell::Load(HMESSAGEREAD hRead, uint32 dwLoadFlags)
 	m_bAlarm = g_pLTServer->ReadFromMessageByte(hRead);
 }
 
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::IsWeaponAllowed()
+//
+//	PURPOSE:	PH: may a player have this weapon? Only the multiplayer
+//				game restricts them (0x1005b4f0; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CGameServerShell::IsWeaponAllowed(int nWeaponId)
+{
+	if(!g_pGameServerShell->GetGameType().IsMultiplayer())
+		return LTTRUE;
+
+	if(!GetGameInfo())
+		return LTFALSE;
+
+	int nIndex = MPRestrict_FindWeapon(nWeaponId);
+	if(nIndex == -1)
+		return LTTRUE;
+
+	return MPRestrict_IsWeaponAllowed(nIndex);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::GetPickupWeaponId()
+//
+//	PURPOSE:	PH: the weapon a pickup's message gives ("Weapon <name>",
+//				among its comma-separated parts), its multiplayer "_MP"
+//				version first; -1 if none (0x1005b560; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+int CGameServerShell::GetPickupWeaponId(const char* szMessage)
+{
+	if(!szMessage || !szMessage[0])
+		return -1;
+
+	char szBuf[256];
+	strncpy(szBuf, szMessage, sizeof(szBuf));
+
+	char* aParts[32];
+	int nParts = 0;
+
+	aParts[0] = strtok(szBuf, ",");
+	if(aParts[0])
+	{
+		int n;
+		for(n = 1; n < 32; n++)
+		{
+			aParts[n] = strtok(LTNULL, ",");
+			if(!aParts[n])
+				break;
+		}
+
+		nParts = n;
+	}
+
+	for(int i = 0; i < nParts; i++)
+	{
+		char szPart[64];
+		strncpy(szPart, aParts[i], sizeof(szPart));
+
+		char* aTokens[32];
+		aTokens[0] = strtok(szPart, " ");
+		if(aTokens[0])
+		{
+			for(int n = 1; n < 32; n++)
+			{
+				aTokens[n] = strtok(LTNULL, " ");
+				if(!aTokens[n])
+					break;
+			}
+		}
+
+		if(stricmp(aTokens[0], "weapon") == 0)
+		{
+			char szWeapon[128];
+			_snprintf(szWeapon, 127, "%s_MP", aTokens[1]);
+
+			WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(szWeapon);
+			if(pWeapon)
+				return pWeapon->nId;
+
+			pWeapon = g_pWeaponMgr->GetWeapon(aTokens[1]);
+			if(pWeapon)
+				return pWeapon->nId;
+		}
+	}
+
+	return -1;
+}
+#endif

@@ -27,6 +27,7 @@
 #include "MultiplayerMgr.h"
 #ifdef PRIMAL_HUNT
 #include "Turret.h"
+#include "TurretGun.h"
 #endif
 
 #define TRIGGER_MSG_DESTROY	"DESTROY"
@@ -1275,8 +1276,34 @@ void CDestructible::ProcessPlayerDeath(HOBJECT hDamager)
     CPlayerObj* pVictim = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject(m_hObject));
     CPlayerObj* pKiller = LTNULL;
 	
+#ifdef PRIMAL_HUNT
+	// PH: a mounted turret's kills are its user's (PHObject.lto 0x100d6bd0)
+	if(hDamager)
+	{
+		if(IsPlayer(hDamager) == LTTRUE)
+		{
+			pKiller = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject(hDamager));
+		}
+		else if(IsTurretGun(hDamager) == LTTRUE)
+		{
+			CTurretGun* pGun = GetTurretGun(hDamager);
+			if(pGun)
+			{
+				HOBJECT hUser = pGun->GetUser();
+				if(IsPlayer(hUser) == LTTRUE)
+				{
+					pKiller = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject(hUser));
+				}
+			}
+		}
+	}
+
+	if(!pKiller)
+		pKiller = pVictim;
+#else
 	if(hDamager)
 		pKiller = IsPlayer(hDamager) ? dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject(hDamager)) : pVictim;
+#endif
 
 	if(pVictim && pKiller)
 	{

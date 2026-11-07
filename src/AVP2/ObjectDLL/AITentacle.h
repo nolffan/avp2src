@@ -46,7 +46,7 @@ class CAITentacle : public CAIBase
 
 		// CAIBase
 		void	SetVisionMode(int nMode);
-		void	HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, LTFLOAT fRange, uint32 nType);
+		void	HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime);
 		LTBOOL	ChooseTarget();
 		void	UpdateIdle(LTFLOAT fFrameTime);
 		void	UpdateAlert(LTFLOAT fFrameTime);

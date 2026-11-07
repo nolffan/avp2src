@@ -26,6 +26,10 @@ class CCharacter;
 
 #ifdef PRIMAL_HUNT
 LTBOOL IsTurret(HOBJECT hObj);
+
+// PH: creates a carryable turret for a CTurretSpawner (PHObject.lto
+// 0x10091e40)
+HOBJECT SpawnTurret(HOBJECT hSpawner, const LTVector & vPos, const LTRotation & rRot);
 #endif
 
 class Turret : public Prop
@@ -56,6 +60,13 @@ class Turret : public Prop
 		LTVector GetUpVector() const { return m_vInitialUp; }
 		LTVector GetRightVector() const { return m_vInitialRight; }
 
+#ifdef PRIMAL_HUNT
+		// PH: 0x10091c30 (name ours)
+		void	SetSpawner(HOBJECT hSpawner);
+
+		// PH: it marks the gun too
+		friend HOBJECT SpawnTurret(HOBJECT hSpawner, const LTVector & vPos, const LTRotation & rRot);
+#endif
 
 
 	protected :

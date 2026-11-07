@@ -28,6 +28,10 @@
 #include "ltrotation.h"
 #include "GameServerShell.h"
 #include "AISenseMgr.h"
+#ifdef PRIMAL_HUNT
+#include "TurretSpawner.h"
+#include "Spawner.h"
+#endif
 
 #include <algorithm>
 
@@ -588,6 +592,16 @@ Turret::~Turret()
 
 	if( m_hFiringSound ) g_pLTServer->KillSound(m_hFiringSound);
 	m_hFiringSound = LTNULL;
+
+#ifdef PRIMAL_HUNT
+	// PH: a spawned turret lets go of its place in the count, if
+	// Destroyed has not (PHObject.lto 0x10089769)
+	if (!m_bSpawnerNotified)
+	{
+		CTurretSpawner::DecTurretCount();
+		m_bSpawnerNotified = LTTRUE;
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -902,6 +916,30 @@ uint32 Turret::ObjectMessageFn(HOBJECT hSender, uint32 messageID, HMESSAGEREAD h
 void   Turret::Destroyed(LTBOOL val /* = LTTRUE */)
 { 
 	m_RootFSM.AddMessage(Root::eDestroyed); 
+
+#ifdef PRIMAL_HUNT
+	// PH: a spawned turret lets go of its place in the count once, tells
+	// its spawner, and is gone from the hands of the player carrying it
+	// (PHObject.lto 0x1008a9cb)
+	if (!m_bSpawnerNotified)
+	{
+		CTurretSpawner::DecTurretCount();
+		m_bSpawnerNotified = LTTRUE;
+	}
+
+	if (m_hSpawner)
+	{
+		SendTriggerMsgToObject(this, m_hSpawner, "DESTROYED");
+		m_hSpawner = LTNULL;
+	}
+
+	if (m_hOwner && IsPlayer(m_hOwner) == LTTRUE)
+	{
+		CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(m_hOwner);
+		pPlayer->TurretDestroyed(m_hObject);
+		m_hOwner = LTNULL;
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -2902,6 +2940,127 @@ void Turret::PrintRootFSMState(const RootFSM & fsm, Root::State state)
 
 
 #ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Turret::SetSpawner()
+//
+//	PURPOSE:	PH: the CTurretSpawner that made us, told when we're
+//				destroyed (PHObject.lto 0x10091c30)
+//
+// ----------------------------------------------------------------------- //
+
+void Turret::SetSpawner(HOBJECT hSpawner)
+{
+	m_hSpawner = hSpawner;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	SpawnTurret()
+//
+//	PURPOSE:	PH: create a carryable tripod turret for a CTurretSpawner;
+//				it ignores everyone until it is set down (PHObject.lto
+//				0x10091e40..0x10092c9c)
+//
+// ----------------------------------------------------------------------- //
+
+HOBJECT SpawnTurret(HOBJECT hSpawner, const LTVector & vPos, const LTRotation & rRot)
+{
+	CString sProps;
+	sProps = "Turret";
+	sProps += " SP_Story 1;";
+	sProps += " MP_DM 1;";
+	sProps += " MP_TeamDM 1;";
+	sProps += " MoveToFloor 1;";
+	sProps += " Filename ";
+	sProps += "Models\\Props\\Tripod.abc";
+	sProps += " ;";
+	sProps += " Skin ";
+	sProps += "Skins\\Props\\Tripod.dtx";
+	sProps += " ;";
+	sProps += " AttributeName Tripod;";
+	sProps += " Corporate ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " Marine ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " Alien ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " Predator ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " MarineExo ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " CorpExo ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " Synthetic ";
+	sProps += g_szObjectiveTypes[0];
+	sProps += ";";
+	sProps += " IdleTimeOut ";
+	sProps += g_szIdleActions[0];
+	sProps += ";";
+	sProps += " MaxIdleTime 300.0;";
+	sProps += " Idle ";
+	sProps += g_szIdleActions[1];
+	sProps += ";";
+	sProps += " DetectInterest ";
+	sProps += g_szActions[2];
+	sProps += ";";
+	sProps += " DetectTarget ";
+	sProps += g_szActions[3];
+	sProps += ";";
+	sProps += " TargetDelay 0.1;";
+	sProps += " TargetTimeOut 1.0;";
+	sProps += " UseAwakeSound 1;";
+	sProps += " UseDetectSound 1;";
+	sProps += " AttachToBase 0;";
+	sProps += " DebrisType Metal03;";
+	sProps += " SurfaceOverride Metal;";
+	sProps += " ImpactFXName SpiderGrenadeImpact;";
+	sProps += " HitPoints 100.0;";
+	sProps += " MaxHitPoints 100.0;";
+	sProps += " Armor 100.0;";
+	sProps += " MaxArmor 100.0;";
+	sProps += " MinYaw -45.0;";
+	sProps += " MaxYaw 45.0;";
+	sProps += " MinPitch -20.0;";
+	sProps += " MaxPitch 20.0;";
+	sProps += " SweepPauseTime 0;";
+	sProps += " VisualRange 2000.0;";
+	sProps += " StartOff 1;";
+	sProps += " CanSeeThrough 0;";
+	sProps += " CanShootThrough 0;";
+	sProps += " Solid 1;";
+	sProps += " CanHeal 0;";
+	sProps += " CanRepair 0;";
+	sProps += " CanDamage 1;";
+	sProps += " NeverDestroy 0;";
+	sProps += " CreateExplosion 0;";
+	sProps += " MaxDamage 25.0;";
+
+	Turret* pTurret = (Turret*)SpawnObject(sProps.GetBuffer(1), vPos, rRot);
+	if (!pTurret) return LTNULL;
+
+	pTurret->SetSpawner(hSpawner);
+
+	// A spawned turret glows, until it is picked up
+	if (hSpawner)
+	{
+		g_pLTServer->SetObjectUserFlags(pTurret->m_hObject, g_pLTServer->GetObjectUserFlags(pTurret->m_hObject) | USRFLG_GLOW);
+
+		if (pTurret->m_hGunHandle)
+		{
+			g_pLTServer->SetObjectUserFlags(pTurret->m_hGunHandle, g_pLTServer->GetObjectUserFlags(pTurret->m_hGunHandle) | USRFLG_GLOW);
+		}
+	}
+
+	return pTurret->m_hObject;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	Turret::SendAmmoMessage()

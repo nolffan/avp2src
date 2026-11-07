@@ -37,6 +37,12 @@ CLeash::CLeash()
 	m_nHomeNode		= -1;
 }
 
+// PH: empty; folded with the other empty functions (CAIBase's destructor
+// calls it at 0x10142891)
+CLeash::~CLeash()
+{
+}
+
 // PH: 0x1014b640
 LTBOOL CLeash::IsValid()
 {
@@ -213,11 +219,11 @@ void AIBaseList_SetVisionMode(int nMode)
 }
 
 // PH: 0x1014baa0, from CCharacter's footsteps
-void AIBaseList_HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, LTFLOAT fRange, uint32 nType)
+void AIBaseList_HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime)
 {
 	for (CAIBase* pAI = AIBaseList_GetFirst(); pAI; pAI = AIBaseList_GetNext())
 	{
-		pAI->HandleSound(hObj, vPos, fVolume, fRange, nType);
+		pAI->HandleSound(hObj, vPos, fVolume, nSurfaceType, fTime);
 	}
 }
 

@@ -195,6 +195,12 @@ class MultiplayerMgr : public CGameSpyMgr
 		void		ClientCheating(HCLIENT hClient);
 		void		KickSpeedCheater(HCLIENT hClient);
 
+#ifdef PRIMAL_HUNT
+		// PH: fill the server's class and weapon restrictions
+		// (MPRestrictions.cpp) from the game info (0x1006a480; name ours)
+		void		UpdateRestrictions();
+#endif
+
 
 		// -------------------------------------------------------------------- //
 		// Helper functions

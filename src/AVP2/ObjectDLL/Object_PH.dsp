@@ -1213,6 +1213,10 @@ SOURCE=.\Polygon.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\MPRestrictions.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\SenseLevels.cpp
 # End Source File
 # Begin Source File
@@ -1237,15 +1241,11 @@ SOURCE=.\TurretSpawner.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AISight.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\VolumetricFog.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIStubs_n1.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIStubs_n2.cpp
 # End Source File
 # End Group
 # End Group

@@ -47,6 +47,13 @@ public :
 	// PH: a carried turret is gone (Turret::Destroyed; names ours)
 	void		TurretDestroyed(HOBJECT hTurret);
 	void		RemoveTurret(HOBJECT hTurret);
+
+	// PH: the mounted turret the player is using, and its fire and spin
+	// controls (CGameServerShell::OnMessage, MID_TURRET_USE)
+	HOBJECT		GetUsingTurret() const { return m_hUsingTurret; }
+	void		StartUsingTurret(HOBJECT hTurret);
+	void		StopUsingTurret();
+	void		SetTurretControls(uint8 nControls);
 #endif
 	
 	CPlayerObj();

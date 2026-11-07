@@ -38,6 +38,8 @@ class CTurretGun : public GameBase
 		int				GetAmmoCount();
 
 		HOBJECT			GetUser() const { return m_hUser; }
+		LTFLOAT			GetYawRange() const { return m_fYawRange; }		// the player's view (CPlayerObj::StartUsingTurret)
+		LTFLOAT			GetPitchRange() const { return m_fPitchRange; }
 
 	protected :
 

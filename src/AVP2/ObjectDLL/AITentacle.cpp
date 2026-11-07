@@ -312,7 +312,7 @@ LTBOOL CAITentacle::AddTentacle(CTentacle* pTentacle)
 // ----------------------------------------------------------------------- //
 
 // PH: 0x1014c5e0
-void CAITentacle::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, LTFLOAT fRange, uint32 nType)
+void CAITentacle::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, uint32 nSurfaceType, LTFLOAT fTime)
 {
 	if (IsDead() == LTTRUE) return;
 	if (!IsPlayer(hObj)) return;
