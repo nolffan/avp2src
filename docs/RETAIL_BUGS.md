@@ -626,6 +626,37 @@ whose first is destroyed is left carrying none.
 
 Not fixed yet.
 
+### A fading fog volume takes its blue for its red
+
+PHObject.lto 0x1015b9e0 (`VolumetricFog::OnUpdate`,
+src/AVP2/ObjectDLL/VolumetricFog.cpp). While a FADEALPHA message fades
+the volume, its color is set to (blue, green, blue) instead of (red,
+green, blue), so a colored fog volume changes color as it fades; only a
+grey one looks right.
+
+Not fixed yet.
+
+### A tentacle's attack and burrow updates are swapped
+
+PHObject.lto 0x10156790 (`CTentacle::OnUpdate`,
+src/AVP2/ObjectDLL/Tentacle.cpp). StartAttack (0x101575b0) sets state 4
+and Burrow (0x101574b0) state 3, but the update switch runs the burrow
+update (wait for the burrow timer, then hide) for state 4 and the attack
+update (wait for the attack timer, then burrow) for state 3. An attack
+ends on its first update, since the burrow timer ran out long ago, and a
+burrow restarts on every update once the attack timer has run out.
+
+Not fixed yet.
+
+### A turret gun that can turn all the way round never wraps its yaw
+
+PHObject.lto 0x1015a340 (`CTurretGun::Rotate`,
+src/AVP2/ObjectDLL/TurretGun.cpp). With a Yaw Range of a full turn the
+yaw is meant to be wrapped into one turn, but the ceil() that would do it
+has its result thrown away, so the yaw grows without bound.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

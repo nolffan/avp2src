@@ -476,10 +476,6 @@ SOURCE=.\AIUtils.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\Shared\MultiFile.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIVolume.cpp
 # End Source File
 # Begin Source File
@@ -1134,6 +1130,122 @@ SOURCE=.\VolumeBrushTypes.cpp
 # Begin Source File
 
 SOURCE=.\WorldProperties.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIBase.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIBull.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIChameleon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AILeash.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AITentacle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIUtilsPH.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ArtifactField.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AttachedSpears.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ChameleonTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIMemory.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LeashFace.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LeashMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LeashPoint.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LeashVolume.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Marker.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\MiniTurret.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\MoveMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\Shared\MultiFile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OrientationMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Polygon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SenseLevels.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Tentacle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TentHole.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Tokenizer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TurretGun.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TurretSpawner.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\VolumetricFog.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIStubs_n1.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIStubs_n2.cpp
 # End Source File
 # End Group
 # End Group
@@ -2186,6 +2298,14 @@ SOURCE=.\VolumeBrushTypes.h
 # Begin Source File
 
 SOURCE=.\WorldProperties.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIBase.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIBull.h
 # End Source File
 # End Group
 # End Group

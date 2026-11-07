@@ -67,6 +67,13 @@ SETUP_SERVERSHELL()
 
 CDialogueWindow		g_DialogueWindow;
 
+#ifdef PRIMAL_HUNT
+// PH: the leash manager's entry points (LeashMgr.cpp)
+LTBOOL	LeashMgr_Init();
+void	LeashMgr_Clear();
+void	AIBaseList_Clear();	// AILeash.cpp
+#endif
+
 #ifndef _FINAL
 CVarTrack			g_ShowDimsTrack;
 CVarTrack			g_ShowTimingTrack;
@@ -617,6 +624,14 @@ void CGameServerShell::PreStartWorld(LTBOOL bSwitchingWorlds)
 		// Tell the server app.
 		m_pMPMgr->ServerAppPreStartWorld( );
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: forget the last world's leash groups (0x10057f79) and AIs.
+	// Retail then calls 0x1015abc0 and 0x1006a480 (m_pMPMgr's), not yet
+	// written.
+	LeashMgr_Clear();
+	AIBaseList_Clear();
+#endif
 }
 
 
@@ -676,6 +691,12 @@ void CGameServerShell::PostStartWorld()
 	else
 	{
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: link up the leash groups' nodes now that they are all in
+	// (0x100580c7)
+	LeashMgr_Init();
+#endif
 
 }
 
