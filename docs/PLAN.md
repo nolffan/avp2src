@@ -332,8 +332,6 @@ Still to do:
 - A `PRIMAL_HUNT` build of LTGUIMgr.
 - Primal Hunt's WONAPI (the VC6-STL build), which needs its GameSpy
   managers rebuilt.
-- The splash-screen skip and cheat that compare against a developer's
-  handle (decided: it goes in, as a game string).
 - The scorer's vtable-vote tie (a table that ties gets no placement).
 - The PHObject rows the enumeration splits.
 - Door's size (the other server-side layouts are in: MPGameInfo's class
