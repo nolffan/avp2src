@@ -1771,17 +1771,17 @@ void CAIBase::UpdateMoveToward(LTFLOAT fFrameTime)
 				return;
 			}
 
-			int nFrom = -1, nVia = -1, nTo = -1;
+			int nStart = -1, nNext = -1, nDest = -1;
 			LTVector vTarget = m_Move.m_vTarget;
-			if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nFrom, &nVia, &nTo) ||
-				!MoveToNode(nFrom, nVia))
+			if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nNext, &nStart, &nDest) ||
+				!MoveToNode(nStart, nNext))
 			{
 				SetState(&info);
 				return;
 			}
 
-			m_Move.m_nTo = nTo;
-			m_Move.m_nFrom = nFrom;
+			m_Move.m_nTo = nDest;
+			m_Move.m_nFrom = nStart;
 			return;
 		}
 
@@ -1822,19 +1822,19 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 			return;
 		}
 
-		int nFrom = -1, nVia = -1, nTo = -1;
+		int nStart = -1, nNext = -1, nDest = -1;
 		LTVector vTarget = m_Move.m_vTarget;
-		if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nFrom, &nVia, &nTo))
+		if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nNext, &nStart, &nDest))
 		{
 			SetState(&info);
 			return;
 		}
 
-		if (nFrom == m_Move.m_nTo)
+		if (nNext == m_Move.m_nTo)
 		{
 			if (HasMoveTarget() == LTTRUE)
 			{
-				MoveToPos(nFrom, GetMoveTarget());
+				MoveToPos(nDest, GetMoveTarget());
 			}
 			else
 			{
@@ -1844,7 +1844,7 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 		}
 		else
 		{
-			MoveToNode(nFrom, nVia);
+			MoveToNode(nStart, nNext);
 		}
 	}
 

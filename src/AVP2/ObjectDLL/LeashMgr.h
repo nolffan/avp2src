@@ -303,7 +303,7 @@ class CLeashGroup
 		CLeashNode*		FindPoint(const LTVector& vPos);			// 0x10150b90
 		CLeashNode*		FindVolume(const LTVector& vPos);			// 0x10150c40
 		LTBOOL			GetNextNode(const LTVector& vFrom, const LTVector& vTo,
-							int* pnNext, int* pnDest, int* pnStart);	// 0x10150c80
+							int* pnNext, int* pnStart, int* pnDest);	// 0x10150c80
 		LTBOOL			GetExitPos(int nFrom, int nTo, const LTVector& vPos,
 							LTVector* pvExit, LTFLOAT fRadius);			// 0x10150d40
 		LTBOOL			GetEntryPos(int nFrom, int nTo, const LTVector& vPos,
@@ -351,7 +351,7 @@ class CLeashMgr
 		CLeashNode*		GetNode(HLEASHGROUP hGroup, int nID);		// 0x10151360
 		CLeashNode*		FindNode(HLEASHGROUP hGroup, const LTVector& vPos);	// 0x101513a0
 		LTBOOL			GetNextNode(HLEASHGROUP hGroup, const LTVector& vFrom, const LTVector& vTo,
-							int* pnNext, int* pnDest, int* pnStart);	// 0x101513e0
+							int* pnNext, int* pnStart, int* pnDest);	// 0x101513e0
 		LTBOOL			GetExitPos(HLEASHGROUP hGroup, int nFrom, int nTo, const LTVector& vPos,
 							LTVector* pvExit, LTFLOAT fRadius);			// 0x10151420
 		LTBOOL			GetEntryPos(HLEASHGROUP hGroup, int nFrom, int nTo, const LTVector& vPos,
@@ -371,7 +371,7 @@ void			LeashMgr_Clear();														// 0x101514e0
 CLeashNode*		LeashMgr_GetNode(HLEASHGROUP hGroup, int nID);							// 0x101514f0
 CLeashNode*		LeashMgr_FindNode(HLEASHGROUP hGroup, const LTVector& vPos);			// 0x10151510
 LTBOOL			LeashMgr_GetNextNode(HLEASHGROUP hGroup, const LTVector& vFrom, const LTVector& vTo,
-					int* pnNext, int* pnDest, int* pnStart);							// 0x10151530
+					int* pnNext, int* pnStart, int* pnDest);							// 0x10151530
 LTBOOL			LeashMgr_GetExitPos(HLEASHGROUP hGroup, int nFrom, int nTo, const LTVector& vPos,
 					LTVector* pvExit, LTFLOAT fRadius);									// 0x10151560
 LTBOOL			LeashMgr_GetEntryPos(HLEASHGROUP hGroup, int nFrom, int nTo, const LTVector& vPos,

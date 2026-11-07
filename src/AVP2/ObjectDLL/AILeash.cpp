@@ -136,9 +136,9 @@ CLeashNode* CLeash::FindNode(const LTVector& vPos)
 }
 
 // PH: 0x1014b840
-LTBOOL CLeash::FindPath(const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnDest, int* pnStart)
+LTBOOL CLeash::FindPath(const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnStart, int* pnDest)
 {
-	return LeashMgr_GetNextNode(m_hGroup, vFrom, vTo, pnNext, pnDest, pnStart);
+	return LeashMgr_GetNextNode(m_hGroup, vFrom, vTo, pnNext, pnStart, pnDest);
 }
 
 // PH: 0x1014b870

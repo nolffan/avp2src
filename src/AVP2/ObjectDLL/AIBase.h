@@ -230,7 +230,7 @@ class CLeash
 		void			Load(HMESSAGEREAD hRead);
 		CLeashNode*		GetNode(int nID);
 		CLeashNode*		FindNode(const LTVector& vPos);
-		LTBOOL			FindPath(const LTVector& vFrom, const LTVector& vTo, int* pnFrom, int* pnVia, int* pnTo);
+		LTBOOL			FindPath(const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnStart, int* pnDest);
 		LTBOOL			GetPosToward(int nFrom, int nTo, const LTVector& vPos, LTVector& vOut, LTFLOAT fRadius);
 		LTBOOL			GetPosAway(int nFrom, int nTo, const LTVector& vPos, LTVector& vOut, LTFLOAT fRadius);
 

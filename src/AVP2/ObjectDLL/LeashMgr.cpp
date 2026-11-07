@@ -475,27 +475,27 @@ CLeashNode* CLeashGroup::FindVolume(const LTVector& vPos)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CLeashGroup::GetNextNode(const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnDest, int* pnStart)
+LTBOOL CLeashGroup::GetNextNode(const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnStart, int* pnDest)
 {
 	*pnNext = -1;
-
-	CLeashNode* pStart = FindNode(vFrom);
-	if (!pStart) return LTFALSE;
-
-	*pnStart = pStart->m_nID;
 
 	CLeashNode* pDest = FindNode(vTo);
 	if (!pDest) return LTFALSE;
 
 	*pnDest = pDest->m_nID;
 
-	if (pDest->m_nID == *pnStart)
+	CLeashNode* pStart = FindNode(vFrom);
+	if (!pStart) return LTFALSE;
+
+	*pnStart = pStart->m_nID;
+
+	if (pStart->m_nID == *pnDest)
 	{
-		*pnNext = pDest->m_nID;
+		*pnNext = pStart->m_nID;
 		return LTTRUE;
 	}
 
-	LeashRoute* pRoute = pDest->GetRoute(pStart->m_nID);
+	LeashRoute* pRoute = pStart->GetRoute(pDest->m_nID);
 	if (!pRoute) return LTFALSE;
 
 	*pnNext = pRoute->m_nNext;
@@ -714,12 +714,12 @@ CLeashNode* CLeashMgr::FindNode(HLEASHGROUP hGroup, const LTVector& vPos)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CLeashMgr::GetNextNode(HLEASHGROUP hGroup, const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnDest, int* pnStart)
+LTBOOL CLeashMgr::GetNextNode(HLEASHGROUP hGroup, const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnStart, int* pnDest)
 {
 	CLeashGroup* pGroup = GetGroup(hGroup);
 	if (!pGroup) return LTFALSE;
 
-	return pGroup->GetNextNode(vFrom, vTo, pnNext, pnDest, pnStart);
+	return pGroup->GetNextNode(vFrom, vTo, pnNext, pnStart, pnDest);
 }
 
 // ----------------------------------------------------------------------- //
@@ -783,9 +783,9 @@ CLeashNode* LeashMgr_FindNode(HLEASHGROUP hGroup, const LTVector& vPos)
 	return g_LeashMgr.FindNode(hGroup, vPos);
 }
 
-LTBOOL LeashMgr_GetNextNode(HLEASHGROUP hGroup, const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnDest, int* pnStart)
+LTBOOL LeashMgr_GetNextNode(HLEASHGROUP hGroup, const LTVector& vFrom, const LTVector& vTo, int* pnNext, int* pnStart, int* pnDest)
 {
-	return g_LeashMgr.GetNextNode(hGroup, vFrom, vTo, pnNext, pnDest, pnStart);
+	return g_LeashMgr.GetNextNode(hGroup, vFrom, vTo, pnNext, pnStart, pnDest);
 }
 
 LTBOOL LeashMgr_GetExitPos(HLEASHGROUP hGroup, int nFrom, int nTo, const LTVector& vPos, LTVector* pvExit, LTFLOAT fRadius)

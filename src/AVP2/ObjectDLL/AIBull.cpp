@@ -420,8 +420,10 @@ void CAIBull::UpdateWalk(LTFLOAT fFrameTime)
 
 		vDir *= 1.0f / fDist;
 
+		// Ram unless we're already facing within 15 degrees of the target;
+		// then charge (0x10147020: retail's test, and the way round it is)
 		LTVector vForward = m_OrientMgr.m_vForward;
-		if (vDir.Dot(vForward) >= (LTFLOAT)cos(MATH_DEGREES_TO_RADIANS(15.0f)))
+		if (vDir.Dot(vForward) < cos(MATH_DEGREES_TO_RADIANS(15.0f)))
 		{
 			StartRam();
 			return;
