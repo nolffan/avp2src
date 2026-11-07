@@ -1985,7 +1985,9 @@ void CButeMgr::GetString(const char* szTagName, const char* szAttName, const cha
 	// the default is never copied into it
 	if( m_bSuccess )
 	{
-		if ( sRet.GetLength() < maxLen )
+		// (int): MFC's GetLength is an int, so this is a signed test there
+		// (AVP2XServ.exe 0x40d4a1), and MFCStub's a DWORD, unsigned
+		if ( sRet.GetLength() < (int)maxLen )
 			maxLen = sRet.GetLength() + 1;
 		strncpy(szResult, (const char*)sRet, maxLen);
 	}

@@ -338,6 +338,17 @@ $(eval $(call lslib,MFCStub,MFCStub,/I $(LT2LS2)\\mfcstub /I $(LT2LS2)\\incs /I 
 # Lith on the path.
 $(eval $(call lslib,ButeMgr,ButeMgrNoMFC,/D _NOMFC /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\mfcstub /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs,\
     arange.cpp avector.cpp butemgr.cpp stdafx.cpp))
+# ButeMgr: MFC's build of the same sources (no _NOMFC, no MFCStub: it names
+# nafxcw.lib and uses CString), the release's prebuilt ButeMgr.lib. Of the
+# images, only Primal Hunt's dedicated server links it (ServerApp_PH, by
+# its path here); AvP2's links its own 8168 build (svlib, below). Its
+# objects go to Release/mfc/, apart from ButeMgrNoMFC's.
+BM_MFC_SRCS := arange.cpp avector.cpp butemgr.cpp stdafx.cpp
+$(foreach s,$(BM_MFC_SRCS),$(eval $(call compile,src/lithshared/ButeMgr/Release/mfc/$(s:.cpp=.obj),src/lithshared/ButeMgr,$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(LIB_CFLAGS) /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs /FoRelease/mfc/,wine-drives)))
+$(eval $(call tool,$(LOUT)/ButeMgr.lib,$(BM_MFC_SRCS:%.cpp=src/lithshared/ButeMgr/Release/mfc/%.obj) | wine-drives,\
+    cd src/lithshared/ButeMgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\ButeMgr.lib' Release/mfc/arange.obj Release/mfc/avector.obj Release/mfc/butemgr.obj Release/mfc/stdafx.obj))
+LS_OURS += ButeMgr
 
 # WONAPI.lib: Monolith's WON client, which the release ships as source
 # (src/LT2/lithshared/wonapi/, "wonapi052201") as well as prebuilt, so built

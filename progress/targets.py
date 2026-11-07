@@ -95,6 +95,9 @@ CITED_SRC = []
 # (progress/reference/, checked against shipped-libs.sha256), which holds
 # more than any one image takes from it.
 OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeMgrNoMFC",
+            # MFC's build of ButeMgr, which Primal Hunt's dedicated server
+            # links (build/build.mk, "ButeMgr")
+            "ButeMgr",
             # AvP2's GUI and font libraries (build/build.mk, "The game
             # DLLs' libraries, ours"), which the game DLLs link
             "ltguimgr_LT2", "LithFontMgr_LT2"]

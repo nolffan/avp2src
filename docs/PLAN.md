@@ -299,6 +299,11 @@ is `ServerApp_PH.dsp` in `AVP2PH.dsw` (the server's Release configuration
 with `PRIMAL_HUNT`), cl 8966 against SP5's MFC and runtime, the release's
 libraries and RegMgr32.lib; its resources are all byte-identical (the
 splash read out of the retail image at build time). Reconstructed so far:
+the class and weapon restrictions (CServerOptions' two lists, LoadFromBute's
+Weapon and Class sections, FillInHostInfo's tables and masks, MPGameInfo's
+defaults; the server's lists are their own class, CMPAllowList, since any
+change to MPRestrictList.h moves unrelated PHObject and PHCShell code); its
+ButeMgr, MFC's build with cl 8966, ours (`ButeMgr` in OUR_LIBS);
 `AddResources` (AvP2's rez files from AvP2's install directory, read from
 the registry), `OnInitDialog`, the default port (27890) and Primal Hunt's
 default names and passwords. Still to come: Third Law's class and weapon

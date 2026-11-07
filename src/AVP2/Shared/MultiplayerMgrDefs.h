@@ -213,6 +213,18 @@ class MPGameInfo
 			m_bClassWeapons = LTTRUE;
 			m_nExosuit = 0;
 			m_nQueenMolt = 0;
+#ifdef PRIMAL_HUNT
+			// PH: no class or weapon lists, everything allowed
+			// (AVP2XServ.exe 0x40229f..0x4022c4, in CServerDlg::DoHost)
+			for(int i = 0; i < MAX_MP_RESTRICTIONS; i++)
+			{
+				m_nClasses[i] = -1;
+				m_nWeapons[i] = -1;
+			}
+
+			m_nAllowedClasses = -1;
+			m_nAllowedWeapons = -1;
+#endif
 		}
 
 		// Basic game information
@@ -287,8 +299,8 @@ class MPGameInfo
 		// past the end of it), and each mask with a bit per allowed entry
 		// (0x408b60, 0x408ba0). The server passes them on in SendGameInfo
 		// (PHObject.lto 0x1006906b) and OnInfoQuery (0x100688f7).
-		uint16		m_nClasses[MAX_MP_RESTRICTIONS];		// The class ID of each entry of the class list
-		uint16		m_nWeapons[MAX_MP_RESTRICTIONS];		// The weapon ID of each entry of the weapon list
+		int16		m_nClasses[MAX_MP_RESTRICTIONS];		// The class ID of each entry of the class list
+		int16		m_nWeapons[MAX_MP_RESTRICTIONS];		// The weapon ID of each entry of the weapon list
 		uint32		m_nAllowedClasses;						// A bit for each allowed entry of m_nClasses
 		uint32		m_nAllowedWeapons;						// A bit for each allowed entry of m_nWeapons
 #endif

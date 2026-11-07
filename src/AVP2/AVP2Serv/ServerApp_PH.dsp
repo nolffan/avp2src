@@ -285,40 +285,6 @@ SOURCE=.\res\ServerApp.rc2
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\ButeMgr.lib"
-
-!IF  "$(CFG)" == "ServerApp_PH - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Debug"
-
-# PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Demo Release"
-
-# PROP Exclude_From_Build 1
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\RegMgr32.lib"
-
-!IF  "$(CFG)" == "ServerApp_PH - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Debug"
-
-# PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Demo Release"
-
-# PROP Exclude_From_Build 1
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE="$(LT2_DIR)\lithshared\libs\Release\CryptMgr.lib"
 
 !IF  "$(CFG)" == "ServerApp_PH - Win32 Release"
@@ -337,6 +303,40 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\CryptMgr.lib"
 # Begin Source File
 
 SOURCE="$(LT2_DIR)\lithshared\libs\Release\StdLith.lib"
+
+!IF  "$(CFG)" == "ServerApp_PH - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Demo Release"
+
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE="$(LT2_DIR)\lithshared\libs\Release\ButeMgr.lib"
+
+!IF  "$(CFG)" == "ServerApp_PH - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ServerApp_PH - Win32 Demo Release"
+
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE="$(LT2_DIR)\lithshared\libs\Release\RegMgr32.lib"
 
 !IF  "$(CFG)" == "ServerApp_PH - Win32 Release"
 

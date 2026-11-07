@@ -13,6 +13,72 @@
 #include <hash_map>
 #include "Globals.h"
 #include "ClientServerShared.h"
+#ifdef PRIMAL_HUNT
+#include "MPRestrictList.h"
+
+// PH: the dedicated server's class and weapon lists: CMPRestrictList's
+// layout, but each entry is added allowed or not, as the server's
+// configuration says (AVP2XServ.exe 0x407c6b, LoadFromBute; the game's
+// own lists add every entry allowed). Name ours.
+class CMPAllowList : public CMPRestrictList
+{
+	public:
+
+		// Add an entry, keeping the list sorted by ID; an entry with the
+		// same ID is replaced
+		void	Add(int nId, const char* szName, LTBOOL bAllowed)
+		{
+			if(m_nNumEntries >= MAX_MP_RESTRICT_ENTRIES)
+				return;
+
+			for(int i = 0; i < m_nNumEntries; i++)
+			{
+				if(m_aEntries[i].nId == nId)
+				{
+					Set(i, nId, szName, bAllowed);
+					return;
+				}
+
+				if(m_aEntries[i].nId > nId)
+				{
+					Insert(i, nId, szName, bAllowed);
+					return;
+				}
+			}
+
+			MPRestrictEntry & entry = m_aEntries[m_nNumEntries];
+			entry.nId = nId;
+			entry.bAllowed = bAllowed;
+			strcpy(entry.szName, szName);
+			m_nNumEntries++;
+		}
+
+		void	Set(int i, int nId, const char* szName, LTBOOL bAllowed)
+		{
+			if((i >= MAX_MP_RESTRICT_ENTRIES) || (i >= m_nNumEntries))
+				return;
+
+			m_aEntries[i].nId = nId;
+			m_aEntries[i].bAllowed = bAllowed;
+			strcpy(m_aEntries[i].szName, szName);
+		}
+
+		// RETAIL BUG: as CMPRestrictList::Insert, the entry at i is copied
+		// over all the ones above it and the count is not raised
+		void	Insert(int i, int nId, const char* szName, LTBOOL bAllowed)
+		{
+			if(i >= MAX_MP_RESTRICT_ENTRIES)
+				return;
+
+			for(int j = i; j < m_nNumEntries; j++)
+				m_aEntries[j + 1] = m_aEntries[j];
+
+			m_aEntries[i].nId = nId;
+			m_aEntries[i].bAllowed = bAllowed;
+			strcpy(m_aEntries[i].szName, szName);
+		}
+};
+#endif
 
 class CButeMgr;
 class StartGameRequest;
@@ -36,6 +102,12 @@ class CServerOptions
 		void		LoadFromBute(CButeMgr& buteMgr);
 
 		void		FillInHostInfo(StartGameRequest &request, MPGameInfo &gi);
+#ifdef PRIMAL_HUNT
+		// PH: a bit for each allowed entry of the class and weapon lists
+		// (AVP2XServ.exe 0x408b60, 0x408ba0)
+		uint32		GetAllowedClasses();
+		uint32		GetAllowedWeapons();
+#endif
 		LTBOOL		MapListEmpty();
 
 		uint8		GetScoring( uint32 nScoringClass );
@@ -133,6 +205,15 @@ class CServerOptions
 		uint8		nEvac_AttackerRace;
 		uint8		nEvac_AttackerLives;
 		StringList	sEvac_Maps;
+
+#ifdef PRIMAL_HUNT
+		// PH: the classes and the weapons the server allows (AVP2XServ.exe
+		// 0x4066a0: two lists of 0x904 bytes at +0x140 and +0xa44, cleared
+		// by their constructors and again at the end of this one; names
+		// ours)
+		CMPAllowList	m_ClassList;
+		CMPAllowList	m_WeaponList;
+#endif
 };
 
 

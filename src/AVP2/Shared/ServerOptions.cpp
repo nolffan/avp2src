@@ -24,6 +24,19 @@ namespace
 	const uint32 kPortMod = 8;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: a class list and a weapon list together, that nothing reads or
+// writes but its initializer (AVP2XServ.exe 0x409e20, .bss 0x454810);
+// names ours
+struct MPRestrictLists
+{
+	CMPRestrictList	m_ClassList;
+	CMPRestrictList	m_WeaponList;
+};
+
+static MPRestrictLists s_MPRestrictLists;
+#endif
+
 // ----------------------------------------------------------------------------------------------
 
 CServerOptions::CServerOptions()
@@ -126,6 +139,13 @@ CServerOptions::CServerOptions()
 	nEvac_DefenderLives = 1;
 	nEvac_AttackerRace = Alien;
 	nEvac_AttackerLives = 3;
+
+#ifdef PRIMAL_HUNT
+	// PH: no class or weapon restrictions until a configuration's are read
+	// (AVP2XServ.exe 0x4069b4)
+	m_ClassList.Clear();
+	m_WeaponList.Clear();
+#endif
 }
 
 
@@ -550,6 +570,46 @@ void CServerOptions::LoadFromBute(CButeMgr& buteMgr)
 		i++;
 		sprintf(szBuffer,"Map%02d",i);
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: the weapons and the classes the server allows (AVP2XServ.exe
+	// 0x407bef..0x407f62)
+	char szAttName[256];
+	char szName[256];
+	int nNum;
+
+	nNum = buteMgr.GetInt("Weapon","num_weapons",0);
+
+	for(i = 0; i < nNum; i++)
+	{
+		sprintf(szAttName,"Name%i",i);
+		buteMgr.GetString("Weapon",szAttName,"none",szName,256);
+
+		sprintf(szAttName,"Allowed%i",i);
+		LTBOOL bAllowed = (buteMgr.GetInt("Weapon",szAttName,1) == 1);
+
+		sprintf(szAttName,"ID%i",i);
+		int nId = buteMgr.GetInt("Weapon",szAttName,-1);
+
+		m_WeaponList.Add(nId, szName, bAllowed);
+	}
+
+	nNum = buteMgr.GetInt("Class","num_classes",0);
+
+	for(i = 0; i < nNum; i++)
+	{
+		sprintf(szAttName,"Name%i",i);
+		buteMgr.GetString("Class",szAttName,"none",szName,256);
+
+		sprintf(szAttName,"Allowed%i",i);
+		LTBOOL bAllowed = (buteMgr.GetInt("Class",szAttName,1) == 1);
+
+		sprintf(szAttName,"ID%i",i);
+		int nId = buteMgr.GetInt("Class",szAttName,-1);
+
+		m_ClassList.Add(nId, szName, bAllowed);
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -803,7 +863,64 @@ void CServerOptions::FillInHostInfo(StartGameRequest &request, MPGameInfo &gi)
 			break;
 		}
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: the class and weapon lists and which of them are allowed
+	// (AVP2XServ.exe 0x40897d..0x408a29)
+	for(i = 0; i < MAX_MP_RESTRICTIONS; i++)
+	{
+		gi.m_nClasses[i] = -1;
+		gi.m_nWeapons[i] = -1;
+	}
+
+	// RETAIL BUG: an entry's ID is taken as -1 out of range, but the test
+	// is i > the count, not >= (harmless here: the loops stop before it)
+	for(i = 0; i < m_ClassList.m_nNumEntries; i++)
+		gi.m_nClasses[i] = ((i > m_ClassList.m_nNumEntries) || (i < 0)) ? -1 : m_ClassList.m_aEntries[i].nId;
+
+	for(i = 0; i < m_WeaponList.m_nNumEntries; i++)
+		gi.m_nWeapons[i] = ((i > m_WeaponList.m_nNumEntries) || (i < 0)) ? -1 : m_WeaponList.m_aEntries[i].nId;
+
+	gi.m_nAllowedClasses = GetAllowedClasses();
+	gi.m_nAllowedWeapons = GetAllowedWeapons();
+#endif
 }
+
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------------------------------
+// PH: AVP2XServ.exe 0x408b60
+
+uint32 CServerOptions::GetAllowedClasses()
+{
+	uint32 nAllowed = 0;
+
+	for(int i = 0; i < m_ClassList.m_nNumEntries; i++)
+	{
+		if(m_ClassList.m_aEntries[i].bAllowed == LTTRUE)
+			nAllowed |= (1 << i);
+	}
+
+	return nAllowed;
+}
+
+// ----------------------------------------------------------------------------------------------
+// PH: AVP2XServ.exe 0x408ba0
+
+uint32 CServerOptions::GetAllowedWeapons()
+{
+	uint32 nAllowed = 0;
+
+	for(int i = 0; i < m_WeaponList.m_nNumEntries; i++)
+	{
+		if(m_WeaponList.m_aEntries[i].bAllowed == LTTRUE)
+			nAllowed |= (1 << i);
+	}
+
+	return nAllowed;
+}
+
+#endif
 
 // ----------------------------------------------------------------------------------------------
 
