@@ -254,7 +254,8 @@ void CArtifactField::TurnOff(LTFLOAT fTime)
 
 	m_eState			= eStateTurningOff;
 	m_fTransitionTime	= fTime;
-	m_fTransitionEnd	= fTime + g_pLTServer->GetTime();
+	LTFLOAT fNow		= g_pLTServer->GetTime();
+	m_fTransitionEnd	= fNow + fTime;
 
 	g_pLTServer->SetObjectState(m_hObject, OBJSTATE_ACTIVE);
 	SetNextUpdate(0.001f);

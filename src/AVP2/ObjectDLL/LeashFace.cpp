@@ -35,10 +35,12 @@ CLeashFace::~CLeashFace()
 
 void CLeashFace::CalcBounds()
 {
+	TLinkNode<LTVector*>* pNode = m_Verts.GetHead();
+
 	m_vMin.Init(999999.0f, 999999.0f, 999999.0f);
 	m_vMax.Init(-999999.0f, -999999.0f, -999999.0f);
 
-	for (TLinkNode<LTVector*>* pNode = m_Verts.GetHead(); pNode != m_Verts.GetEnd(); pNode = pNode->m_pNext)
+	for (; pNode != m_Verts.GetEnd(); pNode = pNode->m_pNext)
 	{
 		LTVector* pVert = pNode->m_Data;
 

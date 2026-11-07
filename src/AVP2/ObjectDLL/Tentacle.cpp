@@ -189,12 +189,14 @@ uint32 CTentacle::OnInitialUpdate(uint32 nInfo)
 	g_pLTServer->SetFrictionCoefficient(m_hObject, 0.0f);
 
 	m_Anim.Init(m_hObject);
-	m_Anim.SetWeightSet(m_Anim.FindWeightSet("Full"), 0);
+	uint32 hWeightSet = m_Anim.FindWeightSet("Full");
+	m_Anim.SetWeightSet(hWeightSet, 0);
 
 	m_Sounds.m_hObject = m_hObject;
 
 	g_pLTServer->SetBlockingPriority(m_hObject, 255);
-	g_pLTServer->SetObjectUserFlags(m_hObject, SurfaceToUserFlag(ST_FLESH_HUMAN));
+	uint32 dwUsrFlags = SurfaceToUserFlag(ST_FLESH_HUMAN);
+	g_pLTServer->SetObjectUserFlags(m_hObject, dwUsrFlags);
 
 	SetNextUpdate(0.001f);
 
@@ -566,11 +568,11 @@ void CTentacle::Erupt(const LTVector & vPos, const LTVector & vNormal)
 		m_hHole = LTNULL;
 	}
 
-	m_Sounds.PlaySound(s_aszSounds[eSoundErupt + rand() % 2], vEruptPos, 100, 0, 0x80, 256.0f, 3072.0f, 0x3a);
+	m_Sounds.PlaySound(s_aszSounds[GetRandom(eSoundErupt, eSoundErupt2)], vEruptPos, 100, 0, 0x80, 256.0f, 3072.0f, 0x3a);
 
 	if (rand() % 100 < 50)
 	{
-		m_Sounds.PlayVoice(s_aszSounds[eSoundEruptScream2 + rand() % 2]);
+		m_Sounds.PlayVoice(s_aszSounds[GetRandom(eSoundEruptScream2, eSoundEruptScream5)]);
 	}
 
 	if (m_hOwner)
@@ -628,7 +630,7 @@ void CTentacle::Burrow()
 	LTVector vPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
-	m_Sounds.PlaySound(s_aszSounds[eSoundBurrow + rand() % 2], vPos, 100, 0, 0x80, 256.0f, 3072.0f, 0x3a);
+	m_Sounds.PlaySound(s_aszSounds[GetRandom(eSoundBurrow, eSoundBurrow2)], vPos, 100, 0, 0x80, 256.0f, 3072.0f, 0x3a);
 }
 
 // ----------------------------------------------------------------------- //
@@ -786,11 +788,11 @@ static LTBOOL GroundFilterFn(HOBJECT hObj, void *pUserData)
 // PH: 0x101578d0
 LTBOOL CTentacle::FindGround(LTVector & vPos, LTVector & vNormal)
 {
-	IntersectQuery iQuery;
-	IntersectInfo iInfo;
-
 	LTVector vMyPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
+
+	IntersectQuery iQuery;
+	IntersectInfo iInfo;
 
 	iQuery.m_From = vMyPos;
 	iQuery.m_To = LTVector(vMyPos.x, vMyPos.y - TENTACLE_GROUND_DIST, vMyPos.z);
@@ -825,7 +827,7 @@ void CTentacle::HandleDamage(const DamageStruct & damage)
 		return;
 	}
 
-	m_Sounds.PlayPain(s_aszSounds[eSoundPain1 + rand() % 2]);
+	m_Sounds.PlayPain(s_aszSounds[GetRandom(eSoundPain1, eSoundPain2)]);
 
 	if (m_eState != ePain && rand() % 100 < 25)
 	{
@@ -872,6 +874,7 @@ LTBOOL CTentacle::DoMeleeAttack()
 	iQuery.m_To = vPos + vDir * (m_fScale * TENTACLE_MELEE_RANGE);
 	iQuery.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID;
 	iQuery.m_FilterFn = ChameleonSwipeFilterFn;
+	iQuery.m_PolyFilterFn = LTNULL;
 	iQuery.m_pUserData = m_hObject;
 
 	if (g_pLTServer->IntersectSegment(&iQuery, &iInfo) != LTTRUE || !iInfo.m_hObject) return LTFALSE;
@@ -889,7 +892,8 @@ LTBOOL CTentacle::DoMeleeAttack()
 		hHit = iInfo.m_hObject;
 	}
 
-	((CAIBase*)this)->DamageObject(hHit, &vDir, GetRandom(m_fDamage * 0.5f, m_fDamage), 0.0f, DT_SLICE);
+	LTFLOAT fDamage = GetRandom(m_fDamage * 0.5f, m_fDamage);
+	((CAIBase*)this)->DamageObject(hHit, &vDir, fDamage, 0.0f, DT_SLICE);
 
 	return LTTRUE;
 }

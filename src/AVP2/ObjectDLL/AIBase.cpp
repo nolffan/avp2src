@@ -214,19 +214,19 @@ CAIBase::CAIBase(uint8 nType) : GameBase(nType)
 	m_StuckCheck.m_fInterval	= 0.25f;
 	m_StuckCheck.m_fMinDist		= 16.0f;
 
+	m_fHeadDist		= 48.0f;
+	m_szHeadPiece	= LTNULL;
+	m_szHeadSocket	= LTNULL;
+
+	m_fFootstepHearingRange	= 512.0f;
+	m_fFootstepSensitivity	= 1.0f;
+
 	m_Memory.SetRange(0, 1000.0f);
 	m_Memory.SetDecay(0, 100.0f);
 	m_Memory.SetRange(1, 1000.0f);
 	m_Memory.SetDecay(1, 100.0f);
 	m_Memory.SetRange(2, 1.0f);
 	m_Memory.SetDecay(2, 0.0f);
-
-	m_fHeadDist		= 48.0f;
-	m_szHeadPiece	= LTNULL;
-	m_szHeadSocket	= LTNULL;
-
-	m_fFootstepHearingRange	= 2048.0f;
-	m_fFootstepSensitivity	= 1.0f;
 
 	m_hPainAnim			= INVALID_ANI;
 	m_fNextPainTime		= 0.0f;
@@ -275,15 +275,14 @@ uint32 CAIBase::OnPrecreate(void *pData, uint32 nInfo)
 	{
 		char szGroup[32];
 		g_pLTServer->GetPropString("Leash_Group", szGroup, 32);
-		strncpy(m_Leash.m_szGroup, szGroup, 31);
-		m_Leash.m_szGroup[31] = '\0';
+		SAFE_STRCPY(m_Leash.m_szGroup, szGroup);
 
 		g_pLTServer->GetPropReal("Footstep_Hearing_Range", &m_fFootstepHearingRange);
 		g_pLTServer->GetPropReal("Footstep_Sensitivity", &m_fFootstepSensitivity);
 
 		LTFLOAT fSightRange = 2048.0f;
 		g_pLTServer->GetPropReal("Sight_Range", &fSightRange);
-		m_Sight.m_fRange = fSightRange;
+		m_Sight.SetRange(fSightRange);
 
 		ObjectCreateStruct* pStruct = (ObjectCreateStruct*)pData;
 		pStruct->m_Flags	= FLAG_VISIBLE | FLAG_ANIMTRANSITION | FLAG_RAYHIT | FLAG_SOLID | FLAG_TOUCH_NOTIFY | FLAG_GRAVITY | FLAG_MODELKEYS;
@@ -344,7 +343,7 @@ uint32 CAIBase::OnInitialUpdate(uint32 nInfo)
 
 	if (nInfo != INITIALUPDATE_SAVEGAME)
 	{
-		AIBaseStateInfo info;
+		AIBaseStateInfo info(eStateIdle);
 		SetState(&info);
 
 		g_pLTServer->SetBlockingPriority(m_hObject, 0);
@@ -552,17 +551,17 @@ void CAIBase::OnLoad(HMESSAGEREAD hRead)
 
 	m_Leash.Load(hRead);
 
-	m_eMoveMode = hRead->ReadByte();
-	*hRead >> m_vMoveTarget;
-	*hRead >> m_vMovePos;
-	m_nMoveFrom = hRead->ReadDWord();
-	m_nMoveNode = hRead->ReadDWord();
-	m_nMoveTo = hRead->ReadDWord();
-	m_nLastMoveNode = hRead->ReadDWord();
-	m_fMoveMinDist = hRead->ReadFloat();
-	m_fMoveMaxDist = hRead->ReadFloat();
-	m_fMoveDist = hRead->ReadFloat();
-	m_nMoveAxes = hRead->ReadDWord();
+	m_Move.m_eMode = hRead->ReadByte();
+	*hRead >> m_Move.m_vTarget;
+	*hRead >> m_Move.m_vPos;
+	m_Move.m_nFrom = hRead->ReadDWord();
+	m_Move.m_nNode = hRead->ReadDWord();
+	m_Move.m_nTo = hRead->ReadDWord();
+	m_Move.m_nLastNode = hRead->ReadDWord();
+	m_MoveDist.m_fMin = hRead->ReadFloat();
+	m_MoveDist.m_fMax = hRead->ReadFloat();
+	m_MoveDist.m_fDist = hRead->ReadFloat();
+	m_MoveDist.m_nAxes = hRead->ReadDWord();
 
 	m_NextState.eState = hRead->ReadByte();
 	*hRead >> m_NextState.vPos;
@@ -578,15 +577,19 @@ void CAIBase::OnLoad(HMESSAGEREAD hRead)
 
 	m_StuckCheck.Load(hRead);
 
-	m_Avoid.m_nState = hRead->ReadByte();
-	*hRead >> m_Avoid.m_vDir;
-	*hRead >> m_Avoid.m_vRight;
-	*hRead >> m_Avoid.m_vPos;
-	m_Avoid.m_fTime = hRead->ReadFloat();
-	m_Avoid.m_nNextState = hRead->ReadByte();
-	m_Avoid.m_bActive = hRead->ReadByte();
-	m_Avoid.m_fCheckDist = hRead->ReadFloat();
-	m_Avoid.m_fAvoidDist = hRead->ReadFloat();
+	// RETAIL BUG: the avoidance state is written into the load message
+	// instead of being read from it (OnSave's lines, pasted and never
+	// turned around): the 51 bytes OnSave wrote for it are never read, so
+	// m_fHeadDist and everything after it load from the wrong place
+	hRead->WriteByte(m_Avoid.m_nState);
+	hRead->WriteVector(m_Avoid.m_vDir);
+	hRead->WriteVector(m_Avoid.m_vRight);
+	hRead->WriteVector(m_Avoid.m_vPos);
+	hRead->WriteFloat(m_Avoid.m_fTime);
+	hRead->WriteByte(m_Avoid.m_nNextState);
+	hRead->WriteByte(m_Avoid.m_bActive);
+	hRead->WriteFloat(m_Avoid.m_fCheckDist);
+	hRead->WriteFloat(m_Avoid.m_fAvoidDist);
 	m_fHeadDist = hRead->ReadFloat();
 
 	m_Memory.Load(hRead);
@@ -633,17 +636,17 @@ void CAIBase::OnSave(HMESSAGEWRITE hWrite)
 
 	m_Leash.Save(hWrite);
 
-	hWrite->WriteByte(m_eMoveMode);
-	*hWrite << m_vMoveTarget;
-	*hWrite << m_vMovePos;
-	hWrite->WriteDWord(m_nMoveFrom);
-	hWrite->WriteDWord(m_nMoveNode);
-	hWrite->WriteDWord(m_nMoveTo);
-	hWrite->WriteDWord(m_nLastMoveNode);
-	*hWrite << m_fMoveMinDist;
-	*hWrite << m_fMoveMaxDist;
-	*hWrite << m_fMoveDist;
-	hWrite->WriteDWord(m_nMoveAxes);
+	hWrite->WriteByte(m_Move.m_eMode);
+	*hWrite << m_Move.m_vTarget;
+	*hWrite << m_Move.m_vPos;
+	hWrite->WriteDWord(m_Move.m_nFrom);
+	hWrite->WriteDWord(m_Move.m_nNode);
+	hWrite->WriteDWord(m_Move.m_nTo);
+	hWrite->WriteDWord(m_Move.m_nLastNode);
+	*hWrite << m_MoveDist.m_fMin;
+	*hWrite << m_MoveDist.m_fMax;
+	*hWrite << m_MoveDist.m_fDist;
+	hWrite->WriteDWord(m_MoveDist.m_nAxes);
 
 	hWrite->WriteByte(m_NextState.eState);
 	*hWrite << m_NextState.vPos;
@@ -698,18 +701,19 @@ uint32 CAIBase::ObjectMessageFn(HOBJECT hSender, uint32 messageID, HMESSAGEREAD 
 {
 	switch (messageID)
 	{
-		case MID_TRIGGER:
-		{
-			LTString hMsg(g_pLTServer->ReadFromMessageHString(hRead));
-			HandleTrigger(hMsg.CStr());
-		}
-		break;
-
 		case MID_DAMAGE:
 		{
 			DamageStruct damage;
 			damage.InitFromMessage(hRead);
 			HandleDamage(damage);
+		}
+		break;
+
+		case MID_TRIGGER:
+		{
+			LTString hMsg = g_pLTServer->ReadFromMessageHString(hRead);
+			const char* szMsg = hMsg ? g_pLTServer->GetStringData(hMsg) : LTNULL;
+			HandleTrigger(szMsg);
 		}
 		break;
 	}
@@ -782,7 +786,7 @@ found:
 	if (IsBodyProp(hTarget) == LTTRUE)
 	{
 		CCharacter* pChar = (CCharacter*)g_pLTServer->HandleToObject(hTarget);
-		if (!pChar || pChar->IsDead() != LTTRUE)
+		if (!pChar || pChar->IsDead() == LTTRUE)
 		{
 			m_Memory.Forget(hTarget);
 			return LTFALSE;
@@ -1042,12 +1046,11 @@ void CAIBase::HandleDamage(const DamageStruct& damage)
 	{
 		AIBaseStateInfo info(eStateDying, eStateDying);
 		SetState(&info);
+		return;
 	}
-	else
-	{
-		AIBaseStateInfo info(eStatePain, m_eState);
-		SetState(&info);
-	}
+
+	AIBaseStateInfo info(eStatePain, m_eState);
+	SetState(&info);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1114,10 +1117,13 @@ void CAIBase::SetSkins(int nSet, ObjectCreateStruct* pStruct, const char* aszSki
 {
 	for (int i = 0; i < 4; i++)
 	{
-		if (!aszSkins[nSet][i]) break;
+		if (!aszSkins[nSet][i])
+		{
+			m_nSoundSet = nSet;
+			return;
+		}
 
-		strncpy(pStruct->m_SkinNames[i], aszSkins[nSet][i], 127);
-		pStruct->m_SkinNames[i][127] = '\0';
+		SAFE_STRCPY(pStruct->m_SkinNames[i], aszSkins[nSet][i]);
 	}
 
 	m_nSoundSet = nSet;
@@ -1176,7 +1182,7 @@ void CAIBase::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolume, u
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CAIBase::IsPlayerInBox(const LTVector& vMin, const LTVector& vMax)
+LTBOOL CAIBase::IsPlayerInBox(const LTVector& vBoxPos, const LTVector& vBoxDims)
 {
 	CCharacterMgr::PlayerIterator iter = g_pCharacterMgr->BeginPlayers();
 	if (iter == g_pCharacterMgr->EndPlayers()) return LTFALSE;
@@ -1193,11 +1199,11 @@ LTBOOL CAIBase::IsPlayerInBox(const LTVector& vMin, const LTVector& vMax)
 	LTVector vPlayerMin = vPos - vDims;
 	LTVector vPlayerMax = vPos + vDims;
 
-	LTVector vBoxMin = vMin;
-	LTVector vBoxMax = vMax;
+	LTVector vBoxMin = vBoxPos - vBoxDims;
+	LTVector vBoxMax = vBoxPos + vBoxDims;
 
-	if (vPlayerMin.x <= vBoxMax.x && vPlayerMin.y <= vBoxMax.y && vPlayerMin.z <= vBoxMax.z &&
-		vPlayerMax.x >= vBoxMin.x && vPlayerMax.y >= vBoxMin.y && vPlayerMax.z >= vBoxMin.z)
+	if (vBoxMin.x <= vPlayerMax.x && vBoxMin.y <= vPlayerMax.y && vBoxMin.z <= vPlayerMax.z &&
+		vBoxMax.x >= vPlayerMin.x && vBoxMax.y >= vPlayerMin.y && vBoxMax.z >= vPlayerMin.z)
 	{
 		return LTTRUE;
 	}
@@ -1481,7 +1487,7 @@ LTBOOL CAIBase::HandleTrigger(const char* szMsg)
 		DamageStruct damage;
 		damage.hDamager = LTNULL;
 		damage.fDamage = (LTFLOAT)atof(parser.m_szTokens[1]);
-		damage.vDir = LTVector(0.0f, 0.0f, 0.0f);
+		damage.vDir.Init();
 		g_pLTServer->GetObjectPos(m_hObject, &damage.vPos);
 
 		HandleDamage(damage);
@@ -1570,11 +1576,11 @@ LTFLOAT GetDifficultyHealthFactor()
 
 void CAIBase::UpdateMoving(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
 	if (ReturnToLeash() == LTTRUE) return;
 
-	if (m_nMoveNode == -1 || m_nMoveTo == -1)
+	if (m_Move.m_nNode == -1 || m_Move.m_nTo == -1)
 	{
 		SetState(&info);
 		return;
@@ -1586,24 +1592,24 @@ void CAIBase::UpdateMoving(LTFLOAT fFrameTime)
 		return;
 	}
 
-	if (!m_Leash.GetNode(m_nMoveNode))
+	if (!m_Leash.GetNode(m_Move.m_nNode))
 	{
 		SetState(&info);
 		return;
 	}
 
-	LTVector vPos = m_vMovePos;
+	LTVector vPos = m_Move.m_vPos;
 	LTVector vDiff = vPos - m_MoveMgr.GetPos(m_hObject);
-	if (!(m_nMoveAxes & 1)) vDiff.x = 0.0f;
-	if (!(m_nMoveAxes & 2)) vDiff.y = 0.0f;
-	if (!(m_nMoveAxes & 4)) vDiff.z = 0.0f;
+	if (!(m_MoveDist.m_nAxes & 1)) vDiff.x = 0.0f;
+	if (!(m_MoveDist.m_nAxes & 2)) vDiff.y = 0.0f;
+	if (!(m_MoveDist.m_nAxes & 4)) vDiff.z = 0.0f;
 
 	LTFLOAT fDist = vDiff.Mag();
-	m_fMoveDist = fDist;
-	if (fDist < m_fMoveMinDist) m_fMoveMinDist = fDist;
-	if (fDist > m_fMoveMaxDist) m_fMoveMaxDist = fDist;
+	m_MoveDist.m_fDist = fDist;
+	if (fDist < m_MoveDist.m_fMin) m_MoveDist.m_fMin = fDist;
+	if (fDist > m_MoveDist.m_fMax) m_MoveDist.m_fMax = fDist;
 
-	switch (m_eMoveMode)
+	switch (m_Move.m_eMode)
 	{
 		case 1: UpdateMoveToward(fFrameTime); return;
 		case 2: UpdateMoveAway(fFrameTime); return;
@@ -1632,16 +1638,16 @@ LTBOOL CAIBase::SetStateMoving(const AIBaseStateInfo* pInfo)
 		return LTFALSE;
 
 	m_StuckCheck.m_bEnabled = LTTRUE;
-	m_nMoveFrom = nNode;
-	m_nMoveTo = nDest;
-	m_vMoveTarget = pInfo->vPos;
+	m_Move.m_nFrom = nNode;
+	m_Move.m_nTo = nDest;
+	m_Move.m_vTarget = pInfo->vPos;
 
 	m_Animator.PlayAnim("Run", LTTRUE, LTFALSE);
 
 	m_MoveMgr.m_eMoveType = 2;
 	m_OrientMgr.m_bFacePos = LTTRUE;
-	m_MoveMgr.SetDest(m_vMovePos);
-	m_OrientMgr.SetFaceTarget(m_vMovePos);
+	m_MoveMgr.SetDest(m_Move.m_vPos);
+	m_OrientMgr.SetFaceTarget(m_Move.m_vPos);
 
 	m_eState = eStateMoving;
 	m_NextState.eState = pInfo->nParam;
@@ -1675,14 +1681,11 @@ LTBOOL CAIBase::MoveToNode(int nFrom, int nTo)
 
 	AIDebugPoint(3, vPos, AIDebugColor(0.0f, 0.0f, 0.0f, 1.0f), 2.0f);
 
-	m_eMoveMode		= 1;
-	m_vMovePos		= vPos;
-	m_nLastMoveNode	= m_nMoveNode;
-	m_nMoveNode		= nTo;
-	m_fMoveMinDist	= 9999999.0f;
-	m_fMoveMaxDist	= -9999999.0f;
-	m_fMoveDist		= 0.0f;
-	m_nMoveAxes		= 5;
+	m_Move.m_eMode		= 1;
+	m_Move.m_vPos		= vPos;
+	m_Move.m_nLastNode	= m_Move.m_nNode;
+	m_Move.m_nNode		= nTo;
+	m_MoveDist.Reset();
 
 	return LTTRUE;
 }
@@ -1695,7 +1698,7 @@ LTBOOL CAIBase::MoveToNode(int nFrom, int nTo)
 
 LTBOOL CAIBase::MoveAway(int nFrom, int nTo)
 {
-	if (m_eMoveMode != 1) return LTFALSE;
+	if (m_Move.m_eMode != 1) return LTFALSE;
 
 	LTVector vDims;
 	g_pLTServer->Physics()->GetObjectDims(m_hObject, &vDims);
@@ -1712,14 +1715,11 @@ LTBOOL CAIBase::MoveAway(int nFrom, int nTo)
 
 	AIDebugPoint(2, vPos, AIDebugColor(0.0f, 0.0f, 0.0f, 1.0f), 2.0f);
 
-	m_eMoveMode		= 2;
-	m_nLastMoveNode	= m_nMoveNode;
-	m_nMoveNode		= nTo;
-	m_vMovePos		= vPos;
-	m_fMoveMinDist	= 9999999.0f;
-	m_fMoveMaxDist	= -9999999.0f;
-	m_fMoveDist		= 0.0f;
-	m_nMoveAxes		= 5;
+	m_Move.m_eMode		= 2;
+	m_Move.m_nLastNode	= m_Move.m_nNode;
+	m_Move.m_nNode		= nTo;
+	m_Move.m_vPos		= vPos;
+	m_MoveDist.Reset();
 
 	return LTTRUE;
 }
@@ -1732,14 +1732,11 @@ LTBOOL CAIBase::MoveAway(int nFrom, int nTo)
 
 LTBOOL CAIBase::MoveToPos(int nNode, const LTVector& vPos)
 {
-	m_eMoveMode		= 3;
-	m_vMovePos		= vPos;
-	m_nLastMoveNode	= m_nMoveNode;
-	m_nMoveNode		= nNode;
-	m_fMoveMinDist	= 9999999.0f;
-	m_fMoveMaxDist	= -9999999.0f;
-	m_fMoveDist		= 0.0f;
-	m_nMoveAxes		= 5;
+	m_Move.m_eMode		= 3;
+	m_Move.m_vPos		= vPos;
+	m_Move.m_nLastNode	= m_Move.m_nNode;
+	m_Move.m_nNode		= nNode;
+	m_MoveDist.Reset();
 
 	AIDebugPoint(4, vPos, AIDebugColor(0.0f, 0.0f, 0.0f, 1.0f), 2.0f);
 
@@ -1754,17 +1751,17 @@ LTBOOL CAIBase::MoveToPos(int nNode, const LTVector& vPos)
 
 void CAIBase::UpdateMoveToward(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
-	if ((m_fMoveMinDist < m_fMoveDist && m_fMoveMinDist < 128.0f) || m_fMoveDist < 32.0f)
+	if ((m_MoveDist.m_fMin < m_MoveDist.m_fDist && m_MoveDist.m_fMin < 128.0f) || m_MoveDist.m_fDist < 32.0f)
 	{
-		if (m_Leash.m_nCurNode == m_nMoveNode)
+		if (m_Leash.m_nCurNode == m_Move.m_nNode)
 		{
-			if (m_Leash.m_nCurNode == m_nMoveTo)
+			if (m_Leash.m_nCurNode == m_Move.m_nTo)
 			{
 				if (HasMoveTarget() == LTTRUE)
 				{
-					if (!MoveToPos(m_nMoveTo, GetMoveTarget()))
+					if (!MoveToPos(m_Move.m_nTo, GetMoveTarget()))
 						SetState(&info);
 				}
 				else
@@ -1775,27 +1772,28 @@ void CAIBase::UpdateMoveToward(LTFLOAT fFrameTime)
 			}
 
 			int nFrom = -1, nVia = -1, nTo = -1;
-			if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), m_vMoveTarget, &nFrom, &nVia, &nTo) ||
+			LTVector vTarget = m_Move.m_vTarget;
+			if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nFrom, &nVia, &nTo) ||
 				!MoveToNode(nFrom, nVia))
 			{
 				SetState(&info);
 				return;
 			}
 
-			m_nMoveTo = nTo;
-			m_nMoveFrom = nFrom;
+			m_Move.m_nTo = nTo;
+			m_Move.m_nFrom = nFrom;
 			return;
 		}
 
-		if (!MoveAway(m_Leash.m_nCurNode, m_nMoveNode))
+		if (!MoveAway(m_Leash.m_nCurNode, m_Move.m_nNode))
 		{
 			SetState(&info);
 			return;
 		}
 	}
 
-	m_MoveMgr.SetDest(m_vMovePos);
-	m_OrientMgr.SetFaceTarget(m_vMovePos);
+	m_MoveMgr.SetDest(m_Move.m_vPos);
+	m_OrientMgr.SetFaceTarget(m_Move.m_vPos);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1806,15 +1804,15 @@ void CAIBase::UpdateMoveToward(LTFLOAT fFrameTime)
 
 void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
-	if (m_fMoveMinDist < m_fMoveDist && m_fMoveMinDist < 128.0f)
+	if (m_MoveDist.m_fMin < m_MoveDist.m_fDist && m_MoveDist.m_fMin < 128.0f)
 	{
-		if (m_Leash.m_nCurNode != m_nMoveNode)
+		if (m_Leash.m_nCurNode != m_Move.m_nNode)
 		{
 			if (SetState(&m_MoveState) == LTTRUE) return;
 
-			AIBaseStateInfo home;
+			AIBaseStateInfo home(eStateIdle);
 			home.eState = eStateMoving;
 			home.vPos = m_Leash.m_vHomePos;
 			home.nParam = 0;
@@ -1825,13 +1823,14 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 		}
 
 		int nFrom = -1, nVia = -1, nTo = -1;
-		if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), m_vMoveTarget, &nFrom, &nVia, &nTo))
+		LTVector vTarget = m_Move.m_vTarget;
+		if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nFrom, &nVia, &nTo))
 		{
 			SetState(&info);
 			return;
 		}
 
-		if (nFrom == m_nMoveTo)
+		if (nFrom == m_Move.m_nTo)
 		{
 			if (HasMoveTarget() == LTTRUE)
 			{
@@ -1849,8 +1848,8 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 		}
 	}
 
-	m_MoveMgr.SetDest(m_vMovePos);
-	m_OrientMgr.SetFaceTarget(m_vMovePos);
+	m_MoveMgr.SetDest(m_Move.m_vPos);
+	m_OrientMgr.SetFaceTarget(m_Move.m_vPos);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1861,19 +1860,19 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 
 void CAIBase::UpdateMoveTo(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
-	if (m_fMoveMinDist < m_fMoveDist && m_fMoveMinDist < 128.0f)
+	if (m_MoveDist.m_fMin < m_MoveDist.m_fDist && m_MoveDist.m_fMin < 128.0f)
 	{
-		if (m_Leash.m_nCurNode != m_nMoveTo)
+		if (m_Leash.m_nCurNode != m_Move.m_nTo)
 			SetState(&info);
 		else
 			SetState(&m_NextState);
 		return;
 	}
 
-	m_MoveMgr.SetDest(m_vMovePos);
-	m_OrientMgr.SetFaceTarget(m_vMovePos);
+	m_MoveMgr.SetDest(m_Move.m_vPos);
+	m_OrientMgr.SetFaceTarget(m_Move.m_vPos);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1895,7 +1894,7 @@ LTBOOL CAIBase::HasMoveTarget()
 
 LTVector CAIBase::GetMoveTarget()
 {
-	return m_vMoveTarget;
+	return m_Move.m_vTarget;
 }
 
 // ----------------------------------------------------------------------- //

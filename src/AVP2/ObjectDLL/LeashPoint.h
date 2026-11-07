@@ -35,6 +35,8 @@ class CLeashPoint : public CLeashNode
 		LTBOOL	Overlaps(const LTVector& vPos, LTFLOAT fRadius);			// 0x10151d50
 		LTBOOL	Overlaps(CLeashNode* pNode);								// 0x10151dd0
 
+		void	SetRadius(LTFLOAT fRadius)	{ m_fRadius = fRadius; }
+
 		LTVector	m_vPos;		// +0x30
 		LTFLOAT		m_fRadius;	// +0x3c
 };

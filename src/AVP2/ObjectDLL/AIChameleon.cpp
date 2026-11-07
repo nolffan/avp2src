@@ -200,7 +200,7 @@ void CAIChameleon::OnLoad(HMESSAGEREAD hRead)
 	m_eCamoState		= (CamoState)hRead->ReadByte();
 	m_fCamoTime			= hRead->ReadFloat();
 	m_bCamoDone			= hRead->ReadByte();
-	hRead->ReadStringFL(m_szTexture, sizeof(m_szTexture) - 1);
+	hRead->ReadStringFL(m_szTexture, sizeof(m_szTexture));
 	m_bResetHeadSkin	= hRead->ReadByte();
 	m_TargetDist.m_fMin	= hRead->ReadFloat();
 	m_TargetDist.m_fMax	= hRead->ReadFloat();
@@ -336,10 +336,11 @@ LTBOOL CAIChameleon::FindSurface(const LTVector& vFrom, const LTVector& vDir, LT
 {
 	IntersectQuery iq;
 	iq.m_From		= vFrom;
-	iq.m_To			= vFrom + vDir * fDist;
+	iq.m_To			= iq.m_From + vDir * fDist;
 	iq.m_Direction	= vDir;
 	iq.m_Flags		= INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY;
 	iq.m_FilterFn	= ChameleonSurfaceFilterFn;
+	iq.m_PolyFilterFn = LTNULL;
 	iq.m_pUserData	= m_hObject;
 
 	return g_pLTServer->IntersectSegment(&iq, pInfo);
@@ -393,7 +394,7 @@ void CAIChameleon::UpdateSurface(LTFLOAT fFrameTime)
 	if (iter == g_pCharacterMgr->EndPlayers()) return;
 
 	CPlayerObj* pPlayer = *iter;
-	if (!pPlayer || !pPlayer->m_hObject) return;
+	if (!pPlayer) return;
 
 	LTVector vPlayerPos, vPos;
 	g_pLTServer->GetObjectPos(pPlayer->m_hObject, &vPlayerPos);
@@ -402,9 +403,9 @@ void CAIChameleon::UpdateSurface(LTFLOAT fFrameTime)
 	LTVector vDir = vPos - vPlayerPos;
 	if (vDir.MagSqr() > 2048.0f * 2048.0f) return;
 
+	IntersectInfo ii;
 	vDir.Norm();
 
-	IntersectInfo ii;
 	if (FindSurface(vPos, vDir, 2048.0f, &ii) != LTTRUE) return;
 	if (ii.m_hPoly == INVALID_HPOLY) return;
 
@@ -436,8 +437,7 @@ void CAIChameleon::TakeTexture(const char* szTexture)
 	if (!szTexture) return;
 	if (_stricmp(m_szTexture, szTexture) == 0) return;
 
-	strncpy(m_szTexture, szTexture, 126);
-	m_szTexture[126] = '\0';
+	SAFE_STRCPY(m_szTexture, szTexture);
 
 	ObjectCreateStruct ocs;
 	g_pLTServer->GetModelFilenames2(m_hObject, &ocs);
@@ -513,15 +513,22 @@ void CAIChameleon::UpdateCamo(LTFLOAT fFrameTime)
 	LTFLOAT r, g, b, a;
 	g_pLTServer->GetObjectColor(m_hObject, &r, &g, &b, &a);
 
-	g_pLTServer->SetObjectColor(m_hObject, r, g, b, (m_eCamoState == eCamoOn) ? fFrameTime : fBlend);
+	// The blend between the two skins goes in red and alpha
+	if (m_eCamoState == eCamoOn)
+	{
+		g_pLTServer->SetObjectColor(m_hObject, fFrameTime, g, b, fBlend);
+	}
+	else
+	{
+		g_pLTServer->SetObjectColor(m_hObject, fBlend, g, b, fFrameTime);
+	}
 }
 
 // PH: 0x101494b0
 void CAIChameleon::ResetHeadSkin()
 {
 	m_bResetHeadSkin = LTTRUE;
-	strncpy(m_szTexture, "skins/exp/characters/chameleonhead.dtx", 126);
-	m_szTexture[126] = '\0';
+	SAFE_STRCPY(m_szTexture, "skins/exp/characters/chameleonhead.dtx");
 }
 
 // ----------------------------------------------------------------------- //
@@ -591,7 +598,8 @@ void CAIChameleon::UpdateIdle(LTFLOAT fFrameTime)
 	if (g_pLTServer->GetTime() >= m_tmrIdleSound.m_fTime)
 	{
 		LTFLOAT fNow = g_pLTServer->GetTime();
-		m_tmrIdleSound.m_fTime = fNow + GetRandom(4.0f, 16.0f);
+		LTFLOAT fDelay = GetRandom(4.0f, 16.0f);
+		m_tmrIdleSound.m_fTime = fNow + fDelay;
 		m_Sounds.PlayVoice(s_aszSounds[GetRandom(eSoundIdle1, eSoundIdle2)]);
 	}
 
@@ -673,25 +681,23 @@ void CAIChameleon::UpdateAlert(LTFLOAT fFrameTime)
 	{
 		m_Leash.m_bOutside = LTFALSE;
 
-		AIBaseStateInfo home;
-		home.eState	= eStateMoving;
-		home.vPos	= m_Leash.m_vHomePos;
-		home.nParam	= 0;
+		AIBaseStateInfo home(eStateMoving, 0);
+		home.vPos = m_Leash.m_vHomePos;
 		if (!SetState(&home))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 	}
 	else if (pNode->m_nID != m_Leash.m_nCurNode)
 	{
-		AIBaseStateInfo follow;
+		AIBaseStateInfo follow(eStateIdle);
 		follow.eState	= eStateMoving;
 		follow.vPos		= vTargetPos;
 		follow.nParam	= 1;
 		if (!SetState(&follow))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 	}
@@ -727,7 +733,8 @@ LTBOOL CAIChameleon::SetStateIdle(const AIBaseStateInfo* pInfo)
 	m_Stare.m_fTime		= 0.0f;
 
 	LTFLOAT fNow = g_pLTServer->GetTime();
-	m_tmrIdleSound.m_fTime = fNow + GetRandom(4.0f, 16.0f);
+	LTFLOAT fDelay = GetRandom(4.0f, 16.0f);
+	m_tmrIdleSound.m_fTime = fNow + fDelay;
 
 	m_hTarget = LTNULL;
 
@@ -829,8 +836,7 @@ LTBOOL CAIChameleon::StartAlert()
 	m_eAttackState = eAttackAlert;
 
 	m_Animator.PlayAnim("Alert", LTTRUE, LTFALSE);
-	LTFLOAT fLength = m_Animator.GetAnimLength(0);
-	m_tmrAlert.m_fTime = g_pLTServer->GetTime() + fLength;
+	m_tmrAlert.Start(m_Animator.GetAnimLength(0));
 
 	m_MoveMgr.m_eMoveType = 1;
 	m_Sounds.PlayAlert(s_aszSounds[eSoundSight]);
@@ -856,7 +862,7 @@ LTBOOL CAIChameleon::StartChase()
 		return LTTRUE;
 	}
 
-	AIBaseStateInfo follow;
+	AIBaseStateInfo follow(eStateIdle);
 	follow.eState	= eStateMoving;
 	follow.vPos		= vTargetPos;
 	follow.nParam	= 1;
@@ -864,13 +870,11 @@ LTBOOL CAIChameleon::StartChase()
 	{
 		m_Leash.m_bOutside = LTFALSE;
 
-		AIBaseStateInfo home;
-		home.eState	= eStateMoving;
-		home.vPos	= m_Leash.m_vHomePos;
-		home.nParam	= 0;
+		AIBaseStateInfo home(eStateMoving, 0);
+		home.vPos = m_Leash.m_vHomePos;
 		if (!SetState(&home))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 	}
@@ -884,8 +888,7 @@ LTBOOL CAIChameleon::StartSwipe()
 	m_eAttackState = eAttackSwipe;
 
 	m_Animator.PlayAnim("Attack0", LTTRUE, LTFALSE);
-	LTFLOAT fLength = m_Animator.GetAnimLength(0);
-	m_tmrSwipe.m_fTime = g_pLTServer->GetTime() + fLength;
+	m_tmrSwipe.Start(m_Animator.GetAnimLength(0));
 
 	m_MoveMgr.m_eMoveType = 1;
 	m_Sounds.PlayVoice(s_aszSounds[eSoundAttack]);
@@ -901,7 +904,7 @@ LTBOOL CAIChameleon::StartPounce()
 
 	m_Animator.PlayAnim("Attack1", LTFALSE, LTFALSE);
 	m_Animator.GetAnimLength(0);	// PH: unused (0x10149f68)
-	m_tmrPounce.m_fTime = g_pLTServer->GetTime() + 0.7f;
+	m_tmrPounce.Start(0.7f);
 
 	m_MoveMgr.m_eMoveType = 1;
 	m_StuckCheck.m_bEnabled = LTFALSE;
@@ -932,7 +935,8 @@ LTBOOL CAIChameleon::StartLeap()
 	if (!m_Leash.FindNode(vTargetPos))
 	{
 		LTFLOAT fNow = g_pLTServer->GetTime();
-		m_tmrNextLeap.m_fTime = fNow + GetRandom(2.0f, 8.0f);
+		LTFLOAT fDelay = GetRandom(2.0f, 8.0f);
+		m_tmrNextLeap.m_fTime = fNow + fDelay;
 		return LTFALSE;
 	}
 
@@ -955,7 +959,7 @@ LTBOOL CAIChameleon::StartLeap()
 	m_MoveMgr.m_vDest		= vTargetPos;
 	m_OrientMgr.m_vFacePos	= vTargetPos;
 
-	m_tmrLeap.m_fTime = g_pLTServer->GetTime() + 0.5f;
+	m_tmrLeap.Start(0.5f);
 	m_StuckCheck.m_bEnabled = LTFALSE;
 
 	return LTTRUE;
@@ -1019,7 +1023,7 @@ void CAIChameleon::UpdateChase(LTFLOAT fFrameTime)
 	CLeashNode* pNode = m_Leash.FindNode(vTargetPos);
 	if (pNode && pNode->m_nID == m_Leash.m_nCurNode) return;
 
-	AIBaseStateInfo follow;
+	AIBaseStateInfo follow(eStateIdle);
 	follow.eState	= eStateMoving;
 	follow.vPos		= vTargetPos;
 	follow.nParam	= 1;
@@ -1027,13 +1031,11 @@ void CAIChameleon::UpdateChase(LTFLOAT fFrameTime)
 	{
 		m_Leash.m_bOutside = LTFALSE;
 
-		AIBaseStateInfo home;
-		home.eState	= eStateMoving;
-		home.vPos	= m_Leash.m_vHomePos;
-		home.nParam	= 0;
+		AIBaseStateInfo home(eStateMoving, 0);
+		home.vPos = m_Leash.m_vHomePos;
 		if (!SetState(&home))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 	}
@@ -1042,9 +1044,9 @@ void CAIChameleon::UpdateChase(LTFLOAT fFrameTime)
 // PH: 0x1014a430
 void CAIChameleon::UpdateSwipe(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo idle;
-
 	m_MoveMgr.m_eMoveType = 1;
+
+	AIBaseStateInfo idle;
 
 	if (g_pLTServer->GetTime() < m_tmrSwipe.m_fTime && !(m_Animator.GetPlaybackState(0) & MS_PLAYDONE))
 	{
@@ -1072,7 +1074,7 @@ void CAIChameleon::UpdateSwipe(LTFLOAT fFrameTime)
 // PH: 0x1014a510
 void CAIChameleon::UpdatePounce(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo idle;
+	AIBaseStateInfo idle(eStateIdle);
 
 	if (IsTargetGone() == LTTRUE)
 	{
@@ -1084,7 +1086,7 @@ void CAIChameleon::UpdatePounce(LTFLOAT fFrameTime)
 	if (StartLeap()) return;
 	if (StartChase()) return;
 
-	AIBaseStateInfo home;
+	AIBaseStateInfo home(eStateIdle);
 	home.eState	= eStateMoving;
 	home.vPos	= m_Leash.m_vHomePos;
 	home.nParam	= 0;
@@ -1094,9 +1096,9 @@ void CAIChameleon::UpdatePounce(LTFLOAT fFrameTime)
 // PH: 0x1014a5f0
 void CAIChameleon::UpdateLeap(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo idle;
-
 	m_MoveMgr.m_eMoveType = 8;
+
+	AIBaseStateInfo idle;
 
 	LTVector vTargetPos;
 	g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);
@@ -1105,7 +1107,7 @@ void CAIChameleon::UpdateLeap(LTFLOAT fFrameTime)
 
 	if (g_pLTServer->GetTime() < m_tmrLeap.m_fTime && !(m_Animator.GetPlaybackState(0) & MS_PLAYDONE))
 	{
-		if (m_tmrLeap.m_fTime - g_pLTServer->GetTime() >= 0.25f) return;
+		if (m_tmrLeap.GetTimeLeft() >= 0.25f) return;
 		if (m_MoveMgr.m_bMoving != LTTRUE) return;
 	}
 
@@ -1116,7 +1118,8 @@ void CAIChameleon::UpdateLeap(LTFLOAT fFrameTime)
 	}
 
 	LTFLOAT fNow = g_pLTServer->GetTime();
-	m_tmrNextLeap.m_fTime = fNow + GetRandom(2.0f, 8.0f);
+	LTFLOAT fDelay = GetRandom(2.0f, 8.0f);
+	m_tmrNextLeap.m_fTime = fNow + fDelay;
 
 	if (InSwipeRange() == LTTRUE)
 	{
@@ -1150,21 +1153,20 @@ LTBOOL CAIChameleon::InSwipeRange()
 // PH: 0x1014a850
 LTBOOL CAIChameleon::CanLeap()
 {
-	if (g_pLTServer->GetTime() < m_tmrNextLeap.m_fTime) return LTFALSE;
-	if (!m_MoveMgr.m_bMoving) return LTFALSE;
+	if (g_pLTServer->GetTime() < m_tmrNextLeap.m_fTime || !m_MoveMgr.m_bMoving) return LTFALSE;
 
 	LTVector vTargetPos;
 	g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);
 
 	LTVector vDir = vTargetPos - m_MoveMgr.GetPos(m_hObject);
 	LTFLOAT fDist = vDir.Mag();
-	if (fDist < m_fLeapMinDist) return LTFALSE;
-	if (fDist > m_fLeapMaxDist) return LTFALSE;
+	if (fDist < m_fLeapMinDist || fDist > m_fLeapMaxDist) return LTFALSE;
 
 	if (!m_Leash.FindNode(vTargetPos))
 	{
 		LTFLOAT fNow = g_pLTServer->GetTime();
-		m_tmrNextLeap.m_fTime = fNow + GetRandom(2.0f, 8.0f);
+		LTFLOAT fDelay = GetRandom(2.0f, 8.0f);
+		m_tmrNextLeap.m_fTime = fNow + fDelay;
 		return LTFALSE;
 	}
 
@@ -1198,9 +1200,7 @@ void CAIChameleon::HandleDamage(const DamageStruct& damage)
 	{
 		SetTarget(damage.hDamager);
 
-		AIBaseStateInfo alert;
-		alert.eState = eStateAlert;
-		alert.nParam = 1;
+		AIBaseStateInfo alert(eStateAlert, 1);
 		SetState(&alert);
 	}
 }
@@ -1245,7 +1245,7 @@ LTBOOL CAIChameleon::Swipe()
 	LTVector vTargetPos(0.0f, 0.0f, 0.0f);
 	LTVector vForward = m_OrientMgr.m_vForward;
 
-	if (m_hTarget && m_hTarget)
+	if (m_hTarget)
 	{
 		g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);
 
@@ -1290,16 +1290,13 @@ LTBOOL CAIChameleon::Swipe()
 	IntersectQuery iq;
 	IntersectInfo ii;
 
-	LTVector vPos = m_MoveMgr.GetPos(m_hObject);
-	iq.m_From = vPos;
-	iq.m_To = LTVector(vPos.x + vForward.x * m_fSwipeRange,
-					   vPos.y + vForward.y * m_fSwipeRange,
-					   vPos.z + vForward.z * m_fSwipeRange);
+	iq.m_From		= m_MoveMgr.GetPos(m_hObject);
+	iq.m_To			= iq.m_From + vForward * m_fSwipeRange;
 	iq.m_FilterFn	= ChameleonSwipeFilterFn;
 	iq.m_Flags		= INTERSECT_OBJECTS | IGNORE_NONSOLID;
+	iq.m_PolyFilterFn = LTNULL;
 	iq.m_pUserData	= m_hObject;
 
-	HOBJECT hHit;
 	if (bInFront == LTTRUE)
 	{
 		ii.m_Point		= vTargetPos;
@@ -1307,26 +1304,27 @@ LTBOOL CAIChameleon::Swipe()
 		ii.m_Plane.m_Normal = LTVector(0.0f, -1.0f, 0.0f);
 		ii.m_Plane.m_Dist = 0.0f;
 		ii.m_hPoly		= INVALID_HPOLY;
-		hHit = ii.m_hObject;
 	}
-	else
+	else if (g_pLTServer->IntersectSegment(&iq, &ii) != LTTRUE || !ii.m_hObject)
 	{
-		if (g_pLTServer->IntersectSegment(&iq, &ii) != LTTRUE || !ii.m_hObject)
-		{
-			return LTFALSE;
-		}
-		hHit = ii.m_hObject;
+		return LTFALSE;
 	}
 
-	if (IsGameBase(hHit) == LTTRUE)
+	HOBJECT hHit;
+	if (IsGameBase(ii.m_hObject) == LTTRUE)
 	{
-		CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(hHit);
+		CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(ii.m_hObject);
 		if (!pHitBox) return LTFALSE;
 
 		hHit = pHitBox->GetModelObject();
 	}
+	else
+	{
+		hHit = ii.m_hObject;
+	}
 
-	DamageObject(hHit, &vForward, GetRandom(1.0f, 2.0f) * 20.0f, 0.0f, DT_SLICE);
+	LTFLOAT fDamage = GetRandom(1.0f, 2.0f) * 20.0f;
+	DamageObject(hHit, &vForward, fDamage, 0.0f, DT_SLICE);
 
 	return LTTRUE;
 }
@@ -1345,8 +1343,7 @@ void CAIChameleon::StartToCrouch()
 	m_bCrouchIdle = LTFALSE;
 
 	m_Animator.PlayAnim("ToCrouch", LTTRUE, LTFALSE);
-	LTFLOAT fLength = m_Animator.GetAnimLength(0);
-	m_tmrToCrouch.m_fTime = g_pLTServer->GetTime() + fLength;
+	m_tmrToCrouch.Start(m_Animator.GetAnimLength(0));
 
 	m_eCamoState = eCamoOff;
 
@@ -1420,9 +1417,7 @@ void CAIChameleon::UpdateCrouchIdle(LTFLOAT fFrameTime)
 	LTVector vDir = vTargetPos - m_MoveMgr.GetPos(m_hObject);
 	LTFLOAT fDist = vDir.Mag();
 
-	AIBaseStateInfo alert;
-	alert.eState = eStateAlert;
-	alert.nParam = 1;
+	AIBaseStateInfo alert(eStateAlert, 1);
 
 	if (m_bWaitToAttack && fDist >= m_fWaitAttackDist)
 	{
@@ -1463,13 +1458,13 @@ LTBOOL CAIChameleon::ReturnToLeash()
 
 	m_Leash.m_bOutside = LTFALSE;
 
-	AIBaseStateInfo home;
+	AIBaseStateInfo home(eStateIdle);
 	home.eState	= eStateMoving;
 	home.vPos	= m_Leash.m_vHomePos;
 	home.nParam	= 0;
 	if (!SetState(&home))
 	{
-		AIBaseStateInfo idle;
+		AIBaseStateInfo idle(eStateIdle);
 		SetState(&idle);
 	}
 

@@ -479,14 +479,12 @@ LTBOOL CLeashGroup::GetNextNode(const LTVector& vFrom, const LTVector& vTo, int*
 {
 	*pnNext = -1;
 
-	CLeashNode* pStart = FindPoint(vFrom);
-	if (!pStart) pStart = FindVolume(vFrom);
+	CLeashNode* pStart = FindNode(vFrom);
 	if (!pStart) return LTFALSE;
 
 	*pnStart = pStart->m_nID;
 
-	CLeashNode* pDest = FindPoint(vTo);
-	if (!pDest) pDest = FindVolume(vTo);
+	CLeashNode* pDest = FindNode(vTo);
 	if (!pDest) return LTFALSE;
 
 	*pnDest = pDest->m_nID;
@@ -512,12 +510,10 @@ LTBOOL CLeashGroup::GetNextNode(const LTVector& vFrom, const LTVector& vTo, int*
 
 LTBOOL CLeashGroup::GetExitPos(int nFrom, int nTo, const LTVector& vPos, LTVector* pvExit, LTFLOAT fRadius)
 {
-	CLeashNode* pFrom = GetPoint(nFrom);
-	if (!pFrom) pFrom = GetVolume(nFrom);
+	CLeashNode* pFrom = GetNode(nFrom);
 	if (!pFrom) return LTFALSE;
 
-	CLeashNode* pTo = GetPoint(nTo);
-	if (!pTo) pTo = GetVolume(nTo);
+	CLeashNode* pTo = GetNode(nTo);
 	if (!pTo) return LTFALSE;
 
 	return pFrom->GetExitPos(pTo, vPos, pvExit, fRadius);
@@ -531,12 +527,10 @@ LTBOOL CLeashGroup::GetExitPos(int nFrom, int nTo, const LTVector& vPos, LTVecto
 
 LTBOOL CLeashGroup::GetEntryPos(int nFrom, int nTo, const LTVector& vPos, LTVector* pvEntry, LTFLOAT fRadius)
 {
-	CLeashNode* pFrom = GetPoint(nFrom);
-	if (!pFrom) pFrom = GetVolume(nFrom);
+	CLeashNode* pFrom = GetNode(nFrom);
 	if (!pFrom) return LTFALSE;
 
-	CLeashNode* pTo = GetPoint(nTo);
-	if (!pTo) pTo = GetVolume(nTo);
+	CLeashNode* pTo = GetNode(nTo);
 	if (!pTo) return LTFALSE;
 
 	return pFrom->GetEntryPos(pTo, vPos, pvEntry, fRadius);

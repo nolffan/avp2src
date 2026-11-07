@@ -52,8 +52,7 @@ HLTSOUND CAISounds::PlaySound(const char* szSound, const LTVector& vPos, int nVo
 	psi.m_fOuterRadius	= fOuter;
 	psi.m_vPosition		= vPos;
 
-	strncpy(psi.m_szSoundName, szSound, _MAX_PATH + 1);
-	psi.m_szSoundName[_MAX_PATH] = '\0';
+	SAFE_STRCPY(psi.m_szSoundName, szSound);
 
 	g_pLTServer->PlaySound(&psi);
 
@@ -90,20 +89,20 @@ HLTSOUND CAISounds::PlayVoice(const char* szSound)
 	psi.m_nPriority		= m_nPriority;
 	psi.m_fInnerRadius	= m_fInner;
 	psi.m_fOuterRadius	= m_fOuter;
-	psi.m_hObject		= m_hObject;
 
 	if (m_hObject)
 	{
 		psi.m_dwFlags |= PLAYSOUND_ATTACHED;
 	}
 
+	psi.m_hObject		= m_hObject;
+
 	if (psi.m_dwFlags & PLAYSOUND_AMBIENT)
 	{
 		g_pLTServer->GetObjectPos(m_hObject, &psi.m_vPosition);
 	}
 
-	strncpy(psi.m_szSoundName, szSound, _MAX_PATH + 1);
-	psi.m_szSoundName[_MAX_PATH] = '\0';
+	SAFE_STRCPY(psi.m_szSoundName, szSound);
 
 	g_pLTServer->PlaySound(&psi);
 
@@ -117,8 +116,7 @@ HLTSOUND CAISounds::PlayVoice(const char* szSound)
 // PH: 0x1014d880
 HLTSOUND CAISounds::PlayPain(const char* szSound)
 {
-	if (g_pLTServer->GetTime() < m_fNextPain) return LTNULL;
-	if (g_pLTServer->GetTime() < m_fSoundEnd) return LTNULL;
+	if (g_pLTServer->GetTime() < m_fNextPain || g_pLTServer->GetTime() < m_fSoundEnd) return LTNULL;
 
 	HLTSOUND hSound = PlayVoice(szSound);
 	m_fNextPain = m_fSoundEnd;
@@ -128,8 +126,7 @@ HLTSOUND CAISounds::PlayPain(const char* szSound)
 // PH: 0x1014d8d0
 HLTSOUND CAISounds::PlayAlert(const char* szSound)
 {
-	if (g_pLTServer->GetTime() < m_fNextAlert) return LTNULL;
-	if (g_pLTServer->GetTime() < m_fSoundEnd) return LTNULL;
+	if (g_pLTServer->GetTime() < m_fNextAlert || g_pLTServer->GetTime() < m_fSoundEnd) return LTNULL;
 
 	HLTSOUND hSound = PlayVoice(szSound);
 	m_fNextAlert = m_fSoundEnd;
@@ -250,7 +247,7 @@ uint32 CAIAnimator::AddTracker()
 
 	if (g_pModelLT->AddTracker(m_hObject, &pTracker->m_Tracker) != LT_OK)
 	{
-		delete pTracker;
+		if (pTracker) delete pTracker;
 		return -1;
 	}
 
@@ -261,8 +258,11 @@ uint32 CAIAnimator::AddTracker()
 // PH: 0x1014dc40
 AITracker* CAIAnimator::FindTracker(int nTracker)
 {
-	for (TLinkList<AITracker*>::Node* pNode = m_Trackers.GetHead(); pNode != m_Trackers.GetEnd(); pNode = pNode->m_pNext)
+	TLinkList<AITracker*>::Node* pNext;
+	for (TLinkList<AITracker*>::Node* pNode = m_Trackers.GetHead(); pNode != m_Trackers.GetEnd(); pNode = pNext)
 	{
+		pNext = pNode->m_pNext;
+
 		if (pNode->m_Data && pNode->m_Data->m_nID == nTracker)
 		{
 			return pNode->m_Data;

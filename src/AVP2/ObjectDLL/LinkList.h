@@ -91,6 +91,8 @@ class TLinkList
 		// Unlinks and frees pNode, keeping its item.
 		LTBOOL Remove(Node* pNode)
 		{
+			if (!pNode || pNode == &m_Head) return LTFALSE;
+
 			Node* pPrev = &m_Head;
 			Node* pCur = m_Head.m_pNext;
 			while (pCur != &m_Head && pCur != pNode)

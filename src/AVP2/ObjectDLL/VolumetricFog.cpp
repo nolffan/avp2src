@@ -115,8 +115,7 @@ uint32 VolumetricFog::OnInitialUpdate(uint32 nInfo)
 		{
 			LTFLOAT fDensity = m_fFogDensity;
 			uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
-			dwUserFlags &= ~VFOG_DENSITY_MASK;
-			dwUserFlags |= (uint32)ceil(fDensity) << 2;
+			dwUserFlags = (dwUserFlags & ~VFOG_DENSITY_MASK) | ((uint32)ceil(fDensity) << 2);
 			g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags);
 		}
 	}

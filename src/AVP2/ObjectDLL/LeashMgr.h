@@ -35,6 +35,12 @@ typedef uint32 HLEASHGROUP;
 // ----------------------------------------------------------------------- //
 // The hash table of groups
 
+// The fractional part of f
+inline LTFLOAT Frac(LTFLOAT f)
+{
+	return f - (LTFLOAT)floor(f);
+}
+
 template <class T>
 class THashNode
 {
@@ -74,9 +80,8 @@ class CHashTable
 
 		uint32 Hash(uint32 nKey)
 		{
-			LTFLOAT fKey = (LTFLOAT)(nKey & 0xFFFF) * 0.618034f;
-			LTFLOAT fFrac = fKey - floor(fKey);
-			return (uint32)(fFrac * m_nBuckets);
+			LTFLOAT fFrac = Frac((LTFLOAT)(nKey & 0xFFFF) * 0.618034f);
+			return (uint32)(m_nBuckets * fFrac);
 		}
 
 		void Add(T data, uint32 nKey)
@@ -151,18 +156,7 @@ class CHashIterator : public CBaseIterator
 		virtual void First()
 		{
 			m_nBucket = 0;
-			while (m_nBucket < m_pTable->m_nBuckets)
-			{
-				if (m_pTable->m_ppBuckets[m_nBucket])
-				{
-					m_pNode = m_pTable->m_ppBuckets[m_nBucket];
-					return;
-				}
-
-				m_nBucket++;
-			}
-
-			m_pNode = LTNULL;
+			m_pNode = FindBucket();
 		}
 
 		// 0x10151690
@@ -170,22 +164,7 @@ class CHashIterator : public CBaseIterator
 		{
 			if (!m_pNode) return;
 
-			if (m_pNode)
-			{
-				m_pNode = m_pNode->m_pNext;
-				if (m_pNode) return;
-			}
-
-			for (m_nBucket++; m_nBucket < m_pTable->m_nBuckets; m_nBucket++)
-			{
-				if (m_pTable->m_ppBuckets[m_nBucket])
-				{
-					m_pNode = m_pTable->m_ppBuckets[m_nBucket];
-					return;
-				}
-			}
-
-			m_pNode = LTNULL;
+			m_pNode = GetNext(m_pNode);
 		}
 
 		// 0x101516e0
@@ -196,6 +175,36 @@ class CHashIterator : public CBaseIterator
 		}
 
 	protected :
+
+		// The node after pNode: the next in its bucket, else the next
+		// bucket's first
+		THashNode<T>* GetNext(THashNode<T>* pNode)
+		{
+			CHashTable<T>* pTable = m_pTable;
+
+			if (!pNode) return LTNULL;
+			if (pNode->m_pNext) return pNode->m_pNext;
+
+			for (m_nBucket++; m_nBucket < pTable->m_nBuckets; m_nBucket++)
+			{
+				if (pTable->m_ppBuckets[m_nBucket]) return pTable->m_ppBuckets[m_nBucket];
+			}
+
+			return LTNULL;
+		}
+
+		// The first node in a bucket from m_nBucket on
+		THashNode<T>* FindBucket()
+		{
+			CHashTable<T>* pTable = m_pTable;
+
+			for (; m_nBucket < pTable->m_nBuckets; m_nBucket++)
+			{
+				if (pTable->m_ppBuckets[m_nBucket]) return pTable->m_ppBuckets[m_nBucket];
+			}
+
+			return LTNULL;
+		}
 
 		CHashTable<T>*	m_pTable;	// +0x04
 		THashNode<T>*	m_pNode;	// +0x08
@@ -220,9 +229,6 @@ class CLeashNode
 		CLeashNode(int nType)
 		{
 			m_nType = nType;
-			m_bVisited = LTFALSE;
-			m_nID = -1;
-			m_nRoutes = 0;
 			m_pRoutes = LTNULL;
 		}
 
@@ -302,6 +308,22 @@ class CLeashGroup
 							LTVector* pvExit, LTFLOAT fRadius);			// 0x10150d40
 		LTBOOL			GetEntryPos(int nFrom, int nTo, const LTVector& vPos,
 							LTVector* pvEntry, LTFLOAT fRadius);		// 0x10150db0
+
+		// A node by its id, or the one at a position: a point if there is
+		// one, else a volume
+		CLeashNode* GetNode(int nID)
+		{
+			CLeashNode* pNode = GetPoint(nID);
+			if (!pNode) pNode = GetVolume(nID);
+			return pNode;
+		}
+
+		CLeashNode* FindNode(const LTVector& vPos)
+		{
+			CLeashNode* pNode = FindPoint(vPos);
+			if (!pNode) pNode = FindVolume(vPos);
+			return pNode;
+		}
 
 		TLinkList<CLeashPoint*>		m_Points;		// +0x00
 		TLinkList<CLeashVolume*>	m_Volumes;		// +0x10

@@ -176,6 +176,7 @@ uint32 CAITentacle::OnInitialUpdate(uint32 nInfo)
 {
 	CAIBase::OnInitialUpdate(nInfo);
 
+	LTVector vPos;
 	LTVector vDims(32.0f, 48.0f, 32.0f);
 	g_pLTServer->SetObjectDims(m_hObject, &vDims);
 
@@ -185,7 +186,6 @@ uint32 CAITentacle::OnInitialUpdate(uint32 nInfo)
 	{
 		m_tmrRumble.Start(5.0f);
 
-		LTVector vPos;
 		g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
 		for (int i = 0; i < m_nNumTentacles; i++)
@@ -326,10 +326,10 @@ void CAITentacle::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolum
 		fDist = m_fFootstepHearingRange;
 	}
 
-	fVolume = (1.0f - fDist / m_fFootstepHearingRange) * fVolume * 1000.0f * m_fFootstepSensitivity;
-	if (fVolume > 0.0f)
+	LTFLOAT fNoise = (1.0f - fDist / m_fFootstepHearingRange) * fVolume * 1000.0f * m_fFootstepSensitivity;
+	if (fNoise > 0.0f)
 	{
-		HandleFootstep(hObj, LTTRUE, fVolume);
+		HandleFootstep(hObj, LTTRUE, fNoise);
 	}
 }
 
@@ -360,9 +360,7 @@ void CAITentacle::UpdateIdle(LTFLOAT fFrameTime)
 {
 	if (ChooseTarget() == LTTRUE)
 	{
-		AIBaseStateInfo alert;
-		alert.eState = eStateAlert;
-		alert.nParam = 1;
+		AIBaseStateInfo alert(eStateAlert, 1);
 		SetState(&alert);
 	}
 
@@ -397,7 +395,7 @@ void CAITentacle::UpdateIdle(LTFLOAT fFrameTime)
 // PH: 0x1014c8c0
 void CAITentacle::UpdateAlert(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo idle;
+	AIBaseStateInfo idle(eStateIdle);
 
 	if (!m_hTarget)
 	{
@@ -410,9 +408,7 @@ void CAITentacle::UpdateAlert(LTFLOAT fFrameTime)
 	{
 		m_Memory.ClearAll();
 
-		AIBaseStateInfo dying;
-		dying.eState = eStateDying;
-		dying.nParam = 3;
+		AIBaseStateInfo dying(eStateDying, 3);
 		SetState(&dying);
 		return;
 	}
@@ -427,8 +423,10 @@ void CAITentacle::UpdateAlert(LTFLOAT fFrameTime)
 
 	if (!m_bGivingUp && IsBodyProp(m_hTarget) == LTTRUE)
 	{
-		BodyProp* pBody = (BodyProp*)g_pLTServer->HandleToObject(m_hTarget);
-		if (pBody && pBody->GetCanFade() == LTTRUE)
+		// RETAIL BUG: a body prop is not a CCharacter, so this reads a
+		// BodyProp member as CCharacter's m_damage dead flag (0x1014ca71)
+		CCharacter* pChar = (CCharacter*)g_pLTServer->HandleToObject(m_hTarget);
+		if (pChar && pChar->IsDead() == LTTRUE)
 		{
 			m_bGivingUp = LTTRUE;
 			m_tmrGiveUp.Start(5.0f);
@@ -451,8 +449,7 @@ void CAITentacle::UpdateAlert(LTFLOAT fFrameTime)
 
 	if (!m_tmrErupt.IsDone()) return;
 
-	LTFLOAT fNow = g_pLTServer->GetTime();
-	m_tmrErupt.m_fTime = fNow + GetRandom(m_fMinEruptTime, m_fMaxEruptTime);
+	m_tmrErupt.m_fTime = GetRandom(m_fMinEruptTime, m_fMaxEruptTime) + g_pLTServer->GetTime();
 
 	if (!bOnLeash)
 	{
@@ -470,9 +467,7 @@ void CAITentacle::UpdateAlert(LTFLOAT fFrameTime)
 // PH: 0x1014cbd0
 void CAITentacle::UpdateDying(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo dead;
-	dead.eState = eStateDead;
-	dead.nParam = 3;
+	AIBaseStateInfo dead(eStateDead, 3);
 	SetState(&dead);
 }
 
@@ -499,14 +494,13 @@ LTBOOL CAITentacle::SetStateAlert(const AIBaseStateInfo* pInfo)
 
 	if (!m_hTarget)
 	{
-		AIBaseStateInfo idle;
+		AIBaseStateInfo idle(eStateIdle);
 		SetState(&idle);
 		return LTFALSE;
 	}
 
 	m_bGivingUp = LTFALSE;
-	LTFLOAT fNow = g_pLTServer->GetTime();
-	m_tmrErupt.m_fTime = fNow + GetRandom(m_fMinEruptTime, m_fMaxEruptTime);
+	m_tmrErupt.m_fTime = GetRandom(m_fMinEruptTime, m_fMaxEruptTime) + g_pLTServer->GetTime();
 
 	LTVector vPos;
 	g_pLTServer->GetObjectPos(m_hTarget, &vPos);
@@ -535,7 +529,7 @@ LTBOOL CAITentacle::SetStateDying(const AIBaseStateInfo* pInfo)
 	LTFLOAT fShake = m_fTentacleScale * 8.0f;
 	LTVector vShake(fShake, fShake, fShake);
 
-	HLTSOUND hSound = m_Sounds.PlaySound(s_aszSounds[eSoundDeath1 + GetRandom(1)], vPos, 100, 0.0f, 0,
+	HLTSOUND hSound = m_Sounds.PlaySound(s_aszSounds[GetRandom(eSoundDeath1, eSoundDeath2)], vPos, 100, 0.0f, 0,
 		m_fFootstepHearingRange * 2.0f, m_fFootstepHearingRange * 4.0f, 0x3a);
 
 	LTFLOAT fDuration;
@@ -578,13 +572,13 @@ LTBOOL CAITentacle::FindEruptPos(LTVector* pvPos, LTBOOL bInFront)
 	LTVector vDims(32.0f, 48.0f, 32.0f);
 
 	LTVector vTargetDims;
-	if (m_hTarget && m_hTarget)
+	if (m_hTarget)
 	{
 		g_pLTServer->Physics()->GetObjectDims(m_hTarget, &vTargetDims);
 	}
 	else
 	{
-		vTargetDims = LTVector(32.0f, 50.0f, 32.0f);
+		vTargetDims.Init(32.0f, 50.0f, 32.0f);
 	}
 
 	IsPlayerInBox(vTargetPos, vDims);
@@ -646,11 +640,13 @@ LTBOOL CAITentacle::IsPosTaken(const LTVector& vPos, const LTVector& vDims)
 		LTVector vTentMin = vTentPos - vTentDims;
 		LTVector vTentMax = vTentPos + vTentDims;
 
-		if (vMin.x <= vTentMax.x && vMin.y <= vTentMax.y && vMin.z <= vTentMax.z &&
-			vMax.x >= vTentMin.x && vMax.y >= vTentMin.y && vMax.z >= vTentMin.z)
+		if (vMin.x > vTentMax.x || vMin.y > vTentMax.y || vMin.z > vTentMax.z ||
+			vMax.x < vTentMin.x || vMax.y < vTentMin.y || vMax.z < vTentMin.z)
 		{
-			return LTTRUE;
+			continue;
 		}
+
+		return LTTRUE;
 	}
 
 	return LTFALSE;

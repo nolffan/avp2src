@@ -208,11 +208,10 @@ LTBOOL LeashVolume::BuildHull()
 
 CLeashVolume::CLeashVolume() : CLeashNode(LEASHNODE_VOLUME)
 {
-	LTVector vMin(999999.0f, 999999.0f, 999999.0f);
-	LTVector vMax;
-	vMax.Init(-999999.0f, -999999.0f, -999999.0f);
+	m_nID = -1;
 
-	m_Box = LeashBox(vMin, vMax);
+	// An empty box: inside out, so the first ExtendBounds takes its size
+	m_Box = LeashBox(LTVector(0.0f, 0.0f, 0.0f), LTVector(-999999.0f, -999999.0f, -999999.0f));
 }
 
 // ----------------------------------------------------------------------- //
@@ -234,7 +233,7 @@ LTVector CLeashVolume::GetPos()
 
 void CLeashVolume::SetPos(const LTVector& vPos)
 {
-	LTVector vExtents = (m_Box.m_vMax - m_Box.m_vMin) * 0.5f;
+	LTVector vExtents = m_Box.GetExtents();
 
 	LeashBox box;
 	box.m_vMin.x = vPos.x - vExtents.x;
@@ -351,15 +350,18 @@ LTBOOL CLeashVolume::IsConvex(LTFLOAT fEpsilon)
 
 LTBOOL CLeashVolume::Contains(const LTVector& vPos, LTFLOAT fEpsilon)
 {
-	if (!(vPos >= m_Box.m_vMin && vPos <= m_Box.m_vMax)) return LTFALSE;
-
-	for (TLinkNode<CLeashFace*>* pNode = m_Faces.GetHead(); pNode != m_Faces.GetEnd(); pNode = pNode->m_pNext)
+	if (vPos >= m_Box.m_vMin && vPos <= m_Box.m_vMax)
 	{
-		LTVector vVert = vPos;
-		if (pNode->m_Data->m_Plane.DistTo(vVert) >= fEpsilon) return LTFALSE;
+		for (TLinkNode<CLeashFace*>* pNode = m_Faces.GetHead(); pNode != m_Faces.GetEnd(); pNode = pNode->m_pNext)
+		{
+			LTVector vVert = vPos;
+			if (pNode->m_Data->m_Plane.DistTo(vVert) >= fEpsilon) return LTFALSE;
+		}
+
+		return LTTRUE;
 	}
 
-	return LTTRUE;
+	return LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -372,9 +374,16 @@ CLeashNode* CLeashVolume::FindNeighbor(const LTVector& vPos, LTFLOAT fEpsilon)
 {
 	for (TLinkNode<CLeashNode*>* pNode = m_Neighbors.GetHead(); pNode != m_Neighbors.GetEnd(); pNode = pNode->m_pNext)
 	{
-		if (pNode->m_Data->m_nType == LEASHNODE_VOLUME && pNode->m_Data->Contains(vPos, fEpsilon) == LTTRUE)
+		switch (pNode->m_Data->m_nType)
 		{
-			return pNode->m_Data;
+			case LEASHNODE_VOLUME:
+			{
+				if (pNode->m_Data->Contains(vPos, fEpsilon) == LTTRUE)
+				{
+					return pNode->m_Data;
+				}
+			}
+			break;
 		}
 	}
 

@@ -67,10 +67,7 @@ class CAIBull : public CAIBase
 	protected :
 
 		int			m_eBullState;			// 0x384
-		LTFLOAT		m_fMinDist;				// 0x388
-		LTFLOAT		m_fMaxDist;				// 0x38c
-		LTFLOAT		m_fDist;				// 0x390
-		uint32		m_nDistAxes;			// 0x394
+		CAIDistTracker	m_Dist;				// 0x388: to the target
 		uint32		m_nHeadTracker;			// 0x398
 		LTBOOL		m_bHeadDown;			// 0x39c
 		LTFLOAT		m_fNextChargeTime;		// 0x3a0

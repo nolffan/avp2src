@@ -66,7 +66,7 @@ uint32 LeashPoint::OnInitialUpdate(uint32 nInfo)
 	LTVector vPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	m_pNode->SetPos(vPos);
-	m_pNode->m_fRadius = m_fRadius;
+	m_pNode->SetRadius(m_fRadius);
 
 	m_hGroup = LeashMgr_GetGroup(m_szGroupName);
 	if (m_hGroup && !LeashMgr_AddNode(m_hGroup, m_pNode))
@@ -86,8 +86,12 @@ uint32 LeashPoint::OnInitialUpdate(uint32 nInfo)
 
 CLeashPoint::CLeashPoint() : CLeashNode(LEASHNODE_POINT)
 {
+	m_bVisited = LTFALSE;
+	m_nID = -1;
 	m_vPos.Init();
 	m_fRadius = 0.0f;
+	m_nRoutes = 0;
+	m_pRoutes = LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -146,9 +150,16 @@ LTBOOL CLeashPoint::Overlaps(const LTVector& vPos, LTFLOAT fRadius)
 
 LTBOOL CLeashPoint::Overlaps(CLeashNode* pNode)
 {
-	if (pNode->m_nType != LEASHNODE_POINT) return LTFALSE;
+	switch (pNode->m_nType)
+	{
+		case LEASHNODE_POINT:
+		{
+			LTFLOAT fRadius = ((CLeashPoint*)pNode)->m_fRadius;
+			return Overlaps(pNode->GetPos(), fRadius);
+		}
+	}
 
-	return Overlaps(pNode->GetPos(), ((CLeashPoint*)pNode)->m_fRadius);
+	return LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //

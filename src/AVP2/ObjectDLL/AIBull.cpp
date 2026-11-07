@@ -70,11 +70,6 @@ END_CLASS_DEFAULT(CAIBull, CAIBase, NULL, NULL)
 
 CAIBull::CAIBull() : CAIBase(OT_MODEL)
 {
-	m_fMinDist			= 9999999.0f;
-	m_fMaxDist			= -9999999.0f;
-	m_fDist				= 0.0f;
-	m_nDistAxes			= 5;
-
 	m_fNextSightSound	= -1.0f;
 	m_fNextIdleSound	= -1.0f;
 	m_fNextImpactTime	= -1.0f;
@@ -121,8 +116,7 @@ uint32 CAIBull::OnPrecreate(void *pData, uint32 nInfo)
 	{
 		ObjectCreateStruct* pStruct = (ObjectCreateStruct*)pData;
 
-		strncpy(pStruct->m_Filename, "models/exp/characters/buhlagh.abc", 127);
-		pStruct->m_Filename[127] = '\0';
+		SAFE_STRCPY(pStruct->m_Filename, "models/exp/characters/buhlagh.abc");
 
 		SetSkins(0, pStruct, s_aszSkins);
 
@@ -183,10 +177,10 @@ void CAIBull::OnLoad(HMESSAGEREAD hRead)
 	CAIBase::OnLoad(hRead);
 
 	m_eBullState		= hRead->ReadByte();
-	m_fMinDist			= hRead->ReadFloat();
-	m_fMaxDist			= hRead->ReadFloat();
-	m_fDist				= hRead->ReadFloat();
-	m_nDistAxes			= hRead->ReadDWord();
+	m_Dist.m_fMin			= hRead->ReadFloat();
+	m_Dist.m_fMax			= hRead->ReadFloat();
+	m_Dist.m_fDist				= hRead->ReadFloat();
+	m_Dist.m_nAxes			= hRead->ReadDWord();
 	m_bHeadDown			= hRead->ReadByte();
 	m_fNextChargeTime	= hRead->ReadFloat();
 	m_fNextSightSound	= hRead->ReadFloat();
@@ -205,10 +199,10 @@ void CAIBull::OnSave(HMESSAGEWRITE hWrite)
 	CAIBase::OnSave(hWrite);
 
 	hWrite->WriteByte(m_eBullState);
-	*hWrite << m_fMinDist;
-	*hWrite << m_fMaxDist;
-	*hWrite << m_fDist;
-	hWrite->WriteDWord(m_nDistAxes);
+	*hWrite << m_Dist.m_fMin;
+	*hWrite << m_Dist.m_fMax;
+	*hWrite << m_Dist.m_fDist;
+	hWrite->WriteDWord(m_Dist.m_nAxes);
 	hWrite->WriteByte(m_bHeadDown);
 	*hWrite << m_fNextChargeTime;
 	*hWrite << m_fNextSightSound;
@@ -371,7 +365,7 @@ LTBOOL CAIBull::SetStateMoving(const AIBaseStateInfo* pInfo)
 
 void CAIBull::UpdateWalk(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
 	if (IsTargetGone() == LTTRUE)
 	{
@@ -402,7 +396,7 @@ void CAIBull::UpdateWalk(LTFLOAT fFrameTime)
 		home.vPos = m_Leash.m_vHomePos;
 		if (!SetState(&home))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 		return;
@@ -414,7 +408,7 @@ void CAIBull::UpdateWalk(LTFLOAT fFrameTime)
 		move.vPos = vTargetPos;
 		if (!SetState(&move))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 		return;
@@ -445,7 +439,7 @@ void CAIBull::UpdateWalk(LTFLOAT fFrameTime)
 
 void CAIBull::UpdateCharge(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
 	if (IsTargetGone() == LTTRUE)
 	{
@@ -464,22 +458,22 @@ void CAIBull::UpdateCharge(LTFLOAT fFrameTime)
 	if (ReturnToLeash() == LTTRUE) return;
 
 	LTVector vDiff = vTargetPos - m_MoveMgr.GetPos(m_hObject);
-	if (!(m_nDistAxes & 1)) vDiff.x = 0.0f;
-	if (!(m_nDistAxes & 2)) vDiff.y = 0.0f;
-	if (!(m_nDistAxes & 4)) vDiff.z = 0.0f;
+	if (!(m_Dist.m_nAxes & 1)) vDiff.x = 0.0f;
+	if (!(m_Dist.m_nAxes & 2)) vDiff.y = 0.0f;
+	if (!(m_Dist.m_nAxes & 4)) vDiff.z = 0.0f;
 
 	LTFLOAT fDist = vDiff.Mag();
-	m_fDist = fDist;
-	if (fDist < m_fMinDist) m_fMinDist = fDist;
-	if (fDist > m_fMaxDist) m_fMaxDist = fDist;
+	m_Dist.m_fDist = fDist;
+	if (fDist < m_Dist.m_fMin) m_Dist.m_fMin = fDist;
+	if (fDist > m_Dist.m_fMax) m_Dist.m_fMax = fDist;
 
-	if (m_fDist > m_fMinDist && m_fDist > 128.0f && m_fDist - m_fMinDist > 256.0f)
+	if (m_Dist.m_fDist > m_Dist.m_fMin && m_Dist.m_fDist > 128.0f && m_Dist.m_fDist - m_Dist.m_fMin > 256.0f)
 	{
 		StartRam();
 		return;
 	}
 
-	if (m_fDist > 256.0f)
+	if (m_Dist.m_fDist > 256.0f)
 	{
 		LTVector vDir = vTargetPos - m_MoveMgr.GetPos(m_hObject);
 		vDir.Norm();
@@ -491,7 +485,7 @@ void CAIBull::UpdateCharge(LTFLOAT fFrameTime)
 		}
 	}
 
-	if (m_fDist < 128.0f)
+	if (m_Dist.m_fDist < 128.0f)
 	{
 		LowerHead();
 	}
@@ -505,7 +499,7 @@ void CAIBull::UpdateCharge(LTFLOAT fFrameTime)
 
 void CAIBull::UpdateRam(LTFLOAT fFrameTime)
 {
-	AIBaseStateInfo info;
+	AIBaseStateInfo info(eStateIdle);
 
 	if (IsTargetGone() == LTTRUE)
 	{
@@ -532,7 +526,7 @@ void CAIBull::UpdateRam(LTFLOAT fFrameTime)
 		home.vPos = m_Leash.m_vHomePos;
 		if (!SetState(&home))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 		return;
@@ -544,7 +538,7 @@ void CAIBull::UpdateRam(LTFLOAT fFrameTime)
 		move.vPos = vTargetPos;
 		if (!SetState(&move))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 		return;
@@ -605,10 +599,10 @@ void CAIBull::StartCharge()
 
 	m_Animator.PlayAnim("Run", LTTRUE, 0);
 
-	m_fMinDist	= 9999999.0f;
-	m_fMaxDist	= -9999999.0f;
-	m_fDist		= 0.0f;
-	m_nDistAxes	= 7;
+	m_Dist.m_fMin	= 9999999.0f;
+	m_Dist.m_fMax	= -9999999.0f;
+	m_Dist.m_fDist		= 0.0f;
+	m_Dist.m_nAxes	= 7;
 
 	m_StuckCheck.m_bEnabled = LTTRUE;
 }
@@ -650,7 +644,7 @@ void CAIBull::StartRam()
 		home.vPos = m_Leash.m_vHomePos;
 		if (!SetState(&home))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 		return;
@@ -662,7 +656,7 @@ void CAIBull::StartRam()
 		move.vPos = vTargetPos;
 		if (!SetState(&move))
 		{
-			AIBaseStateInfo idle;
+			AIBaseStateInfo idle(eStateIdle);
 			SetState(&idle);
 		}
 	}
@@ -915,13 +909,13 @@ LTBOOL CAIBull::ReturnToLeash()
 
 	m_Leash.m_bOutside = LTFALSE;
 
-	AIBaseStateInfo home;
+	AIBaseStateInfo home(eStateIdle);
 	home.eState	= eStateMoving;
 	home.vPos	= m_Leash.m_vHomePos;
 	home.nParam	= 0;
 	if (!SetState(&home))
 	{
-		AIBaseStateInfo idle;
+		AIBaseStateInfo idle(eStateIdle);
 		SetState(&idle);
 	}
 

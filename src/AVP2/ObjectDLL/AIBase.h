@@ -46,14 +46,16 @@ class CAISight
 			m_bEnabled		= LTTRUE;
 			m_fUpdateRate	= 0.25f;
 			m_fCosHalfFOV	= (LTFLOAT)cos(MATH_DEGREES_TO_RADIANS(m_fFOV) * 0.5f);
+			m_fNextUpdate	= g_pLTServer->GetTime() + 0.25f;
 			m_fRange		= 2048.0f;
 			m_fFudge		= 0.15f;
-			m_fNextUpdate	= g_pLTServer->GetTime() + 0.25f;
 		}
 
 		// PH: it has one, empty: CAIBase's destructor (0x10142840)
 		// counts it among the members it unwinds
 		~CAISight() {}
+
+		void	SetRange(LTFLOAT fRange) { m_fRange = fRange; }
 
 		void	SetFOV(LTFLOAT fFOV)
 		{
@@ -242,6 +244,57 @@ class CLeash
 		LTVector		m_vHomePos;		// 0x40
 };
 
+// PH: CAIBase::m_Move (0x15c, 0x2c bytes): how the AI is moving along its
+// leash, and to where; inline only
+struct CAIMoveInfo
+{
+	CAIMoveInfo()
+	{
+		m_eMode = 0;
+		m_vTarget.Init();
+		m_vPos.Init();
+		m_nFrom = -1;
+		m_nNode = -1;
+		m_nTo = -1;
+		m_nLastNode = -1;
+	}
+
+	int			m_eMode;		// 0x00
+	LTVector	m_vTarget;		// 0x04
+	LTVector	m_vPos;			// 0x10
+	int			m_nFrom;		// 0x1c
+	int			m_nNode;		// 0x20
+	int			m_nTo;			// 0x24
+	int			m_nLastNode;	// 0x28
+};
+
+// PH: how far the AI is from something, and the nearest and farthest it has
+// been (CAIBase::m_MoveDist at 0x188, CAIChameleon::m_TargetDist at 0x418;
+// both are constructed before their vtable pointer is stored)
+struct CAIDistTracker
+{
+	CAIDistTracker()
+	{
+		m_fMin	= 9999999.0f;
+		m_fMax	= -9999999.0f;
+		m_fDist	= 0.0f;
+		m_nAxes	= 5;
+	}
+
+	void Reset()
+	{
+		m_fMin	= 9999999.0f;
+		m_fMax	= -9999999.0f;
+		m_fDist	= 0.0f;
+		m_nAxes	= 5;
+	}
+
+	LTFLOAT	m_fMin;
+	LTFLOAT	m_fMax;
+	LTFLOAT	m_fDist;
+	uint32	m_nAxes;	// which of x, y and z the distance measures (bits)
+};
+
 // PH: CAIBase::m_Sounds (0x1f0, 0x30 bytes); its code is 0x1014d660..
 class CAISounds
 {
@@ -288,7 +341,7 @@ struct CStuckCheck
 {
 	CStuckCheck()
 	{
-		m_vPos.x = m_vPos.y = m_vPos.z = 0.0f;
+		m_vPos		= LTVector(0.0f, 0.0f, 0.0f);
 		m_fMinDist	= 32.0f;
 		m_fInterval	= 0.5f;
 		m_fTime		= 0.0f;
@@ -337,8 +390,8 @@ class CAvoidance
 		CAvoidance()
 		{
 			// RETAIL BUG: Reset() reads m_nState before anything has set it
-			// (CAIBase::CAIBase, 0x1014261d); harmless only because the
-			// result is overwritten when the avoidance first starts
+			// (CAIBase::CAIBase, 0x1014261d), and the first avoidance
+			// starts from whatever it leaves in m_nNextState
 			Reset();
 			m_bActive	= LTFALSE;
 			m_fCheckDist	= 320.0f;
@@ -444,7 +497,14 @@ class CSpearList : public TLinkList<SpearInfo*>
 // PH: the state a CAIBase is told to go to (CAIBase::SetState, slot 38)
 struct AIBaseStateInfo
 {
-	AIBaseStateInfo(int state = 0, int next = 0)
+	AIBaseStateInfo()
+	{
+		eState = 0;
+		vPos.Init();
+		nParam = 0;
+	}
+
+	AIBaseStateInfo(int state, int next = 0)
 	{
 		eState = state;
 		vPos = LTVector(0.0f, 0.0f, 0.0f);
@@ -529,7 +589,7 @@ class CAIBase : public GameBase
 		virtual void	HideHead();															// 54
 		virtual LTBOOL	HandleTrigger(const char* szMsg);									// 55
 
-		LTBOOL			IsPlayerInBox(const LTVector& vMin, const LTVector& vMax);
+		LTBOOL			IsPlayerInBox(const LTVector& vBoxPos, const LTVector& vBoxDims);
 		LTBOOL			AddSpear(HOBJECT hSpear, const LTVector& vPos, const LTVector& vDir, const LTVector& vScale);
 
 	protected :
@@ -550,17 +610,8 @@ class CAIBase : public GameBase
 		LTFLOAT			m_fMaxHitPoints;		// 0x108
 		LTFLOAT			m_fHitPoints;			// 0x10c
 		CLeash			m_Leash;				// 0x110
-		int				m_eMoveMode;			// 0x15c
-		LTVector		m_vMoveTarget;			// 0x160
-		LTVector		m_vMovePos;				// 0x16c
-		int				m_nMoveFrom;			// 0x178
-		int				m_nMoveNode;			// 0x17c
-		int				m_nMoveTo;				// 0x180
-		int				m_nLastMoveNode;		// 0x184
-		LTFLOAT			m_fMoveMinDist;			// 0x188
-		LTFLOAT			m_fMoveMaxDist;			// 0x18c
-		LTFLOAT			m_fMoveDist;			// 0x190
-		uint32			m_nMoveAxes;			// 0x194
+		CAIMoveInfo		m_Move;					// 0x15c
+		CAIDistTracker	m_MoveDist;				// 0x188
 		AIBaseStateInfo	m_NextState;			// 0x198
 		AIBaseStateInfo	m_MoveState;			// 0x1ac
 		LTBOOL			m_bFirstUpdate;			// 0x1c0

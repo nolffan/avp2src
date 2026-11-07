@@ -30,23 +30,7 @@
 // vtable pointer is stored (0x101485b3..0x10148615), which is what tells
 // them apart from the members the constructor's body sets.
 
-// PH: how far the target is, and the nearest and farthest it has been
-// (CAIBase has one at 0x188, set up the same)
-struct CAIDistTracker
-{
-	CAIDistTracker()
-	{
-		m_fMin	= 9999999.0f;
-		m_fMax	= -9999999.0f;
-		m_fDist	= 0.0f;
-		m_nAxes	= 5;
-	}
-
-	LTFLOAT	m_fMin;
-	LTFLOAT	m_fMax;
-	LTFLOAT	m_fDist;
-	uint32	m_nAxes;	// which of x, y and z the distance measures (bits)
-};
+// PH: CAIDistTracker is in AIBase.h (CAIBase has one at 0x188)
 
 // PH: how long the player has been looking at the chameleon
 struct CAIStareCheck
@@ -146,7 +130,7 @@ class CAIChameleon : public CAIBase
 		CamoState		m_eCamoState;			// 0x388
 		LTFLOAT			m_fCamoTime;			// 0x38c
 		LTBOOL			m_bCamoDone;			// 0x390
-		char			m_szTexture[128];		// 0x394
+		char			m_szTexture[127];		// 0x394
 		LTBOOL			m_bResetHeadSkin;		// 0x414
 		CAIDistTracker	m_TargetDist;			// 0x418
 		LTBOOL			m_bWaitToAttack;		// 0x428
