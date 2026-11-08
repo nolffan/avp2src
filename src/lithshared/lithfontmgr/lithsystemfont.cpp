@@ -309,6 +309,7 @@ void LithSystemFont::SetFormatData(uint32 nFormatWidth)
 				nLastWidth = 0;
 				pCurrent = pStart;
 				nIndex = nLastSpace;
+				nLastSpace = 0;
 
 				continue;
 			}
@@ -327,6 +328,7 @@ void LithSystemFont::SetFormatData(uint32 nFormatWidth)
 				pStart = _tcsninc(pString, nIndex + 1);
 
 				nLastWidth = 0;
+				nLastSpace = 0;
 				pCurrent = pStart;
 				nIndex = nIndex + 1;
 

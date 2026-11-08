@@ -456,15 +456,8 @@ void CString::Concat(LPCTSTR pString)
 	DWORD otherLength = (DWORD)strlen(pString);
 	if (!ExpandBuffer(GetLength() + otherLength + 1))
 		return;
-	// The shipped code stops here: it never calls SetLength, so the stored
-	// length stays whatever ExpandBuffer carried over. That is a bug in the
-	// shipped library — appending leaves GetLength() short — and it is what
-	// the bytes say, so it is what this reconstructs.
 	memcpy(&(GetBuffer()[GetLength()]), pString, otherLength + 1);
-#ifdef AVP2_MODERN
-	// fixed: CString::Concat(LPCTSTR) leaves the length short (RETAIL_BUGS.md).
 	SetLength(GetLength() + otherLength);
-#endif
 }
 
 void CString::Concat(char ch)

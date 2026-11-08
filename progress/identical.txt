@@ -12650,6 +12650,7 @@ CShell.dll	sub_10124980
 CShell.dll	sub_10124a30
 CShell.dll	sub_10124a80
 CShell.dll	sub_10124ca0
+CShell.dll	sub_10124cd0
 CShell.dll	sub_10124fc0
 CShell.dll	sub_101257c0
 CShell.dll	sub_10125910
@@ -12783,6 +12784,7 @@ CShell.dll	sub_1012a810
 CShell.dll	sub_1012a880
 CShell.dll	sub_1012a930
 CShell.dll	sub_1012a9f0
+CShell.dll	sub_1012aa10
 CShell.dll	sub_1012aaa0
 CShell.dll	sub_1012ab40
 CShell.dll	sub_1012ac00
@@ -14093,6 +14095,7 @@ LithFontMgr_LT2	?LoadOffsets@LithBitmapFont@@AAEIXZ
 LithFontMgr_LT2	?SaveOffsets@LithBitmapFont@@AAEIXZ
 LithFontMgr_LT2	?SetDrawData@LithBitmapFont@@QAEXPAUHSURFACE_t@@PADPAULITHFONTDRAWDATA@@HHPAULITHFONTSAVEDATA@@H@Z
 LithFontMgr_LT2	?SetFormatData@LithBitmapFont@@QAEXK@Z
+LithFontMgr_LT2	?SetFormatData@LithSystemFont@@QAEXK@Z
 LithFontMgr_LT2	?SetupCompositeSurface@LithSystemFont@@IAEIXZ
 LithFontMgr_LT2	?_Draw@LithBitmapFont@@QAEXHHKK@Z
 LithFontMgr_LT2	?_DrawSolid@LithBitmapFont@@QAEXHHKK@Z
@@ -14273,6 +14276,7 @@ LithTrackMgrClient	?Send_To_Console@LithTrackMgr@@QAEXPADI@Z
 LithTrackMgrClient	?SetDrawData@LithBitmapFont@@QAEXPAUHSURFACE_t@@PADPAULITHFONTDRAWDATA@@HHPAULITHFONTSAVEDATA@@H@Z
 LithTrackMgrClient	?SetFocus@LithTrackBarBase@@QAEXI@Z
 LithTrackMgrClient	?SetFormatData@LithBitmapFont@@QAEXK@Z
+LithTrackMgrClient	?SetFormatData@LithSystemFont@@QAEXK@Z
 LithTrackMgrClient	?SetPathDetail@LithTrackDrawObj@@QAEXH@Z
 LithTrackMgrClient	?SetupCamera@LithTrackMgr@@AAEIXZ
 LithTrackMgrClient	?SetupCompositeSurface@LithSystemFont@@IAEIXZ
@@ -14336,6 +14340,7 @@ MFCStub	?BottomRight@CRect@@QBEABVCPoint@@XZ
 MFCStub	?Compare@CString@@QBEHPBD@Z
 MFCStub	?CompareNoCase@CString@@QBEHPBD@Z
 MFCStub	?Concat@CString@@QAEXD@Z
+MFCStub	?Concat@CString@@QAEXPBD@Z
 MFCStub	?CopyString@CString@@IAEXPBD@Z
 MFCStub	?ExpandBuffer@CString@@IAEHK@Z
 MFCStub	?Find@CString@@QBEHDK@Z
@@ -21907,6 +21912,7 @@ Object.lto	sub_102005b0
 Object.lto	sub_10200620
 Object.lto	sub_102006d0
 Object.lto	sub_10200790
+Object.lto	sub_102007b0
 Object.lto	sub_10200840
 Object.lto	sub_102008e0
 Object.lto	sub_102009a0
@@ -27274,6 +27280,7 @@ PHCShell.dll	sub_1014ccd0
 PHCShell.dll	sub_1014cd40
 PHCShell.dll	sub_1014cdf0
 PHCShell.dll	sub_1014ceb0
+PHCShell.dll	sub_1014ced0
 PHCShell.dll	sub_1014cf60
 PHCShell.dll	sub_1014d000
 PHCShell.dll	sub_1014d0c0
@@ -35430,6 +35437,7 @@ PHObject.lto	sub_10220c20
 PHObject.lto	sub_10220c90
 PHObject.lto	sub_10220d40
 PHObject.lto	sub_10220e00
+PHObject.lto	sub_10220e20
 PHObject.lto	sub_10220eb0
 PHObject.lto	sub_10220f50
 PHObject.lto	sub_10221010
