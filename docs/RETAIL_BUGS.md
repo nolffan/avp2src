@@ -671,6 +671,50 @@ functions), but wrong.
 
 Not fixed yet.
 
+### Deleting a track key leaves a duplicate that is freed twice
+
+LithTrackMgrClient.lib, linked into CShell.dll (`LithTrack::DeleteKey`,
+src/lithshared/lithtrackmgr/LithTrack.cpp). The keys after the deleted one
+move down a slot, but the last slot is never cleared, so two slots point at
+the same key and `Term` deletes it twice.
+
+Not fixed yet.
+
+### Deleting a track leaves a duplicate that is freed twice
+
+LithTrackMgrClient.lib, linked into CShell.dll (`LithTrackList::Delete(int)`,
+src/lithshared/lithtrackmgr/LithTrackList.cpp). The same as the key list:
+the last slot is never cleared after the tracks move down.
+
+Not fixed yet.
+
+### The track editor's "Font Type" command never changes the font
+
+LithTrackMgrClient.lib, linked into CShell.dll (`LithTrackMgr::Ext_Type`,
+src/lithshared/lithtrackmgr/LithTrackMgr.cpp). It assigns the new type to
+its own pointer parameter instead of the setting, so `TrackEdit Font Type
+<x>` rebuilds the same font.
+
+Not fixed yet.
+
+### The track editor's help text ignores the bar's width
+
+LithTrackMgrClient.lib, linked into CShell.dll
+(`LithTrackBarHelp::SetupLines`, src/lithshared/lithtrackmgr/LithTrackBarHelp.cpp).
+All five `CreateTextItem` calls pass the width where the justification
+goes, so the width is the default 0: the help is never wrapped to the bar,
+and a width whose low byte is 1 or 2 centres or right-justifies the lines.
+
+Not fixed yet.
+
+### The track editor's draw object always reports failure
+
+LithTrackMgrClient.lib, linked into CShell.dll (`LithTrackDrawObj::Init`,
+src/lithshared/lithtrackmgr/LithTrackDrawObj.cpp). It returns `DFALSE` even
+when its line system was created.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

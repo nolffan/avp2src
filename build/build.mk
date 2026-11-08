@@ -467,10 +467,18 @@ $(eval $(call lslib,lithfontmgr,LithFontMgr_LT2,/D _LITHTECH2 /I $(LT2LS)\lithfo
 LTM_SRCS := LithTrack.cpp LithTrackList.cpp LithTrackKey.cpp LithTrackDrawObj.cpp LithTrackBarBase.cpp \
     LithTrackBarCamera.cpp LithTrackBarEdit.cpp LithTrackBarHelp.cpp LithTrackBarKey.cpp LithTrackBarTrack.cpp \
     LithTrackMgr.cpp
-$(eval $(call lsobjs,lithtrackmgr,/D _CLIENTBUILD /D _LITHTECH2 /I $(LT2LS)\lithtrackmgr /I $(LT2LS)\lithfontmgr \
+$(eval $(call lsobjs,lithtrackmgr,/D _CLIENTBUILD /D _LITHTECH2 /D LT15_COMPAT /I $(LT2LS)\lithtrackmgr /I $(LT2LS)\lithfontmgr \
     /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTM_SRCS)))
 .PHONY: lithtrackobjs
 lithtrackobjs: $(LSOBJ_lithtrackmgr)
+# The library, in the shipped one's member order: LithFontMgr's five
+# objects (ours, the same build as LithFontMgr_LT2.lib's), then these.
+LTM_MEMBERS := $(addprefix src/lithshared/lithfontmgr/Release/,lithbitmapfont.obj lithcursor.obj lithfont.obj \
+    lithfontmgr.obj lithsystemfont.obj) $(addprefix src/lithshared/lithtrackmgr/Release/,LithTrackMgr.obj \
+    LithTrackList.obj LithTrackKey.obj LithTrackDrawObj.obj LithTrackBarTrack.obj LithTrackBarKey.obj \
+    LithTrackBarHelp.obj LithTrackBarEdit.obj LithTrackBarCamera.obj LithTrackBarBase.obj LithTrack.obj)
+$(eval $(call tool,$(LOUT)/LithTrackMgrClient.lib,$(LTM_MEMBERS) | wine-drives,cd src/lithshared && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\LithTrackMgrClient.lib' $(call q,$(subst /,\,$(patsubst src/lithshared/%,%,$(LTM_MEMBERS))))))
+LS_OURS += LithTrackMgrClient
 #
 # WONAPI.lib, as the game DLLs link it ($(LT2_DIR)\lithshared\libs\Release\
 # WONAPI.lib in the project files): the release's STLport build (above,
@@ -486,7 +494,7 @@ lithtrackobjs: $(LSOBJ_lithtrackmgr)
 $(eval $(call tool,$(LOUT)/WONAPI.lib,$(LOUT)/wonapi/WONAPI.lib,cp $(LOUT)/wonapi/WONAPI.lib $(LOUT)/WONAPI.lib))
 LS_OURS += WONAPI
 .PHONY: gamelibs
-gamelibs: $(LOUT)/ltguimgr_LT2.lib $(LOUT)/LithFontMgr_LT2.lib $(LOUT)/WONAPI.lib
+gamelibs: $(LOUT)/ltguimgr_LT2.lib $(LOUT)/LithFontMgr_LT2.lib $(LOUT)/WONAPI.lib $(LOUT)/LithTrackMgrClient.lib
 
 # ---------------------------------------------------------------------------
 # The prebuilt libraries

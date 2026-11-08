@@ -100,7 +100,10 @@ OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeM
             "ButeMgr",
             # AvP2's GUI and font libraries (build/build.mk, "The game
             # DLLs' libraries, ours"), which the game DLLs link
-            "ltguimgr_LT2", "LithFontMgr_LT2"]
+            "ltguimgr_LT2", "LithFontMgr_LT2",
+            # LithTrackMgr, the camera-track editor the client links
+            # (build/build.mk, "LithTrackMgrClient.lib")
+            "LithTrackMgrClient"]
 LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
 # WONAPI.lib, built from the release's own source (build/build.mk,
 # "WONAPI.lib"): the release's prebuilt build of it, scored against that.
