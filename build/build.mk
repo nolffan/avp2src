@@ -459,6 +459,18 @@ $(eval $(call lslib,ltguimgr,ltguimgr_LT2,/D _NOMFC /D _LITHTECH2 /I $(LT2LS)\lt
     /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTGUI_SRCS)))
 $(eval $(call lslib,lithfontmgr,LithFontMgr_LT2,/D _LITHTECH2 /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs /I $(LT2LS)\mfcstub \
     /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,lithbitmapfont.cpp lithcursor.cpp lithfont.cpp lithfontmgr.cpp lithsystemfont.cpp))
+# LithTrackMgrClient.lib: LithTrackMgr, the in-game camera-track editor,
+# client build (_CLIENTBUILD), with cl 8966. The release has its headers
+# only (LT2/lithshared/lithtrackmgr); the sources are written from the
+# release's prebuilt build. That build also holds a copy of LithFontMgr's
+# five objects.
+LTM_SRCS := LithTrack.cpp LithTrackList.cpp LithTrackKey.cpp LithTrackDrawObj.cpp LithTrackBarBase.cpp \
+    LithTrackBarCamera.cpp LithTrackBarEdit.cpp LithTrackBarHelp.cpp LithTrackBarKey.cpp LithTrackBarTrack.cpp \
+    LithTrackMgr.cpp
+$(eval $(call lsobjs,lithtrackmgr,/D _CLIENTBUILD /D _LITHTECH2 /I $(LT2LS)\lithtrackmgr /I $(LT2LS)\lithfontmgr \
+    /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTM_SRCS)))
+.PHONY: lithtrackobjs
+lithtrackobjs: $(LSOBJ_lithtrackmgr)
 #
 # WONAPI.lib, as the game DLLs link it ($(LT2_DIR)\lithshared\libs\Release\
 # WONAPI.lib in the project files): the release's STLport build (above,
