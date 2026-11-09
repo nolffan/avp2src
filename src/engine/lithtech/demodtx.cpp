@@ -639,7 +639,7 @@ LTRESULT CDemoMgrQ42C::Sub42c6d0(int nFlag)
 	float  fTime;
 	float  fFPS;
 	double fVariance;
-	uint32* pCounter;
+	CCounterEntryQ428* pEntry;
 	uint32 i;
 
 	if (!m_pStream || m_nMode != 2)
@@ -655,30 +655,23 @@ LTRESULT CDemoMgrQ42C::Sub42c6d0(int nFlag)
 		dm_PrintQ42C("Demo played in %.3f seconds", fTime);
 		dm_PrintQ42C("%d frames drawn, average %.3f fps", m_nFrames, fFPS);
 
-		if (g_fDemoMinTimeQC5 >= fTime)
-			g_fDemoMinTimeQC5 = fTime;
-
-		if (g_fDemoMaxTimeQC5 <= fTime)
-			g_fDemoMaxTimeQC5 = fTime;
-
-		if (g_fDemoMinFPSQC5 >= fFPS)
-			g_fDemoMinFPSQC5 = fFPS;
-
-		if (g_fDemoMaxFPSQC5 <= fFPS)
-			g_fDemoMaxFPSQC5 = fFPS;
+		g_fDemoMinTimeQC5 = LTMIN(g_fDemoMinTimeQC5, fTime);
+		g_fDemoMaxTimeQC5 = LTMAX(g_fDemoMaxTimeQC5, fTime);
+		g_fDemoMinFPSQC5  = LTMIN(g_fDemoMinFPSQC5, fFPS);
+		g_fDemoMaxFPSQC5  = LTMAX(g_fDemoMaxFPSQC5, fFPS);
 
 		for (i = 0; i < 17; i++)
 		{
+			pEntry = &g_CounterTableQ428[i];
+
 			if (g_CV_PlayDemoProfile)
 			{
-				dm_PrintQ42C("%s: %.3f", g_CounterTableQ428[i].m_pName,
-				             (double)*g_CounterTableQ428[i].m_pCounter / cnt_GetFrequencyQC5());
+				dm_PrintQ42C("%s: %.3f", pEntry->m_pName,
+				             (double)*pEntry->m_pCounter / cnt_GetFrequencyQC5());
 			}
 
-			pCounter = g_CounterTableQ428[i].m_pCounter;
-
-			g_CounterTableQ428[i].m_nMin = LTMIN(g_CounterTableQ428[i].m_nMin, *pCounter);
-			g_CounterTableQ428[i].m_nMax = LTMAX(g_CounterTableQ428[i].m_nMax, *pCounter);
+			pEntry->m_nMin = LTMIN(pEntry->m_nMin, *pEntry->m_pCounter);
+			pEntry->m_nMax = LTMAX(pEntry->m_nMax, *pEntry->m_pCounter);
 		}
 
 		if (g_CV_PlayDemoReps > 1)

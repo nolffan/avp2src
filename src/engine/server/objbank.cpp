@@ -466,12 +466,6 @@ public:
 // eleven but for which body it calls.
 CObjModel::~CObjModel() {}
 
-// 0x10001000 — the generated copy assignment, reached through a member.
-void LTAnimTracker::SetupTimeRef(AnimTimeRef* pOut)
-{
-	*pOut = m_TimeRef;
-}
-
 // 0x10024f3e — slot 0x2c: the model's own radius, straight off the model the
 // tracker's time reference points at.
 float CObjModel::_v2c()
@@ -1571,3 +1565,13 @@ LTRESULT am_CreateAttachment(CObjMgrView* pAttachMgr, CObjLinked* pParent,
 // The world's segment query (NOLF 0x1000edd7, w_IntersectSegment and its
 // tests) moved to worldisect.cpp: Primal Hunt and AvP2 build it as a module
 // of its own, unoptimised.
+
+// 0x10001000 — the generated copy assignment, reached through a member.
+// Defined last, after SetupModelWalker and SetupModelWalkerRefsOnly: AvP2's
+// cl 9044 reads the register use of a function compiled earlier in the same
+// file, and with this one above them both keep their pointers in eax/edx
+// across the call where AvP2's server.dll saves them (0x1002d149).
+void LTAnimTracker::SetupTimeRef(AnimTimeRef* pOut)
+{
+	*pOut = m_TimeRef;
+}

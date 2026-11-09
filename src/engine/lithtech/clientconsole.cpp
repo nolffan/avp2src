@@ -554,18 +554,20 @@ LTBOOL CConsoleHistory::SetSize(int nSize)
 		{
 			i = nSize - 1;
 
-			while ((pName = GetName()) != LTNULL)
+			do
 			{
+				pName = GetName();
+				if (!pName)
+					break;
+
 				strncpy(pNew[i].m_szText, pName, 0x100);
 
 				i--;
 
 				if (i == 0)
 					break;
-
-				if (!Prev())
-					break;
 			}
+			while (Prev());
 
 			i++;
 
@@ -1792,15 +1794,17 @@ void cc_ListHistory(int argc, char** argv)
 
 	nCount = 0;
 
-	while ((pName = pHist->GetName()) != LTNULL)
+	do
 	{
+		pName = pHist->GetName();
+		if (!pName)
+			break;
+
 		con_ConsolePrint(pName);
 
 		nCount++;
-
-		if (!pHist->FindNext(LTNULL))
-			break;
 	}
+	while (pHist->FindNext(LTNULL));
 
 	con_ConsolePrint("%d commands", nCount);
 }

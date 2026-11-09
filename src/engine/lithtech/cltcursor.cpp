@@ -740,12 +740,24 @@ LTBOOL dib_LoadQ41C(ILTStream* pStream, CObj4a1ab4View* pDib)
 						nLeft--;
 						if (pOut >= pStart && pOut <= pEnd)
 						{
+#ifdef PRIMAL_HUNT
 							if (nPlane == 0)
 								*(uint32*)pOut = (*(uint32*)pOut & 0xffff) | ((uint32)value << 16);
 							else if (nPlane == 1)
 								*(uint32*)pOut = (*(uint32*)pOut & 0xff00ff) | ((uint32)value << 8);
 							else if (nPlane == 2)
 								*(uint32*)pOut = (*(uint32*)pOut & 0xffff00) | value;
+#else
+							// AvP2 1.0.9.6 rebuilds the pixel from its three
+							// bytes (0x004464c0): the plane read goes in, the
+							// other two come back out of the pixel.
+							if (nPlane == 0)
+								*(uint32*)pOut = ((uint32)value << 16) | ((uint32)pOut[1] << 8) | (*(uint32*)pOut & 0xff);
+							else if (nPlane == 1)
+								*(uint32*)pOut = ((uint32)pOut[2] << 16) | ((uint32)value << 8) | (*(uint32*)pOut & 0xff);
+							else if (nPlane == 2)
+								*(uint32*)pOut = ((uint32)pOut[2] << 16) | ((uint32)pOut[1] << 8) | value;
+#endif
 						}
 
 						pOut += nBytesPerPixel;

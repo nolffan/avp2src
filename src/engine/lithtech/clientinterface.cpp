@@ -2343,7 +2343,7 @@ inline LTBOOL cis_ClipLeftQ40E(LTWarpPt** ppPts, int* pnPts)
 
 	for (i = 0; i < *pnPts; i++)
 	{
-		LTBOOL bIn = !((*ppPts)[i].dest_x < g_fWarpClipLeftQ40E);
+		LTBOOL bIn = ((*ppPts)[i].dest_x >= g_fWarpClipLeftQ40E);
 		bInside[i] = bIn ? LTTRUE : LTFALSE;
 
 		nInside += bInside[i];
@@ -2468,7 +2468,7 @@ inline LTBOOL NAME(CLIPPER clipper, LTWarpPt** ppPts, int* pnPts)               
 	return LTTRUE;                                                               \
 }
 
-#define CIS_INSIDE_TOP_Q40E(pt)    !((pt).dest_y < g_fWarpClipTopQ438)
+#define CIS_INSIDE_TOP_Q40E(pt)    ((pt).dest_y >= g_fWarpClipTopQ438)
 #define CIS_INSIDE_RIGHT_Q40E(pt)  ((pt).dest_x < g_fWarpClipRightQ438)
 
 CIS_CLIP_PASS_Q40E(cis_ClipTopQ40E, CWarpClipTopQ438, CIS_INSIDE_TOP_Q40E)

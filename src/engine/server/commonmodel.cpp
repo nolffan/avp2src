@@ -7736,8 +7736,8 @@ CModelVertRec::CModelVertRec()
 // the cleared four, which is what says they are the back-pointers.
 Model::CModelSub1D4::CModelSub1D4()
 {
-	m_pName     = "";
 	m_Unknown18 = 0;
+	m_pName     = "";
 	m_pOwner28  = 0;
 	m_pOwner24  = 0;
 	m_Unknown14 = 0;

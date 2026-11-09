@@ -1331,7 +1331,7 @@ LTRESULT CSoundInstanceView::Play()
 		{
 			fLoopStart = m_pData->m_Unknown58 / m_f34;
 
-			nLoopStart = (int)(fLoopStart / m_Unknown2c * m_pData->GetDataSize());
+			nLoopStart = (int)(m_pData->GetDataSize() * (fLoopStart / m_Unknown2c));
 			if (nLoopStart < 0)
 				nLoopStart = 0;
 			else if (nLoopStart > (int)m_pData->GetDataSize())
@@ -1339,7 +1339,7 @@ LTRESULT CSoundInstanceView::Play()
 
 			fLoopEnd = m_pData->m_Unknown5c / m_f34;
 
-			nLoopEnd = (int)(fLoopEnd / m_Unknown2c * m_pData->GetDataSize());
+			nLoopEnd = (int)(m_pData->GetDataSize() * (fLoopEnd / m_Unknown2c));
 			if (nLoopEnd < nLoopStart)
 				nLoopEnd = nLoopStart;
 			else if (nLoopEnd > (int)m_pData->GetDataSize())

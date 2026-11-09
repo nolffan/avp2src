@@ -1186,6 +1186,18 @@ LTBOOL FMConvertRequest::IsValid()
 typedef LTRESULT (*FMBlitFn)(FMConvertMgr* pMgr, FMConvertRequest* pRequest);
 extern FMBlitFn g_FMBlitters[8 * 8];     // 0x004acdb8
 
+#ifndef PRIMAL_HUNT
+// AvP2 1.0.9.6 defines the getter in this file: Convert (0x0046c4b0) still
+// calls it, but keeps the first answer in %edx across the second call, which
+// cl 9044 only does for a callee it has compiled itself. (Primal Hunt's
+// Convert saves it in %ebx; its getter is the folded one-liner the link
+// aliases.)
+uint32 PFormat::GetType()
+{
+	return m_nBitDepth;
+}
+#endif
+
 // 0x0045f3d0, 84 bytes (the csv's 72 + the 12-byte `gap` row 0x0045f418,
 // which is this function's `push esi; push edi; call *eax` tail). thiscall,
 // one argument, `ret 0x4`. Refuses an invalid request with LT_ERROR

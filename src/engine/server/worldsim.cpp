@@ -676,6 +676,13 @@ uint32 g_nPhysMoveTime;
 // y-sum temporary swap frame slots (shipped -0x8 and the dead pOut slot,
 // ours the other way round); with a separate scale server.dll keeps that
 // swap too, so it is slot assignment, not the scale.
+//
+// AVP2: `inline` in 1.0.9.6. Its lithtech.exe box move (0x0041cbda) carries
+// the body for the axis push-out and calls the copy (0x0041d640) only from
+// ws_HitPoly's, past where /O2 stops inlining.
+#ifndef PRIMAL_HUNT
+inline
+#endif
 void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 {
 	float fMag;
@@ -1400,6 +1407,9 @@ void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
 	uint16         nNode;
 	float          fDist;
 	float          fReach;
+#ifndef PRIMAL_HUNT
+	int            nSide;
+#endif
 
 	if (pList)
 	{
@@ -1493,6 +1503,7 @@ void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
 							}
 						}
 
+#ifdef PRIMAL_HUNT
 						if (pNode->m_nChild[0] != WS_NODE_EMPTY &&
 						    pNode->m_nChild[0] != WS_NODE_SOLID)
 						{
@@ -1501,6 +1512,27 @@ void ws_GetSpherePosTestPolysQ553(CSphereMoveQ553* pMove,
 						}
 
 						nNode = pNode->m_nChild[1];
+#else
+						// AVP2: a straddler is descended on the point's side
+						// of the plane and the far side pushed, as the
+						// collide gather does (AvP2 1.0.9.6's lithtech.exe
+						// 0x0041a75d `and $0x100`: an unordered distance
+						// takes the back). IDENTICAL on both AvP2 images
+						// (lithtech.exe 0x0041a570, server.dll 0x10003a9a).
+						if (fDist >= WS_PLANE_SLOP)
+							nSide = 1;
+						else
+							nSide = 0;
+
+						if (pNode->m_nChild[nSide == 0] != WS_NODE_EMPTY &&
+						    pNode->m_nChild[nSide == 0] != WS_NODE_SOLID)
+						{
+							*pTop = pNode->m_nChild[nSide == 0];
+							pTop++;
+						}
+
+						nNode = pNode->m_nChild[nSide];
+#endif
 					}
 				}
 			}
@@ -2516,6 +2548,11 @@ void ws_SetupSweptBox(LTVector* pMin, LTVector* pMax)
 // order (4 instructions left) but costs lithtech 5 bytes: shipped lithtech
 // addresses dims.y/z off g_pMoveState and dims.x through `lea 0x2c`, which is
 // the CSE of the member form used here.
+#ifndef PRIMAL_HUNT
+extern LTVector g_vStepSweepMinQ553;
+extern LTVector g_vStepSweepMaxQ553;
+#endif
+
 int ws_ShiftBox()
 {
 #ifdef LT_SERVER_TIMERS
@@ -2523,8 +2560,10 @@ int ws_ShiftBox()
 #endif
 	CMoveState* pState;
 	LTVector    vBase[2];
+#ifdef PRIMAL_HUNT
 	LTVector    vMax;
 	LTVector    vMin;
+#endif
 	LTVector    vP2;
 	LTVector    vP1;
 	LTVector    vDiff;
@@ -2602,6 +2641,7 @@ int ws_ShiftBox()
 	g_BoxSphere.m_vPoint = vMid;
 	g_BoxSphere.m_fRadius = vLen.Mag() + g_fBoxRadius;
 
+#ifdef PRIMAL_HUNT
 	VEC_MIN(vMin, vP1, vP2);
 	VEC_MAX(vMax, vP1, vP2);
 
@@ -2614,6 +2654,25 @@ int ws_ShiftBox()
 	g_BoxPlanes[3].m_Dist = -vMax.y;
 	g_BoxPlanes[4].m_Dist =  vMin.z;
 	g_BoxPlanes[5].m_Dist = -vMax.z;
+#else
+	// AVP2: the swept box's bounds are kept, in the step sweep's globals,
+	// for the box move to measure its push-out against (AvP2 1.0.9.6's
+	// lithtech.exe 0x00418b1e..0x00418cc5). With them both AvP2 images are
+	// size-exact (lithtech.exe 1200, server.dll 991), the corner sums'
+	// operand order left as above.
+	VEC_MIN(g_vStepSweepMinQ553, vP1, vP2);
+	VEC_MAX(g_vStepSweepMaxQ553, vP1, vP2);
+
+	g_vStepSweepMinQ553 -= g_pMoveState->m_vDims;
+	g_vStepSweepMaxQ553 += g_pMoveState->m_vDims;
+
+	g_BoxPlanes[0].m_Dist =  g_vStepSweepMinQ553.x;
+	g_BoxPlanes[1].m_Dist = -g_vStepSweepMaxQ553.x;
+	g_BoxPlanes[2].m_Dist =  g_vStepSweepMinQ553.y;
+	g_BoxPlanes[3].m_Dist = -g_vStepSweepMaxQ553.y;
+	g_BoxPlanes[4].m_Dist =  g_vStepSweepMinQ553.z;
+	g_BoxPlanes[5].m_Dist = -g_vStepSweepMaxQ553.z;
+#endif
 
 	return 1;
 }
@@ -3183,10 +3242,16 @@ int CSimContext::TestPoly(WorldPolyOwner* pPoly, WorldPoly* pHandle)
 
 	fFlatDist = vFlatDelta.Mag();
 
+	// AVP2: the flat-distance test is spelled positively: a NaN distance
+	// takes the plane arm (AvP2 1.0.9.6's lithtech.exe 0x00419758 `and
+	// $0x100; jne`), which cl 9044 keeps apart from `!(... >)`.
 	if (fClosest < m_fRadius &&
-	    !(bInsidePoly && !bFlatPlane && fClosest > fFlatDist) && !bStepUp)
+	    (!bInsidePoly || bFlatPlane || fClosest <= fFlatDist) && !bStepUp)
 	{
-		if (m_fRadius - fClosest <= m_fHitDepth)
+		// AVP2: negated, as the overlap test below -- a NaN depth answers a
+		// hit. cl 9044 keeps NaN apart where 8966 does not (AvP2 1.0.9.6's
+		// lithtech.exe 0x0041977c `and $0x4100; jne`).
+		if (!(m_fRadius - fClosest > m_fHitDepth))
 			return 1;
 
 		m_vHitPoint = vClosest;
@@ -3210,7 +3275,7 @@ int CSimContext::TestPoly(WorldPolyOwner* pPoly, WorldPoly* pHandle)
 		if (!bInsidePoly)
 			return 0;
 
-		if (m_fOverlap <= m_fHitDepth)
+		if (!(m_fOverlap > m_fHitDepth))
 			return 1;
 
 		m_vHitPoint = vOnPlane;
@@ -4108,7 +4173,14 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 
 				vAny = pObj->m_Velocity + vVel;
 
+#ifdef PRIMAL_HUNT
 				if (!(vAny.Dot(vNormal) > 0.0f) &&
+#else
+				// AVP2: `<=`, which cl 9044 keeps apart from the negated `>`
+				// (AvP2 1.0.9.6's lithtech.exe 0x0041ef96 `test $0x41; jp`:
+				// an unordered dot product is no contact).
+				if (vAny.Dot(vNormal) <= 0.0f &&
+#endif
 				    w_IsPolyBlocking(pOwner, LTNULL, LTNULL))
 				{
 					fBest = WS_STEP_FAR;
@@ -4146,6 +4218,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 					}
 					else
 					{
+#ifdef PRIMAL_HUNT
 						for (nPoint = 0; nPoint < 4; nPoint++)
 						{
 							vPointA = g_SweepPoints[1][nPoint];
@@ -4158,6 +4231,28 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 							if (fDist < fBest)
 								fBest = fDist;
 						}
+#else
+						// AVP2: a floor is reported as flat, and each corner's
+						// rise is measured straight up to the plane, as the
+						// slope arm measures it along the flattened normal
+						// (AvP2 1.0.9.6's lithtech.exe 0x0041f0f4..0x0041f17f).
+						pInfo->m_Plane.m_Normal = LTVector(0.0f, 1.0f, 0.0f);
+
+						fScale = -1.0f / pPlane->m_Normal.y;
+
+						for (nPoint = 0; nPoint < 4; nPoint++)
+						{
+							vPointA = g_SweepPoints[1][nPoint];
+
+							fDist = (pInfo->m_Plane.m_Dist -
+							         (vPointA.y * pPlane->m_Normal.y +
+							          vPointA.z * pPlane->m_Normal.z +
+							          vPointA.x * pPlane->m_Normal.x)) * fScale;
+
+							if (fDist < fBest)
+								fBest = fDist;
+						}
+#endif
 					}
 
 					g_pMoveState->m_pInfo->m_hObject = g_pMoveState->m_hObject;
@@ -4206,7 +4301,13 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 
 						if (pRec->m_pOwner->m_pSurface->m_Flags & WBSP_NOSTEP)
 						{
+#ifdef PRIMAL_HUNT
 							if (fRise < vPush.y)
+#else
+							// AVP2: negated (lithtech.exe 0x0041f219 `and
+							// $0x100`: an unordered rise is refused too).
+							if (!(fRise >= vPush.y))
+#endif
 							{
 								nResult = 1;
 
@@ -4275,9 +4376,9 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 // a flag cleared here first (`andl $0x0,-0x4(%ebp)`, 0x10004fa5), says the
 // first pass wants another; only then is the box shifted (ws_ShiftBox,
 // 0x100024f1 / 0x0041aa60) and swept again with the third argument set.
-// That four-argument move is not written yet: this file's ws_MoveBox below
-// is NOLF's three-argument one, and ws_MoveObject still calls it directly.
-// (names ours)
+// AvP2 1.0.9.6's four-argument move follows (ws_MoveBoxQ544); Primal Hunt's
+// is not written yet, and its build keeps NOLF's three-argument ws_MoveBox
+// below. (names ours)
 int ws_MoveBoxQ544(uint16 nBlock, CBounceState* pState, int bRetry,
                    int* pbAgain);                     // 0x10004fec / 0x0041e750
 
@@ -4296,6 +4397,285 @@ int ws_MoveBoxPassesQ544(uint16 nBlock, CBounceState* pState)
 
 	return ws_MoveBoxQ544(nBlock, pState, 1, &bAgain);
 }
+
+#ifndef PRIMAL_HUNT
+// AVP2: the four-argument box move (AvP2 1.0.9.6's lithtech.exe 0x0041c460,
+// server.dll 0x1000501b). It walks the tree as NOLF's ws_MoveBox does, but a
+// polygon both ends straddle is no longer pushed back along the move a step
+// at a time. The first pass only asks for another (*pbAgain); the second
+// takes the polygon's clipped bounds (w_IsPolyBlocking's out-parameters) and
+// pushes the box out along whichever axis of the move it overlaps least --
+// none it moves along at all abandons the move -- reporting the impact
+// against that axis. A polygon the move faces away from is left alone. One
+// the box only comes to lies in front of is ws_HitPoly's, as before, and a
+// refused hit there falls through to the descend.
+//
+// NEAR on server.dll (2400 of 2404). NEAR on lithtech.exe (4652 of 4543):
+// /O2's inline budget runs out elsewhere. Shipped expands CPolyTest's
+// constructor and calls WorldPoly::GetPlane, Init, operator+ and Dot in the
+// ws_HitPoly copy and the descend (0x0041d054, 0x0041d22c, 0x0041d545,
+// 0x0041d599); ours calls the CBoxProject constructor and expands those.
+// The straddle arm's ws_NudgeQ516 is expanded in both, its operators called.
+// The re-setup's `vAt = LTVector(sum, ...)` is shipped's shape (a constructed
+// temporary, no by-value copy of g_vMoveStart), but it moves the budget
+// further off (94 blocks against 59), so the operator form stays.
+#define WS_BOX_AXIS_EPSILON 0.0001f
+
+int ws_MoveBoxQ544(uint16 nBlock, CBounceState* pState, int bRetry,
+                   int* pbAgain)
+{
+	CPolyTest test;
+#ifdef LT_SERVER_TIMERS
+	CountAdder cntAdder(&g_nPhysStepTime);
+#endif
+	LTVector   vAt;
+	LTVector   vDir;
+	LTVector   vPolyMin;
+	LTVector   vPolyMax;
+	LTVector   vNormal;
+	LTVector   vPush;
+
+	WorldPolyRef* pRecs;
+	WorldPolyRef* pRec;
+	WSNode*       pNode;
+	uint32        nProjected;
+	uint16*       pTop;
+	uint16        nNode;
+	uint16        nChild;
+	int           nStart, nEnd, nSide;
+	int           i, nAxis;
+	float         fBest, fDist, fPush;
+	LTPlane*      pPlane;
+
+	vAt = g_vMoveBase + g_vMoveStart;
+
+	test.m_Start.m_pPoints = g_SweepPoints[0];
+	test.m_End.m_pPoints   = g_SweepPoints[1];
+
+	test.m_Start.m_pSphere = &g_SphereAtDelta;
+	test.m_End.m_pSphere   = &g_SphereAtOffset;
+
+	test.m_End.m_pProjected   = &nProjected;
+	test.m_Start.m_pProjected = &nProjected;
+
+	test.m_Start.m_vMin = vAt - g_pMoveState->m_vDims;
+	test.m_Start.m_vMax = vAt + g_pMoveState->m_vDims;
+
+	vAt = g_vMoveBase + g_vMoveEnd;
+
+	test.m_End.m_vMin = vAt - g_pMoveState->m_vDims;
+	test.m_End.m_vMax = vAt + g_pMoveState->m_vDims;
+
+	pRecs = g_pMoveState->m_pWorldBsp->GetPolyRefs();
+
+	pTop  = g_BlockStackQ534;
+	nNode = nBlock;
+
+	for (;;)
+	{
+		if (nNode == WS_NODE_EMPTY || nNode == WS_NODE_SOLID)
+		{
+			if (pTop == g_BlockStackQ534)
+			{
+				return 1;
+			}
+
+			pTop--;
+			nNode = *pTop;
+		}
+
+		g_nPhysNodes++;
+
+		pNode  = &g_pPBlock->m_pNodes[nNode];
+		pRec   = &pRecs[pNode->m_nPoly];
+		pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
+
+		fDist = pPlane->DistTo(g_BoxSphere.m_vPoint);
+
+		if (fDist > g_BoxSphere.m_fRadius)
+		{
+			nNode = pNode->m_nChild[1];
+			continue;
+		}
+
+		if (fDist < -g_BoxSphere.m_fRadius)
+		{
+			nNode = pNode->m_nChild[0];
+			continue;
+		}
+
+		nProjected = 1;
+
+		test.m_End.m_pPlane   = pPlane;
+		test.m_Start.m_pPlane = pPlane;
+
+		nStart = g_BoxProjectFns[pRec->m_nProject](&test.m_Start);
+		nEnd   = g_BoxProjectFns[pRec->m_nProject](&test.m_End);
+
+		if (nStart == nEnd)
+		{
+			if (nStart != WS_STRADDLE)
+			{
+				nNode = pNode->m_nChild[nStart];
+				continue;
+			}
+
+			vDir = g_vMoveEnd - g_vMoveStart;
+			vDir.Norm();
+
+			if (vDir.Dot(pPlane->m_Normal) < WS_BOX_AXIS_EPSILON &&
+			    w_IsPolyBlocking(pRec->m_pOwner, &vPolyMin, &vPolyMax))
+			{
+				*pbAgain = 1;
+
+				if (bRetry)
+				{
+					fBest = FLT_MAX;
+					nAxis = -1;
+
+					for (i = 0; i < 3; i++)
+					{
+						if (VEC_INDEX(vDir, i) > WS_BOX_AXIS_EPSILON)
+						{
+							fDist = VEC_INDEX(g_vStepSweepMaxQ553, i) - VEC_INDEX(vPolyMin, i);
+
+							if (fDist < fBest)
+							{
+								fBest = fDist;
+								fPush = -fDist;
+								nAxis = i;
+							}
+						}
+						else if (VEC_INDEX(vDir, i) < -WS_BOX_AXIS_EPSILON)
+						{
+							fDist = VEC_INDEX(vPolyMax, i) - VEC_INDEX(g_vStepSweepMinQ553, i);
+
+							if (fDist < fBest)
+							{
+								fBest = fDist;
+								fPush = fDist;
+								nAxis = i;
+							}
+						}
+					}
+
+					if (nAxis == -1)
+						return 0;
+
+					vNormal.Init(0.0f, 0.0f, 0.0f);
+					VEC_INDEX(vNormal, nAxis) = 1.0f;
+
+					if (vNormal.y > WS_FLOOR_NORMAL_Y)
+					{
+						if (!g_pMoveResult->m_pStandingPoly ||
+						    ws_GetPlaneQ506(g_pMoveResult->m_pStandingPoly->m_pOwner)->m_Normal.y <
+						        pPlane->m_Normal.y)
+						{
+							g_pMoveResult->m_pStandingPoly = (WorldPoly*)pRec;
+						}
+					}
+
+					ws_HandleImpact(g_pMoveState->m_pInfo, pState,
+					                g_pMoveState->m_pObject, g_pMoveState->m_hObject,
+					                g_pMoveState->m_pWorldBsp, (WorldPoly*)pRec,
+					                &vNormal);
+
+					pState->m_nHits++;
+
+					if (g_pMoveState->m_bPushOut)
+					{
+						vPush = vNormal * fPush;
+					}
+					else
+					{
+						LTVector vDelta;
+						float    fDot, fT;
+
+						vDelta.Init(g_vMoveEnd.x - g_vMoveStart.x,
+						            g_vMoveEnd.y - g_vMoveStart.y,
+						            g_vMoveEnd.z - g_vMoveStart.z);
+
+						fDot = vNormal.Dot(vDelta);
+
+						if (fDot < FLT_EPSILON && fDot > -FLT_EPSILON)
+							fT = 0.0f;
+						else
+							fT = -fPush / fDot;
+
+						vPush = vDelta * -fT;
+					}
+
+					ws_NudgeQ516(&g_vMoveEnd, g_vMoveEnd, vPush);
+
+					if (!ws_ShiftBox())
+						goto Failed;
+
+					vAt = g_vMoveBase + g_vMoveStart;
+
+					test.m_Start.m_vMin = vAt - g_pMoveState->m_vDims;
+					test.m_Start.m_vMax = vAt + g_pMoveState->m_vDims;
+
+					vAt = g_vMoveBase + g_vMoveEnd;
+
+					test.m_End.m_vMin = vAt - g_pMoveState->m_vDims;
+					test.m_End.m_vMax = vAt + g_pMoveState->m_vDims;
+				}
+			}
+
+			pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
+
+			fDist = g_vMoveStart.z * pPlane->m_Normal.z +
+			        g_vMoveStart.y * pPlane->m_Normal.y +
+			        g_vMoveStart.x * pPlane->m_Normal.x - pPlane->m_Dist;
+		}
+		else
+		{
+			if (nStart == WS_INFRONT &&
+			    w_IsPolyBlocking(pRec->m_pOwner, LTNULL, LTNULL) &&
+			    ws_HitPoly((WorldPoly*)pRec, pState, &test))
+			{
+				vAt = g_vMoveBase + g_vMoveStart;
+
+				test.m_Start.m_vMin = vAt - g_pMoveState->m_vDims;
+				test.m_Start.m_vMax = vAt + g_pMoveState->m_vDims;
+
+				vAt = g_vMoveBase + g_vMoveEnd;
+
+				test.m_End.m_vMin = vAt - g_pMoveState->m_vDims;
+				test.m_End.m_vMax = vAt + g_pMoveState->m_vDims;
+
+				nNode = pNode->m_nChild[1];
+
+				continue;
+			}
+
+			pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
+
+			fDist = g_vMoveStart.z * pPlane->m_Normal.z +
+			        g_vMoveStart.y * pPlane->m_Normal.y +
+			        g_vMoveStart.x * pPlane->m_Normal.x - pPlane->m_Dist;
+		}
+
+		if (fDist > WS_PLANE_SLOP)
+			nSide = 1;
+		else
+			nSide = 0;
+
+		nChild = pNode->m_nChild[nSide == 0];
+
+		if (nChild != WS_NODE_EMPTY && nChild != WS_NODE_SOLID)
+		{
+			*pTop = nChild;
+			pTop++;
+		}
+
+		nNode = pNode->m_nChild[nSide];
+	}
+
+Failed:
+	return 0;
+}
+#endif
 
 // The box sweep. Unlike the cylinder there is no marching: the box at each
 // end of the move is projected onto every plane the tree offers, and a plane
@@ -4338,6 +4718,8 @@ int ws_MoveBoxPassesQ544(uint16 nBlock, CBounceState* pState)
 // it. It follows the PROLOGUE's spelling: three component stores give z,y,x
 // here, but the prologue then loses its shipped scheduling. Allocation, not
 // structure.
+// AVP2: not in 1.0.9.6, whose box move is ws_MoveBoxQ544 above.
+#ifdef PRIMAL_HUNT
 int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 {
 	CPolyTest test;
@@ -4606,3 +4988,4 @@ int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 Failed:
 	return 0;
 }
+#endif

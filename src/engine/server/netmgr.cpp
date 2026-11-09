@@ -1158,42 +1158,6 @@ void CNetMgr::TermQueue(LMessageList* pQueue)
 	pQueue->m_nMessages = 0;
 }
 
-// The queue is in sequence order, so a record past the one asked for says it
-// is not there at all.
-//
-// NEAR (50 of 46 bytes): the shipped build folds the "not found" exit into
-// the loop's own top test and reaches the loop back edge with the same
-// compare that answers the two hits; ours rotates the loop, peels the first
-// null test and pays a duplicated one at the bottom for it. Four source
-// shapes give byte-for-byte the same rotated code: this while/continue/break
-// form, the same with `break` spelt `return LTNULL`, `for(;;)` with the null
-// test as an explicit early return, and a literal label with a backward
-// `goto`. VC6 canonicalises the loop before it lays anything out, so the
-// shape of the source is not the lever here.
-void* CNetMgr::FindQueuedPacket(LMessageList* pList, uint32 nID)
-{
-	CNetRecvPacket* pTail = (CNetRecvPacket*)pList->m_pTail;
-	// RE-READ THE MEMBER, do not copy pTail. Written `pCur = pTail;`
-	// VC6 tests the tail and sinks the copy; the shipped bytes copy first
-	// and test the copy. Proven in-tree by tcpdriver.cpp's tcp_FindConnection,
-	// which reads the member twice and is byte-identical.
-	CNetRecvPacket* pCur = (CNetRecvPacket*)pList->m_pTail;
-
-	while (pCur)
-	{
-		CNetRecvPacket* pRec = pCur;
-
-		pCur = (pCur->m_pNext == pTail) ? LTNULL : pCur->m_pNext;
-
-		if (pRec->m_ID == nID)
-			return pRec;
-
-		if (pRec->m_ID > nID)
-			break;
-	}
-
-	return LTNULL;
-}
 
 // The app guid the drivers advertise; a null argument clears it.
 void CNetMgr::SetGuid(LTGUID* pGuid)
@@ -1225,27 +1189,6 @@ public:
 // AVP2: lithtech.exe reads the counter as server.dll does (PH 0x0046b0c9,
 // `mov $0x4f5770,%ecx; call 0x004260f0`, the forwarder's jmp).
 #define NET_TRACE_TIME() (((CBaseCounterReadView*)&g_NetCounter)->sub_10005fab())
-
-// The trace line carries the elapsed counter and whatever name the update is
-// running under, so a client and a server log interleave readably. Quiet
-// while the connection is still coming up unless the console asks for
-// everything.
-void CNetMgr::DebugPrint(NetConnection* pConn, int nLevel, char* pFormat, ...)
-{
-	char    msg[500];
-	va_list marker;
-
-	if (nLevel > g_NetDebugLevel)
-		return;
-
-	if (!g_NetDebugAll && (pConn->m_Flags & 1))
-		return;
-
-	va_start(marker, pFormat);
-	_vsnprintf(msg, sizeof(msg) - 1, pFormat, marker);
-
-	dsi_ServerError("(%d) %s%s", NET_TRACE_TIME(), m_pTraceName, msg);
-}
 
 
 // 0x100263e7 — age the window by one frame. A tracker with no window length
@@ -1356,48 +1299,6 @@ inline void CNetPending::Term()
 	}
 }
 
-
-
-// NEAR (106 of 106 bytes): an ebx/edi transposition, nothing else.
-//
-// 0x10023bb5 — a receive buffer goes back into the pool, which is kept in
-// size order so a later request can take the smallest one that will do. The
-// walk runs back from the largest and stops at the first buffer this one is
-// not smaller than; running off the end means it is the smallest there is.
-void CNetMgr::FreeRecvPacket(CNetRecvPacket* pRec)
-{
-	CNetRecvPacket* pTail;
-	CNetRecvPacket* pCur;
-	CNetRecvPacket* pAt = LTNULL;
-
-	pRec->m_Len = 0;
-
-	pTail = (CNetRecvPacket*)m_QueueB8.m_pTail;
-	// RE-READ THE MEMBER, do not copy pTail. Written `pCur = pTail;`
-	// VC6 tests the tail and sinks the copy; the shipped bytes copy first
-	// and test the copy. Proven in-tree by tcpdriver.cpp's tcp_FindConnection,
-	// which reads the member twice and is byte-identical.
-	pCur = (CNetRecvPacket*)m_QueueB8.m_pTail;
-
-	while (pCur)
-	{
-		pAt = pCur;
-		pCur = (pCur->m_pNext == pTail) ? LTNULL : pCur->m_pNext;
-
-		if (pRec->m_nAlloced >= pAt->m_nAlloced)
-			break;
-	}
-
-	if (pCur)
-	{
-		((LMessageList*)&m_QueueB8)->InsertAfter((LThreadMessage*)pAt,
-		                                         (LThreadMessage*)pRec);
-	}
-	else
-	{
-		((LMessageList*)&m_QueueB8)->Prepend((LThreadMessage*)pRec);
-	}
-}
 
 // 0x100235a3 — everything still pending for a connection goes away with it.
 // A record is also dropped when its own connection has already moved past
@@ -1593,19 +1494,6 @@ CNetSentPacketView* CNetBankAllocView::Allocate()
 }
 
 
-// 0x10023a8c — the post-accept hook: five bytes of `return 0`. Two
-// arguments and `ret 8`, and nothing in the body, so the connection and
-// the message are both unread. Whatever it was meant to do (a per-packet
-// handler notification, on the evidence of where TranslatePacket calls it —
-// twice, on both the local and the guaranteed path, each time treating a
-// nonzero answer as "the packet has been consumed") was gone by the time
-// this shipped.
-int CNetMgrSendView::sub_10023a8c(NetConnection* pConn, ServerMessage* pMsg)
-{
-	return 0;
-}
-
-
 // 0x10022ac2 — the in-order step, run when the packet just received is the
 // one the connection was expecting. Everything still queued at or below the
 // current id is released, and the id then advances.
@@ -1622,74 +1510,6 @@ void CNetMgrSendView::sub_10022ac2(NetConnection* pConn)
 	sub_10023a91(&pConn->m_GuaranteedQueue, pConn->m_PacketID);
 
 	pConn->m_PacketID++;
-}
-
-
-// The rule these two settle, which decides four other loops in this file:
-// cl 8447 reproduces the shipped *unrotated* loop — one test block that both
-// the entry and the back edge reach — exactly when the back edge is an
-// unconditional `jmp`, and rotates the loop (peeling the head test and
-// duplicating it at the bottom) when the back edge is conditional. Both of
-// these have an unconditional back edge and both match; FindQueuedPacket,
-// sub_100233ad and sub_10023c4d end their bodies with a conditional
-// break/continue, rotate, and are four-to-six-byte nears for it. No source
-// shape moves them (while/continue, `for(;;)` with the test as a `break` or
-// an early return, and a literal backward `goto` all give the rotated code),
-// and neither does any held compiler revision.
-//
-// 0x10023a91 — release every record queued out of order whose id has now
-// been overtaken. The queue is kept in id order, so the walk stops at the
-// first record that belongs after the id handed in.
-//
-// The cursor-alias walk: the record in hand is taken out of the list before
-// the cursor is advanced, so the advance reads the *record's* next pointer
-// and re-reads the list's tail to decide whether it has come back round.
-// The loop's back edge jumps to the `while` test rather than to the body,
-// which is what says the test is shared and not duplicated.
-void CNetMgrSendView::sub_10023a91(LMessageList* pList, uint32 nID)
-{
-	CNetRecvPacket* pCur = (CNetRecvPacket*)pList->m_pTail;
-	CNetRecvPacket* pRec;
-
-	while (pCur)
-	{
-		pRec = pCur;
-		pCur = (pCur->m_pNext == (CNetRecvPacket*)pList->m_pTail) ?
-		           LTNULL : pCur->m_pNext;
-
-		if (pRec->m_ID > nID)
-			break;
-
-		pList->Remove((LThreadMessage*)pRec);
-
-		FreeRecvPacket(pRec);
-	}
-}
-
-
-// 0x10023ad7 — the same walk with the comparison the other way round: it
-// releases everything queued *above* the id and keeps going to the end of
-// the list rather than stopping. Because nothing breaks out of it, VC6
-// rotates the loop (the test moves to the bottom) and shrink-wraps ebx into
-// the body, which is the whole structural difference between the two.
-void CNetMgrSendView::sub_10023ad7(LMessageList* pList, uint32 nID)
-{
-	CNetRecvPacket* pCur = (CNetRecvPacket*)pList->m_pTail;
-	CNetRecvPacket* pRec;
-
-	while (pCur)
-	{
-		pRec = pCur;
-		pCur = (pCur->m_pNext == (CNetRecvPacket*)pList->m_pTail) ?
-		           LTNULL : pCur->m_pNext;
-
-		if (pRec->m_ID > nID)
-		{
-			pList->Remove((LThreadMessage*)pRec);
-
-			FreeRecvPacket(pRec);
-		}
-	}
 }
 
 
@@ -1791,330 +1611,6 @@ public:
 };
 
 
-// 0x100235e8 — the internal packet handler, run before anything else looks
-// at an arrived packet. Only packet id 1 is internal; everything else comes
-// straight back out as zero so the caller hands it on. The first payload
-// byte then selects one of five things (the names are the ones its own error
-// string uses: "Error in SUB_ACK"):
-//
-//   0 — the acknowledgement. Optionally answers a ping request with a
-//       sub-type 2 of its own, releases everything the far end has
-//       acknowledged, and resends up to eight NAKed frames.
-//   1 — a forced disconnect: the connection goes, the driver is told, and
-//       the handler gets event 4 with the reason the packet carried.
-//   2 — a ping reply. Only the sequence number the connection is waiting
-//       for counts; the round trip goes into a three-deep ring and the ping
-//       becomes their average.
-//   3 — a group of packets, each length-prefixed, split back out into the
-//       connection's receive list.
-//   4 — one fragment of a split packet. Once all four have arrived the
-//       original is rebuilt in place and the answer is zero, so the caller
-//       hands the reassembled packet on.
-//
-// Everything except the completed reassembly answers one, meaning "handled;
-// do not hand this packet out".
-//
-// Three readings worth writing down.
-//
-// The ping average is a shipped BUG: the three-sample ring is summed into
-// pConn->m_Ping and then divided by the number of non-zero samples, but
-// m_Ping is never cleared first — so it accumulates across every ping reply
-// for the life of the connection and the number the stats line prints grows
-// without bound. There is no store to +0x9c anywhere in the function, and
-// AddConnection's reset is the only other one.
-//
-// The sub-type-4 arm opens with `RemoveConnection(LTNULL)`. The argument
-// really is the zero the function has been carrying in edi since the
-// prologue — nothing on the path to that arm loads the connection into it —
-// so the walk runs with a null connection, which its own body survives but
-// which cannot have been what was meant.
-//
-// And one codegen note: the "Invalid fragment count received!" arm ends with
-// `cmp %edi,%ecx` where the shared exit block has `test %ecx,%ecx`. VC6
-// cross-jumped that path into the *middle* of the reference's destructor,
-// one instruction past its own test, using the zero already in edi to set
-// the flags. Nothing in the source asks for that, and it reproduces.
-//
-// NEAR (1188 bytes against 1188, 406 instructions against 406, the same
-// registers, the same frame and the same slot assignments): three bytes, one
-// size-neutral schedule. The reassembly's `mov 0x54(%esi),%edx` (the
-// destination packet's payload pointer) is hoisted above the two `movw $1`
-// stores that the shipped build puts first (0x100239f5). Measured and
-// negative: the stores through a CPacket view, the destination through
-// `((CPacket*)pMsg)->m_Data.m_pData`, the stores in an inline member (a file-
-// scope view class, and a local class, which /Ob1 does not expand), a walking
-// CNetFragSlot pointer for the copy and the loop (+2 bytes), and volatile
-// stores (this one keeps the load below the stores but moves the `lea` and the
-// `add $0x14`). CNetMgr::WriteAckPacket has the same residual.
-//
-// The ping sum reads the ring through a named `float* pSamples` indexed by
-// i. The evidence is 0x10023880 (`flds 0x9c(%esi) ; fadds (%edi)`) in server.dll
-// and 0x00459142 (`flds (%ecx) ; fadds 0x9c(%esi)`) in lithtech.exe. The bare
-// `m_UnknownA0[i]` gets lithtech right and server.dll commuted. A walking
-// `*pSample++` gets server.dll right and lithtech commuted. Only the indexed
-// pointer gets both. Using the same pointer for the shift loop above it is
-// worse on both images.
-//
-// Everything else that was off has been closed and is worth recording,
-// because each was a real source fact: the two length tests are *unsigned*
-// (`(uint32)m_Unknown34 - (uint32)m_Unknown38`, giving `jb`/`jae` where an
-// int difference gives `jl`/`jge`); the fragment-count byte is read once
-// into a local and masked with `~0x0f`, not `0xf0`, and not read twice; the
-// sub-type-3 length and the fragment replay length are both passed to
-// ReadData/WriteData as *uint16* (the call sites push the raw dword their
-// uint16 locals sit in, with no zero-extension, which a uint32 parameter
-// would have forced); the two `movw $1` stores on the fresh ping packet
-// share one load of `ref.m_pMsg` and so need a block-local pointer, while
-// everything after them re-reads the reference; and `nValid` is assigned
-// zero *after* the sample shift, or the zero VC6 is already holding in edi
-// gets spilled to a frame slot and reloaded. All four revisions (8168,
-// 8447, 8804, 8966) emit the same five bytes.
-int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
-{
-	CMessageRef ref;
-#ifdef PRIMAL_HUNT
-	// PH: a second reference, constructed (zeroed, EH state 1 -- server.dll
-	// 0x1002d1cf..0x1002d1d6, lithtech.exe 0x0046a32a) and never assigned, so
-	// VC6 drops its release from every exit.  AvP2 1.0.9.6 has no such slot
-	// (`sub $0x50`).  (name ours)
-	CMessageRef refUnused;
-#endif
-	uint32      nAcks[16];
-	uint32      nAckID;
-	uint32      nCount;
-	uint32      i;
-	uint8       nSubType;
-
-	if ((pMsg->m_pData[0] & 0x3f) != 1)
-		return 0;
-
-	nSubType = pMsg->ReadByte(0);
-
-	if (nSubType == 0)
-	{
-		((NetConnectionResetView*)pConn)->m_Unknown98 = 0.0f;
-
-		if (pMsg->ReadByte(0))
-		{
-			uint16       nPingSeq = ((ServerMessageTypeView*)pMsg)->ReadWord(0);
-
-			ref.Init(msg_AllocPacket(0x44c, 0x44c));
-
-			ServerMessage* pNew = ref.m_pMsg;
-
-			pNew->m_Unknown38 = 1;
-			pNew->m_Unknown34 = 1;
-
-			ref.m_pMsg->m_pData[0] = 1;
-
-			ref.m_pMsg->WriteByte(2);
-			ref.m_pMsg->WriteWord(nPingSeq);
-
-			SendToConnection(ref.m_pMsg, pConn, 0);
-		}
-
-		nAckID = ((ServerMessageTypeView*)pMsg)->ReadDWord(0);
-
-		((NetConnectionResetView*)pConn)->m_Unknown80 =
-			((ServerMessageTypeView*)pMsg)->ReadDWord(0);
-
-		sub_10023ad7(&pConn->m_GuaranteedQueue,
-		             ((NetConnectionResetView*)pConn)->m_Unknown80);
-
-		nCount = 0;
-
-		while ((uint32)pMsg->m_Unknown34 - (uint32)pMsg->m_Unknown38 >= 4)
-		{
-			nAcks[nCount] = ((ServerMessageTypeView*)pMsg)->ReadDWord(0);
-
-			nCount++;
-
-			if (nCount >= 8)
-				break;
-		}
-
-		if (nAckID != (uint32)-1)
-		{
-			sub_10023a91(&pConn->m_SendQueue, nAckID);
-
-			CNetMgr::DebugPrint(pConn, 2, "Got an ack on local %d, remote %d",
-				nAckID, ((NetConnectionResetView*)pConn)->m_Unknown80);
-		}
-
-		for (i = 0; i < nCount; i++)
-		{
-			CNetRecvPacket* pRec =
-				(CNetRecvPacket*)FindQueuedPacket(&pConn->m_SendQueue, nAcks[i]);
-
-			if (pRec)
-			{
-				if ((pRec->m_Unknown14 + i) % 5 == 0)
-				{
-					CNetMgr::DebugPrint(pConn, 1, "Resending frame %d", nAcks[i]);
-
-					sub_10022c2f(pRec->m_pData, pRec->m_Len,
-					             pRec->m_nAlloced - pRec->m_Len, pConn);
-				}
-
-				pRec->m_Unknown14++;
-			}
-			else
-			{
-				DebugPrint(1, "Error in SUB_ACK: missing requested packet %d",
-					nAcks[i]);
-			}
-		}
-	}
-	else if (nSubType == 1)
-	{
-		CNetMgr::DebugPrint(pConn, 1, "Forced disconnect!");
-
-		RemoveConnection(pConn);
-
-		pConn->m_pDriver->Disconnect(pConn, 4);
-
-		((CNetHandlerQ556*)m_pHandler)->Notify(4, g_EmptyString);
-	}
-	else if (nSubType == 2)
-	{
-		if (((ServerMessageTypeView*)pMsg)->ReadWord(0) ==
-		        ((NetConnectionResetView*)pConn)->m_UnknownB8)
-		{
-			uint32 nValid;
-
-			for (i = 0; i < 2; i++)
-				((NetConnectionResetView*)pConn)->m_UnknownA0[i] =
-					((NetConnectionResetView*)pConn)->m_UnknownA0[i + 1];
-
-			((NetConnectionResetView*)pConn)->m_UnknownA0[2] =
-				pConn->m_Counter.Read() * 0.001f;
-
-			nValid = 0;
-
-			float* pSamples = ((NetConnectionResetView*)pConn)->m_UnknownA0;
-
-			for (i = 0; i < 3; i++)
-			{
-				((NetConnectionResetView*)pConn)->m_Ping += pSamples[i];
-
-				if (pSamples[i] > 0.0f)
-					nValid++;
-			}
-
-			if (nValid)
-				((NetConnectionResetView*)pConn)->m_Ping /= nValid;
-		}
-	}
-	else if (nSubType == 3)
-	{
-		while ((uint32)pMsg->m_Unknown34 - (uint32)pMsg->m_Unknown38 >= 2)
-		{
-			uint16 nSubLen = ((ServerMessageTypeView*)pMsg)->ReadWord(0);
-
-			if (nSubLen <= pMsg->m_Unknown34 - pMsg->m_Unknown38)
-			{
-				CNetRecvPacket* pRec = sub_10023c4d(nSubLen);
-
-				((ServerMessageTypeView*)pMsg)->ReadData(pRec->m_pData, nSubLen);
-
-				pRec->m_Len = nSubLen;
-
-				((LMessageList*)&pConn->m_RecvList)->Prepend((LThreadMessage*)pRec);
-			}
-			else
-			{
-				DebugPrint(0, "Invalid PACKETGROUP subpacket length");
-			}
-		}
-	}
-	else if (nSubType == 4)
-	{
-		uint8        nCountByte;
-		uint8        nIndex;
-		uint32       nFragID;
-		CNetFragRec* pRec;
-
-		RemoveConnection(LTNULL);
-
-		nCountByte = pMsg->ReadByte(0);
-
-		if ((nCountByte & ~0x0f) != 0x30)
-		{
-			CNetMgr::DebugPrint(pConn, 0, "Invalid fragment count received!");
-
-			return 1;
-		}
-
-		nIndex = (uint8)(nCountByte & 0x0f);
-
-		// packet.h's ReadType<uint32> spelled directly, like the WriteType of
-		// the same id below. lithtech.exe expands both of them: see the
-		// REPORT_ERROR pair at 0x004592ec/0x00459314, and the Insert2 call at
-		// 0x00459400 inside the expanded write. The other reads and writes in
-		// this function stay calls there. server.dll calls both either way.
-		// lithtech NEAR, 1625 of 1622 bytes (it was 1374). Shipped declines
-		// the Append inside the sub-type-3 Prepend (0x00459227 ->
-		// 0x0045a1c0), and ours still expands it. The /O2 budget runs in
-		// source order: a declared-only Append view frees budget, and the
-		// Insert2 below then expands (1816). Writing the ping arm's header
-		// through an inline helper expands its WriteType (1802). Spelling
-		// the count byte as ReadType expands it (1723). So shipped spent more
-		// before sub-type 3 than any spelling here does. The rest of the
-		// diff is register allocation that follows from this.
-		nFragID = ((CPacket*)pMsg)->ReadType((uint32*)0);
-
-		pRec = sub_100233ad(nFragID, pConn);
-
-		if (!pRec)
-		{
-			pRec = sub_10023495();
-
-#ifdef AVP2_MODERN
-			// No record: the fragment is dropped, like any packet the
-			// reassembly cannot take.
-			if (!pRec)
-				return 1;
-
-#endif
-			pRec->m_ID    = nFragID;
-			pRec->m_pConn = pConn;
-		}
-
-		sub_100233e3(pMsg, nIndex, pRec);
-
-		if (sub_10023474(pRec))
-		{
-			CNetMgr::DebugPrint(pConn, 2, "Completed fragmented packet %d",
-				pRec->m_ID);
-
-			pMsg->m_Unknown38 = 1;
-			pMsg->m_Unknown34 = 1;
-
-			pMsg->m_pData[0] = pRec->m_pFrags[0].m_pMsg->m_pData[0];
-
-			for (i = 0; i < 4; i++)
-				((ServerMessageTypeView*)pMsg)->WriteData(
-					pRec->m_pFrags[i].m_pMsg->m_pData + 1,
-					pRec->m_pFrags[i].m_pMsg->m_Unknown34 - 1);
-
-			((CPacket*)pMsg)->WriteType(nFragID);
-
-			pMsg->m_Unknown38 = 1;
-
-			ReleaseQueued((CNetPending*)pRec);
-
-			return 0;
-		}
-	}
-	else
-	{
-		CNetMgr::DebugPrint(pConn, 1, "Got an invalid internal packet!");
-	}
-
-	return 1;
-}
-
-
 // 0x10022a7b — the send-side counterpart of CNetMgr::AddRecvBytes, with one
 // extra term: the manager's own rate tracker at +0xe0 gains the byte count
 // too, but only for a remote connection (the connection's m_Flags bit 0 is
@@ -2161,147 +1657,6 @@ void CNetMgrSendView::AddSentBytes(NetConnection* pConn, uint32 nBytes)
 // insert starts dropping them. A plain initialised global (32), signed, with
 // no console binding (name ours).
 extern int g_NetMaxQueued;
-
-
-// 0x10023c4d — a receive record with room for nLen bytes, off the manager's
-// free list at +0xb8 if one there is big enough and freshly allocated
-// otherwise.
-//
-// Two extra bytes are always reserved (`inc %esi` twice, which is a byte
-// shorter than `add $2`), and the length the record records is the reserved
-// one, so a record's usable capacity is always two more than whatever asked
-// for it. The comparison is signed on both sides — the record's own capacity
-// field is an `int` — which is why the length arrives as one.
-//
-// The record and its payload are two separate allocations, both through
-// `::operator new` (0x1000d25d, the forwarder in front of dalloc), and the record is
-// cleared with memset rather than a constructor: the three
-// calls' cleanups all batch into one `add $0x14,%esp`, so all three have
-// fixed prototypes.
-//
-// The cursor re-reads the member instead of copying pTail, as sub_100233ad
-// and tcp_FindConnection do. With `pCur = pTail`, VC6 tested the tail
-// register, peeled that test off the loop and copied it to the back edge
-// (117 bytes). The shipped code copies first and tests the copy
-// (`mov %ecx,%eax ; test %eax,%eax`, 0x10023c5e). That test is the one both
-// the entry and the `jl` back edge reach (0x10023c76), and the function is
-// byte-identical. The earlier verdict here ("rotation, not reachable", with
-// while/continue, for(;;), goto and four compiler revisions as negatives) was
-// wrong. The `if (... < nLen) continue;` spelling also matches once the member
-// is re-read. The lithtech twin (0x4597a0, 179 bytes) is byte-identical as
-// well. It clears the record with an inline `rep stos` (0x4597e7): the same
-// memset, expanded by /O2's /Oi, where server.dll's /O1 calls 0x1003e280.
-CNetRecvPacket* CNetMgrSendView::sub_10023c4d(int nLen)
-{
-	CNetRecvPacketSendView* pRec;
-	LThreadMessage*         pTail = m_QueueB8.m_pTail;
-	LThreadMessage*         pCur  = m_QueueB8.m_pTail;
-
-	nLen += 2;
-
-	while (pCur)
-	{
-		pRec = (CNetRecvPacketSendView*)pCur;
-		pCur = (pCur->m_pPrev == pTail) ? LTNULL : pCur->m_pPrev;
-
-		if (pRec->m_nAlloced >= nLen)
-		{
-			((LMessageList*)&m_QueueB8)->Remove((LThreadMessage*)pRec);
-
-			pRec->m_Unknown14 = 0;
-			pRec->m_bPending  = 0;
-
-			return pRec;
-		}
-	}
-
-	pRec = (CNetRecvPacketSendView*)::operator new(sizeof(CNetRecvPacketSendView));
-
-	memset(pRec, 0, sizeof(CNetRecvPacketSendView));
-
-	pRec->m_pData    = (uint8*)::operator new(nLen);
-	pRec->m_nAlloced = nLen;
-
-	m_UnknownD8 += nLen;
-
-	return pRec;
-}
-
-
-// 0x10023b1f — put a received guaranteed packet into the connection's
-// out-of-order queue, in packet-id order. LTFALSE means the queue was full
-// and the record was not taken.
-//
-// The walk runs from the tail with the usual cursor alias and stops at the
-// first record whose id is above the new one, splicing in front of it; past
-// the end of the queue the record goes on the front. The overflow test is
-// written at both places — once at the head of the loop and once after it —
-// but the report exists once: the in-loop test `break`s and the post-loop
-// test carries the only DebugPrint, which is why the block sits between the
-// post-loop test and the append. Writing the report (and its return) in both
-// places is the same at /O1 but gives lithtech.exe (/O2) two copies of the
-// tail (249 bytes against 219); the `break` spelling matches both images.
-//
-// The splice is LMessageList::InsertAfter expanded inline, the tail fix-up
-// included; the append is a real call to Prepend. lthread.h has both, and
-// this is the caller its note about the inline copy refers to.
-//
-// NEAR (150 bytes against 150, sixty-two instructions against sixty-two,
-// the same frame and the same slots): two independent prologue stores are
-// in the other order — the shipped build spills `this` to -0x8 before
-// zeroing nCount at -0x4, ours zeroes first — and esi/edi are swapped
-// throughout (ours holds the tail in esi and the cursor in edi, the shipped
-// build the other way round). Nothing else differs. `nCount` has to be the
-// first declaration with an initialiser or it lands in the dead pList
-// parameter slot instead of a frame slot of its own, which was worth a byte
-// and the whole slot layout; past that, all four revisions (8168, 8447,
-// 8804, 8966) emit our order. Callee-saved rotation plus a store-order
-// tie-break.
-LTBOOL CNetMgrSendView::sub_10023b1f(LMessageList* pList, CNetRecvPacket* pRec)
-{
-	int             nCount;
-	LThreadMessage* pTail;
-	LThreadMessage* pCur;
-
-	nCount = 0;
-	pTail  = pList->m_pTail;
-	// RE-READ THE MEMBER, do not copy pTail. Written `pCur = pTail;`
-	// VC6 tests the tail and sinks the copy; the shipped bytes copy first
-	// and test the copy. Proven in-tree by tcpdriver.cpp's tcp_FindConnection,
-	// which reads the member twice and is byte-identical.
-	pCur   = pList->m_pTail;
-
-	while (pCur)
-	{
-		LThreadMessage* pAt;
-
-		if (nCount >= g_NetMaxQueued)
-			break;
-
-		pAt  = pCur;
-		pCur = (pCur->m_pPrev == pTail) ? LTNULL : pCur->m_pPrev;
-
-		nCount++;
-
-		if (pRec->m_ID < ((CNetRecvPacket*)pAt)->m_ID)
-		{
-			pList->InsertAfter(pAt, (LThreadMessage*)pRec);
-
-			return LTTRUE;
-		}
-	}
-
-	if (nCount >= g_NetMaxQueued)
-	{
-		DebugPrint(1, "Dropped guaranteed packet due to queue overflow");
-
-		return LTFALSE;
-	}
-
-	pList->Prepend((LThreadMessage*)pRec);
-
-	return LTTRUE;
-}
 
 
 // 0x1002118b — the two-byte checksum the remote packets carry in their last
@@ -4579,3 +3934,657 @@ bad:
 	strcat(pStr, "BAD ");
 }
 #endif // LT_SERVER_BUILD
+
+
+// 0x10023a8c — the post-accept hook: five bytes of `return 0`. Two
+// arguments and `ret 8`, and nothing in the body, so the connection and
+// the message are both unread. Whatever it was meant to do (a per-packet
+// handler notification, on the evidence of where TranslatePacket calls it —
+// twice, on both the local and the guaranteed path, each time treating a
+// nonzero answer as "the packet has been consumed") was gone by the time
+// this shipped.
+//
+// Defined last, after TranslatePacket: AvP2's cl 9044 reads the register use
+// of a function compiled earlier in the same file, and seeing this one leave
+// ecx alone it drops the `mov %ebx,%ecx` AvP2's server.dll reloads `this`
+// with before the next call (0x1002b1d0).
+int CNetMgrSendView::sub_10023a8c(NetConnection* pConn, ServerMessage* pMsg)
+{
+	return 0;
+}
+
+
+
+// 0x100235e8 — the internal packet handler, run before anything else looks
+// at an arrived packet. Only packet id 1 is internal; everything else comes
+// straight back out as zero so the caller hands it on. The first payload
+// byte then selects one of five things (the names are the ones its own error
+// string uses: "Error in SUB_ACK"):
+//
+//   0 — the acknowledgement. Optionally answers a ping request with a
+//       sub-type 2 of its own, releases everything the far end has
+//       acknowledged, and resends up to eight NAKed frames.
+//   1 — a forced disconnect: the connection goes, the driver is told, and
+//       the handler gets event 4 with the reason the packet carried.
+//   2 — a ping reply. Only the sequence number the connection is waiting
+//       for counts; the round trip goes into a three-deep ring and the ping
+//       becomes their average.
+//   3 — a group of packets, each length-prefixed, split back out into the
+//       connection's receive list.
+//   4 — one fragment of a split packet. Once all four have arrived the
+//       original is rebuilt in place and the answer is zero, so the caller
+//       hands the reassembled packet on.
+//
+// Everything except the completed reassembly answers one, meaning "handled;
+// do not hand this packet out".
+//
+// Three readings worth writing down.
+//
+// The ping average is a shipped BUG: the three-sample ring is summed into
+// pConn->m_Ping and then divided by the number of non-zero samples, but
+// m_Ping is never cleared first — so it accumulates across every ping reply
+// for the life of the connection and the number the stats line prints grows
+// without bound. There is no store to +0x9c anywhere in the function, and
+// AddConnection's reset is the only other one.
+//
+// The sub-type-4 arm opens with `RemoveConnection(LTNULL)`. The argument
+// really is the zero the function has been carrying in edi since the
+// prologue — nothing on the path to that arm loads the connection into it —
+// so the walk runs with a null connection, which its own body survives but
+// which cannot have been what was meant.
+//
+// And one codegen note: the "Invalid fragment count received!" arm ends with
+// `cmp %edi,%ecx` where the shared exit block has `test %ecx,%ecx`. VC6
+// cross-jumped that path into the *middle* of the reference's destructor,
+// one instruction past its own test, using the zero already in edi to set
+// the flags. Nothing in the source asks for that, and it reproduces.
+//
+// NEAR (1188 bytes against 1188, 406 instructions against 406, the same
+// registers, the same frame and the same slot assignments): three bytes, one
+// size-neutral schedule. The reassembly's `mov 0x54(%esi),%edx` (the
+// destination packet's payload pointer) is hoisted above the two `movw $1`
+// stores that the shipped build puts first (0x100239f5). Measured and
+// negative: the stores through a CPacket view, the destination through
+// `((CPacket*)pMsg)->m_Data.m_pData`, the stores in an inline member (a file-
+// scope view class, and a local class, which /Ob1 does not expand), a walking
+// CNetFragSlot pointer for the copy and the loop (+2 bytes), and volatile
+// stores (this one keeps the load below the stores but moves the `lea` and the
+// `add $0x14`). CNetMgr::WriteAckPacket has the same residual.
+//
+// The ping sum reads the ring through a named `float* pSamples` indexed by
+// i. The evidence is 0x10023880 (`flds 0x9c(%esi) ; fadds (%edi)`) in server.dll
+// and 0x00459142 (`flds (%ecx) ; fadds 0x9c(%esi)`) in lithtech.exe. The bare
+// `m_UnknownA0[i]` gets lithtech right and server.dll commuted. A walking
+// `*pSample++` gets server.dll right and lithtech commuted. Only the indexed
+// pointer gets both. Using the same pointer for the shift loop above it is
+// worse on both images.
+//
+// Everything else that was off has been closed and is worth recording,
+// because each was a real source fact: the two length tests are *unsigned*
+// (`(uint32)m_Unknown34 - (uint32)m_Unknown38`, giving `jb`/`jae` where an
+// int difference gives `jl`/`jge`); the fragment-count byte is read once
+// into a local and masked with `~0x0f`, not `0xf0`, and not read twice; the
+// sub-type-3 length and the fragment replay length are both passed to
+// ReadData/WriteData as *uint16* (the call sites push the raw dword their
+// uint16 locals sit in, with no zero-extension, which a uint32 parameter
+// would have forced); the two `movw $1` stores on the fresh ping packet
+// share one load of `ref.m_pMsg` and so need a block-local pointer, while
+// everything after them re-reads the reference; and `nValid` is assigned
+// zero *after* the sample shift, or the zero VC6 is already holding in edi
+// gets spilled to a frame slot and reloaded. All four revisions (8168,
+// 8447, 8804, 8966) emit the same five bytes.
+int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
+{
+	CMessageRef ref;
+#ifdef PRIMAL_HUNT
+	// PH: a second reference, constructed (zeroed, EH state 1 -- server.dll
+	// 0x1002d1cf..0x1002d1d6, lithtech.exe 0x0046a32a) and never assigned, so
+	// VC6 drops its release from every exit.  AvP2 1.0.9.6 has no such slot
+	// (`sub $0x50`).  (name ours)
+	CMessageRef refUnused;
+#endif
+	uint32      nAcks[16];
+	uint32      nAckID;
+	uint32      nCount;
+	uint32      i;
+	uint8       nSubType;
+
+	if ((pMsg->m_pData[0] & 0x3f) != 1)
+		return 0;
+
+	nSubType = pMsg->ReadByte(0);
+
+	if (nSubType == 0)
+	{
+		((NetConnectionResetView*)pConn)->m_Unknown98 = 0.0f;
+
+		if (pMsg->ReadByte(0))
+		{
+			uint16       nPingSeq = ((ServerMessageTypeView*)pMsg)->ReadWord(0);
+
+			ref.Init(msg_AllocPacket(0x44c, 0x44c));
+
+			ServerMessage* pNew = ref.m_pMsg;
+
+			pNew->m_Unknown38 = 1;
+			pNew->m_Unknown34 = 1;
+
+			ref.m_pMsg->m_pData[0] = 1;
+
+			ref.m_pMsg->WriteByte(2);
+			ref.m_pMsg->WriteWord(nPingSeq);
+
+			SendToConnection(ref.m_pMsg, pConn, 0);
+		}
+
+		nAckID = ((ServerMessageTypeView*)pMsg)->ReadDWord(0);
+
+		((NetConnectionResetView*)pConn)->m_Unknown80 =
+			((ServerMessageTypeView*)pMsg)->ReadDWord(0);
+
+		sub_10023ad7(&pConn->m_GuaranteedQueue,
+		             ((NetConnectionResetView*)pConn)->m_Unknown80);
+
+		nCount = 0;
+
+		while ((uint32)pMsg->m_Unknown34 - (uint32)pMsg->m_Unknown38 >= 4)
+		{
+			nAcks[nCount] = ((ServerMessageTypeView*)pMsg)->ReadDWord(0);
+
+			nCount++;
+
+			if (nCount >= 8)
+				break;
+		}
+
+		if (nAckID != (uint32)-1)
+		{
+			sub_10023a91(&pConn->m_SendQueue, nAckID);
+
+			CNetMgr::DebugPrint(pConn, 2, "Got an ack on local %d, remote %d",
+				nAckID, ((NetConnectionResetView*)pConn)->m_Unknown80);
+		}
+
+		for (i = 0; i < nCount; i++)
+		{
+			CNetRecvPacket* pRec =
+				(CNetRecvPacket*)FindQueuedPacket(&pConn->m_SendQueue, nAcks[i]);
+
+			if (pRec)
+			{
+				if ((pRec->m_Unknown14 + i) % 5 == 0)
+				{
+					CNetMgr::DebugPrint(pConn, 1, "Resending frame %d", nAcks[i]);
+
+					sub_10022c2f(pRec->m_pData, pRec->m_Len,
+					             pRec->m_nAlloced - pRec->m_Len, pConn);
+				}
+
+				pRec->m_Unknown14++;
+			}
+			else
+			{
+				DebugPrint(1, "Error in SUB_ACK: missing requested packet %d",
+					nAcks[i]);
+			}
+		}
+	}
+	else if (nSubType == 1)
+	{
+		CNetMgr::DebugPrint(pConn, 1, "Forced disconnect!");
+
+		RemoveConnection(pConn);
+
+		pConn->m_pDriver->Disconnect(pConn, 4);
+
+		((CNetHandlerQ556*)m_pHandler)->Notify(4, g_EmptyString);
+	}
+	else if (nSubType == 2)
+	{
+		if (((ServerMessageTypeView*)pMsg)->ReadWord(0) ==
+		        ((NetConnectionResetView*)pConn)->m_UnknownB8)
+		{
+			uint32 nValid;
+
+			for (i = 0; i < 2; i++)
+				((NetConnectionResetView*)pConn)->m_UnknownA0[i] =
+					((NetConnectionResetView*)pConn)->m_UnknownA0[i + 1];
+
+			((NetConnectionResetView*)pConn)->m_UnknownA0[2] =
+				pConn->m_Counter.Read() * 0.001f;
+
+			nValid = 0;
+
+			float* pSamples = ((NetConnectionResetView*)pConn)->m_UnknownA0;
+
+			for (i = 0; i < 3; i++)
+			{
+				((NetConnectionResetView*)pConn)->m_Ping += pSamples[i];
+
+				if (pSamples[i] > 0.0f)
+					nValid++;
+			}
+
+			if (nValid)
+				((NetConnectionResetView*)pConn)->m_Ping /= nValid;
+		}
+	}
+	else if (nSubType == 3)
+	{
+		while ((uint32)pMsg->m_Unknown34 - (uint32)pMsg->m_Unknown38 >= 2)
+		{
+			uint16 nSubLen = ((ServerMessageTypeView*)pMsg)->ReadWord(0);
+
+			if (nSubLen <= pMsg->m_Unknown34 - pMsg->m_Unknown38)
+			{
+				CNetRecvPacket* pRec = sub_10023c4d(nSubLen);
+
+				((ServerMessageTypeView*)pMsg)->ReadData(pRec->m_pData, nSubLen);
+
+				pRec->m_Len = nSubLen;
+
+				((LMessageList*)&pConn->m_RecvList)->Prepend((LThreadMessage*)pRec);
+			}
+			else
+			{
+				DebugPrint(0, "Invalid PACKETGROUP subpacket length");
+			}
+		}
+	}
+	else if (nSubType == 4)
+	{
+		uint8        nCountByte;
+		uint8        nIndex;
+		uint32       nFragID;
+		CNetFragRec* pRec;
+
+		RemoveConnection(LTNULL);
+
+		nCountByte = pMsg->ReadByte(0);
+
+		if ((nCountByte & ~0x0f) != 0x30)
+		{
+			CNetMgr::DebugPrint(pConn, 0, "Invalid fragment count received!");
+
+			return 1;
+		}
+
+		nIndex = (uint8)(nCountByte & 0x0f);
+
+		// packet.h's ReadType<uint32> spelled directly, like the WriteType of
+		// the same id below. lithtech.exe expands both of them: see the
+		// REPORT_ERROR pair at 0x004592ec/0x00459314, and the Insert2 call at
+		// 0x00459400 inside the expanded write. The other reads and writes in
+		// this function stay calls there. server.dll calls both either way.
+		// lithtech NEAR, 1625 of 1622 bytes (it was 1374). Shipped declines
+		// the Append inside the sub-type-3 Prepend (0x00459227 ->
+		// 0x0045a1c0), and ours still expands it. The /O2 budget runs in
+		// source order: a declared-only Append view frees budget, and the
+		// Insert2 below then expands (1816). Writing the ping arm's header
+		// through an inline helper expands its WriteType (1802). Spelling
+		// the count byte as ReadType expands it (1723). So shipped spent more
+		// before sub-type 3 than any spelling here does. The rest of the
+		// diff is register allocation that follows from this.
+		nFragID = ((CPacket*)pMsg)->ReadType((uint32*)0);
+
+		pRec = sub_100233ad(nFragID, pConn);
+
+		if (!pRec)
+		{
+			pRec = sub_10023495();
+
+#ifdef AVP2_MODERN
+			// No record: the fragment is dropped, like any packet the
+			// reassembly cannot take.
+			if (!pRec)
+				return 1;
+
+#endif
+			pRec->m_ID    = nFragID;
+			pRec->m_pConn = pConn;
+		}
+
+		sub_100233e3(pMsg, nIndex, pRec);
+
+		if (sub_10023474(pRec))
+		{
+			CNetMgr::DebugPrint(pConn, 2, "Completed fragmented packet %d",
+				pRec->m_ID);
+
+			pMsg->m_Unknown38 = 1;
+			pMsg->m_Unknown34 = 1;
+
+			pMsg->m_pData[0] = pRec->m_pFrags[0].m_pMsg->m_pData[0];
+
+			for (i = 0; i < 4; i++)
+				((ServerMessageTypeView*)pMsg)->WriteData(
+					pRec->m_pFrags[i].m_pMsg->m_pData + 1,
+					pRec->m_pFrags[i].m_pMsg->m_Unknown34 - 1);
+
+			((CPacket*)pMsg)->WriteType(nFragID);
+
+			pMsg->m_Unknown38 = 1;
+
+			ReleaseQueued((CNetPending*)pRec);
+
+			return 0;
+		}
+	}
+	else
+	{
+		CNetMgr::DebugPrint(pConn, 1, "Got an invalid internal packet!");
+	}
+
+	return 1;
+}
+
+
+// The rule these two settle, which decides four other loops in this file:
+// cl 8447 reproduces the shipped *unrotated* loop — one test block that both
+// the entry and the back edge reach — exactly when the back edge is an
+// unconditional `jmp`, and rotates the loop (peeling the head test and
+// duplicating it at the bottom) when the back edge is conditional. Both of
+// these have an unconditional back edge and both match; FindQueuedPacket,
+// sub_100233ad and sub_10023c4d end their bodies with a conditional
+// break/continue, rotate, and are four-to-six-byte nears for it. No source
+// shape moves them (while/continue, `for(;;)` with the test as a `break` or
+// an early return, and a literal backward `goto` all give the rotated code),
+// and neither does any held compiler revision.
+//
+// 0x10023a91 — release every record queued out of order whose id has now
+// been overtaken. The queue is kept in id order, so the walk stops at the
+// first record that belongs after the id handed in.
+//
+// The cursor-alias walk: the record in hand is taken out of the list before
+// the cursor is advanced, so the advance reads the *record's* next pointer
+// and re-reads the list's tail to decide whether it has come back round.
+// The loop's back edge jumps to the `while` test rather than to the body,
+// which is what says the test is shared and not duplicated.
+void CNetMgrSendView::sub_10023a91(LMessageList* pList, uint32 nID)
+{
+	CNetRecvPacket* pCur = (CNetRecvPacket*)pList->m_pTail;
+	CNetRecvPacket* pRec;
+
+	while (pCur)
+	{
+		pRec = pCur;
+		pCur = (pCur->m_pNext == (CNetRecvPacket*)pList->m_pTail) ?
+		           LTNULL : pCur->m_pNext;
+
+		if (pRec->m_ID > nID)
+			break;
+
+		pList->Remove((LThreadMessage*)pRec);
+
+		FreeRecvPacket(pRec);
+	}
+}
+
+
+// 0x10023ad7 — the same walk with the comparison the other way round: it
+// releases everything queued *above* the id and keeps going to the end of
+// the list rather than stopping. Because nothing breaks out of it, VC6
+// rotates the loop (the test moves to the bottom) and shrink-wraps ebx into
+// the body, which is the whole structural difference between the two.
+void CNetMgrSendView::sub_10023ad7(LMessageList* pList, uint32 nID)
+{
+	CNetRecvPacket* pCur = (CNetRecvPacket*)pList->m_pTail;
+	CNetRecvPacket* pRec;
+
+	while (pCur)
+	{
+		pRec = pCur;
+		pCur = (pCur->m_pNext == (CNetRecvPacket*)pList->m_pTail) ?
+		           LTNULL : pCur->m_pNext;
+
+		if (pRec->m_ID > nID)
+		{
+			pList->Remove((LThreadMessage*)pRec);
+
+			FreeRecvPacket(pRec);
+		}
+	}
+}
+
+
+// 0x10023b1f — put a received guaranteed packet into the connection's
+// out-of-order queue, in packet-id order. LTFALSE means the queue was full
+// and the record was not taken.
+//
+// The walk runs from the tail with the usual cursor alias and stops at the
+// first record whose id is above the new one, splicing in front of it; past
+// the end of the queue the record goes on the front. The overflow test is
+// written at both places — once at the head of the loop and once after it —
+// but the report exists once: the in-loop test `break`s and the post-loop
+// test carries the only DebugPrint, which is why the block sits between the
+// post-loop test and the append. Writing the report (and its return) in both
+// places is the same at /O1 but gives lithtech.exe (/O2) two copies of the
+// tail (249 bytes against 219); the `break` spelling matches both images.
+//
+// The splice is LMessageList::InsertAfter expanded inline, the tail fix-up
+// included; the append is a real call to Prepend. lthread.h has both, and
+// this is the caller its note about the inline copy refers to.
+//
+// NEAR (150 bytes against 150, sixty-two instructions against sixty-two,
+// the same frame and the same slots): two independent prologue stores are
+// in the other order — the shipped build spills `this` to -0x8 before
+// zeroing nCount at -0x4, ours zeroes first — and esi/edi are swapped
+// throughout (ours holds the tail in esi and the cursor in edi, the shipped
+// build the other way round). Nothing else differs. `nCount` has to be the
+// first declaration with an initialiser or it lands in the dead pList
+// parameter slot instead of a frame slot of its own, which was worth a byte
+// and the whole slot layout; past that, all four revisions (8168, 8447,
+// 8804, 8966) emit our order. Callee-saved rotation plus a store-order
+// tie-break.
+LTBOOL CNetMgrSendView::sub_10023b1f(LMessageList* pList, CNetRecvPacket* pRec)
+{
+	int             nCount;
+	LThreadMessage* pTail;
+	LThreadMessage* pCur;
+
+	nCount = 0;
+	pTail  = pList->m_pTail;
+	// RE-READ THE MEMBER, do not copy pTail. Written `pCur = pTail;`
+	// VC6 tests the tail and sinks the copy; the shipped bytes copy first
+	// and test the copy. Proven in-tree by tcpdriver.cpp's tcp_FindConnection,
+	// which reads the member twice and is byte-identical.
+	pCur   = pList->m_pTail;
+
+	while (pCur)
+	{
+		LThreadMessage* pAt;
+
+		if (nCount >= g_NetMaxQueued)
+			break;
+
+		pAt  = pCur;
+		pCur = (pCur->m_pPrev == pTail) ? LTNULL : pCur->m_pPrev;
+
+		nCount++;
+
+		if (pRec->m_ID < ((CNetRecvPacket*)pAt)->m_ID)
+		{
+			pList->InsertAfter(pAt, (LThreadMessage*)pRec);
+
+			return LTTRUE;
+		}
+	}
+
+	if (nCount >= g_NetMaxQueued)
+	{
+		DebugPrint(1, "Dropped guaranteed packet due to queue overflow");
+
+		return LTFALSE;
+	}
+
+	pList->Prepend((LThreadMessage*)pRec);
+
+	return LTTRUE;
+}
+
+
+// NEAR (106 of 106 bytes): an ebx/edi transposition, nothing else.
+//
+// 0x10023bb5 — a receive buffer goes back into the pool, which is kept in
+// size order so a later request can take the smallest one that will do. The
+// walk runs back from the largest and stops at the first buffer this one is
+// not smaller than; running off the end means it is the smallest there is.
+void CNetMgr::FreeRecvPacket(CNetRecvPacket* pRec)
+{
+	CNetRecvPacket* pTail;
+	CNetRecvPacket* pCur;
+	CNetRecvPacket* pAt = LTNULL;
+
+	pRec->m_Len = 0;
+
+	pTail = (CNetRecvPacket*)m_QueueB8.m_pTail;
+	// RE-READ THE MEMBER, do not copy pTail. Written `pCur = pTail;`
+	// VC6 tests the tail and sinks the copy; the shipped bytes copy first
+	// and test the copy. Proven in-tree by tcpdriver.cpp's tcp_FindConnection,
+	// which reads the member twice and is byte-identical.
+	pCur = (CNetRecvPacket*)m_QueueB8.m_pTail;
+
+	while (pCur)
+	{
+		pAt = pCur;
+		pCur = (pCur->m_pNext == pTail) ? LTNULL : pCur->m_pNext;
+
+		if (pRec->m_nAlloced >= pAt->m_nAlloced)
+			break;
+	}
+
+	if (pCur)
+	{
+		((LMessageList*)&m_QueueB8)->InsertAfter((LThreadMessage*)pAt,
+		                                         (LThreadMessage*)pRec);
+	}
+	else
+	{
+		((LMessageList*)&m_QueueB8)->Prepend((LThreadMessage*)pRec);
+	}
+}
+
+
+// The queue is in sequence order, so a record past the one asked for says it
+// is not there at all.
+//
+// NEAR (50 of 46 bytes): the shipped build folds the "not found" exit into
+// the loop's own top test and reaches the loop back edge with the same
+// compare that answers the two hits; ours rotates the loop, peels the first
+// null test and pays a duplicated one at the bottom for it. Four source
+// shapes give byte-for-byte the same rotated code: this while/continue/break
+// form, the same with `break` spelt `return LTNULL`, `for(;;)` with the null
+// test as an explicit early return, and a literal label with a backward
+// `goto`. VC6 canonicalises the loop before it lays anything out, so the
+// shape of the source is not the lever here.
+void* CNetMgr::FindQueuedPacket(LMessageList* pList, uint32 nID)
+{
+	CNetRecvPacket* pTail = (CNetRecvPacket*)pList->m_pTail;
+	// RE-READ THE MEMBER, do not copy pTail. Written `pCur = pTail;`
+	// VC6 tests the tail and sinks the copy; the shipped bytes copy first
+	// and test the copy. Proven in-tree by tcpdriver.cpp's tcp_FindConnection,
+	// which reads the member twice and is byte-identical.
+	CNetRecvPacket* pCur = (CNetRecvPacket*)pList->m_pTail;
+
+	while (pCur)
+	{
+		CNetRecvPacket* pRec = pCur;
+
+		pCur = (pCur->m_pNext == pTail) ? LTNULL : pCur->m_pNext;
+
+		if (pRec->m_ID == nID)
+			return pRec;
+
+		if (pRec->m_ID > nID)
+			break;
+	}
+
+	return LTNULL;
+}
+
+
+// 0x10023c4d — a receive record with room for nLen bytes, off the manager's
+// free list at +0xb8 if one there is big enough and freshly allocated
+// otherwise.
+//
+// Two extra bytes are always reserved (`inc %esi` twice, which is a byte
+// shorter than `add $2`), and the length the record records is the reserved
+// one, so a record's usable capacity is always two more than whatever asked
+// for it. The comparison is signed on both sides — the record's own capacity
+// field is an `int` — which is why the length arrives as one.
+//
+// The record and its payload are two separate allocations, both through
+// `::operator new` (0x1000d25d, the forwarder in front of dalloc), and the record is
+// cleared with memset rather than a constructor: the three
+// calls' cleanups all batch into one `add $0x14,%esp`, so all three have
+// fixed prototypes.
+//
+// The cursor re-reads the member instead of copying pTail, as sub_100233ad
+// and tcp_FindConnection do. With `pCur = pTail`, VC6 tested the tail
+// register, peeled that test off the loop and copied it to the back edge
+// (117 bytes). The shipped code copies first and tests the copy
+// (`mov %ecx,%eax ; test %eax,%eax`, 0x10023c5e). That test is the one both
+// the entry and the `jl` back edge reach (0x10023c76), and the function is
+// byte-identical. The earlier verdict here ("rotation, not reachable", with
+// while/continue, for(;;), goto and four compiler revisions as negatives) was
+// wrong. The `if (... < nLen) continue;` spelling also matches once the member
+// is re-read. The lithtech twin (0x4597a0, 179 bytes) is byte-identical as
+// well. It clears the record with an inline `rep stos` (0x4597e7): the same
+// memset, expanded by /O2's /Oi, where server.dll's /O1 calls 0x1003e280.
+CNetRecvPacket* CNetMgrSendView::sub_10023c4d(int nLen)
+{
+	CNetRecvPacketSendView* pRec;
+	LThreadMessage*         pTail = m_QueueB8.m_pTail;
+	LThreadMessage*         pCur  = m_QueueB8.m_pTail;
+
+	nLen += 2;
+
+	while (pCur)
+	{
+		pRec = (CNetRecvPacketSendView*)pCur;
+		pCur = (pCur->m_pPrev == pTail) ? LTNULL : pCur->m_pPrev;
+
+		if (pRec->m_nAlloced >= nLen)
+		{
+			((LMessageList*)&m_QueueB8)->Remove((LThreadMessage*)pRec);
+
+			pRec->m_Unknown14 = 0;
+			pRec->m_bPending  = 0;
+
+			return pRec;
+		}
+	}
+
+	pRec = (CNetRecvPacketSendView*)::operator new(sizeof(CNetRecvPacketSendView));
+
+	memset(pRec, 0, sizeof(CNetRecvPacketSendView));
+
+	pRec->m_pData    = (uint8*)::operator new(nLen);
+	pRec->m_nAlloced = nLen;
+
+	m_UnknownD8 += nLen;
+
+	return pRec;
+}
+
+
+// The trace line carries the elapsed counter and whatever name the update is
+// running under, so a client and a server log interleave readably. Quiet
+// while the connection is still coming up unless the console asks for
+// everything.
+void CNetMgr::DebugPrint(NetConnection* pConn, int nLevel, char* pFormat, ...)
+{
+	char    msg[500];
+	va_list marker;
+
+	if (nLevel > g_NetDebugLevel)
+		return;
+
+	if (!g_NetDebugAll && (pConn->m_Flags & 1))
+		return;
+
+	va_start(marker, pFormat);
+	_vsnprintf(msg, sizeof(msg) - 1, pFormat, marker);
+
+	dsi_ServerError("(%d) %s%s", NET_TRACE_TIME(), m_pTraceName, msg);
+}

@@ -2299,9 +2299,11 @@ void cs_InvalidateAndTerm()
 	}
 }
 
-// 0x004149e0 — reach the manager through the global and hand it on.  cdecl,
-// no arguments; two call sites, both in the loader.
-void cs_Sub4149e0()
+// 0x004149e0 — reach the manager through the global and hand it on.  cdecl;
+// both call sites (smgr.cpp's load hook and CacheFile) push one dword it
+// never reads. AvP2 1.0.9.6's cl 9044 turns the call into a jump and reuses
+// that argument's slot (0x0041680c `mov %eax,0x4(%esp)`), so it is declared.
+void cs_Sub4149e0(int /*nUnused*/)
 {
 	if (g_pClientShell)
 		sub_490200((CClientMgrTexBankView*)g_pClientShell->m_pClientMgr);

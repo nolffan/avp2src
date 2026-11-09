@@ -213,27 +213,10 @@ extern CObjQueueBank g_ObjQueueBank;
 // `extern LTLink* g_FreeLinks` named that address as if it were one.
 #define SM_FREE_LINKS (*(LTLink**)&g_ObjQueueBank.m_Bank.m_pFreeList)
 
-void CServerMgr::SetupGlobals()
-{
-	g_pServerMgr = this;
-	g_pClassMgr = &m_ClassMgr;
-}
+// Defined at the end of the file, after their callers (see SetupGlobals).
+CObjectMapEntry* sm_FindObjectMapEntry(CServerMgr* pMgr, uint16 nID);
+void sub_100348cc(LTObject* pObject);
 
-// SetupError RETURNS dsi_SetupMessage's result: that is what keeps eax busy
-// and pushes the reload of nError for the store into ecx (0x10034660;
-// lithtech 0x47638d has the same ecx reload, and the client's twin at
-// lithtech 0x41fc60 returns the result outright). Declared void, the store
-// reloads through eax and the function is two bytes off.
-LTRESULT CServerMgr::SetupError(int nError, ...)
-{
-	va_list marker;
-	LTRESULT dResult;
-
-	va_start(marker, nError);
-	dResult = dsi_SetupMessage(m_ErrorString, sizeof(m_ErrorString), nError, marker);
-	m_ErrorCode = nError;
-	return dResult;
-}
 
 LTBOOL CServerMgr::AddResources(char** pResources, uint32 nResources)
 {
@@ -737,23 +720,6 @@ LTRESULT CServerMgrQ502::CreateWorldCRC()
 	return LT_ERROR;
 }
 
-LTRESULT CServerMgr::DoRunWorld()
-{
-	if (!m_pWorldFile)
-		RETURN_ERROR(1, "CServerMgr::DoRunWorld", LT_NOTINWORLD);
-
-	sm_CacheObjectFiles(this);
-	sm_CacheFiles(this);
-
-	m_Unknown198 = 0;
-	m_UpdatesPerSec = g_UpdatesPerSec;
-
-	m_ClassMgr.m_pServerShell->PostStartWorld();
-	sm_FlushObjectQueue(this);
-
-	dsi_ServerError("Running world");
-	return LT_OK;
-}
 
 // 0x1002c929 — the server handed back. Term() is the whole body; everything
 // after it is the compiler destroying the nine sub-objects that have
@@ -1063,52 +1029,6 @@ void CServerMgr::Term()
 // previously written off as the SpriteControl::SetCurPos SIB near class.)
 void sub_48d400Q502(CServerMgr* pMgr);    // 0x0048d400
 
-void CServerMgr::EndWorld(int bKeepWorldData)
-{
-	LTLink* pCur;
-	int i, j;
-
-	m_bWorldLoaded = 0;
-
-	// Rewind every client's packet slots to one byte.
-	for (pCur = m_ClientList.m_Head.m_pNext; pCur != &m_ClientList.m_Head; pCur = pCur->m_pNext)
-	{
-		Client* pClient = (Client*)pCur->m_pData;
-		for (i = 0; i < 2; i++)
-		{
-			for (j = 0; j < 2; j++)
-			{
-				CPacket* pPacket = pClient->m_PacketSets[i][j].m_pPacket;
-				pPacket->m_Pos = 1;
-				pPacket->m_DataLen = 1;
-			}
-		}
-	}
-
-	sm_EndWorldA(this);
-	sm_EndWorldB(this);
-
-	{
-		LTLink* pHead = &m_ClientList.m_Head;
-		for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
-			sm_ResetClient(this, (Client*)pCur->m_pData, 1);
-	}
-
-	sm_EndWorldC(this);
-	sm_RemoveObjects(this, LTFALSE);
-	sm_EndWorldD(this);
-
-	m_World.TermObjects();
-	if (!bKeepWorldData)
-		m_World.Term();
-
-	m_Unknown198 = 1;
-	// AVP2: one more teardown step after the flag (Primal Hunt 0x0048d396
-	// -> 0x0048d400, AvP2 1.0.9.6 0x00485175 likewise; cdecl, the manager
-	// its one argument; not yet reconstructed).
-	sub_48d400Q502(this);
-	dsi_ServerError("World ended");
-}
 
 #ifdef PRIMAL_HUNT
 // PH: CLTServer::BroadcastFileMessage again, as a free function of the
@@ -1526,13 +1446,12 @@ public:
 	CServerMgr* m_pMgr;                      // +0x04
 };
 
-#ifdef PRIMAL_HUNT
 extern "C" {
 __declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
 __declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
 }
 
-// PH: a reference-counted object, released through its virtual destructor
+// A reference-counted object, released through its virtual destructor
 // when the last reference goes (server.dll 0x1003f2d1: InterlockedDecrement
 // of +0x04, then `delete this` -- the null test and slot 0 with 1 pushed).
 // What it is is not established; only the count at +0x04 and the virtual
@@ -1557,7 +1476,7 @@ public:
 	long m_nRefs;                            // +0x04
 };
 
-// PH: the one-pointer smart reference that holds one (names ours):
+// The one-pointer smart reference that holds one (names ours):
 // assignment (server.dll 0x10043361) releases what it held and takes a
 // reference on what it is given; the destructor (0x1003f2c5) releases.
 class CRefPtrQ523
@@ -1596,11 +1515,12 @@ CRefPtrQ523::~CRefPtrQ523()
 		m_p->Release();
 }
 
-// PH: server.dll 0x1008dfc8 (its initializer 0x1003f29b, the destructor
+// Both engines (AvP2 1.0.9.6's lithtech.exe clears it at the end of Init
+// too, 0x0048278a). PH server.dll 0x1008dfc8 (its initializer 0x1003f29b, the destructor
 // registered through atexit at 0x1003f2af); cleared by Init. Name ours.
 CRefPtrQ523 g_RefQ523;
 
-// PH: what Primal Hunt keeps in the 0x408 bytes servermgr.h carries as
+// What both engines keep in the 0x408 bytes servermgr.h carries as
 // m_Unknown66c: Init empties a 0x400-byte string at the front and zeroes the
 // two dwords after it (server.dll 0x1003f79e, 0x1003f7a4, 0x1003f7b2).
 // servermgr.h is shared with files this one does not own, so the fields are
@@ -1613,7 +1533,6 @@ public:
 	uint32 m_na6c;                           // 0xa6c
 	uint32 m_na70;                           // 0xa70
 };
-#endif
 
 LTBOOL CServerMgr::Init()
 {
@@ -1659,13 +1578,10 @@ LTBOOL CServerMgr::Init()
 		sb_Init2(&m_Bank9D4, 0x164, 0x30, 0x20);
 		sb_Init2(&m_Bank864, 0x18, 0x20, 0x10);
 		sb_Init2(&m_Bank0C, 0x1c, 0x10, 0x10);
-#ifdef PRIMAL_HUNT
-		// PH: the sound instance is 0x68 bytes (server.dll 0x1003f6a2), the
-		// sound type and user data at +0x60/+0x64 that sub_100298d9 sends.
+		// The sound instance is 0x68 bytes (PH server.dll 0x1003f6a2, AvP2
+		// lithtech.exe 0x004825b8), the sound type and user data at
+		// +0x60/+0x64 that sub_100298d9 sends.
 		sb_Init2(&m_Bank28, 0x68, 0x10, 0x10);
-#else
-		sb_Init2(&m_Bank28, 0x60, 0x10, 0x10);
-#endif
 		sb_Init2(&m_PropBank, 0xc0, 0x10, 0x10);
 		sb_Init2(&m_Bank89C, 10, 0x20, 0x20);
 
@@ -1688,11 +1604,9 @@ LTBOOL CServerMgr::Init()
 		// zero stores in source order (server.dll's /O1 is identical either way).
 		m_bWorldLoaded = 0;
 		m_hWorldFile = LTNULL;
-#ifdef PRIMAL_HUNT
 		((CServerMgrPHViewQ523*)this)->m_sz66c[0] = 0;
 		((CServerMgrPHViewQ523*)this)->m_na6c = 0;
 		((CServerMgrPHViewQ523*)this)->m_na70 = 0;
-#endif
 		m_pUnknown808 = LTNULL;
 		m_FrameTime = 0.0f;
 		m_UpdatesPerSec = 0.0f;
@@ -1720,11 +1634,10 @@ LTBOOL CServerMgr::Init()
 
 		m_pCollisionInfo = LTNULL;
 		sm_ResetProfileCounters();
-#ifdef PRIMAL_HUNT
+		// Both engines (AvP2 lithtech.exe 0x0048278a, server.dll alike).
 		// PH: server.dll 0x1003f87f, a call to the assignment with zero;
 		// lithtech.exe expands it (0x0048a7xx: the release, then the store).
 		g_RefQ523 = LTNULL;
-#endif
 		return LTTRUE;
 	}
 
@@ -3300,7 +3213,6 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 }
 
 
-
 // 0x10032617 — what the string bank reports for anything still alive at
 // shutdown.
 void sm_ErrorHook(char* pString)
@@ -3326,21 +3238,6 @@ void sm_Free28(CServerMgr* pMgr, LTLink* pLink)
 	pLink->m_pPrev->m_pNext = pLink;
 }
 
-// 0x1002acd3 — an object by its id. The map is indexed straight by id and a
-// slot only counts when its flag says the object is live.
-LTObject* sm_FindObjectByID(CServerMgr* pMgr, uint16 nID)
-{
-	CObjectMapEntry* pEntry;
-
-	if (nID >= pMgr->m_Unknown8fc.m_nElements)
-		return LTNULL;
-
-	pEntry = &pMgr->m_Unknown8fc.m_pArray[nID];
-	if (pEntry->m_nFlags == 1)
-		return (LTObject*)pEntry->m_pRecord;
-
-	return LTNULL;
-}
 
 // ---- the world, session and interface block (0x1002fb47-0x1003030a) ----- //
 
@@ -4240,12 +4137,6 @@ void si_RemoveObjectFromList(ObjectList* pList, HOBJECT hObj)
 	}
 }
 
-// Every message the manager hands out starts pointing at the same object, so
-// the writer can reach it without going back through the manager.
-void CServerMgr::InitMessageOwner(ServerMessage* pMsg)
-{
-	pMsg->m_Write.m_pObjectIO = (CMsgObjectIO*)m_Unknown804;
-}
 
 // Changing the global light is a change every client has to hear about, so it
 // is marked on all of them rather than on an object.
@@ -6439,22 +6330,6 @@ inline int sub_10027be0(CServerMgr* pMgr, LTObject* pObject)
 	return 1;
 }
 
-// 0x100348cc — restart the object's update countdown and put it back in the
-// state its change flags now ask for. The deactivation time is the interval;
-// a zero or negative one is copied through unchanged, which is why one arm
-// stores through the FPU and the other with an integer `mov`.
-void sub_100348cc(LTObject* pObject)
-{
-	SObjData* pSData = pObject->m_pSData;
-
-	if (pSData->m_DeactivationTime > 0.0f)
-		pSData->m_UpdateTimer = g_pServerMgr->m_FrameTime + pSData->m_DeactivationTime;
-	else
-		pSData->m_UpdateTimer = pSData->m_DeactivationTime;
-
-	if (pObject->m_ChangeFlags & 0x20)
-		sm_SetObjectState(g_pServerMgr, pObject, pObject->m_ChangeFlags & 0x18);
-}
 
 // An object the sweep may deactivate is told so through its own vptr, slot 2.
 // ltobject_internal.h models LTObject as a plain structure, which is right
@@ -6826,17 +6701,6 @@ public:
 	uint32 m_bWanted;                        // +0x18
 };
 
-// 0x100356e9 — the two counters a fresh (or recycled) record starts from.
-// Source order is only visible at /O2: /O1 rewrites the integer zero as
-// `andl $0x0,0x14(%ecx)` and schedules that ahead of the `fldz/fstps`
-// whatever order they are written in (0x100356e9), while /O2 folds both to
-// one `xor %eax,%eax` and keeps them as spelled -- and lithtech.exe stores
-// +0x10 first (0x0047d302).
-void CCacheRecView::Reset()
-{
-	m_f10 = 0.0f;
-	m_n14 = 0;
-}
 
 // The 0x38-byte description 0x100392a9 fills in from the opened source (it
 // memsets exactly 0x38 bytes before parsing). Only two fields are read here,
@@ -7564,44 +7428,16 @@ public:
 	LTLink m_AttachHead;                     // +0x180
 };
 
-// 0x10027259 — stop a client watching another's view.
-//
-// SHIPPED BUG. The message this sends is a null pointer: the two header
-// words are written to absolute addresses 0x38 and 0x34 (there is no
-// relocation anywhere in this function, so those are literally `(char*)0 +
-// 0x34`), the word write is a thiscall with `xor %ecx,%ecx` for `this`, and
-// the fourth argument handed to sm_SendToClient is a pushed zero. The
-// sibling sm_AttachClient (0x10027155) does the same sequence properly, off
-// a `CMessageRef` it fills from msg_AllocPacket — so what is missing here is
-// exactly that allocation. Reconstructed as it shipped, null and all.
-LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
+
+// 0x100330fc (AvP2 server.dll 0x1003ce91) -- defined here, after every
+// caller. AvP2's cl 9044 reads the register use of a function compiled
+// earlier in the same file: defined above its callers, it is known to leave
+// eax alone and _v08 keeps `this` in eax across the call, where AvP2's
+// shipped callers save it in esi (0x10031a48) as an unknown callee demands.
+void CServerMgr::SetupGlobals()
 {
-	ServerMessage* pMsg = LTNULL;
-
-	if (pClient->m_pViewClient)
-	{
-		dl_Remove(&((CClientAttachView*)pClient)->m_AttachLink);
-
-		pClient->m_pViewClient = LTNULL;
-
-		if (pClient->m_pUnknown3AC)
-		{
-			pMsg->m_Unknown38 = 1;
-			pMsg->m_Unknown34 = 1;
-
-			// CPacket::WriteType<uint16>, not the ServerMessage::WriteWord
-			// wrapper servermsg.h names: 0x1000ec3d IS that instantiation
-			// (m_Pos/m_MaxDataLen/m_DataLen, SetAtGrow, and the
-			// "CPacket::WriteType" error), so /O1 calls it either way and
-			// only /O2 can tell the spellings apart -- lithtech.exe carries
-			// the body expanded here (0x00463f54..0x0046403a).
-			((CPacket*)pMsg)->WriteType(pClient->m_pUnknown3AC->m_ObjectID);
-
-			sm_SendToClient(pMgr, pClient, 7, pMsg, 1, 0x80);
-		}
-	}
-
-	return LT_OK;
+	g_pServerMgr = this;
+	g_pClassMgr = &m_ClassMgr;
 }
 
 
@@ -8725,17 +8561,6 @@ LTRESULT sm_QueueMessageToClient2(CServerMgr* pMgr, Client* pClient, int nPacket
 	return LT_OK;
 }
 
-
-// 0x1002acfa — the object map entry for an id, or null (name ours; it is
-// sm_FindObjectByID's sibling and hands back the entry rather than the
-// object behind it).
-CObjectMapEntry* sm_FindObjectMapEntry(CServerMgr* pMgr, uint16 nID)
-{
-	if (nID < pMgr->m_Unknown8fc.m_nElements)
-		return &pMgr->m_Unknown8fc.m_pArray[nID];
-
-	return LTNULL;
-}
 
 uint32 sm_GetObjectChangeFlags2(CServerMgr* pMgr, class LTObject* pObject);  // 0x1002a264
 
@@ -10480,110 +10305,6 @@ public:
 void sub_10013585(class ServerMessage* pMsg, LTRotation* pRot);
 void sub_100290d7(LTObject* pObject, class ServerMessage* pMsg, uint32* pSize);
 
-// 0x100290d7 / 0x00467250 (NOLF) — the object's animation state into a
-// client update. NOLF's shape (count, then per tracker the animation word,
-// the elapsed byte and, past the first tracker, the weight set) is gone:
-//
-// AVP2: the walk both writes and MEASURES (Primal Hunt server.dll
-// 0x10034528, 326 bytes; AvP2 1.0.9.6 0x10031b19): either half is optional,
-// as in sm_WriteObjectFiles -- with no message nothing is written, with a
-// size every field adds its width. sub_10027ad0 calls it with no message
-// and a size to estimate (0x10032dd3), and again with the message and no
-// size to write (0x10032e75); sub_100291c7 passes both of its own through
-// (0x1003491a). New in AvP2: the object's dimensions go first, as a
-// compressed vector (slot 0x5c on the message's writer, LTObject+0x1a0, nine
-// bytes), and every tracker now sends seven fields, fourteen bytes:
-//
-//   WriteWord   the current animation with AT_ bits 1 and 0 at 0x8000/0x4000
-//   WriteByte   the elapsed time as 0..255 of the animation's length
-//   WriteByte   m_bAllowInterpolation (+0x24)
-//   WriteDWord  m_TimeScaleNum (+0x20), then m_TimeScaleDenom (+0x1c)
-//   WriteByte   the previous and current frame's weight sets (+0x34, +0x40)
-//
-// so NOLF's "every tracker but the first sends its weight set" index is gone.
-// The trackers are walked through the link's own next pointer (+0x04).
-void sub_100290d7(LTObject* pObject, ServerMessage* pMsg, uint32* pSize)
-{
-	LTAnimTracker* pTracker;
-	ModelAnim*     pAnim;
-	uint16         nCount;
-	uint16         nValue;
-	uint32         nPercent;
-
-	if (pMsg)
-		((IMessageWrite*)&pMsg->m_Write)->WriteCompVector(&pObject->m_Dims);
-
-	if (pSize)
-		*pSize += 9;
-
-	nCount = (uint16)((CObjTrackerCountView*)pObject)->GetTrackerCount();
-
-	if (nCount > 0x100)
-	{
-		if (g_DebugLevel >= 1)
-		{
-			dsi_ServerError(
-				"Model (%s) with > 256 AnimTrackers, ignoring animation.",
-				((CObjTrackerCountView*)pObject)->GetFilename());
-		}
-
-		if (pMsg)
-			pMsg->WriteByte(0);
-
-		if (pSize)
-			(*pSize)++;
-
-		return;
-	}
-
-	if (pMsg)
-		pMsg->WriteByte((uint8)nCount);
-
-	if (pSize)
-		(*pSize)++;
-
-	for (pTracker = ((CObjTrackerCountView*)pObject)->m_pTrackerList;
-	     pTracker;
-	     pTracker = pTracker->GetNext())
-	{
-		if (pMsg)
-		{
-			nValue = pTracker->m_TimeRef.m_Cur.m_iAnim;
-
-			if (pTracker->m_Flags & 2)
-				nValue |= 0x8000;
-
-			if (pTracker->m_Flags & 1)
-				nValue |= 0x4000;
-
-			nPercent = 0;
-
-			pAnim = pTracker->m_TimeRef.m_pModel->m_AnimArray.m_pArray
-			            [pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
-
-			if (pAnim && pAnim->GetLength())
-			{
-				nPercent = pTracker->m_TimeRef.m_Cur.m_Time * 255
-				           / pAnim->GetLength();
-			}
-
-			// The first two are calls in both images; the last five are
-			// CPacket::WriteType, expanded at /O2 (lithtech.exe 0x0047ab92..
-			// 0x0047aeb8, five overrun reports) and calls at /O1.
-			pMsg->WriteWord(nValue);
-			pMsg->WriteByte((uint8)nPercent);
-			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_bAllowInterpolation);
-			((CPacket*)pMsg)->WriteType((uint32)pTracker->m_TimeScaleNum);
-			((CPacket*)pMsg)->WriteType((uint32)pTracker->m_TimeScaleDenom);
-			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_TimeRef.m_Prev.m_iWeightSet);
-			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_TimeRef.m_Cur.m_iWeightSet);
-		}
-
-		if (pSize)
-			*pSize += 14;
-	}
-}
-
 
 // The unguaranteed half of an object's update: position, rotation and
 // animation, each sent only if the object's NETFLAG_*UNGUARANTEED bit asks
@@ -10878,16 +10599,12 @@ public:
 	uint8    m_pad_49[0x4c - 0x49];
 	float    m_f4c;                          // +0x4c
 	LTVector m_vPos;                         // +0x50
-#ifdef PRIMAL_HUNT
-	// PH: a float, sent scaled by ten and clamped to a byte (server.dll
+	// A float (both engines), sent scaled by ten and clamped to a byte (server.dll
 	// 0x1003522a), and two more fields after it (names ours).
 	float    m_f5c;                          // +0x5c
 	uint8    m_Unknown60;                    // +0x60
 	uint8    m_pad_61[0x64 - 0x61];
 	uint32   m_Unknown64;                    // +0x64
-#else
-	uint32   m_Unknown5c;                    // +0x5c
-#endif
 
 	// Stand-in accessors (names ours): a float RETURNED from an inline
 	// reaches its use on the x87 stack, which is how sub_100298d9 reads both
@@ -11056,8 +10773,11 @@ public:
 //   * if (pInfo->m_ChangeFlags & 2): lmsg_WriteCompPos(&pMsg's LMessageImpl,
 //     &pSound->m_vPos, (CPosRef*)&pMgr->m_World).
 //
-// MATCH, 587 of 587 bytes (AvP2 1.0.9.6; Primal Hunt adds the PH blocks
-// at the end, 673 bytes in server.dll). The last residuals were:
+// MATCH in Primal Hunt (673 bytes in server.dll) and in AvP2 1.0.9.6's
+// lithtech.exe; AvP2's server.dll (0x100325b7, 675 bytes) is NEAR on one
+// struct copy (`lea 0x194(%eax),%esi` where ours is `mov %eax,%esi; add`).
+// Both have the +0x5c..+0x64 blocks; an older 587-byte shape without them
+// was matched first. The last residuals were:
 //   * The flag word: a uint32 FIELD read into a uint16 LOCAL. That is a
 //     truncating `mov 0x34(%ebx),%ax` with a dead upper half, which is what
 //     the shipped code has; sm_WriteQueuedMessageBody forced the spelling
@@ -11123,9 +10843,15 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 	pMsg->WriteByte(0);
 	pMsg->WriteByte(1);
 	pMsg->WriteByte((uint8)pInfo->m_ChangeFlags);
+#ifdef PRIMAL_HUNT
 	// The dword-parameter WriteWord: see CMsgFloatWriteView (0x10029972).
 	((CMsgFloatWriteView*)pMsg)->WriteWord(
 		((CSoundClientRec*)pSound->m_pUnknown0c)->m_nIndex);
+#else
+	// AVP2: 1.0.9.6 narrows the index to the word it sends
+	// (`mov 0x8(%eax),%ax; push %eax`, server.dll 0x1003264c).
+	pMsg->WriteWord((uint16)((CSoundClientRec*)pSound->m_pUnknown0c)->m_nIndex);
+#endif
 
 	if (pInfo->m_ChangeFlags & 1)
 	{
@@ -11234,8 +10960,9 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 			}
 		}
 
-#ifdef PRIMAL_HUNT
-		// PH: the dword at +0x5c is gone from here; two flag bits of their
+		// Both engines (AvP2 1.0.9.6's server.dll 0x100325b7 is PH's code
+		// but for the index's WriteWord). The dword at +0x5c is gone from
+		// here; two flag bits of their
 		// own send a byte and a dword instead (server.dll 0x100351e2,
 		// 0x100351f3).
 		if (nFlags & 0x2000)
@@ -11243,9 +10970,6 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 
 		if (nFlags & 0x4000)
 			((CPacket*)pMsg)->WriteType(pSnd->m_Unknown64);
-#else
-		((CPacket*)pMsg)->WriteType(pSnd->m_Unknown5c);
-#endif
 	}
 
 	if (pInfo->m_ChangeFlags & 2)
@@ -11254,8 +10978,7 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 		                  (CPosRef*)&pMgr->m_World);
 	}
 
-#ifdef PRIMAL_HUNT
-	// PH: change bit 0x20 sends the float at +0x5c, times ten and clamped to
+	// Change bit 0x20 sends the float at +0x5c, times ten and clamped to
 	// 0..255, as a byte (server.dll 0x10035224; 10.0f at 0x100753c0, 0.0f
 	// at 0x10074220, 255.0f at 0x10074400). The byte is a named local:
 	// handed straight to the write, lithtech.exe's /O2 lowered the clamp to
@@ -11268,7 +10991,6 @@ void sub_100298d9(CServerMgr* pMgr, SoundInstance* pSound, CObjInfo* pInfo,
 
 		((CPacket*)pMsg)->WriteType(nVal);
 	}
-#endif
 }
 
 // 0x10028454 — write the sounds this client still has to hear about.
@@ -12906,8 +12628,8 @@ void sm_WriteQueuedMessageBody(SoundRecord* pRec, Client* pClient,
 			(CPosRef*)&g_pServerMgr->m_World);       // 0x00468d6a
 	}
 
-#ifdef PRIMAL_HUNT
-	// PH: the sound type and the user data each travel only under the flag
+	// Both engines (AvP2 server.dll 0x10032b23 alike): the sound type and
+	// the user data each travel only under the flag
 	// the SDK gives them (server.dll 0x10035532 `test $0x20,%bh`, a byte
 	// from +0x13c; 0x10035545 `test $0x40,%bh`, a dword from +0x140).
 	if (nFlags & PLAYSOUND_CTRL_TYPE)
@@ -12915,11 +12637,6 @@ void sm_WriteQueuedMessageBody(SoundRecord* pRec, Client* pClient,
 
 	if (nFlags & PLAYSOUND_USER_DATA)
 		((CPacket*)pMsg)->WriteType(pRec->m_Info.m_UserData);
-#else
-	// 0x00468d72 -- the last field, expanded, and its overrun tail at
-	// 0x00468de6 is the block the enumerator mistook for a second function.
-	((CPacket*)pMsg)->WriteType(pRec->m_Info.m_UserData);
-#endif
 }
 
 
@@ -13827,4 +13544,303 @@ void sm_Unknown26755(CServerMgr* pMgr, Client* pClient)
 	}
 
 	pLAClient->m_nChanges = 0;
+}
+
+
+// SetupError RETURNS dsi_SetupMessage's result: that is what keeps eax busy
+// and pushes the reload of nError for the store into ecx (0x10034660;
+// lithtech 0x47638d has the same ecx reload, and the client's twin at
+// lithtech 0x41fc60 returns the result outright). Declared void, the store
+// reloads through eax and the function is two bytes off.
+LTRESULT CServerMgr::SetupError(int nError, ...)
+{
+	va_list marker;
+	LTRESULT dResult;
+
+	va_start(marker, nError);
+	dResult = dsi_SetupMessage(m_ErrorString, sizeof(m_ErrorString), nError, marker);
+	m_ErrorCode = nError;
+	return dResult;
+}
+
+
+LTRESULT CServerMgr::DoRunWorld()
+{
+	if (!m_pWorldFile)
+		RETURN_ERROR(1, "CServerMgr::DoRunWorld", LT_NOTINWORLD);
+
+	sm_CacheObjectFiles(this);
+	sm_CacheFiles(this);
+
+	m_Unknown198 = 0;
+	m_UpdatesPerSec = g_UpdatesPerSec;
+
+	m_ClassMgr.m_pServerShell->PostStartWorld();
+	sm_FlushObjectQueue(this);
+
+	dsi_ServerError("Running world");
+	return LT_OK;
+}
+
+
+void CServerMgr::EndWorld(int bKeepWorldData)
+{
+	LTLink* pCur;
+	int i, j;
+
+	m_bWorldLoaded = 0;
+
+	// Rewind every client's packet slots to one byte.
+	for (pCur = m_ClientList.m_Head.m_pNext; pCur != &m_ClientList.m_Head; pCur = pCur->m_pNext)
+	{
+		Client* pClient = (Client*)pCur->m_pData;
+		for (i = 0; i < 2; i++)
+		{
+			for (j = 0; j < 2; j++)
+			{
+				CPacket* pPacket = pClient->m_PacketSets[i][j].m_pPacket;
+				pPacket->m_Pos = 1;
+				pPacket->m_DataLen = 1;
+			}
+		}
+	}
+
+	sm_EndWorldA(this);
+	sm_EndWorldB(this);
+
+	{
+		LTLink* pHead = &m_ClientList.m_Head;
+		for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+			sm_ResetClient(this, (Client*)pCur->m_pData, 1);
+	}
+
+	sm_EndWorldC(this);
+	sm_RemoveObjects(this, LTFALSE);
+	sm_EndWorldD(this);
+
+	m_World.TermObjects();
+	if (!bKeepWorldData)
+		m_World.Term();
+
+	m_Unknown198 = 1;
+	// AVP2: one more teardown step after the flag (Primal Hunt 0x0048d396
+	// -> 0x0048d400, AvP2 1.0.9.6 0x00485175 likewise; cdecl, the manager
+	// its one argument; not yet reconstructed).
+	sub_48d400Q502(this);
+	dsi_ServerError("World ended");
+}
+
+
+// 0x100356e9 — the two counters a fresh (or recycled) record starts from.
+// Source order is only visible at /O2: /O1 rewrites the integer zero as
+// `andl $0x0,0x14(%ecx)` and schedules that ahead of the `fldz/fstps`
+// whatever order they are written in (0x100356e9), while /O2 folds both to
+// one `xor %eax,%eax` and keeps them as spelled -- and lithtech.exe stores
+// +0x10 first (0x0047d302).
+void CCacheRecView::Reset()
+{
+	m_f10 = 0.0f;
+	m_n14 = 0;
+}
+
+
+// Every message the manager hands out starts pointing at the same object, so
+// the writer can reach it without going back through the manager.
+void CServerMgr::InitMessageOwner(ServerMessage* pMsg)
+{
+	pMsg->m_Write.m_pObjectIO = (CMsgObjectIO*)m_Unknown804;
+}
+
+
+// 0x1002acfa — the object map entry for an id, or null (name ours; it is
+// sm_FindObjectByID's sibling and hands back the entry rather than the
+// object behind it).
+CObjectMapEntry* sm_FindObjectMapEntry(CServerMgr* pMgr, uint16 nID)
+{
+	if (nID < pMgr->m_Unknown8fc.m_nElements)
+		return &pMgr->m_Unknown8fc.m_pArray[nID];
+
+	return LTNULL;
+}
+
+
+// 0x100348cc — restart the object's update countdown and put it back in the
+// state its change flags now ask for. The deactivation time is the interval;
+// a zero or negative one is copied through unchanged, which is why one arm
+// stores through the FPU and the other with an integer `mov`.
+void sub_100348cc(LTObject* pObject)
+{
+	SObjData* pSData = pObject->m_pSData;
+
+	if (pSData->m_DeactivationTime > 0.0f)
+		pSData->m_UpdateTimer = g_pServerMgr->m_FrameTime + pSData->m_DeactivationTime;
+	else
+		pSData->m_UpdateTimer = pSData->m_DeactivationTime;
+
+	if (pObject->m_ChangeFlags & 0x20)
+		sm_SetObjectState(g_pServerMgr, pObject, pObject->m_ChangeFlags & 0x18);
+}
+
+
+// 0x100290d7 / 0x00467250 (NOLF) — the object's animation state into a
+// client update. NOLF's shape (count, then per tracker the animation word,
+// the elapsed byte and, past the first tracker, the weight set) is gone:
+//
+// AVP2: the walk both writes and MEASURES (Primal Hunt server.dll
+// 0x10034528, 326 bytes; AvP2 1.0.9.6 0x10031b19): either half is optional,
+// as in sm_WriteObjectFiles -- with no message nothing is written, with a
+// size every field adds its width. sub_10027ad0 calls it with no message
+// and a size to estimate (0x10032dd3), and again with the message and no
+// size to write (0x10032e75); sub_100291c7 passes both of its own through
+// (0x1003491a). New in AvP2: the object's dimensions go first, as a
+// compressed vector (slot 0x5c on the message's writer, LTObject+0x1a0, nine
+// bytes), and every tracker now sends seven fields, fourteen bytes:
+//
+//   WriteWord   the current animation with AT_ bits 1 and 0 at 0x8000/0x4000
+//   WriteByte   the elapsed time as 0..255 of the animation's length
+//   WriteByte   m_bAllowInterpolation (+0x24)
+//   WriteDWord  m_TimeScaleNum (+0x20), then m_TimeScaleDenom (+0x1c)
+//   WriteByte   the previous and current frame's weight sets (+0x34, +0x40)
+//
+// so NOLF's "every tracker but the first sends its weight set" index is gone.
+// The trackers are walked through the link's own next pointer (+0x04).
+void sub_100290d7(LTObject* pObject, ServerMessage* pMsg, uint32* pSize)
+{
+	LTAnimTracker* pTracker;
+	ModelAnim*     pAnim;
+	uint16         nCount;
+	uint16         nValue;
+	uint32         nPercent;
+
+	if (pMsg)
+		((IMessageWrite*)&pMsg->m_Write)->WriteCompVector(&pObject->m_Dims);
+
+	if (pSize)
+		*pSize += 9;
+
+	nCount = (uint16)((CObjTrackerCountView*)pObject)->GetTrackerCount();
+
+	if (nCount > 0x100)
+	{
+		if (g_DebugLevel >= 1)
+		{
+			dsi_ServerError(
+				"Model (%s) with > 256 AnimTrackers, ignoring animation.",
+				((CObjTrackerCountView*)pObject)->GetFilename());
+		}
+
+		if (pMsg)
+			pMsg->WriteByte(0);
+
+		if (pSize)
+			(*pSize)++;
+
+		return;
+	}
+
+	if (pMsg)
+		pMsg->WriteByte((uint8)nCount);
+
+	if (pSize)
+		(*pSize)++;
+
+	for (pTracker = ((CObjTrackerCountView*)pObject)->m_pTrackerList;
+	     pTracker;
+	     pTracker = pTracker->GetNext())
+	{
+		if (pMsg)
+		{
+			nValue = pTracker->m_TimeRef.m_Cur.m_iAnim;
+
+			if (pTracker->m_Flags & 2)
+				nValue |= 0x8000;
+
+			if (pTracker->m_Flags & 1)
+				nValue |= 0x4000;
+
+			nPercent = 0;
+
+			pAnim = pTracker->m_TimeRef.m_pModel->m_AnimArray.m_pArray
+			            [pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
+
+			if (pAnim && pAnim->GetLength())
+			{
+				nPercent = pTracker->m_TimeRef.m_Cur.m_Time * 255
+				           / pAnim->GetLength();
+			}
+
+			// The first two are calls in both images; the last five are
+			// CPacket::WriteType, expanded at /O2 (lithtech.exe 0x0047ab92..
+			// 0x0047aeb8, five overrun reports) and calls at /O1.
+			pMsg->WriteWord(nValue);
+			pMsg->WriteByte((uint8)nPercent);
+			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_bAllowInterpolation);
+			((CPacket*)pMsg)->WriteType((uint32)pTracker->m_TimeScaleNum);
+			((CPacket*)pMsg)->WriteType((uint32)pTracker->m_TimeScaleDenom);
+			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_TimeRef.m_Prev.m_iWeightSet);
+			((CPacket*)pMsg)->WriteType((uint8)pTracker->m_TimeRef.m_Cur.m_iWeightSet);
+		}
+
+		if (pSize)
+			*pSize += 14;
+	}
+}
+
+
+// 0x10027259 — stop a client watching another's view.
+//
+// SHIPPED BUG. The message this sends is a null pointer: the two header
+// words are written to absolute addresses 0x38 and 0x34 (there is no
+// relocation anywhere in this function, so those are literally `(char*)0 +
+// 0x34`), the word write is a thiscall with `xor %ecx,%ecx` for `this`, and
+// the fourth argument handed to sm_SendToClient is a pushed zero. The
+// sibling sm_AttachClient (0x10027155) does the same sequence properly, off
+// a `CMessageRef` it fills from msg_AllocPacket — so what is missing here is
+// exactly that allocation. Reconstructed as it shipped, null and all.
+LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
+{
+	ServerMessage* pMsg = LTNULL;
+
+	if (pClient->m_pViewClient)
+	{
+		dl_Remove(&((CClientAttachView*)pClient)->m_AttachLink);
+
+		pClient->m_pViewClient = LTNULL;
+
+		if (pClient->m_pUnknown3AC)
+		{
+			pMsg->m_Unknown38 = 1;
+			pMsg->m_Unknown34 = 1;
+
+			// CPacket::WriteType<uint16>, not the ServerMessage::WriteWord
+			// wrapper servermsg.h names: 0x1000ec3d IS that instantiation
+			// (m_Pos/m_MaxDataLen/m_DataLen, SetAtGrow, and the
+			// "CPacket::WriteType" error), so /O1 calls it either way and
+			// only /O2 can tell the spellings apart -- lithtech.exe carries
+			// the body expanded here (0x00463f54..0x0046403a).
+			((CPacket*)pMsg)->WriteType(pClient->m_pUnknown3AC->m_ObjectID);
+
+			sm_SendToClient(pMgr, pClient, 7, pMsg, 1, 0x80);
+		}
+	}
+
+	return LT_OK;
+}
+
+
+
+// 0x1002acd3 — an object by its id. The map is indexed straight by id and a
+// slot only counts when its flag says the object is live.
+LTObject* sm_FindObjectByID(CServerMgr* pMgr, uint16 nID)
+{
+	CObjectMapEntry* pEntry;
+
+	if (nID >= pMgr->m_Unknown8fc.m_nElements)
+		return LTNULL;
+
+	pEntry = &pMgr->m_Unknown8fc.m_pArray[nID];
+	if (pEntry->m_nFlags == 1)
+		return (LTObject*)pEntry->m_pRecord;
+
+	return LTNULL;
 }

@@ -2546,8 +2546,8 @@ void CCmgClientMgr::Sub415810(CCmgNetMgr* pNetMgr, uint32 nConnID,
 
 LTRESULT CCmgDemoMgr::Sub42c5f0()
 {
-	LTRESULT        dResult;
-	CCmgCounterRec* pRec;
+	LTRESULT dResult;
+	uint32   i;
 
 	if (m_nMode == 2)
 	{
@@ -2555,8 +2555,8 @@ LTRESULT CCmgDemoMgr::Sub42c5f0()
 		{
 			m_fStartTime = cmg_GetClock();
 
-			for (pRec = g_CmgCounters; pRec < &g_CmgCounters[17]; pRec++)
-				*pRec->m_pCounter = 0;
+			for (i = 0; i < 17; i++)
+				*g_CmgCounters[i].m_pCounter = 0;
 		}
 
 		dResult = Sub42c6d0(0);
@@ -3327,7 +3327,7 @@ CCmgClientMgr::~CCmgClientMgr()
 
 void CCmgClientMgr::Sub41fdd0(uint32* pCommands, int nCommands)
 {
-	if (m_pClientShell && nCommands > 0)
+	if (m_pClientShell)
 	{
 		for (int i = 0; i < nCommands; i++)
 		{

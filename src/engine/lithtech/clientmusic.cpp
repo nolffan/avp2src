@@ -654,7 +654,9 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 {
 	int i;
 	static char sReadError[] = "ERROR! Unable to read control file. (CLTDirectMusicMgr::InitLevel)\n";
+#ifdef PRIMAL_HUNT
 	static char sSeparator[] = "\\";
+#endif
 
 #ifdef AVP2_MODERN
 	// fixed: "sDefine3", not "sDeine3" (RETAIL_BUGS.md)
@@ -716,7 +718,13 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 
 			if (sWorkingDirectory[nLen] != '\\' && sWorkingDirectory[nLen] != '/'
 			    && sWorkingDirectory[nLen] != ':')
+#ifdef PRIMAL_HUNT
 				strcat(sFullName, sSeparator);
+#else
+				// AvP2 1.0.9.6 appends a literal (0x004481b0: the two bytes
+				// of "\\" stored as one word).
+				strcat(sFullName, "\\");
+#endif
 		}
 
 		strcat(sFullName, sControlFileName);
@@ -748,8 +756,8 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 	m_nNumIntensities = 0;
 	m_nInitialIntensity = 0;
 	m_nInitialVolume = 0;
-	// AVP2: zeroed here (AvP2 1.0.9.6's 0x00448214); only Primal Hunt reads
-	// it from the control file below.
+	// AVP2: zeroed here (AvP2 1.0.9.6's 0x00448214), then read from the
+	// control file below.
 	m_nVolumeOffset = 0;
 	m_nNumPChannels = 64;
 	m_nNumVoices = 64;
@@ -758,10 +766,8 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 	controlFile.GetKeyVal(LTNULL, "NUMINTENSITIES", m_nNumIntensities);
 	controlFile.GetKeyVal(LTNULL, "INITIALINTENSITY", m_nInitialIntensity);
 	controlFile.GetKeyVal(LTNULL, "INITIALVOLUME", m_nInitialVolume);
-#ifdef PRIMAL_HUNT
-	// PH: 0x0044c047..0x0044c07a; AvP2 1.0.9.6 has no "VOLUMEOFFSET".
+	// PH 0x0044c047..0x0044c07a, AvP2 1.0.9.6 0x0044827f.
 	controlFile.GetKeyVal(LTNULL, "VOLUMEOFFSET", m_nVolumeOffset);
-#endif
 	controlFile.GetKeyVal(LTNULL, "PCHANNELS", m_nNumPChannels);
 	controlFile.GetKeyVal(LTNULL, "VOICES", m_nNumVoices);
 	controlFile.GetKeyVal(LTNULL, "SYNTHSAMPLERATE", m_nSynthSampleRate);
@@ -1237,8 +1243,9 @@ void __cdecl dm_NotificationThread(void* pParam)
 							g_pDirectMusicMgr->m_pPerformance->PlaySegment(
 								pNode->m_pSegment->m_pDMSegment, 0x2000, 0, &pNewState);
 							g_pDirectMusicMgr->m_PrimaryList.Add(pNewState, pNode->m_pSegment);
-							g_pDirectMusicMgr->m_PendingList.Remove(pNode);
-							pNode = LTNULL;
+							// The node stays on the pending list and becomes
+							// the queue mark (PH 0x0044b769, AvP2 1.0.9.6
+							// 0x004479d1 jump past the transition's Remove).
 							break;
 						}
 						else if (pNode->m_nType == DMPENDING_PLAYTRANSITION)

@@ -810,11 +810,11 @@ LTBOOL ps_BoundsChangedQ45C(CClientParticleSystemQ45C* pSys)
 {
 	ps_UpdateBoundsQ45C(pSys);
 
-	if (pSys->m_PrevCenter == pSys->m_Center &&
-	    pSys->m_Radius <= pSys->m_PrevRadius)
-		return LTFALSE;
+	if (pSys->m_PrevCenter != pSys->m_Center ||
+	    pSys->m_Radius > pSys->m_PrevRadius)
+		return LTTRUE;
 
-	return LTTRUE;
+	return LTFALSE;
 }
 
 

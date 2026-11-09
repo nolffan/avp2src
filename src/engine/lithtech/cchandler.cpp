@@ -1799,10 +1799,15 @@ public:
 #ifndef PRIMAL_HUNT
 	uint8   m_pad_224[4];
 #endif
-	// AVP2: a model's trailing dword is at +0x260 (Primal Hunt 0x00495369,
-	// AvP2 1.0.9.6 the same), behind the model's per-type fields.
+	// AVP2: a model's trailing dword is at +0x260 (Primal Hunt 0x00495369),
+	// behind the model's per-type fields; AvP2 1.0.9.6's is at +0x24c
+	// (0x0048ba95).
+#ifdef PRIMAL_HUNT
 	uint8   m_pad_228[0x260 - 0x228];
-	uint32  m_Unknown204;                    // 0x260  type 1 only
+#else
+	uint8   m_pad_228[0x24c - 0x228];
+#endif
+	uint32  m_Unknown204;                    // 0x260  type 1 only (AvP2 0x24c)
 
 	// predobj.cpp's LTObject::SetPos: __thiscall, the vector BY VALUE
 	// (0x00420930 builds the twelve-byte copy with `mov %esp,%ecx`).
