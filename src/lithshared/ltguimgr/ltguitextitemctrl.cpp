@@ -44,6 +44,10 @@ LTBOOL CLTGUITextItemCtrl::Create(ILTClient *pClientDE, uint32 dwCommandID, HSTR
 	m_dwCommandID = dwCommandID;
 	m_dwParam1 = dwParam1;
 	m_dwParam2 = dwParam2;
+#ifdef PRIMAL_HUNT
+	m_dwParam3 = 0;
+	m_dwParam4 = 0;
+#endif
 
 	return LTTRUE;
 }

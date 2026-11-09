@@ -747,7 +747,8 @@ Not fixed yet.
 GameSpyClientMgr.lib (`CGameSpyClientMgr::SetupDirServers`,
 src/lithshared/gamespy/gamespyclientmgr/GameSpyClientMgr.cpp). The `fopen`
 result is used unchecked, so a missing file crashes, and the file is never
-closed.
+closed. Primal Hunt's build (PHCShell.dll 0x10138830, byte-identical)
+checks the open but still never closes the file.
 
 Not fixed yet.
 

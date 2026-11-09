@@ -215,8 +215,11 @@ DBOOL LithTrackList::CreateNewName(char *szNewName, const char *szName)
 	int nDigits = 0;
 	i = nLength;
 
-	while(i > 0)
+	while(1)
 	{
+		if(i <= 0)
+			break;
+
 		if((szBase[i - 1] < '0') || (szBase[i - 1] > '9'))
 			break;
 

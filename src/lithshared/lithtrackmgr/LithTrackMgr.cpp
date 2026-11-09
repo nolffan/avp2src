@@ -939,13 +939,20 @@ void LithTrackMgr::UpdateMouseClicks()
 		{
 			int i;
 
-			for(i = 0; i < TRACKMGR_MAX_GUIBARS; i++)
-				if(m_pGUIBars[i] && m_pGUIBars[i]->HasFocus()) break;
+			DBOOL bHandled = DFALSE;
 
-			if(i == TRACKMGR_MAX_GUIBARS)
+			for(i = 0; i < TRACKMGR_MAX_GUIBARS; i++)
+			{
+				if(m_pGUIBars[i] && m_pGUIBars[i]->HasFocus())
+				{
+					m_pGUIBars[i]->OnMouseClick();
+					bHandled = DTRUE;
+					break;
+				}
+			}
+
+			if(!bHandled)
 				HandleScreenClick();
-			else
-				m_pGUIBars[i]->OnMouseClick();
 		}
 
 		m_dCtrl.m_bMouse0Clicked = DFALSE;

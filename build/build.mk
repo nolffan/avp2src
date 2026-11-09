@@ -515,7 +515,9 @@ LS_OURS += GameSpyClientMgr
 # Primal Hunt's builds of the two (libs/ReleasePH/, which the _PH projects
 # link): the same sources with VC6's own STL instead of STLport, as Third
 # Law built them, so that they call the VC6-STL WONAPI (the engine's build
-# of it, which the _PH projects link from there too).
+# of it, which the _PH projects link from there too). The client's C++ with
+# /D PRIMAL_HUNT: Third Law's changes to it (Primal Hunt's own WON product
+# and directory, the version check's highest version kept, a sort by class).
 LPH := src/LT2/lithshared/libs/ReleasePH
 $(eval $(call compile,src/lithshared/gamespy/gamespymgr/ReleaseVC6/GameSpyMgr.obj,src/lithshared/gamespy/gamespymgr,GameSpyMgr.cpp,\
     $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSM_INCS)) /YX /FpReleaseVC6\GameSpyMgr.pch /FoReleaseVC6/,wine-drives))
@@ -525,7 +527,7 @@ $(foreach c,cengtest darray gserver gserverlist gutil hashtable nonport,$(eval $
     src/lithshared/gamespy/gamespyclientmgr,$(c).c,$(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSC_INCS)) /FoReleaseVC6/,wine-drives)))
 $(foreach o,$(GSC_CPP),$(eval $(call compile,src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/$(o).obj,\
     src/lithshared/gamespy/gamespyclientmgr,$(o).cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
-    $(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSC_INCS)) /D GSCM_LOCAL_BUILD /YX /FpReleaseVC6\$(o).pch /FoReleaseVC6/,wine-drives)))
+    $(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSC_INCS)) /D PRIMAL_HUNT /D GSCM_LOCAL_BUILD /YX /FpReleaseVC6\$(o).pch /FoReleaseVC6/,wine-drives)))
 src/lithshared/gamespy/gamespymgr/ReleaseVC6/.dir src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/.dir:
 	@mkdir -p $(@D) && touch $@
 src/lithshared/gamespy/gamespymgr/ReleaseVC6/%.obj: | src/lithshared/gamespy/gamespymgr/ReleaseVC6/.dir

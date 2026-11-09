@@ -58,6 +58,9 @@ public:
 	void				Term();
 
 	const char*			GetVersion()						{ return m_sVersion; }
+#ifdef PRIMAL_HUNT
+	const char*			GetMaxVersion()						{ return m_sMaxVersion; }
+#endif
 
 	BOOL				GetCDKey(char *szCDKey);
 	BOOL				SetupCDKey(char *szCDKey = NULL);
@@ -97,6 +100,9 @@ public:
 	void				SortServersByName(BOOL bAscending = TRUE);
 	void				SortServersByPing(BOOL bAscending = TRUE);
 	void				SortServersByPlayers(BOOL bAscending = FALSE);
+#ifdef PRIMAL_HUNT
+	void				SortServersByClass(BOOL bAscending = TRUE);
+#endif
 	void				SortServersByMap(BOOL bAscending = TRUE);
 	void				SortServersByGameType(BOOL bAscending = TRUE);
 	void				SortServers(BOOL bAscending, char* sSortKey, GCompareMode eCompareMode);
@@ -139,6 +145,9 @@ public:
 	CGameSpyServer		m_CurServer;
 
 	void				*m_pAuthContext;
+#ifdef PRIMAL_HUNT
+	char				m_sMaxVersion[GSCM_MAX_STRING];	// the highest valid version, from the version check
+#endif
 };
 
 

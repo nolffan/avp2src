@@ -12950,6 +12950,7 @@ CShell.dll	sub_10133240
 CShell.dll	sub_10133300
 CShell.dll	sub_101335c0
 CShell.dll	sub_10133850
+CShell.dll	sub_10133920
 CShell.dll	sub_10133c60
 CShell.dll	sub_10134200
 CShell.dll	sub_10134250
@@ -14792,6 +14793,7 @@ LithTrackMgrClient	?Copy@LithTrackList@@QAEIHPAD@Z
 LithTrackMgrClient	?Copy@LithTrackList@@QAEIPAD0@Z
 LithTrackMgrClient	?CreateLithCursor@@YAPAVLithCursor@@PAVILTClient@@PAULITHCURSORCREATESTRUCT@@@Z
 LithTrackMgrClient	?CreateLithFont@@YAPAVLithFont@@PAVILTClient@@PAULITHFONTCREATESTRUCT@@I@Z
+LithTrackMgrClient	?CreateNewName@LithTrackList@@AAEIPADPBD@Z
 LithTrackMgrClient	?Cursor@LithFontMgr@@QAEPAVLithCursor@@H@Z
 LithTrackMgrClient	?Cursor@LithFontMgr@@QAEPAVLithCursor@@PAD@Z
 LithTrackMgrClient	?Delete@LithTrackList@@QAEIH@Z
@@ -14946,6 +14948,7 @@ LithTrackMgrClient	?UpdateItems@LithTrackBarCamera@@UAEIXZ
 LithTrackMgrClient	?UpdateItems@LithTrackBarEdit@@UAEIXZ
 LithTrackMgrClient	?UpdateItems@LithTrackBarKey@@UAEIXZ
 LithTrackMgrClient	?UpdateItems@LithTrackBarTrack@@UAEIXZ
+LithTrackMgrClient	?UpdateMouseClicks@LithTrackMgr@@AAEXXZ
 LithTrackMgrClient	?UpdateResolution@LithTrackBarBase@@UAEIKK@Z
 LithTrackMgrClient	?UpdateResolution@LithTrackBarCamera@@UAEIKK@Z
 LithTrackMgrClient	?UpdateResolution@LithTrackBarEdit@@UAEIKK@Z
@@ -24323,6 +24326,7 @@ PHCShell.dll	sub_100225e0
 PHCShell.dll	sub_10022620
 PHCShell.dll	sub_10022640
 PHCShell.dll	sub_10022850
+PHCShell.dll	sub_10022b60
 PHCShell.dll	sub_10022f00
 PHCShell.dll	sub_10022f70
 PHCShell.dll	sub_10022fc0
@@ -24334,6 +24338,8 @@ PHCShell.dll	sub_100232f0
 PHCShell.dll	sub_10023390
 PHCShell.dll	sub_100233b0
 PHCShell.dll	sub_100233c0
+PHCShell.dll	sub_100233d0
+PHCShell.dll	sub_100233e0
 PHCShell.dll	sub_100233f0
 PHCShell.dll	sub_10023400
 PHCShell.dll	sub_10023410
@@ -24356,21 +24362,32 @@ PHCShell.dll	sub_10023520
 PHCShell.dll	sub_10023530
 PHCShell.dll	sub_10023540
 PHCShell.dll	sub_10023550
+PHCShell.dll	sub_10023580
 PHCShell.dll	sub_100236c0
 PHCShell.dll	sub_100236e0
 PHCShell.dll	sub_100237b0
 PHCShell.dll	sub_10023810
 PHCShell.dll	sub_10023880
-PHCShell.dll	sub_10023ed4
+PHCShell.dll	sub_10023b00
+PHCShell.dll	sub_10023db0
+PHCShell.dll	sub_10023e30
+PHCShell.dll	sub_10023e80
+PHCShell.dll	sub_10023ea0
+PHCShell.dll	sub_10023ec0
 PHCShell.dll	sub_100245f0
+PHCShell.dll	sub_100248f0
 PHCShell.dll	sub_10024be0
+PHCShell.dll	sub_10024c10
 PHCShell.dll	sub_10024d60
 PHCShell.dll	sub_10025120
+PHCShell.dll	sub_10025280
 PHCShell.dll	sub_100253c0
 PHCShell.dll	sub_100256e0
+PHCShell.dll	sub_10025730
 PHCShell.dll	sub_100257d0
 PHCShell.dll	sub_10025880
 PHCShell.dll	sub_10025bc0
+PHCShell.dll	sub_10025c10
 PHCShell.dll	sub_10025d60
 PHCShell.dll	sub_10025eb0
 PHCShell.dll	sub_10025ed0
@@ -28252,10 +28269,12 @@ PHCShell.dll	sub_10138340
 PHCShell.dll	sub_101385c0
 PHCShell.dll	sub_101385f0
 PHCShell.dll	sub_10138750
+PHCShell.dll	sub_10138830
 PHCShell.dll	sub_10138920
 PHCShell.dll	sub_10138d00
 PHCShell.dll	sub_10138f40
 PHCShell.dll	sub_10139080
+PHCShell.dll	sub_10139150
 PHCShell.dll	sub_10139190
 PHCShell.dll	sub_101391d0
 PHCShell.dll	sub_101391f0
@@ -28263,6 +28282,7 @@ PHCShell.dll	sub_10139200
 PHCShell.dll	sub_10139210
 PHCShell.dll	sub_10139230
 PHCShell.dll	sub_10139250
+PHCShell.dll	sub_10139270
 PHCShell.dll	sub_10139290
 PHCShell.dll	sub_101392b0
 PHCShell.dll	sub_101392d0
@@ -28271,6 +28291,7 @@ PHCShell.dll	sub_10139320
 PHCShell.dll	sub_10139340
 PHCShell.dll	sub_101395a0
 PHCShell.dll	sub_101395c0
+PHCShell.dll	sub_10139a80
 PHCShell.dll	sub_10139b70
 PHCShell.dll	sub_10139ba0
 PHCShell.dll	sub_10139bc0
@@ -28472,6 +28493,7 @@ PHCShell.dll	sub_101416f0
 PHCShell.dll	sub_101417b0
 PHCShell.dll	sub_10141a70
 PHCShell.dll	sub_10141d00
+PHCShell.dll	sub_10141dd0
 PHCShell.dll	sub_10142110
 PHCShell.dll	sub_101426b0
 PHCShell.dll	sub_10142700
@@ -28541,6 +28563,7 @@ PHCShell.dll	sub_10148970
 PHCShell.dll	sub_10148a30
 PHCShell.dll	sub_10148ac0
 PHCShell.dll	sub_10148b20
+PHCShell.dll	sub_10148b90
 PHCShell.dll	sub_10148ca0
 PHCShell.dll	sub_10148cc0
 PHCShell.dll	sub_10148de0
@@ -28583,6 +28606,7 @@ PHCShell.dll	sub_1014a070
 PHCShell.dll	sub_1014a090
 PHCShell.dll	sub_1014a150
 PHCShell.dll	sub_1014a170
+PHCShell.dll	sub_1014a200
 PHCShell.dll	sub_1014a290
 PHCShell.dll	sub_1014a2c0
 PHCShell.dll	sub_1014a3e0
@@ -28607,6 +28631,7 @@ PHCShell.dll	sub_1014a8e0
 PHCShell.dll	sub_1014a920
 PHCShell.dll	sub_1014a960
 PHCShell.dll	sub_1014a980
+PHCShell.dll	sub_1014a9d0
 PHCShell.dll	sub_1014aa90
 PHCShell.dll	sub_1014aad0
 PHCShell.dll	sub_1014ab20
@@ -28644,6 +28669,7 @@ PHCShell.dll	sub_1014b8c0
 PHCShell.dll	sub_1014b900
 PHCShell.dll	sub_1014b9c0
 PHCShell.dll	sub_1014b9e0
+PHCShell.dll	sub_1014ba70
 PHCShell.dll	sub_1014bad0
 PHCShell.dll	sub_1014bc30
 PHCShell.dll	sub_1014bc80

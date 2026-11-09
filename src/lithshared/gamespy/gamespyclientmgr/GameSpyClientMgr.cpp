@@ -46,7 +46,14 @@ extern "C"
 
 const wchar_t*			WONAPI_AVP2COMMUNITY         = L"AliensVsPredator2";
 const char*				WONAPI_AVP2PRODUCTSTRING     = "AliensVsPredator2";
+#ifdef PRIMAL_HUNT
+// Primal Hunt keeps AvP2's CD key product, but has its own directory, MOTD
+// and version check
+const char*				WONAPI_AVP2PHPRODUCTSTRING   = "avp2primalhunt";
+const wchar_t*			WONAPI_DIRPATH_AVP2SERVERS   = L"/avp2primalhunt";
+#else
 const wchar_t*			WONAPI_DIRPATH_AVP2SERVERS   = L"/AliensVsPredator2";
+#endif
 const wchar_t*			WONAPI_DIRPATH_TITANSERVERS  = L"/TitanServers/Auth";
 
 WONAPICore*				gAPICore;
@@ -242,9 +249,13 @@ BOOL CGameSpyClientMgr::SetupDirServers()
 	char szServer[256];
 	int nServers = 0;
 
-	// RETAIL BUG: the file is neither checked for having opened nor closed.
+	// RETAIL BUG: the file is never closed (and, in AvP2, not checked for
+	// having opened either).
 
 	fp = fopen("sierraup.cfg", "r");
+#ifdef PRIMAL_HUNT
+	if (!fp) return(FALSE);
+#endif
 
 	while (fgets(szLine, 256, fp))
 	{
@@ -277,7 +288,11 @@ BOOL CGameSpyClientMgr::SetupMOTD(char *szSysMsg, char *szGameMsg, int nMaxLengt
 {
 	if (!m_bInitialized || nMaxLength < 1 || !szSysMsg || !szGameMsg) return(FALSE);
 
+#ifdef PRIMAL_HUNT
+	GSClient_gGetMOTDOp = new GetMOTDOp(WONAPI_AVP2PHPRODUCTSTRING);
+#else
 	GSClient_gGetMOTDOp = new GetMOTDOp(WONAPI_AVP2PRODUCTSTRING);
+#endif
 
 	if (GSClient_gGetMOTDOp->Run(OP_MODE_BLOCK, 30000) != WS_Success) return(FALSE);
 
@@ -314,7 +329,11 @@ BOOL CGameSpyClientMgr::SetupVersionCheck()
 {
 	if (!m_bInitialized) return(FALSE);
 
+#ifdef PRIMAL_HUNT
+	GSClient_gGetVersionOp = new GetVersionOp(GSClient_gDirContext, WONAPI_AVP2PHPRODUCTSTRING);
+#else
 	GSClient_gGetVersionOp = new GetVersionOp(GSClient_gDirContext, WONAPI_AVP2PRODUCTSTRING);
+#endif
 	GSClient_gGetVersionOp->SetCompletion(new ParamCompletion<AsyncOpPtr, CGameSpyClientMgr*>(GetVersionOpCompletion, this));
 	GSClient_gGetVersionOp->RunAsync(30000);
 
@@ -438,6 +457,9 @@ void CGameSpyClientMgr::Clear()
 	m_nProgress           = 0;
 	m_bNewServer          = FALSE;
 	m_pAuthContext        = NULL;
+#ifdef PRIMAL_HUNT
+	m_sMaxVersion[0]      = '\0';
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -582,6 +604,15 @@ void CGameSpyClientMgr::SortServersByPing(BOOL bAscending)
 
 	SortServers(bAscending, "ping", cm_int);
 }
+
+#ifdef PRIMAL_HUNT
+void CGameSpyClientMgr::SortServersByClass(BOOL bAscending)
+{
+	if (!m_pServerList) return;
+
+	SortServers(bAscending, "class", cm_int);
+}
+#endif
 
 void CGameSpyClientMgr::SortServersByPlayers(BOOL bAscending)
 {
@@ -793,7 +824,18 @@ void GetVersionOpCompletion(AsyncOpPtr theOp, CGameSpyClientMgr* pGameSpyClientM
 		return;
 	}
 
+#ifdef PRIMAL_HUNT
+	const char* sMaxVersion = aGetVersionOp->GetHighestValidVersion().c_str();
+
+	if (sMaxVersion)
+		strcpy(pGameSpyClientMgr->m_sMaxVersion, sMaxVersion);
+	else
+		pGameSpyClientMgr->m_sMaxVersion[0] = '\0';
+
+	if (sMaxVersion[0])
+#else
 	if (aGetVersionOp->GetHighestValidVersion()[0])
+#endif
 	{
 		if (!aGetVersionOp->VersionIsValid(pGameSpyClientMgr->GetVersion()))
 		{
@@ -853,7 +895,11 @@ BOOL CGameSpyClientMgr::RefreshLANServers()
 	// Search the LAN...
 
 	m_nProgress = 0;
+#ifdef PRIMAL_HUNT
+	ServerListLANUpdate(m_pServerList, FALSE, 27800, 27900, 2);
+#else
 	ServerListLANUpdate(m_pServerList, FALSE, 27800, 27900, 8);
+#endif
 
 
 	// Remove the servers of other games...
