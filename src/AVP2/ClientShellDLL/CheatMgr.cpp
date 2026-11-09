@@ -17,6 +17,9 @@
 #include "vartrack.h"
 #include "foldercampaignlevel.h"
 #include "FXButeMgr.h"
+#ifdef PRIMAL_HUNT
+#include "Scramble.h"
+#endif
 
 // ----------------------------------------------------------------------- //
 // Tracked console variables
@@ -105,6 +108,12 @@ CheatInfo CheatMgr::s_CheatInfo[] = {
 
 	// Easter egg cheats
 	{ "LPJUIHN\\]_RI",	LTFALSE, LTNULL },	// mpmillertime		- the 'Miller' easter egg
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's codes start "ne" (HandleCheat)
+	{ "OCgRIOQMU",		LTFALSE, LTNULL },	// nextlevel		- end the level
+	{ "OCKLJ",			LTFALSE, LTNULL },	// nelno			- an easter egg message
+#endif
 };	
 
 // ----------------------------------------------------------------------- //
@@ -391,6 +400,11 @@ void CheatMgr::Process(CheatCode nCheatCode)
 
 			// Easter egg cheats
 			case CHEAT_MILLERTIME:			Cheat_MillerTime();			break;
+
+#ifdef PRIMAL_HUNT
+			case CHEAT_NEXTLEVEL:			Cheat_NextLevel();			break;
+			case CHEAT_PH30:				Cheat_Nelno();				break;
+#endif
 
 			// Skip setting the global cheat indicator for unhandled cheats
 			default:
@@ -1300,6 +1314,83 @@ void CheatMgr::Cheat_MillerTime()
 		g_pLTClient->CPrint("What!? It got annoying already?");
 	}
 }
+
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CheatMgr::Cheat_NextLevel()
+//
+//	PURPOSE:	Primal Hunt: have the server end the level
+//				(PHCShell 0x10076170)
+//
+// ----------------------------------------------------------------------- //
+
+void CheatMgr::Cheat_NextLevel()
+{
+	// Tell the server
+	SendCheatMessage(CHEAT_NEXTLEVEL, LTTRUE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CheatMgr::Cheat_Nelno()
+//
+//	PURPOSE:	Primal Hunt: toggles an easter egg message, kept
+//				scrambled (Scramble.h) so it doesn't show in the dll
+//				(PHCShell 0x10076180)
+//
+// ----------------------------------------------------------------------- //
+
+// "You are just a cog in my universe machine."
+static const char s_szNelnoOff[] =
+{
+	(char)0xd4, (char)0x12, (char)0x51, (char)0xfb, (char)0xd3, (char)0xb1, (char)0x53, (char)0xfb,
+	(char)0xb2, (char)0x51, (char)0x91, (char)0x71, (char)0xfb, (char)0xd3, (char)0xfb, (char)0x93,
+	(char)0x12, (char)0x13, (char)0xfb, (char)0xd2, (char)0x32, (char)0xfb, (char)0x52, (char)0xd0,
+	(char)0xfb, (char)0x51, (char)0x32, (char)0xd2, (char)0x31, (char)0x53, (char)0xb1, (char)0x91,
+	(char)0x53, (char)0xfb, (char)0x52, (char)0xd3, (char)0x93, (char)0xf2, (char)0xd2, (char)0x32,
+	(char)0x53, (char)0x3a, (char)0x5e, (char)0xbe, (char)0x5e, 0
+};
+
+static char s_szNelnoMessage[256];
+
+void CheatMgr::Cheat_Nelno()
+{
+	LTBOOL bMode = !s_CheatInfo[CHEAT_PH30].bActive;
+	s_CheatInfo[CHEAT_PH30].bActive = bMode;
+
+	// Tell the server
+	SendCheatMessage(CHEAT_PH30, bMode);
+
+	s_szNelnoMessage[0] = '\0';
+
+	if (bMode != LTTRUE)
+	{
+		ScrambleString(s_szNelnoOff, s_szNelnoMessage, sizeof(s_szNelnoMessage)-1, SCRAMBLE_BOTH);
+	}
+	else
+	{
+		// "You need more training to defeat me!"
+		// RETAIL BUG: this one isn't terminated, so the unscrambling runs on
+		// into whatever follows it on the stack (up to the buffer's end)
+		char szNelnoOn[] =
+		{
+			(char)0xd4, (char)0x12, (char)0x51, (char)0xfb, (char)0x32, (char)0x53, (char)0x53, (char)0x73,
+			(char)0xfb, (char)0x52, (char)0x12, (char)0xb1, (char)0x53, (char)0xfb, (char)0x71, (char)0xb1,
+			(char)0xd3, (char)0xd2, (char)0x32, (char)0xd2, (char)0x32, (char)0x13, (char)0xfb, (char)0x71,
+			(char)0x12, (char)0xfb, (char)0x73, (char)0x53, (char)0x33, (char)0x53, (char)0xd3, (char)0x71,
+			(char)0xfb, (char)0x52, (char)0x53, (char)0xdb, (char)0x5e
+		};
+
+		ScrambleString(szNelnoOn, s_szNelnoMessage, sizeof(s_szNelnoMessage)-1, SCRAMBLE_BOTH);
+	}
+
+	if (g_pInterfaceMgr)
+		g_pInterfaceMgr->GetMessageMgr()->AddMessage(s_szNelnoMessage);
+}
+
+#endif // PRIMAL_HUNT
 
 
 //***************************************************************************

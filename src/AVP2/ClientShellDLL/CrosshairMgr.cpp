@@ -15,6 +15,9 @@
 #include "GameClientShell.h"
 #include "CharacterFuncs.h"
 #include "VarTrack.h"
+#ifdef PRIMAL_HUNT
+#include "TurretInfoMgr.h"
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -190,7 +193,15 @@ void CCrosshairMgr::DrawCrosshair()
 			}
 		}
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: the minigun has a crosshair of its own
+		if(m_eActMode == XHM_EXOSUIT_MINIGUN)
+			DrawMinigunCrosshair();
+		else
+			DrawActivateCrosshair();
+#else
 		DrawActivateCrosshair();
+#endif
 	}
 	else
 	{
@@ -230,6 +241,99 @@ void CCrosshairMgr::DrawActivateCrosshair()
 													LTNULL, 
 													hTransColor);
 }
+
+#ifdef PRIMAL_HUNT
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCrosshairMgr::DrawMinigunCrosshair
+//
+//	PURPOSE:	Primal Hunt: draw the minigun's crosshair, then its heat
+//				gauge and, over it, the ammo and heat bars of the turret
+//				the player looks at (PHCShell 0x10037990)
+//
+// --------------------------------------------------------------------------- //
+
+void CCrosshairMgr::DrawMinigunCrosshair()
+{
+	//get screen dims
+	HSURFACE hScreen = g_pLTClient->GetScreenSurface();
+	uint32 nHalfScreenWidth, nHalfScreenHeight;
+	g_pLTClient->GetSurfaceDims(hScreen, &nHalfScreenWidth, &nHalfScreenHeight);
+	nHalfScreenWidth>>=1;
+	nHalfScreenHeight>>=1;
+
+	//draw the crosshair to the screen
+	HDECOLOR hTransColor = SETRGB_T(0,0,0);
+
+	LTRect rcDest;
+	rcDest.top = nHalfScreenHeight-(uint32)(m_nHalfActXhairHeight*m_fActScale);
+	rcDest.left = nHalfScreenWidth-(uint32)(m_nHalfActXhairWidth*m_fActScale);
+	rcDest.bottom = rcDest.top + (uint32)(m_nHalfActXhairHeight*m_fActScale*2);
+	rcDest.right = rcDest.left + (uint32)(m_nHalfActXhairWidth*m_fActScale*2);
+
+	g_pLTClient->ScaleSurfaceToSurfaceTransparent(	hScreen, 
+													m_hActivateCrosshair,
+													&rcDest, 
+													LTNULL, 
+													hTransColor);
+
+	//get the turret's ammo and heat (percent)
+	int nAmmo = 100;
+	int nHeat = 0;
+
+	if(GetTurretInfoMgr())
+		GetTurretInfoMgr()->GetTargetInfo(nAmmo, nHeat);
+
+	uint32 nXhairWidth, nXhairHeight;
+	g_pLTClient->GetSurfaceDims(m_hActivateCrosshair, &nXhairWidth, &nXhairHeight);
+
+	uint32 nBarWidth, nBarHeight;
+	g_pLTClient->GetSurfaceDims(m_hAmmoFull, &nBarWidth, &nBarHeight);
+
+	uint32 nGaugeWidth, nGaugeHeight;
+	g_pLTClient->GetSurfaceDims(m_hHeatEmpty, &nGaugeWidth, &nGaugeHeight);
+
+	//the gauge, left of the crosshair
+	LTRect rcSrc;
+	rcSrc.top = 0;
+	rcSrc.left = 0;
+	rcSrc.right = nGaugeWidth;
+	rcSrc.bottom = nGaugeHeight;
+
+	rcDest.left += (int)(m_fActScale * -76.0f);
+	rcDest.bottom = rcDest.top + (uint32)(nGaugeHeight*m_fActScale);
+	rcDest.right = rcDest.left + (int)(rcSrc.right*m_fActScale);
+
+	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hHeatEmpty, &rcDest, &rcSrc, hTransColor);
+
+	//the ammo bar
+	rcSrc.top = 0;
+	rcSrc.left = 0;
+	rcSrc.right = nBarWidth*nAmmo/100;
+	rcSrc.bottom = nBarHeight;
+
+	rcDest.top += (int)(m_fActScale * 47.0f);
+	rcDest.left += (int)(m_fActScale * 33.0f);
+	rcDest.bottom = rcDest.top + (uint32)(nBarHeight*m_fActScale);
+	rcDest.right = rcDest.left + (int)(rcSrc.right*m_fActScale);
+
+	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hAmmoFull, &rcDest, &rcSrc, hTransColor);
+
+	//the heat bar, above it
+	rcSrc.top = 0;
+	rcSrc.left = 0;
+	rcSrc.right = nBarWidth*nHeat/100;
+	rcSrc.bottom = nBarHeight;
+
+	rcDest.top += (int)(m_fActScale * 21.0f);
+	rcDest.bottom = rcDest.top + (uint32)(nBarHeight*m_fActScale);
+	rcDest.right = rcDest.left + (int)(rcSrc.right*m_fActScale);
+
+	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hHeatFull, &rcDest, &rcSrc, hTransColor);
+}
+
+#endif // PRIMAL_HUNT
 
 // --------------------------------------------------------------------------- //
 //

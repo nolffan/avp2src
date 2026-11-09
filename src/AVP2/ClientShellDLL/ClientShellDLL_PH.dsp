@@ -210,7 +210,7 @@ BSC32=bscmake.exe
 LINK32=xilink6.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /out:"PrimalHunt\CShell.dll"
 # SUBTRACT BASE LINK32 /pdb:none /map
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /pdb:"PrimalHunt/CShell.pdb" /machine:I386 /out:"PrimalHunt\CShell.dll"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib winmm.lib /nologo /subsystem:windows /dll /pdb:"PrimalHunt/CShell.pdb" /machine:I386 /out:"PrimalHunt\CShell.dll"
 # SUBTRACT LINK32 /pdb:none /map
 # Begin Custom Build
 InputPath=.\final\CShell.dll
@@ -1028,6 +1028,10 @@ SOURCE=..\Shared\MultiFile.cpp
 # Begin Source File
 
 SOURCE=.\TurretInfoMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Scramble.cpp
 # End Source File
 # End Group
 # End Group
@@ -2239,7 +2243,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\CryptMgr.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\LithFontMgr_LT2.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\LithFontMgr_LT2.lib"
 
 !IF  "$(CFG)" == "ClientShellDLL_PH - Win32 Release"
 
@@ -2261,7 +2265,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\LithFontMgr_LT2.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\ltguimgr_LT2.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\ltguimgr_LT2.lib"
 
 !IF  "$(CFG)" == "ClientShellDLL_PH - Win32 Release"
 
@@ -2327,7 +2331,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\ButeMgrNoMFC.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\LithTrackMgrClient.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\LithTrackMgrClient.lib"
 
 !IF  "$(CFG)" == "ClientShellDLL_PH - Win32 Release"
 

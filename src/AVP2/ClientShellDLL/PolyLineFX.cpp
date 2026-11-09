@@ -374,6 +374,85 @@ LTBOOL CPolyLineFX::SetupLine(PolyLine* pLine, LTVector vStartPos, LTVector vEnd
 }
 
 
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPolyLineFX::ResetLine
+//
+//	PURPOSE:	Primal Hunt: lay a line's verts out again between new end
+//				points, as SetupLine does (PHCShell 0x1011ff10)
+//
+// ----------------------------------------------------------------------- //
+
+void CPolyLineFX::ResetLine(PolyLine* pLine, const LTVector & vStartPos, const LTVector & vEndPos)
+{
+    if (!pLine) return;
+
+	// Make all the verticies relative to the object's position...
+
+    LTVector vPos = vStartPos;
+    LTVector vDir = (vEndPos - vStartPos);
+	float fDist  = vDir.Mag();
+	float fTotalDist = fDist;
+
+	vDir.Norm();
+
+    LTRotation rRot;
+	if (m_cs.bUseObjectRotation)
+	{
+		rRot = m_rRot;
+	}
+	else
+	{
+        g_pLTClient->AlignRotation(&rRot, &vDir, LTNULL);
+	}
+
+    LTVector vU, vR, vF;
+    g_pLTClient->GetRotationVectors(&rRot, &vU, &vR, &vF);
+
+	float fMinDist = fDist / m_cs.nNumSegments;
+	fMinDist *= m_cs.fMinDistMult;
+	float fMaxDist = fMinDist * m_cs.fMaxDistMult;
+
+	PolyVertStruct** ppVert = pLine->list.GetItem(TLIT_FIRST);
+
+	for (int i=0; i <= m_cs.nNumSegments; i++)
+	{
+		if (ppVert)
+		{
+			PolyVertStruct* pCurVert = *ppVert;
+
+			// Set up the vertex
+			pCurVert->fPosOffset = fTotalDist - fDist;
+			pCurVert->vPos		 = vPos - m_vPos;
+			pCurVert->fOffset	 = CalcCurOffset(i);
+
+			float fNewDist = GetRandom(fMinDist, fMaxDist);
+			fDist -= fNewDist;
+
+			if (fDist > 0.0)
+			{
+				vPos += (vF * fNewDist);
+				vPos += (vU * GetRandom(-m_cs.fPerturb, m_cs.fPerturb));
+				vPos += (vR * GetRandom(-m_cs.fPerturb, m_cs.fPerturb));
+			}
+
+			// Calculate end point vert...
+
+			if (i == m_cs.nNumSegments)
+			{
+				pCurVert->fPosOffset = fTotalDist;
+				pCurVert->vPos = vEndPos - m_vPos;
+			}
+		}
+
+		ppVert = pLine->list.GetItem(TLIT_NEXT);
+	}
+}
+
+#endif // PRIMAL_HUNT
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPolyLineFX::CalcCurOffset

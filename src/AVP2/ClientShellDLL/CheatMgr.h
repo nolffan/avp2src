@@ -108,6 +108,10 @@ class CheatMgr
 
 		// Easter egg cheats
 		void	Cheat_MillerTime();
+#ifdef PRIMAL_HUNT
+		void	Cheat_NextLevel();
+		void	Cheat_Nelno();
+#endif
 };
 
 extern CheatMgr *g_pCheatMgr;

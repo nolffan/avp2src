@@ -34,6 +34,9 @@
 #include "LithTrackMgr.h"
 #include "PlayerMovement.h"
 #include "CheatMgr.h"
+#ifdef PRIMAL_HUNT
+#include <mmsystem.h>
+#endif
 #include "CameraMgrFX.h"
 #include "ClientButeMgr.h"
 #include "CharacterFX.h"
@@ -462,6 +465,101 @@ void GameTimeFn(int argc, char **argv)
 		g_pClientDE->CPrint("%f", fTime);
 	}
 }
+
+#ifdef PRIMAL_HUNT
+
+// Primal Hunt: console shortcuts for the multiplayer cheats, and a way to
+// set a server console variable (PHCShell 0x1007aa80..0x1007ace4)
+
+void GodFn(int argc, char **argv)
+{
+	static char* s_pArgs[1];
+	s_pArgs[0] = "mpcanthurtme";
+
+	if(g_pCheatMgr)
+		g_pCheatMgr->HandleCheat(1, s_pArgs);
+}
+
+void HealFn(int argc, char **argv)
+{
+	static char* s_pArgs[1];
+	s_pArgs[0] = "mpdoctordoctor";
+
+	if(g_pCheatMgr)
+		g_pCheatMgr->HandleCheat(1, s_pArgs);
+}
+
+void KfaFn(int argc, char **argv)
+{
+	static char* s_pArgs[1];
+	s_pArgs[0] = "mpschuckit";
+
+	if(g_pCheatMgr)
+		g_pCheatMgr->HandleCheat(1, s_pArgs);
+}
+
+void NoclipFn(int argc, char **argv)
+{
+	static char* s_pArgs[1];
+	s_pArgs[0] = "mpsixthsense";
+
+	if(g_pCheatMgr)
+		g_pCheatMgr->HandleCheat(1, s_pArgs);
+}
+
+void MorphFn(int argc, char **argv)
+{
+	static char* s_pArgs[2];
+	s_pArgs[0] = "mpmorph";
+	s_pArgs[1] = argv[0];
+
+	if(g_pCheatMgr)
+		g_pCheatMgr->HandleCheat(2, s_pArgs);
+}
+
+void CamFn(int argc, char **argv)
+{
+	static char* s_pArgs[1];
+	s_pArgs[0] = "mpicu";
+
+	if(g_pCheatMgr)
+		g_pCheatMgr->HandleCheat(1, s_pArgs);
+}
+
+void SvarFn(int argc, char **argv)
+{
+	if(argc <= 0 || argc > 2)
+	{
+		g_pLTClient->CPrint("USAGE: ");
+		g_pLTClient->CPrint("  SVAR <server console variable>");
+		g_pLTClient->CPrint("  SVAR <server console variable> <value>");
+		return;
+	}
+
+	char szCommand[256];
+	szCommand[0] = '\0';
+
+	for(int i = 0; i < argc; i++)
+	{
+		if(i > 0)
+			strcat(szCommand, " ");
+		else
+			strcat(szCommand, "SVAR ");
+
+		strcat(szCommand, argv[i]);
+	}
+
+	// Send message to server...
+	HSTRING hstrCommand = g_pLTClient->CreateString(szCommand);
+
+	HMESSAGEWRITE hMessage = g_pLTClient->StartMessage(MID_CONSOLE_COMMAND);
+	hMessage->WriteHString(hstrCommand);
+	g_pLTClient->EndMessage(hMessage);
+
+	g_pLTClient->FreeString(hstrCommand);
+}
+
+#endif // PRIMAL_HUNT
 
 // --------------------------------------------------------------------------- //
 //
@@ -1268,6 +1366,27 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 
 	PERFINFO_START( );
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: time the start up, and name every command for the
+	// console's binding (PHCShell 0x1007b811)
+	DWORD dwInitStart = timeGetTime();
+
+	for(int nCommand = 0; nCommand < COMMAND_ID_UNASSIGNED; nCommand++)
+	{
+		for(int i = 0; g_CommandArray[i].nCommandID != COMMAND_ID_UNASSIGNED; i++)
+		{
+			if(g_CommandArray[i].nCommandID == nCommand)
+			{
+				char szAction[256];
+				HSTRING hString = g_pLTClient->FormatString(g_CommandArray[i].nActionStringID);
+				_snprintf(szAction, 255, "AddAction %s %i", g_pLTClient->GetStringData(hString), nCommand);
+				g_pLTClient->RunConsoleString(szAction);
+				break;
+			}
+		}
+	}
+#endif
+
 	*pAppGuid = AVP2GUID;
 
 	char strTimeDiff[64];
@@ -1365,6 +1484,15 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	g_pLTClient->RegisterConsoleProgram("Trigger", TriggerFn);
 	g_pClientDE->RegisterConsoleProgram("List", ListFn);
 	g_pClientDE->RegisterConsoleProgram("GameTime", GameTimeFn);
+#ifdef PRIMAL_HUNT
+	g_pLTClient->RegisterConsoleProgram("god", GodFn);
+	g_pLTClient->RegisterConsoleProgram("noclip", NoclipFn);
+	g_pLTClient->RegisterConsoleProgram("heal", HealFn);
+	g_pLTClient->RegisterConsoleProgram("kfa", KfaFn);
+	g_pLTClient->RegisterConsoleProgram("cam", CamFn);
+	g_pLTClient->RegisterConsoleProgram("svar", SvarFn);
+	g_pLTClient->RegisterConsoleProgram("morph", MorphFn);
+#endif
 
 	g_pLTClient->SetModelHook((ModelHookFn)DefaultModelHook, this);
 
@@ -1587,6 +1715,10 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 		// for debugging...
 		// g_pLTClient->RunConsoleString("+NumConsoleLines 0");
 	}
+
+#ifdef PRIMAL_HUNT
+	g_pLTClient->CPrint("Client shell initialization took %.2f seconds.", ((LTFLOAT)timeGetTime() - dwInitStart) * 0.001f);
+#endif
 	
 	if (hVar = g_pLTClient->GetConsoleVar("runworld"))
 	{

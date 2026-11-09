@@ -29,6 +29,12 @@
 #include "ClientButeMgr.h"  // For debug keys.
 #include "MultiplayerClientMgr.h"
 #include "FolderEscape.h"
+#ifdef PRIMAL_HUNT
+#include "TurretInfoMgr.h"
+
+// Primal Hunt: a manned turret gun (ObjectDLL TurretGun.cpp)
+#define AT_TURRETGUN		((ActivateType)10)
+#endif
 
 #define AO_DEFAULT_ENABLED		(AO_MUSIC | AO_SOUND | AO_MOVIES | AO_LIGHTMAP | AO_FOG | AO_LINES | AO_MODELFULLBRITE | AO_JOYSTICK | AO_TRIPLEBUFFER)
 
@@ -483,6 +489,16 @@ DBOOL CInterfaceMgr::Init()
 
 
 	//initialize ServerOptionMgr with default options
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: let go of any we had first (PHCShell 0x1003fb5e)
+	if( g_pServerOptionMgr )
+	{
+		g_pServerOptionMgr->Term();
+		delete g_pServerOptionMgr;
+		g_pServerOptionMgr = LTNULL;
+	}
+#endif
+
 	g_pServerOptionMgr = new CServerOptionMgr;
 	if( !g_pServerOptionMgr )
 		return DFALSE;
@@ -5383,6 +5399,52 @@ void CInterfaceMgr::UpdateActivate(LTVector vPos, LTVector vDir)
 			}
 		case (AT_CUT):		eRval = TestCutRange((uint32)(vPos-IInfo.m_Point).MagSqr());		break;
 		case (AT_HACK):		eRval = TestHackRange((uint32)(vPos-IInfo.m_Point).MagSqr());		break;
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: a turret shows its ammo and heat in the minigun's
+		// crosshair, and is the one the turret info is wanted for
+		case (AT_TRIPOD_PICKUP):
+			{
+				uint32 dwFlags;
+				g_pLTClient->Common()->GetObjectFlags(IInfo.m_hObject, OFT_Flags, dwFlags);
+
+				if((dwFlags & FLAG_VISIBLE) && IsHuman(nButeSet))
+				{
+					eRval = XHM_EXOSUIT_MINIGUN;
+
+					if(GetTurretInfoMgr())
+						GetTurretInfoMgr()->SetTarget(IInfo.m_hObject);
+				}
+				break;
+			}
+
+		// Primal Hunt: a turret gun can be let go of from behind it
+		case (AT_TURRETGUN):
+			{
+				if(IsHuman(nButeSet))
+				{
+					LTRotation rRot;
+					LTVector vU, vR, vF;
+					g_pLTClient->GetObjectRotation(IInfo.m_hObject, &rRot);
+					g_pLTClient->GetRotationVectors(&rRot, &vU, &vR, &vF);
+
+					LTVector vGunPos, vMyPos;
+					g_pLTClient->GetObjectPos(IInfo.m_hObject, &vGunPos);
+					g_pLTClient->GetObjectPos(g_pLTClient->GetClientObject(), &vMyPos);
+
+					LTVector vToGun = vGunPos - vMyPos;
+					LTFLOAT fDist = vToGun.Mag();
+
+					if(fDist <= 96.0f)
+					{
+						vToGun *= 1.0f / fDist;
+
+						if(vF.Dot(vToGun) >= 0.866f)
+							eRval = XHM_DEFAULT_ACTIVATE;
+					}
+				}
+				break;
+			}
+#endif
 		default:			eRval = XHM_TARGETING;			break;
 		}
 	}

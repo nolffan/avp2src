@@ -64,6 +64,9 @@ private:
 	void		SetActivateCrosshair(XHairMode eMode);
 	void		DrawTargetingCrosshair();
 	void		DrawActivateCrosshair();
+#ifdef PRIMAL_HUNT
+	void		DrawMinigunCrosshair();
+#endif
 
 #ifdef PRIMAL_HUNT
 	// Primal Hunt: the minigun crosshair's bars (PHCShell 0x10037fea)

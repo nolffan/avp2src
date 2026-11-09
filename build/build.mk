@@ -536,8 +536,40 @@ GSC_ORDER := nonport.obj hashtable.obj gutil.obj gserverlist.obj gserver.obj Gam
 $(eval $(call tool,$(LPH)/GameSpyClientMgr.lib,$(addprefix src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/,$(GSC_ORDER)) | wine-drives,\
     mkdir -p $(LPH) && cd src/lithshared/gamespy/gamespyclientmgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LPH))\GameSpyClientMgr.lib' $(call q,$(addprefix ReleaseVC6\,$(GSC_ORDER)))))
 $(eval $(call tool,$(LPH)/WONAPI.lib,src/engine/lithtech/Release/wonapi/WONAPI.lib,mkdir -p $(LPH) && cp src/engine/lithtech/Release/wonapi/WONAPI.lib $(LPH)/WONAPI.lib))
+#
+# Primal Hunt's builds of the font, GUI and track-editor libraries: the
+# same sources and flags as AvP2's (above) with /D PRIMAL_HUNT, as Third
+# Law built them against Primal Hunt's SDK headers (sdk/inc): ILTClient has
+# their engine's extra slot (iltclient.h), so every call through it past
+# SetModelPlaying is one slot further on, and the GUI controls carry
+# CLTGUICtrl's two more parameters (ltguictrl.h). Objects into
+# <dir>/ReleasePH/. cl 8966, as AvP2's: the nears they leave are the
+# release's prebuilt builds' own (out/plan/libdiff.py --list), and do not
+# move under 8168 (which the Rich header's 21 C++ objects of 8168 suggested).
+# $(call lsphobjs,<dir>,<incs>,<sources>)
+define lsphobjs
+$(foreach s,$(3),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/ReleasePH),src/lithshared/$(1),$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) /D PRIMAL_HUNT $(2) /FoReleasePH/,wine-drives)))
+LSPHOBJ_$(1) := $(foreach s,$(3),$(call c_obj,$(s),src/lithshared/$(1)/ReleasePH))
+src/lithshared/$(1)/ReleasePH/.dir:
+	@mkdir -p $$(@D) && touch $$@
+$(foreach s,$(3),$(call c_obj,$(s),src/lithshared/$(1)/ReleasePH)): | src/lithshared/$(1)/ReleasePH/.dir
+endef
+# $(call lsphlib,<library>,<the members' directory under src/lithshared/, with its slash; or none>,<objects>)
+define lsphlib
+$(call tool,$(LPH)/$(1).lib,$(3) | wine-drives,mkdir -p $(LPH) && cd src/lithshared/$(2) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LPH))\$(1).lib' $(call q,$(subst /,\,$(patsubst src/lithshared/$(2)%,%,$(3)))))
+endef
+$(eval $(call lsphobjs,ltguimgr,/D _NOMFC /D _LITHTECH2 /I $(LT2LS)\ltguimgr /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs \
+    /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTGUI_SRCS)))
+$(eval $(call lsphobjs,lithfontmgr,/D _LITHTECH2 /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs /I $(LT2LS)\mfcstub \
+    /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,lithbitmapfont.cpp lithcursor.cpp lithfont.cpp lithfontmgr.cpp lithsystemfont.cpp))
+$(eval $(call lsphobjs,lithtrackmgr,/D _CLIENTBUILD /D _LITHTECH2 /D LT15_COMPAT /I $(LT2LS)\lithtrackmgr /I $(LT2LS)\lithfontmgr \
+    /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTM_SRCS)))
+$(eval $(call lsphlib,ltguimgr_LT2,ltguimgr/,$(LSPHOBJ_ltguimgr)))
+$(eval $(call lsphlib,LithFontMgr_LT2,lithfontmgr/,$(LSPHOBJ_lithfontmgr)))
+$(eval $(call lsphlib,LithTrackMgrClient,,$(subst /Release/,/ReleasePH/,$(LTM_MEMBERS))))
 .PHONY: phlibs
-phlibs: $(LPH)/GameSpyMgr.lib $(LPH)/GameSpyClientMgr.lib $(LPH)/WONAPI.lib
+phlibs: $(LPH)/GameSpyMgr.lib $(LPH)/GameSpyClientMgr.lib $(LPH)/WONAPI.lib $(LPH)/ltguimgr_LT2.lib \
+    $(LPH)/LithFontMgr_LT2.lib $(LPH)/LithTrackMgrClient.lib
 .PHONY: gamespyobjs
 gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 #

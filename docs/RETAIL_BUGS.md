@@ -769,6 +769,18 @@ has no SingleSegment attribute keeps the allocation's leftover value.
 
 Not fixed yet.
 
+### The "nelno" cheat's message isn't terminated
+
+PHCShell.dll 0x10076180 (`CheatMgr::Cheat_Nelno`, name ours,
+src/AVP2/ClientShellDLL/CheatMgr.cpp; byte-identical). The scrambled
+"You need more training to defeat me!" is a 37-byte local array with no
+terminating zero, so `ScrambleString` (Scramble.cpp) unscrambles on into
+the three padding bytes and whatever follows them on the stack, until it
+meets a zero or fills the 255-character buffer; the message can end in
+garbage.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

@@ -42,6 +42,7 @@ class CTurretInfoMgr
 
 		void		GetInfo(HOBJECT hTurret, int &nAmmo, int &nHeat);
 		void		GetTargetInfo(int &nAmmo, int &nHeat);
+		void		SetTarget(HOBJECT hTarget) { m_hTarget = hTarget; }
 
 	public :
 

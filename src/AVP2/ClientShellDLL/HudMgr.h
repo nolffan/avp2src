@@ -274,6 +274,9 @@ private:
 	void UpdateExoArmor				(CHudElement *pHudElement);
 	void UpdateExoEnergy			(CHudElement *pHudElement);
 	void UpdateFlareStr				(CHudElement *pHudElement);
+#ifdef PRIMAL_HUNT
+	void UpdateTurretStr			(CHudElement *pHudElement);
+#endif
 
 	//ammo counter functions
 	void NoCounter			(CHudElement *pHudElement) { return; }

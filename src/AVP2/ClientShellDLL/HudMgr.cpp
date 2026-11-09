@@ -18,6 +18,9 @@
 #include "CharacterFuncs.h"
 #include "PlayerStats.h"
 #include "MotionDetector.h"
+#ifdef PRIMAL_HUNT
+#include "TurretInfoMgr.h"
+#endif
 
 VarTrack	g_cvarIconOffset;
 VarTrack	g_cvarNumIcons;
@@ -258,6 +261,9 @@ void CHudMgr::SetFunctionPointers (char * pTag, uint32 nIndex)
 	case 9:	 {m_paHudElements[nIndex].m_pUpdateFunction = UpdateExoArmor; break;}
 	case 10: {m_paHudElements[nIndex].m_pUpdateFunction = UpdateExoEnergy; break;}
 	case 11: {m_paHudElements[nIndex].m_pUpdateFunction = UpdateFlareStr; break;}
+#ifdef PRIMAL_HUNT
+	case 12: {m_paHudElements[nIndex].m_pUpdateFunction = UpdateTurretStr; break;}
+#endif
 	default: {m_paHudElements[nIndex].m_pUpdateFunction = NoUpdate; break;}
 	}
 }
@@ -794,6 +800,64 @@ void CHudMgr::UpdateHealthStr	(CHudElement *pHudElement)
 	}
 }
 
+#ifdef PRIMAL_HUNT
+
+// -----------------------------------------------/
+//
+// void CHudMgr::UpdateTurretStr Implimentation
+//
+// Primal Hunt: updates the count of turrets the player carries, showing
+// it and the turret icon only while there are some (PHCShell 0x1003a3a0)
+//
+// -----------------------------------------------/
+void CHudMgr::UpdateTurretStr	(CHudElement *pHudElement)
+{
+	//sanity check
+	if ( !g_pLTClient || !pHudElement || !g_pGameClientShell) return;
+
+	if(pHudElement->GetString())
+	{
+		int nTurrets = 0;
+
+		if(GetTurretInfoMgr())
+			nTurrets = GetTurretInfoMgr()->m_nCarried;
+
+		//create new string
+		char	szBuffer[12];
+		//print string
+		sprintf(szBuffer,"%.1d",nTurrets);
+
+		char *szStr = g_pLTClient->GetStringData(pHudElement->GetString());
+
+		if(_stricmp(szBuffer, szStr) != 0)
+		{
+			HSTRING hStr = g_pLTClient->CreateString(szBuffer);
+			pHudElement->SetString(hStr);
+			g_pLTClient->FreeString(hStr);
+
+			//only show the count and the turret icon when there are some
+			LTBOOL bShow = LTFALSE;
+			if(nTurrets)
+				bShow = LTTRUE;
+
+			pHudElement->SetEnabled(bShow);
+
+			CHudElement* pIcon = &m_paHudElements[18];
+			if(pIcon)
+				pIcon->SetEnabled(bShow);
+		}
+	}
+	else
+	{
+		//first time through, set the initial string
+		HSTRING hStr = g_pLTClient->CreateString("");
+		pHudElement->SetString(hStr);
+		g_pLTClient->FreeString(hStr);
+	}
+}
+
+#endif // PRIMAL_HUNT
+
 // -----------------------------------------------/
 //
 // void CHudMgr::UpdateFlareStr Implimentation
@@ -941,11 +1005,25 @@ void CHudMgr::NormalCounter	(CHudElement *pHudElement)
 			} break;
 		case(CT_CLIPS):
 			{
+#ifdef PRIMAL_HUNT
+				// Primal Hunt: a dual muzzle weapon's clip counts twice
+				// (PHCShell 0x1003a820)
+				uint32 nShotsPerClip = m_CounterItems[i].pBarrel->nShotsPerClip;
+				if(m_CounterItems[i].pBarrel->bDualMuzzle == LTTRUE)
+					nShotsPerClip /= 2;
+
+				uint32 nAmmo		= m_pPlayerStats->GetAmmoCount(m_CounterItems[i].pAmmo->nId);
+				uint32 nAmmoInClip	= m_pPlayerStats->GetAmmoInClip(m_CounterItems[i].pBarrel->nId);
+				uint32 nClips		= nAmmo > nAmmoInClip?(nAmmo-nAmmoInClip) / nShotsPerClip:0;
+				if( (nAmmo-nAmmoInClip) && ((nAmmo-nAmmoInClip) % nShotsPerClip) )
+					nClips++;
+#else
 				uint32 nAmmo		= m_pPlayerStats->GetAmmoCount(m_CounterItems[i].pAmmo->nId);
 				uint32 nAmmoInClip	= m_pPlayerStats->GetAmmoInClip(m_CounterItems[i].pBarrel->nId);
 				uint32 nClips		= nAmmo > nAmmoInClip?(nAmmo-nAmmoInClip) / m_CounterItems[i].pBarrel->nShotsPerClip:0;
 				if( (nAmmo-nAmmoInClip) && ((nAmmo-nAmmoInClip) % m_CounterItems[i].pBarrel->nShotsPerClip) )
 					nClips++;
+#endif
 				sprintf(szTemp, "%.*d",m_CounterItems[i].nNumDigits, nClips);
 			} break;
 		case(CT_CLIP):
@@ -1884,9 +1962,17 @@ void CHudMgr::DrawPredatorEnergy	(CHudElement *pHudElement)
 	CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
 
 	//local variables
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the energy is ten times what the meter shows
+	// (PHCShell 0x1003ba70)
+	static DFLOAT nDisEnergy = (DFLOAT)(pStats->GetPredatorEnergy() / 10);
+	uint32	nEnergy = (uint32)pStats->GetPredatorEnergy() / 10;
+	uint32  nMaxEnergy = (uint32)pStats->GetMaxPredatorEnergy() / 10;
+#else
 	static DFLOAT nDisEnergy = (DFLOAT)pStats->GetPredatorEnergy();
 	uint32	nEnergy = pStats->GetPredatorEnergy();
 	uint32  nMaxEnergy = pStats->GetMaxPredatorEnergy();
+#endif
 	LTFLOAT fRate = nMaxEnergy / g_cvarMeterRate.GetFloat();
 
 	//incriment based on time
@@ -2538,6 +2624,35 @@ HSURFACE CreateCounterIcon(char* szImage)
 	return rVal;
 }
 
+#ifdef PRIMAL_HUNT
+// Primal Hunt: a corporate player's counter icons are the marine ones from
+// a "corporate" folder beside the marine one (PHCShell 0x1003c7d0)
+static void GetCounterIcon(char* szImage, char* szIcon, int nIconLen)
+{
+	const CharacterButes & butes = g_pCharacterButeMgr->GetCharacterButes(g_pGameClientShell->GetPlayerStats()->GetButeSet());
+
+	if(butes.m_eCharacterClass == CORPORATE && strstr(szImage, "marine"))
+	{
+		char szDrive[_MAX_DRIVE];
+		char szDir[_MAX_DIR];
+		char szFname[_MAX_FNAME];
+		char szExt[_MAX_EXT];
+
+		_splitpath(szImage, szDrive, szDir, szFname, szExt);
+
+		char* pMarine = strstr(szDir, "marine");
+		if(pMarine)
+			*pMarine = '\0';
+
+		_snprintf(szIcon, nIconLen, "%s%scorporate\\%s%s", szDrive, szDir, szFname, szExt);
+	}
+	else
+	{
+		strncpy(szIcon, szImage, nIconLen);
+	}
+}
+#endif
+
 // -----------------------------------------------/
 //
 // void CHudMgr::InitMultiCounter Implimentation
@@ -2576,8 +2691,16 @@ void CHudMgr::InitMultiCounter(WEAPON* pNewWeapon)
 			m_CounterItems[j+1].eType	= CT_CLIP;
 
 			//yep lets set up a clip counter
+#ifdef PRIMAL_HUNT
+			char szIcon[256];
+			GetCounterIcon(pBarrel->szClipIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[j].hIcon		= CreateCounterIcon(szIcon);
+			GetCounterIcon(pPool->szCounterIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[j+1].hIcon	= CreateCounterIcon(szIcon);
+#else
 			m_CounterItems[j].hIcon		= CreateCounterIcon(pBarrel->szClipIcon);
 			m_CounterItems[j+1].hIcon	= CreateCounterIcon(pPool->szCounterIcon);
+#endif
 
 			uint32 nMaxClips = pPool->GetMaxAmount(g_pLTClient->GetClientObject())/pBarrel->nShotsPerClip;
 
@@ -2748,8 +2871,16 @@ void CHudMgr::InitNormalCounter	(WEAPON* pNewWeapon)
 			m_CounterItems[i+1].eType	= CT_CLIP;
 
 			//yep lets set up a clip counter
+#ifdef PRIMAL_HUNT
+			char szIcon[256];
+			GetCounterIcon(pAltBarrel->szClipIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[i].hIcon		= CreateCounterIcon(szIcon);
+			GetCounterIcon(pPool->szCounterIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[i+1].hIcon	= CreateCounterIcon(szIcon);
+#else
 			m_CounterItems[i].hIcon		= CreateCounterIcon(pAltBarrel->szClipIcon);
 			m_CounterItems[i+1].hIcon	= CreateCounterIcon(pPool->szCounterIcon);
+#endif
 
 			uint32 nMaxClips = pPool->GetMaxAmount(g_pLTClient->GetClientObject())/pAltBarrel->nShotsPerClip;
 
@@ -2778,7 +2909,13 @@ void CHudMgr::InitNormalCounter	(WEAPON* pNewWeapon)
 			m_CounterItems[i].eType		= CT_AMMO_ONLY;
 
 			//alt parrel doesnt use clips
+#ifdef PRIMAL_HUNT
+			char szIcon[256];
+			GetCounterIcon(pPool->szCounterIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[i].hIcon = CreateCounterIcon(szIcon);
+#else
 			m_CounterItems[i].hIcon = CreateCounterIcon(pPool->szCounterIcon);
+#endif
 
 			uint32 nMaxAmmo = pPool->GetMaxAmount(g_pLTClient->GetClientObject());
 
@@ -2812,8 +2949,16 @@ void CHudMgr::InitNormalCounter	(WEAPON* pNewWeapon)
 			m_CounterItems[i+1].eType	= CT_CLIP;
 
 			//yep lets set up a clip counter
+#ifdef PRIMAL_HUNT
+			char szIcon[256];
+			GetCounterIcon(pPrimBarrel->szClipIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[i].hIcon		= CreateCounterIcon(szIcon);
+			GetCounterIcon(pPool->szCounterIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[i+1].hIcon	= CreateCounterIcon(szIcon);
+#else
 			m_CounterItems[i].hIcon		= CreateCounterIcon(pPrimBarrel->szClipIcon);
 			m_CounterItems[i+1].hIcon	= CreateCounterIcon(pPool->szCounterIcon);
+#endif
 
 			uint32 nMaxClips = pPool->GetMaxAmount(g_pLTClient->GetClientObject())/pPrimBarrel->nShotsPerClip;
 
@@ -2853,7 +2998,13 @@ void CHudMgr::InitNormalCounter	(WEAPON* pNewWeapon)
 			m_CounterItems[i].eType		= CT_AMMO_ONLY;
 
 			//alt parrel doesnt use clips
+#ifdef PRIMAL_HUNT
+			char szIcon[256];
+			GetCounterIcon(pPool->szCounterIcon, szIcon, sizeof(szIcon)-1);
+			m_CounterItems[i].hIcon = CreateCounterIcon(szIcon);
+#else
 			m_CounterItems[i].hIcon = CreateCounterIcon(pPool->szCounterIcon);
+#endif
 
 			uint32 nMaxAmmo = pPool->GetMaxAmount(g_pLTClient->GetClientObject());
 

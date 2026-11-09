@@ -224,6 +224,12 @@ class CPolyLineFX : public CBasePolyDrawFX
 
 		virtual uint32 GetSFXID() { return SFX_POLYLINE_ID; }
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: move a line's verts to new end points (PHCShell
+		// 0x1011ff10; name ours)
+		virtual void ResetLine(PolyLine* pLine, const LTVector & vStartPos, const LTVector & vEndPos);
+#endif
+
 	protected :
 
         virtual LTBOOL Draw(ILTCustomDraw *pDraw);
