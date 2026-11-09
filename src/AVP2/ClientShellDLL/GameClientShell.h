@@ -58,6 +58,9 @@ class CGameTexMgr;
 class StoryElement;
 class MultiplayerClientMgr;
 class CGameSpyServer;
+#ifdef PRIMAL_HUNT
+class CClientTurret;
+#endif
 
 typedef std::list<HSURFACE>	ImageList;
 
@@ -226,6 +229,9 @@ class CGameClientShell : public CClientShellDE
 		void		HandleAmmoPickup(uint8 nAmmoPoolId, int nAmmoCount);
 
 		void		ShakeScreen(LTVector vAmount);
+#ifdef PRIMAL_HUNT
+		void		ShakeScreen(LTVector vAmount, LTFLOAT fTime, LTFLOAT fMin, LTFLOAT fMax);	// PH: 0x10081d80 (the mounted turret's recoil)
+#endif
 		void		FlashScreen(LTVector vTintColor, LTVector vPos, LTFLOAT fTime, LTFLOAT fRampUp,
 								LTFLOAT fRampDown, LTFLOAT fScaleDist, LTBOOL bFirstPersonOnly = LTFALSE);
 
@@ -268,6 +274,9 @@ class CGameClientShell : public CClientShellDE
 
 		GameType*		GetGameType()			{ return &m_GameType; }
 		CWeaponModel*	GetWeaponModel()		{ return &m_weaponModel; }
+#ifdef PRIMAL_HUNT
+		CClientTurret*	GetUsingTurret();				// PH: 0x10086c80
+#endif
 		CPlayerStats*	GetPlayerStats()		{ return m_InterfaceMgr.GetPlayerStats(); }
 		CGameSettings*	GetGameSettings()		{ return m_InterfaceMgr.GetSettings(); }
 		CInterfaceMgr*	GetInterfaceMgr()		{ return &m_InterfaceMgr; }
@@ -516,7 +525,7 @@ class CGameClientShell : public CClientShellDE
 		uint8					m_nSpeedCheatCounter;
 
 #ifdef PRIMAL_HUNT
-		uint32					m_nRestoreWeaponId;			// PHCShell 0x10080e62
+		int						m_nRestoreWeaponId;			// PHCShell 0x10080e62
 #endif
 };
 

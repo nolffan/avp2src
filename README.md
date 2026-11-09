@@ -69,8 +69,8 @@ those functions make up.
 | `Launch.dll` | the engine's command-line helper | 28 / 28 | 5,599 / 5,599 bytes | `████████████████████` 100.0% | 0 | 0 |
 | `PrimalHunt.exe` | Primal Hunt's launcher | 175 / 195 | 27,068 / 27,317 bytes | `███████████████████░` 99.0% | 0 | 0 |
 | `AVP2XServ.exe` | Primal Hunt's dedicated server | 294 / 333 | 57,991 / 61,852 bytes | `██████████████████░░` 93.7% | 8 | 0 |
-| `PHCShell.dll` | Primal Hunt's game: client | 4,380 / 5,990 | 898,087 / 1,350,425 bytes | `█████████████░░░░░░░` 66.5% | 465 | 25 |
-| `PHObject.lto` | Primal Hunt's game: server objects | 8,420 / 10,298 | 2,033,074 / 2,372,206 bytes | `█████████████████░░░` 85.7% | 807 | 2 |
+| `PHCShell.dll` | Primal Hunt's game: client | 4,863 / 5,986 | 1,128,347 / 1,352,330 bytes | `████████████████░░░░` 83.4% | 331 | 10 |
+| `PHObject.lto` | Primal Hunt's game: server objects | 9,086 / 10,259 | 2,218,283 / 2,372,003 bytes | `██████████████████░░` 93.5% | 124 | 5 |
 | `AVP2.exe` | AvP2's launcher | 172 / 192 | 25,957 / 27,502 bytes | `██████████████████░░` 94.3% | 0 | 0 |
 | `AVP2Serv.exe` | AvP2's dedicated server | 289 / 320 | 58,703 / 58,920 bytes | `███████████████████░` 99.6% | 2 | 0 |
 | `CShell.dll` | AvP2's game: client | 5,988 / 6,629 | 1,426,378 / 1,463,968 bytes | `███████████████████░` 97.4% | 135 | 1 |
@@ -87,7 +87,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **47,315 / 56,485** | **9,230,173 / 10,956,109 bytes** | `████████████████░░░░` **84.2%** | **2,032** | **2,730** |
+| **All** | | **48,464 / 56,442** | **9,645,642 / 10,957,811 bytes** | `█████████████████░░░` **88.0%** | **1,215** | **2,718** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

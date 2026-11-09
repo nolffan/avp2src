@@ -13,6 +13,10 @@
 #include "stdafx.h"
 #include "SoundButeMgr.h"
 
+#ifdef PRIMAL_HUNT
+#include "MultiFileImpl.h"
+#endif
+
 #ifdef _DEBUG
 // #define SOUND_BUTE_DEBUG
 #endif
@@ -119,6 +123,17 @@ bool CSoundButeMgr::LoadButes(const char *szTagName, void *pData)
 LTBOOL CSoundButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
 {
 	if (g_pSoundButeMgr || !szAttributeFile) return LTFALSE;
+
+#ifdef PRIMAL_HUNT
+	// PH: read the bute cache instead, if there is one (0x1002cc20)
+	CMultiFile_LITH cacheFile;
+	if (ReadCache(szAttributeFile, &cacheFile) == LTTRUE)
+	{
+		g_pSoundButeMgr = this;
+		return LTTRUE;
+	}
+#endif
+
 	if (!Parse(pInterface, szAttributeFile)) return LTFALSE;
 
 
@@ -146,6 +161,12 @@ LTBOOL CSoundButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
 	// Free up butemgr's memory and what-not.
 
 	m_buteMgr.Term();
+
+#ifdef PRIMAL_HUNT
+	// PH: and write the bute cache (0x1002cd87)
+	CMultiFile_FILE cacheOut;
+	WriteCache(szAttributeFile, &cacheOut);
+#endif
 
 	return LTTRUE;
 }
@@ -372,6 +393,176 @@ void CSoundButeMgr::LoadSoundButes(const char * szTagName, SoundButes * pButes, 
 	pButes->m_fMinDelay	= (LTFLOAT)GetDouble(szTagName, SOUND_BUTE_MIN_DELAY);
 	pButes->m_fMaxDelay	= (LTFLOAT)GetDouble(szTagName, SOUND_BUTE_MAX_DELAY);
 }
+
+#ifdef PRIMAL_HUNT
+
+//*********************************************************************************
+//
+//	ROUTINE:	SoundFiles::Write() / Read()
+//	PURPOSE:	Primal Hunt: a sound set's files in the bute cache
+//
+//*********************************************************************************
+
+LTBOOL SoundFiles::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteDWord(m_nNumSounds);
+	pFile->WriteString(m_szName);
+	pFile->WriteString(m_szParent);
+
+	pFile->WriteInt(m_szSounds.size());
+	for( SoundFileList::iterator iter = m_szSounds.begin(); iter != m_szSounds.end(); ++iter )
+	{
+		pFile->WriteString(*iter);
+	}
+
+	pFile->WriteInt(m_fWeights.size());
+	for( WeightList::iterator weight_iter = m_fWeights.begin(); weight_iter != m_fWeights.end(); ++weight_iter )
+	{
+		pFile->WriteFloat(*weight_iter);
+	}
+
+	return LTTRUE;
+}
+
+LTBOOL SoundFiles::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadDWord(&m_nNumSounds);
+	pFile->ReadString(m_szName, SOUND_BUTES_STRING_SIZE);
+	pFile->ReadString(m_szParent, SOUND_BUTES_STRING_SIZE);
+
+	int nNumSounds = pFile->ReadInt();
+	for (int i=0; i < nNumSounds; i++)
+	{
+		char szSound[SOUND_BUTES_STRING_SIZE];
+		pFile->ReadString(szSound, SOUND_BUTES_STRING_SIZE);
+
+		m_szSounds.push_back( new char[strlen(szSound) + 1] );
+		strcpy(m_szSounds.back(), szSound);
+	}
+
+	int nNumWeights = pFile->ReadInt();
+	for (i=0; i < nNumWeights; i++)
+	{
+		m_fWeights.push_back( pFile->ReadFloat() );
+	}
+
+	return LTTRUE;
+}
+
+//*********************************************************************************
+//
+//	ROUTINE:	SoundButes::Write() / Read()
+//	PURPOSE:	Primal Hunt: a sound set's attributes in the bute cache
+//
+//*********************************************************************************
+
+LTBOOL SoundButes::Write(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteFloat(m_fInnerRad);
+	pFile->WriteFloat(m_fOuterRad);
+	pFile->WriteFloat(m_fPitch);
+	pFile->WriteFloat(m_fPlayChance);
+	pFile->WriteByte(m_nVolume);
+	pFile->WriteByte(m_ePriority);
+	pFile->WriteDWord(m_nFlags);
+	pFile->WriteBool(m_bLipSync);
+	pFile->WriteFloat(m_fMinDelay);
+	pFile->WriteFloat(m_fMaxDelay);
+
+	return LTTRUE;
+}
+
+LTBOOL SoundButes::Read(CMultiFile* pFile)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->ReadFloat(&m_fInnerRad);
+	pFile->ReadFloat(&m_fOuterRad);
+	pFile->ReadFloat(&m_fPitch);
+	pFile->ReadFloat(&m_fPlayChance);
+	pFile->ReadByte(&m_nVolume);
+	m_ePriority = (SoundPriority)pFile->ReadByte();
+	pFile->ReadDWord(&m_nFlags);
+	pFile->ReadBool(&m_bLipSync);
+	pFile->ReadFloat(&m_fMinDelay);
+	pFile->ReadFloat(&m_fMaxDelay);
+
+	return LTTRUE;
+}
+
+//*********************************************************************************
+//
+//	ROUTINE:	CSoundButeMgr::WriteCache()
+//	PURPOSE:	Primal Hunt: write the sound sets to the bute cache
+//
+//*********************************************************************************
+
+LTBOOL CSoundButeMgr::WriteCache(const char* szFile, CMultiFile* pFile)
+{
+	if (!g_pInterface || !pFile || !szFile) return LTFALSE;
+
+	// The base class's comes back LTFALSE, so the cache is never written
+	if (!CHierarchicalButeMgr::WriteCache(szFile, pFile))
+	{
+		pFile->Close();
+		return LTFALSE;
+	}
+
+	pFile->WriteInt(m_nNumSoundButes);
+
+	for (int i=0; i < m_nNumSoundButes; i++)
+	{
+		m_pSoundButes[i].Write(pFile);
+		m_pSoundFiles[i].Write(pFile);
+	}
+
+	pFile->Close();
+	return LTTRUE;
+}
+
+//*********************************************************************************
+//
+//	ROUTINE:	CSoundButeMgr::ReadCache()
+//	PURPOSE:	Primal Hunt: read the sound sets from the bute cache
+//
+//*********************************************************************************
+
+LTBOOL CSoundButeMgr::ReadCache(const char* szFile, CMultiFile* pFile)
+{
+	if (!g_pInterface || !pFile || !szFile) return LTFALSE;
+
+	// The base class's comes back LTFALSE, so the cache is never read
+	if (!CHierarchicalButeMgr::ReadCache(szFile, pFile))
+	{
+		pFile->Close();
+		return LTFALSE;
+	}
+
+	m_nNumSoundButes = pFile->ReadInt();
+
+	m_pSoundButes = new SoundButes[m_nNumSoundButes];
+	m_pSoundFiles = new SoundFiles[m_nNumSoundButes];
+
+	for (int i=0; i < m_nNumSoundButes; i++)
+	{
+		m_pSoundButes[i].Read(pFile);
+		m_pSoundFiles[i].Read(pFile);
+
+		// Store away the name-index pair for quick look-up.
+		m_IndexTable[m_pSoundFiles[i].m_szName] = i;
+	}
+
+	pFile->Close();
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 
 //*********************************************************************************

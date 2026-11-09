@@ -610,10 +610,6 @@ SOURCE=.\MPClientMgrChart.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\Shared\MultiFile.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\MultiplayerClientMgr.cpp
 # End Source File
 # Begin Source File
@@ -1016,6 +1012,22 @@ SOURCE=.\WeaponSoundFX.cpp
 # Begin Source File
 
 SOURCE=.\WeatherFX.cpp
+# End Source File
+# Begin Source File
+
+SOURCE="$(LT2_DIR)\sdk\inc\ltquatbase.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientTurretMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\Shared\MultiFile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TurretInfoMgr.cpp
 # End Source File
 # End Group
 # End Group
@@ -2337,7 +2349,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\LithTrackMgrClient.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\GameSpyClientMgr.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\GameSpyClientMgr.lib"
 
 !IF  "$(CFG)" == "ClientShellDLL_PH - Win32 Release"
 
@@ -2361,7 +2373,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\GameSpyClientMgr.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\WONAPI.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\WONAPI.lib"
 
 !IF  "$(CFG)" == "ClientShellDLL_PH - Win32 Release"
 

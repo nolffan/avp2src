@@ -17,6 +17,12 @@
 #include "volumebrushfx.h"
 #include "clientsoundmgr.h"
 #include "ContainerCodes.h"
+#ifdef PRIMAL_HUNT
+#include "ClientTurretMgr.h"
+
+// PH: an effect that sets the camera rather than offsetting it (the turret view)
+#define CAMERA_FX_USE_ABSOLUTE					0x4000
+#endif
 
 // ----------------------------------------------------------------------- //
 // Variables that the FX need to use in order to update properly
@@ -1486,6 +1492,247 @@ LTBOOL CameraMgrFX_ShakeUpdate(HCAMERA hCamera, void *pEffect)
 
 	return LTTRUE;
 }
+
+#ifdef PRIMAL_HUNT
+// *********************************************************************** //
+// *********************************************************************** //
+// *********************************************************************** //
+//
+//	PH: the mounted turret's recoil (0x10069ac0)
+//
+// *********************************************************************** //
+
+void CameraMgrFX_RecoilCreate(HCAMERA hCamera, LTVector vAmount, LTFLOAT fTime, LTFLOAT fMinDelay, LTFLOAT fMaxDelay)
+{
+	// See if this camera is active...
+	if(!g_pCameraMgr->GetCameraActive(hCamera))
+		return;
+
+	// Find any recoil special fx
+	CAMERAEFFECTINSTANCE *pEffect = g_pCameraMgr->GetCameraEffectByID(hCamera, CAMERAMGRFX_ID_RECOIL, LTNULL);
+
+	// If an effect doesn't exist, then create one and return
+	if(!pEffect)
+	{
+		// Create a user data structure
+		CAMERAMGRFX_RECOIL *pData = new CAMERAMGRFX_RECOIL;
+		pData->nState = CAMERAMGRFX_STATE_ACTIVE;
+		pData->vAmount = vAmount;
+		pData->fTime = fTime;
+		pData->fMinDelay = fMinDelay;
+		pData->fMaxDelay = fMaxDelay;
+		pData->fEndTime = g_pLTClient->GetTime() + fTime;
+		pData->fDelay = GetRandom(pData->fMinDelay, pData->fMaxDelay);
+		pData->fNextTime = g_pLTClient->GetTime() + pData->fDelay;
+		pData->vOffset.x = GetRandom(0.0f, pData->vAmount.x * 2.0f) - pData->vAmount.x;
+		pData->vOffset.y = GetRandom(0.0f, pData->vAmount.y * 2.0f) - pData->vAmount.y;
+		pData->vOffset.z = GetRandom(0.0f, pData->vAmount.z * 2.0f) - pData->vAmount.z;
+		pData->vLastOffset.Init();
+
+		LTFLOAT fMax = g_vtShakeMaxAmount.GetFloat();
+		if(pData->vAmount.x > fMax) pData->vAmount.x = fMax;
+		if(pData->vAmount.y > fMax) pData->vAmount.y = fMax;
+		if(pData->vAmount.z > fMax) pData->vAmount.z = fMax;
+
+		// Create the camera description to create
+		CAMERAEFFECTCREATESTRUCT ceCS;
+		ceCS.nID = CAMERAMGRFX_ID_RECOIL;
+		ceCS.dwFlags = CAMERA_FX_USE_POS;
+		ceCS.fnCustomUpdate = CameraMgrFX_RecoilUpdate;
+		ceCS.pUserData = pData;
+
+		g_pCameraMgr->NewCameraEffect(hCamera, ceCS);
+		return;
+	}
+
+	// Otherwise, just restart the current effect
+	if(pEffect->ceCS.pUserData)
+	{
+		CAMERAMGRFX_RECOIL *pData = (CAMERAMGRFX_RECOIL*)pEffect->ceCS.pUserData;
+
+		pData->nState = CAMERAMGRFX_STATE_ACTIVE;
+		pData->vAmount = vAmount;
+		pData->fTime = fTime;
+		pData->fMinDelay = fMinDelay;
+		pData->fMaxDelay = fMaxDelay;
+		pData->fEndTime = g_pLTClient->GetTime() + fTime;
+		pData->fDelay = GetRandom(pData->fMinDelay, pData->fMaxDelay);
+		pData->fNextTime = g_pLTClient->GetTime() + pData->fDelay;
+		pData->vOffset.x = GetRandom(0.0f, pData->vAmount.x * 2.0f) - pData->vAmount.x;
+		pData->vOffset.y = GetRandom(0.0f, pData->vAmount.y * 2.0f) - pData->vAmount.y;
+		pData->vOffset.z = GetRandom(0.0f, pData->vAmount.z * 2.0f) - pData->vAmount.z;
+		pData->vLastOffset.Init();
+
+		LTFLOAT fMax = g_vtShakeMaxAmount.GetFloat();
+		if(pData->vAmount.x > fMax) pData->vAmount.x = fMax;
+		if(pData->vAmount.y > fMax) pData->vAmount.y = fMax;
+		if(pData->vAmount.z > fMax) pData->vAmount.z = fMax;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+// PH: 0x10069e80
+
+LTBOOL CameraMgrFX_RecoilUpdate(HCAMERA hCamera, void *pEffect)
+{
+	// Make sure everything is valid
+	if(!pEffect) return LTTRUE;
+
+	// Cast the pointers to the data so we can use them
+	CAMERAINSTANCE *pCamera = g_pCameraMgr->GetCamera(hCamera);
+	CAMERAEFFECTINSTANCE *pFX = (CAMERAEFFECTINSTANCE*)pEffect;
+	CAMERAMGRFX_RECOIL *pData = (CAMERAMGRFX_RECOIL*)pFX->ceCS.pUserData;
+
+	// See if we're done
+	if(g_pLTClient->GetTime() >= pData->fEndTime)
+		return LTFALSE;
+
+	// Time for a new offset?
+	if(g_pLTClient->GetTime() >= pData->fNextTime)
+	{
+		pData->vOffset.x = GetRandom(0.0f, pData->vAmount.x * 2.0f) - pData->vAmount.x;
+		pData->vOffset.y = GetRandom(0.0f, pData->vAmount.y * 2.0f) - pData->vAmount.y;
+		pData->vOffset.z = GetRandom(0.0f, pData->vAmount.z * 2.0f) - pData->vAmount.z;
+
+		// Die down over the effect's life
+		LTFLOAT fScale = (pData->fEndTime - g_pLTClient->GetTime()) / pData->fTime;
+		pData->vOffset.x *= fScale;
+		pData->vOffset.y *= fScale;
+		pData->vOffset.z *= fScale;
+
+		pData->vLastOffset = pFX->ceCS.vPos;
+
+		pData->fDelay = GetRandom(pData->fMinDelay, pData->fMaxDelay);
+		pData->fNextTime = g_pLTClient->GetTime() + pData->fDelay;
+	}
+
+	// Move toward the offset
+	LTFLOAT fT = 1.0f - (pData->fNextTime - g_pLTClient->GetTime()) / pData->fDelay;
+
+	LTVector vPos;
+	vPos.x = pData->vLastOffset.x + (pData->vOffset.x - pData->vLastOffset.x) * fT;
+	vPos.y = pData->vLastOffset.y + (pData->vOffset.y - pData->vLastOffset.y) * fT;
+	vPos.z = pData->vLastOffset.z + (pData->vOffset.z - pData->vLastOffset.z) * fT;
+
+	pFX->ceCS.vPos = vPos;
+
+	// And the weapon with it
+	CWeaponModel *pWeaponModel = g_pGameClientShell->GetWeaponModel();
+
+	if(pWeaponModel)
+	{
+		HOBJECT hWeapon = pWeaponModel->GetHandle();
+
+		if(hWeapon && !g_pGameClientShell->GetUsingTurret())
+		{
+			LTVector vWeaponPos;
+			g_pLTClient->GetObjectPos(hWeapon, &vWeaponPos);
+			// RETAIL BUG: this moves the weapon by the offset plus 0.95 on
+			// every axis; it was surely meant to be scaled by 0.95
+			vPos += 0.95f;
+			vWeaponPos += vPos;
+			g_pLTClient->SetObjectPos(hWeapon, &vWeaponPos);
+		}
+	}
+
+	return LTTRUE;
+}
+
+// *********************************************************************** //
+// *********************************************************************** //
+// *********************************************************************** //
+//
+//	PH: the view from behind the mounted turret (0x1006a0e0)
+//
+// *********************************************************************** //
+
+void CameraMgrFX_TurretCreate(HCAMERA hCamera, HOBJECT hTurret)
+{
+	// See if this camera is active...
+	if(!g_pCameraMgr->GetCameraActive(hCamera))
+		return;
+
+	if(!hTurret)
+		return;
+
+	// There's only ever one...
+	if(g_pCameraMgr->GetCameraEffectByID(hCamera, CAMERAMGRFX_ID_TURRET, LTNULL))
+		return;
+
+	// Create a user data structure
+	CAMERAMGRFX_TURRET *pData = new CAMERAMGRFX_TURRET;
+	pData->nState = CAMERAMGRFX_STATE_ACTIVE;
+	pData->hTurret = hTurret;
+
+	// Create the camera description to create
+	CAMERAEFFECTCREATESTRUCT ceCS;
+	ceCS.nID = CAMERAMGRFX_ID_TURRET;
+	ceCS.dwFlags = CAMERA_FX_USE_ABSOLUTE;
+	ceCS.fnCustomUpdate = CameraMgrFX_TurretUpdate;
+	ceCS.pUserData = pData;
+
+	g_pCameraMgr->NewCameraEffect(hCamera, ceCS);
+}
+
+// ----------------------------------------------------------------------- //
+// PH: 0x1006a220
+
+LTBOOL CameraMgrFX_TurretUpdate(HCAMERA hCamera, void *pEffect)
+{
+	CClientTurretMgr *pTurretMgr = GetClientTurretMgr();
+	if(!pTurretMgr) return LTFALSE;
+
+	// Cast the pointers to the data so we can use them
+	CAMERAINSTANCE *pCamera = g_pCameraMgr->GetCamera(hCamera);
+	CAMERAEFFECTINSTANCE *pFX = (CAMERAEFFECTINSTANCE*)pEffect;
+	CAMERAMGRFX_TURRET *pData = (CAMERAMGRFX_TURRET*)pFX->ceCS.pUserData;
+
+	if(!pData->hTurret) return LTFALSE;
+
+	CClientTurret *pTurret = pTurretMgr->Find(pData->hTurret);
+	if(!pTurret) return LTFALSE;
+
+	// Look from the turret's pivot
+	LTVector vPos;
+	g_pLTClient->GetObjectPos(pData->hTurret, &vPos);
+
+	HMODELNODE hNode = INVALID_MODEL_NODE;
+	g_pLTClient->GetModelLT()->GetNode(pData->hTurret, "Bone_Pivot", hNode);
+
+	if(hNode != INVALID_MODEL_NODE)
+	{
+		LTransform tf;
+		g_pLTClient->GetModelLT()->GetNodeTransform(pData->hTurret, hNode, tf, LTTRUE);
+		vPos = tf.m_Pos;
+	}
+
+	LTVector vOffset = vPos - pCamera->cidOriginal.vPos;
+
+	// Turn with the turret
+	LTRotation rRot;
+	g_pLTClient->GetObjectRotation(pData->hTurret, &rRot);
+	pCamera->cidOriginal.rRot = rRot;
+
+	LTVector vR, vU, vF;
+	LTVector vUp(0.0f, 1.0f, 0.0f);
+	g_pLTClient->RotateAroundAxis(&rRot, &vUp, pTurret->GetYaw());
+	g_pLTClient->GetRotationVectors(&rRot, &vR, &vU, &vF);
+	g_pLTClient->RotateAroundAxis(&rRot, &vR, pTurret->GetPitch());
+	g_pLTClient->GetRotationVectors(&rRot, &vR, &vU, &vF);
+
+	// Up and behind it
+	LTVector vBehind = (vU * 24.0f) + (vF * -32.0f);
+
+	pFX->ceCS.vPos = vOffset + vBehind;
+	pFX->ceCS.rRot = rRot;
+
+	pCamera->cidFinal.rRot = rRot;
+	pCamera->cidFinal.vPos = vPos + vBehind;
+
+	return LTTRUE;
+}
+#endif
+
 
 // *********************************************************************** //
 // *********************************************************************** //

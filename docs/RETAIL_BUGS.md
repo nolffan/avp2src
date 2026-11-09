@@ -760,6 +760,48 @@ the count still drops, so the servers after it go unchecked.
 
 Not fixed yet.
 
+### A tracer without SingleSegment takes whatever its memory held
+
+PHObject.lto 0x1001a480 (`TRACERFX::Init`, src/AVP2/Shared/FXButeMgr.cpp).
+Primal Hunt's tracer gains SingleSegment, HeadVelocity, Flare and FlareScale,
+but its constructor never sets `bSingleSegment`, so a tracer whose bute
+has no SingleSegment attribute keeps the allocation's leftover value.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)
+
+### A mounted turret with a full circle of yaw never wraps its yaw
+
+PHCShell.dll 0x10135480 (`CClientTurret::Rotate`, name ours,
+src/AVP2/ClientShellDLL/ClientTurretMgr.cpp). For a turret whose yaw range
+is a full turn (6.28 or more) the function computes
+`floor(m_fYaw / 2pi)` and throws the result away, so the yaw is neither
+wrapped nor clamped and grows without bound as the player turns. Harmless
+in practice (the angle is only fed to a rotation), but the wrap was
+plainly meant.
+
+Not fixed yet: the modern build's turret fixes are still to come.
+
+### The turret recoil pushes the first-person weapon off by 0.95 on every axis
+
+PHCShell.dll 0x10069e80 (`CameraMgrFX_RecoilUpdate`, name ours,
+src/AVP2/ClientShellDLL/CameraMgrFX.cpp). While the recoil effect runs and
+the player is not at a turret, the weapon model is moved by the camera's
+recoil offset *plus* 0.95 on each axis (`vPos += 0.95f`), where scaling the
+offset by 0.95 was surely meant: the weapon jumps up, right and forward by
+nearly a unit for the effect's life.
+
+Not fixed yet.
+
+### Putting the weapon away for a turret hides muzzle flashes it may not have (probable)
+
+PHCShell.dll 0x100b9f00 (`CWeaponModel::Holster`, name ours,
+src/AVP2/ClientShellDLL/WeaponModel.cpp). For each of the two muzzle
+flashes the function calls `Hide()` before testing the pointer, then
+deletes it; `Hide` writes the flash's members, so a weapon with no flash
+on a muzzle writes through a null pointer.
+
+Not fixed yet.

@@ -59,6 +59,9 @@ class CWeaponModel
 		LTBOOL Create(ILTClient* pClient, uint8 nWeaponId, LTBOOL bPlaySelSound);
 		void ChangeWeapon(uint8 nCommandId, LTBOOL bNoDeselect= LTFALSE);
 		void ForceChangeWeapon(uint8 nWeaponId, LTBOOL bDeselect=LTTRUE);
+#ifdef PRIMAL_HUNT
+		void Holster();					// PH: 0x100b9f00
+#endif
 		void ChangeToPrevWeapon();
 		void ChangeToNextBestWeapon(LTBOOL bNoDeselect=LTFALSE);	
 

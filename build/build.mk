@@ -511,6 +511,33 @@ $(foreach o,$(GSC_CPP),$(eval $(call compile,src/lithshared/gamespy/gamespyclien
 LSOBJ_gamespy/gamespyclientmgr += $(foreach o,$(GSC_CPP),src/lithshared/gamespy/gamespyclientmgr/Release/$(o).obj)
 $(eval $(call tool,$(LOUT)/GameSpyClientMgr.lib,$(LSOBJ_gamespy/gamespyclientmgr) | wine-drives,cd src/lithshared/gamespy/gamespyclientmgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\GameSpyClientMgr.lib' $(call q,$(addprefix Release\,nonport.obj hashtable.obj gutil.obj gserverlist.obj gserver.obj GameSpyServer.obj GameSpyPlayer.obj GameSpyClientMgr.obj darray.obj cengtest.obj))))
 LS_OURS += GameSpyClientMgr
+#
+# Primal Hunt's builds of the two (libs/ReleasePH/, which the _PH projects
+# link): the same sources with VC6's own STL instead of STLport, as Third
+# Law built them, so that they call the VC6-STL WONAPI (the engine's build
+# of it, which the _PH projects link from there too).
+LPH := src/LT2/lithshared/libs/ReleasePH
+$(eval $(call compile,src/lithshared/gamespy/gamespymgr/ReleaseVC6/GameSpyMgr.obj,src/lithshared/gamespy/gamespymgr,GameSpyMgr.cpp,\
+    $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSM_INCS)) /YX /FpReleaseVC6\GameSpyMgr.pch /FoReleaseVC6/,wine-drives))
+$(eval $(call compile,src/lithshared/gamespy/gamespymgr/ReleaseVC6/gsutils.obj,src/lithshared/gamespy/gamespymgr,gsutils.cpp,\
+    $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSM_INCS)) /FoReleaseVC6/,wine-drives))
+$(foreach c,cengtest darray gserver gserverlist gutil hashtable nonport,$(eval $(call compile,src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/$(c).obj,\
+    src/lithshared/gamespy/gamespyclientmgr,$(c).c,$(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSC_INCS)) /FoReleaseVC6/,wine-drives)))
+$(foreach o,$(GSC_CPP),$(eval $(call compile,src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/$(o).obj,\
+    src/lithshared/gamespy/gamespyclientmgr,$(o).cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(LIB_CFLAGS) $(subst /I ..\$(LT2LS)\stl ,,$(GSC_INCS)) /D GSCM_LOCAL_BUILD /YX /FpReleaseVC6\$(o).pch /FoReleaseVC6/,wine-drives)))
+src/lithshared/gamespy/gamespymgr/ReleaseVC6/.dir src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/.dir:
+	@mkdir -p $(@D) && touch $@
+src/lithshared/gamespy/gamespymgr/ReleaseVC6/%.obj: | src/lithshared/gamespy/gamespymgr/ReleaseVC6/.dir
+src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/%.obj: | src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/.dir
+$(eval $(call tool,$(LPH)/GameSpyMgr.lib,$(addprefix src/lithshared/gamespy/gamespymgr/ReleaseVC6/,GameSpyMgr.obj gsutils.obj) | wine-drives,\
+    mkdir -p $(LPH) && cd src/lithshared/gamespy/gamespymgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LPH))\GameSpyMgr.lib' $(call q,ReleaseVC6\GameSpyMgr.obj ReleaseVC6\gsutils.obj)))
+GSC_ORDER := nonport.obj hashtable.obj gutil.obj gserverlist.obj gserver.obj GameSpyServer.obj GameSpyPlayer.obj GameSpyClientMgr.obj darray.obj cengtest.obj
+$(eval $(call tool,$(LPH)/GameSpyClientMgr.lib,$(addprefix src/lithshared/gamespy/gamespyclientmgr/ReleaseVC6/,$(GSC_ORDER)) | wine-drives,\
+    mkdir -p $(LPH) && cd src/lithshared/gamespy/gamespyclientmgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LPH))\GameSpyClientMgr.lib' $(call q,$(addprefix ReleaseVC6\,$(GSC_ORDER)))))
+$(eval $(call tool,$(LPH)/WONAPI.lib,src/engine/lithtech/Release/wonapi/WONAPI.lib,mkdir -p $(LPH) && cp src/engine/lithtech/Release/wonapi/WONAPI.lib $(LPH)/WONAPI.lib))
+.PHONY: phlibs
+phlibs: $(LPH)/GameSpyMgr.lib $(LPH)/GameSpyClientMgr.lib $(LPH)/WONAPI.lib
 .PHONY: gamespyobjs
 gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 #

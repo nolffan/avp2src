@@ -211,6 +211,10 @@ public:
 
 	//get functions
 	LTBOOL GetHudEnabled () { return m_bHudEnabled; }
+#ifdef PRIMAL_HUNT
+	// PH: the turret's ammo display (ClientTurretMgr.cpp) draws with the HUD's fonts
+	LithFont* GetFont (uint32 nIndex) { return m_aplfFonts[nIndex]; }
+#endif
 
 	//interface functions
 	void	OnObjectMove		(HOBJECT hObj, LTBOOL bTeleport, LTVector pPos);

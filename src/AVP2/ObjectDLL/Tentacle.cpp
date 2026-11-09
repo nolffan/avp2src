@@ -902,14 +902,18 @@ LTBOOL CTentacle::DoMeleeAttack()
 //
 //	ROUTINE:	CTentacle::IsHidden()
 //
-//	PURPOSE:	Is the tentacle down? Folded with CanShootThrough
-//				(0x10092d30); called directly by CAITentacle.
+//	PURPOSE:	Is the tentacle down (not shown)? Folded with
+//				Turret::CanShootThrough (0x10092d30); called directly by
+//				CAITentacle::IsPosTaken.
 //
 // ----------------------------------------------------------------------- //
 
 LTBOOL CTentacle::IsHidden()
 {
-	return m_eState == eHidden || m_eState == eDead || m_eState == eDying;
+	uint32 dwFlags;
+	g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+
+	return !(dwFlags & FLAG_VISIBLE);
 }
 
 #endif // PRIMAL_HUNT

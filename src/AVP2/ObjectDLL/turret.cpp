@@ -53,6 +53,14 @@ LTBOOL IsTurret(HOBJECT hObj)
 
 	return g_pLTServer->IsKindOf(hClass, hTurret) == LTTRUE;
 }
+
+// PH: the Turret, if the object is one (PHObject.lto 0x100874f0; name ours)
+Turret* GetTurret(HOBJECT hObj)
+{
+	if (!IsTurret(hObj)) return LTNULL;
+
+	return (Turret*)g_pLTServer->HandleToObject(hObj);
+}
 #endif
 
 ILTMessage & operator<<(ILTMessage & out, Turret::ObjectiveType & x)
@@ -2956,6 +2964,74 @@ void Turret::SetSpawner(HOBJECT hSpawner)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	Turret::SetOwner()
+//
+//	PURPOSE:	PH: a player picked us up: we target everyone, aliens
+//				first, but in a team game we leave our owner's side alone
+//				(PHObject.lto 0x10091ca0; names ours)
+//
+// ----------------------------------------------------------------------- //
+
+void Turret::SetOwner(HOBJECT hOwner, CharacterClass eOwnerClass)
+{
+	m_hOwner = hOwner;
+
+	if (g_pGameServerShell->GetGameType().IsMultiplayer() && IsCharacter(hOwner))
+	{
+		CCharacter* pChar = (CCharacter*)g_pLTServer->HandleToObject(hOwner);
+		if (pChar)
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				m_aClassTypes[i] = Target;
+			}
+
+			m_aClassTypes[ALIEN] = Prefer;
+
+			int nGameType = g_pGameServerShell->GetGameType().Get();
+			if (nGameType >= MP_TEAMDM && nGameType <= MP_EVAC)
+			{
+				m_aClassTypes[pChar->GetCharacterClass()] = Ignore;
+
+				if (pChar->GetCharacterClass() == MARINE)
+				{
+					m_aClassTypes[MARINE_EXOSUIT] = Ignore;
+				}
+				else if (pChar->GetCharacterClass() == CORPORATE)
+				{
+					m_aClassTypes[CORPORATE_EXOSUIT] = Ignore;
+				}
+			}
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Turret::ClearOwner()
+//
+//	PURPOSE:	PH: our owner let go of us; in deathmatch we go back to
+//				targeting everyone (PHObject.lto 0x10091dd0; names ours)
+//
+// ----------------------------------------------------------------------- //
+
+void Turret::ClearOwner(LTBOOL bResetTargets)
+{
+	m_hOwner = LTNULL;
+
+	if (bResetTargets)
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			m_aClassTypes[i] = Target;
+		}
+
+		m_aClassTypes[ALIEN] = Prefer;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	SpawnTurret()
 //
 //	PURPOSE:	PH: create a carryable tripod turret for a CTurretSpawner;
@@ -3082,5 +3158,49 @@ void Turret::SendAmmoMessage(int nAmmo)
 	g_pLTServer->EndMessage(hMessage);
 
 	m_nLastAmmo = nAmmo;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Turret::CanShootThrough()
+//
+//	PURPOSE:	PH: shots go through a turret that isn't shown (PHObject.lto
+//				0x10092d30; CTentacle::IsHidden is the same, folded in)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL Turret::CanShootThrough()
+{
+	uint32 dwFlags;
+	g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+
+	return !(dwFlags & FLAG_VISIBLE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Turret::Remove()
+//
+//	PURPOSE:	PH: take the turret and its gun out of the world (PHObject.lto
+//				0x10092d60; called by CPlayerObj::ProcessCommand; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void Turret::Remove()
+{
+	if (m_hGunAttachment)
+	{
+		g_pLTServer->RemoveAttachment(m_hGunAttachment);
+		m_hGunAttachment = LTNULL;
+	}
+
+	if (m_hGunHandle)
+	{
+		g_pLTServer->RemoveObject(m_hGunHandle);
+		m_hGunHandle = LTNULL;
+	}
+
+	Destroyed(LTTRUE);
+	g_pLTServer->RemoveObject(m_hObject);
 }
 #endif

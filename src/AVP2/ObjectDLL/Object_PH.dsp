@@ -2424,7 +2424,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\LithTrackMgr.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\GameSpyMgr.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\GameSpyMgr.lib"
 
 !IF  "$(CFG)" == "Object_PH - Win32 Release"
 
@@ -2448,7 +2448,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\GameSpyMgr.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\WONAPI.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\WONAPI.lib"
 # End Source File
 # Begin Source File
 

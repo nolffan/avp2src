@@ -322,8 +322,9 @@ void CGlobalMgr::Term()
 		m_pObjectiveButeMgr = LTNULL;
 	}
 
-#if defined(PRIMAL_HUNT) && defined(_CLIENTBUILD)
-	// Primal Hunt's client also terminates these (PHCShell.dll 0x100d473e)
+#ifdef PRIMAL_HUNT
+	// Primal Hunt also terminates these (PHCShell.dll 0x100d473e,
+	// PHObject.lto 0x100234a5)
 	if( m_pPickupButeMgr )
 	{
 		m_pPickupButeMgr->Term();
@@ -390,6 +391,29 @@ void CGlobalMgr::Term()
 		delete m_pSpawnButeMgr;
 		m_pSpawnButeMgr = LTNULL;
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: and these (PHObject.lto 0x1002356b)
+	if( m_pAnimationButeMgr )
+	{
+		m_pAnimationButeMgr->Term();
+		delete m_pAnimationButeMgr;
+		m_pAnimationButeMgr = LTNULL;
+	}
+
+	if( m_pPropTypeMgr )
+	{
+		m_pPropTypeMgr->Term();
+		delete m_pPropTypeMgr;
+		m_pPropTypeMgr = LTNULL;
+	}
+
+	if( m_pAIAnimButeMgr )
+	{
+		delete m_pAIAnimButeMgr;
+		m_pAIAnimButeMgr = LTNULL;
+	}
+#endif
 
 #endif
 

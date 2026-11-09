@@ -17,6 +17,10 @@
 #include "SurfaceFunctions.h"
 #include "SoundButeMgr.h"
 
+#ifdef PRIMAL_HUNT
+#include "MultiFileImpl.h"
+#endif
+
 #ifdef _CLIENTBUILD
 #include "..\ClientShellDLL\ParticleShowerFX.h"
 #include "..\ClientShellDLL\PolyDebrisFX.h"
@@ -242,6 +246,12 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_TRACERFX_INITIALALPHA	"InitialAlpha"
 #define FXBMGR_TRACERFX_FINALALPHA		"FinalAlpha"
 #define FXBMGR_TRACERFX_COLOR			"Color"
+#ifdef PRIMAL_HUNT
+#define FXBMGR_TRACERFX_SINGLESEGMENT	"SingleSegment"
+#define FXBMGR_TRACERFX_HEADVELOCITY	"HeadVelocity"
+#define FXBMGR_TRACERFX_FLARE			"Flare"
+#define FXBMGR_TRACERFX_FLARESCALE		"FlareScale"
+#endif
 
 #define FXBMGR_BEAMFX_TAG				"BeamFX"
 #define FXBMGR_BEAMFX_NAME				"Name"
@@ -416,10 +426,20 @@ LTBOOL CFXButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
     if (g_pFXButeMgr || !szAttributeFile) return LTFALSE;
     if (!Parse(pInterface, szAttributeFile)) return LTFALSE;
 
+#ifdef PRIMAL_HUNT
+	// PH: read the bute cache instead, if there is one (0x1001387e)
+	CMultiFile_LITH cacheFile;
+	LTBOOL bCached = ReadCache(szAttributeFile, &cacheFile);
+#endif
+
 
 	// Set up global pointer...
 
 	g_pFXButeMgr = this;
+
+#ifdef PRIMAL_HUNT
+	if (bCached == LTTRUE) return LTTRUE;
+#endif
 
 
 	// Build our lists...
@@ -905,6 +925,11 @@ LTBOOL CFXButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
 
 	m_buteMgr.Term();
 
+#ifdef PRIMAL_HUNT
+	// PH: and write the bute cache (0x10014edc)
+	CMultiFile_FILE cacheOut;
+	WriteCache(szAttributeFile, &cacheOut);
+#endif
 
     return LTTRUE;
 }
@@ -918,6 +943,19 @@ LTBOOL CFXButeMgr::Init(ILTCSBase *pInterface, const char* szAttributeFile)
 //	whether it is there (PHCShell.dll 0x100c5680..0x100c64ad).
 //
 // ----------------------------------------------------------------------- //
+
+inline PROJECTILEFX::~PROJECTILEFX()
+{
+	// What Read built belongs to this one (PHObject.lto 0x1001f9d0)
+	if (bFromFile == LTTRUE)
+	{
+		if (pClassData)
+		{
+			delete pClassData;
+			pClassData = LTNULL;
+		}
+	}
+}
 
 LTBOOL PROJECTILEFX::Write(CMultiFile* pFile)
 {
@@ -1029,6 +1067,19 @@ LTBOOL PROJECTILEFX::Read(CMultiFile* pFile)
 	bFromFile = LTTRUE;
 
 	return LTTRUE;
+}
+
+inline IMPACTFX::~IMPACTFX()
+{
+	// What Read built belongs to this one (PHObject.lto 0x1001ff30)
+	if (bFromFile == LTTRUE)
+	{
+		if (pPusherFX)
+		{
+			delete pPusherFX;
+			pPusherFX = LTNULL;
+		}
+	}
 }
 
 LTBOOL IMPACTFX::Write(CMultiFile* pFile)
@@ -1172,6 +1223,22 @@ LTBOOL IMPACTFX::Read(CMultiFile* pFile)
 	return LTTRUE;
 }
 
+inline FIREFX::~FIREFX()
+{
+	// What Read built belongs to this one (PHObject.lto 0x100206d0)
+	if (bFromFile == LTTRUE)
+	{
+		for (int i=0; i < FIRE_MAX_BEAMFX; i++)
+		{
+			if (pBeamFX[i])
+			{
+				delete pBeamFX[i];
+				pBeamFX[i] = LTNULL;
+			}
+		}
+	}
+}
+
 LTBOOL FIREFX::Write(CMultiFile* pFile)
 {
 	if (!pFile) return LTFALSE;
@@ -1214,6 +1281,31 @@ LTBOOL FIREFX::Read(CMultiFile* pFile)
 	bFromFile = LTTRUE;
 
 	return LTTRUE;
+}
+
+inline CMuzzleFX::~CMuzzleFX()
+{
+	// What Read built belongs to this one (PHObject.lto 0x10021080)
+	if (bFromFile == LTTRUE)
+	{
+		if (pPMuzzleFX)
+		{
+			delete pPMuzzleFX;
+			pPMuzzleFX = LTNULL;
+		}
+
+		if (pScaleFX)
+		{
+			delete pScaleFX;
+			pScaleFX = LTNULL;
+		}
+
+		if (pDLightFX)
+		{
+			delete pDLightFX;
+			pDLightFX = LTNULL;
+		}
+	}
 }
 
 LTBOOL CMuzzleFX::Write(CMultiFile* pFile)
@@ -4929,6 +5021,22 @@ LTBOOL TRACERFX::Init(CButeMgr & buteMgr, char* aTagName)
     fInitialAlpha   = (LTFLOAT) buteMgr.GetDouble(aTagName, FXBMGR_TRACERFX_INITIALALPHA, fInitialAlpha);
     fFinalAlpha     = (LTFLOAT) buteMgr.GetDouble(aTagName, FXBMGR_TRACERFX_FINALALPHA, fFinalAlpha);
 
+#ifdef PRIMAL_HUNT
+	// RETAIL BUG: the constructor doesn't set bSingleSegment, so a tracer
+	// without the attribute gets whatever the allocation held
+	bSingleSegment	= buteMgr.GetInt(aTagName, FXBMGR_TRACERFX_SINGLESEGMENT, bSingleSegment);
+    fHeadVelocity   = (LTFLOAT) buteMgr.GetDouble(aTagName, FXBMGR_TRACERFX_HEADVELOCITY, fVelocity);
+
+	str = buteMgr.GetString(aTagName, FXBMGR_TRACERFX_FLARE, CString("") );
+	if (!str.IsEmpty())
+	{
+		strncpy(szFlare, (char*)(LPCSTR)str, ARRAY_LEN(szFlare));
+	}
+
+	// No default: the bute manager's own, 0, without the attribute
+    fFlareScale     = (LTFLOAT) buteMgr.GetDouble(aTagName, FXBMGR_TRACERFX_FLARESCALE);
+#endif
+
 	CAVector vTemp;
 	
 	vTemp = ToCAVector(vColor);
@@ -6002,6 +6110,207 @@ void DRIPPEROBJFX::Cache(CFXButeMgr* pFXButeMgr)
 
 #endif
 }
+
+#ifdef PRIMAL_HUNT
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	WriteFXList() / ReadFXList()
+//
+//	PURPOSE:	Primal Hunt: write a list of fx to the bute cache, its
+//				length then each in turn, and read one back into an empty
+//				list (PHObject.lto 0x1001dc30, 0x1001dcb0..0x1001ee80).
+//				The last argument only names the fx type: VC6 can't
+//				deduce it from the CTList<T*> (an internal compiler error)
+//
+// ----------------------------------------------------------------------- //
+
+template <class L, class T>
+static LTBOOL WriteFXList(L & list, CMultiFile* pFile, T** ppFX)
+{
+	if (!pFile) return LTFALSE;
+
+	pFile->WriteInt(list.GetLength());
+
+	T** pCur = list.GetItem(TLIT_FIRST);
+	while (pCur)
+	{
+		(*pCur)->Write(pFile);
+		pCur = list.GetItem(TLIT_NEXT);
+	}
+
+	return LTTRUE;
+}
+
+template <class L, class T>
+static LTBOOL ReadFXList(L & list, CMultiFile* pFile, T** ppFX)
+{
+	if (!pFile) return LTFALSE;
+	if (list.GetLength() != 0) return LTFALSE;
+
+	int nNum = pFile->ReadInt();
+	for (int i=0; i < nNum; i++)
+	{
+		T* pFX = new T;
+		pFX->Read(pFile);
+		list.AddTail(pFX);
+	}
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CFXButeMgr::WriteCache()
+//
+//	PURPOSE:	Primal Hunt: write the fx to the bute cache
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CFXButeMgr::WriteCache(const char* szFile, CMultiFile* pFile)
+{
+	if (!g_pInterface || !pFile || !szFile) return LTFALSE;
+
+	// The base class's comes back LTFALSE, so the cache is never written
+	if (!CGameButeMgr::WriteCache(szFile, pFile))
+	{
+		pFile->Close();
+		return LTFALSE;
+	}
+
+	void* pDummy;
+
+	WriteFXList(m_ParticleTrailFXList, pFile, (PARTICLETRAILFX**)&pDummy);
+	WriteFXList(m_ProjectileFXList, pFile, (PROJECTILEFX**)&pDummy);
+	WriteFXList(m_ProjClassDataList, pFile, (PROJECTILECLASSDATA**)&pDummy);
+	WriteFXList(m_ImpactFXList, pFile, (IMPACTFX**)&pDummy);
+	WriteFXList(m_FireFXList, pFile, (FIREFX**)&pDummy);
+	WriteFXList(m_PExplFXList, pFile, (PEXPLFX**)&pDummy);
+	WriteFXList(m_DLightFXList, pFile, (DLIGHTFX**)&pDummy);
+	WriteFXList(m_PVFXList, pFile, (PVFX**)&pDummy);
+	WriteFXList(m_PartMuzzleFXList, pFile, (CParticleMuzzleFX**)&pDummy);
+	WriteFXList(m_MuzzleFXList, pFile, (CMuzzleFX**)&pDummy);
+	WriteFXList(m_TracerFXList, pFile, (TRACERFX**)&pDummy);
+	WriteFXList(m_BeamFXList, pFile, (BEAMFX**)&pDummy);
+	WriteFXList(m_SoundFXList, pFile, (SOUNDFX**)&pDummy);
+	WriteFXList(m_PusherFXList, pFile, (PUSHERFX**)&pDummy);
+	WriteFXList(m_SmokeFXList, pFile, (SMOKEFX**)&pDummy);
+	WriteFXList(m_SteamFXList, pFile, (STEAMFX**)&pDummy);
+	WriteFXList(m_FireObjFXList, pFile, (FIREOBJFX**)&pDummy);
+	WriteFXList(m_DripperObjFXList, pFile, (DRIPPEROBJFX**)&pDummy);
+	WriteFXList(m_PShowerFXList, pFile, (CPShowerFX**)&pDummy);
+	WriteFXList(m_PolyDebrisFXList, pFile, (CPolyDebrisFX**)&pDummy);
+
+	pFile->WriteInt(m_ScaleFXList.size());
+
+	for (ScaleFXList::iterator iter = m_ScaleFXList.begin(); iter != m_ScaleFXList.end(); ++iter)
+	{
+		(*iter)->Write(pFile);
+	}
+
+	pFile->Close();
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CFXButeMgr::ReadCache()
+//
+//	PURPOSE:	Primal Hunt: read the fx from the bute cache
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CFXButeMgr::ReadCache(const char* szFile, CMultiFile* pFile)
+{
+	if (!g_pInterface || !pFile || !szFile) return LTFALSE;
+
+	// The base class's comes back LTFALSE, so the cache is never read
+	if (!CGameButeMgr::ReadCache(szFile, pFile))
+	{
+		pFile->Close();
+		return LTFALSE;
+	}
+
+	void* pDummy;
+
+	ReadFXList(m_ParticleTrailFXList, pFile, (PARTICLETRAILFX**)&pDummy);
+	ReadFXList(m_ProjectileFXList, pFile, (PROJECTILEFX**)&pDummy);
+
+	// The class data are of several kinds: each begins with which
+	if (m_ProjClassDataList.GetLength() == 0)
+	{
+		int nNum = pFile->ReadInt();
+		for (int i=0; i < nNum; i++)
+		{
+			PROJBASEFX base;
+			base.Read(pFile);
+
+			PROJECTILECLASSDATA* pPCD = LTNULL;
+
+			switch (base.nClassType)
+			{
+				case 2:
+					pPCD = new PROXCLASSDATA;
+				break;
+
+				case 3:
+					pPCD = new SPIDERCLASSDATA;
+				break;
+
+				case 4:
+					pPCD = new TRACKINGSADARCLASSDATA;
+				break;
+
+				case 5:
+					pPCD = new PREDDISKCLASSDATA;
+				break;
+
+				default:
+				break;
+			}
+
+			if (pPCD)
+			{
+				pPCD->Read(pFile);
+				m_ProjClassDataList.AddTail(pPCD);
+			}
+		}
+	}
+
+	ReadFXList(m_ImpactFXList, pFile, (IMPACTFX**)&pDummy);
+	ReadFXList(m_FireFXList, pFile, (FIREFX**)&pDummy);
+	ReadFXList(m_PExplFXList, pFile, (PEXPLFX**)&pDummy);
+	ReadFXList(m_DLightFXList, pFile, (DLIGHTFX**)&pDummy);
+	ReadFXList(m_PVFXList, pFile, (PVFX**)&pDummy);
+	ReadFXList(m_PartMuzzleFXList, pFile, (CParticleMuzzleFX**)&pDummy);
+	ReadFXList(m_MuzzleFXList, pFile, (CMuzzleFX**)&pDummy);
+	ReadFXList(m_TracerFXList, pFile, (TRACERFX**)&pDummy);
+	ReadFXList(m_BeamFXList, pFile, (BEAMFX**)&pDummy);
+	ReadFXList(m_SoundFXList, pFile, (SOUNDFX**)&pDummy);
+	ReadFXList(m_PusherFXList, pFile, (PUSHERFX**)&pDummy);
+	ReadFXList(m_SmokeFXList, pFile, (SMOKEFX**)&pDummy);
+	ReadFXList(m_SteamFXList, pFile, (STEAMFX**)&pDummy);
+	ReadFXList(m_FireObjFXList, pFile, (FIREOBJFX**)&pDummy);
+	ReadFXList(m_DripperObjFXList, pFile, (DRIPPEROBJFX**)&pDummy);
+	ReadFXList(m_PShowerFXList, pFile, (CPShowerFX**)&pDummy);
+	ReadFXList(m_PolyDebrisFXList, pFile, (CPolyDebrisFX**)&pDummy);
+
+	int nNum = pFile->ReadInt();
+	for (int i=0; i < nNum; i++)
+	{
+		CScaleFX* pScaleFX = new CScaleFX;
+		pScaleFX->Read(pFile);
+		m_ScaleFXList.push_back(pScaleFX);
+
+		// Store away the name-index pair for quick look-up.
+		m_ScaleFXTable[pScaleFX->szName] = pScaleFX->nId;
+	}
+
+	pFile->Close();
+	return LTTRUE;
+}
+
+#endif // PRIMAL_HUNT
 
 
 

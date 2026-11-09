@@ -4551,6 +4551,61 @@ void CWeaponModel::ForceChangeWeapon(uint8 nWeaponId, LTBOOL bDeselect)
 	pStats->ValidateClips();
 }
 
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CWeaponModel::Holster()
+//
+//	PURPOSE:	PH: put the weapon away for a mounted turret, remembering
+//				it (PHCShell 0x100b9f00; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CWeaponModel::Holster()
+{
+	m_nRequestedWeaponId = m_nWeaponId;
+
+	uint32 dwDeselectAni = GetDeselectAni();
+
+	if(m_hObject && dwDeselectAni != INVALID_ANI)
+	{
+		uint32 dwAni = g_pInterface->GetModelAnimation(m_hObject);
+
+		if(!IsDeselectAni(dwAni))
+		{
+			m_eState = W_DESELECT;
+			g_pInterface->SetModelLooping(m_hObject, LTFALSE);
+			g_pInterface->SetModelAnimation(m_hObject, dwDeselectAni);
+			g_pInterface->ResetModelAnimation(m_hObject);
+		}
+	}
+	else
+	{
+		m_bWeaponDeselected = LTTRUE;
+	}
+
+	m_PVFXMgr.Term();
+
+	//be sure to re-set zoom
+	if(m_fCurZoomLevel > 1)
+	{
+		m_fCurZoomLevel = 1;
+		HCAMERA hCamera = g_pGameClientShell->GetPlayerCamera();
+		CameraMgrFX_ZoomToggle(hCamera, m_fCurZoomLevel);
+		g_pClientSoundMgr->PlaySoundLocal("Sounds\\Weapons\\Marine\\RailGun\\zoom.wav", SOUNDPRIORITY_PLAYER_HIGH);
+		m_bZooming = m_bZoomed = m_bPreZooming = LTFALSE;
+	}
+
+	for(int i = 0; i < WM_MAX_MUZZLES; i++)
+	{
+		// RETAIL BUG: the flash is hidden before it is checked for
+		m_pMuzzleFlash[i]->Hide();
+		delete m_pMuzzleFlash[i];
+		m_pMuzzleFlash[i] = LTNULL;
+	}
+}
+#endif
+
 
 // ----------------------------------------------------------------------- //
 //

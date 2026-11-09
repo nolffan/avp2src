@@ -18,6 +18,9 @@
 #include "VarTrack.h"
 #include "CameraMgrFX.h"
 #include "CharacterFX.h"
+#ifdef PRIMAL_HUNT
+#include "ClientTurretMgr.h"
+#endif
 #include "CharacterFuncs.h"
 
 #include "MultiplayerClientMgr.h"
@@ -474,6 +477,11 @@ LTBOOL PlayerMovement::HandleMessageWrite(uint8 nType, HMESSAGEREAD hRead, uint3
 
 void PlayerMovement::Update()
 {
+#ifdef PRIMAL_HUNT
+	m_fTurretPitch = 0.0f;
+	m_fTurretYaw = 0.0f;
+#endif
+
 	// Get the game settings
 	CGameSettings *pSettings = g_pGameClientShell->GetGameSettings();
 
@@ -645,6 +653,18 @@ void PlayerMovement::UpdateRotation()
 
 		// Rotate around the up axis of the character for side to side rotation
 		m_pMath->RotateAroundAxis(rRot, vU, fTurnAmount);
+
+#ifdef PRIMAL_HUNT
+		// PH: at a mounted turret, the mouse aims the turret instead
+		CClientTurret* pTurret = g_pGameClientShell->GetUsingTurret();
+
+		if(pTurret)
+		{
+			m_fTurretYaw = fTurnAmount;
+			pTurret->SetAim(m_fTurretPitch, fTurnAmount);
+		}
+		else
+#endif
 		m_pInterface->SetObjectRotation(m_Vars.m_hObject, &rRot);
 
 		// Fill in the object rotation again
@@ -699,6 +719,18 @@ void PlayerMovement::UpdateAiming()
 			if (m_Vars.m_fAimingPitch < 0.0f) m_Vars.m_fAimingPitch += LTMIN(fPitchDelta, -m_Vars.m_fAimingPitch);
 		}
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: at a mounted turret, the aim goes to the turret, not the view
+	CClientTurret* pTurret = g_pGameClientShell->GetUsingTurret();
+
+	if(pTurret)
+	{
+		m_fTurretPitch = m_Vars.m_fAimingPitch;
+		m_Vars.m_fAimingPitch = 0.0f;
+		pTurret->SetAim(m_fTurretPitch, m_fTurretYaw);
+	}
+#endif
 
 	// Do the standard control aiming updates...
 	CharacterMovement::UpdateAiming();
@@ -1350,6 +1382,13 @@ uint16 PlayerMovement::GetClientUpdateFlags()
 		m_CURot = rRot;
 		nUpdateFlags |= CLIENTUPDATE_ROTATION;
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: the turret we man (looked up, then never used)
+	CClientTurret* pTurret = LTNULL;
+	if(GetClientTurretMgr())
+		pTurret = GetClientTurretMgr()->Find(g_pLTClient->GetClientObject());
+#endif
 
 	// Check the velocity
 	LTVector vVel = GetVelocity();

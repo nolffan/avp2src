@@ -305,10 +305,12 @@ private :
 	DBYTE		m_nLoopKeyId; //does not need save/load
 
 #ifdef PRIMAL_HUNT
-	// PH: the sentry turrets a player picks up and carries, and the turret
-	// he is using (CPlayerObj +0x1e80..+0x1eb0; the turret pickup in
-	// EngineMessageFn, PHObject.lto 0x1010bb2b)
-	LTFLOAT		m_fNextTurretTime;
+	// PH: when a marine's self-destruct goes off (MID_SELF_DESTRUCT,
+	// ObjectMessageFn 0x1010b9b9; Update 0x1010cf4b), then the sentry
+	// turrets a player picks up and carries, and the turret he is using
+	// (CPlayerObj +0x1e80..+0x1eb0; the turret pickup in ObjectMessageFn,
+	// PHObject.lto 0x1010bb2b)
+	LTFLOAT		m_fSelfDestructTime;
 	int			m_nNumTurrets;
 	LTSmartLink	m_hTurrets[MAX_PLAYER_TURRETS];
 	LTSmartLink	m_hUsingTurret;

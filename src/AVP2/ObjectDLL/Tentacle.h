@@ -33,8 +33,8 @@ class CTentacle : public GameBase
 		// Our CAITentacle sends us after a target (PHObject.lto 0x1014d363)
 		void	Erupt(HOBJECT hTarget);
 
-		// Our CAITentacle asks whether we're down (0x1014d2c4); the same
-		// body as CanShootThrough, folded into CTurret's at 0x10092d30
+		// Our CAITentacle asks whether we're down (not shown); the same
+		// body as Turret::CanShootThrough, folded with it at 0x10092d30
 		LTBOOL	IsHidden();
 
 		virtual LTBOOL CanShootThrough()

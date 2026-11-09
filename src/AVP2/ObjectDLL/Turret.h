@@ -22,10 +22,18 @@
 
 #include <string>
 
+#ifdef PRIMAL_HUNT
+#include "CharacterAlignment.h"
+#endif
+
 class CCharacter;
 
 #ifdef PRIMAL_HUNT
 LTBOOL IsTurret(HOBJECT hObj);
+
+// PH: the Turret, if the object is one (PHObject.lto 0x100874f0; name ours)
+class Turret;
+Turret* GetTurret(HOBJECT hObj);
 
 // PH: creates a carryable turret for a CTurretSpawner (PHObject.lto
 // 0x10091e40)
@@ -63,6 +71,18 @@ class Turret : public Prop
 #ifdef PRIMAL_HUNT
 		// PH: 0x10091c30 (name ours)
 		void	SetSpawner(HOBJECT hSpawner);
+
+		// PH: a player carries us (0x10091ca0, 0x10091dd0; names ours).
+		// SetOwner's class goes unused: it asks the owner for its own.
+		void	SetOwner(HOBJECT hOwner, CharacterClass eOwnerClass);
+		void	ClearOwner(LTBOOL bResetTargets);
+		HOBJECT	GetOwner() const { return m_hOwner; }
+
+		// PH: shots go through it while it is hidden (0x10092d30)
+		virtual LTBOOL CanShootThrough();
+
+		// PH: take it and its gun out of the world (0x10092d60; name ours)
+		void	Remove();
 
 		// PH: it marks the gun too
 		friend HOBJECT SpawnTurret(HOBJECT hSpawner, const LTVector & vPos, const LTRotation & rRot);

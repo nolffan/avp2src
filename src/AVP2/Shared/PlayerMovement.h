@@ -129,6 +129,13 @@ class PlayerMovement : public CharacterMovement
 		uint16		m_CUFlags2;
 		uint8		m_CUMovementState;
 		uint16		m_CUCtrlFlags;
+
+#ifdef PRIMAL_HUNT
+		// PH: the aim handed to the mounted turret the player mans
+		// (CClientTurret::SetAim; PHCShell 0x100a0a76, 0x100a0ccb)
+		LTFLOAT		m_fTurretPitch;
+		LTFLOAT		m_fTurretYaw;
+#endif
 };
 
 // ----------------------------------------------------------------------- //

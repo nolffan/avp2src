@@ -20,6 +20,10 @@
 
 #include <deque>
 
+#ifdef PRIMAL_HUNT
+#include "MultiFile.h"
+#endif
+
 //*********************************************************************************
 
 #ifdef _WIN32
@@ -51,6 +55,13 @@ struct SoundFiles
 
 	~SoundFiles();
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the bute cache (MultiFile.h; PHObject.lto 0x1002d930,
+	// 0x1002db10)
+	LTBOOL	Write(CMultiFile* pFile);
+	LTBOOL	Read(CMultiFile* pFile);
+#endif
+
 	uint32			m_nNumSounds;		// The number of sounds in the set
 
 	// Our name in the bute file.
@@ -68,6 +79,13 @@ struct SoundFiles
 struct SoundButes
 {
 	SoundButes::SoundButes();
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the bute cache (MultiFile.h; PHObject.lto 0x1002dc70,
+	// 0x1002dd00)
+	LTBOOL	Write(CMultiFile* pFile);
+	LTBOOL	Read(CMultiFile* pFile);
+#endif
 
 	LTFLOAT	m_fInnerRad;				// Inner sound radius
 	LTFLOAT	m_fOuterRad;				// Outer sound radius
@@ -101,6 +119,13 @@ class CSoundButeMgr : public CHierarchicalButeMgr
 
 		LTBOOL		Init(ILTCSBase *pInterface, const char* szAttributeFile = SOUND_BUTES_DEFAULT_FILE);
 		void		Term();
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: the bute cache (MultiFile.h; PHObject.lto 0x1002dd90,
+		// 0x1002de40)
+		virtual LTBOOL	WriteCache(const char* szFile, CMultiFile* pFile);
+		virtual LTBOOL	ReadCache(const char* szFile, CMultiFile* pFile);
+#endif
 
 		LTBOOL		WriteFile()						{ return m_buteMgr.Save(); }
 		void		Reload()						{ m_buteMgr.Parse(m_strAttributeFile); }

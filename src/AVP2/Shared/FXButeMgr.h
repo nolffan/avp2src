@@ -259,6 +259,12 @@ struct PROJECTILEFX
 	PROJECTILEFX();
 
 #ifdef PRIMAL_HUNT
+	// Primal Hunt: what Read built belongs to this one (PHObject.lto
+	// 0x1001f9d0)
+	~PROJECTILEFX();
+#endif
+
+#ifdef PRIMAL_HUNT
 	virtual LTBOOL	Write(CMultiFile* pFile);
 	virtual LTBOOL	Read(CMultiFile* pFile);
 #endif
@@ -313,6 +319,12 @@ struct PUSHERFX;
 struct IMPACTFX
 {
 	IMPACTFX();
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: what Read built belongs to this one (PHObject.lto
+	// 0x1001ff30)
+	~IMPACTFX();
+#endif
 
 #ifdef PRIMAL_HUNT
 	virtual LTBOOL	Write(CMultiFile* pFile);
@@ -401,6 +413,12 @@ struct BEAMFX;
 struct FIREFX
 {
 	FIREFX();
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: what Read built belongs to this one (PHObject.lto
+	// 0x100206d0)
+	~FIREFX();
+#endif
 
 #ifdef PRIMAL_HUNT
 	virtual LTBOOL	Write(CMultiFile* pFile);
@@ -575,6 +593,12 @@ struct CMuzzleFX
 	CMuzzleFX();
 
 #ifdef PRIMAL_HUNT
+	// Primal Hunt: what Read built belongs to this one (PHObject.lto
+	// 0x10021080)
+	~CMuzzleFX();
+#endif
+
+#ifdef PRIMAL_HUNT
 	virtual LTBOOL	Write(CMultiFile* pFile);
 	virtual LTBOOL	Read(CMultiFile* pFile);
 #endif
@@ -624,6 +648,17 @@ struct TRACERFX
 	float		fInitialAlpha;
 	float		fFinalAlpha;
     LTVector    vColor;
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: TRACERFX is 0xf4 bytes (CFXButeMgr::Init, PHObject.lto
+	// 0x10014966). Init (0x1001a480) reads these; the constructor leaves
+	// them be, and the bute cache doesn't keep them. Names ours, after
+	// the attributes'.
+	LTBOOL		bSingleSegment;
+	float		fHeadVelocity;
+	char		szFlare[FXBMGR_MAX_FILE_PATH];
+	float		fFlareScale;
+#endif
 };
 
 typedef CTList<TRACERFX*> TracerFXList;
@@ -875,6 +910,13 @@ class CFXButeMgr : public CGameButeMgr
 		void			Term();
 
         void            Reload(ILTCSBase *pInterface);
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: the bute cache (MultiFile.h; PHObject.lto 0x1001c000,
+		// 0x1001c350)
+		virtual LTBOOL	WriteCache(const char* szFile, CMultiFile* pFile);
+		virtual LTBOOL	ReadCache(const char* szFile, CMultiFile* pFile);
+#endif
 
 #ifdef _CLIENTBUILD
         CSpecialFX* CreateScaleFX(CScaleFX* pScaleFX, LTVector vPos,

@@ -658,6 +658,7 @@ DBOOL CPlayerObj::Update()
 			}
 		}
 
+
 		UpdateHistory();
 	}
 
@@ -695,6 +696,7 @@ DBOOL CPlayerObj::Update()
 
 	return LTTRUE;
 }
+
 
 
 // ----------------------------------------------------------------------- //
@@ -1617,6 +1619,54 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags)
 	// Remove any models we may have loaded from a keepalive save.
 	if(g_pGameServerShell->GetGameType() == SP_STORY)
 		g_pLTServer->FreeUnusedModels( );
+
+#ifdef PRIMAL_HUNT
+	// PH: let go of the mounted turret, lose the carried ones, and free
+	// the ones we set down (PHObject.lto 0x1010e752)
+	m_fSelfDestructTime = 0.0f;
+
+	if (m_hUsingTurret)
+	{
+		if (GetTurretGun(m_hUsingTurret))
+		{
+			HSTRING hStr = g_pLTServer->CreateString("ACTIVATE");
+			SendTriggerMsgToObject(this, m_hUsingTurret, hStr);
+			g_pLTServer->FreeString(hStr);
+		}
+
+		StopUsingTurret();
+	}
+
+	if (m_nNumTurrets > 0)
+	{
+		for (int i = 0; i < m_nNumTurrets; i++)
+		{
+			if (m_hTurrets[i])
+			{
+				g_pLTServer->RemoveObject(m_hTurrets[i]);
+				m_hTurrets[i] = LTNULL;
+			}
+		}
+
+		m_nNumTurrets = 0;
+	}
+
+	HMESSAGEWRITE hTurretMsg = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+	g_pLTServer->WriteToMessageByte(hTurretMsg, 0);
+	g_pLTServer->EndMessage(hTurretMsg);
+
+	HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+	while (hObj)
+	{
+		Turret* pTurret = GetTurret(hObj);
+		if (pTurret && pTurret->GetOwner() == m_hObject)
+		{
+			pTurret->ClearOwner(g_pGameServerShell->GetGameType() == MP_DM);
+		}
+
+		hObj = g_pLTServer->GetNextObject(hObj);
+	}
+#endif
 }
 
 
@@ -4901,7 +4951,7 @@ void CPlayerObj::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 	*hWrite << m_bResetHealthAndArmor;
 
 #ifdef PRIMAL_HUNT
-	SAVE_FLOAT(m_fNextTurretTime);
+	SAVE_FLOAT(m_fSelfDestructTime);
 	SAVE_INT(m_nNumTurrets);
 	for (int i = 0; i < MAX_PLAYER_TURRETS; i++)
 	{
@@ -4991,7 +5041,7 @@ void CPlayerObj::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 	*hRead >> m_bResetHealthAndArmor;
 
 #ifdef PRIMAL_HUNT
-	LOAD_FLOAT(m_fNextTurretTime);
+	LOAD_FLOAT(m_fSelfDestructTime);
 	LOAD_INT(m_nNumTurrets);
 
 	HOBJECT hObj = LTNULL;
@@ -5735,6 +5785,54 @@ void CPlayerObj::MPRespawn(uint8 nCharId)
 	SetHasNightVision();
 
 	UpdateInterface(LTTRUE, LTTRUE);
+
+#ifdef PRIMAL_HUNT
+	// PH: let go of the mounted turret, lose the carried ones, and free
+	// the ones we set down (PHObject.lto 0x101164da)
+	m_fSelfDestructTime = 0.0f;
+
+	if (m_hUsingTurret)
+	{
+		if (GetTurretGun(m_hUsingTurret))
+		{
+			HSTRING hStr = g_pLTServer->CreateString("ACTIVATE");
+			SendTriggerMsgToObject(this, m_hUsingTurret, hStr);
+			g_pLTServer->FreeString(hStr);
+		}
+
+		StopUsingTurret();
+	}
+
+	if (m_nNumTurrets > 0)
+	{
+		for (int i = 0; i < m_nNumTurrets; i++)
+		{
+			if (m_hTurrets[i])
+			{
+				g_pLTServer->RemoveObject(m_hTurrets[i]);
+				m_hTurrets[i] = LTNULL;
+			}
+		}
+
+		m_nNumTurrets = 0;
+	}
+
+	HMESSAGEWRITE hTurretMsg = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+	g_pLTServer->WriteToMessageByte(hTurretMsg, 0);
+	g_pLTServer->EndMessage(hTurretMsg);
+
+	HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+	while (hObj)
+	{
+		Turret* pTurret = GetTurret(hObj);
+		if (pTurret && pTurret->GetOwner() == m_hObject)
+		{
+			pTurret->ClearOwner(g_pGameServerShell->GetGameType() == MP_DM);
+		}
+
+		hObj = g_pLTServer->GetNextObject(hObj);
+	}
+#endif
 }
 
 

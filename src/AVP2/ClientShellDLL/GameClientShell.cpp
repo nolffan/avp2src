@@ -51,6 +51,10 @@
 #include "PerformanceMgr.h"
 #include "SCDefs.h"
 #include "FXButeMgr.h"
+#ifdef PRIMAL_HUNT
+#include "ClientTurretMgr.h"
+#include "TurretInfoMgr.h"
+#endif
 
 // For Deg2Rad()
 #include "ServerUtilities.h"
@@ -120,6 +124,9 @@ TeleType			m_TeleType;
 
 CClientDE*			g_pInterface = DNULL;
 CGameClientShell*	g_pGameClientShell = DNULL;
+#ifdef PRIMAL_HUNT
+LTFLOAT				g_fOldCloak = 0.0f;		// PH: the server's "OldCloak" (MID_CONSOLE_COMMAND)
+#endif
 LTVector				g_vWorldWindVel(0.0f, 0.0f, 0.0f);
 PhysicsState		g_normalPhysicsState;
 PhysicsState		g_waterPhysicsState;
@@ -214,6 +221,12 @@ IClientShell* CreateClientShell(ILTClient *pClientDE)
     g_pPhysicsLT = g_pLTClient->Physics();
 
 	g_pPhysicsLT->SetStairHeight(DEFAULT_STAIRSTEP_HEIGHT);
+
+#ifdef PRIMAL_HUNT
+	// PH: the mounted turrets and what we know of the turrets about
+	InitClientTurrets(32);
+	InitTurretInfo(64);
+#endif
 
     return ((IClientShell*)pShell);
 }
@@ -1936,6 +1949,12 @@ void CGameClientShell::PreLoadWorld(char *pWorldName)
 	}
 
 	SAFE_STRCPY(m_strCurrentWorldName, pWorldName);
+
+#ifdef PRIMAL_HUNT
+	// PH: a new world, new turrets
+	InitTurretInfo(64);
+	InitClientTurrets(32);
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -2304,6 +2323,12 @@ void CGameClientShell::UpdatePlaying()
 
 	// Update player movement...
 	m_PlayerMovement.Update();
+
+#ifdef PRIMAL_HUNT
+	// PH: the mounted turrets
+	if(GetClientTurretMgr())
+		GetClientTurretMgr()->Update(m_fFrameTime);
+#endif
 
 	
 	// Update reverb...
@@ -2814,6 +2839,49 @@ void CGameClientShell::UpdateWeaponModel()
 			bFire	  = LTTRUE;
 			eFireType = (dwFlags & CM_FLAG_ALTFIRING) ? FT_ALT_FIRE : FT_NORMAL_FIRE;
 		}
+#ifdef PRIMAL_HUNT
+		// PH: the predalien's backhand fires until it's done
+		else if(m_fBackhandTime >= 0.0f)
+		{
+			if(g_pLTClient->GetTime() > m_fBackhandTime)
+			{
+				SetBackhand(LTFALSE);
+			}
+			else
+			{
+				bFire	  = LTTRUE;
+				eFireType = FT_NORMAL_FIRE;
+			}
+		}
+
+		// PH: at a mounted turret, fire works the turret: the primary
+		// fires it and the alternate spins its barrels
+		CClientTurret* pTurret = GetUsingTurret();
+
+		if(pTurret)
+		{
+			if(bFire == LTTRUE)
+			{
+				if(eFireType == FT_NORMAL_FIRE)
+				{
+					pTurret->SetFireControl(bFire);
+					pTurret->SetSpinControl(LTFALSE);
+				}
+				else
+				{
+					pTurret->SetSpinControl(bFire);
+					pTurret->SetFireControl(LTFALSE);
+				}
+			}
+			else
+			{
+				pTurret->SetFireControl(LTFALSE);
+				pTurret->SetSpinControl(LTFALSE);
+			}
+
+			return;
+		}
+#endif
 
 		// Update the model position and state...
 		WeaponState eWeaponState = m_weaponModel.UpdateWeaponModel(rRot, vPos, bFire, eFireType);
@@ -2832,6 +2900,19 @@ void CGameClientShell::UpdateWeaponModel()
 
 				CameraMgrFX_TiltCreate(m_hPlayerCamera, vRecoil, pBarrelData->vRecoilTimes);
 			}
+
+#ifdef PRIMAL_HUNT
+			// PH: the backhand has been swung, back to the claws
+			if(m_fBackhandTime >= 0.0f && g_pLTClient->GetTime() > m_fBackhandTime)
+			{
+				WEAPON* pWep = g_pWeaponMgr->GetWeapon("Claws_Predalien");
+
+				if(pWep)
+					m_weaponModel.ForceChangeWeapon(pWep->nId, LTFALSE);
+
+				SetBackhand(LTFALSE);
+			}
+#endif
 		}
 	}
 	else
@@ -3643,6 +3724,154 @@ void CGameClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 
 	switch(messageID)
 	{
+#ifdef PRIMAL_HUNT
+		// PH: the mounted turrets (0x10080cfc)
+		case MID_TURRET_USE:
+		{
+			switch(g_pLTClient->ReadFromMessageByte(hMessage))
+			{
+				case TURRET_USE_ACTIVE:
+				{
+					LTBOOL bActive = g_pLTClient->ReadFromMessageByte(hMessage);
+					HOBJECT hTurret = g_pLTClient->ReadFromMessageObject(hMessage);
+					if(!hTurret) break;
+
+					CClientTurretMgr* pTurretMgr = GetClientTurretMgr();
+
+					if(bActive)
+					{
+						HOBJECT hUser = g_pLTClient->ReadFromMessageObject(hMessage);
+						if(!hUser) break;
+
+						LTFLOAT fPitchRange = g_pLTClient->ReadFromMessageFloat(hMessage);
+						LTFLOAT fYawRange = g_pLTClient->ReadFromMessageFloat(hMessage);
+						int nAmmo = g_pLTClient->ReadFromMessageWord(hMessage);
+
+						if(!pTurretMgr) break;
+
+						CClientTurret* pTurret = pTurretMgr->Find(hTurret);
+
+						if(!pTurret)
+						{
+							pTurret = pTurretMgr->Add(hTurret);
+							if(!pTurret) break;
+						}
+
+						pTurret->m_nAmmo = nAmmo;
+						pTurret->SetRange(fPitchRange, fYawRange);
+						pTurret->Activate(hUser);
+
+						if(hUser == g_pLTClient->GetClientObject())
+						{
+							// Stop where we are
+							LTVector vZero(0.0f, 0.0f, 0.0f);
+							m_PlayerMovement.SetVelocity(vZero);
+							g_pPhysicsLT->SetVelocity(g_pLTClient->GetClientObject(), &vZero);
+
+							// Put the weapon away
+							m_nRestoreWeaponId = m_weaponModel.GetWeaponId();
+
+							if(m_nRestoreWeaponId > 0)
+							{
+								m_weaponModel.Holster();
+								m_InterfaceMgr.GetHudMgr()->NewWeapon(LTNULL);
+								g_pInterfaceMgr->GetCrosshairMgr()->LoadCrosshair("Interface\\StatusBar\\Marine\\Xhair_normal.pcx", 1.0f, 1.0f);
+								g_pInterfaceMgr->GetCrosshairMgr()->SetCrosshairColors(1.0f, 1.0f, 1.0f, 1.0f);
+								g_pInterfaceMgr->GetAutoTargetMgr()->Init(TT_NORMAL);
+							}
+
+							m_PlayerMovement.SetMovementState(CMS_TURRET);
+							StartTurretView(pTurret);
+						}
+					}
+					else
+					{
+						if(!pTurretMgr) break;
+
+						CClientTurret* pTurret = pTurretMgr->Find(hTurret);
+						if(!pTurret) break;
+
+						HOBJECT hUser = pTurret->m_hUser;
+
+						if(hUser == g_pLTClient->GetClientObject())
+						{
+							ChangeWeapon((uint8)m_nRestoreWeaponId, LTTRUE, LTTRUE);
+							m_PlayerMovement.SetMovementState(CMS_IDLE);
+						}
+
+						EndTurretView(pTurret);
+						pTurret->Deactivate();
+					}
+				}
+				break;
+
+				case TURRET_USE_AIM:
+				{
+					HOBJECT hUser = g_pLTClient->ReadFromMessageObject(hMessage);
+					LTFLOAT fYaw = g_pLTClient->ReadFromMessageFloat(hMessage);
+					LTFLOAT fPitch = g_pLTClient->ReadFromMessageFloat(hMessage);
+
+					CClientTurretMgr* pTurretMgr = GetClientTurretMgr();
+					if(!pTurretMgr) break;
+
+					CClientTurret* pTurret = pTurretMgr->Find(hUser);
+					if(!pTurret) break;
+
+					pTurret->Rotate(fPitch, fYaw, 0.0f);
+				}
+				break;
+
+				case TURRET_USE_CONTROLS:
+				{
+					g_pLTClient->ReadFromMessageObject(hMessage);
+					g_pLTClient->ReadFromMessageByte(hMessage);
+				}
+				break;
+
+				case TURRET_USE_AMMO:
+				{
+					HOBJECT hTurret = g_pLTClient->ReadFromMessageObject(hMessage);
+
+					CClientTurretMgr* pTurretMgr = GetClientTurretMgr();
+					if(!pTurretMgr) break;
+
+					CClientTurret* pTurret = pTurretMgr->Find(hTurret);
+					if(!pTurret) break;
+
+					pTurret->m_nAmmo = g_pLTClient->ReadFromMessageWord(hMessage);
+				}
+				break;
+
+				case TURRET_USE_ROTATION:
+				{
+					HOBJECT hUser = g_pLTClient->ReadFromMessageObject(hMessage);
+					uint8 nYaw = g_pLTClient->ReadFromMessageByte(hMessage);
+					LTFLOAT fPitch = g_pLTClient->ReadFromMessageFloat(hMessage);
+
+					CClientTurretMgr* pTurretMgr = GetClientTurretMgr();
+					if(!pTurretMgr) break;
+
+					CClientTurret* pTurret = pTurretMgr->Find(hUser);
+					if(!pTurret) break;
+
+					// Our own turret turns as we aim it
+					if(GetUsingTurret() == pTurret) break;
+
+					pTurret->SetRotation(fPitch, (LTFLOAT)nYaw * (MATH_CIRCLE / 255.0f));
+				}
+				break;
+			}
+		}
+		break;
+
+		// PH: "OldCloak" (CCommandMgr's SVAR; 0x1008109f)
+		case MID_CONSOLE_COMMAND:
+		{
+			g_fOldCloak = g_pLTClient->ReadFromMessageFloat(hMessage);
+		}
+		break;
+#endif
+
 		case MID_SERVERFORCEPOS:
 		{
 			m_PlayerMovement.HandleMessageRead(messageID, hMessage, 0);
@@ -3702,9 +3931,28 @@ void CGameClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 
 		case MID_SHAKE_SCREEN :
 		{
+#ifdef PRIMAL_HUNT
+			// PH: a zero first says a recoil follows (0x100811e6)
+			if(!g_pLTClient->ReadFromMessageByte(hMessage))
+			{
+				LTVector vAmount;
+				g_pLTClient->ReadFromMessageVector(hMessage, &vAmount);
+				LTFLOAT fTime = g_pLTClient->ReadFromMessageFloat(hMessage);
+				LTFLOAT fMinDelay = g_pLTClient->ReadFromMessageFloat(hMessage);
+				LTFLOAT fMaxDelay = g_pLTClient->ReadFromMessageFloat(hMessage);
+				ShakeScreen(vAmount, fTime, fMinDelay, fMaxDelay);
+			}
+			else
+			{
+				LTVector vAmount;
+				g_pLTClient->ReadFromMessageVector(hMessage, &vAmount);
+				ShakeScreen(vAmount);
+			}
+#else
 			LTVector vAmount;
 			g_pLTClient->ReadFromMessageVector(hMessage, &vAmount);
 			ShakeScreen(vAmount);
+#endif
 		}
 		break;
 
@@ -4060,6 +4308,30 @@ void CGameClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 				m_FlashLight.TurnOff();
 		}
 		break;
+
+#ifdef PRIMAL_HUNT
+		// PH: a turret's ammo and heat, for the crosshair (0x10081ab1)
+		case MID_TURRET_AMMO:
+		{
+			HOBJECT hTurret = g_pInterface->ReadFromMessageObject(hMessage);
+			int nAmmo = g_pInterface->ReadFromMessageByte(hMessage);
+			int nHeat = g_pInterface->ReadFromMessageByte(hMessage);
+
+			if(GetTurretInfoMgr())
+				GetTurretInfoMgr()->Set(hTurret, nAmmo, nHeat);
+		}
+		break;
+
+		// PH: the turrets the player carries, for the HUD (0x10081aff)
+		case MID_PLAYER_TURRETS:
+		{
+			uint8 nCarried = g_pInterface->ReadFromMessageByte(hMessage);
+
+			if(GetTurretInfoMgr())
+				GetTurretInfoMgr()->m_nCarried = nCarried;
+		}
+		break;
+#endif
 			
 
 		default : break;
@@ -4082,6 +4354,17 @@ void CGameClientShell::ShakeScreen(LTVector vShake)
 	else
 		CameraMgrFX_ShakeCreate(m_hPlayerCamera, vShake);
 }
+
+#ifdef PRIMAL_HUNT
+// PH: the mounted turret's recoil (0x10081d80)
+void CGameClientShell::ShakeScreen(LTVector vShake, LTFLOAT fTime, LTFLOAT fMinDelay, LTFLOAT fMaxDelay)
+{
+	if(m_CameraMgr.GetCameraActive(m_hCinematicCamera))
+		CameraMgrFX_RecoilCreate(m_hCinematicCamera, vShake, fTime, fMinDelay, fMaxDelay);
+	else
+		CameraMgrFX_RecoilCreate(m_hPlayerCamera, vShake, fTime, fMinDelay, fMaxDelay);
+}
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -4499,6 +4782,10 @@ void CGameClientShell::OnObjectRemove(HLOCALOBJ hObj)
 	{
 		m_InterfaceMgr.GetPlayerStats()->SetAutoTarget(LTNULL);
 	}
+
+#ifdef PRIMAL_HUNT
+	RemoveTurretInfo(hObj);
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -5152,6 +5439,12 @@ void CGameClientShell::RenderCamera(DBOOL bDrawInterface)
 		// Display any necessary debugging info...
 		if(g_pCheatMgr)
 			g_pCheatMgr->UpdateDebugText();
+
+#ifdef PRIMAL_HUNT
+		// PH: the mounted turret's ammo
+		if(GetClientTurretMgr())
+			GetClientTurretMgr()->DrawAmmo();
+#endif
 
 
 		g_pLTClient->EndOptimized2D();
@@ -7407,3 +7700,23 @@ void CGameClientShell::ReadMPInterfaceUpdate(HMESSAGEREAD hMessage)
 	fValue = g_pLTClient->ReadFromMessageFloat(hMessage);
 	m_InterfaceMgr.GetPlayerStats()->UpdateBatteryLevel(fValue);
 }
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameClientShell::GetUsingTurret()
+//
+//	PURPOSE:	PH: the mounted turret the player mans, if any
+//				(0x10086c80; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+CClientTurret* CGameClientShell::GetUsingTurret()
+{
+	if(!GetClientTurretMgr())
+		return LTNULL;
+
+	return GetClientTurretMgr()->Find(g_pLTClient->GetClientObject());
+}
+#endif
+

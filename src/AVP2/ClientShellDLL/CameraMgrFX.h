@@ -36,6 +36,10 @@
 #define CAMERAMGRFX_ID_SCREENWASH			116
 #define CAMERAMGRFX_ID_LANDBOB				117
 #define CAMERAMGRFX_ID_NET_TILT				118
+#ifdef PRIMAL_HUNT
+#define CAMERAMGRFX_ID_RECOIL				119	// PH: the mounted turret's recoil
+#define CAMERAMGRFX_ID_TURRET				120	// PH: the view from behind a mounted turret
+#endif
 
 // ----------------------------------------------------------------------- //
 
@@ -303,5 +307,40 @@ struct CAMERAMGRFX_NET_TILT : public CAMERAMGRFX
 void	CameraMgrFX_NetTiltCreate(HCAMERA hCamera, LTVector vRotAmount, LTVector vTiltAmount);
 LTBOOL	CameraMgrFX_NetTiltUpdate(HCAMERA hCamera, void *pEffect);
 void	CameraMgrFX_NetTiltSetRampDown(HCAMERA hCamera);
+
+#ifdef PRIMAL_HUNT
+// *********************************************************************** //
+// PH: the mounted turret's recoil: the view (and the weapon) jumps about by
+// up to vAmount for fTime, to a new offset every fMinDelay to fMaxDelay
+// (PHCShell 0x10069ac0, 0x10069e80)
+
+struct CAMERAMGRFX_RECOIL : public CAMERAMGRFX
+{
+	LTVector	vAmount;
+	LTFLOAT		fTime;
+	LTFLOAT		fMinDelay;
+	LTFLOAT		fMaxDelay;
+	LTFLOAT		fEndTime;
+	LTFLOAT		fNextTime;
+	LTFLOAT		fDelay;
+	LTVector	vOffset;
+	LTVector	vLastOffset;
+};
+
+void	CameraMgrFX_RecoilCreate(HCAMERA hCamera, LTVector vAmount, LTFLOAT fTime, LTFLOAT fMinDelay, LTFLOAT fMaxDelay);
+LTBOOL	CameraMgrFX_RecoilUpdate(HCAMERA hCamera, void *pEffect);
+
+// *********************************************************************** //
+// PH: the view from behind the mounted turret the player mans
+// (PHCShell 0x1006a0e0, 0x1006a220)
+
+struct CAMERAMGRFX_TURRET : public CAMERAMGRFX
+{
+	HOBJECT		hTurret;
+};
+
+void	CameraMgrFX_TurretCreate(HCAMERA hCamera, HOBJECT hTurret);
+LTBOOL	CameraMgrFX_TurretUpdate(HCAMERA hCamera, void *pEffect);
+#endif
 
 #endif //__CAMERA_MGR_FX_H__

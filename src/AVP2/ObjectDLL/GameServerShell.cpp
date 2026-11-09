@@ -124,6 +124,14 @@ static int			g_nNumClients = 0;
 
 static char			s_LevelCacheFileName[128];
 
+#ifdef PRIMAL_HUNT
+// PH: the world the last load game message loaded (HandleLoadGameMsg,
+// PHObject.lto 0x1005a4ac; name ours)
+static char			s_szLoadedWorld[256];
+
+static char* FormatString(char* szBuffer, const char* szFormat, ...);
+#endif
+
 // Our current save/load version.
 // Formatted as YYYYMMDDN (year, month, day, number).  So that it will always be increasing.
 uint32 CGameServerShell::m_nCurrentSaveLoadVersion = 200111210;
@@ -2328,8 +2336,17 @@ void CGameServerShell::HandleLoadGameMsg(HCLIENT hSender, HMESSAGEREAD hMessage)
 	{
 		ReportError(hSender, SERROR_LOADGAME);
 		g_pLTServer->BPrint("Load Game Error: Invalid world filename!");
+#ifdef PRIMAL_HUNT
+		s_szLoadedWorld[0] = '\0';
+#endif
 		goto FREE_DATA;
 	}
+
+#ifdef PRIMAL_HUNT
+	// PH: remember the world, for Update's autosave (0x1005a4a6)
+	strncpy(s_szLoadedWorld, pLGFileName, 255);
+	s_szLoadedWorld[255] = '\0';
+#endif
 
 	if (bRestoreLevelObjects)
 	{
@@ -2686,6 +2703,28 @@ void CGameServerShell::Update(LTFLOAT timeElapsed)
 		}
 		else if(pPlayer->ShouldDoAutoSave())
 		{
+#ifdef PRIMAL_HUNT
+			// PH: but not in these worlds (0x1005aabf)
+			char szWorld[256];
+			FormatString(szWorld, s_szLoadedWorld);
+
+			for (int i = 0; i < 256; i++)
+			{
+				if (szWorld[i] > '@' && szWorld[i] < '[')
+				{
+					szWorld[i] += 'a' - 'A';
+				}
+			}
+
+			if (strstr(szWorld, "exp3s3") || strstr(szWorld, "exa3s3") ||
+				strstr(szWorld, "exh3s2") || strstr(szWorld, "exoutro"))
+			{
+				m_bDoAutoSave = LTFALSE;
+				pPlayer->ResetDoAutoSave();
+				return;
+			}
+#endif
+
 			// Set us up so we save next update..
 			m_bDoAutoSave = LTTRUE;
 
@@ -3449,5 +3488,28 @@ int CGameServerShell::GetPickupWeaponId(const char* szMessage)
 	}
 
 	return -1;
+}
+#endif
+
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	FormatString()
+//
+//	PURPOSE:	PH: sprintf into a 256 character buffer (PHObject.lto
+//				0x1005b8c0; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+static char* FormatString(char* szBuffer, const char* szFormat, ...)
+{
+	va_list marker;
+	va_start(marker, szFormat);
+	_vsnprintf(szBuffer, 256, szFormat, marker);
+	va_end(marker);
+
+	szBuffer[255] = '\0';
+	return szBuffer;
 }
 #endif
