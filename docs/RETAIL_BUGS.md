@@ -911,24 +911,3 @@ a null pointer.
 
 Not fixed yet.
 
-### A quoted -cmdfile argument keeps two stray bytes
-
-AvP2 1.0.9.6 lithtech.exe 0x00403a00 (`clu_dsi_BuildCommandLine`,
-src/engine/lithtech/clientwin.cpp). A token opening with `"` is copied
-without its quote by hand, but the terminator is written two bytes past the
-copy (`szToken[k + 1]`), so `szToken[nLen - 1]` and `szToken[nLen]` keep
-whatever the previous token left there; the next token's text is then
-appended after them. (Primal Hunt's build copies with `strncpy` and
-terminates correctly.)
-
-Not fixed yet.
-
-### A light's brightness scale carries over to the lights after it
-
-AvP2 1.0.9.6 lithtech.exe 0x00429fa0 (`w_ReadWorldLights`,
-src/engine/server/commonmodel.cpp). `fBrightScale` is set to 1.0 once,
-before the object loop, and not per light, so a light without a
-`BrightScale` property is scaled by the last one read before it (as
-`bFast`/`FastLightObjects` already was in NOLF's reader).
-
-Not fixed yet.
