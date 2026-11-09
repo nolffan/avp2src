@@ -103,7 +103,12 @@ OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeM
             "ltguimgr_LT2", "LithFontMgr_LT2",
             # LithTrackMgr, the camera-track editor the client links
             # (build/build.mk, "LithTrackMgrClient.lib")
-            "LithTrackMgrClient"]
+            "LithTrackMgrClient",
+            # GameSpy's server manager (build/build.mk, "GameSpyMgr.lib")
+            "GameSpyMgr",
+            # and its client manager with the GameSpy C Engine SDK
+            # (build/build.mk, "GameSpyClientMgr.lib")
+            "GameSpyClientMgr"]
 LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
 # WONAPI.lib, built from the release's own source (build/build.mk,
 # "WONAPI.lib"): the release's prebuilt build of it, scored against that.

@@ -715,6 +715,51 @@ when its line system was created.
 
 Not fixed yet.
 
+### A GameSpy secure query can overrun the server's buffer
+
+GameSpyMgr.lib, linked into Object.lto and PHObject.lto
+(`CGameSpyMgr::OnSecureQuery`, src/lithshared/gamespy/gamespymgr/GameSpyMgr.cpp).
+The `secure` value from the network packet is copied with `strcpy` into a
+64-byte buffer with no length check; a long value overruns the stack.
+
+Not fixed yet.
+
+### The LAN server list searches an unterminated reply
+
+GameSpyClientMgr.lib, linked into CShell.dll and PHCShell.dll
+(`ServerListLANList`, src/lithshared/gamespy/gamespyclientmgr/gserverlist.c).
+The reply buffer is searched with `strstr` without being null-terminated
+first (the query loop does terminate its replies), so a full buffer is read
+past its end.
+
+Not fixed yet.
+
+### Sorting the server list by an unknown mode uses an uninitialised comparator
+
+GameSpyClientMgr.lib (`ServerListSort`, gserverlist.c). The switch on the
+compare mode has no default case, so an unknown mode sorts with whatever
+the comparator variable holds.
+
+Not fixed yet.
+
+### The server browser never checks or closes sierraup.cfg
+
+GameSpyClientMgr.lib (`CGameSpyClientMgr::SetupDirServers`,
+src/lithshared/gamespy/gamespyclientmgr/GameSpyClientMgr.cpp). The `fopen`
+result is used unchecked, so a missing file crashes, and the file is never
+closed.
+
+Not fixed yet.
+
+### Refreshing LAN servers removes other games' servers by the wrong port
+
+GameSpyClientMgr.lib (`CGameSpyClientMgr::RefreshLANServers`). Servers of
+other games are removed by their game port, but `ServerListRemoveServer`
+looks them up by query port. A server it misses stays in the list while
+the count still drops, so the servers after it go unchecked.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

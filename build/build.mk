@@ -482,14 +482,35 @@ LS_OURS += LithTrackMgrClient
 # GameSpyMgr.lib and GameSpyClientMgr.lib: GameSpy's server and client
 # managers and the GameSpy C Engine SDK, with cl 8966 against STLport, as
 # the release's prebuilt builds (which these sources are written from).
-# Not linked yet.
-GSM_SRCS := GameSpyMgr.cpp gsutils.cpp
-$(eval $(call lsobjs,gamespy/gamespymgr,/I $(LT2LS)\gamespy\gamespymgr /I $(LT2LS)\gamespy\cengine /I $(LT2LS)\gamespy \
-    /I $(LT2LS)\wonapi /I $(LT2LS)\stl /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I .,$(GSM_SRCS)))
-GSC_SRCS := GameSpyClientMgr.cpp GameSpyPlayer.cpp GameSpyServer.cpp cengtest.c darray.c gserver.c gserverlist.c \
-    gutil.c hashtable.c nonport.c
-$(eval $(call lsobjs,gamespy/gamespyclientmgr,/I $(LT2LS)\gamespy\gamespyclientmgr /I $(LT2LS)\gamespy\cengine \
-    /I $(LT2LS)\gamespy /I $(LT2LS)\stl /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I .,$(GSC_SRCS)))
+# GameSpyMgr.lib's directory is a level deeper than the others', so its
+# include paths go up one more. GameSpyMgr.cpp is built with the automatic
+# precompiled header (/YX) its project had: through one, cl defers every
+# inline function and template instance of the headers to the end of the
+# object, as the prebuilt one has them.
+GSM_INCS := /I ..\$(LT2LS)\gamespy\gamespymgr /I ..\$(LT2LS)\gamespy\cengine /I ..\$(LT2LS)\gamespy \
+    /I ..\$(LT2LS)\wonapi /I ..\$(LT2LS)\stl /I ..\$(LT2LS)\incs /I ..\$(LT2LS)\mfcstub /I .
+$(eval $(call lsobjs,gamespy/gamespymgr,$(GSM_INCS),gsutils.cpp))
+$(eval $(call compile,src/lithshared/gamespy/gamespymgr/Release/GameSpyMgr.obj,src/lithshared/gamespy/gamespymgr,GameSpyMgr.cpp,\
+    $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(GSM_INCS) /YX /FpRelease\GameSpyMgr.pch /FoRelease/,wine-drives))
+LSOBJ_gamespy/gamespymgr += src/lithshared/gamespy/gamespymgr/Release/GameSpyMgr.obj
+# The library, ours: the shipped one's members, in its order
+$(eval $(call tool,$(LOUT)/GameSpyMgr.lib,$(LSOBJ_gamespy/gamespymgr) | wine-drives,cd src/lithshared/gamespy/gamespymgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\GameSpyMgr.lib' $(call q,Release\GameSpyMgr.obj Release\gsutils.obj)))
+LS_OURS += GameSpyMgr
+# GameSpyClientMgr.lib's directory is a level deeper too. Its C++ objects
+# are built as its project had them (GameSpyClientMgr.dsp: GSCM_LOCAL_BUILD,
+# the automatic precompiled header /YX), GameSpyClientMgr.cpp with WONAPI's
+# headers as well. (A .pch each, so that parallel builds do not share one.)
+GSC_INCS := /I ..\$(LT2LS)\gamespy\gamespyclientmgr /I ..\$(LT2LS)\gamespy\cengine /I ..\$(LT2LS)\gamespy \
+    /I ..\$(LT2LS)\wonapi /I ..\$(LT2LS)\stl /I ..\$(LT2LS)\incs /I ..\$(LT2LS)\mfcstub /I .
+$(eval $(call lsobjs,gamespy/gamespyclientmgr,$(GSC_INCS),cengtest.c darray.c gserver.c gserverlist.c gutil.c \
+    hashtable.c nonport.c))
+GSC_CPP := GameSpyClientMgr GameSpyPlayer GameSpyServer
+$(foreach o,$(GSC_CPP),$(eval $(call compile,src/lithshared/gamespy/gamespyclientmgr/Release/$(o).obj,\
+    src/lithshared/gamespy/gamespyclientmgr,$(o).cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
+    $(LIB_CFLAGS) $(GSC_INCS) /D GSCM_LOCAL_BUILD /YX /FpRelease\$(o).pch /FoRelease/,wine-drives)))
+LSOBJ_gamespy/gamespyclientmgr += $(foreach o,$(GSC_CPP),src/lithshared/gamespy/gamespyclientmgr/Release/$(o).obj)
+$(eval $(call tool,$(LOUT)/GameSpyClientMgr.lib,$(LSOBJ_gamespy/gamespyclientmgr) | wine-drives,cd src/lithshared/gamespy/gamespyclientmgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\GameSpyClientMgr.lib' $(call q,$(addprefix Release\,nonport.obj hashtable.obj gutil.obj gserverlist.obj gserver.obj GameSpyServer.obj GameSpyPlayer.obj GameSpyClientMgr.obj darray.obj cengtest.obj))))
+LS_OURS += GameSpyClientMgr
 .PHONY: gamespyobjs
 gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 #
@@ -507,7 +528,7 @@ gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 $(eval $(call tool,$(LOUT)/WONAPI.lib,$(LOUT)/wonapi/WONAPI.lib,cp $(LOUT)/wonapi/WONAPI.lib $(LOUT)/WONAPI.lib))
 LS_OURS += WONAPI
 .PHONY: gamelibs
-gamelibs: $(LOUT)/ltguimgr_LT2.lib $(LOUT)/LithFontMgr_LT2.lib $(LOUT)/WONAPI.lib $(LOUT)/LithTrackMgrClient.lib
+gamelibs: $(LOUT)/ltguimgr_LT2.lib $(LOUT)/LithFontMgr_LT2.lib $(LOUT)/WONAPI.lib $(LOUT)/LithTrackMgrClient.lib $(LOUT)/GameSpyMgr.lib $(LOUT)/GameSpyClientMgr.lib
 
 # ---------------------------------------------------------------------------
 # The prebuilt libraries
