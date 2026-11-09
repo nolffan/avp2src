@@ -237,8 +237,20 @@ inline CElem1CQ428::CElem1CQ428()
 //  wrappers come along for the ride and will read as unmatched; that is
 //  the documented cost of asking for the vtable at all.
 
+//  AvP2 1.0.9.6's build holds none of those wrappers: its arrays come from
+//  their users alone (the surface cache below, and CElem1CQ428, whose
+//  constructors emit both vtables), as collection.cpp's do there.
+#ifdef PRIMAL_HUNT
 template class CMoArray<CElem08Q428, DefaultCache>;
 template class CMoArray<CElem1CQ428, DefaultCache>;
+#else
+// The cache's own array of 0x1c elements is constructed outside this file,
+// so its vtable is asked for here.  (name ours)
+void surf_UseArraysAvP2()
+{
+	CMoArray<CElem1CQ428, DefaultCache> aCells;
+}
+#endif
 
 // 0x0042bb20 (59 bytes) — the 8-byte element's allocator, the one whose
 // construction loop named the element.  0x0042bbd0 (238) is the 0x1c
