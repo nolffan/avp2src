@@ -3598,10 +3598,10 @@ void wm_RotatePushFilter(LTObject* pObj, WMMoveState* pState)
 }
 
 
-#ifdef PRIMAL_HUNT
-// PH: an attachment's world transform, which smgr.cpp's si_CreateAttachment
-// calls (lithtech.exe 0x004675c0, 377 bytes, called at 0x00488033 and from
-// 0x0049871c; server.dll 0x1002a7ed, 157 bytes, between wm_RotatePushFilter
+// An attachment's world transform, which smgr.cpp's si_CreateAttachment
+// calls (Primal Hunt lithtech.exe 0x004675c0, 377 bytes, called at
+// 0x00488033 and from 0x0049871c; AvP2 1.0.9.6 lithtech.exe 0x00462510,
+// 369 bytes, called at 0x00480cf3; Primal Hunt server.dll 0x1002a7ed, 157 bytes, between wm_RotatePushFilter
 // and the quat_Mul / Apply3x3 COMDATs this unit emits at 0x1002a88a and
 // 0x1002a912). Name ours (smgr.cpp's declaration).
 //
@@ -3636,7 +3636,6 @@ void sm_GetAttachmentTransformQ523(LTObject* pParent, Attachment* pAttach,
 
 	*pRot = pParent->m_Rotation * pAttach->m_Offset.m_Rot;
 }
-#endif
 
 
 // ======================================================================= //

@@ -42,9 +42,18 @@ LTRESULT LMessageImpl::ReadStringFL(char* pStr, uint32 maxLen)
 	{
 		uint8 ch;
 
+#ifdef PRIMAL_HUNT
 		((IMessageRead*)this)->ReadByte(&ch);
 		while (ch)
 			((IMessageRead*)this)->ReadByte(&ch);
+#else
+		// AVP2 1.0.9.6: one read in the loop (0x0044589d), where cl 9044
+		// would peel a copy of the while's.
+		do
+		{
+			((IMessageRead*)this)->ReadByte(&ch);
+		} while (ch);
+#endif
 	}
 
 	return LT_OK;

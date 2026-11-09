@@ -954,6 +954,16 @@ public:
 class ClientIDList
 {
 public:
+	// AVP2 1.0.9.6's Client constructor empties both lists through their
+	// own `this` (server.dll 0x1002fa82 `lea 0x194(%esi),%eax`, then the
+	// three stores through %eax; name ours).
+	void Clear()
+	{
+		m_nIDs = 0;
+		m_nMaxIDs = 0;
+		m_pIDs = LTNULL;
+	}
+
 	uint16  m_nIDs;                          // +0x00
 	uint16  m_nMaxIDs;                       // +0x02  grown 200 at a time
 	uint16* m_pIDs;                          // +0x04
@@ -972,6 +982,14 @@ public:
 
 #define MAX_CLIENTCOMMANDS 0xff
 
+// Client+0x0c's sixty-four word pairs (names ours).
+class ClientWordPair
+{
+public:
+	uint16 m_Unknown00;
+	uint16 m_Unknown02;
+};
+
 class Client
 {
 public:
@@ -983,19 +1001,22 @@ public:
 
 	LTLink          m_Link;                  // 0x000  ties it into m_ClientList;
 	                                         //        m_pData points back here
-	uint8           m_pad_00c[0x10c - 0x00c];
+	ClientWordPair  m_Unknown0C[64];         // 0x00c  AVP2 1.0.9.6's constructor
+	                                         //        zeroes both words of each
+	                                         //        (lithtech.exe 0x00470542)
 	uint32          m_Unknown10C;            // 0x10c  zeroed at handshake
 	void*           m_pClientData;           // 0x110  handed to OnClientEnterWorld
 	uint32          m_ClientDataLen;         // 0x114
 	CRateController m_RateControl;           // 0x118  the send-rate governor
 	float           m_Unknown128;            // 0x128  rate scale
-	uint8           m_pad_12c[0x134 - 0x12c];
+	float           m_Unknown12C;            // 0x12c  35.0f at the handshake
+	float           m_Unknown130;            // 0x130
 	ClientPacketSet m_PacketSets[2][2];      // 0x134
-	uint8           m_pad_164[0x170 - 0x164];
+	LTLink          m_AttachLink;            // 0x164  smgr.cpp's CClientAttachView
 	Client*         m_pViewClient;           // 0x170  whose eyes this client uses;
 	                                         //        set skips the first update send
 	LTVector        m_Position;              // 0x174  the update gather centers here
-	uint8           m_pad_180[0x18c - 0x180];
+	LTLink          m_AttachHead;            // 0x180
 	void*           m_pUnknown18C;           // 0x18c  unhandled packets go here
 	CObjInfo*       m_pObjInfos;             // 0x190  indexed by object id
 	ClientIDList    m_IDLists[2];            // 0x194  ping-pong sent-object id lists
@@ -1025,6 +1046,13 @@ public:
 	// written spans only 0x3dc, and 0x00463a29 fills exactly these four
 	// bytes with dhash_Create(500, 0).
 	void*          m_hSoundHash;             // 0x3dc
+#ifndef PRIMAL_HUNT
+	// AVP2 1.0.9.6: eight bytes more -- `new Client` pushes 0x3e8
+	// (lithtech.exe 0x004704f8, server.dll 0x1002f638) and the constructor
+	// zeroes both (0x0047066a) -- which Primal Hunt's 0x3e0 has not.
+	uint32         m_Unknown3E0;             // 0x3e0
+	uint32         m_Unknown3E4;             // 0x3e4
+#endif
 };
 
 // The console entry points the interface forwards to — all __cdecl.
@@ -1756,7 +1784,11 @@ public:
 	uint32             m_nLightAnims;        // 0x1b0
 	uint8              m_pad_1b4[0x210 - 0x1b4];  // (see also m_Flags1A0 below)
 	CUnknown210        m_Unknown210;         // 0x210
-	uint8              m_pad_214[0x2a0 - 0x214];
+	uint8              m_pad_214[0x28c - 0x214];
+	LTLink             m_ShadeLights;        // 0x28c  AVP2 1.0.9.6: lights the
+	                                         //        point-shade lookup adds in
+	                                         //        (si_GetPointShade, name ours)
+	uint8              m_pad_298[0x2a0 - 0x298];
 	uint8              m_ShadeState[0x30c - 0x2a0];  // 0x2a0  what the point-shade
 	                                                 //        lookup runs on; only
 	                                                 //        its address is reached
@@ -2517,7 +2549,7 @@ extern LTLink* g_FreeLinks;
 // 0x10035c81 — install (or clear) the console print hook; Term passes the
 // server's own hook at 0x10032617 and NULL user data.
 void dsi_SetErrorHook(void* pFn, void* pUser);
-void sm_ErrorHook(char* pMsg);               // 0x10032617
+void sm_ErrorHook(char* pMsg, void* pUser); // 0x10032617
 
 // 0x10028fbb — tear down the console state.
 void cc_TermState(ConsoleState* pState);

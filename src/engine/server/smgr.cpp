@@ -1725,8 +1725,10 @@ LTRESULT CServerMgr::PlaySound(PlaySoundInfo* pPlaySoundInfo, HLTSOUND& hResult)
 
 			// Hand the instance straight back to its bank. AVP2: through
 			// the header's sb_Free, whose bank test survives (`test
-			// %ebp,%ebp`, Primal Hunt 0x0048e0c5).
-			sb_Free(pBank, pSound);
+			// %ebp,%ebp`, Primal Hunt 0x0048e0c5, AvP2 1.0.9.6 0x00485c67).
+			// The bank named again rather than through pBank: cl 9044
+			// drops the test for the local it has already dereferenced.
+			sb_Free(&m_Bank28, pSound);
 			return LT_ERROR;
 		}
 
@@ -2411,8 +2413,15 @@ void sm_ApplyChangeFlags(CServerMgr* pMgr)
 			pSound = pMgr->m_pChangedSounds;
 			while (pSound)
 			{
+#ifdef PRIMAL_HUNT
 				uint32 nIndex = ((uint32*)pSound->m_pUnknown0c)[2];
 				pClient->m_pObjInfos[(uint16)nIndex].m_ChangeFlags |= pSound->m_Unknown2c;
+#else
+				// AVP2 1.0.9.6: cl 9044 narrows the load either way
+				// (`xor ; mov 8(%ecx),%bp`, 0x00483338).
+				uint16 nIndex = (uint16)((uint32*)pSound->m_pUnknown0c)[2];
+				pClient->m_pObjInfos[nIndex].m_ChangeFlags |= pSound->m_Unknown2c;
+#endif
 				pSound = pSound->m_pNextChanged;
 			}
 		}
@@ -2794,8 +2803,9 @@ void sm_WriteClientUpdate(CServerMgr* pMgr, Client* pClient)
 			if (fUsage > 0.75f)
 			{
 				fUsage += 0.25f;
-				if (fUsage >= 2.0f)
-					fUsage = 2.0f;
+				// LTMIN: kept when below, so an unordered usage clamps
+				// (AvP2 1.0.9.6 0x004726d3 `test $0x5,%ah; jnp`).
+				fUsage = LTMIN(fUsage, 2.0f);
 
 				float fScale = 2.0f - fUsage;
 				fRate *= fScale * fScale;
@@ -3214,8 +3224,10 @@ LTRESULT sm_UpdateClientState2(CServerMgr* pMgr, Client* pClient)
 
 
 // 0x10032617 — what the string bank reports for anything still alive at
-// shutdown.
-void sm_ErrorHook(char* pString)
+// shutdown. The bank's enumeration callback (sb_EnumStrings) takes the
+// string and the user pointer; with both in its argument area AvP2 1.0.9.6's
+// cl 9044 turns the print into a tail jump that reuses them (0x00482b2d).
+void sm_ErrorHook(char* pString, void* pUser)
 {
 	if (g_DebugLevel >= 1)
 		dsi_ServerError("Unfreed (server) string: %s", pString);
@@ -3555,6 +3567,75 @@ LTBOOL si_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo)
 	return w_IntersectSegment(pQuery, pInfo, &g_pServerMgr->m_Unknown210, 1);
 }
 
+#ifndef PRIMAL_HUNT
+// AVP2 1.0.9.6: what the shade lookup's lights look like from here (names
+// ours): a sphere of influence and, for a spot, a cone given by its cosine,
+// fading from the inner colour on the axis to the outer one at the edge.
+struct CShadeLight
+{
+	uint8    m_pad_00[0x68];
+	LTVector m_Pos;                          // +0x68
+	float    m_Radius;                       // +0x74
+	LTVector m_Color;                        // +0x78
+	LTVector m_Dir;                          // +0x84
+	float    m_CosFov;                       // +0x90  -1 or 1: no cone
+	LTVector m_InnerColor;                   // +0x94
+};
+
+// The lookup answers in bytes and the caller wants floats, and the channels
+// come back the other way round. AvP2 1.0.9.6 then adds each light in
+// range (0x004795f0, server.dll 0x10036008) and clamps to 255; Primal Hunt
+// has only the lookup.
+LTBOOL si_GetPointShade(LTVector* pPoint, LTVector* pColor)
+{
+	uint8   color[4];
+	LTLink* pCur;
+	LTLink* pHead;
+
+	if (!pColor || !pPoint)
+		return LTFALSE;
+
+	w_GetPointShade(g_pServerMgr->m_ShadeState, pPoint, color);
+
+	pColor->x = color[2];
+	pColor->y = color[1];
+	pColor->z = color[0];
+
+	pHead = &g_pServerMgr->m_ShadeLights;
+	for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+	{
+		CShadeLight* pLight = (CShadeLight*)pCur->m_pData;
+		LTVector vDelta = *pPoint - pLight->m_Pos;
+		float fDist = vDelta.Mag();
+
+		if (fDist < pLight->m_Radius)
+		{
+			if (pLight->m_CosFov > -1.0f && pLight->m_CosFov < 1.0f && fDist != 0.0f)
+			{
+				float fCos = VEC_DOT(vDelta, pLight->m_Dir) * (1.0f / fDist);
+				if (fCos >= pLight->m_CosFov)
+				{
+					float t = (1.0f - (fCos + 1.0f) * 0.5f) /
+						(1.0f - (pLight->m_CosFov + 1.0f) * 0.5f);
+					*pColor += pLight->m_InnerColor * t + pLight->m_Color * (1.0f - t);
+				}
+			}
+			else
+			{
+				*pColor += pLight->m_Color;
+			}
+		}
+	}
+
+	if (pColor->x > 255.0f)
+		pColor->x = 255.0f;
+	if (pColor->y > 255.0f)
+		pColor->y = 255.0f;
+	if (pColor->z > 255.0f)
+		pColor->z = 255.0f;
+	return LTTRUE;
+}
+#else
 // The lookup answers in bytes and the caller wants floats, and the channels
 // come back the other way round.
 LTBOOL si_GetPointShade(LTVector* pPoint, LTVector* pColor)
@@ -3568,6 +3649,7 @@ LTBOOL si_GetPointShade(LTVector* pPoint, LTVector* pColor)
 	pColor->z = color[0];
 	return LTTRUE;
 }
+#endif
 
 // sm_FreeObjectInline and sm_AllocateObjectInline -- 0x1002abf8's and
 // 0x10001c54's bodies again, `inline` under local names -- used to be
@@ -5279,13 +5361,11 @@ LTRESULT si_ReleaseSmartLinkBody(LTSmartLink_Body* pBody)
 	return LT_OK;
 }
 
-#ifdef PRIMAL_HUNT
-// PH: an attachment's world transform -- the offset turned by the parent's
+// An attachment's world transform -- the offset turned by the parent's
 // rotation and added to its position, and the two rotations composed --
-// (server.dll 0x1002a7ed, 157 bytes; not yet reconstructed, name ours).
+// (commonphysics.cpp; Primal Hunt server.dll 0x1002a7ed, name ours).
 void sm_GetAttachmentTransformQ523(LTObject* pParent, Attachment* pAttach,
                                    LTVector* pPos, LTRotation* pRot);
-#endif
 
 LTRESULT si_CreateAttachment(LTObject* hParent, LTObject* hChild, char* pSocketName,
                              LTVector* pOffset, LTRotation* pRotationOffset,
@@ -5318,11 +5398,10 @@ LTRESULT si_CreateAttachment(LTObject* hParent, LTObject* hChild, char* pSocketN
 	if (dResult != LT_OK)
 		return dResult;
 
-#ifdef PRIMAL_HUNT
-	// PH: the child is put where the attachment holds it at once, and
-	// marked attached -- change bit 0x400, which si_RemoveAttachment clears
-	// -- with the attachment change flagged on both (server.dll
-	// 0x1003e37d..0x1003e3c3).
+	// The child is put where the attachment holds it at once, and marked
+	// attached -- change bit 0x400, which si_RemoveAttachment clears -- with
+	// the attachment change flagged on both (Primal Hunt server.dll
+	// 0x1003e37d..0x1003e3c3; AvP2 1.0.9.6 lithtech.exe 0x00480ce3).
 	{
 		LTVector   vPos;
 		LTRotation rRot;
@@ -5335,9 +5414,6 @@ LTRESULT si_CreateAttachment(LTObject* hParent, LTObject* hChild, char* pSocketN
 		hChild->m_ChangeFlags |= 0x400;
 		sm_SetObjectChangeFlag(g_pServerMgr, hChild, 0x100);
 	}
-#else
-	sm_SetObjectChangeFlag(g_pServerMgr, hParent, 0x100);
-#endif
 	if (pAttachment)
 		*pAttachment = pAttach;
 	return LT_OK;
@@ -5352,20 +5428,17 @@ LTRESULT si_RemoveAttachment(Attachment* hAttachment)
 	if (!pParent)
 		RETURN_ERROR(1, "ILTPhysics::RemoveAttachment", LT_ERROR);
 
-#ifdef PRIMAL_HUNT
 #ifdef AVP2_MODERN
 	uint16 nChildID = hAttachment->m_nChildID;
-#endif
 #endif
 
 	if (am_RemoveAttachment(&g_pServerMgr->m_Unknown390, pParent, hAttachment) == LT_OK)
 	{
 		sm_SetObjectChangeFlag(g_pServerMgr, pParent, 0x100);
 
-#ifdef PRIMAL_HUNT
-		// PH: the child is let go as well -- change bit 0x400 cleared and
-		// the attachment change flagged on it too (server.dll 0x1003e4c9..
-		// 0x1003e4f4).
+		// The child is let go as well -- change bit 0x400 cleared and the
+		// attachment change flagged on it too (Primal Hunt server.dll
+		// 0x1003e4c9..0x1003e4f4; AvP2 1.0.9.6 lithtech.exe 0x004810c7).
 		// RETAIL BUG: the child's id is read out of the attachment record
 		// AFTER am_RemoveAttachment has handed it back to its bank. Only the
 		// record's first dword is written by the free, so the id survives,
@@ -5381,7 +5454,6 @@ LTRESULT si_RemoveAttachment(Attachment* hAttachment)
 			pChild->m_ChangeFlags &= ~0x400;
 			sm_SetObjectChangeFlag(g_pServerMgr, pChild, 0x100);
 		}
-#endif
 
 		return LT_OK;
 	}
@@ -9163,52 +9235,7 @@ LTLink* sub_1002af00(CServerMgr* pMgr, LTObject* pObject)
 	return LTNULL;
 }
 
-// 0x1002ceac — let go of everything the engine-side object data owns; a
-// thiscall on the SObjData with one argument, which ltobject_internal.h does
-// not declare (name ours).
-//
-// Its shape is a scalar deleting destructor's — release what the object
-// owns, `operator delete(this)` when bit 0 of the flag is set, return
-// `this` — but it cannot be one: SObjData's +0x00 is its LTLink pair, so the
-// class has no vptr and VC6 emits no `??_G` for it. So the flag, the
-// `operator delete` (0x10028ace, the wrapper one call above dfree) and the
-// returned `this` are all in the source, and the one call site pushes zero.
-//
-// What the object at +0x2c is is not determined here; only that it is
-// released through slot 2 of its own vtable with nothing pushed.
-class IObjDataOwned
-{
-public:
-	virtual void _v00() = 0;
-	virtual void _v04() = 0;
-	virtual void Release() = 0;              // slot 2
-};
-
-class CSObjDataTermView
-{
-public:
-	// 0x1002ceac. DEFINED IN-CLASS so /Ob1 will expand it: the shipped
-	// client carries this body in line at sm_ObjectRemoved2's tail, with
-	// the `nFlags & 1` arm folded away because the argument is 0. The
-	// server build is /Os and declines the expansion, which is what keeps
-	// the out-of-line copy there.
-	void* Term(int nFlags)                   // 0x1002ceac
-	{
-		if (m_pOwned2c)
-			m_pOwned2c->Release();
-
-		if (nFlags & 1)
-			operator delete(this);
-
-		return this;
-	}
-
-	uint8          m_pad_00[0x2c];
-	IObjDataOwned* m_pOwned2c;               // +0x2c
-};
-
-#ifdef PRIMAL_HUNT
-// PH: the object data goes back to the message bank through a member of the
+// The object data goes back to the message bank through a member of the
 // bank, not through two statements at the call site: server.dll CALLS it
 // (0x10040d47, thiscall on CServerMgr+0xe00 with the data pushed; the
 // bank's vtable slot 2, 0x10038a68, forwards to it too) and its body is
@@ -9238,7 +9265,6 @@ public:
 	void*      m_pVTable;                    // +0x00
 	StructBank m_Bank;                       // +0x04
 };
-#endif
 
 // ---- putting a created object into the world ----------------------------- //
 
@@ -9414,21 +9440,14 @@ LTRESULT sm_ObjectRemoved2(CServerMgr* pMgr, LTObject* pObject)
 
 	dl_RemoveAt(&pMgr->m_List8dc, &pObject->m_pSData->m_StateLink);
 
-#ifdef PRIMAL_HUNT
 	// PH: the release is a call, `mov %edi,%ecx; call 0x00418e40`, to the
 	// record's out-of-line 13-byte destructor (`mov 0x2c(%ecx),%ecx; test;
 	// je; jmp *0x8(%eax)`), from the bank's Free above, which server.dll
-	// calls and lithtech.exe expands; AvP2 1.0.9.6 expands the release too.
+	// calls and lithtech.exe expands. AvP2 1.0.9.6's lithtech.exe expands
+	// the release too and keeps sb_Free's null test of the data
+	// (0x0048400e); its server.dll calls Free (0x1003d4eb, thiscall on
+	// +0xe00), and Free calls the release with a zero pushed (0x10035d57).
 	((CMessageBankFreeQ523*)&pMgr->m_MessageBank)->Free(pObject->m_pSData);
-#else
-	{
-		SObjData* pSData = pObject->m_pSData;
-
-		((CSObjDataTermView*)pSData)->Term(0);
-
-		sb_Free(&pMgr->m_MessageBank.m_Bank, pSData);
-	}
-#endif
 
 	return LT_OK;
 }
@@ -10568,10 +10587,12 @@ void sub_10027918(LTObject* pObject, CUpdateContext* pCtx)
 // Out of line, our lithtech build called it (1332 bytes against 1386, and a
 // stray 72-byte ??0Client row); inline it is expanded (1380), server.dll
 // unchanged.
+#ifdef PRIMAL_HUNT
 inline Client::Client()
 	: m_pClientData(LTNULL)
 {
 }
+#endif
 
 
 // The sound instance's audible radius and world position, both inside the
@@ -12042,6 +12063,92 @@ public:
 	uint32      m_nSize;                     // +0x08
 };
 
+#ifndef PRIMAL_HUNT
+// AVP2 1.0.9.6: a packet slot emptied -- its reference dropped through the
+// cursor's Init (server.dll calls 0x1002be8b with a null) and both numbers
+// zeroed. lithtech.exe has it out of line, 0x00470b70, called four times
+// from the constructor below (name ours).
+class CClientPacketSetClearView
+{
+public:
+	void Clear()
+	{
+		m_Ref.Init(LTNULL);
+		m_fRate = 0.0f;
+		m_nSize = 0;
+	}
+
+	CMsgCursor m_Ref;                        // +0x00
+	float      m_fRate;                      // +0x04
+	uint32     m_nSize;                      // +0x08
+};
+
+// AVP2 1.0.9.6's Client constructor: every member set in declaration order
+// after the rate governor, the four packet slots and the message list are
+// constructed (lithtech.exe 0x0047050f..0x00470670, expanded into
+// sm_AddClientForConnection; server.dll 0x1002f9a5, out of line). There is
+// no memset after it, as Primal Hunt's has.
+inline Client::Client()
+{
+	uint32 i;
+	uint32 j;
+
+	m_Link.TieOff();
+
+	for (i = 0; i < 64; i++)
+	{
+		ClientWordPair* pPair = &m_Unknown0C[i];
+
+		pPair->m_Unknown00 = 0;
+		pPair->m_Unknown02 = 0;
+	}
+
+	m_Unknown10C = 0;
+	m_pClientData = LTNULL;
+	m_ClientDataLen = 0;
+	m_Unknown128 = 0.0f;
+	m_Unknown12C = 0.0f;
+	m_Unknown130 = 0.0f;
+
+	for (i = 0; i < 2; i++)
+	{
+		for (j = 0; j < 2; j++)
+			((CClientPacketSetClearView*)&m_PacketSets[i][j])->Clear();
+	}
+
+	m_AttachLink.TieOff();
+	m_pViewClient = LTNULL;
+	m_Position.Init();
+	m_AttachHead.TieOff();
+	m_pUnknown18C = LTNULL;
+	m_pObjInfos = LTNULL;
+
+	m_IDLists[0].Clear();
+	m_IDLists[1].Clear();
+	m_CurIDList = 0;
+
+	// A signed count (`jl`, 0x0047062b).
+	for (int k = 0; k < MAX_CLIENTCOMMANDS; k++)
+	{
+		m_CommandStates[0][k] = 0;
+		m_CommandStates[1][k] = 0;
+	}
+
+	m_nCurCommands = 0;
+	m_pUnknown3AC = LTNULL;
+	m_pUserData = LTNULL;
+	m_ClientID = 0;
+	m_State = 0;
+	m_Unknown3BC = 0;
+	m_ClientFlags = 0;
+	m_pName = LTNULL;
+	m_pConnection = LTNULL;
+	m_hSoundHash = LTNULL;
+	m_Unknown3E0 = 0;
+	m_Unknown3E4 = 0;
+}
+#endif
+
 // One more Client field servermgr.h leaves in padding: +0x12c, a float set to
 // 35.0f (0x420c0000) at 0x004639e6. (+0x164 / +0x180 are smgr.cpp's own
 // CClientAttachView, reused as-is; +0x3dc is now a real member.)
@@ -12110,7 +12217,9 @@ Client* sm_AddClientForConnection(CServerMgr* pMgr, NetConnection* pConn,
 	// at S:0x10026d76.
 	pClient = new Client;
 
+#ifdef PRIMAL_HUNT
 	memset(pClient, 0, sizeof(Client));                  // 0x004637e2 rep stos
+#endif
 
 	// 0x004637ed..0x00463816. CLIENTFLAG_LOCAL is 2 and so is the manager
 	// bit; the shipped code materialises the 2 once into %ecx and ors it into
