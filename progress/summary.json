@@ -576,28 +576,28 @@
     "PHCShell.dll": {
       "attempted": 0,
       "bytes_identical": 1154575,
-      "bytes_total": 1352875,
-      "crt": 6829,
-      "crt_bytes": 334411,
+      "bytes_total": 1342901,
+      "crt": 6967,
+      "crt_bytes": 344385,
       "driver": 0,
       "driver_bytes": 0,
       "encrypted": 0,
       "encrypted_bytes": 0,
-      "funcs": 5983,
+      "funcs": 5845,
       "identical": 4986,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
       "near": 204,
-      "small": 564,
+      "small": 560,
       "started": true,
-      "todo": 229,
+      "todo": 95,
       "unlinked": 317,
       "unlinked_bytes": 47125,
       "unplaced": 11,
       "unplaced_bytes": 4756,
-      "unwritten": 229,
-      "unwritten_bytes": 42167
+      "unwritten": 95,
+      "unwritten_bytes": 32209
     },
     "PHObject.lto": {
       "attempted": 0,
@@ -1071,15 +1071,15 @@
   "total": {
     "attempted": 84,
     "bytes_identical": 9679989,
-    "bytes_total": 10958356,
-    "funcs": 56439,
+    "bytes_total": 10948382,
+    "funcs": 56301,
     "identical": 48593,
     "near": 1557,
-    "small": 5178,
-    "todo": 1027,
+    "small": 5174,
+    "todo": 893,
     "unplaced": 2719,
     "unplaced_bytes": 551140,
-    "unwritten": 1111,
-    "unwritten_bytes": 324152
+    "unwritten": 977,
+    "unwritten_bytes": 314194
   }
 }

@@ -372,10 +372,23 @@ TARGETS = [
          # (0x1019cbab). 1.0.9.6's links WONAPI below its runtime
          # (0x1013d590..0x101709b0, 978 of the release's prebuilt
          # WONAPI.lib functions placed); here only about 280 are, so
-         # Third Law's WONAPI may be another build of it. 9,974
-         # bytes of packed code (138 functions) from 0x10154200 below the
-         # first hit, where ButeMgr.lib's last run ends (0x101541ff)
-         app=[(0x10001000, 0x101568f6)]),
+         # Third Law's WONAPI may be another build of it.
+         #   The runtime starts at 0x10154200, where ButeMgr.lib's last
+         # run ends (0x101541ff); as in NOLF's and NOLF2's game DLLs, it
+         # opens with libcpmt.lib or libcimt.lib. libcpmt.lib's operator delete
+         # (delop.obj, 11 bytes: push [esp+4]; call free), xlock.obj's
+         # _Lockit, string.obj's _Xlen/_Xran and the logic_error family,
+         # ios.obj's runtime_error/ios_base::failure, the basic_string<char>
+         # assign/erase/_Split COMDATs (libcpmt's own copies, 206/103/48
+         # bytes: byte-identical to string.obj's, not to the 512-byte
+         # inlined ones our VC6-STL WONAPI.obj instantiates) and its _$E
+         # initializers to 0x10154778; then libcimt.lib, the old iostream
+         # classes (ifstream, ofstream, fstream, strstream, filebuf,
+         # streambuf, ostream/istream, mtlock) to 0x101568ae; then 12
+         # import thunks (jmp [IAT]) to typinfo.obj. All 134 functions of
+         # the span match a libcpmt.lib/libcimt.lib member masked by its
+         # relocations (or are thunks), so none of it is the game's code
+         app=[(0x10001000, 0x10154200)]),
     dict(label="PHObject.lto", what="Primal Hunt's game: server objects", kind="image",
          shipped=REFERENCE + "/PHObject.lto", stem="PHObject",
          built="src/AVP2/ObjectDLL/PrimalHunt/Object.lto", optional=True,
