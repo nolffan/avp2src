@@ -686,6 +686,7 @@ inline
 void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 {
 	float fMag;
+	float fScale;
 
 	*pOut = vStart;
 
@@ -698,9 +699,10 @@ void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 
 		if (*pOut == vStart)
 		{
-			fMag = vStart.Mag() * 1.192092896e-07f / fMag;
+			fScale = vStart.Mag() * 1.192092896e-07f;
+			fScale /= fMag;
 
-			vStep *= fMag;
+			vStep *= fScale;
 
 			*pOut = vStart + vStep;
 		}

@@ -8,13 +8,18 @@
 // 0x1008ec84, atexit of the empty 0x1002eaeb; 0x1002162a, 0x10024249,
 // 0x10024546).
 #include <string>
+#endif
 // Model::LoadChildModels' four vectors and the name map it is handed
 // (below): their members are this unit's (server.dll 0x10023073..0x10023904,
-// lithtech.exe 0x0045c450..0x0045d660).
+// lithtech.exe 0x0045c450..0x0045d660). AvP2 1.0.9.6's are STLport's
+// (lithtech.exe 0x00457260..0x00459162).
+#ifndef PRIMAL_HUNT
+#include <string>
+#include <algorithm>
+#endif
 #include <vector>
 #include <map>
 #include <set>
-#endif
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -3642,12 +3647,9 @@ extern "C" __declspec(dllimport) void __stdcall Sleep(unsigned long dwMs);
 // is left is mostly the out-of-line CMoArray<T,NoCache>::SetSize2 for
 // m_Pieces (0x0044dff6), which is the collection.h /Ob budget noted above
 // Model::Model, plus the merge loop's store at -0x1c(%edx,%eax,1).
-//
 // AVP2: that is NOLF's reader. Both AvP2 engines replace its child-model
-// half (below, Primal Hunt's); AvP2 1.0.9.6's (server.dll 0x100213fc) is the
-// same source over STLport and without /GX, which this build's AvP2 engine
-// does not have, so it keeps NOLF's body.
-#ifdef PRIMAL_HUNT
+// half (below): Primal Hunt's, and AvP2 1.0.9.6's (server.dll 0x100213fc,
+// lithtech.exe 0x00456390), the same source over STLport and without /GX.
 
 // The request's name map (serverengine.h declares it, opaque): the server's
 // child-model names, each with the names that may be loaded in its place.
@@ -3739,6 +3741,9 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 	LTRESULT          dChild;
 	CModelSub1D4*     pRec3;
 	uint32            nOut;
+#ifndef PRIMAL_HUNT
+	ModelPiece*       pNoPiece;
+#endif
 
 	if (!pRequest->m_pStream ||
 	    (pRequest->m_bUnknown14 && !pRequest->m_pfnLoadChild))
@@ -3805,7 +3810,15 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 	// SetSizeInit4 is expanded and the SetSizeInit3 it forwards to is called
 	// (server.dll 0x10024215, lithtech.exe 0x0045de60), its `val` a frame
 	// temporary passed by address (0x1002273e..0x10022745).
+#ifdef PRIMAL_HUNT
 	if (!m_Pieces.SetSizeInit4(nPieces, LTNULL, GetAlloc()))
+#else
+	// AVP2: SetSizeInit3 itself, its null in a local (lithtech.exe 0x004565e9
+	// calls it out of line, the one caller beside sub_1001bb37; LoadSockets
+	// and sub_1001c560 expand their SetSizeInit4s).
+	pNoPiece = LTNULL;
+	if (!m_Pieces.SetSizeInit3(nPieces, pNoPiece, GetAlloc()))
+#endif
 	{
 		nError = 4;
 		goto fail;
@@ -4146,299 +4159,6 @@ fail:
 	return nError;
 }
 
-#else // !PRIMAL_HUNT
-
-LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
-{
-	CModelLoadRequest childReq;
-	CModelLoadState   state;
-	// The declaration order below is the frame, read off the shipped slots:
-	// VC6 6.0 hands out -0x4 downward in declaration order, so the uint16
-	// second and the uint8 twelfth are what put the two-byte hole at -0x8 and
-	// the three-byte one at -0x30. `i` is one variable across the child, the
-	// animation and the merge loops, which is why it is in memory (-0x4) while
-	// the early loops' counters stay in registers. -0x18, -0x1c and -0x40 are
-	// compiler temporaries (two induction offsets and a spill of pStream).
-	uint32     i;            // -0x04
-	uint16     nOOBB;        // -0x06
-	CUnknownD9E4* pAnim;     // -0x0c
-	uint32     nChildren;    // -0x10
-	uint32     nAnims;       // -0x14
-	LTRESULT   dResult;      // -0x20
-	uint32     k;            // -0x24
-	uint32     nInner;       // -0x28
-	uint32     nPieces;      // -0x2c
-	uint8      nSkip;        // -0x2d
-	Model*     pLoaded;      // -0x34
-	uint32     n38;          // -0x38
-	uint32     nPieceBase;   // -0x3c
-	uint32     nOOBB2;       // -0x44
-	// Never spilled, so their order is not observable.
-	ILTStream* pStream;
-	uint32     j;
-	uint32     nZero;
-	uint32     nSkipLeft;
-	uint32     nAnimTotal;
-	LTRESULT   dChild;
-	CMoArray<ModelPiece*, NoCache>* pPieces;
-	LAlloc*    pAlloc;
-
-	// One guard, one answer, and the flag at +0x10 is "load the children too":
-	// set it and the callback becomes mandatory, clear it and the callback is
-	// never reached (the loop below answers LT_NOCHANGE for every child).
-	if (!pRequest->m_pStream ||
-	    (pRequest->m_bUnknown14 && !pRequest->m_pfnLoadChild))
-		return LT_INVALIDPARAMS;
-
-	sub_10017016(0);
-
-	pStream = pRequest->m_pStream;
-	dResult = LT_ERROR;
-
-	if (!LoadHeader(pStream, &state))
-		goto fail;
-
-	if (!sub_1001c325(pStream, &m_pCommandString))
-		goto fail;
-
-	pStream->Read(&m_f0a4, sizeof(m_f0a4));
-	pStream->Read(&nOOBB, sizeof(nOOBB));
-
-	// Sixty-two bytes discarded, not read into anything: the same scratch byte
-	// is passed every time round.
-	for (nSkipLeft = 62; nSkipLeft; nSkipLeft--)
-		pStream->Read(&nSkip, sizeof(nSkip));
-
-	// The one failure in this function that answers LT_OK. Every other one
-	// jumps to the shared exit and reports what it recorded; this jumps to the
-	// SUCCESS return, so a model whose table at 0x8c cannot be allocated loads
-	// as though nothing were wrong, with none of its four chunks read.
-	if (!m_Unknown08c.SetSize2(nOOBB, (LAlloc*)m_pDataBlock))
-#ifdef AVP2_MODERN
-		// fixed: Model::LoadChildModels reports success when it cannot size
-		// one table (RETAIL_BUGS.md).
-		goto fail;
-#else
-		goto done;
-#endif
-
-	for (j = 0; j < nOOBB; j++)
-		pStream->Read(&m_Unknown08c.m_pArray[j], 4);
-
-	if (!mod_FindChunk(pStream, "Pieces"))
-		goto fail;
-
-	pStream->Read(&n38, sizeof(n38));
-
-	if (!m_Unknown054.SetSize2(n38, (LAlloc*)m_pDataBlock))
-		goto fail;
-
-	pStream->Read(&nPieces, sizeof(nPieces));
-
-	// Through a pointer to the collection, which is what the shipped code
-	// keeps in a register across the SetSize2 call and then reads the size and
-	// the array off. Reaching for the members through `this` instead is a byte
-	// cheaper per access and VC6 takes that deal, which then costs the piece
-	// index below its register.
-	pAlloc  = GetAlloc();
-	pPieces = &m_Pieces;
-
-	if (!pPieces->SetSize2(nPieces, pAlloc))
-		goto fail;
-
-	for (nZero = 0; nZero < pPieces->GetSize(); nZero++)
-		(*pPieces)[nZero] = 0;
-
-	nPieceBase = 0;
-
-	for (j = 0; j < nPieces; j++)
-	{
-		ModelPiece* pPiece = BaseNew(GetAlloc(), (ModelPiece*)0, 1, this);
-
-		if (!pPiece)
-		{
-			sub_10017016(0);
-			goto fail;
-		}
-
-		m_Pieces.m_pArray[j] = pPiece;
-
-		if (!pPiece->sub_1001c1a5(pStream, &nPieceBase))
-			goto fail;
-	}
-
-	if (!mod_FindChunk(pStream, "Nodes"))
-		goto fail;
-
-	if (!m_pSub20c->sub_1001bd54(pStream))
-		goto fail;
-
-	if (!sub_1001c560(pStream))
-		goto fail;
-
-	if (!sub_100171f4(1))
-		goto fail;
-
-	if (!mod_FindChunk(pStream, "ChildModels"))
-		goto fail;
-
-	pStream->Read(&nChildren, sizeof(nChildren));
-
-	if (nChildren == 0)
-		goto fail;
-
-	if (nChildren > 16)
-		goto fail;
-
-	for (i = 0; i < nChildren; i++)
-	{
-		CModelSub1D4* pRec;
-
-		if (i == 0)
-		{
-			// Slot zero is the model itself, under the name the engine gives
-			// it rather than one off the wire.
-			pRec = &m_Sub1d4;
-
-			if (!sub_10017b8a(0, pRec, this, "SELF"))
-				goto fail;
-		}
-		else
-		{
-			// The name the file gave the child goes straight into the request
-			// the reader's callback is about to be handed.
-			if (!sub_1001c325(pStream, &childReq.m_pChildName))
-				goto fail;
-
-			childReq.m_pStream      = LTNULL;
-			childReq.m_bUnknown14   = LTFALSE;
-			childReq.m_pfnLoadChild = pRequest->m_pfnLoadChild;
-			childReq.m_pContext     = pRequest->m_pContext;
-
-			pLoaded = LTNULL;
-
-			if (pRequest->m_bUnknown14)
-				dChild = pRequest->m_pfnLoadChild(&childReq, &pLoaded);
-			else
-				dChild = LT_NOCHANGE;
-
-			if (dChild != LT_OK && dChild != LT_NOCHANGE)
-			{
-				dResult = dChild;
-				goto fail;
-			}
-
-			// A callback that answered without producing a model is not a
-			// failure; the request just records that not every child was found.
-			if (!pLoaded)
-				pRequest->m_bChildrenFound = LTFALSE;
-			else if (pLoaded->m_nChildModels > 1)
-			{
-				dResult = 0x4d;
-				goto fail;
-			}
-
-			pRec = BaseNew(GetAlloc(), (CModelSub1D4*)0, 1);
-
-			if (!pRec)
-				goto fail;
-
-			m_pChildModels[i] = pRec;
-			m_nChildModels++;
-
-			if (!sub_10017b8a(i, pRec, pLoaded, childReq.m_pChildName))
-				goto fail;
-		}
-
-		if (!pRec->sub_1001bf0d(pStream))
-			goto fail;
-
-		pRec->m_Unknown2c = 0;
-
-		if (pRec->m_pOwner28)
-			pRec->m_Unknown2c = sub_10017b69(pRec->m_pOwner28, &nOOBB2);
-
-		// Every child is a file read, so give the rest of the machine a turn.
-		Sleep(0);
-	}
-
-	if (!mod_FindChunk(pStream, "Animation"))
-		goto fail;
-
-	pStream->Read(&nAnims, sizeof(nAnims));
-
-	nAnimTotal = GetTotalAnimCount(0) + nAnims;
-
-	// The animation table is the one collection here sized out of m_pAlloc
-	// rather than the model's own data block.
-	if (!m_AnimArray.SetSize2(nAnimTotal, (LAlloc*)m_pAlloc))
-		goto fail;
-
-	for (i = 0; i < nAnims; i++)
-	{
-		// CUnknownD9E4 above is ModelAnim under its vtable's name: 0x5c bytes
-		// with a virtual destructor, which is what this sizes and what the
-		// release on the failure path below sizes too.
-		pAnim = BaseNew(GetAlloc(), (CUnknownD9E4*)0, 1, this);
-
-		if (!pAnim)
-			goto fail;
-
-		m_AnimArray[i].m_pAnim       = (ModelAnim*)pAnim;
-		m_AnimArray[i].m_pChildModel = &m_Sub1d4;
-
-		if (!m_AnimArray[i].sub_1001bec9(pStream))
-		{
-			BaseDelete((LAlloc*)m_pDataBlock, pAnim, 1);
-			goto fail;
-		}
-	}
-
-	// Every child model's animations are appended to ours, each one tagged
-	// with the child record it came in with, and each child told where in our
-	// table its own block begins.
-	nInner = nAnims;
-
-	for (i = 0; i < m_nChildModels; i++)
-	{
-		CModelSub1D4* pRec = m_pChildModels[i];
-
-		if (!pRec->m_pOwner28 || pRec->m_pOwner28 == this)
-			continue;
-
-		pRec->m_Unknown18 = nInner;
-
-		for (k = 0; k < pRec->m_pOwner28->m_AnimArray.m_nElements; k++)
-		{
-			m_AnimArray[nInner] = pRec->m_pOwner28->m_AnimArray[k];
-			m_AnimArray[nInner].m_pChildModel = pRec;
-			nInner++;
-		}
-	}
-
-	if (!sub_1001c36c(pRequest, pStream, 1))
-		goto fail;
-
-	if (!LoadSockets(pStream))
-		goto fail;
-
-	if (pStream->ErrorStatus() != LT_OK)
-		goto fail;
-
-	if (sub_100171f4(0))
-	{
-		sub_100176dc();
-		sub_10017517();
-		done:
-		return LT_OK;
-	}
-
-fail:
-	sub_10017016(0);
-	return dResult;
-}
-
-#endif // PRIMAL_HUNT
 
 
 
@@ -6192,6 +5912,21 @@ public:
 	// empty before the worlds are read in.
 	LTBOOL SetSizeInit2(uint32 nItems, CServerWorldRec* val);
 	inline LTBOOL SetSizeInit2Inline(uint32 nItems, CServerWorldRec* val);
+#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
+	// AVP2: AvP2 1.0.9.6's lithtech.exe Load expands SetSize2 as well
+	// (0x004287ef..0x00428857), calling only the template's
+	// _DeleteAndDestroyArray (0x00414720) and BaseNew (0x00414860); its
+	// InheritWorld still calls SetSize2. The template's members for this
+	// table, written out (stand-in, as SetSizeInit2Inline is).
+	inline LTBOOL SetSizeInit2Expanded(uint32 nItems, CServerWorldRec* val);
+	inline LTBOOL SetSizeInit3Expanded(uint32 nItems, CServerWorldRec*& val, LAlloc* pAlloc);
+	inline LTBOOL SetSize2Expanded(uint32 newSize, LAlloc* pAlloc);
+	CServerWorldRec** _AllocateTArray(uint32 nElements, LAlloc* pAlloc)
+	{
+		return BaseNew(pAlloc, (CServerWorldRec**)0, nElements);
+	}
+	void   _DeleteAndDestroyArray(LAlloc* pAlloc, uint32 nElements);
+#endif
 
 	// Inline, for the same reason as CWorldPolyList's.
 	~CWorldTable() { SetSize2(0, (class CMoAllocator*)&g_DefAlloc); }
@@ -6230,6 +5965,51 @@ inline LTBOOL CWorldTable::SetSizeInit2Inline(uint32 nItems, CServerWorldRec* va
 
 	return LTTRUE;
 }
+
+#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
+inline LTBOOL CWorldTable::SetSize2Expanded(uint32 newSize, LAlloc* pAlloc)
+{
+	if ((newSize == m_nWorlds) && (newSize != 0))
+		return LTTRUE;
+
+	if (m_pWorlds)
+		_DeleteAndDestroyArray(pAlloc, m_nWorlds + m_CacheSize);
+
+	m_nWorlds = newSize;
+	if (newSize > 0)
+	{
+		m_pWorlds = _AllocateTArray(newSize + m_WantedCache, pAlloc);
+		if (!m_pWorlds)
+		{
+			m_nWorlds = 0;
+			m_CacheSize = 0;
+			return LTFALSE;
+		}
+
+		m_CacheSize = m_WantedCache;
+	}
+
+	return LTTRUE;
+}
+
+inline LTBOOL CWorldTable::SetSizeInit3Expanded(uint32 nItems, CServerWorldRec*& val, LAlloc* pAlloc)
+{
+	uint32 i;
+
+	if (!SetSize2Expanded(nItems, pAlloc))
+		return LTFALSE;
+
+	for (i = 0; i < m_nWorlds; i++)
+		m_pWorlds[i] = val;
+
+	return LTTRUE;
+}
+
+inline LTBOOL CWorldTable::SetSizeInit2Expanded(uint32 nItems, CServerWorldRec* val)
+{
+	return SetSizeInit3Expanded(nItems, val, &g_DefAlloc);
+}
+#endif
 
 // server.dll only: lithtech.exe's one caller reaches the inline twin, so
 // the out-of-line member has no body there and is not compiled into it.
@@ -6959,6 +6739,220 @@ void w_SetNodeProjectionsQT1(void* pNodes, uint32 nNodes, int bCurrent)
 //   * the FOV is `cos()` of half the angle in radians. 0x1003f5f4 contains
 //     `fcos` and 0x1003f924 contains `fsin`, which settles which CRT entry
 //     is which.
+#ifndef PRIMAL_HUNT
+// AVP2: AvP2 1.0.9.6's reader (lithtech.exe 0x00429fa0, 2790 bytes) walks the
+// object list twice. The first pass collects the names every LightGroup
+// object lists (its string properties whose names begin "Object") into a
+// vector of strings; the second is NOLF's, except that a light whose Name is
+// in a group is left out (its group lights it), the property buffer is 0x100
+// bytes and string properties are read as strings, and a BrightScale
+// property scales both colours. Primal Hunt's engine has the same strings
+// (its reader is still NOLF's below).
+//
+// RETAIL BUG: fBrightScale, like bFast, is initialised once before the
+// object loop, so a light without BrightScale takes the scale of the last
+// light before it that had one.
+void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
+                       CWorldSubFC* pShade)
+{
+	char     sName[0x100];
+	LTVector vUp;
+	LTVector vRight;
+	uint8    value[0x100];
+	LTVector vForward;
+	uint32   nPropFlags;
+	LTVector vOuterColor;
+	LTVector vDir;
+	LTVector vPos;
+	LTVector vColor;
+	uint32   nNumProps;
+	uint32   nPos;
+	uint32   nStartPos;
+	int      bLightObjects;
+	float    fFOVCos;
+	float    fBrightScale = 1.0f;
+	std::vector<std::string> groupObjects;
+	int      bFast = 1;
+	uint32   nNumObjects;
+	uint32   i;
+	float    fRadius;
+	uint32   j;
+	uint16   nLen;
+	uint16   nRecordSize;
+	uint8    nType;
+	bool     bEnabled;
+	CWorldLight* pLight;
+
+	pStream->GetPos(&nStartPos);
+
+	// Pass 1: the lights the groups claim.
+	pStream->Read(&nNumObjects, 4);
+
+	for (i = 0; i < nNumObjects; i++)
+	{
+		pStream->Read(&nRecordSize, 2);
+		pStream->GetPos(&nPos);
+		pStream->ReadString(sName, sizeof(sName));
+
+		if (strcmp(sName, "LightGroup") == 0)
+		{
+			pStream->Read(&nNumProps, 4);
+
+			for (j = 0; j < nNumProps; j++)
+			{
+				pStream->ReadString(sName, sizeof(sName));
+				pStream->Read(&nType, 1);
+				pStream->Read(&nPropFlags, 4);
+				pStream->Read(&nLen, 2);
+
+				if (nLen > 0x100)
+					pStream->SeekTo(nPos + nRecordSize);
+				else if (nType == 0)
+					pStream->ReadString((char*)value, 0x100);
+				else
+					pStream->Read(value, nLen);
+
+				if (nType == 0 && strncmp(sName, "Object", 6) == 0)
+				{
+					std::string sObject((char*)value);
+
+					if (!sObject.empty())
+						groupObjects.push_back((char*)value);
+				}
+			}
+		}
+		else
+		{
+			pStream->SeekTo(nPos + nRecordSize);
+		}
+	}
+
+	// Pass 2: the lights.
+	pStream->SeekTo(nStartPos);
+	pStream->Read(&nNumObjects, 4);
+
+	for (i = 0; i < nNumObjects; i++)
+	{
+		pStream->Read(&nRecordSize, 2);
+		pStream->GetPos(&nPos);
+		pStream->ReadString(sName, sizeof(sName));
+
+		if (strcmp(sName, "Light") == 0 ||
+		    strcmp(sName, "DirLight") == 0 ||
+		    strcmp(sName, "ObjectLight") == 0)
+		{
+			VEC_INIT(vColor);
+			fRadius = 0.0f;
+			bLightObjects = 1;
+			VEC_INIT(vDir);
+			fFOVCos = -1.0f;
+			bEnabled = true;
+
+			pStream->Read(&nNumProps, 4);
+
+			for (j = 0; j < nNumProps; j++)
+			{
+				pStream->ReadString(sName, sizeof(sName));
+				pStream->Read(&nType, 1);
+				pStream->Read(&nPropFlags, 4);
+				pStream->Read(&nLen, 2);
+
+				if (nLen > 0x100)
+					pStream->SeekTo(nPos + nRecordSize);
+				else if (nType == 0)
+					pStream->ReadString((char*)value, 0x100);
+				else
+					pStream->Read(value, nLen);
+
+				if (nType == 0 && strcmp(sName, "Name") == 0)
+				{
+					if (std::find(groupObjects.begin(), groupObjects.end(),
+					              std::string((char*)value)) != groupObjects.end())
+						bEnabled = false;
+				}
+
+				if (!bEnabled)
+					continue;
+
+				if (nType == 3 && strcmp(sName, "LightRadius") == 0)
+				{
+					fRadius = *(float*)value;
+				}
+				else if (nType == 2 && (strcmp(sName, "LightColor") == 0 ||
+				                        strcmp(sName, "InnerColor") == 0))
+				{
+					VEC_COPY(vColor, *(LTVector*)value);
+				}
+				else if (nType == 2 && strcmp(sName, "OuterColor") == 0)
+				{
+					VEC_COPY(vOuterColor, *(LTVector*)value);
+				}
+				else if (nType == 1 && strcmp(sName, "Pos") == 0)
+				{
+					VEC_COPY(vPos, *(LTVector*)value);
+				}
+				else if (nType == 5 && strcmp(sName, "LightObjects") == 0)
+				{
+					bLightObjects = *(char*)value;
+				}
+				else if (nType == 5 && strcmp(sName, "FastLightObjects") == 0)
+				{
+					bFast = *(char*)value;
+				}
+				else if (nType == 7 && strcmp(sName, "Rotation") == 0)
+				{
+					mat_GetEulerVectors(*(LTVector*)value, &vRight, &vUp,
+					                    &vForward);
+
+					vDir = vForward;
+				}
+				else if (nType == 3 && strcmp(sName, "FOV") == 0)
+				{
+					fFOVCos = (float)cos(*(float*)value *
+					                     (float)(MATH_PI / 360.0f));
+				}
+				else if (nType == 3 && strcmp(sName, "BrightScale") == 0)
+				{
+					fBrightScale = *(float*)value;
+				}
+			}
+
+			if (bLightObjects && bEnabled)
+			{
+				vColor      *= fBrightScale;
+				vOuterColor *= fBrightScale;
+
+				if (bFast)
+				{
+					w_AddFastLight(&vPos, &vColor, fRadius, pShade);
+				}
+				else
+				{
+					pLight = new CWorldLight;
+
+					if (pLight)
+					{
+						pLight->m_vColor      = vColor;
+						pLight->m_vOuterColor = vOuterColor;
+						pLight->m_vPos        = vPos;
+						pLight->m_fRadius     = fRadius;
+						pLight->m_vDir        = vDir;
+						pLight->m_fFOVCos     = fFOVCos;
+
+						pWorld->m_LightHead.AddAfter(&pLight->m_Link);
+					}
+				}
+			}
+		}
+		else
+		{
+			pStream->SeekTo(nPos + nRecordSize);
+		}
+	}
+
+	pWorld->AddLights(&pWorld->m_LightHead);
+}
+#else
 void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
                        CWorldSubFC* pShade)
 {
@@ -7095,6 +7089,7 @@ void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
 
 	pWorld->AddLights(&pWorld->m_LightHead);
 }
+#endif // PRIMAL_HUNT
 
 
 // One sample of the point-shade grid: four bytes, and only three of them are
@@ -7267,8 +7262,10 @@ int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 	// the /O2 image reaches an inline twin and the server the real member.
 #ifdef LT_SERVER_BUILD
 	if (!m_Worlds.SetSizeInit2(nNumWorlds, LTNULL))
-#else
+#elif defined(PRIMAL_HUNT)
 	if (!m_Worlds.SetSizeInit2Inline(nNumWorlds, LTNULL))
+#else
+	if (!m_Worlds.SetSizeInit2Expanded(nNumWorlds, LTNULL))
 #endif
 	{
 		Term();

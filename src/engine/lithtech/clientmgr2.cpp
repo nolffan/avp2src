@@ -1339,6 +1339,13 @@ struct SceneDescQ5
 	LTVector     m_GlobalLightDir;                 // 0x38  mgr+0x760
 	LTVector     m_GlobalLightColor;               // 0x44  mgr+0x754
 	LTVector     m_GlobalLightScale;               // 0x50  mgr+0x76c
+#ifndef PRIMAL_HUNT
+	// AVP2: two more vectors, the manager's at +0x778 and ccclient.cpp's
+	// "WMAmbient" triple (cc_WMAmbient, 0x00422480), which push everything
+	// after them 0x18 bytes on (0x00412461, 0x004124e1; names ours).
+	LTVector     m_GlobalLightScale2;              // 0x5c  mgr+0x778
+	LTVector     m_WMAmbient;                      // 0x68  g_fWMAmbientR/G/B
+#endif
 	LTVector     m_GlobalLightAdd;                 // 0x5c  camera+0x1c4
 	float        m_FrameTime;                      // 0x68
 	SkyDef       m_SkyDef;                         // 0x6c
@@ -1387,7 +1394,12 @@ public:
 	LTVector     m_GlobalLightColor;               // 0x754
 	LTVector     m_GlobalLightDir;                 // 0x760
 	LTVector     m_GlobalLightScale;               // 0x76c
+#ifndef PRIMAL_HUNT
+	LTVector     m_GlobalLightScale2;              // 0x778  (name ours)
+	uint8        m_pad_784[0x1270 - 0x784];
+#else
 	uint8        m_pad_778[0x1270 - 0x778];
+#endif
 	uint16       m_ObjectIDs[30];                  // 0x1270
 	uint8        m_pad_12ac[0x12b0 - 0x12ac];
 	SkyDef       m_SkyDef;                         // 0x12b0
@@ -1434,9 +1446,55 @@ inline void VecCopyQ5(LTVector& vDest, const LTVector& vSrc)
 	vDest = vSrc;
 }
 
+#ifndef PRIMAL_HUNT
+// AVP2: counter.cpp's timer and clientmgr3.cpp's adder, as AvP2 1.0.9.6's
+// RenderCamera uses them, and the two totals it adds to (0x004defa8,
+// 0x004ded10; names ours).
+class CBaseCounter
+{
+public:
+	CBaseCounter(int nMode);
+
+	uint32 m_Data[2];
+};
+void   cnt_StartCounter(CBaseCounter* pCounter);
+uint32 cnt_EndCounter(CBaseCounter* pCounter);
+
+class CRenderCountAdderQ5
+{
+public:
+	CRenderCountAdderQ5(uint32* pTotal) : m_Counter(0)
+	{
+		m_pTotal = pTotal;
+		cnt_StartCounter(&m_Counter);
+	}
+
+	~CRenderCountAdderQ5()
+	{
+		*m_pTotal += cnt_EndCounter(&m_Counter);
+	}
+
+	CBaseCounter m_Counter;                        // 0x00
+	uint32*      m_pTotal;                         // 0x08
+};
+
+// ccclient.cpp's "WMAmbient" (0x004e36a8..0x004e36b0).
+extern float g_fWMAmbientR;
+extern float g_fWMAmbientG;
+extern float g_fWMAmbientB;
+
+uint32 g_nRenderTicksQ5;                           // 0x004defa8
+uint32 g_nSceneTicksQ5;                            // 0x004ded10
+#endif
+
 LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
                        int nDrawMode, void* pUser4, void* pUser5)
 {
+#ifndef PRIMAL_HUNT
+	// AVP2: a timer built first (0x00412272, before m_Rect's constructor)
+	// and never started or read; it sits above sceneDesc in the frame.
+	CBaseCounter cntUnused(0);
+#endif
 	SceneDescQ5 sceneDesc;
 	HLOCALOBJ   objectList[30];
 	int         i;
@@ -1486,9 +1544,17 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 			sceneDesc.m_pTicks[5] = &g_TicksQ5[0];
 			VecCopyQ5(sceneDesc.m_GlobalLightColor, pClientMgr->m_GlobalLightColor);
 			VecCopyQ5(sceneDesc.m_GlobalLightScale, pClientMgr->m_GlobalLightScale);
+#ifndef PRIMAL_HUNT
+			VecCopyQ5(sceneDesc.m_GlobalLightScale2, pClientMgr->m_GlobalLightScale2);
+#endif
 			VecCopyQ5(sceneDesc.m_GlobalLightAdd, pCamera->m_LightAdd);
 			VecCopyQ5(sceneDesc.m_ModelAdd, g_ModelAdd);
 			VecCopyQ5(sceneDesc.m_ModelDirAdd, g_ModelDirAdd);
+#ifndef PRIMAL_HUNT
+			sceneDesc.m_WMAmbient.x = g_fWMAmbientR;
+			sceneDesc.m_WMAmbient.y = g_fWMAmbientG;
+			sceneDesc.m_WMAmbient.z = g_fWMAmbientB;
+#endif
 			sceneDesc.m_FrameTime = pClientMgr->m_FrameTime;
 			sceneDesc.m_pUser4 = pUser4;
 			sceneDesc.m_pUser5 = pUser5;
@@ -1509,8 +1575,20 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 			sceneDesc.m_ModelHookUser = pClientMgr->m_ModelHookUser;
 
 			pClientMgr->m_bRendering = LTTRUE;
+#ifndef PRIMAL_HUNT
+			{
+				// AVP2: the render is timed into two totals
+				// (0x004125ad..0x00412628).
+				CRenderCountAdderQ5 cntRender(&g_nRenderTicksQ5);
+				CRenderCountAdderQ5 cntScene(&g_nSceneTicksQ5);
+
+				if (g_CV_RenderEnable)
+					g_pfnRenderSceneQ5(&sceneDesc);
+			}
+#else
 			if (g_CV_RenderEnable)
 				g_pfnRenderSceneQ5(&sceneDesc);
+#endif
 			pClientMgr->m_bRendering = LTFALSE;
 
 			pClientMgr->m_RenderFrame.Inc();

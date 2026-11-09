@@ -413,7 +413,8 @@ public:
 class CDMSegmentDefList
 {
 public:
-	uint8 m_pad_00[0x08];
+	CDMSegment* m_pHead;                     // 0x000
+	uint8 m_pad_04[0x08 - 0x04];
 
 	CDMSegment* FindByName(const char* pName);                      // 0x00441fe0
 	// 0x00442180: stop and release every segment in the list, through

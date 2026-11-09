@@ -1379,3 +1379,54 @@ const char* CDMSegment::GetName()
 
 	return m_szName;
 }
+
+
+#ifndef PRIMAL_HUNT
+// 0x0044a2f0 and 0x0044a360 (AvP2 1.0.9.6): the two FindByNames, here after
+// GetName as the image has them (Primal Hunt's are ltnew1.cpp's, before it).
+// cl 9044 knows GetName leaves %ecx alone, so each second call for the
+// compare goes out without reloading `this` (0x0044a310, 0x0044a37b).
+CDMPlayingNode* CDMPlayingList::FindByName(const char* pName)
+{
+	if (pName)
+	{
+		CDMPlayingNode* pNode = m_pHead;
+
+		while (pNode)
+		{
+			CDMSegment* pSegment = pNode->m_pSegment;
+
+			if (pSegment && pSegment->GetName())
+			{
+				if (stricmp(pSegment->GetName(), pName) == 0)
+					return pNode;
+			}
+
+			pNode = pNode->m_pNext;
+		}
+	}
+
+	return LTNULL;
+}
+
+CDMSegment* CDMSegmentDefList::FindByName(const char* pName)
+{
+	if (pName)
+	{
+		CDMSegment* pSegment = m_pHead;
+
+		while (pSegment)
+		{
+			if (pSegment->GetName())
+			{
+				if (stricmp(pSegment->GetName(), pName) == 0)
+					return pSegment;
+			}
+
+			pSegment = pSegment->m_pNext;
+		}
+	}
+
+	return LTNULL;
+}
+#endif

@@ -402,6 +402,19 @@ public:
 	// The object's slot in the device state -- a dword index; objects
 	// that share a name share the slot (0x00437d69).
 	uint32         m_nIndex;                 // 0x0e8
+#ifndef PRIMAL_HUNT
+	// AvP2 1.0.9.6's older algorithm: the object's value as a float with
+	// its two previous values and the times they came in; an axis is
+	// smoothed over the three (input_ReadActions, 0x0043f490).
+	float          m_fValue;                 // 0x0ec
+	float          m_fPrevValue;             // 0x0f0
+	float          m_fPrevValue2;            // 0x0f4
+	uint32         m_dwTime;                 // 0x0f8
+	uint32         m_dwPrevTime;             // 0x0fc
+	uint32         m_dwPrevTime2;            // 0x100
+	// Set by a button's press, cleared when the frame's bindings are done.
+	uint32         m_bPressed;               // 0x104
+#else
 	uint32         m_dwValue;                // 0x0ec
 	uint32         m_Unknown0f0;             // 0x0f0
 	uint32         m_Unknown0f4;             // 0x0f4
@@ -411,6 +424,7 @@ public:
 	// The per-millisecond rate slot 5 (0x00437160) spreads an axis's
 	// buffered movement over, in value units (x10000) per tick.
 	float          m_fRate;                  // 0x104
+#endif
 	// The scale and range-scale state input_ScaleTrigger (0x00438bb0) sets
 	// and GetDeviceBindings copies out (0x00439160..0x0043918a).  The
 	// range maps the object's own range [m_fRangeMin, m_fRangeMax] onto
@@ -1766,6 +1780,338 @@ inline float di_BindRecValue(CInputBindRec* pRec)
 	return pVar->m_FloatVal;
 }
 
+#ifndef PRIMAL_HUNT
+// 0x0043f490 -- AvP2 1.0.9.6's per-frame read, an older algorithm than
+// Primal Hunt's below.  An object keeps its value as a float with the two
+// before it and the times they came in (+0xec..+0x100).  An event pushes a
+// button's or POV's raw value, or an axis's into the history; an axis's
+// value is then its latest moved towards the mean of the three by
+// InputRate percent, and a relative axis that has had no event for a tenth
+// of InputRate pushes a zero.  There is no rate or elapsed-time spreading.
+void input_ReadActions(InputMgr* pMgr, uint8* pActions, float* pAxisOffsets)
+{
+	DIDEVICEOBJECTDATA data[64];
+	InputDevice*       pDevice;
+	CDeviceObject*     pObj;
+	CDeviceObject*     pos;
+	SInputBinding*     pBinding;
+	CInputBindRec*     pRec;
+	uint32             dwNow;
+	DWORD              dwItems;
+	HRESULT            hResult;
+	uint32             i;
+	uint32             iObject;
+	int32              nCode;
+	uint32             nType;
+	float              fValue;
+	float              fVar;
+
+	pAxisOffsets[2] = 0.0f;
+	pAxisOffsets[1] = 0.0f;
+	pAxisOffsets[0] = 0.0f;
+
+	for (pRec = g_pBindRecHead; pRec; pRec = pRec->m_pNext)
+	{
+		if (pRec->m_n00)
+		{
+			char szValue[100];
+
+			_snprintf(szValue, 100, "%f", 0.0);
+			szValue[99] = '\0';
+
+			con_SetVar((ConsoleState*)g_pInputClient, di_BindRecVarName(pRec), szValue);
+		}
+
+		pRec->m_n04 = (uint32)con_FindVar((ConsoleState*)g_pInputClient,
+		                                  di_BindRecVarName(pRec));
+	}
+
+	dwNow = GetTickCount();
+
+	for (pDevice = g_pDeviceHead; pDevice; pDevice = pDevice->m_pNext)
+	{
+		while (pDevice->m_pDevice)
+		{
+#ifdef AVP2_MODERN
+			// M-P7-01: JoystickDisable (the launcher's "Disable joystick")
+			// was about DirectInput's joysticks, which are left out; not
+			// ##gamepad.
+			if (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK &&
+			    g_CV_JoystickDisable && !P7Pad_IsPad(pDevice->m_Guid))
+				break;
+#else
+			if (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK &&
+			    g_CV_JoystickDisable)
+				break;
+#endif
+
+			if (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK)
+				pDevice->m_pDevice->Poll();
+
+			memset(data, 0, sizeof(data));
+			dwItems = pDevice->m_bIsMouse ? 1 : 64;
+
+			hResult = pDevice->m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA),
+			                                            data, &dwItems, 0);
+			if (hResult != DI_OK)
+			{
+				if (hResult == DI_BUFFEROVERFLOW)
+				{
+					con_ConsolePrint("Input buffer overflow on %s", pDevice->m_Name);
+				}
+				else
+				{
+					pDevice->m_pDevice->Acquire();
+
+					hResult = pDevice->m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA),
+					                                            data, &dwItems, 0);
+					if (hResult != DI_OK && hResult != DI_BUFFEROVERFLOW)
+						break;
+				}
+			}
+
+			// The events, into their objects.
+			for (i = 0; i < dwItems; i++)
+			{
+				iObject = data[i].dwOfs >> 2;
+
+				if (iObject >= pDevice->m_Objects.m_nCount)
+					continue;
+
+				pObj = pDevice->m_ObjectMap[iObject];
+
+				if (g_CV_InputDebug)
+					con_ConsolePrint("%s (%s) generated %d", pObj->m_Name,
+					                 pObj->m_TriggerName, data[i].dwData);
+
+				nType = pObj->m_Type;
+
+				if (nType == 0)
+				{
+					if (data[i].dwData)
+					{
+						if (pObj->m_fValue == 0.0f)
+							pObj->m_bPressed = 1;
+
+						pObj->m_fValue = (float)data[i].dwData;
+					}
+				}
+				else if (nType == 4)
+				{
+					pObj->m_fValue = (float)data[i].dwData;
+				}
+				else
+				{
+					pObj->m_dwPrevTime2 = pObj->m_dwPrevTime;
+					pObj->m_dwPrevTime  = pObj->m_dwTime;
+					pObj->m_dwTime      = dwNow;
+					pObj->m_fPrevValue2 = pObj->m_fPrevValue;
+					pObj->m_fPrevValue  = pObj->m_fValue;
+					pObj->m_fValue      = (float)(int32)data[i].dwData;
+				}
+			}
+
+			// Every object: its value, then its bindings.
+			for (pos = pDevice->m_Objects.m_pHead; pos; )
+			{
+				pObj = pDevice->m_Objects.GetNext(pos);
+
+				if (pObj->m_Type == 0)
+				{
+					fValue = pObj->m_fScale * pObj->m_fValue;
+				}
+				else
+				{
+					fValue = pObj->m_fValue;
+
+					if (pObj->m_Type != 4)
+					{
+						fValue = ((pObj->m_fPrevValue + pObj->m_fPrevValue2 + pObj->m_fValue) *
+						          (1.0f / 3.0f) - pObj->m_fValue) *
+						         (g_CV_InputRate * 0.01f) + pObj->m_fValue;
+
+						if (pObj->m_Type == 3 &&
+						    dwNow - pObj->m_dwTime > (uint32)g_CV_InputRate / 10)
+						{
+							pObj->m_fPrevValue2 = pObj->m_fPrevValue;
+							pObj->m_dwPrevTime2 = pObj->m_dwPrevTime;
+							pObj->m_dwPrevTime  = pObj->m_dwTime;
+							pObj->m_fPrevValue  = pObj->m_fValue;
+							pObj->m_fValue      = 0.0f;
+							pObj->m_dwTime      = dwNow;
+						}
+					}
+
+					fValue = LTCLAMP(fValue, pObj->m_fRangeMin, pObj->m_fRangeMax);
+
+					if (pObj->m_fRangeScalePreCenterOffset != 0.0)
+					{
+						if (fValue <= pObj->m_fCenter)
+							fValue = fValue * pObj->m_fLowMult + pObj->m_fLowOffset;
+						else
+							fValue = fValue * pObj->m_fHighMult + pObj->m_fHighOffset;
+					}
+					else
+					{
+						fValue = fValue * pObj->m_fRangeScaleMult + pObj->m_fRangeScaleOffset;
+					}
+
+					fValue *= pObj->m_fScale;
+				}
+
+				for (pBinding = pObj->m_pBindings; pBinding; pBinding = pBinding->m_pNext)
+				{
+					if (pBinding->m_pData && pObj->m_bPressed && g_pInputClient)
+					{
+						con_RunString((ConsoleState*)g_pInputClient, (char*)pBinding->m_pData);
+						continue;
+					}
+
+					if (!pBinding->m_pAction)
+						continue;
+
+					nCode = pBinding->m_pAction->m_nCode;
+
+					if (pObj->m_Type == 3 && nCode < 0)
+					{
+						if (nCode == -1)
+							pAxisOffsets[0] += fValue;
+						else if (nCode == -2)
+							pAxisOffsets[1] += fValue;
+						else if (nCode == -3)
+							pAxisOffsets[2] += fValue;
+						else if (pRec = pBinding->m_pBind)
+						{
+							fVar = di_BindRecValue(pRec);
+
+							if (pRec->m_n00)
+							{
+								char szValue[100];
+
+								_snprintf(szValue, 100, "%f", fVar + fValue);
+								szValue[99] = '\0';
+
+								con_SetVar((ConsoleState*)g_pInputClient,
+								           di_BindRecVarName(pRec), szValue);
+							}
+
+							if (g_CV_InputDebug)
+							{
+								pRec = pBinding->m_pBind;
+
+								con_ConsolePrint("rel Trigger %s set console var %s to %22.12f",
+								                 pObj->m_Name, di_BindRecVarName(pRec),
+								                 di_BindRecValue(pRec));
+							}
+						}
+					}
+					else if (pObj->m_Type == 2)
+					{
+						if (nCode < 0)
+						{
+							if (nCode == -1)
+								pAxisOffsets[0] += fValue;
+							else if (nCode == -2)
+								pAxisOffsets[1] += fValue;
+							else if (nCode == -3)
+								pAxisOffsets[2] += fValue;
+							else if (pRec = pBinding->m_pBind)
+							{
+								fVar = di_BindRecValue(pRec);
+
+								if (pRec->m_n00)
+								{
+									char szValue[100];
+
+									_snprintf(szValue, 100, "%f", fVar + fValue);
+									szValue[99] = '\0';
+
+									con_SetVar((ConsoleState*)g_pInputClient,
+									           di_BindRecVarName(pRec), szValue);
+								}
+
+								if (g_CV_InputDebug)
+								{
+									pRec = pBinding->m_pBind;
+
+									con_ConsolePrint("abs Trigger %s set console var %s to %22.12f",
+									                 pObj->m_Name, di_BindRecVarName(pRec),
+									                 di_BindRecValue(pRec));
+								}
+							}
+						}
+						else if (fValue >= pBinding->m_fRangeLow &&
+						         fValue <= pBinding->m_fRangeHigh)
+						{
+							pActions[nCode] |= 1;
+						}
+					}
+					else if (pObj->m_Type == 4 && (pRec = pBinding->m_pBind))
+					{
+						fVar = di_BindRecValue(pRec);
+
+						if (pRec->m_n00)
+						{
+							char szValue[100];
+
+							_snprintf(szValue, 100, "%f", fVar + fValue);
+							szValue[99] = '\0';
+
+							con_SetVar((ConsoleState*)g_pInputClient,
+							           di_BindRecVarName(pRec), szValue);
+						}
+					}
+					else if (pObj->m_Type == 4 && nCode < 0 && fValue != 65536.0f)
+					{
+						if (fValue >= 4500.0f && fValue <= 13500.0f)
+							pAxisOffsets[0] += 30.0f;
+						else if (fValue >= 22500.0f && fValue <= 31500.0f)
+							pAxisOffsets[0] -= 30.0f;
+
+						if ((fValue >= 31500.0f && fValue <= 36000.0f) ||
+						    (fValue <= 4500.0f && fValue >= 0.0f))
+							pAxisOffsets[1] -= 30.0f;
+
+						if (fValue >= 13500.0f && fValue <= 22500.0f)
+							pAxisOffsets[1] += 30.0f;
+					}
+					else if (pBinding->m_fRangeLow == 0.0f && pBinding->m_fRangeHigh == 0.0f)
+					{
+						if (nCode >= 0)
+							pActions[nCode] |= (pObj->m_fValue != 0.0f);
+					}
+					else if (fValue >= pBinding->m_fRangeLow &&
+					         fValue <= pBinding->m_fRangeHigh)
+					{
+						pActions[nCode] |= 1;
+					}
+				}
+
+				pObj->m_bPressed = 0;
+			}
+
+			// Released buttons, cleared for the next read.
+			for (i = 0; i < dwItems; i++)
+			{
+				iObject = data[i].dwOfs >> 2;
+
+				if (iObject >= pDevice->m_Objects.m_nCount)
+					continue;
+
+				pObj = pDevice->m_ObjectMap[iObject];
+
+				if (pObj->m_Type == 0 && !data[i].dwData)
+					pObj->m_fValue = (float)data[i].dwData;
+			}
+
+			if (!dwItems || !pDevice->m_bIsMouse)
+				break;
+		}
+
+		pDevice->m_dwCreateTime = dwNow;
+	}
+}
+#else
 // 0x00437160 -- slot 5, the per-frame read (demodtx.cpp's m_ReadInput: the
 // manager, a 256-byte action array, three axis offsets).  2564 bytes:
 //
@@ -2164,6 +2510,7 @@ void input_ReadActions(InputMgr* pMgr, uint8* pActions, float* pAxisOffsets)
 		pDevice->m_dwCreateTime = dwNow;
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 // 0x00437b70 -- slot 6.  Throw away everything in every device's buffer:
@@ -2236,6 +2583,9 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	DWORD              nOffset;
 	HRESULT            hr;
 	BOOL               bFound;
+#ifndef PRIMAL_HUNT
+	float              fCentre;
+#endif
 
 	pDevice->m_pDevice->Unacquire();
 
@@ -2284,6 +2634,15 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	}
 
 	memset(&df, 0, sizeof(df));
+#ifndef PRIMAL_HUNT
+	df.dwNumObjs  = nObjects;
+	df.dwFlags    = (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK) ?
+	                DIDF_ABSAXIS : DIDF_RELAXIS;
+	df.rgodf      = formats;
+	df.dwSize     = sizeof(DIDATAFORMAT);
+	df.dwObjSize  = sizeof(DIOBJECTDATAFORMAT);
+	df.dwDataSize = nOffset;
+#else
 	df.dwSize     = sizeof(DIDATAFORMAT);
 	df.dwObjSize  = sizeof(DIOBJECTDATAFORMAT);
 	df.dwFlags    = (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK) ?
@@ -2291,11 +2650,16 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	df.dwDataSize = nOffset;
 	df.dwNumObjs  = nObjects;
 	df.rgodf      = formats;
+#endif
 
 	if (pDevice->m_pDevice->SetDataFormat(&df) != DI_OK)
 		return LTFALSE;
 
+#ifndef PRIMAL_HUNT
+	pDevice->m_dwDataSize = nOffset;
+#else
 	pDevice->m_dwDataSize = df.dwDataSize;
+#endif
 
 	dipdw.diph.dwSize       = sizeof(DIPROPDWORD);
 	dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
@@ -2313,6 +2677,24 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	{
 		pObject = pDevice->m_Objects.GetNext(pos);
 
+#ifndef PRIMAL_HUNT
+		// AvP2 1.0.9.6: the value and its history, centred.
+		if (pObject->m_Type == 3 || pObject->m_Type == 2)
+		{
+			fCentre = (pObject->m_fRangeMax - pObject->m_fRangeMin) * 0.5f +
+			          pObject->m_fRangeScalePreCenterOffset;
+
+			pObject->m_fValue      = fCentre;
+			pObject->m_fPrevValue  = fCentre;
+			pObject->m_fPrevValue2 = fCentre;
+		}
+		else
+		{
+			pObject->m_fValue      = 0.0f;
+			pObject->m_fPrevValue  = 0.0f;
+			pObject->m_fPrevValue2 = 0.0f;
+		}
+#else
 		if (pObject->m_Type == 3 || pObject->m_Type == 2)
 		{
 			pObject->m_dwValue = (long)((pObject->m_fRangeMax - pObject->m_fRangeMin) * 0.5f +
@@ -2327,6 +2709,7 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 
 		pObject->m_Unknown0f4 = 0;
 		pObject->m_Unknown100 = 0;
+#endif
 	}
 
 	hr = pDevice->m_pDevice->Acquire();
@@ -2339,6 +2722,16 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 		{
 			pObject = pDevice->m_Objects.GetNext(pos);
 
+#ifndef PRIMAL_HUNT
+			// AvP2 1.0.9.6: an axis and a button read the same way.
+			if (pObject->m_Type == 3 || pObject->m_Type == 2)
+				pObject->m_fValue = (float)state[pObject->m_nIndex];
+			else
+				pObject->m_fValue = (float)state[pObject->m_nIndex];
+
+			pObject->m_fPrevValue  = pObject->m_fValue;
+			pObject->m_fPrevValue2 = pObject->m_fValue;
+#else
 			if (pObject->m_Type == 3 || pObject->m_Type == 2)
 			{
 				pObject->m_dwValue = state[pObject->m_nIndex] * 10000;
@@ -2348,6 +2741,7 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 			{
 				pObject->m_nValue = pObject->m_dwValue = state[pObject->m_nIndex];
 			}
+#endif
 		}
 	}
 

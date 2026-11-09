@@ -1563,6 +1563,9 @@ LTRESULT CSoundInstanceQ47C::sub_47d860(uint32 nElapsedMS)
 	uint32 nSpan;
 	uint32 nLoopStart;
 	uint32 nLoopEnd;
+#ifndef PRIMAL_HUNT
+	float  fScale;
+#endif
 
 	if (!(m_StateFlags & 0x20))
 	{
@@ -1599,10 +1602,20 @@ LTRESULT CSoundInstanceQ47C::sub_47d860(uint32 nElapsedMS)
 			}
 			else if ((m_Flags10 & 4) && !(m_StateFlags & 0x40))
 			{
+#ifndef PRIMAL_HUNT
+				// AvP2 1.0.9.6: one reciprocal, two multiplies (0x00490576).
+				fScale = 1.0f / m_f34;
+
+				nSpan = nEnd - nCur;
+
+				nLoopStart = (uint32)(m_pData->m_nLoopStart58 * fScale);
+				nLoopEnd   = (uint32)(m_pData->m_nLoopEnd5c * fScale);
+#else
 				nSpan = nEnd - nCur;
 
 				nLoopStart = (uint32)((double)m_pData->m_nLoopStart58 / m_f34);
 				nLoopEnd   = (uint32)((double)m_pData->m_nLoopEnd5c / m_f34);
+#endif
 
 				if (nLoopEnd - nSpan <= nElapsedMS)
 				{

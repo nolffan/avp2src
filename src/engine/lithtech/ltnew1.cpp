@@ -1051,6 +1051,9 @@ void dm_NotInitError(char* pFnName)
 }
 
 
+#ifdef PRIMAL_HUNT
+// (AvP2 1.0.9.6 has these two in clientmusic.cpp, after CDMSegment::GetName:
+// see there.)
 // ---- 0x00442030 — CDMPlayingList::FindByName --------------------------- //
 //
 // BELONGS IN: src/engine/lithtech/clientmusic.cpp (clientmusic.h declares
@@ -1151,6 +1154,9 @@ CDMSegmentDefLtn1* CDMSegmentDefListLtn1::FindByName(const char* pName)
 
 	return LTNULL;
 }
+
+
+#endif // PRIMAL_HUNT
 
 
 // ---- 0x004420b0 .. 0x00442240 — the rest of clientmusic's list helpers - //

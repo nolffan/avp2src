@@ -787,12 +787,18 @@ D3D_GROUPS := OS_G5 OS_SF QIP_OS_OI_SF QIP_SF QIP_NI_SF QIP_OS_OI_NI QIP_OS_OI Q
 d3d_group = $(firstword $(foreach g,$(D3D_GROUPS),$(if $(filter $(1),$(D3D_$(g))),$(g))))
 d3d_opt = $(if $(call d3d_group,$(1)),$(filter /%,$(D3D_$(call d3d_group,$(1)))),/O2)
 
+# AvP2 1.0.9.6's engine sees STLport 4.0 (lithshared/stl) ahead of VC6's
+# headers: commonmodel.obj's set<string> members (lithtech.exe
+# 0x00457260..0x00459162) are STLport's, byte for byte as WON's STLport
+# build has them. Primal Hunt's engine is VC6's STL (above).
+ENG_AVP_STL_SRC := commonmodel.cpp
+eng_avp_stl = $(if $(and $(filter AvP2Release,$(1)),$(filter $(ENG_AVP_STL_SRC),$(notdir $(subst \,/,$(2))))),/I ..\..\LT2\lithshared\stl)
 # $(call engine_variant,<object dir>,<cl>,<env>,<defines>,<renderer: icl|cl>)
 define engine_variant
 $(foreach s,$(SERVER_SRC) $(SERVER_OS_SRC),$(eval $(call compile,$(SERVER)/$(1)/$(s:.cpp=.obj),$(SERVER),$(s),$(3),$(2),\
-    /nologo $(4) $(call server_flags,$(s)) /Fo$(1)/,wine-drives)))
+    /nologo $(4) $(call eng_avp_stl,$(1),$(s)) $(call server_flags,$(s)) /Fo$(1)/,wine-drives)))
 $(foreach s,$(LITHTECH_ALL),$(eval $(call compile,$(call c_obj,$(s),$(LITHTECH)/$(1)),$(LITHTECH),$(s),$(3),$(2),\
-    /nologo $(if $(filter $(s),$(LITHTECH_NOGX_SRC)),$(filter-out /GX,$(4)),$(4)) $(call lithtech_flags,$(s)) /Fo$(1)/,wine-drives)))
+    /nologo $(if $(filter $(s),$(LITHTECH_NOGX_SRC)),$(filter-out /GX,$(4)),$(4)) $(call eng_avp_stl,$(1),$(s)) $(call lithtech_flags,$(s)) /Fo$(1)/,wine-drives)))
 $(foreach s,$(D3D_CL_SRC),$(eval $(call compile,$(D3D)/$(1)/$(s:.cpp=.obj),$(D3D),$(s),$(3),$(2),\
     $(D3D_CL) $(filter-out /GX,$(4)) /Fo$(1)/,wine-drives)))
 $(foreach s,$(filter-out $(D3D_CL_SRC),$(D3D_SRC)),$(eval $(call compile,$(D3D)/$(1)/$(s:.cpp=.obj),$(D3D),$(s),\

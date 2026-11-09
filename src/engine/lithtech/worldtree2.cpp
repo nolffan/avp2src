@@ -360,7 +360,11 @@ void wt_InsertObjectN48C(CWTNodeN48C *pNode, WTInsertInfoN48C *pInfo);
 //               je` -- jump away when NOT (less or equal) -- so the source
 //               condition that CONTINUES is `vMin.x > pInfo->m_vBoxMax.x`;
 //               the last three use `test $0x1 / jne`, i.e. `<`.  Written as
-//               six early-outs, which is the shape that shipped.
+//               five early-outs and a test that calls, which is the shape
+//               that shipped: cl 9044 (AvP2 1.0.9.6, 0x0049f0b2) keeps NaN
+//               apart, and its last compare is `and $0x100 / jne` -- the
+//               callback only when vMax.z >= the box's min.z -- where the
+//               two before it are the ordered `<` (`test $0x5 / jnp`).
 //
 //   the descent  `test $0x1 / je` on the min side is `<`; `test $0x41 /
 //               jne` on the max side is `>`.  m_Children[0] is loaded ONCE
@@ -413,18 +417,15 @@ void wt_FindObjectsInBoxN48C(CWTNodeN48C *pNode, WTFindInfoN48C *pInfo,
 			pObj->m_nTouchCode = pInfo->m_pTree->m_nCurCode;
 			pObj->GetDims(&vMin, &vMax);
 
-			if (vMin.x > pInfo->m_vBoxMax.x) goto nextObject;
-			if (vMin.y > pInfo->m_vBoxMax.y) goto nextObject;
-			if (vMin.z > pInfo->m_vBoxMax.z) goto nextObject;
-			if (vMax.x < pInfo->m_vBoxMin.x) goto nextObject;
-			if (vMax.y < pInfo->m_vBoxMin.y) goto nextObject;
-			if (vMax.z < pInfo->m_vBoxMin.z) goto nextObject;
+			if (vMin.x > pInfo->m_vBoxMax.x) continue;
+			if (vMin.y > pInfo->m_vBoxMax.y) continue;
+			if (vMin.z > pInfo->m_vBoxMax.z) continue;
+			if (vMax.x < pInfo->m_vBoxMin.x) continue;
+			if (vMax.y < pInfo->m_vBoxMin.y) continue;
 
-			pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
+			if (vMax.z >= pInfo->m_vBoxMin.z)
+				pInfo->m_pfnCallback(pObj, pInfo->m_pUserData);
 		}
-
-nextObject:
-		;
 	}
 
 	if (pNode->m_Children[0])
@@ -1198,22 +1199,28 @@ void wt_InsertObjectN48C(CWTNodeN48C *pNode, WTInsertInfoN48C *pInfo)
 	if (pNode->m_Objects[2].m_pNext != (LTLink*)&pNode->m_Objects[2])
 		((CWTObjN48C*)pNode->m_Objects[2].m_pNext->m_pData)->NotifyInserted(pInfo->m_pObject);
 
-	if (pNode->m_fSmallestDim * 0.5f > pInfo->m_fMaxDim && pNode->m_Children[0])
+	// Small enough to go further down only if this test FAILS: cl 9044 keeps
+	// NaN apart, and AvP2 1.0.9.6's `test $0x41 / jnp` (0x0049f99d) is the
+	// ordered `<=` taking the link arm, not `>` taking the children's.
+	if (pNode->m_fSmallestDim * 0.5f <= pInfo->m_fMaxDim || !pNode->m_Children[0])
+	{
+		if (pInfo->m_nNumLinks < WT_NUMLINKS)
+		{
+			pNode->AddObjectLink(&pInfo->m_pObject->m_Links[pInfo->m_nNumLinks],
+			                     pInfo->m_nListIndex);
+
+			if (pInfo->m_pObject->WantsExtraLink())
+			{
+				pLink = pInfo->m_pObject->MakeExtraLink(pInfo->m_nNumLinks);
+				pNode->m_Objects[2].AddAfter(pLink);
+			}
+
+			pInfo->m_nNumLinks++;
+		}
+	}
+	else
 	{
 		wt_ForEachChildInBoxN48C(&pInfo->m_vBoxMin, &pInfo->m_vBoxMax, pNode,
 		                         (WTNodeCallbackN48C)wt_InsertObjectN48C, pInfo);
-	}
-	else if (pInfo->m_nNumLinks < WT_NUMLINKS)
-	{
-		pNode->AddObjectLink(&pInfo->m_pObject->m_Links[pInfo->m_nNumLinks],
-		                     pInfo->m_nListIndex);
-
-		if (pInfo->m_pObject->WantsExtraLink())
-		{
-			pLink = pInfo->m_pObject->MakeExtraLink(pInfo->m_nNumLinks);
-			pNode->m_Objects[2].AddAfter(pLink);
-		}
-
-		pInfo->m_nNumLinks++;
 	}
 }

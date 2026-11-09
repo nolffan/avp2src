@@ -271,7 +271,14 @@ void w_GetPointShadeQ3S(uint8* pShadeState, LTVector* pPoint, uint8* pColor)
 	// Declared at its initialisation, not in the `v, vLeft, vRight`
 	// statement: codegen-neutral on the frame but flips one SIB pair,
 	// `movzbl (%edx,%eax,1)` at 0x1002d093 / 0x1002d12d, to shipped order.
+#ifndef PRIMAL_HUNT
+	// AVP2: assigned, so the difference goes through its own temp
+	// (0x004059b6..0x004059eb).
+	LTVector v;
+	v = *pPoint - pShade->m_vBase;
+#else
 	LTVector v = *pPoint - pShade->m_vBase;
+#endif
 	v.x *= pShade->m_vScale.x;
 	v.y *= pShade->m_vScale.y;
 	v.z *= pShade->m_vScale.z;
@@ -308,6 +315,46 @@ void w_GetPointShadeQ3S(uint8* pShadeState, LTVector* pPoint, uint8* pColor)
 	// against the slot.  The store of v.z is dead -- its value stays in
 	// st and -0x1c is reused for (1.0f - v.z) at 0x1002d041 -- which is
 	// why only two of the three have an `fstp` of their own.
+#ifndef PRIMAL_HUNT
+	// AVP2: a point on the grid's far face of an axis takes the last cell's
+	// far corner (weight 0 into the cell below), so the eight corners never
+	// reach past the grid (lithtech.exe 0x00405a6d..0x00405b21).
+	if (ix == pShade->m_nMaxX)
+	{
+		v.x = 0.0f;
+		vInv.x = 1.0f;
+		ix--;
+	}
+	else
+	{
+		v.x -= (float)floor(v.x);
+		vInv.x = 1.0f - v.x;
+	}
+
+	if (iy == pShade->m_nMaxY)
+	{
+		v.y = 0.0f;
+		vInv.y = 1.0f;
+		iy--;
+	}
+	else
+	{
+		v.y -= (float)floor(v.y);
+		vInv.y = 1.0f - v.y;
+	}
+
+	if (iz == pShade->m_nMaxZ)
+	{
+		v.z = 0.0f;
+		vInv.z = 1.0f;
+		iz--;
+	}
+	else
+	{
+		v.z -= (float)floor(v.z);
+		vInv.z = 1.0f - v.z;
+	}
+#else
 	v.x -= (float)floor(v.x);
 	v.y -= (float)floor(v.y);
 	v.z -= (float)floor(v.z);
@@ -325,6 +372,7 @@ void w_GetPointShadeQ3S(uint8* pShadeState, LTVector* pPoint, uint8* pColor)
 	vInv.x = 1.0f - v.x;
 	vInv.y = 1.0f - v.y;
 	vInv.z = 1.0f - v.z;
+#endif
 
 	// 0x1002d014..0x1002d04b / 0x004058a0..0x004058e2.  Cells are four
 	// bytes, so the whole index folds into `lea eax,[eax+ecx*4]`.

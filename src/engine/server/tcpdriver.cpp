@@ -264,6 +264,53 @@ public:
 		{ return Insert2(iItem, toInsert, &g_MoAlloc); }
 	LTBOOL Append(const T& toAdd)
 		{ return Insert(m_nElements, toAdd); }
+#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+	// AvP2 1.0.9.6's lithtech.exe has this expanded into StartQuery's
+	// address arm (0x00497e78), where its broadcast arm and UpdateQuery
+	// call Insert2: collection.h's Insert2 at the end of the array, with
+	// the one read of m_nElements its expansion makes (name ours).
+	LTBOOL Add(const T& toAdd)
+	{
+		T*     pNewArray;
+		uint32 index, i;
+
+		index = m_nElements;
+
+		if (m_Cache.GetCacheSize() == 0)
+		{
+			pNewArray = _AllocateTArray(index + 1 + m_Cache.GetWantedCache(), (LAlloc*)&g_MoAlloc);
+			if (!pNewArray)
+				return LTFALSE;
+
+			for (i = 0; i < index; i++)
+				pNewArray[i] = m_pArray[i];
+
+			for (i = index; i < m_nElements; i++)
+				pNewArray[i + 1] = m_pArray[i];
+
+			pNewArray[index] = toAdd;
+
+			if (m_pArray)
+				_DeleteAndDestroyArray((LAlloc*)&g_MoAlloc, GetNumAllocatedElements());
+
+			m_Cache.SetCacheSize(m_Cache.GetWantedCache());
+			m_pArray = pNewArray;
+		}
+		else
+		{
+			for (i = m_nElements; i > index; i--)
+				m_pArray[i] = m_pArray[i - 1];
+
+			m_Cache.SetCacheSize(m_Cache.GetCacheSize() - 1);
+
+			m_pArray[index] = toAdd;
+		}
+
+		++m_nElements;
+
+		return LTTRUE;
+	}
+#endif
 	void   Term(CMoAllocator* pAlloc = &g_MoAlloc) { SetSize2(0, pAlloc); }
 
 	// +0x00 is the vptr the two virtuals above declare; 0x1004e9bc is the
@@ -844,7 +891,11 @@ LTRESULT TCPDriver::StartQuery(char* pAddresses)
 					else if (tcp_BuildSockaddrFromString(pAddr, &resp.m_Addr))
 					{
 						resp.m_Time = dsi_GetTime();
+#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+						m_Query.Add(resp);
+#else
 						m_Query.Append(resp);
+#endif
 					}
 				}
 			}

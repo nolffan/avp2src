@@ -1413,6 +1413,7 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 							{
 								if (*pToken == '"')
 								{
+#ifdef PRIMAL_HUNT
 									nLen = strlen(pToken);
 									strncpy(szToken, pToken + 1, nLen - 1);
 									szToken[nLen - 1] = 0;
@@ -1428,6 +1429,21 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 									{
 										bInQuote = true;
 									}
+#else
+									// AVP2: the token is copied without its
+									// quote by hand, and it always opens a
+									// quoted run (0x00403b79..0x00403baa).
+									// RETAIL BUG: the terminator lands two
+									// bytes past the copy, leaving
+									// szToken[nLen - 1] and szToken[nLen]
+									// as they were.
+									nLen = strlen(pToken);
+									for (k = 1; k < nLen; k++)
+										szToken[k - 1] = pToken[k];
+									szToken[k + 1] = 0;
+
+									bInQuote = true;
+#endif
 
 									continue;
 								}
