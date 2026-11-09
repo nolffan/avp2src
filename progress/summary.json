@@ -158,7 +158,7 @@
       "unwritten_bytes": 86724
     },
     "AvP2 lithtech.exe": {
-      "attempted": 19,
+      "attempted": 18,
       "bytes_identical": 496937,
       "bytes_total": 704739,
       "crt": 1127,
@@ -167,21 +167,21 @@
       "driver_bytes": 8191,
       "encrypted": 0,
       "encrypted_bytes": 0,
-      "funcs": 4039,
+      "funcs": 4035,
       "identical": 3445,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 295,
+      "near": 296,
       "small": 170,
       "started": true,
-      "todo": 110,
+      "todo": 106,
       "unlinked": 40,
       "unlinked_bytes": 2563,
-      "unplaced": 179,
-      "unplaced_bytes": 37363,
-      "unwritten": 129,
-      "unwritten_bytes": 42273
+      "unplaced": 178,
+      "unplaced_bytes": 35739,
+      "unwritten": 124,
+      "unwritten_bytes": 39804
     },
     "AvP2 ltmsg.dll": {
       "attempted": 0,
@@ -1069,17 +1069,17 @@
     }
   },
   "total": {
-    "attempted": 82,
+    "attempted": 81,
     "bytes_identical": 9773198,
     "bytes_total": 10948396,
-    "funcs": 56290,
+    "funcs": 56286,
     "identical": 48833,
-    "near": 1409,
+    "near": 1410,
     "small": 5156,
-    "todo": 810,
-    "unplaced": 2359,
-    "unplaced_bytes": 479961,
-    "unwritten": 892,
-    "unwritten_bytes": 295653
+    "todo": 806,
+    "unplaced": 2358,
+    "unplaced_bytes": 478337,
+    "unwritten": 887,
+    "unwritten_bytes": 293184
   }
 }
