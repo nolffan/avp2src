@@ -50,10 +50,14 @@ public :
 
 	// PH: the mounted turret the player is using, and its fire and spin
 	// controls (CGameServerShell::OnMessage, MID_TURRET_USE)
-	HOBJECT		GetUsingTurret() const { return m_hUsingTurret; }
 	void		StartUsingTurret(HOBJECT hTurret);
 	void		StopUsingTurret();
 	void		SetTurretControls(uint8 nControls);
+
+	// PH: a Predator's self-destruct going off (PHObject.lto 0x1010d250),
+	// and what Activate last activated (0x101105b0)
+	void		SelfDestruct();
+	HOBJECT		GetLastActivated();
 #endif
 	
 	CPlayerObj();
@@ -305,11 +309,13 @@ private :
 	DBYTE		m_nLoopKeyId; //does not need save/load
 
 #ifdef PRIMAL_HUNT
-	// PH: when a marine's self-destruct goes off (MID_SELF_DESTRUCT,
+	// PH: when a Predator's self-destruct goes off (MID_SELF_DESTRUCT,
 	// ObjectMessageFn 0x1010b9b9; Update 0x1010cf4b), then the sentry
 	// turrets a player picks up and carries, and the turret he is using
 	// (CPlayerObj +0x1e80..+0x1eb0; the turret pickup in ObjectMessageFn,
-	// PHObject.lto 0x1010bb2b)
+	// PHObject.lto 0x1010bb2b). Public: CGameServerShell::OnMessage
+	// aims the turret being used.
+public :
 	LTFLOAT		m_fSelfDestructTime;
 	int			m_nNumTurrets;
 	LTSmartLink	m_hTurrets[MAX_PLAYER_TURRETS];

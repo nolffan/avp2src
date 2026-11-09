@@ -32358,12 +32358,15 @@ PHObject.lto	sub_1010b330
 PHObject.lto	sub_1010b350
 PHObject.lto	sub_1010b360
 PHObject.lto	sub_1010b520
+PHObject.lto	sub_1010b690
 PHObject.lto	sub_1010c640
 PHObject.lto	sub_1010c690
 PHObject.lto	sub_1010c6b0
 PHObject.lto	sub_1010c700
 PHObject.lto	sub_1010c720
 PHObject.lto	sub_1010c770
+PHObject.lto	sub_1010ca90
+PHObject.lto	sub_1010d250
 PHObject.lto	sub_1010d450
 PHObject.lto	sub_1010d490
 PHObject.lto	sub_1010d8e0
@@ -32400,11 +32403,13 @@ PHObject.lto	sub_1010fd30
 PHObject.lto	sub_101101c0
 PHObject.lto	sub_10110260
 PHObject.lto	sub_10110590
+PHObject.lto	sub_101105b0
 PHObject.lto	sub_101105c0
 PHObject.lto	sub_10110640
 PHObject.lto	sub_101107f0
 PHObject.lto	sub_101108f0
 PHObject.lto	sub_101109c0
+PHObject.lto	sub_10110a10
 PHObject.lto	sub_10111fc0
 PHObject.lto	sub_10112010
 PHObject.lto	sub_10112050
@@ -36165,6 +36170,7 @@ PHObject.lto	sub_101f80e0
 PHObject.lto	sub_101f81d0
 PHObject.lto	sub_101f8220
 PHObject.lto	sub_101f8250
+PHObject.lto	sub_101f8260
 PHObject.lto	sub_101f8270
 PHObject.lto	sub_101f8290
 PHObject.lto	sub_101f8660

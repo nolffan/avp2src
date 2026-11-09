@@ -1158,7 +1158,7 @@ void CGameServerShell::OnMessage(HCLIENT hSender, uint8 messageID, HMESSAGEREAD 
 					g_pLTServer->WriteToMessageFloat(hWrite, fPitch);
 					g_pLTServer->EndMessage(hWrite);
 
-					CTurretGun* pGun = dynamic_cast<CTurretGun*>(g_pLTServer->HandleToObject(pPlayer->GetUsingTurret()));
+					CTurretGun* pGun = dynamic_cast<CTurretGun*>(g_pLTServer->HandleToObject(pPlayer->m_hUsingTurret));
 					if (pGun)
 					{
 						pGun->Rotate(fYaw, fPitch);

@@ -53,6 +53,8 @@
 #ifdef PRIMAL_HUNT
 #include "Turret.h"
 #include "TurretGun.h"
+#include "Explosion.h"
+#include "BodyProp.h"
 #endif
 
 static 	LTBOOL g_bShowNodes = LTFALSE;
@@ -108,7 +110,6 @@ CVarTrack	g_PounceStunRatio;
 // PH: the object the player last activated (CPlayerObj::Activate; read by
 // EngineMessageFn's turret pickup, PHObject.lto 0x1010baec)
 static HOBJECT s_hLastActivated = LTNULL;
-static HOBJECT GetLastActivatedObject();
 #endif
 
 // ----------------------------------------------------------------------- //
@@ -330,6 +331,28 @@ DDWORD CPlayerObj::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	return CCharacter::EngineMessageFn(messageID, pData, fData);
 }
 
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	TurretDropFilterFn()
+//
+//	PURPOSE:	PH: what's in the way of a turret being put down: the
+//				world and solid objects, but not players (PHObject.lto
+//				0x1010b690; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+static LTBOOL TurretDropFilterFn(HOBJECT hObj, void *pUserData)
+{
+	if(!hObj) return LTFALSE;
+	if(g_pPhysicsLT->IsWorldObject(hObj) == LT_YES) return LTTRUE;
+
+	if(IsPlayer(hObj)) return LTFALSE;
+
+	return (g_pLTServer->GetObjectFlags(hObj) & FLAG_SOLID) != 0;
+}
+#endif
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPlayerObj::ObjectMessageFn
@@ -404,8 +427,213 @@ DDWORD CPlayerObj::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGERE
 		}
 		break;
 
+#ifdef PRIMAL_HUNT
+		// PH: a badly hurt Predator sets off his self-destruct; it goes
+		// off three seconds later in Update (PHObject.lto 0x1010b92a)
+		case MID_SELF_DESTRUCT:
+		{
+			if(IsPredator(m_hObject) && g_pGameServerShell->GetGameType().IsMultiplayer())
+			{
+				if(m_damage.GetHitPoints() / m_damage.GetMaxHitPoints() <= 0.345f && m_fSelfDestructTime == 0.0f)
+				{
+					m_fSelfDestructTime = g_pLTServer->GetTime() + 3.0f;
+
+					HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(LTNULL, MID_SFX_MESSAGE);
+					g_pLTServer->WriteToMessageByte(hMessage, SFX_CHARACTER_ID);
+					g_pLTServer->WriteToMessageObject(hMessage, m_hObject);
+					g_pLTServer->WriteToMessageByte(hMessage, CFX_SELF_DESTRUCT_START);
+					g_pLTServer->EndMessage(hMessage);
+				}
+			}
+		}
+		break;
+
+		// PH: a marine picks up the turret he's looking at, or puts down
+		// the last one he picked up (PHObject.lto 0x1010ba0f)
+		case MID_PLAYER_TURRETS:
+		{
+			if(!IsHuman(m_hObject)) break;
+
+			LTVector vPos, vDir, vPlayerPos;
+			g_pLTServer->ReadFromMessageVector(hRead, &vPos);
+			g_pLTServer->ReadFromMessageVector(hRead, &vDir);
+			g_pLTServer->ReadFromMessageVector(hRead, &vPlayerPos);
+
+			vDir.Norm();
+
+			Activate(vPos, vDir);
+
+			HOBJECT hObj = GetLastActivated();
+
+			uint32 dwFlags;
+			g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
+
+			if((dwFlags & FLAG_VISIBLE) == FLAG_VISIBLE && IsTurret(hObj) == LTTRUE)
+			{
+				if(m_nNumTurrets >= 2) break;
+
+				g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
+
+				if((dwFlags & (FLAG_VISIBLE | FLAG_SOLID)) == (FLAG_VISIBLE | FLAG_SOLID))
+				{
+					Turret* pTurret = dynamic_cast<Turret*>(g_pLTServer->HandleToObject(hObj));
+
+					CWeapon* pWeapon = pTurret->m_GunMgr.GetCurWeapon();
+					if(!pWeapon) break;
+
+					if(!pTurret->m_GunMgr.GetAmmoCount(pWeapon->GetAmmoId())) break;
+
+					if(!pTurret->m_bTripod) break;
+
+					if(!pTurret->CanPickUp()) break;
+
+					m_hTurrets[m_nNumTurrets] = hObj;
+					m_nNumTurrets++;
+
+					SendTriggerMsgToObject(this, hObj, "PICKUP");
+
+					HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+					g_pLTServer->WriteToMessageByte(hMessage, m_nNumTurrets);
+					g_pLTServer->EndMessage(hMessage);
+					break;
+				}
+			}
+
+			// Put one down
+			if(!m_nNumTurrets) break;
+			if(!m_cmMovement.GetCharacterVars()->m_bStandingOn) break;
+
+			HOBJECT hTurret = m_hTurrets[m_nNumTurrets - 1];
+			if(!hTurret)
+			{
+				RemoveTurret(LTNULL);
+
+				HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+				g_pLTServer->WriteToMessageByte(hMessage, m_nNumTurrets);
+				g_pLTServer->EndMessage(hMessage);
+				break;
+			}
+
+			// Level the direction, unless we're looking well up or down
+			if(vDir.y <= 0.7071f && vDir.y >= -0.7071)
+			{
+				vDir.y = 0.0f;
+			}
+			else
+			{
+				LTRotation rRot;
+				LTVector vU, vR;
+				g_pLTServer->GetObjectRotation(m_hObject, &rRot);
+				g_pLTServer->GetRotationVectors(&rRot, &vU, &vR, &vDir);
+			}
+
+			vDir.Norm();
+
+			LTVector vUp;
+			vUp = LTVector(0.0f, 1.0f, 0.0f);
+
+			LTVector vDims;
+			g_pLTServer->GetObjectDims(hTurret, &vDims);
+
+			// It goes on the floor in front of us, if there's room
+			vPlayerPos.y -= vDims.y - 40.0f;
+			LTVector vDropPos = vPlayerPos;
+			vDropPos += vDir * 75.0f;
+
+			LTVector vMin = vDropPos - vDims;
+			LTVector vMax = vDropPos + vDims;
+
+			HPOLY hPolys[16];
+			uint32 nPolys = 0;
+			g_pLTServer->FindPoliesTouchingBox(vMin, vMax, hPolys, 16, &nPolys, TurretDropFilterFn);
+			if(nPolys > 0) break;
+
+			// and we can see where it goes
+			LTVector vRight(vDir.z, 0.0f, -vDir.x);
+
+			LTVector vUpDims = vUp * vDims.y;
+			LTVector vRightDims = vRight * vDims.x;
+
+			LTVector vFrom[5];
+			vFrom[0] = vPos;
+			vFrom[1] = vPos - vRightDims * 0.25f + vUpDims;
+			vFrom[2] = vPos + vRightDims * 0.25f + vUpDims * 0.5f;
+			vFrom[3] = vPos + vRightDims * 0.5f - vUpDims;
+			vFrom[4] = vPos - vRightDims * 0.5f - vUpDims;
+
+			int i;
+			for(i = 0; i < 5; i++)
+			{
+				IntersectQuery IQuery;
+				IntersectInfo IInfo;
+
+				IQuery.m_From = vFrom[i];
+				IQuery.m_To = vDropPos + vDir * 25.0f;
+				IQuery.m_Flags = INTERSECT_OBJECTS;
+				IQuery.m_FilterFn = TurretDropFilterFn;
+
+				if(g_pLTServer->IntersectSegment(&IQuery, &IInfo))
+				{
+					uint32 dwHitFlags;
+					g_pLTServer->Common()->GetObjectFlags(IInfo.m_hObject, OFT_Flags, dwHitFlags);
+
+					if(dwHitFlags & (FLAG_VISIBLE | FLAG_SOLID)) break;
+				}
+			}
+
+			if(i < 5) break;
+
+			g_pLTServer->SetObjectPos(hTurret, &vDropPos);
+
+			LTRotation rRot;
+			g_pLTServer->AlignRotation(&rRot, &vDir, &vUp);
+			g_pLTServer->SetObjectRotation(hTurret, &rRot);
+
+			SendTriggerMsgToObject(this, hTurret, "DROP");
+
+			Turret* pTurret = (Turret*)g_pLTServer->HandleToObject(hTurret);
+			if(pTurret)
+			{
+				pTurret->SetOwner(m_hObject, GetCharacterClass());
+			}
+
+			m_nNumTurrets--;
+			m_hTurrets[m_nNumTurrets] = LTNULL;
+
+			HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+			g_pLTServer->WriteToMessageByte(hMessage, m_nNumTurrets);
+			g_pLTServer->EndMessage(hMessage);
+		}
+		break;
+
+		// PH: a turret lets us use it, or we let go of the one we're
+		// using (PHObject.lto 0x1010c4da)
+		case MID_TURRET_USE:
+		{
+			// 1: on or off
+			if(g_pLTServer->ReadFromMessageByte(hRead) == 1)
+			{
+				uint8 nOn = g_pLTServer->ReadFromMessageByte(hRead);
+
+				if(m_hUsingTurret)
+				{
+					StopUsingTurret();
+				}
+				else if(nOn == LTTRUE && IsHuman(m_hObject))
+				{
+					LTVector vZero(0.0f, 0.0f, 0.0f);
+					g_pLTServer->SetAcceleration(m_hObject, &vZero);
+
+					StartUsingTurret(hSender);
+
+					g_pLTServer->Physics()->SetVelocity(m_hObject, &vZero);
+				}
+			}
+		}
+		break;
+#endif
 	}
-	
+
 	return CCharacter::ObjectMessageFn(hSender, messageID, hRead);
 }
 
@@ -570,6 +798,15 @@ DBOOL CPlayerObj::Update()
 		{
 			UpdateClientPhysics(); // (to make sure they have their model around)
 			TeleportClientToServerPos(1.0f);
+
+#ifdef PRIMAL_HUNT
+			// PH: tell the client how many turrets we carry
+			// (PHObject.lto 0x1010cc19)
+			HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(m_hClient, MID_PLAYER_TURRETS);
+			g_pLTServer->WriteToMessageByte(hMessage, m_nNumTurrets);
+			g_pLTServer->EndMessage(hMessage);
+#endif
+
 			m_bFirstUpdate = DFALSE;
 		}
 
@@ -658,6 +895,28 @@ DBOOL CPlayerObj::Update()
 			}
 		}
 
+#ifdef PRIMAL_HUNT
+		// PH: a self-destruct counting down goes off, unless we died
+		// first (PHObject.lto 0x1010cf4b)
+		if(m_fSelfDestructTime != 0.0f)
+		{
+			if(m_damage.IsDead())
+			{
+				m_fSelfDestructTime = 0.0f;
+
+				HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(LTNULL, MID_SFX_MESSAGE);
+				g_pLTServer->WriteToMessageByte(hMessage, SFX_CHARACTER_ID);
+				g_pLTServer->WriteToMessageObject(hMessage, m_hObject);
+				g_pLTServer->WriteToMessageByte(hMessage, CFX_SELF_DESTRUCT_STOP);
+				g_pLTServer->EndMessage(hMessage);
+			}
+			else if(g_pLTServer->GetTime() >= m_fSelfDestructTime)
+			{
+				m_fSelfDestructTime = 0.0f;
+				SelfDestruct();
+			}
+		}
+#endif
 
 		UpdateHistory();
 	}
@@ -696,6 +955,55 @@ DBOOL CPlayerObj::Update()
 
 	return LTTRUE;
 }
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::SelfDestruct()
+//
+//	PURPOSE:	PH: the Predator's self-destruct goes off (PHObject.lto
+//				0x1010d250)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::SelfDestruct()
+{
+	HCLASS hClass = g_pLTServer->GetClass("Explosion");
+	if (!hClass) return;
+
+	ObjectCreateStruct theStruct;
+	INIT_OBJECTCREATESTRUCT(theStruct);
+
+	g_pLTServer->GetObjectPos(m_hObject, &theStruct.m_Pos);
+
+	LTVector vUp(0.0f, 1.0f, 0.0f);
+	LTRotation rRot;
+	g_pLTServer->AlignRotation(&rRot, &vUp, &vUp);
+	ROT_COPY(theStruct.m_Rotation, rRot);
+
+	Explosion* pExplosion = (Explosion*)g_pLTServer->CreateObject(hClass, &theStruct);
+	if (pExplosion)
+	{
+		EXPLOSION_CREATESTRUCT explosion_struct;
+
+		explosion_struct.vPos = theStruct.m_Pos;
+
+		explosion_struct.eDamageType = DT_EXPLODE;
+		explosion_struct.eProgDamageType = DT_EXPLODE;
+		explosion_struct.bHideFromShooter = LTFALSE;
+		explosion_struct.fDamageRadius = 800.0f;
+		explosion_struct.fMaxDamage = 200.0f;
+		explosion_struct.fProgDamage = 200.0f;
+		explosion_struct.fProgDamageDuration = 0.01f;
+
+		explosion_struct.bRemoveWhenDone = LTTRUE;
+		explosion_struct.hFiredFrom = m_hObject;
+		explosion_struct.nImpactFXId = 81;
+
+		pExplosion->Setup(explosion_struct);
+	}
+}
+#endif
 
 
 
@@ -2703,8 +3011,8 @@ DBOOL CPlayerObj::Activate(LTVector vPos, LTVector vDir)
 }
 
 #ifdef PRIMAL_HUNT
-// PH (PHObject.lto 0x101105b0)
-static HOBJECT GetLastActivatedObject()
+// PH: what Activate last activated (PHObject.lto 0x101105b0)
+HOBJECT CPlayerObj::GetLastActivated()
 {
 	return s_hLastActivated;
 }
@@ -3303,6 +3611,128 @@ DBOOL CPlayerObj::ProcessCommand(const char*const* pTokens, int nArgs)
 			return HandleCreditsMessage(pTokens[1]);
 		}
 	}
+#ifdef PRIMAL_HUNT
+	// PH: Primal Hunt's level commands (PHObject.lto 0x101115f9..0x10111f8e)
+	else if (stricmp("STOPTURRET", pTokens[0]) == 0)
+	{
+		// Let go of the turret we're using
+		if (m_hUsingTurret)
+		{
+			if (GetTurretGun(m_hUsingTurret))
+			{
+				HSTRING hStr = g_pLTServer->CreateString("ACTIVATE");
+				SendTriggerMsgToObject(this, m_hUsingTurret, hStr);
+				g_pLTServer->FreeString(hStr);
+			}
+
+			StopUsingTurret();
+		}
+
+		return LTTRUE;
+	}
+	else if (stricmp("KILLALIENS", pTokens[0]) == 0)
+	{
+		HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+		while (hObj)
+		{
+			if (IsAlien(hObj) == LTTRUE)
+			{
+				HMESSAGEWRITE hMsg = g_pLTServer->StartMessageToObject(this, hObj, MID_DAMAGE);
+				LTVector vDir(0.0f, 1.0f, 0.0f);
+				g_pLTServer->WriteToMessageVector(hMsg, &vDir);
+				g_pLTServer->WriteToMessageFloat(hMsg, 0.0f);
+				g_pLTServer->WriteToMessageFloat(hMsg, 10000.0f);
+				g_pLTServer->WriteToMessageByte(hMsg, DT_BULLET_NOGIB);
+				g_pLTServer->WriteToMessageObject(hMsg, m_hObject);
+				g_pLTServer->WriteToMessageObject(hMsg, LTNULL);
+				g_pLTServer->EndMessage(hMsg);
+			}
+
+			hObj = g_pLTServer->GetNextObject(hObj);
+		}
+
+		return LTTRUE;
+	}
+	else if (stricmp("HIDEALIENS", pTokens[0]) == 0)
+	{
+		// Remove the aliens, and hide their bodies
+		HCLASS hBodyProp = g_pLTServer->GetClass("BodyProp");
+
+		HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+		while (hObj)
+		{
+			if (IsAlien(hObj) == LTTRUE)
+			{
+				g_pLTServer->RemoveObject(hObj);
+			}
+			else
+			{
+				HCLASS hObjClass = g_pLTServer->GetObjectClass(hObj);
+				if (g_pLTServer->IsKindOf(hObjClass, hBodyProp) == LTTRUE)
+				{
+					BodyProp* pProp = (BodyProp*)g_pLTServer->HandleToObject(hObj);
+					if (pProp)
+					{
+						CharacterButes butes = g_pCharacterButeMgr->GetCharacterButes(pProp->GetCharacter());
+
+						if (IsAlien(butes) == LTTRUE)
+						{
+							SendTriggerMsgToObject(this, hObj, "HIDDEN 1");
+						}
+					}
+				}
+			}
+
+			hObj = g_pLTServer->GetNextObject(hObj);
+		}
+
+		return LTTRUE;
+	}
+	else if (stricmp("HIDESENTRIES", pTokens[0]) == 0)
+	{
+		HCLASS hTurret = g_pLTServer->GetClass("Turret");
+
+		HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+		while (hObj)
+		{
+			HCLASS hObjClass = g_pLTServer->GetObjectClass(hObj);
+			if (g_pLTServer->IsKindOf(hObjClass, hTurret) == LTTRUE)
+			{
+				Turret* pTurret = (Turret*)g_pLTServer->HandleToObject(hObj);
+				if (pTurret)
+				{
+					pTurret->Remove();
+				}
+			}
+
+			hObj = g_pLTServer->GetNextObject(hObj);
+		}
+
+		return LTTRUE;
+	}
+	else if (stricmp("HIDECLASS", pTokens[0]) == 0)
+	{
+		if (nArgs > 1)
+		{
+			HCLASS hClass = g_pLTServer->GetClass(const_cast<char*>(pTokens[1]));
+			if (!hClass) return LTTRUE;
+
+			HOBJECT hObj = g_pLTServer->GetNextObject(LTNULL);
+			while (hObj)
+			{
+				HCLASS hObjClass = g_pLTServer->GetObjectClass(hObj);
+			if (g_pLTServer->IsKindOf(hObjClass, hClass) == LTTRUE)
+				{
+					SendTriggerMsgToObject(this, hObj, "HIDDEN 1");
+				}
+
+				hObj = g_pLTServer->GetNextObject(hObj);
+			}
+		}
+
+		return LTTRUE;
+	}
+#endif
 	if (stricmp("REMOVE", pTokens[0]) == 0)
 	{
 #ifndef _FINAL

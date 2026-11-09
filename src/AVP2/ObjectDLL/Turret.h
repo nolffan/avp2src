@@ -86,6 +86,11 @@ class Turret : public Prop
 
 		// PH: it marks the gun too
 		friend HOBJECT SpawnTurret(HOBJECT hSpawner, const LTVector & vPos, const LTRotation & rRot);
+
+		// PH: a player picks it up and puts it down (CPlayerObj::
+		// ObjectMessageFn, PHObject.lto 0x1010bb63)
+		LTBOOL	CanPickUp();
+		friend class CPlayerObj;
 #endif
 
 

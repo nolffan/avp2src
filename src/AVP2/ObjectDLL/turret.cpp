@@ -880,6 +880,109 @@ uint32 Turret::ObjectMessageFn(HOBJECT hSender, uint32 messageID, HMESSAGEREAD h
 						}
 #endif
 					}
+#ifdef PRIMAL_HUNT
+					// PH: a player picks up a tripod turret, or puts it
+					// down (CPlayerObj::ObjectMessageFn; PHObject.lto
+					// 0x10089f4a)
+					else if( m_bTripod )
+					{
+						if( stricmp(parse.m_Args[0], "PICKUP") == 0 )
+						{
+							if( !CanPickUp() ) return LTTRUE;
+
+							if( IsCharacter(hSender) == LTTRUE )
+							{
+								CCharacter* pChar = (CCharacter*)g_pLTServer->HandleToObject(hSender);
+								if( pChar )
+								{
+									SetOwner(hSender, pChar->GetCharacterClass());
+								}
+							}
+
+							m_damage.SetCanDamage(LTFALSE);
+							m_bCanDamage = LTFALSE;
+
+							m_hObjective = LTNULL;
+							m_vObjectiveOffset = LTVector(0,0,0);
+							m_pCharObjective = LTNULL;
+							m_ObjectiveType = Ignore;
+
+							// Out of the world while it's carried
+							g_pLTServer->SetObjectFlags(m_hGunHandle, g_pLTServer->GetObjectFlags(m_hGunHandle) & ~(FLAG_VISIBLE | FLAG_SOLID | FLAG_RAYHIT | FLAG_GRAVITY | FLAG_FORCECLIENTUPDATE));
+							g_pLTServer->SetObjectFlags(m_hObject, g_pLTServer->GetObjectFlags(m_hObject) & ~(FLAG_VISIBLE | FLAG_SOLID | FLAG_RAYHIT | FLAG_GRAVITY | FLAG_FORCECLIENTUPDATE));
+
+							SendTriggerMsgToObject(this, m_hObject, "OFF");
+
+							m_GunMgr.SetInfinitePool(m_nAmmoId, LTFALSE);
+
+							if( m_hSpawner )
+							{
+								SendTriggerMsgToObject(this, m_hSpawner, "PICKED_UP");
+								m_hSpawner = LTNULL;
+							}
+
+							PlaySoundInfo playSoundInfo;
+							SAFE_STRCPY(playSoundInfo.m_szSoundName, "Sounds/Exp/Weapons/Marine/Turret/Pickup.wav");
+							g_pLTServer->GetObjectPos(m_hObject, &playSoundInfo.m_vPosition);
+							playSoundInfo.m_fInnerRadius = 256.0f;
+							playSoundInfo.m_fOuterRadius = 2048.0f;
+							playSoundInfo.m_nPriority = SOUNDPRIORITY_MISC_LOW;
+							playSoundInfo.m_nVolume = 100;
+							playSoundInfo.m_dwFlags = PLAYSOUND_3D;
+
+							HLTSOUND hSound;
+							g_pLTServer->SoundMgr()->PlaySound(&playSoundInfo, hSound);
+						}
+						else if( stricmp(parse.m_Args[0], "DROP") == 0 )
+						{
+							LTVector vPos;
+							g_pLTServer->GetObjectPos(m_hObject, &vPos);
+							g_pLTServer->SetObjectPos(m_hGunHandle, &vPos);
+
+							LTRotation rRot;
+							g_pLTServer->GetObjectRotation(m_hObject, &rRot);
+							g_pLTServer->SetObjectRotation(m_hGunHandle, &rRot);
+
+							m_damage.SetCanDamage(LTTRUE);
+							m_damage.SetCanCrush(LTTRUE);
+							m_bCanDamage = LTTRUE;
+
+							m_hObjective = LTNULL;
+							m_vObjectiveOffset = LTVector(0,0,0);
+							m_pCharObjective = LTNULL;
+							m_ObjectiveType = Ignore;
+
+							// Back in the world
+							g_pLTServer->SetObjectFlags(m_hGunHandle, g_pLTServer->GetObjectFlags(m_hGunHandle) | FLAG_VISIBLE | FLAG_SOLID | FLAG_FORCECLIENTUPDATE);
+							g_pLTServer->SetObjectFlags(m_hObject, g_pLTServer->GetObjectFlags(m_hObject) | FLAG_VISIBLE | FLAG_SOLID | FLAG_RAYHIT | FLAG_GRAVITY | FLAG_FORCECLIENTUPDATE);
+
+							SendTriggerMsgToObject(this, m_hObject, "ON");
+
+							m_fNextAmmoMsgTime = g_pLTServer->GetTime() + 0.5f;
+
+							g_pLTServer->SetObjectUserFlags(m_hObject, g_pLTServer->GetObjectUserFlags(m_hObject) & ~USRFLG_GLOW);
+							if( m_hGunHandle )
+							{
+								g_pLTServer->SetObjectUserFlags(m_hGunHandle, g_pLTServer->GetObjectUserFlags(m_hGunHandle) & ~USRFLG_GLOW);
+							}
+
+							// It can't be picked up again straight away
+							m_fNextPickupTime = g_pLTServer->GetTime() + 1.0f;
+
+							PlaySoundInfo playSoundInfo;
+							SAFE_STRCPY(playSoundInfo.m_szSoundName, "Sounds/Exp/Weapons/Marine/Turret/Drop.wav");
+							g_pLTServer->GetObjectPos(m_hObject, &playSoundInfo.m_vPosition);
+							playSoundInfo.m_fInnerRadius = 256.0f;
+							playSoundInfo.m_fOuterRadius = 2048.0f;
+							playSoundInfo.m_nPriority = SOUNDPRIORITY_MISC_LOW;
+							playSoundInfo.m_nVolume = 100;
+							playSoundInfo.m_dwFlags = PLAYSOUND_3D;
+
+							HLTSOUND hSound;
+							g_pLTServer->SoundMgr()->PlaySound(&playSoundInfo, hSound);
+						}
+					}
+#endif
 
 				} //if (parse.m_nArgs > 0 && parse.m_Args[0])
 
@@ -3175,6 +3278,22 @@ LTBOOL Turret::CanShootThrough()
 	g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
 
 	return !(dwFlags & FLAG_VISIBLE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Turret::CanPickUp()
+//
+//	PURPOSE:	PH: whether a player may pick the turret up (CPlayerObj::
+//				ObjectMessageFn and the PICKUP command; folded in with the
+//				other "return LTTRUE" functions, PHObject.lto 0x10146330;
+//				name ours)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL Turret::CanPickUp()
+{
+	return LTTRUE;
 }
 
 // ----------------------------------------------------------------------- //

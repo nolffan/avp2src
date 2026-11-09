@@ -119,6 +119,10 @@
 #define MID_DISPLAY_TIMER					220	// Server to client	
 #define MID_SPEED_CHEAT						221	// Server to client	
 #ifdef PRIMAL_HUNT
+// PH: a Predator sets off his self-destruct (CPlayerObj::ObjectMessageFn,
+// PHObject.lto 0x1010b92a; name ours)
+#define MID_SELF_DESTRUCT					222
+
 // PH: the player's carried turrets (names ours)
 #define MID_PLAYER_TURRETS					223	// Server to client: the number carried (CPlayerObj, PHObject.lto 0x1010f57e)
 #define MID_TURRET_AMMO						224	// Server to client: a turret's ammo

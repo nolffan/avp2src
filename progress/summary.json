@@ -601,7 +601,7 @@
     },
     "PHObject.lto": {
       "attempted": 0,
-      "bytes_identical": 2218283,
+      "bytes_identical": 2226402,
       "bytes_total": 2372003,
       "crt": 12603,
       "crt_bytes": 176718,
@@ -610,20 +610,20 @@
       "encrypted": 0,
       "encrypted_bytes": 0,
       "funcs": 10259,
-      "identical": 9086,
+      "identical": 9092,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 180,
-      "small": 869,
+      "near": 177,
+      "small": 868,
       "started": true,
-      "todo": 124,
+      "todo": 122,
       "unlinked": 294,
       "unlinked_bytes": 49660,
       "unplaced": 5,
       "unplaced_bytes": 784,
-      "unwritten": 124,
-      "unwritten_bytes": 16224
+      "unwritten": 122,
+      "unwritten_bytes": 15656
     },
     "PHSRes.dll": {
       "attempted": 0,
@@ -1070,16 +1070,16 @@
   },
   "total": {
     "attempted": 84,
-    "bytes_identical": 9645642,
+    "bytes_identical": 9653761,
     "bytes_total": 10957811,
     "funcs": 56442,
-    "identical": 48464,
-    "near": 1569,
-    "small": 5194,
-    "todo": 1131,
+    "identical": 48470,
+    "near": 1566,
+    "small": 5193,
+    "todo": 1129,
     "unplaced": 2718,
     "unplaced_bytes": 550829,
-    "unwritten": 1215,
-    "unwritten_bytes": 343324
+    "unwritten": 1213,
+    "unwritten_bytes": 342756
   }
 }
