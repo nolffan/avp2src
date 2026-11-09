@@ -479,6 +479,19 @@ LTM_MEMBERS := $(addprefix src/lithshared/lithfontmgr/Release/,lithbitmapfont.ob
     LithTrackBarHelp.obj LithTrackBarEdit.obj LithTrackBarCamera.obj LithTrackBarBase.obj LithTrack.obj)
 $(eval $(call tool,$(LOUT)/LithTrackMgrClient.lib,$(LTM_MEMBERS) | wine-drives,cd src/lithshared && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\LithTrackMgrClient.lib' $(call q,$(subst /,\,$(patsubst src/lithshared/%,%,$(LTM_MEMBERS))))))
 LS_OURS += LithTrackMgrClient
+# GameSpyMgr.lib and GameSpyClientMgr.lib: GameSpy's server and client
+# managers and the GameSpy C Engine SDK, with cl 8966 against STLport, as
+# the release's prebuilt builds (which these sources are written from).
+# Not linked yet.
+GSM_SRCS := GameSpyMgr.cpp gsutils.cpp
+$(eval $(call lsobjs,gamespy/gamespymgr,/I $(LT2LS)\gamespy\gamespymgr /I $(LT2LS)\gamespy\cengine /I $(LT2LS)\gamespy \
+    /I $(LT2LS)\wonapi /I $(LT2LS)\stl /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I .,$(GSM_SRCS)))
+GSC_SRCS := GameSpyClientMgr.cpp GameSpyPlayer.cpp GameSpyServer.cpp cengtest.c darray.c gserver.c gserverlist.c \
+    gutil.c hashtable.c nonport.c
+$(eval $(call lsobjs,gamespy/gamespyclientmgr,/I $(LT2LS)\gamespy\gamespyclientmgr /I $(LT2LS)\gamespy\cengine \
+    /I $(LT2LS)\gamespy /I $(LT2LS)\stl /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I .,$(GSC_SRCS)))
+.PHONY: gamespyobjs
+gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 #
 # WONAPI.lib, as the game DLLs link it ($(LT2_DIR)\lithshared\libs\Release\
 # WONAPI.lib in the project files): the release's STLport build (above,

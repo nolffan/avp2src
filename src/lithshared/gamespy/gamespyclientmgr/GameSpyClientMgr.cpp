@@ -1,0 +1,1 @@
+/* GameSpyClientMgr.cpp: GameSpyClientMgr.lib, written from the release's prebuilt build of it. */
