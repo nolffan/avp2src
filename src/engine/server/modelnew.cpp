@@ -1042,7 +1042,28 @@ LTBOOL ModelQ444::sub_10017b8aQ444(uint32 iSlot, CModelSub1D4Q444* pRec,
 //  GenGetNext/GenGetAt bodies fold together at link time.
 // ======================================================================= //
 
+#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
 template class CMoArray<CModelXform, NoCache>;
+#else
+// AvP2 1.0.9.6's server.dll holds only what the array's users reach: its
+// vtable, the sized constructor (out of line at /O1), Init and CopyArray2.
+// Term, Remove, Insert, Get, operator[], operator=, CopyArray, the
+// NiceSetSize family and the destructor are in it nowhere, so the array is
+// used here rather than instantiated whole.  (name ours)
+void mn_UseXformArrayAvP2Srv(uint32 nCacheSize, CMoArray<CModelXform, NoCache>& other)
+{
+	CMoArray<CModelXform, NoCache> aXforms(nCacheSize);
+
+	LTBOOL (CMoArray<CModelXform, NoCache>::*pCopy2)(const CMoArray<CModelXform, NoCache>&, LAlloc*) =
+		&CMoArray<CModelXform, NoCache>::CopyArray2;
+
+	LTBOOL (CMoArray<CModelXform, NoCache>::*pInit)(uint32, uint32) =
+		&CMoArray<CModelXform, NoCache>::Init;
+
+	(aXforms.*pCopy2)(other, &g_DefAlloc);
+	(other.*pInit)(0, nCacheSize);
+}
+#endif
 
 
 // ======================================================================= //

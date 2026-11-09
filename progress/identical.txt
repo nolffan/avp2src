@@ -5381,6 +5381,7 @@ AvP2 server.dll	sub_1000e817
 AvP2 server.dll	sub_1000e83b
 AvP2 server.dll	sub_1000e85c
 AvP2 server.dll	sub_1000e871
+AvP2 server.dll	sub_1000e882
 AvP2 server.dll	sub_1000e88f
 AvP2 server.dll	sub_1000e943
 AvP2 server.dll	sub_1000ea04
@@ -5684,6 +5685,7 @@ AvP2 server.dll	sub_100195f7
 AvP2 server.dll	sub_10019602
 AvP2 server.dll	sub_10019622
 AvP2 server.dll	sub_10019644
+AvP2 server.dll	sub_10019659
 AvP2 server.dll	sub_1001965c
 AvP2 server.dll	sub_10019668
 AvP2 server.dll	sub_1001968f

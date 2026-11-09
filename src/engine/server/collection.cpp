@@ -348,11 +348,11 @@
 #include <string.h>
 #include "collection.h"
 
-// Primal Hunt's engine and AvP2 1.0.9.6's server.dll take the arrays below
-// as whole-class instantiations. AvP2 1.0.9.6's lithtech.exe holds only
-// what its users reach, and takes it from coll_UseArraysQ514 at the foot
-// of the file instead.
-#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
+// Primal Hunt's engine takes the arrays below as whole-class
+// instantiations. AvP2 1.0.9.6's lithtech.exe and server.dll hold only what
+// their users reach, and take it from coll_UseArraysAvP2 and
+// coll_UseArraysAvP2Srv at the foot of the file instead.
+#ifdef PRIMAL_HUNT
 #define COLL_WHOLE_CLASSES
 #endif
 
@@ -1102,13 +1102,16 @@ DECLARE_COLLPOD (CCollElem0CNQ514, 0x0c);
 // Gen* slot) and whatever members those reach out of line, exactly the set
 // a real user of the array produces.  This function itself has no shipped
 // counterpart.  (name ours)
-#ifdef COLL_WHOLE_CLASSES
+#if defined(COLL_WHOLE_CLASSES) || defined(LT_SERVER_BUILD)
 void coll_UseArraysQ514()
 {
 	CMoArray<CCollElem18PQ514, DefaultCache> a18;
 	CMoArray<CCollElem24PQ514, DefaultCache> a24;
 	CMoArray<LTVector, DefaultCache>         aVec;
+#ifdef COLL_WHOLE_CLASSES
+	// Not in AvP2 1.0.9.6's server.dll: no vtable there has these slots.
 	CMoArray<uint16, NoCache>                aWord;
+#endif
 	CMoArray<CCollElem0CNQ514, NoCache>      a0C;
 
 	// The 0x18 array's SetSize2 is called out of line in lithtech.exe
@@ -1512,7 +1515,7 @@ template class CMoArray<CCollElemC0Rec, DefaultCache>;
 #endif
 
 
-#ifndef COLL_WHOLE_CLASSES
+#if !defined(COLL_WHOLE_CLASSES) && !defined(LT_SERVER_BUILD)
 // AvP2 1.0.9.6's lithtech.exe. A whole-class instantiation emits every
 // member, and of the arrays above this image holds only what their users
 // reach: the vtables of seven of them, and a handful of members called out
@@ -1595,5 +1598,68 @@ void coll_UseArraysAvP2(
 	(a24Rec.*pSetSize24Rec)(0, &g_DefAlloc);
 	(a60.*pSetSize60)(0, &g_DefAlloc);
 	(aC0Rec.*pSetSizeC0Rec)(0, &g_DefAlloc);
+}
+#endif
+
+
+#if !defined(COLL_WHOLE_CLASSES) && defined(LT_SERVER_BUILD)
+// AvP2 1.0.9.6's server.dll, likewise: none of Term, Remove, Insert,
+// NiceSetSize, Fast_*, Get, operator[], operator=, CopyArray, the copy
+// constructor or the destructor of these arrays is in it. Its code is /O1,
+// so the default constructors are out of line, and each one names its
+// array's vtable; the members below are the ones it also calls directly.
+// Nor are the 0x20-byte DefaultCache, the 0xa4 and the uint16 arrays'
+// vtables: no vtable in the image has their Insert2/Remove2 slots. (Most
+// of these element types are stand-ins: the shipped vtables they cover are
+// commonmodel's, worldbsp's and modelnew's arrays, whose bodies are the
+// same bytes.)  The sized constructor of the 0x20-byte NoCache array is out
+// of line too (0x1001dbb4, from Model::Model), but VC6 expands it inside a
+// function as large as the second one, hence a function of its own.
+// (names ours)
+void coll_UseSizedArrayAvP2Srv(uint32 nCacheSize)
+{
+	CMoArray<CCollElem20, NoCache> aSized(nCacheSize);
+}
+
+void coll_UseArraysAvP2Srv(
+	CMoArray<uint8, DefaultCache>&          aBytes,
+	CMoArray<CCollElem1CS, DefaultCache>&   a1CSRef,
+	CMoArray<CCollElemA4, DefaultCache>&    aA4Ref)
+{
+	CMoArray<uint32, DefaultCache>          aDword;
+	CMoArray<float, DefaultCache>           aFloat;
+	CMoArray<CCollElem04, DefaultCache>     a04;
+	CMoArray<CCollElem04F, DefaultCache>    a04F;
+	CMoArray<CCollElem08, DefaultCache>     a08;
+	CMoArray<CCollElem14, NoCache>          a14;
+	CMoArray<CCollElem18, DefaultCache>     a18;
+	CMoArray<CCollElem1CS, DefaultCache>    a1CS;
+	CMoArray<CCollElem20, NoCache>          a20N;
+	CMoArray<CCollElem20A, NoCache>         a20A;
+	CMoArray<CCollElem20C, NoCache>         a20C;
+	CMoArray<CCollElem24Rec, NoCache>       a24Rec;
+	CMoArray<CCollElem40, NoCache>          a40;
+	CMoArray<CCollElem60, DefaultCache>     a60;
+	CMoArray<CCollElemC0Rec, DefaultCache>  aC0Rec;
+
+	uint8* (CMoArray<uint8, DefaultCache>::*pBytes)() =
+		&CMoArray<uint8, DefaultCache>::GetArray;
+	LTBOOL (CMoArray<float, DefaultCache>::*pInsertFloat)(uint32, const float&, LAlloc*) =
+		&CMoArray<float, DefaultCache>::Insert2;
+	void (CMoArray<float, DefaultCache>::*pRemoveFloat)(uint32, LAlloc*) =
+		&CMoArray<float, DefaultCache>::Remove2;
+	LTBOOL (CMoArray<CCollElem1CS, DefaultCache>::*pCopy1CS)(const CMoArray<CCollElem1CS, DefaultCache>&, LAlloc*) =
+		&CMoArray<CCollElem1CS, DefaultCache>::CopyArray2;
+	LTBOOL (CMoArray<CCollElem1CS, DefaultCache>::*pInsert1CS)(uint32, const CCollElem1CS&, LAlloc*) =
+		&CMoArray<CCollElem1CS, DefaultCache>::Insert2;
+	LTBOOL (CMoArray<CCollElemA4, DefaultCache>::*pInsertA4)(uint32, const CCollElemA4&, LAlloc*) =
+		&CMoArray<CCollElemA4, DefaultCache>::Insert2;
+
+	(aBytes.*pBytes)();
+	(aFloat.*pInsertFloat)(0, 0.0f, &g_DefAlloc);
+	(aFloat.*pRemoveFloat)(0, &g_DefAlloc);
+	(a1CSRef.*pCopy1CS)(a1CS, &g_DefAlloc);
+	(a1CSRef.*pInsert1CS)(0, CCollElem1CS(), &g_DefAlloc);
+	(aA4Ref.*pInsertA4)(0, CCollElemA4(), &g_DefAlloc);
 }
 #endif
