@@ -16,6 +16,9 @@
 #include "MultiplayerMgrDefs.h"
 #include "MPClientMgrChart.h"
 #include "ClientRes.h"
+#ifdef PRIMAL_HUNT
+#include "MPRestrictList.h"
+#endif
 
 // -------------------------------------------------------------------- //
 
@@ -134,6 +137,12 @@ class MultiplayerClientMgr
 		void		ClearTeamData();
 		LTBOOL		ClearVerification();
 		uint8		GetCharacterClass(uint32 nClientId);
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: does the server allow this character class (by the
+		// class list its game info sent)? (PHCShell 0x10097520)
+		LTBOOL		IsClassAllowed(int nClass);
+#endif
 
 
 		// -------------------------------------------------------------------- //
@@ -425,6 +434,18 @@ class MultiplayerClientMgr
 		HSTRING			m_szCharList[MAX_TEAMS][32];
 		int				m_nCharList[MAX_TEAMS][32];
 		int				m_nCharCount[4];
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: the server's class and weapon restrictions, as its
+		// game info sends them (OnMessage_GameInfo, PHCShell 0x100955a7):
+		// the IDs, a bit for each allowed one, and the lists made of them
+		int				m_nClassIDs[MAX_MP_RESTRICT_ENTRIES];
+		int				m_nWeaponIDs[MAX_MP_RESTRICT_ENTRIES];
+		uint32			m_dwAllowedClasses;
+		uint32			m_dwAllowedWeapons;
+		CMPRestrictList	m_ClassList;
+		CMPRestrictList	m_WeaponList;
+#endif
 };
 
 // -------------------------------------------------------------------- //

@@ -76,6 +76,16 @@ namespace
 		CMD_DCS_OK,
 		CMD_DCS_CANCEL,
 	};
+
+#ifdef PRIMAL_HUNT
+	// No directory servers: back out of the multiplayer menu
+	void NoDirServersCallBack(LTBOOL bReturn, void *pData)
+	{
+		CFolderMulti *pThisFolder = (CFolderMulti *)pData;
+		if (bReturn && pThisFolder)
+			pThisFolder->SendCommand(FOLDER_CMD_BACK,0,0);
+	}
+#endif
 }
 
 
@@ -526,7 +536,30 @@ LTBOOL CFolderMulti::Render(HSURFACE hDestSurf)
 
 		case VERIFYSTATE_SERVERS:
 		{
+#ifdef PRIMAL_HUNT
+			if(!m_GameSpyClientMgr.SetupDirServers())
+			{
+				// Go back to the normal dialog state (none displayed)
+				m_nDialogState = DIALOGSTATE_NONE;
+
+				SetSelection(kNoSelection);
+
+				RemoveFixedControl(m_pDCSDialog);
+				RemoveFixedControl(m_pDCSOk);
+				RemoveFixedControl(m_pDCSCancel);
+
+				ForceMouseUpdate();
+
+				// "Error: No directory servers were found. ..."
+				HSTRING hString = g_pLTClient->FormatString(29796);
+				g_pInterfaceMgr->ShowMessageBox(hString, LTMB_OK, NoDirServersCallBack, this, LTTRUE, LTTRUE, LTFALSE);
+				g_pLTClient->FreeString(hString);
+
+				break;
+			}
+#else
 			m_GameSpyClientMgr.SetupDirServers();
+#endif
 			m_nVerifyState = VERIFYSTATE_SETUP_MOTD;
 
 			ShowDialog_DCS(LTFALSE);
@@ -607,6 +640,10 @@ LTBOOL CFolderMulti::Render(HSURFACE hDestSurf)
 				if((g_pLTClient->GetTime() - m_fProgessStart) >= MIN_PROGRESS_TIME)
 				{
 					ShowDialog_PRG(LTFALSE);
+
+#ifdef PRIMAL_HUNT
+					g_pLTClient->CPrint("GSCM Max Version: %s", m_GameSpyClientMgr.GetMaxVersion());
+#endif
 
 #ifndef _DEMO
 					if(nVersionCheck == VERSIONCHECKSTATE_FAILED)

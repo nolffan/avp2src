@@ -13,12 +13,19 @@
 
 #include "MultiplayerMgrDefs.h"
 #include "FolderMulti.h"
+#ifdef PRIMAL_HUNT
+#include "ProfileMgr.h"
+#include "ServerOptionMgr.h"
+#endif
 
 
 namespace
 {
 	int kIconWidth = 0;
 	int kNameWidth = 0;
+#ifdef PRIMAL_HUNT
+	int kClassWidth = 0;
+#endif
 	int kPingWidth = 0;
 	int kNumWidth = 0;
 	int kTypeWidth = 0;
@@ -44,6 +51,10 @@ namespace
 		CMD_REFRESH,
 		CMD_SORT_NAME,
 		CMD_SORT_PING,
+#ifdef PRIMAL_HUNT
+		CMD_SORT_CLASS,
+		CMD_SORT_UNUSED,
+#endif
 		CMD_SORT_NUM,
 		CMD_SORT_TYPE,
 		CMD_SORT_MAP,
@@ -153,6 +164,9 @@ CFolderJoin::CFolderJoin()
 
 	m_pSortName = LTNULL;
 	m_pSortPing = LTNULL;
+#ifdef PRIMAL_HUNT
+	m_pSortClass = LTNULL;
+#endif
 	m_pSortNum = LTNULL;
 	m_pSortType = LTNULL;
 	m_pSortMap = LTNULL;
@@ -216,6 +230,11 @@ LTBOOL CFolderJoin::Build()
 	// Create the lock graphic
 	m_hLock = g_pLTClient->CreateSurfaceFromBitmap("Interface\\Menus\\lock.pcx");
 	g_pLTClient->OptimizeSurface(m_hLock, kTransBlack);
+#ifdef PRIMAL_HUNT
+	// RETAIL BUG: never deleted
+	m_hNoEntry = g_pLTClient->CreateSurfaceFromBitmap("Interface\\Exp\\Menus\\noentry.pcx");
+	g_pLTClient->OptimizeSurface(m_hNoEntry, kTransBlack);
+#endif
 
 
 	// Add the links to other menus...
@@ -229,6 +248,9 @@ LTBOOL CFolderJoin::Build()
 	// Grab some custom values out of the attributes
 	kIconWidth = g_pLayoutMgr->GetFolderCustomInt((eFolderID)m_nFolderID, "IconWidth");
 	kNameWidth = g_pLayoutMgr->GetFolderCustomInt((eFolderID)m_nFolderID, "NameWidth");
+#ifdef PRIMAL_HUNT
+	kClassWidth = g_pLayoutMgr->GetFolderCustomInt((eFolderID)m_nFolderID, "ClassWidth");
+#endif
 	kPingWidth = g_pLayoutMgr->GetFolderCustomInt((eFolderID)m_nFolderID, "PingWidth");
 	kNumWidth = g_pLayoutMgr->GetFolderCustomInt((eFolderID)m_nFolderID, "NumWidth");
 	kTypeWidth = g_pLayoutMgr->GetFolderCustomInt((eFolderID)m_nFolderID, "TypeWidth");
@@ -304,6 +326,14 @@ LTBOOL CFolderJoin::Build()
 
 	pos.x += kNameWidth;
 
+#ifdef PRIMAL_HUNT
+	// "Class", "Sort by servers that allow your current class."
+	m_pSortClass = CreateTextItem(29779, CMD_SORT_CLASS, 29780, LTFALSE, GetTinyFont());
+	m_pSortClass->SetParam1(1);
+	AddFixedControl(m_pSortClass,kCustomGroup0,pos);
+	pos.x += kClassWidth;
+
+#endif
 	m_pSortPing = CreateTextItem(IDS_PING, CMD_SORT_PING, IDS_HELP_FIND_PING, LTFALSE, GetTinyFont());
 	m_pSortPing->SetParam1(1);
 	AddFixedControl(m_pSortPing,kCustomGroup0,pos);
@@ -514,6 +544,9 @@ uint32 CFolderJoin::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 
 		case CMD_SORT_NAME:
 		case CMD_SORT_PING:
+#ifdef PRIMAL_HUNT
+		case CMD_SORT_CLASS:
+#endif
 		case CMD_SORT_NUM:
 		case CMD_SORT_TYPE:
 		case CMD_SORT_MAP:
@@ -937,6 +970,10 @@ void CFolderJoin::AddServerCtrl(CGameSpyServer* pGame)
 	CLTGUIColumnTextCtrl* pColCtrl = CreateColumnText(FOLDER_CMD_MP_JOIN_GAME, LTNULL, LTFALSE, GetTinyFont());
 	pColCtrl->SetParam1((uint32)pGame->GetHandle());
 	pColCtrl->SetParam2((uint32)pGame->GetIntValue("lock"));
+#ifdef PRIMAL_HUNT
+	pColCtrl->SetParam3((uint32)pGame->GetIntValue("allowedclasses"));
+	g_pLTClient->CPrint("AddServerCtrl(): allowclasses %d", pColCtrl->GetParam3());
+#endif
 
 	char szTemp[128];
 
@@ -959,6 +996,13 @@ void CFolderJoin::AddServerCtrl(CGameSpyServer* pGame)
 	hText = g_pLTClient->CreateString(szTemp);
 	pColCtrl->AddColumn(hText, kNameWidth, LTF_JUSTIFY_LEFT);
 	g_pLTClient->FreeString(hText);
+
+#ifdef PRIMAL_HUNT
+	// class (the no entry icon is drawn over it)
+	hText = g_pLTClient->CreateString(" ");
+	pColCtrl->AddColumn(hText, kClassWidth, LTF_JUSTIFY_LEFT);
+	g_pLTClient->FreeString(hText);
+#endif
 
 	// ping
 	if(pGame->GetPing() >= 9999)
@@ -1071,6 +1115,16 @@ LTBOOL CFolderJoin::Render(HSURFACE hDestSurf)
 
 			g_pLTClient->DrawSurfaceToSurface(hDestSurf, m_hLock, LTNULL, pt.x + nOffset, pt.y);
 		}
+
+#ifdef PRIMAL_HUNT
+		// mark the servers that don't allow our class
+		if(pCtrl && !IsClassAllowed(pCtrl->GetParam3()))
+		{
+			pt = pCtrl->GetPos();
+
+			g_pLTClient->DrawSurfaceToSurface(hDestSurf, m_hNoEntry, LTNULL, pt.x + kNameWidth + (kIconWidth + kClassWidth) / 2, pt.y);
+		}
+#endif
 	}
 
 
@@ -1346,6 +1400,18 @@ void CFolderJoin::SortServers()
 			GetGameSpyMgr()->SortServersByPing();
 			break;
 		}
+
+#ifdef PRIMAL_HUNT
+		case CMD_SORT_CLASS:
+		{
+			LTIntPt pos = m_pSortClass->GetPos();
+			m_pSortFrame->SetPos(LTIntPt(pos.x - 5, pos.y - 2));
+			m_pSortFrame->SetSize(m_pSortClass->GetWidth() + 10, m_pSortClass->GetHeight() + 4);
+
+			GetGameSpyMgr()->SortServersByClass();
+			break;
+		}
+#endif
 
 		case CMD_SORT_NUM:
 		{
@@ -1705,3 +1771,38 @@ void CFolderJoin::RefreshServers()
 
 	g_pLTClient->FreeString(hStr);
 }
+
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CFolderJoin::IsClassAllowed
+//
+//	PURPOSE:	Does a server (its bit for each allowed entry of the class
+//				list) allow the player's class?
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CFolderJoin::IsClassAllowed(uint32 dwAllowedClasses)
+{
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	CServerOptions *pOptions = g_pServerOptionMgr->GetCurrentCfg();
+
+	if(!pProfile || !pOptions)
+		return LTTRUE;
+
+	CMPRestrictList classList = pOptions->m_ClassList;
+
+	// RETAIL BUG: this is the profile's index into its race's characters,
+	// not the character set the class list holds
+	int nCharacter = pProfile->m_nChar[pProfile->m_nRace];
+
+	if(nCharacter < 0)
+		return LTTRUE;
+
+	for(int i = 0; i < classList.m_nNumEntries; i++)
+		classList.m_aEntries[i].bAllowed = (dwAllowedClasses & (1 << i)) ? LTTRUE : LTFALSE;
+
+	return classList.IsAllowed(classList.FindIndex(nCharacter));
+}
+#endif

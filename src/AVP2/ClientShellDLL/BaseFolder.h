@@ -107,11 +107,8 @@ public:
 	// Primal Hunt: is the profile's character allowed by the server's class
 	// restrictions?  Its OnCommand refuses with "The class you've chosen is
 	// locked out of this server." when it is not (PHCShell 0x100053d6).
-	// The retail body (PHCShell 0x10005aa0) looks the character up in
-	// g_pServerOptionMgr->GetCurrentCfg()'s class list, which waits for
-	// Primal Hunt's CServerOptions (Shared/ServerOptions.h); until then
-	// this placeholder keeps the vtable's layout (slot 9).
-	virtual LTBOOL	IsCharacterAllowed()	{ return LTTRUE; }
+	// Vtable slot 9 (PHCShell 0x10005aa0)
+	virtual LTBOOL	IsCharacterAllowed();
 #endif
 
 	// Creates the title for the folder

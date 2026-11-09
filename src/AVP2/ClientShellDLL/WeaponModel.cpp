@@ -2268,10 +2268,20 @@ void CWeaponModel::ReloadClip(LTBOOL bPlayReload, int nNewAmmo, LTBOOL bForce)
 
 		// Clip is full...
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: asks once, and an empty clip is never full
+		// (PHCShell 0x100b6ba9)
+		int nAmmoInClip = pStats->GetAmmoInClip(m_pPrimBarrel->nId);
+		if (nAmmoInClip && (nAmmoInClip == nShotsPerClip || nAmmoInClip == nAmmoCount))
+		{
+			return;
+		}
+#else
 		if (pStats->GetAmmoInClip(m_pPrimBarrel->nId) == nShotsPerClip || pStats->GetAmmoInClip(m_pPrimBarrel->nId)  == nAmmoCount)
 		{
 			return;
 		}
+#endif
 	}
 
 	if (nAmmo > 0 && nShotsPerClip > 0)

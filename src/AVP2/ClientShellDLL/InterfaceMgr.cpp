@@ -4732,6 +4732,19 @@ void CInterfaceMgr::InitWepChooser()
 			if(m_pWeaponChooser)
 				m_pWeaponChooser->Init();
 		} break;
+#ifdef PRIMAL_HUNT
+	case (7):
+		{
+			if(_stricmp(g_pCharacterButeMgr->GetName(m_stats.GetButeSet()), "NoHands") == 0)
+				break;
+			//we are corporate
+			m_pWeaponChooser = new CCorporateWepChooser;
+
+			//if all is good, initialize
+			if(m_pWeaponChooser)
+				m_pWeaponChooser->Init();
+		} break;
+#endif
 	}
 }
 

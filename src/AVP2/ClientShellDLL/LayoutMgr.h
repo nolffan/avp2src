@@ -142,6 +142,25 @@ public:
 	void		GetScrollTab(char *pBuf, int nBufLen, DDWORD nIndex);
 	DDWORD		GetDefaultCfg(DDWORD nIndex);
 	DDWORD		GetHUDCfg(DDWORD nType, DDWORD nIndex);
+#ifdef PRIMAL_HUNT
+	void		GetMDLargeFontName(char *pBuf, int nBufLen, int nType);
+	void		GetMDSmallFontName(char *pBuf, int nBufLen, int nType);
+	DDWORD		GetNumMDBlipImages(int nType);
+	DDWORD		GetNumMDGridImages(int nType);
+	DIntPt		GetMDGridOffset(int nType);
+	DIntPt		GetMDBaseOffset(int nType);
+	DFLOAT		GetMDGridTranslucency(int nType);
+	DFLOAT		GetMDBaseTranslucency(int nType);
+	DFLOAT		GetMDArcTranslucency(int nType);
+	DIntPt		GetMDRangeOffset(int nType);
+	DIntPt		GetMDRangeSmallOffset(int nType);
+	void		GetArcSurfaceName(char *pBuf, int nBufLen, int nType);
+	void		GetBaseSurfaceName(char *pBuf, int nBufLen, int nType);
+	void		GetGridSurfaceName(char *pBuf, int nBufLen, int nType);
+	void		GetBlipSurfaceName(char *pBuf, int nBufLen, int nType);
+	void		GetTrackerArrowSurfaceName(char *pBuf, int nBufLen, int nType);
+	void		GetTrackerBlipSurfaceName(char *pBuf, int nBufLen, int nType);
+#else
 	void		GetMDLargeFontName(char *pBuf, int nBufLen);
 	void		GetMDSmallFontName(char *pBuf, int nBufLen);
 	DDWORD		GetNumMDBlipImages();
@@ -157,6 +176,7 @@ public:
 	void		GetBlipSurfaceName(char *pBuf, int nBufLen);
 	void		GetTrackerArrowSurfaceName(char *pBuf, int nBufLen);
 	void		GetTrackerBlipSurfaceName(char *pBuf, int nBufLen);
+#endif
 
 	// NOLF Stuff
     LTIntPt     GetBackPos();

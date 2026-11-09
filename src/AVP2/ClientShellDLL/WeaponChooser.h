@@ -28,6 +28,9 @@ public:
 	virtual void	PrevWeapon()	= 0;
 	virtual void	Draw()			= 0;
 	virtual DDWORD	GetCurrentSelection() = 0;
+#ifdef PRIMAL_HUNT
+	virtual LTBOOL	IsDualPistols(int nWeaponID) = 0;
+#endif
 };
 
 class CMarineWepChooser : public CWeaponChooser
@@ -44,6 +47,9 @@ public:
 	void	PrevWeapon();
 	void	Draw();
 	DDWORD	GetCurrentSelection() { return m_nCurWeapon; }
+#ifdef PRIMAL_HUNT
+	LTBOOL	IsDualPistols(int nWeaponID);
+#endif
 
 	//new AvP3 Functions
 	void	Init();
@@ -83,6 +89,62 @@ private:
 };
 
 
+#ifdef PRIMAL_HUNT
+// The Corporate HUD's chooser: the Marine's, with its own images
+class CCorporateWepChooser : public CWeaponChooser
+{
+public:
+	CCorporateWepChooser();
+	~CCorporateWepChooser();
+
+	void	Term();
+	DBOOL	Open();
+	void	Close();
+	DBOOL	IsOpen()	{return m_bIsOpen;}
+	void	NextWeapon();
+	void	PrevWeapon();
+	void	Draw();
+	DDWORD	GetCurrentSelection() { return m_nCurWeapon; }
+	LTBOOL	IsDualPistols(int nWeaponID) { return LTFALSE; }
+
+	//new AvP3 Functions
+	void	Init();
+
+private:
+	DBOOL		HaveAmmo(DBYTE nWeaponID);
+	void		DrawAmmoBars(HSURFACE hScreen, DBYTE nWeaponID, DWORD nXOffset, DWORD nYOffset);
+
+	HSURFACE*	m_ahWeaponSurf;
+	DBOOL		m_bIsOpen;
+	LTBOOL		m_bClosing;
+
+	float		m_fStartTime;
+	float		m_fFinishTime;
+
+	//new AvP3 Variables
+	HSURFACE	m_ahSmallIcon[2];	//0=green block, 1=red block
+	HSURFACE	m_hSelectBox;		//border box for selected weapon
+	int			m_nCurWeapon;		//current weapon index
+	DDWORD		m_nLastWeapon;		//index number of last weapon
+	DDWORD		m_nFirstWeapon;		//index number of first weapon
+	DDWORD		m_nMaxWeapons;		//max number of weapons
+	DDWORD		m_nIconWidth;		//width in pixels of icon images
+	DDWORD		m_nIconHeight;		//height in pixels of icon images
+	DDWORD		m_nSmIconWidth;		//width in pixels of small icon images
+	DDWORD		m_nSmIconHeight;	//height in pixels of small icon images
+	LithFont*	m_plfIconFontWht;	//pointer to white lith font for icon labels		
+	LithFont*	m_plfIconFontBlk;	//pointer to black lith font for icon labels
+	float		m_fResetTime;		//time chooser was last reset
+	DDWORD		m_nScreenWidth;		//current screen width
+	DDWORD		m_nScreenHeight;	//current screen height
+	CPlayerStats*	m_pPlayerStats;	//pointer to player stats class
+
+	//new AvP3 Functions
+	void		LoadImages();
+	void		LoadFonts();
+};
+#endif
+
 class CPredatorWepChooser : public CWeaponChooser
 {
 public:
@@ -97,6 +159,9 @@ public:
 	void	PrevWeapon();
 	void	Draw();
 	DDWORD	GetCurrentSelection() { return m_nCurWeapon; }
+#ifdef PRIMAL_HUNT
+	LTBOOL	IsDualPistols(int nWeaponID) { return LTFALSE; }
+#endif
 
 	//new AvP3 Functions
 	void	Init();

@@ -399,6 +399,48 @@ struct IFXCS
 		fTintRange		= 0.0f;
 	}
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the create structure writes and reads itself
+	// (PHCShell.dll 0x100efd00, 0x100efda0)
+	virtual LTBOOL	Write(CMultiFile* pFile)
+	{
+		if (!pFile) return LTFALSE;
+
+		pFile->WriteVector(vPos);
+		pFile->WriteVector(vDir);
+		pFile->WriteVector(vSurfNormal);
+		pFile->WriteFloat(rSurfRot.m_Quat[0]);
+		pFile->WriteFloat(rSurfRot.m_Quat[1]);
+		pFile->WriteFloat(rSurfRot.m_Quat[2]);
+		pFile->WriteFloat(rSurfRot.m_Quat[3]);
+		pFile->WriteByte(eSurfType);
+		pFile->WriteByte(eCode);
+		pFile->WriteBool(bPlaySound);
+		pFile->WriteFloat(fTintRange);
+
+		return LTTRUE;
+	}
+
+	virtual LTBOOL	Read(CMultiFile* pFile)
+	{
+		if (!pFile) return LTFALSE;
+
+		pFile->ReadVector(&vPos);
+		pFile->ReadVector(&vDir);
+		pFile->ReadVector(&vSurfNormal);
+		pFile->ReadFloat(&rSurfRot.m_Quat[0]);
+		pFile->ReadFloat(&rSurfRot.m_Quat[1]);
+		pFile->ReadFloat(&rSurfRot.m_Quat[2]);
+		pFile->ReadFloat(&rSurfRot.m_Quat[3]);
+		eSurfType = (SurfaceType)pFile->ReadByte();
+		eCode = (ContainerCode)pFile->ReadByte();
+		pFile->ReadBool(&bPlaySound);
+		pFile->ReadFloat(&fTintRange);
+
+		return LTTRUE;
+	}
+#endif
+
     LTVector         vPos;           // Position of FX
     LTVector         vDir;           // Direction for scale fx
     LTVector         vSurfNormal;    // Normal of surface of impact

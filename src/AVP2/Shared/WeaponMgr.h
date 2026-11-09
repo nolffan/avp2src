@@ -441,7 +441,10 @@ class CWeaponMgr : public CHierarchicalButeMgr
 		CPlayerStats*		m_pPlayerStats;		// pointer to player stats class
 
 #ifdef PRIMAL_HUNT
-		// PH: the "_MP" weapons a server can restrict (MPRestrictList.h)
+	public :
+
+		// PH: the "_MP" weapons a server can restrict (MPRestrictList.h;
+		// the host options folder reads its count, PHCShell.dll 0x1001a9e0)
 		CMPRestrictList		m_MPWeapons;
 #endif
 };

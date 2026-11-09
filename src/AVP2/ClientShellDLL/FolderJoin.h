@@ -82,6 +82,9 @@ class CFolderJoin : public CBaseFolder
 		void	SetUpdateControls(LTBOOL bEnabled);
 
 		void	RefreshServers();
+#ifdef PRIMAL_HUNT
+		LTBOOL	IsClassAllowed(uint32 dwAllowedClasses);
+#endif
 
 
 		CListCtrl*			m_pServerList;
@@ -99,6 +102,9 @@ class CFolderJoin : public CBaseFolder
 
 		CLTGUITextItemCtrl*	m_pSortName;
 		CLTGUITextItemCtrl*	m_pSortPing;
+#ifdef PRIMAL_HUNT
+		CLTGUITextItemCtrl*	m_pSortClass;
+#endif
 		CLTGUITextItemCtrl*	m_pSortNum;
 		CLTGUITextItemCtrl*	m_pSortType;
 		CLTGUITextItemCtrl*	m_pSortMap;
@@ -139,6 +145,9 @@ class CFolderJoin : public CBaseFolder
 		int			m_nServerSort;
 
 		HSURFACE	m_hLock;
+#ifdef PRIMAL_HUNT
+		HSURFACE	m_hNoEntry;		// a server that doesn't allow the player's class
+#endif
 };
 
 #endif // _FOLDER_JOIN_H_

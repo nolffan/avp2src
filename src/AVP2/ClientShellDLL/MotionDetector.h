@@ -74,7 +74,7 @@ private:
 	// Primal Hunt (CMotionDetector is 0x14 bytes bigger): Init sets this
 	// when the player's character class is 2 (PHCShell.dll 0x100545d8);
 	// the name is ours
-	LTBOOL			m_bAltDisplay;
+	int				m_nMDType;		// 1 for the Corporate HUD's motion detector
 #endif
 
 	//private utility functions
@@ -94,6 +94,10 @@ private:
 	void		LoadFonts();
 	void		LoadImages();
 	void		SetOffsets();
+#ifdef PRIMAL_HUNT
+	int			GetMDType();
+	uint32		GetMaxRange();
+#endif
 
 	LithFont*	m_pSmallNums;	//pointer to small number font
 	LithFont*	m_pLargeNums;	//pointer to large number font
@@ -120,8 +124,8 @@ private:
 #ifdef PRIMAL_HUNT
 	// Primal Hunt: two more layout points LoadImages reads
 	// (PHCShell.dll 0x10054756, 0x1005477f); names ours
-	DIntPt		m_ptExtraDest;
-	DIntPt		m_ptExtraOffset;
+	DIntPt		m_ptRangeOffset;		//where the range is displayed
+	DIntPt		m_ptRangeSmallOffset;	//where the small range is displayed
 #endif
 };
 

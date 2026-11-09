@@ -32,6 +32,12 @@ class CFolderHost : public CBaseFolder
 
 		void	SetPassCheck(LTBOOL bOn);
 
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: against the class list of the options being set up
+		// here, not the current configuration's (PHCShell 0x10014260)
+		LTBOOL	IsCharacterAllowed();
+#endif
+
 	protected:
 
 		uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);

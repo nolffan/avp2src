@@ -382,7 +382,10 @@ class CCharacterButeMgr : public CHierarchicalButeMgr
 		CharacterButes	*m_pButeSets;
 
 #ifdef PRIMAL_HUNT
-		// PH: the "_MP" character sets a server can restrict (MPRestrictList.h)
+	public:
+
+		// PH: the "_MP" character sets a server can restrict (MPRestrictList.h;
+		// the host options folder reads its count, PHCShell.dll 0x1001a9e0)
 		CMPRestrictList	m_MPClasses;
 #endif
 };

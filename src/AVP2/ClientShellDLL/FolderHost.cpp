@@ -10,6 +10,9 @@
 #include "ClientRes.h"
 #include "GameClientShell.h"
 #include "MultiplayerMgrDefs.h"
+#ifdef PRIMAL_HUNT
+#include "ProfileMgr.h"
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -840,4 +843,19 @@ void CFolderHost::SetPassCheck(LTBOOL bOn)
 
 	ForceMouseUpdate();
 }
+
+#ifdef PRIMAL_HUNT
+
+LTBOOL CFolderHost::IsCharacterAllowed()
+{
+	if (!g_pProfileMgr) return LTTRUE;
+
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	int nChar = pProfile->m_nChar[pProfile->m_nRace];
+	if (nChar < 0) return LTTRUE;
+
+	return m_Options.m_ClassList.IsAllowed(m_Options.m_ClassList.FindIndex(nChar));
+}
+
+#endif
 

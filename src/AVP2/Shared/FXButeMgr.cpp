@@ -6149,11 +6149,63 @@ static LTBOOL ReadFXList(L & list, CMultiFile* pFile, T** ppFX)
 	if (list.GetLength() != 0) return LTFALSE;
 
 	int nNum = pFile->ReadInt();
+	if (nNum <= 0) return LTTRUE;
+
 	for (int i=0; i < nNum; i++)
 	{
 		T* pFX = new T;
 		pFX->Read(pFile);
 		list.AddTail(pFX);
+	}
+
+	return LTTRUE;
+}
+
+// The projectile class data are of several kinds: each begins with which
+// (PROJBASEFX::Read), so their list has its own reader. The template's
+// instances from the sixth list on are calls in the retail ReadCache, and
+// PROJBASEFX::Read is one (PHCShell.dll 0x100cf1f0): the inlining budget
+// is spent by this one being expanded
+static inline LTBOOL ReadFXList(ProjClassDataList & list, CMultiFile* pFile, PROJECTILECLASSDATA** ppFX)
+{
+	if (!pFile) return LTFALSE;
+	if (list.GetLength() != 0) return LTFALSE;
+
+	int nNum = pFile->ReadInt();
+	for (int i=0; i < nNum; i++)
+	{
+		PROJBASEFX base;
+		base.Read(pFile);
+
+		PROJECTILECLASSDATA* pPCD = LTNULL;
+
+		switch (base.nClassType)
+		{
+			case 2:
+				pPCD = new PROXCLASSDATA;
+			break;
+
+			case 3:
+				pPCD = new SPIDERCLASSDATA;
+			break;
+
+			case 4:
+				pPCD = new TRACKINGSADARCLASSDATA;
+			break;
+
+			case 5:
+				pPCD = new PREDDISKCLASSDATA;
+			break;
+
+			default:
+			break;
+		}
+
+		if (pPCD)
+		{
+			pPCD->Read(pFile);
+			list.AddTail(pPCD);
+		}
 	}
 
 	return LTTRUE;
@@ -6235,48 +6287,7 @@ LTBOOL CFXButeMgr::ReadCache(const char* szFile, CMultiFile* pFile)
 
 	ReadFXList(m_ParticleTrailFXList, pFile, (PARTICLETRAILFX**)&pDummy);
 	ReadFXList(m_ProjectileFXList, pFile, (PROJECTILEFX**)&pDummy);
-
-	// The class data are of several kinds: each begins with which
-	if (m_ProjClassDataList.GetLength() == 0)
-	{
-		int nNum = pFile->ReadInt();
-		for (int i=0; i < nNum; i++)
-		{
-			PROJBASEFX base;
-			base.Read(pFile);
-
-			PROJECTILECLASSDATA* pPCD = LTNULL;
-
-			switch (base.nClassType)
-			{
-				case 2:
-					pPCD = new PROXCLASSDATA;
-				break;
-
-				case 3:
-					pPCD = new SPIDERCLASSDATA;
-				break;
-
-				case 4:
-					pPCD = new TRACKINGSADARCLASSDATA;
-				break;
-
-				case 5:
-					pPCD = new PREDDISKCLASSDATA;
-				break;
-
-				default:
-				break;
-			}
-
-			if (pPCD)
-			{
-				pPCD->Read(pFile);
-				m_ProjClassDataList.AddTail(pPCD);
-			}
-		}
-	}
-
+	ReadFXList(m_ProjClassDataList, pFile, (PROJECTILECLASSDATA**)&pDummy);
 	ReadFXList(m_ImpactFXList, pFile, (IMPACTFX**)&pDummy);
 	ReadFXList(m_FireFXList, pFile, (FIREFX**)&pDummy);
 	ReadFXList(m_PExplFXList, pFile, (PEXPLFX**)&pDummy);

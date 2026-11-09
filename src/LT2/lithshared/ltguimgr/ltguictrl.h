@@ -107,6 +107,10 @@ public:
 
     uint32          GetParam1() { return(m_dwParam1); }
     uint32          GetParam2() { return(m_dwParam2); }
+#ifdef PRIMAL_HUNT
+    void            SetParam3(uint32 dw) { m_dwParam3 = dw; }
+    uint32          GetParam3() { return(m_dwParam3); }
+#endif
 
 	int				GetBoxDrawAdjustX() { return(m_xBoxDrawAdj); }
 	void			SetBoxDrawAdjustX(int xAdj) { m_xBoxDrawAdj = xAdj; }

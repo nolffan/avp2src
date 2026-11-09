@@ -56,7 +56,7 @@ CMotionDetector::CMotionDetector()
 	memset(&m_BlipDispList,0, sizeof(MDDispBlipList));
 
 #ifdef PRIMAL_HUNT
-	m_bAltDisplay		= LTFALSE;
+	m_nMDType			= 0;
 #endif
 }
 
@@ -79,6 +79,19 @@ LTBOOL CMotionDetector::Init()
 	if(!m_pPlayerStats)
 		return LTFALSE;
 
+#ifdef PRIMAL_HUNT
+	// the Corporates have their own motion detector
+	CharacterClass eClass = g_pCharacterButeMgr->GetClass(g_pGameClientShell->GetPlayerStats()->GetButeSet());
+
+	if(eClass != MARINE && eClass != CORPORATE)
+		eClass = MARINE;
+
+	m_nMDType = 0;
+
+	if(eClass == CORPORATE)
+		m_nMDType = 1;
+#endif
+
 	//load up font resources
 	LoadFonts();
 
@@ -99,6 +112,86 @@ LTBOOL CMotionDetector::Init()
 // Loads the bitmap images
 //
 // -----------------------------------------------/
+#ifdef PRIMAL_HUNT
+void CMotionDetector::LoadImages()
+{
+	HLTCOLOR	hTransColor = SETRGB_T(0,0,0);
+	char		s_aSurfaceName[60];
+
+	m_nBlipSurfaces = g_pLayoutMgr->GetNumMDBlipImages(GetMDType());	
+	m_nGridSurfaces = g_pLayoutMgr->GetNumMDGridImages(GetMDType());	
+
+	//set image offset
+	m_ptGridOffset	= g_pLayoutMgr->GetMDGridOffset(GetMDType());	
+	m_ptBaseOffset	= g_pLayoutMgr->GetMDBaseOffset(GetMDType());	
+	m_ptRangeOffset	= g_pLayoutMgr->GetMDRangeOffset(GetMDType());
+	m_ptRangeSmallOffset = g_pLayoutMgr->GetMDRangeSmallOffset(GetMDType());
+
+	//get translucency value
+	m_fGridTrans	= g_pLayoutMgr->GetMDGridTranslucency(GetMDType());
+	m_fBaseTrans	= g_pLayoutMgr->GetMDBaseTranslucency(GetMDType());
+	m_fArcTrans		= g_pLayoutMgr->GetMDArcTranslucency(GetMDType());
+
+	//get surface path and name
+	g_pLayoutMgr->GetArcSurfaceName(s_aSurfaceName, 60, GetMDType());
+	//load up surface
+	m_hArcSurf = g_pInterfaceResMgr->GetSharedSurface(s_aSurfaceName);
+	//set translucency
+	g_pClientDE->SetSurfaceAlpha (m_hArcSurf, m_fArcTrans);
+
+	//get surface path and name
+	g_pLayoutMgr->GetBaseSurfaceName(s_aSurfaceName, 60, GetMDType());
+	//load up surface
+	m_hBaseSurf = g_pInterfaceResMgr->GetSharedSurface(s_aSurfaceName);
+	//set translucency
+	g_pClientDE->SetSurfaceAlpha (m_hBaseSurf, m_fBaseTrans);
+
+	//create the array
+	m_ahGridSurf = new HSURFACE[m_nGridSurfaces];
+	if(!m_ahGridSurf) return;
+	//creat my name
+	g_pLayoutMgr->GetGridSurfaceName(s_aSurfaceName, 60, GetMDType());
+
+	for(uint32 i=0 ; i<m_nGridSurfaces ; i++)
+	{
+		char	aTemp[60];
+		//parse the name
+		sprintf(aTemp,"%s%d%s",s_aSurfaceName,i,".pcx");
+		//create surface
+		m_ahGridSurf[i] = g_pInterfaceResMgr->GetSharedSurface(aTemp);
+		//set translucency
+		g_pClientDE->SetSurfaceAlpha (m_ahGridSurf[i], m_fGridTrans);
+	}
+
+
+	//create the array
+	m_ahBlipSurf = new HSURFACE[m_nBlipSurfaces];
+	if(!m_ahBlipSurf) return;
+	//creat my name
+	g_pLayoutMgr->GetBlipSurfaceName(s_aSurfaceName, 60, GetMDType());
+
+	for(i=0 ; i<m_nBlipSurfaces ; i++)
+	{
+		char	aTemp[60];
+		//parse the name
+		sprintf(aTemp,"%s%d%s",s_aSurfaceName,i,".pcx");
+		//create surface
+		m_ahBlipSurf[i] = g_pInterfaceResMgr->GetSharedSurface(aTemp);
+	}
+
+	//get surface path and name
+	g_pLayoutMgr->GetTrackerBlipSurfaceName(s_aSurfaceName, 60, GetMDType());
+	//load up surface
+	m_hTrackerBlip = g_pInterfaceResMgr->GetSharedSurface(s_aSurfaceName);
+	//get surface path and name
+	g_pLayoutMgr->GetTrackerArrowSurfaceName(s_aSurfaceName, 60, GetMDType());
+	//load up surface
+	m_hTrackerArrow = g_pInterfaceResMgr->GetSharedSurface(s_aSurfaceName);
+
+	SetOffsets();
+}
+
+#else
 void CMotionDetector::LoadImages()
 {
 	HLTCOLOR	hTransColor = SETRGB_T(0,0,0);
@@ -175,6 +268,8 @@ void CMotionDetector::LoadImages()
 	SetOffsets();
 }
 
+#endif
+
 // -----------------------------------------------/
 //
 // void CMotionDetector::SetOffsets Implimentation
@@ -219,6 +314,37 @@ void CMotionDetector::SetOffsets()
 // Loads the numeric display fonts
 //
 // -----------------------------------------------/
+#ifdef PRIMAL_HUNT
+void CMotionDetector::LoadFonts()
+{
+	LITHFONTCREATESTRUCT	lfCreateStruct;
+	char					s_aSurfaceName[60];
+
+	//set create struct fixed elements
+	lfCreateStruct.nGroupFlags = LTF_INCLUDE_NUMBERS;
+	lfCreateStruct.hTransColor = SETRGB_T(0,0,0);
+	lfCreateStruct.bChromaKey	= LTTRUE;
+
+	//get surface path and name
+	g_pLayoutMgr->GetMDSmallFontName(s_aSurfaceName, 60, GetMDType());
+
+	//set name elelment for font
+	lfCreateStruct.szFontBitmap = s_aSurfaceName;
+
+	//load up the font
+	m_pSmallNums = CreateLithFont(g_pClientDE, &lfCreateStruct, LTTRUE);
+
+	//get surface path and name
+	g_pLayoutMgr->GetMDLargeFontName(s_aSurfaceName, 60, GetMDType());
+
+	//set name elelment for font
+	lfCreateStruct.szFontBitmap = s_aSurfaceName;
+
+	//load up the font
+	m_pLargeNums = CreateLithFont(g_pClientDE, &lfCreateStruct, LTTRUE);
+}
+
+#else
 void CMotionDetector::LoadFonts()
 {
 	LITHFONTCREATESTRUCT	lfCreateStruct;
@@ -247,6 +373,8 @@ void CMotionDetector::LoadFonts()
 	//load up the font
 	m_pLargeNums = CreateLithFont(g_pClientDE, &lfCreateStruct, LTTRUE);
 }
+
+#endif
 
 // -----------------------------------------------/
 //
@@ -392,6 +520,43 @@ void CMotionDetector::DrawMDFrame	(LTBOOL bEMPEffect)
 		{
 			nIndex = GetRandom(0, 45);
 		}
+#ifdef PRIMAL_HUNT
+		//update our surface
+		if(nIndex >= m_nGridSurfaces && m_nGridSurfaces > 0)
+		{
+			// the Corporate motion detector has fewer grid frames
+			g_pClientDE->DrawSurfaceToSurfaceTransparent(	hScreen,
+															m_ahGridSurf[0],
+															LTNULL,
+															m_ptGridDest.x, 
+															m_ptGridDest.y, 
+															hTransColor);
+		}
+		else
+		{
+			g_pClientDE->DrawSurfaceToSurfaceTransparent(	hScreen,
+															m_ahGridSurf[nIndex],
+															LTNULL,
+															m_ptGridDest.x, 
+															m_ptGridDest.y, 
+															hTransColor);
+		}
+
+		//display the blips if any
+		if(!bEMPEffect)
+		{
+			for(uint32 i=0; i<m_BlipDispList.nNumBlips; i++)
+			{
+				if(UpdateDispBlipList(i, vPlayerPos, vForward, vRight))
+					g_pClientDE->DrawSurfaceToSurfaceTransparent
+						(	hScreen,
+							m_ahBlipSurf[m_nBlipIndex],
+							LTNULL,
+							m_BlipDispList.ptOffset.x + m_BlipDispList.BlipDispArray[i].pt.x + m_ptGridDest.x, 
+							m_BlipDispList.ptOffset.y - m_BlipDispList.BlipDispArray[i].pt.y + m_ptGridDest.y, 
+							hTransColor);
+			}
+#else
 		//update our surface
 		g_pClientDE->DrawSurfaceToSurfaceTransparent(	hScreen,
 														m_ahGridSurf[nIndex],
@@ -414,12 +579,22 @@ void CMotionDetector::DrawMDFrame	(LTBOOL bEMPEffect)
 							m_ptGridDest.y + m_BlipDispList.ptOffset.y - m_BlipDispList.BlipDispArray[i].pt.y, 
 							hTransColor);
 			}
+#endif
 
 			if(m_bFirstUpdate)
 			{
 				//play blip sound
 				m_bFirstUpdate = LTFALSE;
 
+#ifdef PRIMAL_HUNT
+				if(m_BlipDispList.nMinRange != (int)GetMaxRange())
+					g_pClientSoundMgr->PlaySoundLocal(
+								"\\Sounds\\Interface\\md_tracking.wav",
+								SOUNDPRIORITY_MISC_LOW,
+								PLAYSOUND_CTRL_PITCH,
+								(uint8)(30.0f + (1.0f - (LTFLOAT)m_BlipDispList.nMinRange / (int)GetMaxRange()) * 70.0f),
+								1.0f + (1.0f - (LTFLOAT)m_BlipDispList.nMinRange / (int)GetMaxRange()) * 0.05f);
+#else
 				if(m_BlipDispList.nMinRange != MAX_MD_RANGE)
 					g_pClientSoundMgr->PlaySoundLocal(
 								"\\Sounds\\Interface\\md_tracking.wav",
@@ -427,6 +602,7 @@ void CMotionDetector::DrawMDFrame	(LTBOOL bEMPEffect)
 								PLAYSOUND_CTRL_PITCH,
 								(uint8)(30.0f + (1.0f - (LTFLOAT)m_BlipDispList.nMinRange / MAX_MD_RANGE) * 70.0f),
 								1.0f + (1.0f - (LTFLOAT)m_BlipDispList.nMinRange / MAX_MD_RANGE) * 0.05f);
+#endif
 			}
 
 			//dispaly the tracker blip or arrow
@@ -486,6 +662,127 @@ void CMotionDetector::DrawMDBase	()
 // Displays the numeric range on the motion detector
 //
 // -----------------------------------------------/
+#ifdef PRIMAL_HUNT
+void CMotionDetector::DisplayMDRange	(LTBOOL bActive, DFLOAT fTotAnimTime, uint32 nRange, LTBOOL bEMPEffect)
+{
+	static char aBigNums[3];
+	static char aLilNums[3];
+	static LTBOOL bRunning = LTFALSE;
+	static DFLOAT	fStartTime = g_pClientDE->GetTime();
+	static DFLOAT	fTemp = 0.5f;
+	DFLOAT			fTimeDelta = g_pClientDE->GetTime() - fStartTime;
+	uint32			nCount;
+	LITHFONTDRAWDATA lfDDLg, lfDDSm;
+
+	//get handle to screen surface
+	HSURFACE hScreen = g_pClientDE->GetScreenSurface();
+
+	//set drawdata elements
+	lfDDLg.byJustify		= LTF_JUSTIFY_LEFT;
+	lfDDLg.nLetterSpace		= 2;
+	lfDDLg.bForceFormat		= LTTRUE;
+	lfDDSm.byJustify		= LTF_JUSTIFY_LEFT;
+	lfDDSm.nLetterSpace		= 1;
+	lfDDSm.bForceFormat		= LTTRUE;
+
+	if(bActive)
+	{
+		if(bRunning)
+		{
+			if(nRange == GetMaxRange())
+			{
+				//continuation of sequence
+				if(GetMDType() == 1)
+					nCount = (uint32) (fTimeDelta / fTotAnimTime * 2000);
+				else
+					nCount = (uint32) (fTimeDelta / fTotAnimTime * 3000);
+			}
+			else
+			{
+				if(GetMDType() == 1)
+					nCount = (uint32) ( (DFLOAT)nRange / GetMaxRange() * 2000);
+				else
+					nCount = (uint32) ( (DFLOAT)nRange / GetMaxRange() * 3000);
+			}
+
+			uint32 nBigNum = nCount / 100;
+			uint32 nLilNum = nCount % 100;
+
+			sprintf(aBigNums,"%02d",nBigNum);
+			sprintf(aLilNums,"%02d",nLilNum);
+
+		}
+		else
+		{
+			//start of a new sequence
+			bRunning = LTTRUE;
+			fStartTime = g_pClientDE->GetTime();
+			nCount = 0;
+		}
+	}
+	else
+	{
+		//set flag to false
+		bRunning = LTFALSE;
+
+		if(nRange != GetMaxRange())
+		{
+			if(GetMDType() == 1)
+				nCount = (uint32) ( (DFLOAT)nRange / GetMaxRange() * 2000);
+			else
+				nCount = (uint32) ( (DFLOAT)nRange / GetMaxRange() * 3000);
+
+			uint32 nBigNum = nCount / 100;
+			uint32 nLilNum = nCount % 100;
+
+			sprintf(aBigNums,"%02d",nBigNum);
+			sprintf(aLilNums,"%02d",nLilNum);
+		}
+		else
+		{
+			//set strings
+			sprintf(aBigNums,"%s","00");
+			sprintf(aLilNums,"%s","00");
+		}
+	}
+
+	if(bEMPEffect)
+	{
+		//set strings
+		sprintf(aBigNums,"88");
+		sprintf(aLilNums,"88");
+	}
+
+	if(GetMDType() == 1)
+	{
+		//the Corporate motion detector shows just the large digits, in the small font
+		m_pSmallNums->Draw(	hScreen,
+								aBigNums,
+								&lfDDLg, 
+								m_ptGridDest.x+m_ptRangeOffset.x, 
+								m_ptGridDest.y+m_ptRangeOffset.y, 
+								LTNULL);
+		return;
+	}
+
+	//draw large text to the screen
+	m_pLargeNums->Draw(	hScreen,
+							aBigNums,
+							&lfDDLg, 
+							m_ptGridDest.x+m_ptRangeOffset.x, 
+							m_ptGridDest.y+m_ptRangeOffset.y, 
+							LTNULL);
+
+	//draw small text to the screen
+	m_pSmallNums->Draw(	hScreen,
+							aLilNums,
+							&lfDDSm, 
+							m_ptGridDest.x+m_ptRangeSmallOffset.x, 
+							m_ptGridDest.y+m_ptRangeSmallOffset.y, 
+							LTNULL);
+}
+
+#else
 void CMotionDetector::DisplayMDRange	(LTBOOL bActive, DFLOAT fTotAnimTime, uint32 nRange, LTBOOL bEMPEffect)
 {
 	static char aBigNums[3];
@@ -586,6 +883,8 @@ void CMotionDetector::DisplayMDRange	(LTBOOL bActive, DFLOAT fTotAnimTime, uint3
 							LTNULL);
 }
 
+#endif
+
 // -----------------------------------------------/
 //
 // void CMotionDetector::GetMDAnimDestRect Implimentation
@@ -593,6 +892,117 @@ void CMotionDetector::DisplayMDRange	(LTBOOL bActive, DFLOAT fTotAnimTime, uint3
 // Calculates destination for MD animation
 //
 // -----------------------------------------------/
+#ifdef PRIMAL_HUNT
+DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
+{
+	static DFLOAT	fStartTime = g_pClientDE->GetTime();
+	DFLOAT			fTimeDelta = g_pClientDE->GetTime() - fStartTime;
+	DFLOAT			fSeqDelay = 0.5f;
+	static LTBOOL	bSeqDelay = LTTRUE;
+	static DFLOAT	fTotAnimTime = 0.4f;
+	DRect			rcRval;
+	uint32			nWidth		= 195;
+	uint32 nHalfWidth	= nWidth>>1;
+	uint32			nHeight	= 98;
+	static int		nHalfHeight;
+	static DFLOAT	fSeqStartTime = g_pClientDE->GetTime();
+	static DFLOAT	fTotSeqTime = fTotAnimTime + fSeqDelay;
+	DFLOAT			fSeqTimeDelta = g_pClientDE->GetTime() - fSeqStartTime;
+
+	// the Corporate motion detector is round, and grows from its centre
+	if(GetMDType() == 1)
+	{
+		nWidth		= 150;
+		nHalfWidth	= 75;
+		nHeight		= 150;
+		nHalfHeight	= 75;
+	}
+
+	m_nBlipIndex = (uint32)((m_nBlipSurfaces-1)*(1-fSeqTimeDelta/fTotSeqTime));
+	m_nBlipIndex = m_nBlipIndex <= m_nBlipSurfaces ? m_nBlipIndex : m_nBlipSurfaces-1;
+	m_nBlipIndex = m_nBlipIndex > 0 ? m_nBlipIndex : 0;
+
+	//display numeric range
+	DisplayMDRange(!bSeqDelay, fTotAnimTime, m_BlipDispList.nMinRange, bEMPEffect);
+
+	//return null for first sequence delay
+	if(bSeqDelay)
+	{
+		if(fTimeDelta > fSeqDelay)
+		{
+			//ok waited long enuf, start the animation
+			bSeqDelay = LTFALSE;
+
+			//reset the timer
+			fStartTime = fSeqStartTime = g_pClientDE->GetTime();
+
+			//play the sound
+			if(g_vtMDSound.GetFloat())
+				g_pClientSoundMgr->PlaySoundLocal("\\Sounds\\Interface\\md_scan.wav", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f);
+
+			BuildDisplayList();
+		}
+		//set dest rect
+		rcRval.left		= m_ptGridDest.x + nHalfWidth;
+		rcRval.top		= m_ptGridDest.y + nHeight;
+		rcRval.right	= rcRval.left;
+		rcRval.bottom	= rcRval.top;
+
+		//return the dest rect
+		return rcRval;
+	}
+	
+	//rect ratio
+	LTFLOAT	fRatio;
+
+	if(!bEMPEffect)
+	{
+		if(fTimeDelta < fTotAnimTime)
+		{
+			fRatio = fTimeDelta/fTotAnimTime;
+
+			if(GetMDType() == 1)
+			{
+				//set dest rect
+				// (probably a retail bug: the bottom is above the top)
+				rcRval.left		= m_ptGridDest.x + (int)(nHalfWidth * (1-fRatio));
+				rcRval.top		= m_ptGridDest.y + (int)(nHalfHeight * (1-fRatio));
+				rcRval.right	= m_ptGridDest.x + nWidth - (int)(nHalfWidth * (1-fRatio));
+				rcRval.bottom	= m_ptGridDest.y - (int)(nHalfHeight * (1-fRatio));
+			}
+			else
+			{
+				//set dest rect
+				rcRval.left		= m_ptGridDest.x + (int)(nHalfWidth * (1-fRatio));
+				rcRval.top		= m_ptGridDest.y + (int)(nHeight * (1-fRatio));
+				rcRval.right	= m_ptGridDest.x + nWidth - (int)(nHalfWidth * (1-fRatio));
+				rcRval.bottom	= m_ptGridDest.y + (int)nHeight;
+			}
+		}
+		else
+		{
+			fStartTime = g_pClientDE->GetTime();
+
+			//time to reset
+			bSeqDelay = LTTRUE;
+
+			ResetDisplayList();
+		}
+	}
+	else
+	{
+		fRatio = GetRandom(0.0f, 1.0f);
+
+		//set dest rect
+		rcRval.left		= m_ptGridDest.x + (int)(nHalfWidth * (1-fRatio));
+		rcRval.top		= m_ptGridDest.y + (int)(nHeight * (1-fRatio));
+		rcRval.right	= m_ptGridDest.x + nWidth - (int)(nHalfWidth * (1-fRatio));
+		rcRval.bottom	= m_ptGridDest.y + (int)nHeight;
+	}
+
+	return rcRval;
+}
+#else
 DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 {
 	static DFLOAT	fStartTime = g_pClientDE->GetTime();
@@ -680,6 +1090,7 @@ DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 
 	return rcRval;
 }
+#endif
 
 // -----------------------------------------------/
 //
@@ -691,8 +1102,14 @@ DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 void CMotionDetector::OnObjectMove(HOBJECT hObj, LTBOOL bTeleport, DVector vPos)
 {
 	//verify we are based on the marine and not moving due to teleport
+#ifdef PRIMAL_HUNT
+	// (or the Corporate)
+	if(m_pPlayerStats->GetHUDType() != 1 && m_pPlayerStats->GetHUDType() != 7)
+		return;
+#else
 	if(m_pPlayerStats->GetHUDType() != 1)
 		return;
+#endif
 
 	LTBOOL bKeyframed = LTFALSE;
 
@@ -778,7 +1195,11 @@ LTBOOL CMotionDetector::TestObjectForLocation(HOBJECT hObj, DVector vPos)//, DFL
 	uint32 nRange = (uint32)vPlayerToObj.MagSqr();
 
 	//test range
+#ifdef PRIMAL_HUNT
+	if( nRange > GetMaxRange() * GetMaxRange() )
+#else
 	if( nRange > MAX_MD_RANGE_SQ )
+#endif
 		return LTFALSE;
 
 
@@ -798,6 +1219,12 @@ LTBOOL CMotionDetector::TestObjectForLocation(HOBJECT hObj, DVector vPos)//, DFL
 	//see if the object is infront of us
 	if(vForward.Dot(vPlayerToObj) > 0)
 		return LTTRUE;
+
+#ifdef PRIMAL_HUNT
+	// the Corporate motion detector sees all around
+	if(GetMDType() == 1)
+		return LTTRUE;
+#endif
 
 	return LTFALSE;
 }
@@ -920,9 +1347,15 @@ void CMotionDetector::BuildDisplayList()
 	memset(&m_BlipDispList, 0, sizeof(MDDispBlipList));
 
 	//re-set constants
+#ifdef PRIMAL_HUNT
+	m_BlipDispList.nMinRange = GetMaxRange();
+	m_BlipDispList.ptOffset.x = 75;
+	m_BlipDispList.ptOffset.y = 75;
+#else
 	m_BlipDispList.nMinRange = MAX_MD_RANGE;
 	m_BlipDispList.ptOffset.x = 94;
 	m_BlipDispList.ptOffset.y = 92;
+#endif
 	m_bFirstUpdate = LTTRUE;
 
 	for(int i=0; i<MAX_BLIPS; i++)
@@ -967,6 +1400,60 @@ void CMotionDetector::AddToDispList(MDBlip nBlip)
 // Updates the display list of blips
 //
 // -----------------------------------------------/
+#ifdef PRIMAL_HUNT
+LTBOOL CMotionDetector::UpdateDispBlipList(int nIndex, LTVector vPlayerPos, LTVector vPlayerForward, LTVector vPlayerRight)
+{
+	LTFLOAT fRatio = (GetMDType() == 1) ? (LTFLOAT)67 / GetMaxRange() : (LTFLOAT)98 / GetMaxRange();
+
+	//calculate range and test
+	//get vector from player to object
+	LTVector vPlayerToObj = m_BlipDispList.BlipDispArray[nIndex].vLoc - vPlayerPos;
+
+	//calculate range
+	uint32 nRange = (uint32)vPlayerToObj.Mag();
+
+	//test range
+	if( nRange > GetMaxRange() )
+		return LTFALSE;
+
+	//test forward dot
+	//norm vector
+	vPlayerToObj.Norm();
+
+	//see if the object is infront of us (the Corporate motion detector sees all around)
+	if(!GetMDType() && vPlayerForward.Dot(vPlayerToObj) <= 0)
+		return LTFALSE;
+
+	//calculate right dot
+	LTFLOAT fMag	= (LTFLOAT)nRange / GetMaxRange();
+
+	if(GetMDType() == 1)
+		fMag = (fMag * 67)+8;
+	else
+		fMag = (fMag * 88)+10;
+
+	LTFLOAT fForward = vPlayerForward.Dot(vPlayerToObj);
+	LTFLOAT fAngle	= vPlayerRight.Dot(vPlayerToObj);
+
+	// Bounds check
+	fAngle = fAngle < -1.0f ? -1.0f : fAngle;
+	fAngle = fAngle > 1.0f ? 1.0f : fAngle;
+
+	fAngle	= (LTFLOAT) acos(fAngle);
+
+	m_BlipDispList.BlipDispArray[nIndex].pt.x = (int)(fMag * cos(fAngle));
+	m_BlipDispList.BlipDispArray[nIndex].pt.y = (int)(fMag * sin(fAngle));
+
+	// behind us goes below the centre
+	if(GetMDType() == 1 && fForward < 0)
+		m_BlipDispList.BlipDispArray[nIndex].pt.y = -m_BlipDispList.BlipDispArray[nIndex].pt.y;
+
+	if(nRange < (uint32)m_BlipDispList.nMinRange)
+		m_BlipDispList.nMinRange = nRange;
+
+	return LTTRUE;
+}
+#else
 LTBOOL CMotionDetector::UpdateDispBlipList(int nIndex, LTVector vPlayerPos, LTVector vPlayerForward, LTVector vPlayerRight)
 {
 	static LTFLOAT fRatio = (LTFLOAT)98 / MAX_MD_RANGE;
@@ -1009,6 +1496,7 @@ LTBOOL CMotionDetector::UpdateDispBlipList(int nIndex, LTVector vPlayerPos, LTVe
 
 	return LTTRUE;
 }
+#endif
 // -----------------------------------------------/
 //
 // void CMotionDetector::OnObjectRemove Implimentation
@@ -1028,6 +1516,91 @@ void CMotionDetector::OnObjectRemove(HLOCALOBJ hObj)
 // Updates the locatoin of the tracker blip
 //
 // -----------------------------------------------/
+#ifdef PRIMAL_HUNT
+HSURFACE CMotionDetector::UpdateTracker(LTVector vPlayerPos, LTVector vPlayerForward, LTVector vPlayerRight)
+{
+	LTFLOAT fRatio = (GetMDType() == 1) ? (LTFLOAT)67 / GetMaxRange() : (LTFLOAT)98 / GetMaxRange();
+
+	//calculate range and test
+	//get vector from player to object
+	LTVector vPlayerToObj = m_vTrackerPos - vPlayerPos;
+
+	//calculate range
+	uint32 nRange = (uint32)vPlayerToObj.Mag();
+
+	//test forward dot
+	//norm vector
+	vPlayerToObj.Norm();
+
+	if(GetMDType() == 1)
+	{
+		// the Corporate motion detector sees all around: the tracker is
+		// always a blip, behind us below the centre
+		LTFLOAT fMag	= (LTFLOAT)nRange / GetMaxRange();
+
+		fMag = fMag < 0.0f ? 0.0f : fMag;
+		fMag = fMag > 1.0f ? 1.0f : fMag;
+
+		fMag = (fMag * 67)+8;
+
+		LTFLOAT fForward = vPlayerForward.Dot(vPlayerToObj);
+		LTFLOAT fAngle	= vPlayerRight.Dot(vPlayerToObj);
+
+		// Bounds check
+		fAngle = fAngle < -1.0f ? -1.0f : fAngle;
+		fAngle = fAngle > 1.0f ? 1.0f : fAngle;
+
+		fAngle	= (LTFLOAT) acos(fAngle);
+
+		m_ptTracker.x = (int)(fMag * cos(fAngle));
+		m_ptTracker.y = (int)(fMag * sin(fAngle));
+
+		if(fForward < 0)
+			m_ptTracker.y = -m_ptTracker.y;
+
+		m_ptTracker.y += 4;
+
+		return m_hTrackerBlip;
+	}
+
+	//see if the object is infront of us
+	if(vPlayerForward.Dot(vPlayerToObj) <= 0)
+	{
+		//tracker is behiend us
+		//test for left or right and set position of arrow
+		if(vPlayerRight.Dot(vPlayerToObj) <= 0)
+		{
+			//behiend and to left
+			m_ptTracker.x = -98;
+			m_ptTracker.y = 0;
+		}
+		else
+		{
+			//behiend and to right
+			m_ptTracker.x = 98;
+			m_ptTracker.y = 0;
+		}
+		return m_hTrackerArrow;
+	}
+	else
+	{
+		//calculate right dot
+		LTFLOAT fMag	= nRange > GetMaxRange() ? 98.0f : ((LTFLOAT)nRange / GetMaxRange() * 88)+10;
+		LTFLOAT fAngle	= vPlayerRight.Dot(vPlayerToObj);
+
+		// Bounds check
+		fAngle = fAngle < -1.0f ? -1.0f : fAngle;
+		fAngle = fAngle > 1.0f ? 1.0f : fAngle;
+
+		fAngle	= (LTFLOAT) acos(fAngle);
+
+		m_ptTracker.x = (int)(fMag * cos(fAngle));
+		m_ptTracker.y = (int)(fMag * sin(fAngle));
+
+		return m_hTrackerBlip;
+	}
+}
+#else
 HSURFACE CMotionDetector::UpdateTracker(LTVector vPlayerPos, LTVector vPlayerForward, LTVector vPlayerRight)
 {
 	static LTFLOAT fRatio = (LTFLOAT)98 / MAX_MD_RANGE;
@@ -1080,3 +1653,30 @@ HSURFACE CMotionDetector::UpdateTracker(LTVector vPlayerPos, LTVector vPlayerFor
 		return m_hTrackerBlip;
 	}
 }
+#endif
+
+#ifdef PRIMAL_HUNT
+// -----------------------------------------------/
+//
+// int CMotionDetector::GetMDType Implimentation
+//
+// Which motion detector this is (1: Corporate)
+//
+// -----------------------------------------------/
+int CMotionDetector::GetMDType()
+{
+	return m_nMDType;
+}
+
+// -----------------------------------------------/
+//
+// uint32 CMotionDetector::GetMaxRange Implimentation
+//
+// The Corporate motion detector has a shorter range
+//
+// -----------------------------------------------/
+uint32 CMotionDetector::GetMaxRange()
+{
+	return (GetMDType() == 1) ? 640 : MAX_MD_RANGE;
+}
+#endif

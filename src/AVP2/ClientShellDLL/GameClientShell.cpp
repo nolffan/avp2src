@@ -1373,18 +1373,23 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 
 	for(int nCommand = 0; nCommand < COMMAND_ID_UNASSIGNED; nCommand++)
 	{
-		for(int i = 0; g_CommandArray[i].nCommandID != COMMAND_ID_UNASSIGNED; i++)
+		int i;
+		for(i = 0; g_CommandArray[i].nCommandID != COMMAND_ID_UNASSIGNED; i++)
 		{
 			if(g_CommandArray[i].nCommandID == nCommand)
-			{
-				char szAction[256];
-				HSTRING hString = g_pLTClient->FormatString(g_CommandArray[i].nActionStringID);
-				_snprintf(szAction, 255, "AddAction %s %i", g_pLTClient->GetStringData(hString), nCommand);
-				g_pLTClient->RunConsoleString(szAction);
 				break;
-			}
+		}
+
+		if(g_CommandArray[i].nCommandID == nCommand)
+		{
+			char szAction[256];
+			HSTRING hString = g_pLTClient->FormatString(g_CommandArray[i].nActionStringID);
+			_snprintf(szAction, 255, "AddAction %s %i", g_pLTClient->GetStringData(hString), nCommand);
+			g_pLTClient->RunConsoleString(szAction);
 		}
 	}
+
+	PERFINFO_REPORT( );
 #endif
 
 	*pAppGuid = AVP2GUID;
@@ -1717,7 +1722,8 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	}
 
 #ifdef PRIMAL_HUNT
-	g_pLTClient->CPrint("Client shell initialization took %.2f seconds.", ((LTFLOAT)timeGetTime() - dwInitStart) * 0.001f);
+	DWORD dwInitEnd = timeGetTime();
+	g_pInterface->CPrint("Client shell initialization took %.2f seconds.", ((LTFLOAT)dwInitEnd - dwInitStart) * 0.001f);
 #endif
 	
 	if (hVar = g_pLTClient->GetConsoleVar("runworld"))

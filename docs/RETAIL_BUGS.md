@@ -782,6 +782,30 @@ garbage.
 
 Not fixed yet.
 
+### Naming the console's actions leaks a string per command
+
+PHCShell.dll 0x1007b811 (`CGameClientShell::OnEngineInitialized`,
+src/AVP2/ClientShellDLL/GameClientShell.cpp; near, one `jmp` short).
+Primal Hunt's start-up runs "AddAction <name> <id>" for every command,
+taking each name from `FormatString`, and never frees the HSTRING it gets:
+one string leaks for each command, every time the client shell starts.
+
+Not fixed yet.
+
+### The multiplayer class check takes an index one past the list
+
+PHCShell.dll 0x10005aa0, 0x10014260, 0x10086cb0 and 0x10097520
+(`CBaseFolder::IsCharacterAllowed`, `CFolderHost::IsCharacterAllowed`,
+the client shell's check of the character butes' list (not yet written),
+`MultiplayerClientMgr::IsClassAllowed`, names ours; byte-identical except
+the unwritten one;
+src/AVP2/Shared/MPRestrictList.h `CMPRestrictList::IsAllowed`). The bounds
+test is `index > count`, not `>=`, so the entry one past the last would be
+read. Harmless as shipped: the index always comes from a search of the
+same list, which gives a real entry or -1.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)
@@ -816,5 +840,72 @@ src/AVP2/ClientShellDLL/WeaponModel.cpp). For each of the two muzzle
 flashes the function calls `Hide()` before testing the pointer, then
 deletes it; `Hide` writes the flash's members, so a weapon with no flash
 on a muzzle writes through a null pointer.
+
+Not fixed yet.
+
+### The host options' class and weapon lists accept the index one past the last entry
+
+PHCShell.dll 0x10018ba0 (`CFolderHostOptions::OnCommand`,
+src/AVP2/ClientShellDLL/FolderHostOptions.cpp; the check is
+`CMPRestrictList::SetAllowed`, src/AVP2/Shared/MPRestrictList.h, and
+`GetId` and `IsAllowed` beside it share it). The index is tested with
+`i > m_nNumEntries` where `>=` was meant, so the entry just past the last
+one is written; with a full list (32 entries) that is the count itself.
+
+Not fixed yet.
+
+### The host options take check-box commands past the end of their boxes
+
+PHCShell.dll 0x10018ba0 (`CFolderHostOptions::OnCommand`,
+src/AVP2/ClientShellDLL/FolderHostOptions.cpp). A class box command is
+accepted up to `CMD_CLASS_FIRST + 32`, but there are only 24 class boxes, and
+a weapon box command up to `CMD_WEAPON_FIRST + 64` (inclusive) for 64 weapon
+boxes, so a stray command indexes past `m_aClassBoxes` or `m_aWeaponBoxes`.
+
+Not fixed yet.
+
+### The host options' check boxes leak their bitmaps
+
+PHCShell.dll 0x10018690 (`CHostCheckBox::CHostCheckBox`, name ours,
+src/AVP2/ClientShellDLL/FolderHostOptions.h). Each of the 88 check boxes
+news a `CBitmapCtrl` that its (empty) destructor never deletes.
+
+Not fixed yet.
+
+### The server list's no-entry surface is never deleted
+
+PHCShell.dll 0x1001aed0 (`CFolderJoin::Build`,
+src/AVP2/ClientShellDLL/FolderJoin.cpp). Build creates
+`Interface\Exp\Menus\noentry.pcx` each time it runs; the destructor
+deletes only the lock surface.
+
+Not fixed yet.
+
+### The server list checks the wrong number against a server's class list
+
+PHCShell.dll 0x1001dda0 (`CFolderJoin::IsClassAllowed`, name ours,
+src/AVP2/ClientShellDLL/FolderJoin.cpp). To mark the servers that do not
+allow the player's class it looks up the profile's `m_nChar[m_nRace]`, an
+index into that race's list of characters, among the class list's
+character-set IDs, so the no-entry mark is shown for the wrong servers.
+
+Not fixed yet.
+
+### The Corporate motion detector settings check the Marine's tag
+
+PHCShell.dll 0x1004d720 to 0x1004de80 (the `CLayoutMgr::GetMD...` and
+`Get...SurfaceName` functions, src/AVP2/ClientShellDLL/LayoutMgr.cpp). For the
+Corporate motion detector each tests that `HUDMotionDetector` exists, then
+reads `HUDMotionDetector_Corporate`; a layout without the Corporate tag reads
+nothing (or zeros) instead of falling back.
+
+Not fixed yet.
+
+### The Marine weapon chooser's dual pistols check has no null test
+
+PHCShell.dll 0x10057790 (`CMarineWepChooser::IsDualPistols`, name ours,
+src/AVP2/ClientShellDLL/WeaponChooser.cpp). It reads the weapon's name
+without testing the `GetWeapon` result, so an invalid weapon ID reads through
+a null pointer.
 
 Not fixed yet.

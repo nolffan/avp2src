@@ -18,6 +18,9 @@
 #include "FolderJoinInfo.h"
 #include "FolderMulti.h"
 #include "FXButeMgr.h"
+#ifdef PRIMAL_HUNT
+#include "ProfileMgr.h"
+#endif
 
 #include <algorithm>
 
@@ -2618,6 +2621,36 @@ uint32 CBaseFolder::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 
 	return 1;
 }
+
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CBaseFolder::IsCharacterAllowed()
+//
+//	PURPOSE:	Primal Hunt: is the profile's multiplayer character in the
+//				class list of the current server configuration, and allowed
+//				there?  With no profile, no character or no configuration
+//				it is (PHCShell 0x10005aa0)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CBaseFolder::IsCharacterAllowed()
+{
+	if (!g_pProfileMgr) return LTTRUE;
+
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	int nChar = pProfile->m_nChar[pProfile->m_nRace];
+	if (nChar < 0) return LTTRUE;
+
+	CServerOptions *pOptions = g_pServerOptionMgr->GetCurrentCfg();
+	if (!pOptions) return LTTRUE;
+
+	return pOptions->m_ClassList.IsAllowed(pOptions->m_ClassList.FindIndex(nChar));
+}
+
+#endif
+
+// ----------------------------------------------------------------------- //
 
 void CBaseFolder::ForceMouseUpdate()
 {

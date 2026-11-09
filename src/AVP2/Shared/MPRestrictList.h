@@ -100,6 +100,53 @@ class CMPRestrictList
 			strcpy(m_aEntries[i].szName, szName);
 		}
 
+#ifdef _CLIENTBUILD
+		// (the client's only: the server build of this header declares none of
+		// these, and adding them moves unrelated server code, e.g. CWeaponMgr::
+		// LoadWeaponButes and Breakable's property-table initialiser)
+		// An entry's ID and whether it's allowed (the client's host options
+		// folder, PHCShell.dll 0x10019810, 0x10018ba0).
+		// RETAIL BUG: the index is checked against the count with '>', so the
+		// entry just past the last one passes
+		int		GetId(int i)
+		{
+			if((i > m_nNumEntries) || (i < 0))
+				return -1;
+
+			return m_aEntries[i].nId;
+		}
+
+		// The index of the entry with this ID, or -1
+		int		FindIndex(int nId)
+		{
+			for(int i = 0; i < m_nNumEntries; i++)
+			{
+				if(m_aEntries[i].nId == nId)
+					return i;
+			}
+
+			return -1;
+		}
+
+		// RETAIL BUG: an index one past the last entry passes the check
+		// (harmless: FindIndex never returns it)
+		LTBOOL	IsAllowed(int i)
+		{
+			if((i > m_nNumEntries) || (i < 0))
+				return LTFALSE;
+
+			return m_aEntries[i].bAllowed;
+		}
+
+		void	SetAllowed(int i, LTBOOL bAllowed)
+		{
+			if((i > m_nNumEntries) || (i < 0))
+				return;
+
+			m_aEntries[i].bAllowed = bAllowed;
+		}
+#endif
+
 		MPRestrictEntry	m_aEntries[MAX_MP_RESTRICT_ENTRIES];
 		int				m_nNumEntries;
 };

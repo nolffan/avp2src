@@ -5675,3 +5675,25 @@ uint8 MultiplayerClientMgr::GetCharacterClass(uint32 nClientID)
 	return m_ClientData[nIndex].m_nCharacterClass;
 }
 
+#ifdef PRIMAL_HUNT
+// -------------------------------------------------------------------- //
+//
+// FUNCTION:	MultiplayerClientMgr::IsClassAllowed()
+//
+// PURPOSE:		Primal Hunt: outside a multiplayer game, or for a class the
+//				server's list doesn't have, every class is
+//
+// -------------------------------------------------------------------- //
+
+LTBOOL MultiplayerClientMgr::IsClassAllowed(int nClass)
+{
+	if(!g_pGameClientShell->IsMultiplayerGame()) return LTTRUE;
+	if(nClass == -1) return LTTRUE;
+
+	int nIndex = m_ClassList.FindIndex(nClass);
+	if(nIndex == -1) return LTTRUE;
+
+	return m_ClassList.IsAllowed(nIndex);
+}
+
+#endif

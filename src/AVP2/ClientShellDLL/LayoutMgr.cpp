@@ -90,6 +90,11 @@ const char* const LO_MT_TYPE_SOUND			=	"TypeSound";
 const char* const LO_MT_SCROLL_SOUND		=	"ScrollSound";
 
 //attribute (bute) file defines=
+#ifdef PRIMAL_HUNT
+const char* const HUD_MD_CORP_TAG			=	"HUDMotionDetector_Corporate";
+const char* const HUD_MD_RANGE_OFFSET		=	"RangeOffset";
+const char* const HUD_MD_RANGE_SMALL_OFFSET	=	"RangeSmallOffset";
+#endif
 const char* const HUD_MD_TAG				=	"HUDMotionDetector";
 const char* const HUD_MD_SMALL_NUMS			=	"SmallNums";
 const char* const HUD_MD_LARGE_NUMS			=	"LargeNums";
@@ -1493,6 +1498,154 @@ DDWORD	CLayoutMgr::GetHUDCfg(DDWORD nType, DDWORD nIndex)
 	return HUD_ERROR;
 }
 
+#ifdef PRIMAL_HUNT
+// PH: the Corporate HUD has its own motion detector (HUD_MD_CORP_TAG,
+// nType 1). RETAIL BUG: the tag checked is still the Marine's
+void CLayoutMgr::GetMDLargeFontName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_LARGE_NUMS, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_LARGE_NUMS, pBuf, nBufLen);
+}
+
+void CLayoutMgr::GetMDSmallFontName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_SMALL_NUMS, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_SMALL_NUMS, pBuf, nBufLen);
+}
+
+DDWORD		CLayoutMgr::GetNumMDBlipImages(int nType)
+{
+	//check to see that the page exists
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return m_buteMgr.GetInt(HUD_MD_CORP_TAG, HUD_MD_NUM_BLIP_IMAGES);
+
+	if(m_buteMgr.Exist(HUD_MD_TAG))
+		return m_buteMgr.GetInt(HUD_MD_TAG, HUD_MD_NUM_BLIP_IMAGES);
+
+	return 0;
+}
+
+DDWORD		CLayoutMgr::GetNumMDGridImages(int nType)
+{
+	//check to see that the page exists
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return m_buteMgr.GetInt(HUD_MD_CORP_TAG, HUD_MD_NUM_GRID_IMAGES);
+
+	if(m_buteMgr.Exist(HUD_MD_TAG))
+		return m_buteMgr.GetInt(HUD_MD_TAG, HUD_MD_NUM_GRID_IMAGES);
+
+	return 0;
+}
+
+DIntPt		CLayoutMgr::GetMDGridOffset(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_GRID_OFFSET);
+
+	return GetPoint(HUD_MD_TAG, HUD_MD_GRID_OFFSET);
+}
+
+DIntPt		CLayoutMgr::GetMDBaseOffset(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_BASE_OFFSET);
+
+	return GetPoint(HUD_MD_TAG, HUD_MD_BASE_OFFSET);
+}
+
+DFLOAT CLayoutMgr::GetMDGridTranslucency(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_CORP_TAG, HUD_MD_GRID_TRANS, 0.0f);
+
+	return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_TAG, HUD_MD_GRID_TRANS, 0.0f);
+}
+
+DFLOAT CLayoutMgr::GetMDBaseTranslucency(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_CORP_TAG, HUD_MD_BASE_TRANS, 0.0f);
+
+	return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_TAG, HUD_MD_BASE_TRANS, 0.0f);
+}
+
+DFLOAT CLayoutMgr::GetMDArcTranslucency(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_CORP_TAG, HUD_MD_ARC_TRANS, 0.0f);
+
+	return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_TAG, HUD_MD_ARC_TRANS, 0.0f);
+}
+
+DIntPt		CLayoutMgr::GetMDRangeOffset(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_RANGE_OFFSET);
+
+	return GetPoint(HUD_MD_TAG, HUD_MD_RANGE_OFFSET);
+}
+
+DIntPt		CLayoutMgr::GetMDRangeSmallOffset(int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_RANGE_SMALL_OFFSET);
+
+	return GetPoint(HUD_MD_TAG, HUD_MD_RANGE_SMALL_OFFSET);
+}
+
+void CLayoutMgr::GetArcSurfaceName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_ARC_FILE, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_ARC_FILE, pBuf, nBufLen);
+}
+
+void CLayoutMgr::GetBaseSurfaceName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_BASE_FILE, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_BASE_FILE, pBuf, nBufLen);
+}
+
+void CLayoutMgr::GetGridSurfaceName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_GRID_FILE, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_GRID_FILE, pBuf, nBufLen);
+}
+
+void CLayoutMgr::GetBlipSurfaceName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_BLIP_FILE, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_BLIP_FILE, pBuf, nBufLen);
+}
+
+void CLayoutMgr::GetTrackerBlipSurfaceName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_TRACKER_BLIP_FILE, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_TRACKER_BLIP_FILE, pBuf, nBufLen);
+}
+
+void CLayoutMgr::GetTrackerArrowSurfaceName(char *pBuf, int nBufLen, int nType)
+{
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_CORP_TAG, HUD_MD_TRACKER_ARROW_FILE, pBuf, nBufLen);
+	else if(m_buteMgr.Exist(HUD_MD_TAG))
+		GetString(HUD_MD_TAG, HUD_MD_TRACKER_ARROW_FILE, pBuf, nBufLen);
+}
+
+#else
 void CLayoutMgr::GetMDLargeFontName(char *pBuf, int nBufLen)
 {
 	if(m_buteMgr.Exist(HUD_MD_TAG))
@@ -1583,8 +1736,7 @@ void CLayoutMgr::GetTrackerArrowSurfaceName(char *pBuf, int nBufLen)
 	if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_TRACKER_ARROW_FILE, pBuf, nBufLen);
 }
-
-
+#endif
 
 
 

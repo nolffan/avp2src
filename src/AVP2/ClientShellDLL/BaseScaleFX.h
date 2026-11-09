@@ -99,6 +99,9 @@ inline BSCREATESTRUCT::BSCREATESTRUCT()
 	vInitialColor.Init(-1.0f, -1.0f, -1.0f);
 	vFinalColor.Init(-1.0f, -1.0f, -1.0f);
 	ePriority		= BS_PRIORITY_HIGH;
+#ifdef PRIMAL_HUNT
+	bAdditiveAlpha	= LTFALSE;
+#endif
 }
 
 

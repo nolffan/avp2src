@@ -9,6 +9,10 @@
 #include "FolderCommands.h"
 #include "ClientRes.h"
 #include "InterfaceMgr.h"
+#ifdef PRIMAL_HUNT
+#include "CharacterButeMgr.h"
+#include "WeaponMgr.h"
+#endif
 
 namespace
 {
@@ -19,11 +23,26 @@ namespace
 	{
 		CMD_PREFERENCES = FOLDER_CMD_CUSTOM,
 		CMD_SCORING,
+#ifdef PRIMAL_HUNT
+		CMD_CLASSES,
+		CMD_WEAPONS,
+		CMD_RACE_LABEL,
+#endif
 		CMD_PORT,
 		CMD_EDIT_BANDWIDTH,
 		CMD_CYCLE_BANDWIDTH,
 		CMD_FIX_PORT,
 	};
+
+#ifdef PRIMAL_HUNT
+	// the check boxes' commands: the weapon list's entry plus
+	// CMD_WEAPON_FIRST, the class list's plus CMD_CLASS_FIRST
+	enum
+	{
+		CMD_WEAPON_FIRST	= 100,
+		CMD_CLASS_FIRST		= 200,
+	};
+#endif
 
 	void ConfirmCallBack(LTBOOL bReturn, void *pData)
 	{
@@ -44,13 +63,30 @@ CFolderHostOptions::CFolderHostOptions()
 {
 	m_pPreferences		= LTNULL;
 	m_pScoring			= LTNULL;
+#ifdef PRIMAL_HUNT
+	m_pClasses			= LTNULL;
+	m_pWeapons			= LTNULL;
+
+	m_pRaceLabels[0]	= LTNULL;
+	m_pRaceLabels[1]	= LTNULL;
+	m_pRaceLabels[2]	= LTNULL;
+	m_pRaceLabels[3]	= LTNULL;
+
+	m_nUnused			= 0;
+	m_pUnusedCtrl		= LTNULL;
+#endif
 
 	m_pPortGroup		= LTNULL;
 	m_pPortEdit			= LTNULL;
 	m_pPortLabel		= LTNULL;
 
+#ifdef PRIMAL_HUNT
+	strcpy(m_szPort, "27890");
+	strcpy(m_szOldPort, "27890");
+#else
 	strcpy(m_szPort, "27888");
 	strcpy(m_szOldPort, "27888");
+#endif
 
 	m_pBandwidthCycle	= LTNULL;
 	m_pBandwidthGroup	= LTNULL;
@@ -113,6 +149,12 @@ LTBOOL CFolderHostOptions::Build()
 
 	m_pPreferences = AddTab(IDS_ADVANCED,CMD_PREFERENCES,IDS_HELP_HOST_PREFERENCES);
 	m_pScoring = AddTab(IDS_HOST_SCORING,CMD_SCORING,IDS_HELP_HOST_SCORING);
+#ifdef PRIMAL_HUNT
+	// "Classes", "Select classes allowed to play."
+	m_pClasses = AddTab(29775,CMD_CLASSES,29776);
+	// "Weapons", "Select weapons allowed in game."
+	m_pWeapons = AddTab(29777,CMD_WEAPONS,29778);
+#endif
 
 
 	// Create the bottom 'back' control
@@ -138,6 +180,10 @@ uint32 CFolderHostOptions::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 				SetTab(0);
 				m_pPreferences->Enable(LTFALSE);
 				m_pScoring->Enable(LTTRUE);
+#ifdef PRIMAL_HUNT
+				m_pClasses->Enable(LTTRUE);
+				m_pWeapons->Enable(LTTRUE);
+#endif
 				UpdateData(LTTRUE);
 				BuildControlList();
 				UpdateData(LTFALSE);
@@ -149,11 +195,43 @@ uint32 CFolderHostOptions::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 				SetTab(1);
 				m_pPreferences->Enable(LTTRUE);
 				m_pScoring->Enable(LTFALSE);
+#ifdef PRIMAL_HUNT
+				m_pClasses->Enable(LTTRUE);
+				m_pWeapons->Enable(LTTRUE);
+#endif
 				UpdateData(LTTRUE);
 				BuildControlList();
 				UpdateData(LTFALSE);
 				break;
 			}
+
+#ifdef PRIMAL_HUNT
+		case CMD_CLASSES:
+			{
+				SetTab(2);
+				m_pPreferences->Enable(LTTRUE);
+				m_pScoring->Enable(LTTRUE);
+				m_pClasses->Enable(LTFALSE);
+				m_pWeapons->Enable(LTTRUE);
+				UpdateData(LTTRUE);
+				BuildControlList();
+				UpdateData(LTFALSE);
+				break;
+			}
+
+		case CMD_WEAPONS:
+			{
+				SetTab(3);
+				m_pPreferences->Enable(LTTRUE);
+				m_pScoring->Enable(LTTRUE);
+				m_pClasses->Enable(LTTRUE);
+				m_pWeapons->Enable(LTFALSE);
+				UpdateData(LTTRUE);
+				BuildControlList();
+				UpdateData(LTFALSE);
+				break;
+			}
+#endif
 
 		case CMD_FIX_PORT:
 		{
@@ -266,6 +344,38 @@ uint32 CFolderHostOptions::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 		}
 
 		default:
+#ifdef PRIMAL_HUNT
+			// a class check box
+			// RETAIL BUG: both ranges run one past the last box (and the
+			// class one past its 24 boxes, to the class list's 32)
+			if((dwCommand >= CMD_CLASS_FIRST) && (dwCommand <= CMD_CLASS_FIRST + MAX_MP_RESTRICT_ENTRIES))
+			{
+				// the classes are fixed in these games
+				if(	(m_Options.nGameType == MP_OVERRUN) || (m_Options.nGameType == MP_EVAC) ||
+					(m_Options.nGameType == MP_HUNT) || (m_Options.nGameType == MP_SURVIVOR) ||
+					m_Options.nDM_Lifecycle)
+				{
+					HSTRING hString = g_pLTClient->FormatString(29800);
+					g_pInterfaceMgr->ShowMessageBox(hString,LTMB_OK,LTNULL,LTNULL,LTTRUE,LTTRUE,LTFALSE);
+					g_pLTClient->FreeString(hString);
+					break;
+				}
+
+				int i = dwCommand - CMD_CLASS_FIRST;
+				m_aClassBoxes[i].SetCheck(m_aClassBoxes[i].m_bChecked != LTTRUE, dwCommand);
+				m_Options.m_ClassList.SetAllowed(i, m_aClassBoxes[i].m_bChecked);
+				return 1;
+			}
+
+			// a weapon check box
+			if((dwCommand >= CMD_WEAPON_FIRST) && (dwCommand <= CMD_WEAPON_FIRST + MAX_HOST_WEAPON_BOXES))
+			{
+				int i = dwCommand - CMD_WEAPON_FIRST;
+				m_aWeaponBoxes[i].SetCheck(m_aWeaponBoxes[i].m_bChecked != LTTRUE, dwCommand);
+				m_Options.m_WeaponList.SetAllowed(i, m_aWeaponBoxes[i].m_bChecked);
+				return 1;
+			}
+#endif
 			return CBaseFolder::OnCommand(dwCommand,dwParam1,dwParam2);
 	}
 
@@ -308,6 +418,10 @@ void CFolderHostOptions::FocusSetup(LTBOOL bFocus)
 
 		m_pPreferences->Enable(LTFALSE);
 		m_pScoring->Enable(LTTRUE);
+#ifdef PRIMAL_HUNT
+		m_pClasses->Enable(LTTRUE);
+		m_pWeapons->Enable(LTTRUE);
+#endif
 
 		m_Options = *(g_pServerOptionMgr->GetCurrentCfg());
 
@@ -362,6 +476,9 @@ void CFolderHostOptions::FocusSetup(LTBOOL bFocus)
 void CFolderHostOptions::BuildControlList()
 {
 	RemoveFree();
+#ifdef PRIMAL_HUNT
+	RemoveBoxes();
+#endif
 
 	switch (m_nCurTab)
 	{
@@ -467,8 +584,245 @@ void CFolderHostOptions::BuildControlList()
 			}
 
 		} break;
+
+#ifdef PRIMAL_HUNT
+		//classes
+		case 2:
+		{
+			// the races' columns
+			int nX[4] = { 200, 410, 200, 410 };
+			int nY[4] = { 130, 130, 260, 260 };
+			int nRows[5] = { 40, 56, 72, 88, 104 };
+			int nRaceLabels[4] = { IDS_MP_TEAM_MARINES, IDS_MP_TEAM_CORPORATES, IDS_MP_TEAM_PREDATORS, IDS_MP_TEAM_ALIENS };
+
+			// the classes are fixed in these games
+			if(	(m_Options.nGameType == MP_OVERRUN) || (m_Options.nGameType == MP_EVAC) ||
+				(m_Options.nGameType == MP_HUNT) || (m_Options.nGameType == MP_SURVIVOR) ||
+				m_Options.nDM_Lifecycle)
+			{
+				for(int i = 0; i < m_Options.m_ClassList.m_nNumEntries; i++)
+					m_Options.m_ClassList.m_aEntries[i].bAllowed = LTTRUE;
+			}
+
+			for(int nRace = 0; nRace < 4; nRace++)
+			{
+				m_pRaceLabels[nRace] = CreateTextItem(nRaceLabels[nRace], CMD_RACE_LABEL, IDS_SPACER, LTTRUE, GetLargeFont());
+				AddFixedControl(m_pRaceLabels[nRace], kBackGroup, LTIntPt(nX[nRace] + 30, nY[nRace]), LTFALSE);
+			}
+
+			int nCount[4] = { 0, 0, 0, 0 };
+
+			for(int i = 0; i < m_Options.m_ClassList.m_nNumEntries; i++)
+			{
+				CharacterButes butes = g_pCharacterButeMgr->GetCharacterButes(m_Options.m_ClassList.GetId(i));
+				nRace = butes.m_eCharacterClass - 1;
+
+				AddClassBox(CMD_CLASS_FIRST + i, nX[nRace], nY[nRace] + nRows[nCount[nRace]], butes.m_nDisplayName, m_Options.m_ClassList.IsAllowed(i));
+				nCount[nRace]++;
+			}
+		}
+		break;
+
+		//weapons
+		case 3:
+		{
+			int x = 200;
+			int y = 130;
+
+			for(int i = 0; i < m_Options.m_WeaponList.m_nNumEntries; i++)
+			{
+				WEAPON *pWeapon = g_pWeaponMgr->GetWeapon(m_Options.m_WeaponList.GetId(i));
+
+				// show the name without the "_MP"
+				int nLen = strstr(pWeapon->szName, "_MP") - pWeapon->szName;
+
+				if(nLen > 0)
+				{
+					char szName[256];
+					memset(szName, 0, sizeof(szName));
+					strncpy(szName, pWeapon->szName, nLen);
+
+					for(unsigned int j = 0; j < strlen(szName); j++)
+					{
+						if(szName[j] == '_')
+							szName[j] = ' ';
+					}
+
+					if(!_stricmp(szName, "StickyHotBomb"))
+						strcpy(szName, "Remote Bomb");
+					else if(!_stricmp(szName, "EnergyFlechette"))
+						strcpy(szName, "Energy Flechette");
+
+					AddWeaponBox(CMD_WEAPON_FIRST + i, x, y, szName, m_Options.m_WeaponList.IsAllowed(i));
+				}
+				else
+				{
+					AddWeaponBox(CMD_WEAPON_FIRST + i, x, y, pWeapon->szName, m_Options.m_WeaponList.IsAllowed(i));
+				}
+
+				// next row, or the next column
+				y += 16;
+
+				if(y >= 282)
+				{
+					y = 130;
+					x += 200;
+				}
+			}
+		}
+		break;
+#endif
+	}
+
+#ifdef PRIMAL_HUNT
+	// RETAIL BUG: the race headings are destroyed but neither deleted nor
+	// removed from the fixed controls
+	if(m_nCurTab != 2)
+	{
+		for(int i = 0; i < 4; i++)
+		{
+			if(m_pRaceLabels[i])
+			{
+				m_pRaceLabels[i]->Destroy();
+				m_pRaceLabels[i] = LTNULL;
+			}
+		}
+	}
+
+	if((m_nCurTab != 3) && m_pUnusedCtrl)
+	{
+		m_pUnusedCtrl->Destroy();
+		delete m_pUnusedCtrl;
+		m_pUnusedCtrl = LTNULL;
+	}
+#endif
+}
+
+
+#ifdef PRIMAL_HUNT
+LTBOOL CFolderHostOptions::Render(HSURFACE hDestSurf)
+{
+	if(m_hTabSurf)
+	{
+		LTRect rcDest(0,0,0,0);
+
+		// the check box pages get a page background
+		switch(m_nCurTab)
+		{
+			//classes
+			case 2:
+			{
+				rcDest.left		= GetPageLeft() + g_pInterfaceResMgr->GetXOffset();
+				rcDest.top		= GetPageTop() + g_pInterfaceResMgr->GetYOffset();
+				rcDest.right	= GetPageRight() + g_pInterfaceResMgr->GetXOffset();
+				rcDest.bottom	= GetPageBottom() - (int)(g_pInterfaceResMgr->GetYRatio() * 8.0f) + g_pInterfaceResMgr->GetYOffset();
+			}
+			break;
+
+			//weapons
+			case 3:
+			{
+				rcDest.left		= GetPageLeft() + g_pInterfaceResMgr->GetXOffset();
+				rcDest.top		= GetPageTop() + g_pInterfaceResMgr->GetYOffset();
+				rcDest.right	= GetPageRight() + g_pInterfaceResMgr->GetXOffset();
+				rcDest.bottom	= GetPageBottom() - (int)(g_pInterfaceResMgr->GetYRatio() * 8.0f) + g_pInterfaceResMgr->GetYOffset();
+			}
+			break;
+		}
+
+		if(rcDest.left)
+			g_pLTClient->ScaleSurfaceToSurface(hDestSurf, m_hTabSurf, &rcDest, LTNULL);
+	}
+
+	return CBaseFolder::Render(hDestSurf);
+}
+
+
+void CFolderHostOptions::AddClassBox(uint32 dwCommand, int x, int y, int nStringID, LTBOOL bChecked)
+{
+	m_aClassBoxes[dwCommand - CMD_CLASS_FIRST].Create(this, dwCommand, x, y, nStringID, bChecked);
+}
+
+
+void CFolderHostOptions::AddWeaponBox(uint32 dwCommand, int x, int y, char *szText, LTBOOL bChecked)
+{
+	m_aWeaponBoxes[dwCommand - CMD_WEAPON_FIRST].Create(this, dwCommand, x, y, szText, bChecked);
+}
+
+
+void CHostCheckBox::Create(CBaseFolder *pFolder, uint32 dwCommand, int x, int y, int nStringID, LTBOOL bChecked)
+{
+	m_pFolder = pFolder;
+
+	m_pLabel = m_pFolder->CreateTextItem(nStringID, dwCommand, IDS_SPACER, LTFALSE, m_pFolder->GetTinyFont());
+	m_pFolder->AddFixedControl(m_pLabel, kBackGroup, LTIntPt(x + 20, y + 2));
+	m_pFolder->AddFixedControl(m_pBitmap, kLinkGroup, LTIntPt(x, y));
+
+	SetCheck(bChecked, dwCommand);
+}
+
+
+void CHostCheckBox::Create(CBaseFolder *pFolder, uint32 dwCommand, int x, int y, char *szText, LTBOOL bChecked)
+{
+	m_pFolder = pFolder;
+
+	m_pLabel = m_pFolder->CreateTextItem(szText, dwCommand, IDS_SPACER, LTFALSE, m_pFolder->GetTinyFont());
+	m_pFolder->AddFixedControl(m_pLabel, kBackGroup, LTIntPt(x + 20, y + 2));
+	m_pFolder->AddFixedControl(m_pBitmap, kLinkGroup, LTIntPt(x, y));
+
+	SetCheck(bChecked, dwCommand);
+}
+
+
+LTBOOL CHostCheckBox::SetCheck(LTBOOL bChecked, uint32 dwCommand)
+{
+	m_bChecked = bChecked;
+
+	if(m_pBitmap)
+		m_pBitmap->Destroy();
+
+	if(m_bChecked)
+	{
+		m_pBitmap->Create(g_pLTClient, "interface\\menus\\checkon.pcx", "interface\\menus\\checkon_h.pcx", "interface\\menus\\checkon_d.pcx", m_pFolder, dwCommand);
+		m_pBitmap->SetHelpID(IDS_SPACER);
+		return m_bChecked;
+	}
+
+	m_pBitmap->Create(g_pLTClient, "interface\\menus\\checkoff.pcx", "interface\\menus\\checkoff_h.pcx", "interface\\menus\\checkoff_d.pcx", m_pFolder, dwCommand);
+	m_pBitmap->SetHelpID(IDS_SPACER);
+	return m_bChecked;
+}
+
+
+void CHostCheckBox::Destroy()
+{
+	if(m_pLabel)
+	{
+		m_pLabel->Destroy();
+		m_pLabel = LTNULL;
 	}
 }
+
+
+void CFolderHostOptions::RemoveBoxes()
+{
+	int i;
+
+	for(i = 0; i < g_pCharacterButeMgr->m_MPClasses.m_nNumEntries; i++)
+	{
+		CHostCheckBox &box = m_aClassBoxes[i];
+		box.Destroy();
+		RemoveFixedControl(box.m_pBitmap);
+	}
+
+	for(i = 0; i < g_pWeaponMgr->m_MPWeapons.m_nNumEntries; i++)
+	{
+		CHostCheckBox &box = m_aWeaponBoxes[i];
+		box.Destroy();
+		RemoveFixedControl(box.m_pBitmap);
+	}
+}
+#endif
 
 
 LTBOOL CFolderHostOptions::OnEnter()
