@@ -2251,6 +2251,7 @@ void CD3DModelDraw::sub_10019640()
 //  array (+0x63c, one LTMat per bone) are big enough.  0 on an allocation
 //  failure.
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp (its BaseNew<ModelTLVert> is 0x1000f089)
 int32 CD3DModelDraw::sub_10019870()
 {
 	if (m_pModel00->NumVerts() > m_Arr628.GetSize())
@@ -2267,6 +2268,7 @@ int32 CD3DModelDraw::sub_10019870()
 
 	return 1;
 }
+#endif // PRIMAL_HUNT
 
 
 // ----------------------------------------------------------------------- //

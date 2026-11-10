@@ -4,7 +4,8 @@
 //
 //  Three lookup tables with constructors, nothing else (whatever code this
 //  object had, /OPT:REF removed).  It is not pixelformat.cpp: its
-//  initialisers have no /Os jmp stub (each is `mov ecx,obj; jmp ctor`).
+//  initialisers have no /Os jmp stub (each is `mov ecx,obj; jmp ctor`):
+//  /O1 /Ob2, which expands each into its table entry (/Ob1 leaves a stub).
 //  Its `rep stosd` is no intrinsic memset: VC6's loop optimiser makes it
 //  of a byte-fill loop (CIdentTable's constructor).  The world draw
 //  (TU15), DrawWorldModels (TU34) and the lightmap code (TU36, TU37) read

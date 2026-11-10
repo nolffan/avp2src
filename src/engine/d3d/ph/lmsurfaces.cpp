@@ -1,6 +1,7 @@
 // *********************************************************************** //
 //  ph/lmsurfaces.cpp -- Primal Hunt's d3d.ren, TU39 (0x10035611..0x10035c7e),
-//  /O1.
+//  /O1 /Ob2: the pools' initialiser is expanded into its table entry
+//  (0x10035b4b, `mov ecx,obj; jmp ctor`), where /Ob1 leaves a jmp stub.
 //
 //  The lightmap surfaces: the six lightmap bases (a polygon's lightmap
 //  axes come from the one its flags pick), and the pools of small

@@ -28,10 +28,11 @@ namespace
 	const uint32 kPortMod = 8;
 }
 
-#ifdef PRIMAL_HUNT
+#if defined(PRIMAL_HUNT) && !defined(_CLIENTBUILD)
 // PH: a class list and a weapon list together, that nothing reads or
 // writes but its initializer (AVP2XServ.exe 0x409e20, .bss 0x454810);
-// names ours
+// names ours. The dedicated server's only: PHCShell.dll has no such
+// initializer (no pair of 0x240-dword clears of fixed .bss).
 struct MPRestrictLists
 {
 	CMPRestrictList	m_ClassList;

@@ -1664,6 +1664,7 @@ void             sub_100299a0(Obj299a8 *pObj, Mat299a8 *pXForm);   // below
 //    0x10027df9  advance the record pointer and loop
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp d3d_DrawPortals (0x100162a0), d3d_DrawVisiblePortals (0x10016c40)
 void sub_10026720(Sink26728 *pSink, Mgr26728 *pMgr)
 {
 	XForm26728   saved;
@@ -1914,6 +1915,7 @@ void sub_1002b0c0()
 	Mgr26728* pMgr = (Mgr26728*)sub_1007b8d0();
 	sub_10026720((Sink26728*)g_1008beb0, pMgr);
 }
+#endif // PRIMAL_HUNT
 
 
 

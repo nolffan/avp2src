@@ -294,6 +294,7 @@ extern void sub_10021010(const DDPixelFormat* pPF, PFormat* pFormat);
 //  one, since the Release call could change it), free the grid, clear the
 //  pointer.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: its caller (d3dblit.cpp's DeleteSurface) is not Primal Hunt's; its 0x10033f30 is d3d_LightTexel (ph/lightanim.cpp)
 void sub_10033f30(D3DRenderData* pData)
 {
 	uint32 nCount, i;
@@ -317,6 +318,7 @@ void sub_10033f30(D3DRenderData* pData)
 		pData->m_pOptimized = LTNULL;
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //

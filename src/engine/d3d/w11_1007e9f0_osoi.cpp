@@ -270,6 +270,7 @@ void Arr1007e9f0::sub_1007ef70(uint32 index, IAllocator* pAlloc)
 //  at the single `incl 0x8(%ebx)` / `return TRUE`.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1007e9f0::sub_1007f150(uint32 index, const Elem1007e9f0& toInsert,
                                 IAllocator* pAlloc)
 {
@@ -317,6 +318,7 @@ int32 Arr1007e9f0::sub_1007f150(uint32 index, const Elem1007e9f0& toInsert,
 
 	return 1;
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //

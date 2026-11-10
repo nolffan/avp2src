@@ -280,7 +280,15 @@ TARGETS = [
          # onexit.obj (0x1003c5e5), libscan's first unique hit of 250 to
          # 0x10047783. The thunks are the linker's, not code of the image's
          # own: left out, as the runtime is
-         app=[(0x10001000, 0x1003c136), (0x1003c150, 0x1003c58b)]),
+         app=[(0x10001000, 0x1003c136), (0x1003c150, 0x1003c58b)],
+         # lmpaging's unit opens at 0x10034df0 with d3d_FindLMSpace, the
+         # same instruction sequence as AvP2's 0x10034000 (identical to our
+         # cl 8168 build there); cl 8966 allocates it otherwise here, too far
+         # for the content pass, which left the slot to an inline of
+         # lightanim's. d3d_AddLMPage (0x10034f32) follows it, identical.
+         own_symbols={
+             "?d3d_FindLMSpace@@YAIPAPAVCLMPage@@KKPAH10@Z": 0x10034df0,
+         }),
     dict(label="ltmsg.dll", what="the engine's messages", kind="resources",
          shipped=REFERENCE + "/ltmsg.dll", stem="ltmsg",
          built="src/engine/ltmsg/Release/ltmsg.dll", optional=True),
