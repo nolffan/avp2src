@@ -757,8 +757,42 @@ public:
 	CAxisBasis(LTVector vRight, LTVector vUp, LTVector vNormal);
 };
 
-// 0x10058610 — defined (with its dynamic initializer) in svlast.cpp.
+#ifdef LT_SERVER_BUILD
+// The table, constructed in place: its element type is the class with the
+// constructor, so each record is built straight into the global
+// (Primal Hunt server.dll 0x10019852, AvP2 1.0.9.6 0x10018c63: `mov
+// ecx,<record>; call` the constructor six times, no temporary and no copy).
+// lithtech.exe's is src/engine/lithtech/wgrid.cpp's.
+CAxisBasis g_AxisBases[6] =
+{
+	CAxisBasis(LTVector(1.0f, 0.0f,  0.0f),
+	           LTVector(0.0f, 0.0f, -1.0f),
+	           LTVector(0.0f, 1.0f,  0.0f)),
+
+	CAxisBasis(LTVector(1.0f,  0.0f, 0.0f),
+	           LTVector(0.0f,  0.0f, 1.0f),
+	           LTVector(0.0f, -1.0f, 0.0f)),
+
+	CAxisBasis(LTVector(1.0f, 0.0f, 0.0f),
+	           LTVector(0.0f, 1.0f, 0.0f),
+	           LTVector(0.0f, 0.0f, 1.0f)),
+
+	CAxisBasis(LTVector(1.0f,  0.0f,  0.0f),
+	           LTVector(0.0f, -1.0f,  0.0f),
+	           LTVector(0.0f,  0.0f, -1.0f)),
+
+	CAxisBasis(LTVector(0.0f,  0.0f, 1.0f),
+	           LTVector(0.0f, -1.0f, 0.0f),
+	           LTVector(1.0f,  0.0f, 0.0f)),
+
+	CAxisBasis(LTVector( 0.0f,  0.0f, -1.0f),
+	           LTVector( 0.0f, -1.0f,  0.0f),
+	           LTVector(-1.0f,  0.0f,  0.0f))
+};
+#else
+// lithtech.exe: defined (with its dynamic initializer) in wgrid.cpp.
 extern SAxisBasis g_AxisBases[6];
+#endif
 
 // 0x1001450d — the constructor. It is a constructor and not an Init: the
 // body returns `this` in %eax (`mov %ecx,%eax` on entry, `%eax` untouched at

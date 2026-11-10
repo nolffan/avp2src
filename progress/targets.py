@@ -181,7 +181,13 @@ TARGETS = [
          # code below it from 0x4bf4c0 are the C++ library's: libcp.lib's
          # string.obj (std::_Xlen/_Xran and the logic_error family, 17 of its
          # functions matched by exematch) and xlock.cpp's std::_Lockit
-         app=[(0x00401000, 0x004bf4c0)]),
+         #   Between WON and RezMgr the linker put the DINPUT import thunk
+         # (0x004ba2a0, jmp [0x004d4000], DirectInputCreateA), and after it
+         # dinput.lib's object data formats (0x004ba2b0..0x004ba570, data:
+         # progress/lithtech-screen-exclude.csv), as AvP2's engine has them
+         # at 0x004af950. The thunk is the linker's, not code of the image's
+         # own: left out, as the runtime is
+         app=[(0x00401000, 0x004ba2a0), (0x004ba2b0, 0x004bf4c0)]),
     dict(label="server.dll", what="the server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
          # nolfsrc's engine compiled for Primal Hunt, and linked with /FORCE
@@ -195,13 +201,19 @@ TARGETS = [
          # and the debug builds of RezMgr and StdLith, interleaved in one
          # block from 0x1004a6e0 up to the WON client (build/build.mk, "The
          # debug builds")
+         # and, after WON, the release lith.lib (basehash.obj, baselist.obj
+         # and virtlist.obj: 0x10060940..0x10060be4, its 13 functions each
+         # matched at one address by tools/libscan.py, as lithtech.exe's
+         # 0x004bd300..0x004bd5c4 are), which the debug RezMgr calls
          partial_objs=["src/engine/server/Release/*.obj",
                        "src/engine/lithtech/Release/wonapi/WONAPI.lib",
                        "src/LT2/lithshared/libs/Debug/RezMgr.lib",
-                       "src/LT2/lithshared/libs/Debug/StdLith.lib"],
-         lib_range={"WONAPI": (0x10051e10, 0x10060eec),
+                       "src/LT2/lithshared/libs/Debug/StdLith.lib",
+                       "src/LT2/lithshared/libs/Release/lith.lib"],
+         lib_range={"WONAPI": (0x10051e10, 0x10060940),
                     "RezMgr": (0x1004a6e0, 0x10051e10),
-                    "StdLith": (0x1004a6e0, 0x10051e10)},
+                    "StdLith": (0x1004a6e0, 0x10051e10),
+                    "lith": (0x10060940, 0x10060bf0)},
          built="src/engine/server/Release/server.dll", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib from __ftol (0x10061048), 354 members to
@@ -215,11 +227,15 @@ TARGETS = [
          # __fpmath/__cfltcvt_init: every row matches a libcpmt.lib/libcmt.lib
          # member masked by its relocations at its own address, and the
          # block is lithtech.exe's 0x4bf4c0..0x4bf918, the same length,
-         # differing only in relocated bytes. The range still ends at
-         # __ftol: three deleting destructors of ours (smgr.obj's, of the
-         # same generic shape) are recorded identical there, and the
-         # scoreboard places them nowhere else yet
-         app=[(0x10001000, 0x10061048)]),
+         # differing only in relocated bytes. So the range ends there, at
+         # 0x10060bf0, as lithtech.exe's does at 0x4bf4c0. The three rows
+         # once recorded identical inside it (0x10060d15, 0x10060de8,
+         # 0x10060ed0) are string.obj's deleting destructors of the
+         # logic_error family, at their own offsets in that block; what had
+         # been placed on them was smgr.obj's copies of the inline
+         # ??_GCFileBank, ??_GCMessageBank and a pair<string, map>'s, a
+         # generic 28-byte shape of which the image has 55 more
+         app=[(0x10001000, 0x10060bf0)]),
     dict(label="d3d.ren", what="the Direct3D renderer", kind="image",
          shipped=REFERENCE + "/d3d.ren", stem="d3d",
          # nolfsrc's renderer compiled for Primal Hunt, and linked with

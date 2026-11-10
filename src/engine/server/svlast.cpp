@@ -425,47 +425,11 @@ int cc_FindNameIndex(char* pName, char* pTable, int nCount, int* pnIndex)
 //  shipped body calls at all six sites.
 // ======================================================================= //
 
-struct SAxisBasis                            // plain, 0x24 bytes
-{
-	LTVector m_vRight;                       // +0x00
-	LTVector m_vUp;                          // +0x0c
-	LTVector m_vNormal;                      // +0x18
-};
-
-class CAxisBasis : public SAxisBasis
-{
-public:
-	// 0x1001450d — defined in servermath.cpp, declared only here.
-	CAxisBasis(LTVector vRight, LTVector vUp, LTVector vNormal);
-};
-
-// 0x10058610, initializer 0x100142a9 / 0x100142ae, .CRT$XCU slot 0x10051050.
-SAxisBasis g_AxisBases[6] =
-{
-	CAxisBasis(LTVector(1.0f, 0.0f,  0.0f),
-	           LTVector(0.0f, 0.0f, -1.0f),
-	           LTVector(0.0f, 1.0f,  0.0f)),
-
-	CAxisBasis(LTVector(1.0f,  0.0f, 0.0f),
-	           LTVector(0.0f,  0.0f, 1.0f),
-	           LTVector(0.0f, -1.0f, 0.0f)),
-
-	CAxisBasis(LTVector(1.0f, 0.0f, 0.0f),
-	           LTVector(0.0f, 1.0f, 0.0f),
-	           LTVector(0.0f, 0.0f, 1.0f)),
-
-	CAxisBasis(LTVector(1.0f,  0.0f,  0.0f),
-	           LTVector(0.0f, -1.0f,  0.0f),
-	           LTVector(0.0f,  0.0f, -1.0f)),
-
-	CAxisBasis(LTVector(0.0f,  0.0f, 1.0f),
-	           LTVector(0.0f, -1.0f, 0.0f),
-	           LTVector(1.0f,  0.0f, 0.0f)),
-
-	CAxisBasis(LTVector( 0.0f,  0.0f, -1.0f),
-	           LTVector( 0.0f, -1.0f,  0.0f),
-	           LTVector(-1.0f,  0.0f,  0.0f))
-};
+// NOT HERE: both server.dll images construct the six records in place
+// (`mov ecx,&g_AxisBases[k]; call` the constructor, no copy: Primal Hunt
+// 0x10019852, AvP2 1.0.9.6 0x10018c63), and put the initializer in
+// servermath.cpp's run, before the constructor. So the array is
+// servermath.cpp's, a CAxisBasis array (the analysis above is NOLF's).
 
 
 // ======================================================================= //

@@ -7,6 +7,8 @@
 // Primal Hunt's server.dll the same (guard byte 0x1008ec84, atexit of
 // 0x1002eaeb), so it is not limited to the engine's build.
 #include <string>
+#include <map>
+#include <set>
 #endif
 #include <math.h>
 #include <stdlib.h>
@@ -234,6 +236,20 @@ public:
 	// the constructor (0x1003674d.., a call through 0x1003f87d). Opaque
 	// until AvP2's map and its three ILTServer slots are written.
 	uint8             m_StringSets[0x0c];    // 0x280
+#else
+	// PH: the same map, VC6's (0x10 bytes: `new` asks for 0x290 at
+	// 0x100395e6), built by the constructor after the light-anim interface
+	// (0x100396b8..0x100396cb: its comparator and allocator bytes, the
+	// header's _Multi cleared, then _Tree::_Init) -- the string sets
+	// servermessage.cpp's CLTServerStringSetViewQ526 reads.
+#ifdef LT_SERVER_BUILD
+	std::map<std::string, std::set<std::string> > m_StringSets;  // 0x280
+#else
+	// lithtech.exe's is the same map (servermessage.cpp's AddStrings reads
+	// it at +0x280, 0x00483ad0), but where its /O2 destructor went is not
+	// found yet: opaque here, as AvP2's is.
+	uint8             m_StringSets[0x10];    // 0x280
+#endif
 #endif
 };
 
@@ -277,8 +293,10 @@ inline CLTServer::CLTServer(CServerMgr* pServerMgr)
 
 	m_CommonLT.SetMath((ICommonMath*)&m_MathLT);
 	m_CommonLT.m_pServerMgr   = pServerMgr;
-	m_CommonLT.m_pModelLT     = (ILTModel*)&m_ModelLT;
+	// The transform first: both server.dll images store +0x258 before
+	// +0x25c (Primal Hunt 0x10039717..0x1003972f, AvP2 1.0.9.6 0x100367c7..).
 	m_CommonLT.m_pTransformLT = &m_TransformLT;
+	m_CommonLT.m_pModelLT     = (ILTModel*)&m_ModelLT;
 }
 
 // smgr.cpp:3846, 0x1002fd9b.

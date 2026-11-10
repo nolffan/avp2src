@@ -695,7 +695,7 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp c
     objbank.cpp objtypes.cpp collection.cpp worldbsp.cpp worldmodels.cpp saveio.cpp worldsim.cpp \
     serverengine.cpp ltobject.cpp lmessage.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
     genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
-    savrest.cpp shade.cpp smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
+    smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
     svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp interlink.cpp
 SERVER_OS_SRC := localdriver.cpp
 # the segment-query module, unoptimised in Primal Hunt and AvP2 1.0.9.6
@@ -711,7 +711,7 @@ LITHTECH := $(E)/lithtech
 LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c
 LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\server\netobj.cpp \
     ..\server\smgrnew.cpp ..\server\modelnew.cpp ..\server\objmover.cpp ..\server\smgrmisc.cpp \
-    ..\server\shade.cpp wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \
+    wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \
     diblit.cpp savobj.cpp conline.cpp nettrace.cpp modchunk.cpp partfm.cpp ccobj.cpp demodtx.cpp \
     cissurf.cpp cltapi.cpp sndinst2.cpp sndmgr2.cpp predtick.cpp cmgrinit.cpp wgrid.cpp dmgrow.cpp \
     cmgsurf.cpp warpblit.cpp startload.cpp fntdraw.cpp predobj.cpp fmcvt32.cpp fmconvert.cpp \
@@ -1089,7 +1089,8 @@ $(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:w
     $(LT_OBJS) $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/RezMgr.lib $(LOUT)/lith.lib $(LOUT)/StdLith.lib \
     $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib))
 # server.dll: our objects, then the debug RezMgr and StdLith (one block from
-# 0x1004a6e0) and WON (0x10051e10); link/server.def names the DLL
+# 0x1004a6e0), WON (0x10051e10) and the release lith (0x10060940, which the
+# debug RezMgr calls); link/server.def names the DLL
 # "server.DLL" as the retail export table does. The debug libraries name
 # LIBCMTD as their default library, but the retail image has the release
 # runtime's only (its "Assertion failed: %s, file %s, line %d" is
@@ -1097,8 +1098,9 @@ $(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:w
 # debug heap or _CrtDbgReport), so not LIBCMTD.
 $(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\server.def /nodefaultlib:libcmtd.lib,\
     $(SV_OBJS:$(SERVER)/%=%) $(LS_D)\RezMgr.lib $(LS_D)\StdLith.lib ..\lithtech\Release\wonapi\WONAPI.lib \
-    winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib,\
-    $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(SERVER)/link/server.def))
+    $(LS_R)\lith.lib winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib,\
+    $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/lith.lib \
+    $(SERVER)/link/server.def))
 .PHONY: engine-link
 engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
 
