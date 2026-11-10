@@ -36,7 +36,9 @@ struct Arr1001d
 //  third, exactly as d3dr2b.cpp's 0x100507b0 over another T.  The worker
 //  0x1001d810 is d3dr5d_os.cpp's Arr1001d810::InternalNiceSetSize.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001d::sub_1001dc70(uint32 nNewSize)
 {
 	return InternalNiceSetSize(nNewSize, LTFALSE, &g_10091df0);
 }
+#endif

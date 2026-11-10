@@ -6,7 +6,11 @@
 //  PURPOSE:  The QueryPerformanceCounter timers (LithTech's counter.cpp,
 //            the renderer's own copy).  Only what the renderer references
 //            survives the link: the divisor's initialiser, the
-//            constructor and the start/end pair.
+//            constructor and the start/end pair.  The rest (EndMS,
+//            CountMS, CountMicro, cnt_NumTicksPerSecond) the link's
+//            /OPT:REF dropped, and the members the survivors inline have
+//            no copy of their own: they are inline here, so our
+//            /OPT:NOREF link has none either.
 //
 // *********************************************************************** //
 
@@ -53,12 +57,30 @@ public:
 static CountDivSetter __g_CountDivSetter;                   // 0x10013f96
 
 
-unsigned long cnt_NumTicksPerSecond()
+inline void CounterFinal::StartMS()
 {
-	LARGE_INTEGER perSec;
+	LARGE_INTEGER *pInt;
 
-	QueryPerformanceFrequency(&perSec);
-	return (unsigned long)(perSec.QuadPart / g_CountDiv);
+	pInt = (LARGE_INTEGER*)m_Data;
+	QueryPerformanceCounter(pInt);
+}
+
+inline void CounterFinal::StartMicro()
+{
+	LARGE_INTEGER *pInt;
+
+	pInt = (LARGE_INTEGER*)m_Data;
+	QueryPerformanceCounter(pInt);
+}
+
+inline unsigned long CounterFinal::EndMicro()
+{
+	LARGE_INTEGER curCount, *pInCount;
+
+	pInCount = (LARGE_INTEGER*)m_Data;
+	QueryPerformanceCounter(&curCount);
+
+	return (unsigned long)((curCount.QuadPart - pInCount->QuadPart) / g_CountDiv);
 }
 
 
@@ -69,57 +91,6 @@ CounterFinal::CounterFinal(unsigned long startMode)
 		StartMicro();
 	else if (startMode == CSTART_MILLI)
 		StartMS();
-}
-
-
-void CounterFinal::StartMS()
-{
-	LARGE_INTEGER *pInt;
-
-	pInt = (LARGE_INTEGER*)m_Data;
-	QueryPerformanceCounter(pInt);
-}
-
-unsigned long CounterFinal::EndMS()
-{
-	LARGE_INTEGER curCount, *pInCount, perSec;
-	LONGLONG timeElapsed;
-
-	pInCount = (LARGE_INTEGER*)m_Data;
-	QueryPerformanceCounter(&curCount);
-
-	QueryPerformanceFrequency(&perSec);
-	timeElapsed = curCount.QuadPart - pInCount->QuadPart;
-	return (unsigned long)((timeElapsed*(LONGLONG)1000) / perSec.QuadPart);
-}
-
-unsigned long CounterFinal::CountMS()
-{
-	return EndMS();
-}
-
-
-void CounterFinal::StartMicro()
-{
-	LARGE_INTEGER *pInt;
-
-	pInt = (LARGE_INTEGER*)m_Data;
-	QueryPerformanceCounter(pInt);
-}
-
-unsigned long CounterFinal::EndMicro()
-{
-	LARGE_INTEGER curCount, *pInCount;
-
-	pInCount = (LARGE_INTEGER*)m_Data;
-	QueryPerformanceCounter(&curCount);
-
-	return (unsigned long)((curCount.QuadPart - pInCount->QuadPart) / g_CountDiv);
-}
-
-unsigned long CounterFinal::CountMicro()
-{
-	return EndMicro();
 }
 
 

@@ -82,6 +82,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these but the
+// matrix multiply below. Its own functions are ph/'s (and the libraries'),
+// and none of the fifteen still unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 #include <math.h>
 #include <string.h>
@@ -364,6 +369,13 @@ int32 sub_10015190(float f)
 }
 
 
+#endif // !PRIMAL_HUNT
+
+// Kept for Primal Hunt too: its 0x10016c00 is this operator* (ltmatrix.h's,
+// out of line in d3d_draw.cpp's object, after d3d_DrawPortals, its caller,
+// which ph/d3d_draw.cpp has not written yet). Until it does, this copy
+// stands in there; MatMul folds into ph's identical 0x10008fd0.
+
 // ---------------------------------------------------------------------- //
 //  LTMatrix multiply, out of line.  Bodies from src/LT2/sdk/inc/ltmatrix.h.
 // ---------------------------------------------------------------------- //
@@ -432,6 +444,8 @@ LTMat LTMat::sub_10015800(LTMat &other)
 	sub_10014720(&mRet, this, &other);
 	return mRet;
 }
+
+#ifndef PRIMAL_HUNT
 
 
 // ---------------------------------------------------------------------- //
@@ -995,3 +1009,5 @@ float VecDist::sub_100154b0(const VecDist& vec) const
 {
 	return sub_10015640(vec).Mag();
 }
+
+#endif // !PRIMAL_HUNT

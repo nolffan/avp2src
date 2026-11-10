@@ -50,6 +50,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -829,3 +834,5 @@ void sub_10068890()
 	pList->sub_1007b8e0((Ctx1007b8e0*)g_1008b880, sub_10067aa0);
 }
 #endif // Primal Hunt: ph/drawworldmodel.cpp
+
+#endif // !PRIMAL_HUNT

@@ -535,6 +535,7 @@ extern float     g_f1008ef04;                           // 0x1008ef04 -- ...as a
 //   I  0x1004dffa  restore all fourteen saved states and the texture, then
 //                  the 0x100aa330 timing line behind g_n1008ca38.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodelshadows.cpp DrawProjShadows
 void CShadowRenderer::sub_1004b720(uint32 nMaxShadows)
 {
 	// -- the fixed-size scratch, in the shipped frame's order ----------- //
@@ -1239,3 +1240,4 @@ void CShadowRenderer::sub_1004b720(uint32 nMaxShadows)
 			nFindTicks, nSetupTicks, nTextureTicks, 0, 0);
 	}
 }
+#endif

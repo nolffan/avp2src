@@ -59,6 +59,7 @@ struct Arr1001cd40
 	int32 sub_1001cd40(uint32 newSize, int32 bFast, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001cd40::sub_1001cd40(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 {
 	T1001cd40* pNewArray;
@@ -108,6 +109,7 @@ int32 Arr1001cd40::sub_1001cd40(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 
@@ -123,6 +125,7 @@ int32 Arr1001cd40::sub_1001cd40(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 struct LTVec  { float x, y, z; };
 struct SPlane { LTVec m_vNormal; float m_fDist; };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_1001e950(const LTVec* pEye, const LTVec* pPos, const SPlane* pPlane,
                   float* pU, float* pV)
 {
@@ -145,3 +148,4 @@ void sub_1001e950(const LTVec* pEye, const LTVec* pPos, const SPlane* pPlane,
 		*pV = -0.5f * vRefl.y + 0.5f;
 	}
 }
+#endif

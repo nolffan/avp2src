@@ -122,6 +122,7 @@ inline void* sb_Allocate124a4(Pool124a4* pBank)
 // ======================================================================= //
 //  0x1000d9f0 -- 93 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_1000d9f0(void* pObj)
 {
 	Elem1000eef0* pElem;
@@ -139,11 +140,13 @@ void sub_1000d9f0(void* pObj)
 		pElem->m_pOwner = pObj;
 	}
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1003dc80 -- 205 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_1003dc80(void* pvPoly)
 {
 	Owner1000eef0*   pPoly = (Owner1000eef0*)pvPoly;
@@ -169,3 +172,4 @@ void sub_1003dc80(void* pvPoly)
 	pElem->m_pOwner = pPoly;
 	pElem->m_n10 = g_1008b874;
 }
+#endif

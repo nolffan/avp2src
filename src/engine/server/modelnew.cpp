@@ -900,6 +900,10 @@ public:
 	uint32           m_iWeightSet;                      // 0x18
 };
 
+#if 0
+// AVP2: not built. objbank.cpp's AnimTimeRef::Init (the SDK's class) is this
+// function, byte-identical in every image (Primal Hunt's lithtech.exe
+// 0x004549b0) with its callers; this view's copy has no caller.
 void AnimTimeRefQ444::Init(ModelQ444* pModel,
                            uint32 iAnim1, uint32 iFrame1,
                            uint32 iAnim2, uint32 iFrame2,
@@ -917,6 +921,7 @@ void AnimTimeRefQ444::Init(ModelQ444* pModel,
 
 	m_Percent = percent;                                // 0x004470b6
 }
+#endif
 
 
 // ======================================================================= //
@@ -1050,7 +1055,7 @@ template class CMoArray<CModelXform, NoCache>;
 // Term, Remove, Insert, Get, operator[], operator=, CopyArray, the
 // NiceSetSize family and the destructor are in it nowhere, so the array is
 // used here rather than instantiated whole.  (name ours)
-void mn_UseXformArrayAvP2Srv(uint32 nCacheSize, CMoArray<CModelXform, NoCache>& other)
+void mn_ForceInstantiationXformAvP2Srv(uint32 nCacheSize, CMoArray<CModelXform, NoCache>& other)
 {
 	CMoArray<CModelXform, NoCache> aXforms(nCacheSize);
 

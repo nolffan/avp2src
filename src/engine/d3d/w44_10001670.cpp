@@ -70,6 +70,7 @@ static inline float ClipEdgeTop(LTVector* a, LTVector* b, LTVector* dst)
 // ----------------------------------------------------------------------- //
 //  0x10001670 -- top plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp ClipTop
 LTBOOL sub_10001670(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVert** ppOut)
 {
 	uint32     anInside[CLIP_MAX_VERTS];
@@ -134,5 +135,6 @@ LTBOOL sub_10001670(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVer
 
 	return LTTRUE;
 }
+#endif
 
 

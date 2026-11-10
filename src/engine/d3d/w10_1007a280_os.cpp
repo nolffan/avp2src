@@ -51,6 +51,7 @@ public:
 // slot) where an unsigned k let icl strength-reduce it to a pointer:
 // 311 -> 292 bytes, the shipped length.  Left: the shipped k lives in
 // %edx through the up loop, ours in its slot.)
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C1007a0d0::sub_1007a280()
 {
 	int32 k;
@@ -84,6 +85,7 @@ void C1007a0d0::sub_1007a280()
 		}
 	}
 }
+#endif
 
 
 // ======================================================================= //
@@ -197,6 +199,7 @@ struct Obj1007dcc4
 	void sub_1007def4();
 };
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/vertexbuffer.cpp CVertexBufferCache
 void Obj1007dcc4::sub_1007def4()
 {
 	uint32 i;
@@ -234,6 +237,7 @@ void Obj1007dcc4::sub_1007def4()
 	m_iCur18 = 0;
 	m_n1c = 0;
 }
+#endif
 
 
 // ======================================================================= //
@@ -361,6 +365,7 @@ public:
 	uint32						m_nStamp60;             // +0x60
 };
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/vertexbuffer.cpp CVertexBufferCache
 int32 D3DModelCache::sub_1007e430(D3DObject* pObject, uint32 nColor,
                                   uint32 nTris, uint32 bForce)
 {
@@ -430,3 +435,4 @@ UseSlot:
 	m_Slots[m_iCur18].m_nTris = nTris;
 	return 1;
 }
+#endif

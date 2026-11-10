@@ -548,6 +548,10 @@ LTBOOL CTransformMaker_C::SetupTransforms()
 	return LTTRUE;
 }
 
+#if 0
+// AVP2: not built. Neither AvP2's nor Primal Hunt's server.dll has it: in
+// both, SetupTransforms (0x10043afe, 0x1004879f) runs straight into Prepare
+// (0x10043b2f, 0x100487d0), and nothing calls it.
 LTBOOL CTransformMaker_C::SetupTransformsForNode(uint32 iNode)
 {
 	uint32 nodePath[MAX_NODE_PATH_C];
@@ -579,6 +583,7 @@ LTBOOL CTransformMaker_C::SetupTransformsForNode(uint32 iNode)
 
 	return LTTRUE;
 }
+#endif
 
 LTBOOL CTransformMaker_C::Prepare()
 {

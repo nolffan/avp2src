@@ -131,6 +131,7 @@ inline void* sb_Allocate73140(Pool73140* pBank)
 //  NULL and the NULL is stored through" shape is sb_Allocate's own
 //  `return 0` with no test in this caller (as 0x10024020 in big24090.cpp).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawpolymgr.cpp (the texture buckets)
 void sub_10073140(Obj73140* pObj)
 {
 	Tex73140*		pTex = pObj->m_p28->m_pTex30;
@@ -153,6 +154,7 @@ void sub_10073140(Obj73140* pObj)
 	pElem->m_pOwner       = pObj;
 	pElem->m_nClipFlags10 = g_nClipFlags1008b874;
 }
+#endif
 
 
 // ======================================================================= //

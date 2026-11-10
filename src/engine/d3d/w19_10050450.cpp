@@ -97,6 +97,7 @@ struct Arr10050560
 	uint32		sub_10050450(const GenList10050560& theList);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 uint32 Arr10050560::sub_10050450(const GenList10050560& theList)
 {
 	GenListPosR5C	pos;
@@ -123,3 +124,4 @@ uint32 Arr10050560::sub_10050450(const GenList10050560& theList)
 
 	return LTTRUE;
 }
+#endif

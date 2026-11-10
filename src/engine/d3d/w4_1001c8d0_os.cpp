@@ -79,6 +79,7 @@ struct Arr1001ca80
 	void sub_1001c8d0(uint32 index, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1001ca80::sub_1001c8d0(uint32 index, IAllocator* pAlloc)
 {
 	uint32 i, newSize, newAllocSize;
@@ -118,6 +119,7 @@ void Arr1001ca80::sub_1001c8d0(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ---- 0x1001cab0 -- CMoArray<T64>::Insert2, verbatim from the header.
@@ -130,6 +132,7 @@ struct Arr1001cab0
 	int32 sub_1001cab0(uint32 index, const T1001c8d0& toInsert, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001cab0::sub_1001cab0(uint32 index, const T1001c8d0& toInsert, IAllocator* pAlloc)
 {
 	T1001c8d0* pNewArray;
@@ -176,6 +179,7 @@ int32 Arr1001cab0::sub_1001cab0(uint32 index, const T1001c8d0& toInsert, IAlloca
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -199,6 +203,7 @@ struct Arr1001d2a0
 	int32 sub_1001d2a0(uint32 newSize, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001d2a0::sub_1001d2a0(uint32 newSize, IAllocator* pAlloc)
 {
 	if ((newSize == m_nElements) && (newSize != 0))
@@ -227,6 +232,7 @@ int32 Arr1001d2a0::sub_1001d2a0(uint32 newSize, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 // ---- 0x1001d390 -- CMoArray<T32>::Remove2, verbatim from the header.
@@ -244,6 +250,7 @@ struct Arr1001d390
 	void sub_1001d390(uint32 index, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1001d390::sub_1001d390(uint32 index, IAllocator* pAlloc)
 {
 	uint32 i, newSize, newAllocSize;
@@ -283,6 +290,7 @@ void Arr1001d390::sub_1001d390(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ---- 0x1001d570 -- CMoArray<T32>::Insert2, verbatim from the header.
@@ -300,6 +308,7 @@ struct Arr1001d570
 	int32 sub_1001d570(uint32 index, const T1001cd40& toInsert, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001d570::sub_1001d570(uint32 index, const T1001cd40& toInsert, IAllocator* pAlloc)
 {
 	T1001cd40* pNewArray;
@@ -346,6 +355,7 @@ int32 Arr1001d570::sub_1001d570(uint32 index, const T1001cd40& toInsert, IAlloca
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -367,6 +377,7 @@ struct Arr1001dca0
 	int32 sub_1001dca0(uint32 newSize, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001dca0::sub_1001dca0(uint32 newSize, IAllocator* pAlloc)
 {
 	if ((newSize == m_nElements) && (newSize != 0))
@@ -395,6 +406,7 @@ int32 Arr1001dca0::sub_1001dca0(uint32 newSize, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 // ---- 0x1001dd90 -- CMoArray<WORD>::Remove2, verbatim from the header.
@@ -412,6 +424,7 @@ struct Arr1001dd90
 	void sub_1001dd90(uint32 index, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1001dd90::sub_1001dd90(uint32 index, IAllocator* pAlloc)
 {
 	uint32 i, newSize, newAllocSize;
@@ -451,6 +464,7 @@ void Arr1001dd90::sub_1001dd90(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ---- 0x1001dee0 -- CMoArray<WORD>::Insert2, verbatim from the header.
@@ -468,6 +482,7 @@ struct Arr1001dee0
 	int32 sub_1001dee0(uint32 index, const uint16& toInsert, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001dee0::sub_1001dee0(uint32 index, const uint16& toInsert, IAllocator* pAlloc)
 {
 	uint16* pNewArray;
@@ -514,5 +529,6 @@ int32 Arr1001dee0::sub_1001dee0(uint32 index, const uint16& toInsert, IAllocator
 
 	return 1;
 }
+#endif
 
 

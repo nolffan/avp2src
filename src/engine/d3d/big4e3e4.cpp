@@ -659,6 +659,7 @@ inline int32 RoundF(float f)
 //  because that is what the call site's %ecx says it is, and because
 //  big4b720.cpp already declared it one.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodelshadows.cpp's projected per-polygon shadow draw
 void CShadowRenderer::sub_1004e3e4(Frustum4e3e4* pFrustum, Item4e3e4* pItem,
                                    float fRadius)
 {
@@ -1080,6 +1081,7 @@ void CShadowRenderer::sub_1004e3e4(Frustum4e3e4* pFrustum, Item4e3e4* pItem,
 		                                    nVerts, 0);
 	}
 }
+#endif
 
 
 // *********************************************************************** //

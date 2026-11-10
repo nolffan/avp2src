@@ -20,6 +20,7 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_init.cpp d3d_GetErrorString
 const char* __cdecl sub_10030f30(long hResult)
 {
 	if (hResult == 0)
@@ -259,3 +260,4 @@ const char* __cdecl sub_10030f30(long hResult)
 
 	return "Unrecognized error value.";
 }
+#endif

@@ -81,6 +81,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -447,3 +452,5 @@ void C100598a0::sub_100598a0(const ColorSource* pSrc, ColorDest* pDest)
 	pDest->m_n10 = g_ColorRamp0[pSrc->m_n14];
 	pDest->m_n13 = g_nByte1008be60;
 }
+
+#endif // !PRIMAL_HUNT

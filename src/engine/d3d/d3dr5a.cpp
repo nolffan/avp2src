@@ -136,6 +136,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -1329,3 +1334,5 @@ void C100592a0::sub_100592a0(void* pA, uint8* pB, uint32 nUnused)
 // very class pair (empty virtual base destructor, derived destructor
 // calling sb_Term2).  /O2 drops it but uses `mov` arguments and duplicates
 // the epilogue (the shipped code cross-jumps), 30 -> 38.
+
+#endif // !PRIMAL_HUNT

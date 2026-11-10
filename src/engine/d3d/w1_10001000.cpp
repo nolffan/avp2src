@@ -197,6 +197,7 @@ static inline float ClipEdgeFar(LTVector* a, LTVector* b, LTVector* dst)
 // ----------------------------------------------------------------------- //
 //  0x10001000 -- near plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_10001000(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVert** ppOut)
 {
 	uint32     anInside[CLIP_MAX_VERTS];
@@ -261,11 +262,13 @@ LTBOOL sub_10001000(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVer
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x10001330 -- left plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_10001330(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVert** ppOut)
 {
 	uint32     anInside[CLIP_MAX_VERTS];
@@ -330,11 +333,13 @@ LTBOOL sub_10001330(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVer
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x10001990 -- right plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_10001990(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVert** ppOut)
 {
 	uint32     anInside[CLIP_MAX_VERTS];
@@ -399,11 +404,13 @@ LTBOOL sub_10001990(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVer
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x10001cb0 -- bottom plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_10001cb0(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVert** ppOut)
 {
 	uint32     anInside[CLIP_MAX_VERTS];
@@ -468,11 +475,13 @@ LTBOOL sub_10001cb0(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVer
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x10001fe0 -- far plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_10001fe0(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVert** ppOut)
 {
 	uint32     anInside[CLIP_MAX_VERTS];
@@ -537,4 +546,5 @@ LTBOOL sub_10001fe0(uint32* pUnused, ClipVert** ppVerts, int32* pnVerts, ClipVer
 
 	return LTTRUE;
 }
+#endif
 

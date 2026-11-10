@@ -148,6 +148,11 @@ public:
 	HINSTANCE m_hInst;                       // 0x00
 };
 
+#if 0
+// AVP2: not built. servermessage.cpp's str_FormatMessage is this function
+// (byte-identical at Primal Hunt's 0x004a1420 and AvP2's 0x00497480), and
+// cltnew.cpp's two callers (the +0x614 and +0x610 modules) call that one; this
+// copy has no caller.
 char* str_GetMessage(CResModule* pModule, uint32 nStringID, void* pArgs,
                      uint32* pLen)
 {
@@ -182,6 +187,7 @@ char* str_GetMessage(CResModule* pModule, uint32 nStringID, void* pArgs,
 
 	return pMessage;
 }
+#endif
 
 
 // ======================================================================= //

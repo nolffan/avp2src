@@ -75,6 +75,7 @@ inline void LTVec::Norm(float nVal)
 // ======================================================================= //
 //  0x10069ed0  728 bytes (12-byte stack entry + register body)
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/geomroutines.cpp gr_GetPerpendicularVector
 void sub_10069ed0(LTVec* pIn, LTVec* pHint, LTVec* pOut)
 {
 	LTVec	vUp;
@@ -117,3 +118,4 @@ void sub_10069ed0(LTVec* pIn, LTVec* pHint, LTVec* pOut)
 	*pOut += *pIn * -pIn->Dot(*pOut);
 	pOut->Norm();
 }
+#endif

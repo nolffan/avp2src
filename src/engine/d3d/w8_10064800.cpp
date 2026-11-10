@@ -114,6 +114,7 @@ extern uint32	g_1008cb98;                             // 0x1008cb98 Saturate
 // ======================================================================= //
 //  0x10064800  879 bytes
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_10064800(Obj10064800* pObj, Vert10064800* pVerts,
                              uint32 nVerts)
 {
@@ -203,3 +204,4 @@ extern "C" void sub_10064800(Obj10064800* pObj, Vert10064800* pVerts,
 		}
 	}
 }
+#endif

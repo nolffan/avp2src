@@ -20,7 +20,9 @@ struct Arr32
 	T32&	sub_1001d370(uint32 nIndex) const;          // 0x1001d370 operator[]
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 T32& Arr32::sub_1001d370(uint32 nIndex) const
 {
 	return sub_10009ef0(nIndex);
 }
+#endif

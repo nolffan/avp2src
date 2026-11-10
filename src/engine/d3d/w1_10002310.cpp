@@ -184,6 +184,7 @@ static inline float ClipEdgeFarA(LTVector* a, LTVector* b, LTVector* dst)
 // ----------------------------------------------------------------------- //
 //  0x10002310 -- near plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 sub_10002310(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void** ppOutArg)
 {
 	SClipVertA** ppVerts = (SClipVertA**)ppVertsArg;
@@ -251,11 +252,13 @@ int32 sub_10002310(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void*
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x10002670 -- left plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 sub_10002670(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void** ppOutArg)
 {
 	SClipVertA** ppVerts = (SClipVertA**)ppVertsArg;
@@ -323,11 +326,13 @@ int32 sub_10002670(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void*
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x100029e0 -- top plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 sub_100029e0(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void** ppOutArg)
 {
 	SClipVertA** ppVerts = (SClipVertA**)ppVertsArg;
@@ -395,11 +400,13 @@ int32 sub_100029e0(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void*
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x10003410 -- far plane
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 sub_10003410(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void** ppOutArg)
 {
 	SClipVertA** ppVerts = (SClipVertA**)ppVertsArg;
@@ -467,4 +474,5 @@ int32 sub_10003410(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void*
 
 	return LTTRUE;
 }
+#endif
 

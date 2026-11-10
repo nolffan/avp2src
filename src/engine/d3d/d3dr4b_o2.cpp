@@ -11,6 +11,11 @@
 //               which stays in d3dr4b.cpp).
 //   0x100506f0  CMoArray<T12>::GenGetAt, forwarding to Get (0x10050790).
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -58,3 +63,5 @@ void C10037470::sub_10037470(uint32 nFlags)
 
 	sub_10080479(this);
 }
+
+#endif // !PRIMAL_HUNT

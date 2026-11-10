@@ -84,6 +84,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -1197,3 +1202,5 @@ void C10059270::sub_10059270(const LTVector* pIn, float* pOut, uint32 nUnused)
 //  dynarray.h's CMoArray constructor inlined (Clear(); Init()), which this
 //  file cannot include; identical there.
 // ---------------------------------------------------------------------- //
+
+#endif // !PRIMAL_HUNT

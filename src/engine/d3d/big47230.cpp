@@ -791,6 +791,7 @@ static inline void Unbind47230(uint32 nStage)
 	}
 }
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel_env.cpp's model pass setup
 void CD3DModelDraw::sub_10047230(uint32 nIndex)
 {
 	TexBlock47230* pBlock;
@@ -841,6 +842,7 @@ void CD3DModelDraw::sub_10047230(uint32 nIndex)
 		Unbind47230(g_n1008d7d0);
 	}
 }
+#endif
 
 
 // ======================================================================= //

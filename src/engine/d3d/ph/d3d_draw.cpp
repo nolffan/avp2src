@@ -23,9 +23,9 @@
 //  dead `mov %esi,(%esp)` is _Destroy's first argument).
 //
 //  Not written: 0x100162a0 (the portals, 2365 bytes; 0x10016c40 after it
-//  is its RenderScene callback),
-//  0x10016c60 (the line clipper, 3949 bytes), 0x10018520 (RenderScene,
-//  2671 bytes).  Near, all from VC6's inlining choices or scheduling
+//  is its RenderScene callback), 0x10018520 (RenderScene, 2671 bytes).
+//  0x10016c60 (d3d_ClipLine) is near: the scheduling of the colour lerp's
+//  byte loads, size-exact.  Near, all from VC6's inlining choices or scheduling
 //  rather than a known source difference: 0x10014550 (register choice),
 //  0x10014620 (which push_back sites expand), 0x100149c0 and 0x10014b80
 //  (the vertex copy and the transform's operand order), 0x10015070,
@@ -1549,7 +1549,203 @@ struct ProjectParams
 
 extern ProjectParams    g_ProjectParams;                    // 0x1005baac (g_ViewParams+0x31c)
 
-LTBOOL  d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags);   // 0x10016c60
+extern float    g_fNearZ;                                   // 0x1005b818
+extern float    g_fFarZ;                                    // 0x1005b820
+
+// A clipped line end's texture coordinates, colour and specular alpha,
+// interpolated from a to b (d3d_clip.h's LerpClipVert over a TLVertex).
+inline void d3d_LerpLineVert(TLVertex* a, TLVertex* b, TLVertex* dst, float t)
+{
+	dst->tu = (b->tu - a->tu) * t + a->tu;
+	dst->tv = (b->tv - a->tv) * t + a->tv;
+	((uint8*)&dst->color)[2]    = (uint8)RoundFloatToInt((((uint8*)&b->color)[2]    - ((uint8*)&a->color)[2])    * t + ((uint8*)&a->color)[2]);
+	((uint8*)&dst->color)[1]    = (uint8)RoundFloatToInt((((uint8*)&b->color)[1]    - ((uint8*)&a->color)[1])    * t + ((uint8*)&a->color)[1]);
+	((uint8*)&dst->color)[0]    = (uint8)RoundFloatToInt((((uint8*)&b->color)[0]    - ((uint8*)&a->color)[0])    * t + ((uint8*)&a->color)[0]);
+	((uint8*)&dst->color)[3]    = (uint8)RoundFloatToInt((((uint8*)&b->color)[3]    - ((uint8*)&a->color)[3])    * t + ((uint8*)&a->color)[3]);
+	((uint8*)&dst->specular)[3] = (uint8)RoundFloatToInt((((uint8*)&b->specular)[3] - ((uint8*)&a->specular)[3]) * t + ((uint8*)&a->specular)[3]);
+}
+
+// ---------------------------------------------------------------------- //
+//  0x10016c60 -- clip the line pVerts[0]..pVerts[1] (camera space) in
+//  place against the planes clipFlags selects: 0x01 near, 0x04 left,
+//  0x08 top, 0x10 right, 0x20 bottom, 0x02 far, tested in that order.
+//  FALSE when the line is wholly outside one of them.
+// ---------------------------------------------------------------------- //
+LTBOOL d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags)
+{
+	TLVertex*   v = pVerts;
+	float       t;
+
+	if (clipFlags & 1)
+	{
+		if (v[0].m_Vec.z >= g_fNearZ)
+		{
+			if (v[1].m_Vec.z < g_fNearZ)
+			{
+				t = (g_fNearZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				v[1].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[1].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[1].m_Vec.z = g_fNearZ;
+				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
+			}
+		}
+		else
+		{
+			if (v[1].m_Vec.z >= g_fNearZ)
+			{
+				t = (g_fNearZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				v[0].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[0].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[0].m_Vec.z = g_fNearZ;
+				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
+			}
+			else
+				return FALSE;
+		}
+	}
+
+	if (clipFlags & 4)
+	{
+		if (-v[0].m_Vec.z < v[0].m_Vec.x)
+		{
+			if (-v[1].m_Vec.z >= v[1].m_Vec.x)
+			{
+				t = -(v[0].m_Vec.z + v[0].m_Vec.x) / ((v[1].m_Vec.x - v[0].m_Vec.x) + v[1].m_Vec.z - v[0].m_Vec.z);
+				v[1].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[1].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[1].m_Vec.x = -v[1].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
+			}
+		}
+		else
+		{
+			if (-v[1].m_Vec.z < v[1].m_Vec.x)
+			{
+				t = -(v[0].m_Vec.z + v[0].m_Vec.x) / ((v[1].m_Vec.x - v[0].m_Vec.x) + v[1].m_Vec.z - v[0].m_Vec.z);
+				v[0].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[0].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[0].m_Vec.x = -v[0].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
+			}
+			else
+				return FALSE;
+		}
+	}
+
+	if (clipFlags & 8)
+	{
+		if (v[0].m_Vec.y < v[0].m_Vec.z)
+		{
+			if (v[1].m_Vec.y >= v[1].m_Vec.z)
+			{
+				t = -(v[0].m_Vec.y - v[0].m_Vec.z) / ((v[1].m_Vec.y - v[0].m_Vec.y) - v[1].m_Vec.z + v[0].m_Vec.z);
+				v[1].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[1].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[1].m_Vec.y = v[1].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
+			}
+		}
+		else
+		{
+			if (v[1].m_Vec.y < v[1].m_Vec.z)
+			{
+				t = -(v[0].m_Vec.y - v[0].m_Vec.z) / ((v[1].m_Vec.y - v[0].m_Vec.y) - v[1].m_Vec.z + v[0].m_Vec.z);
+				v[0].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[0].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[0].m_Vec.y = v[0].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
+			}
+			else
+				return FALSE;
+		}
+	}
+
+	if (clipFlags & 0x10)
+	{
+		if (v[0].m_Vec.x < v[0].m_Vec.z)
+		{
+			if (v[1].m_Vec.x >= v[1].m_Vec.z)
+			{
+				t = -(v[0].m_Vec.x - v[0].m_Vec.z) / ((v[1].m_Vec.x - v[0].m_Vec.x) - v[1].m_Vec.z + v[0].m_Vec.z);
+				v[1].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[1].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[1].m_Vec.x = v[1].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
+			}
+		}
+		else
+		{
+			if (v[1].m_Vec.x < v[1].m_Vec.z)
+			{
+				t = -(v[0].m_Vec.x - v[0].m_Vec.z) / ((v[1].m_Vec.x - v[0].m_Vec.x) - v[1].m_Vec.z + v[0].m_Vec.z);
+				v[0].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[0].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[0].m_Vec.x = v[0].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
+			}
+			else
+				return FALSE;
+		}
+	}
+
+	if (clipFlags & 0x20)
+	{
+		if (-v[0].m_Vec.z < v[0].m_Vec.y)
+		{
+			if (-v[1].m_Vec.z >= v[1].m_Vec.y)
+			{
+				t = -(v[0].m_Vec.z + v[0].m_Vec.y) / ((v[1].m_Vec.y - v[0].m_Vec.y) + v[1].m_Vec.z - v[0].m_Vec.z);
+				v[1].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[1].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[1].m_Vec.y = -v[1].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
+			}
+		}
+		else
+		{
+			if (-v[1].m_Vec.z < v[1].m_Vec.y)
+			{
+				t = -(v[0].m_Vec.z + v[0].m_Vec.y) / ((v[1].m_Vec.y - v[0].m_Vec.y) + v[1].m_Vec.z - v[0].m_Vec.z);
+				v[0].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[0].m_Vec.z = (v[1].m_Vec.z - v[0].m_Vec.z) * t + v[0].m_Vec.z;
+				v[0].m_Vec.y = -v[0].m_Vec.z;
+				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
+			}
+			else
+				return FALSE;
+		}
+	}
+
+	if (clipFlags & 2)
+	{
+		if (v[0].m_Vec.z <= g_fFarZ)
+		{
+			if (v[1].m_Vec.z > g_fFarZ)
+			{
+				t = (g_fFarZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				v[1].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[1].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[1].m_Vec.z = g_fFarZ;
+				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
+			}
+		}
+		else
+		{
+			if (v[1].m_Vec.z <= g_fFarZ)
+			{
+				t = (g_fFarZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				v[0].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
+				v[0].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
+				v[0].m_Vec.z = g_fFarZ;
+				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
+			}
+			else
+				return FALSE;
+		}
+	}
+
+	return TRUE;
+}
 
 // 0x10017bd0
 void d3d_DrawLine(LTVector vStart, LTVector vEnd, uint32 color0, uint32 color1)

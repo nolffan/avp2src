@@ -114,6 +114,7 @@ struct Arr1007e9f0
 //  _DeleteAndDestroyArray(pAlloc, GetNumAllocatedElements()).
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1007e9f0::sub_1007e9f0(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 {
 	Elem1007e9f0* pNewArray;
@@ -163,6 +164,7 @@ int32 Arr1007e9f0::sub_1007e9f0(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -174,6 +176,7 @@ int32 Arr1007e9f0::sub_1007e9f0(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 //  cache size and returns FALSE.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1007e9f0::sub_1007eea0(uint32 newSize, IAllocator* pAlloc)
 {
 	if ((newSize == m_nElements) && (newSize != 0))
@@ -202,6 +205,7 @@ int32 Arr1007e9f0::sub_1007eea0(uint32 newSize, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -213,6 +217,7 @@ int32 Arr1007e9f0::sub_1007eea0(uint32 newSize, IAllocator* pAlloc)
 //  to the slide, which is bSlideDown folded into control flow.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1007e9f0::sub_1007ef70(uint32 index, IAllocator* pAlloc)
 {
 	uint32        i, newSize, newAllocSize;
@@ -252,6 +257,7 @@ void Arr1007e9f0::sub_1007ef70(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ======================================================================= //
@@ -341,6 +347,7 @@ struct Arr1007f8e0
 //  `mov (%edx,%eax,4)` / `mov 0x4(%edx,%eax,4)`.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1007f8e0::sub_1007f8e0(uint32 index, IAllocator* pAlloc)
 {
 	uint32 i, newSize, newAllocSize;
@@ -380,6 +387,7 @@ void Arr1007f8e0::sub_1007f8e0(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ======================================================================= //
@@ -389,7 +397,9 @@ void Arr1007f8e0::sub_1007f8e0(uint32 index, IAllocator* pAlloc)
 //  `ret $0x4`: the header's { SetSize2(0, pAlloc); }, result discarded.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1007f8e0::sub_1007fa50(IAllocator* pAlloc)
 {
 	SetSize2(0, pAlloc);
 }
+#endif

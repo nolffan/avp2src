@@ -231,6 +231,7 @@ inline uint32 D3DRenderInfo::IsValid()
 	return 1;
 }
 
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 uint32 D3DRenderInfo::sub_1007cab4()
 {
 	uint32 i;
@@ -268,6 +269,7 @@ uint32 D3DRenderInfo::sub_1007cab4()
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -316,6 +318,7 @@ uint32 D3DRenderInfo::sub_1007cab4()
 //  vPos / rOld scoped to their arms (554), the two accumulate statements
 //  swapped (262), `m_Vec198 += vPos` (149).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 void D3DRenderInfo::sub_1007d624(uint32 iAnim, uint32 iNode)
 {
 	float      fWeight;
@@ -343,6 +346,7 @@ void D3DRenderInfo::sub_1007d624(uint32 iAnim, uint32 iNode)
 		m_Vec198 = m_Vec198 + (vPos - m_Vec198) * fWeight;
 	}
 }
+#endif
 
 
 // ======================================================================= //
@@ -367,6 +371,7 @@ void D3DRenderInfo::sub_1007d624(uint32 iAnim, uint32 iNode)
 //  quat_Mul, and a separate TU holding only 0x1007d880/0x1007da80 leave it
 //  unchanged; copying *pRot to a local first costs 433 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 void D3DRenderInfo::sub_1007d880(uint32 iAnim, uint32 iNode,
                                  LTRotation* pRot, LTVector* pPos)
 {
@@ -389,6 +394,7 @@ void D3DRenderInfo::sub_1007d880(uint32 iAnim, uint32 iNode,
 
 	*pPos = *pPos - pBase->m_vPos00;
 }
+#endif
 
 
 
@@ -424,6 +430,7 @@ void D3DRenderInfo::sub_1007d880(uint32 iAnim, uint32 iNode,
 //    * the node-0 block reads the model's anim array twice (operator[]
 //      twice through one pModel local), as shipped.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 void D3DRenderInfo::sub_1007da80(uint32 iAnim, uint32 iNode,
                                  LTRotation* pRot, LTVector* pPos)
 {
@@ -455,3 +462,4 @@ void D3DRenderInfo::sub_1007da80(uint32 iAnim, uint32 iNode,
 done:
 	;
 }
+#endif

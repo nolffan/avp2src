@@ -169,6 +169,7 @@ struct Query1006a5f0
 // away, pFilter removed (worse), iSide uint32/LTBOOL (worse), Norm(1.0f)
 // or written out, pNode/pQuery copied from renamed parameters, a for(;;)
 // with the flag test inside (worse), unused functions before it.
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/intersect_line.cpp (segment intersection)
 LTBOOL sub_1006a1b0(Hit1006a5f0* pNode, Query1006a5f0* pQuery,
                     LTVector vFrom, LTVector vTo)
 {
@@ -280,22 +281,26 @@ LTBOOL sub_1006a1b0(Hit1006a5f0* pNode, Query1006a5f0* pQuery,
 
 	return LTFALSE;
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1006a5f0  8-byte stack entry + 56-byte register body at 0x1006a5f8.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/intersect_line.cpp (segment intersection)
 LTBOOL sub_1006a5f0(void* pNode, Query1006a5f0* pQuery)
 {
 	return sub_1006a1b0((Hit1006a5f0*)pNode, pQuery,
 	                    *(LTVector*)pQuery->m_pFrom, *(LTVector*)pQuery->m_pTo);
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1006a630  104 bytes.  Answers the node hit (or NULL) and copies the
 //  plane of the polygon it hit into the caller's buffer.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/intersect_line.cpp (segment intersection)
 void* sub_1006a630(void* pWorld, D3DVec3* pFrom, D3DVec3* pTo,
                    D3DVec3* pIPoint, Plane10069110* pPlane)
 {
@@ -324,3 +329,4 @@ void* sub_1006a630(void* pWorld, D3DVec3* pFrom, D3DVec3* pTo,
 	*pPlane = *query.m_pHit14->m_pPoly00->m_pSurf28->m_pPlane34;
 	return query.m_pHit14;
 }
+#endif

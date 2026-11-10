@@ -41,6 +41,7 @@ struct GammaTable10023930
 	}
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's gamma-corrected fog colour
 extern "C" uint32 sub_10023930(float r, float g, float b)
 {
 	static GammaTable10023930 s_Gamma;
@@ -52,3 +53,4 @@ extern "C" uint32 sub_10023930(float r, float g, float b)
 
 	return (nR << 16) | (nG << 8) | nB;
 }
+#endif

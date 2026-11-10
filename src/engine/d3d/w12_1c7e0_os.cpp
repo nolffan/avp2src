@@ -62,6 +62,7 @@ struct Arr1001c7e0
 	int32	sub_1001c7e0(uint32 nNewSize, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 template<class T, class C>
 int32 Arr1001c7e0<T, C>::sub_1001c7e0(uint32 nNewSize, IAllocator* pAlloc)
 {
@@ -93,3 +94,4 @@ int32 Arr1001c7e0<T, C>::sub_1001c7e0(uint32 nNewSize, IAllocator* pAlloc)
 }
 
 template struct Arr1001c7e0<void, DefaultCache>;
+#endif

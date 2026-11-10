@@ -243,6 +243,7 @@ static float ModernHorPlusFovX(SceneDesc* pScene)
 	                          * g_fModernFovXScale);
 }
 #endif
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/common_draw.cpp d3d_InitFrame
 unsigned int sub_1001eb90(SceneDesc* pScene, void* pMem, unsigned long nMemSize)
 {
 	uint16          nCW;
@@ -366,3 +367,4 @@ unsigned int sub_1001eb90(SceneDesc* pScene, void* pMem, unsigned long nMemSize)
 
 	return 1;
 }
+#endif

@@ -213,6 +213,7 @@ extern LTLink			g_10091968[5];                  // 0x10091968
 // ======================================================================= //
 //  0x1006d550 -- 466 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 CLightDesc0ae20::sub_1006d550(Surf0ae20* pSurf, uint32 bFill,
                                     uint32 nWidth, uint32 nHeight)
 {
@@ -286,11 +287,13 @@ int32 CLightDesc0ae20::sub_1006d550(Surf0ae20* pSurf, uint32 bFill,
 	m_pBits00 = ddsd.lpSurface;
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1006d210 -- 404 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 CLightDesc0ae20::sub_1006d210(void* pMap)
 {
 	DDRect6d210		r;
@@ -336,3 +339,4 @@ int32 CLightDesc0ae20::sub_1006d210(void* pMap)
 	g_a1008e664[g_1008d7cc].m_fInvH04 = fInv;
 	return 1;
 }
+#endif

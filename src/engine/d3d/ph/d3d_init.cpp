@@ -95,7 +95,7 @@ extern PFormat              g_ScreenFormat;                 // 0x1005d260 (commo
 
 LTBOOL  d3d_CreateLightmapPages(void* pWorld);              // 0x10035389
 void    d3d_TermRenderWorld(void* pWorld);                  // 0x1003559e
-void    d3d_FreeLightmapPages();                            // 0x1001f860
+void    d3d_ResetLightmapPages();                           // 0x1001f860 (d3d_texture.cpp)
 void    d3d_EndOptimized2D();                               // 0x1001d335
 void    d3d_FreeAllTextures();                              // 0x10020640 (d3d_texture.cpp)
 void    d3d_TermTextures();                                 // 0x10020450 (d3d_texture.cpp)
@@ -1185,7 +1185,7 @@ void d3d_RebindWorld(void* pWorld)
 
 	if (g_bLightmapPages)
 	{
-		d3d_FreeLightmapPages();
+		d3d_ResetLightmapPages();
 
 		if (pWorld)
 		{

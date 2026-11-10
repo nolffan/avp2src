@@ -68,6 +68,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "../../LT2/lithshared/stdlith/object_bank.h"
@@ -1564,3 +1569,5 @@ int32 CBlit10036130::sub_100361c0(uint32 nX, uint32 nY)
 
 
 // 0x10026500 -- MOVED to d3dqip2.cpp; see there.
+
+#endif // !PRIMAL_HUNT

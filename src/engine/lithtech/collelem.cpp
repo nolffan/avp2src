@@ -246,7 +246,7 @@ template class CMoArray<CElem1CQ428, DefaultCache>;
 #else
 // The cache's own array of 0x1c elements is constructed outside this file,
 // so its vtable is asked for here.  (name ours)
-void surf_UseArraysAvP2()
+void surf_ForceInstantiationAvP2()
 {
 	CMoArray<CElem1CQ428, DefaultCache> aCells;
 }

@@ -26,6 +26,7 @@ struct D3DLens
 	float	m_fFar;                                     // +0x18
 };
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/common_draw.cpp d3d_InitViewBox
 void sub_10020e80(D3DLens* pLens, float fNear, float fFar, float fFovX,
                   float fFovY)
 {
@@ -44,3 +45,4 @@ void sub_10020e80(D3DLens* pLens, float fNear, float fFar, float fFovX,
 	pLens->m_fOffX = 0.0f;
 	pLens->m_fOffY = 0.0f;
 }
+#endif

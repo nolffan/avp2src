@@ -124,6 +124,12 @@ public:
 // came out 236 bytes with no COMDAT at all). Linkage does not change the
 // body, and byte matching masks the relocation, so external linkage is the
 // measurable spelling. Restore `static` when this lands in a TU that calls it.
+#if 0
+// AVP2: neither AvP2 1.0.9.6's nor Primal Hunt's lithtech.exe has the
+// client's packet tracer: none of its names ("NM  ", "PNG ", "DIS ", "GRP ",
+// ...) is anywhere in either image, where NOLF GOTY's carries them all.
+// server.dll keeps its own (its strings are in both servers). Kept for
+// the record.
 void net_TracePacketQ454(ServerMessage* pMsg, uint32 nLen, uint8 bOut)
 {
 	char         temp[0x100];
@@ -728,6 +734,7 @@ done:
 
 	con_Printf(str);
 }
+#endif
 
 
 // =====================================================================

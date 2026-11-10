@@ -38,6 +38,7 @@ struct W7XForm4b5c0
 	float	m_fZ330;                                    // +0x330
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_1004b5c0(W7Vert4b5c0* pVert, W7XForm4b5c0* pXForm)
 {
 	pVert->rhw = 1.0f / pVert->z;
@@ -45,6 +46,7 @@ extern "C" void sub_1004b5c0(W7Vert4b5c0* pVert, W7XForm4b5c0* pXForm)
 	pVert->y = (pVert->y * pXForm->m_fYY324 + pVert->z * pXForm->m_fYZ328) * pVert->rhw;
 	pVert->z = (pVert->z * pXForm->m_fZZ32c + pXForm->m_fZ330) * pVert->rhw;
 }
+#endif
 
 
 // ======================================================================= //
@@ -81,6 +83,7 @@ struct W7Node50d00
 	W7Node50d00*	sub_10050d00();
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 W7Node50d00* W7Node50d00::sub_10050d00()
 {
 	m_Link10.Init(this);
@@ -89,3 +92,4 @@ W7Node50d00* W7Node50d00::sub_10050d00()
 	m_pNext04 = this;
 	return this;
 }
+#endif

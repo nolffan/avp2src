@@ -40,6 +40,7 @@ struct XForm1000d940
 };
 
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: the same body as w3_10014580_os.cpp's sub_10014580, which pairs with 0x1000ba54
 void sub_1000d940(RVert* pVert, uint8* pXForm)
 {
 	XForm1000d940* pM = (XForm1000d940*)pXForm;
@@ -51,3 +52,4 @@ void sub_1000d940(RVert* pVert, uint8* pXForm)
 	pVert->m_vPos.y = (pVert->m_vPos.y * pM->m_f324 + pVert->m_vPos.z * pM->m_f328) * pVert->m_fRHW;
 	pVert->m_vPos.z = (pVert->m_vPos.z * pM->m_f32c + pM->m_f330) * pVert->m_fRHW;
 }
+#endif

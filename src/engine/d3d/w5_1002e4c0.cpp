@@ -78,6 +78,7 @@ struct Arr1002e4c0
 //  (`push %ecx; shr $2; rep movsl; pop %ecx; and $3; rep movsb`).
 //  Same source as d3dr5d.cpp's 0x1007c290 / 0x10009f10.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 uint32 Arr1002e4c0::sub_1002e4c0(uint32 newSize, uint32 bFast, IAllocator* pAlloc)
 {
 	Elem1002e4c0* pNewArray;
@@ -127,6 +128,7 @@ uint32 Arr1002e4c0::sub_1002e4c0(uint32 newSize, uint32 bFast, IAllocator* pAllo
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -135,6 +137,7 @@ uint32 Arr1002e4c0::sub_1002e4c0(uint32 newSize, uint32 bFast, IAllocator* pAllo
 //  the delete is SUNK past the body (0x1002e7cb) and jumps back to the
 //  `m_nElements = newSize` store.  Same source as 0x1007f810 (T = 4).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 uint32 Arr1002e4c0::sub_1002e710(uint32 newSize, IAllocator* pAlloc)
 {
 	if ((newSize == m_nElements) && (newSize != 0))
@@ -163,6 +166,7 @@ uint32 Arr1002e4c0::sub_1002e710(uint32 newSize, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -171,6 +175,7 @@ uint32 Arr1002e4c0::sub_1002e710(uint32 newSize, IAllocator* pAlloc)
 //  `pNewArray || newAllocSize == 0` test is the sunk block at 0x1002e9b1
 //  (the allocation failing with a non-zero size falls into the slide).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1002e4c0::sub_1002e820(uint32 index, IAllocator* pAlloc)
 {
 	uint32        i, newSize, newAllocSize;
@@ -210,6 +215,7 @@ void Arr1002e4c0::sub_1002e820(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ======================================================================= //
@@ -219,6 +225,7 @@ void Arr1002e4c0::sub_1002e820(uint32 index, IAllocator* pAlloc)
 //  and the single `incl 0x8(%ebx)` is the `++m_nElements` both arms reach.
 //  The callers pass the element as `const void*`; it is a `const T&`.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 uint32 Arr1002e4c0::sub_1002ea00(uint32 index, const void* pToInsert, IAllocator* pAlloc)
 {
 	const Elem1002e4c0& toInsert = *(const Elem1002e4c0*)pToInsert;
@@ -266,3 +273,4 @@ uint32 Arr1002e4c0::sub_1002ea00(uint32 index, const void* pToInsert, IAllocator
 
 	return 1;
 }
+#endif

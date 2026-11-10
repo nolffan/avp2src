@@ -44,7 +44,7 @@
 //    attachment follower ... a translation unit that has no reconstruction
 //    yet.  When it gets one, that file's own calls emit these two and this
 //    forcing driver should be DELETED."  This IS that reconstruction, so
-//    servermath_ForceSDKInlines() can go when this file lands.
+//    servermath_ForceInstantiation() can go when this file lands.
 //
 //  Slot 10 depends on servermgr.h's inline sm_CanDeactivate -- see the
 //  note above CanDeactivate at the bottom of this file.

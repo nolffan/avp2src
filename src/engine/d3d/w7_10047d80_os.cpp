@@ -134,6 +134,7 @@ static inline float ClipEdgePlaneA(SPlaneA** ppPlane, LTVec* a, LTVec* b, LTVec*
 	return t;
 }
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 sub_10047d80(SPlaneA** ppPlane, SClipVertA** ppVerts, int32* pnVerts,
                    SClipVertA** ppOut)
 {
@@ -199,3 +200,4 @@ int32 sub_10047d80(SPlaneA** ppPlane, SClipVertA** ppVerts, int32* pnVerts,
 
 	return 1;
 }
+#endif

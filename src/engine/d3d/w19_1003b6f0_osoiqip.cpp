@@ -215,6 +215,7 @@ uint32 sub_1003b690(uint32 nOp, uint32 nFallbackOp);
 //  themselves, tested in that order, anything else to 2 (D3DBLEND_ONE);
 //  %eax is preloaded with 2 before the first test.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/draw_canvas.cpp CustomDrawMgr
 uint32 sub_1003b6f0(uint32 nMode)
 {
 	uint32 nBlend = 2;
@@ -232,6 +233,7 @@ uint32 sub_1003b6f0(uint32 nMode)
 
 	return nBlend;
 }
+#endif
 
 
 // ======================================================================= //
@@ -295,6 +297,7 @@ inline uint32 MapAddress(uint32 nValue)
 //    6  stage 0 D3DTSS_COLOROP          (0x01)   the op map, MODULATE fallback
 //    7  stage 0 D3DTSS_ALPHAOP          (0x04)   the op map, SELECTARG1 fallback
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/draw_canvas.cpp CustomDrawMgr::SetState
 uint32 C10089530::sub_1003d350(uint32 nState, uint32 nValue)
 {
 	if (nState >= 8)
@@ -338,12 +341,14 @@ uint32 C10089530::sub_1003d350(uint32 nState, uint32 nValue)
 	m_States[nState] = nValue;
 	return 0;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
 //  0x1003d5c0 -- thiscall, `ret $0x8`.  The remembered value, or 1 for a
 //  state out of range.
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 uint32 C10089530::sub_1003d5c0(uint32 nState, uint32* pValue)
 {
 	if (nState >= 8)
@@ -352,6 +357,7 @@ uint32 C10089530::sub_1003d5c0(uint32 nState, uint32* pValue)
 	*pValue = m_States[nState];
 	return 0;
 }
+#endif
 
 
 // The two pieces of 0x1003d5f0 that big0ae20.cpp, big2ef34.cpp and
@@ -454,6 +460,7 @@ inline void BindRec(Tex1003d5f0* pRec)
 //      return: its LOD test then jumps straight to that block (with its
 //      own `return 0` the test lands on a trailing `jmp`, 1 byte off).
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/draw_canvas.cpp CustomDrawMgr
 uint32 C10089530::sub_1003d5f0(void* pTexture)
 {
 	TexBlock1003d5f0*	pBlock;
@@ -525,3 +532,4 @@ L_MakeRec:
 
 	goto L_Bind;
 }
+#endif

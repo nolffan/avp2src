@@ -793,6 +793,7 @@ static inline LTBOOL sub_1000f4b0(uint32 nClipFlags, ClipVert** ppVerts, int32* 
 // ======================================================================= //
 //  0x1006f540 .. 0x10070d0e   (6,096 bytes)   1 caller
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" int32 sub_1006f540(Obj6f540* pObj)
 {
 	ClipVert		aVerts[64];                         // -0xe0c
@@ -921,3 +922,4 @@ L_Draw:
 	                                    nVerts, 0);
 	return 1;
 }
+#endif

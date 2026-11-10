@@ -78,6 +78,7 @@ extern Elem24024* g_1008d4bc;                           // 0x1008d4bc  pending
 // ======================================================================= //
 //  0x100256a0 -- return a whole in-use chain to the free list.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_100256a0(Elem24024* pChain)
 {
 	Elem24024* pNext;
@@ -90,6 +91,7 @@ extern "C" void sub_100256a0(Elem24024* pChain)
 		pChain = pNext;
 	}
 }
+#endif
 
 
 // ======================================================================= //

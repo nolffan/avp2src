@@ -1040,10 +1040,15 @@ public:
 	LTRESULT sub_47c180(CCrushObjView* pObj, void* pData);
 };
 
+#if 0
+// AVP2: not built. objmover.cpp's CObjectMoverQ47C::Crush is this same vtable
+// entry (byte-identical at Primal Hunt's 0x00498630 and AvP2's 0x0048edb0);
+// this copy is in no vtable and has no caller.
 LTRESULT CCrushHostView::sub_47c180(CCrushObjView* pObj, void* pData)
 {
 	return pObj->m_pSData->m_pBaseClass->EngineMessageFn(MID_CRUSH, pData, 0.0f);
 }
+#endif
 
 
 // ---- 0x0047ac40, 51 bytes -------------------------------------------- //

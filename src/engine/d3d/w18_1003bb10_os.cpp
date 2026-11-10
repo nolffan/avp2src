@@ -753,6 +753,7 @@ struct C1003bb10
 };
 
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 C1003bb10::sub_1003bb10(Vert3c40* pVerts, int32 nVerts, uint32 nFlags)
 {
 	float		fSaveNear;
@@ -842,3 +843,4 @@ int32 C1003bb10::sub_1003bb10(Vert3c40* pVerts, int32 nVerts, uint32 nFlags)
 
 	return LTFALSE;
 }
+#endif

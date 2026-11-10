@@ -19,6 +19,7 @@
 #include "ltbasedefs.h"
 
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_1000a770(LTVector* pVec, const float* pMat34)
 {
 	LTMatrix* pMat = (LTMatrix*)pMat34;
@@ -30,3 +31,4 @@ void sub_1000a770(LTVector* pVec, const float* pMat34)
 	pVec->x = x;
 	pVec->y = y;
 }
+#endif

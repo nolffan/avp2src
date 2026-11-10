@@ -92,6 +92,7 @@ extern uint32           g_n1008bd80;                    // 0x1008bd80  texture c
 // 0x1000a6e0 -- ltlink.h's dl_Remove, out of line (d3dneutral.cpp).
 extern void dl_Remove_1000a6e0(Link0ae20* pLink);
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_1000a7d0(Tex0ae20* pRec)
 {
 	Link0ae20* pAfter;
@@ -140,3 +141,4 @@ extern "C" void sub_1000a7d0(Tex0ae20* pRec)
 
 	g_n1008bd80++;
 }
+#endif

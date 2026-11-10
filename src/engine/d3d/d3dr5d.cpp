@@ -236,6 +236,11 @@
 // its own: ltbasedefs.h already pulls in <string.h> (and <stdlib.h>),
 // which is what lets icl treat memcpy as the intrinsic it expands
 // inline at 0x1007c290 and calls at 0x1007f420.
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 
@@ -1297,3 +1302,5 @@ int32 sub_1005a410(LTVector* pPos, float fRadius, LTPlane* pPlanes,
 
 	return 1;
 }
+
+#endif // !PRIMAL_HUNT

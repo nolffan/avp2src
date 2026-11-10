@@ -280,6 +280,7 @@ extern uint32			g_1008ae80_flag;                // 0x1008ae80
 //  load is hoisted above the flag test, as shipped (without it the
 //  register entry comes out one byte longer, device and value swapped
 //  between %eax and %edx).
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_10011450(unsigned long nMode)
 {
 	if (nMode == 1)
@@ -296,6 +297,7 @@ void sub_10011450(unsigned long nMode)
 		g_1008d988->lpVtbl->SetTextureStageState(g_1008d988, 1, 1, 0x12);
 	}
 }
+#endif
 
 void sub_10011500();
 void sub_10011560();
@@ -381,6 +383,7 @@ public:
 };
 
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_10011620()
 {
 	uint32          dwOldAlpha;
@@ -469,6 +472,7 @@ void sub_10011620()
 	g_1008d520 = 0;
 	g_pBucketList1008d4c4 = LTNULL;
 }
+#endif
 
 
 // ======================================================================= //
@@ -1421,6 +1425,7 @@ static inline LTBOOL ClipPolyA(uint32 nFlags, void** ppVerts, uint32* pnVerts)
 
 
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworld.cpp's piece queue draw
 static void sub_1000f6f0(Bucket0f6f0* pBucket, LTBOOL bRelease, uint32 nUnused)
 {
 	RVert       aVerts[80];          // -0x179c, 0xc80 bytes = 80 * 0x28
@@ -1742,6 +1747,7 @@ L_Next:
 	}
 	while (pElem);
 }
+#endif
 
 
 // *********************************************************************** //
@@ -1988,6 +1994,7 @@ L_MakeRec:
 //  -0x4); the inline's declaration order does not move them (all six
 //  orders measured).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworld.cpp d3d_DrawPieceQueue
 static void sub_10011980(Bucket729c0* pBucket, TexBlock729c0* pBlock, uint32 bFlag,
                   uint32 nMode)
 {
@@ -2064,3 +2071,4 @@ static void sub_10011980(Bucket729c0* pBucket, TexBlock729c0* pBlock, uint32 bFl
 		pElem = pNext;
 	}
 }
+#endif

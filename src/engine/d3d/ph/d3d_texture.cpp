@@ -609,9 +609,10 @@ LPDIRECTDRAWSURFACE7 d3d_CreateTextureFromData(uint32 *pData, uint32 width, uint
 
 
 // ------------------------------------------------------------------------------ //
-// 0x1001f860 -- reset the lightmap pages and their scratch surface.
+// The scratch surface's release: no function of its own in retail (inlined
+// into both callers).
 // ------------------------------------------------------------------------------ //
-void d3d_FreeLightmapPages()
+static void d3d_FreeLightmapPages()
 {
 	if (g_pLightmapScratch)
 	{
@@ -640,6 +641,7 @@ static void d3d_CreateLightmapScratch()
 	}
 }
 
+// 0x1001f860 -- reset the lightmap pages and their scratch surface.
 void d3d_ResetLightmapPages()
 {
 	d3d_FreeLightmapPages();

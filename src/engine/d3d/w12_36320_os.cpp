@@ -47,6 +47,7 @@ public:
 	Node10036380* m_pList;                              // +0x04
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 C10036320::C10036320()
 {
 	m_pVTable = g_vtbl_100894a0;
@@ -54,3 +55,4 @@ C10036320::C10036320()
 		g_100911b8 = this;
 	m_pList = new Node10036380(0, 0);
 }
+#endif

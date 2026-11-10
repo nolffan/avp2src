@@ -96,12 +96,14 @@ extern StructBank g_1008bef4;                           // 0x1008bef4
 
 void sub_1007fbe0(void* pBank);                         // 0x1007fbe0 sb_Term
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/common_draw.cpp (the world banks)
 void sub_1001e920()
 {
 	sub_1007fbe0(&g_1008bef4);
 	sub_1007fbe0(&g_1008bed8);
 	sub_1007fbe0(&g_1008bebc);
 }
+#endif
 
 
 // ======================================================================= //
@@ -124,6 +126,7 @@ void sub_1001e920()
 //  answer that window as offset / half-extent, with the given near/far and
 //  a unit focal length.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/common_draw.cpp d3d_InitViewBox
 void sub_10020d80(D3DLens* pOut, float fNear, float fFar, D3DXForm* pXForm,
                   float fMinX, float fMinY, float fMaxX, float fMaxY)
 {
@@ -164,6 +167,7 @@ void sub_10020d80(D3DLens* pOut, float fNear, float fFar, D3DXForm* pXForm,
 	pOut->m_fHalfW = (fX1 - fX0) * 0.5f;
 	pOut->m_fHalfH = -(fY1 - fY0) * 0.5f;
 }
+#endif
 
 
 // ======================================================================= //
@@ -179,6 +183,7 @@ int32 sub_1001ef30(D3DXForm* pXForm, D3DLens* pLens,
                    float fMinX, float fMinY, float fMaxX, float fMaxY,
                    LTMat* pMatCam, LTVec vScale);       // 0x1001ef30
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/common_draw.cpp d3d_InitViewBox
 int32 sub_10020ce0(D3DXForm* pXForm, float fFovX, float fFovY, float fNear,
                    float fFar, float fMinX, float fMinY, float fMaxX,
                    float fMaxY, LTMat* pMatCam)
@@ -190,3 +195,4 @@ int32 sub_10020ce0(D3DXForm* pXForm, float fFovX, float fFovY, float fNear,
 	             LTVec(1.0f, 1.0f, 1.0f));
 	return 1;
 }
+#endif

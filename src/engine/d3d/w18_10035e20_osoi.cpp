@@ -197,6 +197,7 @@ public:
 // ======================================================================= //
 //  0x10035e20 -- 777 bytes, `ret $0x10`.  Draw the texture as one quad.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 C10035e20::sub_10035e20(uint32 x, uint32 y, uint32 nColor, uint8 bFlag)
 {
 	D3DDevice7* pDevice;
@@ -272,6 +273,7 @@ int32 C10035e20::sub_10035e20(uint32 x, uint32 y, uint32 nColor, uint8 bFlag)
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -288,6 +290,7 @@ int32 C10035e20::sub_10035e20(uint32 x, uint32 y, uint32 nColor, uint8 bFlag)
 //  unlocked.  The answer is (char)(Lock's HRESULT == 0).  The error text
 //  of GetPixelFormat and CreateSurface goes to 0x1008da30.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 C10035e20::sub_10036460(uint32 nWidth, uint32 nHeight)
 {
 	int32       bWidthPow2, bHeightPow2;
@@ -394,3 +397,4 @@ int32 C10035e20::sub_10036460(uint32 nWidth, uint32 nHeight)
 
 	return (char)(hResult == 0);
 }
+#endif

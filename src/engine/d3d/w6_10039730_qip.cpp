@@ -283,6 +283,7 @@ void      sub_10021d60(uint32 nLevel, const char* pszMsg, ...);  // dlog
 //         (ltlink.h's Remove, stores +0x20 before +0x1c)
 //         the destructor's vptr store (0x100894d0), then the bank free.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static void sub_10039850(RTexture* pTex, uint32 bForce)
 {
 	RTexture* pChild;
@@ -333,6 +334,7 @@ static void sub_10039850(RTexture* pTex, uint32 bForce)
 	pTex->m_pVTable = g_vtbl_100894d0;
 	g_1008e644.Free(pTex);
 }
+#endif
 
 
 // ======================================================================= //
@@ -399,6 +401,7 @@ void sub_10039930()
 //  or NULL.  (pShared, nStage, nFlags): nFlags is big38a90.cpp's
 //  RTEX_NOLINK word.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" RTexture* sub_10039bd0(SharedTexture* pShared, uint32 nStage,
                                   uint32 nFlags)
 {
@@ -435,6 +438,7 @@ extern "C" RTexture* sub_10039bd0(SharedTexture* pShared, uint32 nStage,
 
 	return pRet;
 }
+#endif
 
 
 // ======================================================================= //
@@ -569,6 +573,7 @@ long sub_10039d70(void* pPoly, long bToSurface)
 //  binding it first (register call into 0x10039bdc, flags 0) when it has
 //  none; 0 when that fails.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" uint32 sub_10039f50(SharedTexture* pShared, uint32 nStage)
 {
 	if (!pShared->m_pRTexture0c)
@@ -579,6 +584,7 @@ extern "C" uint32 sub_10039f50(SharedTexture* pShared, uint32 nStage)
 
 	return pShared->m_pRTexture0c->m_n40;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -641,6 +647,7 @@ struct D3DSharedTexture
 	D3DTextureData*  m_pData;                           // +0x0c
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 uint32 sub_10039f90(D3DSharedTexture* pTexture, uint32 nIndex,
                     uint32* pOut0, uint32* pOut1)
 {
@@ -658,6 +665,7 @@ uint32 sub_10039f90(D3DSharedTexture* pTexture, uint32 nIndex,
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
@@ -678,6 +686,7 @@ uint32 sub_10039f90(D3DSharedTexture* pTexture, uint32 nIndex,
 // ======================================================================= //
 extern uint32 g_1008d7d0;                                   // 0x1008d7d0, current stage
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_10039fe0(SharedTexture* pShared, LTBOOL bUpload)
 {
 	RTexture*    pTex;
@@ -707,6 +716,7 @@ void sub_10039fe0(SharedTexture* pShared, LTBOOL bUpload)
 		}
 	}
 }
+#endif
 
 
 // ======================================================================= //
@@ -1350,6 +1360,7 @@ extern void sub_10021010(const DDPixelFormat* pPF, PFormat* pFormat);
 //  Register-argument entry (icl /Qip): %eax = pRTex, %edx = pData.
 //  Returns 1 on success, 0 on every failure.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static long r_TransferTexture(RTexture* pRTex, TextureData* pData)
 {
 	// The ten frame objects, in the order the frame lays them out; see the
@@ -1864,6 +1875,7 @@ static long r_TransferTexture(RTexture* pRTex, TextureData* pData)
 			return 1;
 	}
 }
+#endif
 
 
 // *********************************************************************** //
@@ -2370,6 +2382,7 @@ extern uint32 g_1008da68;                                   // 0x1008da68  DXT1 
 // and sinks 0x10038a90's `if (!sub_100385e0()) nMipBase += bias`, which
 // the shipped code keeps inline (0x10038a90 1232 -> 1216 bytes, the
 // shipped length).
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static LTBOOL sub_100385e0(uint32 nFormat)
 {
 	uint32 bSupported;
@@ -2387,6 +2400,7 @@ static LTBOOL sub_100385e0(uint32 nFormat)
 
 	return bSupported ? 1 : 0;
 }
+#endif
 
 // MEASURED, NOT KEPT: a dead `case 3:` label (the guard
 // above already excludes 3) is not shipped source we can evidence, so it
@@ -2622,6 +2636,7 @@ static inline uint32 GetFmt8630(TexData8630* p)
 	return p->m_nFormat;
 }
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static int32 sub_10038630(TexRequest* pReq, RTexInfo* pInfo,
                           uint32 nFirstMip, uint32 nMipCount,
                           uint32 nFormat)
@@ -2724,6 +2739,7 @@ static int32 sub_10038630(TexRequest* pReq, RTexInfo* pInfo,
 	pInfo->m_pSurface0c = (DDSurf7T*)pSurf;
 	return 1;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -2810,6 +2826,7 @@ extern uint32 g_n1008e6c8;                              // 0x1008e6c8
 //
 //  Returns the record, or LTNULL on any of five failures.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static RTexture* sub_10038a90(TexRequest* pReq, uint32 nFlags)
 {
 	// The nine frame slots, in the order the frame lays them out; see the
@@ -3307,6 +3324,7 @@ static RTexture* sub_10038a90(TexRequest* pReq, uint32 nFlags)
 
 	return pRec;
 }
+#endif
 
 
 // *********************************************************************** //

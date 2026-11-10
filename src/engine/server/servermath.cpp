@@ -891,7 +891,7 @@ void math_GetAxisBasisVectors(uint32 iBasis, LTVector* pDir,
 // *********************************************************************** //
 #include "ltquatbase.h"
 
-void servermath_ForceSDKInlines(LTRotation* pOut, LTRotation* pA, LTRotation* pB,
+void servermath_ForceInstantiation(LTRotation* pOut, LTRotation* pA, LTRotation* pB,
                                 LTMatrix* pMat, LTVector* pIn, LTVector* pDest)
 {
 	quat_Mul((float*)pOut, (float*)pA, (float*)pB);

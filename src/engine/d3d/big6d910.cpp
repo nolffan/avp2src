@@ -722,6 +722,7 @@ extern float			g_1008e670;                     // 0x1008e670  stage 1 1/h
 //  down, and the first UV pair goes through an inline setter (SetUV0),
 //  whose two loads icl schedules before either store.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static void sub_1006d730(Obj6d910* pObj, Vert6d910* pDest,
                          SrcVert6d910* pSrc, int32 nCount)
 {
@@ -757,11 +758,13 @@ static void sub_1006d730(Obj6d910* pObj, Vert6d910* pDest,
 		pDest++;
 	}
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1006d820 -- 192 bytes.  The same, writing only the projected pair.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static void sub_1006d820(Obj6d910* pObj, Vert6d910* pDest,
                          SrcVert6d910* pSrc, int32 nCount)
 {
@@ -791,6 +794,7 @@ static void sub_1006d820(Obj6d910* pObj, Vert6d910* pDest,
 		pDest++;
 	}
 }
+#endif
 
 
 // The frame says fifty: each pass's flag array is 0xc8 = 200 bytes and the
@@ -938,6 +942,7 @@ inline int32 RoundF(float f)
 // ======================================================================= //
 //  0x1006d910 .. 0x1006f533   (7,204 bytes)   2 callers
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawlightmaps.cpp's two-stage lightmapped polygon draw
 int32 sub_1006d910(Obj6d910* pObj, void* pCtx)
 {
 	// The declaration order is the frame order the shipped code uses,
@@ -1481,3 +1486,4 @@ L_NoDrawA:
 
 	goto L_Tex;
 }
+#endif

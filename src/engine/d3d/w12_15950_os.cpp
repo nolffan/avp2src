@@ -60,6 +60,7 @@ struct D3DRenderInfo
 	uint32           m_n0f4;                            // +0x0f4
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 D3DRenderInfo::D3DRenderInfo()
 {
 	m_n0e4 = 0;
@@ -69,3 +70,4 @@ D3DRenderInfo::D3DRenderInfo()
 	m_n0f4 = 0;
 	m_n0e0 = 0;
 }
+#endif

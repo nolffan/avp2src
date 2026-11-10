@@ -74,6 +74,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 #include <ctype.h>
@@ -868,3 +873,5 @@ extern PFN_1008ce8c g_pfn_1008ce8c;
 // ======================================================================= //
 
 
+
+#endif // !PRIMAL_HUNT

@@ -32,6 +32,7 @@ struct D3DMatrix { float m[4][4]; };
 //  is a `rep movsl` block copy (226 bytes), and a sixteen-float
 //  D3DMATRIX-style constructor 320 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_100265a0(const LTMat* pIn, D3DMatrix* pOut)
 {
 	float a00, a01, a02, a03, a10, a11, a12, a13, a20, a21, a22, a23, a30, a31, a32, a33;
@@ -70,6 +71,7 @@ void sub_100265a0(const LTMat* pIn, D3DMatrix* pOut)
 	pOut->m[3][2] = a23;
 	pOut->m[3][3] = a33;
 }
+#endif
 
 
 // ======================================================================= //
@@ -98,6 +100,7 @@ extern uint32 g_1008ba9c;                               // 0x1008ba9c  world
 extern LTMat  g_Mat1008b95c;                            // 0x1008b95c  view
 extern LTMat  g_1008b99c;                               // 0x1008b99c  projection
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/common_draw.cpp
 void sub_10026670()
 {
 	D3DMatrix mWorld;
@@ -111,3 +114,4 @@ void sub_10026670()
 	sub_100265a0(&g_1008b99c, &mProj);
 	g_pD3DDevice->lpVtbl->SetTransform(g_pD3DDevice, 3, &mProj);
 }
+#endif

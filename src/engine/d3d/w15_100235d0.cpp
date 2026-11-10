@@ -68,6 +68,7 @@ inline int32 RoundF(float f)
 // ======================================================================= //
 //  0x100235d0 -- 860 bytes.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's per-vertex height fog
 void __fastcall sub_100235d0(const LTVec* pPos, uint8* pOut)
 {
 	float  px, py, pz, ex, ey, ez, fBottom, fTop;
@@ -154,3 +155,4 @@ void __fastcall sub_100235d0(const LTVec* pPos, uint8* pOut)
 
 	pOut[3] = 255 - (uint8)RoundF(fFog);
 }
+#endif

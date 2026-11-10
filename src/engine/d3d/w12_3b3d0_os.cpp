@@ -72,6 +72,7 @@ static inline int32 RectArea3b3d0(const LTRect* pRect)
 	return (pRect->bottom - pRect->top) * (pRect->right - pRect->left);
 }
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/dirtyrect.cpp InvalidateRect
 void sub_1003b3d0(LTRect* pRect)
 {
 	uint32 i;
@@ -140,3 +141,4 @@ void sub_1003b3d0(LTRect* pRect)
 		}
 	}
 }
+#endif

@@ -1125,6 +1125,10 @@ public:
 //     plane goes in FRONT.
 //   * the point is copied into a local before the loop, and DistTo's own
 //     by-value copy is then elided -- one `movsl` run, not two.
+#if 0
+// AVP2: not built. netobj.cpp's w_FindPolyAtPointQ458 is this function, and
+// the one OnFoundInBox calls (byte-identical at Primal Hunt's server.dll
+// 0x1002eaec and AvP2's 0x1002cd1b); this copy has no caller in any image.
 CBspWorldPoly* w_FindPolyAtPoint(CBspWorldView* pWorld, LTVector* pPoint)
 {
 	uint16        nIndex;
@@ -1156,6 +1160,7 @@ CBspWorldPoly* w_FindPolyAtPoint(CBspWorldView* pWorld, LTVector* pPoint)
 
 	return &pWorld->m_pPolys[nIndex];
 }
+#endif
 
 
 // server.dll 0x1002eced / lithtech.exe 0x0046c9d0 -- the physics block under

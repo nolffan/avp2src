@@ -690,7 +690,8 @@ void VisibleSet::ClearSet()
 }
 
 
-void VisibleSet::Term()
+// Init's failure path inlines it; it has no copy of its own in retail.
+inline void VisibleSet::Term()
 {
 	LTLink *pCur, *pNext;
 

@@ -193,6 +193,7 @@ inline uint16 LitPixel1006a860(uint32 color, float fLit)
 // ======================================================================= //
 //  0x1006a860  1088 bytes
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/lmdynamic.cpp (the dynamic lightmap builder)
 extern "C" LTBOOL sub_1006a860(Desc1006a860* pDesc, Surf1006a860* pSurf,
                                Light1006a860* pLight, float fScale)
 {
@@ -299,3 +300,4 @@ extern "C" LTBOOL sub_1006a860(Desc1006a860* pDesc, Surf1006a860* pSurf,
 L_Fail:
 	return LTFALSE;
 }
+#endif

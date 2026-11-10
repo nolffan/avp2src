@@ -750,6 +750,10 @@ LTBOOL CTransformMakerK::SetupTransforms()
 //    * the tail is SetupTransforms' tail verbatim.
 //  CONFIDENCE: high on shape and calls.
 // ----------------------------------------------------------------------- //
+#if 0
+// AVP2: not built. Neither AvP2's nor Primal Hunt's lithtech.exe has it: in
+// both, SetupTransforms (0x0049c5f0, 0x004a6a20) runs straight into Prepare
+// (0x0049c630, 0x004a6a60), and nothing calls it; NOLF's caller is gone.
 LTBOOL CTransformMakerK::SetupTransformsForNode(uint32 iNode)
 {
 	uint32 nodePath[MAX_NODE_PATH];
@@ -781,6 +785,7 @@ LTBOOL CTransformMakerK::SetupTransformsForNode(uint32 iNode)
 
 	return LTTRUE;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -1245,7 +1250,7 @@ void CTransformMakerK::ProcessNode(uint32 iNode, LTMatrix *pParent)
 //  `m_rBlend = m_rBlend * rot`), both of which are ltrotation.h's
 //  `operator*` -- so the two calls above already force this COMDAT and the
 //  driver below is only for building section C standalone.  Like
-//  servermath.cpp's servermath_ForceSDKInlines and packet.cpp's
+//  servermath.cpp's servermath_ForceInstantiation and packet.cpp's
 //  packet_ForceInstantiation, it exists in no shipped binary and is not
 //  itself reconstruction.
 // ####################################################################### //

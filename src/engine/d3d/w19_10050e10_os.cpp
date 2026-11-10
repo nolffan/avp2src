@@ -83,6 +83,7 @@ struct Arr1005a
 	T1005a		sub_1005a350(GenListPos& pos) const;      // GenGetNext
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 T1005a Arr1005a::sub_1005a350(GenListPos& pos) const
 {
 	T1005a& ret = sub_1007ee40(pos.m_Index);
@@ -90,3 +91,4 @@ T1005a Arr1005a::sub_1005a350(GenListPos& pos) const
 	pos.m_Index++;
 	return ret;
 }
+#endif

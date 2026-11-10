@@ -74,9 +74,11 @@ public:
 //  0x10016234 -- the members are destroyed in reverse order of
 //  declaration: +0x63c, +0x628, +0x614.
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C1008b090::sub_10016234()
 {
 	Destruct16234(&m_Array63c, g_vtbl_10089340);
 	Destruct16234(&m_Array628, g_vtbl_10089310);
 	Destruct16234(&m_Array614, g_vtbl_100892e0);
 }
+#endif

@@ -102,15 +102,18 @@ struct Arr1001d
 //  {Remove(pos.m_Index);}`: two stack dwords in (`ret $0x8`, the 8-byte
 //  GenListPos by value), the first forwarded to Remove (0x1001d540).
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr1001d::sub_1001d180(GenListPos pos)
 {
 	sub_1001d540(pos.m_Index);
 }
+#endif
 
 
 // ---------------------------------------------------------------------- //
 //  0x1001da90 -- 188 bytes.  GenCopyList, dynarray.h line for line.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001d::sub_1001da90(const GenListW& theList)
 {
 	GenListPos pos;
@@ -134,12 +137,14 @@ int32 Arr1001d::sub_1001da90(const GenListW& theList)
 
 	return LTTRUE;
 }
+#endif
 
 
 // ---------------------------------------------------------------------- //
 //  0x1001d9c0 -- 195 bytes.  GenAppendList.  prevSize is read FIRST
 //  (`call 0x1007ee60 ; ... mov %eax,%esi` before theList's GenGetSize).
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr1001d::sub_1001d9c0(const GenListW& theList)
 {
 	GenListPos pos;
@@ -165,6 +170,7 @@ int32 Arr1001d::sub_1001d9c0(const GenListW& theList)
 
 	return LTTRUE;
 }
+#endif
 
 
 // ======================================================================= //
@@ -180,11 +186,13 @@ int32 Arr1001d::sub_1001d9c0(const GenListW& theList)
 extern LTLink  g_1008b078;                              // 0x1008b078
 extern LTLink  g_1008b084;                              // 0x1008b084
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_10015d30()
 {
 	g_1008b084.TieOff();
 	g_1008b078.TieOff();
 }
+#endif
 
 
 // ======================================================================= //

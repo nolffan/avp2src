@@ -350,8 +350,8 @@
 
 // Primal Hunt's engine takes the arrays below as whole-class
 // instantiations. AvP2 1.0.9.6's lithtech.exe and server.dll hold only what
-// their users reach, and take it from coll_UseArraysAvP2 and
-// coll_UseArraysAvP2Srv at the foot of the file instead.
+// their users reach, and take it from coll_ForceInstantiationAvP2 and
+// coll_ForceInstantiationAvP2Srv at the foot of the file instead.
 #ifdef PRIMAL_HUNT
 #define COLL_WHOLE_CLASSES
 #endif
@@ -1101,9 +1101,12 @@ DECLARE_COLLPOD (CCollElem0CNQ514, 0x0c);
 // of each is constructed and destroyed here, which emits the vtable (every
 // Gen* slot) and whatever members those reach out of line, exactly the set
 // a real user of the array produces.  This function itself has no shipped
-// counterpart.  (name ours)
+// counterpart: like every instantiation driver here (the ones below, and
+// collelem.cpp's, modelnew.cpp's and servermath.cpp's) its name says
+// ForceInstantiation, so the scoreboard neither scores it nor counts what
+// only it reaches as kept.  (name ours)
 #if defined(COLL_WHOLE_CLASSES) || defined(LT_SERVER_BUILD)
-void coll_UseArraysQ514()
+void coll_ForceInstantiationQ514()
 {
 	CMoArray<CCollElem18PQ514, DefaultCache> a18;
 	CMoArray<CCollElem24PQ514, DefaultCache> a24;
@@ -1521,12 +1524,12 @@ template class CMoArray<CCollElemC0Rec, DefaultCache>;
 // reach: the vtables of seven of them, and a handful of members called out
 // of line. The rest -- Term, Remove, NiceSetSize, Get, operator[],
 // operator=, the copy and sized constructors, and the vtables of the
-// others -- are in it nowhere. So, as coll_UseArraysQ514 does in the other
+// others -- are in it nowhere. So, as coll_ForceInstantiationQ514 does in the other
 // builds, the arrays are used rather than instantiated: constructing one
 // emits its vtable, and a member reached through its address is emitted
 // rather than expanded; the arrays passed in are only reached through
 // members, so their vtables are not asked for.  (name ours)
-void coll_UseArraysAvP2(
+void coll_ForceInstantiationAvP2(
 	CMoArray<uint8, DefaultCache>&          aBytes,
 	CMoArray<LTVector, DefaultCache>&       aVec,
 	CMoArray<CCollElem04, DefaultCache>&    a04,
@@ -1616,12 +1619,12 @@ void coll_UseArraysAvP2(
 // of line too (0x1001dbb4, from Model::Model), but VC6 expands it inside a
 // function as large as the second one, hence a function of its own.
 // (names ours)
-void coll_UseSizedArrayAvP2Srv(uint32 nCacheSize)
+void coll_ForceInstantiationSizedAvP2Srv(uint32 nCacheSize)
 {
 	CMoArray<CCollElem20, NoCache> aSized(nCacheSize);
 }
 
-void coll_UseArraysAvP2Srv(
+void coll_ForceInstantiationAvP2Srv(
 	CMoArray<uint8, DefaultCache>&          aBytes,
 	CMoArray<CCollElem1CS, DefaultCache>&   a1CSRef,
 	CMoArray<CCollElemA4, DefaultCache>&    aA4Ref)

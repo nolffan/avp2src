@@ -89,6 +89,7 @@ struct XForm1000f2c0
 };
 
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_1000f2c0(TVert1000f2c0** ppVerts, uint32* pnVerts,
                     XForm1000f2c0* pM, uint32 nUnused)
 {
@@ -153,3 +154,4 @@ LTBOOL sub_1000f2c0(TVert1000f2c0** ppVerts, uint32* pnVerts,
 	}
 	return 1;
 }
+#endif

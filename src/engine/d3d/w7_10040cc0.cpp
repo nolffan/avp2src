@@ -107,6 +107,7 @@ extern S1001e520Root*		g_1008beac;                     // 0x1008beac
 extern unsigned long	g_1008bd84;                     // 0x1008bd84
 extern C1001e210*	g_1008bd88[40];                 // 0x1008bd88
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_10040cc0(void* pUnused, C1001e210* pLight)
 {
 	W7Query40cc0 query;
@@ -133,6 +134,7 @@ void sub_10040cc0(void* pUnused, C1001e210* pLight)
 
 	g_1008beac->m_Query6c.Slot2(&query);
 }
+#endif
 
 
 // ======================================================================= //
@@ -220,6 +222,7 @@ struct W7Obj43a80
 	uint32		m_dwFlags8c;                            // +0x8c
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_10043a80(void* pUnused, W7Obj43a80* pObj)
 {
 	uint32 nFogColor;
@@ -264,6 +267,7 @@ void sub_10043a80(void* pUnused, W7Obj43a80* pObj)
 
 	g_1008d988->lpVtbl->SetTextureStageState(g_1008d988, 1, 1, 1);
 }
+#endif
 
 
 // ======================================================================= //
@@ -333,6 +337,7 @@ public:
 	uint32	m_dwFlags698;                               // +0x698
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C10044f74::sub_10047b60(uint32* pbFullbright)
 {
 	uint32 nBlendState;
@@ -369,6 +374,7 @@ void C10044f74::sub_10047b60(uint32* pbFullbright)
 
 	*pbFullbright = bFullbright;
 }
+#endif
 
 // 0x1005d170, 0x1005d3e0 and 0x1005a630 were here; they are /Qip
 // register-only statics of 0x1005a960 and moved into its TU,

@@ -1133,6 +1133,7 @@ static inline void Lerp40e10(Vert40e10* pOut, Vert40e10* pPrev, Vert40e10* pWalk
 //  (0x100500c9) and this function never reads -- it reaches the block's
 //  +0x15c matrix as the absolute g_m1008b9dc instead.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawlight.cpp d3d_DrawLineSystem
 void sub_10040e10(void* pCtx1008b880, ObjLine40e10* pObj)
 {
 	Mat40e10		mObj;                               // -0x2bc
@@ -1491,3 +1492,4 @@ void sub_10040e10(void* pCtx1008b880, ObjLine40e10* pObj)
 		                                    &v[0], 2, 0);
 	}
 }
+#endif

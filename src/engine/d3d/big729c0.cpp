@@ -775,6 +775,7 @@ L_MakeRec:
 //  ones named below; the rule "the frame is the declaration order" is
 //  therefore not usable here and is not claimed.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawpolymgr.cpp DrawPolyMgr::Flush (the texture buckets)
 void sub_100729c0()
 {
 	Bucket729c0*    pBucket;
@@ -1219,6 +1220,7 @@ L_FreeBucket2:
 	// ------------------------------------------------------------------ //
 	g_pBucketList1008d4c4 = LTNULL;                     // 0x10072f45
 }
+#endif
 
 
 // ======================================================================= //

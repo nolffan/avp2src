@@ -1213,6 +1213,7 @@ static inline LTBOOL sub_1000f4b0(uint32 nClipFlags, RVert24090** ppVerts, int32
 }
 
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp d3d_DrawPolyFillInfo (the overdraw meter)
 void sub_10024090(Obj24090* pObj)
 {
 	RVert24090      aVerts[30];
@@ -1431,6 +1432,7 @@ L_Done:
 	//    cross-jumps here rather than duplicating it.
 	;
 }
+#endif
 
 
 // *********************************************************************** //
@@ -1587,6 +1589,7 @@ L_Done:
 //  off); the flat chain is identical whichever way round each product's
 //  operands are written.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp d3d_DrawPolyFillInfo (the overdraw meter)
 extern "C" float sub_10025640(const RVert24090* pA, const RVert24090* pB,
                               const RVert24090* pC)
 {
@@ -1594,3 +1597,4 @@ extern "C" float sub_10025640(const RVert24090* pA, const RVert24090* pB,
 	     + pA->m_vPos.y*pC->m_vPos.x - pA->m_vPos.x*pC->m_vPos.y
 	     + pC->m_vPos.y*pB->m_vPos.x - pC->m_vPos.x*pB->m_vPos.y;
 }
+#endif

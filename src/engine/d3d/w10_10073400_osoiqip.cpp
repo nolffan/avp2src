@@ -57,6 +57,7 @@ struct Mat10073400
 	float	m[4][4];
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_10073400(Quat10073400 *pRot, Mat10073400 *pMat)
 {
 	float s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
@@ -98,6 +99,7 @@ extern "C" void sub_10073400(Quat10073400 *pRot, Mat10073400 *pMat)
 		pMat->m[3][0] = pMat->m[3][1] = pMat->m[3][2] = 0.0f;
 	pMat->m[3][3] = 1.0f;
 }
+#endif
 
 
 
@@ -109,6 +111,7 @@ extern "C" void sub_10073400(Quat10073400 *pRot, Mat10073400 *pMat)
 //  what makes icl emit that function's /Qip two-entry pair (see the file
 //  header).  /Qip inlines the call, as it may.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 void quat_GetVectors(const float *pQuat, float *pRight, float *pUp, float *pForward)
 {
 	float mat[4][4];
@@ -127,6 +130,7 @@ void quat_GetVectors(const float *pQuat, float *pRight, float *pUp, float *pForw
 	pForward[1] = mat[1][2];
 	pForward[2] = mat[2][2];
 }
+#endif
 
 
 // ======================================================================= //
@@ -171,6 +175,7 @@ struct LTQuat
 	float  x, y, z, w;
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 void sub_10073500(LTQuat* pDestQ, LTQuat* pFrom, LTQuat* pTo, float t)
 {
 	const float *pQ1 = &pFrom->x;
@@ -215,3 +220,4 @@ void sub_10073500(LTQuat* pDestQ, LTQuat* pFrom, LTQuat* pTo, float t)
 	for (i = 0; i < 4; i++) // build the new quarternion
 		(&pDestQ->x)[i] = (float)(scalerot0 * pQ1[i] + scalerot1 * rot1q[i]);
 }
+#endif

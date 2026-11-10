@@ -588,6 +588,7 @@ static LTMat    g_Mat10091d40;
 //  would be 0x40 more bytes of frame and there is no room for one.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// NOLF's only: NOLF's renderer-side model animation (D3DRenderInfo)
 void D3DRenderInfo::sub_1007cc90(uint32 nNodeIndex, LTMat *pParentXForm)
 {
 	//  The back edge at 0x1007d5a6 and 0x1007d619 is an UNCONDITIONAL
@@ -1078,6 +1079,7 @@ void D3DRenderInfo::sub_1007cc90(uint32 nNodeIndex, LTMat *pParentXForm)
 		pParentXForm = pNodeMat;
 	}
 }
+#endif
 
 
 // *********************************************************************** //

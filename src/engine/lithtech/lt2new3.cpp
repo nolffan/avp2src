@@ -352,6 +352,10 @@ extern CSurfaceQ40C      g_ScreenSurface;                  // 0x004b1620
 //     statements, not one call through a cached pointer.
 //   * `mov 0xc(%eax),%ecx` is read from the parameter, so the second arm's
 //     argument is the surface's own m_pRenderData and not the surface.
+#if 0
+// AVP2: not built. diblit.cpp's cis_UnlockSurfaceQ438 is this same function
+// (byte-identical at Primal Hunt's 0x00446fa0 and AvP2's 0x00443050, with its
+// callers); this copy has no caller in either image's link.
 void r_UnlockSurface(CSurfaceView3* pSurface)              // 0x0043afc0
 {
 	if (pSurface == &g_ScreenSurface)
@@ -359,6 +363,7 @@ void r_UnlockSurface(CSurfaceView3* pSurface)              // 0x0043afc0
 	else
 		g_pRender->UnlockSurface(pSurface->m_pRenderData);
 }
+#endif
 
 
 // ======================================================================= //
@@ -650,6 +655,11 @@ extern int dsi_SetupMessage(char* pBuf, int nBufSize, int nMessageCode,
 //     pushes put its slot at +0x1c) and stores it at +0x64.  It is read a
 //     SECOND time rather than kept, and the store lands AFTER the call, so
 //     the assignment is the second statement, not the first.
+#if 0
+// AVP2: not built. This is CServerMgr::SetupError (smgr.cpp), reconstructed
+// a second time from NOLF's image: that one is byte-identical in both engines
+// (Primal Hunt's 0x0048e980, AvP2's 0x004864d0) with every caller; this copy
+// has none.
 void sub_00476370(SLoadErrorSink* pSink, int nMessageCode, ...)
 {
 	va_list marker;
@@ -659,6 +669,7 @@ void sub_00476370(SLoadErrorSink* pSink, int nMessageCode, ...)
 
 	pSink->m_nMessageCode = nMessageCode;
 }
+#endif
 
 
 // ======================================================================= //

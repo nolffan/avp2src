@@ -136,6 +136,7 @@ struct MoArray1007c760
 
 
 // 0x1007c760 -- SetSize2, dynarray.h verbatim.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL MoArray1007c760::sub_1007c760(uint32 newSize, IAllocator* pAlloc)
 {
 	if ((newSize == m_nElements) && (newSize != 0))
@@ -164,9 +165,11 @@ LTBOOL MoArray1007c760::sub_1007c760(uint32 newSize, IAllocator* pAlloc)
 
 	return LTTRUE;
 }
+#endif
 
 
 // 0x1007c890 -- Remove2, dynarray.h verbatim.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void MoArray1007c760::sub_1007c890(uint32 index, IAllocator* pAlloc)
 {
 	uint32 i, newSize, newAllocSize;
@@ -206,3 +209,4 @@ void MoArray1007c760::sub_1007c890(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif

@@ -44,10 +44,12 @@ public:
 	LTBOOL	sub_1001c760(const GenListPos1001c760& pos) const;
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL CGenArray1001c760::sub_1001c760(const GenListPos1001c760& pos) const
 {
 	return pos.m_Index < sub_1007ee60();
 }
+#endif
 
 
 // ======================================================================= //

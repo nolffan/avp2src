@@ -52,6 +52,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 #include <stdlib.h>
@@ -366,3 +371,5 @@ extern D3DDirtyRect g_DirtyRects[100];                  // 0x1008e734, defined i
 //  ACTION: drop the row, and treat the size column for 0x10039930 as wrong
 //  too.
 // ----------------------------------------------------------------------- //
+
+#endif // !PRIMAL_HUNT

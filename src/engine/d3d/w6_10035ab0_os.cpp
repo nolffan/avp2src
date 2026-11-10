@@ -43,6 +43,7 @@ struct Node10036420
 };
 
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Node10036420::sub_10035ab0(uint32 nFlags)
 {
 	sub_100362a4();
@@ -52,3 +53,4 @@ void Node10036420::sub_10035ab0(uint32 nFlags)
 
 	sub_10080479(this);
 }
+#endif

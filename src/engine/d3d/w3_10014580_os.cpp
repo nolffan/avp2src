@@ -451,10 +451,12 @@ void LTMat::sub_10015770(const LTVec* s, LTVec* d)
 // ======================================================================= //
 //  0x100158c0 -- the +0x1dc getter (11 bytes).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 SDesc1dc* SModel::sub_100158c0() const
 {
 	return m_p1dc;
 }
+#endif
 
 
 // ======================================================================= //
@@ -486,10 +488,12 @@ extern "C" void __fastcall sub_100159d0(MVert159d0* pVert, HVert159d0* pOut,
 // the enumerator's size-0 row, but a real body: big17c14.cpp's
 // 0x1001916b stores its address).  The 64-bit `fistpll` is icl's
 // float-to-UNSIGNED conversion.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_10015a60()
 {
 	g_1008b748 = (uint32)g_fWarbleTime;
 }
+#endif
 
 
 
@@ -499,6 +503,7 @@ extern "C" void sub_10015a60()
 // 0x10015320 after it, it matches.  Do not reorder.
 // 0x10015aa0 -- 0x100159d0 with the position first scaled by the warble
 // table, one step per vertex (204 bytes).
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void __fastcall sub_10015aa0(MVert159d0* pVert, HVert159d0* pOut,
                                         LTMat* pMat)
 {
@@ -520,6 +525,7 @@ extern "C" void __fastcall sub_10015aa0(MVert159d0* pVert, HVert159d0* pOut,
 	pOut->z = (pMat->m[2][0]*v.x + pMat->m[2][1]*v.y + pMat->m[2][2]*v.z + pMat->m[2][3]) * one_over_w;
 	pOut->rhw = one_over_w;
 }
+#endif
 
 
 // ======================================================================= //
@@ -592,6 +598,7 @@ static inline Tex10059590* FindRec15320(Tex10059590* pHead, uint32 nStage)
 	return LTNULL;
 }
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" int32 sub_10015320(TexBlock15320* pBlock, uint32 nStage, uint32 nLOD)
 {
 	Tex10059590* pRec;
@@ -658,3 +665,4 @@ L_MakeRec:
 
 	goto L_Bind;
 }
+#endif

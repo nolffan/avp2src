@@ -147,6 +147,7 @@ inline void Clip42e80Y(Vert42e80* v, Vert42e80* dst, float t, int bNeg)
 	sub_10023380(&v[0], &v[1], dst, t);
 }
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp d3d_ClipLine (0x10016c60)
 extern "C" int sub_10042e80(void* pVerts, uint32 nMask)
 {
 	Vert42e80*	v = (Vert42e80*)pVerts;
@@ -316,3 +317,4 @@ extern "C" int sub_10042e80(void* pVerts, uint32 nMask)
 
 	return 1;
 }
+#endif

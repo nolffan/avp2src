@@ -54,6 +54,7 @@ struct Vert1005a550                                     // 40 bytes
 	uint32 m_pad_0c[7];
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" void sub_1005a550(Vert1005a550* pVerts, uint32 nCount,
                              Mat1005a550* pMat)
 {
@@ -76,3 +77,4 @@ extern "C" void sub_1005a550(Vert1005a550* pVerts, uint32 nCount,
 		pV->z = fZ;
 	}
 }
+#endif

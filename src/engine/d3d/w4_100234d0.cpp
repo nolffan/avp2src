@@ -64,6 +64,7 @@ void __fastcall sub_100234d0(const LTVec* pPos, uint8* pOut)
 //  [start, end] to a fog factor 255..0 in the specular colour's alpha
 //  byte; nearer than start is the whole dword 0xffffffff, beyond end is 0.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void __fastcall sub_100234e0(const LTVec* pPos, uint8* pOut)
 {
 	float fDist;
@@ -85,11 +86,13 @@ void __fastcall sub_100234e0(const LTVec* pPos, uint8* pOut)
 		pOut[3] = 255 - (uint8)RoundF((fDist - g_1008cb08) * g_1008caec);
 	}
 }
+#endif
 
 
 // ======================================================================= //
 //  0x10023570 -- the same on the vertex's z, into the alpha byte only.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void __fastcall sub_10023570(const LTVec* pPos, uint8* pOut)
 {
 	float fZ = pPos->z;
@@ -107,3 +110,4 @@ void __fastcall sub_10023570(const LTVec* pPos, uint8* pOut)
 		pOut[3] = 255 - (uint8)RoundF((fZ - g_1008cb04) * g_1008d5d4);
 	}
 }
+#endif

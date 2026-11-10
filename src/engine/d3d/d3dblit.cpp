@@ -116,6 +116,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "ltrect.h"
@@ -1313,3 +1318,5 @@ void sub_10036e40(const char* pFilename)
 //  D3DRenderData, and the out-parameters are (width, height, pitch) in that
 //  order.  The names can come off the "Unknown" list.
 // ---------------------------------------------------------------------- //
+
+#endif // !PRIMAL_HUNT

@@ -153,6 +153,7 @@ inline int32 RoundF(float f)
 // ======================================================================= //
 //  0x1005fb70  1170 bytes
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 extern "C" int32 sub_1005fb70(void* pObj, int32 nIndex,
                               Vert1005fb70** ppVerts, int32* pnVerts,
                               Vert1005fb70* pOut)
@@ -257,3 +258,4 @@ extern "C" int32 sub_1005fb70(void* pObj, int32 nIndex,
 	*pnVerts = nVerts;
 	return 1;
 }
+#endif

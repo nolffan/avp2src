@@ -1131,6 +1131,7 @@ inline int32 RoundF(float f)
 //
 //  __cdecl, four stack arguments, void.  See THE SIGNATURE above.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp d3d_DrawLine
 void sub_1002b1b0(LTVec2b1b0 vStart, LTVec2b1b0 vEnd,
                   uint32 nColor0, uint32 nColor1)
 {
@@ -1450,3 +1451,4 @@ void sub_1002b1b0(LTVec2b1b0 vStart, LTVec2b1b0 vEnd,
 done:
 	;
 }
+#endif

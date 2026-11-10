@@ -36,6 +36,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 #include "ltlink.h"
 
@@ -694,3 +699,5 @@ int32 sub_10047d80(SPlaneA **ppPlane, SClipVertA **ppVerts, int32 *pnVerts,
 //    with the two clippers above rather than decoding cold.
 //
 // *********************************************************************** //
+
+#endif // !PRIMAL_HUNT

@@ -33,6 +33,7 @@ struct C100374a0
 	void	sub_100374a0(uint32 nFlags);
 };
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C100374a0::sub_100374a0(uint32 nFlags)
 {
 	m_pVTable = g_vtbl_100894d0;
@@ -40,3 +41,4 @@ void C100374a0::sub_100374a0(uint32 nFlags)
 		return;
 	operator delete(this);
 }
+#endif

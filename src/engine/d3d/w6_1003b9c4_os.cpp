@@ -120,6 +120,7 @@ struct Obj1003b964
 // ======================================================================= //
 //  0x1003d950 -- save the device state and set the callback's.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Obj1003b964::sub_1003d950(Ctx1003b964* pCtx)
 {
 	uint32 nStage;
@@ -169,11 +170,13 @@ void Obj1003b964::sub_1003d950(Ctx1003b964* pCtx)
 		g_1008e684[nStage] = LTNULL;
 	}
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1003b9c4 -- put the saved device state back.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Obj1003b964::sub_1003b9c4()
 {
 	g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice, W6_D3DRS_ALPHABLENDENABLE, m_nAlphaBlend04);
@@ -187,3 +190,4 @@ void Obj1003b964::sub_1003b9c4()
 	g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, W6_D3DTSS_COLOROP, m_nColorOp1c);
 	g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, W6_D3DTSS_ALPHAOP, m_nAlphaOp20);
 }
+#endif

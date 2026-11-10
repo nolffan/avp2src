@@ -68,6 +68,7 @@ struct C10035a70
 //  Release the surface if there is one and forget it, then zero the size
 //  (+0x08 is stored before +0x04).
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C10035a70::sub_10035bd0()
 {
 	DDSurface* p = m_pSurface;
@@ -83,6 +84,7 @@ void C10035a70::sub_10035bd0()
 	m_nWidth  = 0;
 	m_nHeight = 0;
 }
+#endif
 
 // ---------------------------------------------------------------------- //
 //  0x10035a70 -- 55 bytes.  The scalar deleting destructor: re-store this
@@ -91,6 +93,7 @@ void C10035a70::sub_10035bd0()
 //  stores are member stores, as d3dr2c.cpp does for the constructor, so
 //  that no vtable of ours is emitted.
 // ---------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C10035a70::sub_10035a70(uint32 nFlags)
 {
 	m_pVTable = g_vtbl_10089480;
@@ -102,3 +105,4 @@ void C10035a70::sub_10035a70(uint32 nFlags)
 
 	sub_10080479(this);
 }
+#endif

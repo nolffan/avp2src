@@ -306,6 +306,7 @@ extern uint32				g_1009194c;                 // 0x1009194c  lightmap memory plac
 //  stage g_1008d7cc), and the memory counters.  Zero on failure (a failed
 //  CreateSurface is reported).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LMPage13* sub_1006c6e0(RenderWorld6d130* pWorld)
 {
 	LMPage13*		pPage;
@@ -351,6 +352,7 @@ LMPage13* sub_1006c6e0(RenderWorld6d130* pWorld)
 	g_pStruct->m_SystemTextureMemory += pPage->m_MemUsage;
 	return pPage;
 }
+#endif
 
 
 LTBOOL sub_1006c8a0(RenderWorld6d130* pWorld, Poly6d130* pPoly);
@@ -360,6 +362,7 @@ LTBOOL sub_1006c8a0(RenderWorld6d130* pWorld, Poly6d130* pPoly);
 //  polygon of the node into the world at g_10091940, stopping at the
 //  first that fails.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_1006c860(Node13* pNode)
 {
 	uint32 i;
@@ -370,6 +373,7 @@ void sub_1006c860(Node13* pNode)
 			return;
 	}
 }
+#endif
 
 
 // ======================================================================= //
@@ -379,6 +383,7 @@ void sub_1006c860(Node13* pNode)
 //  vertex's position into lightmap uv on that page.  A polygon already
 //  placed (low six flag bits) or without a lightmap succeeds untouched.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_1006c8a0(RenderWorld6d130* pWorld, Poly6d130* pPoly)
 {
 	uint32			nWidth, nHeight, nArea;
@@ -493,9 +498,11 @@ Found:
 	pPoly->m_pLMPage = pPage;
 	return LTTRUE;
 }
+#endif
 
 
 // The pages' block maps are only needed while placing: free them.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 static void FreeLMPageBlocks(RenderWorld6d130* pWorld)
 {
 	LMPage13* pPage;
@@ -509,6 +516,7 @@ static void FreeLMPageBlocks(RenderWorld6d130* pWorld)
 		}
 	}
 }
+#endif
 
 void sub_1006d130(RenderWorld6d130* pWorld);
 
@@ -532,6 +540,7 @@ void sub_1006d130(RenderWorld6d130* pWorld);
 //  where shipped uses %edi).  Also unchanged: FreeLMPageBlocks as a
 //  while loop, over the list head, or with the clear outside the test.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_1006cc90(RenderWorld6d130* pWorld)
 {
 	BspWorld6d130*	pBsp;
@@ -630,6 +639,7 @@ LTBOOL sub_1006cc90(RenderWorld6d130* pWorld)
 	             (timeGetTime() - nStart) * 0.001f);
 	return LTTRUE;
 }
+#endif
 
 
 // ======================================================================= //
@@ -644,6 +654,7 @@ LTBOOL sub_1006cc90(RenderWorld6d130* pWorld)
 //  (the d3ddraw spelling) compiles to the same 214 bytes; pWorld is still
 //  rematerialised from 8(%ebp) after the first loop where shipped keeps it
 //  in %edi across it.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void sub_1006d130(RenderWorld6d130* pWorld)
 {
 	LMPage13 *pPage, *pNext;
@@ -671,3 +682,4 @@ void sub_1006d130(RenderWorld6d130* pWorld)
 			pModel->m_Polies[j]->m_pLMPage = 0;
 	}
 }
+#endif

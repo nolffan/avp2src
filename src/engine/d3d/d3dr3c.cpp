@@ -52,6 +52,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 
 #include <stdio.h>
@@ -764,3 +769,5 @@ void sub_1005fac0(Vert1005fac0* pVerts, uint32 nCount, Mat1005fac0* pMat)
 // the inlined vertex lerp, a ClipEdge inline taking the LTVector at +0,
 // int32 nInside compared uncast).  The /QIfist guess above was wrong:
 // the bare fistpl is RoundF's inline asm.
+
+#endif // !PRIMAL_HUNT

@@ -84,6 +84,7 @@ struct Arr10009f10
 // ======================================================================= //
 //  0x1000a110 -- CMoArray::SetSize2.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr10009f10::sub_1000a110(uint32 newSize, IAllocator* pAlloc)
 {
 	// Uhhh ok...
@@ -113,11 +114,13 @@ int32 Arr10009f10::sub_1000a110(uint32 newSize, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1000a220 -- CMoArray::Remove2.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void Arr10009f10::sub_1000a220(uint32 index, IAllocator* pAlloc)
 {
 	uint32 i, newSize, newAllocSize;
@@ -161,11 +164,13 @@ void Arr10009f10::sub_1000a220(uint32 index, IAllocator* pAlloc)
 
 	--m_nElements;
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1000a3f0 -- CMoArray::Insert2.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 int32 Arr10009f10::sub_1000a3f0(uint32 index, const Elem10009f10& toInsert,
                                 IAllocator* pAlloc)
 {
@@ -217,12 +222,15 @@ int32 Arr10009f10::sub_1000a3f0(uint32 index, const Elem10009f10& toInsert,
 
 	return 1;
 }
+#endif
 
 
 // ======================================================================= //
 //  0x1000a660 -- DefaultCache::SetWantedCache.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void DefaultCache::sub_1000a660(uint32 val)
 {
 	m_WantedCache = val;
 }
+#endif

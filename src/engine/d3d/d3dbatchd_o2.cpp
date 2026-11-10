@@ -87,6 +87,11 @@
 //
 // *********************************************************************** //
 
+// NOLF's renderer only: Primal Hunt's d3d.ren has none of these. Its own
+// functions are ph/'s (and the libraries'), and none of the fifteen still
+// unwritten (the big draws) is one of them.
+#ifndef PRIMAL_HUNT
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -629,3 +634,5 @@ float LTVec::sub_10023330() const
 {
 	return (float)sqrt((x * x) + (y * y) + (z * z));
 }
+
+#endif // !PRIMAL_HUNT

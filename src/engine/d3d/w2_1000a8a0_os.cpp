@@ -122,6 +122,7 @@ inline float MatVMulH_a8a0(LTVector *pDest, LTMatrix *pMat, LTVector *pSrc)
 }
 
 
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 LTBOOL sub_1000a8a0(TVert1000a8a0** ppVerts, uint32* pnVerts,
                     XForm1000a8a0* pM, uint32 nUnused)
 {
@@ -167,3 +168,4 @@ LTBOOL sub_1000a8a0(TVert1000a8a0** ppVerts, uint32* pnVerts,
 	}
 	return 1;
 }
+#endif

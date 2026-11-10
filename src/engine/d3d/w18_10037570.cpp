@@ -30,13 +30,17 @@ public:
 };
 
 // 0x10037570 -- 19 bytes.  `this` rounded through %eax, bare `ret`.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 C1003abe4 *C10037520Bank::sub_10037570()
 {
 	return sub_10037520();
 }
+#endif
 
 // 0x10037590 -- 26 bytes.  One dword in, forwarded, `ret $0x4`.
+#ifndef PRIMAL_HUNT	// NOLF's: Primal Hunt's renderer is ph/'s
 void C10037520Bank::sub_10037590(C1003abe4 *pNode)
 {
 	sub_10037550(pNode);
 }
+#endif

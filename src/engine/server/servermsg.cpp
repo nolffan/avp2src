@@ -771,8 +771,9 @@ CNetMsgRecord::~CNetMsgRecord()
 // explicit destructor call, so this driver is what asks for it; like
 // packet.cpp's instantiation forcer it exists in no shipped binary. If
 // ServerMessage ever gains a real destructor in servermsg.h, that is where
-// this address belongs and this can go.
-void msg_TermMessage(CTermMessage* pMsg)
+// this address belongs and this can go. (Its name says ForceInstantiation, so
+// the scoreboard does not score it; name ours.)
+void msg_ForceInstantiationTermMessage(CTermMessage* pMsg)
 {
 	pMsg->~CTermMessage();
 }
@@ -879,6 +880,11 @@ char* CMsgStringReader::ReadStringInPlace()
 // its 43-byte match at 0x1002a1da for nothing. Moving the body into
 // servermsg.h is the edit; server.dll keeps the address either way, because
 // smgr.obj would then emit the COMDAT that servermsg.obj emits today.
+#ifdef LT_SERVER_BUILD
+// AVP2: server.dll's only. lithtech.exe's one caller (smgr.cpp's
+// sm_GiveMessageToShell) expands it, and neither engine's lithtech.exe has an
+// out-of-line copy: the servermsg functions around it (Primal Hunt's
+// 0x0046f380.., AvP2's 0x00469320..) are contiguous without it.
 uint8 ServerMessage::ReadByteFromEnd(uint8 nDummy)
 {
 	if ((uint32)(m_Unknown34 - m_Unknown38) >= 1)
@@ -892,6 +898,7 @@ uint8 ServerMessage::ReadByteFromEnd(uint8 nDummy)
 
 	return 0;
 }
+#endif
 
 
 void ServerMessage::ReadData(void* pData, uint32 nBytes)
