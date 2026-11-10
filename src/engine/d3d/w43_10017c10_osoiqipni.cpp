@@ -1312,15 +1312,9 @@ void sub_10015c70(Ctx1007b8e0* pContext, void* pElem)
 // Per byte lane: out.byte[i] = (a.byte[i] >> 2) | (((b >> 2*i) & 3) << 6),
 // written word-wide with the shipped constants; the OR order is the shipped
 // order.
-// Primal Hunt has it at 0x1000ddd7, a cdecl function of ph/drawmodel.cpp's
-// translation unit whose one caller (0x1000d2d6) is not written yet; with
-// this file's own caller retired there, it is external in that build so it
-// is still emitted.
-#ifdef PRIMAL_HUNT
-uint32 sub_10015e30(uint32 a, uint32 b)
-#else
+// Primal Hunt has it at 0x1000ddd7: ph/drawmodel.cpp's d3d_GetModelCacheKey.
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp d3d_GetModelCacheKey (0x1000ddd7)
 static uint32 sub_10015e30(uint32 a, uint32 b)
-#endif
 {
 	return ((a >> 2) & 0x3f3f3f3f)
 	     | ((b & 0x03) << 6)
@@ -1328,6 +1322,7 @@ static uint32 sub_10015e30(uint32 a, uint32 b)
 	     | ((b & 0x30) << 18)
 	     | ((b & 0xc0) << 24);
 }
+#endif // PRIMAL_HUNT
 
 
 
@@ -2318,6 +2313,7 @@ static inline void MatMul1b844(LTMat *pDest, LTMat *pMat1, LTMat *pMat2)
 #undef M1
 #undef M2
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp d3d_WarbleTransform (0x1000dd7d)
 void CD3DModelDraw::sub_1001b840(LTMat* pMat)
 {
 	uint32 i;
@@ -2325,6 +2321,7 @@ void CD3DModelDraw::sub_1001b840(LTMat* pMat)
 	for (i = 0; i < m_pModel00->NumNodes(); i++)
 		MatMul1b844(&m_Arr63c[i], pMat, &m_pModel00->m_Xf70[i]);
 }
+#endif // PRIMAL_HUNT
 
 
 
@@ -2896,6 +2893,7 @@ inline Poly1be00* FindPoly1be00(Src19d64Grid* pWorld, HPOLY hPoly)
 	return pModel->m_pPolys04->GetPoly(hPoly);
 }
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp CD3DModelDraw::SetupLOD (0x1000de0e)
 extern "C" int32 sub_1001be00(LTVector* pPos, LTVector* pRay)
 {
 	IntersectQuery      iq;
@@ -2920,6 +2918,7 @@ extern "C" int32 sub_1001be00(LTVector* pPos, LTVector* pRay)
 
 	return 0;
 }
+#endif // PRIMAL_HUNT
 
 
 // ----------------------------------------------------------------------- //
@@ -3186,6 +3185,7 @@ struct Model1001bf34
 // every iteration and walks an INDEX, which the CMoArray-style inline
 // accessors give, with m_44c hoisted into the preheader after the
 // zero-trip test exactly as shipped.
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp CD3DModelDraw::SetupNodeTransforms (0x1000df32)
 uint32 CD3DModelDraw::sub_1001bf30()
 {
 	Model1001bf34* pModel;
@@ -3204,6 +3204,7 @@ uint32 CD3DModelDraw::sub_1001bf30()
 
 	return nTotal * 3;
 }
+#endif // PRIMAL_HUNT
 
 
 

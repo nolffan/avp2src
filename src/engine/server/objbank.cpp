@@ -1191,8 +1191,23 @@ public:
 		sb_FreeChunks(&m_Bank, 1);
 	}
 
-	// The bank hands back raw memory, so the construction is explicit.
+	// The two virtuals forward to the typed members below. server.dll's /O1
+	// declines to expand those, so each slot is a five-byte `jmp` to the
+	// body (AvP2 1.0.9.6 0x1002e18d.. -> 0x1002e2ac.., Free's one folded
+	// 0x1002e1a6 for every bank; Primal Hunt 0x1001b204 -> 0x1001b244);
+	// lithtech.exe's /O2 expands them, so its slots hold the bodies.
 	virtual void* Allocate()
+	{
+		return AllocObject();
+	}
+
+	virtual void Free(void* pObj)
+	{
+		FreeObject(pObj);
+	}
+
+	// The bank hands back raw memory, so the construction is explicit.
+	T* AllocObject()
 	{
 		T* pRet = (T*)sb_Allocate(&m_Bank);
 
@@ -1204,7 +1219,7 @@ public:
 
 	// Destructed, not released: the flag tells the deleting destructor to
 	// leave the memory alone, and it goes back to the bank instead.
-	virtual void Free(void* pObj)
+	void FreeObject(void* pObj)
 	{
 		((T*)pObj)->~T();
 

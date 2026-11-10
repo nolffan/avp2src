@@ -676,16 +676,18 @@ void CObjWorldModelQ458::OnFoundInBoxQ458(WTFindInfoQ458* pInfo)
 	// inlined DistTo's y/z terms at lithtech 0x0045af13..0x0045af24.
 	pWorldBsp = m_pWorldBsp;
 
-#ifdef PRIMAL_HUNT
+#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
 	// PH: once per query code (0x0046c6fd..0x0046c71c, the code fetched
-	// twice through the holder; AvP2 1.0.9.6 and server.dll have no test).
+	// twice through the holder; AvP2 1.0.9.6's lithtech.exe has no test).
+	// Both server.dll images have it too (Primal Hunt 0x1002ea5e, AvP2
+	// 1.0.9.6 0x1002cc89).
 	if (pWorldBsp->m_nLastFoundCode == pInfo->m_pCodeHolder->CodeSourceSlot1Q458())
 		return;
 
 	pWorldBsp->m_nLastFoundCode = pInfo->m_pCodeHolder->CodeSourceSlot1Q458();
 #endif
 
-#ifdef PRIMAL_HUNT
+#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
 	// PH: and the walk is handed the local (%esi from 0x0046c6c5 on; the
 	// object itself is never read again).  NEAR (0x0046c6c0, 334 of 334
 	// bytes, 0 mnemonic blocks): the y/z flip described above -- shipped

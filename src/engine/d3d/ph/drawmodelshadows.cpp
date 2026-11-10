@@ -356,7 +356,7 @@ struct ShadowModelTri                                   // 0x20 bytes
 	uint8		m_pad_06[0x20 - 0x06];
 };
 
-struct PieceLOD                                         // 0x24 bytes
+struct ModelVertSet                                         // 0x24 bytes
 {
 	void*		m_pVertsVTable;                         // +0x00 CMoArray<ModelVert>
 	void*		m_pVerts;                               // +0x04
@@ -368,9 +368,9 @@ struct PieceLOD                                         // 0x24 bytes
 	uint8		m_pad_1c[0x24 - 0x1c];
 };
 
-struct ModelPiece : public PieceLOD
+struct ModelPiece : public ModelVertSet
 {
-	PieceLOD*	GetLOD(uint32 iLOD)
+	ModelVertSet*	GetLOD(uint32 iLOD)
 	{
 		if (iLOD == 0)
 			return this;
@@ -383,7 +383,7 @@ struct ModelPiece : public PieceLOD
 	}
 
 	uint8		m_pad_24[0x38 - 0x24];
-	PieceLOD*	m_pLODs;                                // +0x38
+	ModelVertSet*	m_pLODs;                                // +0x38
 	uint32		m_nLODs;                                // +0x3c
 };
 
@@ -393,7 +393,7 @@ struct ShadowModel
 	ModelPiece**	m_pPieces;                          // +0x38
 	uint32		m_nPieces;                              // +0x3c
 	uint8		m_pad_40[0x74 - 0x40];
-	uint32		m_VertFlags;                            // +0x74
+	LTMatrix*	m_pTransforms;                          // +0x74 (CMoArray<LTMatrix>'s array)
 	uint8		m_pad_78[0x94 - 0x78];
 	uint32		m_nLODs;                                // +0x94
 	uint8		m_pad_98[0xd4 - 0x98];
@@ -428,13 +428,19 @@ struct ShadowModelLight                                 // 0x28 bytes
 };
 
 // A transformed model vertex.
-struct ShadowModelTLVert                                // 0x20 bytes
+struct ModelTLVert                                // 0x20 bytes
 {
 	LTVector	m_Vec;                                  // +0x00
 	uint8		m_pad_0c[0x20 - 0x0c];
 };
 
 #define MAX_MODEL_SHADOWS		8
+
+// d3d_modelvb.cpp's per-vertex texture coordinate hook.
+class CD3DModelDraw;
+struct ModelVert;
+struct UVVert;
+typedef void (__fastcall *GenSpecularFn)(CD3DModelDraw* pDraw, ModelVert* pVert, UVVert* pOut);
 
 // The model drawer (TU02's CD3DModelDraw), the members the shadows use.
 class CD3DModelDraw
@@ -446,9 +452,9 @@ public:
 	void		DrawProjShadows(uint32 nMaxShadows);    // 0x10027e40
 
 	// d3d_modelvb.cpp's vertex transform (0x10004660).
-	void		TransformVerts(PieceLOD* pLOD, PieceLOD* pPrevLOD, ShadowModelTLVert* pOut,
-					uint32 flags, uint32 vertFlags, LTVector* pBox, uint32 bLight,
-					LTVector* pMin, LTVector* pMax);
+	void		TransformVerts(ModelVertSet* pLOD, ModelVertSet* pNextLOD, ModelTLVert* pOut,
+					GenSpecularFn pfnGenSpecular, LTMatrix* pTransforms, LTVector* pColorSum,
+					bool bBounds, LTVector* pMin, LTVector* pMax);
 
 	ShadowModel*	m_pModel;                           // +0x000
 	ShadowModelInstance* m_pInstance;                   // +0x004
@@ -458,7 +464,7 @@ public:
 	uint8		m_pad_2c0[0x4d0 - 0x2c0];
 	LTMatrix	m_mLightTransform;                      // +0x4d0
 	uint8		m_pad_510[0x5ec - 0x510];
-	uint32		m_TransformFlags;                       // +0x5ec
+	GenSpecularFn	m_pfnGenSpecular;                   // +0x5ec
 	uint8		m_pad_5f0[0x60c - 0x5f0];
 	uint32		m_iLOD;                                 // +0x60c
 	uint32		m_bBlendLOD;                            // +0x610
@@ -466,7 +472,7 @@ public:
 	LTVector	m_vShadowDirs[MAX_MODEL_SHADOWS];       // +0x644
 	uint8		m_pad_6a4[0x828 - 0x6a4];
 	void*		m_pTLVertsVTable;                       // +0x828 CMoArray<ModelTLVert>
-	ShadowModelTLVert*	m_pTLVerts;                     // +0x82c
+	ModelTLVert*	m_pTLVerts;                     // +0x82c
 };
 
 struct ViewParams;
@@ -1160,13 +1166,13 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 	LTMatrix mCamToWorld, mInvView, mBasis, mScale, mTemp;
 	LTVector vObjPos, vDims, vLight, vTemp, vDir, vRight, vUp, vPos;
 	LTVector vRightS, vUpS, vUpHalf, vLeft, vRightP, vTop, vBottom;
-	LTVector vBox[2], vMin, vMax;
+	LTVector vColorSum[2], vMin, vMax;
 	ShadowModelLight* pLight;
 	ShadowPolyList* pList;
 	float* pRadius;
 	ModelPiece* pPiece;
-	PieceLOD *pLOD, *pPrevLOD;
-	ShadowModelTLVert *pTLVerts, *pVert;
+	ModelVertSet *pLOD, *pPrevLOD;
+	ModelTLVert *pTLVerts, *pVert;
 	ShadowModelTri* pTri;
 	ShadowTarget *pTarget, *pBuffer;
 	WorldPoly** ppPoly;
@@ -1337,8 +1343,8 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 				if (m_pInstance->m_HiddenPieces & (1 << iPiece))
 					continue;
 
-				TransformVerts(pLOD, pPrevLOD, pTLVerts, m_TransformFlags, m_pModel->m_VertFlags,
-					vBox, 0, &vMin, &vMax);
+				TransformVerts(pLOD, pPrevLOD, pTLVerts, m_pfnGenSpecular, m_pModel->m_pTransforms,
+					vColorSum, false, &vMin, &vMax);
 
 				pVert = pTLVerts;
 				nVerts = pLOD->m_nVerts;

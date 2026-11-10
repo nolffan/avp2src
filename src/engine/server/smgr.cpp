@@ -7,11 +7,10 @@
 // (server.dll too: 0x10010dab, 0x10033e4d, guard 0x1008ec84)
 #include <string>
 #endif
-#ifdef PRIMAL_HUNT
-// PH: the world's end gathers the models still in use into an STL set
-// (sub_48d400Q502), in both images.
+// The world's end gathers the models still in use into an STL set
+// (sub_48d400Q502), in both images of both engines (AvP2 1.0.9.6's
+// STLport set: server.dll 0x1003e071, its members 0x1003f80e..0x10040225).
 #include <set>
-#endif
 // The child-model table is an STL map of maps keyed by strings
 // (sm_LoadChildModelMapQ523), in both engines and both images. AvP2
 // 1.0.9.6 builds this file against STLport (build/build.mk
@@ -1034,9 +1033,9 @@ void CServerMgr::Term()
 void sub_48d400Q502(CServerMgr* pMgr);    // 0x0048d400
 
 
-#ifdef PRIMAL_HUNT
-// PH: CLTServer::BroadcastFileMessage again, as a free function of the
-// manager (server.dll 0x10041ad0, lithtech.exe 0x0048d660; name ours): tell
+// CLTServer::BroadcastFileMessage again, as a free function of the manager
+// (Primal Hunt server.dll 0x10041ad0, lithtech.exe 0x0048d660; AvP2 1.0.9.6
+// server.dll 0x1003e186; name ours): tell
 // every client -- or, without bToAll, every client not flagged 2 -- about
 // one file. The writes are WriteType's, called at /O1 (0x10041b42,
 // 0x10041b4d) and expanded at /O2, as in servermessage.cpp's PH copy.
@@ -1064,8 +1063,9 @@ void sm_BroadcastFileMessageQ523(CServerMgr* pMgr, uint32 nFileType,
 	}
 }
 
-// PH: CLTServer::UnloadModel as a free function of the manager (server.dll
-// 0x10041a4e, lithtech.exe 0x0048d5d0; name ours), which the world's end
+// CLTServer::UnloadModel as a free function of the manager (Primal Hunt
+// server.dll 0x10041a4e, lithtech.exe 0x0048d5d0; AvP2 1.0.9.6 server.dll
+// 0x1003e104; name ours), which the world's end
 // calls for every model nothing uses any more (sub_48d400Q502). The missing
 // file is reported under "ThreadLoadTexture", the literal the interface's
 // copy has too.
@@ -1088,8 +1088,8 @@ LTRESULT sm_UnloadModelFileQ523(CServerMgr* pMgr, char* pFilename)
 	return LT_OK;
 }
 
-// PH: lithtech.exe 0x0048d400, server.dll 0x10041995 -- the last step of
-// EndWorld. Every model in the manager's model hash whose +0x190 is set goes
+// Primal Hunt lithtech.exe 0x0048d400, server.dll 0x10041995; AvP2 1.0.9.6
+// server.dll 0x1003e071 -- the last step of EndWorld. Every model in the manager's model hash whose +0x190 is set goes
 // into a set (so each is visited once, in address order), and then each of
 // them is unloaded by name and the clients told. The set's own code is the
 // STL's: its insert, iterator step and destructor are the template members
@@ -1113,7 +1113,6 @@ void sub_48d400Q502(CServerMgr* pMgr)
 	for (std::set<Model*>::iterator it = models.begin(); it != models.end(); ++it)
 		sm_UnloadModelFileQ523(pMgr, (*it)->GetFilename());
 }
-#endif
 
 // Detach every client's tracked object (name ours).
 void sm_EndWorldC(CServerMgr* pMgr)
@@ -2012,9 +2011,6 @@ void sm_ResetProfileCounters()
 void CServerMgr::UpdateObjects()
 {
 	char sName[32];
-#if defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
-	CBaseCounter counter(0);
-#endif
 	LTLink* pCur;
 	LTObject* pObject;
 	CClassStats* pStats;
@@ -2069,12 +2065,10 @@ void CServerMgr::UpdateObjects()
 			// the update is a bare call (0x00473cc9 -> 0x004697e0), so the
 			// class tick counts it prints are always zero.
 #ifdef LT_SERVER_BUILD
-#ifdef PRIMAL_HUNT
-			// PH: the counter is the update's own, constructed for each
-			// object (server.dll 0x1003fecb `push $0 ... call`, after the
-			// stats are found).
+			// The counter is the update's own, constructed for each object
+			// after the stats are found (`push $0 ... call`: Primal Hunt's
+			// server.dll 0x1003fecb, AvP2 1.0.9.6's 0x1003c6aa).
 			CBaseCounter counter(0);
-#endif
 			cnt_StartCounter(&counter);
 			sm_UpdateObject(this, pObject);
 			pStats->m_Ticks += cnt_EndCounter(&counter);
@@ -6780,6 +6774,78 @@ void sm_DropConnection(CServerMgr* pMgr, NetConnection* pConn)
 }
 
 
+// ltobject_internal.h declares LTObject's vtable slot 0x34 (index 13) as
+// void; the write gate below tests its answer, so the object is reached
+// through a view that gives the slot a return type. Only that slot is used
+// (name ours, from what it decides).
+class IObjectUpdateGate
+{
+public:
+	virtual void _v00() = 0; virtual void _v04() = 0; virtual void _v08() = 0;
+	virtual void _v0c() = 0; virtual void _v10() = 0; virtual void _v14() = 0;
+	virtual void _v18() = 0; virtual void _v1c() = 0; virtual void _v20() = 0;
+	virtual void _v24() = 0; virtual void _v28() = 0; virtual void _v2c() = 0;
+	virtual void _v30() = 0;
+	virtual int  IsSkipped() = 0;            // 0x34
+};
+
+// The filter sub_10027918 asks, defined below it (0x10027be0).
+#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
+inline
+#endif
+int sub_10027be0(CServerMgr* pMgr, LTObject* pObject);
+
+#ifdef LT_SERVER_BUILD
+// (lithtech.exe's /O2 copy, 0x00464a00, is further down, after
+// sm_WriteObjectUpdate, so that both of its helpers can be expanded.)
+//
+// Above sub_10027be0, as AvP2 1.0.9.6's server.dll has the two (0x1003036d,
+// 0x10030624): cl 9044 has not seen the filter's body here, so the child
+// is kept in %ebx across both calls rather than %edx.
+// 0x10027918 — write one changed object into the update (two arguments, the
+// object and the context; named by address). The object has to be one the
+// client can be told about at all, and a world model whose BSP is busy is
+// left alone; everything attached to it goes out with it, resolved by child
+// id and gated the same way.
+void sub_10027918(LTObject* pObject, CUpdateContext* pCtx)
+{
+	Attachment* pAttach;
+
+	if (pObject->m_Unknown54)
+		return;
+
+	if (((IObjectUpdateGate*)pObject)->IsSkipped())
+		return;
+
+	if (pObject->m_ObjectType == OT_WORLDMODEL &&
+		pObject->m_pWorldBsp->IsBusy() == 1)
+		return;
+
+	if (!sub_10027be0(pCtx->m_pMgr, pObject))
+		return;
+
+	sm_WriteObjectUpdate(pCtx, pObject,
+		&pCtx->m_pClient->m_pObjInfos[pObject->m_ObjectID]);
+
+	pAttach = pObject->m_pAttachments;
+
+	while (pAttach)
+	{
+		LTObject* pChild = sm_FindObjectByID(pCtx->m_pMgr, pAttach->m_nChildID);
+
+		if (pChild && sub_10027be0(pCtx->m_pMgr, pChild))
+		{
+			sm_WriteObjectUpdate(pCtx, pChild,
+				&pCtx->m_pClient->m_pObjInfos[pChild->m_ObjectID]);
+		}
+
+		pAttach = pAttach->m_pNext;
+	}
+}
+#else
+void sub_10027918(LTObject* pObject, CUpdateContext* pCtx);  // defined below
+#endif // LT_SERVER_BUILD
+
 // 0x10027be0 and 0x100348cc — whether this client still owes the object an
 // update, and the queue it goes on when it does (names ours, from the shape
 // of the call; nothing in the image names either).
@@ -6814,7 +6880,15 @@ public:
 // all four sites -- sm_VisCallbackA (0x00464ed0), sub_10027918 (0x00464a00,
 // twice) and sm_VisGatherObjects (0x00465e00) -- and has no copy of its own,
 // while server.dll's /Os declines every site and keeps 0x10027be0.
-inline int sub_10027be0(CServerMgr* pMgr, LTObject* pObject)
+//
+// AVP2: not inline in AvP2 1.0.9.6's server.dll (0x10030624), where it is
+// an ordinary function in this file's order: cl 9044 knows its body from
+// here on, so sm_VisCallbackA keeps its object in %edx across the call
+// (0x1003067d), as callers of an inline the /O1 inliner declined do not.
+#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
+inline
+#endif
+int sub_10027be0(CServerMgr* pMgr, LTObject* pObject)
 {
 	uint32 nFlags = pObject->m_Flags;
 
@@ -7684,6 +7758,9 @@ public:
 // (the lone call to 0x00463730 is at 0x00463584, sm_SendObjectInfo2), so
 // /O2 must see an inline body; server.dll calls 0x1000e845 from all six of
 // its callers here, and making it inline there costs five of them.
+// AVP2: AvP2 1.0.9.6's server.dll has it after its callers (the end of this
+// file), out of their sight; see there.
+#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
 #ifndef LT_SERVER_BUILD
 inline
 #endif
@@ -7696,6 +7773,7 @@ int CMsgLenView::GetSpaceLeft()
 
 	return nLeft;
 }
+#endif
 
 // STAND-IN for the one lithtech.exe site that CALLS GetSpaceLeft
 // (0x00463584, the model-hash loop of sm_SendObjectInfo2) while the next
@@ -8114,67 +8192,6 @@ void sm_RemoveObjects(CServerMgr* pMgr, int bRemoveAll)
 }
 
 
-// ltobject_internal.h declares LTObject's vtable slot 0x34 (index 13) as
-// void; the write gate below tests its answer, so the object is reached
-// through a view that gives the slot a return type. Only that slot is used
-// (name ours, from what it decides).
-class IObjectUpdateGate
-{
-public:
-	virtual void _v00() = 0; virtual void _v04() = 0; virtual void _v08() = 0;
-	virtual void _v0c() = 0; virtual void _v10() = 0; virtual void _v14() = 0;
-	virtual void _v18() = 0; virtual void _v1c() = 0; virtual void _v20() = 0;
-	virtual void _v24() = 0; virtual void _v28() = 0; virtual void _v2c() = 0;
-	virtual void _v30() = 0;
-	virtual int  IsSkipped() = 0;            // 0x34
-};
-
-#ifdef LT_SERVER_BUILD
-// (lithtech.exe's /O2 copy, 0x00464a00, is further down, after
-// sm_WriteObjectUpdate, so that both of its helpers can be expanded.)
-// 0x10027918 — write one changed object into the update (two arguments, the
-// object and the context; named by address). The object has to be one the
-// client can be told about at all, and a world model whose BSP is busy is
-// left alone; everything attached to it goes out with it, resolved by child
-// id and gated the same way.
-void sub_10027918(LTObject* pObject, CUpdateContext* pCtx)
-{
-	Attachment* pAttach;
-
-	if (pObject->m_Unknown54)
-		return;
-
-	if (((IObjectUpdateGate*)pObject)->IsSkipped())
-		return;
-
-	if (pObject->m_ObjectType == OT_WORLDMODEL &&
-		pObject->m_pWorldBsp->IsBusy() == 1)
-		return;
-
-	if (!sub_10027be0(pCtx->m_pMgr, pObject))
-		return;
-
-	sm_WriteObjectUpdate(pCtx, pObject,
-		&pCtx->m_pClient->m_pObjInfos[pObject->m_ObjectID]);
-
-	pAttach = pObject->m_pAttachments;
-
-	while (pAttach)
-	{
-		LTObject* pChild = sm_FindObjectByID(pCtx->m_pMgr, pAttach->m_nChildID);
-
-		if (pChild && sub_10027be0(pCtx->m_pMgr, pChild))
-		{
-			sm_WriteObjectUpdate(pCtx, pChild,
-				&pCtx->m_pClient->m_pObjInfos[pChild->m_ObjectID]);
-		}
-
-		pAttach = pAttach->m_pNext;
-	}
-}
-#else
-void sub_10027918(LTObject* pObject, CUpdateContext* pCtx);  // defined below
-#endif // LT_SERVER_BUILD
 
 // Eleven lists inside the object at 0x390, starting at +0x220. Only their
 // heads are reached, and only from here (name ours).
@@ -8782,6 +8799,34 @@ void sm_WriteUpdateHeader(CServerMgr* pMgr, CUpdateContext* pCtx, Client* pClien
 			ClientPacketSet* pSet = &pClient->m_PacketSets[i][j];
 			ServerMessage* pSetMsg = (ServerMessage*)pSet->m_pPacket;
 
+#ifndef PRIMAL_HUNT
+			// AVP2 (server.dll 0x100306e7): the set's message is held for
+			// the whole test and its length read once, as a word (%bx): the
+			// append takes the word less one (`dec %bx`), the send the
+			// message.
+			uint16 nLen = pSetMsg->m_Unknown34;
+
+			if (nLen - 1 > 0)
+			{
+				if (nLen - 1 < ((CMsgLenView*)pMsg)->GetSpaceLeft())
+				{
+					((CMsgDataView*)pMsg)->WriteData(pSetMsg->m_pData + 1,
+						nLen - 1);
+				}
+				else
+				{
+					sm_SendToClient(pMgr, pClient, 0xe, pSetMsg, 1,
+						pSet->m_Unknown08);
+				}
+
+				{
+					ServerMessage* pReset = (ServerMessage*)pSet->m_pPacket;
+
+					pReset->m_Unknown38 = 1;
+					pReset->m_Unknown34 = 1;
+				}
+			}
+#else
 			if (pSetMsg->m_Unknown34 - 1 > 0)
 			{
 				if (pSetMsg->m_Unknown34 - 1 <
@@ -8805,6 +8850,7 @@ void sm_WriteUpdateHeader(CServerMgr* pMgr, CUpdateContext* pCtx, Client* pClien
 					pReset->m_Unknown34 = 1;
 				}
 			}
+#endif
 		}
 
 		// lithtech.exe expands this, Insert2 and all (0x00465175..
@@ -14149,7 +14195,7 @@ void CServerMgr::EndWorld(int bKeepWorldData)
 	m_Unknown198 = 1;
 	// AVP2: one more teardown step after the flag (Primal Hunt 0x0048d396
 	// -> 0x0048d400, AvP2 1.0.9.6 0x00485175 likewise; cdecl, the manager
-	// its one argument; not yet reconstructed).
+	// its one argument; server.dll 0x1003e071).
 	sub_48d400Q502(this);
 	dsi_ServerError("World ended");
 }
@@ -14368,3 +14414,210 @@ LTObject* sm_FindObjectByID(CServerMgr* pMgr, uint16 nID)
 
 	return LTNULL;
 }
+
+#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+// AVP2: GetSpaceLeft (0x10011e6f) defined after every caller in this file.
+// cl 9044 uses what it knows of a callee defined earlier in the file: with
+// the body above them, sm_SendObjectInfo2's flushes kept the message in
+// %ecx across the call; retail reloads it from the frame (0x1002f4dc..).
+int CMsgLenView::GetSpaceLeft()
+{
+	int nLeft = m_MaxDataLen - m_Pos - 7;
+
+	if (nLeft < 0)
+		nLeft = 0;
+
+	return nLeft;
+}
+#endif
+
+#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+// AVP2: the parts of WON's peer authentication (LT2/lithshared/wonapi,
+// WONAuth/PeerAuthServer.h and what it reaches) the server's packet 13
+// handler uses, declared here as WON's headers have them: those headers
+// bring windows.h and winsock2.h, which the engine's own cannot sit beside.
+// Only what is called or destroyed here is spelled out; the layouts are
+// WON's (PeerAuthServer 0x2174 bytes, its two Blowfish keys 0x10ac).
+namespace WONAPI
+{
+enum WONStatus { WS_Success = 0 };
+enum AuthType { AUTH_TYPE_NONE = 0 };
+
+class RefCount                               // WONCommon/SmartPtr.h
+{
+protected:
+	virtual ~RefCount() {}
+
+public:
+	const RefCount* CreateRef() const
+	{
+		InterlockedIncrement(&mRefCount);
+		return this;
+	}
+
+	void Release()
+	{
+		if (InterlockedDecrement(&mRefCount) <= 0)
+			delete this;
+	}
+
+private:
+	mutable long mRefCount;
+};
+
+template <class T>
+class ConstSmartPtr                          // WONCommon/SmartPtr.h
+{
+protected:
+	T* mObject;
+
+public:
+	ConstSmartPtr() : mObject(NULL) {}
+	~ConstSmartPtr() { if (mObject != NULL) mObject->Release(); }
+
+	const T* operator->() const { return mObject; }
+	operator const T*() const { return mObject; }
+	const T* get() const { return mObject; }
+};
+
+template <class T>
+class SmartPtr : public ConstSmartPtr<T>
+{
+};
+
+typedef std::basic_string<unsigned char> RawBuffer;   // WONCommon/WONTypes.h
+
+class ByteBuffer : public RefCount           // WONCommon/ByteBuffer.h
+{
+	char*         mData;
+	unsigned long mDataLen;
+
+public:
+	const char* data() const { return this ? mData : NULL; }
+	unsigned long length() const { return this ? mDataLen : 0; }
+};
+typedef ConstSmartPtr<ByteBuffer> ByteBufferPtr;
+
+class AuthPeerData : public RefCount {};
+typedef ConstSmartPtr<AuthPeerData> AuthPeerDataPtr;
+class AuthCertificateBase : public RefCount {};
+class AuthSession : public RefCount {};
+
+class Blowfish                               // WONCrypt/Blowfish.h
+{
+	int S0[256];
+	int S1[256];
+	int S2[256];
+	int S3[256];
+	int P[18];
+
+	mutable RawBuffer XOR_MASK;
+	RawBuffer mRawKey;
+
+	int P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15,
+	    P16, P17;
+
+	bool mIsValid;
+};
+
+class PeerAuthServer                         // WONAuth/PeerAuthServer.h
+{
+private:
+	AuthPeerDataPtr mPeerData;
+	AuthType mAuthType;
+	Blowfish mSecretA;
+	Blowfish mSecretB;
+	unsigned char mLengthFieldSize;
+
+	ConstSmartPtr<AuthCertificateBase> mClientCertificate;
+	SmartPtr<AuthSession> mSession;
+	bool mUseAuth2;
+
+public:
+	enum PeerAuthServerState
+	{
+		STATE_NOT_STARTED = 0,
+		STATE_AWAITING_REQUEST = 1,
+		STATE_AWAITING_CHALLENGE2 = 2
+	} mState;
+
+	PeerAuthServer();
+
+	void Start(const AuthPeerData* theData, unsigned char theLengthFieldSize);
+	WONStatus HandleRecvMsg(const void* inMsg, unsigned long inMsgLen,
+	                        ByteBufferPtr& outMsg);
+
+	PeerAuthServerState GetState() { return mState; }
+	void SetUseAuth2(bool useAuth2) { mUseAuth2 = useAuth2; }
+};
+
+class AuthContext : public RefCount          // WONAuth/AuthContext.h
+{
+public:
+	AuthPeerDataPtr GetPeerData();
+};
+};
+
+// AVP2: 0x1003f41c -- packet 13 from a client (sub_100358baQ502): one step
+// of WON's peer authentication, the server's side. The server shell's auth
+// context is fetched once and kept (g_RefQ523); without one the client is
+// answered with an empty message 0x1b. Otherwise a fresh PeerAuthServer
+// is started on the context's peer data, handed the packet's payload past
+// its four-byte length field, and whatever it answers goes back to the
+// client as message 0x1b. A completed step marks the client: the first
+// in m_Unknown3E0, the second in m_Unknown3E4. The server object's
+// destructor and its Blowfish keys' are the compiler's (0x1003f5dd,
+// 0x1003f61e).
+void CServerMgrQ502::Sub48f570(Client* pClient, ServerMessage* pMsg)
+{
+	CServerMgr*            pMgr = (CServerMgr*)this;
+	WONAPI::PeerAuthServer authServer;
+	uint8                  aData[512];
+
+	memset(aData, 0, sizeof(aData));
+
+	if (!g_RefQ523.m_p)
+		g_RefQ523 = (CRefObjQ523*)g_pClassMgr->m_pServerShell->GetAuthContext();
+
+	if (!g_RefQ523.m_p)
+	{
+		CMessageRef msg = msg_AllocPacket(0x44c, 0x44c);
+
+		msg.m_pMsg->m_pData[0] = 0x1b;
+		((CNetMgrSendView*)&pMgr->m_NetMgr)->SendToConnection(
+			msg.m_pMsg, pClient->m_pConnection, 0x80);
+	}
+	else
+	{
+		if (authServer.GetState() == WONAPI::PeerAuthServer::STATE_NOT_STARTED)
+		{
+			authServer.SetUseAuth2(true);
+			authServer.Start(((WONAPI::AuthContext*)g_RefQ523.m_p)->GetPeerData(), 4);
+		}
+
+		int nLen = pMsg->m_Unknown34 - pMsg->m_Unknown38;
+
+		pMsg->ReadData(aData, nLen);
+
+		WONAPI::ByteBufferPtr pOut;
+
+		if (authServer.HandleRecvMsg(aData + 4, nLen - 4, pOut) == WONAPI::WS_Success)
+		{
+			if (pClient->m_Unknown3E0 == 1)
+				pClient->m_Unknown3E4 = 1;
+			else
+				pClient->m_Unknown3E0 = 1;
+		}
+
+		if (pOut)
+		{
+			CMessageRef msg = msg_AllocPacket(0x44c, 0x44c);
+
+			msg.m_pMsg->WriteData((void*)pOut->data(), pOut->length());
+			msg.m_pMsg->m_pData[0] = 0x1b;
+			((CNetMgrSendView*)&pMgr->m_NetMgr)->SendToConnection(
+				msg.m_pMsg, pClient->m_pConnection, 0x80);
+		}
+	}
+}
+#endif

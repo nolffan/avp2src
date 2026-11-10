@@ -13,10 +13,11 @@
 //  The drawer itself -- DrawModel, its sprite, LOD and lighting set-up,
 //  the light grid sample, the vertex transforms, and the SDK inlines they
 //  call out of line (MatVMul, Mat_InverseTransformation, TransformPlane,
-//  Equals, Dist, ...) -- is AvP2 1.0.9.6's (0x1000baa4..0x1000e09c of its
-//  image), behind #ifndef PRIMAL_HUNT: Primal Hunt has the same functions
-//  over its own CD3DModelDraw and ModelInstance layouts, and its build
-//  still takes them from nolfsrc's files.  AvP2's addresses below.
+//  Equals, Dist, ...) -- is the same code in both builds over the same
+//  CD3DModelDraw; ModelInstance's tail is 0x14 bytes further on in Primal
+//  Hunt, which also cloaks models (FLAG2_CHAMELEON: full colour, the red
+//  as the alpha, environment-mapped) and turns the environment map's
+//  offset.  AvP2's addresses below (Primal Hunt's 0x1000ba54..0x1000dfeb).
 //
 //  Near, and why:
 //    * 0x1000bafe (AddLight): the spot blend's outer-colour product loads
@@ -201,13 +202,18 @@ struct ModelInstance
 	uint32      m_Flags3;                                   // +0x188
 	uint8       m_pad_18c[0x194 - 0x18c];
 	LTVector    m_Pos;                                      // +0x194
-#ifdef PRIMAL_HUNT
-	uint8       m_pad_1a0[0x1d4 - 0x1a0];
-	AnimTracker m_AnimTracker;                              // +0x1d4
-#else
 	uint8       m_pad_1a0[0x1bc - 0x1a0];
 	ModelInstanceHookFn m_InstanceHookFn;                   // +0x1bc
 	uint8       m_pad_1c0[0x1d0 - 0x1c0];
+#ifdef PRIMAL_HUNT
+	SharedTexture* m_pEnvMap;                               // +0x1d0
+	AnimTracker m_AnimTracker;                              // +0x1d4
+	uint8       m_pad_210[0x258 - 0x210];
+	void*       m_pAttachments;                             // +0x258
+	uint8       m_pad_25c[0x2c4 - 0x25c];
+	LTVector    m_LastSunPos;                               // +0x2c4
+	float       m_fLastSunVis;                              // +0x2d0
+#else
 	AnimTracker m_AnimTracker;                              // +0x1d0
 	uint8       m_pad_20c[0x244 - 0x20c];
 	void*       m_pAttachments;                             // +0x244
@@ -259,7 +265,9 @@ struct SceneDesc
 {
 	uint8       m_pad_000[0x1c];
 	LTVector    m_GlobalModelLightAdd;                      // +0x1c
-	uint8       m_pad_028[0xfc - 0x28];
+	uint8       m_pad_028[0x80 - 0x28];
+	float       m_FrameTime;                                // +0x80
+	uint8       m_pad_084[0xfc - 0x84];
 	ModelHookFn m_ModelHookFn;                              // +0xfc
 	void*       m_ModelHookUser;                            // +0x100
 };
@@ -421,6 +429,8 @@ public:
 	uint8       m_pad_8a9[0x8ac - 0x8a9];
 	uint32      m_iCacheState;                              // +0x8ac (MCS_)
 	LTBOOL      m_bUseTnL;                                  // +0x8b0
+	uint8       m_pad_8b4[0x8b8 - 0x8b4];
+	uint8       m_ObjectAlpha;                              // +0x8b8 (Primal Hunt's translucent models)
 };
 
 
@@ -441,12 +451,17 @@ CD3DConVar         g_CV_DrawModelsRigid("DrawModelsRigid", 1.0f, LTNULL, LTNULL)
 CD3DConVar         g_CV_ModelCacheRigid("ModelCacheRigid", 0.0f, LTNULL, LTNULL);     // 0x100572e8
 CD3DConVar         g_CV_ModelUseTnL("ModelUseTnL", 0.0f, LTNULL, LTNULL);             // 0x10056910
 
-static float    g_fModelLights;                             // 0x100572b0
+float           g_fWarbleTime;                              // 0x100572b0 (RenderScene advances it)
 static CheapLTLink g_ModelLights;                              // 0x100572b8
 static float    g_fModelSun[32];                            // 0x10057768
 static float    g_fModelSunDelta[32];                       // 0x10056930
-static float    g_fModelShadows;                            // 0x100588a8
+float           g_fWarbleFrac;                              // 0x100588a8
 static CheapLTLink g_ModelShadows;                             // 0x100588b0
+#ifdef PRIMAL_HUNT
+static float    g_fEnvMapAngle;                             // 0x100588c0
+float           g_fEnvMapOffsetU;                           // 0x100588c4 (drawmodel_env.cpp's)
+float           g_fEnvMapOffsetV;                           // 0x100588c8
+#endif
 
 
 // NEAR (0x1000b5eb): the loop's two increments come out swapped.
@@ -527,8 +542,8 @@ void d3d_InitModelSun()
 void d3d_InitModels()
 {
 	d3d_InitModelSun();
-	g_fModelShadows = 0.0f;
-	g_fModelLights = 0.0f;
+	g_fWarbleFrac = 0.0f;
+	g_fWarbleTime = 0.0f;
 	g_ModelShadows.TieOff();
 	g_ModelLights.TieOff();
 	d3d_InitModelVBs();
@@ -762,14 +777,14 @@ inline int32 RoundFloatToInt(float f)
 	__asm fistp n
 	return n;
 }
+// Primal Hunt's cloaked models (the game's FLAG2_CHAMELEON2).
+#define FLAG2_CHAMELEON     (1<<11)
+
 #define MIN_MODEL_FOV       MATH_DEGREES_TO_RADIANS(10.0f)
 #define MAX_MODEL_FOV       MATH_DEGREES_TO_RADIANS(170.0f)
 
-#ifndef PRIMAL_HUNT
 // ---------------------------------------------------------------------- //
-//  The model's lights.  AvP2 1.0.9.6's code: Primal Hunt has the same
-//  functions over its own CD3DModelDraw layout, which its build still
-//  takes from nolfsrc's files.
+//  The model's lights.
 // ---------------------------------------------------------------------- //
 
 extern LTVector g_vGlobalLightColor;                        // 0x1005b780
@@ -1131,9 +1146,28 @@ void CD3DModelDraw::SetupLighting()
 		Mat_InverseTransformation(&m_mTransform, &mWorldToModel);
 	}
 
+#ifdef PRIMAL_HUNT
+	// The cloaked: full colour, and the instance's red as the alpha
+	// (drawmodel_env.cpp's DrawPasses).
+	if (m_pInstance->m_Flags2 & FLAG2_CHAMELEON)
+	{
+		m_vObjectColor.x = 255.0f;
+		m_vObjectColor.y = 255.0f;
+		m_vObjectColor.z = 255.0f;
+		m_ObjectAlpha = m_pInstance->m_ColorR;
+	}
+	else
+	{
+		m_ObjectAlpha = 0;
+		m_vObjectColor.x = (float)m_pInstance->m_ColorR;
+		m_vObjectColor.y = (float)m_pInstance->m_ColorG;
+		m_vObjectColor.z = (float)m_pInstance->m_ColorB;
+	}
+#else
 	m_vObjectColor.x = (float)m_pInstance->m_ColorR;
 	m_vObjectColor.y = (float)m_pInstance->m_ColorG;
 	m_vObjectColor.z = (float)m_pInstance->m_ColorB;
+#endif
 	m_vLightAdd = g_pSceneDesc->m_GlobalModelLightAdd;
 
 	CallModelHook();
@@ -1473,8 +1507,21 @@ void CD3DModelDraw::DrawModel(ModelInstance* pInstance)
 		}
 	}
 
+#ifdef PRIMAL_HUNT
+	// Environment-mapped when the console says all, or the model asks for
+	// it and has a map, and is cloaked or the console enables maps.
+	m_bEnvMap = LTFALSE;
+	if (g_CV_EnvMapAll == 1 ||
+		((pInstance->m_Flags & FLAG_ENVIRONMENTMAP) &&
+		 (g_pStruct->m_bEnvMapEnable || m_pInstance->m_pEnvMap) &&
+		 ((pInstance->m_Flags2 & FLAG2_CHAMELEON) || g_CV_EnvMapEnable == 1)))
+	{
+		m_bEnvMap = LTTRUE;
+	}
+#else
 	m_bEnvMap = (g_CV_EnvMapAll || (pInstance->m_Flags & FLAG_ENVIRONMENTMAP)) &&
 		g_CV_EnvMapEnable && g_pStruct->m_bEnvMapEnable;
+#endif
 
 	m_fLODDist = g_ViewParams.m_Pos.Dist(m_vPos);
 	m_fLODDist /= g_CV_ModelZoomScale.m_fValue;
@@ -1600,6 +1647,15 @@ void CD3DModelDraw::DrawModel(ModelInstance* pInstance)
 	else
 		m_mEnvMap = g_ViewParams.m_mView;
 
+#ifdef PRIMAL_HUNT
+	// The environment map's offset circles once every four seconds.
+	g_fEnvMapAngle += g_pSceneDesc->m_FrameTime * MATH_HALFPI;
+	if (g_fEnvMapAngle > MATH_CIRCLE)
+		g_fEnvMapAngle -= MATH_CIRCLE;
+	g_fEnvMapOffsetU = (float)sin(g_fEnvMapAngle) * 0.025f;
+	g_fEnvMapOffsetV = (float)cos(g_fEnvMapAngle) * 0.025f;
+#endif
+
 	if (m_pInstance->m_pAttachments && !(m_pInstance->m_Flags3 & 8))
 		g_ClipFlags |= 0x3f;
 
@@ -1639,7 +1695,7 @@ void __fastcall d3d_Transform(void* pVert, TLVert* pOut, LTMatrix* pMat)
 // next step of the model sun's curve.
 void d3d_BeginWarbleTransform()
 {
-	g_iModelWarble = (uint32)g_fModelLights;
+	g_iModelWarble = (uint32)g_fWarbleTime;
 }
 
 void __fastcall d3d_WarbleTransform(void* pVert, TLVert* pOut, LTMatrix* pMat)
@@ -1649,7 +1705,7 @@ void __fastcall d3d_WarbleTransform(void* pVert, TLVert* pOut, LTMatrix* pMat)
 	LTVector vScaled;
 
 	i = g_iModelWarble++ & 31;
-	fScale = g_fModelShadows * g_fModelSunDelta[i] + g_fModelSun[i];
+	fScale = g_fWarbleFrac * g_fModelSunDelta[i] + g_fModelSun[i];
 	VEC_MULSCALAR(vScaled, ((ModelSrcVert*)pVert)->m_Vec, fScale);
 	pOut->m_RHW = MatVMul_H(&pOut->m_Vec, pMat, &vScaled);
 }
@@ -1698,5 +1754,3 @@ void CD3DModelDraw::SetupNodeTransforms(LTMatrix* pMat)
 	for (i = 0; i < m_pModel->m_nNodes; i++)
 		MatMul((LTMatrix*)&m_ClipVerts[i], pMat, &m_pModel->m_Transforms[i]);
 }
-
-#endif

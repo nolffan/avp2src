@@ -5020,6 +5020,7 @@ extern int32  g_nViewBottom;                            // 0x1008b8a8
 //  2,288 bytes.  Always answers LTFALSE; the caller ignores the answer.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp d3d_RenderScene (0x10018520)
 LTBOOL d3d_RenderScene(SceneDesc* pScene)
 {
 	// 20,480 bytes, and both the pointer and the size are handed to the
@@ -5323,3 +5324,4 @@ LTBOOL d3d_RenderScene(SceneDesc* pScene)
 
 	return LTFALSE;
 }
+#endif // PRIMAL_HUNT

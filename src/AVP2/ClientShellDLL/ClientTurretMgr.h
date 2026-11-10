@@ -145,7 +145,7 @@ class CClientTurretMgr : public CClientTurretList
 		CClientTurretMgr() {}
 		~CClientTurretMgr() {}
 
-		void			SaveCameraFX(uint8 nID);
+		void			SaveCameraFX(int nID);
 		void			RestoreCameraFX(uint8 nID);
 
 	protected :

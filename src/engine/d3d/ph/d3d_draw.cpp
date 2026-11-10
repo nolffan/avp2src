@@ -22,15 +22,18 @@
 //  where retail calls it (0x10019550: ~vector, not ~_Vector_base -- its
 //  dead `mov %esi,(%esp)` is _Destroy's first argument).
 //
-//  Not written: 0x100162a0 (the portals, 2365 bytes; 0x10016c40 after it
-//  is its RenderScene callback), 0x10018520 (RenderScene, 2671 bytes).
+//  0x100162a0 (d3d_DrawPortals: the scene again through each mirror) and
+//  0x10018520 (d3d_RenderScene) are near, by the inliner's choices:
+//  retail calls the TransformPlane and reflection helpers it uses out of
+//  line.  AvP2's vertical fog (0x100135c0, d3d_CalcVFog) is near the same
+//  way; Primal Hunt's fogvolume.cpp replaces it.
 //  0x10016c60 (d3d_ClipLine) is near: the scheduling of the colour lerp's
 //  byte loads, size-exact.  Near, all from VC6's inlining choices or scheduling
 //  rather than a known source difference: 0x10014550 (register choice),
 //  0x10014620 (which push_back sites expand), 0x100149c0 and 0x10014b80
 //  (the vertex copy and the transform's operand order), 0x10015070,
-//  0x100154c0 and 0x10015760 (which of d3d_DrawPolyFlat / the deferred
-//  list / d3d_DisableTexture expand), 0x10015270 and 0x10017bd0 (the
+//  0x10015760 (d3d_DrawPolyFlat's drawing spelt out, through the
+//  out-of-line transform; size within 4 bytes), 0x10015270 and 0x10017bd0 (the
 //  transform's term order), 0x10015400, 0x10017e60, 0x10018400 and
 //  0x10019040 (register choice).
 //
@@ -126,7 +129,42 @@ LTVector    g_vLightAddLast;                                                    
 // ---------------------------------------------------------------------- //
 //  Fog.
 // ---------------------------------------------------------------------- //
-struct ViewParams;
+// The view (common_draw.cpp's), as this file reads it.
+struct ViewParams
+{
+	uint8       m_Reserved000[0x1c];
+	LTRect      m_Rect;                                     // +0x01c
+	uint8       m_Reserved02c[0x8c - 0x2c];
+	float       m_FarZ;                                     // +0x08c
+	uint8       m_Reserved090[0xdc - 0x90];
+	LTMatrix    m_mView;                                    // +0x0dc
+	LTMatrix    m_mProjection;                              // +0x11c
+	LTMatrix    m_mWorldToCamera;                           // +0x15c
+	uint8       m_Reserved19c[0x1dc - 0x19c];
+	LTMatrix    m_mFullTransform;                           // +0x1dc
+	LTMatrix    m_mDeviceTransform;                         // +0x21c
+	uint8       m_Reserved25c[0x2dc - 0x25c];
+	LTMatrix    m_mReallyCloseToCamera;                     // +0x2dc
+	uint8       m_Reserved31c[0x334 - 0x31c];
+	LTVector    m_ViewPoints[5];                            // +0x334
+	LTPlane     m_ViewPlanes[6];                            // +0x370
+	LTPlane     m_ClipPlanes[6];                            // +0x3d0
+	LTPlane     m_ReallyClosePlanes[6];                     // +0x430
+	LTVector    m_vUp;                                      // +0x490
+	LTVector    m_vRight;                                   // +0x49c
+	LTVector    m_vForward;                                 // +0x4a8
+	LTVector    m_Pos;                                      // +0x4b4
+	LTVector    m_SkyViewPos;                               // +0x4c0
+	LTBOOL      m_bMirrorView;                              // +0x4cc (through an odd number of mirrors)
+	float       m_fMirrorSign;                              // +0x4d0
+	LTBOOL      m_bInPortal;                                // +0x4d4
+	LTVector    m_vPortalPos;                               // +0x4d8
+	LTVector    m_vViewPos;                                 // +0x4e4
+	float       m_fVFog;                                    // +0x4f0 (the camera's)
+	uint32      m_nVFogMode;                                // +0x4f4 (the camera's)
+};
+
+extern ViewParams   g_ViewParams;                           // 0x1005b790
 extern LTVector g_vViewPos;                                 // 0x1005bc74 (g_ViewParams+0x4e4)
 extern float    g_fSkyFogScale;                             // 0x1005e0b8
 
@@ -173,6 +211,102 @@ void __fastcall d3d_CalcSkyFog(const LTVector* pPos, uint32* pSpecular)
 	fDist = (pPos->z - g_CV_SkyFogNearZ) * g_fSkyFogScale;
 	((uint8*)pSpecular)[3] = (uint8)(255 - RoundFloatToInt(fDist));
 }
+
+
+#ifndef PRIMAL_HUNT
+// ---------------------------------------------------------------------- //
+//  AvP2's vertical fog (Primal Hunt's fog volumes replace it,
+//  fogvolume.cpp).
+// ---------------------------------------------------------------------- //
+extern float    g_fVFogValScale;                            // 0x1005df90
+extern float    g_fVFogRangeScale;                          // 0x1005e210
+extern float    g_fVFogDensityScale;                        // 0x1005e20c
+
+// Where a height is against the fog: 0 below it, 1 above it, 2 in it.
+inline uint32 d3d_GetVFogMode(float y)
+{
+	if (y >= g_CV_VFogMaxY.m_fValue)
+		return 1;
+	else if (y <= g_CV_VFogMinY.m_fValue)
+		return 0;
+	else
+		return 2;
+}
+
+// The fog's density at a height.
+inline float d3d_GetVFogVal(float y)
+{
+	if (y <= g_CV_VFogMinY.m_fValue)
+		return g_CV_VFogMinYVal.m_fValue;
+	else if (y >= g_CV_VFogMaxY.m_fValue)
+		return g_CV_VFogMaxYVal.m_fValue;
+	else
+		return (y - g_CV_VFogMinY.m_fValue) * g_fVFogRangeScale * g_fVFogValScale + g_CV_VFogMinYVal.m_fValue;
+}
+
+// 0x100135c0 -- the vertical fog between the camera and a point: the
+// distance through each layer by the mean of the densities at its ends,
+// into the specular colour's alpha.
+//
+// RETAIL BUG: where the segment leaves the camera's layer it is cut at
+// VFogMaxY, even when it crosses VFogMinY (camera below the fog, the
+// point in it, or the other way round), and the top layer's density is
+// taken as VFogMaxYVal at the cut.
+void __fastcall d3d_CalcVFog(const LTVector* pPos, uint32* pSpecular)
+{
+	LTVector vCamera = g_ViewParams.m_Pos;
+	LTVector vPos = *pPos;
+	float fFog;
+
+	uint32 nMode = d3d_GetVFogMode(pPos->y);
+	if (g_ViewParams.m_nVFogMode == nMode)
+	{
+		if (nMode == 2)
+		{
+			float fPosFog = (vPos.y - g_CV_VFogMinY.m_fValue) * g_fVFogRangeScale * g_fVFogValScale +
+				g_ViewParams.m_fVFog + g_CV_VFogMinYVal.m_fValue;
+			fFog = (vCamera - vPos).Mag() * fPosFog * g_fVFogDensityScale;
+		}
+		else
+		{
+			float fPosFog = g_ViewParams.m_fVFog;
+			fFog = (vCamera - vPos).Mag() * fPosFog * 2.0f * g_fVFogDensityScale;
+		}
+	}
+	else
+	{
+		LTVector vHit;
+		float t;
+
+		t = (g_CV_VFogMaxY.m_fValue - vCamera.y) / (vPos.y - vCamera.y);
+		vHit.y = g_CV_VFogMaxY.m_fValue;
+		vHit.x = (vPos.x - vCamera.x) * t + vCamera.x;
+		vHit.z = (vPos.z - vCamera.z) * t + vCamera.z;
+
+		if (g_ViewParams.m_nVFogMode == 1)
+		{
+			float fTopFog = g_CV_VFogMaxYVal.m_fValue * 2.0f;
+			float fFog1 = (vCamera - vHit).Mag() * fTopFog * g_fVFogDensityScale;
+			float fPosFog = d3d_GetVFogVal(vPos.y) + g_CV_VFogMaxYVal.m_fValue;
+			fFog = (vHit - vPos).Mag() * fPosFog * g_fVFogDensityScale + fFog1;
+		}
+		else
+		{
+			float fCamFog = d3d_GetVFogVal(vCamera.y) + g_CV_VFogMaxYVal.m_fValue;
+			float fFog1 = (vCamera - vHit).Mag() * fCamFog * g_fVFogDensityScale;
+			float fTopFog = g_CV_VFogMaxYVal.m_fValue * 2.0f;
+			fFog = (vHit - vPos).Mag() * fTopFog * g_fVFogDensityScale + fFog1;
+		}
+	}
+
+	if (fFog > g_CV_VFogMax.m_fValue)
+		fFog = g_CV_VFogMax.m_fValue;
+	else if (fFog < 0.0f)
+		fFog = 0.0f;
+
+	((uint8*)pSpecular)[3] = (uint8)(0xFF - RoundFloatToInt(fFog));
+}
+#endif
 
 
 // 0x10014340 -- a colour through the gamma table.
@@ -421,22 +555,6 @@ void d3d_DeferPoly(RenderPoly* pPoly)
 // ---------------------------------------------------------------------- //
 //  The view and the world's polygons, as this file reads them.
 // ---------------------------------------------------------------------- //
-struct ViewParams
-{
-	uint8       m_Reserved000[0x1c];
-	LTRect      m_Rect;                                     // +0x01c
-	uint8       m_Reserved02c[0xdc - 0x2c];
-	LTMatrix    m_mView;                                    // +0x0dc
-	LTMatrix    m_mProjection;                              // +0x11c
-	LTMatrix    m_mWorldToCamera;                           // +0x15c
-	uint8       m_Reserved19c[0x1dc - 0x19c];
-	LTMatrix    m_mFullTransform;                           // +0x1dc
-	LTMatrix    m_mDeviceTransform;                         // +0x21c
-	uint8       m_Reserved25c[0x2dc - 0x25c];
-	LTMatrix    m_mReallyCloseToCamera;                     // +0x2dc
-};
-
-extern ViewParams   g_ViewParams;                           // 0x1005b790
 
 struct RenderVertex
 {
@@ -457,11 +575,22 @@ struct RenderSurface
 	uint8           m_Reserved00[0x2c];
 	SharedTexture*  m_pTexture;                             // +0x2c
 	uint32          m_Flags;                                // +0x30
+	uint8           m_Reserved34[0x3a - 0x34];
+	uint16          m_TextureFlags;                         // +0x3a
 };
+
+// A surface's texture flags: a portal (a mirror), and whether the
+// portal's own polygon is drawn over what it shows.
+#define TEXFLAG_PORTALMASK  0x7fff
+#define TEXFLAG_PORTAL      0x7ffe
+#define TEXFLAG_DRAWPORTAL  0x8000
 
 struct RenderPoly
 {
-	uint8           m_Reserved00[0x2c];
+	uint8           m_Reserved00[0x18];
+	LTVector        m_vCenter;                              // +0x18
+	uint8           m_Reserved24[0x28 - 0x24];
+	LTPlane*        m_pPlane;                               // +0x28
 	RenderSurface*  m_pSurface;                             // +0x2c
 	uint8           m_Reserved30[0x50 - 0x30];
 	RenderPolyVert* m_pTJuncVerts;                          // +0x50
@@ -1136,20 +1265,35 @@ struct SceneDesc
 {
 	int32       m_DrawMode;                                 // +0x00
 	uint32*     m_pTicks_Render_Objects;                    // +0x04
-	uint8       m_Reserved08[0x50 - 0x08];
+	uint8       m_Reserved08[0x34 - 0x08];
+	struct RenderWorld* m_pWorld;                           // +0x34
+	uint8       m_Reserved38[0x50 - 0x38];
 	LTVector    m_GlobalLightScale;                         // +0x50
 	uint8       m_Reserved5c[0x74 - 0x5c];
 	LTVector    m_GlobalLightAdd;                           // +0x74
-	uint8       m_Reserved80[0xf4 - 0x80];
+	float       m_FrameTime;                                // +0x80
+	uint8       m_Reserved84[0xd4 - 0x84];
+	float       m_FarZ;                                     // +0xd4
+	LTVector    m_Pos;                                      // +0xd8 (the camera's)
+	uint8       m_Reservede4[0xf4 - 0xe4];
 	LTObject**  m_pObjectList;                              // +0xf4
 	int         m_ObjectListSize;                           // +0xf8
 };
 
 struct RenderStruct
 {
-	uint8       m_Reserved00[0x58];
+	uint8       m_Reserved00[0x14];
+	void        (*ConsolePrint)(const char* pMsg, ...);     // +0x14
+	uint8       m_Reserved18[0x28 - 0x18];
+	uint32      (*GetTime)();                               // +0x28
+	uint8       m_Reserved2c[0x48 - 0x2c];
+	uint32      m_nCounter48;                               // +0x48
+	uint32      m_nCounter4c;                               // +0x4c
+	uint8       m_Reserved50[0x58 - 0x50];
 	uint32      m_WorldTicks;                               // +0x58
 	uint32      m_ObjectTicks;                              // +0x5c
+	uint8       m_Reserved60[0x138 - 0x60];
+	LTVector    m_vSunDir;                                  // +0x138
 };
 
 typedef void (*ProcessObjectFn)(LTObject* pObject);
@@ -1161,9 +1305,22 @@ struct ObjectHandler
 	uint8           m_Reserved08[0x0c];
 };
 
+// A visible portal: its polygon and the transform it's drawn through.
+struct PortalRef
+{
+	RenderPoly*     m_pPoly;                                // +0x00
+	LTMatrix*       m_pTransform;                           // +0x04
+};
+
+#define MAX_VISIBLE_PORTALS 32
+
 struct VisibleSet
 {
 	void    ClearSets();                                    // 0x10039e80
+
+	uint8       m_Reserved000[0x40];
+	PortalRef   m_Portals[MAX_VISIBLE_PORTALS];             // +0x040
+	uint32      m_nPortals;                                 // +0x140
 };
 
 extern RenderStruct*    g_pStruct;                          // 0x1005df08
@@ -1274,17 +1431,56 @@ void d3d_FullDrawScene(SceneDesc* pDesc)
 }
 
 
-// 0x10015760 -- draw a deferred list
-// flat and free it.
+// 0x10015760 -- draw a deferred list flat (d3d_DrawPolyFlat's drawing,
+// through the out-of-line transform) and free it.
 void d3d_DrawDeferredList(DeferredPoly* pList)
 {
 	DeferredPoly *pCur, *pNext;
+	RenderPoly* pPoly;
+	RenderPolyVert* pPolyVerts;
+	TLVertex verts[40];
+	TLVertex* pVerts;
+	int nVerts, i;
+	uint32 color;
 
 	for (pCur = pList; pCur; pCur = pNext)
 	{
 		pNext = pCur->m_pNext;
 		g_ClipFlags = pCur->m_ClipFlags;
-		d3d_DrawPolyFlat(pCur->m_pPoly);
+		pPoly = pCur->m_pPoly;
+
+		color = (uint32)pPoly;
+		if (!g_CV_ShowSplits)
+			color = (uint32)pPoly->m_pSurface;
+
+		d3d_UnsetTexture(g_iCurTextureStage);
+
+		if (g_CV_FixTJunc)
+		{
+			pPolyVerts = pPoly->m_pTJuncVerts;
+			nVerts = pPoly->m_nTJuncVerts;
+		}
+		else
+		{
+			pPolyVerts = pPoly->m_Verts;
+			nVerts = pPoly->m_nVerts;
+		}
+
+		for (i = 0; i < nVerts; i++)
+		{
+			d3d_MatVMul_H(&verts[i].m_Vec, &g_ViewParams.m_mDeviceTransform, &pPolyVerts[i].m_pVert->m_Vec);
+			verts[i].color = color;
+			verts[i].specular = 0xFFFFFFFF;
+		}
+
+		g_nTrianglesDrawn += nVerts - 2;
+		pVerts = verts;
+		if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+		{
+			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
+			g_nDrawPrimCalls++;
+		}
+
 		sb_Free(&g_DeferredPolyBank, pCur);
 	}
 }
@@ -1522,7 +1718,214 @@ void d3d_DrawPortalPoly(RenderPoly* pPoly, LTMatrix* pTransform)
 
 extern SceneDesc*   g_pSceneDesc;                           // 0x1005c14c (common_draw.cpp)
 
-void    d3d_DrawPortals(SceneDesc* pDesc, VisibleSet* pVisibleSet);  // 0x100162a0 (not written)
+// What the portal pass reads of the frame's set-up (common_draw.cpp).
+struct ViewBox
+{
+	float       m_fOffX;                                    // +0x00
+	float       m_fOffY;                                    // +0x04
+	float       m_fFocal;                                   // +0x08
+	float       m_fHalfW;                                   // +0x0c
+	float       m_fHalfH;                                   // +0x10
+	float       m_fNear;                                    // +0x14
+	float       m_fFar;                                     // +0x18
+};
+
+struct RenderWorld
+{
+	uint8       m_Reserved00[0x0c];
+	uint16      m_FrameCode;                                // +0x0c
+};
+
+extern CD3DConVar   g_CV_NearZ;                             // 0x1005b748 (d3d_viewparams.cpp)
+extern uint16       g_CurFrameCode;                         // 0x1005d238
+extern uint32       g_nFrameTime;                           // 0x1005bc88
+struct ProjectParams
+{
+	float   m_fScaleX;                                      // +0x31c
+	float   m_fCenterX;                                     // +0x320
+	float   m_fScaleY;                                      // +0x324
+	float   m_fCenterY;                                     // +0x328
+	float   m_fScaleZ;                                      // +0x32c
+	float   m_fOffsetZ;                                     // +0x330
+};
+
+extern ProjectParams    g_ProjectParams;                    // 0x1005baac (g_ViewParams+0x31c)
+extern void         (*g_pfnPostQueueHook)();                // 0x10072808
+extern int32        g_CV_LightMap;                          // 0x1004a790
+
+void    d3d_IncFrameCode(RenderWorld* pWorld);              // 0x10010160 (common_draw.cpp)
+void    d3d_InitViewBox(ViewBox* pBox, float fNearZ, float fFarZ, ViewParams* pPrev,
+	float fMinX, float fMinY, float fMaxX, float fMaxY);    // 0x10010383
+int32   d3d_InitSceneContext(ViewParams* pParams, ViewBox* pBox,
+	float fMinX, float fMinY, float fMaxX, float fMaxY,
+	LTMatrix* pCamera, LTVector vScale);                    // 0x100104cb
+
+// Whether the scene through a portal is clipped to the portal's polygon
+// by the stencil buffer.
+int32   g_bPortalStencilClip = 1;                           // 0x1004ac60
+
+// 0x100162a0 -- draw the scene through each visible portal (a mirror):
+// mark the portal's polygon in the stencil buffer and push the depth
+// buffer to the far plane there, then draw the scene again from the
+// camera reflected in the portal's plane, clipped to the polygon's
+// screen box, and blend the portal's own polygon over it.
+void d3d_DrawPortals(SceneDesc* pDesc, VisibleSet* pVisibleSet)
+{
+	ViewParams savedParams;
+	PortalRef portals[MAX_VISIBLE_PORTALS];
+	TLVertex verts[40];
+	TLVertex* pVerts;
+	RenderPolyVert* pPolyVerts;
+	int nVerts, i;
+	uint32 nPortals, iPortal;
+	RenderPoly* pPoly;
+	RenderSurface* pSurface;
+	LTMatrix* pTransform;
+	RenderWorld* pWorld;
+	LTPlane plane;
+	LTVector vOrigin;
+	LTMatrix mCamera, mReflect, mMirrorCamera, mScene;
+	ViewBox viewBox;
+	float fMinX, fMinY, fMinZ, fMaxX, fMaxY, fZ, fRHW;
+	uint32 color;
+	int32 nSaveLightMap;
+
+	// The scene through a portal draws no portals itself.
+	g_pfnPostQueueHook = LTNULL;
+
+	nPortals = pVisibleSet->m_nPortals;
+	if (!nPortals)
+		return;
+
+	memcpy(portals, pVisibleSet->m_Portals, nPortals * sizeof(PortalRef));
+
+	pWorld = pDesc->m_pWorld;
+	for (iPortal = 0; iPortal < nPortals; iPortal++)
+	{
+		pPoly = portals[iPortal].m_pPoly;
+		pTransform = portals[iPortal].m_pTransform;
+		pSurface = pPoly->m_pSurface;
+		if ((pSurface->m_TextureFlags & TEXFLAG_PORTALMASK) != TEXFLAG_PORTAL)
+			continue;
+
+		// Only from the portal's front.
+		plane = pTransform->TransformPlane(*pPoly->m_pPlane);
+		if (plane.m_Normal.Dot(g_ViewParams.m_Pos) - plane.m_Dist < 0.0f)
+			continue;
+
+		// The camera, reflected in the portal's plane.
+		mCamera.Identity();
+		mCamera.SetBasisVectors(&g_ViewParams.m_vRight, &g_ViewParams.m_vUp, &g_ViewParams.m_vForward);
+		mCamera.SetTranslation(g_ViewParams.m_Pos);
+
+		vOrigin = plane.m_Normal * plane.m_Dist;
+		mReflect.SetupReflectionMatrix(plane.m_Normal, vOrigin);
+		MatMul(&mMirrorCamera, &mReflect, &mCamera);
+		mScene = mMirrorCamera;
+
+		d3d_IncFrameCode(pWorld);
+		g_CurFrameCode = pWorld->m_FrameCode;
+		g_nFrameTime = g_pStruct->GetTime();
+
+		// Mark the portal's polygon in the stencil buffer.
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILENABLE, TRUE);
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILPASS, D3DSTENCILOP_REPLACE);
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILFUNC, D3DCMP_ALWAYS);
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILREF, 1);
+
+		g_ClipFlags = 0x3f;
+
+		color = (uint32)pPoly;
+		if (!g_CV_ShowSplits)
+			color = (uint32)pPoly->m_pSurface;
+
+		d3d_DisableTexture(g_iCurTextureStage);
+		d3d_GetPolyVerts(pPoly, &pPolyVerts, &nVerts);
+		for (i = 0; i < nVerts; i++)
+		{
+			d3d_MatVMul_H(&verts[i].m_Vec, pTransform, &pPolyVerts[i].m_pVert->m_Vec);
+			verts[i].color = color;
+			verts[i].specular = 0xFFFFFFFF;
+		}
+
+		g_nTrianglesDrawn += nVerts - 2;
+		pVerts = verts;
+		if (d3d_DrawTLPoly(&pVerts, &nVerts))
+		{
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILREF, 1);
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILPASS, D3DSTENCILOP_KEEP);
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILFUNC, D3DCMP_EQUAL);
+
+			// Push the depth buffer back to the far plane over the
+			// polygon, and find its screen box.
+			fZ = g_ViewParams.m_FarZ - 1.0f;
+			fRHW = 1.0f / fZ;
+			fZ = (fZ * g_ProjectParams.m_fScaleZ + g_ProjectParams.m_fOffsetZ) * fRHW;
+
+			fMinX = fMinY = fMinZ = 100000.0f;
+			fMaxX = fMaxY = -100000.0f;
+			for (i = 0; i < nVerts; i++)
+			{
+				pVerts[i].color = 0x00FF0000;
+				pVerts[i].rhw = fRHW;
+				pVerts[i].m_Vec.z = fZ;
+
+				if (pVerts[i].m_Vec.x < fMinX)
+					fMinX = pVerts[i].m_Vec.x;
+				if (pVerts[i].m_Vec.y < fMinY)
+					fMinY = pVerts[i].m_Vec.y;
+				if (fZ < fMinZ)
+					fMinZ = fZ;
+				if (pVerts[i].m_Vec.x > fMaxX)
+					fMaxX = pVerts[i].m_Vec.x;
+				if (pVerts[i].m_Vec.y > fMaxY)
+					fMaxY = pVerts[i].m_Vec.y;
+			}
+
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, TRUE);
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, TRUE);
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZFUNC, D3DCMP_ALWAYS);
+			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZFUNC, D3DCMP_LESSEQUAL);
+
+			if (!g_bPortalStencilClip || g_CV_ShowPortalBounds.m_nValue)
+			{
+				g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILENABLE, FALSE);
+				g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILFUNC, D3DCMP_EQUAL);
+			}
+
+			// The scene from the reflected camera, in the polygon's box.
+			savedParams = g_ViewParams;
+
+			d3d_InitViewBox(&viewBox, g_CV_NearZ.m_fValue, pDesc->m_FarZ, &g_ViewParams,
+				fMinX, fMinY, fMaxX, fMaxY);
+			d3d_InitSceneContext(&g_ViewParams, &viewBox, fMinX, fMinY, fMaxX, fMaxY,
+				&mScene, LTVector(1.0f, 1.0f, 1.0f));
+
+			g_ViewParams.m_vPortalPos = pPoly->m_vCenter;
+			g_ViewParams.m_bMirrorView = !savedParams.m_bMirrorView;
+			g_ViewParams.m_fMirrorSign = g_ViewParams.m_bMirrorView ? -1.0f : 1.0f;
+			g_ViewParams.m_bInPortal = LTTRUE;
+
+			nSaveLightMap = g_CV_LightMap;
+			if (!g_CV_PortalLightmap.m_nValue)
+				g_CV_LightMap = 0;
+
+			d3d_FullDrawScene(pDesc);
+
+			g_CV_LightMap = nSaveLightMap;
+			g_ViewParams = savedParams;
+
+			// The portal's own polygon over it.
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZFUNC, D3DCMP_ALWAYS);
+			if (pSurface->m_TextureFlags & TEXFLAG_DRAWPORTAL)
+				d3d_DrawPortalPoly(pPoly, portals[iPortal].m_pTransform);
+			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZFUNC, D3DCMP_LESSEQUAL);
+		}
+
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_STENCILENABLE, FALSE);
+	}
+}
 
 // 0x10016c40 -- RenderScene's portal pass: the frame's visible set
 // through the portals.
@@ -1537,17 +1940,6 @@ void d3d_DrawVisiblePortals()
 // ---------------------------------------------------------------------- //
 //  Debug lines and boxes.
 // ---------------------------------------------------------------------- //
-struct ProjectParams
-{
-	float   m_fScaleX;                                      // +0x31c
-	float   m_fCenterX;                                     // +0x320
-	float   m_fScaleY;                                      // +0x324
-	float   m_fCenterY;                                     // +0x328
-	float   m_fScaleZ;                                      // +0x32c
-	float   m_fOffsetZ;                                     // +0x330
-};
-
-extern ProjectParams    g_ProjectParams;                    // 0x1005baac (g_ViewParams+0x31c)
 
 extern float    g_fNearZ;                                   // 0x1005b818
 extern float    g_fFarZ;                                    // 0x1005b820
@@ -1900,12 +2292,357 @@ void d3d_DrawTerrainSections(TerrainWorld* pWorld)
 
 
 // ---------------------------------------------------------------------- //
+//  RenderScene.
+// ---------------------------------------------------------------------- //
+
+// The world's tree: its root node, whose box the debug pass draws.
+struct WorldTree
+{
+	uint8           m_Reserved00[0x0c];
+	WorldTreeNode   m_RootNode;                             // +0x0c
+};
+
+struct RenderSceneWorld
+{
+	uint8       m_Reserved000[0x6c];
+	WorldTree   m_WorldTree;                                // +0x06c
+};
+
+// The model drawer's environment-map scale and pan (drawmodel.cpp).
+class CD3DModelDraw
+{
+public:
+	uint8       m_Reserved000[0x61c];
+	float       m_fEnvOffsetU;                              // +0x61c
+	float       m_fEnvOffsetV;                              // +0x620
+	float       m_fEnvScaleU;                               // +0x624
+	float       m_fEnvScaleV;                               // +0x628
+};
+
+extern CD3DModelDraw    g_ModelDraw;                        // 0x100569b0
+
+extern LPDIRECTDRAW7        g_pDirectDraw;                  // 0x1005d2a8
+extern LPDIRECTDRAWSURFACE7 g_pPrimarySurface;              // 0x1005d2b0
+extern LPDIRECTDRAWSURFACE7 g_pBackBuffer;                  // 0x1005d2b4
+extern LPDIRECTDRAWSURFACE7 g_pZBuffer;                     // 0x1005d2b8
+extern LTBOOL       g_bIn3D;                                // 0x100638d8
+extern LTBOOL       g_bInOptimized2D;                       // 0x100638dc
+extern uint32       g_bAnimateLightmaps;                    // 0x100628b0
+extern void         (*g_pfnPostQueueHook)();                // 0x10072808
+extern CD3DConVar   g_CV_TableFogVar;                       // 0x1005d2f0
+extern float        g_CV_LightSaturate;                     // 0x1005d8b0
+extern float        g_CV_WarbleScale;                       // 0x1005d8b4
+extern float        g_CV_WarbleSpeed;                       // 0x1005dea0
+extern float        g_CV_EnvPanSpeed;                       // 0x1004a72c
+extern float        g_CV_EnvScale;                          // 0x1005d5a8
+extern int32        g_CV_Saturate;                          // 0x1005d384
+extern int32        g_CV_Wireframe;                         // 0x1005df64
+extern int32        g_CV_ShowTextureCounts;                 // 0x1005df5c
+extern int32        g_CV_ShowPolyCounts;                    // 0x1005df70
+extern int32        g_CV_ModelProfile;                      // 0x1005da08
+extern float        g_fVFogValScale;                        // 0x1005df90
+extern float        g_fVFogRangeScale;                      // 0x1005e210
+extern float        g_fVFogDensityScale;                    // 0x1005e20c
+extern LTVector     g_vGlobalLightColor;                    // 0x1005b780
+extern LTVector     g_vLightAdd;                            // 0x1005bc90
+extern uint32       g_WorldColor;                           // 0x1005c154
+extern uint8        g_GammaTableR[256];                     // 0x1005f79c
+extern uint8        g_GammaTableG[256];                     // 0x1005f89c
+extern uint8        g_GammaTableB[256];                     // 0x1005f99c
+extern uint8        g_LightTableR[256];                     // 0x1005fa9c
+extern uint8        g_LightTableG[256];                     // 0x1005fb9c
+extern uint8        g_LightTableB[256];                     // 0x1005fc9c
+extern void*        g_LightmapPolyList;                     // 0x1005fda0
+extern int32        g_GouraudPolyList;                      // 0x1005e728
+extern uint32       g_nTLVertsUsed;                         // 0x1005e27c
+extern uint32       g_nModelsClipped;                       // 0x1005e278
+extern uint32       g_nModelsUnclipped;                     // 0x1005e774
+extern float        g_fWarbleTime;                          // 0x100572b0 (drawmodel.cpp)
+extern float        g_fWarbleFrac;                          // 0x100588a8 (drawmodel.cpp)
+extern uint32       g_nTextureChanges;                      // 0x1005d22c
+extern uint32       g_1005bd18;                             // 0x1005bd18 (texture uploads)
+extern uint32       g_nWorldPoliesDrawn;                    // 0x1005c120
+extern uint32       g_nDrawPrimCalls;                       // 0x1005c144
+extern uint32       g_nSkyLightsApplied;                    // 0x1005c164
+extern uint32       g_nLitObjects;                          // 0x1005bcac
+extern uint32       g_1005bd10;                             // 0x1005bd10
+extern int32        g_nModelTriangles;                      // 0x1005bd04
+extern uint32       g_1005b770;                             // 0x1005b770 (particles drawn)
+extern uint32       g_nClipPasses;                          // 0x1005c124
+extern uint32       g_nVisibleLeaves;                       // 0x1005b78c
+extern uint32       g_nSkyPortalPoliesDrawn;                // 0x1005c150
+extern uint32       g_1005bd08;                             // 0x1005bd08
+extern uint32       g_nDynamicLights;                       // 0x1005bcb0
+extern uint32       g_nLightPolyRejects;                    // 0x1005c128
+extern uint32       g_nLightmapUploadSaves;                 // 0x1005b774
+
+void    dd_ConsolePrint(const char* pMsg, ...);             // 0x10013ade
+void    AddDebugMessage(int32 debugLevel, const char* pMsg, ...);  // 0x10013b13
+int32   d3d_InitFrame(SceneDesc* pDesc, void* pClipScratch, uint32 nScratch); // 0x10011162 (common_draw.cpp)
+void    d3d_InitLMAnimRamp(float fScale);                   // 0x100337b0 (lightanim.cpp)
+void    d3d_InitModelSun();                                 // 0x1000b67d (drawmodel.cpp)
+#ifdef PRIMAL_HUNT
+void    __fastcall d3d_CalcFogVolume(const LTVector* pPos, uint32* pSpecular);  // 0x1000fa33 (fogvolume.cpp)
+void    d3d_ClearFogVolumes();                              // 0x1000fc43 (fogvolume.cpp)
+#define d3d_CalcVFog    d3d_CalcFogVolume
+#endif
+
+void (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);       // 0x1005e1c4
+void (__fastcall *g_pfnCalcSkyFog)(const LTVector* pPos, uint32* pSpecular);    // 0x1005e6d8
+LTVector    g_vNegSunDir;                                   // 0x1005e288
+extern uint32   g_LastWorldColor;                           // 0x1005fdc8
+static int32    g_LastRenderToFront;                        // 0x1005fe10
+static LTBOOL   g_bSaturateTableValid;                      // 0x1005df0c
+static float    g_fSaturateTableLast;                       // 0x1005d72c
+static LTBOOL   g_bWarbleTableValid;                        // 0x1005df7c
+static float    g_fWarbleScaleLast;                         // 0x1005d4f0
+static float    g_fFogRange;                                // 0x1005d338
+
+// No fog (table fog does it).
+void __fastcall d3d_CalcNoFog(const LTVector* pPos, uint32* pSpecular)
+{
+}
+
+// |a - b|.
+#define FDIFF(a, b)     (((a) < (b)) ? ((b) - (a)) : ((a) - (b)))
+
+// A colour ramp: 256 bytes of a 16.16 accumulator stepped by fScale,
+// clamped at 255.
+#define BUILD_RAMP(pTable, fScale) \
+{ \
+	uint8* pRamp = (pTable); \
+	uint32 nStep = (uint32)((fScale) * 65536.0f); \
+	uint32 nAccum = 0; \
+	for (int i = 256; i; i--) \
+	{ \
+		*pRamp++ = (uint8)(nAccum >> 16); \
+		nAccum += nStep; \
+		if (nAccum > (255 << 16)) \
+			nAccum = (255 << 16); \
+	} \
+}
+
+// RenderScene: draw the frame's scene, with the per-frame tables and the
+// debug statistics around it.
+LTBOOL d3d_RenderScene(SceneDesc* pDesc)
+{
+	uint8 clipScratch[0x5000];
+	CounterFinal cnt;
+
+	if (!pDesc || !g_pPrimarySurface || !g_pD3DDevice || !g_pDirectDraw || !g_bIn3D)
+		return LTFALSE;
+
+	if (g_bInOptimized2D)
+	{
+		AddDebugMessage(0, "Error: tried to render 3D while in optimized 2D mode.");
+		return LTFALSE;
+	}
+
+	// Swap the front and back buffers' roles when RenderToFront changes.
+	if (g_CV_RenderToFront.m_nValue != g_LastRenderToFront)
+	{
+		LPDIRECTDRAWSURFACE7 pOldBack = g_pBackBuffer;
+
+		g_pBackBuffer = g_pPrimarySurface;
+		g_pPrimarySurface = pOldBack;
+
+		g_pBackBuffer->AddAttachedSurface(g_pZBuffer);
+		g_pPrimarySurface->DeleteAttachedSurface(0, g_pZBuffer);
+		g_pD3DDevice->SetRenderTarget(g_pBackBuffer, 0);
+
+		g_LastRenderToFront = g_CV_RenderToFront.m_nValue;
+	}
+
+	g_bAnimateLightmaps = g_CV_DrawPortals.m_nValue && d3d_HasStencilBuffer();
+
+	if (!g_bSaturateTableValid || g_CV_LightSaturate != g_fSaturateTableLast)
+	{
+		d3d_InitLMAnimRamp(g_CV_LightSaturate);
+		g_fSaturateTableLast = g_CV_LightSaturate;
+		g_bSaturateTableValid = LTTRUE;
+	}
+
+	g_ModelDraw.m_fEnvOffsetU = pDesc->m_Pos.x * g_CV_EnvPanSpeed + 0.5f;
+	g_ModelDraw.m_fEnvOffsetV = pDesc->m_Pos.z * g_CV_EnvPanSpeed + 0.5f;
+	g_ModelDraw.m_fEnvScaleU = g_ModelDraw.m_fEnvScaleV = 1.0f / g_CV_EnvScale * 0.5f;
+
+	g_nModelsClipped = 0;
+	g_nModelsUnclipped = 0;
+
+	LTVector vNegSunDir = -g_pStruct->m_vSunDir;
+	g_vNegSunDir = vNegSunDir;
+
+	if (d3d_InitFrame(pDesc, clipScratch, sizeof(clipScratch)))
+	{
+		// The fog functions.
+		g_pfnCalcSkyFog = d3d_CalcSkyFog;
+		g_fSkyFogScale = 1.0f / (g_CV_SkyFogFarZ - g_CV_SkyFogNearZ) * 255.0f;
+		g_fFogRange = g_CV_FogFarZ - g_CV_FogNearZ;
+		g_fFogScale = 1.0f / g_fFogRange * 255.0f;
+
+		if (g_CV_TableFogVar.m_nValue)
+		{
+			g_pfnCalcFog = d3d_CalcNoFog;
+		}
+		else if (g_CV_VFog.m_nValue)
+		{
+			g_pfnCalcFog = d3d_CalcVFog;
+#ifdef PRIMAL_HUNT
+			d3d_ClearFogVolumes();
+#endif
+			g_fVFogValScale = g_CV_VFogMaxYVal.m_fValue - g_CV_VFogMinYVal.m_fValue;
+			g_fVFogRangeScale = 1.0f / (g_CV_VFogMaxY.m_fValue - g_CV_VFogMinY.m_fValue);
+			g_fVFogDensityScale = 255.0f / g_CV_VFogDensity.m_fValue;
+		}
+		else
+		{
+			g_pfnCalcFog = d3d_CalcFog;
+		}
+
+		// Rebuild the colour ramps when the light scale or the world's
+		// colour changes.
+		if (FDIFF(g_vLightAdd.x, g_vLightScaleLast.x) > 0.001f ||
+			FDIFF(g_vLightAdd.y, g_vLightScaleLast.y) > 0.001f ||
+			FDIFF(g_vLightAdd.z, g_vLightScaleLast.z) > 0.001f ||
+			g_WorldColor != g_LastWorldColor)
+		{
+			if (g_CV_Saturate)
+			{
+				BUILD_RAMP(g_GammaTableR, g_vGlobalLightColor.x * 2.0f);
+				BUILD_RAMP(g_GammaTableG, g_vGlobalLightColor.y * 2.0f);
+				BUILD_RAMP(g_GammaTableB, g_vGlobalLightColor.z * 2.0f);
+			}
+			else
+			{
+				BUILD_RAMP(g_GammaTableR, g_vGlobalLightColor.x);
+				BUILD_RAMP(g_GammaTableG, g_vGlobalLightColor.y);
+				BUILD_RAMP(g_GammaTableB, g_vGlobalLightColor.z);
+			}
+
+			BUILD_RAMP(g_LightTableR, g_vGlobalLightColor.x);
+			BUILD_RAMP(g_LightTableG, g_vGlobalLightColor.y);
+			BUILD_RAMP(g_LightTableB, g_vGlobalLightColor.z);
+
+			g_vLightScaleLast = g_vLightAdd;
+			g_LastWorldColor = g_WorldColor;
+		}
+
+		g_LightmapPolyList = LTNULL;
+		g_GouraudPolyList = 0;
+		g_pDeferredPolies = LTNULL;
+		g_nTLVertsUsed = 0;
+
+		g_pStruct->m_nCounter4c = 0;
+		g_pStruct->m_nCounter48 = 0;
+
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FILLMODE,
+			g_CV_Wireframe ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
+
+		// The scene, with the portals drawn after the object queues.
+		if (!g_CV_ShowPortalBounds.m_nValue)
+		{
+			g_pfnPostQueueHook = d3d_DrawVisiblePortals;
+			d3d_FullDrawScene(pDesc);
+			g_pfnPostQueueHook = LTNULL;
+		}
+
+		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FILLMODE, D3DFILL_SOLID);
+
+		if (g_CV_ShowTextureCounts)
+		{
+			AddDebugMessage(0, "Texture changes: %d", g_nTextureChanges);
+			AddDebugMessage(0, "Texture uploads: %d", g_1005bd18);
+		}
+
+		if (g_CV_ShowPolyCounts)
+		{
+			g_pStruct->ConsolePrint("World Polies Processed: %d", g_nWorldPoliesDrawn);
+			g_pStruct->ConsolePrint("World Polies Drawn: %d", g_nDrawPrimCalls);
+			g_pStruct->ConsolePrint("Num Light Tests: %d", g_nSkyLightsApplied);
+			g_pStruct->ConsolePrint("Num Lit Polies: %d (textured and uploaded: %d)", g_nLitObjects, g_1005bd10);
+			g_pStruct->ConsolePrint("Model triangles drawn: %d", g_nModelTriangles);
+			g_pStruct->ConsolePrint("Particles drawn: %d", g_1005b770);
+			g_pStruct->ConsolePrint("Num Clip Tests: %d", g_nClipPasses);
+			g_pStruct->ConsolePrint("Visible Leaves: %d", g_nVisibleLeaves);
+			g_pStruct->ConsolePrint("Sky Portals: %d", g_nSkyPortalPoliesDrawn);
+			g_pStruct->ConsolePrint("Sky Polies (fragments): %d", g_1005bd08);
+			g_pStruct->ConsolePrint("Portals: %d", d3d_GetVisibleSet()->m_nPortals);
+			g_pStruct->ConsolePrint("Visible lights: %d, rejected: %d", g_nDynamicLights, g_nLightPolyRejects);
+			g_pStruct->ConsolePrint("Texture upload saves: %d", g_nLightmapUploadSaves);
+			g_pStruct->ConsolePrint("Triangles: %d", g_nTrianglesDrawn);
+		}
+
+		if (g_CV_ShowFillInfo)
+		{
+			g_pStruct->ConsolePrint("Tri area drawn: %.3f", g_fFillArea);
+			g_pStruct->ConsolePrint("Overdraw: %.3f", g_fFillArea /
+				(float)((g_ViewParams.m_Rect.right - g_ViewParams.m_Rect.left) *
+				        (g_ViewParams.m_Rect.bottom - g_ViewParams.m_Rect.top)));
+		}
+
+		if (g_CV_ShowTexInfo.m_nValue)
+		{
+			D3DDEVINFO_TEXTUREMANAGER info;
+
+			g_pD3DDevice->GetInfo(D3DDEVINFOID_TEXTUREMANAGER, &info, sizeof(info));
+			dd_ConsolePrint("ShowTexInfo ----------------------------");
+			dd_ConsolePrint("bThrashing        - %d", info.bThrashing);
+			dd_ConsolePrint("dwNumEvicts       - %d", info.dwNumEvicts);
+			dd_ConsolePrint("dwNumVidCreates   - %d", info.dwNumVidCreates);
+			dd_ConsolePrint("dwNumTexturesUsed - %d", info.dwNumTexturesUsed);
+			dd_ConsolePrint("dwNumUsedTexInVid - %d", info.dwNumUsedTexInVid);
+			dd_ConsolePrint("dwWorkingSet      - %d", info.dwWorkingSet);
+			dd_ConsolePrint("dwWorkingSetBytes - %d", info.dwWorkingSetBytes);
+			dd_ConsolePrint("dwTotalManaged    - %d", info.dwTotalManaged);
+			dd_ConsolePrint("dwTotalBytes      - %d", info.dwTotalBytes);
+			dd_ConsolePrint("dwLastPri         - %d", info.dwLastPri);
+		}
+	}
+
+	// The world tree's boxes, down to DrawWorldTree's depth.
+	if (g_CV_DrawWorldTree.m_nValue > -1 && g_pSceneWorld)
+	{
+		StateSet ssZEnable(D3DRENDERSTATE_ZENABLE, TRUE);
+
+		d3d_UnsetTexture(g_iCurTextureStage);
+		d3d_DrawWorldTree_R(&((RenderSceneWorld*)g_pSceneWorld)->m_WorldTree.m_RootNode,
+			0, g_CV_DrawWorldTree.m_nValue);
+	}
+
+	if (g_CV_DrawTerrainSections.m_nValue && g_pSceneWorld)
+		d3d_DrawTerrainSections((TerrainWorld*)g_pSceneWorld);
+
+	d3d_CanvasPreFrame();
+
+	if (!g_bWarbleTableValid || g_CV_WarbleScale != g_fWarbleScaleLast)
+	{
+		AddDebugMessage(9, "Rebuilding warble table");
+		d3d_InitModelSun();
+		g_bWarbleTableValid = LTTRUE;
+		g_fWarbleScaleLast = g_CV_WarbleScale;
+	}
+
+	g_fWarbleTime += g_CV_WarbleSpeed * g_pSceneDesc->m_FrameTime;
+	g_fWarbleFrac = g_fWarbleTime - (float)floor(g_fWarbleTime);
+
+	if (g_CV_ModelProfile)
+	{
+		g_pStruct->ConsolePrint("ModelProfile: %d clipped, %d unclipped",
+			g_nModelsClipped, g_nModelsUnclipped);
+	}
+
+	g_bSceneCleared++;
+	return LTFALSE;
+}
+
+
+// ---------------------------------------------------------------------- //
 //  Init and term.
 // ---------------------------------------------------------------------- //
 StructBank      g_ClipVertBank;                             // 0x1005e0e0
 StructBank      g_ClipPointBank;                            // 0x1005e730
 uint32          g_nClipVerts;                               // 0x1005e298
-void*           g_pClipList;                                // 0x1005fdc8
+uint32          g_LastWorldColor;                           // 0x1005fdc8 (RenderScene's)
 
 void d3d_InitWorldBanks();                                  // 0x100115a0 (common_draw.cpp)
 void d3d_TermWorldBanks();                                  // 0x100115da
@@ -1920,7 +2657,7 @@ void d3d_InitDraw()
 	sb_Init(&g_ClipPointBank, 0xc, 0x64);
 	sb_Init2(&g_DeferredPolyBank, sizeof(DeferredPoly), 0x80, 0x300);
 	g_TLVertPool = LTNULL;
-	g_pClipList = LTNULL;
+	g_LastWorldColor = 0;
 }
 
 // 0x10018ff0

@@ -47,6 +47,20 @@ class CTracerFX : public CSpecialFX
 			m_vTracerPos.Init();
 		}
 
+#ifdef PRIMAL_HUNT
+		// RETAIL BUG: the constructor leaves m_hFlares unset (Init clears
+		// them, but only once it has its TRACERFX), and the destructor's
+		// Term removes them: a tracer whose Init failed early removes
+		// three garbage handles
+		virtual ~CTracerFX()
+		{
+			Term();
+		}
+
+		virtual void Term();
+		virtual void OnObjectRemove(HOBJECT hObj);
+#endif
+
         virtual LTBOOL Init(HLOCALOBJ hServObj, HMESSAGEREAD hRead);
         virtual LTBOOL Init(SFXCREATESTRUCT* psfxCreateStruct);
         virtual LTBOOL Update();
@@ -64,6 +78,23 @@ class CTracerFX : public CSpecialFX
         LTVector        m_vTracerPos;
 
 		CPolyLineFX		m_Tracer;
+
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: a single-segment tracer (TRACERFX's bSingleSegment)
+		// runs its head and tail out along the path in half a second, with
+		// three flare sprites at the head (PHCShell.dll 0x1012da40..
+		// 0x1012df10; names ours)
+		HOBJECT	CreateFlare(char* szSprite, LTVector & vPos, LTFLOAT fScale, LTBOOL bGlow);
+		void	RemoveFlares();
+		void	UpdateFlares(LTVector & vPos);
+		void	SetFlaresHidden(LTBOOL bHide);
+
+		LTVector		m_vFlareStart;
+		LTFLOAT			m_fHeadVelocity;
+		LTFLOAT			m_fTailVelocity;
+		LTFLOAT			m_fFlareTime;
+		HOBJECT			m_hFlares[3];
+#endif
 };
 
 //-------------------------------------------------------------------------------------------------

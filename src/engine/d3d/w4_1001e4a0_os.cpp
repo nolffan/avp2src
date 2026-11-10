@@ -60,12 +60,14 @@ struct D3DXForm
 //  0x1001e4a0 -- LTMat::SetTranslation(x, y, z): m[0][3], m[1][3], m[2][3].
 //  __thiscall, `ret $0xc`.  The stores come out z, y, x.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp LTMatrix::SetTranslation (0x10016be0, d3d_DrawPortals's)
 void LTMat::sub_1001e4a0(float x, float y, float z)
 {
 	m[0][3] = x;
 	m[1][3] = y;
 	m[2][3] = z;
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //

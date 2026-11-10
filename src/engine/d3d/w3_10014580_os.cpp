@@ -25,6 +25,7 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp (d3d_ModelLightCB, Mat_InverseTransformation, d3d_GetLightGridColor, DrawSprite, ...)
 
 
 // ======================================================================= //
@@ -666,3 +667,4 @@ L_MakeRec:
 	goto L_Bind;
 }
 #endif
+#endif // PRIMAL_HUNT

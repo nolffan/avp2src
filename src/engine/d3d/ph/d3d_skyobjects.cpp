@@ -258,7 +258,7 @@ extern uint32		g_nSkyLightsApplied;                // 0x1005c164
 extern LTVector		g_vGlobalLightColor;                // 0x1005b780
 extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
 extern ViewParams	g_SkyContext;                       // 0x10079450
-extern void			(__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e6d8
+extern void			(__fastcall *g_pfnCalcSkyFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e6d8 (d3d_draw.cpp)
 
 extern void		dd_ConsolePrint(const char* pMsg, ...);  // 0x10013ade
 extern void		d3d_TransformToCamera(TLVertex* pVert, LTMatrix* pMat);  // 0x10008719
@@ -349,7 +349,7 @@ void d3d_DrawSkyPoly(RenderPoly* pPoly)
 	for (i = 0; i < nVerts; i++)
 	{
 		pVert = &pVerts[i];
-		g_pfnCalcFog(&pVert->m_Vec, &pVert->specular);
+		g_pfnCalcSkyFog(&pVert->m_Vec, &pVert->specular);
 		d3d_ProjectTLVert(pVert, &g_SkyContext);
 		pVert->tu *= g_fTexelSizeU;
 		pVert->tv *= g_fTexelSizeV;

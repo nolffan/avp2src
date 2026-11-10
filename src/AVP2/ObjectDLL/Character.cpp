@@ -317,6 +317,64 @@ static LTFLOAT CloakAmountFromState(CharacterMovementState cms, uint32 dwFlags)
 	return 0.0f;
 }
 
+#ifdef PRIMAL_HUNT
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PHCloakAmountFromState
+//
+//	PURPOSE:	Primal Hunt's cloak shows more of the Predator than AvP2's
+//				(CloakAmountFromState), which OldCloak brings back
+//				(PHObject.lto 0x100beab0; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+static LTFLOAT PHCloakAmountFromState(CharacterMovementState cms, uint32 dwFlags)
+{
+	if(g_cvarOldCloak.GetFloat() != 0.0f)
+		return CloakAmountFromState(cms, dwFlags);
+
+	LTFLOAT fAmount = 0.1f;
+
+	switch(cms)
+	{
+		case CMS_WALKING:
+			fAmount = 0.15f;
+			break;
+
+		case CMS_CRAWLING:
+			fAmount = 0.1f;
+			break;
+
+		case CMS_CLIMBING:
+		case CMS_SWIMMING:
+		{
+			if(dwFlags & (CM_FLAG_DIRECTIONAL | CM_FLAG_JUMP | CM_FLAG_DUCK))
+				fAmount = 0.15f;
+			else
+				fAmount = 0.1f;
+			break;
+		}
+
+		case CMS_RUNNING:
+			fAmount = 0.3f;
+			break;
+
+		case CMS_STAND_JUMP:
+		case CMS_WALK_JUMP:
+		case CMS_RUN_JUMP:
+		case CMS_WWALK_JUMP:
+		case CMS_STAND_FALL:
+		case CMS_WALK_FALL:
+		case CMS_RUN_FALL:
+		case CMS_WWALK_FALL:
+			fAmount = 0.3f;
+			break;
+	}
+
+	return fAmount;
+}
+#endif
+
 static LTFLOAT FootStepStateVolumeMod(CharacterMovementState cms)
 {
 	// If you change this, please keep FootStepStateVolumeMod in CharacterFX.cpp
@@ -6130,7 +6188,11 @@ void CCharacter::UpdateCloakEffect()
 			// Turn off Predator's shadow
 			m_cmMovement.SetObjectFlags(OFT_Flags, m_cmMovement.GetObjectFlags(OFT_Flags) & ~FLAG_SHADOW, LTFALSE);
 
+#ifdef PRIMAL_HUNT
+			LTFLOAT fDestAlpha = PHCloakAmountFromState(m_cmMovement.GetMovementState(), m_cmMovement.GetControlFlags());
+#else
 			LTFLOAT fDestAlpha = CloakAmountFromState(m_cmMovement.GetMovementState(), m_cmMovement.GetControlFlags());
+#endif
 
 			// Set the color of our character to fade him out
 			LTFLOAT r, g, b, a;

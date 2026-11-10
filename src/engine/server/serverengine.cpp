@@ -1590,7 +1590,9 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
 int se_LoadFile(CFileMgr* pFileMgr, char* pFilename, uint16 nFlags, void** ppFile)
 {
 	CFileRef*     pRef;
+#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
 	uint32        nLen;
+#endif
 	CFileTreeRec* pTreeRec;
 	uint32        nUnknown;
 	void*         hElement;
@@ -1601,9 +1603,19 @@ int se_LoadFile(CFileMgr* pFileMgr, char* pFilename, uint16 nFlags, void** ppFil
 	if (ppFile)
 		*ppFile = LTNULL;
 
+#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+	// AVP2: AvP2 1.0.9.6's server.dll (cl 9044, 0x10034c82) measures the
+	// name inside the call; the named length costs it a frame slot (247
+	// bytes). NEAR, size-exact: the manager's load comes before the strlen
+	// call where shipped has it after, and the two out-values take each
+	// other's dead parameter slots (allocation; declaration order unmoved).
+	hElement = dhash_FindElement(pFileMgr->m_hFileHash, pFilename,
+	                             strlen(pFilename) + 1);
+#else
 	nLen = strlen(pFilename);
 
 	hElement = dhash_FindElement(pFileMgr->m_hFileHash, pFilename, nLen + 1);
+#endif
 
 	if (hElement)
 	{

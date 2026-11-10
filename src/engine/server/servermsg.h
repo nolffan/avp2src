@@ -558,6 +558,10 @@ public:
 // Drops the reference it was holding, then takes one on what the other
 // holds (in practice msg_AllocPacket's returned temporary, which releases
 // its own reference at the end of the full expression).
+//
+// AVP2: not in AvP2 1.0.9.6's server.dll, whose Init is out of line in
+// servermessage.cpp (0x100121de), unseen by its callers.
+#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
 inline ServerMessage* CMessageRef::Init(const CMessageRef& other)
 {
 	if (m_pMsg)
@@ -570,6 +574,7 @@ inline ServerMessage* CMessageRef::Init(const CMessageRef& other)
 
 	return m_pMsg;
 }
+#endif
 
 // A write position into a message's packet: the same counted reference the
 // scoped one is, but taking the message directly rather than the packet it

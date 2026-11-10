@@ -432,6 +432,7 @@ TARGETS = [
          # import thunks (jmp [IAT]) to typinfo.obj. All 134 functions of
          # the span match a libcpmt.lib/libcimt.lib member masked by its
          # relocations (or are thunks), so none of it is the game's code
+         lib_block=True,
          app=[(0x10001000, 0x10154200)]),
     dict(label="PHObject.lto", what="Primal Hunt's game: server objects", kind="image",
          shipped=REFERENCE + "/PHObject.lto", stem="PHObject",
@@ -452,6 +453,7 @@ TARGETS = [
          # match a libcmt.lib/libcpmt.lib/libcimt.lib member masked by its
          # relocations at their own address, so none of it is the game's
          # code
+         lib_block=True,
          app=[(0x10001000, 0x10253a50)]),
     dict(label="PHCRes.dll", what="Primal Hunt's client resources",
          kind="resources", shipped=REFERENCE + "/PHCRes.dll", stem="PHCRes",

@@ -742,7 +742,7 @@ CClientTurretMgr* GetClientTurretMgr()
 //
 // ----------------------------------------------------------------------- //
 
-inline void CClientTurretMgr::SaveCameraFX(uint8 nID)
+inline void CClientTurretMgr::SaveCameraFX(int nID)
 {
 	CAMERAEFFECTINSTANCE *pEffect = g_pCameraMgr->GetCameraEffectByID(g_pGameClientShell->GetPlayerCamera(), nID, LTNULL);
 

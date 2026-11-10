@@ -48,6 +48,9 @@ namespace
 	enum LocalCommands
 	{
 		CMD_HOSTCONFIRM = FOLDER_CMD_CUSTOM + 50,
+#ifdef PRIMAL_HUNT
+		CMD_CLASSLOCKED,
+#endif
 	};
 
 	void HostConfirmCallBack(LTBOOL bReturn, void *pData)
@@ -57,6 +60,17 @@ namespace
 		if (bReturn && pThisFolder)
 			pThisFolder->SendCommand(CMD_HOSTCONFIRM,0,0);
 	}
+
+#ifdef PRIMAL_HUNT
+	// The "class locked out" message box's: no folder handles the command
+	void ClassLockedCallBack(LTBOOL bReturn, void *pData)
+	{
+		CBaseFolder *pThisFolder = (CBaseFolder*)pData;
+
+		if (bReturn && pThisFolder)
+			pThisFolder->SendCommand(CMD_CLASSLOCKED,0,0);
+	}
+#endif
 
 	LTIntPt offscreen(-2000,0);
     LTVector g_vPos, g_vU, g_vR, g_vF;
@@ -2586,6 +2600,16 @@ uint32 CBaseFolder::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 
 			if(pServer)
 			{
+#ifdef PRIMAL_HUNT
+				// Primal Hunt: a server can lock classes out
+				if(!pJoin->IsClassAllowed(pServer->GetIntValue("allowedclasses")))
+				{
+					HSTRING hString = g_pLTClient->FormatString(29794);
+					g_pInterfaceMgr->ShowMessageBox(hString, LTMB_OK, ClassLockedCallBack, this);
+					g_pLTClient->FreeString(hString);
+				}
+				else
+#endif
 				if(pServer->GetIntValue("lock"))
 				{
 					ShowPasswordDlg();

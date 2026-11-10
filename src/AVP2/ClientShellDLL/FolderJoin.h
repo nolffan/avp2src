@@ -55,6 +55,12 @@ class CFolderJoin : public CBaseFolder
 
 		CGameSpyClientMgr* GetGameSpyMgr();
 
+#ifdef PRIMAL_HUNT
+		// Does a server's mask of allowed classes take the player's class?
+		// (CBaseFolder asks before joining)
+		LTBOOL	IsClassAllowed(uint32 dwAllowedClasses);
+#endif
+
 	protected:
  
 		uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
@@ -82,9 +88,6 @@ class CFolderJoin : public CBaseFolder
 		void	SetUpdateControls(LTBOOL bEnabled);
 
 		void	RefreshServers();
-#ifdef PRIMAL_HUNT
-		LTBOOL	IsClassAllowed(uint32 dwAllowedClasses);
-#endif
 
 
 		CListCtrl*			m_pServerList;

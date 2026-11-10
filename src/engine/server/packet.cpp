@@ -60,10 +60,14 @@ PacketReadFn32  g_pPacketRead32  = &CPacket::ReadType;
 // are exactly the template's.
 
 
-#ifndef PRIMAL_HUNT
-// AvP2 1.0.9.6 only. Primal Hunt's link workers, with the smart-link bodies
-// and type-3 links, are a translation unit of their own (interlink.cpp:
-// lithtech.exe 0x00447bc0..0x004480cb, server.dll 0x10018c25..0x100190e1).
+#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// AvP2 1.0.9.6's lithtech.exe only, for now. Primal Hunt's link workers,
+// with the smart-link bodies and type-3 links, are a translation unit of
+// their own (interlink.cpp: lithtech.exe 0x00447bc0..0x004480cb, server.dll
+// 0x10018c25..0x100190e1), and so are AvP2 1.0.9.6's: its server.dll has
+// interlink.cpp's STLport build at 0x10018069..0x10018553, byte for byte,
+// so these NOLF-layout views (SObjData at +0x188, the record bank at
+// +0x848) are no longer built for it.
 // *********************************************************************** //
 //  The inter-object link workers, 0x100139d0 and 0x10013b63.
 //
@@ -379,7 +383,7 @@ void sm_BreakAttachments(CLinkMgrView* pMgr, CLinkedObject* pObject,
 		pCur = pNext;
 	}
 }
-#endif // !PRIMAL_HUNT
+#endif // !PRIMAL_HUNT && !LT_SERVER_BUILD
 
 // The BSP line query's recursion and its polygon test (NOLF 0x10013bf5,
 // 0x10013ddc) are worldsim.cpp's: AvP2 and Primal Hunt have them there.

@@ -923,3 +923,14 @@ a null pointer.
 
 Not fixed yet.
 
+
+### A tracer whose Init fails removes three garbage flare handles
+
+PHCShell.dll 0x1012d970 (`CTracerFX`'s destructor) and 0x1012dbe0
+(`CTracerFX::RemoveFlares`, name ours, src/AVP2/ClientShellDLL/TracerFX.h and
+TracerFX.cpp). The constructor leaves the three flare handles unset; Init
+clears them only after it has the tracer's TRACERFX, and Term (from the
+destructor) deletes every non-null one. A tracer whose Init fails before that
+point hands three uninitialised handles to `DeleteObject`. Identical.
+
+Not fixed yet.

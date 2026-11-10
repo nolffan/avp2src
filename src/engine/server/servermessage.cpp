@@ -2199,6 +2199,29 @@ void xfer_SendNextChunk(CClientFiles* pState)
 	}
 }
 
+#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+// AVP2: 0x100121de -- AvP2 1.0.9.6's server has the scoped reference's Init
+// out of line, here after xfer_SendNextChunk, where Primal Hunt's has it
+// inline in servermsg.h. cl 9044 uses what it knows of a callee's body: with
+// Init's body in sight, every caller kept the reference's message in a
+// register across the writes that follow it; retail reloads it from the
+// frame after each call (sm_SendObjectInfo2 0x1002f457.., sm_SendSkyInfo,
+// sm_BroadcastPrintf, sm_SetPortalFlags), as callers that cannot see the
+// body must.
+ServerMessage* CMessageRef::Init(const CMessageRef& other)
+{
+	if (m_pMsg)
+		m_pMsg->Release();
+
+	m_pMsg = other.m_pMsg;
+
+	if (m_pMsg)
+		m_pMsg->AddRef();
+
+	return m_pMsg;
+}
+#endif
+
 // 0x1000e9c7 — the record for one file id, or null. Reconstructed, but in
 // svnew.cpp's holding pen and against its own view classes, so it is
 // declared here in this file's terms rather than moved (the same thing

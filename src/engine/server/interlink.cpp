@@ -22,14 +22,23 @@
 // types 0 and 1. A type-2 link's far end is a SoundInstance holding the
 // record in its m_pObjectRef slot; a type-3 link's is an LTSmartLink_Body
 // (ltsmartlink.h) out of the body list below, which keeps no node either.
+//
+// AvP2 1.0.9.6 has the same module, against STLport (build/build.mk,
+// ENG_AVP_STL_SRC): server.dll 0x10018069..0x10018553, the list's _$E
+// (0x10018069, atexit 0x1001807b) first, then the workers and the list's
+// out-of-line members. Its body list is found with find_if, and its node
+// bank's free is servermgr.h's sb_Free on the global bank.
 #ifdef PRIMAL_HUNT
-
 // PH: <string> as everywhere else in this engine: this translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id (guard
 // 0x004f8014, atexit of the empty 0x00401790; lithtech.exe 0x004480a0;
 // server.dll 0x100190c1, guard 0x1008ec84).
 #include <string>
+#endif
 #include <list>
+#ifndef PRIMAL_HUNT
+#include <algorithm>
+#endif
 #include "servermgr.h"
 #include "ltengineobjects.h"
 #include "iltmessage.h"                     // ltsmartlink.h's serializers
@@ -59,6 +68,58 @@ extern CObjQueueBank g_ObjQueueBank;
 // 0x004f5458 (server.dll 0x1008c96c / 0x1008c970); the byte at 0x004f5450 is
 // the list's allocator. Name ours.
 static std::list<LTSmartLink_Body> g_SmartLinkBodies;
+
+#ifndef PRIMAL_HUNT
+// AVP2: the two searches of the body list are find_if calls (server.dll
+// 0x100184de and 0x10018519, each copying its iterators and taking the
+// predicate by value), one predicate for each key. Names ours.
+struct SmartLinkBodyOf
+{
+	SmartLinkBodyOf(LTObject* pObject) : m_pObject(pObject) {}
+	bool operator()(const LTSmartLink_Body& body) const
+		{ return body.m_pObject == m_pObject; }
+
+	LTObject* m_pObject;
+};
+
+struct SmartLinkBodyAt
+{
+	SmartLinkBodyAt(LTSmartLink_Body* pBody) : m_pBody(pBody) {}
+	bool operator()(const LTSmartLink_Body& body) const
+		{ return &body == m_pBody; }
+
+	LTSmartLink_Body* m_pBody;
+};
+
+// 0x10018091 -- AvP2's GetSmartLinkBody: the body whose object is the
+// owner, or a new one pushed onto the end.
+LTSmartLink_Body* sm_GetSmartLinkBodyQ502(LTObject* pOwner)
+{
+	std::list<LTSmartLink_Body>::iterator it = std::find_if(
+		g_SmartLinkBodies.begin(), g_SmartLinkBodies.end(),
+		SmartLinkBodyOf(pOwner));
+
+	if (it != g_SmartLinkBodies.end())
+		return &(*it);
+
+	g_SmartLinkBodies.push_back(LTSmartLink_Body(pOwner));
+	return &g_SmartLinkBodies.back();
+}
+
+// 0x100180f0 -- AvP2's ReleaseSmartLinkBody, as Primal Hunt's below.
+void sm_ReleaseSmartLinkBodyQ502(LTSmartLink_Body* pBody)
+{
+	std::list<LTSmartLink_Body>::iterator it = std::find_if(
+		g_SmartLinkBodies.begin(), g_SmartLinkBodies.end(),
+		SmartLinkBodyAt(pBody));
+
+	if (it != g_SmartLinkBodies.end())
+	{
+		if (it->m_nCount <= 0 && !it->m_pObject)
+			g_SmartLinkBodies.erase(it);
+	}
+}
+#else
 
 
 // 0x00447c70 / 0x10018c6b -- the body an owner's smart links share, made on
@@ -105,6 +166,7 @@ void sm_ReleaseSmartLinkBodyQ502(LTSmartLink_Body* pBody)
 			g_SmartLinkBodies.erase(it);
 	}
 }
+#endif
 
 
 // 0x00447d60 / 0x10018d00 -- take the link between two objects apart again.
@@ -304,5 +366,3 @@ static LTBOOL sm_InterObjectLinkExists(LTObject* pOwner, LTObject* pLinked,
 
 	return LTFALSE;
 }
-
-#endif

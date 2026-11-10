@@ -21,6 +21,8 @@
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp CD3DModelDraw::DrawLOD (0x10005700)
+
 
 
 struct LTMat;
@@ -203,3 +205,4 @@ void CD3DModelDraw::sub_10008e10()
 	if (g_CV_ModelProfile)
 		sub_10021d10("SetupVerts: %d", 0);
 }
+#endif

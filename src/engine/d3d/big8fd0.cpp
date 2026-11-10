@@ -1130,6 +1130,8 @@
 //  THE RECONSTRUCTION
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp CD3DModelDraw::TransformVerts (0x10004660)
+
 typedef unsigned char  uint8;
 typedef unsigned short uint16;
 typedef unsigned int   uint32;
@@ -1852,3 +1854,4 @@ void CD3DModelDraw::sub_10008fd0(ModelVertSet* pSet1, ModelVertSet* pSet2,
 //    undecoded       NONE.  All 661 instructions and all 2,191 bytes are
 //                    attributed.
 //
+#endif

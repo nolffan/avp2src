@@ -437,6 +437,7 @@ void sub_10014720(LTMat* pDest, LTMat* pMat1, LTMat* pMat2)
 // as pDest -- `mRet` was elided into the return slot -- then answered in
 // %eax.  The three arguments go into a preallocated 0x18-byte outgoing area
 // as (return slot, this, &other), which is the order the source writes them.
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_draw.cpp LTMatrix::operator* (0x10016c00, d3d_DrawPortals's)
 LTMat LTMat::sub_10015800(LTMat &other)
 {
 	LTMat mRet;
@@ -444,6 +445,7 @@ LTMat LTMat::sub_10015800(LTMat &other)
 	sub_10014720(&mRet, this, &other);
 	return mRet;
 }
+#endif // PRIMAL_HUNT
 
 #ifndef PRIMAL_HUNT
 
