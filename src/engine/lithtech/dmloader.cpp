@@ -274,6 +274,13 @@ public:
 	void Insert(CDMFileRecord* pRecord);                            // 0x0048de30
 	void Delete(CDMFileRecord* pRecord);                            // 0x0048dee0
 
+	CDMFileRecordList() { m_pHead = LTNULL; m_pTail = LTNULL; m_nCount = 0; }
+	// Empty, but declared: Primal Hunt's /GX build gives the manager's
+	// destructor an unwind frame for its members (0x0044f590), and with the
+	// members' unwind states the manager's constructor is no longer
+	// expanded into its initialiser (0x0044f540 jumps to 0x0044f550).
+	~CDMFileRecordList() {}
+
 	void Add(CDMFileRecord* pRecord)    { m_nCount++; Insert(pRecord); }
 	void Remove(CDMFileRecord* pRecord) { m_nCount--; Delete(pRecord); }
 
@@ -290,6 +297,9 @@ public:
 class CDMFileMgr
 {
 public:
+	CDMFileMgr() { m_bInitialized = LTFALSE; }
+	~CDMFileMgr() { if (m_bInitialized) Term(); }
+
 	void FreeRecord(CDMFileRecord* pRecord);                        // 0x0042d610
 	// 0x0042d520, clientworld.cpp's CLockedOwnerView::Init: the lock and the
 	// open-file limit.
@@ -303,9 +313,16 @@ public:
 	CDMFileRecordList  m_Loaded;             // 0x018
 	CDMFileRecordList  m_Unloaded;           // 0x024
 	uint32             m_nLimit;             // 0x030
+	LTBOOL             m_bInitialized;       // 0x034
 };
 
-extern CDMFileMgr g_DMFileMgr;                     // 0x004b3fe8
+// The manager itself, this unit's: its initialiser set opens the unit
+// (AvP2 1.0.9.6 0x0044b2b0..0x0044b300, before CDMSearchDirList::Find;
+// Primal Hunt 0x0044f530..0x0044f580, whose constructor and destructor are
+// out of line, 0x0044f550 and 0x0044f590). The constructor clears both
+// lists and the "initialised" flag at +0x34 (Init, 0x0042d520, sets the
+// limit at +0x30); the destructor terminates only an initialised manager.
+CDMFileMgr g_DMFileMgr;                            // AvP2 0x004b3fe8, PH 0x004f5620
 
 // The doubly-linked list helpers the whole DirectMusic module shares, already
 // named in clientmusic.h. Every node type puts its links at 0x00 and 0x04, so

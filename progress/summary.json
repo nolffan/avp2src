@@ -170,8 +170,8 @@
       "unwritten_bytes": 0
     },
     "AvP2 lithtech.exe": {
-      "attempted": 1,
-      "bytes_identical": 531092,
+      "attempted": 2,
+      "bytes_identical": 531136,
       "bytes_total": 702182,
       "crt": 1128,
       "crt_bytes": 69254,
@@ -184,18 +184,18 @@
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 245,
-      "small": 148,
+      "near": 243,
+      "small": 149,
       "started": true,
       "todo": 1,
       "unlinked": 38,
       "unlinked_bytes": 2546,
       "unplaced": 90,
-      "unplaced_bytes": 9230,
+      "unplaced_bytes": 9189,
       "unreferenced": 108,
       "unreferenced_bytes": 14995,
-      "unwritten": 2,
-      "unwritten_bytes": 1594
+      "unwritten": 3,
+      "unwritten_bytes": 1603
     },
     "AvP2 ltmsg.dll": {
       "attempted": 0,
@@ -1038,8 +1038,8 @@
       "unwritten_bytes": 0
     },
     "lithtech.exe": {
-      "attempted": 3,
-      "bytes_identical": 581431,
+      "attempted": 0,
+      "bytes_identical": 581607,
       "bytes_total": 747502,
       "crt": 1868,
       "crt_bytes": 78043,
@@ -1048,22 +1048,22 @@
       "encrypted": 0,
       "encrypted_bytes": 0,
       "funcs": 4382,
-      "identical": 3989,
+      "identical": 3998,
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 193,
-      "small": 194,
+      "near": 187,
+      "small": 196,
       "started": true,
-      "todo": 3,
-      "unlinked": 58,
-      "unlinked_bytes": 2705,
-      "unplaced": 131,
-      "unplaced_bytes": 11366,
-      "unreferenced": 439,
-      "unreferenced_bytes": 84411,
-      "unwritten": 6,
-      "unwritten_bytes": 1346
+      "todo": 1,
+      "unlinked": 54,
+      "unlinked_bytes": 2823,
+      "unplaced": 129,
+      "unplaced_bytes": 11312,
+      "unreferenced": 444,
+      "unreferenced_bytes": 84364,
+      "unwritten": 1,
+      "unwritten_bytes": 1265
     },
     "ltguimgr_LT2": {
       "attempted": 0,
@@ -1151,17 +1151,17 @@
     }
   },
   "total": {
-    "attempted": 5,
-    "bytes_identical": 9873746,
+    "attempted": 3,
+    "bytes_identical": 9873966,
     "bytes_total": 10919629,
     "funcs": 55911,
-    "identical": 50061,
-    "near": 1295,
-    "small": 4535,
-    "todo": 15,
-    "unplaced": 422,
-    "unplaced_bytes": 35078,
-    "unwritten": 20,
-    "unwritten_bytes": 15667
+    "identical": 50070,
+    "near": 1287,
+    "small": 4538,
+    "todo": 13,
+    "unplaced": 420,
+    "unplaced_bytes": 34983,
+    "unwritten": 16,
+    "unwritten_bytes": 15595
   }
 }

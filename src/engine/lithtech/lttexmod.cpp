@@ -765,21 +765,6 @@ LTRESULT LTTexMod::UnlockTexture(const HTEXTURE hTexture)
 }
 
 
-// 0x004b4cf8 - a file-scope CGLinkedList, and the dynamic-initialiser group
-// it emits straight after UnlockTexture: 0x00488920 (the head, .CRT$XCU slot
-// 0x004a70c8: call the constructor body, jmp to the registrar), 0x00488930
-// (constructor: vptr 0x004a3860, then m_nElements at +0x04 and m_pHead at
-// +0x08 zeroed - goodlinklist.h's constructor order), 0x00488950 (atexit of
-// 0x00488960) and 0x00488960 (destructor: the vptr again, then +0x08 before
-// +0x04 - RemoveAll's order). The vtable's twelve slots are the same folded
-// bodies as every other CGLinkedList<pointer> in the image (0x004a1a84).
-// Nothing but its own constructor and destructor reads the object, so the
-// element type is unrecoverable and the list is dead; type and name ours.
-#include "../../LT2/lithshared/stdlith/goodlinklist.h"
-
-static CGLinkedList<SharedTexture*> g_TexModList;
-
-
 // ======================================================================= //
 //  The RIFF/WAVE reader - 0x0048c1a0 .. 0x0048c539
 // ======================================================================= //

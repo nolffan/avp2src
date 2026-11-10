@@ -111,8 +111,6 @@
 /ALTERNATENAME:?cm_FindFileQ474@@YAPAVCFileRecQ474@@PAVCFileMgrQ474@@PAVCFileIdentQ474@@E@Z=?clu_fm_GetFileRec@@YAPAUCluFileRec@@PAVCluFileMgr@@PAUCluFileIdent@@E@Z
 # 0x404680
 /ALTERNATENAME:?fm_GetFileRec@@YAPAVCFileRecQ478@@PAVCFileMgrQ478@@PAVCClientFileRefQ478@@E@Z=?clu_fm_GetFileRec@@YAPAUCluFileRec@@PAVCluFileMgr@@PAUCluFileIdent@@E@Z
-# 0x4b4d00
-/ALTERNATENAME:?g_pFontListQ40C@@3PAVCFontQ40C@@A=?g_pFontListQ488@@3PAVCFontQ488@@A
 # 0x43c500
 /ALTERNATENAME:?cb_MakeNodeQ414@@YAPAVCKeyedNodeQ414@@PAX0@Z=?dl_MakeLink@@YAPAXPAX0@Z
 # 0x43c500
@@ -2613,10 +2611,6 @@
 # 0x43ddb0 -- slot 0 of 0x4a2b68, the embedded LMessageImpl vtable the placed
 # CServerMessageQ18 ctor (0x457c40) stores at +0x1d: lmessage.cpp's Release, placed there.
 /ALTERNATENAME:?_v00@CMsgWriteQ18@@UAEXXZ=?Release@LMessageImpl@@QAEKXZ
-# cmgsurf.cpp's fnt_FreeAllFonts copy: 0x489580 reads 0x4b4d00 and calls 0x488b20,
-# fntdraw.cpp's g_pFontListQ488 / fnt_FreeFontQ488 (the Q40C copies are aliased so above).
-/ALTERNATENAME:?g_pFontListQ428@@3PAVCFontQ428@@A=?g_pFontListQ488@@3PAVCFontQ488@@A
-/ALTERNATENAME:?fnt_FreeFontQ428@@YAXPAVCFontQ428@@@Z=?fnt_FreeFontQ488@@YAXPAVCFontQ488@@@Z
 # 0x4a2b44 -- CAbstractIO's vtable, which msgterm.cpp stores as a plain address:
 # servermsg.cpp's ??_7CAbstractIO (as server.dll aliases its own spellings).
 /ALTERNATENAME:?g_AbstractIOVtblQ454@@3PAXA=??_7CAbstractIO@@6B@

@@ -60,9 +60,23 @@
 #include "iclientshell.h"
 #include "de_error.h"          // RETURN_ERROR / RETURN_ERROR_SYM_DESC (server/)
 #include "packet.h"            // CPacket::WriteType                   (server/)
+#include "wonptrq503.h"        // the WON AuthContext pointers below
+
 #ifdef AVP2_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
 #endif
+
+
+// The game shell's WON AuthContext (clientmgr3.cpp's Init stores it and the
+// peer authentication reads it), and a second pointer of the same kind
+// right after it that nothing reads or writes: the only references to it
+// are its own initialiser set's. Both initialiser sets open this unit
+// (Primal Hunt 0x004108b0..0x00410920, AvP2 1.0.9.6 0x0040fa60..0x0040faf0,
+// before the command bank's at 0x0040fb20). In Primal Hunt's /GX build the
+// smart pointer's constructor, with the base's destructor to unwind, stays
+// out of line (0x00410900 jumps to 0x00414090); AvP2's expands it.
+CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;        // PH 0x004f0118, AvP2 0x004def68
+CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrUnusedQ503;  // PH 0x004f011c, AvP2 0x004def6c
 
 
 // ----------------------------------------------------------------------- //

@@ -1263,59 +1263,6 @@ LTBOOL CLTDirectMusicMgrQ12::ReadStyles(CControlFileMgrQ12* pControlFile)
 }
 
 
-// ----------------------------------------------------------------------- //
-// 0x00442ec0 -- the inlined constructor of the DirectMusic file manager
-// g_DMFileMgr at 0x004b3fe8 (dmloader.cpp:258 declares it extern; nobody
-// defines it).  It is the middle third of the dynamic-initialiser group
-// 0x00442eb0 `call 0x442ec0; jmp 0x442ef0`, 0x00442ef0 registering
-// 0x00442f00 with atexit.
-//
-// MOVE-ME: the definition belongs at the head of src/engine/lithtech/
-// dmloader.cpp -- the group sits immediately before 0x00442f20, the first
-// of that TU's bodies -- under dmloader.cpp's own CDMFileMgr name.  Written
-// here on a view.
-//
-// Read off the bytes: seven zero stores, +0x18/+0x1c/+0x20 (the loaded
-// list's head, tail, count), +0x24/+0x28/+0x2c (the unloaded list's), and
-// +0x34, SKIPPING +0x30 (m_nLimit, which Init 0x0042d520 sets) and the
-// critical section at the front.  So the lists have an in-class
-// constructor and there is a flag at +0x34 that the manager's constructor
-// clears.  The destructor 0x00442f00 is `if (+0x34) Term()` with Term the
-// tail call to 0x0042d540 (clientworld.cpp's CLockedOwnerView::Term), so
-// +0x34 is the "initialised" flag.
-// ----------------------------------------------------------------------- //
-class CDMFileRecordQ12;
-
-class CDMFileRecordListQ12
-{
-public:
-	CDMFileRecordListQ12() { m_pHead = LTNULL; m_pTail = LTNULL; m_nCount = 0; }
-
-public:
-	CDMFileRecordQ12* m_pHead;                             // 0x000
-	CDMFileRecordQ12* m_pTail;                             // 0x004
-	uint32            m_nCount;                            // 0x008
-};
-
-class CDMFileMgrQ12
-{
-public:
-	CDMFileMgrQ12() { m_bInitialized = LTFALSE; }
-	~CDMFileMgrQ12() { if (m_bInitialized) Term(); }
-
-	void Term();                                           // 0x0042d540
-
-public:
-	CRITICAL_SECTION     m_CriticalSection;                // 0x000
-	CDMFileRecordListQ12 m_Loaded;                         // 0x018
-	CDMFileRecordListQ12 m_Unloaded;                       // 0x024
-	uint32               m_nLimit;                         // 0x030
-	LTBOOL               m_bInitialized;                   // 0x034
-};
-
-CDMFileMgrQ12 g_DMFileMgrQ12;                              // 0x004b3fe8
-
-
 // ======================================================================= //
 //
 //  THE OTHER NINE ROWS -- no code, and why
@@ -1363,8 +1310,8 @@ CDMFileMgrQ12 g_DMFileMgrQ12;                              // 0x004b3fe8
 //                  0x004b3fe8 and 0x004b4000 is its +0x18.  Reproducing it
 //                  means declaring the right global in the right
 //                  translation unit, not writing a function.
-//                  DONE (later pass): g_DMFileMgrQ12 above defines it, and
-//                  its _$E ctor and _$F dtor halves are IDENTICAL at
+//                  DONE (later pass): dmloader.cpp defines it (g_DMFileMgr),
+//                  and its _$E ctor and _$F dtor halves are IDENTICAL at
 //                  0x00442ec0 and 0x00442f00.
 //
 //       0x00461d90 (42) IS an entry in the `.CRT$XC` table -- the dword at

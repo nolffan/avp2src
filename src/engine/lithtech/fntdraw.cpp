@@ -48,8 +48,8 @@
 //
 //  THE MODULE'S STATE, read off the .data addresses it touches:
 //
-//      0x004b4cfc  uint32   g_nFontCount     inc'd on add, dec'd on delete
-//      0x004b4d00  CFont*   g_pFontList      circular list HEAD POINTER
+//      0x004b4cf8  CGLinkedList<CFont*> g_FontList: vptr, then the count
+//                  (0x004b4cfc) and the circular list's head (0x004b4d00)
 //      0x004b4d04  HDC      g_hFontDC        CreateCompatibleDC(NULL)
 //      0x004b4d08  HBITMAP  g_hDIB           CreateDIBSection's answer
 //      0x004b4d0c  HGDIOBJ  g_hOldDIB        SelectObject's answer
@@ -67,7 +67,9 @@
 //
 //  with +0x00 the PREV link: 0x00488b2f reads (%esi) and 0x4(%esi) and
 //  writes `(%esi)->[4] = 0x4(%esi)` then `0x4(%esi)->[0] = (%esi)`, i.e.
-//  prev->next = next; next->prev = prev.
+//  prev->next = next; next->prev = prev. That is goodlinklist.h's CGLLNode
+//  (m_pGPrev, m_pGNext), and the list is a CGLinkedList: CreateFont's splice
+//  is AddHead's InsertBefore and FreeFont's is RemoveAt, both expanded.
 //
 //  THE HSTRING ACCESSORS, 0x00484a30 and 0x00484a50, are just outside this
 //  cluster and are read off their own four instructions:
@@ -107,6 +109,7 @@
 #include "ltbasedefs.h"
 #include "ltcodes.h"
 #include "ltrect.h"
+#include "../../LT2/lithshared/stdlith/goodlinklist.h"
 
 
 // ----------------------------------------------------------------------- //
@@ -250,16 +253,18 @@ extern uint32            g_nBytesPerPixel;         // 0x004b1794
 //  The font record and the module's state.
 // ----------------------------------------------------------------------- //
 
-class CFontQ488
+class CFontQ488 : public CGLLNode
 {
 public:
-	CFontQ488* m_pPrev;                            // 0x00
-	CFontQ488* m_pNext;                            // 0x04
 	HFONT      m_hFont;                            // 0x08
 };
 
-uint32     g_nFontCountQ488;                       // 0x004b4cfc
-CFontQ488* g_pFontListQ488;                        // 0x004b4d00
+// The fonts. Its initialiser set opens this unit: Primal Hunt 0x004a5850
+// (call the constructor body 0x004a5860: the vptr 0x004d6b24, then
+// m_nElements and m_pHead zeroed; jmp to 0x004a5880, atexit of 0x004a5890,
+// the destructor: the vptr, then RemoveAll's m_pHead before m_nElements).
+// The vtable is referenced by nothing else.
+static CGLinkedList<CFontQ488*> g_FontList;        // 0x004b4cf8, PH 0x004f73e0
 HDC        g_hFontDCQ488;                          // 0x004b4d04
 HBITMAP    g_hDIBQ488;                             // 0x004b4d08
 HGDIOBJ    g_hOldDIBQ488;                          // 0x004b4d0c
@@ -365,21 +370,17 @@ void fnt_InitQ488(CLTClientQ488* pClientDE)
 //  The failure arm has NO `xor %eax,%eax`: CreateFontA's zero answer is
 //  still live in %eax and VC6 reuses it for the null return.
 //
-//  The list splice reloads pHead->m_pPrev at 0x00488ac7 after storing
-//  through it at 0x00488ac4, which is what says the source writes
-//  `pHead->m_pPrev` twice rather than caching it.  The head itself IS a
-//  local: shipped keeps it in %ecx across all four stores (0x00488ab5..
-//  0x00488ace), where reading the global each time reloads it after every
-//  store (188 bytes, near).  The final
-//  `if (pFont->m_pNext == g_pFontList)` is provably always true and VC6
-//  keeps it, so it is a statement in the source.
+//  The list splice is CGLinkedList::AddHead's, InsertBefore expanded: it
+//  reloads pos->m_pGPrev at 0x00488ac7 after storing through it at
+//  0x00488ac4, keeps the head (InsertBefore's `pos`) in %ecx across all
+//  four stores (0x00488ab5..0x00488ace), and makes InsertBefore's
+//  `if (el->m_pGNext == m_pHead)`, provably true here, which VC6 keeps.
 // ----------------------------------------------------------------------- //
 
 CFontQ488* fnt_CreateFontQ488(char* pFontName, int width, int height,
                               LTBOOL bItalic, LTBOOL bUnderline, LTBOOL bBold)
 {
 	CFontQ488* pFont;
-	CFontQ488* pHead;
 	HFONT      hFont;
 
 	hFont = ::CreateFont(height, width, 0, 0,
@@ -394,28 +395,7 @@ CFontQ488* fnt_CreateFontQ488(char* pFontName, int width, int height,
 
 	pFont->m_hFont = hFont;
 
-	pHead = g_pFontListQ488;
-
-	if (pHead)
-	{
-		pHead->m_pPrev->m_pNext = pFont;
-		pFont->m_pPrev = pHead->m_pPrev;
-		pFont->m_pNext = pHead;
-		pHead->m_pPrev = pFont;
-
-		g_nFontCountQ488++;
-
-		if (pFont->m_pNext == g_pFontListQ488)
-			g_pFontListQ488 = pFont;
-	}
-	else
-	{
-		pFont->m_pNext = pFont;
-		pFont->m_pPrev = pFont;
-
-		g_pFontListQ488 = pFont;
-		g_nFontCountQ488++;
-	}
+	g_FontList.AddHead(pFont);
 
 	return pFont;
 }
@@ -438,27 +418,15 @@ void fnt_DeleteFontQ488(CFontQ488* hFont)
 // ----------------------------------------------------------------------- //
 //  0x00488b20, 82 bytes -- the real delete.  Not in the enumeration.
 //
-//  `dec %eax; mov %eax,g_nFontCount; jne` is a decrement whose RESULT is
-//  tested, so the source is `g_nFontCount--;` followed by a test of the
-//  decremented value -- written here as the pre-decrement in the condition
-//  would read, but as two statements, which is what the separate store
-//  before the branch says.
+//  The splice is CGLinkedList::RemoveAt's: `dec %eax; mov %eax,
+//  m_nElements; jne` is its `--m_nElements; if (m_nElements == 0)`.
 // ----------------------------------------------------------------------- //
 
 void fnt_FreeFontQ488(CFontQ488* pFont)
 {
 	::DeleteObject(pFont->m_hFont);
 
-	pFont->m_pPrev->m_pNext = pFont->m_pNext;
-	pFont->m_pNext->m_pPrev = pFont->m_pPrev;
-
-	if (pFont == g_pFontListQ488)
-		g_pFontListQ488 = g_pFontListQ488->m_pNext;
-
-	g_nFontCountQ488--;
-
-	if (g_nFontCountQ488 == 0)
-		g_pFontListQ488 = LTNULL;
+	g_FontList.RemoveAt(pFont);
 
 	dfreeQ488(pFont);
 }
@@ -1140,6 +1108,53 @@ CSurfaceQ488* fnt_CreateSurfaceFromStringQ488(CFontQ488* hFont,
 	}
 
 	return LTNULL;
+}
+
+
+// ----------------------------------------------------------------------- //
+//  0x00489510, 107 bytes -- the module's GDI teardown; its one caller is
+//  cissurf.cpp's cis_Term (0x0040ee22). The fonts go first, before the DC
+//  they were selected into. The two SelectObject()s restore the brush
+//  first (0x0048952b pushes 0x004b4d10), then the DIB (0x0048953a), under
+//  ONE test of the DC (0x0048951a); DeleteObject is under its own test
+//  (0x00489551). The stores are old-DIB, DIB, DC (0x0048955c..70); the
+//  old brush is NOT cleared.
+// ----------------------------------------------------------------------- //
+
+void fnt_FreeAllFontsQ488();
+
+void fnt_TermQ488()
+{
+	fnt_FreeAllFontsQ488();
+
+	if (g_hFontDCQ488)
+	{
+		::SelectObject(g_hFontDCQ488, g_hOldBrushQ488);
+		::SelectObject(g_hFontDCQ488, g_hOldDIBQ488);
+		::DeleteDC(g_hFontDCQ488);
+	}
+
+	if (g_hDIBQ488)
+		::DeleteObject(g_hDIBQ488);
+
+	g_hOldDIBQ488 = LTNULL;
+	g_hDIBQ488    = LTNULL;
+	g_hFontDCQ488 = LTNULL;
+}
+
+
+// ----------------------------------------------------------------------- //
+//  0x00489580, 47 bytes -- free every font: the list's GetNext walk, the
+//  head re-read each pass (0x0048958b, as GetNext reads m_pHead) and its
+//  wrap test the 0-or-next select at 0x00489599, before the free.
+// ----------------------------------------------------------------------- //
+
+void fnt_FreeAllFontsQ488()
+{
+	GPOS pos = g_FontList.GetHeadPosition();
+
+	while (pos)
+		fnt_FreeFontQ488(g_FontList.GetNext(pos));
 }
 
 

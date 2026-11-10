@@ -1678,119 +1678,15 @@ extern int g_CV_DebugNumSounds;                                 // 0x004b32e4  "
 
 // AVP2: a file-scope WONAPI smart pointer (WONCommon/SmartPtr.h's
 // SmartPtr<T> over a RefCount-derived object: vptr at +0, the count at +4)
-// at 0x004f0118.  Its constructor (0x00414090) and destructor (0x0048fac0)
-// are registered by the _$E pair at 0x004108c0/0x004108e0, in this TU's
-// run.  TermClientShell (0x00411370) and Init (0x00410dff) both drop it
-// with `= NULL`, which expands ConstSmartPtr::operator= and RefCount::
-// Release in place.  AvP2 1.0.9.6 has the same at 0x004103d6.  T
-// is the game shell's AuthContext (see CWonAuthContextQ548 below).
-extern "C" {
-__declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
-__declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
-}
+// at 0x004f0118, defined in clientmgr2.cpp, whose unit registers its
+// constructor (0x00414090) and destructor (0x0048fac0) through the _$E
+// pair at 0x004108c0/0x004108e0.  TermClientShell (0x00411370) and Init
+// (0x00410dff) both drop it with `= NULL`, which expands
+// ConstSmartPtr::operator= and RefCount::Release in place.  AvP2 1.0.9.6
+// has the same at 0x004103d6.  T is the game shell's AuthContext
+// (wonptrq503.h's CWonAuthContextQ548).
+#include "wonptrq503.h"
 
-class CWonRefCountQ503                       // WONAPI::RefCount
-{
-protected:
-	virtual ~CWonRefCountQ503() {}
-
-public:
-	const CWonRefCountQ503* CreateRef() const
-	{
-		InterlockedIncrement(&mRefCount);
-		return this;
-	}
-
-	void Release()
-	{
-		if (InterlockedDecrement(&mRefCount) <= 0)
-			delete this;
-	}
-
-private:
-	mutable long mRefCount;                  // +0x04
-};
-
-template<class T>
-class CWonConstSmartPtrQ503                  // WONAPI::ConstSmartPtr<T>
-{
-protected:
-	T* mObject;
-
-public:
-	CWonConstSmartPtrQ503() : mObject(LTNULL) {}
-	~CWonConstSmartPtrQ503() { if (mObject != LTNULL) mObject->Release(); }
-
-	const T* operator->() const { return mObject; }
-	operator const T*() const { return mObject; }
-	const T* get() const { return mObject; }
-
-	const T* operator=(const T* thePtr)
-	{
-		if (mObject != thePtr)
-		{
-			if (mObject != LTNULL) mObject->Release();
-			mObject = (T*)(thePtr ? thePtr->CreateRef() : LTNULL);
-		}
-		return thePtr;
-	}
-
-	const CWonConstSmartPtrQ503& operator=(const CWonConstSmartPtrQ503& theCopy)
-	{
-		operator=(theCopy.get());
-		return *this;
-	}
-};
-
-template<class T>
-class CWonSmartPtrQ503 : public CWonConstSmartPtrQ503<T>  // WONAPI::SmartPtr<T>
-{
-public:
-	CWonSmartPtrQ503() {}
-
-	T* operator=(T* thePtr)
-	{
-		CWonConstSmartPtrQ503<T>::operator=(thePtr);
-		return thePtr;
-	}
-
-	T* operator->() const { return mObject; }
-	operator T*() const { return mObject; }
-	T* get() const { return mObject; }
-};
-
-// AVP2: what the pointer holds -- the game shell's GetAuthContext (slot 1,
-// `call *0x4(%eax)` at Primal Hunt 0x00410e65) hands back a
-// WONAuth/AuthContext.h AuthContext, and the peer-auth start asks it for
-// its peer data (GetPeerData, 0x004abe40, an AuthPeerDataPtr by value).
-class CWonAuthPeerDataQ548 : public CWonRefCountQ503      // WONAPI::AuthPeerData
-{
-};
-
-class CWonAuthContextQ548 : public CWonRefCountQ503       // WONAPI::AuthContext
-{
-public:
-	CWonConstSmartPtrQ503<CWonAuthPeerDataQ548> GetPeerData();  // PH 0x004abe40
-};
-
-// Its definition belongs to this TU (the dynamic initialiser pair at
-// 0x004108c0 / 0x004108e0 jumps to an OUT-OF-LINE constructor and
-// destructor); defined here, VC6 expands the constructor into the _$E
-// instead, so it is left declared until that is understood.
-#ifdef PRIMAL_HUNT
-extern CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;  // 0x004f0118
-#else
-// AVP2 1.0.9.6 (0x004def68): its initialiser expands the constructor
-// (0x0040fa70) and registers a destructor that expands the release
-// (0x0040fa80, 0x0040fa90).
-CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;
-// ... and a second pointer of the same kind right after it, which nothing
-// reads or writes: its own initialiser set follows the first's
-// (0x0040fac0..0x0040faf0, storing 0x004def6c), and the only references to
-// 0x004def6c in the image are those two. Primal Hunt has it too (0x004f011c,
-// 0x00410900..0x00410920), declared nowhere, as the first is (name ours).
-CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrUnusedQ503;
-#endif
 
 // What Init reaches outside this run.  (names ours where not cited)
 void r_InitRenderStruct(int bFullClear);                        // 0x00462110

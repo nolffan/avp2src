@@ -50,8 +50,8 @@
 //  0x0040ee10    34  cis_Term  (the THUNK is 0x0040bfd0, not this)  high
 //  0x0040ee40   100  cis_FreeAllSurfaces              WRITTEN  medium-high
 //  0x0040ef30   293  surface_CopyIn                   WRITTEN  medium
-//  0x00489510   107  fnt_Term (home: fntdraw.cpp)     WRITTEN  identical
-//  0x00489580    47  fnt_FreeAllFonts (home: fntdraw) WRITTEN  identical
+//  0x00489510   107  fnt_Term          now in fntdraw.cpp, its home
+//  0x00489580    47  fnt_FreeAllFonts  now in fntdraw.cpp, its home
 //
 //  All eleven were checked against the
 //  src/engine tree and the decoded symbol map: every one is
@@ -459,7 +459,7 @@ void sb_TermQ40C(CStructBankQ40C* pBank);                    // 0x00490c10
 
 // 0x00489510 -- the font module's GDI teardown; defined at the end of this
 // file (its real home is fntdraw.cpp's PART ONE).
-void fnt_TermQ40C();                                         // 0x00489510
+void fnt_TermQ488();                                         // 0x00489510, fntdraw.cpp
 
 // de_error.h, as diblit.cpp and binkvideo.cpp already write it out.  The
 // stringiser double-expands, which is why 0x004a7494 is "1" and not
@@ -1800,7 +1800,7 @@ LTRESULT ci_GetEngineHookQ40C(char* pName, void** pData)
 //  0x00490c10 is sb_FreeChunks(pBank, 0), which clientmgr3.cpp already
 //  names sb_Term; 0x004b1600 is the surface bank cis_CreateSurface
 //  allocates out of (0x0040c1b2 grows it through 0x00490c20).  0x00489510
-//  is the font module's GDI teardown (fnt_TermQ40C, end of this file).  The last act is to drop
+//  is the font module's GDI teardown (fntdraw.cpp's fnt_TermQ488).  The last act is to drop
 //  g_pRender, which is what makes this the surface half of the render-DLL
 //  shutdown.
 // ======================================================================= //
@@ -1809,7 +1809,7 @@ void cis_TermQ40C()
 {
 	cis_FreeAllSurfacesQ40C();                            // 0x0040ee10
 	sb_TermQ40C(&g_SurfaceBankQ40C);                      // 0x0040ee1a
-	fnt_TermQ40C();                                       // 0x0040ee22
+	fnt_TermQ488();                                       // 0x0040ee22
 	g_pRender = LTNULL;                                   // 0x0040ee27
 }
 
@@ -1898,94 +1898,6 @@ LTBOOL surface_CopyInQ40C(CSurfaceQ40C* pSurface)
 	}
 
 	return LTTRUE;                                        // 0x0040f048
-}
-
-
-// ======================================================================= //
-//  0x00489510 -- 107 bytes.  The GDI font module's teardown.
-// ======================================================================= //
-//
-//  REAL HOME: src/engine/lithtech/fntdraw.cpp, PART ONE (the GDI font
-//  module, 0x00488980..0x004895ae).  Written here, where its one caller
-//  cis_Term (0x0040ee22) is; move it (and drop the externs below) when
-//  fntdraw.cpp is next open.  Its first act is 0x00489580, fnt_FreeAllFonts, which today lives
-//  in src/engine/lithtech/cmgsurf.cpp PART B as fnt_FreeAllFontsQ428.
-//
-//  All four globals are fntdraw.cpp's, at the addresses it defines them:
-//  g_hFontDC 0x004b4d04, g_hDIB 0x004b4d08, g_hOldDIB 0x004b4d0c,
-//  g_hOldBrush 0x004b4d10.  The two SelectObject()s restore the brush
-//  first (0x0048952b pushes 0x004b4d10), then the DIB (0x0048953a), under
-//  ONE test of the DC (0x0048951a); DeleteObject is under its own test
-//  (0x00489551).  The stores are old-DIB, DIB, DC (0x0048955c..70); the
-//  old brush is NOT cleared.
-// ======================================================================= //
-
-void fnt_FreeAllFontsQ40C();                                 // 0x00489580
-
-extern HDC     g_hFontDCQ488;                                // 0x004b4d04
-extern HBITMAP g_hDIBQ488;                                   // 0x004b4d08
-extern HGDIOBJ g_hOldDIBQ488;                                // 0x004b4d0c
-extern HGDIOBJ g_hOldBrushQ488;                              // 0x004b4d10
-
-void fnt_TermQ40C()
-{
-	fnt_FreeAllFontsQ40C();                               // 0x00489510
-
-	if (g_hFontDCQ488)                                    // 0x0048951a
-	{
-		SelectObject(g_hFontDCQ488, g_hOldBrushQ488);     // 0x0048952d
-		SelectObject(g_hFontDCQ488, g_hOldDIBQ488);       // 0x0048953c
-		DeleteDC(g_hFontDCQ488);                          // 0x00489545
-	}
-
-	if (g_hDIBQ488)                                       // 0x00489551
-		DeleteObject(g_hDIBQ488);                         // 0x00489556
-
-	g_hOldDIBQ488 = LTNULL;                               // 0x0048955c
-	g_hDIBQ488    = LTNULL;                               // 0x00489566
-	g_hFontDCQ488 = LTNULL;                               // 0x00489570
-}
-
-
-// ======================================================================= //
-//  0x00489580 -- 47 bytes.  fnt_FreeAllFonts: free every GDI font.
-// ======================================================================= //
-//
-//  REAL HOME: fntdraw.cpp PART ONE, straight after fnt_Term above (its
-//  only caller, 0x00489510).  src/engine/lithtech/cmgsurf.cpp PART B has
-//  an earlier 42-byte attempt, fnt_FreeAllFontsQ428, that never placed;
-//  this one supersedes it and that copy should be deleted when the file
-//  is next open.  The shape is cis_FreeAllSurfaces' exactly: one cursor
-//  stepped in place after a copy is taken (0x00489591 `mov %esi,%eax`,
-//  0x00489593 `mov 0x4(%esi),%esi`), the head RE-READ each pass
-//  (0x0048958b), and the wrap test a ternary -- the sub/neg/sbb/and at
-//  0x00489599 -- computed before the free (0x004895a1).
-// ======================================================================= //
-
-class CFontQ40C
-{
-public:
-	CFontQ40C* m_pPrev;                            // 0x00
-	CFontQ40C* m_pNext;                            // 0x04
-	HFONT      m_hFont;                            // 0x08
-};
-
-extern CFontQ40C* g_pFontListQ40C;                 // 0x004b4d00 (fntdraw.cpp's g_pFontList)
-
-void fnt_FreeFontQ40C(CFontQ40C* pFont);           // 0x00488b20
-
-void fnt_FreeAllFontsQ40C()
-{
-	CFontQ40C* pCur = g_pFontListQ40C;             // 0x00489581
-
-	while (pCur)                                   // 0x00489587 / 0x004895a9
-	{
-		CFontQ40C* pFont = pCur;                   // 0x00489591
-		pCur = pCur->m_pNext;                      // 0x00489593
-		pCur = (pCur == g_pFontListQ40C) ? LTNULL : pCur;  // 0x00489597..9f
-
-		fnt_FreeFontQ40C(pFont);                   // 0x004895a1
-	}
 }
 
 
