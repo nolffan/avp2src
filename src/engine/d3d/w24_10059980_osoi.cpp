@@ -19,6 +19,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// NOLF's 0x1008977c table: not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -221,3 +223,5 @@ L_NextLight:
 		pNode = pNode->m_pNext;
 	}
 }
+
+#endif // PRIMAL_HUNT

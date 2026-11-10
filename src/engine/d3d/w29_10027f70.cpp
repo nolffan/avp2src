@@ -1,3 +1,5 @@
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 
 // *********************************************************************** //
@@ -74,3 +76,5 @@ void Obj10027f70::sub_10027f70(const Vec10027f70* pRight,
 				 pRight->z, pUp->z, pForward->z, 0.0f,
 				 0.0f, 0.0f, 0.0f, 1.0f);
 }
+
+#endif // PRIMAL_HUNT

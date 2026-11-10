@@ -1218,6 +1218,7 @@ extern Scene10015c70*	g_1008beb0;                     // 0x1008beb0
 //  store (`mov %eax,%ebx`); `for (i = 0, pPlane = pPlanes; ...)` and an
 //  indexed `&pPlanes[i]` are each 4 bytes off.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 static LTBOOL sub_10015b70(CD3DModelDraw* pDraw, D3DObject* pObj,
                            uint32* pClip)
 {
@@ -1254,6 +1255,7 @@ static LTBOOL sub_10015b70(CD3DModelDraw* pDraw, D3DObject* pObj,
 
 	return LTTRUE;
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //
@@ -1271,6 +1273,7 @@ static LTBOOL sub_10015b70(CD3DModelDraw* pDraw, D3DObject* pObj,
 //      volatile on the count instead hoists the count load ahead of the
 //      movzwl (9 and 10 bytes differ).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 void sub_10015c70(Ctx1007b8e0* pContext, void* pElem)
 {
 	D3DObject*	pObj = (D3DObject*)pElem;
@@ -1294,6 +1297,7 @@ void sub_10015c70(Ctx1007b8e0* pContext, void* pElem)
 
 	g_1008beb0->m_pTicks08->m_n00 += nTicks;
 }
+#endif // PRIMAL_HUNT
 
 
 // 0x10015e30 -- the two-argument byte packer (70 bytes; the ret is at
@@ -1308,7 +1312,15 @@ void sub_10015c70(Ctx1007b8e0* pContext, void* pElem)
 // Per byte lane: out.byte[i] = (a.byte[i] >> 2) | (((b >> 2*i) & 3) << 6),
 // written word-wide with the shipped constants; the OR order is the shipped
 // order.
+// Primal Hunt has it at 0x1000ddd7, a cdecl function of ph/drawmodel.cpp's
+// translation unit whose one caller (0x1000d2d6) is not written yet; with
+// this file's own caller retired there, it is external in that build so it
+// is still emitted.
+#ifdef PRIMAL_HUNT
+uint32 sub_10015e30(uint32 a, uint32 b)
+#else
 static uint32 sub_10015e30(uint32 a, uint32 b)
+#endif
 {
 	return ((a >> 2) & 0x3f3f3f3f)
 	     | ((b & 0x03) << 6)
@@ -1601,6 +1613,7 @@ public:
 //  0x10017c14 -- __thiscall, one dword argument, `ret $0x4`, void.
 //  One caller: 0x10015cea, on the global object at 0x1008b090.
 // ----------------------------------------------------------------------- //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 void CD3DModelDraw::sub_10017c10(D3DObject* pObject)
 {
 	//  Only the SIX matrices the source has to name are declared.  The
@@ -2165,6 +2178,7 @@ void CD3DModelDraw::sub_10017c10(D3DObject* pObject)
 	else
 		g_n1008cea4++;
 }
+#endif // PRIMAL_HUNT
 
 
 // ----------------------------------------------------------------------- //
@@ -2177,6 +2191,7 @@ void CD3DModelDraw::sub_10017c10(D3DObject* pObject)
 // the shipped i==0-inline / i!=0-sunk placement is not reached; nor by
 // building this TU as /Os /Qip /Qip_no_inlining (same) or /O2 /Qip
 // /Qip_no_inlining (519 bytes, still unpaired).
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 void CD3DModelDraw::sub_10019640()
 {
 	float   fDist;
@@ -2232,6 +2247,7 @@ void CD3DModelDraw::sub_10019640()
 		}
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 // ----------------------------------------------------------------------- //
@@ -2353,6 +2369,7 @@ static inline void MatVMul19a70(LTVector *pDest, LTMat *pMat, LTVector *pSrc)
 	pDest->z = pMat->m[2][0]*pSrc->x + pMat->m[2][1]*pSrc->y + pMat->m[2][2]*pSrc->z + pMat->m[2][3];
 }
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 extern "C" void sub_10019a70(Light19a70* pLight, Callback19a70Data* pData)
 {
 	CD3DModelLight*  pOwner = pData->m_pOwner;
@@ -2424,6 +2441,7 @@ extern "C" void sub_10019a70(Light19a70* pLight, Callback19a70Data* pData)
 		}
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 
@@ -2432,6 +2450,7 @@ extern "C" void sub_10019a70(Light19a70* pLight, Callback19a70Data* pData)
 //  0x10019d64 -- 6,861 bytes of body.  __thiscall, no arguments, void.
 // ======================================================================= //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 void CD3DModelLight::sub_10019d60()
 {
 	Query10015830		query;              // -0x3f4, ctor 0x10015830
@@ -2790,6 +2809,7 @@ void CD3DModelLight::sub_10019d60()
 		g_p1008beac->m_Query6c.Slot2(&query);
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 
@@ -2912,6 +2932,7 @@ extern "C" int32 sub_1001be00(LTVector* pPos, LTVector* pRay)
 // ----------------------------------------------------------------------- //
 // (g_p1008cbcc's record and g_f1008af78 are declared above.)
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 float CD3DModelLight::sub_1001bae0()
 {
 	LTVector    vRay;
@@ -2974,6 +2995,7 @@ float CD3DModelLight::sub_1001bae0()
 
 	return fResult;
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //
@@ -2998,6 +3020,7 @@ struct Arr1001c2c0
 	int32   sub_1001c2c0(uint32 newSize, int32 bFast, IAllocator* pAlloc);
 };
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp
 int32 Arr1001c2c0::sub_1001c2c0(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 {
 	LTMat*  pNewArray;
@@ -3050,6 +3073,7 @@ int32 Arr1001c2c0::sub_1001c2c0(uint32 newSize, int32 bFast, IAllocator* pAlloc)
 
 	return 1;
 }
+#endif // PRIMAL_HUNT
 
 
 

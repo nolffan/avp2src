@@ -20,6 +20,8 @@
 //  what the byte comparison maps.  IDENTICAL.
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp (CModelVB::CreateBuffers)
+
 #include "ltbasedefs.h"
 #include <string.h>
 
@@ -112,3 +114,5 @@ LTBOOL Batch100038e0::sub_100037f0(D3D7R5C* pD3D)
 
 	return bOk;
 }
+
+#endif // PRIMAL_HUNT

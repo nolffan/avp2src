@@ -35,6 +35,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 
@@ -114,3 +116,5 @@ LTBOOL Item10073640::sub_10073640() const
 	}
 	return LTFALSE;
 }
+
+#endif // PRIMAL_HUNT

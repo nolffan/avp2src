@@ -25,6 +25,8 @@
 //  ___sti__w57_1003b1c0_cpp_* name, which is how the byte comparison maps it.
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 
 struct Link1003b1c0
@@ -58,3 +60,5 @@ public:
 
 C1003b1c0 g_1008e6d0(1);                                // 0x1008e6d0  (new global)
 C1003b1c0 g_1008e6e8(2);                                // 0x1008e6e8  (new global)
+
+#endif // PRIMAL_HUNT

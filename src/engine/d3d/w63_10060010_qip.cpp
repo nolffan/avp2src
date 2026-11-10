@@ -632,6 +632,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawparticles.cpp, ph/drawlight.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -3021,3 +3023,5 @@ Lcleanup:
 	                                     sSrcBlend.m_nState00,
 	                                     sSrcBlend.m_nOld04);
 }
+
+#endif // PRIMAL_HUNT

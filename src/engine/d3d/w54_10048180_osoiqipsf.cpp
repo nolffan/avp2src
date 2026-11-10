@@ -117,6 +117,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodelshadows.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -3224,3 +3226,5 @@ void C10048180::sub_10049bb0(Shadow49bb0* pShadow, Item49bb0* pItem)
 //     The indexed form is the one to write, which both of these are.
 //
 // *********************************************************************** //
+
+#endif // PRIMAL_HUNT

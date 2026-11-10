@@ -44,6 +44,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/dirtyrect.cpp, ph/d3d_surface.cpp
+
 #include "ltbasedefs.h"
 #include <string.h>
 
@@ -270,3 +272,5 @@ void sub_100371e0(uint32 dwFlags)
 	sub_1003b3a0();
 }
 #endif // Primal Hunt: ph/d3d_surface.cpp
+
+#endif // PRIMAL_HUNT

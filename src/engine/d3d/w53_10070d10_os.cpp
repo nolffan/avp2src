@@ -569,6 +569,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp (d3d_ClipPoly2 and its plane clippers)
+
 #include "ltbasedefs.h"
 
 
@@ -1801,3 +1803,5 @@ L_MakeRec:
 
 	goto L_Bind;
 }
+
+#endif // PRIMAL_HUNT

@@ -22,6 +22,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodelshadows.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -289,3 +291,5 @@ PopSegment:
 		pTop++;
 	}
 }
+
+#endif // PRIMAL_HUNT

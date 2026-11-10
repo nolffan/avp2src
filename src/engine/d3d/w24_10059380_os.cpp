@@ -14,6 +14,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// NOLF's texture-stage table: not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 
 
@@ -466,3 +468,5 @@ void C10059880::sub_10059880(const void* pSrc, ColorDest59880* pDest)
 {
 	pDest->m_nColor10 = 0xffffffff;
 }
+
+#endif // PRIMAL_HUNT

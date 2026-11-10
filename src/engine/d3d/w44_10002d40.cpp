@@ -18,6 +18,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp (the plane clippers)
+
 #include "ltbasedefs.h"
 
 struct SClipVertA                                       // 0x28 bytes
@@ -248,4 +250,4 @@ int32 sub_100030a0(uint32* pUnused, void** ppVertsArg, uint32* pnVertsArg, void*
 	return LTTRUE;
 }
 
-
+#endif // PRIMAL_HUNT

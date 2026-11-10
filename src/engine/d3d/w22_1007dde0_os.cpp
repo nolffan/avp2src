@@ -28,6 +28,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/vertexbuffer.cpp
+
 #include "ltbasedefs.h"
 
 
@@ -310,3 +312,5 @@ LTBOOL VBBatch1007e8b0::sub_1007e8b0(D3D7e8b0* pD3D, uint32 nVertsPerVB,
 	m_bInit = 1;
 	return LTTRUE;
 }
+
+#endif // PRIMAL_HUNT

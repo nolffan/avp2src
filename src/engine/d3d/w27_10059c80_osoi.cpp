@@ -44,6 +44,8 @@
 //  0x1008fe38 / 0x1008fe18 / 0x1008f600 / 0x1008f5e0 as Bank10021f40 and
 //  0x1008f620 as DrawPolyMgr59c80 are new names.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawpolymgr.cpp (its globals and initialiser)
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
@@ -287,3 +289,5 @@ void sub_10059c80()
 	g_1008f600.sub_10021f40("TestGouraud", 0.0f, 0, 0);
 	g_1008f5e0.sub_10021f40("TestLightmap", 1.0f, 0, 0);
 }
+
+#endif // PRIMAL_HUNT

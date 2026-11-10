@@ -24,6 +24,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/vertexbuffer.cpp and CMoArray's members
+
 #include "ltbasedefs.h"
 
 
@@ -259,3 +261,5 @@ void* C10009d40::sub_1007f790(GenListPos& pos)
 {
 	return (void*)*sub_10009d40(pos.m_Index);
 }
+
+#endif // PRIMAL_HUNT

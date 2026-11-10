@@ -285,6 +285,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawmodel.cpp, ph/drawmodel_env.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -1141,3 +1143,5 @@ L_Done:
 //      stored only on the L_Bind path, which is downstream of pHead's
 //      last reader at 0x100441c0.
 //  ---------------------------------------------------------------------- //
+
+#endif // PRIMAL_HUNT

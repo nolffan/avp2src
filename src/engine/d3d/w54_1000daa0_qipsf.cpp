@@ -285,6 +285,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_matrix.cpp (d3d_DrawParticleBatch), ph/drawparticles.cpp
+
 #include "ltbasedefs.h"
 
 
@@ -1456,3 +1458,5 @@ L_Transform:
 //      itself is in the right place with the right target.
 //
 // ======================================================================= //
+
+#endif // PRIMAL_HUNT

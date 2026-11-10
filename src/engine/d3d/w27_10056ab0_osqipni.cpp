@@ -344,6 +344,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawpolymgr.cpp
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "../../LT2/lithshared/stdlith/object_bank.h"
@@ -2088,3 +2090,5 @@ void C1008f620::sub_10058e60(W7Poly56c60* pPoly, W7MatPass56c60* pPass,
 	if (nNextPass)
 		sub_10056ab0(pPoly, nNextPass);
 }
+
+#endif // PRIMAL_HUNT

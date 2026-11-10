@@ -37,6 +37,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_drawsky.cpp
+
 #include "ltbasedefs.h"
 
 // Round to nearest in the current FPU mode (w1_10001000.cpp's helper;
@@ -2080,3 +2082,5 @@ void sub_10030a60()
 	g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice, D3DRENDERSTATE_FOGEND, *(uint32*)&g_100893c8);
 	g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 1, D3DTSS_COLOROP, nColorOp);
 }
+
+#endif // PRIMAL_HUNT

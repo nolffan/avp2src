@@ -421,6 +421,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawpolygrid.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -2120,3 +2122,5 @@ static void sub_1005d3e0(W7Obj5d170* pObj, W7Vert5d170* pVert,
 		pVert->m_fV1c = fV;
 	}
 }
+
+#endif // PRIMAL_HUNT

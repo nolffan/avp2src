@@ -717,6 +717,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp, ph/drawpolymgr.cpp
+
 #include "ltbasedefs.h"
 
 
@@ -2525,3 +2527,5 @@ void sub_10025820()
 
 	g_1008d4bc = LTNULL;
 }
+
+#endif // PRIMAL_HUNT

@@ -95,6 +95,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawlight.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -231,3 +233,5 @@ extern "C" void sub_1002ec60(Obj1002ec60* pObj, Vert1002ec60* pVerts, uint32 nUn
 		}
 	}
 }
+
+#endif // PRIMAL_HUNT

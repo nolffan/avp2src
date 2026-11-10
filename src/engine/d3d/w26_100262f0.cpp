@@ -38,6 +38,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: d3d_Clear, ph/d3d_draw.cpp
+
 #include "ltbasedefs.h"
 #include <string.h>
 
@@ -153,3 +155,5 @@ void sub_100262f0(LTRect* pRect, uint32 dwFlags)
 	g_nFrameCount = 0;
 	sub_1003b3d0(pRect);
 }
+
+#endif // PRIMAL_HUNT

@@ -32,6 +32,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/intersect_line.cpp, ph/fullintersectline.cpp
+
 #include "ltbasedefs.h"
 
 
@@ -537,3 +539,5 @@ LTBOOL sub_10069190(Obj69190* pObj)
 		return IsectObject69190(&g_10091150->m_From, &g_10091150->m_To, pObj);
 	}
 }
+
+#endif // PRIMAL_HUNT

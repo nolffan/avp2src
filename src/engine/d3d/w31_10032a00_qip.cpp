@@ -19,6 +19,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_init.cpp (d3d_DetectCard, d3d_ReleaseDevice)
+
 #include "ltbasedefs.h"
 #include <stdlib.h>
 #include <string.h>
@@ -241,3 +243,5 @@ void sub_10032c30()
 	SAFE_RELEASE_10032C30(DDSurface,  g_pZBuffer);
 	SAFE_RELEASE_10032C30(D3D7,       g_pD3D);
 }
+
+#endif // PRIMAL_HUNT

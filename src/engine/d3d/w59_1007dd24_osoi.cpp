@@ -44,6 +44,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/vertexbuffer.cpp (CVertexBuffer::Flush)
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 
@@ -216,3 +218,5 @@ long VBDefault1007dde0::sub_1007dde0(Dev7dde0* pDev, uint32 nPrimType,
 
 	return hr;
 }
+
+#endif // PRIMAL_HUNT

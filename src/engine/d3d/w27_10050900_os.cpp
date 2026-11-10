@@ -95,6 +95,9 @@ inline float Dist50900(const Plane17c14* p, const LTVector* v)
 //  small object's constructor and destructor (state and old value kept
 //  together at -0x24/-0x20 .. -0x0c/-0x08).
 // ======================================================================= //
+void sub_10050900(void* pCtx, Obje0e0* pObj);
+
+#ifndef PRIMAL_HUNT	// Primal Hunt: d3d_DrawSprite, ph/drawsprite.cpp
 void sub_10050900(void* pCtx, Obje0e0* pObj)
 {
 	float		fRadius;
@@ -158,6 +161,7 @@ void sub_10050900(void* pCtx, Obje0e0* pObj)
 		sub_1000e0e0(pObj);
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 class C100500a0

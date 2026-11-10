@@ -195,6 +195,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp (CD3DModelDraw::DrawTLVerts*)
+
 #include "ltbasedefs.h"
 
 // Round to nearest in the current FPU mode (w1_10001000.cpp's helper;
@@ -1243,3 +1245,5 @@ void CModelDraw::sub_10016324(SModel* pModel, uint8 nAlpha)
 //      order in the image.
 //
 // *********************************************************************** //
+
+#endif // PRIMAL_HUNT

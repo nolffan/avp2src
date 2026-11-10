@@ -15,6 +15,8 @@
 //  (Shipped it is a /Qip pair -- the 0x1007dc50 shim -- entered at the
 //  register entry by 0x1007e0a4; the body at +4 does not need the pair.)
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/vertexbuffer.cpp
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 
@@ -80,3 +82,5 @@ C1007dc54* C1007dc54::sub_1007dc54()
 
 	return this;
 }
+
+#endif // PRIMAL_HUNT

@@ -14,6 +14,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/pixelformat.cpp (PFormat::Init)
+
 #include "ltbasedefs.h"
 
 
@@ -96,3 +98,5 @@ void PFormat1007a3f0::sub_1007a3f0(uint32 nType, uint32 nAlphaMask,
 		m_nWidth[i] = nEnd - nShift;
 	}
 }
+
+#endif // PRIMAL_HUNT

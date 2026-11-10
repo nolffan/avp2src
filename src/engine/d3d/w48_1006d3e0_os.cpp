@@ -7,6 +7,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/lmsurfaces.cpp (CLightmapPages::Term)
+
 #include "ltbasedefs.h"
 #include "ltlink.h"
 
@@ -93,3 +95,5 @@ void C10091950::sub_1006d3e0()
 		sub_10039730(&g_10091968[i]);
 	}
 }
+
+#endif // PRIMAL_HUNT

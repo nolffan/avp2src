@@ -903,6 +903,8 @@
 
 // Only ltbasedefs.h, exactly as big3c40.cpp, big051a0.cpp, big6d910.cpp
 // and big2ef34.cpp have it.
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworldmodel.cpp, ph/drawgouraud.cpp, ph/d3d_modelvb.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -3406,3 +3408,5 @@ void sub_10040850()
 
 	g_1008d4c0 = LTNULL;
 }
+
+#endif // PRIMAL_HUNT

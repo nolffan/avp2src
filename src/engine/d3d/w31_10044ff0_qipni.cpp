@@ -307,6 +307,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: 0x10016c60, which w28_100256d0_qipni.cpp places
+
 #include "ltbasedefs.h"
 
 
@@ -891,3 +893,5 @@ void C10044ff4::sub_10044ff4()
 	                                     D3DRENDERSTATE_ZENABLE,
 	                                     g_nZEnable1008d984);
 }
+
+#endif // PRIMAL_HUNT

@@ -40,6 +40,8 @@
 //  the vtable it never stores; neither is referenced.
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 
 struct IAllocator
@@ -204,3 +206,5 @@ C1007e0a0::C1007e0a0()
 }
 
 C1007e0a0 g_10091d80;                                   // 0x10091d80
+
+#endif // PRIMAL_HUNT

@@ -55,6 +55,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/pixelformat.cpp
+
 typedef unsigned long uint32;
 typedef unsigned char uint8;
 
@@ -170,3 +172,5 @@ uint32 FormatMgr::ConvertPixels(ConvertRequest* pRequest)
 
 	return fn(this, pRequest);
 }
+
+#endif // PRIMAL_HUNT

@@ -90,6 +90,8 @@
 // ======================================================================= //
 
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/pixelformat.cpp (FormatMgr, rewritten round FMConvert)
+
 typedef unsigned long  uint32;
 typedef unsigned short uint16;
 typedef unsigned char  uint8;
@@ -2725,3 +2727,5 @@ unsigned int C10079f84::sub_10079f80(C10079f84* pOther)
 	        m_Masks[2] == pOther->m_Masks[2] &&
 	        m_Masks[3] == pOther->m_Masks[3]);
 }
+
+#endif // PRIMAL_HUNT

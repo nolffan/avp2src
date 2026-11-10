@@ -22,6 +22,8 @@
 //  IDENTICAL.  New global (defined here): 0x10091950.
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/lmsurfaces.cpp
+
 #include "ltbasedefs.h"
 
 struct sub_1006d3a4
@@ -32,3 +34,5 @@ struct sub_1006d3a4
 };
 
 sub_1006d3a4 g_10091950;                                // 0x10091950
+
+#endif // PRIMAL_HUNT

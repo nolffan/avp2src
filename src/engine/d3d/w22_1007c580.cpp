@@ -14,6 +14,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: CMoArray's members (ph/tagnodes.cpp, ph/drawobjects.cpp)
+
 #include "ltbasedefs.h"
 
 
@@ -119,3 +121,5 @@ uint32 Arr1007c480::sub_1007c580(const GenList1007c480& theList)
 
 	return LTTRUE;
 }
+
+#endif // PRIMAL_HUNT

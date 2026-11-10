@@ -15,6 +15,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: CMoArray's members (ph/drawobjects.cpp)
+
 #include "ltbasedefs.h"
 
 
@@ -201,3 +203,4 @@ int32 Arr1007f420::InternalNiceSetSize(uint32 newSize, int32 bFast,
 	return 1;
 }
 
+#endif // PRIMAL_HUNT

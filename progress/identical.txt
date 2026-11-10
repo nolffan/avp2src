@@ -42543,6 +42543,7 @@ d3d.ren	sub_10023688
 d3d.ren	sub_100236b5
 d3d.ren	sub_100236d2
 d3d.ren	sub_10023753
+d3d.ren	sub_1002377f
 d3d.ren	sub_10023780
 d3d.ren	sub_10023797
 d3d.ren	sub_100237c4

@@ -108,6 +108,8 @@
 //  for what is left; it is the same here).
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_modelvb.cpp (d3d_ClipPoly and its plane clippers)
+
 #include "ltbasedefs.h"
 
 
@@ -826,3 +828,5 @@ long __fastcall sub_10050e60(unsigned long nClipFlags, unsigned char** ppVerts,
 	g_1008b874 = nClipFlags;
 	return XFormClip((ClipVert**)ppVerts, (int32*)pnVerts, (XForm10050e60*)g_1008b880);
 }
+
+#endif // PRIMAL_HUNT

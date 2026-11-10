@@ -279,6 +279,7 @@ void sub_100256d0(int32 nMode);
 #endif // Primal Hunt: ph/d3d_draw.cpp
 
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer: its d3d_RenderScene (0x10018520) calls none of this
 void sub_10026480(int32 nMode)
 {
 	sub_100256d0(nMode);
@@ -304,6 +305,7 @@ void sub_10026480(int32 nMode)
 	else
 		sub_100145f0();
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //
@@ -833,6 +835,9 @@ struct Obj1002cf40
 // stack entries. (LL: were qip_Callee placeholders with wrong bodies.)
 // sub_1002dd60 and sub_1002d050 are defined above.
 
+void sub_1002cf40(Obj1002cf40* pObj, uint32 nValue);
+
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer: its d3d_RenderScene (0x10018520) calls none of this
 void sub_1002cf40(Obj1002cf40* pObj, uint32 nValue)
 {
 	uint32 i;
@@ -852,6 +857,7 @@ void sub_1002cf40(Obj1002cf40* pObj, uint32 nValue)
 		}
 	}
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //
@@ -919,6 +925,7 @@ extern uint32 g_1008d4c0;                               // 0x1008d4c0
 extern uint32 g_1008d4bc;                               // 0x1008d4bc
 extern uint32 g_1008fe18;                               // 0x1008fe18
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer: its d3d_RenderScene (0x10018520) calls none of this
 void sub_10026500(void* pArg)
 {
 	sub_100123a0();
@@ -950,6 +957,7 @@ void sub_10026500(void* pArg)
 	if (g_1008fe18)
 		g_1008f620.sub_10056c60();
 }
+#endif // PRIMAL_HUNT
 
 
 // 0x10029890 is defined below 0x10026728 (their shipped order): icl /Qip
@@ -1909,6 +1917,7 @@ void sub_1002b0c0()
 
 
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer: its d3d_RenderScene (0x10018520) calls none of this
 void sub_10029890(Obj10029890* pObj)
 {
 	Elem10029890*   pElem;
@@ -1958,6 +1967,7 @@ void sub_10029890(Obj10029890* pObj)
 	sub_10025db0(pObj->m_a50);
 	sub_10025890(pObj->m_a5c);
 }
+#endif // PRIMAL_HUNT
 
 
 // ======================================================================= //
@@ -2764,6 +2774,7 @@ extern "C" void   sub_10014580(RVert299a8* pVert, uint8* pXForm);
 // ======================================================================= //
 #define CLIP299A8_EPSILON   0.00001f
 
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer: its d3d_RenderScene (0x10018520) calls none of this
 static inline void LerpClipVert299a8(RVert299a8* a, RVert299a8* b,
                                      RVert299a8* dst, float t)
 {
@@ -3367,6 +3378,7 @@ L_Done:
 	g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice,
 	                                     D3DRENDERSTATE_ALPHABLENDENABLE, 0);
 }
+#endif // PRIMAL_HUNT
 
 
 // *********************************************************************** //

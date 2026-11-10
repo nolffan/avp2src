@@ -469,6 +469,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworldmodel.cpp, ph/drawmodel_clip.cpp
+
 #include "ltbasedefs.h"
 #include <math.h>
 
@@ -2946,3 +2948,5 @@ L_Done:
 //  in 0x1000b910..0x1000d931 is either a statement above or a row in the
 //  banner's census, and the census has no residue.
 // *********************************************************************** //
+
+#endif // PRIMAL_HUNT

@@ -172,6 +172,7 @@ extern C1008b090_15e84	g_1008b090;                     // 0x1008b090  the model 
 //  0x10015e84 -- 927 bytes, then 13 bytes of padding (the shim at
 //  0x10015e80).  NEAR, 7 bytes (above).
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: CD3DModelDraw's constructor, ph/drawmodel.cpp
 C1008b090_15e84* C1008b090_15e84::sub_10015e80()
 {
 	Slot15e84*	pSlot;
@@ -213,6 +214,7 @@ C1008b090_15e84* C1008b090_15e84::sub_10015e80()
 
 	return this;
 }
+#endif // PRIMAL_HUNT
 
 
 extern "C" int __cdecl atexit(void (__cdecl* pfn)(void));

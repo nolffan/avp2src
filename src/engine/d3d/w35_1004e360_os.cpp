@@ -5,6 +5,8 @@
 //  functions (0x1001cf00, 0x10021a80, 0x1007ebe0 -- measured: 19 -> 17
 //  identical there), so they have their own file, /Os as before.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// not in Primal Hunt's renderer
+
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 
@@ -73,3 +75,5 @@ uint32 C1004e360::sub_1004e3d0()
 {
 	return m_Array34.GetSize();
 }
+
+#endif // PRIMAL_HUNT

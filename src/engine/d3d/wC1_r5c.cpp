@@ -16,6 +16,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_texture.cpp, CMoArray's members
+
 #include "ltbasedefs.h"
 #include "ltlink.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
@@ -226,3 +228,5 @@ void C100500a0::sub_10050284(uint32 nSize)
 
 	SetSize(nSize);
 }
+
+#endif // PRIMAL_HUNT

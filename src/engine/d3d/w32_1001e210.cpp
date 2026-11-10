@@ -18,6 +18,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/d3d_viewparams.cpp (d3d_GetDynamicLightAdd)
+
 #include "ltbasedefs.h"
 
 // ======================================================================= //
@@ -226,3 +228,5 @@ void sub_1002b0e0()
 		g_1008ce8c = sub_100234e0;
 	}
 }
+
+#endif // PRIMAL_HUNT

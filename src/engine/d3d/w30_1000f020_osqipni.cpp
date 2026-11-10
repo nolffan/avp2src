@@ -271,6 +271,8 @@
 //
 // *********************************************************************** //
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworld.cpp, ph/drawlightmaps.cpp
+
 #include "ltbasedefs.h"
 
 
@@ -2129,3 +2131,5 @@ L_Done:
 //      into %edx first, so the ternary is the reading taken.
 //
 // *********************************************************************** //
+
+#endif // PRIMAL_HUNT
