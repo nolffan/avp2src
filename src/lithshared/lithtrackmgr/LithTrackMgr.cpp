@@ -971,17 +971,17 @@ void LithTrackMgr::HandleScreenClick()
 	if(m_pInterface->Get3DCameraPt(m_dCamera.m_hObj, m_dCursor.m_nX, m_dCursor.m_nY, &vPt) == LT_OUTSIDE)
 		return;
 
+	DVector vPos;
 	ClientIntersectQuery iq;
 	ClientIntersectInfo ii;
-	DVector vPos;
 
 	m_pInterface->GetObjectPos(m_dCamera.m_hObj, &vPos);
 
 	DVector vDir = vPt - vPos;
-	vDir = vDir * (1.0f / vDir.Mag());
-
 	iq.m_From = vPos;
-	iq.m_To = vPos + (vDir * 3000.0f);
+	vDir *= 1.0f / vDir.Mag();
+	vDir *= 3000.0f;
+	iq.m_To = vPos + vDir;
 	iq.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID;
 
 	if(m_pInterface->IntersectSegment(&iq, &ii) && ii.m_hObject)

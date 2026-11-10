@@ -633,4 +633,21 @@ void CLeashVolume::ExtendBounds(const LTVector& vMin, const LTVector& vMax)
 	m_Box = LeashBox(vCenter, vExtents);
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	A list of volumes nothing uses (0x103378d8; its initialisers are
+//	0x10153b60..0x10153b9f, its destructor 0x10153ba0): it frees only its
+//	nodes, not the volumes. Names ours.
+//
+// ----------------------------------------------------------------------- //
+
+class CLeashVolumeList : public TLinkList<CLeashVolume*>
+{
+	public :
+
+		~CLeashVolumeList() { RemoveAll(); }
+};
+
+static CLeashVolumeList s_LeashVolumeList;
+
 #endif // PRIMAL_HUNT
