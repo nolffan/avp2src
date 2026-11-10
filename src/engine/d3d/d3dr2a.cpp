@@ -346,6 +346,8 @@ void Mat1001e480::sub_1001e480(Vec1004b6f0& vec)
 }
 
 
+#ifndef PRIMAL_HUNT
+// (Primal Hunt's build takes ph/common_draw.cpp's own COMDAT of it.)
 // 0x1001e4d0 -- 73 bytes of body (0x1001e4d0..0x1001e518), 2 callers.
 // LTMatrix::GetBasisVectors, ltmatrix.h:663.
 //
@@ -371,6 +373,7 @@ void Mat1001e480::sub_1001e4d0(Vec1004b6f0* pRight, Vec1004b6f0* pUp,
 	pForward->y = m[1][2];
 	pForward->z = m[2][2];
 }
+#endif
 
 
 // 0x10028010 -- 25 bytes of body then a lea-nop, 1 caller.

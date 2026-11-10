@@ -20,6 +20,7 @@
 
 #include "ltbasedefs.h"
 #include <math.h>
+#include <string.h>
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
 
 
@@ -49,6 +50,17 @@ LTVector        g_vFogColor;                                // 0x1005bcf8
 LTVector        g_1005c138;                                 // 0x1005c138
 LTVector        g_vLightAddScale;                           // 0x1005c158
 
+
+// The clip planes, in their order in the view.
+#define CPLANE_NEAR_INDEX       0
+#define CPLANE_FAR_INDEX        1
+#define CPLANE_LEFT_INDEX       2
+#define CPLANE_TOP_INDEX        3
+#define CPLANE_RIGHT_INDEX      4
+#define CPLANE_BOTTOM_INDEX     5
+#define NUM_CLIPPLANES          6
+
+#define MAX_FARZ                100000.0f
 
 // The view box: the centre of projection and the view window around it.
 struct ViewBox

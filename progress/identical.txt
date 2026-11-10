@@ -896,7 +896,9 @@ AvP2 d3d.ren	sub_1000b4ad
 AvP2 d3d.ren	sub_1000b4d0
 AvP2 d3d.ren	sub_1000b4ef
 AvP2 d3d.ren	sub_1000b50e
+AvP2 d3d.ren	sub_1000b528
 AvP2 d3d.ren	sub_1000b560
+AvP2 d3d.ren	sub_1000b584
 AvP2 d3d.ren	sub_1000b772
 AvP2 d3d.ren	sub_1000b891
 AvP2 d3d.ren	sub_1000b8e5
@@ -904,13 +906,29 @@ AvP2 d3d.ren	sub_1000b94b
 AvP2 d3d.ren	sub_1000b9b1
 AvP2 d3d.ren	sub_1000b9d4
 AvP2 d3d.ren	sub_1000ba1c
+AvP2 d3d.ren	sub_1000baa4
+AvP2 d3d.ren	sub_1000bcf3
 AvP2 d3d.ren	sub_1000bdeb
 AvP2 d3d.ren	sub_1000be28
 AvP2 d3d.ren	sub_1000be59
 AvP2 d3d.ren	sub_1000c0bf
 AvP2 d3d.ren	sub_1000c73d
+AvP2 d3d.ren	sub_1000c790
+AvP2 d3d.ren	sub_1000c823
+AvP2 d3d.ren	sub_1000d340
+AvP2 d3d.ren	sub_1000d35f
+AvP2 d3d.ren	sub_1000dbf8
+AvP2 d3d.ren	sub_1000dc6d
+AvP2 d3d.ren	sub_1000dcc7
+AvP2 d3d.ren	sub_1000dd19
+AvP2 d3d.ren	sub_1000dd34
+AvP2 d3d.ren	sub_1000de1f
+AvP2 d3d.ren	sub_1000df7a
 AvP2 d3d.ren	sub_1000dfb6
+AvP2 d3d.ren	sub_1000dfcf
 AvP2 d3d.ren	sub_1000e011
+AvP2 d3d.ren	sub_1000e03c
+AvP2 d3d.ren	sub_1000e06c
 AvP2 d3d.ren	sub_1000e09f
 AvP2 d3d.ren	sub_1000e0c1
 AvP2 d3d.ren	sub_1000e0d7
@@ -939,6 +957,7 @@ AvP2 d3d.ren	sub_1000e5f6
 AvP2 d3d.ren	sub_1000e6b2
 AvP2 d3d.ren	sub_1000e6d9
 AvP2 d3d.ren	sub_1000e70c
+AvP2 d3d.ren	sub_1000e756
 AvP2 d3d.ren	sub_1000e7cc
 AvP2 d3d.ren	sub_1000e801
 AvP2 d3d.ren	sub_1000e860
@@ -1125,6 +1144,7 @@ AvP2 d3d.ren	sub_100147b0
 AvP2 d3d.ren	sub_10014e40
 AvP2 d3d.ren	sub_10014f20
 AvP2 d3d.ren	sub_10015240
+AvP2 d3d.ren	sub_100161c0
 AvP2 d3d.ren	sub_10017930
 AvP2 d3d.ren	sub_100184f0
 AvP2 d3d.ren	sub_10018550
@@ -42296,6 +42316,7 @@ d3d.ren	sub_10023688
 d3d.ren	sub_100236b5
 d3d.ren	sub_100236d2
 d3d.ren	sub_10023753
+d3d.ren	sub_1002377f
 d3d.ren	sub_10023780
 d3d.ren	sub_10023797
 d3d.ren	sub_100237c4

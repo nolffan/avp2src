@@ -22,7 +22,8 @@
 //  where retail calls it (0x10019550: ~vector, not ~_Vector_base -- its
 //  dead `mov %esi,(%esp)` is _Destroy's first argument).
 //
-//  Not written: 0x100162a0 (the portals, 2365 bytes) and 0x10016c40 after it,
+//  Not written: 0x100162a0 (the portals, 2365 bytes; 0x10016c40 after it
+//  is its RenderScene callback),
 //  0x10016c60 (the line clipper, 3949 bytes), 0x10018520 (RenderScene,
 //  2671 bytes).  Near, all from VC6's inlining choices or scheduling
 //  rather than a known source difference: 0x10014550 (register choice),
@@ -1517,6 +1518,17 @@ void d3d_DrawPortalPoly(RenderPoly* pPoly, LTMatrix* pTransform)
 		g_nTrianglesDrawn += nVerts - 2;
 		g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
 	}
+}
+
+extern SceneDesc*   g_pSceneDesc;                           // 0x1005c14c (common_draw.cpp)
+
+void    d3d_DrawPortals(SceneDesc* pDesc, VisibleSet* pVisibleSet);  // 0x100162a0 (not written)
+
+// 0x10016c40 -- RenderScene's portal pass: the frame's visible set
+// through the portals.
+void d3d_DrawVisiblePortals()
+{
+	d3d_DrawPortals(g_pSceneDesc, d3d_GetVisibleSet());
 }
 
 

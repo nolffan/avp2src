@@ -330,7 +330,10 @@ void d3d_Term()
 	d3d_FreeDeviceList();
 	d3d_TermSubsystems();
 	d3d_FreeDevice();
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's: AvP2 1.0.9.6's d3d_Term (0x10010b13) stops here.
 	d3d_TermTranslucentStates();
+#endif
 }
 
 static LTBOOL d3d_IsNullRenderOn();
