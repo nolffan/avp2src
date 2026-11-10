@@ -915,6 +915,16 @@ public:
 	// rate governor's constructor and the message list's, which is exactly
 	// where declaration order puts it and nowhere the body could be.
 	ClientPacketSet() { m_pPacket = LTNULL; }
+#ifdef PRIMAL_HUNT
+	// PH: and a destructor that drops the slot's message, defined with the
+	// constructor in smgr.cpp. Client's constructor builds the four slots
+	// through the `eh vector constructor iterator` with this pair
+	// (server.dll 0x10032179: 0x100430c1 and 0x10012b8b, both folded with
+	// the message references' identical ones) and its destructor tears them
+	// down through the destructor iterator (0x100326e0). AvP2 1.0.9.6's
+	// slots have none: its constructor zeroes them inline.
+	~ClientPacketSet();
+#endif
 
 	class CPacket* m_pPacket;                // +0x00
 	uint32         m_Unknown04;

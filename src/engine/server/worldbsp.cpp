@@ -1,11 +1,11 @@
 // server.dll — IWorldBsp, the world geometry (reconstruction). Build /O1.
 #include "worldbsp.h"
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine sees the STL's <string> here, through a header
 // AvP2's does not have: the translation unit carries <string>'s 44-byte
 // guarded initialiser of std::ctype<unsigned short>::id (guard 0x004f8014,
-// atexit of the empty 0x00401790; this one's near 0x004330c0). server.dll has it
-// in collection/objbank only.
+// atexit of the empty 0x00401790; this one's near 0x004330c0), as server.dll's
+// does (guard 0x1008ec84, atexit of 0x1002eaeb; 0x10010dab).
 #include <string>
 #endif
 #include "commonmodel.h"   // Model::CModelSub14, the member at CWorldSurface+0x28

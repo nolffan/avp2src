@@ -12,11 +12,12 @@
 // so a slow frame does not lose the sends it should have made.
 //
 // The file name is ours.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
-// (guard 0x004f8014, atexit of the empty 0x00401790; 0x4018d0).
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x4018d0), as server.dll's
+// does (guard 0x1008ec84, atexit of 0x1002eaeb; 0x10001d8f).
 #include <string>
 #endif
 #include <windows.h>
@@ -1319,3 +1320,23 @@ void cb_FreeSoundTable(void* p)
 
 	free(p);
 }
+
+
+#ifndef LT_SERVER_BUILD
+// lithtech.exe only: the block's emptying (counterblock.h). It sits right
+// after cnt_EndCounter in both images (AvP2 1.0.9.6 0x00423a00, Primal Hunt
+// 0x00426170); its one caller is the block's own constructor, expanded into
+// the global's initializer in another unit (ltcounters.cpp).
+#include "counterblock.h"
+
+void CCounterBlockQ423::Clear()
+{
+	m_Unknown00 = 0;
+	m_Unknown04 = 0;
+	m_Unknown08 = 0;
+	m_Unknown0C = 0;
+	m_Unknown10 = 0;
+	m_Unknown14 = 0;
+	m_Unknown18 = 0;
+}
+#endif

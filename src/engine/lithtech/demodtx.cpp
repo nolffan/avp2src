@@ -1178,3 +1178,10 @@ CVectorZeroInitQ42C g_ModelAddQ42C(0.0f, 0.0f, 0.0f);
 
 // 0x004b3218 — "ModelDirAdd".  Initializer 0x0042f630 -> body 0x0042f640.
 CVectorZeroInitQ42C g_ModelDirAddQ42C(0.0f, 0.0f, 0.0f);
+
+// ... and a third, which no console command and no code reads: its
+// initializer follows the other two in both images (Primal Hunt
+// 0x00439a70/0x00439a80 storing 0x004f4830, between ModelDirAdd's
+// 0x004f4820 and ModelAdd's 0x004f4840; AvP2 1.0.9.6 0x00436160/0x00436170
+// storing 0x004e36a8), as server.dll's svlast.cpp has a third (name ours).
+CVectorZeroInitQ42C g_UnknownVecQ42C(0.0f, 0.0f, 0.0f);

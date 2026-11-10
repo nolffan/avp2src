@@ -676,28 +676,23 @@ void CObjWorldModelQ458::OnFoundInBoxQ458(WTFindInfoQ458* pInfo)
 	// inlined DistTo's y/z terms at lithtech 0x0045af13..0x0045af24.
 	pWorldBsp = m_pWorldBsp;
 
-#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
-	// PH: once per query code (0x0046c6fd..0x0046c71c, the code fetched
-	// twice through the holder; AvP2 1.0.9.6's lithtech.exe has no test).
-	// Both server.dll images have it too (Primal Hunt 0x1002ea5e, AvP2
-	// 1.0.9.6 0x1002cc89).
+	// AVP2: once per query code (Primal Hunt lithtech.exe
+	// 0x0046c6fd..0x0046c71c, the code fetched twice through the holder;
+	// AvP2 1.0.9.6's 0x004670dd..0x004670f6, reached only through the
+	// world models' vtables). Both server.dll images have it too (Primal
+	// Hunt 0x1002ea5e, AvP2 1.0.9.6 0x1002cc89). NOLF's has no test.
 	if (pWorldBsp->m_nLastFoundCode == pInfo->m_pCodeHolder->CodeSourceSlot1Q458())
 		return;
 
 	pWorldBsp->m_nLastFoundCode = pInfo->m_pCodeHolder->CodeSourceSlot1Q458();
-#endif
 
-#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
-	// PH: and the walk is handed the local (%esi from 0x0046c6c5 on; the
-	// object itself is never read again).  NEAR (0x0046c6c0, 334 of 334
-	// bytes, 0 mnemonic blocks): the y/z flip described above -- shipped
-	// takes DistTo's z term first (0x0046c765), ours y.
+	// AVP2: and the walk is handed the local (%esi from Primal Hunt's
+	// 0x0046c6c5 on; the object itself is never read again).  NEAR in
+	// Primal Hunt (0x0046c6c0, 334 of 334 bytes, 0 mnemonic blocks): the
+	// y/z flip described above -- shipped takes DistTo's z term first
+	// (0x0046c765), ours y.
 	query.m_Unknown00 = w_FindPolyAtPointQ458(
-		(CBspWorldViewQ458*)pWorldBsp, &pInfo->m_vCenter);       // 0x0046c731
-#else
-	query.m_Unknown00 = w_FindPolyAtPointQ458(
-		(CBspWorldViewQ458*)m_pWorldBsp, &pInfo->m_vCenter);     // 0x0045af80
-#endif
+		(CBspWorldViewQ458*)pWorldBsp, &pInfo->m_vCenter);
 	query.m_Unknown04 = pWorldBsp;                               // 0x0045af8e
 	query.m_pFn08     = (void (*)(void*, void*))pInfo->m_pfnCallback;  // 0x0045af79
 	query.m_Unknown18 = pInfo->m_pUserData;                      // 0x0045af92

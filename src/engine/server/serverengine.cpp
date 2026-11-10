@@ -8,6 +8,14 @@
 #include <stdlib.h>
 #include "lthread.h"
 #include <string.h>
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): the unit ends in <string>'s
+// guarded initializer of std::ctype<unsigned short>::id (server.dll
+// 0x1003753f: guard 0x1008ec84, atexit of the empty 0x1002eaeb; lithtech.exe
+// 0x0047fc90: guard 0x004f8014, atexit of the empty 0x00401790).
+#if defined(PRIMAL_HUNT)
+#include <string>
+#endif
 
 
 // A byte-wide view of the file record's flag word, for the one operation VC6

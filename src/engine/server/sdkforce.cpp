@@ -181,6 +181,10 @@ void        (LTRotation::*g_pSDKRot10)(LTMatrix&) const        = &LTRotation::Co
 void        (LTRotation::*g_pSDKRot11)(const LTMatrix&)        = &LTRotation::ConvertFromMatrix;
 void        (LTRotation::*g_pSDKRot12)(const LTRotation&, const LTRotation&, float) = &LTRotation::Slerp;
 LTRotation  (LTRotation::*g_pSDKRot13)() const                 = &LTRotation::Conjugate;
+// Out of line in AvP2 1.0.9.6's lithtech.exe (0x00461f80, called from
+// wm_RotateWorldModel at 0x00461a75 once that function's inline budget is
+// spent).
+LTBOOL      (LTRotation::*g_pSDKRot14)(const LTRotation&, float) const = &LTRotation::Equals;
 
 
 // *********************************************************************** //

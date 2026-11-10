@@ -780,7 +780,8 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp l
     serverengine.cpp ltobject.cpp lmessage.cpp lmessage2.cpp soundinst.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
     genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
     smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
-    svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp interlink.cpp
+    svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp interlink.cpp sisegment.cpp serverthread.cpp \
+    cacherec.cpp
 SERVER_OS_SRC := localdriver.cpp
 # the segment-query module, unoptimised in Primal Hunt and AvP2 1.0.9.6
 # (server.dll 0x10012de7..0x10013ebf)
@@ -804,7 +805,7 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     clientphysics.cpp clientsound.cpp dmloader.cpp clientmgr2.cpp stdlithalloc.cpp clientsoundinst.cpp \
     clientworld.cpp cltcursor.cpp clientconsole.cpp clientdsi.cpp lttexmod.cpp clienttexmgr.cpp \
     clientstreams.cpp clientinput.cpp clientsoundmgr.cpp clientworldinfo.cpp clientblit.cpp \
-    clientrender.cpp ltnew1.cpp cltnew.cpp cltrest.cpp lt2new1.cpp lt2new2.cpp lt2new3.cpp lt2new4.cpp \
+    clientrender.cpp ltcounters.cpp ltnew1.cpp cltnew.cpp cltrest.cpp lt2new1.cpp lt2new2.cpp lt2new3.cpp lt2new4.cpp \
     ltnew2.cpp ..\server\csbase.cpp ..\server\servermgr.cpp ..\server\servermsg.cpp \
     ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\ltservermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp \
     ..\server\sharedcommon.cpp ..\server\servermodel.cpp ..\server\serverlightanim.cpp \
@@ -816,7 +817,8 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     ..\server\collection.cpp ..\server\fsstream.cpp ..\server\objbank.cpp ..\server\objtypes.cpp \
     ..\server\saveio.cpp ..\server\serverengine.cpp ..\server\streamsim.cpp ..\server\tcpdriver.cpp \
     ..\server\worldbsp.cpp ..\server\worldmodels.cpp ..\server\worldsim.cpp worldtree.cpp clientmusic.cpp \
-    ..\server\sweptsphere.cpp ..\server\interlink.cpp
+    ..\server\sweptsphere.cpp ..\server\interlink.cpp ..\server\sisegment.cpp ..\server\serverthread.cpp \
+    ..\server\cacherec.cpp
 LITHTECH_OD_SRC := ..\server\localdriver.cpp
 # the segment-query module, unoptimised as in server.dll (lithtech.exe 0x0043b750..)
 LITHTECH_ODS_SRC := ..\server\worldisect.cpp
@@ -1229,7 +1231,7 @@ engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
 # So lith comes before RezMgr on both command lines, and in lithtech.exe
 # after the import libraries.
 LT_AVP_ORDER := \
-    modelanim binkvideo counter clientwin clientphysics cltapi lvideomgr cltnew cltrest clientinterface \
+    modelanim binkvideo counter clientwin clientphysics cltapi lvideomgr cltnew cltrest clientinterface ltcounters \
     clientworldinfo cissurf clientblit clientmgr2 cmgrinit clientmgr3 startload csvis worldsim ltnew2 \
     sweptsphere console conline clientconsole ccline lt2new4 ccclient servermsg csbase clienttexmgr fsstream \
     worldmodels worldbsp dalloc ltobject dsi cmgsurf collelem dhash objbank clientshell clientworld demodtx \
@@ -1237,8 +1239,8 @@ LT_AVP_ORDER := \
     filemgr warpblit clientinput diblit lmessage lmessage2 localdriver cltcursor clientmusic dmextra ltnew1 dmgrow \
     lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel collection modchunk commonphysics wmrotate \
     msgterm netmgr nettrace netobj objtypes lt2new3 partfm fmconvert fmcvt32 lttexmod predobj clientrender \
-    serverengine serverlightanim smgrmisc servercommon servermodel servermessage smgr smgrnew cmodelload \
-    cchandler objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound soundinst spritecontrol \
+    serverengine serverlightanim smgrmisc servercommon servermodel servermessage sisegment smgr smgrnew cmodelload \
+    cchandler serverthread objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound cacherec soundinst spritecontrol \
     streamsim clientstreams stringbank tcpdriver tcpqarray transform fntdraw smackvideo worldtree2 worldtree \
     stdlithalloc
 SV_AVP_ORDER := \
@@ -1246,7 +1248,7 @@ SV_AVP_ORDER := \
     dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath ltservermath svnew sharedcommon \
     lmessage lmessage2 localdriver lthread modelnew collection commonmodel sdkforce commonphysics netmgr packet \
     serverengine netobj objtypes objbank serverlightanim smgrmisc filemgr servermgr server servercommon \
-    servermodel servermessage smgr smgrnew objmover soundinst spritecontrol streamsim stringbank tcpdriver worldtree
+    servermodel servermessage sisegment smgr smgrnew serverthread objmover cacherec soundinst spritecontrol streamsim stringbank tcpdriver worldtree
 LT_AVP_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),AvP2Release)))
 LT_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER))) \
     $(filter-out $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER) controlfile)),$(LT_AVP_OBJS)) AvP2Release/controlfile.obj

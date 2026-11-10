@@ -271,12 +271,15 @@ LTRESULT cmg_Sub41fc90(CCmgClientMgr* pClientMgr, uint32 nFlags);   // 0x0041fc9
 void cmg_Sub420020(CCmgClientMgr* p);                           // 0x00420020
 void cmg_Sub41e920();                                           // 0x0041e920
 void cmg_Sub40bfd0();                                           // 0x0040bfd0
-void cmg_Sub484740(void (*pfn)(char*), int nFlag);              // 0x00484740
+// stringbank.cpp's walk of the strings still allocated: each one handed to
+// the callback with the caller's pointer (AvP2 1.0.9.6 0x00497440 pushes
+// both).
+void sb_EnumStrings(void (*pFn)(char* pStr, void* pUser), void* pUser);
 // 0x00411320 -- the callback that goes with it: `con_Print("Unfreed string:
-// %s", p)` and nothing else.  Not one of this run's eight (it is 19 bytes of
+// %s", p)` and nothing else (AvP2 1.0.9.6 0x00411b80).  Not one of this run's eight (it is 19 bytes of
 // padding-terminated code between 0x00411318 and 0x00411340) but it is only
 // ever named here, so it is written out below for the record.
-void cmg_ReportUnfreedString(char* pString);                    // 0x00411320
+void cmg_ReportUnfreedString(char* pString, void* pUser);       // 0x00411320
 // 0x004627d0 is clientrender.cpp's r_TermRender (ccclient.cpp names it).
 void r_TermRender(CCmgClientMgr* pClientMgr, LTBOOL bReportFailure); // 0x004627d0
 // src/engine/lithtech/clientworld.cpp: the render/texture cache flush.
@@ -1781,6 +1784,12 @@ extern CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;  // 0x004f0118
 // (0x0040fa70) and registers a destructor that expands the release
 // (0x0040fa80, 0x0040fa90).
 CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;
+// ... and a second pointer of the same kind right after it, which nothing
+// reads or writes: its own initialiser set follows the first's
+// (0x0040fac0..0x0040faf0, storing 0x004def6c), and the only references to
+// 0x004def6c in the image are those two. Primal Hunt has it too (0x004f011c,
+// 0x00410900..0x00410920), declared nowhere, as the first is (name ours).
+CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrUnusedQ503;
 #endif
 
 // What Init reaches outside this run.  (names ours where not cited)
@@ -2896,7 +2905,12 @@ void cmg_ReleaseRefList(LTLink* pHead)
 //      19 bytes; NOT one of the eight rows, but nothing else names it.
 // ======================================================================= //
 
-void cmg_ReportUnfreedString(char* pString)
+// The enumeration's callback, so it takes the user pointer too (and ignores
+// it): AvP2 1.0.9.6's /O2 build, without /GX, reuses that second argument
+// slot for a tail jump into con_Print (0x00411b80: the format over the
+// string, the string over the user pointer, `jmp`); Primal Hunt's /GX build
+// calls (0x00413110).
+void cmg_ReportUnfreedString(char* pString, void* pUser)
 {
 	con_Print("Unfreed string: %s", pString);
 }
@@ -3280,7 +3294,7 @@ CCmgClientMgr::~CCmgClientMgr()
 	sb_Term(&m_Bank1120);
 
 	cmg_Sub40bfd0();
-	cmg_Sub484740(cmg_ReportUnfreedString, 0);
+	sb_EnumStrings(cmg_ReportUnfreedString, LTNULL);
 
 	if (m_pFileMgr)
 		fm_Destroy(m_pFileMgr);

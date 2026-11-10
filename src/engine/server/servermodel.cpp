@@ -1,9 +1,10 @@
 // server.dll — the server's ILTModel setter overrides (reconstruction). Build /O1.
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#if defined(PRIMAL_HUNT)
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
-// (guard 0x004f8014, atexit of the empty 0x00401790; 0x403220).
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x47eb80), as server.dll's
+// does after sm_EndWorldA (guard 0x1008ec84, atexit of 0x1002eaeb; 0x100367a6).
 #include <string>
 #endif
 #include "servermodel.h"

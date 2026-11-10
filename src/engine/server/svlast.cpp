@@ -125,6 +125,14 @@ CVectorZeroInit g_Unknown58450(0.0f, 0.0f, 0.0f);
 // nothing, so whether they are padding or a third dead global is open.
 CVectorZeroInit g_Unknown58440(0.0f, 0.0f, 0.0f);
 
+// The third, and the four bytes above are not padding in AvP2 and Primal
+// Hunt: both images initialise one more zero vector right after these two,
+// from the next .CRT$XCU slot (Primal Hunt server.dll 0x100123bc/0x100123c1
+// storing 0x1008c7e0, slot 0x1007d068; AvP2 1.0.9.6 0x10011b23/0x10011b28
+// storing 0x1007f654, slot 0x10070040), and it lies between the other two in
+// .bss (0x1008c7d0, 0x1008c7e0, 0x1008c7f0). Read by nothing either.
+CVectorZeroInit g_UnknownVecQ3(0.0f, 0.0f, 0.0f);
+
 
 // *********************************************************************** //
 //  MOVE-ME: console.cpp — beside cc_ShowGameVars / cc_World, which are the

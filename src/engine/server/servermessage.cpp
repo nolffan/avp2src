@@ -2054,9 +2054,18 @@ void xfer_SendPendingFiles(CClientFiles* pState)
 
 		if (pFile->m_Flags & XFERFILE_PENDING)
 		{
+#ifdef PRIMAL_HUNT
 			int nNeeded = strlen(pFile->m_pName) + 6;
 
 			if (nNeeded >= ((CMsgWriteView*)msg.m_pMsg)->GetSpaceLeft())
+#else
+			// AVP2 1.0.9.6: the room left is taken first, then the name's
+			// length (lithtech.exe 0x004374f6..0x00437527, server.dll
+			// 0x10011dd0..); Primal Hunt measures the name first.
+			int nLeft = ((CMsgWriteView*)msg.m_pMsg)->GetSpaceLeft();
+
+			if ((int)strlen(pFile->m_pName) + 6 >= nLeft)
+#endif
 			{
 				pState->m_pNetMgr->SendToConnection(msg.m_pMsg,
 					pState->m_pConnection, 0x80);

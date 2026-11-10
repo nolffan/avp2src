@@ -11,6 +11,14 @@
 #include <new.h>
 #include "servermgr.h"
 #include "de_error.h"
+// PH: Primal Hunt's server.dll saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): this unit ends after
+// dsi_OutOfMemory in <string>'s guarded initializer of
+// std::ctype<unsigned short>::id (0x1001231e: guard 0x1008ec84, atexit of the
+// empty 0x1002eaeb). lithtech.exe's copy of the layer is clientdsi.cpp's.
+#if defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+#include <string>
+#endif
 
 // Declared here rather than through windows.h, whose macros rename half the
 // engine's own methods out from under it. The shipped call goes through the

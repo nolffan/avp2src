@@ -3556,15 +3556,10 @@ LPBASECLASS si_CreateObject(HCLASS hClass, ObjectCreateStruct* pStruct)
 }
 
 // The two entries whose work is done elsewhere: both are the thin server-side
-// half of a world query, with the manager's own state handed in.
+// half of a world query, with the manager's own state handed in. The segment
+// query's is sisegment.cpp's, a translation unit of its own.
+LTBOOL si_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo);
 
-LTBOOL si_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo)
-{
-	if (!g_pServerMgr)
-		return LTFALSE;
-
-	return w_IntersectSegment(pQuery, pInfo, &g_pServerMgr->m_Unknown210, 1);
-}
 
 #ifndef PRIMAL_HUNT
 // AVP2 1.0.9.6: what the shade lookup's lights look like from here (names
@@ -6725,20 +6720,6 @@ void sm_ReturnList44(CServerMgr* pMgr)
 	dl_InitList(&pMgr->m_List44);
 }
 
-// 0x1003512f — the worker thread's own construction; the base runs first and
-// the manager is filled in later, by Init.
-CServerThread::CServerThread()
-{
-	m_pServerMgr = LTNULL;
-}
-
-// 0x10035145 — which manager the thread works for.
-LTBOOL CServerThread::Init(CServerMgr* pMgr)
-{
-	m_pServerMgr = pMgr;
-
-	return LTTRUE;
-}
 
 
 // 0x10029bc4 — a queued message goes out unless something already dealt with
@@ -7276,71 +7257,7 @@ void sm_FlushList44(CServerMgr* pMgr)
 }
 
 
-// The cache record with the one member servermgr.h does not model: the
-// reset at 0x100356e9 is a thiscall (the shipped sweep loads the record into
-// ecx and pushes nothing), and it clears a count at +0x14 and a float at
-// +0x10. Named by what it does; nothing in the image names the record.
-class CCacheRecView
-{
-public:
-	void Reset();                            // 0x100356e9
-	// 0x1003567c — fill the record in from the file, the opened source and
-	// the handle's second dword; nonzero if it took (name ours).
-	int  Init(void* hFile, class ICacheSource* pSource, void* pParam);
-
-	LTLink m_Link;                           // +0x00
-	void*  m_hFile;                          // +0x0c
-	float  m_f10;                            // +0x10
-	uint32 m_n14;                            // +0x14
-	uint32 m_bWanted;                        // +0x18
-};
-
-
-// The 0x38-byte description 0x100392a9 fills in from the opened source (it
-// memsets exactly 0x38 bytes before parsing). Only two fields are read here,
-// and the division of one by the other plus a tenth of a second says what
-// they are: a byte total over a byte rate is a duration. Names ours.
-struct CCacheSourceInfo
-{
-	uint8  m_pad_00[0x08];
-	uint32 m_nBytesPerSec;                   // +0x08
-	uint8  m_pad_0c[0x18 - 0x0c];
-	uint32 m_nDataSize;                      // +0x18
-	uint8  m_pad_1c[0x38 - 0x1c];
-};
-
-// 0x100392a9 — parse the opened source's header into that description;
-// nonzero if it made sense of it (name ours).
-int fs_GetSourceInfo(class ICacheSource* pSource, CCacheSourceInfo* pInfo);
-
-// 0x1003567c — fill the record in from the file. The third argument is
-// validated and never read; the shipped code checks it and nothing else.
-//
-// The failure return sits at the very end with the success return jumping
-// over it, which is the AND-merged shape: one positive guard around the
-// whole body rather than three guarded returns.
-int CCacheRecView::Init(void* hFile, ICacheSource* pSource, void* pParam)
-{
-	CCacheSourceInfo info;
-
-	if (hFile && pSource && pParam)
-	{
-		Reset();
-
-		m_hFile = hFile;
-
-		if (fs_GetSourceInfo(pSource, &info))
-		{
-			m_bWanted = 0;
-			m_n14 = 0;
-			m_f10 = (float)info.m_nDataSize / info.m_nBytesPerSec + 0.1f;
-
-			return 1;
-		}
-	}
-
-	return 0;
-}
+#include "cacherec.h"
 
 // 0x10034757 — the cache-pass sweep: every record nobody asked for this
 // pass is unlinked, reset and returned to the bank at 0x0c.
@@ -10687,97 +10604,7 @@ void CServerWorld::Term()
 // homes it next to the lock's own copy (`mov %ecx,-0x14(%ebp); mov
 // %ecx,-0x18(%ebp)`, 0x10044f63), four bytes of frame the bare argument
 // does not have; lithtech.exe's /O2 drops it either way.
-// A critical section held for a scope (name ours): the constructor enters
-// and the destructor leaves, which is what gives retail's /GX frame and the
-// unwind entries that leave each lock (lithtech.exe 0x004982c0; the client
-// loader thread's IsRequestQueued, 0x00419490, is the same code).
-class CCSLockQ551
-{
-public:
-	CCSLockQ551(LCriticalSection* pCS)
-	{
-		m_pCS = pCS;
-		m_pCS->Enter();
-	}
-
-	~CCSLockQ551()
-	{
-		m_pCS->Leave();
-	}
-
-	LCriticalSection* m_pCS;
-};
-
-LTBOOL CServerThread::IsRequestQueued(void* pFile)
-{
-	LCriticalSection* pCS = &m_IncomingQueue.m_CS;
-	CCSLockQ551 lock1(pCS);
-	CCSLockQ551 lock2(&m_OutgoingQueue.m_CS);
-
-	if (m_pServerMgr)
-	{
-		LThreadMessage* pCur;
-		LThreadMessage* pRec;
-
-		pCur = m_IncomingQueue.m_MessageList.m_pTail;
-
-		while (pCur)
-		{
-			pRec = pCur;
-			pCur = (pCur->m_pPrev == m_IncomingQueue.m_MessageList.m_pTail) ? LTNULL : pCur->m_pPrev;
-
-			if ((void*)pRec->m_Data[3] == pFile)
-				return LTTRUE;
-		}
-
-		pCur = m_OutgoingQueue.m_MessageList.m_pTail;
-
-		while (pCur)
-		{
-			pRec = pCur;
-			pCur = (pCur->m_pPrev == m_OutgoingQueue.m_MessageList.m_pTail) ? LTNULL : pCur->m_pPrev;
-
-			if ((void*)pRec->m_Data[3] == pFile)
-				return LTTRUE;
-		}
-	}
-
-	return LTFALSE;
-}
-
-
-// serverengine.cpp's loader (0x1002b22c); serverengine.h is not included here.
-LTRESULT se_LoadModelData(CServerMgr* pMgr, char* pFilename, void* pFile,
-                          class Model** ppModel);
-
-// 0x100351d9 / lithtech 0x47bfa0 — slot 0x0c of the thread's vftable: one
-// load request off the incoming queue. The request is the same eight-dword
-// record se_LoadModel posts (payload dwords 0 and 2 zero, the file handle in
-// dword 3); anything else is ignored. The model is loaded here, on the
-// worker, and the answer goes back on the outgoing queue in the shape
-// OnModelLoaded reads: dword 0 is the failure flag (the `neg/sbb/neg` is
-// `!= LT_OK`), dword 3 the file and dword 4 the model.
-void CServerThread::ProcessMessage(LThreadMessage* pMsg)
-{
-	LThreadMessage reply;
-	Model*         pModel;
-
-	if (m_pServerMgr && pMsg->m_Data[0] == 0 && pMsg->m_Data[2] == 0)
-	{
-		void* pFile     = (void*)pMsg->m_Data[3];
-		char* pFilename = fs_GetFileName(&m_pServerMgr->m_FileMgr, pFile);
-
-		LTRESULT dResult = se_LoadModelData(m_pServerMgr, pFilename, pFile,
-		                                    &pModel);
-
-		reply.m_Data[0] = (dResult != LT_OK);
-		reply.m_Data[2] = 0;
-		reply.m_Data[3] = (uint32)pFile;
-		reply.m_Data[4] = (uint32)pModel;
-
-		m_OutgoingQueue.PostMessage(&reply);
-	}
-}
+// CServerThread's IsRequestQueued and ProcessMessage are serverthread.cpp's.
 
 
 // The sent-id list being refilled is g_pFillIDList (0x100587a4, defined at
@@ -12550,6 +12377,17 @@ public:
 	uint32     m_nSize;                      // +0x08
 };
 
+#ifdef PRIMAL_HUNT
+// PH: a packet slot gives up its message when it goes (servermgr.h). The
+// slot's message is the reference-counted ServerMessage the cursor Init
+// below hands it; Release is slot 2 (server.dll 0x10012b8b's `jmp *0x8(%eax)`).
+ClientPacketSet::~ClientPacketSet()
+{
+	if (m_pPacket)
+		((ServerMessage*)m_pPacket)->Release();
+}
+#endif
+
 // The Client constructor: every member set in declaration order after the
 // rate governor, the four packet slots and the message list are constructed
 // (AvP2 1.0.9.6: lithtech.exe 0x0047050f..0x00470670, expanded into
@@ -14211,17 +14049,6 @@ void CServerMgr::EndWorld(int bKeepWorldData)
 }
 
 
-// 0x100356e9 — the two counters a fresh (or recycled) record starts from.
-// Source order is only visible at /O2: /O1 rewrites the integer zero as
-// `andl $0x0,0x14(%ecx)` and schedules that ahead of the `fldz/fstps`
-// whatever order they are written in (0x100356e9), while /O2 folds both to
-// one `xor %eax,%eax` and keeps them as spelled -- and lithtech.exe stores
-// +0x10 first (0x0047d302).
-void CCacheRecView::Reset()
-{
-	m_f10 = 0.0f;
-	m_n14 = 0;
-}
 
 
 // Every message the manager hands out starts pointing at the same object, so

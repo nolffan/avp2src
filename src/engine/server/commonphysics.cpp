@@ -9,9 +9,9 @@
 #include <string>
 #include <map>
 #include <set>
-#elif defined(LT_SERVER_BUILD)
+#else
 // AVP2: the server interface object's string-set map (CLTServer below),
-// STLport's here (build/build.mk ENG_AVP_STL_SRC).
+// STLport's here (build/build.mk ENG_AVP_STL_SRC), in both images.
 #include <map>
 #include <set>
 #include <string>
@@ -228,10 +228,11 @@ class CLTServer : public ILTServer
 {
 public:
 	CLTServer(CServerMgr* pServerMgr);       // 0x1002d385
-#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
-	// AVP2: declared, and empty: AvP2 1.0.9.6's destructor (0x10038d9d)
-	// stores the class's own vptr before the map's destructor runs, which
-	// the compiler's implicit one does not.
+#if !defined(PRIMAL_HUNT)
+	// AVP2: declared, and empty: AvP2 1.0.9.6's destructor (server.dll
+	// 0x10038d9d; lithtech.exe's deleting form 0x0047dbe0) stores the
+	// class's own vptr before the map's destructor runs, which the
+	// compiler's implicit one does not.
 	~CLTServer() {}
 #endif
 
@@ -246,13 +247,11 @@ public:
 	// (server.dll 0x100366b0) -- which are the string-set map
 	// servermessage.cpp's Primal Hunt view keeps at +0x280, built here by
 	// the constructor (0x1003674d.., a call through 0x1003f87d).
-#ifdef LT_SERVER_BUILD
 	// STLport's map: its destructor is the compiler's ~CLTServer
-	// (0x10038d9d), which /O1 calls out of line from the deleting form.
+	// (0x10038d9d), which /O1 calls out of line from the deleting form;
+	// lithtech.exe's /O2 expands it there and calls the node teardown
+	// (0x00481f60) from its erase loop.
 	std::map<std::string, std::set<std::string> > m_StringSets;  // 0x280
-#else
-	uint8             m_StringSets[0x0c];    // 0x280
-#endif
 #else
 	// PH: the same map, VC6's (0x10 bytes: `new` asks for 0x290 at
 	// 0x100395e6), built by the constructor after the light-anim interface

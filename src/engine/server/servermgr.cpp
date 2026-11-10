@@ -37,6 +37,13 @@
 #include <string.h>
 #include "servermgr.h"
 #include "de_error.h"
+// PH: Primal Hunt's server.dll saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): MyServerInterface's unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (0x10038f15: guard 0x1008ec84, atexit of the empty 0x1002eaeb).
+#if defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+#include <string>
+#endif
 
 
 // The whole TU is server.dll's (see above), so lithtech.exe's compile of
