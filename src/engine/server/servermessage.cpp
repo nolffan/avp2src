@@ -3,13 +3,15 @@
 // PH: Primal Hunt's engine saw the STL's <string> here, through a header
 // not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
 // in <string>'s guarded initializer of std::ctype<unsigned short>::id
-// (guard 0x004f8014, atexit of the empty 0x00401790; 0x498260).  Both
-// images' CLTServer keep a map of string sets at +0x280 (below), which is
-// what brings in <map> and <set>.
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x498260).
+#include <string>
+#endif
+// Both engines' CLTServer keep a map of string sets at +0x280 (below),
+// which is what brings in <map> and <set>; AvP2 1.0.9.6 builds this file
+// against STLport (build/build.mk ENG_AVP_STL_SRC).
 #include <string>
 #include <map>
 #include <set>
-#endif
 #include <string.h>
 #include <stdio.h>
 #include "iltserver.h"
@@ -205,13 +207,13 @@ LTRESULT CLTServer::GetClientData(HCLIENT hClient, void *&pData, uint32 &nLength
 	return LT_OK;
 }
 
-#ifdef PRIMAL_HUNT
 // ---- the string-set map (PH 0x1003b1f0-0x1003b2c8) ----------------------- //
 //
-// PH: CLTServer's ILTServer slots 99, 100 and 101 (vtable 0x10075504 /
-// lithtech 0x004d6150; AvP2 1.0.9.6 has the same three as its slots 97..99,
-// 0x100381bc / 0x10038243 / 0x1003824e, but over a different string type,
-// so the code below is Primal Hunt's only).  They keep a
+// CLTServer's ILTServer slots 99, 100 and 101 (Primal Hunt's vtable
+// 0x10075504 / lithtech 0x004d6150; AvP2 1.0.9.6 has the same three as its
+// slots 97..99, server.dll 0x100381bc / 0x10038243 / 0x1003824e, lithtech.exe
+// 0x0047cd10 / 0x0047ce60 / 0x0047ced0, the same source over STLport's
+// 12-byte string: the node's value is at +0x1c in both).  They keep a
 // std::map<std::string, std::set<std::string> > at +0x280: the node's value
 // is at +0x1c (`add $0x1c,%eax` at 0x1002310a, the end of the map's
 // operator[]: the 16-byte key string at +0x0c), the set's insert is
@@ -256,7 +258,6 @@ CLTServerStringSetViewQ526::StringSetMap* CLTServerStringSetViewQ526::GetStrings
 {
 	return &m_StringSets;
 }
-#endif
 
 // ---- the threaded-loader halves (0x1002ec9a-0x1002ef14) ------------------ //
 

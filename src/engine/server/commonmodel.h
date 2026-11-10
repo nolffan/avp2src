@@ -1249,18 +1249,15 @@ public:
 	                                         //        come back world-relative
 	uint32     m_Unknown_f0;                 // 0x0f0
 	uint32     m_Unknown_f4;                 // 0x0f4
-#ifdef PRIMAL_HUNT
-	// PH: 0x2a8 bytes in all. The eight records are 0x24 each, which moves
+	// AVP2: 0x2a8 bytes in all. The eight records are 0x24 each, which moves
 	// the fields above to 0x120..0x134, and the walker ends 0x20 further on
 	// than that alone accounts for: Model::sub_100176dc's frame is 0x17e8 in
-	// both images, the walker spanning 0x2a8 between the command parser and
-	// the property table (server.dll 0x1001d5aa/0x1001d5be, lithtech.exe
-	// 0x004544f6/0x0045450f); UpdateTransforms' walker is the same size
-	// (objbank.cpp's ModelWalkerQ521).
+	// both engines and all four images, the walker spanning 0x2a8 between
+	// the command parser and the property table (Primal Hunt server.dll
+	// 0x1001d5aa/0x1001d5be, lithtech.exe 0x004544f6/0x0045450f; AvP2
+	// 1.0.9.6 server.dll 0x1001c4d8, lithtech.exe 0x0044fa16); UpdateTransforms'
+	// walker is the same size (objbank.cpp's ModelWalkerQ521).
 	uint8      m_pad_0f8[0x2a8 - 0x138];
-#else
-	uint8      m_pad_0f8[0x248 - 0x0f8];
-#endif
 };
 
 // CommonModelLT's own vtable is not the one m_pModelLT points at. Reached

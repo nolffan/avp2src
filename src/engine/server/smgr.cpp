@@ -9,12 +9,16 @@
 #endif
 #ifdef PRIMAL_HUNT
 // PH: the world's end gathers the models still in use into an STL set
-// (sub_48d400Q502), and the child-model table is an STL map of maps keyed
-// by strings (sm_LoadChildModelMapQ523), in both images.
+// (sub_48d400Q502), in both images.
 #include <set>
+#endif
+// The child-model table is an STL map of maps keyed by strings
+// (sm_LoadChildModelMapQ523), in both engines and both images. AvP2
+// 1.0.9.6 builds this file against STLport (build/build.mk
+// ENG_AVP_STL_SRC): its template members are lithtech.exe
+// 0x00487000..0x00489600.
 #include <map>
 #include <string>
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1235,12 +1239,9 @@ public:
 	LTBOOL PrecacheModels();                 // 0x10033e76
 };
 
-#ifdef PRIMAL_HUNT
-// PH: Primal Hunt's "child model" table, defined below sm_CacheObjectFiles
-// (names ours).
+// The "child model" table, defined below sm_CacheObjectFiles (names ours).
 void     sm_LoadChildModelMapQ523();
 void     sm_ApplyChildModelsQ523(ILTServer* pServer, char* pWorldName);
-#endif
 
 LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 {
@@ -1249,10 +1250,9 @@ LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 	void* hFile;
 	LTRESULT dResult;
 
-#ifdef PRIMAL_HUNT
-	// PH: server.dll 0x100413fe, before anything else.
+	// server.dll 0x100413fe (AvP2 lithtech.exe 0x00484aac), before
+	// anything else.
 	sm_LoadChildModelMapQ523();
-#endif
 
 	// Reseed everything from the clock, the game shell included.
 	uint32 seed = (uint32)dsi_GetTime();
@@ -1309,11 +1309,9 @@ LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 	cs_PreLoadWorld(pszWorldName);
 #endif
 
-#ifdef PRIMAL_HUNT
-	// PH: server.dll 0x10041588 (lithtech.exe 0x0048cd99, after the client
-	// shell's notice), once the world file is known.
+	// server.dll 0x10041588 (lithtech.exe 0x0048cd99, AvP2's 0x00484c49,
+	// after the client shell's notice), once the world file is known.
 	sm_ApplyChildModelsQ523((ILTServer*)m_pUnknown928, pszWorldName);
-#endif
 
 	if (bSameWorld && m_hWorldFile)
 	{
@@ -1361,11 +1359,10 @@ LTRESULT CServerMgr::DoStartWorld(char* pszWorldName, uint32 flags, float fTime)
 	return LT_OK;
 }
 
-#ifdef PRIMAL_HUNT
 extern std::map<std::string, std::map<std::string, std::string> > g_ChildModelMapQ523;
 extern std::string g_sChildModelDefaultQ523;
 
-// PH: server.dll 0x1004167e -- fill the child-model table from
+// server.dll 0x1004167e (AvP2 lithtech.exe 0x00484d70) -- fill the child-model table from
 // childmodel.map, once. Each line is a world, a model file and the child
 // model that stands in for it, separated by any of "; \t\n\r", all three
 // lowered; a line short of three is skipped.
@@ -1410,7 +1407,6 @@ void sm_LoadChildModelMapQ523()
 	fclose(pFile);
 #endif
 }
-#endif
 
 // The object Init hangs at +0x6a8: the object mover, whose vtable is the
 // thirteen-slot table at 0x1004e8c8 (Init's inline construction stores it at
@@ -9046,8 +9042,7 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 }
 
 
-#ifdef PRIMAL_HUNT
-// PH: Primal Hunt's "child model" table: for each world, which model file
+// The "child model" table: for each world, which model file
 // stands for which extra child model. Read from childmodel.map once (the
 // first world start that finds the table empty) and handed to the server
 // interface world by world. The globals' initializers sit here in
@@ -9057,7 +9052,7 @@ LTRESULT sm_CacheObjectFiles(CServerMgr* pMgr)
 std::map<std::string, std::map<std::string, std::string> > g_ChildModelMapQ523;
 std::string g_sChildModelDefaultQ523;
 
-// server.dll 0x10041303, lithtech.exe 0x0048ca10 -- hand the interface
+// server.dll 0x10041303, lithtech.exe 0x0048ca10 (AvP2's 0x004848f0) -- hand the interface
 // every link the table has for this world (ILTServer's
 // ResetModelToChildModelLink, then LinkModelToExtraChildModel once per
 // entry, each with a one-name list). The world name is lowered first: the
@@ -9087,7 +9082,6 @@ void sm_ApplyChildModelsQ523(ILTServer* pServer, char* pWorldName)
 		}
 	}
 }
-#endif
 
 // 0x1002a365 — shut every model down at server teardown. Three passes over
 // the model hash: bump every cache count so nothing can go while the sweep

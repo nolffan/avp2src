@@ -8084,6 +8084,27 @@ void Model::sub_100176dc()
 		// NOLF tested ==2, ==1, >=3 and >=4 in turn.
 		switch (parser.m_nArgs)
 		{
+		case 1:
+		{
+			if (stricmp("NoAnimation", parser.m_ArgPointers[0]) == 0)
+			{
+				m_Unknown0ac = 1;            // 0x100178da
+			}
+			else if (stricmp("ShadowEnable", parser.m_ArgPointers[0]) == 0)
+			{
+				m_Unknown0d4 = 1;            // 0x100178fb
+			}
+			else if (stricmp("SpecularEnable", parser.m_ArgPointers[0]) == 0)
+			{
+				m_Unknown14c = 1;            // 0x1001791c
+			}
+			else if (stricmp("Rigid", parser.m_ArgPointers[0]) == 0)
+			{
+				m_Unknown150 = 1;            // 0x10017941
+			}
+		}
+		break;
+
 		case 2:
 		{
 			// -- 0x100177ad .. 0x100177df ------------------------------ //
@@ -8167,27 +8188,6 @@ void Model::sub_100176dc()
 		// (0x10017941).  The CLIENT does exactly the same (0x00447426 and
 		// 0x004474bc), so it is the allocator's live range ending and not
 		// a source difference.
-		break;
-
-		case 1:
-		{
-			if (stricmp("NoAnimation", parser.m_ArgPointers[0]) == 0)
-			{
-				m_Unknown0ac = 1;            // 0x100178da
-			}
-			else if (stricmp("ShadowEnable", parser.m_ArgPointers[0]) == 0)
-			{
-				m_Unknown0d4 = 1;            // 0x100178fb
-			}
-			else if (stricmp("SpecularEnable", parser.m_ArgPointers[0]) == 0)
-			{
-				m_Unknown14c = 1;            // 0x1001791c
-			}
-			else if (stricmp("Rigid", parser.m_ArgPointers[0]) == 0)
-			{
-				m_Unknown150 = 1;            // 0x10017941
-			}
-		}
 		break;
 
 		// -- 0x10017950 ------------------------------------------------ //

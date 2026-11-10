@@ -790,8 +790,11 @@ d3d_opt = $(if $(call d3d_group,$(1)),$(filter /%,$(D3D_$(call d3d_group,$(1))))
 # AvP2 1.0.9.6's engine sees STLport 4.0 (lithshared/stl) ahead of VC6's
 # headers: commonmodel.obj's set<string> members (lithtech.exe
 # 0x00457260..0x00459162) are STLport's, byte for byte as WON's STLport
-# build has them. Primal Hunt's engine is VC6's STL (above).
-ENG_AVP_STL_SRC := commonmodel.cpp
+# build has them, as are smgr.obj's child-model map members (lithtech.exe
+# 0x00487000..0x00489600) and servermessage.obj's string-set map
+# (0x0047cd10.., its members 0x00481b70..0x00482220). Primal Hunt's engine
+# is VC6's STL (above).
+ENG_AVP_STL_SRC := commonmodel.cpp smgr.cpp servermessage.cpp
 eng_avp_stl = $(if $(and $(filter AvP2Release,$(1)),$(filter $(ENG_AVP_STL_SRC),$(notdir $(subst \,/,$(2))))),/I ..\..\LT2\lithshared\stl)
 # $(call engine_variant,<object dir>,<cl>,<env>,<defines>,<renderer: icl|cl>)
 define engine_variant
