@@ -301,7 +301,23 @@ public:
 	~CMsgPacketData() { SetSize(0, &g_PacketDataBank); }
 
 	LTBOOL SetSize(uint32 nItems, uint32* pBank);        // 0x1000be59
+#ifndef LT_SERVER_BUILD
+	// lithtech.exe EXPANDS the reset-and-resize, CMoArray's Init (Term,
+	// _InitArray, SetSize), wherever ServerMessage::Init is expanded: AvP2
+	// 1.0.9.6's CNetMgrSendView::SendPacket 0x00463d1a..0x00463d4a and
+	// sav_RestoreObject 0x0043a574..0x0043a5a7, Primal Hunt's 0x00469014
+	// (SetSize(0) twice, the cache step, the new size). AvP2's _InitArray is
+	// the folded 0x0042f7c0. server.dll's /O1 calls it (AvP2 1.0.9.6's 0x10014975).
+	void   _InitArray(uint32 nWantedCache);
+	LTBOOL Init(uint32 nItems, uint32 nGrowBy)
+	{
+		SetSize(0, &g_PacketDataBank);
+		_InitArray(nGrowBy);
+		return SetSize(nItems, &g_PacketDataBank);
+	}
+#else
 	LTBOOL Init(uint32 nItems, uint32 nGrowBy);          // 0x1000be24
+#endif
 
 	uint8 m_vptr[4];
 };
@@ -452,13 +468,17 @@ public:
 // for either operand, the owner store through a `pThis` local, reading the
 // bound through a pointer to the packet data, and all four held compiler
 // revisions (8168, 8447, 8804, 8966).
+//
+// The flags are cleared after the three ones: both lithtech.exe images store
+// them in that order (AvP2 1.0.9.6 0x00463d0b, Primal Hunt 0x00468ffd), and
+// /O1 hoists the clear to the top whichever way it is written.
 inline void ServerMessage::Init(uint16 nMaxDataLen, uint16 nGrowSize)
 {
-	m_MsgFlags   = 0;
 	m_Unknown34  = 1;
 	m_MaxDataLen = nMaxDataLen;
 	m_Unknown38  = 1;
 	m_Unknown3a  = 1;
+	m_MsgFlags   = 0;
 
 	m_Write.m_pOwner = this;
 

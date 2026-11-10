@@ -322,8 +322,10 @@ void si_SetupInterface(CLTServer* pServer);
 // 0x1002d355 (48 bytes) / lithtech 0x0046bbf0 -- builds the server interface
 // object and fills its function table.  Reached only through
 // sm_CreateUnknown928 (smgr.cpp, 0x1002d34a), which is why it answers the
-// CUnknown928Obj* smgr.cpp declares.
-CUnknown928Obj* sub_1002d355(CServerMgr* pMgr)
+// CUnknown928Obj* smgr.cpp declares; AVP2 1.0.9.6's lithtech.exe calls it
+// from CServerMgr::Init directly (0x004798b0).  (Name ours: it was named
+// for NOLF's address, which is no function in either engine's server.dll.)
+CUnknown928Obj* sm_CreateServerLTQ928(CServerMgr* pMgr)
 {
 	// `new CLTServer(pMgr)` spelled out: the class is abstract here (its
 	// ILTCSBase overrides are written as views in servermessage.cpp and

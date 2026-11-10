@@ -908,6 +908,21 @@ public:
 			((IPacketRefQ2B*)m_pMsg)->AddRef();
 	}
 
+	// servermsg.h's CMessageRef::Init: drop the old reference, take one on
+	// the other's.
+	CPacket* Init(const CMsgRefQ2B& other)
+	{
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->Release();
+
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->AddRef();
+
+		return m_pMsg;
+	}
+
 	CPacket* m_pMsg;                                                     // 0x00
 };
 
@@ -1260,7 +1275,9 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 	CClientShellQ2B* pShell;
 	CBaseDriverQ2B*  pDriver;
 	char*            pWorldName;
+#ifdef PRIMAL_HUNT
 	uint32           nFlags;
+#endif
 
 	Disconnect();                                                   // 0x004114d4
 
@@ -1347,6 +1364,7 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 
 		pWorldName = pRequest->m_WorldName;                         // 0x00411607
 
+#ifdef PRIMAL_HUNT
 		if (pRequest->m_RecordFilename[0])                          // 0x00411605
 		{
 			dResult = m_DemoMgr.StartRecording(pWorldName,
@@ -1389,10 +1407,43 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 
 			return dResult;
 		}
+#else
+		// AVP2 1.0.9.6: one failure tail for both demo arms (0x00410680),
+		// and the shell is disconnected without a null test at every site
+		// (0x00410688, 0x004106c4, 0x0041071c).
+		if (pRequest->m_RecordFilename[0] || pRequest->m_PlaybackFilename[0])
+		{
+			if (pRequest->m_RecordFilename[0])                      // 0x00410641
+				dResult = m_DemoMgr.StartRecording(pWorldName,
+				                                   pRequest->m_RecordFilename);  // 0x00410650
+			else
+				dResult = m_DemoMgr.StartPlayback(pRequest->m_PlaybackFilename,
+				                                  worldName, 0x100);  // 0x0041067b
+
+			if (dResult != LT_OK)                                   // 0x00410680
+			{
+				pShell->Disconnect(1);                              // 0x0041068e
+				return dResult;
+			}
+
+			pWorldName[0] = 0;                                      // 0x004106a1
+		}
+
+		dResult = pShell->StartupLocal(pRequest,
+		                               pRequest->m_Type == STARTGAME_HOST,
+		                               (uint32)pDriver);            // 0x004106b7
+
+		if (dResult != LT_OK)                                       // 0x004106bc
+		{
+			pShell->Disconnect(1);                                  // 0x004106ca
+			return dResult;
+		}
+#endif
 
 		// AVP2: an empty world name is now an error rather than a skip
 		// (0x004116c9 jumps straight to the report), and the start flags
 		// are 0 for STARTGAME_NORMAL, 3 otherwise (0x004116ce..0x004116d8).
+#ifdef PRIMAL_HUNT
 		nFlags = 3;                                                 // 0x004116ce
 		if (pRequest->m_Type == STARTGAME_NORMAL)                   // 0x004116d3
 			nFlags = 0;
@@ -1406,6 +1457,17 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 
 			if (pShell)                                             // 0x00411711
 				pShell->Disconnect(1);                              // 0x0041171b
+#else
+		// AVP2 1.0.9.6 starts every world with flags 3 (0x004106f1).
+		if (!pWorldName[0] ||                                       // 0x004106e5
+		    pShell->m_pServerMgr->DoStartWorld(pWorldName, 3,
+		                                       m_fTime125c) != LT_OK)  // 0x004106f4
+		{
+			pShell->m_pServerMgr->GetErrorString(errorString, 0x100);  // 0x0041070a
+			SetupError(LT_SERVERERROR, errorString);                // 0x00410717
+
+			pShell->Disconnect(1);                                  // 0x00410725
+#endif
 
 			RETURN_ERROR_SYM_DESC(1, "CClientMgr::StartShell", LT_SERVERERROR,
 			                      "error loading world")
@@ -1425,7 +1487,13 @@ LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
 	if (m_pClientShell2)                                            // 0x004118a5
 	{
 		// AVP2: 0x44c (Primal Hunt 0x004118ad).
+#ifdef PRIMAL_HUNT
 		cMsg = msg_StartWriteQ2B(0x44c, 0x44c);                     // 0x004118bc
+#else
+		// AVP2 1.0.9.6 keeps the holder in a register (%ebp, zeroed at
+		// 0x00410510) and takes the reference through Init (0x0041084d).
+		cMsg.Init(msg_StartWriteQ2B(0x44c, 0x44c));                 // 0x00410848
+#endif
 
 		cMsg.m_pMsg->WriteType((uint16)pRequest->m_ClientDataLen);  // 0x004118f2
 		((IPacketRefQ2B*)cMsg.m_pMsg)->WriteData(pRequest->m_pClientData,
@@ -2653,7 +2721,11 @@ class CClientMgrQ474;
 class CClientHookObjQ474;
 LTRESULT cm_RunRemoveHookQ474(CClientMgrQ474* pMgr, CClientHookObjQ474* pObject); // 0x00477d90
 void     tbl_ReleaseSlotQ5(CClientMgrView* pClientMgr, uint16 nID);  // 0x004204f0
-void     cm_ReleaseObjectTexturesQ5(CClientMgrView* pClientMgr, CClientObjIDView* pObj); // 0x00420330
+// cltapi.cpp's cm_ReleaseObjectTexturesQ404, under its own name and types
+// (AvP2 1.0.9.6 0x004263f0, Primal Hunt 0x00420330).
+class CClientMgr;
+class CClientObject;
+void     cm_ReleaseObjectTexturesQ404(CClientMgr* pClientMgr, CClientObject* hObj);
 void     om_RemoveObjectQ5(void* pObjectMgr, CClientObjIDView* pObj); // 0x0045bde0
 
 LTRESULT sub_411bf0(CClientMgrView* pClientMgr, CClientObjIDView* pObj)
@@ -2674,7 +2746,7 @@ LTRESULT sub_411bf0(CClientMgrView* pClientMgr, CClientObjIDView* pObj)
 		tbl_ReleaseSlotQ5(pClientMgr, pObj->m_nServerID);
 
 	if (pObj->m_ObjectType == 1)
-		cm_ReleaseObjectTexturesQ5(pClientMgr, pObj);
+		cm_ReleaseObjectTexturesQ404((CClientMgr*)pClientMgr, (CClientObject*)pObj);
 
 	om_RemoveObjectQ5(pClientMgr->m_ObjectMgr1ec, pObj);
 	g_dwDirtyFlags4b44a4 |= 2;

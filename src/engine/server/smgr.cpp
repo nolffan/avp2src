@@ -1529,6 +1529,9 @@ public:
 	uint32 m_na70;                           // 0xa70
 };
 
+// 0x1002d355 (commonphysics.cpp) -- the worker sm_CreateUnknown928 forwards to.
+class CUnknown928Obj* sm_CreateServerLTQ928(CServerMgr* pMgr);
+
 LTBOOL CServerMgr::Init()
 {
 	SetupGlobals();
@@ -1621,7 +1624,13 @@ LTBOOL CServerMgr::Init()
 		cc_InitState(this, &m_ConsoleState);
 		cc_LoadConfigFile(&m_ConsoleState, "s_autoexec.cfg", 2, 0);
 
+#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
+		// AVP2 1.0.9.6's lithtech.exe calls the worker itself (0x00482748
+		// -> 0x004798b0); there is no forward in its image.
+		m_pUnknown928 = sm_CreateServerLTQ928(this);
+#else
 		m_pUnknown928 = sm_CreateUnknown928(this);
+#endif
 
 		fs_Init(&m_FileMgr, this);
 		m_ClassMgr.Init(this);
@@ -6752,14 +6761,15 @@ void CBaseMgr::_v10(int nEvent, char* pName, int n)
 
 // 0x1002d34a — a one-line forward, and the only reason it exists is that the
 // worker takes the manager by argument where the caller has it in `this`.
-// The worker (0x1002d355) is what actually builds the object; nothing names
-// either it or what it builds, so both keep their addresses.
-class CUnknown928Obj* sub_1002d355(CServerMgr* pMgr);
-
+// The worker (0x1002d355, declared above Init) is what actually builds the
+// object; nothing names either it or what it builds, so both keep their
+// addresses. (AvP2 1.0.9.6's lithtech.exe has no forward: see Init.)
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 CUnknown928Obj* sm_CreateUnknown928(CServerMgr* pMgr)
 {
-	return sub_1002d355(pMgr);
+	return sm_CreateServerLTQ928(pMgr);
 }
+#endif
 
 
 // 0x10027135 — a connection going away only matters if a client was sitting

@@ -179,7 +179,10 @@ void cm_OnShellTerm(CClientMgrView* pClientMgr, CClientShell* pShell);  // 0x004
 //   0x00415bb0()        — __thiscall on the CClientMgr, no arguments.
 //   0x00421fc0(pNode)   — __cdecl, one argument, inside the node walk of
 //                         0x00413b40.
-void sub_461270(CClientShell* pShell);                         // 0x00461270
+// predtick.cpp's sub_461270Q1S, under its own name and types (Primal Hunt
+// 0x00461270, AvP2 1.0.9.6 0x0046e250).
+class CClientShellQ1S;
+void sub_461270Q1S(CClientShellQ1S* pShell);                   // 0x00461270
 void sub_421fc0(void* pNode);                                  // 0x00421fc0
 
 // The global the shell publishes itself into (CClientShell::Init, written
@@ -1625,7 +1628,7 @@ LTRESULT CClientShell::Update()
 	m_Unknown14 = m_Unknown18;
 
 	if (dsi_IsClientActive())
-		sub_461270(this);
+		sub_461270Q1S((CClientShellQ1S*)this);
 
 	{
 		CountAdderQ514 cTicks(&g_nTicks4efeecQ514);

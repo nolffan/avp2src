@@ -2254,12 +2254,16 @@ AvP2 lithtech.exe	sub_40f8d0
 AvP2 lithtech.exe	sub_40f900
 AvP2 lithtech.exe	sub_40f940
 AvP2 lithtech.exe	sub_40f970
+AvP2 lithtech.exe	sub_40fae0
+AvP2 lithtech.exe	sub_40faf0
 AvP2 lithtech.exe	sub_40fb20
 AvP2 lithtech.exe	sub_40fb30
 AvP2 lithtech.exe	sub_40fb60
 AvP2 lithtech.exe	sub_40fb70
 AvP2 lithtech.exe	sub_40fbc0
 AvP2 lithtech.exe	sub_40fc70
+AvP2 lithtech.exe	sub_4101c0
+AvP2 lithtech.exe	sub_410310
 AvP2 lithtech.exe	sub_4103d0
 AvP2 lithtech.exe	sub_4104c0
 AvP2 lithtech.exe	sub_4104e0
@@ -2339,6 +2343,7 @@ AvP2 lithtech.exe	sub_413880
 AvP2 lithtech.exe	sub_4139c0
 AvP2 lithtech.exe	sub_413ad0
 AvP2 lithtech.exe	sub_413b40
+AvP2 lithtech.exe	sub_413b90
 AvP2 lithtech.exe	sub_413bf0
 AvP2 lithtech.exe	sub_413ce0
 AvP2 lithtech.exe	sub_413d50
@@ -3235,6 +3240,7 @@ AvP2 lithtech.exe	sub_443da0
 AvP2 lithtech.exe	sub_443e60
 AvP2 lithtech.exe	sub_443f10
 AvP2 lithtech.exe	sub_443ff0
+AvP2 lithtech.exe	sub_444100
 AvP2 lithtech.exe	sub_444230
 AvP2 lithtech.exe	sub_444280
 AvP2 lithtech.exe	sub_444290

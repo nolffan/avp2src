@@ -601,8 +601,37 @@ TARGETS = [
          # __fpmath (0x4b42e0; __cfltcvt_init 0x4b42f8, then ftol.obj's
          # __ftol 0x4b4330), 486 of its members placed in one run to
          # initcon.obj (0x4c3675; tools/libscan.py --min=1), lith's
-         # basehash and virtlist inside it
-         app=[(0x00401000, 0x004b42e0)]),
+         # basehash and virtlist inside it. The DINPUT import thunk at
+         # 0x004af950 (`jmp [0x004c6000]`, DINPUT.dll!DirectInputCreateA's
+         # IAT slot; input_Init's two calls, 0x0043ee95 and 0x0043eeb0) is
+         # not the image's own code: the import library put it, and its
+         # object data formats after it (0x004af960, a NOT A FUNCTION row),
+         # between WON's block and lith's, as Primal Hunt's has it at
+         # 0x004ba2a0 above its app range
+         app=[(0x00401000, 0x004af950), (0x004af956, 0x004b42e0)],
+         # CObjectBank<T>::Allocate is one shape for every T, the same bytes
+         # but for the constructor it calls (and the sound and texture
+         # banks' Allocate the same again), so the byte search hands them
+         # out in name order. Each is where it calls its own type's
+         # constructor: 0x00412a9c CObjModel's (0x004674a0), 0x00412adc
+         # CObjWorldModel's (0x00466ec0), ... 0x00412bdc CObjParticleSystem's
+         # (0x00468070), 0x00413e7c CObjBase's (0x00466850).
+         own_symbols={
+             "?Allocate@?$CObjectBank@VCObjModel@@@@UAEPAXXZ": 0x00412a70,
+             "?Allocate@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ": 0x00412ab0,
+             "?Allocate@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ": 0x00412af0,
+             "?Allocate@?$CObjectBank@VCObjLight@@@@UAEPAXXZ": 0x00412b30,
+             "?Allocate@?$CObjectBank@VCObjCamera@@@@UAEPAXXZ": 0x00412b70,
+             "?Allocate@?$CObjectBank@VCObjParticleSystem@@@@UAEPAXXZ": 0x00412bb0,
+             "?Allocate@?$CObjectBank@VCObjPolyGrid@@@@UAEPAXXZ": 0x00412c20,
+             "?Allocate@?$CObjectBank@VCObjLineSystem@@@@UAEPAXXZ": 0x00412c60,
+             "?Allocate@?$CObjectBank@VCObjContainer@@@@UAEPAXXZ": 0x00412ca0,
+             "?Allocate@?$CObjectBank@VCObjCanvas@@@@UAEPAXXZ": 0x00412ce0,
+             "?Allocate@?$CObjectBank@VCObjBase@@@@UAEPAXXZ": 0x00413e50,
+             # called from 0x004058e9 (ClientCommonLT::GetPointShade) and
+             # 0x00479621 (si_GetPointShade), both placed identical
+             "?w_GetPointShade@@YAXPAEPAV?$_CVector@M@@0@Z": 0x00405980,
+         }),
     dict(label="AvP2 server.dll", what="AvP2's server", kind="image",
          shipped=REFERENCE + "/avp2/server.dll", stem="AVP2server",
          # linked with /FORCE for the scoreboard as Primal Hunt's is

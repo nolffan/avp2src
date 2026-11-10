@@ -879,7 +879,7 @@ d3d_opt = $(if $(call d3d_group,$(1)),$(filter /%,$(D3D_$(call d3d_group,$(1))))
 # (0x0047cd10.., its members 0x00481b70..0x00482220), and interlink.obj's
 # smart-link body list (server.dll 0x10018069..0x10018553). Primal Hunt's engine
 # is VC6's STL (above).
-ENG_AVP_STL_SRC := commonmodel.cpp smgr.cpp servermessage.cpp interlink.cpp commonphysics.cpp
+ENG_AVP_STL_SRC := commonmodel.cpp smgr.cpp servermessage.cpp interlink.cpp commonphysics.cpp clientmgr3.cpp
 eng_avp_stl = $(if $(and $(filter AvP2Release,$(1)),$(filter $(ENG_AVP_STL_SRC),$(notdir $(subst \,/,$(2))))),/I ..\..\LT2\lithshared\stl /I ..\..\LT2\lithshared\wonapi)
 # $(call engine_variant,<object dir>,<cl>,<env>,<defines>,<renderer: icl|cl>)
 define engine_variant

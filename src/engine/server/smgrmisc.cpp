@@ -50,7 +50,7 @@
 //                                 DECLARED AND NEVER DEFINED at
 //                                 serverengine.cpp:1231 AND counter.cpp:903
 //                                 (server 0x1002bde9, 88 bytes)
-//  0x0046bbf0 235  WRITE (LOW     sub_1002d355 with 0x1002d385's constructor
+//  0x0046bbf0 235  WRITE (LOW     sm_CreateServerLTQ928 with 0x1002d385's constructor
 //              CONFIDENCE)        EXPANDED into it.  svnew.cpp:914 recorded
 //                                 0x1002d385 as blocked on "the whole class
 //                                 graph"; the graph is read off the bytes
@@ -893,7 +893,7 @@ void* sm_FindObjectIDRecQ468(CServerMgrIDListQ468* pMgr, uint16 nID)
 //
 //      0x1002d355   48 bytes   the allocator wrapper.  ALREADY DECLARED AND
 //                              NEVER DEFINED at src/engine/server/smgr.cpp:4985
-//                                  class CUnknown928Obj* sub_1002d355(CServerMgr*);
+//                                  class CUnknown928Obj* sm_CreateServerLTQ928(CServerMgr*);
 //                              (sm_CreateUnknown928, smgr.cpp:4987, calls it).
 //      0x1002d385  208 bytes   the constructor.  src/engine/server/svnew.cpp:914
 //                              lists it as NOT RECONSTRUCTED and blocked on
@@ -973,7 +973,7 @@ void* sm_FindObjectIDRecQ468(CServerMgrIDListQ468* pMgr, uint16 nID)
 
 //  MOVED.  Both halves now live in src/engine/server/commonphysics.cpp under
 //  their real names: CLTServer::CLTServer (0x1002d385, marked `inline` so
-//  lithtech.exe's /O2 expands it) and sub_1002d355 (the wrapper smgr.cpp
+//  lithtech.exe's /O2 expands it) and sm_CreateServerLTQ928 (the wrapper smgr.cpp
 //  declares), which match 0x1002d385 / 0x1002d355 on server.dll and
 //  0x0046bbf0 on lithtech.exe.  The Q468 class graph that stood here was a
 //  byte-identical stand-in whose vtables named virtuals nothing defines, so

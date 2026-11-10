@@ -54,7 +54,16 @@
 class CObjQueueBank
 {
 public:
+#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
+	// (AvP2 1.0.9.6's server.dll calls it, as Primal Hunt does.)
 	LTLink* Allocate();
+#else
+	// AVP2 1.0.9.6's lithtech.exe expands it, sb_Allocate and all, at both
+	// of sm_CreateInterObjectLink's sites (0x00444174, 0x004441d5: the bank
+	// at 0x004def74, its free list 0x004def8c), as packet.cpp's
+	// CLinkNodeBank has it.
+	LTLink* Allocate() { return (LTLink*)sb_Allocate(&m_Bank); }
+#endif
 
 	uint8      m_vptr[4];
 	StructBank m_Bank;                       // +0x04

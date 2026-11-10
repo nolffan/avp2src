@@ -108,12 +108,12 @@
 #include "iclientshell.h"      // the game DLL's shell -- slots 0x30/0x34/0x38/
                                // 0x48/0x5c are reached below
 
-#ifdef PRIMAL_HUNT
 // PH: the WON peer-auth client's two Blowfish keys hold <string>'s
 // basic_string<unsigned char> (WONCommon/WONTypes.h's RawBuffer), whose
 // _Tidy the client's implicit destructor expands (0x00411190, 0x004112f0).
+// AVP2: STLport's (build/build.mk ENG_AVP_STL_SRC), as its WON was built:
+// twelve bytes a string, so the client is 0x2170 bytes (0x0041007b).
 #include <string>
-#endif
 
 
 // ======================================================================= //
@@ -1471,10 +1471,8 @@ public:
 	              struct CCmdArgsQ503* pArgs);
 	// 0x0040fc80
 	void     TermClientShell();
-#ifdef PRIMAL_HUNT
 	void     StartPeerAuthQ548();                               // PH 0x00410e40
 	void     OnPeerAuthPacketQ548(CCmgMsg* pPacket);            // PH 0x00411000
-#endif
 	// 0x0041fd30
 	void     ProcessKeyEvents();
 	// 0x00410670
@@ -1776,7 +1774,14 @@ public:
 // 0x004108c0 / 0x004108e0 jumps to an OUT-OF-LINE constructor and
 // destructor); defined here, VC6 expands the constructor into the _$E
 // instead, so it is left declared until that is understood.
+#ifdef PRIMAL_HUNT
 extern CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;  // 0x004f0118
+#else
+// AVP2 1.0.9.6 (0x004def68): its initialiser expands the constructor
+// (0x0040fa70) and registers a destructor that expands the release
+// (0x0040fa80, 0x0040fa90).
+CWonSmartPtrQ503<CWonAuthContextQ548> g_WonPtrQ503;
+#endif
 
 // What Init reaches outside this run.  (names ours where not cited)
 void r_InitRenderStruct(int bFullClear);                        // 0x00462110
@@ -1942,7 +1947,6 @@ LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands
 }
 
 
-#ifdef PRIMAL_HUNT
 // ======================================================================= //
 //  3a. Primal Hunt 0x00410e40 / 0x00411000 -- the client's half of WON's
 //      peer-to-peer authentication, and the two destructors it brings
@@ -1962,9 +1966,10 @@ LTRESULT CCmgClientMgr::Init(char** pResTrees, uint32 nResTrees, char* pCommands
 //  HandleRecvMsg.  Both send what WON hands back as message 13.
 //
 //  AVP2: 1.0.9.6 has both (0x00410050, the start, news 0x2170 bytes and
-//  sets +0x2161: its WON is older and its PeerAuthClient sixteen bytes
-//  shorter), built without /GX; so the views below are Primal Hunt's WON
-//  and stay behind PRIMAL_HUNT until AvP2's layout is written.
+//  sets +0x2161; 0x004101c0, the answer; the destructor 0x00410310),
+//  built without /GX. Its WON is the STLport build, whose strings are
+//  four bytes shorter, which is all the sixteen bytes are: the views below
+//  serve both.
 // ======================================================================= //
 
 // VC6's <string>: WONCommon/WONTypes.h's RawBuffer.
@@ -2118,7 +2123,6 @@ void CCmgClientMgr::OnPeerAuthPacketQ548(CCmgMsg* pPacket)
 		g_WonPtrQ503 = LTNULL;
 	}
 }
-#endif  // PRIMAL_HUNT
 
 
 // ======================================================================= //

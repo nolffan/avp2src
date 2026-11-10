@@ -212,6 +212,7 @@ unknown-type walk is not changed yet).
 ### A second peer-authentication message uses a freed client
 
 lithtech.exe 0x00411000 (Primal Hunt's peer-auth handler, message 13;
+AvP2 1.0.9.6 0x004101c0;
 src/engine/lithtech/clientmgr3.cpp). The handler deletes
 `g_pPeerAuthClient` and never clears it, so a second message 13 calls
 `HandleRecvMsg` on freed memory.
