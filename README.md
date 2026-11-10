@@ -69,11 +69,11 @@ those functions make up.
 | `Launch.dll` | the engine's command-line helper | 28 / 28 | 5,599 / 5,599 bytes | `████████████████████` 100.0% | 0 | 0 |
 | `PrimalHunt.exe` | Primal Hunt's launcher | 175 / 195 | 27,068 / 27,317 bytes | `███████████████████░` 99.0% | 0 | 0 |
 | `AVP2XServ.exe` | Primal Hunt's dedicated server | 297 / 330 | 59,335 / 61,852 bytes | `███████████████████░` 95.9% | 0 | 0 |
-| `PHCShell.dll` | Primal Hunt's game: client | 5,174 / 5,836 | 1,229,962 / 1,343,794 bytes | `██████████████████░░` 91.5% | 9 | 4 |
+| `PHCShell.dll` | Primal Hunt's game: client | 5,177 / 5,835 | 1,232,439 / 1,343,906 bytes | `██████████████████░░` 91.7% | 5 | 4 |
 | `PHObject.lto` | Primal Hunt's game: server objects | 9,102 / 10,145 | 2,228,325 / 2,363,096 bytes | `██████████████████░░` 94.2% | 1 | 5 |
 | `AVP2.exe` | AvP2's launcher | 172 / 192 | 25,957 / 27,502 bytes | `██████████████████░░` 94.3% | 0 | 0 |
 | `AVP2Serv.exe` | AvP2's dedicated server | 289 / 320 | 58,703 / 58,920 bytes | `███████████████████░` 99.6% | 0 | 0 |
-| `CShell.dll` | AvP2's game: client | 5,999 / 6,528 | 1,431,845 / 1,455,467 bytes | `███████████████████░` 98.3% | 6 | 1 |
+| `CShell.dll` | AvP2's game: client | 6,000 / 6,528 | 1,431,870 / 1,455,467 bytes | `███████████████████░` 98.3% | 5 | 1 |
 | `Object.lto` | AvP2's game: server objects | 8,574 / 10,620 | 2,174,821 / 2,229,310 bytes | `███████████████████░` 97.5% | 0 | 1 |
 | `AvP2 lithtech.exe` | AvP2's engine | 3,596 / 4,013 | 530,911 / 702,182 bytes | `███████████████░░░░░` 75.6% | 2 | 90 |
 | `AvP2 server.dll` | AvP2's server | 2,556 / 2,850 | 278,623 / 351,844 bytes | `███████████████░░░░░` 79.1% | 0 | 51 |
@@ -87,7 +87,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **49,564 / 55,912** | **9,862,102 / 10,919,517 bytes** | `██████████████████░░` **90.3%** | **38** | **427** |
+| **All** | | **49,568 / 55,911** | **9,864,604 / 10,919,629 bytes** | `██████████████████░░` **90.3%** | **33** | **427** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

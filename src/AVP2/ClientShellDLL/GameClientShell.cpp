@@ -5220,6 +5220,7 @@ DBOOL CGameClientShell::SaveGame(char* pObjectsFile)
 }
 
 
+#ifndef PRIMAL_HUNT
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CGameClientShell::IsJoystickEnabled()
@@ -5245,6 +5246,7 @@ DBOOL CGameClientShell::IsJoystickEnabled()
 
 	return bEnabled;
 }
+#endif
 
 // ----------------------------------------------------------------------- //
 //
@@ -7855,6 +7857,32 @@ CClientTurret* CGameClientShell::GetUsingTurret()
 		return LTNULL;
 
 	return GetClientTurretMgr()->Find(g_pLTClient->GetClientObject());
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameClientShell::IsCharacterAllowed()
+//
+//	PURPOSE:	PH: may a player play this character set?  Always outside
+//				multiplayer; never without a server configuration; else
+//				whatever the character list says, and yes for a set not
+//				in it (0x10086cb0, from the multiplayer player chart)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CGameClientShell::IsCharacterAllowed(int nSet)
+{
+	if(!g_pGameClientShell->IsMultiplayerGame())
+		return LTTRUE;
+
+	if(!g_pServerOptionMgr->GetCurrentCfg())
+		return LTFALSE;
+
+	int nIndex = g_pCharacterButeMgr->m_MPClasses.FindIndex(nSet);
+	if(nIndex == -1)
+		return LTTRUE;
+
+	return g_pCharacterButeMgr->m_MPClasses.IsAllowed(nIndex);
 }
 #endif
 

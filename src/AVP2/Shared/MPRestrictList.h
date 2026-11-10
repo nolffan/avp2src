@@ -30,6 +30,20 @@ struct MPRestrictEntry
 	int			nId;								// The class or weapon ID
 	LTBOOL		bAllowed;							// Is it allowed?
 	char		szName[MAX_MP_RESTRICT_NAME];		// The class or weapon name
+
+#ifdef _CLIENTBUILD
+	// (the client's only: the server build sets the entries' fields in
+	// place; with this in, PHObject.lto's CWeaponMgr::LoadWeaponButes,
+	// 0x100328e0, and four small functions inline differently)
+	// Out of line where the caller's inlining budget runs out (PHCShell.dll
+	// 0x100975b0, from MultiplayerClientMgr::OnMessage_GameInfo's class list)
+	void	Set(int nNewId, LTBOOL bNewAllowed, const char* szNewName)
+	{
+		nId = nNewId;
+		bAllowed = bNewAllowed;
+		strcpy(szName, szNewName);
+	}
+#endif
 };
 
 class CMPRestrictList
@@ -66,10 +80,14 @@ class CMPRestrictList
 				}
 			}
 
+#ifdef _CLIENTBUILD
+			m_aEntries[m_nNumEntries].Set(nId, LTTRUE, szName);
+#else
 			MPRestrictEntry & entry = m_aEntries[m_nNumEntries];
 			entry.nId = nId;
 			entry.bAllowed = LTTRUE;
 			strcpy(entry.szName, szName);
+#endif
 			m_nNumEntries++;
 		}
 
@@ -78,9 +96,13 @@ class CMPRestrictList
 			if((i >= MAX_MP_RESTRICT_ENTRIES) || (i >= m_nNumEntries))
 				return;
 
+#ifdef _CLIENTBUILD
+			m_aEntries[i].Set(nId, LTTRUE, szName);
+#else
 			m_aEntries[i].nId = nId;
 			m_aEntries[i].bAllowed = LTTRUE;
 			strcpy(m_aEntries[i].szName, szName);
+#endif
 		}
 
 		// RETAIL BUG: the entries are moved up from the bottom, so the one
@@ -95,9 +117,13 @@ class CMPRestrictList
 			for(int j = i; j < m_nNumEntries; j++)
 				m_aEntries[j + 1] = m_aEntries[j];
 
+#ifdef _CLIENTBUILD
+			m_aEntries[i].Set(nId, LTTRUE, szName);
+#else
 			m_aEntries[i].nId = nId;
 			m_aEntries[i].bAllowed = LTTRUE;
 			strcpy(m_aEntries[i].szName, szName);
+#endif
 		}
 
 #ifdef _CLIENTBUILD
@@ -154,6 +180,14 @@ class CMPRestrictList
 				return;
 
 			m_aEntries[i].bAllowed = bAllowed;
+		}
+
+		// Allow the entries whose bits are set (the server's game info,
+		// MultiplayerClientMgr::OnMessage_GameInfo)
+		void	SetAllowedMask(uint32 dwMask)
+		{
+			for(int i = 0; i < m_nNumEntries; i++)
+				m_aEntries[i].bAllowed = (dwMask & (1 << i)) != 0;
 		}
 #endif
 

@@ -4472,6 +4472,31 @@ LTBOOL MultiplayerClientMgr::OnMessage_GameInfo(uint8 nMessage, HMESSAGEREAD hRe
 
 	*hRead >> m_bCustScoring;								// Is there custom scoring?		
 
+#ifdef PRIMAL_HUNT
+	// PH: the classes and weapons the server lists, and which of them it
+	// allows (a bit for each entry of the sorted lists)
+	m_ClassList.Clear();
+	m_WeaponList.Clear();
+
+	for(i = 0; i < MAX_MP_RESTRICT_ENTRIES; i++)
+	{
+		m_nClassIDs[i] = hRead->ReadWord();
+		m_ClassList.Add(m_nClassIDs[i], "");
+	}
+
+	for(i = 0; i < MAX_MP_RESTRICT_ENTRIES; i++)
+	{
+		m_nWeaponIDs[i] = hRead->ReadWord();
+		m_WeaponList.Add(m_nWeaponIDs[i], "");
+	}
+
+	m_dwAllowedClasses = hRead->ReadDWord();
+	m_dwAllowedWeapons = hRead->ReadDWord();
+
+	m_ClassList.SetAllowedMask(m_dwAllowedClasses);
+	m_WeaponList.SetAllowedMask(m_dwAllowedWeapons);
+#endif
+
 	// Reinit some variables
 	m_fStartTime = 0.0f;
 	m_nDisplayState = SD_STATE_NONE;

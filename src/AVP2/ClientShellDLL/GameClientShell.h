@@ -164,7 +164,13 @@ class CGameClientShell : public CClientShellDE
 		// --------------------------------------------------------------------------------- //
 		// Specific joystick input functions
 
+#ifndef PRIMAL_HUNT
+		// (unused; Primal Hunt's header declares one member fewer than ours
+		// with IsCharacterAllowed in: with one more, CFolderPlayerJoin::
+		// UpdateDescriptions, 0x1002a7a0, swaps two registers. Which one it
+		// dropped the code cannot say; this one is unused in both games)
 		LTBOOL		IsJoystickEnabled();
+#endif
 		LTBOOL		EnableJoystick();
 
 
@@ -276,6 +282,7 @@ class CGameClientShell : public CClientShellDE
 		CWeaponModel*	GetWeaponModel()		{ return &m_weaponModel; }
 #ifdef PRIMAL_HUNT
 		CClientTurret*	GetUsingTurret();				// PH: 0x10086c80
+		LTBOOL			IsCharacterAllowed(int nSet);	// PH: 0x10086cb0
 #endif
 		CPlayerStats*	GetPlayerStats()		{ return m_InterfaceMgr.GetPlayerStats(); }
 		CGameSettings*	GetGameSettings()		{ return m_InterfaceMgr.GetSettings(); }
