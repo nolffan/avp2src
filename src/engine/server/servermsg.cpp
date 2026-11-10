@@ -762,9 +762,16 @@ public:
 // note above deliberately declines for six other TUs' sake). The 33-byte
 // COMDAT this driver emits is still what matches server.dll at 0x100242c1,
 // so leave it exactly as it is.
+//
+// AVP2: not in AvP2 1.0.9.6's lithtech.exe, whose one teardown of the record
+// is netobj.cpp's deleting form (0x00466350, the only store of the packet
+// data's vtable at +0x5c in the image). Primal Hunt's /GX engine keeps it
+// out of line (0x0046b780, called from 0x0046b21a and 0x0046b763).
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 CNetMsgRecord::~CNetMsgRecord()
 {
 }
+#endif
 
 // 0x100241f4 — the same teardown in its scalar deleting form, which is slot
 // zero of ServerMessage's own vtable (0x1004de00). VC6 emits it only for an

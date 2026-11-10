@@ -716,7 +716,14 @@ void snd_MergeSentStateQ468(CSoundSentStateQ468* pStored,
 //      with servermgr.h typing m_nArgs `int`.
 //
 //  HOME: src/engine/server/servermodel.cpp, at the declaration on :255.
+//
+//  RETIRED (#if 0, below): NOLF's two-argument form. AvP2's and Primal
+//  Hunt's callback is the SDK's four-argument StringKeyCallback, which
+//  servermodel.cpp defines (identical in all four engine images: Primal
+//  Hunt 0x0047e020 / 0x10035fe4, AvP2 0x00477640 / 0x10033593); this copy
+//  duplicated it.
 // ----------------------------------------------------------------------- //
+#if 0
 
 // src/LT2/sdk/inc/ltserverobj.h:124.
 #define MID_MODELSTRINGKEY_Q468 5
@@ -805,6 +812,7 @@ void sm_ModelStringKeyCallbackQ468(LTAnimTrackerQ468* pTracker,
 		}
 	}
 }
+#endif // retired
 
 
 // ----------------------------------------------------------------------- //
@@ -870,7 +878,11 @@ void* sm_FindObjectIDRecQ468(CServerMgrIDListQ468* pMgr, uint16 nID)
 	// address live from the top and the shipped bytes use `lea`.
 	pHead = (CObjIDRecQ468*)&pMgr->m_Link8c4;
 
-	for (pCur = (CObjIDRecQ468*)pMgr->m_Link8c4.m_pNext;      // 0x0046a3eb
+	// The first record through the head, not the manager: AvP2's server.dll
+	// (cl 9044) reads it `mov 0x4(%ecx),%eax` off the head (0x10033ad5);
+	// the other three images give the same bytes either way.
+
+	for (pCur = pHead->m_pNext;                               // 0x0046a3eb
 	     pCur != pHead;                                       // 0x0046a3f1
 	     pCur = pCur->m_pNext)                                // 0x0046a40c
 	{

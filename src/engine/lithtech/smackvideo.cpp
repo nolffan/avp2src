@@ -236,6 +236,10 @@ public:
 // Expanded at 0x0048abc4..0x0048abed exactly as 0x00401b90 expands it:
 // the +0x1c pair is an inline /Oi memset (own pointer, own zero) and +0x32
 // is one whole-word store of both bitfields.
+// AVP2: out of line in both Talon images (wgrid.cpp's SharedTextureQ517:
+// AvP2 1.0.9.6 0x0042d450, Primal Hunt 0x004304f0), as binkvideo.cpp's
+// SharedTextureK; SmackVideoInst's constructor calls it (AvP2 0x0049d65c).
+#if 0
 inline SharedTextureS::SharedTextureS()
 {
 	m_pEngineData = LTNULL;
@@ -249,6 +253,7 @@ inline SharedTextureS::SharedTextureS()
 	m_bMarked = 0;
 	m_nFrameCode = 0;
 }
+#endif
 
 // lttexmod.cpp's PFormat: one virtual (vtable 0x004a1ab4), 0x38 bytes, and
 // NO declared constructor -- its whole construction is the implicit

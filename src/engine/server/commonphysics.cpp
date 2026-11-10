@@ -228,11 +228,13 @@ class CLTServer : public ILTServer
 {
 public:
 	CLTServer(CServerMgr* pServerMgr);       // 0x1002d385
-#if !defined(PRIMAL_HUNT)
 	// AVP2: declared, and empty: AvP2 1.0.9.6's destructor (server.dll
 	// 0x10038d9d; lithtech.exe's deleting form 0x0047dbe0) stores the
 	// class's own vptr before the map's destructor runs, which the
-	// compiler's implicit one does not.
+	// compiler's implicit one does not; so does Primal Hunt's lithtech.exe
+	// (0x00484d70). Primal Hunt's server.dll's is not found yet (its
+	// deleting forms are all CObjectBank's), and keeps the implicit one.
+#if !defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
 	~CLTServer() {}
 #endif
 
@@ -258,14 +260,11 @@ public:
 	// (0x100396b8..0x100396cb: its comparator and allocator bytes, the
 	// header's _Multi cleared, then _Tree::_Init) -- the string sets
 	// servermessage.cpp's CLTServerStringSetViewQ526 reads.
-#ifdef LT_SERVER_BUILD
-	std::map<std::string, std::set<std::string> > m_StringSets;  // 0x280
-#else
 	// lithtech.exe's is the same map (servermessage.cpp's AddStrings reads
-	// it at +0x280, 0x00483ad0), but where its /O2 destructor went is not
-	// found yet: opaque here, as AvP2's is.
-	uint8             m_StringSets[0x10];    // 0x280
-#endif
+	// it at +0x280, 0x00483ad0), and its /O2 destructor is the compiler's
+	// ~CLTServer at 0x00484d70 (the tree's erase, 0x00489060, then the
+	// interfaces' own), which the deleting form 0x00484d50 calls.
+	std::map<std::string, std::set<std::string> > m_StringSets;  // 0x280
 #endif
 };
 
@@ -552,6 +551,8 @@ LTRESULT SPhysicsLT::SetObjectDims(HOBJECT hObj, LTVector* pNewDims, uint32 flag
 // ---- the world's global force -------------------------------------------- //
 
 // Gravity, and the slope beyond which a surface stops holding anything up.
+// The client build's is in the class (commonphysics.h).
+#ifdef LT_SERVER_BUILD
 GlobalForceControl::GlobalForceControl()
 {
 	LTVector vForce(0.0f, -2000.0f, 0.0f);
@@ -560,6 +561,7 @@ GlobalForceControl::GlobalForceControl()
 
 	m_Unknown30 = -0.70709997f;
 }
+#endif
 
 
 
@@ -4477,7 +4479,9 @@ void phys_ResetMoveCounter()
 //      c3            ret
 //
 // An out-of-line member definition is emitted whether or not the TU calls
-// it.
+// it. lithtech.exe's only: both server.dlls expand the constructor at every
+// site and have no copy, so their build leaves the stand-in out.
+#ifndef LT_SERVER_BUILD
 class CPushState453EE0
 {
 public:
@@ -4499,3 +4503,4 @@ CPushState453EE0::CPushState453EE0()
 	m_nUnknown64 = 0;
 	m_fUnknown68 = 0.0f;
 }
+#endif

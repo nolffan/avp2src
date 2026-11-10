@@ -797,6 +797,11 @@ public:
 // 0x00490c20 -- sb_AllocateNewStructPage.
 void sb_GrowQ414(StructBankQ414* pBank, uint32 nCount);
 
+#if 0
+// RETIRED: smgr.cpp's CObjQueueBank declares Allocate without a body for
+// Primal Hunt's engine too, so smgr.cpp's sm_RemoveObject is the function at
+// 0x0047e6d0 (and AvP2's, expanded, at 0x00477ce0); this copy duplicated it.
+
 // servermgr.h's sb_Allocate.
 inline void* sb_AllocateQ414(StructBankQ414* pBank)
 {
@@ -872,6 +877,7 @@ void sm_RemoveObjectQ414(CServerMgrQ46A* pServerMgr, LTObjectQ46A* hObj)
 		}
 	}
 }
+#endif // retired stand-in
 
 
 // ======================================================================= //

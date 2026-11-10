@@ -18,6 +18,11 @@
 // so they are not written to the save at all.
 #define CF_ALWAYSLOAD (1 << 3)
 
+// No image has this constructor: nothing constructs a CSaveIO (the real
+// object, CSaveLoadMessage below, is built by its users), and the 22-byte
+// body it was paired with in every engine image is the world intersect
+// query record's (see saveio.h). Kept for the record, not built.
+#if 0
 CSaveIO::CSaveIO()
 {
 	m_n00 = 0;
@@ -27,6 +32,7 @@ CSaveIO::CSaveIO()
 	m_n0c = 0;
 	m_n10 = 0;
 }
+#endif
 
 // Read the caller's bytes, then the sentinel that should follow them. A read
 // that asked for nothing is not guarded, and neither is one that already
@@ -994,12 +1000,19 @@ LTRESULT RestoreInterlinks(SavServerMgr* pMgr, SavObject* pObject,
 // than as twelve bytes in one call. sav_SaveObject uses it twice; every
 // other vector in the file goes out whole, so the difference is the
 // original's, not a pattern (name ours).
+//
+// server.dll's only: lithtech.exe's sav_SaveObject is savobj.cpp's, which
+// expands its own copy, and neither engine image keeps one out of line
+// (Primal Hunt's saveio unit goes RestoreInterlinks, its <string> guard,
+// CSaveXlatInit: 0x0043ea20..0x0043eb60).
+#ifdef LT_SERVER_BUILD
 void sav_WriteVector(ILTStream* pStream, float* pVec)
 {
 	pStream->Write(&pVec[0], 4);
 	pStream->Write(&pVec[1], 4);
 	pStream->Write(&pVec[2], 4);
 }
+#endif
 
 
 // ---- the save translation table (0x1001110d-0x10011171) ---------------- //
@@ -2070,13 +2083,17 @@ public:
 	// CMessageRef, not ltobject_internal.h's `uint32 m_Unknown2c`.
 	CMessageRef   m_SaveData;                // 0x2c
 	void*         m_hFile0;                  // 0x30
-	SavFileSlotQ4S m_hFiles12[2];            // 0x34  ctor zeroes both
 	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
 	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
 #ifdef PRIMAL_HUNT
+	SavFileSlotQ4S m_hFiles12[2];            // 0x34  ctor zeroes both
 	uint8       m_pad_3c[0x5c - 0x3c];
 #else
-	uint8       m_pad_3c[0x58 - 0x3c];
+	// AVP2: four slots, as the constructor both this restore and the
+	// object-data bank call zeroes (server.dll 0x10014989, called from
+	// 0x1001424b and 0x10035d42; smgrnew.cpp's CSObjDataCtorQ474).
+	SavFileSlotQ4S m_hFiles12[4];            // 0x34
+	uint8       m_pad_44[0x58 - 0x44];
 #endif
 	uint16        m_ClientChangeFlags;       // 0x58 (PH 0x5c)
 	uint16        m_NetFlags;                // 0x5a (PH 0x5e)

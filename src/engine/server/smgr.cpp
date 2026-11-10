@@ -196,7 +196,10 @@ public:
 	// this forward and calls sm_sb_Allocate directly from sm_RemoveObject
 	// (push $imm/pop, 93 vs 92); lithtech.exe's /O2 needs the body to expand
 	// both levels (0x0046a2a3). So server.dll sees only the declaration.
-#ifdef LT_SERVER_BUILD
+	// PH: Primal Hunt's lithtech.exe calls it from sm_RemoveObject
+	// (0x0047e6f3 `mov $0x4f0120,%ecx; call 0x00404fb0`), as smgrnew.cpp's
+	// sm_CreateNewID does; AvP2 1.0.9.6 expands it (0x00477ce0).
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 	LTLink* Allocate();                      // 0x1000ed6f
 #else
 	LTLink* Allocate() { return (LTLink*)sm_sb_Allocate(&m_Bank); }
@@ -262,6 +265,11 @@ void CServerMgr::SetGameInfo(void* pGameInfo, uint32 nGameInfoLen)
 	}
 }
 
+// The dedicated server's queries (servermgr.cpp's MyServerInterface, built
+// for server.dll only, is their one caller): neither lithtech.exe has them
+// (Primal Hunt's SetGameInfo, 0x0048ae10, is followed by
+// sm_ClearChangedObjects), so its /OPT:REF link dropped them.
+#ifdef LT_SERVER_BUILD
 int CServerMgr::GetNumClients()
 {
 	return m_ClientList.m_nElements;
@@ -343,6 +351,7 @@ Client* CServerMgr::FindClient(uint32 nClientId)
 
 	return LTNULL;
 }
+#endif // LT_SERVER_BUILD
 
 void CServerMgr::GetErrorString(char* pString, int maxLen)
 {
@@ -3256,10 +3265,15 @@ void sm_Free28(CServerMgr* pMgr, LTLink* pLink)
 // MagSqr does not, which is the shape the engine's own ltvector.h gives:
 // operator- carries its body in the class, Mag/MagSqr only their declarations
 // (the same split SPhysicsLT::SetVelocity shows for Dist/DistSqr).
+//
+// server.dll's only: its one caller, sm_GatherContainers, expands it in both
+// lithtech.exe images (GetBoxDiagonalSqrInline, below), which keep no copy.
+#ifdef LT_SERVER_BUILD
 float IWorldBsp::GetBoxDiagonalSqr()
 {
 	return (m_vBoxMax - m_vBoxMin).MagSqr();
 }
+#endif
 
 // Save and restore both open the stream here and hand it to the object
 // serializer; the interface half is only the open, the check and the close.
@@ -6598,6 +6612,10 @@ void sm_EndWorldB(CServerMgr* pMgr)
 // runs first, through the class definition's own pointer, because the object
 // belongs to the game module; the memory then goes onto the per-class free
 // list rather than back to the allocator (name ours).
+//
+// server.dll's only: lithtech.exe expands it at every site
+// (sm_FreeObjectInline, servermodel.h) and has no standalone copy.
+#ifdef LT_SERVER_BUILD
 void sm_FreeObject(CServerMgr* pMgr, ClassDef* pClassDef, LPBASECLASS pObject)
 {
 	CClassStats* pStats =
@@ -6607,14 +6625,19 @@ void sm_FreeObject(CServerMgr* pMgr, ClassDef* pClassDef, LPBASECLASS pObject)
 
 	sb_Free(&pStats->m_Bank, pObject);
 }
+#endif
 
 
 // 0x1003401a — a client's name into the caller's buffer. The manager is not
 // touched: a client already knows its own name.
+//
+// server.dll's only: its callers are the dedicated server's queries above.
+#ifdef LT_SERVER_BUILD
 void CServerMgr::GetClientName(Client* pClient, char* pName, int maxChars)
 {
 	strncpy(pName, pClient->m_pName, maxChars);
 }
+#endif
 
 // 0x100277c2 — everything the client still has queued goes out now, at
 // whatever the manager's current time is (name ours).
@@ -10793,6 +10816,12 @@ void sub_10027ad0(CUpdateContext* pCtx, LTObject* pObject, CObjInfo* pInfo)
 // The object's id also goes on the list of ids the client is being told
 // about this frame, which is grown two hundred entries at a time — allocate,
 // copy, free, by hand. Every one of the seven uses re-reads the global.
+//
+// server.dll's only: both lithtech.exe images expand it into each caller
+// (sm_WriteObjectUpdateInline above) and keep no copy of it (Primal Hunt's
+// 0x00490c90, where it was paired, is a map's _Tree member; AvP2's 0x00473230
+// is sm_Unknown2873d).
+#ifdef LT_SERVER_BUILD
 void sm_WriteObjectUpdate(CUpdateContext* pCtx, LTObject* pObject,
                           CObjInfo* pInfo)
 {
@@ -10837,6 +10866,7 @@ void sm_WriteObjectUpdate(CUpdateContext* pCtx, LTObject* pObject,
 
 	pInfo->m_ChangeFlags = (uint16)((pInfo->m_ChangeFlags & 0x4000) | 0x1000);
 }
+#endif // LT_SERVER_BUILD
 
 #ifndef LT_SERVER_BUILD
 // lithtech.exe 0x00464a00 (926 bytes) — sub_10027918's /O2 copy. It EXPANDS
@@ -14204,6 +14234,10 @@ void sub_100290d7(LTObject* pObject, ServerMessage* pMsg, uint32* pSize)
 // sibling sm_AttachClient (0x10027155) does the same sequence properly, off
 // a `CMessageRef` it fills from msg_AllocPacket — so what is missing here is
 // exactly that allocation. Reconstructed as it shipped, null and all.
+//
+// server.dll's form only: the engine's (an unfilled CMessageRef, the same
+// null message) is ccobj.cpp's, identical in both lithtech.exe images.
+#ifdef LT_SERVER_BUILD
 LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 {
 	ServerMessage* pMsg = LTNULL;
@@ -14233,6 +14267,7 @@ LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 
 	return LT_OK;
 }
+#endif // LT_SERVER_BUILD
 
 
 

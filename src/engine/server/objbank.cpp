@@ -1470,9 +1470,16 @@ CObjMgrView::CObjMgrView()
 	m_Link.TieOff();
 }
 
+// AVP2: not in AvP2 1.0.9.6's lithtech.exe. Primal Hunt's /GX engine keeps
+// it out of line for the server manager constructor's unwind funclets
+// (0x004129a0, reached only from 0x004cee1c.. jmps); AvP2's has no unwind
+// code, and its server manager's deleting destructor (clientshell.cpp's
+// CServerMgrView, 0x00414e80) expands it.
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 CObjMgrView::~CObjMgrView()
 {
 }
+#endif
 
 // 0x1002592e — drop an object out of the manager. Two statements: unlink it
 // from its type's list, and give the storage back to that type's bank.

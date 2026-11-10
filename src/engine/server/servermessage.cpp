@@ -1588,6 +1588,10 @@ LTRESULT CLTServer::SendTo(const void *pData, uint32 len, const char *sAddr, uin
 // to the head of this file so /O2 can expand it — see the note there.)
 
 // 0x10023e86 — the cursor takes the message directly.
+//
+// server.dll's only: lithtech.exe expands it at every site (smgr.cpp's
+// CMsgCursorView, netmgr.cpp's CNetFragRec::Clear) and keeps no copy.
+#ifdef LT_SERVER_BUILD
 ServerMessage* CMsgCursor::Init(ServerMessage* pMsg)
 {
 	if (m_pMsg)
@@ -1600,6 +1604,7 @@ ServerMessage* CMsgCursor::Init(ServerMessage* pMsg)
 
 	return m_pMsg;
 }
+#endif
 
 // 0x1002860b and 0x1002861f — the update context is nothing but its four
 // references; construction empties them and teardown releases them, the

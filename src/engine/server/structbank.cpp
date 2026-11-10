@@ -25,6 +25,11 @@ void sb_Grow(StructBank* pBank, uint32 nCount);
 // shipped /O2 build expands it at every call site.
 
 
+// Both functions below are server.dll's only: lithtech.exe's /O2 build
+// expands them where it uses them (smgr.cpp's sm_sb_AllocateCleared;
+// sm_AllocateObjectInline in servermodel.h), nothing of the engine's calls
+// them, and neither Talon lithtech.exe has an out-of-line copy.
+#ifdef LT_SERVER_BUILD
 // 0x10028933 — the same allocate, CLEARED. Kept beside its twin even though
 // its address falls in the manager's run rather than near sb_Allocate, since
 // it pushes no string literal and so is not sensitive to which TU it compiles
@@ -89,3 +94,4 @@ LPBASECLASS sm_AllocateObject(CServerMgr* pMgr, struct ClassDef* pClassDef)
 
 	return pObject;
 }
+#endif // LT_SERVER_BUILD

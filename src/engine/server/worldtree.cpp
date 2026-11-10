@@ -2901,6 +2901,10 @@ public:
 	uint8*              m_pData;             // 0x038
 };
 
+// PH: Primal Hunt's server.dll links the debug RezMgr.lib, whose
+// rezmgr.obj defines CRezItm::CRezItm itself (0x1004a6e0, identical): the
+// stand-in is AvP2's only, whose release library leaves it undefined.
+#ifndef PRIMAL_HUNT
 CRezItm_F::CRezItm_F()
 {
 	m_pRezFile   = NULL;
@@ -2908,5 +2912,6 @@ CRezItm_F::CRezItm_F()
 	m_sName      = NULL;
 	m_heName.SetRezItm(this);
 }
+#endif
 
 // ==== END SECTION F =======================================================

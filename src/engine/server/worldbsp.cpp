@@ -437,35 +437,39 @@ LTVector* CWorldBsp::GetCellOrigin()
 	return &m_Sub108.m_vOrigin;
 }
 
-// Which cell a point falls in. The point is turned into three indices, each
-// clamped to its own count, and the cell is looked up by them. The three
-// negative tests afterwards cannot fire once the clamping has run — they are
-// in the shipped code all the same.
+// Which cell a point falls in (lithtech.exe 0x0042f290, server.dll
+// 0x1000db48, right after Load). The point comes BY VALUE (`ret $0xc`). Each
+// axis is the offset from the origin in cells, nudged up by 0.0001f
+// (0x004d4f30, server.dll 0x100742d0) and truncated; each is then clamped
+// into the grid, and the sign tests that follow are what the source still
+// says although the clamp has already settled them. The cell is
+// x + y*X + z*(X*Y), eight bytes each. (worldmodels.cpp's CSubGrid::GetCell
+// was this body under another name; NOLF's had no nudge.)
 CSubRecord* CWorldSub108::GetPointStatus(LTVector vPoint)
 {
-	int ix = (int)((vPoint.x - m_vOrigin.x) / m_vCell.x);
-	int iy = (int)((vPoint.y - m_vOrigin.y) / m_vCell.y);
-	int iz = (int)((vPoint.z - m_vOrigin.z) / m_vCell.z);
+	int x = (int)((vPoint.x - m_vOrigin.x) / m_vCell.x + 0.0001f);
+	int y = (int)((vPoint.y - m_vOrigin.y) / m_vCell.y + 0.0001f);
+	int z = (int)((vPoint.z - m_vOrigin.z) / m_vCell.z + 0.0001f);
 
-	if (ix < 0)
-		ix = 0;
-	else if (ix > m_nCountX - 1)
-		ix = m_nCountX - 1;
+	if (x < 0)
+		x = 0;
+	else if (x > m_nCountX - 1)
+		x = m_nCountX - 1;
 
-	if (iy < 0)
-		iy = 0;
-	else if (iy > m_nCountY - 1)
-		iy = m_nCountY - 1;
+	if (y < 0)
+		y = 0;
+	else if (y > m_nCountY - 1)
+		y = m_nCountY - 1;
 
-	if (iz < 0)
-		iz = 0;
-	else if (iz > m_nCountZ - 1)
-		iz = m_nCountZ - 1;
+	if (z < 0)
+		z = 0;
+	else if (z > m_nCountZ - 1)
+		z = m_nCountZ - 1;
 
-	if (ix < 0 || iy < 0 || iz < 0)
+	if (x < 0 || y < 0 || z < 0)
 		return LTNULL;
 
-	return &m_pRecords[ix + iz * m_nSliceStride + iy * m_nCountX];
+	return &m_pRecords[x + y * m_nCountX + z * m_nSliceStride];
 }
 
 // The furthest any of the world's own positions gets from a point, and it is
@@ -697,6 +701,12 @@ uint32 CWorldSimple::IsFlagSet()
 // wb_ReadSimpleHeader, so VC6 would stop emitting the COMDAT altogether and
 // server.dll's 0x1000aa81 would go with it. The row closes when 0x00425df0
 // is written, not before.
+//
+// That loader is written now (CWorldSimple::Load, below), and its client
+// build reads the header through wb_ReadSimpleHeaderInline: nothing in
+// lithtech.exe calls this, and neither engine's lithtech.exe has it. So the
+// standalone is the server's only.
+#ifdef LT_SERVER_BUILD
 void wb_ReadSimpleHeader(ILTStream* pStream, CWorldSimpleHeader* pHeader)
 {
 	pStream->Read(&pHeader->m_n00, 1);
@@ -705,6 +715,7 @@ void wb_ReadSimpleHeader(ILTStream* pStream, CWorldSimpleHeader* pHeader)
 	pStream->Read(&pHeader->m_n03, 1);
 	pStream->Read(&pHeader->m_n04, 4);
 }
+#endif
 
 
 // ======================================================================= //
@@ -760,6 +771,9 @@ void* dalloc_z(uint32 nSize);
 // is why the shipped call site is three `movsl` into a 12-byte hole in the
 // stack (0x10008b81..0x10008b8f).
 int math_FindClosestAxisBasis(LTVector vDir);
+// lithtech.exe's is wgrid.cpp's (Primal Hunt 0x00448ee0, AvP2 1.0.9.6
+// 0x00445060): servermath.cpp's is the server's only.
+uint32 sb_GetSideQ43C(LTVector vDir);
 
 // 0x10007cf7 — the loop that walks one polygon's vertices and builds each
 // one's texture coordinates out of the surface's three vectors at
@@ -880,7 +894,14 @@ struct WorldObjectRecQT1
 // Primal Hunt's instead hands its address to the eh vector constructor
 // (0x0042bb89), which /O2 (/Ob1) does only for a constructor it may not
 // expand.
-
+//
+// AVP2: AvP2 1.0.9.6's lithtech.exe, built without /GX, expands it in that
+// loop as NOLF's did (0x00428eb3..0x00428efa, the 0x7fff store at
+// 0x00428ee5) and has no copy, so its build has it `inline`; its server.dll
+// calls the copy (0x1000be60).
+#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+inline
+#endif
 CWorldSurface::CWorldSurface()
 {
 	m_Sub28.Init((uint32)this);
@@ -1503,7 +1524,11 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 			LTPlane* pPlane = &((LTPlane*)pWorld->m_p68)[nPlane];
 
 			pSurf->m_pPlane = pPlane;        // 0x10008b89, +0x34
+#ifdef LT_SERVER_BUILD
 			pSurf->m_nAxis  = math_FindClosestAxisBasis(pPlane->m_Normal);
+#else
+			pSurf->m_nAxis  = sb_GetSideQ43C(pPlane->m_Normal);
+#endif
 		}                                    // 0x10008b8f / 0x10008bac
 
 		pStream->Read(&nFlagWord, 4);                // 0x10008bb6, -0x6c
@@ -1813,8 +1838,13 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	cnt_StartCounter(&counterPrecalc);                     // 0x100091a2
 #endif
 
+#ifdef LT_SERVER_BUILD
+	// server.dll's only: both Talon lithtech.exe builds go from the size
+	// sum straight to the surface linking (Primal Hunt 0x0042c9e6, AvP2
+	// 1.0.9.6 0x00429c96).
 	for (i = 0; i < nNumPolies; i++)         // 0x100091aa / 0x100091c0
 		w_SetupPolyTexCoordsQT1(pWorld->m_ppParts[i]);     // 0x100091b9
+#endif
 
 	w_LinkSurfacePoliesQT1(pWorld);                        // 0x100091c6
 

@@ -319,6 +319,11 @@ int CMessageHelperTinyView::_vb4()
 //  when folding.
 // ======================================================================= //
 
+// RETIRED (#if 0): NOLF's form of smgrnew.cpp's CSObjDataCtorQ474, the
+// record the object-data bank constructs (AvP2 server.dll 0x10014989 is that
+// constructor, with four zeroed entries at +0x34; Primal Hunt has no out-of-
+// line copy). Kept for the record, not built.
+#if 0
 class CSub10010E03View
 {
 public:
@@ -336,3 +341,4 @@ CSub10010E03View::CSub10010E03View()
 	m_p2c = LTNULL;
 	memset(m_a34, 0, sizeof(m_a34));
 }
+#endif // retired

@@ -3317,6 +3317,10 @@ public:
 	void*            m_pServerMgr;           // +0x60
 };
 
+// A duplicate: serverthread.cpp's CServerThread::IsRequestQueued is the
+// one both images place (Primal Hunt 0x004982c0, AvP2 1.0.9.6 0x00417420,
+// identical), and nothing of ours calls this copy.
+#if 0
 LTBOOL CServerThreadQ478::IsRequestQueued(void* pFile)
 {
 	LCritSecQ478* pCS2;
@@ -3371,6 +3375,7 @@ LTBOOL CServerThreadQ478::IsRequestQueued(void* pFile)
 
 	return LTFALSE;
 }
+#endif
 
 
 
@@ -3606,9 +3611,15 @@ public:
 
 // 0x00478930 -- 111 bytes: ObjectCreateStruct::ObjectCreateStruct()
 // (src/LT2/sdk/inc/ltbasedefs.h), Clear() expanded, `this` returned.
+//
+// AvP2's only (1.0.9.6 0x0048b190, identical, called from OnUpdatePacket):
+// Primal Hunt's ReadObjectSubPacket expands the constructor and calls only
+// the Clear (0x00494770), so its image has no out-of-line copy.
+#ifndef PRIMAL_HUNT
 CObjectCreateStructQ478::CObjectCreateStructQ478()
 {
 }
+#endif
 
 // 0x00411a70 -- clientmgr2.cpp's object create (manager, server id,
 // request, out object, bMove, bRotate).
@@ -3622,13 +3633,19 @@ LTRESULT sub_411a70Q478(CClientMgrQ478* pClientMgr, uint16 nServerID,
 // into its one caller, which is why its constant error result travels
 // through the caller's dResult register (0x004788b8).
 //
-// AVP2: no longer expanded: Primal Hunt CALLS it (0x00494154 -> 0x00494740,
-// AvP2 1.0.9.6 the same), and its caller reads the id and passes it.
+// AVP2: no longer expanded in Primal Hunt, which CALLS it (0x00494154 ->
+// 0x00494740), its caller reading the id and passing it.  AvP2 1.0.9.6
+// still expands it: its OnUpdatePacket (0x0048ada0, 1,003 bytes) reaches
+// the create request's constructor (0x0048b190) and cc_ReadObjectPacketQ478
+// (0x0048afbc) itself, and no other function calls them.
 // NEAR (PH 0x00494740, 980 of 965): every call and branch agrees; the
 // shipped code expands less of the setup -- the skin array through the
 // vector constructor iterator (0x00494790 -> 0x00401000) and the struct's
 // m_Scale.Init(1,1,1) as a call (0x004948c7) -- where ours writes the loop
 // and the three stores out: the inline budget again (see sub_47a4e0).
+#ifndef PRIMAL_HUNT
+inline
+#endif
 LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell, CPacketQ478* pPacket,
                              uint16 nID, uint16 nFlags)
 {

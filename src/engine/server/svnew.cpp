@@ -141,6 +141,9 @@ public:
 // `m_nVertices + m_nExtraVertices` is written because it is the reading that
 // matches the names; if the operands come out transposed the fix is
 // `m_nExtraVertices + m_nVertices` and nothing else moves.
+// NOT BUILT: NOLF's server.dll's (the address above is NOLF's). Nothing
+// calls it, and neither engine's server.dll has a function of its shape.
+#if 0
 uint32 CWorldPolyOwnerView::GetVertexCount()
 {
 	if (m_pVertexRun != m_Vertices)
@@ -148,6 +151,7 @@ uint32 CWorldPolyOwnerView::GetVertexCount()
 
 	return m_nVertices;
 }
+#endif
 
 
 
@@ -622,6 +626,9 @@ public:
 	CListenerSlot m_Slots[4];                // 0x134 .. 0x163
 };
 
+// NOT BUILT: NOLF's server.dll's (the address above is NOLF's). Nothing
+// calls it, and neither engine's server.dll has a function of its shape.
+#if 0
 void CListenerSlotOwner::ReleaseSlots()
 {
 	int i;
@@ -632,6 +639,7 @@ void CListenerSlotOwner::ReleaseSlots()
 			m_Slots[i].m_pObj->Release();
 	}
 }
+#endif
 
 
 

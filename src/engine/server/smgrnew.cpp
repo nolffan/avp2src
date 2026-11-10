@@ -593,8 +593,15 @@ public:
 	uint8            m_pad_00[0x2c];
 	CSObjDataRefQ474 m_Ref2c;                // +0x2c
 	void*            m_pModelFile;           // +0x30  untouched
-	CSObjDataRefQ474 m_Files[2];             // +0x34
-	uint8            m_pad_3c[0x54 - 0x3c];
+#ifdef PRIMAL_HUNT
+	// PH: five (lithtech.exe 0x00418d40, five zero stores from 0x34).
+	CSObjDataRefQ474 m_Files[5];             // +0x34
+	uint8            m_pad_48[0x54 - 0x48];
+#else
+	// AVP2: four (server.dll 0x10014989: `lea 0x34(%ecx),%edi`, four stos).
+	CSObjDataRefQ474 m_Files[4];             // +0x34
+	uint8            m_pad_44[0x54 - 0x44];
+#endif
 };
 
 inline CSObjDataCtorQ474::CSObjDataCtorQ474()
@@ -628,7 +635,10 @@ void CMessageBank::_v04()
 	Allocate();
 }
 
-#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifndef LT_SERVER_BUILD
+// AVP2: lithtech.exe 0x00416af0 (44 bytes), the same slot with the record's
+// destructor expanded (the +0x2c release through its slot 2), then the
+// guarded sb_Free.
 // PH: lithtech.exe 0x00418b40 (39 bytes), slot 2 of the bank's vftable
 // (0x004d4e7c, beside the 0x00418b30 `jmp Allocate` of slot 1): the
 // record's destructor CALLED (0x00418e40, the out-of-line ~SObjData whose

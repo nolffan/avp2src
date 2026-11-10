@@ -573,6 +573,10 @@ ModelQ444* CAnimNodeQ444::GetModelQ444()
 	return m_pAnim->m_pModel;
 }
 
+// NOT BUILT: commonmodel.cpp's CUnknownD974::sub_1001668a is this function
+// (lithtech.exe 0x00452870, server.dll 0x1001c255, both identical), and it
+// is the one Model's node setup calls; nothing calls this copy.
+#if 0
 LTBOOL CAnimNodeQ444::sub_1001668aQ444(uint32* pnIndex)
 {
 	uint32 i;
@@ -601,6 +605,7 @@ LTBOOL CAnimNodeQ444::sub_1001668aQ444(uint32* pnIndex)
 
 	return LTFALSE;
 }
+#endif
 
 
 // 0x00445bb0 -- ModelAnim::sub_100168a3 -- is written in commonmodel.cpp as
@@ -682,14 +687,18 @@ void CModelSub20CQ444::sub_10016b11Q444(uint32 iParent)
 //  SetModel is declared in class and defined out of it.
 // ======================================================================= //
 
-void ModelPieceDataQ444::SetModelQ444(ModelQ444* pModel)
-{
-	m_pModel20 = pModel;
-}
-
 ModelPieceDataQ444::ModelPieceDataQ444(ModelQ444* pModel)
 {
 	SetModelQ444(pModel);
+}
+
+// Defined after the constructor, as the image orders them (server.dll
+// 0x1001c7dd then 0x1001c85c; AvP2's 0x1001b88f, 0x1001b8cd). Defined
+// first, VC6 knows the call cannot throw and Primal Hunt's /GX build drops
+// the constructor's second unwind state store (0x1001c804).
+void ModelPieceDataQ444::SetModelQ444(ModelQ444* pModel)
+{
+	m_pModel20 = pModel;
 }
 
 
@@ -826,6 +835,10 @@ char* ModelQ444::sub_100173faQ444(char* pName)
 //  read is the bound the parent index is tested against (0x00446f44).
 // ======================================================================= //
 
+// NOT BUILT: commonmodel.cpp's Model::sub_10017517 is this function
+// (lithtech.exe 0x00454270, identical in all four images), and it is the
+// one Model's load calls; nothing calls this copy.
+#if 0
 void ModelQ444::sub_10017517Q444()
 {
 	uint32 i;
@@ -851,6 +864,7 @@ void ModelQ444::sub_10017517Q444()
 		}
 	}
 }
+#endif
 
 
 // ======================================================================= //

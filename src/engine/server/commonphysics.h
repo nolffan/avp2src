@@ -52,9 +52,26 @@
 class GlobalForceControl
 {
 public:
-	GlobalForceControl();                    // 0x1002c87b
-
 	void Set(LTVector* pVec);                // 0x1002c8aa
+
+	// Gravity, and the slope beyond which a surface stops holding anything
+	// up. lithtech.exe has no out-of-line copy: the client manager's and the
+	// server manager's constructors expand it (Primal Hunt 0x0041238a..
+	// 0x004123b0, 0x00416a44; AvP2 1.0.9.6 0x0041130f, 0x00414d48), so the
+	// client build has it in the class; server.dll calls its copy
+	// (0x10038377, AvP2 0x10035634), commonphysics.cpp's.
+#ifdef LT_SERVER_BUILD
+	GlobalForceControl();                    // 0x1002c87b
+#else
+	GlobalForceControl()
+	{
+		LTVector vForce(0.0f, -2000.0f, 0.0f);
+
+		Set(&vForce);
+
+		m_Unknown30 = -0.70709997f;
+	}
+#endif
 
 	class LTObject* m_pObj;                  // +0x00
 	float           m_fFrameTime;            // +0x04

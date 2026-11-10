@@ -51,10 +51,10 @@ public:
 	                                    LTVector& right, LTVector& forward);// 0x1001232a
 	virtual LTRESULT SetupEuler(LTRotation& rot, float pitch, float yaw,
 	                            float roll);                               // 0x10012344
-	// 0x1001236b — the slot after SetupEuler in iltcommon.h, and a stub: the
-	// out-parameter is nulled and the answer is LT_ERROR, so this half of the
-	// engine has no message system to hand out.
-	virtual LTRESULT CreateMessage(class ILTMessage*& pMsg);                // 0x1001236b
+	// CreateMessage, the slot after SetupEuler in iltcommon.h, is not
+	// overridden here: NOLF's stub (0x1001236b) is gone, and the slot of
+	// this class's own table is _purecall in both servers (Primal Hunt
+	// 0x100747d8 -> 0x10062b83). ServerCommonLT's is the one that answers.
 
 	// AVP2: ILTCommon's slot after CreateMessage in AvP2's SDK: the CRC-32 of
 	// a stream's whole contents (Primal Hunt server.dll 0x10016b42).

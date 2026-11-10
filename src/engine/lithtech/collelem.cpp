@@ -203,8 +203,21 @@ public:
 class CElem1CQ428
 {
 public:
+#ifdef PRIMAL_HUNT
 	CElem1CQ428();                           // inlined; see BaseNew 0x0042bbd0
-	CElem1CQ428(uint32 n00, uint32 n04);     // 0x0042b580
+#else
+	// AVP2: ONE constructor with defaulted arguments, as clientmgr3.cpp's
+	// CCmgElem1C (the same element) has it: AvP2 1.0.9.6's lithtech.exe
+	// expands it in BaseNew<T1C> (0x004327d0) and calls it out of line, with
+	// two zeros pushed, from InternalNiceSetSize's placement new
+	// (0x00432137 -> 0x00432230). Primal Hunt's has no out-of-line copy: the
+	// two-argument form has no caller there, and its default one is inline.
+	CElem1CQ428(uint32 n00 = 0, uint32 n04 = 0)
+		: m_n00(n00), m_n04(n04)
+	{
+		m_Array08.Init(0, 0x400);
+	}
+#endif
 
 	uint32 m_n00;                            // +0x00
 	uint32 m_n04;                            // +0x04
@@ -214,18 +227,15 @@ public:
 // 0x0042b580.  `m_Array08` is default-constructed by the implicit member
 // initialisation first — that is the 0x0042b59c..0x0042b5de block — and the
 // one statement of the body is the re-Init with the 0x400 cache.
-CElem1CQ428::CElem1CQ428(uint32 n00, uint32 n04)
-	: m_n00(n00), m_n04(n04)
-{
-	m_Array08.Init(0, 0x400);
-}
-
+// (AvP2's is in the class.)
+#ifdef PRIMAL_HUNT
 // Expanded inside BaseNew<T1C> (0x0042bbd0) and nowhere else in the image.
 inline CElem1CQ428::CElem1CQ428()
 	: m_n00(0), m_n04(0)
 {
 	m_Array08.Init(0, 0x400);
 }
+#endif
 
 
 // ======================================================================= //

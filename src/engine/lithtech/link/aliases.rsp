@@ -770,7 +770,8 @@
 # 0x411440
 /ALTERNATENAME:?sub_411440@CClientMgrShellView@@QAEXPAVCMessageView@@@Z=?SetPacketHelper@CClientMgrView@@QAEXPAVCPacketHelperView@@@Z
 # 0x415bb0
-/ALTERNATENAME:?Sub415bb0@CClientMgrView@@QAEXXZ=?RunFrameUpdates@CClientMgrView@@QAEXXZ
+/ALTERNATENAME:?Sub415bb0@CClientMgrView@@QAEXXZ=?RunFrameUpdates@CClientMgrQ414@@QAEXXZ
+/ALTERNATENAME:?RunFrameUpdates@CClientMgrView@@QAEXXZ=?RunFrameUpdates@CClientMgrQ414@@QAEXXZ
 # 0x45aba0
 /ALTERNATENAME:?SetDims@CClientModelInstQ474@@QAEXV?$_CVector@M@@@Z=?SetDims@CObjDimsSetterQG9@@QAEXV?$_CVector@M@@@Z
 # 0x4143f0
@@ -784,7 +785,7 @@
 # 0x410620
 /ALTERNATENAME:?SetGlobals@CCmgClientMgr@@QAEXXZ=?SetGlobals@CClientMgrView@@QAEXXZ
 # 0x415bb0
-/ALTERNATENAME:?Sub415bb0@CCmgClientMgr@@QAEXXZ=?RunFrameUpdates@CClientMgrView@@QAEXXZ
+/ALTERNATENAME:?Sub415bb0@CCmgClientMgr@@QAEXXZ=?RunFrameUpdates@CClientMgrQ414@@QAEXXZ
 # 0x42c310
 /ALTERNATENAME:?GatherCounters@CCmgDemoMgr@@QAEXPAK0PAD0I@Z=?GatherInput@CDemoMgrQ42C@@QAEKPAH000I@Z
 # 0x410e20
@@ -1391,7 +1392,7 @@
 # 0x490ba0
 /ALTERNATENAME:?clu_sb_Init2@@YAXPAVCluStructBank@@KKK@Z=?sb_Init2@@YAHPAUStructBank_t@@KKK@Z
 # 0x404480
-/ALTERNATENAME:?clu_sub_404480@@YAXPAVCluFileMgr@@@Z=?sub_404480@@YAXPAVCFileMgrView@@@Z
+/ALTERNATENAME:?sub_404480@@YAXPAVCFileMgrView@@@Z=?clu_sub_404480@@YAXPAVCluFileMgr@@@Z
 # 0x429080
 /ALTERNATENAME:?clu_sub_429080@@YAXPAX@Z=?dfree@@YAXPAX@Z
 # 0x42d8e0
@@ -2918,6 +2919,15 @@
 /ALTERNATENAME:?g_CMoByteArrayVtblQ11@@3PAPAXA=??_7?$CMoArray@EVDefaultCache@@@@6B@
 # 0x4283b0 (call at 0x00459c8c) CMoArray<uint8>::Init
 /ALTERNATENAME:?Init@CPacketDataQ11@@QAEIKK@Z=?Init@?$CMoArray@EVDefaultCache@@@@QAEIKK@Z
+# Primal Hunt 0x40cfa0 (call at 0x0046b69f, its expanded Init) CMoArray<uint8>::SetSize2
+/ALTERNATENAME:?SetSize2@CPacketDataQ11@@QAEIKPAVLAlloc@@@Z=?SetSize2@?$CMoArray@EVDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+# Primal Hunt's startload.cpp Allocate (0x0046b5c0): its unwind's two destructors and the two vptrs it stores
+# 0x468580 ~CAbstractIO; 0x4140c0 CMoArray's destructor (one body for every instantiation; the uint8 one is not instantiated here)
+/ALTERNATENAME:??1CAbstractIOQ11@@QAE@XZ=??1CAbstractIO@@UAE@XZ
+/ALTERNATENAME:??1CPacketDataQ11@@QAE@XZ=??1?$CMoArray@VCWorldItem18@@VDefaultCache@@@@QAE@XZ
+# 0x4d5d40 CAbstractIO's vtable, 0x4d5d54 ServerMessage's
+/ALTERNATENAME:?g_AbstractIOVtblQ11@@3PAPAXA=??_7CAbstractIO@@6B@
+/ALTERNATENAME:?g_ServerMessageVtblQ11@@3PAPAXA=??_7ServerMessageQG9@@6B@
 # 0x4a2b58 ServerMessage's vtable = {0x457d20, 0x455c00, 0x455c10, 0x45c1d0}
 # slot 0 0x457d20 the scalar deleting destructor (clientmgr3.obj's view places there)
 /ALTERNATENAME:?_v00@ServerMessageQ11@@UAEXXZ=??_GCCmgServerMessage@@UAEPAXI@Z

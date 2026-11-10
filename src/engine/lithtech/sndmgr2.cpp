@@ -116,6 +116,14 @@ inline void* sb_AllocateQ480(StructBankQ480* pBank)
 // re-deriving this+0x2a0.
 inline void sb_FreeQ480(StructBankQ480* pBank, void* pObj)
 {
+#ifndef PRIMAL_HUNT
+	// AVP2: its lithshared's sb_Free refuses a null object or bank
+	// (clientsoundmgr.cpp's sb_FreeRef): the `test %edi,%edi; je` at AvP2
+	// 1.0.9.6 0x004938fc, the object already known non-null.
+	if (!pObj || !pBank)
+		return;
+#endif
+
 	*(void**)pObj = pBank->m_FreeListHead;
 	pBank->m_FreeListHead = pObj;
 }
@@ -394,6 +402,9 @@ __declspec(dllimport) void   __stdcall AIL_end_3D_sample(void* hSample);
 //     slot +0x00 with the deleting flag 0 (`push $0 ; call *(%edx)`),
 //     followed by struct_bank.h's two-store sb_Free.
 // ======================================================================== //
+// AvP2's (1.0.9.6 0x00493870, the bank's Allocate expanded); Primal Hunt's
+// is clientsoundmgr.cpp's (0x0049d410, the Allocate called).
+#ifndef PRIMAL_HUNT
 CSoundDataQ480* CSoundMgrQ480::GetSoundData(CSoundFileRecQ480* pFileRec)
 {
 	CSoundDataQ480* pSoundData;
@@ -433,6 +444,7 @@ CSoundDataQ480* CSoundMgrQ480::GetSoundData(CSoundFileRecQ480* pFileRec)
 
 	return pSoundData;                                       // 0x00480b0d
 }
+#endif // !PRIMAL_HUNT
 
 
 // ======================================================================== //

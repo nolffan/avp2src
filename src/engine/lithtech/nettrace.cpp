@@ -822,7 +822,14 @@ done:
 //
 //  The out-of-line constructor emits the vftable, which is what makes VC6
 //  emit the ??_G it points at -- and it is 0x00457c40 itself, below.
+//
+//  Not Primal Hunt's: its SendPacket allocates from the net bank
+//  (lithtech.exe 0x00468fd0 calls 0x0046b5c0, startload.cpp's
+//  CNetBankQ11::Allocate) rather than newing a message, and every
+//  ServerMessage construction its image has is expanded (0x0046b632,
+//  0x0046f0bf): no out-of-line constructor, and no ??_G of this class.
 // =====================================================================
+#ifndef PRIMAL_HUNT
 class CAbstractIOQ18
 {
 public:
@@ -904,13 +911,10 @@ inline void CServerMessageQ18::Init(uint16 nMaxDataLen, uint16 nGrowSize)
 // IDENTICAL, 215 b.
 CServerMessageQ18::CServerMessageQ18()
 {
-#ifdef PRIMAL_HUNT
-	Init(0x1000, 0x1000);
-#else
 	// AvP2 1.0.9.6: the packet size, 0x44c (0x00463e6a).
 	Init(0x44c, 0x44c);
-#endif
 }
+#endif // !PRIMAL_HUNT
 
 
 // ---------------------------------------------------------------------

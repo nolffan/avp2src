@@ -1193,6 +1193,25 @@ CBaseDriverQ2B* CNetMgrQ2B::FindDriver(char* pDriverName)
 // ServerMessage nor netmgr.cpp can produce this expansion; the views below
 // restate the three levels with in-class constructors.  (names ours)
 
+#ifdef PRIMAL_HUNT
+// Primal Hunt's /GX build unwinds a failed construction (0x0046b5c0's
+// FuncInfo: the placement delete, then CAbstractIO's destructor at
+// 0x00468580, then the packet array's at 0x004140c0), so here the two
+// levels have their destructors, and both vptrs are stored by hand
+// (0x0046b632, 0x0046b66e) so that this TU emits no vtable of its own.
+extern void* g_AbstractIOVtblQ11[];                           // 0x004d5d40
+extern void* g_ServerMessageVtblQ11[];                        // 0x004d5d54
+
+class CAbstractIOQ11
+{
+public:
+	CAbstractIOQ11() { m_pVtbl = g_AbstractIOVtblQ11; m_nRefCount = 0; }
+	~CAbstractIOQ11();                                       // 0x00468580
+
+	void** m_pVtbl;                                          // +0x00
+	uint32 m_nRefCount;                                      // +0x04
+};
+#else
 class CAbstractIOQ11
 {
 public:
@@ -1205,6 +1224,7 @@ public:
 
 	uint32 m_nRefCount;                                      // +0x04
 };
+#endif
 
 // The two member vtables the constructor stores, the real classes' own:
 // 0x004a2b68 is LMessageImpl's (servermsg.obj's ??_7LMessageImpl@@6B@) and
@@ -1223,7 +1243,9 @@ public:
 	LMessageImplQ11() { m_pVtbl = g_LMessageImplVtblQ11; }
 
 	void** m_pVtbl;                                          // +0x00
-	uint8  m_pad_04[0x2c - 0x04];
+	uint8  m_pad_04[0x08 - 0x04];
+	void*  m_pOwner;                                         // +0x08
+	uint8  m_pad_0c[0x2c - 0x0c];
 };
 
 // packet.h's CPacketData (CMoArray<uint8>) as its constructor is shipped
@@ -1245,6 +1267,11 @@ public:
 	}
 
 	LTBOOL Init(uint32 nSize, uint32 nCacheSize);            // 0x004283b0
+#ifdef PRIMAL_HUNT
+	// Primal Hunt lithtech.exe 0x0040cfa0 (CMoArray<uint8>'s).
+	LTBOOL SetSize2(uint32 nNewSize, LAlloc* pAlloc);
+	~CPacketDataQ11();                                       // 0x004140c0
+#endif
 
 	void** m_pVtbl;                                          // +0x00
 	uint8* m_pArray;                                         // +0x04
@@ -1258,25 +1285,55 @@ class ServerMessageQ11 : public CAbstractIOQ11
 public:
 	ServerMessageQ11()
 	{
+#ifdef PRIMAL_HUNT
+		m_pVtbl = g_ServerMessageVtblQ11;
+#else
 		// Shipped order (0x00459ca3, 0x00459ca9); the other order is
-		// size-exact with these two stores swapped, measured.
+		// size-exact with these two stores swapped, measured.  (Dead
+		// under Primal Hunt's expanded Init, which stores both.)
 		m_Unknown3a = 1;
 		m_MsgFlags  = 0;
-
-#ifdef PRIMAL_HUNT
-		Init(0x1000, 0x1000);
-#else
-		// AvP2 1.0.9.6: the packet size, 0x44c (0x00465f0d).
-		Init(0x44c, 0x44c);
 #endif
+
+		// The packet size, 0x44c (AvP2 1.0.9.6 0x00465f0d, Primal Hunt
+		// 0x0046b669).
+		Init(0x44c, 0x44c);
 	}
 
+#ifndef PRIMAL_HUNT
 	virtual void _v00();
 	virtual void AddRef();
 	virtual void Release();
 	virtual void _v0c();
+#endif
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt expands servermsg.h's Init here (0x0046b669..0x0046b6cb):
+	// the four counts, the flags, the owner, then the array grown or its
+	// cache size set.
+	void Init(uint16 nMaxDataLen, uint16 nGrowSize)
+	{
+		m_Unknown34  = 1;
+		m_MaxDataLen = nMaxDataLen;
+		m_Unknown38  = 1;
+		m_Unknown3a  = 1;
+		m_MsgFlags   = 0;
+
+		m_Write.m_pOwner = this;
+
+		if (nMaxDataLen > m_PacketData.m_nElements)
+		{
+			m_PacketData.SetSize2(0, &g_DefAlloc);
+			m_PacketData.Init(nMaxDataLen, nGrowSize);
+		}
+		else
+		{
+			m_PacketData.m_nCache = nGrowSize;
+		}
+	}
+#else
 	void Init(uint16 nMaxDataLen, uint16 nGrowSize);         // 0x00459cc0
+#endif
 
 	LMessageImplQ11               m_Write;                   // +0x08
 	uint16                        m_Unknown34;               // +0x34
@@ -1342,12 +1399,37 @@ public:
 	CStructBankQ11 m_Bank;                                   // +0x04
 };
 
+#ifdef PRIMAL_HUNT
+// object_bank.h's placement form: its delete is the empty one the unwind
+// calls (0x00401790).
+class DummyThingForConstructorQ11
+{
+public:
+};
+
+inline void* operator new(size_t size, DummyThingForConstructorQ11* pThing,
+                          void* ptr)
+{
+	return ptr;
+}
+
+inline void operator delete(void* pDataPtr, DummyThingForConstructorQ11* pThing,
+                            void* ptr)
+{
+}
+#endif
+
 CNetSentPacketQ11* CNetBankQ11::Allocate()
 {
 	CNetSentPacketQ11* pRec = (CNetSentPacketQ11*)sb_AllocateQ11(&m_Bank);
 
+#ifdef PRIMAL_HUNT
+	if (pRec)
+		::new((DummyThingForConstructorQ11*)0, pRec) CNetSentPacketQ11;
+#else
 	if (pRec)
 		pRec->m_Packet.ServerMessageQ11::ServerMessageQ11();
+#endif
 
 	return pRec;
 }

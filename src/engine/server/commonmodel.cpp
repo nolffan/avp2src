@@ -4912,6 +4912,12 @@ void quat_Slerp(float* pDest, const float* pQ1, const float* pQ2, float t)
 // GetNodeTransform and GetSocketTransform: VC6's inliner is forward-only and
 // both of them expand it.)
 
+// NOLF's (0x10017c17 / 0x004478c0). Not in AvP2's or Primal Hunt's engine:
+// nothing calls it (the socket transforms are CommonModelLT's), and neither
+// the walker store at +0x128 nor the node-table fold (`shl $0x6; add
+// 0x74(...)`) it compiles to occurs in any of the four images. Kept for the
+// record, not built.
+#if 0
 // One socket's 4x4, in whatever space the walker was set up in. The socket
 // is an offset and a rotation hung off a node, so the answer is the node's
 // transform composed with the socket's own — built here as a matrix from
@@ -4967,6 +4973,7 @@ LTBOOL Model::EvalSocket(ModelWalker* pWalker, HMODELSOCKET hSocket, LTMatrix* p
 
 	return LTFALSE;
 }
+#endif
 
 
 // 0x100136c2 — the animation index a name stands for on this object's model.
@@ -5347,6 +5354,13 @@ public:
 	volatile float m_v3cx, m_v3cy, m_v3cz;   // 0x3c
 };
 
+//
+// AVP2: not built for AvP2 1.0.9.6's lithtech.exe, where the grid's clear is
+// wgrid.cpp's CWorldGridQ43C::Clear (identical at 0x00444be0, called from
+// this class's constructor at 0x00444ad3); this body there differs only in
+// the order cl 9044 gives the +0x30 and +0x3c stores. (Primal Hunt's engine
+// folds the two copies onto 0x00448a30.)
+#if defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 void CWorldSubFC::Clear()
 {
 	volatile float* pCellSize = (volatile float*)&m_v24x;
@@ -5374,6 +5388,7 @@ void CWorldSubFC::Clear()
 	m_v3cy = 0.0f;
 	m_v3cz = 0.0f;
 }
+#endif
 
 // 0x10014295 — the teardown the release below tail-jumps to: `dfree(m_pData);
 // Clear();`. smgr.cpp, the file that calls it directly, carries the body as
@@ -7338,6 +7353,11 @@ class CWorldPart : public CWorldPolyOwnerView
 {
 };
 
+// server.dll's only (called per poly at 0x100091b9): neither Talon
+// lithtech.exe's w_LoadWorldModel has the per-poly pass (each goes from the
+// size sum straight to w_LinkSurfacePoliesQT1: Primal Hunt 0x0042c9e6, AvP2
+// 1.0.9.6 0x00429c96), and neither has a copy of this body.
+#ifdef LT_SERVER_BUILD
 void w_SetupPolyTexCoordsQT1(CWorldPart* pPoly)
 {
 	CWorldPolyVertexQT1* pVert;
@@ -7357,6 +7377,7 @@ void w_SetupPolyTexCoordsQT1(CWorldPart* pPoly)
 		pVert++;
 	}
 }
+#endif // LT_SERVER_BUILD
 
 
 // 0x10007da5 — one world's portal table, by name: a run of 0x24-byte records

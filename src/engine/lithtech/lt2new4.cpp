@@ -612,10 +612,19 @@ public:
 // `lea 0x8(%eax)` in %edi (35 bytes, near); `m_First; m_Rest[2]` gives the
 // shipped inline first construction and the literal two-trip loop, byte-
 // identical.
+//
+// NOLF's shape of the create request's constructor.  Talon's request is
+// larger (a four-entry array, +0x3c and +0x40 = 1): cchandler.cpp's
+// CClientCreateRequestQ478 constructor, out of line in AvP2 1.0.9.6
+// (0x0048b210, identical, called from OnUpdatePacket) and expanded into
+// ReadObjectSubPacket in Primal Hunt (0x00494775..0x004947b6), which has no
+// copy.  Nothing of ours calls this one.
+#if 0
 CUnknown4789A0::CUnknown4789A0()
 {
 	m_nCount = 0;
 }
+#endif
 
 
 // ======================================================================= //

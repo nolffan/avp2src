@@ -7,6 +7,11 @@
 
 // A poly is named by two indices, and both are checked before either is
 // used: the model, then the poly within that model's own run.
+//
+// NOT BUILT: NOLF's. It was the second slot of NOLF's four-slot world
+// vtable; AvP2's and Primal Hunt's have three, without it (commonmodel.cpp's
+// CServerWorldFull note), nothing here calls it, and no image has it.
+#if 0
 void* CWorldModelList::FindPoly(CWorldPolyKey* pKey)
 {
 	uint32 iModel = pKey->m_iModel;
@@ -24,6 +29,7 @@ void* CWorldModelList::FindPoly(CWorldPolyKey* pKey)
 
 	return pData->m_pPolies[iPoly];
 }
+#endif
 
 // The two flag searches are the same walk over the same list, and each stops
 // at the first model that carries its bit.
@@ -543,6 +549,10 @@ LTBOOL CSubGrid::Load(ILTStream* pStream)
 	return LTTRUE;
 }
 
+// lithtech.exe 0x0042f290 / server.dll 0x1000db48, the cell a point falls
+// in, is CWorldSub108::GetPointStatus (worldbsp.cpp), which the worlds'
+// own slots call; this copy had no caller.
+#if 0
 // lithtech.exe 0x0042f290 (right after Load) / server.dll 0x1000db48 -- the
 // cell a point falls in, the point BY VALUE (`ret $0xc`). Each axis is the
 // offset from the origin in cells, nudged up by 0.0001f (0x004d4f30,
@@ -576,6 +586,7 @@ CSubCell* CSubGrid::GetCell(LTVector vPos)
 
 	return &m_pCells[x + y * m_nCountX + z * m_nSliceStride];
 }
+#endif
 
 
 // 0x1000a411. Not a "reset" in the sense of restoring anything: it rebuilds

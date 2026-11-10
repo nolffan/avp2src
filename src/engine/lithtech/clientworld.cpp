@@ -478,6 +478,9 @@ public:
 //     grow the array.
 //   * the flag is `orb $0x80,0x15(%eax)` on the answer, under its own null
 //     test, and the operand is a byte — not a dword masked down.
+// NOLF's: neither Talon image has it (no `orb $0x80,0x15(reg)` in either
+// lithtech.exe's code), and nothing of ours calls it.
+#if 0
 void CResolver2cView::FlagResolved(CKeyArray2cView* pArray)
 {
 	uint32 i;
@@ -490,6 +493,7 @@ void CResolver2cView::FlagResolved(CKeyArray2cView* pArray)
 			pRec->m_Flags15 |= 0x80;
 	}
 }
+#endif
 
 
 // ---- the 0xc0-byte world-object record --------------------------------- //
@@ -588,10 +592,15 @@ float wb_MaxDistSqr(CWorldPart** pPoints, uint32 nPoints, LTVector* pOut); // 0x
 // count, then the pointer — so the out-parameter is the LAST argument, and the
 // answer is stored with `fstps 0xbc(%esi)`, so +0xbc is a float and not a
 // double.
+// A duplicate: worldbsp.cpp's CWorldSimple::ComputeRadius is this body
+// (Primal Hunt 0x0042f830, identical; AvP2 1.0.9.6 0x0042c820), and nothing
+// of ours calls this one.
+#if 0
 void CObj425C00View::RecalcBounds()
 {
 	m_f0bc = wb_MaxDistSqr((CWorldPart**)m_p054, m_n058, &m_v0b0);
 }
+#endif
 
 // 0x00426190 — vtable slot 4.  Forward the by-value LTVector to the +0x80
 // sub-object.
@@ -744,10 +753,15 @@ void sub_0043cd10(uint32 nTop3Bits, void* p034, void* pA, void* pB);
 // arguments keep their order.  This body is not in vtable 0x004a2078; the
 // enumeration's other entry in this neighbourhood, 0x00427ca0, is slot 8 of the
 // twelve-slot table at 0x004a20a0 and is over 64 bytes — skipped.
+// NOLF's: neither Talon image has a forward of this shape (no load of
+// +0x38 shifted right by 29 beside +0x34 in either lithtech.exe), and
+// nothing of ours calls it.
+#if 0
 void CObj4a2078View::Forward34(void* pA, void* pB)
 {
 	sub_0043cd10(m_n038 >> 29, m_p034, pA, pB);
 }
+#endif
 
 
 // ---- the 0x429xxx handle wrapper --------------------------------------- //

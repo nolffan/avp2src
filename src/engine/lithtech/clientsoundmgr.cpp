@@ -2517,7 +2517,9 @@ LTRESULT CSoundMgrView::ReleaseSound(CSoundInstanceRef* pSound)
 // The type test is `&&` (two `je`s onto the success arm), and on an Init
 // failure the sample goes back to the bank the way FreeSoundData returns
 // one: the explicit virtual destructor, then sb_Free.  The allocate is
-// the bank's out-of-line Allocate (see ObjectBankView).
+// the bank's out-of-line Allocate (see ObjectBankView).  Primal Hunt's
+// only: AvP2's is sndmgr2.cpp's, with the Allocate expanded (0x00493870).
+#ifdef PRIMAL_HUNT
 CSoundDataRef* CSoundMgrView::GetSoundData(void* pFileRec)
 {
 	CSoundDataRef* pSoundData;
@@ -2553,6 +2555,7 @@ CSoundDataRef* CSoundMgrView::GetSoundData(void* pFileRec)
 
 	return pSoundData;
 }
+#endif // PRIMAL_HUNT
 
 
 // 0x00480b20 — retire one loaded sample.  The sweep in the middle is the

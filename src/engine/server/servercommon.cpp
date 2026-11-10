@@ -369,9 +369,14 @@ struct CSavedFileStateSvQ508
 	// SetObjectFilenames constructs it at -0x4c(%ebp) with the record at
 	// -0x74 (server.dll 0x10039b57, 0x10039bcb; AvP2 1.0.9.6's -0x40 and
 	// -0x68, 0x10036bd7 and 0x10036c45).
+	//
+	// The SDK's AnimTimeRef (ltanimtracker.h): SetObjectFilenames calls its
+	// constructor out of line, the one objbank.obj's model code shares
+	// (server.dll 0x1002ee6b: both weight sets -1, m_bNormalize cleared,
+	// then Clear; AvP2 0x1002d060).
 	uint8         m_pad_00[0x28];
-	CAnimTimeRef  m_TimeRef;                 // 0x28
-	uint8         m_pad_44[0x50 - 0x44];
+	AnimTimeRef   m_TimeRef;                 // 0x28
+	uint8         m_pad_4c[0x50 - 0x4c];
 	void*         m_pModelFile;              // 0x50
 	void*         m_pSkinFile;               // 0x54
 };
@@ -503,6 +508,11 @@ LTRESULT ServerCommonLT::GetPointShade(LTVector* pPoint, LTVector* pColor)
 	return si_GetPointShade(pPoint, pColor);
 }
 
+// NOLF's (0x1002da31, 0x100175fd): AvP2's and Primal Hunt's SetObjectFilenames
+// build the SDK's AnimTimeRef instead (its two weight sets and m_bNormalize),
+// whose constructor and Clear are objbank.obj's. Kept for the record, not
+// built.
+#if 0
 // 0x1002da31 — the time reference starts on no weight set and no animation.
 // Declared in the class and defined here rather than in the class body: /Ob1
 // would otherwise expand it into SetObjectFilenames, and the shipped build
@@ -533,6 +543,7 @@ void CAnimTimeRef::Clear()
 
 	m_Percent = 0.0f;
 }
+#endif
 
 
 // ---- the world-side file swap -------------------------------------------- //

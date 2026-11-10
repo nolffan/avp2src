@@ -656,7 +656,14 @@ void surf_FreeRenderData(CSurfaceRenderView* pSurface)
 //  CAbstractIO in this engine (servermsg.h:314 puts ServerMessage::Release
 //  at slot 2 of the same shape).  The element is therefore a client record
 //  that owns a reference-counted message.  Names ours.
+//
+//  RETIRED (#if 0): this bank is smgrnew.cpp's CMessageBank, the objects'
+//  SObjData records. Its Allocate (Primal Hunt 0x00418d40) and its Free
+//  (_v08: Primal Hunt 0x00418b40, AvP2 0x00416af0) are identical there;
+//  AvP2's Allocate is expanded into slot 1 (_v04, 0x00416ab0). These two
+//  were duplicates of them.
 // ======================================================================= //
+#if 0
 
 // Whatever the element holds at +0x2c: only slot 2 is ever reached.
 class IReleasableView
@@ -793,6 +800,7 @@ void* CBankElem54BankView::Allocate()
 
 	return pRet;
 }
+#endif // retired
 
 
 // ======================================================================= //

@@ -345,7 +345,14 @@ public:
 		pHead->m_pNext = pHead;
 	}
 
-	CWorldItem18(uint8 bInit = 0) { Init(bInit); }
+	// Two constructors, not one with a defaulted argument: Primal Hunt's /GX
+	// server.dll keeps the default one out of line inside BaseNew's unwind
+	// region and calls it with nothing pushed (0x1000c0f9, from 0x10010f24),
+	// and a defaulted argument would have VC6 emit a default constructor
+	// closure (??_F) beside it, which no image has. The flagged one is the
+	// tree terminators' (dalloc.cpp).
+	CWorldItem18() { Init(0); }
+	CWorldItem18(uint8 bInit) { Init(bInit); }
 
 	uint32           m_a, m_b, m_c;          // 0x00
 	CWorldItem18Link m_head;                 // 0x0c

@@ -51,7 +51,7 @@
 #include "servermgr.h"
 #include "servermsg.h"       // ServerMessage, LMessageImpl, IMessageWrite, CPosRef
 #include "servermodel.h"     // the CF_* change-flag names
-#include "packet.h"          // CPacket::WriteType, for sm_DetachClientQ464
+#include "packet.h"          // CPacket::WriteType, for sm_DetachClient
 #include "de_error.h"       // dsi_ServerError
 
 
@@ -808,7 +808,13 @@ void xfer_TermQ464(void* pState)
 
 
 // ======================================================================= //
-//  MOVE-ME: src/engine/server/smgr.cpp:6117, sm_DetachClient.
+//  MOVE-ME: src/engine/server/smgr.cpp's sm_DetachClient, the engine's
+//  form of it (identical: Primal Hunt 0x00477200, AvP2 0x00470db0).
+//  smgr.cpp builds its own for server.dll only, so this is the one the
+//  engine's smgr.cpp callers reach.
+//
+//  RETAIL BUG: `msg` is never allocated, so the header stores and the
+//  send go through a null message (docs/RETAIL_BUGS.md).
 //
 //  0x00463f00 (349 bytes, /O2) / 0x10027259 (/O1).  smgr.cpp's body (a
 //  null `ServerMessage* pMsg` local) is 326 bytes here: VC6 forwards the
@@ -823,7 +829,7 @@ public:
 	LTLink m_AttachLink;                                // +0x164
 };
 
-LTRESULT sm_DetachClientQ464(CServerMgr* pMgr, Client* pClient)
+LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 {
 	CMessageRef msg;
 

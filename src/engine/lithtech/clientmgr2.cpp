@@ -3374,6 +3374,11 @@ class CClientMsgObjectHelper;
 // it follows clientshell.cpp's .bss run 0x004b17e4..0x004b17fc).
 uint32 g_Unknown4b1800;                                            // 0x004b1800
 
+// A duplicate: clientupdate.cpp's CClientMgrQ414::RunFrameUpdates is the
+// one both images place (Primal Hunt 0x00419fa0, AvP2 0x00417de0, the
+// unit retail has on its own); this view's callers reach it through
+// link/aliases.rsp.
+#if 0
 void cs_UpdateSprites(CClientMgrView* pMgr);                       // 0x00415b50
 void cs_UpdateAnimations(CClientMgrView* pMgr);                    // 0x00415d00
 void cs_Sub415bf0(CClientMgrView* pMgr);                           // 0x00415bf0
@@ -3392,6 +3397,7 @@ void CClientMgrView::RunFrameUpdates()
 	cs_ApplyPendingMoves(this);
 	cs_Sub415f10(this);
 }
+#endif
 
 // 0x00415d00 -- the second walk: advance every animation.  (Names ours.)
 //
@@ -4079,6 +4085,10 @@ public:
 void fs_CloseTree(void* pTree);                                     // 0x00420cd0
 void sub_42f780(void* pQueue);                                      // 0x0042f780
 
+// A duplicate: clientfilemgr.cpp's clu_sub_404480 is the one both images
+// place (Primal Hunt 0x004048e0, AvP2 0x004043e0); cm_OnShellTerm reaches
+// it through link/aliases.rsp.
+#if 0
 void sub_404480(CFileMgrView* pFileMgr)
 {
 	if (!pFileMgr)
@@ -4118,6 +4128,7 @@ void sub_404480(CFileMgrView* pFileMgr)
 		pFileMgr->m_pQueue = LTNULL;
 	}
 }
+#endif
 
 
 // ======================================================================= //

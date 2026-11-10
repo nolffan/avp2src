@@ -641,12 +641,17 @@ int cc_RunConsoleString(ConsoleState* pState, char* pString)
 // immediately after SetupEuler: the out-parameter is nulled and the answer is
 // LT_ERROR (`push $1; pop %eax`), so this half of the engine hands out no
 // message objects at all.
+//
+// NOLF's only: AvP2's and Primal Hunt's SharedCommonLT leaves the slot pure
+// (sharedcommon.h). Kept for the record, not built.
+#if 0
 LTRESULT SharedCommonLT::CreateMessage(ILTMessage*& pMsg)
 {
 	pMsg = LTNULL;
 
 	return LT_ERROR;
 }
+#endif
 
 
 // AVP2: 0x10016b42 -- ILTCommon::GetCRC: the CRC-32 (the reflected IEEE

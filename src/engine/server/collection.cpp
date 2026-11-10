@@ -488,6 +488,10 @@ public:
 	uint32 m_n;
 };
 
+// NOT BUILT: NOLF's (its addresses above are NOLF's images'). Nothing here
+// constructs one, and none of the four engine images has a function of
+// this shape: the stand-in was placed nowhere.
+#if 0
 CCollElem14F::CCollElem14F()
 {
 	m_n = 0;
@@ -496,6 +500,7 @@ CCollElem14F::CCollElem14F()
 	m_b = 0.0f;
 	m_a = 0.0f;
 }
+#endif
 // 0x10009250 (37 bytes) is the constructor BaseNew<CCollElem18> (0x1000d145)
 // calls, and the reason that BaseNew pushes a literal zero before the call
 // where the other six push nothing: the constructor takes one defaulted
@@ -535,6 +540,13 @@ public:
 // matching placement delete is visible under /GX); the body is
 // `push 0 ; call Init`. An inline constructor expanded into BaseNew as a
 // bare `push 0 ; call Init` with no frame at all.
+// NOT BUILT: this element is worldbsp.cpp's CWorldItem18 (0x18 bytes, the
+// flag 8 at +0x16 CWorldSimple::Load stores), and CCollElemC0Rec below is
+// its CWorldSimple. Their arrays are worldbsp.cpp's own instantiations; the
+// copies here only held those functions' slots against them (BaseNew
+// server.dll 0x10010ee9, the arrays' Append, GenRemoveAt, SetSize2, Init),
+// and their stand-in constructors and Init were placed nowhere.
+#if 0
 CCollElem18L::CCollElem18L()
 {
 	Init(0);
@@ -554,6 +566,7 @@ void CCollElem18L::Init(uint8 bInit)
 	pHead->m_pPrev = pHead;
 	pHead->m_pNext = pHead;
 }
+#endif
 
 // The 0x18 array and BaseNew below hold THIS element: BaseNew<0x18>
 // (0x1000d145) pushes the defaulted zero and calls 0x10009250, which is
@@ -635,6 +648,10 @@ public:
 	float  m_c, m_d, m_e, m_f, m_g, m_h;
 };
 
+// NOT BUILT: NOLF's (its addresses above are NOLF's images'). Nothing here
+// constructs one, and none of the four engine images has a function of
+// this shape: the stand-in was placed nowhere.
+#if 0
 CCollElem20K::CCollElem20K()
 {
 	m_a = 0;
@@ -646,6 +663,7 @@ CCollElem20K::CCollElem20K()
 	m_g = 0.0f;
 	m_h = 0.0f;
 }
+#endif
 DECLARE_COLLCTORELEM(CCollElem24, 0x24);
 DECLARE_COLLPOD (CCollElem40, 0x40);
 // The 0x60 element CMoArray<CCollElem60> holds. Its fields are read off
@@ -729,6 +747,10 @@ public:
 // source order, while server.dll's /O1 hoists the -1s and the x87 pair ahead
 // of the byte and the zeroes -- so server.dll matches under either order and
 // only this one pairs both images.
+// NOT BUILT: NOLF's (its addresses above are NOLF's images'). Nothing here
+// constructs one, and none of the four engine images has a function of
+// this shape: the stand-in was placed nowhere.
+#if 0
 CCollElem60C::CCollElem60C()
 {
 	m_flag = 0;
@@ -742,6 +764,7 @@ CCollElem60C::CCollElem60C()
 	m_i = 1.0f;
 	m_a = 0;
 }
+#endif
 DECLARE_COLLPOD (CCollElemA4, 0xa4);   // its walk does one thing more
 DECLARE_COLLCTORELEM(CCollElemC0, 0xc0);
 // Seven more sizes with no walk anywhere in the image, and — see the
@@ -1003,7 +1026,6 @@ template class CMoArray<CCollElem04F, DefaultCache>;
 #ifdef COLL_WHOLE_CLASSES
 template class CMoArray<CCollElem08, DefaultCache>;
 template class CMoArray<CCollElem14, NoCache>;
-template class CMoArray<CCollElem18, DefaultCache>;
 #endif
 // A second 0x18 element, plain data: lithtech.exe's vtable 0x004d4c74
 // (the one ~CServerMgr stores into the server world's array at +0x54,
@@ -1057,9 +1079,12 @@ template class CMoArray<CCollElem1CS, DefaultCache>;
 // are shared with AnimInfo's and CCollElem20A's), but it is left in place:
 // it is a free function template, not an array, and the list it sits in is
 // about LNew_Array call sites elsewhere in the engine.
+//
+// So neither array is instantiated in any build: Primal Hunt's whole-class
+// pair placed nothing either image lacked another copy for (its Insert2,
+// Remove2, InternalNiceSetSize and walks were unplaced), and AvP2's
+// server.dll and lithtech.exe drivers below use the 20A element instead.
 #ifdef COLL_WHOLE_CLASSES
-template class CMoArray<CCollElem20, DefaultCache>;
-template class CMoArray<CCollElem20, NoCache>;
 template class CMoArray<CCollElem20A, NoCache>;
 template class CMoArray<CCollElem20C, NoCache>;
 #endif
@@ -1126,12 +1151,13 @@ void coll_ForceInstantiationQ514()
 	(a18.*pSetSize2)(0, &g_DefAlloc);
 }
 #endif
+// No whole CMoArray<CCollElemA4> in either Primal Hunt image: its walk
+// (GenGetNext, GenGetAt, GenCopyList, GenAppendList: the 0xa4-byte copy) is
+// in neither, so its vtable is not; AvP2's server.dll takes Insert2 alone
+// (coll_ForceInstantiationAvP2Srv).
 #ifdef COLL_WHOLE_CLASSES
 template class CMoArray<CCollElem60, DefaultCache>;
-template class CMoArray<CCollElemA4, DefaultCache>;
 #endif
-// CMoArray<CCollElemC0Rec, DefaultCache> — instantiated at the foot of the
-// file, where the element class is complete.
 
 
 // ---- LNew_Array / LDelete_Array on their own -------------------------- //
@@ -1145,7 +1171,6 @@ template class CMoArray<CCollElemA4, DefaultCache>;
 template CCollElem08* BaseNew(LAlloc*, CCollElem08*, uint32);
 template CCollElem04F* BaseNew(LAlloc*, CCollElem04F*, uint32);
 template CCollElem14* BaseNew(LAlloc*, CCollElem14*, uint32);
-template CCollElem18* BaseNew(LAlloc*, CCollElem18*, uint32);
 template CCollElem1C* BaseNew(LAlloc*, CCollElem1C*, uint32);
 template CCollElem20* BaseNew(LAlloc*, CCollElem20*, uint32);
 template CCollElem24* BaseNew(LAlloc*, CCollElem24*, uint32);
@@ -1287,10 +1312,17 @@ public:
 // two array members' constructors run first, then the one call. Shipped
 // order puts it first (0x10016b3e precedes 0x10016b5f), and COMDAT order in a
 // .cpp is source definition order.
+//
+// NOT BUILT: nothing constructs one this way. It is modelnew.cpp's
+// ModelPieceDataQ444(ModelQ444*), which ModelPieceQ444's constructor calls
+// (server.dll 0x1001c7dd, lithtech.exe 0x004530c0): this copy only held
+// that slot against the real one.
+#if 0
 CCollElem24Rec::CCollElem24Rec(CCollElem24Owner* pOwner)
 {
 	SetOwner(pOwner);
 }
+#endif
 
 // 0x10016b5f (29 bytes) — the constructor BaseNew<CCollElem24> calls. Its
 // whole body is the setter below: the two `call`s in front of it are the
@@ -1450,6 +1482,12 @@ public:
 	uint32  m_e;                                      // +0xbc
 };
 
+// NOT BUILT: this record is worldbsp.cpp's CWorldSimple (its name at +0x04,
+// the part array at +0x50, the CWorldItem18 array at +0x68, the grid at
+// +0x80, the centre at +0xb0 and the radius at +0xbc), whose constructor and
+// destructor are the real ones; these stand-ins were placed nowhere, and the
+// array below held CMoArray<CWorldSimple>'s slots against worldbsp.cpp's.
+#if 0
 // Out of line, and that is the whole point of them: BaseNew and BaseDelete
 // have to keep calling. The real bodies are elsewhere in the engine.
 CCollElemC0Rec::CCollElemC0Rec()
@@ -1466,6 +1504,7 @@ CCollElemC0Rec::~CCollElemC0Rec()
 void CCollElemC0Base::Unknown0()
 {
 }
+#endif
 
 // The 0xc0 array, over the element type read out above rather than over the
 // opaque stand-in. It has to sit here, below the class, rather than in the
@@ -1513,9 +1552,7 @@ void CCollElemC0Base::Unknown0()
 // currently matches (Insert2 0x1000c92e, Remove2 0x1000ca72, GenAppendList
 // 0x1000b6ec, GenCopyList 0x1000b62b, operator= 0x1000bd94), so it is a
 // build experiment, not a change to make blind.
-#ifdef COLL_WHOLE_CLASSES
-template class CMoArray<CCollElemC0Rec, DefaultCache>;
-#endif
+
 
 
 #if !defined(COLL_WHOLE_CLASSES) && !defined(LT_SERVER_BUILD)
@@ -1535,15 +1572,13 @@ void coll_ForceInstantiationAvP2(
 	CMoArray<CCollElem04, DefaultCache>&    a04,
 	CMoArray<CCollElem1CS, DefaultCache>&   a1CS,
 	CMoArray<CCollElem24Rec, NoCache>&      a24Rec,
-	CMoArray<CCollElem60, DefaultCache>&    a60,
-	CMoArray<CCollElemC0Rec, DefaultCache>& aC0Rec)
+	CMoArray<CCollElem60, DefaultCache>&    a60)
 {
 	CMoArray<float, DefaultCache>            aFloat;
 	CMoArray<CCollElem04F, DefaultCache>     a04F;
 	CMoArray<CCollElem08, DefaultCache>      a08;
 	CMoArray<CCollElem14, NoCache>           a14;
 	CMoArray<CCollElem18PQ514, DefaultCache> a18;
-	CMoArray<CCollElem20, NoCache>           a20;
 	CMoArray<CCollElem20C, NoCache>          a20C;
 
 	LTBOOL (CMoArray<uint8, DefaultCache>::*pInsertByte)(uint32, const uint8&) =
@@ -1580,8 +1615,6 @@ void coll_ForceInstantiationAvP2(
 		&CMoArray<CCollElem24Rec, NoCache>::SetSize2;
 	LTBOOL (CMoArray<CCollElem60, DefaultCache>::*pSetSize60)(uint32, LAlloc*) =
 		&CMoArray<CCollElem60, DefaultCache>::SetSize2;
-	LTBOOL (CMoArray<CCollElemC0Rec, DefaultCache>::*pSetSizeC0Rec)(uint32, LAlloc*) =
-		&CMoArray<CCollElemC0Rec, DefaultCache>::SetSize2;
 
 	(aBytes.*pInsertByte)(0, 0);
 	(aVec.*pInitVec)(0, 0);
@@ -1600,7 +1633,6 @@ void coll_ForceInstantiationAvP2(
 	(a20C.*pSetSize20C)(0, &g_DefAlloc);
 	(a24Rec.*pSetSize24Rec)(0, &g_DefAlloc);
 	(a60.*pSetSize60)(0, &g_DefAlloc);
-	(aC0Rec.*pSetSizeC0Rec)(0, &g_DefAlloc);
 }
 #endif
 
@@ -1617,11 +1649,14 @@ void coll_ForceInstantiationAvP2(
 // commonmodel's, worldbsp's and modelnew's arrays, whose bodies are the
 // same bytes.)  The sized constructor of the 0x20-byte NoCache array is out
 // of line too (0x1001dbb4, from Model::Model), but VC6 expands it inside a
-// function as large as the second one, hence a function of its own.
+// function as large as the second one, hence a function of its own. Its
+// element is the 20A (the plain 0x20 POD's array is in neither image, see
+// above): the vtable it names is the one whose GenAppend calls 20A's
+// Insert2 (0x1001d352 -> 0x1001f8fb).
 // (names ours)
 void coll_ForceInstantiationSizedAvP2Srv(uint32 nCacheSize)
 {
-	CMoArray<CCollElem20, NoCache> aSized(nCacheSize);
+	CMoArray<CCollElem20A, NoCache> aSized(nCacheSize);
 }
 
 void coll_ForceInstantiationAvP2Srv(
@@ -1635,15 +1670,12 @@ void coll_ForceInstantiationAvP2Srv(
 	CMoArray<CCollElem04F, DefaultCache>    a04F;
 	CMoArray<CCollElem08, DefaultCache>     a08;
 	CMoArray<CCollElem14, NoCache>          a14;
-	CMoArray<CCollElem18, DefaultCache>     a18;
 	CMoArray<CCollElem1CS, DefaultCache>    a1CS;
-	CMoArray<CCollElem20, NoCache>          a20N;
 	CMoArray<CCollElem20A, NoCache>         a20A;
 	CMoArray<CCollElem20C, NoCache>         a20C;
 	CMoArray<CCollElem24Rec, NoCache>       a24Rec;
 	CMoArray<CCollElem40, NoCache>          a40;
 	CMoArray<CCollElem60, DefaultCache>     a60;
-	CMoArray<CCollElemC0Rec, DefaultCache>  aC0Rec;
 
 	uint8* (CMoArray<uint8, DefaultCache>::*pBytes)() =
 		&CMoArray<uint8, DefaultCache>::GetArray;

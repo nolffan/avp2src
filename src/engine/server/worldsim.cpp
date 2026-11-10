@@ -865,6 +865,12 @@ void ws_PushBoxOutOfContacts()
 // choice; lithtech 0x419700 is byte-identical.
 // NEAR (server, 340 of 340 bytes, 4 instructions): the m_Dist dot product
 // multiplies z, x, y at 0x10004649; ours does y, x, z. Operand order only.
+//
+// AVP2: in neither engine. Its only caller is NOLF's three-argument
+// ws_MoveBox (below, not built); the four-argument move tests the straddle
+// with w_IsPolyBlocking's clipped bounds instead, and no function of its
+// shape is left between the physics' placed neighbours.
+#if 0
 int ws_IsBoxOutsidePoly(WorldPolyOwner* pPoly, LTVector* pPoints1,
                         LTVector* pPoints2)
 {
@@ -907,6 +913,7 @@ NextEdge:
 	}
 	return 0;
 }
+#endif
 
 // One surface has been hit: describe it for whoever asked, work out what the
 // hit does to the object, and add that to the running total.
@@ -1728,6 +1735,12 @@ void ws_SphereOrientMoveQ553(CSphereMoveQ553* pMove)
 // the tail. Declaring g_vMoveBase/Start/End as one struct kills the CSE with
 // the component spelling too (vDelta at -0x18 is kept), but it costs
 // ws_MoveObject its match, so the globals really are separate.
+//
+// AVP2: in neither engine. NOLF's ws_HitPoly calls it; AvP2's and Primal
+// Hunt's ws_HitPoly do not, nothing else does, and /OPT:REF drops it: the
+// retail images have no function of its shape between ws_MovePoint and
+// ws_AddContact. NOLF's, kept for reference.
+#if 0
 void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 {
 	LTVector vDelta;
@@ -1790,6 +1803,7 @@ void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 			ws_PushBoxOutOfContacts();
 	}
 }
+#endif
 
 // Project all eight corners of the swept box onto a plane and keep the
 // nearest and furthest. Answering which side the box is on then costs two
@@ -4560,9 +4574,9 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 // a flag cleared here first (`andl $0x0,-0x4(%ebp)`, 0x10004fa5), says the
 // first pass wants another; only then is the box shifted (ws_ShiftBox,
 // 0x100024f1 / 0x0041aa60) and swept again with the third argument set.
-// AvP2 1.0.9.6's four-argument move follows (ws_MoveBoxQ544); Primal Hunt's
-// is not written yet, and its build keeps NOLF's three-argument ws_MoveBox
-// below. (names ours)
+// The four-argument move follows (ws_MoveBoxQ544), built for every engine:
+// Primal Hunt's (server.dll 0x10004fec, lithtech.exe 0x0041e750) is the same
+// function. (names ours)
 int ws_MoveBoxQ544(uint16 nBlock, CBounceState* pState, int bRetry,
                    int* pbAgain);                     // 0x10004fec / 0x0041e750
 
@@ -4582,7 +4596,6 @@ int ws_MoveBoxPassesQ544(uint16 nBlock, CBounceState* pState)
 	return ws_MoveBoxQ544(nBlock, pState, 1, &bAgain);
 }
 
-#ifndef PRIMAL_HUNT
 // AVP2: the four-argument box move (AvP2 1.0.9.6's lithtech.exe 0x0041c460,
 // server.dll 0x1000501b). It walks the tree as NOLF's ws_MoveBox does, but a
 // polygon both ends straddle is no longer pushed back along the move a step
@@ -4859,7 +4872,6 @@ int ws_MoveBoxQ544(uint16 nBlock, CBounceState* pState, int bRetry,
 Failed:
 	return 0;
 }
-#endif
 
 // The box sweep. Unlike the cylinder there is no marching: the box at each
 // end of the move is projected onto every plane the tree offers, and a plane
@@ -4902,8 +4914,10 @@ Failed:
 // it. It follows the PROLOGUE's spelling: three component stores give z,y,x
 // here, but the prologue then loses its shipped scheduling. Allocation, not
 // structure.
-// AVP2: not in 1.0.9.6, whose box move is ws_MoveBoxQ544 above.
-#ifdef PRIMAL_HUNT
+// AVP2: in neither engine, whose box move is ws_MoveBoxQ544 above (each
+// image's ws_MoveBoxPassesQ544 calls the four-argument move; Primal Hunt's
+// lithtech.exe has no three-argument one). NOLF's, kept for reference.
+#if 0
 int ws_MoveBox(uint16 nBlock, CBounceState* pState, int bRetry)
 {
 	CPolyTest test;

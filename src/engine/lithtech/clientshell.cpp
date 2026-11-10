@@ -2157,6 +2157,11 @@ public:
 	CUVVertex   m_Vertices[1];                                  // 0x54
 };
 
+// NOLF's: neither Talon image has it (AvP2 1.0.9.6 and Primal Hunt
+// recompute the coordinates in place, in the walk above, and nothing else
+// of theirs calls a per-poly helper of this shape), and nothing of ours
+// calls it.
+#if 0
 void sub_421fc0(void* pNode)
 {
 	CUVPoly*   pPoly = (CUVPoly*)pNode;
@@ -2173,6 +2178,7 @@ void sub_421fc0(void* pNode)
 		pCur->m_V = vDiff.Dot(pPoly->m_pSurface->m_Q);
 	}
 }
+#endif
 
 // ======================================================================= //
 //

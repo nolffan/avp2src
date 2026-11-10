@@ -536,10 +536,15 @@ extern ILTStream* fs_OpenFile(CFileMgr* pFileMgr, char* pName);
 //   * `add $0xa2c,%eax` with NO null test between it and the call -> the
 //     source takes the member's address off the accessor's result
 //     unguarded; a guarded version would branch.
+// NOLF's: neither Talon image has a wrapper of this shape (no
+// accessor-call, `add $imm32,%eax`, fs_OpenFile run ending in one cleanup),
+// and nothing of ours calls it.
+#if 0
 void sub_00463cf0(HOBJECT hObj, void* pArg)
 {
 	fs_OpenFile((CFileMgr*)&sub_0042fcd0(hObj)->m_Unknown0a2c, (char*)pArg);
 }
+#endif
 
 
 // ======================================================================= //
@@ -925,6 +930,11 @@ public:
 //     %eax,%eax` -- declaration order, which is how VC6 emits zero-inits.
 //   * `movl $0xffffffff,0x20(%esi)` is the seven-byte `c7` form, not `orl
 //     $-1`, so it is a plain assignment of a full dword.
+//
+// Primal Hunt's only (0x004bc9d0, identical): AvP2 1.0.9.6's image has no
+// constructor of this shape (no +0x10/+0x14 zeroes and +0x20 = -1 after a
+// base call), and nothing of ours calls it.
+#ifdef PRIMAL_HUNT
 CClass4A3BB4::CClass4A3BB4(void* pArg)
 	: CUnknown4901B0(pArg)
 {
@@ -932,6 +942,7 @@ CClass4A3BB4::CClass4A3BB4(void* pArg)
 	m_pUnknown14 = NULL;
 	m_nUnknown20 = -1;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -1010,11 +1021,18 @@ public:
 //     member destructor and then a base destructor must: `movl
 //     $0x4a2648,0x18(%esi)` (the member's own prologue), `+0x20 = 0`,
 //     `+0x1c = 0` (its body), then `call 0x444170` (the base).
+//
+// A duplicate: this is lthread.cpp's LThreadQueue::~LThreadQueue (Primal
+// Hunt 0x004509a0, AvP2 1.0.9.6 0x0044c5b0, both identical), and nothing of
+// ours calls this one.  (With it goes the only use of CUnknown4A2648's
+// destructor, whose ??_G no image has.)
+#if 0
 CUnknown4441E0::~CUnknown4441E0()
 {
 	Clear();
 	CloseHandle(m_hHandle);
 }
+#endif
 
 
 // ======================================================================= //
@@ -1188,6 +1206,11 @@ public:
 //     `cmp $0x41; jb` keeps going while `i + 1 < 65`.  Indices 0..64
 //     inclusive -- 65 bytes, ending at offset 0x44.
 //   * the compare is `jb`, unsigned, so the index is unsigned.
+//
+// Not out of line in either Talon image: both expand the loop into its
+// callers (the loop at Primal Hunt 0x0043159f, AvP2 1.0.9.6 0x0042e10f), and nothing
+// of ours calls this one.
+#if 0
 void CUnknown428370::CopyBuffer(CUnknown428370* pOther)
 {
 	uint32 i;
@@ -1195,6 +1218,7 @@ void CUnknown428370::CopyBuffer(CUnknown428370* pOther)
 	for (i = 0; i < sizeof(m_Buf); i++)
 		m_Buf[i] = pOther->m_Buf[i];
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //

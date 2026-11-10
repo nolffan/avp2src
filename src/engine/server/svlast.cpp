@@ -184,6 +184,10 @@ CVectorZeroInit g_UnknownVecQ3(0.0f, 0.0f, 0.0f);
 //  Name ours.
 // *********************************************************************** //
 
+// RETIRED: console.cpp's oi_FindClass is this function, identical in all
+// four engine images (Primal Hunt server.dll 0x100340e9, AvP2 0x1003177d);
+// this copy duplicated it. Kept for the record, not built.
+#if 0
 int cc_FindNameIndex(char* pName, char* pTable, int nCount, int* pnIndex)
 {
 	int i;
@@ -200,6 +204,7 @@ int cc_FindNameIndex(char* pName, char* pTable, int nCount, int* pnIndex)
 
 	return 0;
 }
+#endif
 
 
 // sm_Unknown29f42 (0x10029f42) moved to smgr.cpp, above sm_ReadClientCommands.

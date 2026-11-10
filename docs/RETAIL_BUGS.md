@@ -935,3 +935,18 @@ destructor) deletes every non-null one. A tracer whose Init fails before that
 point hands three uninitialised handles to `DeleteObject`. Identical.
 
 Not fixed yet.
+
+### Detaching a client from another's view writes through a null message
+
+`sm_DetachClient` (Primal Hunt lithtech.exe 0x00477200, server.dll
+0x10032452; AvP2 1.0.9.6 lithtech.exe 0x00470db0, server.dll 0x1002fc62;
+src/engine/lithtech/ccobj.cpp for the engine, src/engine/server/smgr.cpp for
+server.dll). When the client has a view object to report, the detach message
+is never allocated: the engine's copy writes the header words through an
+empty `CMessageRef`, server.dll's through a null `ServerMessage*` (the stores
+go to absolute addresses 0x38 and 0x34), and the null message is then
+handed to `sm_SendToClient`. Its sibling `sm_AttachClient` allocates with
+`msg_AllocPacket` first. Detaching such a client crashes the server. The
+engine copies and AvP2's server.dll are identical.
+
+Not fixed yet.

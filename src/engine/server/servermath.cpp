@@ -699,6 +699,10 @@ CAxisBasis::CAxisBasis(LTVector vRight, LTVector vUp, LTVector vNormal)
 //   * the index and the record address are separate registers because the
 //     index is the return value; VC6 strength-reduced the subscript into the
 //     `add $0x24` / `cmp $0x10058704` pointer walk on its own.
+//
+// The server's only: lithtech.exe's copy is wgrid.cpp's sb_GetSideQ43C,
+// which the client build of the world loader calls.
+#ifdef LT_SERVER_BUILD
 int math_FindClosestAxisBasis(LTVector vDir)
 {
 	int nBest = 0;
@@ -721,6 +725,7 @@ int math_FindClosestAxisBasis(LTVector vDir)
 
 	return nBest;
 }
+#endif
 
 // 0x1001457f — build a pair of vectors perpendicular to a direction, using
 // the named basis's `up` as the seed. Name ours.
@@ -730,12 +735,19 @@ int math_FindClosestAxisBasis(LTVector vDir)
 // code reads back the vector it has just written rather than keeping the
 // returned temporary — which is what writing the two statements against the
 // out-parameters gives.
+//
+// NOT BUILT: nothing calls it, and none of the four engine images has it
+// (/OPT:REF dropped it): server.dll's CAxisBasis constructor and
+// math_FindClosestAxisBasis (0x10019a76, 0x10019a9c; AvP2's 0x10018e87,
+// 0x10018ead) are followed by LMessageImpl's readers.
+#if 0
 void math_GetAxisBasisVectors(uint32 iBasis, LTVector* pDir,
                               LTVector* pOut1, LTVector* pOut2)
 {
 	*pOut1 = pDir->Cross(g_AxisBases[iBasis].m_vUp);
 	*pOut2 = pOut1->Cross(*pDir);
 }
+#endif
 
 
 

@@ -261,6 +261,10 @@ void cm_OnShellInitQ46C(CClientMgrQ46C* pClientMgr)
 //    * the console entry is 0x0041ac00 = con_RunString3 on the FILE-SCOPE
 //      state 0x004b2f00, not on the manager's.
 // ----------------------------------------------------------------------- //
+// NOLF's two-argument form: both Talon images have only the three-argument
+// one (clientmgr2.cpp's cm_RunPlusCommandsQ546: Primal Hunt 0x00413760,
+// AvP2 1.0.9.6 0x00412110, identical), and nothing of ours calls this.
+#if 0
 void cm_RunPlusCommandsQ46C(CClientMgrQ46C* /*pClientMgr*/, int nSource)
 {
 	char buf[512];
@@ -277,6 +281,7 @@ void cm_RunPlusCommandsQ46C(CClientMgrQ46C* /*pClientMgr*/, int nSource)
 		}
 	}
 }
+#endif
 
 
 // ======================================================================= //
@@ -364,6 +369,10 @@ class SharedTextureQ46C
 {
 public:
 	SharedTextureQ46C();
+	// AVP2: out of line in both Talon images (wgrid.cpp's SharedTextureQ517:
+	// AvP2 1.0.9.6 0x0042d490, Primal Hunt 0x00430560), which the bank's
+	// Free calls.
+	~SharedTextureQ46C();
 
 public:
 	CBankLinkQ46C     m_Bank;                // 0x00
@@ -384,6 +393,10 @@ public:
 
 // VERBATIM from binkvideo.cpp:241.  Do not diverge from that copy: it is
 // what 0x00401b90 and 0x0048aba0 expand, and it is what 0x00412852 expands.
+// AVP2: in both Talon images the constructor is out of line (wgrid.cpp's
+// SharedTextureQ517: AvP2 1.0.9.6 0x0042d450, Primal Hunt 0x004304f0) and
+// the bank's Allocate calls it, so here it is only declared.
+#if 0
 inline SharedTextureQ46C::SharedTextureQ46C()
 {
 	m_pEngineData  = LTNULL;                             // 0x0041285e
@@ -397,6 +410,7 @@ inline SharedTextureQ46C::SharedTextureQ46C()
 	m_bMarked      = 0;                                  //   whole-word store
 	m_nFrameCode   = 0;                                  // 0x0041287e
 }
+#endif
 
 // struct_bank.h's inline sb_Allocate (the release build), over this file's
 // StructBank.  Shipped holds &m_Bank in %edi (`lea 0x4(%ecx),%edi`,
@@ -436,6 +450,11 @@ public:
 // Out of class, so /Ob1 cannot expand it anywhere.  The shipped body is a
 // standalone COMDAT reached only through the vftable: a sweep of every
 // e8/e9 displacement in .text finds no `call` to 0x00412820 at all.
+//
+// AVP2: AvP2 1.0.9.6's slot 1 is 0x00413ad0 (54 bytes, the constructor
+// called).  Primal Hunt's slot 1 is a jump (0x00415050) to clienttexmgr.cpp's
+// CTextureObjBankQ544::Allocate (0x00415f60), so this one is not built there.
+#ifndef PRIMAL_HUNT
 SharedTextureQ46C* CCmgBank113CQ46C::Allocate()
 {
 	SharedTextureQ46C* pRet;
@@ -448,6 +467,7 @@ SharedTextureQ46C* CCmgBank113CQ46C::Allocate()
 
 	return pRet;
 }
+#endif
 
 
 // 0x00490bd0 / 0x00490b50 -- struct_bank.h's sb_Term2 and sb_Init, the two
@@ -462,12 +482,21 @@ void sb_InitQ46C(StructBankQ46C* pBank, uint32 nStructSize, uint32 nCacheSize); 
 // free head at this+0x1c == m_Bank+0x18).  The teardown is the texture's
 // only non-trivial member, the +0x00 bank link, whose 0x0045a360 is CALLED
 // with the record itself in %ecx.  `ret $4`: one argument.
+//
+// AVP2: both Talon images call the texture's destructor (AvP2 1.0.9.6
+// 0x00413b1a, Primal Hunt 0x0041506a), and their lithshared's sb_Free
+// refuses a null object or bank (`test %esi,%esi; je; test %eax,%eax; je`):
+// AvP2 1.0.9.6 0x00413b10, Primal Hunt 0x00415060.
 void CCmgBank113CQ46C::Free(void* pRec)
 {
-	((SharedTextureQ46C*)pRec)->m_Bank.Release();
+	((SharedTextureQ46C*)pRec)->~SharedTextureQ46C();
 
-	*(void**)pRec     = m_Bank.m_pFreeList;
-	m_Bank.m_pFreeList = pRec;
+	StructBankQ46C* pBank = &m_Bank;
+	if (!pRec || !pBank)
+		return;
+
+	*(void**)pRec     = pBank->m_pFreeList;
+	pBank->m_pFreeList = pRec;
 }
 
 // 0x00412bd0, 27 bytes -- vftable 0x004a1cf4 slot 3, object_bank.h's Term:

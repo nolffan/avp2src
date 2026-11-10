@@ -639,6 +639,27 @@ TARGETS = [
              # called from 0x004058e9 (ClientCommonLT::GetPointShade) and
              # 0x00479621 (si_GetPointShade), both placed identical
              "?w_GetPointShade@@YAXPAEPAV?$_CVector@M@@0@Z": 0x00405980,
+             # the shared-texture bank's Allocate (one shape with the
+             # object banks'): slot 1 of the bank's vtable 0x004c6d9c,
+             # which the bank's constructor 0x00414290 stores, and the one
+             # that calls SharedTexture's constructor 0x0042d450
+             "?Allocate@CCmgBank113CQ46C@@QAEPAVSharedTextureQ46C@@XZ": 0x00413ad0,
+             # the DirectMusic file manager's FreeRecord, right after its
+             # GetRecord (0x00434090) as in Primal Hunt (0x004378e0,
+             # 0x00437990, identical): Enter/LeaveCriticalSection, the two
+             # TryDiscard calls (0x00433e00), the list's dl_Remove, and the
+             # name's and the record's deletes, 41 instructions to ours' 41
+             "?FreeRecord@CDMFileMgr@@QAEXPAVCDMFileRecord@@@Z": 0x00434140,
+             # slot 1 of the SObjData bank's vftable 0x004c6e60, whose
+             # slot 2 (0x00416af0) is CMessageBank::_v08, identical, and
+             # slot 3 (0x00416e30) the bank's Init: the Allocate expanded
+             # into the slot (smgrnew.cpp)
+             "?_v04@CMessageBank@@UAEXXZ": 0x00416ab0,
+             # sm_WriteClientUpdate's call after sm_SendSkyInfo's
+             # (0x00472cc7), as Primal Hunt's identical copy calls it
+             # (0x004792c9 -> 0x00479910): the global-light message, its
+             # six WriteType<float> calls and the seventh expanded
+             "?sm_Unknown2873d@@YAXPAVCServerMgr@@PAVClient@@@Z": 0x00473230,
          }),
     dict(label="AvP2 server.dll", what="AvP2's server", kind="image",
          shipped=REFERENCE + "/avp2/server.dll", stem="AVP2server",
