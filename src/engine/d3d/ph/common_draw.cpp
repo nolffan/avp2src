@@ -6,10 +6,10 @@
 //  PURPOSE:  The renderer's shared draw state (g_ViewParams and the frame
 //            and view globals every drawing module reads), the frame set-up
 //            d3d_InitFrame and the view/frustum helpers.
-//            Not written: the view set-up d3d_InitSceneContext 0x100104cb
-//            (2766 bytes) with the ltmatrix.h COMDATs it calls out of line
-//            (0x10010f99 MatTranspose3x3, 0x10010fc2
-//            MatVMul_InPlace_Transposed3x3).
+//            The view set-up d3d_InitSceneContext 0x100104cb calls the
+//            ltmatrix.h inlines MatTranspose3x3 and
+//            MatVMul_InPlace_Transposed3x3 out of line: their copies are
+//            this object's (0x10010f99, 0x10010fc2).
 //            Near: d3d_InitFrame 0x10011162 -- every instruction agrees,
 //            but the frame's locals sit elsewhere (retail: the view box
 //            lowest at -0x88, the camera matrix at -0x6c, the four rect
@@ -21,6 +21,24 @@
 #include "ltbasedefs.h"
 #include <math.h>
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
+
+
+// The renderer's console variable (common_stuff.cpp's, 0x10011f36).
+class CD3DConVar
+{
+public:
+	CD3DConVar(const char* pName, float fDefault, int32* pnValue, float* pfValue);
+
+	int32       m_nValue;                                   // +0x00
+	float       m_fValue;                                   // +0x04
+	float       m_fDefault;                                 // +0x08
+	int32*      m_pnValue;                                  // +0x0c
+	float*      m_pfValue;                                  // +0x10
+	const char* m_pName;                                    // +0x14
+	void*       m_hParam;                                   // +0x18
+	CD3DConVar* m_pNext;                                    // +0x1c
+};
+
 
 
 // The frame's colours, set by d3d_InitFrame: their (empty) constructors
@@ -49,27 +67,80 @@ struct ViewParams
 {
 	ViewParams();                                         // 0x1001014f
 
+	void        SetCameraPos(LTVector vPos);                // 0x1000ff40 (d3d_viewparams.cpp)
+
 	ViewBox     m_ViewBox;                                  // +0x00
 	int32       m_Left;                                     // +0x1c
 	int32       m_Top;                                      // +0x20
 	int32       m_Right;                                    // +0x24
 	int32       m_Bottom;                                   // +0x28
-	uint8       m_pad_2c[0x19c - 0x2c];
-	LTMatrix    m_mFullTransform;                           // +0x19c
-	uint8       m_pad_1dc[0x31c - 0x1dc];
+	float       m_fScreenMinX;                              // +0x2c
+	float       m_fScreenMaxX;                              // +0x30 (the last pixel's)
+	float       m_fScreenMinY;                              // +0x34
+	float       m_fScreenMaxY;                              // +0x38
+	int32       m_ClipLeft;                                 // +0x3c
+	int32       m_ClipTop;                                  // +0x40
+	int32       m_ClipRight;                                // +0x44
+	int32       m_ClipBottom;                               // +0x48
+	float       m_xFov;                                     // +0x4c
+	float       m_yFov;                                     // +0x50
+	float       m_fScreenWidth;                             // +0x54
+	float       m_fScreenHeight;                            // +0x58
+	float       m_fHalfWidth;                               // +0x5c
+	float       m_fHalfHeight;                              // +0x60
+	float       m_fInvHalfWidth;                            // +0x64
+	float       m_fInvHalfHeight;                           // +0x68
+	float       m_fCenterX;                                 // +0x6c
+	float       m_fCenterY;                                 // +0x70
+	float       m_fScaleX;                                  // +0x74
+	float       m_fScaleY;                                  // +0x78
+	float       m_fInvScaleX;                               // +0x7c
+	float       m_fInvScaleY;                               // +0x80
+	float       m_fScaleXY;                                 // +0x84
+	float       m_NearZ;                                    // +0x88
+	float       m_FarZ;                                     // +0x8c
+	float       m_FarZ2;                                    // +0x90
+	float       m_fFovXScale;                               // +0x94
+	float       m_fFovYScale;                               // +0x98
+	LTMatrix    m_mInvView;                                 // +0x09c
+	LTMatrix    m_mView;                                    // +0x0dc
+	LTMatrix    m_mFarProjection;                           // +0x11c
+	LTMatrix    m_mWorldToCamera;                           // +0x15c
+	LTMatrix    m_DeviceTimesProjection;                    // +0x19c
+	LTMatrix    m_mFullTransform;                           // +0x1dc
+	LTMatrix    m_mIdentity;                                // +0x21c
+	LTMatrix    m_mShear;                                   // +0x25c
+	LTMatrix    m_mShearView;                               // +0x29c
+	LTMatrix    m_mProjection;                              // +0x2dc
 	float       m_fProjX;                                   // +0x31c
 	float       m_fProjXZ;                                  // +0x320
 	float       m_fProjY;                                   // +0x324
 	float       m_fProjYZ;                                  // +0x328
 	float       m_fProjZ;                                   // +0x32c
 	float       m_fProjZW;                                  // +0x330
-	uint8       m_pad_334[0x3d0 - 0x334];
+	LTVector    m_ViewPoints[5];                            // +0x334 (the eye and the far corners)
+	LTPlane     m_CSClipPlanes[6];                          // +0x370
 	LTPlane     m_ClipPlanes[6];                            // +0x3d0
 	LTPlane     m_ReallyClosePlanes[6];                     // +0x430
-	uint8       m_pad_490[0x4b4 - 0x490];
+	LTVector    m_vUp;                                      // +0x490
+	LTVector    m_vRight;                                   // +0x49c
+	LTVector    m_vForward;                                 // +0x4a8
 	LTVector    m_Pos;                                      // +0x4b4
 	LTVector    m_SkyViewPos;                               // +0x4c0
+	uint32      m_4cc;                                      // +0x4cc
+	float       m_4d0;                                      // +0x4d0
+	uint32      m_4d4;                                      // +0x4d4
 };
+
+#define MAX_FARZ            100000.0f
+
+#define CPLANE_NEAR_INDEX   0
+#define CPLANE_FAR_INDEX    1
+#define CPLANE_LEFT_INDEX   2
+#define CPLANE_TOP_INDEX    3
+#define CPLANE_RIGHT_INDEX  4
+#define CPLANE_BOTTOM_INDEX 5
+#define NUM_CLIPPLANES      6
 
 ViewParams g_ViewParams;                                // 0x1005b790
 
@@ -269,17 +340,253 @@ void d3d_InitViewBox(ViewBox *pBox, float fNearZ, float fFarZ, ViewParams *pPrev
 }
 
 
-// 0x1001047e -- the full transform's non-zero projection terms, for the
+// 0x1001047e -- the device-times-projection matrix's non-zero terms, for the
 // hand-written vertex transforms.
 void d3d_SetupProjectionTerms(ViewParams *pContext)
 {
-	pContext->m_fProjX = pContext->m_mFullTransform.m[0][0];
-	pContext->m_fProjXZ = pContext->m_mFullTransform.m[0][2];
-	pContext->m_fProjY = pContext->m_mFullTransform.m[1][1];
-	pContext->m_fProjYZ = pContext->m_mFullTransform.m[1][2];
-	pContext->m_fProjZ = pContext->m_mFullTransform.m[2][2];
-	pContext->m_fProjZW = pContext->m_mFullTransform.m[2][3];
+	pContext->m_fProjX = pContext->m_DeviceTimesProjection.m[0][0];
+	pContext->m_fProjXZ = pContext->m_DeviceTimesProjection.m[0][2];
+	pContext->m_fProjY = pContext->m_DeviceTimesProjection.m[1][1];
+	pContext->m_fProjYZ = pContext->m_DeviceTimesProjection.m[1][2];
+	pContext->m_fProjZ = pContext->m_DeviceTimesProjection.m[2][2];
+	pContext->m_fProjZW = pContext->m_DeviceTimesProjection.m[2][3];
 }
+
+// Round to nearest in the current FPU mode (LithTech's RoundFloatToInt).
+inline int32 RoundFloatToInt(float f)
+{
+	int32 n;
+	__asm fld f
+	__asm fistp n
+	return n;
+}
+
+void d3d_SetupPerspectiveMatrix(LTMatrix *pMatrix, float nearZ, float farZ);
+void d3d_SetupSkyStuff();
+
+extern CD3DConVar g_CV_ReallyCloseNearZ;                    // 0x1005a328 (d3d_viewparams.cpp)
+
+// 0x100104cb -- the view: the screen rectangle, the world-to-camera,
+// projection and device transforms, the frustum's far corners and its
+// clipping planes in camera and world space.
+//
+// RETAIL BUG: the projection is built with g_ViewParams' far Z, not the
+// view's own: a view set up into another ViewParams (a portal's, the
+// sky's) takes the main view's far plane of the frame before.
+int32 d3d_InitSceneContext(ViewParams* pParams, ViewBox* pViewBox,
+	float screenMinX, float screenMinY, float screenMaxX, float screenMaxY,
+	LTMatrix* pMat, LTVector vScale)
+{
+	LTMatrix mTempWorld, mRotation, mScale;
+	LTMatrix mFOVScale, mBackTransform;
+	LTMatrix mDevice, mBackTranslate;
+	LTMatrix mProjectionTransform, mFarScale, mFarPerspective;
+	float leftX, rightX, topY, bottomY, normalZ;
+	float xFarZ, yFarZ, fInvFarZ, fNearOverFar;
+	LTVector forwardVec, zPlanePos;
+	uint32 i;
+
+	pParams->m_4d4 = 0;
+	pParams->m_mIdentity.Identity();
+	pParams->m_mInvView = *pMat;
+
+	memcpy(&pParams->m_ViewBox, pViewBox, sizeof(pParams->m_ViewBox));
+	pMat->GetTranslation(pParams->m_Pos);
+	pParams->SetCameraPos(pParams->m_Pos);
+
+	pParams->m_FarZ = pViewBox->m_fFar;
+	if (pParams->m_FarZ < 3.0f)
+		pParams->m_FarZ = 3.0f;
+	if (pParams->m_FarZ > MAX_FARZ)
+		pParams->m_FarZ = MAX_FARZ;
+	pParams->m_NearZ = pViewBox->m_fNear;
+	pParams->m_FarZ2 = pParams->m_FarZ;
+
+	pParams->m_Left = RoundFloatToInt(screenMinX);
+	pParams->m_Top = RoundFloatToInt(screenMinY);
+	pParams->m_Right = RoundFloatToInt(screenMaxX);
+	pParams->m_Bottom = RoundFloatToInt(screenMaxY);
+
+	pParams->m_fScreenMinX = screenMinX;
+	pParams->m_fScreenMaxX = screenMaxX - 1.0f;
+	pParams->m_fScreenMinY = screenMinY;
+	pParams->m_fScreenMaxY = screenMaxY - 1.0f;
+
+	pParams->m_ClipLeft = pParams->m_Left;
+	pParams->m_ClipTop = pParams->m_Top;
+	pParams->m_ClipRight = pParams->m_Right - 1;
+	pParams->m_ClipBottom = pParams->m_Bottom - 1;
+
+	// The rotation and translation into camera space.
+	mRotation = *pMat;
+	mRotation.SetTranslation(0.0f, 0.0f, 0.0f);
+	mRotation.GetBasisVectors(&pParams->m_vRight, &pParams->m_vUp, &pParams->m_vForward);
+
+	MatTranspose3x3(&mRotation);
+	mBackTranslate.Init(
+		1, 0, 0, -pParams->m_Pos.x,
+		0, 1, 0, -pParams->m_Pos.y,
+		0, 0, 1, -pParams->m_Pos.z,
+		0, 0, 0, 1);
+	MatMul(&mTempWorld, &mRotation, &mBackTranslate);
+
+	mScale.Init(
+		vScale.x, 0, 0, 0,
+		0, vScale.y, 0, 0,
+		0, 0, vScale.z, 0,
+		0, 0, 0, 1);
+	MatMul(&pParams->m_mView, &mScale, &mTempWorld);
+
+	// Shear so the centre of projection is on the z axis.
+	pParams->m_mShear.Init(
+		1.0f, 0.0f, -pViewBox->m_fOffX / pViewBox->m_fFocal, 0.0f,
+		0.0f, 1.0f, -pViewBox->m_fOffY / pViewBox->m_fFocal, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+
+	// The frustum's sides to unit slopes.
+	pParams->m_fFovXScale = pViewBox->m_fFocal / pViewBox->m_fHalfW;
+	pParams->m_fFovYScale = pViewBox->m_fFocal / pViewBox->m_fHalfH;
+	pParams->m_xFov = MATH_PI - (float)atan(pParams->m_fFovXScale) * 2.0f;
+	pParams->m_yFov = MATH_PI - (float)atan(pParams->m_fFovYScale) * 2.0f;
+
+	mFOVScale.Init(
+		pParams->m_fFovXScale, 0.0f, 0.0f, 0.0f,
+		0.0f, pParams->m_fFovYScale, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+
+	pParams->m_mShearView = pParams->m_mShear * pParams->m_mView;
+	pParams->m_mWorldToCamera = mFOVScale * pParams->m_mShearView;
+	pParams->m_mProjection = mFOVScale * pParams->m_mShear;
+
+	d3d_SetupPerspectiveMatrix(&mProjectionTransform, pViewBox->m_fNear, g_ViewParams.m_FarZ);
+
+	// Projection space to the screen.
+	pParams->m_fScreenWidth = screenMaxX - screenMinX;
+	pParams->m_fScreenHeight = screenMaxY - screenMinY;
+	pParams->m_fHalfWidth = pParams->m_fScreenWidth * 0.5f;
+	pParams->m_fHalfHeight = pParams->m_fScreenHeight * 0.5f;
+	pParams->m_fInvHalfWidth = 1.0f / pParams->m_fHalfWidth;
+	pParams->m_fInvHalfHeight = 1.0f / pParams->m_fHalfHeight;
+	pParams->m_fCenterX = pParams->m_fHalfWidth + screenMinX;
+	pParams->m_fCenterY = pParams->m_fHalfHeight + screenMinY;
+	pParams->m_fScaleX = pParams->m_fHalfWidth * pParams->m_fFovXScale;
+	pParams->m_fScaleY = pParams->m_fHalfHeight * pParams->m_fFovYScale;
+	pParams->m_fInvScaleX = 1.0f / pParams->m_fScaleX;
+	pParams->m_fInvScaleY = 1.0f / pParams->m_fScaleY;
+	pParams->m_fScaleXY = pParams->m_fScaleX * pParams->m_fScaleY;
+
+	mDevice.Identity();
+	mDevice.m[0][0] = pParams->m_fHalfWidth - 0.0001f;
+	mDevice.m[0][3] = pParams->m_fCenterX;
+	mDevice.m[1][1] = -(pParams->m_fHalfHeight - 0.0001f);
+	mDevice.m[1][3] = pParams->m_fCenterY;
+
+	pParams->m_DeviceTimesProjection = mDevice * mProjectionTransform;
+	pParams->m_mFullTransform = pParams->m_DeviceTimesProjection * pParams->m_mWorldToCamera;
+	d3d_SetupProjectionTerms(pParams);
+
+	// The projection with the far plane at 1.
+	fInvFarZ = 1.0f / pViewBox->m_fFar;
+	mFarScale.Init(
+		fInvFarZ, 0.0f, 0.0f, 0.0f,
+		0.0f, fInvFarZ, 0.0f, 0.0f,
+		0.0f, 0.0f, fInvFarZ, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+
+	fNearOverFar = fInvFarZ * pViewBox->m_fNear;
+	fInvFarZ = 1.0f - fNearOverFar;
+	mFarPerspective.Init(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f / fInvFarZ, -(fNearOverFar / fInvFarZ),
+		0.0f, 0.0f, 1.0f, 0.0f);
+
+	pParams->m_mFarProjection = mFarPerspective * mFarScale * mFOVScale * pParams->m_mShear;
+
+	// The frustum's far corners in camera space, then into world space.
+	xFarZ = (pParams->m_FarZ * pViewBox->m_fHalfW) / pViewBox->m_fFocal;
+	yFarZ = (pParams->m_FarZ * pViewBox->m_fHalfH) / pViewBox->m_fFocal;
+
+	pParams->m_ViewPoints[0].Init(0.0f, 0.0f, 0.0f);
+	pParams->m_ViewPoints[1].Init(-xFarZ, yFarZ, pParams->m_FarZ);
+	pParams->m_ViewPoints[2].Init(xFarZ, yFarZ, pParams->m_FarZ);
+	pParams->m_ViewPoints[3].Init(-xFarZ, -yFarZ, pParams->m_FarZ);
+	pParams->m_ViewPoints[4].Init(xFarZ, -yFarZ, pParams->m_FarZ);
+
+	for (i=0; i < 5; i++)
+	{
+		MatVMul_InPlace_Transposed3x3(&pParams->m_mView, &pParams->m_ViewPoints[i]);
+		pParams->m_ViewPoints[i] += pParams->m_Pos;
+	}
+
+	// The camera-space clipping planes.
+	leftX = pViewBox->m_fOffX - pViewBox->m_fHalfW;
+	rightX = pViewBox->m_fOffX + pViewBox->m_fHalfW;
+	topY = pViewBox->m_fOffY + pViewBox->m_fHalfH;
+	bottomY = pViewBox->m_fOffY - pViewBox->m_fHalfH;
+	normalZ = pViewBox->m_fFocal;
+
+	pParams->m_CSClipPlanes[CPLANE_NEAR_INDEX].m_Normal.Init(0.0f, 0.0f, 1.0f);
+	pParams->m_CSClipPlanes[CPLANE_NEAR_INDEX].m_Dist = 1.0f;
+
+	pParams->m_CSClipPlanes[CPLANE_FAR_INDEX].m_Normal.Init(0.0f, 0.0f, -1.0f);
+	pParams->m_CSClipPlanes[CPLANE_FAR_INDEX].m_Dist = -pParams->m_FarZ;
+
+	pParams->m_CSClipPlanes[CPLANE_LEFT_INDEX].m_Normal.Init(normalZ, 0.0f, -leftX);
+	pParams->m_CSClipPlanes[CPLANE_RIGHT_INDEX].m_Normal.Init(-normalZ, 0.0f, rightX);
+	pParams->m_CSClipPlanes[CPLANE_TOP_INDEX].m_Normal.Init(0.0f, -normalZ, topY);
+	pParams->m_CSClipPlanes[CPLANE_BOTTOM_INDEX].m_Normal.Init(0.0f, normalZ, -bottomY);
+
+	pParams->m_CSClipPlanes[CPLANE_LEFT_INDEX].m_Normal.Norm();
+	pParams->m_CSClipPlanes[CPLANE_TOP_INDEX].m_Normal.Norm();
+	pParams->m_CSClipPlanes[CPLANE_RIGHT_INDEX].m_Normal.Norm();
+	pParams->m_CSClipPlanes[CPLANE_BOTTOM_INDEX].m_Normal.Norm();
+
+	pParams->m_CSClipPlanes[CPLANE_TOP_INDEX].m_Dist = pParams->m_CSClipPlanes[CPLANE_BOTTOM_INDEX].m_Dist = 0.0f;
+	pParams->m_CSClipPlanes[CPLANE_LEFT_INDEX].m_Dist = pParams->m_CSClipPlanes[CPLANE_RIGHT_INDEX].m_Dist = 0.0f;
+
+	// The world-space clipping planes.
+	mBackTransform = pParams->m_mView;
+	MatTranspose3x3(&mBackTransform);
+	for (i=0; i < NUM_CLIPPLANES; i++)
+	{
+		if (i != CPLANE_NEAR_INDEX && i != CPLANE_FAR_INDEX)
+		{
+			MatVMul_3x3(&pParams->m_ClipPlanes[i].m_Normal, &mBackTransform, &pParams->m_CSClipPlanes[i].m_Normal);
+			pParams->m_ClipPlanes[i].m_Dist = pParams->m_ClipPlanes[i].m_Normal.Dot(pParams->m_Pos);
+		}
+	}
+
+	// The z planes go through the near and far points ahead of the eye.
+	forwardVec.Init(mRotation.m[2][0], mRotation.m[2][1], mRotation.m[2][2]);
+
+	zPlanePos = forwardVec * pViewBox->m_fNear;
+	zPlanePos += pParams->m_Pos;
+	MatVMul_3x3(&pParams->m_ClipPlanes[CPLANE_NEAR_INDEX].m_Normal,
+		&mBackTransform, &pParams->m_CSClipPlanes[CPLANE_NEAR_INDEX].m_Normal);
+	pParams->m_ClipPlanes[CPLANE_NEAR_INDEX].m_Dist =
+		pParams->m_ClipPlanes[CPLANE_NEAR_INDEX].m_Normal.Dot(zPlanePos);
+
+	zPlanePos = forwardVec * pParams->m_FarZ;
+	zPlanePos += pParams->m_Pos;
+	MatVMul_3x3(&pParams->m_ClipPlanes[CPLANE_FAR_INDEX].m_Normal,
+		&mBackTransform, &pParams->m_CSClipPlanes[CPLANE_FAR_INDEX].m_Normal);
+	pParams->m_ClipPlanes[CPLANE_FAR_INDEX].m_Dist =
+		pParams->m_ClipPlanes[CPLANE_FAR_INDEX].m_Normal.Dot(zPlanePos);
+
+	// The really-close view clips in camera space, its near plane closer.
+	memcpy(pParams->m_ReallyClosePlanes, pParams->m_CSClipPlanes, sizeof(pParams->m_ReallyClosePlanes));
+	pParams->m_ReallyClosePlanes[CPLANE_NEAR_INDEX].m_Dist = g_CV_ReallyCloseNearZ.m_fValue;
+
+	pParams->m_4cc = 0;
+	pParams->m_4d0 = 1.0f;
+
+	d3d_SetupSkyStuff();
+	return LTTRUE;
+}
+
 
 // 0x10011021 -- a perspective projection with the given clip depths.
 void d3d_SetupPerspectiveMatrix(LTMatrix *pMatrix, float nearZ, float farZ)
@@ -360,21 +667,6 @@ struct RenderStruct
 extern RenderStruct*    g_pStruct;                          // 0x1005df08 (common_stuff.cpp)
 extern uint32           g_1005d5f0;                         // 0x1005d5f0: the frames begun
 
-class CD3DConVar
-{
-public:
-	CD3DConVar(const char* pName, float fDefault, int32* pnValue, float* pfValue);
-
-	int32       m_nValue;                                   // +0x00
-	float       m_fValue;                                   // +0x04
-	float       m_fDefault;                                 // +0x08
-	int32*      m_pnValue;                                  // +0x0c
-	float*      m_pfValue;                                  // +0x10
-	const char* m_pName;                                    // +0x14
-	void*       m_hParam;                                   // +0x18
-	CD3DConVar* m_pNext;                                    // +0x1c
-};
-
 extern CD3DConVar       g_CV_NearZ;                         // 0x1005b748 (d3d_viewparams.cpp)
 
 // A colour's bytes.
@@ -411,15 +703,6 @@ uint32          g_1005bd18;                                 // 0x1005bd18
 uint32          g_nTextureChanges;                          // 0x1005d22c
 uint32          g_1005bd10;                                 // 0x1005bd10
 uint32          g_1005b774;                                 // 0x1005b774
-
-// Round to nearest in the current FPU mode (LithTech's RoundFloatToInt).
-inline int32 RoundFloatToInt(float f)
-{
-	int32 n;
-	__asm fld f
-	__asm fistp n
-	return n;
-}
 
 void    d3d_ReadConsoleVariables();                         // 0x10013bcd (common_stuff.cpp)
 void    d3d_RotationToMatrix(LTRotation* pRot, LTMatrix* pMat); // 0x1003655d

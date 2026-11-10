@@ -195,7 +195,7 @@ extern uint32               g_nTLVertsUsed;                 // 0x1005e27c
 extern TLVertex*            g_TLVertPool;                   // 0x1005e294
 extern void                 (__fastcall *g_pfnSetupSpecular)(TLVertex* pVert, uint32* pSpecular);  // 0x1005e1c4
 
-void    d3d_UpdateAnimatedLightmap(SceneWorld* pWorld, WorldPoly* pPoly, LTBOOL bForce);   // 0x10034000
+LTBOOL  d3d_UpdateAnimatedLightmap(SceneWorld* pWorld, WorldPoly* pPoly, LTBOOL bForce);   // 0x10034000 (lightanim.cpp)
 void    d3d_GetLightmapVectors(uint32 iScale, void* pLMInfo, LTVector* pP, LTVector* pQ);  // 0x10035860
 LTBOOL  d3d_GrowTLVertPool(uint32 nWanted);                 // 0x10014900
 void    d3d_DisableTexture(uint32 iStage);                  // 0x1000a22b

@@ -532,6 +532,10 @@
 
 #include "ltbasedefs.h"
 
+// Primal Hunt: ph/common_draw.cpp (d3d_InitSceneContext 0x100104cb, with
+// d3d_SetupPerspectiveMatrix and d3d_SetupProjectionTerms its helpers).
+#ifndef PRIMAL_HUNT
+
 
 // ======================================================================= //
 //  THE CRT ENTRY POINTS THIS FUNCTION REACHES.
@@ -1572,3 +1576,5 @@ int32 sub_1001ef30(D3DXForm* pXForm, D3DLens* pLens,
 //      the names are not, so none is given.
 //
 // *********************************************************************** //
+
+#endif // PRIMAL_HUNT

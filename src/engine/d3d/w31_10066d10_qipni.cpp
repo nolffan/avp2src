@@ -1867,6 +1867,7 @@ extern void  sub_10026500(uint32 nMode);                 // 0x10026500
 //  the `this`.  0x100678fa is 72: 16+16, 16+16, 3+3, %esp and `this`.
 //  Both are exact.
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworldmodel.cpp
 void sub_10066f00(XForm66f08* pXForm, Object66f08* pObject)
 {
 	uint32  nOldFog;                                     // -0xb8
@@ -1921,6 +1922,7 @@ void sub_10066f00(XForm66f08* pXForm, Object66f08* pObject)
 	g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice,
 	                                     D3DRENDERSTATE_FOGENABLE, nOldFog);
 }
+#endif
 
 
 // ======================================================================= //
@@ -2349,6 +2351,7 @@ extern void (*g_1008ce9c)(Poly10066d1c* pPoly);        // 0x1008ce9c  flag 0x80
 extern void (*g_1008cea0)(Poly10066d1c* pPoly);        // 0x1008cea0  flag 0x8000
 
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworldmodel.cpp
 void sub_10066d10(Object66f08* pObject, void** pList, uint32 nCount,
                   LTVec* pPos, uint32 nClipFlags)
 {
@@ -2427,6 +2430,7 @@ void sub_10066d10(Object66f08* pObject, void** pList, uint32 nCount,
 		}
 	}
 }
+#endif
 
 
 
@@ -2463,6 +2467,7 @@ struct RenderStateSave10068910
 // ======================================================================= //
 //  0x10068910  320 bytes
 // ======================================================================= //
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/drawworldmodel.cpp
 void sub_10068910(XForm66f08* pXForm, Object66f08* pObject)
 {
 	RenderStateSave10068910 srcBlend(0x13, 2);          // D3DRENDERSTATE_SRCBLEND
@@ -2471,6 +2476,7 @@ void sub_10068910(XForm66f08* pXForm, Object66f08* pObject)
 
 	sub_10066f00(pXForm, pObject);
 }
+#endif
 
 
 // *********************************************************************** //

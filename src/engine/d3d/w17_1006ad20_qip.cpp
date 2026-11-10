@@ -364,6 +364,7 @@ void sub_1006b300(LMCtx* pCtx, LMPoly* pPoly, LTVector* pPos,
                   float fRadius, int32 nR, int32 nG, int32 nB,
                   LMLightInfo* pInfo);
 
+#ifndef PRIMAL_HUNT	// Primal Hunt: ph/lightanim.cpp
 extern "C" uint32 sub_1006ad20(LMCtx* pCtx, LMPoly* pPoly, uint16* pSrc,
                                int32 nSrcPitch, uint32 nWidth,
                                uint32 nHeight, uint16* pDst,
@@ -975,6 +976,7 @@ LTBOOL sub_1006be50(void* pCtxArg, void* pPolyArg, uint32 bForce)
 
 	return desc.sub_1006d210((void*)1);
 }
+#endif
 
 
 // ======================================================================= //

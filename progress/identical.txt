@@ -907,6 +907,8 @@ AvP2 d3d.ren	sub_1000ba1c
 AvP2 d3d.ren	sub_1000bdeb
 AvP2 d3d.ren	sub_1000be28
 AvP2 d3d.ren	sub_1000be59
+AvP2 d3d.ren	sub_1000c0bf
+AvP2 d3d.ren	sub_1000c73d
 AvP2 d3d.ren	sub_1000dfb6
 AvP2 d3d.ren	sub_1000e011
 AvP2 d3d.ren	sub_1000e09f
@@ -961,6 +963,8 @@ AvP2 d3d.ren	sub_1000f458
 AvP2 d3d.ren	sub_1000f551
 AvP2 d3d.ren	sub_1000f5e3
 AvP2 d3d.ren	sub_1000f6de
+AvP2 d3d.ren	sub_100101f9
+AvP2 d3d.ren	sub_10010222
 AvP2 d3d.ren	sub_10010281
 AvP2 d3d.ren	sub_100102b9
 AvP2 d3d.ren	sub_10010777
@@ -41782,6 +41786,7 @@ d3d.ren	sub_1000bca3
 d3d.ren	sub_1000bd9b
 d3d.ren	sub_1000bdd8
 d3d.ren	sub_1000be09
+d3d.ren	sub_1000c03f
 d3d.ren	sub_1000c6f5
 d3d.ren	sub_1000dc25
 d3d.ren	sub_1000ddd7
@@ -41852,6 +41857,8 @@ d3d.ren	sub_100101f8
 d3d.ren	sub_100102f1
 d3d.ren	sub_10010383
 d3d.ren	sub_1001047e
+d3d.ren	sub_10010f99
+d3d.ren	sub_10010fc2
 d3d.ren	sub_10011021
 d3d.ren	sub_10011059
 d3d.ren	sub_10011517
@@ -42289,7 +42296,6 @@ d3d.ren	sub_10023688
 d3d.ren	sub_100236b5
 d3d.ren	sub_100236d2
 d3d.ren	sub_10023753
-d3d.ren	sub_1002377f
 d3d.ren	sub_10023780
 d3d.ren	sub_10023797
 d3d.ren	sub_100237c4

@@ -9,7 +9,7 @@
 //  Not identical yet: the space search 0x10034df0 (its loops' registers),
 //  the per-polygon pager 0x1003508d and the world pager 0x10035389 (two
 //  loop counters' frame slots swapped).  0x10035389 calls TU37's
-//  lightmap upload 0x10034000, not written yet.
+//  lightmap upload 0x10034000 (lightanim.cpp).
 // *********************************************************************** //
 
 #include <windows.h>
@@ -538,7 +538,10 @@ void d3d_TermRenderWorld(void *pWorld)
 }
 
 
-LTBOOL d3d_UploadPolyLightmap(WorldData *pWorldData, WorldPoly *pPoly, LTBOOL bForce);	// 0x10034000
+// The world as the lightmap code (lightanim.cpp) takes it: this file's
+// WorldData.
+struct SceneWorld;
+LTBOOL d3d_UpdateAnimatedLightmap(SceneWorld *pWorld, WorldPoly *pPoly, LTBOOL bForce);	// 0x10034000 (lightanim.cpp)
 
 // 0x10035389 -- page in every lightmap of the world.
 LTBOOL d3d_CreateLightmapPages(void *pWorld)
@@ -604,7 +607,7 @@ LTBOOL d3d_CreateLightmapPages(void *pWorld)
 			{
 				pBsp->m_LMPolies[j]->m_pLMPage = LTNULL;
 			}
-			else if(!d3d_UploadPolyLightmap(pWorldData, pBsp->m_LMPolies[j], LTTRUE))
+			else if(!d3d_UpdateAnimatedLightmap((SceneWorld*)pWorldData, pBsp->m_LMPolies[j], LTTRUE))
 			{
 				goto Failed;
 			}
