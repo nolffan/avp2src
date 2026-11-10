@@ -4585,6 +4585,7 @@ AvP2 lithtech.exe	sub_486e50
 AvP2 lithtech.exe	sub_486f60
 AvP2 lithtech.exe	sub_486fc0
 AvP2 lithtech.exe	sub_486fd0
+AvP2 lithtech.exe	sub_4872f0
 AvP2 lithtech.exe	sub_4873c0
 AvP2 lithtech.exe	sub_487400
 AvP2 lithtech.exe	sub_4874c0
@@ -43781,6 +43782,7 @@ lithtech.exe	sub_418dd0
 lithtech.exe	sub_418e20
 lithtech.exe	sub_418e40
 lithtech.exe	sub_418e50
+lithtech.exe	sub_4192f0
 lithtech.exe	sub_419320
 lithtech.exe	sub_419340
 lithtech.exe	sub_419380
@@ -43849,6 +43851,7 @@ lithtech.exe	sub_421ae0
 lithtech.exe	sub_421b00
 lithtech.exe	sub_421b20
 lithtech.exe	sub_421b60
+lithtech.exe	sub_421bb0
 lithtech.exe	sub_421be0
 lithtech.exe	sub_421c00
 lithtech.exe	sub_421f00
@@ -43970,13 +43973,13 @@ lithtech.exe	sub_425c20
 lithtech.exe	sub_425cc0
 lithtech.exe	sub_425cf0
 lithtech.exe	sub_425d40
-lithtech.exe	sub_425dd0
 lithtech.exe	sub_425de0
 lithtech.exe	sub_425e00
 lithtech.exe	sub_425e20
 lithtech.exe	sub_425e50
 lithtech.exe	sub_425e60
 lithtech.exe	sub_425f50
+lithtech.exe	sub_425fc0
 lithtech.exe	sub_426000
 lithtech.exe	sub_426030
 lithtech.exe	sub_426060
@@ -44416,6 +44419,7 @@ lithtech.exe	sub_4398b0
 lithtech.exe	sub_439970
 lithtech.exe	sub_439980
 lithtech.exe	sub_4399b0
+lithtech.exe	sub_4399e0
 lithtech.exe	sub_439a10
 lithtech.exe	sub_439a20
 lithtech.exe	sub_439a40
@@ -45213,11 +45217,14 @@ lithtech.exe	sub_45dc30
 lithtech.exe	sub_45ddb0
 lithtech.exe	sub_45de10
 lithtech.exe	sub_45de60
+lithtech.exe	sub_45dee0
 lithtech.exe	sub_45df10
 lithtech.exe	sub_45df30
+lithtech.exe	sub_45e030
 lithtech.exe	sub_45e060
 lithtech.exe	sub_45e070
 lithtech.exe	sub_45e0a0
+lithtech.exe	sub_45e2d0
 lithtech.exe	sub_45e300
 lithtech.exe	sub_45e400
 lithtech.exe	sub_45e500
@@ -45313,6 +45320,7 @@ lithtech.exe	sub_4664c0
 lithtech.exe	sub_4664f0
 lithtech.exe	sub_467040
 lithtech.exe	sub_4675a0
+lithtech.exe	sub_467740
 lithtech.exe	sub_467770
 lithtech.exe	sub_4677b0
 lithtech.exe	sub_467860
@@ -46002,6 +46010,7 @@ lithtech.exe	sub_48a070
 lithtech.exe	sub_48a090
 lithtech.exe	sub_48a100
 lithtech.exe	sub_48a130
+lithtech.exe	sub_48a1b0
 lithtech.exe	sub_48a200
 lithtech.exe	sub_48a210
 lithtech.exe	sub_48a220
@@ -46088,6 +46097,8 @@ lithtech.exe	sub_48f360
 lithtech.exe	sub_48f470
 lithtech.exe	sub_48f520
 lithtech.exe	sub_48f530
+lithtech.exe	sub_48f940
+lithtech.exe	sub_48f960
 lithtech.exe	sub_48fac0
 lithtech.exe	sub_48faf0
 lithtech.exe	sub_48fba0
@@ -46187,6 +46198,7 @@ lithtech.exe	sub_497990
 lithtech.exe	sub_497d60
 lithtech.exe	sub_497eb0
 lithtech.exe	sub_497f70
+lithtech.exe	sub_497ff0
 lithtech.exe	sub_498020
 lithtech.exe	sub_498050
 lithtech.exe	sub_498070
@@ -46274,6 +46286,7 @@ lithtech.exe	sub_49b760
 lithtech.exe	sub_49be80
 lithtech.exe	sub_49beb0
 lithtech.exe	sub_49bee0
+lithtech.exe	sub_49bf10
 lithtech.exe	sub_49c270
 lithtech.exe	sub_49c3a0
 lithtech.exe	sub_49ca60
@@ -46356,10 +46369,12 @@ lithtech.exe	sub_4a01a0
 lithtech.exe	sub_4a01c0
 lithtech.exe	sub_4a01f0
 lithtech.exe	sub_4a0410
+lithtech.exe	sub_4a0570
 lithtech.exe	sub_4a05a0
 lithtech.exe	sub_4a07a0
 lithtech.exe	sub_4a0800
 lithtech.exe	sub_4a0840
+lithtech.exe	sub_4a08c0
 lithtech.exe	sub_4a08f0
 lithtech.exe	sub_4a0910
 lithtech.exe	sub_4a0980
@@ -46496,6 +46511,8 @@ lithtech.exe	sub_4a6a20
 lithtech.exe	sub_4a6a60
 lithtech.exe	sub_4a6f20
 lithtech.exe	sub_4a7180
+lithtech.exe	sub_4a73c0
+lithtech.exe	sub_4a73f0
 lithtech.exe	sub_4a7420
 lithtech.exe	sub_4a7480
 lithtech.exe	sub_4a7500
@@ -46530,6 +46547,7 @@ lithtech.exe	sub_4a82c0
 lithtech.exe	sub_4a8400
 lithtech.exe	sub_4a8430
 lithtech.exe	sub_4a8810
+lithtech.exe	sub_4a88d0
 lithtech.exe	sub_4a8900
 lithtech.exe	sub_4a8c60
 lithtech.exe	sub_4a8cb0
@@ -47631,6 +47649,7 @@ server.dll	sub_1000e1c4
 server.dll	sub_1000e30e
 server.dll	sub_1000e325
 server.dll	sub_1000e34b
+server.dll	sub_1000e358
 server.dll	sub_1000e35b
 server.dll	sub_1000e35f
 server.dll	sub_1000e369
@@ -48143,6 +48162,7 @@ server.dll	sub_1001ba07
 server.dll	sub_1001ba40
 server.dll	sub_1001baad
 server.dll	sub_1001bdf9
+server.dll	sub_1001be14
 server.dll	sub_1001be18
 server.dll	sub_1001be66
 server.dll	sub_1001be75
@@ -48455,6 +48475,7 @@ server.dll	sub_100242ff
 server.dll	sub_10024320
 server.dll	sub_1002432c
 server.dll	sub_10024355
+server.dll	sub_10024546
 server.dll	sub_10024567
 server.dll	sub_10024648
 server.dll	sub_10024729

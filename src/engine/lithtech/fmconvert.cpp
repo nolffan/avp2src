@@ -38,6 +38,13 @@
 //
 // *********************************************************************** //
 
+#if defined(PRIMAL_HUNT)
+// PH: Primal Hunt's engine saw the STL's <string> here, through a header
+// not yet identified (AvP2 1.0.9.6's did not): its translation unit ends
+// in <string>'s guarded initializer of std::ctype<unsigned short>::id
+// (guard 0x004f8014, atexit of the empty 0x00401790; 0x473ee0).
+#include <string>
+#endif
 #include "ltbasedefs.h"         // uint8 / uint16 / uint32 / int32 / LTRESULT
 #include "ltpvalue.h"           // PValue, CP_ALPHA..CP_BLUE, NUM_COLORPLANES
 

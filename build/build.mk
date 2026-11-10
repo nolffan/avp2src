@@ -773,7 +773,7 @@ ICL_ENV := WINEPREFIX=$(PFX_PLAIN) WINEPATH='$(call wz,$(TC)/icl-4.0)\BIN;$(call
 # server.dll: nolfsrc's /O1 (Primal Hunt adds /GX, below); localdriver.cpp /Os
 SERVER := $(E)/server
 SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c
-SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp ltservermath.cpp commonphysics.cpp commonmodel.cpp \
+SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp ltservermath.cpp commonphysics.cpp commonmodel.cpp modelloadstate.cpp \
     sharedcommon.cpp servermodel.cpp serverlightanim.cpp servercommon.cpp servermessage.cpp packet.cpp \
     lthread.cpp smgr.cpp counter.cpp dalloc.cpp modelanim.cpp streamsim.cpp fsstream.cpp basestream.cpp \
     objbank.cpp objtypes.cpp collection.cpp worldbsp.cpp worldmodels.cpp saveio.cpp worldsim.cpp \
@@ -796,18 +796,18 @@ LITHTECH := $(E)/lithtech
 LITHTECH_CL := /MT /W3 /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I ..\server /I . /c
 LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\server\netobj.cpp \
     ..\server\smgrnew.cpp ..\server\modelnew.cpp ..\server\objmover.cpp ..\server\smgrmisc.cpp \
-    wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp \
+    wmrotate.cpp collelem.cpp cchandler.cpp cmodelload.cpp dmextra.cpp csvis.cpp clientmsghelper.cpp loaderthread.cpp clientcsbase.cpp clientupdate.cpp sprite.cpp \
     diblit.cpp savobj.cpp conline.cpp nettrace.cpp modchunk.cpp partfm.cpp ccobj.cpp demodtx.cpp \
     cissurf.cpp cltapi.cpp sndinst2.cpp sndmgr2.cpp predtick.cpp cmgrinit.cpp wgrid.cpp dmgrow.cpp \
-    cmgsurf.cpp warpblit.cpp startload.cpp fntdraw.cpp predobj.cpp fmcvt32.cpp fmconvert.cpp \
+    cmgsurf.cpp warpblit.cpp startload.cpp fntdraw.cpp videomgr.cpp visquery.cpp predobj.cpp fmcvt32.cpp fmconvert.cpp \
     ccclient.cpp clientshell.cpp ccline.cpp binkvideo.cpp smackvideo.cpp lvideomgr.cpp soundinst2.cpp \
-    tcpqarray.cpp clientmgr3.cpp clientwin.cpp worldtree2.cpp transform.cpp clientinterface.cpp \
+    tcpqarray.cpp clientmgr3.cpp clientwin.cpp clientfilemgr.cpp clientisect.cpp worldtree2.cpp transform.cpp transformmaker.cpp clientinterface.cpp linesystem.cpp \
     clientphysics.cpp clientsound.cpp dmloader.cpp clientmgr2.cpp stdlithalloc.cpp clientsoundinst.cpp \
     clientworld.cpp cltcursor.cpp clientconsole.cpp clientdsi.cpp lttexmod.cpp clienttexmgr.cpp \
     clientstreams.cpp clientinput.cpp clientsoundmgr.cpp clientworldinfo.cpp clientblit.cpp \
     clientrender.cpp ltcounters.cpp ltnew1.cpp cltnew.cpp cltrest.cpp lt2new1.cpp lt2new2.cpp lt2new3.cpp lt2new4.cpp \
     ltnew2.cpp ..\server\csbase.cpp ..\server\servermgr.cpp ..\server\servermsg.cpp \
-    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\ltservermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp \
+    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\ltservermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp ..\server\modelloadstate.cpp \
     ..\server\sharedcommon.cpp ..\server\servermodel.cpp ..\server\serverlightanim.cpp \
     ..\server\servercommon.cpp ..\server\servermessage.cpp ..\server\packet.cpp ..\server\lthread.cpp \
     ..\server\smgr.cpp ..\server\ltobject.cpp ..\server\lmessage.cpp ..\server\lmessage2.cpp ..\server\soundinst.cpp ..\server\spritecontrol.cpp \
@@ -1231,22 +1231,22 @@ engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
 # So lith comes before RezMgr on both command lines, and in lithtech.exe
 # after the import libraries.
 LT_AVP_ORDER := \
-    modelanim binkvideo counter clientwin clientphysics cltapi lvideomgr cltnew cltrest clientinterface ltcounters \
-    clientworldinfo cissurf clientblit clientmgr2 cmgrinit clientmgr3 startload csvis worldsim ltnew2 \
+    modelanim binkvideo counter clientwin clientfilemgr clientisect clientphysics cltapi lvideomgr cltnew cltrest clientinterface ltcounters \
+    clientworldinfo cissurf clientblit clientmgr2 cmgrinit clientmgr3 startload csvis clientmsghelper loaderthread clientcsbase clientupdate worldsim ltnew2 \
     sweptsphere console conline clientconsole ccline lt2new4 ccclient servermsg csbase clienttexmgr fsstream \
     worldmodels worldbsp dalloc ltobject dsi cmgsurf collelem dhash objbank clientshell clientworld demodtx \
-    clientdsi packet ccobj worldisect wgrid savobj saveio genericprop basestream servermath ltservermath sharedcommon \
+    clientdsi packet ccobj worldisect wgrid linesystem savobj saveio genericprop basestream servermath ltservermath sharedcommon \
     filemgr warpblit clientinput diblit lmessage lmessage2 localdriver cltcursor clientmusic dmextra ltnew1 dmgrow \
-    lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel collection modchunk commonphysics wmrotate \
+    lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel modelloadstate collection modchunk commonphysics wmrotate \
     msgterm netmgr nettrace netobj objtypes lt2new3 partfm fmconvert fmcvt32 lttexmod predobj clientrender \
     serverengine serverlightanim smgrmisc servercommon servermodel servermessage sisegment smgr smgrnew cmodelload \
-    cchandler serverthread objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound cacherec soundinst spritecontrol \
-    streamsim clientstreams stringbank tcpdriver tcpqarray transform fntdraw smackvideo worldtree2 worldtree \
+    cchandler serverthread objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound cacherec soundinst sprite spritecontrol \
+    streamsim clientstreams stringbank tcpdriver tcpqarray transform transformmaker fntdraw videomgr visquery smackvideo worldtree2 worldtree \
     stdlithalloc
 SV_AVP_ORDER := \
     modelanim counter structbank worldsim console csbase sweptsphere fsstream worldmodels servermsg worldbsp \
     dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath ltservermath svnew sharedcommon \
-    lmessage lmessage2 localdriver lthread modelnew collection commonmodel sdkforce commonphysics netmgr packet \
+    lmessage lmessage2 localdriver lthread modelnew collection commonmodel modelloadstate sdkforce commonphysics netmgr packet \
     serverengine netobj objtypes objbank serverlightanim smgrmisc filemgr servermgr server servercommon \
     servermodel servermessage sisegment smgr smgrnew serverthread objmover cacherec soundinst spritecontrol streamsim stringbank tcpdriver worldtree
 LT_AVP_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),AvP2Release)))

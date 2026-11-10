@@ -1839,87 +1839,8 @@ LTRESULT cm_RunRemoveHookQ474(CClientMgrQ474* pMgr, CClientHookObjQ474* pObject)
 }
 
 
-// ======================================================================= //
-//  0x00483a60, 507 bytes -- spr_Load: read a sprite out of an open stream
-//  (name ours).
-//
-//  HOME: the client's sprite module (0x00483a60 .. 0x00483f30), which has
-//  no TU under src/engine/ -- csvis.cpp and clientstreams.cpp both record
-//  it as unwritten.  Written HERE because cm_LoadSprite (0x00476f42) is its
-//  caller and this file already declares it; it is client-only (the
-//  "Untitled" literal 0x004aea78 has no copy in server.dll).
-//
-//  One 0x14-byte sprite, its link pointing at itself, ONE 0x3c-byte
-//  animation (the alloc pushes the constant, the memset re-reads m_nAnims
-//  after the call), then per animation five dwords and per frame a
-//  uint16-length texture name (refused over 1000, 0x00483bb3) resolved
-//  through 0x0041ff90.  The stream's error status decides the result;
-//  failure frees through 0x00483c60 (clientmgr2.cpp's sub_483c60).
-// ======================================================================= //
-void* dalloc(uint32 size);                                     // 0x00428fd0
-void  spr_DestroyQ474(CSpriteQ474* pSprite);                   // 0x00483c60
-
-CSpriteQ474* spr_LoadQ474(CClientMgrQ474* pMgr, ILTStreamQ474* pStream)
-{
-	CFileIdentQ474   ref;
-	CSpriteQ474*     pSprite;
-	CSpriteAnimQ474* pAnim;
-	uint32           i, j;
-	uint32           nFrames, msFrameRate, bKeyed, bTranslucent, colourKey;
-	uint16           nameLen;
-	char             szName[1024];
-
-	pSprite = (CSpriteQ474*)dalloc(sizeof(CSpriteQ474));
-	memset(pSprite, 0, sizeof(CSpriteQ474));
-	pSprite->m_Link.m_pData = pSprite;
-	pSprite->m_nAnims = 1;
-	pSprite->m_Anims = (CSpriteAnimQ474*)dalloc(sizeof(CSpriteAnimQ474) * pSprite->m_nAnims);
-	memset(pSprite->m_Anims, 0, sizeof(CSpriteAnimQ474) * pSprite->m_nAnims);
-
-	for (i = 0; i < pSprite->m_nAnims; i++)
-	{
-		pAnim = &pSprite->m_Anims[i];
-
-		pStream->Read(&nFrames, 4);
-		pStream->Read(&msFrameRate, 4);
-		pStream->Read(&bKeyed, 4);
-		pStream->Read(&bTranslucent, 4);
-		pStream->Read(&colourKey, 4);
-
-		pAnim->m_Frames = (void**)dalloc(sizeof(void*) * nFrames);
-		strncpy(pAnim->m_sName, "Untitled", 31);   // 0x00492b60 = CRT strncpy; no terminator store follows (the memset covers it)
-		pAnim->m_nFrames      = nFrames;
-		pAnim->m_MsFrameRate  = msFrameRate;
-		pAnim->m_MsAnimLength = (1000 / msFrameRate) * nFrames;
-		pAnim->m_bKeyed       = (uint8)bKeyed;
-		pAnim->m_bTranslucent = (uint8)bTranslucent;
-		pAnim->m_ColourKey    = colourKey;
-
-		for (j = 0; j < nFrames; j++)
-		{
-			pStream->Read(&nameLen, 2);
-			if (nameLen > 1000)
-				goto Error;
-
-			pStream->Read(szName, nameLen);
-			szName[nameLen] = 0;
-
-			ref.m_nFileType = 1;
-			ref.m_pFilename = szName;
-			pAnim->m_Frames[j] = cm_FindSharedTextureQ474(pMgr, &ref);
-		}
-	}
-
-	if (pStream->ErrorStatus() != LT_OK)
-		goto Error;
-
-	return pSprite;
-
-Error:
-	spr_DestroyQ474(pSprite);
-	return LTNULL;
-}
-
+// 0x00483a60 -- spr_Load, cm_LoadSprite's reader: sprite.cpp, the sprite
+// module's own translation unit.
 
 // ======================================================================= //
 //  A DIFFERENT MODULE: 0x00477fe0 .. 0x004780ae, 207 bytes

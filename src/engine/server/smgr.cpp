@@ -7029,7 +7029,7 @@ int sub_1002a0f2(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient)
 // server.dll 0x100358ba: with a client and a server shell (+0xc30, the
 // same test sm_GiveMessageToShell makes) the packet goes to a CServerMgr
 // thiscall of two arguments, client first (lithtech.exe 0x0048f570,
-// server.dll 0x10042e1e; 969 bytes, not yet reconstructed). Its result is
+// server.dll 0x10042e1e; 969 bytes, Sub48f570 below). Its result is
 // dropped: `xor %eax,%eax` follows the call.
 int sub_100358baQ502(CServerMgr* pMgr, ServerMessage* pMsg, Client* pClient)
 {
@@ -14268,7 +14268,11 @@ int CMsgLenView::GetSpaceLeft()
 }
 #endif
 
-#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
+#if !defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
+// (Both engines' lithtech.exe have the handler too: Primal Hunt's
+// 0x0048f570 is near -- its /GX build keeps the CRefPtr assignment out of
+// line. Primal Hunt's server.dll copy, 0x10042e1e, is left unbuilt: there
+// it places nowhere and costs two 13-byte identicals their verification.)
 // AVP2: the parts of WON's peer authentication (LT2/lithshared/wonapi,
 // WONAuth/PeerAuthServer.h and what it reaches) the server's packet 13
 // handler uses, declared here as WON's headers have them: those headers
