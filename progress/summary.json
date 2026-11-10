@@ -156,18 +156,18 @@
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 130,
+      "near": 131,
       "small": 61,
       "started": true,
-      "todo": 9,
+      "todo": 8,
       "unlinked": 52,
       "unlinked_bytes": 10392,
       "unplaced": 27,
       "unplaced_bytes": 692,
       "unreferenced": 0,
       "unreferenced_bytes": 0,
-      "unwritten": 13,
-      "unwritten_bytes": 20198
+      "unwritten": 12,
+      "unwritten_bytes": 17466
     },
     "AvP2 lithtech.exe": {
       "attempted": 9,
@@ -982,7 +982,7 @@
       "unwritten_bytes": 0
     },
     "d3d.ren": {
-      "attempted": 10,
+      "attempted": 9,
       "bytes_identical": 125234,
       "bytes_total": 240249,
       "crt": 334,
@@ -996,7 +996,7 @@
       "kind": "image",
       "middleware": 0,
       "middleware_bytes": 0,
-      "near": 140,
+      "near": 141,
       "small": 56,
       "started": true,
       "todo": 6,
@@ -1006,8 +1006,8 @@
       "unplaced_bytes": 257965,
       "unreferenced": 0,
       "unreferenced_bytes": 0,
-      "unwritten": 16,
-      "unwritten_bytes": 18464
+      "unwritten": 15,
+      "unwritten_bytes": 15749
     },
     "lith": {
       "attempted": 0,
@@ -1151,17 +1151,17 @@
     }
   },
   "total": {
-    "attempted": 39,
+    "attempted": 38,
     "bytes_identical": 9824136,
     "bytes_total": 10919355,
     "funcs": 55925,
     "identical": 49292,
-    "near": 1367,
+    "near": 1369,
     "small": 4985,
-    "todo": 242,
+    "todo": 241,
     "unplaced": 1138,
     "unplaced_bytes": 321483,
-    "unwritten": 281,
-    "unwritten_bytes": 116584
+    "unwritten": 279,
+    "unwritten_bytes": 111137
   }
 }

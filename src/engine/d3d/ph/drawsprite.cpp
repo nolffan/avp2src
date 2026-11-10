@@ -69,10 +69,15 @@ struct SpriteEntry
 // The view being drawn (common_draw.cpp's g_ViewParams).
 struct ViewParams
 {
-	uint8		m_pad_000[0x15c];
+	uint8		m_pad_000[0x94];
+	float		m_fScaleX;                              // +0x094 the view's sprite scale
+	float		m_fScaleY;                              // +0x098
+	uint8		m_pad_09c[0x15c - 0x9c];
 	LTMatrix	m_mWorldToCamera;                       // +0x15c
 	LTMatrix	m_mProjection;                          // +0x19c
-	uint8		m_pad_1dc[0x4b4 - 0x1dc];
+	uint8		m_pad_1dc[0x2dc - 0x1dc];
+	LTMatrix	m_mReallyCloseToCamera;                 // +0x2dc
+	uint8		m_pad_31c[0x4b4 - 0x31c];
 	LTVector	m_Pos;                                  // +0x4b4
 };
 
@@ -402,7 +407,282 @@ void d3d_DrawSprite(ViewParams *pContext, LTObject *pObject)
 }
 
 
-// 0x1002e630 (d3d_DrawFlatSprite, 2715 bytes) is not written yet.
+// ---------------------------------------------------------------------- //
+//  0x1002e630 -- a camera-facing sprite: a quad around its camera-space
+//  position, sized by its texture, the view and its scale.
+//
+//  Near: retail also computes (pObject->m_Pos - pContext->m_Pos).Mag(),
+//  unused, with _CVector's constructor and Mag out of line; cl expands
+//  them here and drops the dead code (about 50 bytes).
+// ---------------------------------------------------------------------- //
+#define PHFLAG_GLOWSPRITE		0x20
+#define PHFLAG_REALLYCLOSE		0x40
+#define PHFLAG2_SPRITETEXROTATE	0x200	// turn a flat sprite's texture by the object's rotation
+
+// The glow sprites' size by distance (their own constants in .rdata).
+static const float SPRITE_MINFACTORDIST		= 10.0f;
+static const float SPRITE_MAXFACTORDIST		= 500.0f;
+static const float SPRITE_MINFACTOR			= 0.1f;
+static const float SPRITE_MAXFACTOR			= 2.0f;
+
+extern float			g_NearZ;                        // 0x1005b818
+extern float			g_fReallyCloseNearZ;            // 0x1005a32c (g_CV_ReallyCloseNearZ's value)
+extern float			g_fSpriteNearZ;                 // 0x1005b74c (g_CV_NearZ's value)
+extern void				d3d_ProjectTLVert(ClipVert* pVert, ViewParams* pParams);  // 0x1002739d
+
+inline LTBOOL d3d_ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts);
+
+// A camera-space vertex to the screen, its z (and so its 1/w) pushed by
+// fZBias: x and y project where the vertex is, so it keeps its size.
+inline void d3d_ProjectBiasedVert(ClipVert *pVert, float fZBias)
+{
+	LTMatrix *pMat;
+	float x, y, z, rhw;
+
+	pMat = &g_ViewParams.m_mProjection;
+	rhw = 1.0f / (pMat->m[3][0]*pVert->m_vPos.x + pMat->m[3][1]*pVert->m_vPos.y + pMat->m[3][2]*pVert->m_vPos.z + pMat->m[3][3]);
+	x = rhw * (pMat->m[0][0]*pVert->m_vPos.x + pMat->m[0][1]*pVert->m_vPos.y + pMat->m[0][2]*pVert->m_vPos.z + pMat->m[0][3]);
+	y = rhw * (pMat->m[1][0]*pVert->m_vPos.x + pMat->m[1][1]*pVert->m_vPos.y + pMat->m[1][2]*pVert->m_vPos.z + pMat->m[1][3]);
+	z = pVert->m_vPos.z + fZBias;
+	rhw = 1.0f / (pMat->m[3][0]*pVert->m_vPos.x + pMat->m[3][1]*pVert->m_vPos.y + pMat->m[3][2]*z + pMat->m[3][3]);
+	z = rhw * (pMat->m[2][0]*pVert->m_vPos.x + pMat->m[2][1]*pVert->m_vPos.y + pMat->m[2][2]*z + pMat->m[2][3]);
+	pVert->m_vPos.x = x;
+	pVert->m_vPos.y = y;
+	pVert->m_vPos.z = z;
+	pVert->m_fRHW = rhw;
+}
+
+void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
+	float scaleX, float scaleY, void *pTexture)
+{
+	ClipVert verts[4], *pVerts;
+	LTVector vCamPos, vAdd;
+	LTMatrix mRotation;
+	RTexture *pRenderData, *pCur;
+	ColorBytes lightColor;
+	SpriteColor color;
+	uint32 iStage, specular;
+	float fNearZ, fDist, fWidth, fHeight, fSizeX, fSizeY, fFactor, fBias, fOldNearZ;
+	float uStart, uEnd, vStart, vEnd, uCenter, vCenter, du, dv;
+	float r, g, b;
+	int32 nVerts, i;
+	SharedTexture *pTex = (SharedTexture*)pTexture;
+
+	// Into camera space (really-close sprites have their own).
+	if (pObject->m_Flags & PHFLAG_REALLYCLOSE)
+	{
+		MatVMul(&vCamPos, &pContext->m_mReallyCloseToCamera, pPos);
+		fNearZ = g_fReallyCloseNearZ;
+	}
+	else
+	{
+		MatVMul(&vCamPos, &pContext->m_mWorldToCamera, pPos);
+		fNearZ = g_fSpriteNearZ;
+	}
+
+	g_pfnCalcFog(&pObject->m_Pos, &specular);
+
+	// Bail if it is too close to be seen.
+	if (vCamPos.z <= fNearZ)
+		return;
+
+	fDist = (pObject->m_Pos - pContext->m_Pos).Mag();   // (unused)
+
+	// Bind the texture.
+	iStage = g_iCurTextureStage;
+	if (!pTex)
+		return;
+
+	pRenderData = pTex->m_pRenderData;
+	pTex->m_FrameCode = g_CurTextureFrameCode;
+
+	pCur = LTNULL;
+	if (pRenderData)
+		pCur = d3d_GetStageTexture(pRenderData, (uint8)iStage);
+
+	if (!pCur || pCur != g_pCurTextures[iStage])
+	{
+		if (!pCur)
+		{
+			pRenderData = pTex->m_pRenderData;
+			if (pRenderData)
+			{
+				pCur = d3d_CreateRenderTexture(pTex, iStage, LTTRUE);
+				if (!pCur)
+					return;
+
+				pCur->m_pNext = pRenderData->m_pNext;
+				pRenderData->m_pNext = pCur;
+			}
+			else
+			{
+				pCur = d3d_CreateRenderTexture(pTex, iStage, LTFALSE);
+				if (!pCur)
+					return;
+			}
+		}
+
+		d3d_SetTextureDirect(pCur);
+	}
+
+	if (pCur->m_LOD != 0)
+	{
+		pCur->m_pSurface->SetLOD(0);
+		pCur->m_LOD = 0;
+	}
+
+	fWidth = (float)g_pCurTextures[g_iCurTextureStage]->GetWidth();
+	fHeight = (float)g_pCurTextures[g_iCurTextureStage]->GetHeight();
+
+	// A texel in from each edge.
+	uStart = g_fTexelSizeU * 2.0f;
+	uEnd = (fWidth - 2.0f) * g_fTexelSizeU;
+	vStart = g_fTexelSizeV * 2.0f;
+	vEnd = (fHeight - 2.0f) * g_fTexelSizeV;
+
+	fSizeX = fWidth * pContext->m_fScaleX * scaleX;
+	fSizeY = fHeight * pContext->m_fScaleY * scaleY;
+
+	if (pObject->m_Flags & PHFLAG_GLOWSPRITE)
+	{
+		// Glow sprites grow with distance.
+		fFactor = (vCamPos.z - SPRITE_MINFACTORDIST) / (SPRITE_MAXFACTORDIST - SPRITE_MINFACTORDIST);
+		fFactor = LTCLAMP(fFactor, 0.0f, 1.0f);
+		fFactor = SPRITE_MINFACTOR + ((SPRITE_MAXFACTOR - SPRITE_MINFACTOR) * fFactor);
+
+		fSizeX *= fFactor;
+		fSizeY *= fFactor;
+	}
+
+	// Its colour: its own, lit by the light table and the dynamic lights.
+	color.a = pObject->m_ColorA;
+	if (!(pObject->m_Flags & PHFLAG_NOLIGHT) && g_pSceneWorld)
+	{
+		d3d_GetLightTableColor(g_pSceneWorld->m_LightTable, &pObject->m_Pos, &lightColor);
+		d3d_GetDynamicLightAdd((ModelInstance*)pObject, &vAdd);
+
+		r = ((float)pObject->m_ColorR * g_vGlobalLightColor.x + vAdd.x) * ((float)lightColor.r * (1.0f / 255.0f));
+		if (r < 0.0f)
+			r = 0.0f;
+		else if (r > 255.0f)
+			r = 255.0f;
+
+		g = ((float)pObject->m_ColorG * g_vGlobalLightColor.y + vAdd.y) * ((float)lightColor.g * (1.0f / 255.0f));
+		if (g < 0.0f)
+			g = 0.0f;
+		else if (g > 255.0f)
+			g = 255.0f;
+
+		b = ((float)pObject->m_ColorB * g_vGlobalLightColor.z + vAdd.z) * ((float)lightColor.b * (1.0f / 255.0f));
+		if (b < 0.0f)
+			b = 0.0f;
+		else if (b > 255.0f)
+			b = 255.0f;
+
+		color.r = (uint8)RoundF(r);
+		color.g = (uint8)RoundF(g);
+		color.b = (uint8)RoundF(b);
+	}
+	else
+	{
+		color.r = (uint8)RoundF((float)pObject->m_ColorR * g_vGlobalLightColor.x);
+		color.g = (uint8)RoundF((float)pObject->m_ColorG * g_vGlobalLightColor.y);
+		color.b = (uint8)RoundF((float)pObject->m_ColorB * g_vGlobalLightColor.z);
+	}
+
+	verts[0].m_vPos.x = vCamPos.x - fSizeX;
+	verts[0].m_vPos.y = vCamPos.y + fSizeY;
+	verts[0].m_vPos.z = vCamPos.z;
+	verts[0].m_Diffuse = *(uint32*)&color;
+	verts[0].m_Specular = specular;
+	verts[0].m_fU = uStart;
+	verts[0].m_fV = vStart;
+
+	verts[1].m_vPos.x = vCamPos.x + fSizeX;
+	verts[1].m_vPos.y = vCamPos.y + fSizeY;
+	verts[1].m_vPos.z = vCamPos.z;
+	verts[1].m_Diffuse = *(uint32*)&color;
+	verts[1].m_Specular = specular;
+	verts[1].m_fU = uEnd;
+	verts[1].m_fV = vStart;
+
+	verts[2].m_vPos.x = vCamPos.x + fSizeX;
+	verts[2].m_vPos.y = vCamPos.y - fSizeY;
+	verts[2].m_vPos.z = vCamPos.z;
+	verts[2].m_Diffuse = *(uint32*)&color;
+	verts[2].m_Specular = specular;
+	verts[2].m_fU = uEnd;
+	verts[2].m_fV = vEnd;
+
+	verts[3].m_vPos.x = vCamPos.x - fSizeX;
+	verts[3].m_vPos.y = vCamPos.y - fSizeY;
+	verts[3].m_vPos.z = vCamPos.z;
+	verts[3].m_Diffuse = *(uint32*)&color;
+	verts[3].m_Specular = specular;
+	verts[3].m_fU = uStart;
+	verts[3].m_fV = vEnd;
+
+	// Turn the texture about its centre by the object's rotation (clamped
+	// so the corners don't wrap).
+	if (pObject->m_Flags2 & PHFLAG2_SPRITETEXROTATE)
+	{
+		d3d_RotationToMatrix(&pObject->m_Rotation, &mRotation);
+
+		uCenter = (uEnd + uStart) * 0.5f;
+		vCenter = (vEnd + vStart) * 0.5f;
+		for (i=0; i < 4; i++)
+		{
+			dv = verts[i].m_fV - vCenter;
+			du = verts[i].m_fU - uCenter;
+			verts[i].m_fV = du*mRotation.m[1][0] + dv*mRotation.m[1][1] + vCenter;
+			verts[i].m_fU = du*mRotation.m[0][0] + dv*mRotation.m[0][1] + uCenter;
+		}
+
+		g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_CLAMP);
+	}
+
+	fOldNearZ = g_NearZ;
+	pVerts = verts;
+	nVerts = 4;
+
+	if (pObject->m_Flags & PHFLAG_REALLYCLOSE)
+		g_NearZ = g_fReallyCloseNearZ;
+
+	if (d3d_ClipPoly(g_ClipFlags, &pVerts, &nVerts))
+	{
+		if (pObject->m_Flags & PHFLAG_SPRITEBIAS)
+		{
+			// Pull it towards the camera, up to but not past the near plane.
+			fBias = SPRITE_POSITION_ZBIAS;
+			if (fBias + vCamPos.z < g_fSpriteNearZ)
+				fBias = g_fSpriteNearZ - vCamPos.z;
+
+			for (i=0; i < nVerts; i++)
+				d3d_ProjectBiasedVert(&pVerts[i], fBias);
+		}
+		else if (pObject->m_Flags & PHFLAG_REALLYCLOSE)
+		{
+			for (i=0; i < nVerts; i++)
+				d3d_ProjectBiasedVert(&pVerts[i], g_fSpriteNearZ);
+		}
+		else
+		{
+			for (i=0; i < nVerts; i++)
+				d3d_ProjectTLVert(&pVerts[i], &g_ViewParams);
+		}
+
+		g_SavedStates.Restore();
+		if (pTex->m_pStateList)
+			g_SavedStates.Apply(pTex->m_pStateList, g_iCurTextureStage);
+
+		g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
+	}
+
+	if (pObject->m_Flags2 & PHFLAG2_SPRITETEXROTATE)
+		g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_WRAP);
+
+	g_NearZ = fOldNearZ;
+}
 
 
 // The quad's corners in the order the camera sees them, from the front
