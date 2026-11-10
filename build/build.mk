@@ -314,7 +314,7 @@ $(eval $(call lslib,stdlith,StdLith,/I $(LT2LS)\stdlith /I $(LT2LS)\lith /I . /I
 $(eval $(call lslib,CryptMgr,CryptMgr,/I $(LT2LS2)\\cryptmgr /I $(LT2LS2)\\incs /I .,cryptmgr.cpp blowfish.cpp))
 # (lith.lib: the release names it in lower case, and so does Windows when
 # ours replaces a copy of it)
-$(eval $(call lslib,lith,lith,/I .,basehash.cpp baselist.cpp virtlist.cpp))
+$(eval $(call lslib,lith,lith,/I .,basehash.cpp baselist.cpp dprintf.cpp virtlist.cpp))
 # (RezMgr.lib: Monolith's RezMgr, the REZMGRLITE build its header defaults
 # to; the shipped builds hold these three objects)
 RM_SRCS := rezmgr.cpp rezhash.cpp rezfile.cpp
@@ -342,10 +342,17 @@ $(eval $(call lslib,ButeMgr,ButeMgrNoMFC,/D _NOMFC /I $(LT2LS)\butemgr /I $(LT2L
 # nafxcw.lib and uses CString), the release's prebuilt ButeMgr.lib. Of the
 # images, only Primal Hunt's dedicated server links it (ServerApp_PH, by
 # its path here); AvP2's links its own 8168 build (svlib, below). Its
-# objects go to Release/mfc/, apart from ButeMgrNoMFC's.
+# objects go to Release/mfc/, apart from ButeMgrNoMFC's. With the
+# automatic precompiled header (/YX) its project had (NOLF2's ButeMgr.dsp
+# has it in every Release configuration): through one, cl defers the
+# header's out-of-line inline functions (hash_str_nocase's operator(),
+# sb_Allocate, the STL mutex locks, ...) to the end of butemgr.obj, and
+# the three hash_str_nocase hashtables' resize keep their try blocks, as
+# the release's prebuilt ButeMgr.lib has them (AVP2XServ.exe 0x40f390,
+# 0x40f660, 0x40fa90). A .pch each, so that parallel builds do not share one.
 BM_MFC_SRCS := arange.cpp avector.cpp butemgr.cpp stdafx.cpp
 $(foreach s,$(BM_MFC_SRCS),$(eval $(call compile,src/lithshared/ButeMgr/Release/mfc/$(s:.cpp=.obj),src/lithshared/ButeMgr,$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,\
-    $(LIB_CFLAGS) /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs /FoRelease/mfc/,wine-drives)))
+    $(LIB_CFLAGS) /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs /YX /FpRelease\mfc\$(s:.cpp=.pch) /FoRelease/mfc/,wine-drives)))
 $(eval $(call tool,$(LOUT)/ButeMgr.lib,$(BM_MFC_SRCS:%.cpp=src/lithshared/ButeMgr/Release/mfc/%.obj) | wine-drives,\
     cd src/lithshared/ButeMgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\ButeMgr.lib' Release/mfc/arange.obj Release/mfc/avector.obj Release/mfc/butemgr.obj Release/mfc/stdafx.obj))
 LS_OURS += ButeMgr

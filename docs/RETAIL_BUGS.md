@@ -578,6 +578,18 @@ held, not `defVal`.
 
 Fixed in the modern build: butemgr.cpp copies `defVal`.
 
+### DPRINTF=COM2 sends the debug output to COM1's setting
+
+The release's prebuilt `lith.lib`, DPRINTF.OBJ
+(`dprintfinittype::dprintfinittype`, src/lithshared/lith/dprintf.cpp;
+byte-identical to the prebuilt member). Reading the DPRINTF environment
+variable, "COM2" selects `Com1`; NOLF's lith had `Com2` there (and `LPT1`
+for "LPT2", which AvP2's has right). The release's build is `_WINDOWS`,
+which then forces `Monochrome` whatever was read and compiles the serial
+ports out, so it shows only in a console or DOS build.
+
+Not fixed: no shipped image calls dprintf.
+
 ### A model with no model file crashes the server when its files are sent
 
 server.dll 0x1003448c, AvP2 1.0.9.6 server.dll 0x10031aa9

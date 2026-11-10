@@ -383,7 +383,16 @@ TARGETS = [
          # CryptMgr.lib (0x429dc0, 0x429dd0) are linked above the runtime,
          # just below nafxcw.lib's second run (from 0x429de0; libscan.py:
          # from timecore.obj, 0x429e4b): code of the image's own
-         app=[(0x00401000, 0x004108b0), (0x00429bf0, 0x00429de0)]),
+         app=[(0x00401000, 0x004108b0), (0x00429bf0, 0x00429de0)],
+         # ButeMgr's block in retail (from its initializers, 0x40a330, to
+         # RegMgr32.lib), StdLith's and CryptMgr's: the last two have only
+         # short functions or inline look-alikes (LAlloc's
+         # Free is CObject's operator delete to the byte; CCryptMgr's
+         # constructor and destructor are 3 and 1 bytes), which otherwise
+         # claim the game's own addresses or nothing at all
+         lib_range={"ButeMgr": (0x0040a330, 0x00410580),
+                    "StdLith": (0x00429bf0, 0x00429dc0),
+                    "CryptMgr": (0x00429dc0, 0x00429de0)}),
     # ---- Primal Hunt: the game -----------------------------------------
     # Third Law's, from Monolith's AvP2 1.0.9.6 code: no source was
     # released. Their own code is C++ 8966 (with 21 objects of 8168 in the
@@ -491,7 +500,12 @@ TARGETS = [
          # two 8-byte vcall thunks 0x40fef4 and 0x40fefc), wincore.obj at
          # 0x40ff04, to 0x417f46; libcmt.lib from 0x417f50 to 0x422e3f,
          # nafxcw.lib again from 0x428492
-         app=[(0x00401000, 0x0040fee0)]),
+         app=[(0x00401000, 0x0040fee0)],
+         # ButeMgr's, CryptMgr's and StdLith's blocks in retail (ButeMgr's
+         # from its initializers at 0x409b40), as AVP2XServ.exe's
+         lib_range={"ButeMgr": (0x00409b40, 0x0040fcf0),
+                    "CryptMgr": (0x0040fcf0, 0x0040fd10),
+                    "StdLith": (0x0040fd10, 0x0040fee0)}),
     # ---- AvP2 1.0.9.6: the game ----------------------------------------
     dict(label="CShell.dll", what="AvP2's game: client", kind="image",
          shipped=REFERENCE + "/CShell.dll", stem="CShell",

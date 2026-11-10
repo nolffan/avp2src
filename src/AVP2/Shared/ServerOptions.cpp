@@ -9,6 +9,10 @@
 #include "butemgr.h"
 #include "ServerOptions.h"
 #include "GameType.h"
+#if defined(PRIMAL_HUNT) && defined(_CLIENTBUILD)
+#include "WeaponMgr.h"
+#include "CharacterButeMgr.h"
+#endif
 
 #include <iostream>			// For input and output
 #include <fstream>			// For the files
@@ -145,6 +149,34 @@ CServerOptions::CServerOptions()
 	// (AVP2XServ.exe 0x4069b4)
 	m_ClassList.Clear();
 	m_WeaponList.Clear();
+
+#ifdef _CLIENTBUILD
+	// PH: the client starts from the game's own lists, the "_MP" weapons
+	// and classes (PHCShell.dll 0x100a4f57)
+	if(g_pWeaponMgr)
+	{
+		for(i = 0; i < g_pWeaponMgr->m_MPWeapons.m_nNumEntries; i++)
+		{
+			int nId = g_pWeaponMgr->m_MPWeapons.GetId(i);
+			LTBOOL bAllowed = g_pWeaponMgr->m_MPWeapons.IsAllowed(i);
+			const char* szName = g_pWeaponMgr->m_MPWeapons.GetName(i);
+
+			m_WeaponList.Add(nId, bAllowed, szName);
+		}
+	}
+
+	if(g_pCharacterButeMgr)
+	{
+		for(i = 0; i < g_pCharacterButeMgr->m_MPClasses.m_nNumEntries; i++)
+		{
+			int nId = g_pCharacterButeMgr->m_MPClasses.GetId(i);
+			LTBOOL bAllowed = g_pCharacterButeMgr->m_MPClasses.IsAllowed(i);
+			const char* szName = g_pCharacterButeMgr->m_MPClasses.GetName(i);
+
+			m_ClassList.Add(nId, bAllowed, szName);
+		}
+	}
+#endif
 #endif
 }
 
@@ -591,7 +623,7 @@ void CServerOptions::LoadFromBute(CButeMgr& buteMgr)
 		sprintf(szAttName,"ID%i",i);
 		int nId = buteMgr.GetInt("Weapon",szAttName,-1);
 
-		m_WeaponList.Add(nId, szName, bAllowed);
+		m_WeaponList.Add(nId, bAllowed, szName);
 	}
 
 	nNum = buteMgr.GetInt("Class","num_classes",0);
@@ -607,7 +639,7 @@ void CServerOptions::LoadFromBute(CButeMgr& buteMgr)
 		sprintf(szAttName,"ID%i",i);
 		int nId = buteMgr.GetInt("Class",szAttName,-1);
 
-		m_ClassList.Add(nId, szName, bAllowed);
+		m_ClassList.Add(nId, bAllowed, szName);
 	}
 #endif
 }

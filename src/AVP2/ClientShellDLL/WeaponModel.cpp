@@ -403,7 +403,14 @@ LTBOOL CWeaponModel::Create(CClientDE* pClientDE, uint8 nWeaponId, LTBOOL bPlayS
 	else
 		m_bAlienTail	= LTFALSE;
 
-
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: a predator's weapons take their predator skins
+	// (CreateModelObject, ResetModelSkins)
+	if(IsPredator(g_pGameClientShell->GetPlayerStats()->GetButeSet()))
+		m_nSkinMode		= 1;
+	else
+		m_nSkinMode		= 0;
+#endif
 
 	// Select the weapon
 	Select();

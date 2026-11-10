@@ -745,10 +745,11 @@ dprintfinittype::dprintfinittype () {
     if (strstr(Buf,"FILE") != NULL) dprintfOutType = File;
     if (strstr(Buf,"FILEAPPEND") != NULL) dprintfOutType = FileAppend;
     if (strstr(Buf,"COM1") != NULL) dprintfOutType = Com1;
-    if (strstr(Buf,"COM2") != NULL) dprintfOutType = Com2;
+    // RETAIL BUG: COM2 selects Com1 (AvP2's lith.lib; NOLF's had Com2)
+    if (strstr(Buf,"COM2") != NULL) dprintfOutType = Com1;
     if (strstr(Buf,"STDOUT") != NULL) dprintfOutType = STDOUT;
     if (strstr(Buf,"LPT1") != NULL) dprintfOutType = LPT1;
-    if (strstr(Buf,"LPT2") != NULL) dprintfOutType = LPT1;
+    if (strstr(Buf,"LPT2") != NULL) dprintfOutType = LPT2;
     if (strstr(Buf,"PRN") != NULL) dprintfOutType = PRN;
 
     dprintfExReg.Scan (Buf);

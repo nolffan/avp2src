@@ -26,7 +26,7 @@ class CMPAllowList : public CMPRestrictList
 
 		// Add an entry, keeping the list sorted by ID; an entry with the
 		// same ID is replaced
-		void	Add(int nId, const char* szName, LTBOOL bAllowed)
+		void	Add(int nId, LTBOOL bAllowed, const char* szName)
 		{
 			if(m_nNumEntries >= MAX_MP_RESTRICT_ENTRIES)
 				return;
@@ -35,13 +35,13 @@ class CMPAllowList : public CMPRestrictList
 			{
 				if(m_aEntries[i].nId == nId)
 				{
-					Set(i, nId, szName, bAllowed);
+					Set(i, nId, bAllowed, szName);
 					return;
 				}
 
 				if(m_aEntries[i].nId > nId)
 				{
-					Insert(i, nId, szName, bAllowed);
+					Insert(i, nId, bAllowed, szName);
 					return;
 				}
 			}
@@ -53,7 +53,7 @@ class CMPAllowList : public CMPRestrictList
 			m_nNumEntries++;
 		}
 
-		void	Set(int i, int nId, const char* szName, LTBOOL bAllowed)
+		void	Set(int i, int nId, LTBOOL bAllowed, const char* szName)
 		{
 			if((i >= MAX_MP_RESTRICT_ENTRIES) || (i >= m_nNumEntries))
 				return;
@@ -64,11 +64,13 @@ class CMPAllowList : public CMPRestrictList
 		}
 
 		// RETAIL BUG: as CMPRestrictList::Insert, the entry at i is copied
-		// over all the ones above it and the count is not raised
-		void	Insert(int i, int nId, const char* szName, LTBOOL bAllowed)
+		// over all the ones above it and the count is not raised (the
+		// client's copy, out of line in its constructor: PHCShell.dll
+		// 0x100a88d0)
+		LTBOOL	Insert(int i, int nId, LTBOOL bAllowed, const char* szName)
 		{
 			if(i >= MAX_MP_RESTRICT_ENTRIES)
-				return;
+				return LTFALSE;
 
 			for(int j = i; j < m_nNumEntries; j++)
 				m_aEntries[j + 1] = m_aEntries[j];
@@ -76,6 +78,8 @@ class CMPAllowList : public CMPRestrictList
 			m_aEntries[i].nId = nId;
 			m_aEntries[i].bAllowed = bAllowed;
 			strcpy(m_aEntries[i].szName, szName);
+
+			return LTTRUE;
 		}
 };
 #endif

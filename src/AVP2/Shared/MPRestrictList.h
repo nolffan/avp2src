@@ -116,6 +116,16 @@ class CMPRestrictList
 			return m_aEntries[i].nId;
 		}
 
+		// An entry's name, or none (CServerOptions' constructor, PHCShell.dll
+		// 0x100a4fb0); the index is checked as GetId's is
+		const char*	GetName(int i)
+		{
+			if((i > m_nNumEntries) || (i < 0))
+				return LTNULL;
+
+			return m_aEntries[i].szName;
+		}
+
 		// The index of the entry with this ID, or -1
 		int		FindIndex(int nId)
 		{

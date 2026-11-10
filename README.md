@@ -68,17 +68,17 @@ those functions make up.
 | `cdaudio.dll` | the engine's CD-audio music driver | 80 / 81 | 5,890 / 6,194 bytes | `███████████████████░` 95.0% | 0 | 0 |
 | `Launch.dll` | the engine's command-line helper | 28 / 28 | 5,599 / 5,599 bytes | `████████████████████` 100.0% | 0 | 0 |
 | `PrimalHunt.exe` | Primal Hunt's launcher | 175 / 195 | 27,068 / 27,317 bytes | `███████████████████░` 99.0% | 0 | 0 |
-| `AVP2XServ.exe` | Primal Hunt's dedicated server | 294 / 333 | 57,991 / 61,852 bytes | `██████████████████░░` 93.7% | 8 | 0 |
-| `PHCShell.dll` | Primal Hunt's game: client | 5,163 / 5,834 | 1,227,475 / 1,342,915 bytes | `██████████████████░░` 91.4% | 31 | 6 |
-| `PHObject.lto` | Primal Hunt's game: server objects | 9,099 / 10,146 | 2,228,310 / 2,363,096 bytes | `██████████████████░░` 94.2% | 4 | 5 |
+| `AVP2XServ.exe` | Primal Hunt's dedicated server | 297 / 330 | 59,335 / 61,852 bytes | `███████████████████░` 95.9% | 0 | 0 |
+| `PHCShell.dll` | Primal Hunt's game: client | 5,165 / 5,834 | 1,227,966 / 1,342,915 bytes | `██████████████████░░` 91.4% | 29 | 6 |
+| `PHObject.lto` | Primal Hunt's game: server objects | 9,099 / 10,145 | 2,228,310 / 2,363,096 bytes | `██████████████████░░` 94.2% | 3 | 5 |
 | `AVP2.exe` | AvP2's launcher | 172 / 192 | 25,957 / 27,502 bytes | `██████████████████░░` 94.3% | 0 | 0 |
-| `AVP2Serv.exe` | AvP2's dedicated server | 289 / 320 | 58,703 / 58,920 bytes | `███████████████████░` 99.6% | 2 | 0 |
+| `AVP2Serv.exe` | AvP2's dedicated server | 289 / 320 | 58,703 / 58,920 bytes | `███████████████████░` 99.6% | 0 | 0 |
 | `CShell.dll` | AvP2's game: client | 5,989 / 6,528 | 1,426,485 / 1,455,467 bytes | `███████████████████░` 98.0% | 34 | 1 |
 | `Object.lto` | AvP2's game: server objects | 8,556 / 10,624 | 2,170,260 / 2,229,310 bytes | `███████████████████░` 97.3% | 15 | 0 |
 | `AvP2 lithtech.exe` | AvP2's engine | 3,559 / 4,020 | 525,696 / 702,904 bytes | `██████████████░░░░░░` 74.7% | 38 | 113 |
 | `AvP2 server.dll` | AvP2's server | 2,485 / 2,850 | 269,475 / 351,844 bytes | `███████████████░░░░░` 76.5% | 36 | 64 |
 | `AvP2 d3d.ren` | AvP2's Direct3D renderer | 1,069 / 1,273 | 123,569 / 236,573 bytes | `██████████░░░░░░░░░░` 52.2% | 12 | 27 |
-| libraries | the shared libraries | 4,653 / 4,707 | 651,161 / 673,940 bytes | `███████████████████░` 96.6% | 22 | 0 |
+| libraries | the shared libraries | 4,677 / 4,707 | 653,972 / 673,940 bytes | `███████████████████░` 97.0% | 1 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AVP2XUp.dll` | Primal Hunt's Sierra updater resources, not in the total | 14 / 14 resources | 585,762 / 585,762 bytes | `████████████████████` 100.0% | 0 | -- |
 | `PHCRes.dll` | Primal Hunt's client resources, not in the total | 295 / 295 resources | 440,287 / 440,287 bytes | `████████████████████` 100.0% | 0 | -- |
@@ -87,7 +87,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **49,292 / 55,925** | **9,824,136 / 10,919,355 bytes** | `█████████████████░░░` **89.9%** | **279** | **1,138** |
+| **All** | | **49,321 / 55,921** | **9,828,782 / 10,919,355 bytes** | `██████████████████░░` **90.0%** | **245** | **1,138** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and
