@@ -128,6 +128,9 @@ public:
 	uint32					m_nCacheDelay;
 	LPDIRECT3D7				m_pD3D;
 	LPDIRECT3DDEVICE7		m_pDevice;
+
+	// The model vertex-buffer cache (TU01's).
+	static CVertexBufferCache	s_ModelVBCache;
 };
 
 
@@ -307,8 +310,10 @@ void CVertexBuffer::ReleaseVBs()
 // ------------------------------------------------------------------------------ //
 
 // 0x100995a8: initialiser 0x1003b6a2, its atexit destructor 0x1003b6b8
-// (the destructor itself, compiler-generated, 0x1003b6d3).
-CVertexBufferCache g_VertexBufferCache;
+// (the destructor itself, compiler-generated, 0x1003b6d3).  A static data
+// member: that is what guards the atexit destructor (a plain global's is
+// unguarded).
+CVertexBufferCache CVertexBufferCache::s_ModelVBCache;
 
 // 0x1003b6f4
 CVertexBufferCache::CVertexBufferCache() :

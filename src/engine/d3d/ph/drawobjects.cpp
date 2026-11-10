@@ -21,12 +21,7 @@ public:
 
 	int32		m_nValue;
 	float		m_fValue;
-	float		m_fDefault;
-	int32*		m_pnValue;
-	float*		m_pfValue;
-	const char*	m_pName;
-	void*		m_hParam;
-	CD3DConVar*	m_pNext;
+	uint8		m_pad_08[0x20 - 0x08];
 };
 
 
@@ -275,12 +270,21 @@ void d3d_InitObjectQueues()
 // ---------------------------------------------------------------------- //
 // The element's (empty) constructor is what brings GenAppend and
 // GenRemoveAt (0x10029aa0, 0x10029c20) out as retail's, as in TU30.
-// Still near: d3d_FlushObjectQueues, Sort and Add, where retail calls
-// CMoArray's Clear/Init/Insert2 and _CVector's constructor out of line
-// and cl 8966 expands them (the inliner budget, as tagnodes.cpp).
+// The inliner's budget is spent from the end of a function backwards:
+// Add's Set and operator[] after the Append (the in-place path second)
+// leave Insert2 out of line, and d3d_FlushObjectQueues' draw loop indexing
+// the list at each use, with SetSize (not SetSize2), leaves the static's
+// Clear and Init out of line, as retail has them. Still near: Sort, where
+// retail calls _CVector's constructor out of line.
 struct ObjectDrawEntry
 {
 	ObjectDrawEntry() {}
+
+	void	Set(LTObject* pObject, DrawObjectFn fn)
+	{
+		m_pObject = pObject;
+		m_Fn = fn;
+	}
 
 	LTObject*		m_pObject;                          // +0x00
 	DrawObjectFn	m_Fn;                               // +0x04
@@ -293,9 +297,8 @@ ObjectDrawList*	g_pObjectDrawList;                      // 0x100713cc
 class ObjectDrawList : public CMoArray<ObjectDrawEntry>
 {
 public:
-	ObjectDrawList()
+	ObjectDrawList() : m_nUsed(0)
 	{
-		m_nUsed = 0;
 		g_pObjectDrawList = this;
 	}
 
@@ -346,58 +349,58 @@ void d3d_FlushObjectQueues()
 	if (g_pfnPostQueueHook)
 		g_pfnPostQueueHook();
 
-	CountAdder cntFlush(&g_pStruct->m_FlushTicks);
-
-	static ObjectDrawList s_DrawList;
-
-	uint32 nObjects = d3d_GetVisibleSet()->m_Set304.m_nObjects +
-	                  d3d_GetVisibleSet()->m_Set2c4.m_nObjects +
-	                  d3d_GetVisibleSet()->m_Set2a4.m_nObjects +
-	                  d3d_GetVisibleSet()->m_Set284.m_nObjects +
-	                  d3d_GetVisibleSet()->m_Set204.m_nObjects +
-	                  d3d_GetVisibleSet()->m_Set1a4.m_nObjects +
-	                  d3d_GetVisibleSet()->m_Set164.m_nObjects;
-	if (nObjects > s_DrawList.GetSize())
-		s_DrawList.SetSize2(nObjects, &g_DefAlloc);
-
-	sub_10014620(0);
-	d3d_DrawParticleSystems();
-	g_pStruct->m_pfnPoll();
-	sub_1002dc20();
-	g_pStruct->m_pfnPoll();
-	sub_10024a10();
-	g_pStruct->m_pfnPoll();
-	sub_10030ce0();
-	g_pStruct->m_pfnPoll();
-	sub_10025c2f();
-	g_pStruct->m_pfnPoll();
-	d3d_DrawTranslucentCanvases();
-	sub_1002f800();
-
-	if (s_DrawList.m_nUsed)
 	{
-		s_DrawList.Sort(&g_ViewParams);
+		CountAdder cntFlush(&g_pStruct->m_FlushTicks);
 
-		for (i=0; i < s_DrawList.m_nUsed; i++)
+		static ObjectDrawList s_DrawList;
+
+		uint32 nObjects = d3d_GetVisibleSet()->m_Set304.m_nObjects +
+		                  d3d_GetVisibleSet()->m_Set2c4.m_nObjects +
+		                  d3d_GetVisibleSet()->m_Set2a4.m_nObjects +
+		                  d3d_GetVisibleSet()->m_Set284.m_nObjects +
+		                  d3d_GetVisibleSet()->m_Set204.m_nObjects +
+		                  d3d_GetVisibleSet()->m_Set1a4.m_nObjects +
+		                  d3d_GetVisibleSet()->m_Set164.m_nObjects;
+		if (nObjects > s_DrawList.GetSize())
+			s_DrawList.SetSize(nObjects);
+
+		sub_10014620(0);
+		d3d_DrawParticleSystems();
+		g_pStruct->m_pfnPoll();
+		sub_1002dc20();
+		g_pStruct->m_pfnPoll();
+		sub_10024a10();
+		g_pStruct->m_pfnPoll();
+		sub_10030ce0();
+		g_pStruct->m_pfnPoll();
+		sub_10025c2f();
+		g_pStruct->m_pfnPoll();
+		d3d_DrawTranslucentCanvases();
+		sub_1002f800();
+
+		if (s_DrawList.m_nUsed)
 		{
-			ObjectDrawEntry* pEntry = &s_DrawList[i];
+			s_DrawList.Sort(&g_ViewParams);
 
-			if (g_ViewParams.m_bDrawHidden)
+			for (i=0; i < s_DrawList.m_nUsed; i++)
 			{
-				if (pEntry->m_pObject->m_Flags2 & 1)
-					continue;
+				if (g_ViewParams.m_bDrawHidden)
+				{
+					if (s_DrawList[i].m_pObject->m_Flags2 & 1)
+						continue;
+				}
+
+				if ((s_DrawList[i].m_pObject->m_Flags & FLAG_VISIBLE) ||
+				    (g_ViewParams.m_bDrawHidden && (s_DrawList[i].m_pObject->m_Flags & 0x400)))
+					s_DrawList[i].m_Fn(&g_ViewParams, s_DrawList[i].m_pObject);
 			}
-
-			if ((pEntry->m_pObject->m_Flags & FLAG_VISIBLE) ||
-			    (g_ViewParams.m_bDrawHidden && (pEntry->m_pObject->m_Flags & 0x400)))
-				pEntry->m_Fn(&g_ViewParams, pEntry->m_pObject);
 		}
+
+		s_DrawList.m_nUsed = 0;
+
+		sub_1002f850();
+		sub_10014870(1);
 	}
-
-	s_DrawList.m_nUsed = 0;
-
-	sub_1002f850();
-	sub_10014870(1);
 }
 
 
@@ -476,18 +479,16 @@ void ObjectDrawList::Add(LTObject* pObject, DrawObjectFn fn)
 		return;
 	}
 
-	if (GetSize() > m_nUsed)
-	{
-		(*this)[m_nUsed].m_pObject = pObject;
-		(*this)[m_nUsed].m_Fn = fn;
-	}
-	else
+	if (GetSize() <= m_nUsed)
 	{
 		ObjectDrawEntry entry;
 
-		entry.m_pObject = pObject;
-		entry.m_Fn = fn;
+		entry.Set(pObject, fn);
 		Append(entry);
+	}
+	else
+	{
+		(*this)[m_nUsed].Set(pObject, fn);
 	}
 
 	m_nUsed++;

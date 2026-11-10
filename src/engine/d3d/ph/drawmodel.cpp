@@ -27,8 +27,9 @@
 //      sites than retail's (DrawSprite's corners call the _CVector
 //      constructor out of line one step earlier).
 //    * 0x1000be88, 0x1000c860, 0x1000ddc5, 0x1000de56: scheduling.
-//  Not written: 0x1000f148 (BaseNew<ModelTLVert>, which retail's
-//  ModelTLVert array members call where ours inline _AllocateTArray).
+//  ModelTLVert's (empty) constructor is what makes its array members call
+//  BaseNew<ModelTLVert> (0x1000f148) as retail's do, rather than expand
+//  _AllocateTArray.
 //
 // *********************************************************************** //
 
@@ -344,6 +345,8 @@ struct ModelRenderState
 // A transformed and lit vertex, and a clipped one.
 struct ModelTLVert
 {
+	ModelTLVert() {}
+
 	uint8       m_Data[0x20];
 };
 

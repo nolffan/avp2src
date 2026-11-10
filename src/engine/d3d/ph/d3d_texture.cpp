@@ -29,15 +29,15 @@
 //      one in retail, the 565 red one here.
 //    * 0x10020cd0: the other side of the 0x1001f430 difference -- retail
 //      expands the RTextureHandle constructor and calls its destructor
-//      (0x10021030) out of line at each exit; ours calls the constructor
-//      (that copy is the 9 bytes after AddAfter) and expands the
-//      destructor (779 bytes, 824 shipped).  It also expands
+//      (0x10021030) out of line at each exit.  The handle's own (empty)
+//      virtual destructor is what keeps that call; ours still calls the
+//      constructor (827 bytes, 824 shipped).  It also expands
 //      RTextureHandle::operator=, so ours is emitted after 0x10021f70,
 //      which calls it, rather than at 0x10021c90 (same 55 bytes).
 //    * 0x10021040: same flow and calls; 8 bytes less frame and other
 //      registers (1852 bytes, 1871 shipped).
-//    * 0x10021f70: retail calls d3d_GetS3TCFourCC from the expanded
-//      surface maker, ours expands it too (1768 bytes, 1731 shipped).
+//    * 0x10021f70: size-exact (1731 bytes); register choice in the
+//      mipmap size loop.
 //    * 0x10022830: retail retests the RTexture before the transfer loop.
 // *********************************************************************** //
 
@@ -215,6 +215,8 @@ class RTexture;
 class RTextureHandle : public RTextureInterface
 {
 public:
+	virtual ~RTextureHandle() {}
+
 	virtual LTBOOL	IsValid();
 	virtual uint32	GetFlags();
 	virtual uint32	GetWidth();
