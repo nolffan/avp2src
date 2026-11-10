@@ -49,12 +49,13 @@ Each retail function gets one status (`out/progress/functions.csv`):
 | `middleware` | third-party code linked among the binary's own: listed, not counted (below) |
 | `encrypted` | code a retail image keeps encrypted on disc: listed, not counted (none in AvP2: below) |
 
-Three more statuses are for functions of OURS, not shipped ones, so none of
+Four more statuses are for functions of OURS, not shipped ones, so none of
 them is counted in the denominator:
 
 | Status | Meaning |
 |---|---|
 | `unplaced` | written, and our own link puts it in our image, but no shipped function is placed for it |
+| `unreferenced` | as `unplaced`, but nothing the retail link's `/OPT:REF` keeps references it, so it would have discarded it (our scoreboard links are `/OPT:NOREF`: build/build.mk): a template member, inline or compiler-generated helper only an explicit instantiation or dead code of ours emits. An out-of-line definition is never this (its caller may be retail code not yet written) |
 | `unlinked` | compiled, but our own link leaves it out too: a library member this binary does not pull |
 | `driver` | emitted only by a scoring driver that ships nowhere (none here) |
 

@@ -30,3 +30,5 @@ addr,reason
 0x00444554,NOT A FUNCTION: interior block of the DirectInput object lookup by ##name (0x00444460): the only reference is a pointer inside that function's own tables (a jump table or SEH scope entry)
 0x00417367,"NOT A FUNCTION: interior block of CClientShell::Update (0x00416f90), ~1,260 bytes: the only reference is a pointer inside that function's own tables"
 0x00464441,"NOT A FUNCTION: interior block of wm_MoveThroughSim (0x00464240), 649 bytes, mid-instruction: the only reference is a pointer inside that function's own tables"
+0x00420062,"NOT A FUNCTION: interior block of 0x0041fdb0: decoded from that start, 0x00420060 is `fld dword ptr [esp+0xa4]` (d9 84 24 a4 00 00 00), so 0x00420062 is inside it (the 1 dword(s) in the file equal to 0x00420062 cannot be pointers to it); nothing calls or jumps to 0x00420062 from outside it"
+0x0047afe8,NOT A FUNCTION: interior block of 0x0047aee0: 0x0047afdc `jne 0x47afe8` (75 0a) in that function branches to it; nothing calls or jumps to 0x0047afe8 from outside it and no copy of the address is in the file

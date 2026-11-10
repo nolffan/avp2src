@@ -1,0 +1,5 @@
+addr,reason
+0x10018974,NOT A FUNCTION: interior block of 0x10018940: 0x1001894f `je 0x10018974` (74 23) in that function branches to it; nothing calls or jumps to 0x10018974 from outside it and no copy of the address is in the file
+0x10020600,"NOT A FUNCTION: interior block of 0x10020360: decoded from that start, 0x100205fe is `mov ecx,dword ptr [esp+0x14]` (8b 4c 24 14), so 0x10020600 is inside it (the 1 dword(s) in the file equal to 0x10020600 cannot be pointers to it); nothing calls or jumps to 0x10020600 from outside it"
+0x1002a4c4,"NOT A FUNCTION: interior block of 0x1002a40f: decoded from that start, 0x1002a4c2 is `push dword ptr [ebp-0x4]` (ff 75 fc), so 0x1002a4c4 is inside it; nothing calls or jumps to 0x1002a4c4 from outside it and no copy of the address is in the file"
+0x1002df60,"NOT A FUNCTION: interior block of 0x1002d860: decoded from that start, 0x1002df5e is `lea edx,[ebp-0x1c]` (8d 55 e4), so 0x1002df60 is inside it; nothing calls or jumps to 0x1002df60 from outside it and no copy of the address is in the file"

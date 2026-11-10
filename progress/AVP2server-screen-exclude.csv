@@ -1,2 +1,3 @@
 addr,reason
 0x10001ec0,"NOT A FUNCTION: interior block of w_IsPolyBlocking (0x10001d4e): 0x10001ebf is `jmp 0x10001ec5` (eb 04), so 0x10001ec0 is its displacement byte; the 'call' that enumerated it is an e8 operand byte at 0x10001eba (`mov dword ptr [ebp-0x18],1`, an ebp-0x18 displacement), not a call instruction"
+0x10027a3d,"NOT A FUNCTION: interior block of 0x10027a01: decoded from that start, 0x10027a3c is `mov dword ptr [ebp-0x24],0xffffffd4` (c7 45 dc d4 ff ff ff), so 0x10027a3d is inside it; nothing calls or jumps to 0x10027a3d from outside it and no copy of the address is in the file"

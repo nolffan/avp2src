@@ -2646,6 +2646,7 @@ AvP2 lithtech.exe	sub_42ff80
 AvP2 lithtech.exe	sub_42ffb0
 AvP2 lithtech.exe	sub_430010
 AvP2 lithtech.exe	sub_430020
+AvP2 lithtech.exe	sub_430060
 AvP2 lithtech.exe	sub_430070
 AvP2 lithtech.exe	sub_4300b0
 AvP2 lithtech.exe	sub_4300e0

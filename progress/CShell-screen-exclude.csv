@@ -1,0 +1,3 @@
+addr,reason
+0x101379cf,"NOT A FUNCTION: interior block of 0x10137920: 0x101379c9 `mov eax,dword ptr [esi+0x1928]` (8b 86 28 19 00 00) falls through into 0x101379cf; nothing calls or jumps to 0x101379cf from outside it and no copy of the address is in the file"
+0x1013d1bb,"NOT A FUNCTION: interior block of 0x1013d030: decoded from that start, 0x1013d1b7 is `mov byte ptr [esp+0x2c],0x7` (c6 44 24 2c 07), so 0x1013d1bb is inside it; nothing calls or jumps to 0x1013d1bb from outside it and no copy of the address is in the file"
