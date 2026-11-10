@@ -2309,7 +2309,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\MFCStub.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\ButeMgrNoMFC.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\ButeMgrNoMFC.lib"
 
 !IF  "$(CFG)" == "ClientShellDLL_PH - Win32 Release"
 

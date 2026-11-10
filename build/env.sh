@@ -22,7 +22,7 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 # never a source), and the project's own header directory tools/mkdeps.py
 # follows
 export RELEASESRC_VARIANTS="AVP2_MODERN AVP2_DEBUG"
-export RELEASESRC_OUTPUT_DIRS="built final release clientshelldll___win32_final object___win32_final primalhunt avp2release libs"
+export RELEASESRC_OUTPUT_DIRS="built final release release8168 clientshelldll___win32_final object___win32_final primalhunt avp2release libs"
 # ... and Launch.dll's Debug build (not every Debug/: STLport has a source
 # directory of that name), and the libraries build/build.mk puts in the
 # dedicated server's project directory (server.lib, and AVP2Serv.exe's own

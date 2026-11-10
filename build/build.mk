@@ -115,6 +115,13 @@ ENV_GAME := $(call vc_env,$(V8966))
 # objects (progress/COMPILERS.md).
 CL_ClientShellDLL_PH := $(V8966)/BIN/cl.exe
 CL_Object_PH         := $(V8966)/BIN/cl.exe
+# AvP2's Object.lto is 8168's but for 12 objects of 8966 (Rich header).
+# AINodeMgr.cpp is one: under 8966 its two class-definition initializers
+# (AINodeGroup's and AINodeMgr's PropDef tables, 202 and 114 bytes, built
+# in place where 8168 builds each PropDef on the stack and copies it) are
+# identical, and so are AddTeleportee, FindCowerNode and FindAdvanceNode,
+# which no 8168 build of it is.
+CL_Object__AINodeMgr := $(V8966)/BIN/cl.exe
 CL_ServerApp_PH      := $(V8966)/BIN/cl.exe
 # AvP2's CShell.dll is not 8168's throughout: its Rich header has C++ 8168
 # x142 and 8966 x114, and the 8966 objects are not only the libraries'.
@@ -293,16 +300,24 @@ LIB_CFLAGS := /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D NO_PRAGM
 LT2LS  := ..\..\LT2\lithshared
 LT2LS2 := ..\\..\\LT2\\lithshared
 LOUT   := src/LT2/lithshared/libs/Release
+# The cl 8966 builds of ButeMgrNoMFC, LTGUIMgr, LithTrackMgrClient and
+# GameSpyMgr, as the release's prebuilt ones (progress/targets.py, LIBS,
+# scores these): $(LOUT) has AvP2 1.0.9.6's builds of them ("AvP2 1.0.9.6's
+# builds of the game DLLs' libraries", below)
+L8966  := src/LT2/lithshared/libs/Release8966
 LS_OURS :=
 # $(call lsobjs,<dir>,<incs>,<sources>) -> compile each into <dir>/Release
 define lsobjs
 $(foreach s,$(3),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/Release),src/lithshared/$(1),$(s),$(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(2) /FoRelease/,wine-drives)))
 LSOBJ_$(1) := $(foreach s,$(3),$(call c_obj,$(s),src/lithshared/$(1)/Release))
 endef
-# $(call lslib,<dir>,<library>,<incs>,<sources>)
+# $(call lslib,<dir>,<library>,<incs>,<sources>[,<library's directory>])
+# (the directory $(LOUT) unless given: the four libraries AvP2 1.0.9.6's
+# game DLLs link a build of their own of, below, give $(L8966))
 define lslib
 $(call lsobjs,$(1),$(3),$(4))
-$(call tool,$(LOUT)/$(2).lib,$$(LSOBJ_$(1)) | wine-drives,cd src/lithshared/$(1) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\$(2).lib' $$(call q,$$(subst /,\,$$(patsubst src/lithshared/$(1)/%,%,$$(LSOBJ_$(1))))))
+LSINC_$(1) := $(3)
+$(call tool,$(or $(5),$(LOUT))/$(2).lib,$$(LSOBJ_$(1)) | wine-drives,mkdir -p $(or $(5),$(LOUT)) && cd src/lithshared/$(1) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(or $(5),$(LOUT)))\$(2).lib' $$(call q,$$(subst /,\,$$(patsubst src/lithshared/$(1)/%,%,$$(LSOBJ_$(1))))))
 LS_OURS += $(2)
 endef
 c_obj = $(2)/$(basename $(notdir $(subst \,/,$(1)))).obj
@@ -337,7 +352,7 @@ $(eval $(call lslib,MFCStub,MFCStub,/I $(LT2LS2)\\mfcstub /I $(LT2LS2)\\incs /I 
 # AvP2's game DLLs link it: _NOMFC, STLport, StdLith, MFCStub, CryptMgr and
 # Lith on the path.
 $(eval $(call lslib,ButeMgr,ButeMgrNoMFC,/D _NOMFC /I $(LT2LS)\butemgr /I $(LT2LS)\stl /I $(LT2LS)\stdlith /I $(LT2LS)\mfcstub /I $(LT2LS)\cryptmgr /I $(LT2LS)\lith /I $(LT2LS)\incs,\
-    arange.cpp avector.cpp butemgr.cpp stdafx.cpp))
+    arange.cpp avector.cpp butemgr.cpp stdafx.cpp,$(L8966)))
 # ButeMgr: MFC's build of the same sources (no _NOMFC, no MFCStub: it names
 # nafxcw.lib and uses CString), the release's prebuilt ButeMgr.lib. Of the
 # images, only Primal Hunt's dedicated server links it (ServerApp_PH, by
@@ -391,7 +406,7 @@ $(eval $(call wonlib,src/engine/lithtech/Release/wonapi,..\..\..\engine\lithtech
 wonapi: $(LOUT)/wonapi/WONAPI.lib src/engine/lithtech/Release/wonapi/WONAPI.lib
 
 .PHONY: libs
-libs: $(LS_OURS:%=$(LOUT)/%.lib) $(LOUT)/wonapi/WONAPI.lib
+libs: $(LS_OURS:%=$(LOUT)/%.lib) $(LOUT)/wonapi/WONAPI.lib libs8966
 
 # The debug builds of StdLith and RezMgr. Primal Hunt's server.dll links
 # them, not the release builds (its block from 0x1004a6e0, between the
@@ -463,7 +478,7 @@ LTGUI_SRCS := ltguibitmapctrl.cpp ltguicolumntextctrl.cpp ltguicommandhandler.cp
     ltguieditctrl.cpp ltguifadecolorctrl.cpp ltguifadeitemctrl.cpp ltguifont.cpp ltguilistctrl.cpp ltguimessagebox.cpp \
     ltguimgr.cpp ltguionoffctrl.cpp ltguiscrollbarctrl.cpp ltguisliderctrl.cpp ltguitextitemctrl.cpp
 $(eval $(call lslib,ltguimgr,ltguimgr_LT2,/D _NOMFC /D _LITHTECH2 /I $(LT2LS)\ltguimgr /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs \
-    /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTGUI_SRCS)))
+    /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTGUI_SRCS),$(L8966)))
 $(eval $(call lslib,lithfontmgr,LithFontMgr_LT2,/D _LITHTECH2 /I $(LT2LS)\lithfontmgr /I $(LT2LS)\incs /I $(LT2LS)\mfcstub \
     /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,lithbitmapfont.cpp lithcursor.cpp lithfont.cpp lithfontmgr.cpp lithsystemfont.cpp))
 # LithTrackMgrClient.lib: LithTrackMgr, the in-game camera-track editor,
@@ -474,8 +489,9 @@ $(eval $(call lslib,lithfontmgr,LithFontMgr_LT2,/D _LITHTECH2 /I $(LT2LS)\lithfo
 LTM_SRCS := LithTrack.cpp LithTrackList.cpp LithTrackKey.cpp LithTrackDrawObj.cpp LithTrackBarBase.cpp \
     LithTrackBarCamera.cpp LithTrackBarEdit.cpp LithTrackBarHelp.cpp LithTrackBarKey.cpp LithTrackBarTrack.cpp \
     LithTrackMgr.cpp
-$(eval $(call lsobjs,lithtrackmgr,/D _CLIENTBUILD /D _LITHTECH2 /D LT15_COMPAT /I $(LT2LS)\lithtrackmgr /I $(LT2LS)\lithfontmgr \
-    /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .,$(LTM_SRCS)))
+LTM_INCS := /D _CLIENTBUILD /D _LITHTECH2 /D LT15_COMPAT /I $(LT2LS)\lithtrackmgr /I $(LT2LS)\lithfontmgr \
+    /I $(LT2LS)\incs /I $(LT2LS)\mfcstub /I $(LT2LS)\lith /I ..\..\LT2\sdk\inc /I .
+$(eval $(call lsobjs,lithtrackmgr,$(LTM_INCS),$(LTM_SRCS)))
 .PHONY: lithtrackobjs
 lithtrackobjs: $(LSOBJ_lithtrackmgr)
 # The library, in the shipped one's member order: LithFontMgr's five
@@ -484,7 +500,7 @@ LTM_MEMBERS := $(addprefix src/lithshared/lithfontmgr/Release/,lithbitmapfont.ob
     lithfontmgr.obj lithsystemfont.obj) $(addprefix src/lithshared/lithtrackmgr/Release/,LithTrackMgr.obj \
     LithTrackList.obj LithTrackKey.obj LithTrackDrawObj.obj LithTrackBarTrack.obj LithTrackBarKey.obj \
     LithTrackBarHelp.obj LithTrackBarEdit.obj LithTrackBarCamera.obj LithTrackBarBase.obj LithTrack.obj)
-$(eval $(call tool,$(LOUT)/LithTrackMgrClient.lib,$(LTM_MEMBERS) | wine-drives,cd src/lithshared && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\LithTrackMgrClient.lib' $(call q,$(subst /,\,$(patsubst src/lithshared/%,%,$(LTM_MEMBERS))))))
+$(eval $(call tool,$(L8966)/LithTrackMgrClient.lib,$(LTM_MEMBERS) | wine-drives,mkdir -p $(L8966) && cd src/lithshared && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(L8966))\LithTrackMgrClient.lib' $(call q,$(subst /,\,$(patsubst src/lithshared/%,%,$(LTM_MEMBERS))))))
 LS_OURS += LithTrackMgrClient
 # GameSpyMgr.lib and GameSpyClientMgr.lib: GameSpy's server and client
 # managers and the GameSpy C Engine SDK, with cl 8966 against STLport, as
@@ -501,7 +517,7 @@ $(eval $(call compile,src/lithshared/gamespy/gamespymgr/Release/GameSpyMgr.obj,s
     $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LIB_CFLAGS) $(GSM_INCS) /YX /FpRelease\GameSpyMgr.pch /FoRelease/,wine-drives))
 LSOBJ_gamespy/gamespymgr += src/lithshared/gamespy/gamespymgr/Release/GameSpyMgr.obj
 # The library, ours: the shipped one's members, in its order
-$(eval $(call tool,$(LOUT)/GameSpyMgr.lib,$(LSOBJ_gamespy/gamespymgr) | wine-drives,cd src/lithshared/gamespy/gamespymgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\GameSpyMgr.lib' $(call q,Release\GameSpyMgr.obj Release\gsutils.obj)))
+$(eval $(call tool,$(L8966)/GameSpyMgr.lib,$(LSOBJ_gamespy/gamespymgr) | wine-drives,mkdir -p $(L8966) && cd src/lithshared/gamespy/gamespymgr && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(L8966))\GameSpyMgr.lib' $(call q,Release\GameSpyMgr.obj Release\gsutils.obj)))
 LS_OURS += GameSpyMgr
 # GameSpyClientMgr.lib's directory is a level deeper too. Its C++ objects
 # are built as its project had them (GameSpyClientMgr.dsp: GSCM_LOCAL_BUILD,
@@ -578,7 +594,7 @@ $(eval $(call lsphlib,LithFontMgr_LT2,lithfontmgr/,$(LSPHOBJ_lithfontmgr)))
 $(eval $(call lsphlib,LithTrackMgrClient,,$(subst /Release/,/ReleasePH/,$(LTM_MEMBERS))))
 .PHONY: phlibs
 phlibs: $(LPH)/GameSpyMgr.lib $(LPH)/GameSpyClientMgr.lib $(LPH)/WONAPI.lib $(LPH)/ltguimgr_LT2.lib \
-    $(LPH)/LithFontMgr_LT2.lib $(LPH)/LithTrackMgrClient.lib
+    $(LPH)/LithFontMgr_LT2.lib $(LPH)/LithTrackMgrClient.lib $(LPH)/ButeMgrNoMFC.lib
 .PHONY: gamespyobjs
 gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 #
@@ -597,6 +613,67 @@ $(eval $(call tool,$(LOUT)/WONAPI.lib,$(LOUT)/wonapi/WONAPI.lib,cp $(LOUT)/wonap
 LS_OURS += WONAPI
 .PHONY: gamelibs
 gamelibs: $(LOUT)/ltguimgr_LT2.lib $(LOUT)/LithFontMgr_LT2.lib $(LOUT)/WONAPI.lib $(LOUT)/LithTrackMgrClient.lib $(LOUT)/GameSpyMgr.lib $(LOUT)/GameSpyClientMgr.lib
+#
+# AvP2 1.0.9.6's builds of the game DLLs' libraries. Its CShell.dll
+# (2002-03-01) and Object.lto (2002-02-28) were linked before the release's
+# prebuilt libraries were last built: some of the objects they link are cl
+# 8168 builds, where the prebuilt ones (and ours above, $(L8966)) are all
+# 8966. Each of these objects, compiled with 8168 from the same source and
+# flags, has functions identical to retail that its 8966 build has in no
+# form (and loses none):
+#   ltguieditctrl     CLTGUIEditCtrl::Render, GetWidth (383 and 87 bytes,
+#                     8966: 378 and 78)
+#   ltguicyclectrl    CLTGUICycleCtrl::CalculateSize (204; 8966: 207)
+#   ltguicolumntextctrl  CLTGUIColumnTextCtrl::AddWordWrapColumn and
+#                     SetString of an HSTRING (350, 143; 8966: 349, 142)
+#   ltguimessagebox   CLTGUIMessageBox::GetButtonFromPoint
+#   LithTrackBarTrack LithTrackBarTrack::UpdateItems, UpdateControl,
+#                     OnMouseClick (464, 1250, 1612)
+#   LithTrackList     LithTrackList::CreateNewName (269)
+#   LithTrackDrawObj  none identical, but Update is 5780 bytes, retail's 5832
+#                     (8966: 5240), its _CVector temporaries as retail's
+#   butemgr           CButeMgr::AddString, FindTableOfItems, FindSymTabItem,
+#                     TraverseTableOfTags/Items, CReservedWords::Lookup and
+#                     two hashtable::end instances, in both DLLs
+#   GameSpyMgr        CGameSpyMgr::Init (233; 8966: 236: one `add esp,0x18`
+#                     after both Format calls), SendResponse, FlushResponse,
+#                     ServerOp's and AsyncOpTracker's destructors; the
+#                     8168 InitSierraMultiplayer is retail's length, 2422
+#                     bytes (8966: 2381)
+# The other objects of these libraries compile to the same code under
+# either (so which one Monolith's were cannot be told) and stay 8966's.
+# Primal Hunt's projects link none of these: the _PH projects take Third
+# Law's builds from $(LPH), the release's prebuilt ButeMgrNoMFC.lib among
+# them (PHCShell.dll and PHObject.lto hold the 8966 butemgr.obj: 6 of its
+# functions are identical only as 8966's).
+AVP_8168 := ltguimgr/ltguieditctrl ltguimgr/ltguicyclectrl ltguimgr/ltguicolumntextctrl ltguimgr/ltguimessagebox \
+    lithtrackmgr/LithTrackBarTrack lithtrackmgr/LithTrackList lithtrackmgr/LithTrackDrawObj ButeMgr/butemgr gamespy/gamespymgr/GameSpyMgr
+# $(call avp8168,<dir>,<flags>,<sources>): the 8168 builds, into <dir>/Release8168/
+define avp8168
+$(foreach s,$(3),$(eval $(call compile,$(call c_obj,$(s),src/lithshared/$(1)/Release8168),src/lithshared/$(1),$(s),$(ENV_GAME),$(V8168)/BIN/cl.exe,$(LIB_CFLAGS) $(2) /FoRelease8168/,wine-drives)))
+src/lithshared/$(1)/Release8168/.dir:
+	@mkdir -p $$(@D) && touch $$@
+$(foreach s,$(3),$(call c_obj,$(s),src/lithshared/$(1)/Release8168)): | src/lithshared/$(1)/Release8168/.dir
+endef
+$(eval $(call avp8168,ltguimgr,$(LSINC_ltguimgr),ltguieditctrl.cpp ltguicyclectrl.cpp ltguicolumntextctrl.cpp ltguimessagebox.cpp))
+$(eval $(call avp8168,lithtrackmgr,$(LTM_INCS),LithTrackBarTrack.cpp LithTrackList.cpp LithTrackDrawObj.cpp))
+$(eval $(call avp8168,ButeMgr,$(LSINC_ButeMgr),butemgr.cpp))
+$(eval $(call avp8168,gamespy/gamespymgr,$(GSM_INCS) /YX /FpRelease8168\GameSpyMgr.pch,GameSpyMgr.cpp))
+# $(call avp_mix,<the 8966 build's members>): AvP2 1.0.9.6's, in the same order
+avp_mix = $(foreach o,$(1),$(if $(filter $(patsubst src/lithshared/%/Release/,%/,$(dir $(o)))$(basename $(notdir $(o))),$(AVP_8168)),$(subst /Release/,/Release8168/,$(o)),$(o)))
+# $(call avplib,<library>,<the members' directory under src/lithshared/, with its slash>,<the 8966 build's members>)
+define avplib
+$(call tool,$(LOUT)/$(1).lib,$(call avp_mix,$(3)) | wine-drives,cd src/lithshared/$(2) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\$(1).lib' $(call q,$(subst /,\,$(patsubst src/lithshared/$(2)%,%,$(call avp_mix,$(3))))))
+endef
+$(eval $(call avplib,ButeMgrNoMFC,ButeMgr/,$(LSOBJ_ButeMgr)))
+$(eval $(call avplib,ltguimgr_LT2,ltguimgr/,$(LSOBJ_ltguimgr)))
+$(eval $(call avplib,LithTrackMgrClient,,$(LTM_MEMBERS)))
+$(eval $(call avplib,GameSpyMgr,gamespy/gamespymgr/,$(addprefix src/lithshared/gamespy/gamespymgr/Release/,GameSpyMgr.obj gsutils.obj)))
+# Primal Hunt's ButeMgrNoMFC.lib: the 8966 build, as the release's prebuilt
+$(eval $(call tool,$(LPH)/ButeMgrNoMFC.lib,$(L8966)/ButeMgrNoMFC.lib,mkdir -p $(LPH) && cp $(L8966)/ButeMgrNoMFC.lib $(LPH)/ButeMgrNoMFC.lib))
+L8966_LIBS := $(addprefix $(L8966)/,ButeMgrNoMFC.lib ltguimgr_LT2.lib LithTrackMgrClient.lib GameSpyMgr.lib)
+.PHONY: libs8966
+libs8966: $(L8966_LIBS)
 
 # ---------------------------------------------------------------------------
 # The prebuilt libraries
@@ -645,7 +722,7 @@ endef
 $(foreach w,$(WORKSPACES),$(eval $(call workspace,$(firstword $(subst :, ,$(w))),$(lastword $(subst :, ,$(w))))))
 
 .PHONY: all game
-all game: $(WANTED) ltmsg wonapi debuglibs
+all game: $(WANTED) ltmsg wonapi debuglibs libs8966
 
 # ---------------------------------------------------------------------------
 # The engine: lithtech.exe, server.dll, d3d.ren

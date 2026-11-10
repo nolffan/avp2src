@@ -2358,7 +2358,7 @@ SOURCE="$(LT2_DIR)\lithshared\libs\Release\CryptMgr.lib"
 # End Source File
 # Begin Source File
 
-SOURCE="$(LT2_DIR)\lithshared\libs\Release\ButeMgrNoMFC.lib"
+SOURCE="$(LT2_DIR)\lithshared\libs\ReleasePH\ButeMgrNoMFC.lib"
 
 !IF  "$(CFG)" == "Object_PH - Win32 Release"
 

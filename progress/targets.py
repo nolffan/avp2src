@@ -109,7 +109,13 @@ OUR_LIBS = ["StdLith", "CryptMgr", "lith", "RezMgr", "RegMgr", "MFCStub", "ButeM
             # and its client manager with the GameSpy C Engine SDK
             # (build/build.mk, "GameSpyClientMgr.lib")
             "GameSpyClientMgr"]
-LIBS = [(n, "src/LT2/lithshared/libs/Release/%s.lib" % n) for n in OUR_LIBS]
+# Four of them are scored as their cl 8966 builds (build/build.mk, L8966):
+# AvP2 1.0.9.6's game DLLs link builds with some objects of cl 8168 from
+# the project files' path (build/build.mk, "AvP2 1.0.9.6's builds of the
+# game DLLs' libraries"), where the release's prebuilt ones are all 8966.
+LIBS_8966 = ["ButeMgrNoMFC", "ltguimgr_LT2", "LithTrackMgrClient", "GameSpyMgr"]
+LIBS = [(n, "src/LT2/lithshared/libs/%s/%s.lib" % ("Release8966" if n in LIBS_8966 else "Release", n))
+        for n in OUR_LIBS]
 # WONAPI.lib, built from the release's own source (build/build.mk,
 # "WONAPI.lib"): the release's prebuilt build of it, scored against that.
 # The game DLLs link ours (build/build.mk, "The game DLLs' libraries,
@@ -511,6 +517,11 @@ TARGETS = [
          shipped=REFERENCE + "/CShell.dll", stem="CShell",
          built="src/AVP2/ClientShellDLL/final/CShell.dll", optional=True,
          third_party=PREBUILT_LIBS,
+         # A library's block takes in the unmatched addresses around its
+         # anchored span (lib_block), so that a library function its own
+         # score has as near (out/plan/libdiff.py --list) pairs as near
+         # inside that block, as nolfsrc's game DLLs have it
+         lib_block=True,
          # provisional: 14 import thunks from 0x10172ae6, then libcmt.lib
          # from typinfo.obj (0x10172b3a), 364 members to initcon.obj.
          #   The runtime starts at 0x101709b0, just after WONAPI.lib's last
@@ -530,6 +541,11 @@ TARGETS = [
          shipped=REFERENCE + "/Object.lto", stem="Object",
          built="src/AVP2/ObjectDLL/final/Object.lto", optional=True,
          third_party=PREBUILT_LIBS,
+         # A library's block takes in the unmatched addresses around its
+         # anchored span (lib_block), so that a library function its own
+         # score has as near (out/plan/libdiff.py --list) pairs as near
+         # inside that block, as nolfsrc's game DLLs have it
+         lib_block=True,
          # provisional: libcmt.lib from typinfo.obj (0x10235bb9), 285
          # members.
          #   The runtime starts at 0x10233cb0, as in CShell.dll just after
