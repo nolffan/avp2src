@@ -1046,13 +1046,12 @@ public:
 	// written spans only 0x3dc, and 0x00463a29 fills exactly these four
 	// bytes with dhash_Create(500, 0).
 	void*          m_hSoundHash;             // 0x3dc
-#ifndef PRIMAL_HUNT
-	// AVP2 1.0.9.6: eight bytes more -- `new Client` pushes 0x3e8
-	// (lithtech.exe 0x004704f8, server.dll 0x1002f638) and the constructor
-	// zeroes both (0x0047066a) -- which Primal Hunt's 0x3e0 has not.
+	// AVP2: eight bytes more than NOLF's -- `new Client` pushes 0x3e8
+	// (AvP2 1.0.9.6: lithtech.exe 0x004704f8, server.dll 0x1002f638; Primal
+	// Hunt: lithtech.exe 0x00476892, server.dll 0x10031db8) and the
+	// constructor zeroes both (AvP2 0x0047066a, Primal Hunt 0x100322cb).
 	uint32         m_Unknown3E0;             // 0x3e0
 	uint32         m_Unknown3E4;             // 0x3e4
-#endif
 };
 
 // The console entry points the interface forwards to — all __cdecl.

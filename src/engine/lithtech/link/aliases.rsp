@@ -2092,7 +2092,6 @@
 # 0x490180
 /ALTERNATENAME:?HashFunc@CRezItmHashTableByNameX380@@QAEIPAD@Z=?HashFunc@CRezItmHashTableByNameQ48C@@QAEIPAD@Z
 # 0x43beb0 (bspq_IntersectLine's `call 0x0043beb0` at 0x0043c34a; packet.cpp's body, as server.dll's aliases.rsp)
-/ALTERNATENAME:?bspq_IntersectLineRec@@YAHPAVBSPNode@@PAVCLineQuery@@V?$_CVector@M@@2@Z=?bspq_IntersectLineRec@@YAHPAVCBspNode@@PAVCBspLineQuery@@V?$_CVector@M@@2@Z
 # 0x491a50 (GetKeyVal(int&)'s `call 0x00491a50` at 0x00491ec5; ltnew2.cpp's body)
 /ALTERNATENAME:?GetVal@CControlFileWord@@QAEHAAH@Z=?GetValue@CNode@@QAEHPAJ@Z
 # 0x491a70 (GetKeyVal(float&)'s `call 0x00491a70` at 0x00491f05; ltnew2.cpp's body)

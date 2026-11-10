@@ -58,6 +58,8 @@
 #include "ltbasedefs.h"
 #include "ltlink.h"
 #include "iclientshell.h"
+#include "de_error.h"          // RETURN_ERROR / RETURN_ERROR_SYM_DESC (server/)
+#include "packet.h"            // CPacket::WriteType                   (server/)
 #ifdef AVP2_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
 #endif
@@ -557,6 +559,888 @@ void CClientMgrView::OnExitWorld(CClientShell* /*pShell*/)
 {
 	if (m_pClientShell)
 		m_pClientShell->OnExitWorld();
+}
+
+
+// ======================================================================= //
+//  CClientMgr::StartGame (0x004114a0)
+//
+//  Primal Hunt's client manager unit has it here, between OnExitWorld
+//  (0x00411480) and Disconnect (0x00411a30), which it calls first.  It was
+//  startload.cpp's; startload.cpp's views of the manager, the shell, the
+//  drivers and the message holder come with it, restated (the same class
+//  names, so the calls name the same functions).
+// ======================================================================= //
+
+class CClientMgrQ2B;
+class CClientShellQ2B;
+
+
+// ======================================================================= //
+//  1.  THE VIEWS
+// ======================================================================= //
+
+// clientmgr.h's CClientFileRef, restated so this file does not have to pull
+// that whole header in.  Twelve bytes and the constructor zeroes three
+// fields -- dword, dword, WORD -- which is exactly the shape of DoLoadWorld's
+// first three prologue stores (0x00413d3c dword, 0x00413d40 dword,
+// 0x00413d44 `mov WORD PTR [esp+0x24],bx`).
+class CClientFileRefQ2B
+{
+public:
+	CClientFileRefQ2B() { m_nFileType = 0; m_pFilename = LTNULL; m_nLocalID = 0; }
+
+	uint32 m_nFileType;                            // 0x00
+	char*  m_pFilename;                            // 0x04
+	uint16 m_nLocalID;                             // 0x08
+};
+
+// The opaque file-manager record 0x00404680 hands back.  DoLoadWorld only
+// ever compares it with CClientShell+0x70 and stores it there, so nothing
+// about its contents is known.  clientwin.cpp calls the type CluFileRec.
+class CluFileRecQ2B;
+// The stream 0x004048c0 hands back (clientworldinfo.cpp: "open one
+// CClientFileRef and hand back a stream, or LTNULL").  iltstream.h's
+// ILTStream, with the slot DoLoadWorld calls: SeekTo, slot 5 (PH
+// 0x00417e14 `call *0x14(%edx)` with one zero argument, after the virtual
+// destructor, Release, Read, ReadString and ErrorStatus).
+class ILTStreamQ2B
+{
+public:
+	virtual void     _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
+	virtual void     _p0c()=0; virtual void _p10()=0;
+	virtual LTRESULT SeekTo(uint32 nOffset)=0;                           // 0x14
+};
+// AVP2: iltcommon.h's ILTCommon, as far as GetCRC, slot 15 (0x3c): the
+// virtual destructor, then SetObjectFilenames .. CreateMessage.  PH
+// 0x00417cd0 `call *0x3c(%edx)` with (stream, &result).
+class ILTCommonQ556
+{
+public:
+	virtual void _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
+	virtual void _p0c()=0; virtual void _p10()=0; virtual void _p14()=0;
+	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
+	virtual void _p24()=0; virtual void _p28()=0; virtual void _p2c()=0;
+	virtual void _p30()=0; virtual void _p34()=0; virtual void _p38()=0;
+	virtual LTRESULT GetCRC(ILTStreamQ2B* pStream, uint32& dwResult)=0; // 0x3c
+};
+// The client interface CClientMgr+0x4c4 points to: iltcsbase.h's
+// ILTCSBase puts the embedded ILTMath (one vptr) at +0x04 and m_pCommonLT
+// after it, at +0x08 (PH 0x00417ccb `mov 0x8(%ecx),%ecx`).
+class ILTClientQ556
+{
+public:
+	void*          m_pVtbl;                                              // 0x00
+	void*          m_MathLT;                                             // 0x04
+	ILTCommonQ556* m_pCommonLT;                                          // 0x08
+};
+// lmessage.cpp's view of the ServerMessage string read: the string in place,
+// the cursor stepped past its terminator (lithtech.exe 0x0046f380, server.dll
+// 0x10031041).  DoLoadWorld calls it on its CPacket (PH 0x0041796f, `mov
+// %edi,%ecx`).  The same class name and signature as lmessage.cpp's, so the
+// two declarations name one function.
+class CServerMessageStrQ528
+{
+public:
+	const char* ReadString();                // 0x10031041 / 0x0046f380
+};
+// The file manager at CClientMgr+0x1534 (clientmgr2.cpp / clientwin.cpp).
+class CFileMgrQ2B;
+// The server's world object.  The global at 0x004b17e8 is written at
+// 0x0046440f as `lea ecx,[ebx+0x1a4] ; mov ds:0x4b17e8,ecx` -- CServerMgr's
+// m_World (servermgr.h puts it at 0x1a4), published only when bit 1 of
+// CClient+0x3c0 is set.  DoLoadWorld is its only reader.  (name ours)
+class CServerWorldQ2B;
+// CServerMgr, as far as StartGame reaches it: two methods and nothing else.
+// clientshell.cpp already declares both on its own CServerMgrView.
+class CServerMgrQ2B
+{
+public:
+	// The decoded symbol is
+	// ?DoStartWorld@CServerMgr@@QAEKPADKM@Z, so LTRESULT (char*, uint32,
+	// float).  The float is what makes CClientMgr+0x125c a float here.
+	LTRESULT DoStartWorld(char* pWorldName, uint32 nFlags, float fTime); // 0x004750f0
+	void     GetErrorString(char* pBuf, int nMaxLen);                    // 0x00474580
+};
+
+
+// servermgr.h's CBaseDriver, restated with the five slots StartGame reaches.
+// Slot 0x30 (HostSession) and the two field-free lobby entries are that
+// header's numbering; the three unnamed ones get the names their call sites
+// imply and keep their displacements in the comment.
+class CBaseDriverQ2B
+{
+public:
+	virtual ~CBaseDriverQ2B()=0;                             // 0x00
+	virtual LTBOOL Init()=0;                                 // 0x04
+	virtual void _p08()=0;                                   // 0x08
+	virtual void _p0c()=0;                                   // 0x0c
+	virtual void _p10()=0;                                   // 0x10
+	virtual void _p14()=0;                                   // 0x14
+	virtual void _p18()=0;                                   // 0x18
+	virtual void _p1c()=0;                                   // 0x1c
+	virtual void _p20()=0;                                   // 0x20
+	virtual void _p24()=0;                                   // 0x24
+	virtual void _p28()=0;                                   // 0x28
+	virtual void _p2c()=0;                                   // 0x2c
+	// servermgr.h: HostSession.  0x0040feb4 -- LTRESULT, and StartGame
+	// RETURNS what it answers.
+	virtual LTRESULT HostSession(NetHost* pHostInfo)=0;      // 0x30
+	// 0x004102bb -- one argument, the request's m_pNetSession, LTRESULT.
+	// (name ours)
+	virtual LTRESULT JoinSession(NetSession* pSession)=0;    // 0x34
+	virtual void _p38()=0;                                   // 0x38
+	virtual void _p3c()=0;                                   // 0x3c
+	virtual void _p40()=0;                                   // 0x40
+	virtual void _p44()=0;                                   // 0x44
+	// 0x0040fe69 -- the SG_LOBBY arm of the host path, same argument as
+	// HostSession.  LTRESULT: StartGame tests it against zero and reports
+	// LT_ERROR rather than passing it on.  (name ours)
+	virtual LTRESULT HostLobbySession(NetHost* pHostInfo)=0; // 0x48
+	// 0x00410215 -- the SG_LOBBY arm of the join path, NO arguments, and
+	// the sense is INVERTED against the two above: `test eax,eax ; jne
+	// <continue>`, so nonzero is success.  An LTBOOL, not an LTRESULT.
+	// (name ours)
+	virtual LTBOOL JoinLobbySession()=0;                     // 0x4c
+	virtual void _p50()=0;                                   // 0x50
+	// 0x0041018d -- one argument, the request's m_TCPAddress, LTRESULT.
+	// (name ours)
+	virtual LTRESULT JoinTCPSession(char* sAddress)=0;       // 0x54
+
+	// servermgr.h's CBaseDriver: the name is INLINE at +0x04 (its
+	// m_pad_04 run, which netmgr.cpp's AddDriver fills in place).
+	// FindDriver (0x00459b1d) hands `lea 0x4(%esi)` to stricmp.
+	char m_Name[0x44 - 0x04];                                // 0x04
+};
+
+
+// servermgr.h's CDriverList as far as FindDriver reaches it (name ours).
+class CDriverListQ11
+{
+public:
+	uint32 GetSize() const { return m_nElements; }
+
+	void*            m_pVtbl;                                // +0x00
+	CBaseDriverQ2B** m_pArray;                               // +0x04
+	uint32           m_nElements;                            // +0x08
+};
+
+
+// The client's CNetMgr sub-object (CClientMgr+0x50c, 0x104 bytes).  Both
+// entries are __thiscall on the sub-object, which is why every call site
+// loads its ADDRESS into ecx and pushes nothing for `this`.  m_pMainDriver
+// is servermgr.h's name for CNetMgr+0x100 -- 0x60c absolute, which is the
+// field StartGame reads in both its STARTGAME_HOST and STARTGAME_CLIENT
+// arms.
+class CNetMgrQ2B
+{
+public:
+	CBaseDriverQ2B* FindDriver(char* pDriverName);           // 0x00459b00
+	// 0x00456360.  __thiscall with THREE arguments: CClientShell::
+	// SendToServer (0x00413cd0) is `add ecx,0x50c ; push 0x80 ; push
+	// <connid> ; push <msg> ; call` with no cleanup after, so the callee
+	// cleans and `this` is the sub-object.
+	void SendPacket(CPacket* pMsg, uint32 nConnID, uint32 nFlags);
+
+	uint8           m_pad_000[0x3c];
+	// servermgr.h's m_Drivers (CDriverList, a CMoArray<CBaseDriver*>) at
+	// +0x3c: vptr, then m_pArray at +0x40 and m_nElements at +0x44 --
+	// FindDriver's two reads (0x00459b13, 0x00459b05).  Spelled as the
+	// three words rather than the template so this TU does not
+	// instantiate a second CMoArray.
+	CDriverListQ11  m_Drivers;                               // +0x03c
+	uint8           m_pad_048[0x100 - 0x48];
+	CBaseDriverQ2B* m_pMainDriver;                           // +0x100 (0x60c)
+};
+
+
+// The demo manager at CClientMgr+0x158c.  demodtx.cpp's CDemoMgrQ42C, with
+// only the three entries this file reaches; the trailing pad is what
+// clientmgr2.cpp's `m_Sub158c[0x1610 - 0x158c]` covers.
+class CDemoMgrQ2B
+{
+public:
+	LTRESULT StartRecording(char* pShellName, char* pFilename);          // 0x0042c050
+	LTRESULT StartPlayback(char* pFilename, char* pShellName,
+	                       uint32 nMaxBytes);                            // 0x0042c130
+	void     Stop();                                                     // 0x0042c2a0
+
+	uint8 m_pad_00[0x1610 - 0x158c];
+};
+
+
+// The game DLL's shell.  src/LT2/sdk/inc/iclientshell.h's declaration order with
+// ~IClientShell at slot 0.  (NOLF's header, which this view was first read
+// against at NOLF 0x00413fd5, had PreLoadWorld at 0x1c and a three-argument
+// SetDisconnectCode at 0x60.)
+class IClientShellQ2B
+{
+public:
+	// AVP2: the AvP2 SDK's iclientshell.h order, not NOLF's: GetAuthContext
+	// at slot 1 and OnPeerToPeerAuthPacket at slot 6 push PreLoadWorld to
+	// slot 9 (0x24, PH 0x00417c2c) and SetDisconnectCode to slot 26 (0x68,
+	// PH 0x00417c7b), where it has two arguments and no default -- the
+	// shipped sites push two dwords.
+	virtual void _p00()=0; virtual void _p04()=0; virtual void _p08()=0;
+	virtual void _p0c()=0; virtual void _p10()=0; virtual void _p14()=0;
+	virtual void _p18()=0; virtual void _p1c()=0; virtual void _p20()=0;
+	virtual void PreLoadWorld(char* pWorldName)=0;                       // 0x24
+	virtual void OnEnterWorld()=0;                                       // 0x28
+	virtual void OnExitWorld()=0;                                        // 0x2c
+	virtual void _p30()=0; virtual void _p34()=0; virtual void _p38()=0;
+	virtual void _p3c()=0; virtual void _p40()=0; virtual void _p44()=0;
+	virtual void _p48()=0; virtual void _p4c()=0; virtual void _p50()=0;
+	virtual void _p54()=0; virtual void _p58()=0; virtual void _p5c()=0;
+	virtual void _p60()=0; virtual void _p64()=0;
+	virtual void SetDisconnectCode(uint32 nCode, const char* pMsg)=0;   // 0x68
+};
+
+
+// The refcounting half of the write message.  The object StartGame drives is
+// a CPacket -- packet.h's, field for field: WriteType's expansion at
+// 0x004100a3 reads m_Pos at +0x38, m_MaxDataLen at +0x36, m_DataLen at +0x34,
+// m_Data.m_AllocSize at +0x58, m_Data.m_pData at +0x54 and m_Flags at +0x40,
+// and its overrun arm pushes "CPacket::WriteType".  It ALSO has a vtable at
+// +0x00 whose slots 1 and 2 are AddRef and Release (0x00410093 / 0x004100a0 /
+// 0x0041033c), which is the first dword of packet.h's `m_pad_00[0x34]`.
+//
+// The two are spelled as two classes over one address rather than as a
+// derivation, because deriving would put the vptr BEFORE CPacket's members
+// and move every displacement four bytes.  clientshell.cpp's ILTMessageView
+// takes the other route and re-spells the layout; this file keeps packet.h's
+// templates instead, which is what makes the two inlined WriteTypes
+// reproducible.
+class IPacketRefQ2B
+{
+public:
+	virtual void _p00()=0;
+	virtual void AddRef()=0;                                             // 0x04
+	virtual void Release()=0;                                            // 0x08
+
+	// 0x0045c390, __thiscall, callee-cleaned.  The decoded symbol map
+	// carries it as ?WriteData@ServerMessage@@QAEXPAXK@Z, whose K would be a
+	// uint32 -- but that symbol is a bridged-callsite inference, and
+	// StartGame's site loads the length with `mov ax,WORD PTR [edi+0x11f4]`
+	// and pushes eax with the top half dirty, which only a uint16 parameter
+	// explains ("uint16 parameters load as mov ax").  The callee
+	// masks with `and eax,0xffff` at 0x0045c3af, which is the other half of
+	// the same fact.
+	void WriteData(void* pData, uint16 nLen);
+};
+
+// clientshell.cpp's CMsgRef: the four-byte by-value holder 0x0045c080 hands
+// back through a hidden pointer argument (pushed LAST, which is why the
+// shipped `push eax` at 0x00410080 sits AFTER the two 0x1000s).  The copy
+// AddRefs and the destructor Releases; StartGame's
+//   call 0x45c080 ; esi = [eax] ; if (esi) esi->AddRef()
+//   ecx = [slot]  ; if (ecx) ecx->Release()
+// is the copy into the named holder followed by the temporary going away.
+class CMsgRefQ2B
+{
+public:
+	CMsgRefQ2B(const CMsgRefQ2B& other)
+	{
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->AddRef();
+	}
+
+	~CMsgRefQ2B()
+	{
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->Release();
+	}
+
+	CPacket* operator->() const { return m_pMsg; }
+	operator CPacket*() const   { return m_pMsg; }
+
+	CPacket* m_pMsg;                                                     // 0x00
+};
+
+// clientshell.cpp's CMsgHold: the NAMED holder is built from the returned
+// temporary's pointer (`CMsgHold cMsg(msg_StartWrite(...).m_pMsg)`), which
+// is what gives the shipped AddRef-then-Release-the-temporary pair at
+// 0x00410093 / 0x004100a0.  Initialising a CMsgRef from the call directly
+// elides the copy and loses both.
+class CMsgHoldQ2B
+{
+public:
+	CMsgHoldQ2B(CPacket* pMsg)
+	{
+		m_pMsg = pMsg;
+
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->AddRef();
+	}
+
+	~CMsgHoldQ2B()
+	{
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->Release();
+	}
+
+	CPacket* m_pMsg;                                                     // 0x00
+};
+
+// AVP2: Primal Hunt's StartGame (0x004114a0) declares its holder EMPTY at
+// the top -- `mov %edi,0x1c(%esp)` and EH state 0 before Disconnect
+// (0x004114c9) -- and assigns the returned temporary to it at the send
+// (0x004118c4..0x004118ef): the pointer copied and AddRef'd, nothing
+// released first, then the temporary's Release under EH state 2.  The
+// release at the end tests the copy kept in %edi (0x004119f8).  (name ours)
+class CMsgSlotQ556
+{
+public:
+	CMsgSlotQ556() { m_pMsg = LTNULL; }
+
+	~CMsgSlotQ556()
+	{
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->Release();
+	}
+
+	void operator=(const CMsgRefQ2B& other)
+	{
+		m_pMsg = other.m_pMsg;
+
+		if (m_pMsg)
+			((IPacketRefQ2B*)m_pMsg)->AddRef();
+	}
+
+	CPacket* m_pMsg;                                                     // 0x00
+};
+
+// 0x0045c080 -- a fresh write message of the given size.  __cdecl, returns
+// the holder by value (clientshell.cpp names it).
+CMsgRefQ2B msg_StartWriteQ2B(uint32 nMaxSize, uint32 nSize);
+
+
+// The sixteen-byte block CClientMgr's world loader is handed.  Every field
+// is a shipped store: +0x00 the stream just opened (0x00414048), +0x04 the
+// manager's dword at 0x11d8 (0x00414065), +0x08 the address of the twelve-
+// byte forwarder at 0x00413d20 (0x0041406c) and +0x0c the manager itself
+// (0x00414074), which is that forwarder's own argument -- so the pair is a
+// callback and its user pointer.  The constructor zeroes all four: the
+// shipped code stores zero to each of them before storing the real value
+// (0x00414044 / 0x0041404c / 0x00414053 / 0x00414057).  (names ours)
+class CWorldLoadRequestQ2B
+{
+public:
+	CWorldLoadRequestQ2B()
+	{
+		m_pStream      = LTNULL;
+		m_nUnknown04   = 0;
+		m_pfnCallback  = LTNULL;
+		m_pCallbackUser = LTNULL;
+	}
+
+	ILTStreamQ2B* m_pStream;                                   // 0x00
+	uint32        m_nUnknown04;                                // 0x04
+	void        (*m_pfnCallback)(CClientMgrQ2B* pClientMgr);   // 0x08
+	CClientMgrQ2B* m_pCallbackUser;                            // 0x0c
+};
+
+
+// CClientMgr, as far as these two functions reach it.  Every offset is a
+// shipped displacement and every name that another file already has is that
+// file's name.
+class CClientMgrQ2B
+{
+public:
+	// AVP2: the offsets below are AvP2's and Primal Hunt's, not NOLF's (the
+	// NOLF displacements this view was first read at are kept in the
+	// comments): four bytes longer from m_World's end to the client shell and
+	// 0x110 longer from the music manager on, as clientmgr.h has it.  Every
+	// one is read off Primal Hunt's DoLoadWorld (0x00417790) and StartGame
+	// (0x004114a0); AvP2 1.0.9.6's (0x004157b0) reads the same ones.
+	uint8            m_pad_0000[0x184];
+	// 0x00414085 stores the world stream here and 0x0041408b reads it back
+	// one instruction later, through the SAME base register -- so it is a
+	// member and not a local.  It falls inside clientmgr.h's m_World
+	// (0x06c..0x50c).  (name ours)  PH 0x00417e5d.
+	ILTStreamQ2B*    m_pWorldStream184;                        // 0x000184
+	uint8            m_pad_0188[0x410 - 0x188];
+	// clientmgr2.cpp's m_Records40c (NOLF +0x40c): eleven sixteen-byte
+	// records.  Both CClientShell::ResetRecords and DoLoadWorld's tail loop
+	// (PH 0x00417f2e, `mov edi,0x410 .. cmp edi,0x4c0`) walk them with an
+	// `add 0x10` stride and a 0xb0 span.  They are LTLists: 0x00418130
+	// takes each one's address as an LTList*.
+	uint8            m_Lists40c[0xb0];                         // 0x000410
+	uint8            m_pad_04c0[0x4c4 - 0x4c0];
+	// clientmgr.h's m_pClientDE (ccline.cpp / cchandler.cpp: +0x4c4 in both
+	// retail exes).  DoLoadWorld reaches its CommonLT for the world CRC
+	// (PH 0x00417cbf).
+	ILTClientQ556*   m_pClientDE;                              // 0x0004c4
+	uint8            m_pad_04c8[0x510 - 0x4c8];
+	CNetMgrQ2B       m_NetMgr;                                 // 0x000510 (NOLF 0x50c)
+	uint8            m_pad_0614[0x620 - 0x614];
+	IClientShellQ2B* m_pClientShell;                           // 0x000620 (NOLF 0x61c)
+	uint8            m_pad_0624[0x12e8 - 0x624];
+	// clientmgr2.cpp: "zeroed by the ctor", read by cm_GetUnknown11d8.
+	// DoLoadWorld copies it into the world load request (PH 0x00417e35).
+	uint32           m_Unknown11d8;                            // 0x0012e8 (NOLF 0x11d8)
+	uint8            m_pad_12ec[0x136c - 0x12ec];
+	// A FLOAT.  lt2new3.cpp's note settles it from the other side --
+	// CLTClient::GetTime is a `flds` of it -- and the decoded mangled name
+	// for DoStartWorld (`...@@QAEKPADKM@Z`) makes StartGame's third
+	// DoStartWorld argument a float too, which agrees.  PH 0x0041783d.
+	float            m_fTime125c;                              // 0x00136c (NOLF 0x125c)
+	uint8            m_pad_1370[0x161c - 0x1370];
+	CClientShellQ2B* m_pClientShell2;                          // 0x00161c (NOLF 0x150c)
+	uint8            m_pad_1620[0x1644 - 0x1620];
+	CFileMgrQ2B*     m_pFileMgr;                               // 0x001644 (NOLF 0x1534)
+	uint8            m_pad_1648[0x169c - 0x1648];
+	CDemoMgrQ2B      m_DemoMgr;                                // 0x00169c (NOLF 0x158c)
+
+	// ---- the two entry points this file defines -------------------------
+	LTRESULT StartGame(StartGameRequest* pRequest);            // 0x0040fd90
+	// PH 0x00410e40 -- __thiscall, no arguments; StartGame's last act for
+	// every game type but the two hosts and NORMAL.  It starts from the
+	// shell's GetAuthContext (slot 1 of m_pClientShell).  (name ours)
+	void     Sub410e40Q556();                                  // PH 0x00410e40
+	inline void SendToServerQ2B(CPacket* pMsg);
+
+
+	// ---- reached, not defined -------------------------------------------
+	// clientmgr2.cpp:414 (0x00410350): winds the demo manager down and
+	// tells the shell to disconnect.  StartGame's very first act.
+	void     Disconnect();                                     // 0x00410350
+	// clientmgr2.cpp:377 -- tell the game DLL a world came up.  __thiscall,
+	// one argument, the shell.
+	void     OnEnterWorld(CClientShellQ2B* pShell);            // 0x0040fd50
+	// 0x004248d0 -- __thiscall, one argument, LTBOOL.  Both `this + 0x6c`
+	// and `arg + 0x6c` are handed to 0x0048d930, so the argument is a world
+	// object of the same shape as the manager's own m_World; it also sets
+	// this+0x1e8 to 1 first.  DoLoadWorld reports "Inherit failed" when it
+	// answers false, which is where the name comes from.  (name ours)
+	LTBOOL   InheritWorld(CServerWorldQ2B* pWorld);            // 0x004248d0
+	// 0x004250e0 -- __thiscall, one argument, the stream just stored at
+	// +0x184; it clears bit 2 of this+0x180 and calls slot 5 (0x14) on the
+	// argument.  The decoded symbol map calls the address
+	// CWorldData::LoadObjects on `bridged-callsite` evidence, which
+	// may be wrong -- and `this` here is the CLIENT MANAGER,
+	// so the row's class is at least not the one at this call site.  Kept
+	// as an address.
+	void     Sub4250e0Q2B(ILTStreamQ2B* pStream);              // 0x004250e0
+	// PH 0x004133c0 -- __thiscall, (string, uint32*): the CRC of the misc
+	// files the server names in the world-load packet, checked against the
+	// server's own value (LT_DISCON_MISCCRC / LT_CRCMISCCHECKFAILED when they
+	// differ).  The answer is never read.  (name ours)
+	LTRESULT GetMiscCRCQ556(const char* pFiles, uint32& nCRC); // PH 0x004133c0
+	// 0x004224d0 -- __thiscall, one argument, LTRESULT; it answers 3
+	// immediately if the request's first dword is null.  Same
+	// `bridged-callsite` caveat: the map calls it CServerWorldFull::Load.
+	LTRESULT LoadWorldQ2B(CWorldLoadRequestQ2B* pRequest);     // 0x004224d0
+	// clientrender.cpp / cchandler.cpp: a __cdecl VARARGS member, which is
+	// why the shipped sites push `this` LAST.  It formats the resource
+	// string for the code into this+0x620 with a 0x12c cap.
+	LTRESULT SetupError(LTRESULT dResult, ...);                // 0x0041fc60
+};
+
+extern CClientMgrQ2B* g_pClientMgrQ2B;                         // 0x004b17e0
+
+
+// The engine's own client shell (clientmgr2.cpp names the class off
+// DoLoadWorld's own literal; clientshell.cpp fixes sizeof at 0x90 and
+// refutes the second vptr).  ONE virtual is declared so that the vptr lands
+// at +0x00 and StartGame's `mov eax,[esi] ; push 1 ; mov ecx,esi ;
+// call [eax]` comes out as a __thiscall through slot 0.
+class CClientShellQ2B
+{
+public:
+	CClientShellQ2B();                                         // 0x00413210
+
+	// Slot 0 of 0x004a1d18.  clientmgr.h reads it as Disconnect(int) from
+	// the `1` CClientMgr::Disconnect passes; the identical bytes would come
+	// out of `delete pShell` on a class with a virtual destructor, and
+	// nothing in either function separates the two.  Declared, not defined,
+	// so no vtable is emitted in this object.
+	virtual void Disconnect(int nReason);                      // vtable 0x00
+
+	uint8            m_pad_0004[0x14 - 0x04];
+	// clientshell.cpp's m_Unknown14 / m_Unknown18 / m_Unknown1c, and
+	// clientmgr.h's CClientConnection names the middle two: +0x18 is what
+	// GetGameTime hands out and +0x1c what GetGameFrameTime hands out.
+	float            m_fPrevGameTime;                          // 0x014
+	float            m_fGameTime;                              // 0x018
+	float            m_fFrameTime;                             // 0x01c
+	// Copied from CClientMgr+0x125c with an INTEGER move
+	// (0x00413ddd/0x00413dea), which is why it is spelled uint32 here --
+	// see lt2new3.cpp's coin-flip note on exactly this pair.  (name ours)
+	uint32           m_Unknown20;                              // 0x020
+	// 0x3d088889 stored as an immediate, which is 1.0f/30.0f correctly
+	// rounded -- a float assigned a constant, so no FPU.
+	float            m_fUnknown24;                             // 0x024
+	uint8            m_pad_0028[0x34 - 0x28];
+	// clientmgr2.cpp: the third argument of every send through the
+	// manager's CNetMgr.  StartGame reads it at 0x00410324.
+	uint32           m_nConnID;                                // 0x034
+	uint8            m_pad_0038[0x3c - 0x38];
+	// clientshell.cpp: "1 in StartupLocal".  DoLoadWorld branches on it to
+	// choose inheriting the server's world over loading the file.
+	LTBOOL           m_bLocal;                                 // 0x03c
+	CServerMgrQ2B*   m_pServerMgr;                             // 0x040
+	uint8            m_pad_0044[0x70 - 0x44];
+	// The world file record currently loaded.  DoLoadWorld compares the
+	// lookup against it to decide whether the world CHANGED, and stores the
+	// new one as its last act but one.  (name ours)
+	CluFileRecQ2B*   m_pWorldFileRec;                          // 0x070
+	uint8            m_pad_0074[0x78 - 0x74];
+	CClientMgrQ2B*   m_pClientMgr;                             // 0x078
+	LTBOOL           m_bWorldLoaded;                           // 0x07c
+	uint8            m_pad_0080[0x84 - 0x80];
+	// clientmgr.h's CClientConnection::m_nGameMode, which GetGameMode hands
+	// out; StartGame seeds it from StartGameRequest::m_Type.
+	int              m_nGameMode;                              // 0x084
+	uint8            m_pad_0088[0x90 - 0x88];
+
+	// ---- the entry point this file defines ------------------------------
+	LTRESULT DoLoadWorld(CPacket* pMsg, int nUnused);          // 0x00413d30
+
+	// ---- reached, not defined -------------------------------------------
+	LTBOOL   Init(CClientMgrQ2B* pClientMgr);                  // 0x00413310 (clientmgr2.cpp)
+	// clientmgr2.cpp types the argument uint32; StartGame hands it a
+	// CBaseDriver*, so it is spelled void* here to avoid a cast that would
+	// be free anyway.
+	LTRESULT SetUnknown30(void* pValue);                       // 0x00413430 (clientmgr2.cpp)
+	LTRESULT StartupLocal(StartGameRequest* pRequest, LTBOOL bHost,
+	                      uint32 nGameType);                   // 0x00413440 (clientshell.cpp)
+	void     Sub4143f0Q2B();                                   // 0x004143f0 (clientmgr2.cpp)
+	LTBOOL   CreateRenderWorld();                              // 0x00414860 (clientmgr2.cpp)
+	LTBOOL   CreateVisContainerObjects();                      // 0x004144e0 (csvis.cpp)
+};
+
+void cm_OnShellInitQ2B(CClientMgrQ2B* pClientMgr);             // 0x00411560
+void sub_42e680(uint32 nValue);                                // 0x0042e680
+
+// ======================================================================= //
+//  4.  CClientMgr::StartGame -- 0x0040fd90, 1472 bytes, 47 calls
+//
+//  WHAT NAMES IT: six RETURN_ERROR sites push 0x004a844c "StartGame".
+//  src/engine/lithtech/clientmgr.h:197 already declares
+//  `LTRESULT StartGame(StartGameRequest*)` at this address off the
+//  ILTClient interface slot, and the two agree.
+//
+//  WHAT PINS THE SIGNATURE, and it is the single best thing in the
+//  function.  `ret $0x4`, `mov ecx,ebx`, one argument -- and that argument
+//  is ltbasedefs.h's StartGameRequest EXACTLY, byte for byte, with no
+//  invention at all:
+//
+//      m_Type              0x0000   read at 0x0040fdcd / 0x0040fde1
+//      m_WorldName[100]    0x0004   `lea ebp,[edi+0x4]`      0x0040fecd
+//      m_TCPAddress[100]   0x0068   `lea eax,[edi+0x68]`     0x00410187
+//      m_RecordFilename    0x00cc   `lea eax,[edi+0xcc]`     0x0040fec5
+//      m_PlaybackFilename  0x0130   `lea eax,[edi+0x130]`    0x0040ff12
+//      m_pNetSession       0x0194   read at 0x00410267
+//      m_HostInfo (NetHost) 0x0198  `lea ecx,[edi+0x198]`    0x0040fe5a
+//      m_flags             0x11e4   `test BYTE PTR [edi+0x11e4],0x1`
+//      m_pGameInfo         0x11e8   (not read here)
+//      m_GameInfoLen       0x11ec   (not read here)
+//      m_pClientData       0x11f0   read at 0x00410304
+//      m_ClientDataLen     0x11f4   read at 0x004100a3 and 0x004102fd
+//
+//  MAX_SGR_STRINGLEN is 100 and sizeof(NetHost) is 4+4+4+4096+64 = 0x104c,
+//  and 0x198 + 0x104c is 0x11e4 to the byte.  The `test BYTE ...,0x1` is
+//  SG_LOBBY, and `strncpy(..., 0x63)` at 0x00410045 is
+//  MAX_SGR_STRINGLEN - 1.  Nothing in this layout is inferred.
+//
+//  WHAT PINS THE BODY
+//
+//    * `push 0x90 ; call 0x004290b0 ; test ; je ; mov ecx,eax ; call
+//      0x00413210` is `new CClientShell` verbatim, and 0x90 is
+//      the sizeof that clientshell.cpp derives independently.  The
+//      m_nGameMode store at 0x0040fdcf is OUTSIDE the null guard and the
+//      constructor call is inside it, which is exactly what `new` gives and
+//      what a written-out allocate-and-test does not.
+//
+//    * `sub ecx,2 ; je ... ; dec ecx ; je ... ; test eax,eax ; jne` off ONE
+//      load of m_Type: a three-way compare chain, tested in the order
+//      CLIENT, CLIENTTCP, HOST, not a jump table.
+//
+//    * THE THIRD ARGUMENT OF StartupLocal IS THE NET DRIVER, NOT m_Type.
+//      0x0040ff66 is `push ebx` and 0x0040ff67 is `mov ebx,[edi]` -- the
+//      push happens FIRST, so what reaches the callee is ebx's PREVIOUS
+//      value: the zero written at 0x0040fdf8 on the plain path, or the
+//      driver loaded at 0x0040fe06 on the STARTGAME_HOST path.  ebx is
+//      callee-saved and nothing else writes it between.  This corrects
+//      src/engine/lithtech/clientshell.cpp:1043, which reads argument three
+//      as "arg1->field0 itself".
+//
+//    * The lobby split in the HOST arm is an if/else whose arms share their
+//      argument setup, which is why `lea ecx,[edi+0x198] ; push ecx ;
+//      mov ecx,ebx` is hoisted ABOVE the `test al,1` branch
+//      ("an if/else that starts with the same store hoists it above the
+//      branch").  The two slots differ in SENSE as well as number: 0x48
+//      answers LTRESULT and a non-LT_OK is reported as LT_ERROR, 0x30
+//      answers LTRESULT and a non-LT_OK is RETURNED, and in the CLIENT arm
+//      0x4c answers an LTBOOL whose ZERO is the failure.
+//
+//    * `m_RecordFilename[0]` / `m_PlaybackFilename[0]` are an if / else-if:
+//      the playback test is only reached when the record test fails, and
+//      both arms end in `pRequest->m_WorldName[0] = 0` -- one block at
+//      0x0040ff62 that the first arm jumps forward into, which is
+//      "VC6 keeps the SECOND copy inline".
+//
+//    * FOUR separate `if (pShell) pShell->Disconnect(1)` sites
+//      (0x0040feeb, 0x0040ff41, 0x0040ff7f, 0x0040ffe0), each followed by
+//      its own return.  At /O2 duplicated epilogues are PRESERVED
+//      so these are four real early returns in the source, not
+//      one shared cleanup.  Two of them (0x0040feed, 0x0040ff43) let VC6
+//      cross-jump the `return dResult` into the final epilogue because eax
+//      already holds the value on that path; the other two reload it.
+//
+//    * The message block is a POSITIVE guard with the LT_OK return
+//      trailing: `mov eax,[ebx+0x150c] ; test ; je 0x0041033f` and
+//      0x0041033f is `xor eax,eax` immediately before the last epilogue.
+//
+//    * WriteType<uint16> is packet.h's member template expanded in place --
+//      the grow loop, the `SetAtGrow(m_AllocSize, &dummy, &g_PacketDataBank)`
+//      with 0x004b4e88 as the bank, the `add WORD PTR [esi+0x38],ax` /
+//      `add WORD PTR [esi+0x34],ax` pair off a materialised 2, and the
+//      overrun arm pushing "CPacket::WriteType" and setting
+//      PACKETFLAG_WRITEOVERFLOW with `or al,0x4` AFTER the report.  The
+//      by-value `T val` parameter lands in the frame slot that held `this`
+//      (0x004100bb), which is dead by then.
+//
+//    * m_ClientDataLen is read TWICE, once for each call, both times as a
+//      WORD -- so the cast is written out at each use and not cached
+//      (repeated member loads are repeated source expressions).
+//
+//  THE ONE LITERAL THAT IS NOT "StartGame".  0x00410010 pushes 0x004a8410
+//  "CClientMgr::StartShell" as the fnName of the world-load failure.  That
+//  string occurs nowhere else in the image and no function of that name
+//  exists; it is a copy-paste in the original source and is reproduced.
+// ======================================================================= //
+
+// WHAT CLOSED StartGame IN NOLF'S BUILD (measured, NOLF lithtech.exe 0x0040fd90):
+//   * the type test is a SWITCH: `sub ecx,2 ; je ; dec ecx ; je` at
+//     0x0040fde8 is VC6's small-switch chain; the if/else-if chain gave
+//     `cmp $2 ; jne` and 83 bytes more.
+//   * the message holder is CMsgHoldQ2B built from `.m_pMsg` (AddRef /
+//     Release-the-temporary at 0x00410093 / 0x004100a0).
+//   * the grow inside WriteType is a CALL to Insert2 (0x004100ee ->
+//     0x00412f50): /O2's per-function inline budget.  Two expansions spend
+//     it -- LTStrCpy (ltbasedefs.h) for the world-name copy at 0x00410045,
+//     and this send wrapper (name ours; a stand-in for whatever inline the
+//     original sent through -- the bytes are just the SendPacket call).
+//     Either one alone leaves Insert2 expanded (measured).
+//   * pWorldName is a local: `lea 0x4(%edi),%ebp` at 0x0040fecd, live to
+//     0x0041004d, is what pushes dResult into memory in the two demo arms
+//     and lets VC6 merge their `m_WorldName[0] = 0` tails at 0x0040ff62.
+inline void CClientMgrQ2B::SendToServerQ2B(CPacket* pMsg)
+{
+	m_NetMgr.SendPacket(pMsg, m_pClientShell2->m_nConnID, 0x80);
+}
+
+LTRESULT CClientMgrQ2B::StartGame(StartGameRequest* pRequest)
+{
+	// NEAR (Primal Hunt 0x004114a0: 1419 shipped, 1704 ours).  Everything
+	// down to the message is shipped's block for block -- the holder
+	// declared empty at the top with EH state 0, the early returns leaving
+	// without its Release, the empty-name error, the start flags, the
+	// trailing 0x00410e40 call.  What is left is the message's WriteType:
+	// shipped CALLS the byte array's Insert2 (0x004118e9 -> 0x004162f0)
+	// where ours expands it.  Measured: the NOLF-shaped body this replaced
+	// (holder built in the block, no 0x00410e40 call) calls it, and adding
+	// EITHER the top-level holder or the trailing call alone makes VC6
+	// expand it; the empty-name test, the flags local, an inline
+	// shell-disconnect helper at the four sites, an operator=(CPacket*)
+	// holder and an explicit Insert2 instantiation ahead of the function
+	// change nothing.
+	//
+	// AVP2: Primal Hunt 0x004114a0 (1419 bytes).  `sub esp,0x210`: E-0x210
+	// the `this` spill that pDriver (and the message temporary) reuse,
+	// E-0x208 dResult, E-0x204 cMsg, E-0x200 errorString, E-0x100
+	// worldName.
+	CMsgSlotQ556     cMsg;
+	LTRESULT         dResult;
+	char             errorString[256];
+	char             worldName[256];
+	CClientShellQ2B* pShell;
+	CBaseDriverQ2B*  pDriver;
+	char*            pWorldName;
+	uint32           nFlags;
+
+	Disconnect();                                                   // 0x004114d4
+
+	pShell = new CClientShellQ2B;                                   // 0x004114de
+	pShell->m_nGameMode = pRequest->m_Type;                         // 0x00411514
+	pShell->Init(this);                                             // 0x0041151a
+
+	sub_42e680(0);                                                  // 0x00411521
+
+	switch (pRequest->m_Type)                                       // 0x0041152e
+	{
+	case STARTGAME_CLIENT:                                          // 0x00411531
+	{
+		pDriver = m_NetMgr.m_pMainDriver;                           // 0x00411803
+
+		if (!pDriver)                                               // 0x00411809
+			RETURN_ERROR(1, "StartGame", LT_NOTINITIALIZED)
+
+		if (pRequest->m_flags & SG_LOBBY)                           // 0x0041180d
+		{
+			if (!pDriver->JoinLobbySession())                       // 0x0041181a
+				RETURN_ERROR(1, "StartGame", LT_ERROR)
+		}
+		else
+		{
+			if (!pRequest->m_pNetSession)                           // 0x0041182c
+				RETURN_ERROR_SYM_DESC(1, "StartGame", LT_INVALIDPARAMS,
+				                      "Missing m_pNetSession")
+
+			dResult = pDriver->JoinSession(pRequest->m_pNetSession);  // 0x00411871
+
+			if (dResult != LT_OK)                                   // 0x00411874
+				return dResult;
+		}
+
+		dResult = pShell->SetUnknown30(pDriver);                    // 0x0041187f
+
+		if (dResult != LT_OK)                                       // 0x00411884
+			return dResult;
+		break;
+	}
+	case STARTGAME_CLIENTTCP:                                       // 0x00411538
+	{
+		pDriver = m_NetMgr.FindDriver("internet");                  // 0x00411790
+
+		if (!pDriver)                                               // 0x00411797
+			RETURN_ERROR(1, "StartGame", LT_NOTINITIALIZED)
+
+		dResult = pDriver->JoinTCPSession(pRequest->m_TCPAddress);  // 0x004117e3
+
+		if (dResult != LT_OK)                                       // 0x004117e6
+			return dResult;
+
+		dResult = pShell->SetUnknown30(pDriver);                    // 0x004117f1
+
+		if (dResult != LT_OK)                                       // 0x004117f6
+			return dResult;
+		break;
+	}
+	default:
+	{
+		pDriver = LTNULL;                                           // 0x00411540
+
+		if (pRequest->m_Type == STARTGAME_HOST)                     // 0x0041153e
+		{
+			pDriver = m_NetMgr.m_pMainDriver;                       // 0x0041154e
+
+			if (!pDriver)                                           // 0x00411554
+				RETURN_ERROR(1, "StartGame", LT_NOTINITIALIZED)
+
+			if (pRequest->m_flags & SG_LOBBY)                       // 0x004115a0
+			{
+				if (pDriver->HostLobbySession(&pRequest->m_HostInfo) != LT_OK)  // 0x004115ab
+					RETURN_ERROR(1, "StartGame", LT_ERROR)
+			}
+			else
+			{
+				dResult = pDriver->HostSession(&pRequest->m_HostInfo);  // 0x004115ee
+
+				if (dResult != LT_OK)                               // 0x004115f1
+					return dResult;
+			}
+		}
+
+		pWorldName = pRequest->m_WorldName;                         // 0x00411607
+
+		if (pRequest->m_RecordFilename[0])                          // 0x00411605
+		{
+			dResult = m_DemoMgr.StartRecording(pWorldName,
+			                                   pRequest->m_RecordFilename);  // 0x00411614
+
+			if (dResult != LT_OK)                                   // 0x00411619
+			{
+				if (pShell)                                         // 0x00411621
+					pShell->Disconnect(1);                          // 0x0041162f
+
+				return dResult;
+			}
+
+			pWorldName[0] = 0;                                      // 0x00411684
+		}
+		else if (pRequest->m_PlaybackFilename[0])                   // 0x00411646
+		{
+			dResult = m_DemoMgr.StartPlayback(pRequest->m_PlaybackFilename,
+			                                  worldName, 0x100);    // 0x0041165e
+
+			if (dResult != LT_OK)                                   // 0x00411663
+			{
+				if (pShell)                                         // 0x0041166b
+					pShell->Disconnect(1);                          // 0x00411679
+
+				return dResult;
+			}
+
+			pWorldName[0] = 0;                                      // 0x00411684
+		}
+
+		dResult = pShell->StartupLocal(pRequest,
+		                               pRequest->m_Type == STARTGAME_HOST,
+		                               (uint32)pDriver);            // 0x0041169b
+
+		if (dResult != LT_OK)                                       // 0x004116a0
+		{
+			if (pShell)                                             // 0x004116a8
+				pShell->Disconnect(1);                              // 0x004116b6
+
+			return dResult;
+		}
+
+		// AVP2: an empty world name is now an error rather than a skip
+		// (0x004116c9 jumps straight to the report), and the start flags
+		// are 0 for STARTGAME_NORMAL, 3 otherwise (0x004116ce..0x004116d8).
+		nFlags = 3;                                                 // 0x004116ce
+		if (pRequest->m_Type == STARTGAME_NORMAL)                   // 0x004116d3
+			nFlags = 0;
+
+		if (!pWorldName[0] ||                                       // 0x004116c7
+		    pShell->m_pServerMgr->DoStartWorld(pWorldName, nFlags,
+		                                       m_fTime125c) != LT_OK)  // 0x004116e6
+		{
+			pShell->m_pServerMgr->GetErrorString(errorString, 0x100);  // 0x004116fc
+			SetupError(LT_SERVERERROR, errorString);                // 0x00411709
+
+			if (pShell)                                             // 0x00411711
+				pShell->Disconnect(1);                              // 0x0041171b
+
+			RETURN_ERROR_SYM_DESC(1, "CClientMgr::StartShell", LT_SERVERERROR,
+			                      "error loading world")
+		}
+
+		if (pRequest->m_PlaybackFilename[0])                        // 0x00411758
+		{
+			LTStrCpy(pWorldName, worldName, MAX_SGR_STRINGLEN);     // 0x00411774
+		}
+		break;
+	}
+	}
+
+	m_pClientShell2 = pShell;                                       // 0x00411891
+	cm_OnShellInitQ2B(this);                                        // 0x00411897
+
+	if (m_pClientShell2)                                            // 0x004118a5
+	{
+		// AVP2: 0x44c (Primal Hunt 0x004118ad).
+		cMsg = msg_StartWriteQ2B(0x44c, 0x44c);                     // 0x004118bc
+
+		cMsg.m_pMsg->WriteType((uint16)pRequest->m_ClientDataLen);  // 0x004118f2
+		((IPacketRefQ2B*)cMsg.m_pMsg)->WriteData(pRequest->m_pClientData,
+			(uint16)pRequest->m_ClientDataLen);                     // 0x004119ba
+		cMsg.m_pMsg->m_Data.m_pArray[0] = 5;                         // 0x004119c7
+		SendToServerQ2B(cMsg.m_pMsg);                               // 0x004119db
+	}
+
+	// AVP2: every game type but the two hosts and NORMAL (0x004119e0).
+	if (pRequest->m_Type != STARTGAME_HOST &&
+	    pRequest->m_Type != STARTGAME_HOSTTCP &&
+	    pRequest->m_Type != STARTGAME_NORMAL)
+		Sub410e40Q556();                                            // 0x004119f3
+
+	return LT_OK;
 }
 
 

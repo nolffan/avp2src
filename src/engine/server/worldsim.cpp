@@ -2108,23 +2108,205 @@ inline int ws_HitPoly(WorldPoly* pPoly, CBounceState* pState, CPolyTest* pTest)
 // both images place them after that file's code (server.dll 0x10017db3 /
 // 0x10017e31, lithtech.exe 0x00441570 / 0x00441620).
 
-// The walk's entry point, whose whole job is to unpack the query: the two
-// ends the caller pointed at are copied onto the stack so the recursion can
-// take them by value, and the query travels on beside them. Nothing else
-// happens here — the answer is the recursion's, unexamined.
+// 0x100192ec (lithtech.exe: expanded in line at 0x004480d0's polygon test)
+// -- the polygon test the line query stops on: the crossing point is on the
+// polygon's plane, and this asks whether it is inside the polygon itself.
+// NOLF's was packet.cpp's (0x10013ddc); in both AvP2 1.0.9.6 and Primal Hunt
+// it is here, with the recursion, ahead of bspq_IntersectLine.
 //
-// (NOLF: the two twelve-byte copies were the by-value arguments, the end
-// vector written to the higher slot first, then the start.)
+// Two rejections before the edge walk: bit 0 of the polygon's surface flags,
+// and the bounding sphere at +0x18/+0x24 (the squared radius against the
+// squared distance, so nothing takes a root).
 //
-// AVP2: the ends are no longer copied. PH server.dll 0x10019435 (23 bytes)
-// pushes m_pEnd, m_pStart, the query and the node as they are and calls
-// 0x100190e2, which copies the start into a frame local of its own
-// (0x100190ea..0x100190f6). That recursion is packet.cpp's
-// bspq_IntersectLineRec, still written with NOLF's by-value ends; the
-// pointer form is declared here (name ours) until it is brought over.
-int bspq_IntersectLineRecQ544(BSPNode* pNode, CLineQuery* pQuery,
-                              LTVector* pStart, LTVector* pEnd);  // 0x100190e2
+// The walk itself is the standard convex test. Each edge runs from the
+// previous vertex to the current one -- the cursor starts at the *last*
+// vertex -- and the plane's normal crossed with the edge gives the inward
+// normal of the edge's own plane. The point has to be on the inside of every
+// one of them, to within a hundredth of a unit.
+//
+// `Cross`, `Norm` and `MagSqr` are calls and `Dot` inlines (ltvector.h's,
+// by value). The edge plane is a real LTPlane local, and the plane test
+// re-reads m_Dist from memory (`fstp -0x50` / `fsub -0x50`): the read goes
+// through a volatile float, which is what forces the reload.
+//
+// INLINE, and defined above the recursion: lithtech.exe (/O2) expands it
+// there; server.dll (/O1) declines and keeps the out-of-line copy after it.
+inline int w_PointInPoly(WorldPolyOwner* pOwner, LTVector* pPoint)
+{
+	WorldPolyVertex* pCur;
+	WorldPolyVertex* pPrev;
+	WorldPolyVertex* pEnd;
+	LTPlane*         pPlane;
+	LTPlane          edgePlane;
+	LTVector         vTemp;
 
+	if (!(pOwner->m_pSurface->m_Flags & 1))
+		return 0;
+
+	vTemp = pOwner->m_vCentre - *pPoint;
+
+	if (vTemp.MagSqr() > pOwner->m_fRadius * pOwner->m_fRadius)
+	{
+		return 0;
+	}
+
+	pPlane = pOwner->m_pPlane;
+
+	pEnd  = &pOwner->m_Vertices[pOwner->m_nVertices];
+	pCur  = pOwner->m_Vertices;
+	pPrev = pEnd - 1;
+
+	while (pCur != pEnd)
+	{
+		vTemp = *pPrev->m_pPos - *pCur->m_pPos;
+
+		edgePlane.m_Normal = pPlane->m_Normal.Cross(vTemp);
+
+		edgePlane.m_Normal.Norm();
+
+		edgePlane.m_Dist = edgePlane.m_Normal.Dot(*pCur->m_pPos);
+
+		if (edgePlane.m_Normal.Dot(*pPoint) - *(volatile float*)&edgePlane.m_Dist < -0.01f)
+			return 0;
+
+		pPrev = pCur;
+		pCur++;
+	}
+
+	return 1;
+}
+
+// The plane-thickness the walk works to, and the fraction past which a miss
+// is not worth splitting again (both read out of .rdata: 0x3c23d70a and
+// 0x3f7d70a4).
+#define BSP_LINE_EPSILON 0.01f
+#define BSP_LINE_MAXFRAC 0.99f
+
+// 0x100190e2 (lithtech.exe 0x004480d0; AvP2 server.dll 0x1001854e) -- the
+// line query's recursion: the classic BSP segment walk. A segment entirely
+// on one side of the node's plane descends that side without splitting, and
+// one that straddles it is cut at the crossing and the near half recursed
+// into first; the far half against the other child is the loop.
+//
+// AVP2: the ends come by pointer (NOLF's took them by value, packet.cpp):
+// the start is copied into a local of its own at entry, the end is read
+// where it is. The node's plane is fetched for each of the two distances
+// (a node without a polygon or surface has none), and DistTo's by-value Dot
+// is what copies the end onto the frame.
+//
+// Read off the bytes: the side to take first comes from where the start is,
+// except when the start is within the plane's thickness, where it comes from
+// the end instead, inverted; the split is skipped when the two distances are
+// equal and when the start is on the plane; the polygon test only runs on
+// the front-first side (nSide == 1), and the fraction cut-off only when it
+// does not.
+int bspq_IntersectLineRecQ544(BSPNode* pNode, CLineQuery* pQuery,
+                              LTVector* pStart, LTVector* pEnd)
+{
+	LTVector vStart = *pStart;
+	LTVector vMid;
+	float    t;
+	int      nSide;
+
+	for (;;)
+	{
+		if (pNode->m_Flags & BSPNODE_LEAF)
+			return 0;
+
+		float fStart = ws_GetPlaneQ506(pNode->m_pOwner)->DistTo(vStart);
+		float fEnd   = ws_GetPlaneQ506(pNode->m_pOwner)->DistTo(*pEnd);
+
+		if (fStart > BSP_LINE_EPSILON && fEnd > BSP_LINE_EPSILON)
+		{
+			pNode = pNode->m_pChild[1];
+
+			continue;
+		}
+
+		if (fStart < -BSP_LINE_EPSILON)
+		{
+			if (fEnd < -BSP_LINE_EPSILON)
+			{
+				pNode = pNode->m_pChild[0];
+
+				continue;
+			}
+
+			if (fStart > 0.0f)
+				nSide = 1;
+			else
+				nSide = 0;
+		}
+		else if (fStart <= BSP_LINE_EPSILON)
+		{
+			if (fEnd < 0.0f)
+				nSide = 1;
+			else
+				nSide = 0;
+		}
+		else
+		{
+			if (fStart > 0.0f)
+				nSide = 1;
+			else
+				nSide = 0;
+		}
+
+		float fDelta = fEnd - fStart;
+
+		if (fDelta != 0.0f &&
+		    (fStart < -BSP_LINE_EPSILON || fStart > BSP_LINE_EPSILON))
+		{
+			t = -fStart / fDelta;
+
+			vMid.x = (pEnd->x - vStart.x) * t + vStart.x;
+			vMid.y = (pEnd->y - vStart.y) * t + vStart.y;
+			vMid.z = (pEnd->z - vStart.z) * t + vStart.z;
+
+			if (bspq_IntersectLineRecQ544(pNode->m_pChild[nSide], pQuery,
+			                              &vStart, &vMid))
+				return 1;
+
+			if (nSide == 1 && pNode->m_pOwner)
+			{
+				if (w_PointInPoly(pNode->m_pOwner, &vMid))
+				{
+					// +0x0c is the caller's IntersectQuery (its filter at
+					// 0x2c, its user data at 0x30) and +0x10 the world
+					// whose MakeHPoly makes the handle the filter takes;
+					// the node stands for its polygon. A null filter, a
+					// null function or a null world all mean "accept".
+					IntersectQuery* pIQuery = (IntersectQuery*)pQuery->m_Unknown0c;
+
+					if (!pIQuery || !pIQuery->m_PolyFilterFn ||
+					    !pQuery->m_Unknown10 ||
+					    pIQuery->m_PolyFilterFn(
+					        ((IWorldBsp*)pQuery->m_Unknown10)->MakeHPoly(
+					            (WorldPoly*)pNode),
+					        pIQuery->m_pUserData))
+					{
+						pQuery->m_pPoly = (WorldPoly*)pNode;
+
+						*pQuery->m_pHit = vMid;
+
+						return 1;
+					}
+				}
+			}
+			else if (t > BSP_LINE_MAXFRAC)
+			{
+				return 0;
+			}
+
+			vStart = vMid;
+		}
+
+		pNode = pNode->m_pChild[nSide == 0];
+	}
+}
+
+// The walk's entry point, whose whole job is to unpack the query: the two
+// ends and the query go to the recursion as they are.
 int bspq_IntersectLine(BSPNode* pRoot, CLineQuery* pQuery)
 {
 	return bspq_IntersectLineRecQ544(pRoot, pQuery, pQuery->m_pStart,

@@ -69,7 +69,6 @@
 /ALTERNATENAME:?at_SetCurAnim@@YAXPAVLTAnimTracker@@KI@Z=?at_SetAnim@@YAIPAVLTAnimTracker@@KI@Z
 /ALTERNATENAME:?AttachWorldModel@CServerWorld@@QAEHPAVLTObject@@PAD@Z=?AttachWorldModel@CWorldModelHost@@QAEHPAVLTObject@@PAD@Z
 /ALTERNATENAME:?bsp_IntersectBox@@YAHPAXPAV?$_CVector@M@@1@Z=?ws_GetBoxStatus@@YAHPAVBSPNode@@PAV?$_CVector@M@@1@Z
-/ALTERNATENAME:?bspq_IntersectLineRec@@YAHPAVBSPNode@@PAVCLineQuery@@V?$_CVector@M@@2@Z=?bspq_IntersectLineRec@@YAHPAVCBspNode@@PAVCBspLineQuery@@V?$_CVector@M@@2@Z
 /ALTERNATENAME:?BumpObject@CUnknown210@@QAEXPAVLTObject@@H@Z=?AddObject@CWorldTree_E@@QAEXPAVCWTObj_E@@K@Z
 /ALTERNATENAME:?CanSeek@CStreamSource@@QAEIK@Z=?Seek@CRezItmRz48@@QAEHK@Z
 /ALTERNATENAME:?cb_FreeClassHash@@YAXPAX@Z=?dhash_Free@@YAXPAX@Z

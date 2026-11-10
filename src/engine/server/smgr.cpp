@@ -11003,32 +11003,8 @@ void sub_10027918(LTObject* pObject, CUpdateContext* pCtx)
 #endif // !LT_SERVER_BUILD
 
 
-// 0x100270d4 — a client, freshly built. Nothing here is body code: the four
-// stores are all member initialisation and the shipped order proves it, since
-// the four-trip packet-slot loop is emitted BETWEEN the rate governor's
-// constructor at +0x118 and the message list's tie-off at +0x3cc, which is
-// where declaration order puts ClientPacketSet's own constructor and nowhere a
-// statement could be scheduled to.
-//
-// The list is tied off inline rather than called because ltlink.h's LTList
-// constructor is an in-class one-liner; the rate governor's is a call because
-// its body is out of line.
-//
-// `inline`, and that is the /O2 image's evidence: lithtech.exe has NO
-// standalone Client constructor, it expands this body into its only caller
-// (0x004637aa..0x004637d9, sm_AddClientForConnection), and it sits in
-// server.dll at 0x100270d4 as a COMDAT emitted right after that caller,
-// beside the out-of-line CheapLTLink::AddAfter (0x100270be) -- where /O1
-// leaves inline bodies it declined, not where a defined function would go.
-// Out of line, our lithtech build called it (1332 bytes against 1386, and a
-// stray 72-byte ??0Client row); inline it is expanded (1380), server.dll
-// unchanged.
-#ifdef PRIMAL_HUNT
-inline Client::Client()
-	: m_pClientData(LTNULL)
-{
-}
-#endif
+// The Client constructor is below, beside the packet slot's Clear (both
+// games: server.dll 0x10032145 in Primal Hunt, 0x1002f9a5 in AvP2 1.0.9.6).
 
 
 // The sound instance's audible radius and world position, both inside the
@@ -12499,8 +12475,7 @@ public:
 	uint32      m_nSize;                     // +0x08
 };
 
-#ifndef PRIMAL_HUNT
-// AVP2 1.0.9.6: a packet slot emptied -- its reference dropped through the
+// AVP2 1.0.9.6 and Primal Hunt: a packet slot emptied -- its reference dropped through the
 // cursor's Init (server.dll calls 0x1002be8b with a null) and both numbers
 // zeroed. lithtech.exe has it out of line, 0x00470b70, called four times
 // from the constructor below (name ours).
@@ -12519,11 +12494,16 @@ public:
 	uint32     m_nSize;                      // +0x08
 };
 
-// AVP2 1.0.9.6's Client constructor: every member set in declaration order
-// after the rate governor, the four packet slots and the message list are
-// constructed (lithtech.exe 0x0047050f..0x00470670, expanded into
-// sm_AddClientForConnection; server.dll 0x1002f9a5, out of line). There is
-// no memset after it, as Primal Hunt's has.
+// The Client constructor: every member set in declaration order after the
+// rate governor, the four packet slots and the message list are constructed
+// (AvP2 1.0.9.6: lithtech.exe 0x0047050f..0x00470670, expanded into
+// sm_AddClientForConnection; server.dll 0x1002f9a5, out of line. Primal
+// Hunt the same: server.dll 0x10032145, with the packet slots' vector
+// constructor under its exception frame).
+//
+// `inline`: lithtech.exe has no standalone Client constructor, it expands
+// this body into its only caller; server.dll's /O1 declines it and keeps the
+// out-of-line COMDAT.
 inline Client::Client()
 {
 	uint32 i;
@@ -12583,7 +12563,6 @@ inline Client::Client()
 	m_Unknown3E0 = 0;
 	m_Unknown3E4 = 0;
 }
-#endif
 
 // One more Client field servermgr.h leaves in padding: +0x12c, a float set to
 // 35.0f (0x420c0000) at 0x004639e6. (+0x164 / +0x180 are smgr.cpp's own

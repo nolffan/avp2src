@@ -15,8 +15,8 @@
 // (lithtech.exe 0x00457260..0x00459162).
 #ifndef PRIMAL_HUNT
 #include <string>
-#include <algorithm>
 #endif
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <set>
@@ -6739,15 +6739,18 @@ void w_SetNodeProjectionsQT1(void* pNodes, uint32 nNodes, int bCurrent)
 //   * the FOV is `cos()` of half the angle in radians. 0x1003f5f4 contains
 //     `fcos` and 0x1003f924 contains `fsin`, which settles which CRT entry
 //     is which.
-#ifndef PRIMAL_HUNT
 // AVP2: AvP2 1.0.9.6's reader (lithtech.exe 0x00429fa0, 2790 bytes) walks the
 // object list twice. The first pass collects the names every LightGroup
 // object lists (its string properties whose names begin "Object") into a
 // vector of strings; the second is NOLF's, except that a light whose Name is
 // in a group is left out (its group lights it), the property buffer is 0x100
 // bytes and string properties are read as strings, and a BrightScale
-// property scales both colours. Primal Hunt's engine has the same strings
-// (its reader is still NOLF's below).
+// property scales both colours. Primal Hunt's engine reads the lights the
+// same way (lithtech.exe 0x0042cd60, server.dll 0x1000c39c: the same
+// strings, and the vector's push_back and insert in both). NOLF's reader
+// (described above) zeroes its vectors with VEC_INIT; this one's two
+// zeroed vectors are Init() calls (lithtech.exe 0x0042cd60 follows them:
+// only with them do its three strings call assign out of line).
 //
 // RETAIL BUG: fBrightScale, like bFast, is initialised once before the
 // object loop, so a light without BrightScale takes the scale of the last
@@ -6841,10 +6844,10 @@ void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
 		    strcmp(sName, "DirLight") == 0 ||
 		    strcmp(sName, "ObjectLight") == 0)
 		{
-			VEC_INIT(vColor);
+			vColor.Init();
 			fRadius = 0.0f;
 			bLightObjects = 1;
-			VEC_INIT(vDir);
+			vDir.Init();
 			fFOVCos = -1.0f;
 			bEnabled = true;
 
@@ -6952,144 +6955,6 @@ void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
 
 	pWorld->AddLights(&pWorld->m_LightHead);
 }
-#else
-void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
-                       CWorldSubFC* pShade)
-{
-	char     sName[0x100];
-	LTVector vUp;
-	LTVector vRight;
-	uint8    value[0x80];
-	LTVector vForward;
-	uint32   nPropFlags;
-	LTVector vOuterColor;
-	LTVector vDir;
-	LTVector vPos;
-	LTVector vColor;
-	uint32   nNumProps;
-	uint32   nPos;
-	int      bLightObjects;
-	float    fFOVCos;
-	int      bFast = 1;
-	uint32   nNumObjects;
-	uint32   i;
-	float    fRadius;
-	uint32   j;
-	uint16   nLen;
-	uint16   nRecordSize;
-	uint8    nType;
-	CWorldLight* pLight;
-
-	pStream->Read(&nNumObjects, 4);
-
-	for (i = 0; i < nNumObjects; i++)
-	{
-		pStream->Read(&nRecordSize, 2);
-		pStream->GetPos(&nPos);
-		pStream->ReadString(sName, sizeof(sName));
-
-		if (strcmp(sName, "Light") == 0 ||
-		    strcmp(sName, "DirLight") == 0 ||
-		    strcmp(sName, "ObjectLight") == 0)
-		{
-			// fFOVCos is the LAST of the five, after the direction
-			// vector and not before it: the /O2 block stores 0x54, 0x50,
-			// 0x4c (the vector, z-y-x) and only then -1.0f into 0x48. /O1
-			// turns the vectors into fldz/fstps pairs and wedges both
-			// integer stores into their latency slots, so it shows the
-			// same bytes either way.
-			VEC_INIT(vColor);
-			fRadius = 0.0f;
-			bLightObjects = 1;
-			VEC_INIT(vDir);
-			fFOVCos = -1.0f;
-
-			pStream->Read(&nNumProps, 4);
-
-			for (j = 0; j < nNumProps; j++)
-			{
-				pStream->ReadString(sName, sizeof(sName));
-				pStream->Read(&nType, 1);
-				pStream->Read(&nPropFlags, 4);
-				pStream->Read(&nLen, 2);
-
-				if (nLen > 0x80)
-					pStream->SeekTo(nPos + nRecordSize);
-				else
-					pStream->Read(value, nLen);
-
-				if (nType == 3 && strcmp(sName, "LightRadius") == 0)
-				{
-					fRadius = *(float*)value;
-				}
-				else if (nType == 2 && (strcmp(sName, "LightColor") == 0 ||
-				                        strcmp(sName, "InnerColor") == 0))
-				{
-					VEC_COPY(vColor, *(LTVector*)value);
-				}
-				else if (nType == 2 && strcmp(sName, "OuterColor") == 0)
-				{
-					VEC_COPY(vOuterColor, *(LTVector*)value);
-				}
-				else if (nType == 1 && strcmp(sName, "Pos") == 0)
-				{
-					VEC_COPY(vPos, *(LTVector*)value);
-				}
-				else if (nType == 5 && strcmp(sName, "LightObjects") == 0)
-				{
-					bLightObjects = *(char*)value;
-				}
-				else if (nType == 5 && strcmp(sName, "FastLightObjects") == 0)
-				{
-					bFast = *(char*)value;
-				}
-				else if (nType == 7 && strcmp(sName, "Rotation") == 0)
-				{
-					mat_GetEulerVectors(*(LTVector*)value, &vRight, &vUp,
-					                    &vForward);
-
-					vDir = vForward;
-				}
-				else if (nType == 3 && strcmp(sName, "FOV") == 0)
-				{
-					fFOVCos = (float)cos(*(float*)value *
-					                     (float)(MATH_PI / 360.0f));
-				}
-			}
-
-			if (bLightObjects)
-			{
-				if (bFast)
-				{
-					w_AddFastLight(&vPos, &vColor, fRadius, pShade);
-				}
-				else
-				{
-					pLight = new CWorldLight;
-
-					if (pLight)
-					{
-						pLight->m_vColor      = vColor;
-						pLight->m_vOuterColor = vOuterColor;
-						pLight->m_vPos        = vPos;
-						pLight->m_fRadius     = fRadius;
-						pLight->m_vDir        = vDir;
-						pLight->m_fFOVCos     = fFOVCos;
-
-						pWorld->m_LightHead.AddAfter(&pLight->m_Link);
-					}
-				}
-			}
-		}
-		else
-		{
-			pStream->SeekTo(nPos + nRecordSize);
-		}
-	}
-
-	pWorld->AddLights(&pWorld->m_LightHead);
-}
-#endif // PRIMAL_HUNT
 
 
 // One sample of the point-shade grid: four bytes, and only three of them are

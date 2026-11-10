@@ -5691,7 +5691,6 @@ AvP2 server.dll	sub_1000e240
 AvP2 server.dll	sub_1000e262
 AvP2 server.dll	sub_1000e286
 AvP2 server.dll	sub_1000e29b
-AvP2 server.dll	sub_1000e2ac
 AvP2 server.dll	sub_1000e2b9
 AvP2 server.dll	sub_1000e36d
 AvP2 server.dll	sub_1000e42e
@@ -5979,6 +5978,7 @@ AvP2 server.dll	sub_10017f28
 AvP2 server.dll	sub_10017f43
 AvP2 server.dll	sub_10017f65
 AvP2 server.dll	sub_10017fcd
+AvP2 server.dll	sub_10018795
 AvP2 server.dll	sub_100188e2
 AvP2 server.dll	sub_100188f9
 AvP2 server.dll	sub_1001895e
@@ -6119,7 +6119,6 @@ AvP2 server.dll	sub_1001ac4c
 AvP2 server.dll	sub_1001ac85
 AvP2 server.dll	sub_1001acef
 AvP2 server.dll	sub_1001b06f
-AvP2 server.dll	sub_1001b08a
 AvP2 server.dll	sub_1001b08e
 AvP2 server.dll	sub_1001b0dc
 AvP2 server.dll	sub_1001b0eb
@@ -44051,10 +44050,12 @@ lithtech.exe	sub_431660
 lithtech.exe	sub_4316c0
 lithtech.exe	sub_431970
 lithtech.exe	sub_431bf0
+lithtech.exe	sub_431c20
 lithtech.exe	sub_431c80
 lithtech.exe	sub_431e30
 lithtech.exe	sub_431e60
 lithtech.exe	sub_431e70
+lithtech.exe	sub_431f10
 lithtech.exe	sub_4321c0
 lithtech.exe	sub_4323c0
 lithtech.exe	sub_4323e0
@@ -44414,6 +44415,7 @@ lithtech.exe	sub_442810
 lithtech.exe	sub_442850
 lithtech.exe	sub_442870
 lithtech.exe	sub_4428a0
+lithtech.exe	sub_4428e0
 lithtech.exe	sub_442910
 lithtech.exe	sub_442920
 lithtech.exe	sub_442930
@@ -44547,6 +44549,7 @@ lithtech.exe	sub_449e90
 lithtech.exe	sub_449ee0
 lithtech.exe	sub_449f00
 lithtech.exe	sub_449f20
+lithtech.exe	sub_449f70
 lithtech.exe	sub_449fa0
 lithtech.exe	sub_449fb0
 lithtech.exe	sub_449ff0
@@ -46193,6 +46196,7 @@ lithtech.exe	sub_4a0140
 lithtech.exe	sub_4a0160
 lithtech.exe	sub_4a0180
 lithtech.exe	sub_4a01a0
+lithtech.exe	sub_4a01c0
 lithtech.exe	sub_4a01f0
 lithtech.exe	sub_4a0410
 lithtech.exe	sub_4a05a0
@@ -47358,6 +47362,7 @@ server.dll	sub_10008a82
 server.dll	sub_10008ad4
 server.dll	sub_10008b26
 server.dll	sub_10008b78
+server.dll	sub_10008bd2
 server.dll	sub_100095f4
 server.dll	sub_100096a3
 server.dll	sub_100098ce
@@ -47496,6 +47501,7 @@ server.dll	sub_1000e6e9
 server.dll	sub_1000e777
 server.dll	sub_1000e7ac
 server.dll	sub_1000e7c1
+server.dll	sub_1000e7d2
 server.dll	sub_1000e7df
 server.dll	sub_1000e893
 server.dll	sub_1000e954
@@ -47535,10 +47541,13 @@ server.dll	sub_1000f145
 server.dll	sub_1000f1f9
 server.dll	sub_1000f2ba
 server.dll	sub_1000f2ef
+server.dll	sub_1000f2fe
+server.dll	sub_1000f333
 server.dll	sub_1000f344
 server.dll	sub_1000f3f9
 server.dll	sub_1000f489
 server.dll	sub_1000f4be
+server.dll	sub_1000f543
 server.dll	sub_1000f774
 server.dll	sub_1000f842
 server.dll	sub_1000f8a9
@@ -47812,6 +47821,9 @@ server.dll	sub_10019001
 server.dll	sub_1001902c
 server.dll	sub_10019065
 server.dll	sub_1001909d
+server.dll	sub_100190c1
+server.dll	sub_100190e2
+server.dll	sub_100192ec
 server.dll	sub_10019435
 server.dll	sub_1001944c
 server.dll	sub_100194a7
@@ -49326,6 +49338,7 @@ server.dll	sub_1004530a
 server.dll	sub_10045381
 server.dll	sub_1004538e
 server.dll	sub_10045440
+server.dll	sub_10045462
 server.dll	sub_10045483
 server.dll	sub_100454f0
 server.dll	sub_100454fa

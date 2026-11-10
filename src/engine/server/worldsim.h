@@ -435,12 +435,9 @@ public:
 // them to 0x10013bf5). Nothing here needs more than its answer (name ours).
 int bspq_IntersectLine(class BSPNode* pRoot, CLineQuery* pQuery);
 
-// 0x10013bf5 — the recursion under it. The two ends arrive by value because
-// the walk splits the segment as it descends and needs its own copy of each
-// half; the query object comes along beside them for the crossing point and
-// the result (name ours).
-int bspq_IntersectLineRec(class BSPNode* pNode, CLineQuery* pQuery,
-                          LTVector vStart, LTVector vEnd);
+// The recursion under it (NOLF 0x10013bf5, the two ends by value) is
+// worldsim.cpp's bspq_IntersectLineRecQ544 in AvP2 and Primal Hunt, which
+// takes them by pointer (server.dll 0x100190e2, AvP2 0x10018553).
 
 // 0x10013f53 — the world's line-versus-BSP query: the first polygon the
 // segment crosses, where it crossed it and the plane it crossed (name and

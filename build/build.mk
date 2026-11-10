@@ -773,11 +773,11 @@ ICL_ENV := WINEPREFIX=$(PFX_PLAIN) WINEPATH='$(call wz,$(TC)/icl-4.0)\BIN;$(call
 # server.dll: nolfsrc's /O1 (Primal Hunt adds /GX, below); localdriver.cpp /Os
 SERVER := $(E)/server
 SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c
-SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp commonphysics.cpp commonmodel.cpp \
+SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp ltservermath.cpp commonphysics.cpp commonmodel.cpp \
     sharedcommon.cpp servermodel.cpp serverlightanim.cpp servercommon.cpp servermessage.cpp packet.cpp \
     lthread.cpp smgr.cpp counter.cpp dalloc.cpp modelanim.cpp streamsim.cpp fsstream.cpp basestream.cpp \
     objbank.cpp objtypes.cpp collection.cpp worldbsp.cpp worldmodels.cpp saveio.cpp worldsim.cpp \
-    serverengine.cpp ltobject.cpp lmessage.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
+    serverengine.cpp ltobject.cpp lmessage.cpp lmessage2.cpp soundinst.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
     genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
     smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
     svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp interlink.cpp
@@ -806,10 +806,10 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     clientstreams.cpp clientinput.cpp clientsoundmgr.cpp clientworldinfo.cpp clientblit.cpp \
     clientrender.cpp ltnew1.cpp cltnew.cpp cltrest.cpp lt2new1.cpp lt2new2.cpp lt2new3.cpp lt2new4.cpp \
     ltnew2.cpp ..\server\csbase.cpp ..\server\servermgr.cpp ..\server\servermsg.cpp \
-    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp \
+    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\ltservermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp \
     ..\server\sharedcommon.cpp ..\server\servermodel.cpp ..\server\serverlightanim.cpp \
     ..\server\servercommon.cpp ..\server\servermessage.cpp ..\server\packet.cpp ..\server\lthread.cpp \
-    ..\server\smgr.cpp ..\server\ltobject.cpp ..\server\lmessage.cpp ..\server\spritecontrol.cpp \
+    ..\server\smgr.cpp ..\server\ltobject.cpp ..\server\lmessage.cpp ..\server\lmessage2.cpp ..\server\soundinst.cpp ..\server\spritecontrol.cpp \
     ..\server\server.cpp ..\server\stringbank.cpp ..\server\dsi.cpp ..\server\genericprop.cpp \
     ..\server\dhash.cpp ..\server\filemgr.cpp ..\server\console.cpp ..\server\structbank.cpp \
     ..\server\counter.cpp ..\server\dalloc.cpp ..\server\modelanim.cpp ..\server\basestream.cpp \
@@ -1232,20 +1232,20 @@ LT_AVP_ORDER := \
     clientworldinfo cissurf clientblit clientmgr2 cmgrinit clientmgr3 startload csvis worldsim ltnew2 \
     sweptsphere console conline clientconsole ccline lt2new4 ccclient servermsg csbase clienttexmgr fsstream \
     worldmodels worldbsp dalloc ltobject dsi cmgsurf collelem dhash objbank clientshell clientworld demodtx \
-    clientdsi packet ccobj worldisect wgrid savobj saveio genericprop basestream servermath sharedcommon \
-    filemgr warpblit clientinput diblit lmessage localdriver cltcursor clientmusic dmextra ltnew1 dmgrow \
+    clientdsi packet ccobj worldisect wgrid savobj saveio genericprop basestream servermath ltservermath sharedcommon \
+    filemgr warpblit clientinput diblit lmessage lmessage2 localdriver cltcursor clientmusic dmextra ltnew1 dmgrow \
     lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel collection modchunk commonphysics wmrotate \
     msgterm netmgr nettrace netobj objtypes lt2new3 partfm fmconvert fmcvt32 lttexmod predobj clientrender \
     serverengine serverlightanim smgrmisc servercommon servermodel servermessage smgr smgrnew cmodelload \
-    cchandler objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound spritecontrol \
+    cchandler objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound soundinst spritecontrol \
     streamsim clientstreams stringbank tcpdriver tcpqarray transform fntdraw smackvideo worldtree2 worldtree \
     stdlithalloc
 SV_AVP_ORDER := \
     modelanim counter structbank worldsim console csbase sweptsphere fsstream worldmodels servermsg worldbsp \
-    dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath svnew sharedcommon \
-    lmessage localdriver lthread modelnew collection commonmodel sdkforce commonphysics netmgr packet \
+    dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath ltservermath svnew sharedcommon \
+    lmessage lmessage2 localdriver lthread modelnew collection commonmodel sdkforce commonphysics netmgr packet \
     serverengine netobj objtypes objbank serverlightanim smgrmisc filemgr servermgr server servercommon \
-    servermodel servermessage smgr smgrnew objmover spritecontrol streamsim stringbank tcpdriver worldtree
+    servermodel servermessage smgr smgrnew objmover soundinst spritecontrol streamsim stringbank tcpdriver worldtree
 LT_AVP_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),AvP2Release)))
 LT_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER))) \
     $(filter-out $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER) controlfile)),$(LT_AVP_OBJS)) AvP2Release/controlfile.obj
