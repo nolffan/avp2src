@@ -506,15 +506,19 @@ addresses, so `make progress` scores the objects (`partial_objs`).
   without the fog volumes, and 1,180 functions byte-identical between the
   two images (docs/AVP2_D3D_OBJECTS.md). So it is built from Primal Hunt's
   `src/engine/d3d/ph/` with 8168, without `PRIMAL_HUNT` (`avp2-d3d`),
-  which took it from 10 identical to 857, objects only. Still to do:
+  which took it from 10 identical to 857, objects only. It now links
+  (`avp2-d3d-link`: the AvP2Release/ph objects in Primal Hunt's TU order,
+  link 6.00.8168, the release StdLith.lib after the DirectDraw thunks),
+  so the scoreboard places what we write by link order as it does Primal
+  Hunt's: 857 -> 1,046 identical. Done since: DrawPasses and its two UV
+  generators, d3d_ProcessWorldModel and d3d_DrawNoSortWorldModel behind
+  `#ifdef PRIMAL_HUNT` (identical in AvP2). Still to do:
   - Primal Hunt's changes, each behind `#ifdef PRIMAL_HUNT`: the fog
-    volumes, the StageState vector, two UV generators and DrawPasses, the
+    volumes, the StageState vector, the
     CD3DModelDraw layout, d3d_InitDevice, d3d_RenderCommand,
-    d3d_InitTextures and the texture uploader, the warp, the sprite Z bias,
-    DrawNoSortWorldModel, the intersection structures, and
+    d3d_InitTextures, the warp, the intersection structures, and
     ConvertDXTGeneric's type;
   - AvP2's own 0x100135c0 (a polygon splitter Primal Hunt dropped);
-  - its link.
 - AvP2 1.0.9.6's `lithtech.exe` and `server.dll` link too
   (`avp2-engine-link`, part of `engine-link`): the AvP2Release objects in
   the order their placed functions lie in retail, the release's STLport

@@ -11,13 +11,15 @@
 //  same code a version earlier.
 //
 //  /Ob2: the initialisers are single bodies, and the small helpers
-//  (0x1001f410, 0x1001f860) are expanded into their callers.
-//
-//  Not yet written here: d3d_CreateAndLoad's big neighbours -- the
-//  RTexture maker for a shared texture (0x10020cd0, which emits
-//  RTextureHandle's destructor 0x10021030), r_TransferTexture
-//  (0x10021040), the mipmap copy (0x10021790), RTextureHandle::operator=
-//  (0x10021c90) and d3d_CreateRTexture (0x10021f70).
+//  (0x1001f410, 0x1001f860) are expanded into their callers.  The upload
+//  helpers (r_TransferTexture, d3d_CreateTextureSurface,
+//  d3d_GetFirstUsableMipmap, d3d_CreateRTexture) are inline: retail
+//  expands d3d_CreateRTexture into d3d_CreateRenderTexture (0x10020cd0)
+//  and calls the rest from there, which is what emits their copies (and
+//  CheapLTLink::AddAfter 0x10021010, RTextureHandle::operator= 0x10021c90)
+//  where they are; d3d_CreateRTexture's own copy (0x10021f70) follows its
+//  first caller that keeps the call (0x10021eb0).  The PH and AvP2 copies
+//  of all of these are the same code.
 //
 //  Near:
 //    * 0x1001f430: retail calls RTextureHandle's implicit constructor out
@@ -25,6 +27,17 @@
 //      expands both (an /Ob2 inlining-budget difference).
 //    * 0x1001fdb0: the one GetMaskRange call /Ob2 expands is the 555 red
 //      one in retail, the 565 red one here.
+//    * 0x10020cd0: the other side of the 0x1001f430 difference -- retail
+//      expands the RTextureHandle constructor and calls its destructor
+//      (0x10021030) out of line at each exit; ours calls the constructor
+//      (that copy is the 9 bytes after AddAfter) and expands the
+//      destructor (779 bytes, 824 shipped).  It also expands
+//      RTextureHandle::operator=, so ours is emitted after 0x10021f70,
+//      which calls it, rather than at 0x10021c90 (same 55 bytes).
+//    * 0x10021040: same flow and calls; 8 bytes less frame and other
+//      registers (1852 bytes, 1871 shipped).
+//    * 0x10021f70: retail calls d3d_GetS3TCFourCC from the expanded
+//      surface maker, ours expands it too (1768 bytes, 1731 shipped).
 //    * 0x10022830: retail retests the RTexture before the transfer loop.
 // *********************************************************************** //
 
@@ -34,8 +47,10 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "ltbasedefs.h"
+#include "ltpvalue.h"
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
 #include "../../LT2/lithshared/stdlith/object_bank.h"
 
@@ -109,11 +124,19 @@ public:
 	PFormat			m_DefaultDestFormat;
 };
 
+union GenericColor
+{
+	uint32	dwVal;
+	uint16	wVal;
+	uint8	bVal;
+};
+
 class FormatMgr
 {
 public:
 					FormatMgr();                    // 0x10037600
 	LTRESULT		ConvertPixels(FMConvertRequest *pRequest);  // 0x1003764c
+	LTRESULT		PValueToFormatColor(PFormat *pFormat, PValue in, GenericColor &out);  // 0x10037780
 
 	uint8			m_Data[0x9a8];
 };
@@ -256,15 +279,54 @@ struct TextureMipData
 {
 	uint32		m_Width;                                    // +0x00
 	uint32		m_Height;                                   // +0x04
-	uint8		m_Reserved08[0x18 - 0x08];
+	uint8		*m_Data;                                    // +0x08
+	long		m_Pitch;                                    // +0x0c (bytes)
+	uint8		m_Reserved10[0x18 - 0x10];
+};
+
+// TextureData::m_Header.m_IFlags.
+#define DTX_FULLBRITE		(1<<0)	// This DTX has fullbrite colors.
+#define DTX_PREFER16BIT		(1<<1)	// Use 16-bit, even if in 32-bit mode.
+#define DTX_PREFER4444		(1<<7)	// If in 16-bit mode, use a 4444 texture for this.
+#define DTX_PREFER5551		(1<<8)	// Use 5551 if 16-bit.
+
+#define DTX_COMMANDSTRING_LEN	128
+
+class DtxHeader
+{
+public:
+	inline uint32	GetTextureGroup()			{return m_Extra[0];}
+	inline uint32	GetNumMipmaps()				{return m_Extra[1];}
+	inline BPPIdent	GetBPPIdent()				{return m_Extra[2] == 0 ? BPP_32 : (BPPIdent)m_Extra[2];}
+	inline uint32	GetNonS3TCMipmapOffset()	{return (uint32)m_Extra[3];}
+	inline uint32	GetUIMipmapOffset()			{return m_Extra[4];}
+	inline float	GetUIMipmapScale()			{return (float)(1 << GetUIMipmapOffset());}
+	inline uint32	GetTexturePriority()		{return m_Extra[5];}
+	// It adds 1.0f so all the old values of 0.0f return 1.0f.
+	inline float	GetDetailTextureScale()		{return *((float*)&m_Extra[6]) + 1.0f;}
+	inline int16	GetDetailTextureAngle()		{return (int16)((m_Extra[10]) + (m_Extra[11] << 8));}
+
+public:
+	uint32		m_ResType;                                  // +0x08 (in TextureData)
+	int32		m_Version;                                  // +0x0c
+	uint16		m_BaseWidth, m_BaseHeight;                  // +0x10
+	uint16		m_nMipmaps;                                 // +0x14
+	uint16		m_nSections;                                // +0x16
+	int32		m_IFlags;                                   // +0x18 (DTX_)
+	int32		m_UserFlags;                                // +0x1c
+	uint8		m_Extra[12];                                // +0x20
+	char		m_CommandString[DTX_COMMANDSTRING_LEN];     // +0x2c
 };
 
 class TextureData
 {
 public:
-	uint8		m_Reserved00[0x14];
-	uint16		m_nMipmaps;                                 // +0x14
-	uint8		m_Reserved16[0xcc - 0x16];
+	virtual void	SetupPFormat(PFormat *pFormat);         // vtable +0x00 (the engine's)
+
+public:
+	uint32		m_ResHeader;                                // +0x04
+	DtxHeader	m_Header;                                   // +0x08
+	uint8		m_ReservedAC[0xcc - 0xac];
 	TextureMipData	m_Mips[8];                              // +0xcc
 };
 
@@ -273,8 +335,11 @@ struct TextureRequest
 {
 	SharedTexture*	m_pSharedTexture;
 	TextureData*	m_pTextureData;
-	uint32			m_Stage;
+	uint32			m_Stage;                                // the stage, and TEXSTAGE_ flags above it
 };
+
+// TextureRequest::m_Stage: a bump map texture (name ours).
+#define TEXSTAGE_BUMPMAP	0x100
 
 // The profiling counters (TU14: 0x10013fb7).
 #define CSTART_NONE			0
@@ -303,6 +368,10 @@ extern uint32				g_ScreenHeight;             // 0x1005d9c0
 extern uint32				g_BindTextureStage;         // 0x100638c0
 extern uint32				g_DeviceTextureCaps;        // 0x1006241c (D3DPTEXTURECAPS_)
 extern int32				g_CV_MaxAspectRatio;        // 0x1005d4f4
+extern int32				g_CV_32BitTextures;         // 0x1005d8c4
+extern int32				g_CV_GroupOffset[10];       // 0x1005d7dc
+extern int32				g_CV_MipmapOffset;          // 0x1005df44
+extern CD3DConVar			g_CV_AlphaTest;             // 0x1005e258
 
 void*	dalloc(uint32 size);                            // 0x10013a66
 void	dfree(void* ptr);                               // 0x10013ac5
@@ -310,6 +379,7 @@ void	AddDebugMessage(int32 debugLevel, const char* pMsg, ...);  // 0x10013b13
 uint32	CountBits(uint32 val);                          // 0x10013c60
 void	r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat);  // 0x10011794
 void	d3d_InitLightmapTables();                       // 0x10033810
+uint32	CalcImageSize(BPPIdent bpp, uint32 width, uint32 height);  // 0x100377ae
 
 
 // ------------------------------------------------------------------------------ //
@@ -1128,9 +1198,396 @@ char* d3d_AddFlagName(char *pStr, const char *pName)
 
 
 // ------------------------------------------------------------------------------ //
+// 0x10020cd0 -- make an RTexture for a shared texture on a stage and load
+// it.  A stage copy (bStageCopy) is chained to the shared texture's main
+// RTexture by the caller and freed with it.
+// ------------------------------------------------------------------------------ //
+RTexture* d3d_CreateRTexture(TextureRequest *pRequest, uint32 texFlags);  // 0x10021f70
+LTBOOL r_TransferTexture(RTexture *pTexture, TextureData *pTextureData);  // 0x10021040
+LTBOOL d3d_GetS3TCFourCC(BPPIdent bpp, uint32 *pFourCC);  // 0x10022640
+void d3d_AdjustAspectRatio(uint32 width, uint32 height, uint32 *pOutWidth, uint32 *pOutHeight);  // 0x10022690
+uint32 d3d_IsS3TCSupported(BPPIdent bpp);  // 0x10022730
+int32 d3d_GetFirstUsableMipmap(TextureData *pTexture);  // 0x10021c00
+inline LTBOOL d3d_CreateTextureSurface(TextureRequest *pRequest, RTextureHandle *pHandle,
+	uint32 iFirstMip, uint32 nMipmaps, uint32 iFormat);  // 0x10021790
+
+RTexture* d3d_CreateRenderTexture(SharedTexture *pSharedTexture, uint32 iStage, LTBOOL bStageCopy)
+{
+	CounterFinal cntTotal;
+	CounterFinal cntLoad;
+	TextureRequest request;
+	TextureData *pTextureData;
+	RTexture *pTexture;
+	LTBOOL bFound;
+
+	pTextureData = g_pStruct->GetTexture(pSharedTexture, &bFound);
+	if (!pTextureData)
+		return LTNULL;
+
+	request.m_pSharedTexture = pSharedTexture;
+	request.m_pTextureData = pTextureData;
+	request.m_Stage = iStage;
+	pTexture = d3d_CreateRTexture(&request, bStageCopy);
+	if (pTexture)
+	{
+		if (!r_TransferTexture(pTexture, pTextureData))
+		{
+			AddDebugMessage(4, "Unable to transfer texture data to video memory.");
+			d3d_FreeTexture(pTexture, LTFALSE);
+			pTexture = LTNULL;
+		}
+	}
+
+	g_pStruct->FreeTexture(pSharedTexture);
+	return pTexture;
+}
+
+
+// ------------------------------------------------------------------------------ //
+// 0x10021040 -- copy a texture's mipmaps into its surfaces: bump maps as
+// du/dv differences, 32-bit data converted to the surface's format (and
+// tiled over a surface the aspect ratio made bigger), S3TC data copied or
+// blitted from a system memory surface.
+// ------------------------------------------------------------------------------ //
+inline LTBOOL r_TransferTexture(RTexture *pTexture, TextureData *pTextureData)
+{
+	FMConvertRequest request;
+	DDSURFACEDESC2 ddsd, lockDesc, tempDesc, tempLock;
+	DDSCAPS2 caps;
+	LPDIRECTDRAWSURFACE7 pSurface, pTempSurface;
+	D3DTextureFormat *pFormat;
+	TextureMipData *pMip;
+	BPPIdent bpp;
+	uint32 iMipmap, surfaceWidth, surfaceHeight, mipWidth, mipHeight;
+	uint32 fourCC, size, x, y;
+	int32 i, nTiles;
+	long pitch;
+	uint8 *pDest, *pSrc, *pOut, *pTemp;
+	HRESULT hResult;
+
+	if (pTexture->m_FirstMip + pTexture->m_nMipmaps > pTextureData->m_Header.m_nMipmaps)
+	{
+		AddDebugMessage(1, "r_TransferTexture: mipmap count doesn't match!");
+		return LTFALSE;
+	}
+
+	bpp = pTextureData->m_Header.GetBPPIdent();
+	pFormat = g_TextureFormats[pTexture->m_FormatIndex];
+	pSurface = pTexture->m_Handle.m_pSurface;
+
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_HEIGHT | DDSD_WIDTH;
+	pSurface->GetSurfaceDesc(&ddsd);
+	surfaceWidth = ddsd.dwWidth;
+	surfaceHeight = ddsd.dwHeight;
+	AddDebugMessage(4, "Uploading a (%dx%d) texture", surfaceWidth, surfaceHeight);
+
+	for (iMipmap = pTexture->m_FirstMip; iMipmap < (uint32)(pTexture->m_FirstMip + pTexture->m_nMipmaps); iMipmap++)
+	{
+		if (!pSurface)
+			return LTFALSE;
+
+		pMip = &pTextureData->m_Mips[iMipmap];
+		mipWidth = pMip->m_Width;
+		mipHeight = pMip->m_Height;
+
+		lockDesc.dwSize = sizeof(lockDesc);
+		if (pSurface->Lock(LTNULL, &lockDesc, DDLOCK_WRITEONLY, LTNULL) != DD_OK)
+			return LTFALSE;
+
+		pitch = lockDesc.lPitch;
+
+		if (lockDesc.ddpfPixelFormat.dwFlags & DDPF_BUMPDUDV)
+		{
+			// Bump map: the height differences to the left and above.
+			if (lockDesc.ddpfPixelFormat.dwRGBBitCount != 16)
+			{
+				pSurface->Unlock(LTNULL);
+				return LTFALSE;
+			}
+
+			pDest = (uint8*)lockDesc.lpSurface;
+
+			FMConvertRequest heightRequest;
+			pTemp = new uint8[pMip->m_Width * pMip->m_Height];
+			if (!pTemp)
+			{
+				pSurface->Unlock(LTNULL);
+				return LTFALSE;
+			}
+
+			pTextureData->SetupPFormat(heightRequest.m_pSrcFormat);
+			heightRequest.m_pSrc = pMip->m_Data;
+			heightRequest.m_SrcPitch = pMip->m_Pitch;
+			heightRequest.m_pDestFormat->Init(BPP_8, 0xFF, 0, 0, 0);
+			heightRequest.m_pDest = pTemp;
+			heightRequest.m_DestPitch = pMip->m_Width;
+			heightRequest.m_Width = pMip->m_Width;
+			heightRequest.m_Height = pMip->m_Height;
+			if (g_FormatMgr.ConvertPixels(&heightRequest) != LT_OK)
+			{
+				delete [] pTemp;
+				pSurface->Unlock(LTNULL);
+				return LTFALSE;
+			}
+
+			// The first row and column have nothing to difference with.
+			memset(pDest, 0, pMip->m_Width * 2);
+			pOut = pDest;
+			for (y = 0; y < pMip->m_Height; y++)
+			{
+				*((uint16*)pOut) = 0;
+				pOut += pitch;
+			}
+
+			for (y = 1; y < pMip->m_Height; y++)
+			{
+				pSrc = &pTemp[pMip->m_Width * y + 1];
+				pOut = pDest;
+				for (x = 1; x < pMip->m_Width; x++)
+				{
+					*pOut++ = (uint8)((pSrc[0] - pSrc[-1]) >> 1);
+					*pOut++ = (uint8)((pSrc[0] - pSrc[-(int32)pMip->m_Width]) >> 1);
+					pSrc++;
+				}
+
+				pDest += pitch;
+			}
+
+			delete [] pTemp;
+		}
+		else if (bpp == BPP_32)
+		{
+			request.m_pSrcFormat->InitPValueFormat();
+			request.m_pSrc = pMip->m_Data;
+			request.m_SrcPitch = pMip->m_Pitch;
+			r_SetPFormat(&pFormat->m_PF, request.m_pDestFormat);
+			request.m_pDest = (uint8*)lockDesc.lpSurface;
+			request.m_DestPitch = pitch;
+			request.m_Width = pMip->m_Width;
+			request.m_Height = pMip->m_Height;
+			request.m_Flags = 0;
+			if (g_FormatMgr.ConvertPixels(&request) != LT_OK)
+			{
+				pSurface->Unlock(LTNULL);
+				return LTFALSE;
+			}
+		}
+		else
+		{
+			if (!d3d_GetS3TCFourCC(bpp, &fourCC))
+			{
+				pSurface->Unlock(LTNULL);
+				return LTFALSE;
+			}
+
+			size = CalcImageSize(bpp, pMip->m_Width, pMip->m_Height);
+
+			if (ddsd.ddpfPixelFormat.dwFlags & DDPF_FOURCC)
+			{
+				// The surface is compressed too: copy the blocks.
+				if (fourCC != ddsd.ddpfPixelFormat.dwFourCC || size != lockDesc.dwLinearSize)
+				{
+					pSurface->Unlock(LTNULL);
+					return LTFALSE;
+				}
+
+				memcpy(lockDesc.lpSurface, pMip->m_Data, size);
+			}
+			else
+			{
+				// Let DirectDraw decompress it: blit from a system memory
+				// surface holding the compressed data.
+				pSurface->Unlock(LTNULL);
+
+				memset(&tempDesc, 0, sizeof(tempDesc));
+				tempDesc.dwSize = sizeof(tempDesc);
+				tempDesc.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT;
+				tempDesc.ddsCaps.dwCaps = DDSCAPS_TEXTURE | DDSCAPS_SYSTEMMEMORY;
+				tempDesc.lpSurface = pMip->m_Data;
+				tempDesc.dwLinearSize = size;
+				tempDesc.dwWidth = pMip->m_Width;
+				tempDesc.dwHeight = pMip->m_Height;
+				tempDesc.ddpfPixelFormat.dwFlags |= DDPF_FOURCC;
+				tempDesc.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
+				tempDesc.ddpfPixelFormat.dwFourCC = fourCC;
+				if (g_pDirectDraw->CreateSurface(&tempDesc, &pTempSurface, LTNULL) != DD_OK)
+					return LTFALSE;
+
+				memset(&tempLock, 0, sizeof(tempLock));
+				tempLock.dwSize = sizeof(tempLock);
+				if (pTempSurface->Lock(LTNULL, &tempLock, DDLOCK_WAIT | DDLOCK_WRITEONLY, LTNULL) != DD_OK)
+				{
+					pTempSurface->Release();
+					return LTFALSE;
+				}
+
+				if (tempLock.dwLinearSize != size)
+				{
+					pTempSurface->Unlock(LTNULL);
+					pTempSurface->Release();
+					return LTFALSE;
+				}
+
+				memcpy(tempLock.lpSurface, pMip->m_Data, size);
+				pTempSurface->Unlock(LTNULL);
+
+				hResult = pSurface->BltFast(0, 0, pTempSurface, LTNULL, DDBLTFAST_WAIT);
+				pTempSurface->Release();
+				if (hResult != DD_OK)
+					return LTFALSE;
+
+				lockDesc.dwSize = sizeof(lockDesc);
+				if (pSurface->Lock(LTNULL, &lockDesc, DDLOCK_WRITEONLY, LTNULL) != DD_OK)
+					return LTFALSE;
+			}
+		}
+
+		if (bpp == BPP_32)
+		{
+			// Repeat the mipmap over the rest of the surface.
+			nTiles = surfaceWidth / mipWidth;
+			for (i = 1; i < nTiles; i++)
+			{
+				pSrc = (uint8*)lockDesc.lpSurface;
+				pDest = (uint8*)lockDesc.lpSurface + pFormat->m_PixelSize * i * mipWidth;
+				for (y = 0; y < mipHeight; y++)
+				{
+					memcpy(pDest, pSrc, mipWidth << pFormat->m_PixelShift);
+					pSrc += pitch;
+					pDest += pitch;
+				}
+			}
+
+			nTiles = surfaceHeight / mipHeight;
+			for (i = 1; i < nTiles; i++)
+			{
+				pSrc = (uint8*)lockDesc.lpSurface;
+				pDest = (uint8*)lockDesc.lpSurface + pitch * i * mipHeight;
+				for (y = 0; y < mipHeight; y++)
+				{
+					memcpy(pDest, pSrc, surfaceWidth << pFormat->m_PixelShift);
+					pSrc += pitch;
+					pDest += pitch;
+				}
+			}
+		}
+
+		pSurface->Unlock(LTNULL);
+
+		caps.dwCaps = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP;
+		caps.dwCaps2 = 0;
+		caps.dwCaps3 = 0;
+		caps.dwCaps4 = 0;
+		pSurface->GetAttachedSurface(&caps, &pSurface);
+
+		surfaceWidth >>= 1;
+		surfaceHeight >>= 1;
+	}
+
+	return LTTRUE;
+}
+
+
+// ------------------------------------------------------------------------------ //
+// 0x10021790 -- make the surface (and its mipmap chain) for a request into
+// a texture handle, with the texture's colour key and alpha reference.
+// ------------------------------------------------------------------------------ //
+inline LTBOOL d3d_ShouldUseS3TC(BPPIdent bpp)
+{
+	return bpp != BPP_32 && g_CV_S3TCEnable.m_nValue && d3d_IsS3TCSupported(bpp);
+}
+
+inline LTBOOL d3d_CreateTextureSurface(TextureRequest *pRequest, RTextureHandle *pHandle,
+	uint32 iFirstMip, uint32 nMipmaps, uint32 iFormat)
+{
+	ConParse cParse;
+	PFormat format;
+	DDSURFACEDESC2 ddsd;
+	LPDIRECTDRAWSURFACE7 pSurface;
+	TextureData *pTextureData;
+	BPPIdent bpp;
+	PValue colorKey;
+	GenericColor keyColor;
+	uint32 realWidth, realHeight;
+
+	pTextureData = pRequest->m_pTextureData;
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_MIPMAPCOUNT | DDSD_TEXTURESTAGE;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP | DDSCAPS_COMPLEX;
+	ddsd.ddsCaps.dwCaps2 = DDSCAPS2_TEXTUREMANAGE | DDSCAPS2_OPAQUE | DDSCAPS2_DONOTPERSIST;
+	ddsd.dwWidth = pTextureData->m_Mips[iFirstMip].m_Width;
+	ddsd.dwHeight = pTextureData->m_Mips[iFirstMip].m_Height;
+	ddsd.dwMipMapCount = nMipmaps;
+	ddsd.dwTextureStage = pRequest->m_Stage;
+
+	bpp = pTextureData->m_Header.GetBPPIdent();
+	if (d3d_ShouldUseS3TC(bpp))
+	{
+		memset(&ddsd.ddpfPixelFormat, 0, sizeof(ddsd.ddpfPixelFormat));
+		ddsd.ddpfPixelFormat.dwSize = sizeof(ddsd.ddpfPixelFormat);
+		ddsd.ddpfPixelFormat.dwFlags |= DDPF_FOURCC;
+		if (!d3d_GetS3TCFourCC(bpp, &ddsd.ddpfPixelFormat.dwFourCC))
+			return LTFALSE;
+	}
+	else
+	{
+		memcpy(&ddsd.ddpfPixelFormat, &g_TextureFormats[iFormat]->m_PF, sizeof(ddsd.ddpfPixelFormat));
+		d3d_AdjustAspectRatio(ddsd.dwWidth, ddsd.dwHeight, &ddsd.dwWidth, &ddsd.dwHeight);
+	}
+
+	// "ColorKey r g b".
+	cParse.Init(pTextureData->m_Header.m_CommandString);
+	if (cParse.ParseFind("ColorKey", LTFALSE, 3) && !g_CV_AlphaTest.m_nValue)
+	{
+		colorKey = PValue_Set(0, atoi(cParse.m_Args[1]), atoi(cParse.m_Args[2]), atoi(cParse.m_Args[3]));
+
+		if (d3d_ShouldUseS3TC(bpp))
+			format.InitPValueFormat();
+		else
+			r_SetPFormat(&ddsd.ddpfPixelFormat, &format);
+
+		if (g_FormatMgr.PValueToFormatColor(&format, colorKey, keyColor) == LT_OK)
+		{
+			ddsd.dwFlags |= DDSD_CKSRCBLT;
+			ddsd.ddckCKSrcBlt.dwColorSpaceLowValue = keyColor.dwVal;
+			ddsd.ddckCKSrcBlt.dwColorSpaceHighValue = keyColor.dwVal;
+		}
+	}
+
+	// "AlphaRef n".
+	cParse.Init(pTextureData->m_Header.m_CommandString);
+	if (cParse.ParseFind("AlphaRef", LTFALSE, 1))
+		pHandle->m_AlphaRef = (uint16)atoi(cParse.m_Args[1]);
+	else
+		pHandle->m_AlphaRef = 0;
+
+	if (g_pDirectDraw->CreateSurface(&ddsd, &pSurface, LTNULL) != DD_OK)
+	{
+		AddDebugMessage(4, "Unable to create (%dx%d) texture surface.", ddsd.dwWidth, ddsd.dwHeight);
+		return LTFALSE;
+	}
+
+	pSurface->SetPriority(pTextureData->m_Header.GetTexturePriority());
+
+	// The texture coordinate scale.
+	d3d_AdjustAspectRatio(pTextureData->m_Mips[0].m_Width, pTextureData->m_Mips[0].m_Height, &realWidth, &realHeight);
+	pHandle->m_fInvWidth = 1.0f / (float)realWidth;
+	pHandle->m_fInvHeight = 1.0f / (float)realHeight;
+	pHandle->m_fInvWidth *= pTextureData->m_Header.GetUIMipmapScale();
+	pHandle->m_fInvHeight *= pTextureData->m_Header.GetUIMipmapScale();
+
+	pHandle->m_pSurface = pSurface;
+	return LTTRUE;
+}
+
+
+// ------------------------------------------------------------------------------ //
 // 0x10021c00 -- the first mipmap small enough for the card.  -1 if none is.
 // ------------------------------------------------------------------------------ //
-int32 d3d_GetFirstUsableMipmap(TextureData *pTexture)
+inline int32 d3d_GetFirstUsableMipmap(TextureData *pTexture)
 {
 	uint32 maxWidth, maxHeight, i;
 
@@ -1151,7 +1608,7 @@ int32 d3d_GetFirstUsableMipmap(TextureData *pTexture)
 		maxHeight = LTMIN(maxWidth, g_ScreenHeight);
 	}
 
-	for (i = 0; i < pTexture->m_nMipmaps; i++)
+	for (i = 0; i < pTexture->m_Header.m_nMipmaps; i++)
 	{
 		if (pTexture->m_Mips[i].m_Width <= maxWidth && pTexture->m_Mips[i].m_Height <= maxHeight)
 			return i;
@@ -1280,9 +1737,6 @@ LTBOOL d3d_DrawPolyLightmap(WorldPoly *pPoly, LTBOOL bToTexture)
 // ------------------------------------------------------------------------------ //
 // Making textures on demand.
 // ------------------------------------------------------------------------------ //
-RTexture* d3d_CreateRTexture(TextureRequest *pRequest, uint32 flags);  // 0x10021f70
-LTBOOL r_TransferTexture(RTexture *pTexture, TextureData *pTextureData);  // 0x10021040
-
 // Load the shared texture's data and make an RTexture from it.
 inline RTexture* d3d_CreateAndLoadTexture(SharedTexture *pSharedTexture, uint32 stage)
 {
@@ -1328,6 +1782,133 @@ uint32 d3d_GetTextureFlags(SharedTexture *pSharedTexture, uint32 stage)
 	}
 
 	return pSharedTexture->m_pRenderData->m_Flags;
+}
+
+
+// ------------------------------------------------------------------------------ //
+// 0x10021f70 -- make an RTexture (and its surfaces) for a request: pick the
+// format and the mipmaps to use, make the surfaces and record it all.
+// ------------------------------------------------------------------------------ //
+inline RTexture* d3d_CreateRTexture(TextureRequest *pRequest, uint32 texFlags)
+{
+	RTextureHandle handle;
+	TextureData *pTextureData;
+	RTexture *pTexture;
+	D3DTextureFormat *pFormat;
+	uint32 iFormat, i;
+	int32 iGroup, mipOffset, firstUsable, nMipmaps, maxMipmaps;
+	float fAngle;
+
+	pTextureData = pRequest->m_pTextureData;
+
+	// Pick the format.
+	if (pRequest->m_Stage & TEXSTAGE_BUMPMAP)
+	{
+		if (!g_TextureFormats[FORMAT_BUMPMAP])
+			return LTNULL;
+
+		iFormat = FORMAT_BUMPMAP;
+	}
+	else if (!(pTextureData->m_Header.m_IFlags & DTX_PREFER16BIT) && g_CV_32BitTextures && g_TextureFormats[FORMAT_32BIT])
+	{
+		iFormat = FORMAT_32BIT;
+	}
+	else if (pTextureData->m_Header.m_IFlags & DTX_PREFER5551)
+	{
+		iFormat = FORMAT_FULLBRITE;
+	}
+	else if (pTextureData->m_Header.m_IFlags & DTX_PREFER4444)
+	{
+		iFormat = FORMAT_4444;
+	}
+	else if (pTextureData->m_Header.m_IFlags & DTX_FULLBRITE)
+	{
+		iFormat = FORMAT_FULLBRITE;
+	}
+	else
+	{
+		iFormat = FORMAT_NORMAL;
+	}
+
+	memset(&handle, 0, sizeof(handle));
+
+	// The first mipmap: the texture group's offset, the texture's own and
+	// the global one (and, without S3TC, the texture's extra offset).
+	iGroup = pTextureData->m_Header.m_Extra[0];
+	if (iGroup > 9)
+		iGroup = 9;
+
+	mipOffset = g_CV_GroupOffset[iGroup] + pTextureData->m_Header.GetUIMipmapOffset() + g_CV_MipmapOffset;
+	if (!g_CV_S3TCEnable.m_nValue)
+		mipOffset += pTextureData->m_Header.GetNonS3TCMipmapOffset();
+
+	mipOffset = LTCLAMP(mipOffset, 0, 3);
+	if (mipOffset > pTextureData->m_Header.m_nMipmaps - 1)
+		mipOffset = pTextureData->m_Header.m_nMipmaps - 1;
+
+	// Make sure we're using a valid size.
+	firstUsable = d3d_GetFirstUsableMipmap(pTextureData);
+	if (firstUsable == -1)
+		return LTNULL;
+
+	mipOffset = LTMAX(mipOffset, firstUsable);
+
+	nMipmaps = pTextureData->m_Header.GetNumMipmaps();
+	if (nMipmaps == 0)
+		nMipmaps = 4;
+
+	maxMipmaps = pTextureData->m_Header.m_nMipmaps - mipOffset;
+	if (maxMipmaps == 0)
+		return LTNULL;
+
+	nMipmaps = LTCLAMP(nMipmaps, 1, maxMipmaps);
+
+	if (!d3d_CreateTextureSurface(pRequest, &handle, mipOffset, nMipmaps, iFormat))
+		return LTNULL;
+
+	pTexture = g_RTextureBank.Allocate();
+	if (!pTexture)
+	{
+		handle.m_pSurface->Release();
+		return LTNULL;
+	}
+
+	pTexture->m_pNext = LTNULL;
+	pTexture->m_TexFlags = (uint8)texFlags;
+	pTexture->m_Stage = (uint8)pRequest->m_Stage;
+	pTexture->m_Handle = handle;
+	pTexture->m_Handle.m_pTexture = pTexture;
+	pTexture->m_FirstMip = (uint8)mipOffset;
+	pTexture->m_nMipmaps = (uint8)nMipmaps;
+	pTexture->m_FormatIndex = (uint8)iFormat;
+	pTexture->m_DetailTextureScale = pTextureData->m_Header.GetDetailTextureScale();
+
+	fAngle = MATH_DEGREES_TO_RADIANS((float)pTextureData->m_Header.GetDetailTextureAngle());
+	pTexture->m_DetailTextureAngleC = (float)cos(fAngle);
+	pTexture->m_DetailTextureAngleS = (float)sin(fAngle);
+
+	// What the mipmaps take up.
+	pFormat = g_TextureFormats[iFormat];
+	pTexture->m_Handle.m_MemoryUse = 0;
+	for (i = mipOffset; i < (uint32)(mipOffset + nMipmaps); i++)
+	{
+		pTexture->m_Handle.m_MemoryUse +=
+			(pTextureData->m_Mips[i].m_Width * pTextureData->m_Mips[i].m_Height) << pFormat->m_PixelShift;
+	}
+
+	pTexture->m_pSharedTexture = pRequest->m_pSharedTexture;
+	if (!(texFlags & RT_KEEP))
+		pRequest->m_pSharedTexture->m_pRenderData = pTexture;
+
+	pTexture->m_Flags = (uint16)(pTextureData->m_Header.m_IFlags & DTX_FULLBRITE);
+	pTexture->m_Width = (uint16)pTextureData->m_Mips[0].m_Width;
+	pTexture->m_Height = (uint16)pTextureData->m_Mips[0].m_Height;
+
+	pTexture->m_Link.m_pData = pTexture;
+	dl_Insert(&g_RTextures, &pTexture->m_Link);
+
+	g_pStruct->m_SystemTextureMemory += pTexture->m_Handle.m_MemoryUse;
+	return pTexture;
 }
 
 

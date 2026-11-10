@@ -637,11 +637,14 @@ void d3d_ProcessWorldModel(LTObject *pObject)
 {
 	uint32 flags;
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's fog volumes are portal objects.
 	if (pObject->m_Flags2 & PHFLAG2_PORTALOBJECT)
 	{
 		d3d_ProcessPortalObject(pObject);
 		return;
 	}
+#endif
 
 	flags = d3d_GetWorldModelFlags(pObject);
 	if (flags & PHSURF_TRANSLUCENT)
@@ -1376,6 +1379,7 @@ static void d3d_DrawTranslucentWorldModelPoly(WorldPoly *pPoly)
 // ---------------------------------------------------------------------- //
 static void d3d_DrawNoSortWorldModel(ViewParams *pContext, LTObject *pObject)
 {
+#ifdef PRIMAL_HUNT
 	if (pObject->m_Flags2 & PHFLAG2_ADDITIVE)
 	{
 		StateSet ssSrcBlend(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
@@ -1389,4 +1393,12 @@ static void d3d_DrawNoSortWorldModel(ViewParams *pContext, LTObject *pObject)
 	}
 
 	d3d_DrawTranslucentWorldModel(pContext, pObject);
+#else
+	// AvP2's: additively, with no fog colour, over the draw.
+	StateSet ssSrcBlend(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE);
+	StateSet ssDestBlend(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE);
+	StateSet ssFogColor(D3DRENDERSTATE_FOGCOLOR, 0);
+
+	d3d_DrawTranslucentWorldModel(pContext, pObject);
+#endif
 }

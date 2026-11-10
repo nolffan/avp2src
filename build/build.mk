@@ -1314,6 +1314,28 @@ $(eval $(call tool,$(D3D)/Release/d3d.ren,$(addprefix $(D3D)/Release/,$(D3D_LINK
     test -f $(ROOT)/$(D3D)/Release/d3d.ren || { grep -i 'error\|fatal' $(ROOT)/$(D3D)/Release/d3d-link.txt | head -20 >&2; false; }))
 .PHONY: d3d-link
 d3d-link: $(D3D)/Release/d3d.ren
+#
+# AvP2 1.0.9.6's d3d.ren, linked the same way from the AvP2Release/ph
+# objects (avp2-d3d, above) in Primal Hunt's TU order -- the retail image's
+# object order (docs/AVP2_D3D_OBJECTS.md) -- by link 6.00.8168, as its Rich
+# header has it, with the release StdLith.lib after the DirectDraw thunks
+# (struct_bank, l_allocator, dynarray at 0x1003b520..). The ph files are the
+# whole renderer here: nolfsrc's files are Primal Hunt's link's only.
+D3D_AVP_LINK_OBJS := $(filter-out fogvolume,$(D3D_PH_ORDER))
+D3D_AVP_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib ..\..\LT2\lithshared\libs\Release\StdLith.lib dxguid.lib
+$(eval $(call tool,$(D3D)/AvP2Release/d3d.res,$(D3D)/d3d.rc | wine-drives,\
+    mkdir -p $(D3D)/AvP2Release && cd $(D3D) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /foAvP2Release/d3d.res d3d.rc))
+$(eval $(call tool,$(D3D)/AvP2Release/d3d.ren,$(D3D_AVP_LINK_OBJS:%=$(D3D)/AvP2Release/ph/%.obj) $(D3D)/AvP2Release/d3d.res $(LOUT)/StdLith.lib $(call nlink,$(V8168)) | wine-drives,\
+    cd $(D3D) && { printf '%s\n' $(call q,/nologo /dll /base:0x10000000 /FORCE /OPT:NOREF /OPT:ICF /machine:I386 \
+    /out:AvP2Release\d3d.ren /map:AvP2Release\d3d.map $(addprefix /export:,$(D3D_EXPORTS)) \
+    $(subst /,\,$(D3D_AVP_LINK_OBJS:%=AvP2Release/ph/%.obj) AvP2Release/d3d.res) $(D3D_AVP_LINK_LIBS)) > $(ROOT)/$(D3D)/AvP2Release/d3d.ren.rsp; } && \
+    { $(call nlink_env,$(V8168)) $(WINE) $(ROOT)/$(call nlink,$(V8168)) '@$(call ws,$(ROOT)/$(D3D)/AvP2Release/d3d.ren).rsp' \
+      > $(ROOT)/$(D3D)/AvP2Release/d3d-link.txt 2>&1 || true; } && \
+    grep -c 'error LNK2001\|error LNK2019' $(ROOT)/$(D3D)/AvP2Release/d3d-link.txt | sed 's/^/   LINK AvP2 d3d.ren: unresolved references: /' ; \
+    grep -c 'error LNK2005' $(ROOT)/$(D3D)/AvP2Release/d3d-link.txt | sed 's/^/   LINK AvP2 d3d.ren: defined twice: /' ; \
+    test -f $(ROOT)/$(D3D)/AvP2Release/d3d.ren || { grep -i 'error\|fatal' $(ROOT)/$(D3D)/AvP2Release/d3d-link.txt | head -20 >&2; false; }))
+.PHONY: avp2-d3d-link
+avp2-d3d-link: $(D3D)/AvP2Release/d3d.ren
 
 # ---------------------------------------------------------------------------
 # cdaudio.dll

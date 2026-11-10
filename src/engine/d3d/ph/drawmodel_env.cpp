@@ -512,6 +512,7 @@ void d3d_UnsetEnvMapStage(uint32* pSaved)
 }
 
 
+#ifdef PRIMAL_HUNT
 // ---------------------------------------------------------------------- //
 //  0x1002544b / 0x10025469 -- texture coordinate generators (the
 //  drawer's per-vertex function pointers, as TU01's 0x10001370..).
@@ -535,6 +536,7 @@ void __fastcall d3d_GenUVEnvMapOffset(CD3DModelDraw* pDraw, ModelVert* pVert, UV
 		 + pVert->m_vNormal.z * pDraw->m_mEnvMap.m[1][2])
 			* pDraw->m_fEnvScaleV + pDraw->m_fEnvOffsetV + g_fEnvMapOffsetV);
 }
+#endif  // Primal Hunt's generators
 
 
 // ---------------------------------------------------------------------- //
@@ -613,7 +615,9 @@ void __fastcall d3d_GenUVEnvMapOffset(CD3DModelDraw* pDraw, ModelVert* pVert, UV
 void CD3DModelDraw::DrawPasses()
 {
 	uint32 oldAlphaBlend;
+#ifdef PRIMAL_HUNT
 	uint8 oldAlpha;
+#endif
 	LTBOOL bLOD;
 	void* pOldTexture;
 	uint32 i;
@@ -623,11 +627,12 @@ void CD3DModelDraw::DrawPasses()
 		m_2c4[i] = m_3c4[i] = 0;
 
 	m_iDetailStage = (uint32)-1;
-	m_iSkinStage = 0;
 	m_nEnvMapPasses = 1;
+	m_iSkinStage = 0;
 
 	g_pD3DDevice->GetRenderState(D3DRS_ALPHABLENDENABLE, &oldAlphaBlend);
 
+#ifdef PRIMAL_HUNT
 	oldAlpha = m_Alpha;
 	if (m_pInstance->m_Flags2 & 0x800)
 	{
@@ -644,8 +649,11 @@ void CD3DModelDraw::DrawPasses()
 		}
 	}
 
+#endif
+
 	bLOD = LTTRUE;
 
+#ifdef PRIMAL_HUNT
 	if ((g_CV_EnvMapAll || m_bEnvMapAll) && (g_pStruct->m_pEnvMap || m_pInstance->m_pEnvMap))
 	{
 		if (m_pInstance->m_Flags2 & 0x1000)
@@ -690,6 +698,25 @@ void CD3DModelDraw::DrawPasses()
 			g_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, LTFALSE);
 		}
 	}
+#else
+	// AvP2's: no object alpha override, no per-instance environment map
+	// and no special texture coordinates for it.
+	if ((g_CV_EnvMapAll || m_bEnvMapAll) && g_pStruct->m_pEnvMap)
+	{
+		m_5f4 = (uint32)d3d_GenUVVert;
+		m_5ec = (uint32)d3d_GenUVEnvMap;
+
+		DrawLOD();
+		d3d_SetTexture(g_pStruct->m_pEnvMap, g_BindTextureStage, 0);
+		m_bSetupSkins = LTFALSE;
+		DrawPiece(LTNULL);
+		bLOD = LTFALSE;
+		g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
+	}
+
+	if ((float)m_Alpha < 255.0f)
+		g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
+#endif
 
 	if (!g_CV_EnvMapAll)
 	{

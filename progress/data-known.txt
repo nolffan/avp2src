@@ -538,6 +538,9 @@ AvP2 server.dll	ours	*
 # Primal Hunt's renderer, linked the same way (build/build.mk, d3d-link): /FORCE over nolfsrc's NOLF renderer with 1,594 symbols unresolved, and /OPT:NOREF; not to be compared string by string until it links whole
 d3d.ren	retail	*
 d3d.ren	ours	*
+# AvP2 1.0.9.6's renderer, linked the same way (build/build.mk, avp2-d3d-link): /FORCE over the ph/ objects with about 300 symbols unresolved (the unwritten functions' strings are missing, and libcmt's locale code and tables come in where retail has none); not to be compared string by string until it links whole
+AvP2 d3d.ren	retail	*
+AvP2 d3d.ren	ours	*
 # Launch.dll: the retail image links a debug runtime (libcmtd.lib) no toolchain here holds -- its heap initialisation picks a heap by the __MSVCRT_HEAP_SELECT variable and the image's linker version (GetEnvironmentVariableA, GetModuleHandleA), which msvc-6.00-8168's and -8447's libcmtd.lib lack (build/build.mk, "Launch.dll")
 Launch.dll	retail	__GLOBAL_HEAP_SELECTED
 Launch.dll	retail	__MSVCRT_HEAP_SELECT
