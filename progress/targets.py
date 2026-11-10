@@ -205,7 +205,20 @@ TARGETS = [
          built="src/engine/server/Release/server.dll", optional=True,
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib from __ftol (0x10061048), 354 members to
-         # initcon.obj (0x100706db)
+         # initcon.obj (0x100706db).
+         #   As in lithtech.exe, the 1,112 bytes of packed code below __ftol
+         # from 0x10060bf0 (after the WON client's last function and its
+         # nop padding) are the C++ library's: string.obj's _Xlen/_Xran and
+         # the logic_error/runtime_error family, their rtti.obj-shaped
+         # deleting destructors and copy constructors, the _$E
+         # initializers, xlock.obj's _Lockit/_CleanUp and fpinit.obj's
+         # __fpmath/__cfltcvt_init: every row matches a libcpmt.lib/libcmt.lib
+         # member masked by its relocations at its own address, and the
+         # block is lithtech.exe's 0x4bf4c0..0x4bf918, the same length,
+         # differing only in relocated bytes. The range still ends at
+         # __ftol: three deleting destructors of ours (smgr.obj's, of the
+         # same generic shape) are recorded identical there, and the
+         # scoreboard places them nowhere else yet
          app=[(0x10001000, 0x10061048)]),
     dict(label="d3d.ren", what="the Direct3D renderer", kind="image",
          shipped=REFERENCE + "/d3d.ren", stem="d3d",
@@ -394,9 +407,21 @@ TARGETS = [
          built="src/AVP2/ObjectDLL/PrimalHunt/Object.lto", optional=True,
          third_party=PREBUILT_LIBS,
          # provisional: libcmt.lib from rand.obj (0x10255d1b), 292 members
-         # to gmtime.obj (0x102635f9); 8,907 bytes of packed code (108
-         # functions) from 0x10253a50 below it
-         app=[(0x10001000, 0x10255d1b)]),
+         # to gmtime.obj (0x102635f9).
+         #   The runtime starts at 0x10253a50, after the game's last
+         # function (0x10253a20) and its nop padding: operator delete
+         # (push [esp+4]; call free; pop ecx; ret), then libcpmt.lib as
+         # PHCShell.dll has it (xlock.obj's _Lockit and _CleanUp,
+         # string.obj's _Xlen/_Xran, ios.obj's and locale.obj's
+         # runtime_error/logic_error family, the rtti.obj-shaped deleting
+         # destructors and copy constructors, fiopen.obj's and
+         # iomanip.obj's _$E initializers) to 0x10253e63, then libcimt.lib's
+         # old iostream classes (strstreambuf to istrgint.obj's getint) to
+         # 0x10255d0e, then rand.obj's srand. All 108 rows from 0x10253a50
+         # match a libcmt.lib/libcpmt.lib/libcimt.lib member masked by its
+         # relocations at their own address, so none of it is the game's
+         # code
+         app=[(0x10001000, 0x10253a50)]),
     dict(label="PHCRes.dll", what="Primal Hunt's client resources",
          kind="resources", shipped=REFERENCE + "/PHCRes.dll", stem="PHCRes",
          built="src/AVP2/ClientRes/PrimalHunt/CRes.dll", optional=True),
@@ -457,16 +482,37 @@ TARGETS = [
          built="src/AVP2/ClientShellDLL/final/CShell.dll", optional=True,
          third_party=PREBUILT_LIBS,
          # provisional: 14 import thunks from 0x10172ae6, then libcmt.lib
-         # from typinfo.obj (0x10172b3a), 364 members to initcon.obj; 4.9
-         # KB of packed code from 0x101717a0 below the thunks
-         app=[(0x10001000, 0x10172ae6)]),
+         # from typinfo.obj (0x10172b3a), 364 members to initcon.obj.
+         #   The runtime starts at 0x101709b0, just after WONAPI.lib's last
+         # function (0x101709ab, `mov eax,[esp+4]; ret`): operator delete
+         # (11 bytes: push [esp+4]; call free; pop ecx; ret), then
+         # libcimt.lib, the old iostream classes (ifstream, filebuf,
+         # strstreambuf, istrstream/ostrstream/strstream, istream/ostream
+         # and their inserters/extractors, ofstream, fstream, ios, iostream,
+         # mtlock's four initializers, streambuf) to 0x10172ae6, then the 14
+         # import thunks. All 98 rows from 0x101709b0 to the thunks (and
+         # the one 3-byte `ret`-shaped row at 0x101711e6) match a
+         # libcmt.lib/libcimt.lib member masked by its relocations at
+         # their own address, as in PHCShell.dll, so none of it is the
+         # game's code
+         app=[(0x10001000, 0x101709b0)]),
     dict(label="Object.lto", what="AvP2's game: server objects", kind="image",
          shipped=REFERENCE + "/Object.lto", stem="Object",
          built="src/AVP2/ObjectDLL/final/Object.lto", optional=True,
          third_party=PREBUILT_LIBS,
          # provisional: libcmt.lib from typinfo.obj (0x10235bb9), 285
-         # members; 2.8 KB of packed code from 0x102350f0 below it
-         app=[(0x10001000, 0x10235bb9)]),
+         # members.
+         #   The runtime starts at 0x10233cb0, as in CShell.dll just after
+         # WONAPI.lib's last function (0x10233cab, `mov eax,[esp+4]; ret`):
+         # operator delete (push [esp+4]; call free; pop ecx; ret), then
+         # libcimt.lib's old iostream classes (strstreambuf, istrstream,
+         # ostrstream, ifstream, filebuf, istream/ostream, ios, mtlock's
+         # initializers, streambuf, istrgint.obj's getint) to 0x10235b69,
+         # then fpinit.obj (__fpmath 0x10235b69, __fpclear, __cfltcvt_init
+         # 0x10235b81) up to typinfo.obj. All 89 rows of the span match a
+         # libcmt.lib/libcimt.lib member masked by its relocations at
+         # their own address, so none of it is the game's code
+         app=[(0x10001000, 0x10233cb0)]),
     dict(label="CRes.dll", what="AvP2's client resources",
          kind="resources", shipped=REFERENCE + "/CRes.dll", stem="CRes",
          built="src/AVP2/ClientRes/Release/CRes.dll", optional=True),
@@ -559,8 +605,14 @@ TARGETS = [
          # import objects and dxguid.lib.
          # Provisional: a packed `push [esp+4]; call; pop; ret` thunk at
          # 0x1003b710 after padding, then msvc-6.00-8168's libcmt.lib from
-         # onexit.obj (0x1003b76a), 237 members
-         app=[(0x10001000, 0x1003b710)]),
+         # onexit.obj (0x1003b76a), 237 members.
+         #   As in Primal Hunt's renderer, the renderer's objects end at
+         # 0x1003b502, where the linker put the three DDRAW import thunks
+         # (jmp [0x10046008] DirectDrawCreate, [0x10046000]
+         # DirectDrawCreateEx, [0x10046004] DirectDrawEnumerateA), then
+         # int3 padding to StdLith.lib at 0x1003b520. The thunks are the
+         # linker's, not code of the image's own: left out, as the runtime is
+         app=[(0x10001000, 0x1003b502), (0x1003b520, 0x1003b710)]),
     dict(label="AvP2 ltmsg.dll", what="AvP2's engine messages", kind="resources",
          shipped=REFERENCE + "/avp2/ltmsg.dll", stem="AVP2ltmsg",
          built="src/engine/ltmsg/AvP2Release/ltmsg.dll", optional=True),

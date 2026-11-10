@@ -178,7 +178,7 @@
   "progress/reference.sha256": "ee48f3de56b6be92b1c74bc87028f92239b2d8a1af1f64ce1f24660c162a8d09",
   "progress/server-screen-exclude.csv": "38af58795ae688e73414ba230a14e4324e0efcef25453a989f0ebb2bb74e7a65",
   "progress/shipped-libs.sha256": "67e76edfc9d6bd5f6cd55c1397f829260dbdb71729e2fe8dd508d7b3bcb94c59",
-  "progress/targets.py": "75e6a578df468b874ce9be3c868784e82a7def6105f6f916654e8a7f6b09146b",
+  "progress/targets.py": "244fbaf74a13729d9a492234f3a668f496385a68aafa47bfb53b4f0b896875f6",
   "progress/vtab-known.txt": "bf1d28ca3b46783bddee1d088326b2347d2bad51a3dbc5c2b32a77d88a901a44"
  },
  "reference": {
@@ -208,12 +208,12 @@
   "out/reference/server.dll": "2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268"
  },
  "result": {
-  "out/progress/functions.csv": "d4155fae67aa5c9d04eee94838019f3b8abddbc3d702fe5467716cf6cd0440da",
-  "out/progress/summary.json": "23e0227187e51a8d9f8a7a55054aa876aeefe5e10d229677440eada04818e5f3"
+  "out/progress/functions.csv": "50f13cacda4164be5a28baced60c2714101e9f97b1ecadb2c87eb65145ba008c",
+  "out/progress/summary.json": "ac72f31ad5185a576408ab2662f2614c3739de4a8218d8c640645f63b4d0908a"
  },
  "source": {
-  "modified_files": 16,
-  "revision": "4746b126aaf59de7a8abc46843b3b65884364475",
+  "modified_files": 1,
+  "revision": "77a26c64a0b85a6740ea39a212317075e49312d7",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "c83182ef5819594e499f515858b15c618c417af4"
