@@ -766,69 +766,9 @@ void CObj4a2078View::Forward34(void* pA, void* pB)
 
 // ---- the 0x429xxx handle wrapper --------------------------------------- //
 //
-// A two-dword object: a pointer to a table of __cdecl function pointers at
-// +0x00 and a handle drawn from that table at +0x04.  What says the table is
-// a C struct of function pointers and not a C++ interface is 0x00429841:
-// `call *0x178(%ecx)` with the handle pushed and `add $0x4,%esp` AFTER the
-// call, so the callee does not pop and no `this` goes with it.  Every C++
-// virtual in this image is thiscall and pops its own (names ours).
-class CFnTable178View
-{
-public:
-	uint8 m_pad_000[0x178];
-	// AVP2: as Primal Hunt (PH addresses) -- one more entry below here (0x00433d91 calls +0x17c).
-	uint8 m_padExtra[4];
-	void  (*m_pfnFree0178)(void* hHandle);   // +0x178
-};
-
-class CHandleWrapperView
-{
-public:
-	LTRESULT IsReady();                      // 0x00429820 (name ours)
-	LTRESULT Free();                         // 0x00429830 (name ours)
-
-public:
-	CFnTable178View* m_pTable;               // +0x00
-	void*            m_hHandle;              // +0x04
-};
-
-// 0x00429820 — is this wrapper usable?  thiscall, no arguments, twelve bytes.
-//
-// Read off the bytes: `neg`/`sbb`/`and $0xb7`/`add $0x49` is the
-// branchless `?:`, evaluated as `B + (mask & (A - B))` with B = 0x49 and
-// A = 0 — 0xb7 is (0 - 0x49) & 0xff.  ltcodes.h makes 73 LT_NOTINITIALIZED
-// and LT_OK is 0, so the answer is LT_OK when the table is there and
-// LT_NOTINITIALIZED when it is not, written as a conditional expression and
-// not as an if.  0x00429ca0 is one caller and it guards on `!= LT_OK`.
-LTRESULT CHandleWrapperView::IsReady()
-{
-	return m_pTable ? LT_OK : LT_NOTINITIALIZED;
-}
-
-// 0x00429830 — give the handle back and forget both halves.  thiscall, no
-// arguments.  Found as a gap entry; it is a whole function (aligned start, its
-// own prologue and `ret`).
-//
-// Read off the bytes:
-//
-//   * the two guards are NESTED, and the two stores are what both of them
-//     skip to — so neither guard can skip the stores, which is why they are
-//     unconditional below.
-//   * the stores run +0x04 then +0x00, i.e. handle first.
-//   * the answer is a bare `xor %eax,%eax`, and nothing above it can fail.
-LTRESULT CHandleWrapperView::Free()
-{
-	if (m_pTable)
-	{
-		if (m_hHandle)
-			m_pTable->m_pfnFree0178(m_hHandle);
-	}
-
-	m_hHandle = LTNULL;
-	m_pTable  = LTNULL;
-
-	return LT_OK;
-}
+// 0x00429820 and 0x00429830 were a view here (CHandleWrapperView): they are
+// the surface cache's CSurfItemM5::IsReady and Free, written in collelem.cpp
+// in their unit's order.
 
 
 // ---- a four-dword clear ------------------------------------------------ //

@@ -783,7 +783,7 @@ ICL_ENV := WINEPREFIX=$(PFX_PLAIN) WINEPATH='$(call wz,$(TC)/icl-4.0)\BIN;$(call
 # server.dll: nolfsrc's /O1 (Primal Hunt adds /GX, below); localdriver.cpp /Os
 SERVER := $(E)/server
 SERVER_CL := /MT /W3 /O1 /D WIN32 /D NDEBUG /D _WINDOWS /D LT_SERVER_TIMERS /D LT_SERVER_BUILD /D NO_PRAGMA_LIBS /I ..\..\LT2\sdk\inc /I . /c
-SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp ltservermath.cpp commonphysics.cpp commonmodel.cpp modelloadstate.cpp \
+SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp ltservermath.cpp framemove.cpp commonphysics.cpp commonmodel.cpp modelloadstate.cpp \
     sharedcommon.cpp servermodel.cpp serverlightanim.cpp servercommon.cpp servermessage.cpp packet.cpp \
     lthread.cpp smgr.cpp counter.cpp dalloc.cpp modelanim.cpp streamsim.cpp fsstream.cpp basestream.cpp \
     objbank.cpp objtypes.cpp collection.cpp worldbsp.cpp worldmodels.cpp saveio.cpp worldsim.cpp \
@@ -817,7 +817,7 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     clientstreams.cpp clientinput.cpp clientsoundmgr.cpp clientworldinfo.cpp clientblit.cpp \
     clientrender.cpp ltcounters.cpp ltnew1.cpp stringunitq498.cpp cltnew.cpp cltrest.cpp lt2new1.cpp lt2new2.cpp lt2new3.cpp lt2new4.cpp \
     ltnew2.cpp ..\server\csbase.cpp ..\server\servermgr.cpp ..\server\servermsg.cpp \
-    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\ltservermath.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp ..\server\modelloadstate.cpp \
+    ..\server\netmgr.cpp ..\server\servermath.cpp ..\server\ltservermath.cpp ..\server\framemove.cpp ..\server\commonphysics.cpp ..\server\commonmodel.cpp ..\server\modelloadstate.cpp \
     ..\server\sharedcommon.cpp ..\server\servermodel.cpp ..\server\serverlightanim.cpp \
     ..\server\servercommon.cpp ..\server\servermessage.cpp ..\server\packet.cpp ..\server\lthread.cpp \
     ..\server\smgr.cpp ..\server\ltobject.cpp ..\server\lmessage.cpp ..\server\lmessage2.cpp ..\server\soundinst.cpp ..\server\spritecontrol.cpp \
@@ -1247,7 +1247,7 @@ LT_AVP_ORDER := \
     worldmodels worldbsp dalloc ltobject dsi cmgsurf collelem dhash objbank clientshell clientworld demodtx \
     clientdsi packet ccobj worldisect wgrid linesystem savobj saveio genericprop basestream servermath ltservermath sharedcommon \
     filemgr warpblit clientinput diblit lmessage lmessage2 localdriver cltcursor clientmusic dmextra ltnew1 dmgrow \
-    lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel modelloadstate collection modchunk commonphysics wmrotate \
+    lt2new2 dmloader lt2new1 lthread sdkforce modelnew commonmodel modelloadstate collection modchunk framemove commonphysics wmrotate \
     msgterm netmgr nettrace netobj objtypes lt2new3 partfm fmconvert fmcvt32 lttexmod predobj clientrender \
     serverengine serverlightanim smgrmisc servercommon servermodel servermessage sisegment smgr smgrnew cmodelload \
     cchandler serverthread objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound cacherec soundinst sprite spritecontrol \
@@ -1256,7 +1256,7 @@ LT_AVP_ORDER := \
 SV_AVP_ORDER := \
     modelanim counter structbank worldsim console csbase sweptsphere fsstream worldmodels servermsg worldbsp \
     dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath ltservermath svnew sharedcommon \
-    lmessage lmessage2 localdriver lthread modelnew collection commonmodel modelloadstate sdkforce commonphysics netmgr packet \
+    lmessage lmessage2 localdriver lthread modelnew collection commonmodel modelloadstate sdkforce framemove commonphysics netmgr packet \
     serverengine netobj objtypes objbank serverlightanim smgrmisc filemgr servermgr server servercommon \
     servermodel servermessage sisegment smgr smgrnew serverthread objmover cacherec soundinst spritecontrol streamsim stringbank tcpdriver worldtree
 LT_AVP_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),AvP2Release)))

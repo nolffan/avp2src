@@ -590,12 +590,11 @@ CRateTracker::CRateTracker()
 // destructors, a polymorphic CAbstractIO view, an extra inline level on the
 // four queue views, a derived packet-data class, or a wrapper around the
 // netbank_FreeMessages call.
-extern void* g_AbstractIOVtblB3;             // 0x1004dea0 / 0x004a2b44
-
+// (the base's store: CAbstractIO's own destructor, as servermsg.cpp's view)
 class CTermAbstractIOB3
 {
 public:
-	~CTermAbstractIOB3() { m_pVtbl = &g_AbstractIOVtblB3; }
+	~CTermAbstractIOB3() { ((CAbstractIO*)this)->CAbstractIO::~CAbstractIO(); }
 
 	void*  m_pVtbl;                          // +0x00
 	uint32 m_nRefCount;                      // +0x04

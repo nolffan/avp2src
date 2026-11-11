@@ -31,6 +31,7 @@
 #include "ltlink.h"              // LTLink / LTList / CheapLTLink
 #include "collection.h"          // CMoArray<T,C>, DefaultCache, LAlloc, g_DefAlloc
 #include "de_error.h"            // dsi_ServerError
+#include "servermsg.h"           // CAbstractIO, whose destructor the message view runs
 
 
 // =====================================================================
@@ -755,13 +756,12 @@ void CObjWorldModelQ458::OnFoundInBoxQ458(WTFindInfoQ458* pInfo)
 
 // 0x004a2b44 -- CAbstractIO's vftable (its own slot 0 is 0x00455c30, the
 // four-slot table {0x00455c30, 0x00455c00, 0x00455c10, 0x00455c20}).
-// Stored as a plain address, for the reason servermsg.cpp gives.
-extern void* g_AbstractIOVtblQ458;                   // 0x004a2b44
-
+// Stored by CAbstractIO's own destructor run on the view's bytes, as
+// servermsg.cpp's CTermAbstractIO does.
 class CTermAbstractIOQ458
 {
 public:
-	~CTermAbstractIOQ458() { m_pVtbl = &g_AbstractIOVtblQ458; }
+	~CTermAbstractIOQ458() { ((CAbstractIO*)this)->CAbstractIO::~CAbstractIO(); }
 
 	void*  m_pVtbl;                                  // +0x00
 	uint32 m_nRefCount;                              // +0x04

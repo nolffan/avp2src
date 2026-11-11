@@ -193,7 +193,18 @@ TARGETS = [
          # progress/lithtech-screen-exclude.csv), as AvP2's engine has them
          # at 0x004af950. The thunk is the linker's, not code of the image's
          # own: left out, as the runtime is
-         app=[(0x00401000, 0x004ba2a0), (0x004ba2b0, 0x004bf4c0)]),
+         app=[(0x00401000, 0x004ba2a0), (0x004ba2b0, 0x004bf4c0)],
+         own_symbols={
+             # framemove.cpp's unit opens the physics block (0x00461650:
+             # its 0x4c frame, the half-time-squared and the two MagSqr
+             # tests, as server.dll's 0x10026c87); the world-move
+             # cluster's push pass is 0x00462e50 (the sphere mover, the
+             # qsort of wm_CompareSortRecsQ528, the out-of-line
+             # wm_PushObject call at 0x00463763). Both are nears, which
+             # the content pass had crossed over.
+             "?phys_ComputeFrameMove@@YAHPAVGlobalForceControl@@@Z": 0x00461650,
+             "?wm_PushIntersectingObjects@@YAXPAUWMMoveState@@PAV?$_CVector@M@@1@Z": 0x00462e50,
+         }),
     dict(label="server.dll", what="the server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
          # nolfsrc's engine compiled for Primal Hunt, and linked with /FORCE
@@ -644,6 +655,10 @@ TARGETS = [
          # CObjWorldModel's (0x00466ec0), ... 0x00412bdc CObjParticleSystem's
          # (0x00468070), 0x00413e7c CObjBase's (0x00466850).
          own_symbols={
+             # as Primal Hunt's: the frame move 0x0045c600, the push pass
+             # 0x0045ddf0 (its out-of-line wm_PushObject call 0x0045e701)
+             "?phys_ComputeFrameMove@@YAHPAVGlobalForceControl@@@Z": 0x0045c600,
+             "?wm_PushIntersectingObjects@@YAXPAUWMMoveState@@PAV?$_CVector@M@@1@Z": 0x0045ddf0,
              "?AllocVoid@?$CObjectBank@VCObjModel@@@@UAEPAXXZ": 0x00412a70,
              "?AllocVoid@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ": 0x00412ab0,
              "?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ": 0x00412af0,

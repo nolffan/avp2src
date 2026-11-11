@@ -46,17 +46,15 @@
 // collection.h is already in scope through servermgr.h -> lthread.h, so
 // CMoArray, DefaultCache, LAlloc and g_DefAlloc need no extra include.
 
-// 0x004a2b44 -- CAbstractIO's vftable.  Stored as a plain address rather
-// than through virtuals of our own, for the reason servermsg.cpp gives:
-// a vtable here would drag in a deleting destructor per view that the
-// shipped image has no counterpart for.  Relocations are masked, so the
-// store is the same bytes either way.
-extern void* g_AbstractIOVtblQ454;                   // 0x004a2b44
-
+// The base's store is CAbstractIO's own destructor run on the view's bytes,
+// as servermsg.cpp's CTermAbstractIO does: no virtuals of our own (a
+// vtable here would drag in a deleting destructor per view that the
+// shipped image has no counterpart for), and the vtable stored is the
+// real one.
 class CTermAbstractIOQ454
 {
 public:
-	~CTermAbstractIOQ454() { m_pVtbl = &g_AbstractIOVtblQ454; }
+	~CTermAbstractIOQ454() { ((CAbstractIO*)this)->CAbstractIO::~CAbstractIO(); }
 
 	void*  m_pVtbl;                                  // +0x00
 	uint32 m_nRefCount;                              // +0x04

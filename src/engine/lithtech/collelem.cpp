@@ -284,7 +284,6 @@ template void BaseDelete(LAlloc*, CElem1CQ428*, uint32);
 //  template COMDATs start at 0x0042a160, immediately after its last method.
 //  Other methods of the same two classes are already written under view
 //  names elsewhere and are only DECLARED here:
-//      0x00429820 IsReady, 0x00429830 Free    clientworld.cpp (CHandleWrapperView)
 //      0x00429a20 item SetRect, 0x00429fd0 GetCellRect, 0x0042a050,
 //      0x0042a100                             cmgsurf.cpp PART C
 //  The layouts are cmgsurf.cpp's CSub11F0ItemQ428 / CSub11F0Q428.  The
@@ -348,6 +347,33 @@ public:
 CSurfItemM5::~CSurfItemM5()
 {
 	Free();
+}
+
+// 0x00429820, 12 bytes -- is the item usable?  `neg`/`sbb`/`and $0xb7`/
+// `add $0x49` is the branchless `?:`: LT_OK (0) with an interface,
+// LT_NOTINITIALIZED (73) without.  The cache's IsReady below is the same
+// body on its own +0x00 and folds with this one (AvP2 1.0.9.6 0x00430760,
+// called from both Init and Term).
+LTRESULT CSurfItemM5::IsReady()
+{
+	return m_pClientDE ? LT_OK : LT_NOTINITIALIZED;
+}
+
+// 0x00429830 -- give the surface back and forget both halves.  The two
+// guards are nested and both skip to the stores, handle first; the answer
+// is a bare `xor %eax,%eax`.
+LTRESULT CSurfItemM5::Free()
+{
+	if (m_pClientDE)
+	{
+		if (m_hSurface)
+			m_pClientDE->DeleteSurface(m_hSurface);
+	}
+
+	m_hSurface   = LTNULL;
+	m_pClientDE  = LTNULL;
+
+	return LT_OK;
 }
 
 // 0x00429860, 280 bytes.  Plot one sample into the item's surface as a
@@ -470,6 +496,17 @@ LTRESULT CSurfCacheM5::Init(CLTClient* pClientDE, LTRect* pRect)
 	m_pClientDE = pClientDE;
 
 	return LT_OK;
+}
+
+
+// The cache's own IsReady, defined between Init and Term: AvP2's cl 9044
+// allocates around a callee it has already compiled, and the two callers
+// say where it sat -- Term (0x00430b70) calls RemoveAll straight after it
+// with `this` still in %ecx, Init (0x00430ae0) reloads %ecx as for an
+// unknown callee.  Its body folds with CSurfItemM5::IsReady (0x00430760).
+LTRESULT CSurfCacheM5::IsReady()
+{
+	return m_pClientDE ? LT_OK : LT_NOTINITIALIZED;
 }
 
 

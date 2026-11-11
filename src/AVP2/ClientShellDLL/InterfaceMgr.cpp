@@ -2080,6 +2080,35 @@ int CInterfaceMgr::HandleMissionStatus()
 					break;
 			}
 			pProfile->Save();
+
+#ifdef PRIMAL_HUNT
+			// Primal Hunt: the last mission (its next level is the menu)
+			// completes the species' campaign, and all three complete
+			// wins the game
+			if (_stricmp(g_pMissionMgr->GetNextLevelName(m_nPrevMissionId), "menu") == 0)
+			{
+				pProfile = g_pProfileMgr->GetCurrentProfile();
+
+				if (eSpecies == Alien)
+				{
+					pProfile->m_nAStat = LTTRUE;
+					pProfile->Save();
+				}
+				else if (eSpecies == Predator)
+				{
+					pProfile->m_nPStat = LTTRUE;
+					pProfile->Save();
+				}
+				else if (eSpecies == Marine || eSpecies == Corporate)
+				{
+					pProfile->m_nHStat = LTTRUE;
+					pProfile->Save();
+				}
+
+				if (pProfile->m_nPStat + pProfile->m_nHStat + pProfile->m_nAStat == 3)
+					return 1;
+			}
+#endif
 		}
 	}
 

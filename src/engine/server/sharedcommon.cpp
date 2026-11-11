@@ -29,16 +29,13 @@
 // 0x004347a0 (lithtech.exe) / 0x1001214c (server.dll) -- the constructor,
 // the first function of the file: the vptr, then m_pMath cleared.  Called
 // out of line by CLTServer's constructor on its +0x234 member (commonphysics
-// .cpp).  lithtech.exe only for now: server.dll links svnew.cpp's
-// CSharedCommonView stand-in under this name (src/engine/server/link/
-// aliases.rsp), which this would duplicate.  Too small to be credited in
-// either image.
-#ifndef LT_SERVER_BUILD
+// .cpp).  Built for both images: svnew.cpp's CSharedCommonView stand-in,
+// which server.dll reached only through a link-time alias our link does not
+// take, is retired.
 SharedCommonLT::SharedCommonLT()
 {
 	m_pMath = LTNULL;
 }
-#endif
 
 LTRESULT SharedCommonLT::GetObjectFlags(const HOBJECT hObj, const ObjFlagType flagType, uint32& dwFlags)
 {
@@ -350,69 +347,8 @@ LTRESULT SharedCommonLT::GetAttachedTransform(HATTACHMENT hAttachment, uint32 hP
 }
 
 
-// 0x10015bcd (NOLF) — quaternion to matrix; Primal Hunt lithtech.exe
-// 0x00451180, server.dll 0x1001b2da, both IDENTICAL. This one needed no
-// reconstruction: the SDK ships the source in src/LT2/sdk/inc/ltquatbase.cpp
-// and the shipped bytes are that function, statement for statement -- its
-// static intermediates and its row-by-row fill included. Its real home is
-// ltquatbase.cpp (beside commonmodel.cpp's quat_ConvertFromMatrix, which
-// follows it in both images); it sits here because that TU is not part of
-// the reconstruction yet.
-//
-// The declaration this file uses takes the quaternion and the matrix as their
-// LT types rather than the SDK's `const float*` / `float[4][4]`, because the
-// callers in this TU pass those; the bodies are the same arithmetic on the
-// same offsets.
-void quat_ConvertToMatrix(LTRotation* pQuat, LTMatrix* pMat)
-{
-	// AVP2: the SDK's `static` locals (AvP2 lithtech.exe 0x0044cc80 and
-	// Primal Hunt's 0x00451180 / server.dll 0x1001b2da store every
-	// intermediate to .bss, 0x004f569c..0x004f56cc).
-	static float s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
-
-	// get the values for matrix calcuation...
-	s = 2.0f / ((pQuat->m_Quat[0] * pQuat->m_Quat[0]) + (pQuat->m_Quat[1] * pQuat->m_Quat[1]) +
-		(pQuat->m_Quat[2] * pQuat->m_Quat[2]) + (pQuat->m_Quat[3] * pQuat->m_Quat[3]));
-
-	xs = pQuat->m_Quat[0] * s;
-	ys = pQuat->m_Quat[1] * s;
-	zs = pQuat->m_Quat[2] * s;
-
-	wx = pQuat->m_Quat[3] * xs;
-	wy = pQuat->m_Quat[3] * ys;
-	wz = pQuat->m_Quat[3] * zs;
-
-	xx = pQuat->m_Quat[0] * xs;
-	xy = pQuat->m_Quat[0] * ys;
-	xz = pQuat->m_Quat[0] * zs;
-
-	yy = pQuat->m_Quat[1] * ys;
-	yz = pQuat->m_Quat[1] * zs;
-
-	zz = pQuat->m_Quat[2] * zs;
-
-	// Fill in matrix -- AVP2: the SDK's row-by-row order, each row's zero
-	// stored after it (server.dll 0x1001b3d3 `fldz; fstps 0xc(%eax)`).
-	pMat->m[0][0] = 1.0f - (yy + zz);
-	pMat->m[0][1] = xy - wz;
-	pMat->m[0][2] = xz + wy;
-	pMat->m[0][3] = 0.0f;
-
-	pMat->m[1][0] = xy + wz;
-	pMat->m[1][1] = 1.0f - (xx + zz);
-	pMat->m[1][2] = yz - wx;
-	pMat->m[1][3] = 0.0f;
-
-	pMat->m[2][0] = xz - wy;
-	pMat->m[2][1] = yz + wx;
-	pMat->m[2][2] = 1.0f - (xx + yy);
-	pMat->m[2][3] = 0.0f;
-
-	pMat->m[3][0] = 0.0f;
-	pMat->m[3][1] = 0.0f;
-	pMat->m[3][2] = 0.0f;
-	pMat->m[3][3] = 1.0f;
-}
+// quat_ConvertToMatrix (0x10015bcd NOLF) is ltquatbase.cpp's: commonmodel.cpp
+// holds that unit's functions, it among them, ahead of quat_ConvertFromMatrix.
 
 
 // ---- the console's two server-side notifications ------------------------- //
@@ -730,25 +666,4 @@ LTRESULT SharedCommonLT::GetCRC(ILTStream* pStream, uint32& dwResult)
 
 	dwResult = ~nCRC;
 	return LT_OK;
-}
-
-
-// 0x00466f80, 12 bytes — the console teardown forwarder.
-//
-//      8b 44 24 04   mov 0x4(%esp),%eax
-//      50            push %eax
-//      e8 ..         call 0x0041b200
-//      59            pop %ecx
-//      c3            ret
-//
-// cdecl, one argument, forwarded unchanged. The callee 0x0041b200 is
-// con_Term — clientconsole.cpp:975 and cmgrinit.cpp:88 both name it. The one
-// caller, 0x00473696, passes `lea 0xa74(%esi),%edx`, the ConsoleState
-// embedded in the manager at +0xa74. `pop %ecx` rather than `add $4,%esp` is
-// the one-argument cdecl cleanup /O2 always picks.
-void con_Term(ConsoleState* pState);         // 0x0041b200
-
-void cc_TermConsole(ConsoleState* pState)
-{
-	con_Term(pState);
 }

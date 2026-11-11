@@ -577,7 +577,7 @@ void CClientTurret::CreateFlash()
 	INIT_OBJECTCREATESTRUCT(createStruct);
 
 	createStruct.m_ObjectType = OT_SPRITE;
-	createStruct.m_Flags = FLAG_NOLIGHT | FLAG_SPRITEBIAS;
+	createStruct.m_Flags = FLAG_NOLIGHT | FLAG_FOGDISABLE;
 	createStruct.m_Flags2 = FLAG2_ADDITIVE;
 	createStruct.m_Pos = vPos;
 	strncpy(createStruct.m_Filename, "sprites/exp/SFX/MuzzleFX/TurretFlash.spr", 127);

@@ -331,13 +331,15 @@ void LithTrackBarTrack::SetupLines(int nWidth, int nHeight)
 	int nFontHeight = m_pFont->Height();
 	int nSpace = nFontHeight * 2;
 	int nHalfHeight = nFontHeight >> 1;
+	int nX;
 	DRect rect;
 
 	rect = CreateTextItem(TRACKBAR_TEXT_TITLE, TITLE_TRACK_DETAILS, m_cTitle, TRACKMGR_GUI_BAR_EDGE_SPACE, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_DISPLAY_TRACK, BUTTON_DISPLAY, m_cNormal, TRACKMGR_GUI_BAR_EDGE_SPACE, rect.bottom + nSpace);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_CONTROL_TRACK, BUTTON_CONTROL, m_cNormal, TRACKMGR_GUI_BAR_EDGE_SPACE, rect.bottom);
 
-	rect = CreateButtonItem(TRACKBAR_BUTTON_NEW_TRACK, BUTTON_NEW, m_cNormal, m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.right + nSpace, rect.top);
+	nX = m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.right + nSpace;
+	rect = CreateButtonItem(TRACKBAR_BUTTON_NEW_TRACK, BUTTON_NEW, m_cNormal, nX, rect.top);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_COPY_TRACK, BUTTON_COPY, m_cNormal, rect.right + nSpace, rect.top);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_DELETE_TRACK, BUTTON_DELETE, m_cNormal, rect.right + nSpace, rect.top);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_ALIGN_TRACK, BUTTON_ALIGN, m_cNormal, rect.right + nSpace, rect.top);
@@ -353,19 +355,20 @@ void LithTrackBarTrack::SetupLines(int nWidth, int nHeight)
 	rect = CreateButtonItem(TRACKBAR_BUTTON_LOCK_POS_X, BUTTON_X, m_cNormal, rect.left - nHalfHeight, rect.top, GUI_JUSTIFY_RIGHT);
 	rect = CreateTextItem(TRACKBAR_TEXT_LOCK_POS, TEXT_LOCK_POS, m_cText, rect.left, rect.top, GUI_JUSTIFY_RIGHT);
 
-	rect = CreateTextItem(TRACKBAR_TEXT_TRACK, TEXT_TRACK, m_cText, m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.right + nSpace, TRACKMGR_GUI_BAR_EDGE_SPACE);
+	nX = m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.right + nSpace;
+	rect = CreateTextItem(TRACKBAR_TEXT_TRACK, TEXT_TRACK, m_cText, nX, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_PREV_TRACK_FAST, BUTTON_PREV_FAST, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_PREV_TRACK, BUTTON_PREV, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_NEXT_TRACK, BUTTON_NEXT, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(TRACKBAR_BUTTON_NEXT_TRACK_FAST, BUTTON_NEXT_FAST, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateTextItem(TRACKBAR_TEXT_TRACK_NUM, TEXT_RANGE, m_cText, rect.right + nSpace, TRACKMGR_GUI_BAR_EDGE_SPACE);
 
-	int nX = m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.right + nSpace;
+	nX = m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.right + nSpace;
 	rect = CreateTextItem(TRACKBAR_TEXT_TRACK_NAME, TEXT_NAME, m_cText, nX, m_pTextItems[TRACKBAR_TEXT_TRACK].m_rRect.bottom);
 	rect = CreateTextItem(TRACKBAR_TEXT_TRACK_POSITION, TEXT_POSITION, m_cText, nX, rect.bottom);
 	rect = CreateTextItem(TRACKBAR_TEXT_TRACK_ROTATION, TEXT_ROTATION, m_cText, nX, rect.bottom);
 
-	m_nNumLines = (m_pButtonItems[TRACKBAR_BUTTON_CONTROL_TRACK].m_rRect.bottom - m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.top) / (DDWORD)m_pFont->Height();
+	m_nNumLines = (m_pButtonItems[TRACKBAR_BUTTON_CONTROL_TRACK].m_rRect.bottom - m_pTextItems[TRACKBAR_TEXT_TITLE].m_rRect.top) / m_pFont->Height();
 }
 
 //*********************************************************************************

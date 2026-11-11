@@ -1,14 +1,18 @@
 // *********************************************************************** //
 //
 //  ph/drawmodel.cpp -- Primal Hunt's d3d.ren, TU07: 0x1000b2f9..0x1000f09f,
-//  /O1.
+//  /O1 /Ob2.
 //
 //  Models: the model drawer (CD3DModelDraw, one global instance), the
 //  model console variables LightModelSprites..ModelUseTnL, and the
-//  per-frame model setup.  /O1 without /Ob2: retail calls the empty
-//  ModelLight constructor in CD3DModelDraw's array loop, which /Ob2 would
-//  inline away.  The three CMoArray members instantiate the template
-//  COMDATs 0x1000e008..0x1000f089.
+//  per-frame model setup.  /Ob2: g_ModelDraw's initialiser is one body
+//  (0x1000b2f9: constructor, then the atexit registration) and the empty
+//  one a lone `ret` (0x1000b319), while the console variables' (their
+//  float defaults make them larger) stay a `jmp` stub over a body, as
+//  retail's are.  d3d_DrawPrimitive (0x1000d26f) is extern, defined after
+//  DrawSprite as retail places it: drawsprite.cpp calls it too.  The
+//  three CMoArray members instantiate the template COMDATs
+//  0x1000e008..0x1000f089.
 //
 //  The drawer itself -- DrawModel, its sprite, LOD and lighting set-up,
 //  the light grid sample, the vertex transforms, and the SDK inlines they
@@ -1408,12 +1412,8 @@ void d3d_BeginWarbleTransform();
 void __fastcall d3d_WarbleTransform(void* pVert, TLVert* pOut, LTMatrix* pMat);
 static uint16   g_ModelCacheFrameCode;                      // 0x100588cc
 
-// 0x1000d340
-static HRESULT d3d_DrawPrimitive(D3DPRIMITIVETYPE type, DWORD fvf, LPVOID pVerts,
-                                 DWORD nVerts, DWORD flags)
-{
-	return g_pD3DDevice->DrawPrimitive(type, fvf, pVerts, nVerts, flags);
-}
+HRESULT d3d_DrawPrimitive(D3DPRIMITIVETYPE type, DWORD fvf, LPVOID pVerts,
+                          DWORD nVerts, DWORD flags);
 
 // 0x1000ccd9 -- the model as its sprite: a camera-facing quad lit from
 // the light grid, nAlpha translucent.
@@ -1474,6 +1474,13 @@ void CD3DModelDraw::DrawSprite(ModelInstance* pInstance, uint8 nAlpha)
 	pVerts = verts;
 	if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
 		d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
+}
+
+// 0x1000d26f (AvP2 0x1000d340) -- also drawsprite.cpp's.
+HRESULT d3d_DrawPrimitive(D3DPRIMITIVETYPE type, DWORD fvf, LPVOID pVerts,
+                          DWORD nVerts, DWORD flags)
+{
+	return g_pD3DDevice->DrawPrimitive(type, fvf, pVerts, nVerts, flags);
 }
 
 // 0x1000d35f -- the indices of the model's pieces at the current LOD.

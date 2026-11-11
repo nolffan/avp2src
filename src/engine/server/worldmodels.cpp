@@ -662,9 +662,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 			pBlock->m_vCentre.z /= (float)nTotal;
 		}
 #else
-		pBlock->m_vCentre.x /= (float)nTotal;
-		pBlock->m_vCentre.y /= (float)nTotal;
-		pBlock->m_vCentre.z /= (float)nTotal;
+		pBlock->m_vCentre /= (float)nTotal;
 #endif
 
 		pBlock->m_fRadius = 0.0f;

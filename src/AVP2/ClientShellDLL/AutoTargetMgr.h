@@ -51,8 +51,13 @@ enum ChestbursterWeaponMode
 enum PredalienWeaponMode
 {
 	PAWM_NORMAL = 0,
+#ifdef PRIMAL_HUNT
+	PAWM_TEAR,				// (Primal Hunt's tear is set 1: PHCShell 0x10035f25)
+	PAWM_TAIL,
+#else
 	PAWM_TAIL,
 	PAWM_TEAR,
+#endif
 };
 
 enum RunnerWeaponMode

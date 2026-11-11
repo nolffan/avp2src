@@ -561,7 +561,12 @@ void CAutoTargetMgr::UpdatePredalienTargeting()
 	g_pLTClient->GetObjectRotation(hCamera, &rRot);
 	g_pLTClient->GetRotationVectors(&rRot,&vR,&vU,&vF);
 
+#ifdef PRIMAL_HUNT
+	// PH: out to the tear's range, the only bite this test now picks
+	LTVector vEnd = vPlayerPos + (vF * (LTFLOAT)pTearBarrel->nRange * 2);
+#else
 	LTVector vEnd = vPlayerPos + (vF * (LTFLOAT)pNormBarrel->nRange * 2);
+#endif
 
 
 	// Do an interesect
@@ -587,6 +592,10 @@ void CAutoTargetMgr::UpdatePredalienTargeting()
 			return;
 		}
 
+#ifndef PRIMAL_HUNT
+		// (Primal Hunt bites only what the tear test finds: PHCShell
+		// 0x100361c5 goes straight to the reset)
+
 		//find out what we hit
 		uint32 nType = g_pLTClient->GetObjectType(IInfo.m_hObject);
 		uint32 dwFlags = g_pLTClient->GetObjectFlags(IInfo.m_hObject);
@@ -607,6 +616,7 @@ void CAutoTargetMgr::UpdatePredalienTargeting()
 				return;
 			}
 		}
+#endif
 	}
 
 	//if we already have a target and have the pounce weapon selected
@@ -629,6 +639,15 @@ void CAutoTargetMgr::UpdatePredalienTargeting()
 		pModel->ChangeWeapon(COMMAND_ID_WEAPON_BASE + PAWM_NORMAL);
 //		m_pStats->SetAutoTarget(LTNULL);
 	}
+
+#ifdef PRIMAL_HUNT
+	//kill any looped sounds
+	if(m_hLockedLoopSound)
+	{
+		g_pLTClient->KillSound(m_hLockedLoopSound);
+		m_hLockedLoopSound = LTNULL;
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -835,7 +854,29 @@ LTBOOL CAutoTargetMgr::CheckForLiveAlienTarget(	HOBJECT		hTarget,
 						m_hBiteOrPounceTarget = hTarget;
 						if(g_pLTClient->GetTime() - m_fLastBiteSound > 3.0f)
 						{
+#ifdef PRIMAL_HUNT
+							// PH: a Predalien has its own bite-target sound
+							CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
+							LTBOOL bPredalien = LTFALSE;
+
+							if(pStats)
+							{
+								int nSet = pStats->GetButeSet();
+
+								if(	!stricmp("Predalien", g_pCharacterButeMgr->GetModelType(nSet)) ||
+									!stricmp("Predalien_MP", g_pCharacterButeMgr->GetModelType(nSet)) ||
+									!stricmp("Predalien_AI", g_pCharacterButeMgr->GetModelType(nSet)) ||
+									!stricmp("SuperPredalien_AI", g_pCharacterButeMgr->GetModelType(nSet)) )
+									bPredalien = LTTRUE;
+							}
+
+							if(bPredalien)
+								g_pClientSoundMgr->PlaySoundLocal("predalien_bitetarget");
+							else
+								g_pClientSoundMgr->PlaySoundLocal("bitetarget");
+#else
 							g_pClientSoundMgr->PlaySoundLocal("bitetarget");
+#endif
 							m_fLastBiteSound = g_pLTClient->GetTime();
 						}
 					}

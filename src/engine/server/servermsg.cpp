@@ -716,12 +716,17 @@ void ServerMessage::_v0c()
 // CPacket holds the same array at the same +0x50), and the template's own
 // `~CMoArray() { Term(); }` is exactly that half of the teardown -- its
 // vftable store (0x1004d4b0) and SetSize2(0, &g_DefAlloc) (0x1000be59).
-extern void* g_AbstractIOVtbl;               // 0x1004dea0
-
+//
+// The base's store is CAbstractIO's own destructor, run on the view's bytes:
+// its vtable is the real one (0x1004dea0) and not a name only a link-time
+// alias would resolve, and where VC6 emits the view's destructor out of line
+// it is ~CAbstractIO's body, which the link folds into ~CAbstractIO
+// (lithtech.exe 0x00468580: the image has one such function, not one per
+// view).
 class CTermAbstractIO
 {
 public:
-	~CTermAbstractIO() { m_pVtbl = &g_AbstractIOVtbl; }
+	~CTermAbstractIO() { ((CAbstractIO*)this)->CAbstractIO::~CAbstractIO(); }
 
 	void*  m_pVtbl;                          // +0x00
 	uint32 m_nRefCount;                      // +0x04

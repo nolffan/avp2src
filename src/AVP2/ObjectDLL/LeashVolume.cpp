@@ -628,9 +628,9 @@ void CLeashVolume::ExtendBounds(const LTVector& vMin, const LTVector& vMax)
 	if (vMax.z > box.m_vMax.z) box.m_vMax.z = vMax.z;
 
 	LTVector vExtents = box.GetExtents();
-	LTVector vCenter(box.m_vMin.x + vExtents.x, box.m_vMin.y + vExtents.y, box.m_vMin.z + vExtents.z);
+	LTVector vCenter = box.m_vMin + vExtents;
 
-	m_Box = LeashBox(vCenter, vExtents);
+	m_Box = LeashBox(vCenter, box.m_vMax - vCenter);
 }
 
 // ----------------------------------------------------------------------- //

@@ -32,6 +32,10 @@
 		#include "VisionModeButeMGR.h"
 	#endif
 
+	#ifdef PRIMAL_HUNT
+		#include <mmsystem.h>		// timeGetTime
+	#endif
+
 #else
 
 	#include "AnimationButeMgr.h"
@@ -67,6 +71,11 @@ DBOOL CGlobalMgr::Init(ILTCSBase *pInterface)
 	// Be sure everything is clear before initializing.
 	Term();
 
+#if defined(_CLIENTBUILD) && defined(PRIMAL_HUNT)
+	// Primal Hunt times the attributes' loading (PHCShell 0x100d3eec)
+	DWORD dwInitStart = timeGetTime();
+#endif
+
 	m_pFXButeMgr			= new CFXButeMgr();
 	m_pWeaponMgr			= new CWeaponMgr();
 	m_pModelButeMgr			= new CModelButeMgr();
@@ -95,12 +104,20 @@ DBOOL CGlobalMgr::Init(ILTCSBase *pInterface)
 		return LTFALSE;
 	}
 
+#ifdef PRIMAL_HUNT
+	DWORD dwTestStart = timeGetTime();
+#endif
+
 	if (!m_pSoundButeMgr || !m_pSoundButeMgr->Init(pInterface))
 	{
 		FillErrorMsg(szErrorBuf, nErrorBufSize - 1, "SoundButeMgr", SOUND_BUTES_DEFAULT_FILE, m_pSoundButeMgr->GetErrorString());
 		g_pInterface->ShutdownWithMessage(szErrorBuf);
 		return LTFALSE;
 	}
+
+#ifdef PRIMAL_HUNT
+	DWORD dwTestEnd = timeGetTime();
+#endif
 
 	if (!m_pDebrisMgr || !m_pDebrisMgr->Init(pInterface))
 	{
@@ -182,6 +199,12 @@ DBOOL CGlobalMgr::Init(ILTCSBase *pInterface)
 		g_pInterface->ShutdownWithMessage(szErrorBuf);
 		return LTFALSE;
 	}
+
+#ifdef PRIMAL_HUNT
+	DWORD dwInitEnd = timeGetTime();
+	g_pInterface->CPrint("Client attribute initialization took %.2f seconds.", ((LTFLOAT)dwInitEnd - dwInitStart) * 0.001f);
+	g_pInterface->CPrint("Test initialization took %.2f seconds.", ((LTFLOAT)dwTestEnd - dwTestStart) * 0.001f);
+#endif
 
 
 #else

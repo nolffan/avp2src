@@ -935,6 +935,10 @@ void cc_InitState(CServerMgr* pMgr, ConsoleState* pState)
 	con_Init(pState);
 }
 
+// 0x10028fbb; lithtech.exe 0x0047a660, after cc_InitState as here: the one
+// teardown forwarder (sm_Term's call, 0x0048a9b0). Each image has a single
+// `push; call con_Term; pop %ecx; ret` beside the console code, so
+// sharedcommon.cpp's copy of it (cc_TermConsole, called by nothing) is gone.
 void cc_TermState(ConsoleState* pState)
 {
 	con_Term(pState);

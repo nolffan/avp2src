@@ -1487,7 +1487,19 @@ class CRefPtrQ523
 {
 public:
 	CRefPtrQ523();                           // 0x100430c1
+#ifdef PRIMAL_HUNT
 	~CRefPtrQ523();                          // 0x1003f2c5
+#else
+	// AvP2 1.0.9.6: inline. Both images expand it into the global's
+	// destructor thunk (lithtech.exe 0x004821f0, the release too; server.dll
+	// 0x1003bb00, calling Release out of line) where Primal Hunt's
+	// tail-jump to an out-of-line copy.
+	~CRefPtrQ523()
+	{
+		if (m_p)
+			m_p->Release();
+	}
+#endif
 
 	CRefObjQ523* operator=(CRefObjQ523* p)
 	{
@@ -1507,17 +1519,25 @@ public:
 
 // Out of line: the global's initializer reaches both by a tail jump
 // (server.dll 0x1003f2aa, 0x1003f2c0), and the constructor's six bytes are
-// shared by identical-code folding with three other users.
+// shared by identical-code folding with three other users. AVP2: inline,
+// both expanded into the global's initializer and its atexit destructor
+// (AvP2 1.0.9.6 server.dll 0x1003baec `andl $0x0` on the global, 0x1003bb00
+// the test and the tail jump into Release).
+#ifndef PRIMAL_HUNT
+inline
+#endif
 CRefPtrQ523::CRefPtrQ523()
 {
 	m_p = LTNULL;
 }
 
+#ifdef PRIMAL_HUNT
 CRefPtrQ523::~CRefPtrQ523()
 {
 	if (m_p)
 		m_p->Release();
 }
+#endif
 
 // Both engines (AvP2 1.0.9.6's lithtech.exe clears it at the end of Init
 // too, 0x0048278a). PH server.dll 0x1008dfc8 (its initializer 0x1003f29b, the destructor
@@ -14330,11 +14350,11 @@ int CMsgLenView::GetSpaceLeft()
 }
 #endif
 
-#if !defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
-// (Both engines' lithtech.exe have the handler too: Primal Hunt's
+// (Every engine image has the handler: Primal Hunt's lithtech.exe
 // 0x0048f570 is near -- its /GX build keeps the CRefPtr assignment out of
-// line. Primal Hunt's server.dll copy, 0x10042e1e, is left unbuilt: there
-// it places nowhere and costs two 13-byte identicals their verification.)
+// line -- and Primal Hunt's server.dll 0x10042e1e is size-exact (one
+// `test` where retail compares with the zero it keeps in %ebx), its
+// PeerAuthServer destructor 0x10043010 identical.)
 // AVP2: the parts of WON's peer authentication (LT2/lithshared/wonapi,
 // WONAuth/PeerAuthServer.h and what it reaches) the server's packet 13
 // handler uses, declared here as WON's headers have them: those headers
@@ -14489,38 +14509,41 @@ void CServerMgrQ502::Sub48f570(Client* pClient, ServerMessage* pMsg)
 		msg.m_pMsg->m_pData[0] = 0x1b;
 		((CNetMgrSendView*)&pMgr->m_NetMgr)->SendToConnection(
 			msg.m_pMsg, pClient->m_pConnection, 0x80);
+
+		// A return, not an else: the /O2 builds tear the locals down twice,
+		// here and at the end (AvP2 1.0.9.6 0x004870b1..0x0048710c, Primal
+		// Hunt 0x0048f64a..), and only this copy calls the Blowfish keys'
+		// destructor out of line (AvP2 0x004870dd, 0x004870e9 -> 0x00487310).
+		return;
 	}
-	else
+
+	if (authServer.GetState() == WONAPI::PeerAuthServer::STATE_NOT_STARTED)
 	{
-		if (authServer.GetState() == WONAPI::PeerAuthServer::STATE_NOT_STARTED)
-		{
-			authServer.SetUseAuth2(true);
-			authServer.Start(((WONAPI::AuthContext*)g_RefQ523.m_p)->GetPeerData(), 4);
-		}
+		authServer.SetUseAuth2(true);
+		authServer.Start(((WONAPI::AuthContext*)g_RefQ523.m_p)->GetPeerData(), 4);
+	}
 
-		int nLen = pMsg->m_Unknown34 - pMsg->m_Unknown38;
+	int nLen = pMsg->m_Unknown34 - pMsg->m_Unknown38;
 
-		pMsg->ReadData(aData, nLen);
+	pMsg->ReadData(aData, nLen);
 
-		WONAPI::ByteBufferPtr pOut;
+	WONAPI::ByteBufferPtr pOut;
 
-		if (authServer.HandleRecvMsg(aData + 4, nLen - 4, pOut) == WONAPI::WS_Success)
-		{
-			if (pClient->m_Unknown3E0 == 1)
-				pClient->m_Unknown3E4 = 1;
-			else
-				pClient->m_Unknown3E0 = 1;
-		}
+	if (authServer.HandleRecvMsg(aData + 4, nLen - 4, pOut) == WONAPI::WS_Success)
+	{
+		if (pClient->m_Unknown3E0 == 1)
+			pClient->m_Unknown3E4 = 1;
+		else
+			pClient->m_Unknown3E0 = 1;
+	}
 
-		if (pOut)
-		{
-			CMessageRef msg = msg_AllocPacket(0x44c, 0x44c);
+	if (pOut)
+	{
+		CMessageRef msg = msg_AllocPacket(0x44c, 0x44c);
 
-			msg.m_pMsg->WriteData((void*)pOut->data(), pOut->length());
-			msg.m_pMsg->m_pData[0] = 0x1b;
-			((CNetMgrSendView*)&pMgr->m_NetMgr)->SendToConnection(
-				msg.m_pMsg, pClient->m_pConnection, 0x80);
-		}
+		msg.m_pMsg->WriteData((void*)pOut->data(), pOut->length());
+		msg.m_pMsg->m_pData[0] = 0x1b;
+		((CNetMgrSendView*)&pMgr->m_NetMgr)->SendToConnection(
+			msg.m_pMsg, pClient->m_pConnection, 0x80);
 	}
 }
-#endif

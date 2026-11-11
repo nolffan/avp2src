@@ -12,9 +12,12 @@
 //  recently used texture of its size (LMDrawDesc::End).  No string names
 //  this object; "lmsurfaces" is a guess.  .bss 0x10080590..0x10081abc.
 //
+//  The pools' constructor and Reset start their list pointer where it is
+//  declared, so it is loaded ahead of the scratch-array clear (Primal
+//  Hunt's identical; AvP2's two compare the pointer signed, `jl` for
+//  `jb`, which an int index gives only with the pointer loaded late).
 //  Not identical yet: LMDrawDesc::Begin (the size search's registers),
-//  the pools' constructor and Reset (retail loads the list pointer ahead
-//  of the scratch-array clear), and the empty initialiser 0x10035b45
+//  and the empty initialiser 0x10035b45
 //  (retail's lists have no constructor call; the object behind that
 //  initialiser is not identified).  CLightmapPages::Reset is an ordinary
 //  member whose body never reads `this` (it reuses ecx as its loop
@@ -312,13 +315,13 @@ CLightmapPages		g_LightmapPages;                    // 0x1008067c  $E 0x10035b4b
 // 0x10035b55
 CLightmapPages::CLightmapPages()
 {
-	LMTextureList *pList;
+	LMTextureList *pList = g_LMLists;
 	uint32 i;
 
 	for(i=0; i < NUM_LMSIZES; i++)
 		g_LMScratch[i] = LTNULL;
 
-	for(pList=g_LMLists; pList < &g_LMLists[NUM_LMSIZES]; pList++)
+	for(; pList < &g_LMLists[NUM_LMSIZES]; pList++)
 		dl_TieOff(pList);
 }
 
@@ -353,13 +356,13 @@ void CLightmapPages::SetAllocator(void* (*fn)(uint32 width, uint32 height, uint3
 // 0x10035c00 -- the same, after the device's textures went.
 void CLightmapPages::Reset()
 {
-	LMTextureList *pList;
+	LMTextureList *pList = g_LMLists;
 	uint32 i;
 
 	for(i=0; i < NUM_LMSIZES; i++)
 		g_LMScratch[i] = LTNULL;
 
-	for(pList=g_LMLists; pList < &g_LMLists[NUM_LMSIZES]; pList++)
+	for(; pList < &g_LMLists[NUM_LMSIZES]; pList++)
 		dl_TieOff(pList);
 }
 

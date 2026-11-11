@@ -820,6 +820,18 @@ same list, which gives a real entry or -1.
 
 Not fixed yet.
 
+### The cloaked weapon's alpha floor writes the red channel
+
+PHCShell.dll 0x100b46c2 (`CWeaponModel::UpdateWeaponModel`,
+src/AVP2/ClientShellDLL/WeaponModel.cpp). Primal Hunt keeps the first-person
+weapon at least a little visible: with the model's second flags' bit 11 set
+(part of the cloaked look, 0x1800) the floor is 0.35, else 0.2. The 0.35
+branch compares and stores the colour's red (the first `GetObjectColor`
+output), not its alpha, and skips the 0.2 alpha floor, so a cloaked
+weapon's alpha is not floored at all and its red is raised instead. Near.
+
+Not fixed yet.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

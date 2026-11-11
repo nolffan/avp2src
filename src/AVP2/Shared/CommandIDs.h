@@ -104,6 +104,14 @@
 #define COMMAND_ID_SERVERINFO		75
 
 
+#ifdef PRIMAL_HUNT
+// Primal Hunt's (CGameClientShell::OnCommandOn, PHCShell 0x10080407 on;
+// the names are ours)
+#define COMMAND_ID_BACKHAND			76	// the Predalien's backhand (or ends a story object)
+#define COMMAND_ID_SELF_DESTRUCT	77	// MID_SELF_DESTRUCT
+#define COMMAND_ID_TURRET			78	// MID_PLAYER_TURRETS: pick up or put down a turret
+#endif
+
 // Add new commands here 77-98 available...
 
 

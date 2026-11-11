@@ -926,17 +926,21 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	m_vFlashPos += vFlashF * (vOffset.z + vMuzzleOffset.z);
 #endif
 
+#ifdef PRIMAL_HUNT
+	LTBOOL bFired = LTFALSE;
+#endif
+
 	if (FiredWeapon(eState))
 	{
 		//start muzzle flash effects
 #ifdef PRIMAL_HUNT
-		m_fFlashStartTime[0] = g_pInterface->GetTime();
+		m_fFlashStartTime[nMuzzle] = g_pInterface->GetTime();
 #else
 		m_fFlashStartTime = g_pInterface->GetTime();
 #endif
 
 #ifdef PRIMAL_HUNT
-		m_bNewShot[0] = LTTRUE;
+		m_bNewShot[nMuzzle] = bFired = LTTRUE;
 #else
 		m_bNewShot = LTTRUE;
 #endif
@@ -1014,6 +1018,77 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	LTFLOAT r, g, b, a;
 	g_pLTClient->GetObjectColor(hClientObj, &r, &g, &b, &a);
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the user flags and the model's own flags first, for
+	// the cloaked look
+	uint32 dwUserFlags, dwObjUserFlags;
+
+	g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
+	g_pLTClient->GetObjectUserFlags(m_hObject, &dwObjUserFlags);
+
+	uint32 dwTemp;
+	g_pLTClient->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwTemp);
+	uint32 dwFlags = dwTemp;
+	g_pLTClient->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwTemp);
+	uint32 dwFlags2 = dwTemp;
+
+	// Cap it off so we can always see our weapon at least a little bit
+	// RETAIL BUG: the floor for a model with flag 2 bit 11 set lands on
+	// red, not on the alpha (PHCShell 0x100b46c2 reads and writes r)
+	if((dwFlags2 & 0x800) && r < 0.35f)
+		r = 0.35f;
+	else if(a < 0.2f)
+		a = 0.2f;
+
+	if(dwUserFlags & USRFLG_GLOW)
+		a = 0.5f;
+
+	g_pLTClient->SetObjectColor(m_hObject, r, g, b, a);
+
+	if(dwUserFlags & USRFLG_GLOW)
+		g_pLTClient->SetObjectUserFlags(m_hObject, dwObjUserFlags | USRFLG_GLOW);
+	else
+		g_pLTClient->SetObjectUserFlags(m_hObject, dwObjUserFlags & ~USRFLG_GLOW);
+
+	// cloaked: environment mapped, with the alternate (predator) skins
+	if(dwUserFlags & USRFLG_CHAR_CLOAKED)
+	{
+		dwFlags |= FLAG_ENVIRONMENTMAP;
+		dwFlags2 |= 0x1800;
+
+		if(!m_bAltSkins)
+			ResetModelSkins();
+
+		m_bAltSkins = LTTRUE;
+	}
+	else
+	{
+		dwFlags2 &= ~0x1000;
+
+		if(m_bAltSkins == LTTRUE)
+			ResetModelSkins();
+
+		m_bAltSkins = LTFALSE;
+	}
+
+	if(dwUserFlags & USRFLG_GLOW)
+	{
+		dwFlags &= ~FLAG_ENVIRONMENTMAP;
+		dwFlags2 &= ~0x1800;
+	}
+
+	g_pLTClient->Common()->SetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+	g_pLTClient->Common()->SetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+
+	// a dual-muzzle barrel fires from each muzzle in turn
+	if(bFired == LTTRUE)
+	{
+		if(m_pBarrel && m_pBarrel->bDualMuzzle == LTTRUE)
+			m_pBarrel->nCurMuzzle = !m_pBarrel->nCurMuzzle;
+
+		m_nShotCount++;
+	}
+#else
 	// Cap it off so we can always see our weapon at least a little bit
 	if(a < 0.2f) a = 0.2f;
 	g_pLTClient->SetObjectColor(m_hObject, r, g, b, a);
@@ -1028,6 +1103,7 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 		g_pLTClient->SetObjectUserFlags(m_hObject, dwObjUserFlags | USRFLG_GLOW);
 	else
 		g_pLTClient->SetObjectUserFlags(m_hObject, dwObjUserFlags & ~USRFLG_GLOW);
+#endif
 
 	//----------------------------------------------------------------//
 
@@ -1330,6 +1406,35 @@ HOBJECT CWeaponModel::CreateModelObject(HOBJECT hOldObj, ObjectCreateStruct & cr
 	//test
 	if(!pCommon) return DNULL;
 
+#ifdef PRIMAL_HUNT
+	// a cloaked predator's weapon takes the predator's environment map
+	// (as ResetModelSkins)
+	if(m_nSkinMode == 1)
+	{
+		uint32 dwUserFlags;
+		HLOCALOBJ hClientObj = g_pLTClient->GetClientObject();
+		g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
+
+		if(dwUserFlags & USRFLG_CHAR_CLOAKED)
+		{
+			CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
+			const char* szEnvMap = LTNULL;
+
+			if(pStats)
+				szEnvMap = g_pCharacterButeMgr->GetCharacterButes(pStats->GetButeSet()).m_szDefaultEnvMap;
+
+			if(szEnvMap)
+				SAFE_STRCPY(createStruct.m_SkinNames[4], szEnvMap)
+			else
+				SAFE_STRCPY(createStruct.m_SkinNames[4], "")
+		}
+		else
+		{
+			createStruct.m_SkinNames[4][0] = '\0';
+		}
+	}
+#endif
+
 	if (!hObj)
 	{
 		//finish filling in the create struct
@@ -1362,6 +1467,18 @@ HOBJECT CWeaponModel::CreateModelObject(HOBJECT hOldObj, ObjectCreateStruct & cr
 	//set animation and looping to off
 	g_pInterface->SetModelLooping(hObj, LTFALSE);
 	g_pInterface->SetModelAnimation(hObj, 0);
+
+#ifdef PRIMAL_HUNT
+	// the cloaked look: environment mapped, with the old model's second
+	// flags and bits 11 and 12 (not the SDK's FLAG2_s)
+	if(m_nSkinMode == 1)
+	{
+		uint32 dwFlags2;
+		g_pLTClient->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+		g_pLTClient->Common()->SetObjectFlags(hObj, OFT_Flags, dwFlags | FLAG_ENVIRONMENTMAP);
+		g_pLTClient->Common()->SetObjectFlags(hObj, OFT_Flags2, dwFlags2 | 0x1800);
+	}
+#endif
 
 	return hObj;
 }
@@ -2014,6 +2131,30 @@ WeaponState CWeaponModel::UpdateModelState(LTBOOL bFire)
 			case (AS_NEXT_BARREL):
 				{
 					NextPrimBarrel(m_pPrimBarrel);
+
+#ifdef PRIMAL_HUNT
+					// Primal Hunt: the pistols load their next barrel at
+					// once (PHCShell 0x100b65c6)
+					if(strstr(m_pWeapon->szName, "Dual_Pistols") || stricmp(m_pWeapon->szName, "Pistol")==0 || stricmp(m_pWeapon->szName, "Pistol_MP")==0)
+					{
+						m_pBarrel = m_pPrimBarrel;
+
+						if(m_pBarrel)
+						{
+							m_nBarrelId = m_pBarrel->nId;
+
+							m_pAmmo	= g_pWeaponMgr->GetAmmo(m_pBarrel->nAmmoType);
+
+							if(m_pAmmo)
+							{
+								m_nAmmoId = m_pAmmo->nId;
+
+								m_eAmmoType	= m_pAmmo->eType;
+							}
+						}
+					}
+#endif
+
 					m_eState = W_CHANGE_AMMO;
 					PlayAmmoChangeAnimation();
 

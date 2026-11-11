@@ -249,13 +249,14 @@ void LithTrackBarKey::SetupLines(int nWidth, int nHeight)
 	int nFontHeight = m_pFont->Height();
 	int nSpace = nFontHeight * 2;
 	int nHalfHeight = nFontHeight >> 1;
-	int nRight;
+	int nRight, nX;
 	DRect rect;
 
 	rect = CreateTextItem(KEYBAR_TEXT_TITLE, TITLE_TRACK_KEY_DETAILS, m_cTitle, TRACKMGR_GUI_BAR_EDGE_SPACE, TRACKMGR_GUI_BAR_EDGE_SPACE);
-	rect = CreateButtonItem(KEYBAR_BUTTON_CONTROL_KEY, BUTTON_CONTROL, m_cNormal, TRACKMGR_GUI_BAR_EDGE_SPACE, rect.bottom + nSpace + nFontHeight);
+	rect = CreateButtonItem(KEYBAR_BUTTON_CONTROL_KEY, BUTTON_CONTROL, m_cNormal, TRACKMGR_GUI_BAR_EDGE_SPACE, rect.bottom + (nFontHeight * 2) + nFontHeight);
 
-	rect = CreateButtonItem(KEYBAR_BUTTON_INSERT_KEY, BUTTON_INSERT, m_cNormal, m_pTextItems[KEYBAR_TEXT_TITLE].m_rRect.right + nSpace, rect.top);
+	nX = m_pTextItems[KEYBAR_TEXT_TITLE].m_rRect.right + nSpace;
+	rect = CreateButtonItem(KEYBAR_BUTTON_INSERT_KEY, BUTTON_INSERT, m_cNormal, nX, rect.top);
 	rect = CreateButtonItem(KEYBAR_BUTTON_DELETE_KEY, BUTTON_DELETE, m_cNormal, rect.right + nSpace, rect.top);
 	rect = CreateButtonItem(KEYBAR_BUTTON_RESET_KEY, BUTTON_RESET, m_cNormal, rect.right + nSpace, rect.top);
 
@@ -270,14 +271,15 @@ void LithTrackBarKey::SetupLines(int nWidth, int nHeight)
 	rect = CreateButtonItem(KEYBAR_BUTTON_LOCK_POS_X, BUTTON_X, m_cNormal, rect.left - nHalfHeight, rect.top, GUI_JUSTIFY_RIGHT);
 	rect = CreateTextItem(KEYBAR_TEXT_LOCK_POS, TEXT_LOCK_POS, m_cText, rect.left, rect.top, GUI_JUSTIFY_RIGHT);
 
-	rect = CreateTextItem(KEYBAR_TEXT_KEY, TEXT_KEY, m_cText, m_pTextItems[KEYBAR_TEXT_TITLE].m_rRect.right + nSpace, TRACKMGR_GUI_BAR_EDGE_SPACE);
+	nX = m_pTextItems[KEYBAR_TEXT_TITLE].m_rRect.right + nSpace;
+	rect = CreateTextItem(KEYBAR_TEXT_KEY, TEXT_KEY, m_cText, nX, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(KEYBAR_BUTTON_PREV_KEY_FAST, BUTTON_PREV_FAST, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(KEYBAR_BUTTON_PREV_KEY, BUTTON_PREV, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(KEYBAR_BUTTON_NEXT_KEY, BUTTON_NEXT, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateButtonItem(KEYBAR_BUTTON_NEXT_KEY_FAST, BUTTON_NEXT_FAST, m_cNormal, rect.right + nFontHeight, TRACKMGR_GUI_BAR_EDGE_SPACE);
 	rect = CreateTextItem(KEYBAR_TEXT_KEY_NUM, TEXT_RANGE, m_cText, rect.right + nSpace, TRACKMGR_GUI_BAR_EDGE_SPACE);
 
-	int nX = m_pTextItems[KEYBAR_TEXT_TITLE].m_rRect.right + nSpace;
+	nX = m_pTextItems[KEYBAR_TEXT_TITLE].m_rRect.right + nSpace;
 	rect = CreateTextItem(KEYBAR_TEXT_KEY_POSITION, TEXT_POSITION, m_cText, nX, rect.bottom);
 	rect = CreateTextItem(KEYBAR_TEXT_KEY_ROTATION, TEXT_ROTATION, m_cText, nX, rect.bottom);
 	rect = CreateTextItem(KEYBAR_TEXT_TIME, TEXT_TIME, m_cText, nX, rect.bottom);

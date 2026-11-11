@@ -769,51 +769,6 @@ void CNetSessionView::Clear()
 }
 
 
-
-// *********************************************************************** //
-//  MOVE-ME: sharedcommon.cpp, first function of the file.
-//
-//  0x1001214c (13 bytes) — SharedCommonLT's constructor: `mov %ecx,%eax ;
-//  andl $0,0xc(%eax) ; movl $0x1004d700,(%eax) ; ret`. 0x1004d700 is
-//  SharedCommonLT's vtable (slot 0 is the ??_G 0x10012159 it shares with
-//  ILTCommon's 0x1004d748; slots 2/3 are 0x10012180/0x100121df), +0x0c is
-//  sharedcommon.h's m_pMath, and ILTCommon's own inline constructor leaves
-//  nothing behind but its vptr store, which is dead. The only caller is the
-//  CLTServer constructor (0x1002d3ba, on its +0x234 member), which then
-//  overwrites the vptr with ServerCommonLT's 0x1004e5ac. Lithtech's twin is
-//  0x004347a0 (cltapi.cpp declares it as SharedCommonLTQ404()).
-//
-//  The right home is `SharedCommonLT();` declared in sharedcommon.h and
-//  defined at the top of sharedcommon.cpp (it precedes 0x10012159 and
-//  SetMath 0x10012176). That is a header edit, so it is modelled here with
-//  a view of the same layout, as this file's other MOVE-ME classes are.
-//  Too small for a masked byte match to credit (thirteen bytes, four of them masked).
-// *********************************************************************** //
-
-class CSharedCommonBaseView
-{
-public:
-	virtual ~CSharedCommonBaseView() {}
-
-	void* m_pTransformLT;                    // 0x04
-	void* m_pModelLT;                        // 0x08
-};
-
-class CSharedCommonView : public CSharedCommonBaseView
-{
-public:
-	CSharedCommonView();                     // 0x1001214c
-
-	void* m_pMath;                           // 0x0c
-};
-
-CSharedCommonView::CSharedCommonView()
-{
-	m_pMath = 0;
-}
-
-
-
 // *********************************************************************** //
 //  NOT WRITTEN — the rows of this range that have no body here, with
 //  what the bytes say.

@@ -3259,7 +3259,11 @@ void CGameClientShell::OnCommandOn(int command)
 			CGameSettings* pSettings = m_InterfaceMgr.GetSettings();
 			if (pSettings)
 			{
+#ifdef PRIMAL_HUNT
+				pSettings->SetRunLock(pSettings->RunLock() == LTFALSE);
+#else
 				pSettings->SetRunLock(!pSettings->RunLock());
+#endif
 			}
 		}
 		break;
@@ -3269,7 +3273,11 @@ void CGameClientShell::OnCommandOn(int command)
 			CGameSettings* pSettings = m_InterfaceMgr.GetSettings();
 			if (pSettings)
 			{
+#ifdef PRIMAL_HUNT
+				pSettings->SetCrouchLock(pSettings->CrouchLock() == LTFALSE);
+#else
 				pSettings->SetCrouchLock(!pSettings->CrouchLock());
+#endif
 			}
 		}
 		break;
@@ -3279,7 +3287,11 @@ void CGameClientShell::OnCommandOn(int command)
 			CGameSettings* pSettings = m_InterfaceMgr.GetSettings();
 			if (pSettings)
 			{
+#ifdef PRIMAL_HUNT
+				pSettings->SetWallWalkLock(pSettings->WallWalkLock() == LTFALSE);
+#else
 				pSettings->SetWallWalkLock(!pSettings->WallWalkLock());
+#endif
 			}
 		}
 		break;
@@ -3426,12 +3438,19 @@ void CGameClientShell::OnCommandOn(int command)
 
 		case COMMAND_ID_ZOOM_IN : 
 		{
+#ifdef PRIMAL_HUNT
+			// (not while stunned or under EMP)
+			if(!m_bStunEffect && !m_bEMPEffect)
+#endif
 			m_InterfaceMgr.GetPlayerStats()->ZoomIn();
 		}
 		break;
 
 		case COMMAND_ID_ZOOM_OUT : 
 		{
+#ifdef PRIMAL_HUNT
+			if(!m_bStunEffect && !m_bEMPEffect)
+#endif
 			m_InterfaceMgr.GetPlayerStats()->ZoomOut();
 		}
 		break;
@@ -3485,6 +3504,48 @@ void CGameClientShell::OnCommandOn(int command)
 
 			break;
 		}
+
+#ifdef PRIMAL_HUNT
+		case COMMAND_ID_BACKHAND :
+		{
+			if(m_pStoryElement)
+			{
+				EndStoryObject();
+			}
+			else if(strstr(m_PlayerMovement.GetCharacterButes()->m_szName, "Predalien"))
+			{
+				HandleBackhand();
+			}
+		}
+		break;
+
+		case COMMAND_ID_SELF_DESTRUCT :
+		{
+			HMESSAGEWRITE hMessage = g_pLTClient->StartMessage(MID_SELF_DESTRUCT);
+			g_pLTClient->EndMessage(hMessage);
+		}
+		break;
+
+		case COMMAND_ID_TURRET :
+		{
+			// where we look from and to, and where we stand
+			HMESSAGEWRITE hMessage = g_pLTClient->StartMessage(MID_PLAYER_TURRETS);
+
+			LTVector vPos, vU, vR, vF, vPlayerPos;
+			LTRotation rRot;
+
+			g_pLTClient->GetObjectPos(m_CameraMgr.GetCameraObject(m_hPlayerCamera), &vPos);
+			g_pLTClient->GetObjectRotation(m_CameraMgr.GetCameraObject(m_hPlayerCamera), &rRot);
+			g_pLTClient->GetRotationVectors(&rRot, &vU, &vR, &vF);
+			g_pLTClient->GetObjectPos(g_pLTClient->GetClientObject(), &vPlayerPos);
+
+			g_pLTClient->WriteToMessageVector(hMessage, &vPos);
+			g_pLTClient->WriteToMessageVector(hMessage, &vF);
+			g_pLTClient->WriteToMessageVector(hMessage, &vPlayerPos);
+			g_pLTClient->EndMessage(hMessage);
+		}
+		break;
+#endif
 
 		case COMMAND_ID_DISPLAYSPECIAL :
 		{

@@ -147,7 +147,13 @@ class CLithBaseList
 {
 public:
 	CLithBaseList()                                { m_pFirst = NULL_Q490; m_pLast = NULL_Q490; }
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's ~CControlFileMgr (0x004bd730) enters its body at
+	// unwind state 3: the two lists are destructible members. AvP2
+	// 1.0.9.6's (0x004b35e0) enters at 1 -- only the two strings unwind,
+	// so its lith had no destructor here.
 	~CLithBaseList()                               {}
+#endif
 
 	inline void Insert(ItemType* pItem)            { InsertFirst(pItem); }
 	inline void InsertFirst(ItemType* pItem);

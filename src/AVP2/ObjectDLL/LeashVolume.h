@@ -24,11 +24,11 @@ struct LeashBox
 {
 	LeashBox() {}
 
-	// 0x10153a40
+	// 0x10153a40 (ExtendBounds' second, out of line)
 	LeashBox(const LTVector& vCenter, const LTVector& vExtents)
+		: m_vMin(vCenter - vExtents),
+		  m_vMax(vCenter + vExtents)
 	{
-		m_vMin = vCenter - vExtents;
-		m_vMax = vCenter + vExtents;
 	}
 
 	LTVector GetExtents() const

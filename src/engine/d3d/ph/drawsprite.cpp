@@ -208,7 +208,7 @@ extern void			d3d_RotationToMatrix(Rotation* pRot, LTMatrix* pMat);   // 0x10036
 extern void			d3d_GetLightTableColor(void *pTable, LTVector *pPos, ColorBytes *pColor);  // 0x1000c818 (drawmodel.cpp)
 extern void			d3d_GetDynamicLightAdd(ModelInstance* pInstance, LTVector* pAdd);  // 0x10010010 (d3d_viewparams.cpp)
 extern LTBOOL		d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6
-extern void			d3d_DrawPrim(D3DPRIMITIVETYPE type, uint32 fvf, void *pVerts, uint32 nVerts, uint32 flags);  // 0x1000d26f
+HRESULT			d3d_DrawPrimitive(D3DPRIMITIVETYPE type, DWORD fvf, LPVOID pVerts, DWORD nVerts, DWORD flags);  // 0x1000d26f (drawmodel.cpp)
 
 struct SpriteVert;
 void	d3d_TransformSpriteVerts(SpriteVert *pVerts, uint32 nVerts, LTMatrix *pMat);
@@ -895,7 +895,7 @@ void d3d_DrawRotatableSprite(ViewParams *pContext, LTObject *pObject, LTVector *
 			return;
 	}
 
-	d3d_DrawPrim(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
+	d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
 }
 
 

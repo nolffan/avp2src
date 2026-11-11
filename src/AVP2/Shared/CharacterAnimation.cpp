@@ -218,6 +218,20 @@ void CharacterAnimation::Term()
 	m_pInterface = LTNULL;
 	m_pModel = LTNULL;
 	m_hObject = LTNULL;
+
+#ifdef PRIMAL_HUNT
+	// PH frees the layers here too (PHObject.lto 0x1003b8c0)
+	AnimStyleLayer *pLayer = m_pLayers;
+
+	while(pLayer)
+	{
+		AnimStyleLayer *pNext = pLayer->pNext;
+		delete pLayer;
+		pLayer = pNext;
+	}
+
+	m_pLayers = LTNULL;
+#endif
 }
 
 
