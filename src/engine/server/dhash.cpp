@@ -38,6 +38,10 @@ public:
 		sb_FreeChunks(&m_Bank, 1);
 	}
 
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
+
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
 };

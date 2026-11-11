@@ -263,7 +263,10 @@ CAIVolumeMgr::CAIVolumeMgr()
 CAIVolumeMgr::~CAIVolumeMgr()
 {
 	g_pAIVolumeMgr = LTNULL;
+#ifndef PRIMAL_HUNT
+	// PH: the members' destructors only (0x10207730)
 	Term();
+#endif
 }
 
 void CAIVolumeMgr::Term()

@@ -47,16 +47,17 @@ void sb_FreeChunks(StructBank* pBank, int bAll);
 // The banks are polymorphic, and the vtable at 0x1004d260 is the base's: its
 // three slots past the destructor are all _purecall (0x1003ea24 is
 // `push $0x19; call _amsg_exit`, and 25 is _RT_PUREVIRT), so the base declares
-// a virtual destructor and three pure virtuals and nothing else. The
+// a virtual destructor and three pure virtuals and nothing else: bankbase.h's
+// CBankBase, every bank's base. The
 // destructor has to be *defined*, empty, or the derived destructor calls it
 // instead of inlining the vtable-pointer store that ends both bank destructors
 // (name ours).
 //
-// The three pure virtuals are an allocate, a free and Init, in that slot
+// The three pure virtuals are an allocate, a free and Term, in that slot
 // order, and they are not decoration either. The shipped /O2 client's two
 // bank vtables (0x004a1ee8 and 0x004a1ef8) read
 //
-//     [ ??_G, AllocVoid, FreeVoid, Init ]
+//     [ ??_G, AllocVoid, FreeVoid, Term ]
 //     0x421a20 0x4218c0 0x4219c0 0x4219f0
 //     0x421a60 0x421940 0x4219c0 0x4219f0
 //
@@ -66,8 +67,8 @@ void sb_FreeChunks(StructBank* pBank, int bAll);
 // take their addresses.
 //
 // The /O1 server says what the two slots really are. Its vtables (0x1004d250
-// and 0x1004d270) read [ ??_G, 0x100075b5, 0x100075ba, Init ] and
-// [ ??_G, 0x100075c6, 0x100075ba, Init ], and those three are FORWARDERS:
+// and 0x1004d270) read [ ??_G, 0x100075b5, 0x100075ba, Term ] and
+// [ ??_G, 0x100075c6, 0x100075ba, Term ], and those three are FORWARDERS:
 // `jmp 0x100075f1`, `push 4(esp) ; call 0x10007781 ; ret 4`, and
 // `jmp 0x100077d7` -- while fs_OpenStreamInTree and the Releases call the
 // workers 0x100075f1 / 0x100077d7 / 0x10007781 directly. So the virtuals are
@@ -76,16 +77,7 @@ void sb_FreeChunks(StructBank* pBank, int bAll);
 // Allocate();}` and `virtual void FreeVoid(void *ptr) {Free((T*)ptr);}`),
 // whose names these take. /Os declines to expand the workers into the
 // wrappers; /Ot expands them, which is the /O2 vtables' expanded slots.
-class CStreamBankBase
-{
-public:
-	virtual ~CStreamBankBase() {}
-	virtual void* AllocVoid() = 0;
-	virtual void FreeVoid(void* pStream) = 0;
-	virtual void Init() = 0;
-};
-
-class CStreamBank : public CStreamBankBase
+class CStreamBank : public CBankBase
 {
 public:
 	// 0x10006d88 — a bank comes up with room for eight streams and grows
@@ -119,7 +111,7 @@ public:
 	// 0x100078e9 — the third of the base's three pure virtuals, shared by
 	// both banks the way Free is: the two streams are the same size, so the
 	// two bodies are one function in the image.
-	void Init();
+	void Term();
 
 	StructBank       m_Bank;                 // 0x04
 	LCriticalSection m_Lock;                 // 0x20
@@ -132,12 +124,12 @@ public:
 // a shared member in a common base -- but no shape with the members there
 // reproduces the order the bytes show: a base's member destructs
 // *after* the base destructor has already stamped its own vptr, and here the
-// lock goes down first. So the members are duplicated, and Free and Init are
+// lock goes down first. So the members are duplicated, and Free and Term are
 // written out twice; the two bodies are identical to the byte and the linker
 // folds them, which is exactly what both shipped images show -- one Free
-// (0x10007781 / 0x004219c0) and one Init (0x100078e9 / 0x004219f0) reached
+// (0x10007781 / 0x004219c0) and one Term (0x100078e9 / 0x004219f0) reached
 // from both banks' vtables (names ours).
-class CMemStreamBank : public CStreamBankBase
+class CMemStreamBank : public CBankBase
 {
 public:
 	// 0x10006df7 — the same, with sizeof(CMemStream) (also 0x24).
@@ -150,7 +142,7 @@ public:
 	virtual void  FreeVoid(void* pStream)   { Free(pStream); }
 	void Free(void* pStream);                // 0x10007781, folded
 	ILTStream* Allocate();                   // 0x100077d7
-	void Init();                             // 0x100078e9, folded
+	void Term();                             // 0x100078e9, folded
 
 	StructBank       m_Bank;                 // 0x04
 	LCriticalSection m_Lock;                 // 0x20
@@ -589,7 +581,7 @@ CMemStreamBank g_MemStreamBank(8, 8);        // 0x10058320
 // bank is set up again for records of one stream each, 0x20 at a time. Both
 // cdecl calls share one `add esp,0x14`, which is what consecutive
 // fixed-prototype calls get.
-void CStreamBank::Init()
+void CStreamBank::Term()
 {
 	m_Lock.Enter();
 
@@ -601,7 +593,7 @@ void CStreamBank::Init()
 
 // The memory bank's copy: same size of record, same body, folded onto the same
 // address. Nothing calls either -- both exist for the vtables' third slot.
-void CMemStreamBank::Init()
+void CMemStreamBank::Term()
 {
 	m_Lock.Enter();
 

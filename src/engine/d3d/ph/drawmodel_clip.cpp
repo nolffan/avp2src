@@ -29,9 +29,6 @@
 //      retail's edx. No declaration order or scope moved the slots.
 //    * 0x10007e5d: size-exact; the second dot product's term order
 //      (up.y, up.z, up.x in retail), cl 8966's choice.
-//    * 0x100083ec: size-exact; retail tests the vertex count with `jbe`
-//      where ours has `je` (d3d_skyobjects.cpp's 0x1001a533 has the same
-//      residue).
 //    * 0x100079e4 (d3d_SetTexture): size-exact; retail tail-merges the two
 //      d3d_SetTextureDirect calls into one block after the create path.
 //
@@ -827,7 +824,7 @@ void d3d_LightLMPoly(RenderPoly* pPoly, ClipVert2* pVerts, uint32 nVerts)
 {
 	LMDynamicLight* pLink;
 	LightObject* pLight;
-	LTVector vLightPos;
+	LTVector vLightPos, vDelta;
 	RenderPlane* pPlane;
 	float r, g, b, fDist, fRadiusSqr, fInvRadius, fDistSqr, fScale;
 	int32 newR, newG, newB;
@@ -859,9 +856,10 @@ void d3d_LightLMPoly(RenderPoly* pPoly, ClipVert2* pVerts, uint32 nVerts)
 		fInvRadius = 1.0f / pLight->m_LightRadius;
 
 		pVert = pVerts;
-		for (i = pPoly->m_nVerts; i; i--)
+		for (i = pPoly->m_nVerts; i > 0; i--)
 		{
-			fDistSqr = (pVert->m_vPos - vLightPos).MagSqr();
+			VEC_SUB(vDelta, pVert->m_vPos, vLightPos);
+			fDistSqr = vDelta.MagSqr();
 			if (fDistSqr < fRadiusSqr)
 			{
 				fDist = (float)sqrt(fDistSqr);

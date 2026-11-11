@@ -2557,8 +2557,9 @@ int sm_ProcessPackets(CServerMgr* pMgr)
 
 Client* sm_FindClientByConnection(CServerMgr* pMgr, NetConnection* pConn)
 {
-	LTLink* pCur = pMgr->m_ClientList.m_Head.m_pNext;
-	while (pCur != &pMgr->m_ClientList.m_Head)
+	LTLink* pListHead = &pMgr->m_ClientList.m_Head;
+	LTLink* pCur = pListHead->m_pNext;
+	while (pCur != pListHead)
 	{
 		Client* pClient = (Client*)pCur->m_pData;
 		if (pClient->m_pConnection == pConn)
@@ -9327,8 +9328,8 @@ void sm_BroadcastCacheFile(CServerMgr* pMgr, uint32 fileType, uint16 nFileID)
 		return;
 
 	{
-		LTLink* pCur = pMgr->m_ClientList.m_Head.m_pNext;
 		LTLink* pHead = &pMgr->m_ClientList.m_Head;
+		LTLink* pCur = pHead->m_pNext;
 
 		while (pCur != pHead)
 		{
@@ -11800,15 +11801,19 @@ void sm_SendToClient(CServerMgr* pMgr, Client* pClient, int nPacketID,
 
 
 // What the global light object keeps that the sky update sends on: a colour
-// at +0x10 and one more float at +0x28. It is a game-side class derived from
-// BaseClass, so the offsets are all this side knows (names ours).
+// and one more float. It is a game-side class derived from BaseClass, so the
+// offsets are all this side knows (names ours).
+// AVP2: the colour at +0x14 and the last float at +0x2c (NOLF's +0x10 and
+// +0x28; every AvP2 image:
+// Primal Hunt server.dll 0x10033b62..0x10033b8f, AvP2 1.0.9.6's 0x10031235..
+// 0x10031262 read `0x14(%esi)`, `0x18`, `0x1c`, `0x2c`).
 class CGlobalLightView
 {
 public:
-	uint8    m_pad_00[0x10];
-	LTVector m_vColor;                       // +0x10
-	uint8    m_pad_1c[0x28 - 0x1c];
-	float    m_fUnknown28;                   // +0x28
+	uint8    m_pad_00[0x14];
+	LTVector m_vColor;                       // +0x14
+	uint8    m_pad_20[0x2c - 0x20];
+	float    m_fUnknown28;                   // +0x2c
 };
 
 // 0x1002873d — tell one client where the global light is pointing and what
@@ -12252,20 +12257,17 @@ void CRefHolder4666F0::ReleaseRef()
 // statement, to the bare `ret` — so the guard is positive and its body is a
 // trailing statement, i.e. the source tests the case that CONTINUES. The
 // reloaded member at +0x54 is tested, not compared, so it is a pointer. The
-// callee 0x00476660 is in the same module and reads both 0x188(%edx) and
-// the file-scope pointer at 0x004b48c8.
+// callee 0x00476660 is this file's sub_100348cc (AvP2 1.0.9.6 0x004867f0).
 struct SObj476770
 {
 	uint8 m_pad_00[0x54];
 	void* m_pUnknown54;                      // 0x54
 };
 
-void sub_476660(SObj476770* p);              // 0x00476660
-
 void sm_EnsureQ476770(SObj476770* p)
 {
 	if (!p->m_pUnknown54)
-		sub_476660(p);
+		sub_100348cc((LTObject*)p);
 }
 
 
@@ -14230,9 +14232,40 @@ void sub_100290d7(LTObject* pObject, ServerMessage* pMsg, uint32* pSize)
 //
 // server.dll's form only: the engine's (an unfilled CMessageRef, the same
 // null message) is ccobj.cpp's, identical in both lithtech.exe images.
+//
+// PH: Primal Hunt's server.dll (0x10032452, 158 bytes) has the engine's
+// form too: an unfilled CMessageRef, whose null the compiler propagates into
+// the same absolute stores, under /GX's frame for the reference's destructor.
+// RETAIL BUG either way (docs/RETAIL_BUGS.md); kept as shipped.
 #ifdef LT_SERVER_BUILD
 LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 {
+#ifdef PRIMAL_HUNT
+	CMessageRef msg;
+
+	if (pClient->m_pViewClient)
+	{
+		dl_Remove(&((CClientAttachView*)pClient)->m_AttachLink);
+
+		pClient->m_pViewClient = LTNULL;
+
+		if (pClient->m_pUnknown3AC)
+		{
+			{
+				ServerMessage* pMsg = msg.m_pMsg;
+
+				pMsg->m_Unknown38 = 1;
+				pMsg->m_Unknown34 = 1;
+			}
+
+			((CPacket*)msg.m_pMsg)->WriteType(pClient->m_pUnknown3AC->m_ObjectID);
+
+			sm_SendToClient(pMgr, pClient, 7, msg.m_pMsg, 1, 0x80);
+		}
+	}
+
+	return LT_OK;
+#else
 	ServerMessage* pMsg = LTNULL;
 
 	if (pClient->m_pViewClient)
@@ -14259,6 +14292,7 @@ LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 	}
 
 	return LT_OK;
+#endif
 }
 #endif // LT_SERVER_BUILD
 

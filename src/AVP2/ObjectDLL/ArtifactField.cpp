@@ -40,9 +40,9 @@ END_CLASS_DEFAULT(CArtifactField, GameBase, NULL, NULL)
 // PH: 0x1014e120
 CArtifactField::CArtifactField() : GameBase(OT_WORLDMODEL)
 {
+	m_fAlpha			= 1.0f;
 	m_fTime				= 0.0f;
 	m_fMinAlpha			= 0.0f;
-	m_fAlpha			= 1.0f;
 	m_fAlphaCycleTime	= 5.0f;
 	m_fMaxAlpha			= 1.0f;
 	m_eState			= eStateOn;

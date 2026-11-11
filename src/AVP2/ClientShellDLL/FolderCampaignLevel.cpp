@@ -158,6 +158,9 @@ uint32 CFolderCampaignLevel::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32
 			const CampaignButes & campaign = g_pMissionMgr->GetCampaignButes(m_Species);
 
 			g_pInterfaceMgr->PlayInterfaceSound(IS_SELECT);
+#ifdef PRIMAL_HUNT
+			g_pGameClientShell->GetGameType()->Set(SP_STORY);
+#endif
 			g_pGameClientShell->GetGameType()->SetDifficulty(m_pDiffCtrl->GetSelectedItem());
 
 			g_pInterfaceMgr->GetPlayerStats()->ResetInventory();

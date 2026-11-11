@@ -588,6 +588,108 @@ void at_Reset(LTAnimTracker* pTracker)
 	pTracker->m_TimeRef.m_Percent = 0.0f;
 }
 
+// 0x100011e7 — put the tracker back where it belongs for a given time. The
+// interface's SetCurAnimTime writes the time and then calls this, which winds
+// the tracker back to the start of the animation (at_ResetAnim) and walks the
+// keyframes forward again until it finds the pair the time falls between.
+//
+// It is the model module's (0x10001013 onward), right after at_Reset in
+// every image (Primal Hunt server.dll 0x10001240/0x1000126b, AvP2 1.0.9.6
+// 0x1000121e/0x10001249), and that matters to AvP2's cl 9044: with at_Reset
+// compiled first it keeps the tracker in %edx across the call, as shipped.
+// The `at_UpdateStringKeys` name came from the caller's context before the
+// bytes were read and is ours: nothing here touches m_StringKeyCallback, and
+// what the function actually does is re-derive m_CurKey, the two frame indices,
+// the two times and the percentage between them.
+//
+// Read off the bytes, and three of them are surprising:
+//
+//   * m_CurKey is a uint32 field the found block reads as a *word*
+//     (`mov 0x14(%esi),%cx`), so the source narrows it before storing the two
+//     uint16 frame indices — and `test %cx,%cx; jbe` is an unsigned `> 0`,
+//     not `!= 0`.
+//   * the non-looping clamp of m_Cur.m_Time is DEAD WORK. at_ResetAnim has
+//     just zeroed that field three instructions earlier, so the minimum is
+//     always the zero already there. The block reads exactly like the same
+//     clamp in the ordinary advance path, which is presumably where it was
+//     copied from; the shipped bytes contain it and so does this.
+//   * the divide is `fildll` for the numerator and `fidivl` for the
+//     denominator: VC6 lays down the unsigned-to-float widening (zero the
+//     high dword of the eight-byte temp, store the low) for *both*, and then
+//     divides by the low dword only — so the second `andl $0x0,-0x4(%ebp)` is
+//     dead, and a keyframe span at or above 2^31 would divide as a negative.
+//     Both come out of plain `(float)` casts on uint32 values.
+//
+// One register rotation, and the fix is the predictable one. Written
+// with a `uint32 nRange = nKeyTime - nPrevTime;` local the function came out
+// 205 of 207 with the whole allocation rotated (nTime in edi rather than edx,
+// the animation in ecx rather than edi) and one instruction missing: ours
+// updated nKeyTime's register in place (`sub %eax,%ecx`) where the shipped
+// build copies it and subtracts into the copy (`mov %edi,%eax; sub %ecx,%eax`),
+// keeping nKeyTime alive. Writing the difference out twice — VC6 commons it
+// itself — restores the copy and the rotation goes with it. So an *extra*
+// named local rotates the allocation exactly as a missing one does.
+void at_UpdateStringKeys(LTAnimTracker* pTracker, uint32 nTime)
+{
+	uint32 nPrevTime;
+
+	at_Reset(pTracker);
+
+	ModelAnim* pAnim = pTracker->GetModel()->
+		m_AnimArray.m_pArray[pTracker->m_TimeRef.m_Cur.m_iAnim].m_pAnim;
+
+	uint32 nKeys = pAnim->m_nKeyFrames;
+
+	if (nKeys <= 1)
+		return;
+
+	uint32 nLast    = nKeys - 1;
+	uint32 nEndTime = pAnim->m_pKeyFrames[nLast].m_Time;
+
+	if (nTime > nEndTime)
+		nTime = nEndTime;
+
+	if (!(pTracker->m_Flags & AT_LOOPING))
+	{
+		pTracker->m_TimeRef.m_Cur.m_Time =
+			LTMIN(pTracker->m_TimeRef.m_Cur.m_Time, nEndTime + 1);
+	}
+
+	nPrevTime = 0;
+
+	while (pTracker->m_CurKey <= nLast)
+	{
+		uint32 nKeyTime = pAnim->m_pKeyFrames[pTracker->m_CurKey].m_Time;
+
+		if (nTime <= nKeyTime)
+		{
+			uint16 iKey = (uint16)pTracker->m_CurKey;
+
+			pTracker->m_TimeRef.m_Prev.m_iFrame = (iKey > 0) ? iKey - 1 : 0;
+			pTracker->m_TimeRef.m_Cur.m_iFrame  = iKey;
+
+			if (nKeyTime - nPrevTime == 0)
+			{
+				pTracker->m_TimeRef.m_Percent = 0.0f;
+			}
+			else
+			{
+				pTracker->m_TimeRef.m_Cur.m_Time  = nTime;
+				pTracker->m_TimeRef.m_Prev.m_Time = nPrevTime;
+
+				pTracker->m_TimeRef.m_Percent =
+					(float)(nTime - nPrevTime) / (float)(nKeyTime - nPrevTime);
+			}
+
+			return;
+		}
+
+		nPrevTime = nKeyTime;
+
+		pTracker->m_CurKey++;
+	}
+}
+
 
 // 0x100013f0 — one keyframe fired. A type-1 keyframe calls the function it
 // carries, and only when bit 2 of the tracker's flags is set; a type-0

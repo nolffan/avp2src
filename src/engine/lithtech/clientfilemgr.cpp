@@ -210,40 +210,32 @@ public:
 	uint16 m_nUnknown16;                     // 0x16
 };
 
-// The two record pools.  Same vptr-over-StructBank shape servermgr.h calls
-// CBankBase: base vtable 0x004a14c8 (slots 1..3 are _purecall), derived
-// 0x004a14b8 and 0x004a14a8.  ltnew2.cpp already reads the same three
-// tables out of the image.
-class CluBankBase
-{
-public:
-	virtual ~CluBankBase() {}
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj) = 0;
-	virtual void  Init() = 0;
-};
+// The two record pools.  Over bankbase.h's CBankBase: base vtable
+// 0x004a14c8 (slots 1..3 are _purecall), derived 0x004a14b8 and 0x004a14a8.
+// ltnew2.cpp already reads the same three tables out of the image.
+#include "bankbase.h"
 
-class CluFileRecBank : public CluBankBase                    // vtable 0x004a14b8
+class CluFileRecBank : public CBankBase                      // vtable 0x004a14b8
 {
 public:
 	CluFileRecBank() { clu_sb_Init(&m_Bank, 0x20, 0x20); }
 	virtual ~CluFileRecBank() { clu_sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();                // 0x004049d0
-	virtual void  Free(void* pObj);          // 0x004049c0
-	virtual void  Init();                    // 0x00444820 (ICF)
+	virtual void* AllocVoid();               // 0x004049d0
+	virtual void  FreeVoid(void* pObj);      // 0x004049c0
+	virtual void  Term();                    // 0x00444820 (ICF)
 
 	CluStructBank m_Bank;                    // +0x04
 	uint32        m_Unknown20;               // +0x20
 };
 
-class CluNetFileRecBank : public CluBankBase                 // vtable 0x004a14a8
+class CluNetFileRecBank : public CBankBase                   // vtable 0x004a14a8
 {
 public:
 	CluNetFileRecBank() { clu_sb_Init(&m_Bank, 0x28, 0x20); }
 	virtual ~CluNetFileRecBank() { clu_sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();                // 0x004049d0 (ICF)
-	virtual void  Free(void* pObj);          // 0x004049c0 (ICF)
-	virtual void  Init();                    // 0x00404a00
+	virtual void* AllocVoid();               // 0x004049d0 (ICF)
+	virtual void  FreeVoid(void* pObj);      // 0x004049c0 (ICF)
+	virtual void  Term();                    // 0x00404a00
 
 	CluStructBank m_Bank;                    // +0x04
 	uint32        m_Unknown20;               // +0x20
@@ -257,7 +249,7 @@ public:
 // /OPT:ICF kept in place of this body).  Slots 1 and 2 are the same bytes for
 // both classes and for every objbank.cpp instantiation; ICF keeps the first,
 // in this run.
-void* CluFileRecBank::Allocate()
+void* CluFileRecBank::AllocVoid()
 {
 	return clu_sb_Allocate(&m_Bank);
 }
@@ -265,18 +257,18 @@ void* CluFileRecBank::Allocate()
 // AVP2: sb_Free's null tests, on the object and on the bank (&m_Bank, so
 // `lea 0x4(%ecx)` then `test`): lithtech.exe 0x00416070, which both banks'
 // vtables (0x004d44f4, 0x004d4504) share.
-void CluFileRecBank::Free(void* pObj)
+void CluFileRecBank::FreeVoid(void* pObj)
 {
 	clu_sb_FreeQ501(&m_Bank, pObj);
 }
 
-void CluFileRecBank::Init()
+void CluFileRecBank::Term()
 {
 	clu_sb_FreeChunks(&m_Bank, 1);
 	clu_sb_Init(&m_Bank, 0x20, 0x20);
 }
 
-void* CluNetFileRecBank::Allocate()
+void* CluNetFileRecBank::AllocVoid()
 {
 	return clu_sb_Allocate(&m_Bank);
 }
@@ -284,12 +276,12 @@ void* CluNetFileRecBank::Allocate()
 // AVP2: sb_Free's null tests, on the object and on the bank (&m_Bank, so
 // `lea 0x4(%ecx)` then `test`): lithtech.exe 0x00416070, which both banks'
 // vtables (0x004d44f4, 0x004d4504) share.
-void CluNetFileRecBank::Free(void* pObj)
+void CluNetFileRecBank::FreeVoid(void* pObj)
 {
 	clu_sb_FreeQ501(&m_Bank, pObj);
 }
 
-void CluNetFileRecBank::Init()
+void CluNetFileRecBank::Term()
 {
 	clu_sb_FreeChunks(&m_Bank, 1);
 	clu_sb_Init(&m_Bank, 0x28, 0x20);
@@ -846,7 +838,7 @@ int clu_fm_OnServerFile(void* pQueue, char* pName, uint32 nUnused, uint32 nID)
 	// PH: the bank's own Allocate, called (0x00404788 `lea 0x48(%ebx),%ecx ;
 	// call 0x00404fb0`); AvP2 1.0.9.6 expands the struct-bank pop in place.
 #ifdef PRIMAL_HUNT
-	pRec = (CluNetFileRec*)pMgr->m_NetFileRecBank.CluNetFileRecBank::Allocate();
+	pRec = (CluNetFileRec*)pMgr->m_NetFileRecBank.CluNetFileRecBank::AllocVoid();
 #else
 	pRec = (CluNetFileRec*)clu_sb_Allocate(&pMgr->m_NetFileRecBank.m_Bank);
 #endif
@@ -1164,7 +1156,7 @@ CluFileRec* clu_fm_GetFileRec(CluFileMgr* pMgr, CluFileIdent* pIdent, uint8 nFla
 	// PH: the bank's own Allocate, called, as in clu_fm_OnServerFile; AvP2
 	// 1.0.9.6 expands the struct-bank pop in place.
 #ifdef PRIMAL_HUNT
-	pRec = (CluFileRec*)pMgr->m_FileRecBank.CluFileRecBank::Allocate();
+	pRec = (CluFileRec*)pMgr->m_FileRecBank.CluFileRecBank::AllocVoid();
 #else
 	pRec = (CluFileRec*)clu_sb_Allocate(&pMgr->m_FileRecBank.m_Bank);
 #endif

@@ -60,6 +60,10 @@ float g_CV_DefaultDrawIndexedDist = 500.0f;
 class CModelRayTriQ554
 {
 public:
+	// The ray test against this one triangle (server.dll 0x10026017, AvP2
+	// 1.0.9.6 0x1002473f; name ours).
+	bool IntersectQ554(ILTModel::LTRayResult* pRay, float* pT);
+
 	LTVector m_v[3];                         // 0x00 origin, 0x0c and 0x18 the edges
 };
 
@@ -1923,21 +1927,17 @@ CUnknownD974::~CUnknownD974()
 	sub_1001662c();
 }
 
-// 0x1001671c — seven bytes: the owner at +0x2c, and the model at +0x20 of it.
-Model* CUnknownD974::sub_1001671c()
-{
-	return m_pOwner2c->m_pModel;
-}
-
 // 0x10016723 (42 bytes) / 0x004457e0 (55) -- CModelXform::operator= -- is
 // defined in class in commonmodel.h; see the note there.
 
 // 0x1001662c — both collections handed back to the model's own data block.
 // The model is fetched twice, once per collection, which is two calls in the
-// shipped code and therefore two in the source.
+// shipped code and therefore two in the source. The first allocator is
+// GetAlloc(): with the cast AvP2 1.0.9.6's lithtech.exe hoisted the +0x174
+// load above the array's null test (0x0044e166 has it inside).
 void CUnknownD974::sub_1001662c()
 {
-	m_Array08.SetSize2(0, (LAlloc*)sub_1001671c()->m_pDataBlock);
+	m_Array08.SetSize2(0, sub_1001671c()->GetAlloc());
 
 	FreeArrayElements(&m_Array1c, (LAlloc*)sub_1001671c()->m_pDataBlock);
 }
@@ -2223,6 +2223,15 @@ LTBOOL CUnknownD974::sub_100166de(Model::CModelSub20C* pSub20c)
 	return LTTRUE;
 }
 
+
+// 0x1001671c — seven bytes: the owner at +0x2c, and the model at +0x20 of it.
+// Defined after its callers, as every image places it (AvP2 1.0.9.6
+// lithtech.exe 0x0044e2d0, after sub_1001662c and sub_1001668a), which is
+// what cl 9044's register allocation in those callers follows.
+Model* CUnknownD974::sub_1001671c()
+{
+	return m_pOwner2c->m_pModel;
+}
 
 LTBOOL CUnknownD974::sub_1001bb37(ILTStream* pStream)
 {
@@ -2809,50 +2818,67 @@ void CModelRayIntersectQ504::BuildTrisQ554(CRayLodQ554* pLOD)
 
 // 0x004605d0 (server.dll 0x10025f5f): one ray against every triangle of
 // the piece (the Moller-Trumbore test), keeping the nearest hit inside the
-// ray's range. NEAR: lithtech.exe (705 against 737) calls the three-float
-// constructor (0x004140a0), Cross (0x004428a0) and Dot (0x00421a10) at some
-// sites and expands them at others; server.dll (184 bytes) calls nearly
-// everything out of line. Ours expands all of them -- the inline-budget
-// difference again. Flow, frame and tests are as shipped.
+// ray's range. The test proper is the triangle's own (IntersectQ554
+// below), which both server.dll images call (0x10025f95; AvP2 1.0.9.6
+// 0x100246b9): IDENTICAL there, the hit flag stored before the distance and
+// the normal initialised from v2.Cross(v1) (SDK Cross: v1 x v2). NEAR on
+// lithtech.exe (742 against 737), which expands the test and calls the
+// three-float constructor (0x004140a0), Cross (0x004428a0) and Dot
+// (0x00421a10) at some sites and expands them at others: the inline budget.
 void CModelRayIntersectQ504::IntersectRayQ554(ILTModel::LTRayResult* pRay)
 {
 	CModelRayTriQ554* pTri;
-	LTVector vP, vT, vQ, vNormal;
-	float fInvDet, fU, fV, fT;
+	float fT;
 	uint32 i;
 
 	for (i = 0; i < m_nTrisQ554; i++)
 	{
 		pTri = &s_TrisQ554.GetArray()[i];
 
-		vP = pRay->m_vDir.Cross(pTri->m_v[2]);
-		fInvDet = 1.0f / pTri->m_v[1].Dot(vP);
-
-		vT = pRay->m_vOrigin - pTri->m_v[0];
-
-		fU = vT.Dot(vP) * fInvDet;
-		if (fU < 0.0f || fU > 1.0f)
-			continue;
-
-		vQ = pTri->m_v[1].Cross(vT);
-
-		fV = pRay->m_vDir.Dot(vQ) * fInvDet;
-		if (fV < 0.0f || fU + fV > 1.0f)
-			continue;
-
-		fT = pTri->m_v[2].Dot(vQ) * fInvDet;
-		if (fT < pRay->m_fDistance && fT > pRay->m_fMinDist)
+		if (pTri->IntersectQ554(pRay, &fT) &&
+		    fT < pRay->m_fDistance && fT > pRay->m_fMinDist)
 		{
-			pRay->m_fDistance = fT;
 			pRay->m_bIntersect = LTTRUE;
+			pRay->m_fDistance = fT;
 
-			vNormal = pTri->m_v[1].Cross(pTri->m_v[2]);
+			LTVector vNormal = pTri->m_v[2].Cross(pTri->m_v[1]);
 			vNormal.Norm();
 
 			pRay->m_vNormal = vNormal;
 			pRay->m_nPiece = m_iPieceQ554;
 		}
 	}
+}
+
+// server.dll 0x10026017 (286 bytes; AvP2 1.0.9.6 0x1002473f, 298): the
+// Moller-Trumbore test proper, the distance along the ray through *pT.
+// server.dll's /O1 calls it from IntersectRayQ554, so it is `inline` for
+// the client only, whose /O2 expands it there. Each vector is initialised
+// (Cross and the difference write it in place). NEAR (286 of 286, AvP2 298
+// of 298): shipped forms the reciprocal as `fld1; fdiv %st(1)` and pops the
+// determinant after, ours as `fdivr 1.0f`; a named determinant, `/=`, a
+// double or an int 1 give ours too.
+#ifndef LT_SERVER_BUILD
+inline
+#endif
+bool CModelRayTriQ554::IntersectQ554(ILTModel::LTRayResult* pRay, float* pT)
+{
+	LTVector vP = m_v[2].Cross(pRay->m_vDir);
+	float fInvDet = 1.0f / m_v[1].Dot(vP);
+	LTVector vT = pRay->m_vOrigin - m_v[0];
+	float fU = vT.Dot(vP) * fInvDet;
+
+	if (fU < 0.0f || fU > 1.0f)
+		return false;
+
+	LTVector vQ = m_v[1].Cross(vT);
+	float fV = pRay->m_vDir.Dot(vQ) * fInvDet;
+
+	if (fV < 0.0f || fU + fV > 1.0f)
+		return false;
+
+	*pT = m_v[2].Dot(vQ) * fInvDet;
+	return true;
 }
 
 
@@ -3455,6 +3481,29 @@ LTBOOL Model::sub_100171f4(LTBOOL bFlag)
 	}
 
 	return LTFALSE;
+}
+
+
+// 0x10016a9b — how many nodes hang off this one, itself included. Forty
+// bytes of recursion: the count starts at one (`push $1; pop %ebx`, /O1's
+// three-byte small constant) and every child is asked the same question. It
+// is the function that names the collection at +0x18 as the child list, and
+// the reason the model can size its node tables before it has walked the
+// tree.
+//
+// Defined here, ahead of its callers below, as both AvP2 1.0.9.6 images
+// order them (lithtech.exe 0x0044e7e0, server.dll 0x1001b7ed, before
+// sub_1001728c): cl 9044 allocates registers in a caller around a callee
+// it has already compiled, and sub_1001728c is identical only this way.
+uint32 Model::CModelSub20C::sub_10016a9b()
+{
+	uint32 nNodes = 1;
+	uint32 i;
+
+	for (i = 0; i < m_Array18.m_nElements; i++)
+		nNodes += m_Array18.m_pArray[i]->sub_10016a9b();
+
+	return nNodes;
 }
 
 
@@ -5324,6 +5373,18 @@ public:
 	volatile float m_v3cx, m_v3cy, m_v3cz;   // 0x3c
 };
 
+// The servers define the constructor here, ahead of the clear, as both
+// images order them (Primal Hunt 0x100196fc then 0x100197d1, AvP2 1.0.9.6
+// 0x10018b2f then 0x10018c04). It matters to AvP2's cl 9044, which, with
+// the clear's body already compiled, knows %ecx survives the call and drops
+// the %esi copy shipped keeps (8 bytes against 12).
+#ifdef LT_SERVER_BUILD
+CWorldSubFC::CWorldSubFC()
+{
+	Clear();
+}
+#endif
+
 //
 // AVP2: not built for AvP2 1.0.9.6's lithtech.exe, where the grid's clear is
 // wgrid.cpp's CWorldGridQ43C::Clear (identical at 0x00444be0, called from
@@ -6042,10 +6103,12 @@ CServerWorldFull::CServerWorldFull()
 // the call cannot throw and drops the EH state store in front of it
 // (`movb $0x5,0x18(%esp)` at 0x0042b0e0).  It lives in another module there
 // (0x00448920, beside Setup and Clear), where the caller cannot see it.
+#ifndef LT_SERVER_BUILD
 CWorldSubFC::CWorldSubFC()
 {
 	Clear();
 }
+#endif
 
 // 0x10007f73 — the clear. Read off the bytes rather than guessed:
 //
@@ -7568,24 +7631,6 @@ void Model::CModelSub20C::_v04(uint32 a, uint32 b, uint32 c)
 Model::CModelSub20C* Model::CModelSub20C::Create(Model* pModel)
 {
 	return new CModelSub20C(pModel);
-}
-
-
-// 0x10016a9b — how many nodes hang off this one, itself included. Forty
-// bytes of recursion: the count starts at one (`push $1; pop %ebx`, /O1's
-// three-byte small constant) and every child is asked the same question. It
-// is the function that names the collection at +0x18 as the child list, and
-// the reason the model can size its node tables before it has walked the
-// tree.
-uint32 Model::CModelSub20C::sub_10016a9b()
-{
-	uint32 nNodes = 1;
-	uint32 i;
-
-	for (i = 0; i < m_Array18.m_nElements; i++)
-		nNodes += m_Array18.m_pArray[i]->sub_10016a9b();
-
-	return nNodes;
 }
 
 

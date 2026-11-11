@@ -1492,7 +1492,9 @@ void CPlayerObj::FullAmmoCheat()
 
 	if (m_damage.IsDead()) return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	SetHasFlarePouch();
 	SetHasCloakDevice();
@@ -1504,13 +1506,22 @@ void CPlayerObj::FullAmmoCheat()
 		WEAPON* pWeap = g_pWeaponMgr->GetWeapon("Flare_Pouch_Weapon");
 		if(pWeap)
 		{
+#ifdef PRIMAL_HUNT
 			if (pPlayerAttachments)
 				pPlayerAttachments->ObtainWeapon(pWeap->nId);
+#else
+			// AvP2 1.0.9.6 casts at each use, untested (Object.lto 0x101cbb52)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeap->nId);
+#endif
 		}
 	}
 
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments->HandleCheatFullAmmo();
+#else
+	dynamic_cast<CPlayerAttachments*>(m_pAttachments)->HandleCheatFullAmmo();
+#endif
 }
 
 
@@ -1528,13 +1539,16 @@ void CPlayerObj::FullWeaponCheat()
 
 	if (m_damage.IsDead()) return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	SetHasFlarePouch();
 	SetHasCloakDevice();
 	SetHasMask(LTTRUE, LTFALSE);
 	SetHasNightVision();
 
+#ifdef PRIMAL_HUNT
 	if(IsHuman(m_hObject))
 	{
 		WEAPON* pWeap = g_pWeaponMgr->GetWeapon("Blowtorch");
@@ -1566,6 +1580,40 @@ void CPlayerObj::FullWeaponCheat()
 
 	if (pPlayerAttachments)
 		pPlayerAttachments->HandleCheatFullWeapon();
+#else
+	// AvP2 1.0.9.6 casts at each use and tests none of them (Object.lto
+	// 0x101cbc96 ...)
+	if(IsHuman(m_hObject))
+	{
+		WEAPON* pWeap = g_pWeaponMgr->GetWeapon("Blowtorch");
+		if(pWeap)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeap->nId);
+
+		pWeap = g_pWeaponMgr->GetWeapon("Flare_Pouch_Weapon");
+		if(pWeap)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeap->nId);
+
+		pWeap = g_pWeaponMgr->GetWeapon("MarineHackingDevice");
+		if(pWeap)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeap->nId);
+	}
+
+	if(IsPredator(m_hObject))
+	{
+		WEAPON* pWeap = g_pWeaponMgr->GetWeapon("Energy_Sift");
+		if(pWeap)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeap->nId);
+
+		pWeap = g_pWeaponMgr->GetWeapon("Medicomp");
+		if(pWeap)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeap->nId);
+	}
+
+	//load up the battery power
+	m_fBatteryChargeLevel = MARINE_MAX_BATTERY_LEVEL;
+
+	dynamic_cast<CPlayerAttachments*>(m_pAttachments)->HandleCheatFullWeapon();
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -1620,7 +1668,9 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags)
 
 	if (!m_hClient || !g_pWeaponMgr || m_dwLastLoadFlags == LOAD_RESTORE_GAME) return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	HMESSAGEWRITE hMessage;
 
@@ -1636,9 +1686,16 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags)
 		if (GetCharacterClass() == PREDATOR)
 		{
 			WEAPON *pWeapon = g_pWeaponMgr->GetWeapon("Disc");
+#ifdef PRIMAL_HUNT
 			if (pWeapon && pPlayerAttachments)
 			{
 				CWeapons * const pWeapons = pPlayerAttachments->GetWeapons();
+#else
+			// AvP2 1.0.9.6 casts at each use (Object.lto 0x101cbf78)
+			if (pWeapon && m_pAttachments)
+			{
+				CWeapons * const pWeapons = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetWeapons();
+#endif
 				if (pWeapons && pWeapons->HasWeapon(pWeapon->nId))
 				{
 					pWeapons->SetAmmoPool("Discs", 1);
@@ -1729,6 +1786,10 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags)
 			g_pLTServer->EndMessage(hMessage);
 		}
 
+#ifdef PRIMAL_HUNT
+		// PH: SetCharacter may have made new attachments (0x1010e19d)
+		pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 		// Get start point trigger info...
 		HSTRING hstrTarget = pStartPt->GetTriggerTarget();
@@ -1857,8 +1918,12 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags)
 		Reset();
 
 		// Reset all the weapons
+#ifdef PRIMAL_HUNT
 		if (pPlayerAttachments)
 			pPlayerAttachments->ResetAllWeapons();
+#else
+		dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ResetAllWeapons();
+#endif
 	}
 
 	// Make sure we always have and start with the default weapon...
@@ -2103,7 +2168,9 @@ int CPlayerObj::AquireDefaultWeapon(LTBOOL bChangeWeapon)
 	int i = 0;
 	uint32 nWeaponSet;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	LTBOOL bMultiplayer = g_pGameServerShell->GetGameType().IsMultiplayer();
 	
@@ -2140,6 +2207,10 @@ int CPlayerObj::AquireDefaultWeapon(LTBOOL bChangeWeapon)
 						
 						int nAmt = pPoolData?pPoolData->nDefaultAmount:1;
 
+#ifndef PRIMAL_HUNT
+						// AvP2 1.0.9.6 casts for each weapon (Object.lto 0x101ccc31)
+						pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 						if(pPlayerAttachments)
 							pPlayerAttachments->ObtainWeapon(pWeaponData->nId, pBarrel->nId, pPoolData->nId, nAmt, LTTRUE, LTFALSE);
 					}
@@ -2149,8 +2220,13 @@ int CPlayerObj::AquireDefaultWeapon(LTBOOL bChangeWeapon)
 	}
 
 	CWeapons *pWeapons = LTNULL;
+#ifdef PRIMAL_HUNT
 	if (pPlayerAttachments)
 		pWeapons = pPlayerAttachments->GetWeapons();
+#else
+	// AvP2 1.0.9.6 casts here again, untested (Object.lto 0x101ccc99)
+	pWeapons = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetWeapons();
+#endif
 
 #ifdef PRIMAL_HUNT
 	// PH: the weapon we'd change to (PHObject.lto 0x1010ee0c)
@@ -2696,14 +2772,22 @@ void CPlayerObj::ChangeWeapon(const char *szWeapon, LTBOOL bDeselect)
 
 	if (!m_hClient || !m_pAttachments) return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(szWeapon);
 
 	if(!pWeapon) return;
 
+#ifdef PRIMAL_HUNT
 	if (pPlayerAttachments)
 		pPlayerAttachments->ObtainWeapon(pWeapon->nId);
+#else
+	// RETAIL BUG (AvP2): the cast's result is not tested (Object.lto
+	// 0x101cd9c7); Primal Hunt tests it
+	dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ObtainWeapon(pWeapon->nId);
+#endif
 
 	HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(m_hClient, MID_FORCE_WEAPON_CHANGE);
 	g_pLTServer->WriteToMessageByte(hMessage, pWeapon->nId);
@@ -2727,7 +2811,11 @@ void CPlayerObj::DoWeaponChange(DBYTE nWeaponId)
 	if (!m_hClient || !m_pAttachments) return;
 
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#ifdef PRIMAL_HUNT
 	if (pPlayerAttachments)
+#endif
+		// RETAIL BUG (AvP2): the cast's result is not tested (Object.lto
+		// 0x101cda78); Primal Hunt tests it
 		pPlayerAttachments->ChangeWeapon(nWeaponId);
 }
 
@@ -2746,7 +2834,9 @@ void CPlayerObj::UpdateInterface(DBOOL bForceUpdate, LTBOOL bGuaranteed)
 
 	if (!m_hClient || !g_pWeaponMgr || !m_pAttachments) return; //m_damage.IsDead() || 
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	// Create the send flags
 	uint32 nSendFlags = MESSAGE_NAGGLE;
@@ -2762,8 +2852,13 @@ void CPlayerObj::UpdateInterface(DBOOL bForceUpdate, LTBOOL bGuaranteed)
 	{
 		int nAmmo = 0;
 
+#ifdef PRIMAL_HUNT
 		if (pPlayerAttachments)
 			nAmmo = pPlayerAttachments->GetAmmoPoolCount(i);
+#else
+		// AvP2 1.0.9.6 casts for each pool, untested (Object.lto 0x101cdb17)
+		nAmmo = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetAmmoPoolCount(i);
+#endif
 
 		if (m_pnOldAmmo)
 		{
@@ -3109,7 +3204,9 @@ void CPlayerObj::HandleGameRestore()
 
 	if (!g_pWeaponMgr) return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	// Make sure we are using the correct model/skin...
 	// This shouldn't be necessary anymore,  the client
@@ -3128,8 +3225,13 @@ void CPlayerObj::HandleGameRestore()
 
 	// Make sure we're displaying the default weapon...
 	CWeapons* pWeapons = LTNULL;
+#ifdef PRIMAL_HUNT
 	if (pPlayerAttachments)
 		pWeapons = pPlayerAttachments->GetWeapons();
+#else
+	// AvP2 1.0.9.6: no type check and no test (Object.lto 0x101ce4b2)
+	pWeapons = static_cast<CPlayerAttachments*>(m_pAttachments)->GetWeapons();
+#endif
 
 	if(pWeapons)
 	{
@@ -3217,7 +3319,9 @@ DBOOL CPlayerObj::ProcessCommand(const char*const* pTokens, int nArgs)
 
 	if (!pTokens || nArgs < 1) return DFALSE;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	// Let base class have a whack at it...
 
@@ -3419,11 +3523,20 @@ DBOOL CPlayerObj::ProcessCommand(const char*const* pTokens, int nArgs)
 	}
 	else if (stricmp(TRIGGER_RESETINVENTORY, pTokens[0]) == 0)
 	{
+#ifdef PRIMAL_HUNT
 		if (pPlayerAttachments)
+#else
+		if (m_pAttachments)
+#endif
 		{
 			// Clear our weapons/ammo...
 
+#ifdef PRIMAL_HUNT
 			pPlayerAttachments->ResetAllWeapons();
+#else
+			// AvP2 1.0.9.6 tests the attachments, not the cast (Object.lto 0x101cece6)
+			dynamic_cast<CPlayerAttachments*>(m_pAttachments)->ResetAllWeapons();
+#endif
 
 			// Tell the client to clear out all our inventory...
 
@@ -4183,7 +4296,9 @@ void CPlayerObj::HandleMessage_WeaponFire(HMESSAGEREAD hRead)
 
 	if (!g_pWeaponMgr || !m_hClient || m_bCharacterReset) return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	LTVector vFlashPos, vFirePos, vDir;
 	g_pLTServer->ReadFromMessageVector(hRead, &vFlashPos);
@@ -4213,6 +4328,7 @@ void CPlayerObj::HandleMessage_WeaponFire(HMESSAGEREAD hRead)
 		if(!HasFlarePouch())
 			return;
 
+#ifdef PRIMAL_HUNT
 		if(pPlayerAttachments)
 		{
 			CWeapons* pWeapons = pPlayerAttachments->GetWeapons();
@@ -4225,9 +4341,25 @@ void CPlayerObj::HandleMessage_WeaponFire(HMESSAGEREAD hRead)
 		{
 			pWeapon = LTNULL;
 		}
+#else
+		// AvP2 1.0.9.6 tests the attachments, not the cast (Object.lto 0x101cfc67)
+		if(m_pAttachments)
+		{
+			CWeapons* pWeapons = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetWeapons();
+
+			if(!pWeapons) return;
+
+			pWeapon = pWeapons->GetWeapon(nWeaponId);
+		}
+		else
+		{
+			pWeapon = LTNULL;
+		}
+#endif
 	}
 	else
 	{
+#ifdef PRIMAL_HUNT
 		if(pPlayerAttachments)
 		{
 			pWeapon = pPlayerAttachments->GetWeapon();
@@ -4236,6 +4368,16 @@ void CPlayerObj::HandleMessage_WeaponFire(HMESSAGEREAD hRead)
 		{
 			pWeapon = LTNULL;
 		}
+#else
+		if(m_pAttachments)
+		{
+			pWeapon = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetWeapon();
+		}
+		else
+		{
+			pWeapon = LTNULL;
+		}
+#endif
 	}
 	if (!pWeapon || nWeaponId != pWeapon->GetId()) return;
 
@@ -4362,7 +4504,9 @@ void CPlayerObj::HandleMessage_WeaponHit(HMESSAGEREAD hRead)
 	if(m_bCharacterReset)
 		return;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	LTVector vFlashPos, vFirePos, vDir, vTargetPos;
 
@@ -4387,8 +4531,14 @@ void CPlayerObj::HandleMessage_WeaponHit(HMESSAGEREAD hRead)
 
 	CWeapon* pWeapon = NULL;
 
+#ifdef PRIMAL_HUNT
 	if (pPlayerAttachments)
 		pWeapon = pPlayerAttachments->GetWeapon();
+#else
+	// AvP2 1.0.9.6 tests the attachments, not the cast (Object.lto 0x101d01de)
+	if (m_pAttachments)
+		pWeapon = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetWeapon();
+#endif
 
 	// Test our attachments pointer and be sure the weapon
 	// we claim to be firing is the one we actually have.
@@ -5964,19 +6114,17 @@ WEAPON* CPlayerObj::GetPlayerWeapon()
 	CWeapons* pWeapons = LTNULL;
 
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#else
+	// AvP2 1.0.9.6 casts without a type check (Object.lto 0x101d2e20 reads
+	// the default attachment straight through m_pAttachments)
+	pPlayerAttachments = static_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	// Make sure we're displaying the default weapon...
-#ifdef PRIMAL_HUNT
-	// PH: Third Law's fix (0x10115d70): the weapons are the attachments'
 	if (pPlayerAttachments)
 		pWeapons = pPlayerAttachments->GetWeapons();
-#else
-	// RETAIL BUG: this declares a second pWeapons, local to the if, so the
-	// one tested below is always LTNULL and this always returns LTNULL
-	if (pPlayerAttachments)
-		CWeapons* pWeapons = pPlayerAttachments->GetWeapons();
-#endif
 
 	if(pWeapons)
 	{
@@ -6027,7 +6175,9 @@ void CPlayerObj::MPRespawn(uint8 nCharId)
 {
 	CPlayerAttachments* pPlayerAttachments = LTNULL;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	//if we have a head, lose it
 	if(m_hHead)
@@ -6153,6 +6303,10 @@ void CPlayerObj::MPRespawn(uint8 nCharId)
 
 	// Reset all the weapons
 
+#ifndef PRIMAL_HUNT
+	// AvP2 1.0.9.6 casts here (Object.lto 0x101d3371)
+	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 	if(pPlayerAttachments)
 		pPlayerAttachments->ResetAllWeapons();
 
@@ -6280,7 +6434,9 @@ void CPlayerObj::SendMPInterfaceUpdate(HMESSAGEWRITE hMessage)
 	int i;
 	int nAmmo = 0;
 
+#ifdef PRIMAL_HUNT
 	pPlayerAttachments = dynamic_cast<CPlayerAttachments*>(m_pAttachments);
+#endif
 
 	// See if the ammo has changed...
 	DBYTE nNumAmmoPools = g_pWeaponMgr->GetNumAmmoPools();
@@ -6289,8 +6445,13 @@ void CPlayerObj::SendMPInterfaceUpdate(HMESSAGEWRITE hMessage)
 	uint8 nCount = 0;
 	for (i=0; i < nNumAmmoPools; i++)
 	{
+#ifdef PRIMAL_HUNT
 		if (pPlayerAttachments)
 			nAmmo = pPlayerAttachments->GetAmmoPoolCount(i);
+#else
+		// AvP2 1.0.9.6 casts for each pool, untested (Object.lto 0x101d35c1)
+		nAmmo = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetAmmoPoolCount(i);
+#endif
 		
 		if(nAmmo > 0)
 			nCount++;
@@ -6302,8 +6463,13 @@ void CPlayerObj::SendMPInterfaceUpdate(HMESSAGEWRITE hMessage)
 	// Now write the amounts
 	for (i=0; i < nNumAmmoPools; i++)
 	{
+#ifdef PRIMAL_HUNT
 		if (pPlayerAttachments)
 			nAmmo = pPlayerAttachments->GetAmmoPoolCount(i);
+#else
+		// AvP2 1.0.9.6 casts for each pool, untested (Object.lto 0x101d35c1)
+		nAmmo = dynamic_cast<CPlayerAttachments*>(m_pAttachments)->GetAmmoPoolCount(i);
+#endif
 
 		if(nAmmo > 0)
 		{

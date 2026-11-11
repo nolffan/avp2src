@@ -1063,6 +1063,18 @@ void CInterfaceMgr::UpdateSplashScreenState()
 	DRect rcSrc;
 	rcSrc.Init(0, 0, nWidth, nHeight);
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: the splash screens after the first are drawn unscaled,
+	// centred on a 640x480 screen
+	if(g_nSplashCount > 0)
+	{
+		uint32 nScreenWidth, nScreenHeight;
+		g_pClientDE->GetSurfaceDims(g_pClientDE->GetScreenSurface(), &nScreenWidth, &nScreenHeight);
+
+		g_pClientDE->DrawSurfaceToSurface(hScreen, g_hSplash, LTNULL, (nScreenWidth - 640) / 2, (nScreenHeight - 480) / 2);
+	}
+	else
+#endif
 	g_pClientDE->ScaleSurfaceToSurface(hScreen, g_hSplash, &rcDst, &rcSrc);
 
 	g_pClientDE->Start3D();
@@ -1089,7 +1101,7 @@ void CInterfaceMgr::UpdateSplashScreenState()
 	}
 	else if (bDidFadeOut && m_fCurFadeTime <= 0.0f)
 	{
-#ifdef _DEMO
+#if defined(_DEMO) || defined(PRIMAL_HUNT)
 		NextSplashScreen();
 #else
 		ChangeState(GS_MOVIE);
@@ -1748,6 +1760,11 @@ DBOOL CInterfaceMgr::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 					case LT_DISCON_MISCCRC:			hStr = g_pLTClient->FormatString(IDS_DISCONNECTED_MISCCRC);		break;
 					case LT_DISCON_PASSWORD:		hStr = g_pLTClient->FormatString(IDS_DISCONNECTED_PASSWORD);	break;
 					case LT_DISCON_USER:			hStr = g_pLTClient->FormatString(IDS_DISCONNECTED_FULL);		break;
+#ifdef PRIMAL_HUNT
+					// the server's class lock (GameServerShell's verify code 0x10001):
+					// "The class you've chosen is locked out of this server."
+					case LT_DISCON_USER + 1:		hStr = g_pLTClient->FormatString(29794);						break;
+#endif
 
 					case LT_DISCON_UNKNOWN:
 					default:						hStr = g_pLTClient->FormatString(IDS_DISCONNECTED_FROM_SERVER);	break;
@@ -2401,7 +2418,14 @@ DBOOL CInterfaceMgr::OnCommandOn(int command)
 				{
 					DDWORD nCurrWeapon = m_pWeaponChooser->GetCurrentSelection();
 					m_pWeaponChooser->Close();
+#ifdef PRIMAL_HUNT
+					// (only when it is another weapon)
+					int nWeaponId = g_pWeaponMgr->GetWeaponId(g_pWeaponMgr->GetCommandId(nCurrWeapon));
+					if(g_pGameClientShell->GetWeaponModel()->GetWeaponId() != nWeaponId)
+						g_pGameClientShell->GetWeaponModel()->ChangeWeapon(g_pWeaponMgr->GetCommandId(nCurrWeapon));
+#else
 					g_pGameClientShell->GetWeaponModel()->ChangeWeapon(g_pWeaponMgr->GetCommandId(nCurrWeapon));
+#endif
 				}
 				return DTRUE;
 
@@ -2677,7 +2701,11 @@ DBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 #else
 			if(g_pLTClient->GetTime() - m_fSplashStartTime > g_vtSplashLockTime.GetFloat())
 			{
+#ifdef PRIMAL_HUNT
+				NextSplashScreen();
+#else
  				ChangeState(GS_MOVIE);
+#endif
 			}
 #endif
 			return DTRUE;
@@ -4323,7 +4351,7 @@ void CInterfaceMgr::OnRButtonDown(int x, int y)
 		}
 	case GS_SPLASHSCREEN:
 		{
-#ifdef _DEMO
+#if defined(_DEMO) || defined(PRIMAL_HUNT)
 			NextSplashScreen();
 #else
 			if(g_pLTClient->GetTime() - m_fSplashStartTime > g_vtSplashLockTime.GetFloat())

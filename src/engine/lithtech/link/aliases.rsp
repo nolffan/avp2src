@@ -1771,8 +1771,6 @@
 /ALTERNATENAME:?sub_4628e0@@YAXPAVSharedTexture@@H@Z=?rif_BindTexture@@YAXPAVSharedTexture@@I@Z
 # 0x4628e0
 /ALTERNATENAME:?sub_4628e0@@YAXPAVSharedTextureView@@H@Z=?rif_BindTexture@@YAXPAVSharedTexture@@I@Z
-# 0x476660
-/ALTERNATENAME:?sub_476660@@YAXPAUSObj476770@@@Z=?sub_100348cc@@YAXPAVLTObject@@@Z
 # 0x477830
 /ALTERNATENAME:?sub_477830@@YAXPAVCClientMgrLtn1@@PAXPAUCModelRecLtn1@@@Z=?cm_UnloadModelQ474@@YAXPAVCClientMgrQ474@@PAVModelQ474@@PAVCFileRecQ474@@@Z
 # 0x477830
@@ -1997,59 +1995,59 @@
 # 0x477fb0 slot 4 of CClientShell's table 0x4a1d18: clientmgr2.cpp's SetDisconnectCode (declared non-virtual on its view)
 /ALTERNATENAME:?_v10@CClientShell@@UAEXXZ=?SetDisconnectCode@CClientShell@@QAEXKPBDK@Z
 # 0x414db0 / 0x414df0 / 0x415210 slots 1-3 of the message bank table 0x4a1dac (0x54-byte records)
-/ALTERNATENAME:?Allocate@CMessageBankView@@UAEPAXXZ=?Allocate@CBankElem54BankView@@QAEPAXXZ
-/ALTERNATENAME:?Free@CMessageBankView@@UAEXPAX@Z=?Free@CBankElem54BankView@@QAEXPAX@Z
-/ALTERNATENAME:?Init@CMessageBankView@@UAEXXZ=?Init@?$CObjectBank@VCBankElem54@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@CMessageBankView@@UAEPAXXZ=?Allocate@CBankElem54BankView@@QAEPAXXZ
+/ALTERNATENAME:?FreeVoid@CMessageBankView@@UAEXPAX@Z=?Free@CBankElem54BankView@@QAEXPAX@Z
+/ALTERNATENAME:?Term@CMessageBankView@@UAEXXZ=?Term@?$CObjectBank@VCBankElem54@@@@UAEXXZ
 # 0x4049d0 / 0x4049c0 / 0x415030 slots 1-3 of the file bank table 0x4a1dbc (CFileBank, 0x14-byte records)
-/ALTERNATENAME:?Allocate@CBankA44@@UAEPAXXZ=?Allocate@?$CObjectBank@VCBankElem14@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@CBankA44@@UAEXPAX@Z=?Free@?$CObjectBank@VCBankElem14@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@CBankA44@@UAEXXZ=?Init@?$CObjectBank@VCBankElem14@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@CBankA44@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCBankElem14@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@CBankA44@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem14@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@CBankA44@@UAEXXZ=?Term@?$CObjectBank@VCBankElem14@@@@UAEXXZ
 # CServerMgr+0x390 is objbank.cpp's CObjMgrView (ctor 0x45a470, already paired with CSub390's); its eleven
 # banks at +0x68 + 0x24*i are CObjectBank<T> in OT_ order, so the view's bank at 0x3f8+0x24*i is that T's
 # CServerMgr+0x3f8: CObjectBank<CObjBase>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem3f8@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjBase@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem3f8@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjBase@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem3f8@@@@UAEXXZ=?Init@?$CObjectBank@VCObjBase@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem3f8@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjBase@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem3f8@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjBase@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem3f8@@@@UAEXXZ=?Term@?$CObjectBank@VCObjBase@@@@UAEXXZ
 # CServerMgr+0x41c: CObjectBank<CObjModel>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem41c@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjModel@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem41c@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjModel@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem41c@@@@UAEXXZ=?Init@?$CObjectBank@VCObjModel@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem41c@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjModel@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem41c@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjModel@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem41c@@@@UAEXXZ=?Term@?$CObjectBank@VCObjModel@@@@UAEXXZ
 # CServerMgr+0x440: CObjectBank<CObjWorldModel>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem440@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem440@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjWorldModel@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem440@@@@UAEXXZ=?Init@?$CObjectBank@VCObjWorldModel@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem440@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem440@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjWorldModel@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem440@@@@UAEXXZ=?Term@?$CObjectBank@VCObjWorldModel@@@@UAEXXZ
 # CServerMgr+0x464: CObjectBank<CObjSprite>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem464@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem464@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjSprite@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem464@@@@UAEXXZ=?Init@?$CObjectBank@VCObjSprite@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem464@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem464@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjSprite@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem464@@@@UAEXXZ=?Term@?$CObjectBank@VCObjSprite@@@@UAEXXZ
 # CServerMgr+0x488: CObjectBank<CObjLight>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem488@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjLight@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem488@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjLight@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem488@@@@UAEXXZ=?Init@?$CObjectBank@VCObjLight@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem488@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjLight@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem488@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjLight@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem488@@@@UAEXXZ=?Term@?$CObjectBank@VCObjLight@@@@UAEXXZ
 # CServerMgr+0x4ac: CObjectBank<CObjCamera>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem4ac@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjCamera@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem4ac@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjCamera@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem4ac@@@@UAEXXZ=?Init@?$CObjectBank@VCObjCamera@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem4ac@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjCamera@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem4ac@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjCamera@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem4ac@@@@UAEXXZ=?Term@?$CObjectBank@VCObjCamera@@@@UAEXXZ
 # CServerMgr+0x4d0: CObjectBank<CObjParticleSystem>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem4d0@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjParticleSystem@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem4d0@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjParticleSystem@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem4d0@@@@UAEXXZ=?Init@?$CObjectBank@VCObjParticleSystem@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem4d0@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjParticleSystem@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem4d0@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjParticleSystem@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem4d0@@@@UAEXXZ=?Term@?$CObjectBank@VCObjParticleSystem@@@@UAEXXZ
 # CServerMgr+0x4f4: CObjectBank<CObjPolyGrid>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem4f4@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjPolyGrid@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem4f4@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjPolyGrid@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem4f4@@@@UAEXXZ=?Init@?$CObjectBank@VCObjPolyGrid@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem4f4@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjPolyGrid@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem4f4@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjPolyGrid@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem4f4@@@@UAEXXZ=?Term@?$CObjectBank@VCObjPolyGrid@@@@UAEXXZ
 # CServerMgr+0x518: CObjectBank<CObjLineSystem>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem518@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjLineSystem@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem518@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjLineSystem@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem518@@@@UAEXXZ=?Init@?$CObjectBank@VCObjLineSystem@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem518@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjLineSystem@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem518@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjLineSystem@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem518@@@@UAEXXZ=?Term@?$CObjectBank@VCObjLineSystem@@@@UAEXXZ
 # CServerMgr+0x53c: CObjectBank<CObjContainer>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem53c@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjContainer@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem53c@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjContainer@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem53c@@@@UAEXXZ=?Init@?$CObjectBank@VCObjContainer@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem53c@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjContainer@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem53c@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjContainer@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem53c@@@@UAEXXZ=?Term@?$CObjectBank@VCObjContainer@@@@UAEXXZ
 # CServerMgr+0x560: CObjectBank<CObjCanvas>
-/ALTERNATENAME:?Allocate@?$CObjBankView@VCObjElem560@@@@UAEPAXXZ=?Allocate@?$CObjectBank@VCObjCanvas@@@@UAEPAXXZ
-/ALTERNATENAME:?Free@?$CObjBankView@VCObjElem560@@@@UAEXPAX@Z=?Free@?$CObjectBank@VCObjCanvas@@@@UAEXPAX@Z
-/ALTERNATENAME:?Init@?$CObjBankView@VCObjElem560@@@@UAEXXZ=?Init@?$CObjectBank@VCObjCanvas@@@@UAEXXZ
+/ALTERNATENAME:?AllocVoid@?$CObjBankView@VCObjElem560@@@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjCanvas@@@@UAEPAXXZ
+/ALTERNATENAME:?FreeVoid@?$CObjBankView@VCObjElem560@@@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCObjCanvas@@@@UAEXPAX@Z
+/ALTERNATENAME:?Term@?$CObjBankView@VCObjElem560@@@@UAEXXZ=?Term@?$CObjectBank@VCObjCanvas@@@@UAEXXZ
 # view spellings in dmextra/clientinput/csvis/worldsim/rezdir, each read
 # back at the one shipped address its target stands for.
 # 0x442cc0 (the chunk-list insert the bank grows reach; lt2new2.cpp's body)
@@ -2712,12 +2710,6 @@
 # names the same object g_LinkNodeBank, itself an alias of clientmgr2.cpp's g_Bank0c here
 # (LINK does not chain /ALTERNATENAME, so this points at the definition directly)
 /ALTERNATENAME:?g_ObjQueueBank@@3VCObjQueueBank@@A=?g_Bank0c@@3VCObjectBank0c@@A
-# 0x4928e7 -- CBankBase's slots 1..3: fourteen lithtech.exe vftables carry 0x4928e7 in
-# slots 1, 2 and 3, `push $0x19; call; pop ecx; ret`,
-# the CRT's _purecall -- as server.dll's link has it
-/ALTERNATENAME:?_v04@CBankBase@@UAEXXZ=__purecall
-/ALTERNATENAME:?_v08@CBankBase@@UAEXPAX@Z=__purecall
-/ALTERNATENAME:?Term@CBankBase@@UAEXXZ=__purecall
 # 0x47c480 / 0x47c4b0 / 0x473540 -- the object mover's vftable 0x4a33d4 (CServerMgr::Init
 # stores it at 0x4731c7), slots 6, 8 and 12: spritecontrol.cpp's CObjectMover bodies are
 # placed at those addresses (objmover.cpp's slot table names the same three)
@@ -2731,11 +2723,11 @@
 # 0x48cde0 -- clientmgr2.cpp's world-tree view of worldtree2.cpp's AddObject (cs_ReleaseListToWorld, 0x00414370)
 /ALTERNATENAME:?AddObject@CWorldTreeQ2C@@QAEXPAXK@Z=?AddObject@CWorldTreeN48C@@QAEXPAVCWTObjN48C@@K@Z
 # 0x4049d0 -- slot 1 of g_Bank0c's table 0x004a1ae8 (clientmgr2.cpp's ObjectBank view): the folded Allocate
-/ALTERNATENAME:?AllocVoid@CObjectBank0c@@UAEPAXXZ=?Allocate@?$CObjectBank@VCBankElem0c@@@@UAEPAXXZ
+/ALTERNATENAME:?AllocVoid@CObjectBank0c@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCBankElem0c@@@@UAEPAXXZ
 # 0x4049c0 -- slot 2 of 0x004a1ae8: the folded Free
-/ALTERNATENAME:?FreeVoid@CObjectBank0c@@UAEXPAX@Z=?Free@?$CObjectBank@VCBankElem0c@@@@UAEXPAX@Z
+/ALTERNATENAME:?FreeVoid@CObjectBank0c@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem0c@@@@UAEXPAX@Z
 # 0x412bf0 -- slot 3 of 0x004a1ae8: objbank.cpp's CObjectBank<CBankElem0c>::Init (sb_Term2 + sb_Init(0xc, 0x20))
-/ALTERNATENAME:?Term@CObjectBank0c@@UAEXXZ=?Init@?$CObjectBank@VCBankElem0c@@@@UAEXXZ
+/ALTERNATENAME:?Term@CObjectBank0c@@UAEXXZ=?Term@?$CObjectBank@VCBankElem0c@@@@UAEXXZ
 # 0x425c00 -- collection.cpp's CCollElemC0 is worldbsp.h's CWorldSimple (as server/link/aliases.rsp)
 /ALTERNATENAME:??0CCollElemC0@@QAE@XZ=??0CWorldSimple@@QAE@XZ
 # 0x425cf0
@@ -2881,37 +2873,37 @@
 # 0x404470 factory 0x410b9a pushes it (an ICF-folded bare ret; clientinterface.cpp's ci_DeleteColor is the one placed there)
 /ALTERNATENAME:?cmg_Handler404470@@YAXPAX@Z=?ci_DeleteColor@@YAXK@Z
 # 0x483430 CSoundMgr bank +0x284, vtable 0x4a3610 slot 1 (clientstreams.cpp)
-/ALTERNATENAME:?_v04@CCmgSndBank284@@UAEXXZ=?AllocVoid@?$ObjectBankL10@VCSoundDataL10@@VNullCSL10@@@@UAEPAXXZ
+/ALTERNATENAME:?AllocVoid@CCmgSndBank284@@UAEPAXXZ=?AllocVoid@?$ObjectBankL10@VCSoundDataL10@@VNullCSL10@@@@UAEPAXXZ
 # 0x483470 vtable 0x4a3610 slot 2
-/ALTERNATENAME:?_v08@CCmgSndBank284@@UAEXXZ=?Free@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
+/ALTERNATENAME:?FreeVoid@CCmgSndBank284@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
 # 0x483550 vtable 0x4a3610 slot 3
 /ALTERNATENAME:?Term@CCmgSndBank284@@UAEXXZ=?Term@?$ObjectBankL10@VCSoundDataL10@@VNullCSL10@@@@UAEXXZ
 # 0x483490 CSoundMgr bank +0x2b8, vtable 0x4a3600 slot 1
-/ALTERNATENAME:?_v04@CCmgSndBank2B8@@UAEXXZ=?AllocVoid@?$ObjectBankL10@VCSoundInstanceLocalL10@@VNullCSL10@@@@UAEPAXXZ
+/ALTERNATENAME:?AllocVoid@CCmgSndBank2B8@@UAEPAXXZ=?AllocVoid@?$ObjectBankL10@VCSoundInstanceLocalL10@@VNullCSL10@@@@UAEPAXXZ
 # 0x483470 vtable 0x4a3600 slot 2
-/ALTERNATENAME:?_v08@CCmgSndBank2B8@@UAEXXZ=?Free@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
+/ALTERNATENAME:?FreeVoid@CCmgSndBank2B8@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
 # 0x483570 vtable 0x4a3600 slot 3
 /ALTERNATENAME:?Term@CCmgSndBank2B8@@UAEXXZ=?Term@?$ObjectBankL10@VCSoundInstanceLocalL10@@VNullCSL10@@@@UAEXXZ
 # 0x4834d0 CSoundMgr bank +0x2dc, vtable 0x4a35f0 slot 1
-/ALTERNATENAME:?_v04@CCmgSndBank2DC@@UAEXXZ=?AllocVoid@?$ObjectBankL10@VCSoundInstanceAmbientL10@@VNullCSL10@@@@UAEPAXXZ
+/ALTERNATENAME:?AllocVoid@CCmgSndBank2DC@@UAEPAXXZ=?AllocVoid@?$ObjectBankL10@VCSoundInstanceAmbientL10@@VNullCSL10@@@@UAEPAXXZ
 # 0x483470 vtable 0x4a35f0 slot 2
-/ALTERNATENAME:?_v08@CCmgSndBank2DC@@UAEXXZ=?Free@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
+/ALTERNATENAME:?FreeVoid@CCmgSndBank2DC@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
 # 0x483570 vtable 0x4a35f0 slot 3
 /ALTERNATENAME:?Term@CCmgSndBank2DC@@UAEXXZ=?Term@?$ObjectBankL10@VCSoundInstanceAmbientL10@@VNullCSL10@@@@UAEXXZ
 # 0x483510 CSoundMgr bank +0x300, vtable 0x4a35e0 slot 1
-/ALTERNATENAME:?_v04@CCmgSndBank300@@UAEXXZ=?AllocVoid@?$ObjectBankL10@VCSoundInstance3DL10@@VNullCSL10@@@@UAEPAXXZ
+/ALTERNATENAME:?AllocVoid@CCmgSndBank300@@UAEPAXXZ=?AllocVoid@?$ObjectBankL10@VCSoundInstance3DL10@@VNullCSL10@@@@UAEPAXXZ
 # 0x483470 vtable 0x4a35e0 slot 2
-/ALTERNATENAME:?_v08@CCmgSndBank300@@UAEXXZ=?Free@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
+/ALTERNATENAME:?FreeVoid@CCmgSndBank300@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem54@@@@UAEXPAX@Z
 # 0x483590 vtable 0x4a35e0 slot 3
 /ALTERNATENAME:?Term@CCmgSndBank300@@UAEXXZ=?Term@?$ObjectBankL10@VCSoundInstance3DL10@@VNullCSL10@@@@UAEXXZ
 # 0x480090 dtor call 0x410f5f; clientsoundmgr.cpp's CSoundMgr::Term (matched there)
 /ALTERNATENAME:?Term@CCmgSoundMgr@@QAEXI@Z=?Term@CSoundMgrView@@QAEXI@Z
 # 0x412820 ObjectBank<SharedTexture> vtable 0x4a1cf4 slot 1 (cmgrinit.cpp)
-/ALTERNATENAME:?Allocate@CCmgBank113C@@UAEPAXXZ=?Allocate@CCmgBank113CQ46C@@QAEPAVSharedTextureQ46C@@XZ
+/ALTERNATENAME:?AllocVoid@CCmgBank113C@@UAEPAXXZ=?Allocate@CCmgBank113CQ46C@@QAEPAVSharedTextureQ46C@@XZ
 # 0x412890 vtable 0x4a1cf4 slot 2
-/ALTERNATENAME:?Free@CCmgBank113C@@UAEXPAX@Z=?Free@CCmgBank113CQ46C@@QAEXPAX@Z
+/ALTERNATENAME:?FreeVoid@CCmgBank113C@@UAEXPAX@Z=?Free@CCmgBank113CQ46C@@QAEXPAX@Z
 # 0x412bd0 vtable 0x4a1cf4 slot 3
-/ALTERNATENAME:?Init@CCmgBank113C@@UAEXXZ=?Term@CCmgBank113CQ46C@@QAEXXZ
+/ALTERNATENAME:?Term@CCmgBank113C@@UAEXXZ=?Term@CCmgBank113CQ46C@@QAEXXZ
 # startload.cpp's CNetBankQ11::Allocate (0x00459c30) stores the shipped vtables.
 # 0x4a2b68 LMessageImpl's vtable (the vptr stored at +0x08 of the message, 0x00459c75)
 /ALTERNATENAME:?g_LMessageImplVtblQ11@@3PAPAXA=??_7LMessageImpl@@6B@
@@ -3041,4 +3033,4 @@
 /ALTERNATENAME:?dm_NotLevelInitError@@YAXPAD@Z=?dm_NotInitError@@YAXPAD@Z
 # Primal Hunt calls the shared CObjectBank<T>::Allocate out of line (0x00404fb0)
 # where smgrnew.cpp's queue bank names its own; AvP2 1.0.9.6 expands it inline.
-/ALTERNATENAME:?Allocate@CObjQueueBank@@QAEPAVLTLink@@XZ=?Allocate@?$CObjectBank@VCBankElem0c@@@@UAEPAXXZ
+/ALTERNATENAME:?Allocate@CObjQueueBank@@QAEPAVLTLink@@XZ=?AllocVoid@?$CObjectBank@VCBankElem0c@@@@UAEPAXXZ

@@ -5623,11 +5623,19 @@ void CGameClientShell::UpdatePlayer()
 		
 		if (!(hPhysicsObj = m_PlayerMovement.GetObject())) return;
 
+#ifdef PRIMAL_HUNT
+		g_pLTClient->GetObjectPos(hPhysicsObj, &myPos);
+		g_pLTClient->GetObjectRotation(hPhysicsObj, &myRot);
+
+		g_pLTClient->SetObjectPos(hClientObj, &myPos);
+		g_pLTClient->SetObjectRotation(hClientObj, &myRot);
+#else
 		g_pLTClient->GetObjectPos(hPhysicsObj, &myPos);
 		g_pLTClient->SetObjectPos(hClientObj, &myPos);
 
 		g_pLTClient->GetObjectRotation(hPhysicsObj, &myRot);
 		g_pLTClient->SetObjectRotation(hClientObj, &myRot);
+#endif
 	}
 
 	g_pLTClient->ProcessAttachments(hClientObj);
@@ -6989,7 +6997,18 @@ void CGameClientShell::HandleWeaponPickup(DBYTE nWeaponID)
 		// See if the new weapon is better then the current one...
 		
 		int nNewWeaponRank = GetPlayerStats()->GetWeaponIndex(nWeaponID);
+#ifdef PRIMAL_HUNT
+		// (the dual pistols rank as the third weapon)
+		WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(nWeaponID);
+		if( pWeapon && strstr(pWeapon->szName, "Dual_Pistols") )
+			nNewWeaponRank = 2;
+#endif
 		int nCurWeaponRank = GetPlayerStats()->GetWeaponIndex(m_weaponModel.GetWeaponId());
+#ifdef PRIMAL_HUNT
+		pWeapon = g_pWeaponMgr->GetWeapon(m_weaponModel.GetWeaponId());
+		if( pWeapon && strstr(pWeapon->szName, "Dual_Pistols") )
+			nCurWeaponRank = 2;
+#endif
 
 		if( nNewWeaponRank != WMGR_INVALID_ID )
 		{
@@ -7143,7 +7162,10 @@ void CGameClientShell::UpdateEMPEffect()
 		if((dwUserFlags & USRFLG_CHAR_EMPEFFECT) && (nEMPFlags & EMP_FLAG_STUN))
 		{
 			//first time effect
+#ifndef PRIMAL_HUNT
+			// (Primal Hunt leaves the player free to move)
 			m_PlayerMovement.AllowMovement(LTFALSE);
+#endif
 			m_bEMPEffect = LTTRUE;
 
 			SetMouseSensitivityScale(0.25f);
@@ -7180,7 +7202,10 @@ void CGameClientShell::UpdateStunEffect()
 		if(dwUserFlags & USRFLG_CHAR_STUNNED)
 		{
 			//first time effect
+#ifndef PRIMAL_HUNT
+			// (Primal Hunt leaves the player free to move)
 			m_PlayerMovement.AllowMovement(LTFALSE);
+#endif
 			m_bStunEffect = LTTRUE;
 
 			SetMouseSensitivityScale(0.25f);

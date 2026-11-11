@@ -122,6 +122,16 @@ CL_Object_PH         := $(V8966)/BIN/cl.exe
 # identical, and so are AddTeleportee, FindCowerNode and FindAdvanceNode,
 # which no 8168 build of it is.
 CL_Object__AINodeMgr := $(V8966)/BIN/cl.exe
+# GameServerShell.cpp, MultiplayerMgr.cpp and MissionMgr.cpp are three
+# more, each with functions identical only under 8966 and none lost
+# (GetGameType's return copy, CreatePlayer, AddCharacterToCache, Setup,
+# CreateUniqueClientName, PreHook_EditStringList). Character.cpp is not:
+# under 8966 seven of its near functions match, but its map<int,CTimer>
+# insert, insert_unique and _M_insert (no other object instantiates them)
+# are 8168's code.
+CL_Object__GameServerShell := $(V8966)/BIN/cl.exe
+CL_Object__MultiplayerMgr  := $(V8966)/BIN/cl.exe
+CL_Object__MissionMgr      := $(V8966)/BIN/cl.exe
 CL_ServerApp_PH      := $(V8966)/BIN/cl.exe
 # AvP2's CShell.dll is not 8168's throughout: its Rich header has C++ 8168
 # x142 and 8966 x114, and the 8966 objects are not only the libraries'.

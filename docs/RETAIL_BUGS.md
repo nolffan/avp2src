@@ -942,11 +942,38 @@ Not fixed yet.
 0x10032452; AvP2 1.0.9.6 lithtech.exe 0x00470db0, server.dll 0x1002fc62;
 src/engine/lithtech/ccobj.cpp for the engine, src/engine/server/smgr.cpp for
 server.dll). When the client has a view object to report, the detach message
-is never allocated: the engine's copy writes the header words through an
-empty `CMessageRef`, server.dll's through a null `ServerMessage*` (the stores
-go to absolute addresses 0x38 and 0x34), and the null message is then
-handed to `sm_SendToClient`. Its sibling `sm_AttachClient` allocates with
-`msg_AllocPacket` first. Detaching such a client crashes the server. The
-engine copies and AvP2's server.dll are identical.
+is never allocated: the engine's copies and Primal Hunt's server.dll write
+the header words through an empty `CMessageRef`, AvP2's server.dll through a
+null `ServerMessage*` (the stores go to absolute addresses 0x38 and 0x34),
+and the null message is then handed to `sm_SendToClient`. Its sibling
+`sm_AttachClient` allocates with `msg_AllocPacket` first. Detaching such a
+client crashes the server. All four copies are identical.
+
+Not fixed yet.
+
+### A facehugger whose target is not a character crashes its attack
+
+PHObject.lto 0x10214eb7 (`SimpleAIFacehugger::UpdateAttack`,
+src/AVP2/ObjectDLL/SimpleAIAlien.cpp). Primal Hunt added a test that the
+target is not already dead before rolling the facehug chance, but reads
+`GetCharTargetPtr()->IsDead()` (the character's `m_damage` dead flag,
++0x2ac) before the null test of that same pointer a few lines on. A
+facehugger attacking a target that is not a character (a `GetTarget()`
+with no character pointer) dereferences null. Identical.
+
+Not fixed yet.
+
+### AvP2's player code casts its attachments without testing the cast
+
+Object.lto 0x101cd9c7 (`CPlayerObj::ChangeWeapon`), 0x101cda78
+(`DoWeaponChange`), 0x101cbb52 (`FullAmmoCheat`), 0x101cbc96
+(`FullWeaponCheat`), 0x101ccc99 (`AquireDefaultWeapon`), 0x101cbf78 and
+0x101cc5f3 (`Respawn`), 0x101cdb17 (`UpdateInterface`), 0x101d35c1
+(`SendMPInterfaceUpdate`); 0x101ce4b2 (`HandleGameRestore`) and 0x101d2e20
+(`GetPlayerWeapon`) do not even cast (src/AVP2/ObjectDLL/PlayerObj.cpp).
+Each `dynamic_cast<CPlayerAttachments*>(m_pAttachments)` result is used
+without a null test (some test `m_pAttachments` first, none the cast), so a
+player whose attachments are not a `CPlayerAttachments` dereferences null.
+Primal Hunt casts once and tests the result everywhere. All identical.
 
 Not fixed yet.

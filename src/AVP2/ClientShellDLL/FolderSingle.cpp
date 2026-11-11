@@ -40,7 +40,13 @@ LTBOOL CFolderSingle::Build()
 	m_pLoad = AddLink(IDS_LOADGAME,	FOLDER_CMD_LOAD_GAME, IDS_HELP_LOAD);
 
 	// Add AVP Stuff
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's campaigns: the corporate's ("Choose a corporate mission.")
+	// in the marine's place, the predalien's in the alien's
+	CLTGUITextItemCtrl *pCtrl = AddLink(IDS_CORPORATE, FOLDER_CMD_MARINE_MODE, 29510);
+#else
 	CLTGUITextItemCtrl *pCtrl = AddLink(IDS_MARINE, FOLDER_CMD_MARINE_MODE, IDS_MARINE_HELP);
+#endif
 	pCtrl->SetParam1(1);
 
 	pCtrl = AddLink(IDS_PREDATOR, FOLDER_CMD_PREDATOR_MODE, IDS_PREDATOR_HELP);
@@ -50,7 +56,11 @@ LTBOOL CFolderSingle::Build()
 //	pCtrl->Enable(LTFALSE);
 //#endif
 
+#ifdef PRIMAL_HUNT
+	pCtrl = AddLink(29795, FOLDER_CMD_ALIEN_MODE, IDS_ALIEN_HELP);
+#else
 	pCtrl = AddLink(IDS_ALIEN, FOLDER_CMD_ALIEN_MODE, IDS_ALIEN_HELP);
+#endif
 	pCtrl->SetParam1(3);
 
 //#ifdef _DEMO
@@ -210,6 +220,11 @@ LTBOOL CFolderSingle::Render(HSURFACE hDestSurf)
 
 					g_pLTClient->Common()->GetObjectFlags(hObj, OFT_Flags, nFlags);
 					g_pLTClient->Common()->SetObjectFlags(hObj, OFT_Flags, nFlags | FLAG_ENVIRONMENTMAP);
+#ifdef PRIMAL_HUNT
+					// Primal Hunt: the menu models notify their model keys
+					uint32 dwCFlags = g_pLTClient->GetObjectClientFlags(hObj);
+					g_pLTClient->SetObjectClientFlags(hObj, dwCFlags | CF_NOTIFYMODELKEYS);
+#endif
 				}
 
 				// Update our tracker.

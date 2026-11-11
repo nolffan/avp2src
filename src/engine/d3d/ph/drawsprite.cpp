@@ -344,11 +344,14 @@ inline void d3d_GetBlendStates(LTObject *pObject, uint32 &srcBlend, uint32 &dest
 		destBlend	= D3DBLEND_INVSRCALPHA;
 	}
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's: AvP2's sprites have no additive-alpha blend.
 	if (pObject->m_Flags2 & PHFLAG2_ADDITIVEALPHA)
 	{
 		srcBlend	= D3DBLEND_SRCALPHA;
 		destBlend	= D3DBLEND_ONE;
 	}
+#endif
 }
 
 

@@ -992,6 +992,7 @@ LTBOOL CAutoTargetMgr::CheckForLiveFacehuggerTarget	(	HOBJECT		hTarget,
 	return LTFALSE;
 }
 
+#ifndef PRIMAL_HUNT
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CAutoTargetMgr::CheckForLivePredalienTarget()
@@ -1037,6 +1038,8 @@ LTBOOL CAutoTargetMgr::CheckForLivePredalienTarget	(	HOBJECT		hTarget,
 	//no good target
 	return LTFALSE;
 }
+
+#endif
 
 // ----------------------------------------------------------------------- //
 //

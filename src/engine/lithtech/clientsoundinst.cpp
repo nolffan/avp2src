@@ -532,6 +532,8 @@ LTRESULT CSoundDataView::AddInstance(CSoundInstanceView* pInstance)
 // 0x0047d0e0 — and take it off again. Called from sub_47e360 (0x0047e372).
 // Once the last instance of a decompress-on-demand sample goes, its shadow
 // goes back to the manager's bank.
+inline void sb_FreeSI(StructBankSI* pBank, void* pObj);
+
 LTRESULT CSoundDataView::RemoveInstance(CSoundInstanceView* pInstance)
 {
 	dl_RemoveAt(&m_Instances, &pInstance->m_DataLink);
@@ -544,9 +546,21 @@ LTRESULT CSoundDataView::RemoveInstance(CSoundInstanceView* pInstance)
 		// expression the argument is evaluated first and held from the
 		// guard's load across the call; through a manager local the add
 		// folds into the displacement. Both measured, both near.
+		//
+		// AVP2: 1.0.9.6's is the manager local (0x0048fd10): its bank's
+		// struct bank is one `lea 0x288` off the manager after the
+		// destructor call, as sndinst2.cpp's frees.
+#ifdef PRIMAL_HUNT
 		CSoundDataBankSI* pBank = &ci_GetSoundMgrSI()->m_SoundDataBank;
 
 		pBank->Free(m_pDecompressed);
+#else
+		CSoundMgrSI*    pMgr = ci_GetSoundMgrSI();
+		CSoundDataView* pObj = m_pDecompressed;
+
+		pObj->~CSoundDataView();
+		sb_FreeSI(&pMgr->m_SoundDataBank.m_Bank, pObj);
+#endif
 
 		m_pDecompressed = LTNULL;
 	}

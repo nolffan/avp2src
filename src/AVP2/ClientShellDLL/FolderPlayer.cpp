@@ -263,6 +263,13 @@ uint32 CFolderPlayer::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 				m_nRace = MAX_TEAMS - 1;
 
 			UpdateCurrentSelection();
+#ifdef PRIMAL_HUNT
+			{
+				CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+				if(pProfile)
+					pProfile->m_nRace = (uint8)m_nRace;
+			}
+#endif
 			break;
 		}
 
@@ -274,6 +281,13 @@ uint32 CFolderPlayer::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 				m_nRace = 0;
 
 			UpdateCurrentSelection();
+#ifdef PRIMAL_HUNT
+			{
+				CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+				if(pProfile)
+					pProfile->m_nRace = (uint8)m_nRace;
+			}
+#endif
 			break;
 		}
 
@@ -285,6 +299,16 @@ uint32 CFolderPlayer::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 				m_nChar[m_nRace] = m_nCharCount[m_nRace] - 1;
 
 			UpdateCurrentSelection();
+#ifdef PRIMAL_HUNT
+			{
+				CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+				if(pProfile)
+				{
+					for(int i = 0; i < 4; i++)
+						pProfile->m_nChar[i] = m_nCharList[i][m_nChar[i]];
+				}
+			}
+#endif
 			break;
 		}
 
@@ -296,6 +320,16 @@ uint32 CFolderPlayer::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 				m_nChar[m_nRace] = 0;
 
 			UpdateCurrentSelection();
+#ifdef PRIMAL_HUNT
+			{
+				CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+				if(pProfile)
+				{
+					for(int i = 0; i < 4; i++)
+						pProfile->m_nChar[i] = m_nCharList[i][m_nChar[i]];
+				}
+			}
+#endif
 			break;
 		}
 

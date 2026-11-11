@@ -203,21 +203,12 @@ uint32 CWorldPolyOwnerView::GetVertexCount()
 //                  NOT settled — smgr.cpp is the better guess only because
 //                  the function before it is smgr's.
 //
-//  Vtable slot counts: only the destructor slot is exercised, so the base is
-//  modelled the way fsstream.cpp models the identical 0x1004d260 base — one
-//  defined, empty virtual destructor. It has to be DEFINED, not declared, or
-//  the derived destructor calls it instead of inlining its vptr store.
+//  The base is bankbase.h's CBankBase (vftable 0x1004d260), every bank's.
 // *********************************************************************** //
-
-class CGlobalBankBase
-{
-public:
-	virtual ~CGlobalBankBase() {}
-};
 
 // ---- dhash.cpp: the hash-element bank (0x1004d638) ---------------------- //
 
-class CHashElemBank : public CGlobalBankBase
+class CHashElemBank : public CBankBase
 {
 public:
 	// 0x1000d967 (30 bytes) — 0x18-byte elements, a cache of thirty-two and
@@ -230,6 +221,10 @@ public:
 	// second one.
 	__forceinline ~CHashElemBank() { sb_FreeChunks(&m_Bank, 1); }
 
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
+
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
 };
@@ -240,7 +235,7 @@ static CHashElemBank g_HashElemBank;
 
 // ---- lthread.cpp: the thread-message bank (0x1004d8dc) ------------------ //
 
-class CThreadMsgBank : public CGlobalBankBase
+class CThreadMsgBank : public CBankBase
 {
 public:
 	// 0x10015512 (28 bytes) — 0x20-byte elements, cache of thirty-two, and
@@ -248,6 +243,10 @@ public:
 	__forceinline CThreadMsgBank() { sb_Init(&m_Bank, 0x20, 0x20); }
 	// 0x1001553a (35 bytes).
 	__forceinline ~CThreadMsgBank() { sb_FreeChunks(&m_Bank, 1); }
+
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
@@ -267,13 +266,17 @@ CThreadMsgBank g_ThreadMsgBank;
 // list 0x10058bdc is this object's +0x1c), so it carries that file's name.
 // smgr.cpp's CObjQueueBank / g_ObjQueueBank and smgrnew.cpp's are the same
 // object. Defined once, here, with its initialiser group.
-class CLinkNodeBank : public CGlobalBankBase
+class CLinkNodeBank : public CBankBase
 {
 public:
 	// 0x10031daf (28 bytes).
 	__forceinline CLinkNodeBank() { sb_Init(&m_Bank, 0x0c, 0x20); }
 	// 0x10031dd7 (35 bytes).
 	__forceinline ~CLinkNodeBank() { sb_FreeChunks(&m_Bank, 1); }
+
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
@@ -324,11 +327,15 @@ public:
 // The constructor is defined in the class body so VC6 expands it into
 // CClientFiles' own: a vptr store plus one call is inside /Ob1's gate
 // (a constructor inlines at vptr + one store + call).
-class CXferFileBankView : public CGlobalBankBase
+class CXferFileBankView : public CBankBase
 {
 public:
 	CXferFileBankView() { sb_Init(&m_Bank, 0x1c, 0x20); }
 	~CXferFileBankView() { sb_FreeChunks(&m_Bank, 1); }
+
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
@@ -676,12 +683,10 @@ public:
 	uint8 m_pad[0x54];
 };
 
-class CMsgRecordBank : public CGlobalBankBase
+class CMsgRecordBank : public CBankBase
 {
 public:
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj);          // 0x1002ccb5
-	virtual void  Init() = 0;
+	virtual void  FreeVoid(void* pObj);      // 0x1002ccb5
 
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
@@ -696,7 +701,7 @@ public:
 // word pushed -- smgr.cpp's CMessageBankFreeQ523::Free, identical there --
 // and no function of this shape is in that image.
 #ifndef PRIMAL_HUNT
-void CMsgRecordBank::Free(void* pObj)
+void CMsgRecordBank::FreeVoid(void* pObj)
 {
 	((CBankElem54View*)pObj)->Release(0);
 

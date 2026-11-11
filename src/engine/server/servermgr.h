@@ -37,6 +37,7 @@
 #include "ltlink.h"
 #include "ltcodes.h"
 #include "ltobject_internal.h"
+#include "bankbase.h"
 
 // Console variables are handles to the engine's own command-variable records;
 // the full record is declared with the console state below.
@@ -327,40 +328,28 @@ public:
 
 // Same two-vftable shape as CNetBank: the manager's destructor restores this
 // class's own and then 0x1004d260, so the three slots after the destructor
-// belong to a base (name ours).
+// belong to a base: bankbase.h's CBankBase, every bank's.
 // (CNetQueueA, CUnknown8FC, CConnList and CDriverList used to have VIRTUAL
 // destructors, and so `??_G` scalar-deleting destructors the shipped image
 // has no counterpart for. None of them was ever polymorphic on a destructor:
 // all four are GenList queues/arrays, whose vtables open with GenBegin.)
-class CBankBase
-{
-public:
-	virtual ~CBankBase() {}
-	// Declared, not pure, so a derived bank need not name all three. And the
-	// THIRD slot is Term, not a placeholder: CMessageBank's Term is slot 3
-	// and CServerMgr::Term calls it virtually, so a base that named that
-	// slot anything else pushes Term to slot 4 and costs CServerMgr::Term
-	// its 638 bytes.
-	//
-	// SLOT 2 TAKES THE RECORD, established from the shipped bytes rather
-	// than guessed. server.dll 0x10025ae7 is slot 2 of ELEVEN of these
-	// tables and lithtech.exe 0x00483470 is slot 2 of fourteen -- the same
-	// 29-byte body in both, and both end `ret $4`:
-	//
-	//     push esi ; mov 0x8(esp),esi ; push edi ; mov ecx,edi
-	//     mov (esi),eax ; push $0 ; mov esi,ecx ; call *(eax)   <- ~record
-	//     mov 0x1c(edi),eax ; mov eax,(esi) ; mov esi,0x1c(edi) <- free list
-	//     pop edi ; pop esi ; ret $4
-	//
-	// i.e. `void _v08(void* pRec) { ((Item*)pRec)->~Item(); sb_Free(...); }`
-	// with the record's destructor reached virtually. That is the generic
-	// bank free, folded across every bank whose record has a virtual
-	// destructor; CNetBank overrides it because its record's teardown is a
-	// direct call (see below).
-	virtual void _v04();
-	virtual void _v08(void* pRec);
-	virtual void Term();
-};
+//
+// SLOT 2 TAKES THE RECORD, established from the shipped bytes rather than
+// guessed. server.dll 0x10025ae7 is slot 2 of ELEVEN of these tables and
+// lithtech.exe 0x00483470 is slot 2 of fourteen -- the same 29-byte body in
+// both, and both end `ret $4`:
+//
+//     push esi ; mov 0x8(esp),esi ; push edi ; mov ecx,edi
+//     mov (esi),eax ; push $0 ; mov esi,ecx ; call *(eax)   <- ~record
+//     mov 0x1c(edi),eax ; mov eax,(esi) ; mov esi,0x1c(edi) <- free list
+//     pop edi ; pop esi ; ret $4
+//
+// i.e. `void FreeVoid(void* pRec) { ((Item*)pRec)->~Item(); sb_Free(...); }`
+// with the record's destructor reached virtually. That is the generic bank
+// free, folded across every bank whose record has a virtual destructor;
+// CNetBank overrides it because its record's teardown is a direct call (see
+// below). Slot 3 is Term: CMessageBank's is called virtually by
+// CServerMgr::Term.
 
 class CMessageBank : public CBankBase
 {
@@ -374,9 +363,9 @@ public:
 	}
 	// Inline: CServerMgr's destructor expands it.
 	virtual ~CMessageBank() { sb_FreeChunks(&m_Bank, 1); }
-	virtual void _v04();
-	virtual void _v08(void* pRec);
-	virtual void Term();                     // slot 3; called by CServerMgr::Term
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();                    // slot 3; called by CServerMgr::Term
 
 	StructBank m_Bank;                       // +0x04
 	uint32     m_Unknown20;                  // +0x20
@@ -1107,16 +1096,16 @@ public:
 	// wrappers as the 5- and 12-byte thunks above while /Ot expands the
 	// worker into each of them (0x00459c30 is Allocate with ServerMessage's
 	// constructor inlined; 0x00459dc0 is Free with the record teardown
-	// inlined, 49 bytes). Declaring _v08 here is what gives netmgr.cpp
-	// somewhere to put 0x10023fdb; it changes no existing byte, because the
-	// only thing it moves is which symbol slot 2 of the vftable relocates
-	// to, and relocation bytes are masked.
+	// inlined, 49 bytes). Defining FreeVoid is what gives netmgr.cpp
+	// somewhere to put 0x10023fdb.
 	//
-	// _v04 is deliberately NOT declared: its /O1 body is a bare 5-byte
+	// AllocVoid is declared but not defined: its /O1 body is a bare 5-byte
 	// `jmp`, which has one unmasked byte and would be claimed by shape
 	// against the first same-sized jump thunk in the image -- exactly the
 	// coincidental match a masked shape comparison makes. See netmgr.cpp.
-	virtual void _v08(void* pRec);           // 0x10023fdb
+	virtual void* AllocVoid();               // 0x10023fd6
+	virtual void  FreeVoid(void* pRec);      // 0x10023fdb
+	virtual void  Term();                    // 0x10024242
 
 	void Free(void* pRec);                   // 0x10024226
 
@@ -1555,6 +1544,10 @@ public:
 	// Inline: CFileMgr's destructor expands it and CServerMgr's expands
 	// that, which is why the teardown reaches CServerMgr+0xa44 directly.
 	virtual ~CFileBank() { sb_FreeChunks(&m_Bank, 1); }
+
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	StructBank m_Bank;                       // +0x04
 };
@@ -2649,6 +2642,10 @@ class CHashElementBank : public CBankBase
 public:
 	CHashElementBank(uint32 nCacheSize, uint32 nPreAllocate);
 	virtual ~CHashElementBank();
+
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	CHashElement* Allocate();                // 0x1000ed6f
 

@@ -71,7 +71,13 @@ LTBOOL CFolderMain::Build()
 
 	g_pLayoutMgr->GetEscapeSound(szSelect,sizeof(szSelect));
 
+#ifdef PRIMAL_HUNT
+	// "Aliens vs. Predator 2:" over "Primal Hunt"
+	CreateTitle(29781);
+	CreateSubTitle(29782);
+#else
 	CreateTitle(IDS_TITLE_MAINMENU);
+#endif
 
 #ifdef _DEMO
 //	AddLink(IDS_SINGLEPLAYER, FOLDER_CMD_SINGLE_PLAYER, IDS_HELP_SINGLEPLAYER);
@@ -104,12 +110,18 @@ LTBOOL CFolderMain::Build()
 	HSTRING hTemp = g_pLTClient->FormatString(IDS_VERSION);
 #ifdef _DEMO
 	m_BuildVersion = g_pLTClient->FormatString(IDS_DEMO_BUILDINFO, g_pLTClient->GetStringData(hTemp));
+#elif defined(PRIMAL_HUNT)
+	// "v%1!s!F"
+	m_BuildVersion = g_pLTClient->FormatString(29798, g_pLTClient->GetStringData(hTemp));
 #else
 	m_BuildVersion = g_pLTClient->FormatString(IDS_BUILDINFO, g_pLTClient->GetStringData(hTemp));
 #endif
 	g_pLTClient->FreeString(hTemp);
 
 	m_BuildPos = g_pLayoutMgr->GetFolderCustomPoint((eFolderID)m_nFolderID,"VersionPos");
+#ifdef PRIMAL_HUNT
+	m_BuildPos.x -= 8;
+#endif
 
     UseBack(LTFALSE);
 

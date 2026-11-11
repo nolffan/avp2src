@@ -765,20 +765,18 @@ int sub_100291c7Q464(CServerMgr* pMgr, Client* pClient, LTObject* pObject,
 //  0x0042fc80 (70 bytes, /O2) / 0x1000e5c5 (39 bytes, /O1).
 // ======================================================================= //
 
-// The bank's base: nothing but a vptr (0x004a14c8 is its table, stored back
-// at 0x0042fcaf on the way down).
-class CGlobalBankBaseQ464
-{
-public:
-	virtual ~CGlobalBankBaseQ464() {}
-};
-
 // CClientFiles+0x18, servermessage.cpp's CXferFileBank: its own vptr
-// (0x004a22bc), then sb_FreeChunks(&m_Bank, 1), then the base vptr.
-class CXferFileBankQ464 : public CGlobalBankBaseQ464
+// (0x004a22bc), then sb_FreeChunks(&m_Bank, 1), then the base vptr: the
+// bank's base is bankbase.h's CBankBase (0x004a14c8 is its table, stored
+// back at 0x0042fcaf on the way down).
+class CXferFileBankQ464 : public CBankBase
 {
 public:
 	~CXferFileBankQ464() { sb_FreeChunks(&m_Bank, 1); }
+
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	StructBank m_Bank;                                  // +0x04
 	uint32     m_Unknown20;                             // +0x20

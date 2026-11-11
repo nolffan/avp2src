@@ -472,83 +472,6 @@ CSubRecord* CWorldSub108::GetPointStatus(LTVector vPoint)
 	return &m_pRecords[x + y * m_nCountX + z * m_nSliceStride];
 }
 
-// The furthest any of the world's own positions gets from a point, and it is
-// a real distance rather than a square despite this function's name.
-//
-// The square was a mis-read that /O1 could not catch. At /O1 both spellings
-// are one call to a sixty-six-byte `(*this - vec).Mag<Sqr>()` COMDAT whose
-// only difference is the address in its tail `call`, and the byte comparison masks
-// relocations -- so `DistSqr` "matched" 0x1000af58 in server.dll while that
-// COMDAT's own tail call goes to 0x10005502, which sums three squares and
-// calls the CRT's sqrt. It is `Dist`. The /O2 client settles it from the
-// other side: 0x004260c0 expands the callee and an `fsqrt` sits at 0x0042612e
-// between the last `faddp` and the three `fstp`s, which is where the root
-// would be and is the two bytes our 155 is short of the shipped 157. Both
-// spellings still emit the same bytes here at /O1, so server.dll is unmoved;
-// the COMDAT this TU contributes becomes Dist/Mag instead of DistSqr/MagSqr,
-// and seven other server objects emit each of those four, so no address
-// changes hands.
-//
-// Three locals and no frame beyond the four bytes fMax needs, because the two
-// loop counters live in the incoming parameters' slots: the shipped code
-// stores the part count into ppParts' slot at 0x8(%ebp) and counts down there,
-// and clears nParts' slot at 0xc(%ebp) for the vertex index. That is what
-// forced the two copies at the top of the `if`. A slot is only available once
-// the parameter that owns it is dead, and walking `ppParts` itself keeps it
-// alive: written that way the count stays in its own slot, the vertex index
-// takes ppParts', and fMax's neighbour becomes a fourth slot the shipped frame
-// does not have — 98 bytes against 97, with the extra `push %ecx` to show it.
-// Copying the parameter into `pp` and walking that frees the slot, and the
-// ebx/edi rotation that came with the miss went with it too: pp lands in %edi
-// and the vertex cursor in %ebx, the way it shipped. A register rotation is
-// again a consequence of a misplaced local rather than a lottery.
-float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
-{
-	float        fMax = 0.0f;
-	CWorldPart** pp;
-	uint32       nLeft;
-	uint32       j;
-
-	if (nParts > 0)
-	{
-		pp    = ppParts;
-		nLeft = nParts;
-
-		do
-		{
-			CWorldPart* pPart = *pp;
-
-			for (j = 0; j < pPart->m_nVerts; j++)
-			{
-				float f = pPoint->Dist(*pPart->m_Verts[j].m_pPos);
-
-				if (f > fMax)
-					fMax = f;
-			}
-
-			pp++;
-		}
-		while (--nLeft);
-	}
-
-	return fMax;
-}
-
-// The two array fields go through locals: the shipped code loads the count and
-// then the storage into registers of their own before it takes the centre's
-// address, where pushing the members straight (`push 0x58(%esi)`) is two bytes
-// shorter and was what this used to do. The count is loaded first, so it is
-// the local declared first — the same rule as the collection's grow-by, and
-// it applies to a member pushed as an argument as much as to one added to
-// something.
-void CWorldSimple::ComputeRadius()
-{
-	uint32       nParts  = m_Array50.m_nElements;
-	CWorldPart** ppParts = m_Array50.m_pArray;
-
-	m_fRadiusSqr = wb_MaxDistSqr(ppParts, nParts, &m_vCenter);
-}
-
 
 // ---- the simple world's own vtable slots -------------------------------- //
 //
@@ -2247,3 +2170,110 @@ fail:
 
 	return LTTRUE;                           // 0x1000aa77
 }
+
+// The two array fields go through locals: the shipped code loads the count and
+// then the storage into registers of their own before it takes the centre's
+// address, where pushing the members straight (`push 0x58(%esi)`) is two bytes
+// shorter and was what this used to do. The count is loaded first, so it is
+// the local declared first — the same rule as the collection's grow-by, and
+// it applies to a member pushed as an argument as much as to one added to
+// something. Defined ahead of wb_MaxDistSqr, as every image orders them
+// (AvP2 1.0.9.6 lithtech.exe 0x0042c820, 0x0042c850): cl 9044 allocates a
+// caller's registers around a callee it has already compiled, and with the
+// callee first it took %ecx/%edx/%eax where shipped has %eax/%ecx/%edx.
+void CWorldSimple::ComputeRadius()
+{
+	uint32       nParts  = m_Array50.m_nElements;
+	CWorldPart** ppParts = m_Array50.m_pArray;
+
+	m_fRadiusSqr = wb_MaxDistSqr(ppParts, nParts, &m_vCenter);
+}
+
+// The furthest any of the world's own positions gets from a point, and it is
+// a real distance rather than a square despite this function's name.
+//
+// The square was a mis-read that /O1 could not catch. At /O1 both spellings
+// are one call to a sixty-six-byte `(*this - vec).Mag<Sqr>()` COMDAT whose
+// only difference is the address in its tail `call`, and the byte comparison masks
+// relocations -- so `DistSqr` "matched" 0x1000af58 in server.dll while that
+// COMDAT's own tail call goes to 0x10005502, which sums three squares and
+// calls the CRT's sqrt. It is `Dist`. The /O2 client settles it from the
+// other side: 0x004260c0 expands the callee and an `fsqrt` sits at 0x0042612e
+// between the last `faddp` and the three `fstp`s, which is where the root
+// would be and is the two bytes our 155 is short of the shipped 157. Both
+// spellings still emit the same bytes here at /O1, so server.dll is unmoved;
+// the COMDAT this TU contributes becomes Dist/Mag instead of DistSqr/MagSqr,
+// and seven other server objects emit each of those four, so no address
+// changes hands.
+//
+// Three locals and no frame beyond the four bytes fMax needs, because the two
+// loop counters live in the incoming parameters' slots: the shipped code
+// stores the part count into ppParts' slot at 0x8(%ebp) and counts down there,
+// and clears nParts' slot at 0xc(%ebp) for the vertex index. That is what
+// forced the two copies at the top of the `if`. A slot is only available once
+// the parameter that owns it is dead, and walking `ppParts` itself keeps it
+// alive: written that way the count stays in its own slot, the vertex index
+// takes ppParts', and fMax's neighbour becomes a fourth slot the shipped frame
+// does not have — 98 bytes against 97, with the extra `push %ecx` to show it.
+// Copying the parameter into `pp` and walking that frees the slot, and the
+// ebx/edi rotation that came with the miss went with it too: pp lands in %edi
+// and the vertex cursor in %ebx, the way it shipped. A register rotation is
+// again a consequence of a misplaced local rather than a lottery.
+#ifndef PRIMAL_HUNT
+// AVP2 1.0.9.6 (server.dll 0x1000dba1, lithtech.exe 0x0042c850): the parts
+// are walked by index, `i` in %ebx/%edi against the count's own slot.
+float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
+{
+	float  fMax = 0.0f;
+	uint32 i;
+	uint32 j;
+
+	for (i = 0; i < nParts; i++)
+	{
+		CWorldPart* pPart = ppParts[i];
+
+		for (j = 0; j < pPart->m_nVerts; j++)
+		{
+			float f = pPoint->Dist(*pPart->m_Verts[j].m_pPos);
+
+			if (f > fMax)
+				fMax = f;
+		}
+	}
+
+	return fMax;
+}
+#else
+float wb_MaxDistSqr(CWorldPart** ppParts, uint32 nParts, LTVector* pPoint)
+{
+	float        fMax = 0.0f;
+	CWorldPart** pp;
+	uint32       nLeft;
+	uint32       j;
+
+	if (nParts > 0)
+	{
+		pp    = ppParts;
+		nLeft = nParts;
+
+		do
+		{
+			CWorldPart* pPart = *pp;
+
+			for (j = 0; j < pPart->m_nVerts; j++)
+			{
+				float f = pPoint->Dist(*pPart->m_Verts[j].m_pPos);
+
+				if (f > fMax)
+					fMax = f;
+			}
+
+			pp++;
+		}
+		while (--nLeft);
+	}
+
+	return fMax;
+}
+#endif
+

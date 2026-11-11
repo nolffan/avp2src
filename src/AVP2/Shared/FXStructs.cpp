@@ -392,8 +392,8 @@ LTBOOL CScaleFX::Init(CButeMgr & buteMgr, char* aTagName)
 	}
 
 	// PHCShell.dll 0x1010902b
-	fRotationY		= MATH_DEGREES_TO_RADIANS((LTFLOAT) buteMgr.GetDouble(aTagName, SCALEFX_ROTATIONY));
-	bAdditiveAlpha	= (LTBOOL) buteMgr.GetInt(aTagName, SCALEFX_ADDITIVEALPHA);
+	fRotationY		= MATH_DEGREES_TO_RADIANS((LTFLOAT) buteMgr.GetDouble(aTagName, SCALEFX_ROTATIONY, 0.0));
+	bAdditiveAlpha	= (LTBOOL) buteMgr.GetInt(aTagName, SCALEFX_ADDITIVEALPHA, 0);
 #endif
 
 	str = buteMgr.GetString(aTagName, SCALEFX_NAME);

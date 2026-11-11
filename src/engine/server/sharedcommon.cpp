@@ -521,8 +521,8 @@ void sm_ResetDeactivationTimers(CServerMgr* pMgr)
 	LTLink* pHead;
 	LTLink* pCur;
 
+	pCur = pMgr->m_List8dc.m_Head.m_pNext;
 	pHead = &pMgr->m_List8dc.m_Head;
-	pCur = pHead->m_pNext;
 
 	while (pCur != pHead)
 	{

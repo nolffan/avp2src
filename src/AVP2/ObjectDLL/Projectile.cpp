@@ -673,7 +673,7 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 		uint32 dwFlags;
 		g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
 
-		if(!(dwFlags & FLAG_SOLID) && !(dwFlags & FLAG_RAYHIT))
+		if(!(dwFlags & (FLAG_SOLID | FLAG_RAYHIT)))
 			return;
 	}
 #endif

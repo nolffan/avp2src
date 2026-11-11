@@ -2887,6 +2887,10 @@ void CGameServerShell::HandleConsoleCmdMsg(HCLIENT hSender, HMESSAGEREAD hMessag
 	HSTRING	hMsg = g_pLTServer->ReadFromMessageHString(hMessage);
 	if (!hMsg) return;
 
+#ifdef PRIMAL_HUNT
+	// PH: the local client's commands only (0x1005abea)
+	if (g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL)
+#endif
 	if (m_CmdMgr.Process(g_pLTServer->GetStringData(hMsg)))
 	{
 #ifndef _FINAL

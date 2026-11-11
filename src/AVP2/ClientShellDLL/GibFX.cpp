@@ -60,8 +60,14 @@ LTBOOL CGibFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 		m_eGibTypes[i] = pGib->eGibTypes[i];
 	}
 
+#ifdef PRIMAL_HUNT
+	int nRandomGibs = GetRandom(3, 6);
+	m_nNumRandomGibs = nRandomGibs;
+	m_nNumGibs += nRandomGibs;
+#else
 	m_nNumRandomGibs = GetRandom(3, 6);
 	m_nNumGibs += m_nNumRandomGibs;
+#endif
 	if (m_nNumGibs > MAX_GIB) m_nNumGibs = MAX_GIB;
 
 

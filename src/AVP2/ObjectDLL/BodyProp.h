@@ -36,6 +36,10 @@ enum DeathType
 	CD_EXPLODE,
 	CD_SHOTGUN,
 	CD_BULLET_NOGIB
+#ifdef PRIMAL_HUNT
+	,
+	CD_BACKHAND		// PH: DT_BACKHAND's (BodyProp::GetDeathType, 0x100aba58)
+#endif
 };
 
 // ----------------------------------------------------------------------- //

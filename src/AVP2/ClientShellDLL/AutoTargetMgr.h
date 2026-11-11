@@ -112,11 +112,21 @@ private:
 											WEAPON*		pLungeWep,
 											LTVector	vF			);
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: written inline, so UpdatePredalienTargeting expands it
+	// (it has no out-of-line copy in PHCShell.dll)
+	LTBOOL	CheckForLivePredalienTarget	(	HOBJECT		hTarget, 
+											LTVector	vTargetLoc, 
+											LTVector	vPlayerPos, 
+											int			nNormalRngSqr,
+											LTVector	vF			)	{ return LTFALSE; }
+#else
 	LTBOOL	CheckForLivePredalienTarget	(	HOBJECT		hTarget, 
 											LTVector	vTargetLoc, 
 											LTVector	vPlayerPos, 
 											int			nNormalRngSqr,
 											LTVector	vF			);
+#endif
 
 	LTBOOL	CheckForLungeBounds(	LTVector	vPlayerPos, 
 									int			nNormalRngSqr,

@@ -1543,18 +1543,48 @@ void PlayerMovement::UpdateClientToServer()
 
 void PlayerMovement::UpdateSpeedMods()
 {
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: a stunned or EMP'd player moves at a quarter of the speed
+	uint32 dwUserFlags;
+	HLOCALOBJ hClientObj;
+#endif
+
 	if(g_pGameClientShell->GetGameType()->IsMultiplayer())
 	{
 		LTBOOL bIsExosuit = IsExosuit(m_Butes);
 		m_Vars.m_fWalkSpeedMod = bIsExosuit?0.3f:1.0f;
 		m_Vars.m_fRunSpeedMod = bIsExosuit?0.5f:1.0f;
 		m_Vars.m_fCrouchSpeedMod = bIsExosuit?0.3f:1.0f;
+
+#ifdef PRIMAL_HUNT
+		hClientObj = g_pLTClient->GetClientObject();
+		g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
+
+		if(dwUserFlags & (USRFLG_CHAR_STUNNED | USRFLG_CHAR_EMPEFFECT))
+		{
+			m_Vars.m_fWalkSpeedMod = 0.25f;
+			m_Vars.m_fRunSpeedMod = 0.25f;
+			m_Vars.m_fCrouchSpeedMod = 0.25f;
+		}
+#endif
 	}
 	else
 	{
 		m_Vars.m_fWalkSpeedMod = 1.0f;
 		m_Vars.m_fRunSpeedMod = 1.0f;
 		m_Vars.m_fCrouchSpeedMod = 1.0f;
+
+#ifdef PRIMAL_HUNT
+		hClientObj = g_pLTClient->GetClientObject();
+		g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
+
+		if(dwUserFlags & (USRFLG_CHAR_STUNNED | USRFLG_CHAR_EMPEFFECT))
+		{
+			m_Vars.m_fWalkSpeedMod = 0.25f;
+			m_Vars.m_fRunSpeedMod = 0.25f;
+			m_Vars.m_fCrouchSpeedMod = 0.25f;
+		}
+#endif
 	}
 }
 

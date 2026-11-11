@@ -487,23 +487,17 @@ public:
 
 void sb_FreeChunks(StructBankView* pBank, int bAll);           // 0x00490bd0
 
-class CBankBaseView
-{
-public:
-	virtual ~CBankBaseView() {}
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj) = 0;
-	virtual void  Init() = 0;
-};
+// The banks' base is bankbase.h's CBankBase.
+#include "bankbase.h"
 
 template<class T>
-class CObjBankView : public CBankBaseView
+class CObjBankView : public CBankBase
 {
 public:
 	virtual ~CObjBankView() { sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();
-	virtual void  Free(void* pObj);
-	virtual void  Init();
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pObj);
+	virtual void  Term();
 
 	StructBankView m_Bank;
 	uint32         m_Unknown20;
@@ -542,30 +536,19 @@ typedef CObjBankView<CObjElem560> CCmgBank3BC;
 // the table the linker builds has the shipped slots.  The constructor's
 // bytes are the same either way -- one `movl $vtbl,(%ecx)` before sb_Init.
 //
-// The base is servermgr.h's CBankBase (vftable 0x004a14c8, three _purecall
+// The base is bankbase.h's CBankBase (vftable 0x004a14c8, three _purecall
 // slots): its vptr is what 0x00412ed0 and the CClientMgr destructor
-// (0x004110e4) store back after the chunks are freed.
-class CCmgBankBase
-{
-public:
-	virtual ~CCmgBankBase() {}
-	virtual void _v04()=0;                                      // slot 1 Allocate
-	virtual void _v08()=0;                                      // slot 2 Free
-	virtual void Term()=0;                                      // slot 3
-};
-
-// Over the same base class as the ten banks above (CBankBaseView, not
-// CCmgBankBase): the destructor loads 0x004a14c8 into %edi once, at this
-// bank's restore (0x004110e4), and stores it from there into all ten -- one
-// base table, so one symbol.
-class CCmgBank113C : public CBankBaseView
+// (0x004110e4) store back after the chunks are freed.  The destructor loads
+// 0x004a14c8 into %edi once, at this bank's restore (0x004110e4), and stores
+// it from there into all ten banks above -- one base table, so one symbol.
+class CCmgBank113C : public CBankBase
 {
 public:
 	CCmgBank113C();                                             // 0x00412bb0
 	virtual ~CCmgBank113C() { sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();                                   // slot 1 0x00412820
-	virtual void  Free(void* pObj);                             // slot 2 0x00412890
-	virtual void  Init();                                       // slot 3 0x00412bd0 (Term)
+	virtual void* AllocVoid();                                  // slot 1 0x00412820
+	virtual void  FreeVoid(void* pObj);                         // slot 2 0x00412890
+	virtual void  Term();                                       // slot 3 0x00412bd0
 
 	CCmgStructBank m_Bank;                                      // 0x04
 	uint32         m_Unknown20;                                 // 0x20
@@ -721,19 +704,19 @@ public:
 // each bank overrides them, because each shipped table holds its own
 // Allocate and Term (clientstreams.cpp's ObjectBankL10<T>, 0x00483430..
 // 0x00483590) and they share only Free (0x00483470).
-// (CCmgBankBase is declared above, with CCmgBank113C, which derives from it too.)
+// (CBankBase is bankbase.h's, included above.)
 
 void sb_Init(CCmgStructBank* pBank, uint32 nStructSize, uint32 nCacheSize); // 0x00490b50
 
 #define DECLARE_CMG_SNDBANK(cls, size)                        \
-	class cls : public CCmgBankBase                           \
+	class cls : public CBankBase                              \
 	{                                                         \
 	public:                                                   \
 		cls() { sb_Init(&m_Bank, size, 32); }                 \
 		virtual ~cls() { sb_FreeChunks(&m_Bank, 1); }         \
-		virtual void _v04();                                  \
-		virtual void _v08();                                  \
-		virtual void Term();                                  \
+		virtual void* AllocVoid();                            \
+		virtual void  FreeVoid(void* pRec);                   \
+		virtual void  Term();                                 \
 		CCmgStructBank m_Bank;                                \
 		uint32         m_Unknown20;                           \
 	}
@@ -3018,7 +3001,7 @@ void cmg_Sub40bfd0()
 //  CCmgSub1EC 0x0045a470), exactly as clientshell.cpp models the same two
 //  objects inside CServerMgr, so the factory's inlined constructor stores
 //  none of them.  The 0x004a14c8 held in %edi across the eleven banks
-//  (0x004110e4) is one base class for all of them, CBankBaseView; with
+//  (0x004110e4) is one base class for all of them, CBankBase; with
 //  +0x113c over a base of its own the %edi value split in two and the
 //  +0x774 / +0x11f0 member pointers swapped registers.
 // ======================================================================= //

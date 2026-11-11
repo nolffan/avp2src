@@ -1347,9 +1347,11 @@ void CAIChameleon::StartToCrouch()
 
 	m_eCamoState = eCamoOff;
 
-	uint32 dwFlags;
-	g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
-	g_pLTServer->Common()->SetObjectFlags(m_hObject, OFT_Flags, dwFlags | FLAG_ENVIRONMENTMAP);
+	{
+		uint32 dwFlags;
+		g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+		g_pLTServer->Common()->SetObjectFlags(m_hObject, OFT_Flags, dwFlags | FLAG_ENVIRONMENTMAP);
+	}
 }
 
 // PH: 0x1014b0e0
@@ -1454,21 +1456,22 @@ LTBOOL CAIChameleon::HasMoveTarget()
 // PH: 0x1014b410 (CAIBull's is the same, folded into this one)
 LTBOOL CAIChameleon::ReturnToLeash()
 {
-	if (m_Leash.m_bOutside != LTTRUE) return LTFALSE;
-
-	m_Leash.m_bOutside = LTFALSE;
-
-	AIBaseStateInfo home(eStateIdle);
-	home.eState	= eStateMoving;
-	home.vPos	= m_Leash.m_vHomePos;
-	home.nParam	= 0;
-	if (!SetState(&home))
+	if (m_Leash.m_bOutside == LTTRUE)
 	{
-		AIBaseStateInfo idle(eStateIdle);
-		SetState(&idle);
+		m_Leash.m_bOutside = LTFALSE;
+
+		AIBaseStateInfo home(eStateMoving);
+		home.vPos	= m_Leash.m_vHomePos;
+		if (!SetState(&home))
+		{
+			AIBaseStateInfo idle(eStateIdle);
+			SetState(&idle);
+		}
+
+		return LTTRUE;
 	}
 
-	return LTTRUE;
+	return LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //

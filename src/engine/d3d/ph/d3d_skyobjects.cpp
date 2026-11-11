@@ -26,8 +26,9 @@
 //    * 0x1001a2a1: retail expands CRenderStateList's constructor and calls
 //      the two vectors' constructors (0x100195c0); ours calls the class's
 //      constructor (the /Ob1 one-level constructor gate, guide 09).
-//    * 0x1001a533: the same loop reversal (size-exact under /Oa, which is
-//      not the file's flag).
+//  0x1001a533 (d3d_LightSkyPoly) is identical: its vertex loop counts
+//  down (`i > 0`, the unsigned `jbe`) and the distance goes through a
+//  VEC_SUB temporary, which AvP2's cl 8168 needs to call MagSqr as retail.
 // *********************************************************************** //
 
 #include <d3d.h>
@@ -67,7 +68,6 @@ struct StageState
 class CRenderStateList
 {
 public:
-						CRenderStateList() {}
 						~CRenderStateList() { Restore(); }  // 0x1001a4cc
 
 	void				Restore();                      // 0x10022a86
@@ -431,8 +431,6 @@ void d3d_DrawSkyObjects()
 {
 	CRenderStateList states;
 	RenderState rs;
-	StageState ss;
-	RenderState rsFog, rsSrc, rsDest;
 	uint32 oldFogEnable, oldColorOp;
 	int i;
 	LTObject* pObject;
@@ -454,10 +452,14 @@ void d3d_DrawSkyObjects()
 	rs.m_Value = *((uint32*)&g_CV_SkyFogFarZ);
 	states.SetState(&rs);
 
-	ss.m_Stage = 1;
-	ss.m_State = D3DTSS_COLOROP;
-	ss.m_Value = D3DTOP_DISABLE;
-	states.SetStageState(&ss, 1);
+	{
+		StageState ss;
+
+		ss.m_Stage = 1;
+		ss.m_State = D3DTSS_COLOROP;
+		ss.m_Value = D3DTOP_DISABLE;
+		states.SetStageState(&ss, 1);
+	}
 
 	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_FOGENABLE, (unsigned long*)&oldFogEnable);
 	g_pD3DDevice->GetTextureStageState(1, D3DTSS_COLOROP, (unsigned long*)&oldColorOp);
@@ -472,6 +474,8 @@ void d3d_DrawSkyObjects()
 		{
 			if (pObject->m_Flags & FLAG_FOGDISABLE)
 			{
+				RenderState rsFog;
+
 				rsFog.m_State = D3DRENDERSTATE_FOGENABLE;
 				rsFog.m_Value = FALSE;
 				states.SetState(&rsFog);
@@ -484,6 +488,8 @@ void d3d_DrawSkyObjects()
 			}
 			else
 			{
+				RenderState rsSrc, rsDest;
+
 				rsSrc.m_State = D3DRENDERSTATE_SRCBLEND;
 				rsSrc.m_Value = D3DBLEND_SRCALPHA;
 				states.SetState(&rsSrc);
@@ -547,8 +553,8 @@ void d3d_LightSkyPoly(RenderPoly* pPoly, TLVertex* pVerts, uint32 nVerts)
 		g -= 255.0f - g;
 		b -= 255.0f - b;
 
-		pPlane = pPoly->m_pPlane;
 		g_nSkyLightsApplied++;
+		pPlane = pPoly->m_pPlane;
 		fDist = pPlane->DistTo(vLightPos);
 		if (fDist < 0.0f)
 			fDist = -fDist;
@@ -560,9 +566,10 @@ void d3d_LightSkyPoly(RenderPoly* pPoly, TLVertex* pVerts, uint32 nVerts)
 		fInvRadius = 1.0f / pLight->m_LightRadius;
 
 		pVert = pVerts;
-		for (i = 0; i < pPoly->m_nVerts; i++)
+		for (i = pPoly->m_nVerts; i > 0; i--)
 		{
-			fDistSqr = (pVert->m_Vec - vLightPos).MagSqr();
+			VEC_SUB(vDelta, pVert->m_Vec, vLightPos);
+			fDistSqr = vDelta.MagSqr();
 			if (fDistSqr < fRadiusSqr)
 			{
 				fDist = (float)sqrt(fDistSqr);

@@ -97,8 +97,14 @@ LTBOOL CFolderCustomControls::Build()
 	CreateTitle(IDS_TITLE_CONTROLS);
 
 	m_pShared = AddTab(IDS_SHARED_CONTROLS,CMD_SHARED,LTNULL);
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's species: the predalien's and the corporate's tabs
+	m_pAlien = AddTab(29795,CMD_ALIEN,LTNULL);
+	m_pMarine = AddTab(IDS_CORPORATE,CMD_MARINE,LTNULL);
+#else
 	m_pAlien = AddTab(IDS_ALIEN,CMD_ALIEN,LTNULL);
 	m_pMarine = AddTab(IDS_MARINE,CMD_MARINE,LTNULL);
+#endif
 	m_pPredator = AddTab(IDS_PREDATOR,CMD_PREDATOR,LTNULL);
 
 	g_pLayoutMgr->GetFolderCustomString((eFolderID)m_nFolderID,"TabSound",m_szTabSound,sizeof(m_szTabSound));

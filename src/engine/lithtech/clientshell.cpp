@@ -808,25 +808,19 @@ class CWorldPolyRec;
 // StructBank at +0x04 and one dword, destroyed by handing the bank's
 // chunks back.  Three of them sit in a row at 0x518/0x53c/0x560 with no
 // constructor reached from here, and a fourth at 0x9f0 with one.
-// The banks' common base: its table (0x004a14c8) is what every bank's
-// destructor restores on the way out, and nothing else runs.
-class CBankBaseView
-{
-public:
-	virtual ~CBankBaseView() {}
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj) = 0;
-	virtual void  Init() = 0;
-};
+// The banks' common base, bankbase.h's CBankBase: its table (0x004a14c8) is
+// what every bank's destructor restores on the way out, and nothing else
+// runs.
+#include "bankbase.h"
 
 #define DECLARE_BANK(cls)                                    \
-	class cls : public CBankBaseView                         \
+	class cls : public CBankBase                             \
 	{                                                        \
 	public:                                                  \
 		virtual ~cls() { sb_FreeChunks(&m_Bank, 1); }        \
-		virtual void* Allocate();                            \
-		virtual void  Free(void* pObj);                      \
-		virtual void  Init();                                \
+		virtual void* AllocVoid();                           \
+		virtual void  FreeVoid(void* pObj);                  \
+		virtual void  Term();                                \
 		StructBankView m_Bank;                               \
 		uint32         m_Unknown20;                          \
 	}
@@ -836,13 +830,13 @@ public:
 // template.  Only the element type differs, so each instantiation is its own
 // class with its own table, as shipped.
 template<class T>
-class CObjBankView : public CBankBaseView
+class CObjBankView : public CBankBase
 {
 public:
 	virtual ~CObjBankView() { sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();
-	virtual void  Free(void* pObj);
-	virtual void  Init();
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pObj);
+	virtual void  Term();
 
 	StructBankView m_Bank;
 	uint32         m_Unknown20;
@@ -864,14 +858,14 @@ DECLARE_BANK(CBankA44);
 
 // The same bank with the constructor the shipped code calls (0x004151f0 —
 // servermgr.h's CMessageBank, whose body is sb_Init(&m_Bank, 0x54, 0x20)).
-class CMessageBankView : public CBankBaseView
+class CMessageBankView : public CBankBase
 {
 public:
 	CMessageBankView();                                        // 0x004151f0
 	virtual ~CMessageBankView() { sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();
-	virtual void  Free(void* pObj);
-	virtual void  Init();
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pObj);
+	virtual void  Term();
 
 	StructBankView m_Bank;
 	uint32         m_Unknown20;

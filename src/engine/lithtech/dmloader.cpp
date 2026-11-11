@@ -1583,12 +1583,20 @@ CDMMemStream::~CDMMemStream()
 }
 
 // 0x004436d0: the length's low word, the pointer, then the length's high
-// word. The position is deliberately left where it was - only three stores.
+// word in Primal Hunt's; AvP2 1.0.9.6's (0x0044baa0) stores them in field
+// order, the pointer first. The position is deliberately left where it was -
+// only three stores.
 void CDMMemStream::Close()
 {
+#ifdef PRIMAL_HUNT
 	m_nSizeLow  = 0;
 	m_pBuffer   = LTNULL;
 	m_nSizeHigh = 0;
+#else
+	m_pBuffer   = LTNULL;
+	m_nSizeLow  = 0;
+	m_nSizeHigh = 0;
+#endif
 }
 
 // 0x00443670 (name ours): point the stream at a caller's buffer, rewound.
@@ -1610,9 +1618,15 @@ DMHRESULT CDMMemStream::SetBuffer(void* pBuffer, unsigned __int64 cbSize)
 	{
 		if (IsBadReadPtr(pBuffer, (uint32)cbSize))
 		{
+#ifdef PRIMAL_HUNT
 			m_nSizeLow  = 0;
 			m_pBuffer   = LTNULL;
 			m_nSizeHigh = 0;
+#else
+			m_pBuffer   = LTNULL;
+			m_nSizeLow  = 0;
+			m_nSizeHigh = 0;
+#endif
 		}
 		else
 			return DM_S_OK;

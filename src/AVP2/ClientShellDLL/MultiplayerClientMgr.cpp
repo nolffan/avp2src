@@ -1067,8 +1067,14 @@ LTBOOL MultiplayerClientMgr::OnLButtonDown(int x, int y)
 		// Set the current class and set
 		if(m_bPlayerDisplay)
 		{
-			m_nCurrentClass = m_ptChart.x;
-			m_nCurrentSet = m_nCharList[m_ptChart.x][m_ptChart.y - 2];
+#ifdef PRIMAL_HUNT
+			// (only a class the server allows)
+			if(IsClassAllowed(m_nCharList[m_ptChart.x][m_ptChart.y - 2]) == LTTRUE)
+#endif
+			{
+				m_nCurrentClass = m_ptChart.x;
+				m_nCurrentSet = m_nCharList[m_ptChart.x][m_ptChart.y - 2];
+			}
 		}
 		else if(m_bObserveDisplay)
 		{
@@ -3346,6 +3352,12 @@ void MultiplayerClientMgr::Draw_Player_Selection()
 			{
 				if(m_szCharList[i][j])
 				{
+#ifdef PRIMAL_HUNT
+					// (a class the server locks out shows as such)
+					if(!IsClassAllowed(m_nCharList[i][j]))
+						strcpy(m_StatChart4.GetElement(i, j + 2)->m_szStr, "disabled");
+					else
+#endif
 					strcpy(m_StatChart4.GetElement(i, j + 2)->m_szStr, STRDATA(m_szCharList[i][j]));
 				}
 			}
@@ -3422,7 +3434,11 @@ void MultiplayerClientMgr::Draw_Player_Selection()
 	// Now if the cursor point was over a valid element... set it's background to draw...
 	if((m_ptChart.x != -1) && (m_ptChart.y > 1))
 	{
+#ifdef PRIMAL_HUNT
+		if(IsClassAllowed(m_nCharList[m_ptChart.x][m_ptChart.y - 2]) == LTTRUE && m_StatChart4.GetElement(m_ptChart.x, m_ptChart.y)->m_szStr[0] != 0)
+#else
 		if(m_StatChart4.GetElement(m_ptChart.x, m_ptChart.y)->m_szStr[0] != 0)
+#endif
 		{
 			if((nIndex == -1) || (nTeamPlayers[m_ptChart.x] < m_nTeamLimits[m_ptChart.x]) || (m_ptChart.x == m_ClientData[nIndex].m_nCharacterClass))
 			{

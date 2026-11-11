@@ -879,17 +879,27 @@ void CFolderMulti::OnFocus(LTBOOL bFocus)
 		RemoveFixedControl(m_pJoinNet);
 		RemoveFixedControl(m_pJoinLAN);
 		RemoveFixedControl(m_pUpdateCDK);
+#ifdef PRIMAL_HUNT
+		// (Primal Hunt: the connection speed goes back in under the links)
+		RemoveFixedControl(m_pJoinSpeed);
+#endif
 
 		// Add the controls back depending on if we're in LAN mode
 		if(m_bLAN)
 		{
 			AddFixedControl(m_pHostLAN, kLinkGroup, m_LinkPos[0]);
 			AddFixedControl(m_pJoinLAN, kLinkGroup, m_LinkPos[1]);
+#ifdef PRIMAL_HUNT
+			AddFixedControl(m_pJoinSpeed, kLinkGroup, m_LinkPos[2]);
+#endif
 		}
 		else
 		{
 			AddFixedControl(m_pHost, kLinkGroup, m_LinkPos[0]);
 			AddFixedControl(m_pJoinNet, kLinkGroup, m_LinkPos[1]);
+#ifdef PRIMAL_HUNT
+			AddFixedControl(m_pJoinSpeed, kLinkGroup, m_LinkPos[2]);
+#endif
 
 #ifndef _DEMO
 			AddFixedControl(m_pUpdateCDK, kLinkGroup, m_LinkPos[3]);

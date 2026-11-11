@@ -99,7 +99,12 @@ class CWeaponModel
 		void SetMuzzleOffset(LTVector v);
 
 		LTVector GetWeaponOffset();
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: nMuzzle 1 is the barrel's second muzzle
+		LTVector GetMuzzleOffset(int nMuzzle = 0);
+#else
 		LTVector GetMuzzleOffset();
+#endif
 
 		int GetWeaponId()	const { return m_nWeaponId; }
 		int GetAmmoId()		const { return m_nAmmoId; }

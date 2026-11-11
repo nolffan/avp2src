@@ -1503,6 +1503,10 @@ void BodyProp::Damage(DamageStruct damage)
 				if(CheckForGibs())
 				{
 					// Play the evil sound!
+#ifdef PRIMAL_HUNT
+					// PH: not for a bullet that doesn't gib (0x100aa6e9)
+					if(dt != CD_BULLET_NOGIB)
+#endif
 					DoSpecialDamageSound(damage.hDamager, LTTRUE);	
 				}
 			}
@@ -2062,6 +2066,10 @@ DeathType BodyProp::GetDeathType(DamageType eDamageType)
 		case DT_ALIEN_CLAW:
 		case DT_SHOTGUN:		return CD_SHOTGUN;
 
+#ifdef PRIMAL_HUNT
+		case DT_BACKHAND:		return CD_BACKHAND;
+#endif
+
 		case DT_EXPLODE:		return CD_EXPLODE;
 
 		case DT_FREEZE:			return CD_FREEZE;
@@ -2163,6 +2171,34 @@ void BodyProp::SetupByDeathType(uint32 &dwFlags, uint32 &dwUserFlags)
 
 			return;
 		}
+
+#ifdef PRIMAL_HUNT
+		// PH: knocked flying by a backhand (0x100abde3), humans only
+		case CD_BACKHAND:
+		{
+			const CharacterButes & butes	= g_pCharacterButeMgr->GetCharacterButes(m_nCharacterSet);
+			if(!IsAlien(butes) && !IsPredator(butes) && m_bFirstUpdate == LTTRUE)
+			{
+				// We need to know when we hit somthing
+				uint32 dwFlags = g_pLTServer->GetObjectFlags(m_hObject);
+				g_pLTServer->SetObjectFlags(m_hObject, dwFlags | ( FLAG_TOUCH_NOTIFY));
+
+				LTVector vVel = m_vDeathDir;
+				if(vVel.y < 0.0f)
+				{
+					vVel.y = 0.0f;
+					vVel.Norm();
+				}
+
+				vVel *= GetRandom(350.0f, 650.0f);
+				vVel.y = GetRandom(350.0f, 550.0f);
+
+				g_pLTServer->Physics()->SetVelocity(m_hObject, &vVel);
+			}
+
+			return;
+		}
+#endif
 
 		case CD_HEADBITE:
 		{
@@ -2919,6 +2955,9 @@ const char* BodyProp::GetSpecialDeathTypeAnim(DeathType eType)
 		case CD_FACEHUG:		return "Death_Fhgger";
 		case CD_EXPLODE:
 		case CD_SHOTGUN:
+#ifdef PRIMAL_HUNT
+		case CD_BACKHAND:
+#endif
 			{
 				if(HasFlyingDeathAnims() && GetRandom(0.0f, 1.0f) < 0.75f)
 				{

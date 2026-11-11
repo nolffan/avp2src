@@ -182,8 +182,17 @@ ILTMessage & operator>>(ILTMessage & in,  std::string & x)
 
 // GetDifficultyFactor
 
+#ifdef PRIMAL_HUNT
+extern LTBOOL g_bGodMode;
+#endif
+
 LTFLOAT GetDifficultyFactor()
 {
+#ifdef PRIMAL_HUNT
+	// PH: as GetDifficultyDamageFactor (0x10200c60)
+	if (g_bGodMode == LTTRUE) return 3.0f;
+#endif
+
 	ASSERT( g_pAIButeMgr && g_pGameServerShell );
 
 	if (!g_pGameServerShell || !g_pAIButeMgr) return 1.0f;

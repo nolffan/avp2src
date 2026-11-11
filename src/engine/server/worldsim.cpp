@@ -1815,17 +1815,11 @@ void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 // minimum is never also a new maximum); and the projected flag is set before
 // the answer (PH 0x0041a725).
 //
-// NEAR (211 of 211 bytes): shipped completes the corner copy before the
-// first multiply and multiplies z, x, y (0x0041a6c1..0x0041a6e8). DistTo,
-// Dot and the flat sum all start on x before the z load is stored; the
-// index form `v = pPoint[i]` fixes the copy but puts `inc %edx` ahead of
-// the pointer step, and only the odd `y + (x + z)` sum gives z, x, y.
-// The corner pointer is taken AFTER the two extreme stores: server.dll
-// 0x10002216..0x10002224 stores m_fMin/m_fMax before parking it in the dead
-// parameter slot (9 -> 6 differing instructions there). What is left on
-// both images is the z, x, y term order: every grouping and operand order
-// of the three products measured here comes out x first (x, y, z flat;
-// x, z, y for each `y + (x + z)` / `y + x + z` spelling).
+// The distance is an accumulator in z, x, y order, as shipped multiplies
+// (0x0041a6c1..0x0041a6e8): identical in all four engines. DistTo, Dot and
+// every flat sum start on x before the z load is stored. The corner pointer
+// is taken AFTER the two extreme stores: server.dll 0x10002216..0x10002224
+// stores m_fMin/m_fMax before parking it in the dead parameter slot.
 int ws_ProjectBox(CBoxProject* pProject)
 {
 	CBoxProject*     pBox   = pProject;
@@ -1843,7 +1837,10 @@ int ws_ProjectBox(CBoxProject* pProject)
 	{
 		LTVector v = *pPoint;
 
-		fDist = pPlane->DistTo(v);
+		fDist  = v.z * pPlane->m_Normal.z;
+		fDist += v.x * pPlane->m_Normal.x;
+		fDist += v.y * pPlane->m_Normal.y;
+		fDist -= pPlane->m_Dist;
 
 		if (fDist < pBox->m_fMin)
 		{

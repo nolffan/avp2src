@@ -178,6 +178,10 @@ class MultiplayerClientMgr
 		void		SetInfoString(uint32 nClientID);
 
 		void		SetWarningString(const char *szString, LTBOOL bForce = LTFALSE, LTFLOAT fDelay = 5.0f, HLTCOLOR hColor = SETRGB(128, 128, 128));
+#ifdef PRIMAL_HUNT
+		// Primal Hunt: let the next warning string show at once
+		void		ResetWarningStringTimer()	{ m_fWarningStringTimer = -1.0f; }
+#endif
 
 		LTBOOL		SetObservePoint(uint8 nObserveState);
 

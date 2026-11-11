@@ -116,26 +116,11 @@ public:
 // out-of-line body at all — every call site expands it — and it is the
 // forwarders that carry the 101 and 38 bytes at 0x0043c5c0 and 0x0043c630.
 
-// The base whose three slots after the destructor this bank fills in. It is
-// servermgr.h's CBankBase — same vftable, 0x1004d260, with _purecall in all
-// three slots — but that declaration spells the two middle slots `void _v04()`
-// and `void _v08()`, and the thunks above prove this bank's are `void*` with
-// no argument and `void` with one. An override has to match exactly, so the
-// shared declaration cannot serve here without changing servermgr.h and every
-// other bank that derives from it. Declared locally with the right signatures
-// until that is in scope; the vftable addresses are relocations either way, so
-// the emitted bytes are the same class of thing.
-class CDepBankBase
-{
-public:
-	virtual ~CDepBankBase() {}
-
-	virtual void* _v04() = 0;
-	virtual void  _v08(void* pStruct) = 0;
-	virtual void  Term() = 0;
-};
-
-class CDepLinkBank : public CDepBankBase
+// The base whose three slots after the destructor this bank fills in is
+// bankbase.h's CBankBase (servermgr.h) -- same vftable, 0x1004d260, with
+// _purecall in all three slots; the thunks above prove the slots are `void*`
+// with no argument, `void` with one, and Term.
+class CDepLinkBank : public CBankBase
 {
 public:
 	// ---- from here to the definition of g_DepLinkCS below is one separable
@@ -172,8 +157,8 @@ public:
 	// ---- end of the separable addition's first half ----
 
 	// 0x1001409c / 0x100140a1 — the vftable's own two entries. Defined below.
-	virtual void* _v04();
-	virtual void  _v08(void* pStruct);
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pStruct);
 	virtual void  Term();
 
 	// 0x100140d3 — a zeroed link off the bank, under the bank's own lock. The
@@ -234,12 +219,12 @@ public:
 // 0x0043c5c0 and 0x0043c630: every call of the typed pair is expanded there,
 // so without a body that must be emitted whatever the inliner does, both of
 // those addresses would go unclaimed.
-void* CDepLinkBank::_v04()
+void* CDepLinkBank::AllocVoid()
 {
 	return Allocate();
 }
 
-void CDepLinkBank::_v08(void* pStruct)
+void CDepLinkBank::FreeVoid(void* pStruct)
 {
 	Free(pStruct);
 }
@@ -369,7 +354,7 @@ void* dl_MakeLink(void* pRecord, void* pData)
 #ifdef PRIMAL_HUNT
 	// PH: through the bank's slot-1 entry, called directly on the global
 	// (0x004486e0 `mov $0x4f5460,%ecx; call 0x00448860`), not expanded.
-	CDepLink* pLink = (CDepLink*)g_DepLinkBank._v04();
+	CDepLink* pLink = (CDepLink*)g_DepLinkBank.AllocVoid();
 #else
 	CDepLink* pLink = g_DepLinkBank.Allocate();
 #endif
@@ -1130,9 +1115,16 @@ void CServerMgr::OnModelLoaded(LThreadMessage* pMsg)
 		{
 			if (pShell)
 			{
+#ifdef PRIMAL_HUNT
+				// PH: the name first, then LT_ERROR pushed (server.dll
+				// 0x100403be); AvP2 1.0.9.6 pushes LT_ERROR before the call
+				// (0x1003cb7e), the call in the argument list.
 				char* pFilename = dhash_GetKey(pFile->m_hElement, LTNULL);
 
 				pShell->FileLoadNotify(pFilename, LT_ERROR);
+#else
+				pShell->FileLoadNotify(dhash_GetKey(pFile->m_hElement, LTNULL), LT_ERROR);
+#endif
 			}
 		}
 	}

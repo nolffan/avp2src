@@ -228,11 +228,19 @@ struct ModelInstance
 	LTVector		m_Pos;                              // +0x194
 	uint8			m_pad_1a0[0x1c0 - 0x1a0];
 	SharedTexture*	m_pSkins[4];                        // +0x1c0
+#ifdef PRIMAL_HUNT
 	SharedTexture*	m_pEnvMap;                          // +0x1d0
 	uint8			m_pad_1d4[0x1fc - 0x1d4];
 	Model*			m_pModel;                           // +0x1fc
 	uint8			m_pad_200[0x20c - 0x200];
 	uint16			m_iCurAnim;                         // +0x20c
+#else
+	// AvP2's has no per-instance environment map.
+	uint8			m_pad_1d0[0x1f8 - 0x1d0];
+	Model*			m_pModel;                           // +0x1f8
+	uint8			m_pad_1fc[0x208 - 0x1fc];
+	uint16			m_iCurAnim;                         // +0x208
+#endif
 };
 
 extern void d3d_DrawModel(void* pParams, ModelInstance* pInstance);  // 0x1000b4d8 (drawmodel.cpp)
@@ -926,11 +934,14 @@ static void d3d_DrawTranslucentModel(ViewParams* pContext, LTObject* pObject)
 	g_pD3DDevice->SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_CURRENT);
 
 	d3d_GetBlendStates(pObject, &srcBlend, &destBlend, &fogEnable, &fogColor);
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's additive-alpha blend; AvP2 has none.
 	if (pObject->m_Flags2 & 0x4000)
 	{
 		srcBlend = D3DBLEND_SRCALPHA;
 		destBlend = D3DBLEND_ONE;
 	}
+#endif
 
 	StateSet ssSrcBlend(D3DRS_SRCBLEND, srcBlend);
 	StateSet ssDestBlend(D3DRS_DESTBLEND, destBlend);

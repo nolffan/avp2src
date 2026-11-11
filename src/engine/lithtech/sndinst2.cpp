@@ -502,6 +502,17 @@ inline void ob_FreeQ47C(ObjectBankQ47C* pBank, CSoundDataQ47C* pObj)
 	sb_FreeQ47C(&pBank->m_Bank, pObj);
 }
 
+#ifndef PRIMAL_HUNT
+// AVP2: 1.0.9.6's frees name the manager, not its bank: the struct bank is
+// one `lea 0x288` off the manager after the destructor call (0x0048fb65,
+// 0x0048fbfd), where Primal Hunt's add 0x284 before the call and 4 after.
+inline void ob_FreeQ47C(CSoundMgrQ47C* pMgr, CSoundDataQ47C* pObj)
+{
+	pObj->~CSoundDataQ47C();
+	sb_FreeQ47C(&pMgr->m_SoundDataBank.m_Bank, pObj);
+}
+#endif
+
 
 // Primal Hunt 0x00498b30 (AvP2 0x0047c630), 86 bytes (clientsoundinst.cpp's
 // CSoundDataView carries the same constructor).  The constructor:
@@ -644,8 +655,13 @@ void CSoundDataQ47C::Free()
 
 	if (m_pDecompressed)
 	{
+#ifdef PRIMAL_HUNT
 		pBank = &ci_GetSoundMgrQ47C()->m_SoundDataBank;
 		ob_FreeQ47C(pBank, m_pDecompressed);
+#else
+		CSoundMgrQ47C* pMgr = ci_GetSoundMgrQ47C();
+		ob_FreeQ47C(pMgr, m_pDecompressed);
+#endif
 		m_pDecompressed = LTNULL;
 	}
 
@@ -853,10 +869,16 @@ LTRESULT CSoundDataQ47C::Load()
 				m_pDecompressed->m_pSampleData = LTNULL;
 				m_SoundInfo = m_pDecompressed->m_SoundInfo;
 
+#ifdef PRIMAL_HUNT
 				pBank = &ci_GetSoundMgrQ47C()->m_SoundDataBank;
 				pObj = m_pDecompressed;
 				pObj->~CSoundDataQ47C();
 				sb_FreeQ47C(&pBank->m_Bank, pObj);
+#else
+				CSoundMgrQ47C* pMgr = ci_GetSoundMgrQ47C();
+				pObj = m_pDecompressed;
+				ob_FreeQ47C(pMgr, pObj);
+#endif
 				m_pDecompressed = LTNULL;
 			}
 
@@ -1093,10 +1115,17 @@ LTRESULT CSoundDataQ47C::sub_47cec0()
 			// %edi) and adds 0x284: the bank and the object are both named
 			// before the destructor call.  ob_FreeQ47C (manager argument
 			// evaluated last) loads the object first and swaps esi/edi.
+			// AVP2: the manager itself (ob_FreeQ47C's second form).
+#ifdef PRIMAL_HUNT
 			ObjectBankQ47C* pBank = &ci_GetSoundMgrQ47C()->m_SoundDataBank;
 			pObj = m_pDecompressed;
 			pObj->~CSoundDataQ47C();
 			sb_FreeQ47C(&pBank->m_Bank, pObj);
+#else
+			CSoundMgrQ47C* pMgr = ci_GetSoundMgrQ47C();
+			pObj = m_pDecompressed;
+			ob_FreeQ47C(pMgr, pObj);
+#endif
 			m_pDecompressed = LTNULL;
 
 			return LT_ERROR;
@@ -1131,8 +1160,13 @@ LTRESULT CSoundDataQ47C::Unload()
 
 	if (m_pDecompressed)
 	{
+#ifdef PRIMAL_HUNT
 		pBank = &ci_GetSoundMgrQ47C()->m_SoundDataBank;
 		ob_FreeQ47C(pBank, m_pDecompressed);
+#else
+		CSoundMgrQ47C* pMgr = ci_GetSoundMgrQ47C();
+		ob_FreeQ47C(pMgr, m_pDecompressed);
+#endif
 		m_pDecompressed = LTNULL;
 	}
 

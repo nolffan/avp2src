@@ -171,6 +171,16 @@ struct LTListS
 	LTLinkS* m_pHead;                        // 0x04
 };
 
+// binkvideo.cpp's LTListBindingsK: the instance's binding list is a member
+// with a destructor of its own. Primal Hunt's constructor (0x004a7c00)
+// carries an exception state for it, its unwind funclet calling the
+// out-of-line copy Bink's shares (0x00402910 on this+0x10).
+struct LTListBindingsS : public LTListS
+{
+	LTListBindingsS() { m_nElements = 0; m_pHead = LTNULL; }
+	~LTListBindingsS() { m_pHead = LTNULL; m_nElements = 0; }
+};
+
 // binkvideo.cpp's k_AddToList, the hand-rolled insert (0x0048b311..).
 inline void s_AddToList(LTListS* pList, LTLinkS* pLink, void* pObj)
 {
@@ -482,11 +492,10 @@ void sub_4209b0S(DDPIXELFORMATS* pPF, PFormatS* pFormat);  // 0x004209b0
 
 
 // binkvideo.cpp's VideoInstK: the abstract base behind vtable 0x004a147c,
-// 0x18 bytes, its constructor inline (0x0048abaa..0x0048abb3).
+// 0x10 bytes; the binding list at +0x10 is SmackVideoInst's own member.
 class VideoInstS
 {
 public:
-	VideoInstS() { m_Bindings.m_nElements = 0; m_Bindings.m_pHead = LTNULL; }
 	virtual ~VideoInstS() {}                                   // slot 0
 	virtual void     Release() {}                              // slot 1
 	virtual void     Restore() = 0;                            // slot 2
@@ -500,7 +509,6 @@ public:
 
 public:
 	LTLinkS  m_Link;                         // 0x04  the manager's list
-	LTListS  m_Bindings;                     // 0x10 count, 0x14 head
 };
 
 // 0xa4 bytes. Slots as cmgsurf.cpp PART A indexes them from 0x004a38a4.
@@ -529,6 +537,7 @@ public:
 	// +0x20 is the surface Blt clears, +0x24 is set to 1 only on the
 	// non-565 arm that creates the SECOND surface at +0x28, and +0x64 is
 	// what tex_CreateTextureData's answer is stored into.  Names ours.
+	LTListBindingsS       m_Bindings;        // 0x10 count, 0x14 head
 	SmackS*               m_pSmack;          // 0x18
 	SmackVideoMgr*        m_pMgr;            // 0x1c
 	IDirectDrawSurfaceS*  m_pSurface;        // 0x20

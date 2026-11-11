@@ -1585,6 +1585,9 @@ CAttachmentPosition::~CAttachmentPosition()
 	if ( m_pAttachment )
 	{
 		delete m_pAttachment;
+#ifdef PRIMAL_HUNT
+		m_pAttachment = LTNULL;
+#endif
 	}
 }
 

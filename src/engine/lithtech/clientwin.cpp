@@ -284,40 +284,32 @@ public:
 	uint16 m_nUnknown16;                     // 0x16
 };
 
-// The two record pools.  Same vptr-over-StructBank shape servermgr.h calls
-// CBankBase: base vtable 0x004a14c8 (slots 1..3 are _purecall), derived
-// 0x004a14b8 and 0x004a14a8.  ltnew2.cpp already reads the same three
-// tables out of the image.
-class CluBankBase
-{
-public:
-	virtual ~CluBankBase() {}
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj) = 0;
-	virtual void  Init() = 0;
-};
+// The two record pools.  Over bankbase.h's CBankBase: base vtable
+// 0x004a14c8 (slots 1..3 are _purecall), derived 0x004a14b8 and 0x004a14a8.
+// ltnew2.cpp already reads the same three tables out of the image.
+#include "bankbase.h"
 
-class CluFileRecBank : public CluBankBase                    // vtable 0x004a14b8
+class CluFileRecBank : public CBankBase                      // vtable 0x004a14b8
 {
 public:
 	CluFileRecBank() { clu_sb_Init(&m_Bank, 0x20, 0x20); }
 	virtual ~CluFileRecBank() { clu_sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();                // 0x004049d0
-	virtual void  Free(void* pObj);          // 0x004049c0
-	virtual void  Init();                    // 0x00444820 (ICF)
+	virtual void* AllocVoid();               // 0x004049d0
+	virtual void  FreeVoid(void* pObj);      // 0x004049c0
+	virtual void  Term();                    // 0x00444820 (ICF)
 
 	CluStructBank m_Bank;                    // +0x04
 	uint32        m_Unknown20;               // +0x20
 };
 
-class CluNetFileRecBank : public CluBankBase                 // vtable 0x004a14a8
+class CluNetFileRecBank : public CBankBase                   // vtable 0x004a14a8
 {
 public:
 	CluNetFileRecBank() { clu_sb_Init(&m_Bank, 0x28, 0x20); }
 	virtual ~CluNetFileRecBank() { clu_sb_FreeChunks(&m_Bank, 1); }
-	virtual void* Allocate();                // 0x004049d0 (ICF)
-	virtual void  Free(void* pObj);          // 0x004049c0 (ICF)
-	virtual void  Init();                    // 0x00404a00
+	virtual void* AllocVoid();               // 0x004049d0 (ICF)
+	virtual void  FreeVoid(void* pObj);      // 0x004049c0 (ICF)
+	virtual void  Term();                    // 0x00404a00
 
 	CluStructBank m_Bank;                    // +0x04
 	uint32        m_Unknown20;               // +0x20
@@ -729,9 +721,17 @@ int clu_dsi_RunClientApp(HINSTANCE hInstance, CluCommandLineArgs* pArgs)
 
 	nRet = 0;
 
+	// AVP2: 1.0.9.6's tests the answer itself (`test %eax,%eax`,
+	// 0x00402feb); Primal Hunt's stores it first and compares it against the
+	// zero it holds for nRet (`cmp %esi,%eax`, 0x00403356).
+#ifdef PRIMAL_HUNT
 	pStr = clu_sub_402ec0("DebugStructBanks", pArgs->m_nArgs, pArgs->m_pArgs);
 	if (pStr)
 		g_bCluDebugStructBanks = 1;
+#else
+	if (clu_sub_402ec0("DebugStructBanks", pArgs->m_nArgs, pArgs->m_pArgs))
+		g_bCluDebugStructBanks = 1;
+#endif
 
 	bOutOfMemory = 0;
 	if (setjmp(g_CluClientGlob.m_MemoryJmp))

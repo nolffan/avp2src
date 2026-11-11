@@ -107,17 +107,16 @@ uint32 VolumetricFog::OnPrecreate(void *pData, uint32 nInfo)
 // PH: 0x1015b920
 uint32 VolumetricFog::OnInitialUpdate(uint32 nInfo)
 {
-	if (nInfo != INITIALUPDATE_SAVEGAME)
-	{
-		g_pLTServer->SetObjectColor(m_hObject, m_vFogColor.x, m_vFogColor.y, m_vFogColor.z, 1.0f);
+	if (nInfo == INITIALUPDATE_SAVEGAME) return 0;
 
-		if (g_pLTServer->GetObjectUserFlags(m_hObject) & VFOG_USE_DENSITY)
-		{
-			LTFLOAT fDensity = m_fFogDensity;
-			uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
-			dwUserFlags = (dwUserFlags & ~VFOG_DENSITY_MASK) | ((uint32)ceil(fDensity) << 2);
-			g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags);
-		}
+	g_pLTServer->SetObjectColor(m_hObject, m_vFogColor.x, m_vFogColor.y, m_vFogColor.z, 1.0f);
+
+	if (g_pLTServer->GetObjectUserFlags(m_hObject) & VFOG_USE_DENSITY)
+	{
+		LTFLOAT fDensity = m_fFogDensity;
+		uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
+		dwUserFlags = (dwUserFlags & ~VFOG_DENSITY_MASK) | ((uint32)ceil(fDensity) << 2);
+		g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags);
 	}
 
 	return 0;

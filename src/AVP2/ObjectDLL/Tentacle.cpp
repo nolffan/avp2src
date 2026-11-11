@@ -872,8 +872,8 @@ LTBOOL CTentacle::DoMeleeAttack()
 
 	iQuery.m_From = vPos;
 	iQuery.m_To = vPos + vDir * (m_fScale * TENTACLE_MELEE_RANGE);
-	iQuery.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID;
 	iQuery.m_FilterFn = ChameleonSwipeFilterFn;
+	iQuery.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID;
 	iQuery.m_PolyFilterFn = LTNULL;
 	iQuery.m_pUserData = m_hObject;
 

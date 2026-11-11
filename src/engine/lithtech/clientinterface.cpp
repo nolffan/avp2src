@@ -3168,8 +3168,16 @@ LTRESULT ci_GetPixel(HSURFACE hSurface, uint32 x, uint32 y, HLTCOLOR* color)
 	if (!pBits)
 		RETURN_ERROR(1, "ILTClient::GetPixel", LT_ERROR);
 
+	// AVP2: 1.0.9.6's reads through the sum without storing it back
+	// (`mov (%ecx,%eax,1),%edx`, 0x0040ca55); Primal Hunt's advances pBits
+	// and reads through it (`lea`, then `mov (%eax),%edx`).
+#ifdef PRIMAL_HUNT
 	pBits += x * g_nBytesPerPixel + y * pSurface->m_nPitch;
 	CI_FMCONVERT()->FormatColorToPValue((FMFormat*)&g_ScreenFormat, *(uint32*)pBits, color);
+#else
+	CI_FMCONVERT()->FormatColorToPValue((FMFormat*)&g_ScreenFormat,
+		*(uint32*)(pBits + x * g_nBytesPerPixel + y * pSurface->m_nPitch), color);
+#endif
 
 	((RenderStructQ19*)g_pRender)->UnlockSurface(pSurface->m_pRenderData);
 
@@ -3188,8 +3196,14 @@ LTRESULT ci_SetPixel(HSURFACE hSurface, uint32 x, uint32 y, HLTCOLOR color)
 	if (!pBits)
 		RETURN_ERROR(1, "ILTClient::SetPixel", LT_ERROR);
 
+	// AVP2: the sum is the argument, as GetPixel's (0x0040cb3f).
+#ifdef PRIMAL_HUNT
 	pBits += x * g_nBytesPerPixel + y * pSurface->m_nPitch;
 	CI_FMCONVERT()->PValueToFormatColor((FMFormat*)&g_ScreenFormat, color, (uint32*)pBits);
+#else
+	CI_FMCONVERT()->PValueToFormatColor((FMFormat*)&g_ScreenFormat, color,
+		(uint32*)(pBits + x * g_nBytesPerPixel + y * pSurface->m_nPitch));
+#endif
 
 	((RenderStructQ19*)g_pRender)->UnlockSurface(pSurface->m_pRenderData);
 	pSurface->m_nFlags |= 4;

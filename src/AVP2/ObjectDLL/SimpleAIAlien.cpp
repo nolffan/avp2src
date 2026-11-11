@@ -980,6 +980,15 @@ SimpleAIFacehugger::SimpleAIFacehugger()
 
 void SimpleAIFacehugger::Update()
 {
+#ifdef PRIMAL_HUNT
+	// PH: a facehugger casts no shadow (0x102149d0)
+	{
+		uint32 dwFlags;
+		g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+		g_pLTServer->Common()->SetObjectFlags(m_hObject, OFT_Flags, dwFlags & ~FLAG_SHADOW);
+	}
+
+#endif
 	// Don't perform updates if the facehugging sequence has begun
 	const CharacterMovementState cms = GetMovement()->GetMovementState();
 	if (cms == CMS_FACEHUG || cms == CMS_FACEHUG_ATTACH)
@@ -1040,7 +1049,14 @@ void SimpleAIFacehugger::UpdateAttack(RootFSM * fsm)
 	{
 		m_tmrFacehugDelay.Start( GetRandom(m_pAttackButes->fMinFacehugDelay, m_pAttackButes->fMaxFacehugDelay) );
 
+#ifdef PRIMAL_HUNT
+		// PH: not at a dead target (0x10214eb7).
+		// RETAIL BUG: the character pointer is read before the null test
+		// below; a target that is not a character crashes here.
+		if (!GetCharTargetPtr()->IsDead() && m_pAttackButes->fFacehugChance > GetRandom(0.0f, 1.0f))
+#else
 		if (m_pAttackButes->fFacehugChance > GetRandom(0.0f, 1.0f))
+#endif
 		{
 			if( GetCharTargetPtr() && GetCharTargetPtr()->GetButes()->m_bCanBeFacehugged )
 			{

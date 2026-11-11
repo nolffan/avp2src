@@ -13,6 +13,11 @@
 #include "ModelButeMgr.h"
 
 extern CGameClientShell* g_pGameClientShell;
+#ifdef PRIMAL_HUNT
+#include "MultiplayerClientMgr.h"
+
+extern MultiplayerClientMgr* g_pMPMgr;
+#endif
 
 namespace
 {
@@ -170,6 +175,10 @@ uint32 CFolderEscape::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 			m_bAborting = LTTRUE;
 			if(g_pLTClient->IsConnected())
 				g_pLTClient->Disconnect();
+#ifdef PRIMAL_HUNT
+			if(g_pMPMgr)
+				g_pMPMgr->ResetWarningStringTimer();
+#endif
 			m_bAborting = LTFALSE;
 
 			m_pFolderMgr->SetCurrentFolder(FOLDER_ID_MAIN);

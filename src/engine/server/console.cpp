@@ -93,12 +93,11 @@ inline LTBOOL con_ICompare(char* p1, char* p2)
 // update of the variable itself. Same three bytes, different register roles,
 // and one instruction more. Two functions here turned on that distinction.
 //
-// A failed add returns NULL from inside the `if`, and the key lookup is the
-// one return at the end: lithtech.exe's /O2 twin (0x0041af00) gives the
-// failed add its own `pop; pop; pop; ret` and jumps both successes forward
-// into the dhash_GetKey call. The single-result form (`if (pRet) pRet =
-// GetKey(...)`) shared the epilogue there and came out four bytes short;
-// server.dll's /O1 0x10005892 is identical either way.
+// A found string returns its key at once, and a failed add returns NULL: the
+// two dhash_GetKey tail calls are one in the image, the found one first
+// (AvP2 1.0.9.6's lithtech.exe 0x0041fb80 jumps the add's success back into
+// it). Identical in all four engines; the single-result form (`if (pRet)
+// pRet = GetKey(...)`) shares the epilogue and comes out four bytes short.
 char* con_InternString(ConsoleState* pState, char* pStr)
 {
 	uint32 nLen = strlen(pStr);
@@ -106,13 +105,13 @@ char* con_InternString(ConsoleState* pState, char* pStr)
 
 	pRet = (char*)dhash_FindElement((CHashTable*)pState->m_hStringHash, pStr, nLen + 1);
 
-	if (!pRet)
-	{
-		pRet = (char*)dhash_AddElement((CHashTable*)pState->m_hStringHash, pStr, nLen + 1);
+	if (pRet)
+		return dhash_GetKey(pRet, LTNULL);
 
-		if (!pRet)
-			return LTNULL;
-	}
+	pRet = (char*)dhash_AddElement((CHashTable*)pState->m_hStringHash, pStr, nLen + 1);
+
+	if (!pRet)
+		return LTNULL;
 
 	return dhash_GetKey(pRet, LTNULL);
 }

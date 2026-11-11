@@ -261,7 +261,6 @@
 /ALTERNATENAME:?sub_100386c6@ModelWalker@@QAEIXZ=?SetupTransforms@CTransformMaker_C@@QAEIXZ
 /ALTERNATENAME:?sub_10039c43@CWorldSub6C@@QAEXPAVCWorldLight@@H@Z=?AddObject@CWorldTree_E@@QAEXPAVCWTObj_E@@K@Z
 /ALTERNATENAME:?sub_1003a473@CWorldSub6C@@QAEHPAVILTStream@@@Z=?LoadLayout@CWorldTree_F@@QAEIPAVILTStream@@@Z
-/ALTERNATENAME:?sub_476660@@YAXPAUSObj476770@@@Z=?sub_100348cc@@YAXPAVLTObject@@@Z
 /ALTERNATENAME:?tcp_BuildSockaddrFromString_A@@YAHPADPAUsockaddr_in@@@Z=?tcp_BuildSockaddrFromString@@YAHPADPAUsockaddr_in@@@Z
 /ALTERNATENAME:?tcp_GetLastErrorString@@YAPADXZ=?tcp_GetErrorText@@YAPADXZ
 /ALTERNATENAME:?Term@CServerWorldFull@@QAEXXZ=?Term@CServerWorld@@QAEXXZ
@@ -498,15 +497,6 @@
 /ALTERNATENAME:?GetNextType@CRezDir@@QAEPAVCRezTyp@@PAV2@@Z=?GetNextType@CRezDirQ48C@@QAEPAVCRezTypQ48C@@PAV2@@Z
 /ALTERNATENAME:?GetFirstSubDir@CRezDir@@QAEPAV1@XZ=?GetFirstSubDir@CRezDirQ48C@@QAEPAV1@XZ
 /ALTERNATENAME:?GetNextSubDir@CRezDir@@QAEPAV1@PAV1@@Z=?GetNextSubDir@CRezDirQ48C@@QAEPAV1@PAV1@@Z
-# servermgr.h's CBankBase slots 1..3. The shipped base vftable 0x1004d260
-# is { 0x10006dba ??_G, 0x1003ea24, 0x1003ea24, 0x1003ea24 }, and 0x1003ea24
-# is `push $0x19; call _amsg_exit; pop %ecx; ret` -- the CRT's _purecall. The
-# three are pure in the original; they cannot be `= 0` here because CFileBank
-# and others do not declare all three overrides (they would become abstract),
-# so the base vftable's references go where the shipped ones go.
-/ALTERNATENAME:?_v04@CBankBase@@UAEXXZ=__purecall
-/ALTERNATENAME:?_v08@CBankBase@@UAEXPAX@Z=__purecall
-/ALTERNATENAME:?Term@CBankBase@@UAEXXZ=__purecall
 # 0x1000ed6f -- the one shared bank forward, `add $0x4,%ecx; push %ecx;
 # call sb_Allocate (0x10001c86); pop %ecx; ret`. dhash_AddElement calls it
 # for the hash-element bank (`call 0x1000ed6f` at 0x1000dc74, /O1), and
@@ -536,8 +526,8 @@
 # 0x1002c806; its destructor again at 0x1002c981). Slot 2 = 0x1002ccb5, svnew.cpp's
 # CMsgRecordBank::Free (placed there, identical); slot 3 = 0x1002ce31, objbank.cpp's
 # CObjectBank<CBankElem54>::Init (placed there; the 0x54 sb_Init)
-/ALTERNATENAME:?_v08@CMessageBank@@UAEXPAX@Z=?Free@CMsgRecordBank@@UAEXPAX@Z
-/ALTERNATENAME:?Term@CMessageBank@@UAEXXZ=?Init@?$CObjectBank@VCBankElem54@@@@UAEXXZ
+/ALTERNATENAME:?FreeVoid@CMessageBank@@UAEXPAX@Z=?FreeVoid@CMsgRecordBank@@UAEXPAX@Z
+/ALTERNATENAME:?Term@CMessageBank@@UAEXXZ=?Term@?$CObjectBank@VCBankElem54@@@@UAEXXZ
 # 0x1004e8c8 -- the object mover's vftable (CServerMgr::Init stores it into the new
 # +0x6a8 object at 0x10031fbe). smgr.cpp constructs it as objmover.cpp's CObjectMoverQ47C;
 # the three slots that file leaves unnamed are spritecontrol.cpp's CObjectMover bodies,

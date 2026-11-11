@@ -451,15 +451,8 @@ public:
 // second one Allocate returning CObjBase*, which is the concrete type that
 // side needs; void* is the generic one, because CNetBank, CMessageBank and
 // CFileBank restore this same vftable and hand out net packets, messages and
-// file records rather than objects.
-class CObjectBankBase
-{
-public:
-	virtual ~CObjectBankBase() {}
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj) = 0;
-	virtual void  Init() = 0;
-};
+// file records rather than objects. It is bankbase.h's CBankBase, every
+// bank's base.
 
 // Each object type has a destructor of its own; the deleting form the bank
 // reaches through slot zero is what these emit, and it is identical for all
@@ -1170,7 +1163,7 @@ CBankElem54::~CBankElem54() {}
 // The bank itself: a vptr, a struct bank, and nothing else it owns. The
 // free list Free pushes onto is the struct bank's own, at +0x18 of it.
 template<class T>
-class CObjectBank : public CObjectBankBase
+class CObjectBank : public CBankBase
 {
 public:
 	// 0x1002449b builds eleven of these, each one `vptr = <table> ;
@@ -1196,12 +1189,12 @@ public:
 	// body (AvP2 1.0.9.6 0x1002e18d.. -> 0x1002e2ac.., Free's one folded
 	// 0x1002e1a6 for every bank; Primal Hunt 0x1001b204 -> 0x1001b244);
 	// lithtech.exe's /O2 expands them, so its slots hold the bodies.
-	virtual void* Allocate()
+	virtual void* AllocVoid()
 	{
 		return AllocObject();
 	}
 
-	virtual void Free(void* pObj)
+	virtual void FreeVoid(void* pObj)
 	{
 		FreeObject(pObj);
 	}
@@ -1226,9 +1219,9 @@ public:
 		sb_Free(&m_Bank, pObj);
 	}
 
-	// Starting over drops whatever the bank was holding first, so Init
+	// Starting over drops whatever the bank was holding first, so Term
 	// doubles as a reset.
-	virtual void Init()
+	virtual void Term()
 	{
 		sb_FreeChunks(&m_Bank, 1);
 		sb_Init(&m_Bank, sizeof(T), 0x20);
@@ -1240,14 +1233,14 @@ public:
 };
 
 
-// The locking bank. Only Init and the destructor are written: its Allocate
+// The locking bank. Only Term and the destructor are written: its Allocate
 // and Free are not the shared ones (0x1001409c / 0x100140a1 and 0x100075b5 /
 // 0x100075ba), and the Free forwards to a *cdecl* function of one argument
 // that never sees the bank — so whatever these banks hand out is returned to
 // something global, and reconstructing that is separate work. Leaving the
 // two slots pure keeps the class abstract and emits nothing for them.
 template<class T>
-class CLockedObjectBank : public CObjectBankBase
+class CLockedObjectBank : public CBankBase
 {
 public:
 	virtual ~CLockedObjectBank()
@@ -1255,7 +1248,7 @@ public:
 		sb_FreeChunks(&m_Bank, 1);
 	}
 
-	virtual void Init()
+	virtual void Term()
 	{
 		m_Lock.Enter();
 
@@ -1394,7 +1387,7 @@ public:
 	CObjectBank<CObjLineSystem>     m_LineSystem;      // 0x188
 	CObjectBank<CObjContainer>      m_Container;       // 0x1ac
 	CObjectBank<CObjCanvas>         m_Canvas;          // 0x1d0
-	CObjectBankBase* m_pBanks[11];             // +0x1f4
+	CBankBase*       m_pBanks[11];             // +0x1f4
 	LTList                     m_Lists[11];    // +0x220
 
 	~CObjMgrView();                            // 0x1002ca7c
@@ -1421,9 +1414,9 @@ public:
 // 0x1002ca7c — the eleven banks handed back. The body is empty; every
 // instruction is the compiler expanding CObjectBank's inline destructor
 // eleven times, each expansion being its own vftable restore, the
-// sb_FreeChunks call, and then CObjectBankBase's vftable restore.
+// sb_FreeChunks call, and then CBankBase's vftable restore.
 //
-// This is what proved CObjectBankBase is not a template. Written against a
+// This is what proved CBankBase is not a template. Written against a
 // templated base it came out 322 bytes against 285 with 88 instructions
 // against 91 -- longer with FEWER instructions, which localised the residual
 // completely: the shipped build holds the base vftable's address in a
@@ -1495,7 +1488,7 @@ LTRESULT un390_RemoveObject(CObjMgrView* p, CObjLinked* pObject)
 	dl_RemoveAt(&p->m_Lists[pObject->m_ObjectType], &pObject->m_Link7c);
 
 	if (pObject->m_ObjectType < 11)
-		p->m_pBanks[pObject->m_ObjectType]->Free((CObjBase*)pObject);
+		p->m_pBanks[pObject->m_ObjectType]->FreeVoid((CObjBase*)pObject);
 
 	return LT_OK;
 }

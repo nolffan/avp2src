@@ -81,7 +81,11 @@ class CSFXMgr
 
 	private :
 
+#ifdef PRIMAL_HUNT
+        LTBOOL  AddDynamicSpecialFX(CSpecialFX* pSFX, uint8 nId);
+#else
         void    AddDynamicSpecialFX(CSpecialFX* pSFX, uint8 nId);
+#endif
 		void 	UpdateDynamicSpecialFX();
 		void	RemoveDynamicSpecialFX(HOBJECT hObj);
 		void	RemoveAllDynamicSpecialFX();

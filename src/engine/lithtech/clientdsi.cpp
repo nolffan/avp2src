@@ -1877,19 +1877,18 @@ LTRESULT sub_41fbe0(void* pClientMgr, SurfaceEffectDesc* pDesc);  // 0x0041fbe0
 // 0x0042f5a0 is where the `push %esi; push %edi` prologue starts and where
 // InitClientShellDE's call lands.  The function is 0x0042f5a0..0x0042f5c2.
 //
-// The loop is a pointer walk against a literal end address (`add $0x10,%esi`
-// then `cmp $0x004a9e88,%esi; jb`), and 0x004a9e88 is table + 5 * 0x10 to
-// the byte.  Written as an index it would come out the same after strength
-// reduction, but the pointer form is what the bytes say.
+// The loop is an index over the table: Primal Hunt's build strength-reduces
+// it to a pointer walk against a literal end address (`add $0x10,%esi` then
+// `cmp $0x004a9e88,%esi; jb`, table + 5 * 0x10), AvP2 1.0.9.6's (cl 9044,
+// 0x004360a0) to a pointer and a down-counter from 5 (`dec %edi; jne`),
+// which the pointer form does not give it.
 void sub_42f5a0(void* pClientMgr)
 {
-	SurfaceEffectDesc* pDesc;
+	uint32 i;
 
-	for (pDesc = g_BuiltInSurfaceEffects;
-	     pDesc < g_BuiltInSurfaceEffects + 5;
-	     pDesc++)
+	for (i = 0; i < 5; i++)
 	{
-		sub_41fbe0(pClientMgr, pDesc);
+		sub_41fbe0(pClientMgr, &g_BuiltInSurfaceEffects[i]);
 	}
 }
 

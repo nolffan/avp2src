@@ -26,22 +26,14 @@
 // 0x004441a0), slot 2 Free 0x004049c0 and slot 3 Init 0x00444820, both
 // folded with objbank.cpp's 0x20-byte instantiation.  lthread.obj reaches it
 // as g_ThreadMessageBank through link/aliases.rsp, as server.dll does.
-class CThreadMsgBankBase
-{
-public:
-	virtual ~CThreadMsgBankBase() {}
-	virtual void* Allocate() = 0;
-	virtual void  Free(void* pObj) = 0;
-	virtual void  Init() = 0;
-};
-
-class CThreadMsgBank : public CThreadMsgBankBase
+// The base is bankbase.h's CBankBase (servermgr.h).
+class CThreadMsgBank : public CBankBase
 {
 public:
 	__forceinline CThreadMsgBank() { sb_Init(&m_Bank, sizeof(LThreadMessage), 0x20); }
 	virtual ~CThreadMsgBank() { sb_FreeChunks(&m_Bank, 1); }
 
-	virtual void* Allocate()
+	virtual void* AllocVoid()
 	{
 		LThreadMessage* pRet = (LThreadMessage*)sb_Allocate(&m_Bank);
 
@@ -51,12 +43,12 @@ public:
 		return pRet;
 	}
 
-	virtual void Free(void* pObj)
+	virtual void FreeVoid(void* pObj)
 	{
 		sb_Free(&m_Bank, pObj);
 	}
 
-	virtual void Init()
+	virtual void Term()
 	{
 		sb_FreeChunks(&m_Bank, 1);
 		sb_Init(&m_Bank, sizeof(LThreadMessage), 0x20);

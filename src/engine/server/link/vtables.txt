@@ -293,8 +293,8 @@ vtable ??_7CObjWorldModel@@6B@ 0x1004dfa8  # compiled with 14 slots
     ?HasOriginalBsp@CObjWorldModel@@QAEIXZ
     ?GetWorldFlag4@CObjWorldModel@@QAEKXZ
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
-vtable ??_7CObjectBankBase@@6B@ 0x1004d260  # compiled with 4 slots
-    ??_GCObjectBankBase@@UAEPAXI@Z
+vtable ??_7CBankBase@@6B@ 0x1004d260  # compiled with 4 slots
+    ??_GCBankBase@@UAEPAXI@Z
     __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
     __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
     __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
@@ -402,11 +402,6 @@ vtable ??_7CSharedCommonView@@6B@ 0x1004d700  # compiled with 1 slots
     __purecall  # the shipped slot is _purecall (0x1003ea24) too
     __purecall  # the shipped slot is _purecall (0x1003ea24) too
     __purecall  # the shipped slot is _purecall (0x1003ea24) too
-vtable ??_7CStreamBankBase@@6B@ 0x1004d260  # compiled with 4 slots
-    ??_GCStreamBankBase@@UAEPAXI@Z
-    __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept
-    __purecall  # UNVERIFIED slot 2: nothing placed at 0x1003ea24, our own slot kept
-    __purecall  # UNVERIFIED slot 3: nothing placed at 0x1003ea24, our own slot kept
 vtable ??_7CStreamFields@@6B@ 0x1004d2ac  # compiled with 11 slots
     ??_GCStreamFields@@UAEPAXI@Z
     __purecall  # UNVERIFIED slot 1: nothing placed at 0x1003ea24, our own slot kept

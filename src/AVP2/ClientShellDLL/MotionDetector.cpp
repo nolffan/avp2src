@@ -1216,13 +1216,14 @@ LTBOOL CMotionDetector::TestObjectForLocation(HOBJECT hObj, DVector vPos)//, DFL
 	//norm vector
 //	vPlayerToObj.Norm();
 
+#ifdef PRIMAL_HUNT
+	//see if the object is infront of us (the Corporate motion detector
+	//sees all around)
+	if(vForward.Dot(vPlayerToObj) > 0 || GetMDType() == 1)
+		return LTTRUE;
+#else
 	//see if the object is infront of us
 	if(vForward.Dot(vPlayerToObj) > 0)
-		return LTTRUE;
-
-#ifdef PRIMAL_HUNT
-	// the Corporate motion detector sees all around
-	if(GetMDType() == 1)
 		return LTTRUE;
 #endif
 

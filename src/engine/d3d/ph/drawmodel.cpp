@@ -20,13 +20,13 @@
 //  offset.  AvP2's addresses below (Primal Hunt's 0x1000ba54..0x1000dfeb).
 //
 //  Near, and why:
-//    * 0x1000bafe (AddLight): the spot blend's outer-colour product loads
-//      its operands the other way round.
 //    * 0x1000c100 (SetupLighting), 0x1000d3a7 (DrawModel), 0x1000ccd9
 //      (DrawSprite): frame-exact; the inliner's budget runs out at other
 //      sites than retail's (DrawSprite's corners call the _CVector
 //      constructor out of line one step earlier).
-//    * 0x1000be88, 0x1000c860, 0x1000ddc5, 0x1000de56: scheduling.
+//    * 0x1000be88 (CalcSunVis): frame slots (Primal Hunt's 0x1000be38, its
+//      own vector-macro version, 517 bytes to 519: the scalar products'
+//      FPU operand order); 0x1000c860, 0x1000ddc5, 0x1000de56: scheduling.
 //  ModelTLVert's (empty) constructor is what makes its array members call
 //  BaseNew<ModelTLVert> (0x1000f148) as retail's do, rather than expand
 //  _AllocateTArray.
@@ -763,7 +763,12 @@ LTBOOL d3d_SegmentHitsSky(LTVector* pPos, LTVector* pDir)
 	{
 		pPoly = g_pSceneWorld->GetPolyFromHPoly(iInfo.m_hPoly);
 		if (pPoly)
-			return (pPoly->m_pSurface->m_Flags & SURFFLAG_SKY) ? LTTRUE : LTFALSE;
+		{
+			if (pPoly->m_pSurface->m_Flags & SURFFLAG_SKY)
+				return LTTRUE;
+			else
+				return LTFALSE;
+		}
 	}
 
 	return LTFALSE;
@@ -1032,7 +1037,7 @@ void CD3DModelDraw::AddLight(LTMatrix* pWorldToModel, LTVector* pPos,
 
 	if (fCosCone > -1.0f && fCosCone < 1.0f && fDist != 0.0f)
 	{
-		fDot = (vDelta.z * pDir->z + vDelta.y * pDir->y + vDelta.x * pDir->x) * (1.0f / fDist);
+		fDot = VEC_DOT(vDelta, *pDir) * (1.0f / fDist);
 		if (fDot < fCosCone)
 			return;
 
@@ -1043,9 +1048,7 @@ void CD3DModelDraw::AddLight(LTMatrix* pWorldToModel, LTVector* pPos,
 	}
 
 	pLight = &m_Lights[m_nLights];
-	pLight->m_Color.x = fInnerR;
-	pLight->m_Color.y = fInnerG;
-	pLight->m_Color.z = fInnerB;
+	pLight->m_Color.Init(fInnerR, fInnerG, fInnerB);
 	VEC_MUL(pLight->m_Color, g_vGlobalLightColor, pLight->m_Color);
 	pLight->m_Color *= m_vObjectColor;
 
@@ -1064,6 +1067,58 @@ void CD3DModelDraw::AddLight(LTMatrix* pWorldToModel, LTVector* pPos,
 // edge of the shadow between them.
 float CD3DModelDraw::CalcSunVis()
 {
+#ifdef PRIMAL_HUNT
+	// Primal Hunt's: the ray and the perpendicular constructed in place and
+	// the sums through the vector macros, so no temporaries are copied.
+	LTVector vRay = g_pStruct->m_vSunDir * (g_pSceneWorld->m_WorldTree.m_fRootSize * -2.0f);
+	LTVector vPoint, vTest, vRight, vForward, vUp;
+	float fLo, fMid, fHi, fStep, fVis;
+	LTBOOL bHitLo, bHitHi, bHit;
+
+	if (g_CV_ModelSunVariance.m_fValue == 0.0f)
+		return d3d_SegmentHitsSky(&m_vPos, &vRay) ? 1.0f : 0.0f;
+
+	m_mTransform.GetBasisVectors(&vRight, &vUp, &vForward);
+	LTVector vPerp = g_pStruct->m_vSunDir.Cross(vRight);
+	vPerp *= m_pInstance->GetRadius();
+
+	VEC_ADD(vPoint, vPerp, m_vPos);
+	bHitHi = d3d_SegmentHitsSky(&vPoint, &vRay);
+	VEC_SUB(vPoint, m_vPos, vPerp);
+	bHitLo = d3d_SegmentHitsSky(&vPoint, &vRay);
+
+	if (bHitHi == bHitLo)
+		return bHitHi ? 1.0f : 0.0f;
+
+	fLo = -1.0f;
+	fStep = 1.0f;
+	fHi = 1.0f;
+	fVis = 1.0f;
+	while (fStep > g_CV_ModelSunVariance.m_fValue && bHitLo != bHitHi)
+	{
+		fMid = (fLo + fHi) * 0.5f;
+		VEC_MULSCALAR(vPoint, vPerp, fMid);
+		VEC_ADD(vTest, vPoint, m_vPos);
+		bHit = d3d_SegmentHitsSky(&vTest, &vRay);
+
+		fStep *= 0.5f;
+		if (!bHit)
+			fVis -= fStep;
+
+		if (bHit == bHitHi)
+		{
+			fHi = fMid;
+			bHitHi = bHit;
+		}
+		else
+		{
+			fLo = fMid;
+			bHitLo = bHit;
+		}
+	}
+
+	return fVis;
+#else
 	LTVector vRay, vSunDir, vRight, vUp, vForward, vPerp, vPoint;
 	float fMid, fLo, fHi, fStep, fVis;
 	LTBOOL bHitLo, bHitHi, bHit;
@@ -1113,6 +1168,7 @@ float CD3DModelDraw::CalcSunVis()
 	}
 
 	return fVis;
+#endif
 }
 
 // 0x1000c100 -- the model's lights for this frame: the sun, the light

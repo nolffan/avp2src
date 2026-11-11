@@ -180,16 +180,9 @@ inline void* sm_sb_AllocateQ474(StructBank* pBank)
 	return pStruct;
 }
 
-class CBankBaseQ474
-{
-public:
-	virtual ~CBankBaseQ474() {}
-	virtual void _v04();
-	virtual void _v08(void* pRec);
-	virtual void Term();
-};
+#include "bankbase.h"
 
-class CMessageBank : public CBankBaseQ474
+class CMessageBank : public CBankBase
 {
 public:
 	// server 0x1002ce15 -- a THISCALL member (`lea 0x9f0(%eax),%ecx` at
@@ -200,10 +193,10 @@ public:
 
 	// 0x1002ccb0 — slot 1 of the bank's vftable (0x1004e2f0), five bytes:
 	// `jmp 0x1002ce15`, Allocate as a tail call. Defined below Allocate.
-	virtual void _v04();
-	// Slot 2, the record's free (servermgr.h's _v08).  Defined below for
-	// Primal Hunt's lithtech.exe only.
-	virtual void _v08(void* pRec);
+	virtual void* AllocVoid();
+	// Slot 2, the record's free.  Defined below for lithtech.exe only.
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
 
 	StructBank m_Bank;                       // +0x04  (CServerMgr+0x9f4)
 	uint32     m_Unknown20;
@@ -443,8 +436,8 @@ void CServerMgrObjInfoViewQ474::GrowClientObjInfos(uint32 nCount)
 	LTLink* pCur;
 	LTLink* pHead;
 
-	pCur  = m_ClientList.m_Head.m_pNext;     // 0x0047474b
-	pHead = &m_ClientList.m_Head;            // 0x00474751
+	pHead = &m_ClientList.m_Head;
+	pCur  = pHead->m_pNext;
 
 	for (; pCur != pHead; pCur = pCur->m_pNext)
 	{
@@ -630,9 +623,9 @@ inline void* CMessageBank::Allocate()
 	return pRec;
 }
 
-void CMessageBank::_v04()
+void* CMessageBank::AllocVoid()
 {
-	Allocate();
+	return Allocate();
 }
 
 #ifndef LT_SERVER_BUILD
@@ -672,7 +665,7 @@ inline void sb_FreeQ556(StructBank* pBank, void* pStruct)
 	}
 }
 
-void CMessageBank::_v08(void* pRec)
+void CMessageBank::FreeVoid(void* pRec)
 {
 	((CSObjDataDtorQ556*)pRec)->~CSObjDataDtorQ556();
 	sb_FreeQ556(&m_Bank, pRec);

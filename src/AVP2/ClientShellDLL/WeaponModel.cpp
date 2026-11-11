@@ -127,12 +127,12 @@ CWeaponModel::CWeaponModel()
 	// PHCShell.dll 0x100b3048
 	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
 	{
+		m_pMuzzleFlash[nMuzzle] = LTNULL;
 		m_fFlashStartTime[nMuzzle] = 0.0f;
 
 		m_vFlashPos[nMuzzle].Init();
 		m_vFlashOffset[nMuzzle].Init();
 
-		m_pMuzzleFlash[nMuzzle] = LTNULL;
 		m_bNewShot[nMuzzle] = LTFALSE;
 	}
 #else
@@ -865,8 +865,17 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	m_vFirePos = vPos;
 
 	//get weapon model and muzzle offsets
+#ifdef PRIMAL_HUNT
+	int nMuzzle = 0;
+	if(m_pBarrel)
+		nMuzzle = m_pBarrel->nCurMuzzle;
+
+	LTVector vOffset	= GetWeaponOffset();
+	LTVector vMuzzleOffset = GetMuzzleOffset(nMuzzle);
+#else
 	LTVector vOffset	= GetWeaponOffset();
 	LTVector vMuzzleOffset = GetMuzzleOffset();
+#endif
 
 	//calculate new position for model
 	vNewPos += vR * (vOffset.x + m_fBobWidth);
@@ -874,45 +883,45 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	vNewPos += vF * vOffset.z;
 
 #ifdef PRIMAL_HUNT
-	m_vFlashOffset[0].Init();
+	m_vFlashOffset[nMuzzle].Init();
 #else
 	m_vFlashOffset.Init();
 #endif
 
 #ifdef PRIMAL_HUNT
-	m_vFlashOffset[0].x = (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
+	m_vFlashOffset[nMuzzle].x = (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
 #else
 	m_vFlashOffset.x = (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
 #endif
 #ifdef PRIMAL_HUNT
-	m_vFlashOffset[0].y = (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
+	m_vFlashOffset[nMuzzle].y = (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
 #else
 	m_vFlashOffset.y = (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
 #endif
 #ifdef PRIMAL_HUNT
-	m_vFlashOffset[0].z = (vOffset.z + vMuzzleOffset.z);
+	m_vFlashOffset[nMuzzle].z = (vOffset.z + vMuzzleOffset.z);
 #else
 	m_vFlashOffset.z = (vOffset.z + vMuzzleOffset.z);
 #endif
 
 	//calculate new position for muzzle flash
 #ifdef PRIMAL_HUNT
-	m_vFlashPos[0] = vPos;
+	m_vFlashPos[nMuzzle] = vPos;
 #else
 	m_vFlashPos = vPos;
 #endif
 #ifdef PRIMAL_HUNT
-	m_vFlashPos[0] += vFlashR * (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
+	m_vFlashPos[nMuzzle] += vFlashR * (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
 #else
 	m_vFlashPos += vFlashR * (vOffset.x + vMuzzleOffset.x + m_fBobWidth);
 #endif
 #ifdef PRIMAL_HUNT
-	m_vFlashPos[0] += vFlashU * (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
+	m_vFlashPos[nMuzzle] += vFlashU * (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
 #else
 	m_vFlashPos += vFlashU * (vOffset.y + vMuzzleOffset.y + m_fBobHeight);
 #endif
 #ifdef PRIMAL_HUNT
-	m_vFlashPos[0] += vFlashF * (vOffset.z + vMuzzleOffset.z);
+	m_vFlashPos[nMuzzle] += vFlashF * (vOffset.z + vMuzzleOffset.z);
 #else
 	m_vFlashPos += vFlashF * (vOffset.z + vMuzzleOffset.z);
 #endif
@@ -1167,8 +1176,7 @@ void CWeaponModel::CreateFlash()
 	if (!m_pWeapon || !m_pBarrel) return;
 
 #ifdef PRIMAL_HUNT
-	m_fFlashStartTime[0] = 0.0f;
-	m_fFlashStartTime[1] = 0.0f;
+	memset(m_fFlashStartTime, 0, sizeof(m_fFlashStartTime));
 #else
 	m_fFlashStartTime = 0.0f;
 #endif
@@ -1923,6 +1931,12 @@ void CWeaponModel::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 	}
 	else if (stricmp(pKey, WEAPON_KEY_ZOOM_START) == 0)
 	{
+#ifdef PRIMAL_HUNT
+		// (not while the player mans a turret)
+		if(g_pGameClientShell->GetUsingTurret())
+			return;
+#endif
+
 		//set zoom level to 4x
 		m_fCurZoomLevel = 2;
 		HCAMERA hCamera = g_pGameClientShell->GetPlayerCamera();
@@ -1944,6 +1958,9 @@ void CWeaponModel::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 	else if (stricmp(pKey, WEAPON_KEY_ZOOM_END) == 0)
 	{
 		//set crosshair to normal
+#ifdef PRIMAL_HUNT
+		if(!g_pGameClientShell->GetUsingTurret())
+#endif
 		g_pInterfaceMgr->GetCrosshairMgr()->LoadCrosshair(m_pWeapon->szCrosshair, m_pWeapon->fCrosshairScale, m_pWeapon->fCrosshairAlpha);
 
 		//set overlay
@@ -2134,7 +2151,7 @@ WeaponState CWeaponModel::Fire(LTBOOL bUpdateAmmo)
 		g_pInterface->WriteToMessageByte(hWrite, (uint8)-1);
 		g_pInterface->WriteToMessageByte(hWrite, (uint8)dwId);
 #ifdef PRIMAL_HUNT
-		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[m_pBarrel->nCurMuzzle]);
 #else
 		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
 #endif
@@ -3206,6 +3223,47 @@ LTBOOL CWeaponModel::PlayStartSpinupAnimation(LTBOOL bResetAni)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+LTBOOL CWeaponModel::PlayStartFireAnimation(LTBOOL bResetAni)
+{
+	if (!m_hObject) return LTFALSE;
+
+	//get the current animation and playing state
+	uint32 dwAni	= g_pInterface->GetModelAnimation(m_hObject);
+	uint32 dwState	= g_pInterface->GetModelPlaybackState(m_hObject);
+	LTBOOL bIsAnyFireAnim = (IsEndFireAni(dwAni) | IsStartFireAni(dwAni) | IsReloadAni(dwAni) | IsFireAni(dwAni));
+	LTBOOL bIsStartFireAnim		= IsStartFireAni(dwAni);
+	LTBOOL bIsEndFireAnim		= IsEndFireAni(dwAni);
+	LTBOOL bIsFireAnim			= IsFireAni(dwAni);
+
+	//test to see that we are not already playing a start fire
+	//animation and that the last animation is completed
+	if (!bIsAnyFireAnim || (dwState & MS_PLAYDONE))
+	{
+		if (bResetAni)
+		{
+			//if we have a start fire animation, play it
+			if (m_nStartFireAnim == INVALID_ANI) return LTFALSE;
+
+			g_pInterface->SetModelLooping(m_hObject, LTFALSE);
+			g_pInterface->SetModelAnimation(m_hObject, m_nStartFireAnim);
+			g_pInterface->ResetModelAnimation(m_hObject);  // Start from beginning
+		}
+
+		if (bIsStartFireAnim && (dwState & MS_PLAYDONE))
+		{
+			return LTFALSE;
+		}
+
+		if (bIsEndFireAnim == LTTRUE && (dwState & MS_PLAYDONE))
+		{
+			return LTFALSE;
+		}
+	}
+
+	return DTRUE;
+}
+#else
 LTBOOL CWeaponModel::PlayStartFireAnimation(LTBOOL bResetAni)
 {
 	if (!m_hObject) return LTFALSE;
@@ -3249,6 +3307,7 @@ LTBOOL CWeaponModel::PlayStartFireAnimation(LTBOOL bResetAni)
 
 	return DTRUE;
 }
+#endif
 
 // ----------------------------------------------------------------------- //
 //
@@ -3332,8 +3391,10 @@ LTBOOL CWeaponModel::PlayEndFireAnimation(LTBOOL bResetAni)
 {
 	if (!m_hObject) return LTFALSE;
 
+#ifndef PRIMAL_HUNT
 	// Only primary barrels support end fire anims..  Sorry...
 	if(m_pBarrel != m_pPrimBarrel) return LTFALSE;
+#endif
 
 	uint32		nAnimTime	= 0;
 	LTFLOAT		fRatio		= 1.0f;
@@ -3365,7 +3426,12 @@ LTBOOL CWeaponModel::PlayEndFireAnimation(LTBOOL bResetAni)
 	//animation and that the last animation is completed
 	if (!IsEndFireAni(dwAni) || (dwState & MS_PLAYDONE))
 	{
+#ifdef PRIMAL_HUNT
+		// (an end fire the dual pistols are already playing is not restarted)
+		if ((!IsEndFireAni(dwAni) || !strstr(m_pWeapon->szName, "Dual_Pistols")) && bResetAni)
+#else
 		if (bResetAni)
+#endif
 		{
 			//if we have a start fire animation, play it
 			if (m_nEndFireAnim == INVALID_ANI) return LTFALSE;
@@ -3400,7 +3466,11 @@ LTBOOL CWeaponModel::PlayEndFireAnimation(LTBOOL bResetAni)
 
 void CWeaponModel::OnFireButtonUp()
 {
+#ifdef PRIMAL_HUNT
+	if (!m_hObject || !m_pBarrel) return;
+#else
 	if (!m_hObject || !m_pBarrel || m_pBarrel != m_pPrimBarrel) return;
+#endif
 
 	CWeaponChooser*	pChooser = g_pGameClientShell->GetInterfaceMgr()->GetWeaponChooser();
 	if(pChooser && pChooser->IsOpen())
@@ -3409,6 +3479,21 @@ void CWeaponModel::OnFireButtonUp()
 	if(g_pGameClientShell->IsCinematic())
 		return;
 
+#ifdef PRIMAL_HUNT
+	// a dual muzzle weapon lets its shot finish, and both muzzles fire
+	if(m_pBarrel->bDualMuzzle == LTTRUE)
+	{
+		if(!(g_pInterface->GetModelPlaybackState(m_hObject) & MS_PLAYDONE))
+			return;
+
+		if(m_eState == W_START_FIRING)
+			return;
+
+		if((m_eState == W_FIRING || m_eState == W_FIRING_SPECIAL) && !m_pBarrel->nCurMuzzle)
+			return;
+	}
+#endif
+
 	//set fire animation
 	if(m_pBarrel->eBarrelType == BT_CHARGE && m_eState != W_SELECT && m_eState != W_DESELECT )
 	{
@@ -3416,7 +3501,11 @@ void CWeaponModel::OnFireButtonUp()
 		PlayFireAnimation();
 	}
 
+#ifdef PRIMAL_HUNT
+	if(m_pWeapon->bLoopFireAnim && m_eState != W_RELOADING &&  m_eState != W_SPINUP)
+#else
 	if(m_pWeapon->bLoopFireAnim && m_pBarrel == m_pPrimBarrel && m_eState != W_RELOADING &&  m_eState != W_SPINUP)
+#endif
 	{
 		if(m_nEndFireAnim != INVALID_ANI)
 		{
@@ -3452,6 +3541,11 @@ void CWeaponModel::OnFireButtonUp()
 		else
 			m_eState = W_IDLE;
 	}
+
+#ifdef PRIMAL_HUNT
+	// the next shot is the first muzzle's
+	m_pBarrel->nCurMuzzle = 0;
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -3736,6 +3830,19 @@ LTBOOL CWeaponModel::PlayAmmoChangeAnimation()
 
 	if (bIsAmmoChangeAni && (dwState & MS_PLAYDONE))
 	{
+#ifdef PRIMAL_HUNT
+		// an empty clip is filled once the ammo change is done
+		AmmoStatus as = StatusAmmo(m_pBarrel);
+		CPlayerStats* pStats = g_pGameClientShell->GetPlayerStats();
+
+		if (as == AS_CLIP_EMPTY && pStats && m_pAmmo)
+		{
+			int nAmmoCount = pStats->GetAmmoCount(m_pAmmo->nId);
+			int nShotsPerClip = m_pBarrel->nShotsPerClip;
+
+			pStats->UpdateClip(m_pBarrel->nId, nAmmoCount < nShotsPerClip ? nAmmoCount : nShotsPerClip);
+		}
+#endif
 		return LTFALSE;
 	}
 
@@ -3999,7 +4106,7 @@ void CWeaponModel::SendFireMsg()
 
 		HMESSAGEWRITE hWrite = g_pInterface->StartMessage(MID_WEAPON_FIRE);
 #ifdef PRIMAL_HUNT
-		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[m_pBarrel->nCurMuzzle]);
 #else
 		g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
 #endif
@@ -4087,7 +4194,11 @@ LTBOOL CWeaponModel::GetFireInfo(LTVector & vU, LTVector & vR, LTVector & vF,
 
 	//test for min dist
 	LTVector vDist = vEndPoint - vFirePos;
+#ifdef PRIMAL_HUNT
+	LTVector vMuzzleOffset = GetMuzzleOffset(m_pBarrel->nCurMuzzle);
+#else
 	LTVector vMuzzleOffset = GetMuzzleOffset();
+#endif
 
 	//only adjust our vector if we are shooting more than 150 units
 	if(vDist.MagSqr() > 22500.0f)
@@ -4330,7 +4441,7 @@ void CWeaponModel::HandleGadgetImpact(HOBJECT hObj)
 
 	HMESSAGEWRITE hWrite = g_pInterface->StartMessage(MID_WEAPON_FIRE);
 #ifdef PRIMAL_HUNT
-	g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+	g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[m_pBarrel->nCurMuzzle]);
 #else
 	g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
 #endif
@@ -4488,7 +4599,18 @@ void CWeaponModel::ChangeWeapon(uint8 nCommandId, LTBOOL bNoDeselect)
 
 	if (nWeaponId == m_nWeaponId)
 	{
+#ifdef PRIMAL_HUNT
+		// a multi-select weapon steps on to the next of its group
+		WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
+		if (!pWeapon || !pWeapon->nMultiSelect) return;
+
+		WEAPON* pNext = g_pWeaponMgr->GetWeapon(pWeapon->szMultiSelectNext);
+		if (!pNext || !pStats->HaveWeapon(pNext->nId)) return;
+
+		nWeaponId = pNext->nId;
+#else
 		return;
+#endif
 	}
 
 
@@ -4665,8 +4787,13 @@ void CWeaponModel::DoWeaponChange(uint8 nWeaponId)
 	LTBOOL bIsPounceJump = (stricmp(pWeapon->szName, "PounceJump") == 0);
 	LTBOOL bIsMediComp = (stricmp(pWeapon->szName, "Medicomp") == 0);
 	LTBOOL bIsEnergySift = (stricmp(pWeapon->szName, "Energy_Sift") == 0);
+#ifdef PRIMAL_HUNT
+	LTBOOL bIsBackhand = (stricmp(pWeapon->szName, "Backhand_Predalien") == 0);
 
+	if (pStats->HaveWeapon(nWeaponId) || bIsTorch || bIsHacker || bIsPounceJump || bIsMediComp || bIsEnergySift || bIsBackhand)
+#else
 	if (pStats->HaveWeapon(nWeaponId) || bIsTorch || bIsHacker || bIsPounceJump || bIsMediComp || bIsEnergySift)
+#endif
 	{
 		g_pGameClientShell->ChangeWeapon(nWeaponId);
 	}
@@ -5018,6 +5145,20 @@ void CWeaponModel::SetWeaponOffset(LTVector vPos)
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+LTVector CWeaponModel::GetMuzzleOffset(int nMuzzle)
+{
+	LTVector vRet;
+	vRet.Init();
+
+	if (!m_pBarrel) return vRet;
+
+	if (nMuzzle == 1)
+		return m_pBarrel->vDualMuzzlePos;
+
+	return m_pBarrel->vMuzzlePos;
+}
+#else
 LTVector CWeaponModel::GetMuzzleOffset()
 {
 	LTVector vRet;
@@ -5026,6 +5167,7 @@ LTVector CWeaponModel::GetMuzzleOffset()
 	if (!m_pBarrel) return vRet;
 	return m_pBarrel->vMuzzlePos;
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -5928,6 +6070,33 @@ void CWeaponModel::ResetModelSkins()
 	}
 
 
+#ifdef PRIMAL_HUNT
+	// a predator's weapon takes the cloaked predator's environment map
+	uint32 dwUserFlags;
+	HLOCALOBJ hClientObj = g_pLTClient->GetClientObject();
+	g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
+
+	if(m_nSkinMode == 1)
+	{
+		if(dwUserFlags & USRFLG_CHAR_CLOAKED)
+		{
+			const char* szEnvMap = LTNULL;
+
+			if(pStats)
+				szEnvMap = g_pCharacterButeMgr->GetCharacterButes(pStats->GetButeSet()).m_szDefaultEnvMap;
+
+			if(szEnvMap)
+				SAFE_STRCPY(createStruct.m_SkinNames[4], szEnvMap)
+			else
+				SAFE_STRCPY(createStruct.m_SkinNames[4], "")
+		}
+		else
+		{
+			createStruct.m_SkinNames[4][0] = '\0';
+		}
+	}
+#endif
+
 	//don't re-set the animations
 	createStruct.m_bResetAnimations = LTFALSE;
 
@@ -6228,7 +6397,7 @@ LTBOOL CWeaponModel::ClientHitDetection(WeaponPath& wp, LTVector& vFirePos)
 
 					HMESSAGEWRITE hWrite = g_pInterface->StartMessage(MID_WEAPON_HIT);
 #ifdef PRIMAL_HUNT
-					g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[0]);
+					g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos[m_pBarrel->nCurMuzzle]);
 #else
 					g_pInterface->WriteToMessageVector(hWrite, &m_vFlashPos);
 #endif

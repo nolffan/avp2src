@@ -644,17 +644,17 @@ TARGETS = [
          # CObjWorldModel's (0x00466ec0), ... 0x00412bdc CObjParticleSystem's
          # (0x00468070), 0x00413e7c CObjBase's (0x00466850).
          own_symbols={
-             "?Allocate@?$CObjectBank@VCObjModel@@@@UAEPAXXZ": 0x00412a70,
-             "?Allocate@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ": 0x00412ab0,
-             "?Allocate@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ": 0x00412af0,
-             "?Allocate@?$CObjectBank@VCObjLight@@@@UAEPAXXZ": 0x00412b30,
-             "?Allocate@?$CObjectBank@VCObjCamera@@@@UAEPAXXZ": 0x00412b70,
-             "?Allocate@?$CObjectBank@VCObjParticleSystem@@@@UAEPAXXZ": 0x00412bb0,
-             "?Allocate@?$CObjectBank@VCObjPolyGrid@@@@UAEPAXXZ": 0x00412c20,
-             "?Allocate@?$CObjectBank@VCObjLineSystem@@@@UAEPAXXZ": 0x00412c60,
-             "?Allocate@?$CObjectBank@VCObjContainer@@@@UAEPAXXZ": 0x00412ca0,
-             "?Allocate@?$CObjectBank@VCObjCanvas@@@@UAEPAXXZ": 0x00412ce0,
-             "?Allocate@?$CObjectBank@VCObjBase@@@@UAEPAXXZ": 0x00413e50,
+             "?AllocVoid@?$CObjectBank@VCObjModel@@@@UAEPAXXZ": 0x00412a70,
+             "?AllocVoid@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ": 0x00412ab0,
+             "?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ": 0x00412af0,
+             "?AllocVoid@?$CObjectBank@VCObjLight@@@@UAEPAXXZ": 0x00412b30,
+             "?AllocVoid@?$CObjectBank@VCObjCamera@@@@UAEPAXXZ": 0x00412b70,
+             "?AllocVoid@?$CObjectBank@VCObjParticleSystem@@@@UAEPAXXZ": 0x00412bb0,
+             "?AllocVoid@?$CObjectBank@VCObjPolyGrid@@@@UAEPAXXZ": 0x00412c20,
+             "?AllocVoid@?$CObjectBank@VCObjLineSystem@@@@UAEPAXXZ": 0x00412c60,
+             "?AllocVoid@?$CObjectBank@VCObjContainer@@@@UAEPAXXZ": 0x00412ca0,
+             "?AllocVoid@?$CObjectBank@VCObjCanvas@@@@UAEPAXXZ": 0x00412ce0,
+             "?AllocVoid@?$CObjectBank@VCObjBase@@@@UAEPAXXZ": 0x00413e50,
              # called from 0x004058e9 (ClientCommonLT::GetPointShade) and
              # 0x00479621 (si_GetPointShade), both placed identical
              "?w_GetPointShade@@YAXPAEPAV?$_CVector@M@@0@Z": 0x00405980,
@@ -673,7 +673,7 @@ TARGETS = [
              # slot 2 (0x00416af0) is CMessageBank::_v08, identical, and
              # slot 3 (0x00416e30) the bank's Init: the Allocate expanded
              # into the slot (smgrnew.cpp)
-             "?_v04@CMessageBank@@UAEXXZ": 0x00416ab0,
+             "?AllocVoid@CMessageBank@@UAEPAXXZ": 0x00416ab0,
              # sm_WriteClientUpdate's call after sm_SendSkyInfo's
              # (0x00472cc7), as Primal Hunt's identical copy calls it
              # (0x004792c9 -> 0x00479910): the global-light message, its

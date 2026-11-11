@@ -32,14 +32,17 @@ uint8 ScrambleChar(int nMethod, uint8 nChar)
 			return nChar;
 
 		case SCRAMBLE_ROTATE:
-			return (nChar >> 5) | (nChar << 3);
+			nChar = (nChar >> 5) | (nChar << 3);
+			break;
 
 		case SCRAMBLE_NOT:
-			return ~nChar;
+			nChar = ~nChar;
+			break;
 
 		case SCRAMBLE_BOTH:
 			nChar = ScrambleChar(SCRAMBLE_NOT, nChar);
-			return ScrambleChar(SCRAMBLE_ROTATE, nChar);
+			nChar = ScrambleChar(SCRAMBLE_ROTATE, nChar);
+			break;
 
 		default:
 			break;
@@ -59,15 +62,11 @@ uint8 ScrambleChar(int nMethod, uint8 nChar)
 
 LTBOOL ScrambleString(const char* szSrc, char* szDest, uint32 nDestLen, int nMethod)
 {
-	uint32 i = 0;
+	uint32 i;
 
-	while(szSrc[i])
+	for(i = 0; szSrc[i] && i < nDestLen - 1; i++)
 	{
-		if(i >= nDestLen - 1)
-			break;
-
 		szDest[i] = ScrambleChar(nMethod, szSrc[i]);
-		i++;
 	}
 
 	szDest[i] = '\0';

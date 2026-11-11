@@ -182,16 +182,15 @@ uint32 CAITentacle::OnInitialUpdate(uint32 nInfo)
 
 	SetNextUpdate(0.001f);
 
-	if (nInfo != INITIALUPDATE_SAVEGAME)
+	if (nInfo == INITIALUPDATE_SAVEGAME) return 0;
+
+	m_tmrRumble.Start(5.0f);
+
+	g_pLTServer->GetObjectPos(m_hObject, &vPos);
+
+	for (int i = 0; i < m_nNumTentacles; i++)
 	{
-		m_tmrRumble.Start(5.0f);
-
-		g_pLTServer->GetObjectPos(m_hObject, &vPos);
-
-		for (int i = 0; i < m_nNumTentacles; i++)
-		{
-			m_apTentacles[i] = CreateTentacle(m_hObject, vPos, m_fTentacleHealth, m_fTentacleDamage, m_fTentacleScale);
-		}
+		m_apTentacles[i] = CreateTentacle(m_hObject, vPos, m_fTentacleHealth, m_fTentacleDamage, m_fTentacleScale);
 	}
 
 	return 0;

@@ -266,11 +266,11 @@ vtable ??_7CDeviceObjectList@@6B@ 0x004a23e4  # compiled with 1 slots
 # The bodies are the shared bank routines already placed at those addresses.
 vtable ??_7CFileBank@@6B@ 0x004a1dbc
     ??_GCFileBank@@UAEPAXI@Z
-    ?Allocate@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
-    ?Free@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-    ?Init@?$CObjectBank@VCBankElem14@@@@UAEXXZ
-vtable ??_7CGlobalBankBaseQ464@@6B@ 0x004a14c8  # compiled with 1 slots
-    ??_GCGlobalBankBaseQ464@@UAEPAXI@Z
+    ?AllocVoid@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
+    ?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
+    ?Term@?$CObjectBank@VCBankElem14@@@@UAEXXZ
+vtable ??_7CBankBase@@6B@ 0x004a14c8  # compiled with 4 slots
+    ??_GCBankBase@@UAEPAXI@Z
     __purecall
     __purecall
     __purecall
@@ -558,8 +558,8 @@ vtable ??_7CMsgWriteQ18@@6B@ 0x004a2b68  # compiled with 1 slots
 vtable ??_7CNetBank@@6B@ 0x004a2b30
     ??_GCNetBank@@UAEPAXI@Z
     ?Allocate@CNetBankQ11@@QAEPAVCNetSentPacketQ11@@XZ
-    ?_v08@CNetBank@@UAEXPAX@Z
-    ?Init@?$CObjectBank@VCBankElem70@@@@UAEXXZ
+    ?FreeVoid@CNetBank@@UAEXPAX@Z
+    ?Term@?$CObjectBank@VCBankElem70@@@@UAEXXZ
 vtable ??_7CNetQueueA@@6B@ 0x004a2a70  # compiled with 1 slots
     ?GenBegin@CMessageQueueBase@@UBE?AVGenListPos@@XZ
     ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
@@ -935,9 +935,9 @@ vtable ??_7CWorldTable@@6B@ 0x004a1bf4  # compiled with 1 slots
     ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
 vtable ??_7CXferFileBankQ464@@6B@ 0x004a22bc  # compiled with 1 slots
     ??_GCXferFileBankQ464@@UAEPAXI@Z
-    ?Allocate@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
-    ?Free@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-    ?Init@?$CObjectBank@VCBankElem1c@@@@UAEXXZ
+    ?AllocVoid@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
+    ?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
+    ?Term@?$CObjectBank@VCBankElem1c@@@@UAEXXZ
 vtable ??_7ClientCommonLTQ404@@6B@ 0x004a17c8  # compiled with 3 slots
     ??_GClientCommonLTQ404@@UAEPAXI@Z
     ?SetObjectFilenames@ClientCommonLT@@QAEIPAVCClientObject@@PAVObjectCreateStruct@@@Z  # SDK slot 1 is SetObjectFilenames (was ?_c01@ClientCommonLTQ404@@UAEXXZ)

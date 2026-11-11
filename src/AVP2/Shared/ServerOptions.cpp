@@ -1003,8 +1003,11 @@ uint32 GetValidLANPort(uint32 nPortID)
 	if (nLANPort > kMaxLANPort)
 		nLANPort = kMaxLANPort;
 
+#ifndef PRIMAL_HUNT
+	// (Primal Hunt takes any port in the range)
 	nLANPort -= kMinLANPort;
 	nLANPort = kMinLANPort + kPortMod * (nLANPort/kPortMod);
+#endif
 
 	return nLANPort;
 

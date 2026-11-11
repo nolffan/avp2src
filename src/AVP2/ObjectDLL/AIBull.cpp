@@ -858,7 +858,7 @@ uint32 CAIBull::OnModelStringKey(void *pData)
 	if (_stricmp(pArgList->argv[0], "run_sound") == 0)
 	{
 		m_Sounds.PlaySound(s_aszSounds[15], vPos, 100, 0.0f, 128, 256.0f, 3072.0f, 58);
-		m_Sounds.PlaySound(s_aszSounds[16 + GetRandom(1)], vPos, 100, 0.0f, 128, 256.0f, 3072.0f, 58);
+		m_Sounds.PlaySound(s_aszSounds[GetRandom(16, 17)], vPos, 100, 0.0f, 128, 256.0f, 3072.0f, 58);
 	}
 	else if (_stricmp(pArgList->argv[0], "step_sound") == 0)
 	{
@@ -907,21 +907,22 @@ LTBOOL CAIBull::HasMoveTarget()
 
 LTBOOL CAIBull::ReturnToLeash()
 {
-	if (m_Leash.m_bOutside != LTTRUE) return LTFALSE;
-
-	m_Leash.m_bOutside = LTFALSE;
-
-	AIBaseStateInfo home(eStateIdle);
-	home.eState	= eStateMoving;
-	home.vPos	= m_Leash.m_vHomePos;
-	home.nParam	= 0;
-	if (!SetState(&home))
+	if (m_Leash.m_bOutside == LTTRUE)
 	{
-		AIBaseStateInfo idle(eStateIdle);
-		SetState(&idle);
+		m_Leash.m_bOutside = LTFALSE;
+
+		AIBaseStateInfo home(eStateMoving);
+		home.vPos	= m_Leash.m_vHomePos;
+		if (!SetState(&home))
+		{
+			AIBaseStateInfo idle(eStateIdle);
+			SetState(&idle);
+		}
+
+		return LTTRUE;
 	}
 
-	return LTTRUE;
+	return LTFALSE;
 }
 
 #endif // PRIMAL_HUNT

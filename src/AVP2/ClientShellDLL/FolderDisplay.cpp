@@ -694,6 +694,9 @@ LTBOOL CFolderDisplay::OnLeft()
 			detailLevel = kNumCfg-1;
 		m_pPerformance->SetSelIndex(detailLevel);
 		m_nOverall = detailLevel;
+#ifdef PRIMAL_HUNT
+		g_pInterfaceMgr->PlayInterfaceSound(IS_SELECT, GetSelectSound());
+#endif
         return LTTRUE;
 	}
 	LTBOOL bHandled = CBaseFolder::OnLeft();
@@ -713,6 +716,9 @@ LTBOOL CFolderDisplay::OnRight()
 			detailLevel = 0;
 		m_pPerformance->SetSelIndex(detailLevel);
 		m_nOverall = detailLevel;
+#ifdef PRIMAL_HUNT
+		g_pInterfaceMgr->PlayInterfaceSound(IS_SELECT, GetSelectSound());
+#endif
 
 		return LTTRUE;
 	}

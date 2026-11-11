@@ -47,10 +47,11 @@ void    str_FreeMessage(void* pRaw);       // 0x10035d39
 //      8b 44 24 04   mov 0x4(%esp),%eax
 //      8b 00         mov (%eax),%eax
 //      c3            ret
-void* clm_GetRecordModule(void* pRecord)
-{
-	return *(void**)pRecord;
-}
+//
+// Defined below WriteFormattedString: with the body already seen, AvP2's
+// cl 9044 cleans its argument with `add $4,%esp` where AvP2 1.0.9.6's
+// server.dll has `pop %ecx` (0x1004056c).
+void* clm_GetRecordModule(void* pRecord);
 
 // The engine's string-handle helpers (all cdecl, defined elsewhere).
 HSTRING sb_CopyString(HSTRING hString);                        // 0x10035e3e
@@ -1664,6 +1665,10 @@ public:
 	// (0x1004d260) that destructor restores last.
 	virtual ~CXferFileBank() { sb_FreeChunks(&m_Bank, 1); }
 
+	virtual void* AllocVoid();
+	virtual void  FreeVoid(void* pRec);
+	virtual void  Term();
+
 	// 0x1000ed6f — `add $0x4,%ecx; push %ecx; call sb_Allocate; pop %ecx`,
 	// and in the class body because lithtech.exe has no out-of-line copy of
 	// it inside xfer_AddFile: 0x0042fd22 is `lea 0x1c(%edi),%ebx` — this+4,
@@ -2525,6 +2530,11 @@ LTRESULT CMessageObjectHelper::WriteFormattedString(IMessageWrite* pMsg,
 	}
 
 	return LT_OK;
+}
+
+void* clm_GetRecordModule(void* pRecord)
+{
+	return *(void**)pRecord;
 }
 
 // 0x10034fb9 — the constructor, and with it the vftable at 0x1004e900.

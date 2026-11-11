@@ -427,6 +427,19 @@ void CSFXMgr::RemoveAll()
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+LTBOOL CSFXMgr::AddDynamicSpecialFX(CSpecialFX* pSFX, DBYTE nId)
+{
+	int nIndex = GetDynArrayIndex(nId);
+
+	if (0 <= nIndex && nIndex < DYN_ARRAY_SIZE)
+	{
+		return m_dynSFXLists[nIndex].Add(pSFX);
+	}
+
+	return LTFALSE;
+}
+#else
 void CSFXMgr::AddDynamicSpecialFX(CSpecialFX* pSFX, DBYTE nId)
 {
 	int nIndex = GetDynArrayIndex(nId);
@@ -436,6 +449,7 @@ void CSFXMgr::AddDynamicSpecialFX(CSpecialFX* pSFX, DBYTE nId)
 		m_dynSFXLists[nIndex].Add(pSFX);
 	}
 }
+#endif
 
 
 // ----------------------------------------------------------------------- //
@@ -702,6 +716,24 @@ void CSFXMgr::OnSFXMessage(HMESSAGEREAD hMessage)
 void CSFXMgr::OnModelKey(HLOCALOBJ hObj, ArgList *pArgs)
 {
 	if (!hObj || !pArgs) return;
+
+#ifdef PRIMAL_HUNT
+	// Primal Hunt: "#menu_sound <file>" plays the file (the menus' models)
+	if (pArgs->argv[0][0] == '#' && pArgs->argv[1][0] && !_stricmp(pArgs->argv[0], "#menu_sound"))
+	{
+		PlaySoundInfo psi;
+
+		strncpy(psi.m_szSoundName, pArgs->argv[1], _MAX_PATH);
+		psi.m_szSoundName[_MAX_PATH] = '\0';
+		psi.m_dwFlags = PLAYSOUND_CLIENT;
+		psi.m_nVolume = 100;
+		psi.m_nPriority = 255;
+
+		HLTSOUND hSound;
+		g_pLTClient->SoundMgr()->PlaySound(&psi, hSound);
+		return;
+	}
+#endif
 
 	// Only pass these on to the player (and AI)...
 

@@ -1045,9 +1045,9 @@ void LithTrackMgr::UpdateCamera()
 	// Move the camera with the keyboard
 	if(m_byControlDevice & GUI_DEVICE_KEYBOARD)
 	{
-		vR *= fFrameTime * m_dCamera.m_fMoveSpeed;
-		vU *= fFrameTime * m_dCamera.m_fMoveSpeed;
-		vF *= fFrameTime * m_dCamera.m_fMoveSpeed;
+		VEC_MULSCALAR(vR, vR, fFrameTime * m_dCamera.m_fMoveSpeed);
+		VEC_MULSCALAR(vU, vU, fFrameTime * m_dCamera.m_fMoveSpeed);
+		VEC_MULSCALAR(vF, vF, fFrameTime * m_dCamera.m_fMoveSpeed);
 
 		if(m_dCamera.m_byLockControls & GUI_CONTROL_LOCK_POS_X)	vR.x = vU.x = vF.x = 0.0f;
 		if(m_dCamera.m_byLockControls & GUI_CONTROL_LOCK_POS_Y)	vR.y = vU.y = vF.y = 0.0f;
@@ -1110,7 +1110,9 @@ DBOOL LithTrackMgr::SetupFont()
 		m_CameraBar.Init(m_pInterface, m_pFont);
 		m_HelpBar.Init(m_pInterface, m_pFont);
 
-		memset(m_pGUIBars, 0, sizeof(m_pGUIBars));
+		for(int i = 0; i < TRACKMGR_MAX_GUIBARS; i++)
+			m_pGUIBars[i] = DNULL;
+
 		AddGUIBarToList(&m_EditBar);
 	}
 

@@ -98,6 +98,10 @@ void CNetMgr::Term()
 
 LTBOOL CNetMgr::SetNetName(char* pName)
 {
+#ifdef PRIMAL_HUNT
+	// PH: the name cleared through the pointer strncpy is handed, before the
+	// bank's grow size (server.dll 0x1002ad21); AvP2 1.0.9.6 stores the grow
+	// size first (0x10029303).
 	char* pDst = m_Name;
 
 	m_UnknownD8 = 0;
@@ -107,6 +111,15 @@ LTBOOL CNetMgr::SetNetName(char* pName)
 	m_pTraceName = g_NetNameBuf;
 
 	strncpy(pDst, pName, 100);
+#else
+	m_UnknownD8 = 0;
+	m_Name[0] = 0;
+	m_PacketBank.m_Bank.m_Unknown08 = 0x100;
+	m_UnknownDC = 0;
+	m_pTraceName = g_NetNameBuf;
+
+	strncpy(m_Name, pName, 100);
+#endif
 
 	m_LastTime = dsi_GetTime();
 	SetGuid(LTNULL);
@@ -649,7 +662,7 @@ inline void CNetBank::Free(void* pRec)
 // objection this note used to raise (Free expanding at /O1) was measured
 // and does not happen; the dependent it was waiting for, the record
 // teardown, is CNetRecvPacket::Term above.
-void CNetBank::_v08(void* pRec)
+void CNetBank::FreeVoid(void* pRec)
 {
 	Free(pRec);
 }
@@ -2321,9 +2334,12 @@ LTBOOL CNetMgrSendView::SendPacketData(ServerMessage* pMsg, NetConnection* pConn
 					else
 					{
 						sub_10022c2f(pRec->m_pData, nLen, pRec->m_nAlloced - nLen, pConn);
-
-						pRec->m_bPending = 0;
 					}
+
+					// Either way it is no longer pending: both arms reach
+					// the clear (AvP2 1.0.9.6 server.dll 0x1002af7f jumps
+					// to it, Primal Hunt's 0x1002ca47 too).
+					pRec->m_bPending = 0;
 				}
 			}
 		}
