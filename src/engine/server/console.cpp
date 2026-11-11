@@ -159,21 +159,6 @@ LTCommandVar* con_CreateVar(ConsoleState* pState, char* pName)
 
 // ---- the bindings ------------------------------------------------------- //
 
-// 0x100059ad — the binding that wants this name, if any. A linear walk: the
-// table is small and fixed at startup.
-ConsoleBinding* con_FindBinding(ConsoleState* pState, char* pName)
-{
-	int i;
-
-	for (i = 0; i < pState->m_nBindings; i++)
-	{
-		if (con_ICompare(pState->m_pBindings[i].m_pName, pName))
-			return &pState->m_pBindings[i];
-	}
-
-	return LTNULL;
-}
-
 // 0x1000595c — push a variable's value out to whichever C variables the
 // binding named. Each one is optional, so a binding can take just the float,
 // just the integer, or the text.
@@ -195,6 +180,28 @@ void con_ApplyBinding(ConsoleState* pState, LTCommandVar* pVar)
 		if (pBind->m_ppString)
 			*pBind->m_ppString = pVar->m_pStringVal;
 	}
+}
+
+// 0x100059ad — the binding that wants this name, if any. A linear walk: the
+// table is small and fixed at startup. It follows its caller in every image
+// (AvP2 1.0.9.6 server.dll 0x10007681 then 0x100076d2).
+//
+// NEAR on AvP2 1.0.9.6's server.dll only (63 vs 67): shipped reads the size
+// and the table once, ahead of the loop (0x100076db, 0x100076e4). Written
+// with the two in locals, server.dll is 67 of 67 with the table's load one
+// instruction early, and AvP2's lithtech.exe (identical as it stands) stops
+// matching.
+ConsoleBinding* con_FindBinding(ConsoleState* pState, char* pName)
+{
+	int i;
+
+	for (i = 0; i < pState->m_nBindings; i++)
+	{
+		if (con_ICompare(pState->m_pBindings[i].m_pName, pName))
+			return &pState->m_pBindings[i];
+	}
+
+	return LTNULL;
 }
 
 // 0x100059ec — set a variable by name, making it if it is new. The value is

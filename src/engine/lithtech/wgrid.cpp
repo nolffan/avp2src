@@ -289,35 +289,22 @@ void CWorldGridQ43C::Init(LTVector* pMin, LTVector* pMax, float fCellSize)
 // definition, here with its dynamic initializer.
 struct SAxisBasis                            // plain, 0x24 bytes
 {
-#ifdef PRIMAL_HUNT
-	// PH: the record carries the constructor itself.  Primal Hunt's
-	// initializer (0x00448ad0, 949 bytes) builds each element IN PLACE --
-	// `mov $0x4f54b0,%ecx ; call 0x448e90` and no temporary, no `rep movs`
-	// -- which only an element of the constructed type allows.  AvP2
-	// 1.0.9.6 copies a derived temporary (0x0043c850, below).
+	// The record carries the constructor itself.  Both engines'
+	// initializers (Primal Hunt 0x00448ad0, AvP2 1.0.9.6 0x00444c50, 949
+	// bytes each) build each element IN PLACE -- `mov $0x4f54b0,%ecx ;
+	// call 0x448e90` (AvP2 `mov $0x4e4318,%ecx ; call 0x445010`) and no
+	// temporary, no `rep movs` -- which only an element of the constructed
+	// type allows.  NOLF's copies a derived temporary (0x0043c850, below).
 	SAxisBasis(LTVector vRight, LTVector vUp, LTVector vForward);
-#endif
 	LTVector m_vRight;                       // +0x00
 	LTVector m_vUp;                          // +0x0c
 	LTVector m_vNormal;                      // +0x18  (the side's forward)
 };
 
-#ifdef PRIMAL_HUNT
-typedef SAxisBasis CSideBasisQ43C;           // PH: see SAxisBasis
-#else
-class CSideBasisQ43C : public SAxisBasis
-{
-public:
-	CSideBasisQ43C(LTVector vRight, LTVector vUp, LTVector vForward);
-};
-#endif
+typedef SAxisBasis CSideBasisQ43C;           // see SAxisBasis
 
-// 0x0043cc60 (PH 0x00448e90)
-#ifdef PRIMAL_HUNT
+// 0x0043cc60 (PH 0x00448e90, AvP2 0x00445010)
 SAxisBasis::SAxisBasis(LTVector vRight, LTVector vUp, LTVector vForward)
-#else
-CSideBasisQ43C::CSideBasisQ43C(LTVector vRight, LTVector vUp, LTVector vForward)
-#endif
 {
 	m_vRight  = vRight;
 	m_vUp     = vUp;

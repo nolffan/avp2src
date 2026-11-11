@@ -871,7 +871,12 @@ class CWorldVertQT1
 {
 public:
 	LTVector* m_pPos;                        // 0x00  -> pWorld->m_pa8
-	uint8     m_pad_04[0x14 - 0x04];
+	// AVP2: the vertex's texture coordinates, worked out by the loader
+	// from the polygon's texture vectors (AvP2 server.dll 0x1000ba4b,
+	// 0x1000ba82).
+	float     m_fU;                          // 0x04
+	float     m_fV;                          // 0x08
+	uint8     m_pad_0c[0x14 - 0x0c];
 	uint8     m_b;                           // 0x14
 	uint8     m_g;                           // 0x15
 	uint8     m_r;                           // 0x16
@@ -882,36 +887,41 @@ public:
 // worldbsp.h's CWorldPart, with the fields this loader fills named.  It is
 // ltobject_internal.h's WorldPolyOwner; nothing below moves an offset.
 // Every polygon is carved out of the one flat block at CWorldBsp+0xfc, so
-// the records are variable length: 0x54 plus 0x18 per vertex, rounded up to
-// a multiple of four.
+// the records are variable length: 0x58 plus 0x18 per vertex, rounded up to
+// a multiple of four (AvP2 server.dll 0x1000b1f1).
 class CWorldPartFullQT1
 {
 public:
 	uint8     m_pad_00[0x0c];
 	void*     m_pEdges;                      // 0x0c  -> m_Array54.m_pArray
 	uint32    m_nEdges;                      // 0x10
-	uint8     m_pad_14[0x16 - 0x14];
+	// AVP2: the axis the polygon's plane most nearly points along, a
+	// three-bit field merged in with `and $0x3800` (AvP2 server.dll
+	// 0x1000b97a).
+	uint16    m_n14   : 11;                  // 0x14
+	uint16    m_nAxis : 3;
+	uint16    m_n14Hi : 2;
 	uint16    m_nIndex;                      // 0x16  its own index
 	// AVP2: (NOLF had the surface at +0x28 and the chain link at +0x40)
 	// AvP2's and Primal Hunt's polygon is four bytes longer ahead of the
 	// surface: w_LinkSurfacePolies reads the surface at +0x2c and threads
 	// +0x44 (0x0042cb4e, 0x0042cb59; AvP2 0x00429d8e, 0x00429d99), and the
-	// loader stores the surface at +0x2c (0x0042c3e5).  What follows is
-	// still NOLF's.
-	uint8     m_pad_18[0x2c - 0x18];         // 0x18 m_vCentre, 0x24 m_fRadius
+	// loader stores the surface at +0x2c (0x0042c3e5).  The plane is the
+	// polygon's, not the surface's (AvP2 server.dll 0x1000b96c).
+	uint8     m_pad_18[0x28 - 0x18];         // 0x18 m_vCentre, 0x24 m_fRadius
+	LTPlane*  m_pPlane;                      // 0x28
 	CWorldSurface* m_pSurface;               // 0x2c  WorldPolyOwner::m_pParent
-	uint8     m_pad_30[0x34 - 0x30];
-	LTVector  m_v34;                         // 0x34  read by w_ReadVector
-	uint8     m_pad_40[0x44 - 0x40];
+	uint8     m_pad_30[0x38 - 0x30];
+	LTVector  m_v38;                         // 0x38  read by w_ReadVector
 	uint16    m_nNextOnSurface;              // 0x44  w_LinkSurfacePolies threads this
-	uint8     m_pad_46[0x48 - 0x46];
-	uint8     m_n48;                         // 0x48
-	uint8     m_n49;                         // 0x49
-	uint8     m_pad_4a[0x4c - 0x4a];
-	class CWorldVertQT1* m_pVerts2;          // 0x4c
-	uint16    m_nVerts;                      // 0x50
-	uint16    m_nVerts2;                     // 0x52
-	class CWorldVertQT1 m_Verts[1];          // 0x54  as many as the two
+	uint8     m_pad_46[0x4c - 0x46];
+	uint8     m_n4c;                         // 0x4c
+	uint8     m_n4d;                         // 0x4d
+	uint8     m_pad_4e[0x50 - 0x4e];
+	class CWorldVertQT1* m_pVerts2;          // 0x50
+	uint16    m_nVerts;                      // 0x54
+	uint16    m_nVerts2;                     // 0x56
+	class CWorldVertQT1 m_Verts[1];          // 0x58  as many as the two
 	                                         //       counts add up to
 };
 
@@ -988,12 +998,6 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
                      uint32 nFlags, CWorldBsp** ppGeom, uint32* pnLoadTicks,
                      uint32* pnPrecalcTicks, int bCurrent)
 {
-	// Server-only: the /O2 client has neither counter, no StartCounter and
-	// no tick accumulation anywhere in its twin (0x00422970..0x00423bf3).
-#ifdef LT_SERVER_TIMERS
-	CBaseCounter   counterLoad(0);           // -0x84
-	CBaseCounter   counterPrecalc(0);        // -0x8c
-#endif
 	CommandParser  parser;                   // -0x17d8
 
 	ILTStream*     pStream;                  // %ebx throughout
@@ -1003,7 +1007,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	uint32   nJunk2;                         // -0x90
 	uint32   nJunk3;                         // -0x94
 	uint8    nJunkR, nJunkG, nJunkB;         // -0x42, -0x41, -0x43
-	LTVector vJunk;                          // -0xd0
+	LTVector vO, vP, vQ;                     // AVP2: a polygon's texture vectors
 
 	// The counts, all off the wire in this order.
 	uint32   nNumPoints;                     // -0x30
@@ -1068,8 +1072,14 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 
 	*ppGeom = LTNULL;                        // 0x10008401
 
-#ifdef LT_SERVER_TIMERS
-	cnt_StartCounter(&counterLoad);          // 0x1000840a
+	// The load timer is built here, after the two clears, and the
+	// precalculation timer only where it starts (Primal Hunt server.dll
+	// 0x1000b1d1 and 0x1000c02e area, AvP2 0x1000af6a and 0x1000bd8e).
+	// Neither Talon lithtech.exe has either (Primal Hunt 0x0042b740, AvP2
+	// 0x00428ac0 construct nothing before the `new`).
+#if defined(LT_SERVER_TIMERS) && defined(LT_SERVER_BUILD)
+	CBaseCounter counterLoad(0);
+	cnt_StartCounter(&counterLoad);
 #endif
 
 	// --- B. 0x1000840f..0x10008428 -------------------------------------
@@ -1190,7 +1200,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		pStream->Read(&nVerts0, 1);          // 0x1000866c, -0x11
 		pStream->Read(&nVerts1, 1);          // 0x10008679, -0x12
 
-		nOffset += 0x54 + (nVerts1 + nVerts0) * 0x18;
+		nOffset += 0x58 + (nVerts1 + nVerts0) * 0x18;
 
 		if (nOffset & 3)
 			nOffset += 4 - (nOffset & 3);
@@ -1238,7 +1248,10 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	pWorld->m_p80     = dalloc_z(pWorld->m_n84 * 8);                   // 0x100087e1
 	pWorld->m_pChunks = (CWorldChunk*)dalloc_z(pWorld->m_nChunks * 0x24); // 0x100087fc
 
-	if (!pWorld->m_Array54.SetSize2(nNumEdges, &g_DefAlloc))   // 0x1000880d
+	// SetSize, not SetSize2: one inline level deeper, so Primal Hunt's and
+	// AvP2's lithtech.exe CALL _DeleteAndDestroyArray and BaseNew here
+	// (AvP2 0x00428f89, 0x00428faa); the same bytes at /O1.
+	if (!pWorld->m_Array54.SetSize(nNumEdges))   // 0x1000880d
 		goto fail;
 
 	// --- G. 0x1000881a..0x10008892 -- the live-geometry byte count -----
@@ -1263,7 +1276,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	    + pWorld->m_n84 * 8                                       // m_p80
 	    + nNumPlanes * 0x10                                       // m_p68
 	    + nNumPoints * 0xc                                        // m_pa8
-	    + nNumSurfaces * 0x48                                     // m_pTree
+	    + nNumSurfaces * 0x40                                     // m_pTree
 	    + nNumGroups * 0x30                                       // m_p88
 	    + pWorld->m_n74 * 0x18                                    // m_n70
 	    + nOffset                                                 // m_pfc
@@ -1297,13 +1310,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	// fields out of uint8 locals, which is the `movzbw` pair at 0x100088e7
 	// and 0x100088f0.
 	//
-	// nEdgeBase below is a genuine DEAD STORE in the shipped code: summed
-	// here (0x10008901) and re-zeroed by region L (0x10008d31) before
-	// anything reads it.  The statement is written because /O1 kept
-	// the add; if the original had no such statement the add would not be
-	// there.  It is either a vestigial total or a bug.  Flagged below.
 	nOffset = 0;                             // -0x8
-	nEdgeBase = 0;                             // -0xc
 
 	for (i = 0; i < nNumPolies; i++)         // 0x100088a6 / 0x10008925
 	{
@@ -1318,9 +1325,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		pPoly->m_nVerts  = nVerts0;          // 0x100088ec, +0x50
 		pPoly->m_nVerts2 = nVerts1;          // 0x100088f5, +0x52
 
-		nEdgeBase += nVerts0;                     // 0x10008901 -- dead, see above
-
-		nOffset += 0x54 + (nVerts1 + nVerts0) * 0x18;
+		nOffset += 0x58 + (nVerts1 + nVerts0) * 0x18;
 
 		if (nOffset & 3)
 			nOffset += 4 - (nOffset & 3);
@@ -1431,29 +1436,6 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		pStream->Read(&pSurf->m_vP, 0xc);    // 0x10008b40
 		pStream->Read(&pSurf->m_vQ, 0xc);    // 0x10008b4d
 		pStream->Read(&pSurf->m_n36, 2);     // 0x10008b5a
-		pStream->Read(&nPlane, 4);                // 0x10008b67, -0x68
-
-		if (nPlane >= pWorld->m_n6c)              // 0x10008b6d, unsigned
-			goto fail;
-
-		// A local for the plane: %esi is loaded once (0x10008b83) and used
-		// both for the store and as the source of the three `movsl` that
-		// pass the normal by value.  `pSurf->m_pPlane->m_Normal` as the
-		// argument would re-load the member (VC6 does not CSE a member
-		// read across a call, but there is no call between these two, so
-		// the two spellings are NOT separated by the bytes).  The local is
-		// written; the member re-read is the alternative.
-		{
-			LTPlane* pPlane = &((LTPlane*)pWorld->m_p68)[nPlane];
-
-			pSurf->m_pPlane = pPlane;        // 0x10008b89, +0x34
-#ifdef LT_SERVER_BUILD
-			pSurf->m_nAxis  = math_FindClosestAxisBasis(pPlane->m_Normal);
-#else
-			pSurf->m_nAxis  = sb_GetSideQ43C(pPlane->m_Normal);
-#endif
-		}                                    // 0x10008b8f / 0x10008bac
-
 		pStream->Read(&nFlagWord, 4);                // 0x10008bb6, -0x6c
 		pSurf->m_nFlags = nFlagWord;                 // 0x10008bb9..0x10008bc9, the
 		                                     //   `x ^= ((x ^ v) & 0x1fffffff)`
@@ -1523,6 +1505,19 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	if (nFlags)                              // 0x10008d1f
 		pRequest->m_LoadHook(pRequest->m_Unknown0c);
 
+	// --- P. 0x10009047..0x100090a7 -- the shared vertex positions ------
+	// AVP2: read straight after the surfaces and ahead of the polygons,
+	// whose texture coordinates are worked out from these positions (AvP2
+	// server.dll 0x1000b83f..0x1000b893), and only the three coordinates
+	// (NOLF read a discarded normal after them).  Written out longhand
+	// rather than through w_ReadVector: each one re-loads m_pa8.
+	for (i = 0; i < nNumPoints; i++)         // 0x10009049 / 0x100090a2
+	{
+		pStream->Read(&((LTVector*)pWorld->m_pa8)[i].x, 4);   // 0x10009060
+		pStream->Read(&((LTVector*)pWorld->m_pa8)[i].y, 4);   // 0x10009074
+		pStream->Read(&((LTVector*)pWorld->m_pa8)[i].z, 4);   // 0x10009088
+	}
+
 	// --- L. 0x10008d2c..0x10008ecb -- the polygons ---------------------
 	// Fill in the records region H carved: the plane-space vector, the two
 	// bytes, the edge run, the surface, and every vertex's shared position
@@ -1533,7 +1528,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	{
 		pPoly = (CWorldPartFullQT1*)pWorld->m_ppParts[i];   // %edi
 
-		w_ReadVector(pStream, &pPoly->m_v34);     // 0x10008d4e, +0x34
+		w_ReadVector(pStream, &pPoly->m_v38);     // 0x10008d4e, +0x38
 
 		// TWO distinct slots (-0x4c and -0x4a), both read as words and both
 		// stored as BYTES: `mov -0x4c(%ebp),%al ; mov %al,0x48(%edi)`.  A
@@ -1542,8 +1537,8 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		pStream->Read(&w48, 2);               // 0x10008d5f, -0x4c
 		pStream->Read(&w49, 2);               // 0x10008d6c, -0x4a
 
-		pPoly->m_n48 = (uint8)w48;             // 0x10008d75
-		pPoly->m_n49 = (uint8)w49;            // 0x10008d7b
+		pPoly->m_n4c = (uint8)w48;             // 0x10008d75
+		pPoly->m_n4d = (uint8)w49;            // 0x10008d7b
 
 		pStream->Read(&wEdges, 2);           // 0x10008d85, -0x5e
 		pPoly->m_nEdges = wEdges;                 // 0x10008d8c, a uint16 widened
@@ -1566,7 +1561,30 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		                                     // 0x10008de1
 			goto fail;
 
-		pPoly->m_pSurface = &((CWorldSurface*)pWorld->m_pTree)[nSurface];  // +0x28
+		pPoly->m_pSurface = &((CWorldSurface*)pWorld->m_pTree)[nSurface];  // +0x2c
+
+		// AVP2: the plane, and the axis it most nearly points along, are
+		// the polygon's (AvP2 server.dll 0x1000b95d..0x1000b98d); then the
+		// three texture vectors the vertices' coordinates come from.
+		pStream->Read(&nPlane, 4);
+
+		if (nPlane >= pWorld->m_n6c)
+			goto fail;
+
+		{
+			LTPlane* pPlane = &((LTPlane*)pWorld->m_p68)[nPlane];
+
+			pPoly->m_pPlane = pPlane;
+#ifdef LT_SERVER_BUILD
+			pPoly->m_nAxis  = math_FindClosestAxisBasis(pPlane->m_Normal);
+#else
+			pPoly->m_nAxis  = sb_GetSideQ43C(pPlane->m_Normal);
+#endif
+		}
+
+		pStream->Read(&vO, 0xc);
+		pStream->Read(&vP, 0xc);
+		pStream->Read(&vQ, 0xc);
 
 		// The cursor runs at &m_Verts[k].m_r (record + 0x16), which is
 		// why the three colour reads are at 0, -1 and -2 off it and
@@ -1589,6 +1607,9 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 			// assignment.  (worldbsp.h's CWorldItem18::Init already
 			// records the same /O1 `or` for `= 0xffff`.)
 			pPoly->m_Verts[j].m_a = 0xff;           // 0x10008e6a, +0x17
+
+			pPoly->m_Verts[j].m_fU = (*pPoly->m_Verts[j].m_pPos - vO).Dot(vP);
+			pPoly->m_Verts[j].m_fV = (*pPoly->m_Verts[j].m_pPos - vO).Dot(vQ);
 		}
 
 		if (pPoly->m_nVerts2 == 0)           // 0x10008e80
@@ -1674,27 +1695,11 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 		strcpy(pChunk->m_pName, szChunk);                       // 0x10008ff2
 
 		pStream->Read(&nJunk3, 4);           // 0x10009007, -0x94, dropped
+		pStream->Read(&nJunk3, 4);           // AVP2: twice (0x1000bc46, 0x1000bc56)
 		pStream->Read(&pChunk->m_n04, 2);    // 0x10009014, +0x04
 		pStream->Read(&pChunk->m_v0c, 0xc);  // 0x10009021, +0x0c
 		pStream->Read(&pChunk->m_v18, 0xc);  // 0x1000902e, +0x18
 
-	}
-
-	// --- P. 0x10009047..0x100090a7 -- the shared vertex positions ------
-	// Three four-byte reads per point and then a whole discarded vector.
-	// The three are written out longhand rather than through w_ReadVector:
-	// each one re-loads m_pa8 (`add 0xa8(%esi),%ecx` three times), which is
-	// VC6 not CSE-ing a member across a call, and w_ReadVector would take
-	// the address once and make ONE call.  The fourth read IS w_ReadVector,
-	// into a local nothing ever looks at — a per-point normal the server
-	// does not keep.
-	for (i = 0; i < nNumPoints; i++)         // 0x10009049 / 0x100090a2
-	{
-		pStream->Read(&((LTVector*)pWorld->m_pa8)[i].x, 4);   // 0x10009060
-		pStream->Read(&((LTVector*)pWorld->m_pa8)[i].y, 4);   // 0x10009074
-		pStream->Read(&((LTVector*)pWorld->m_pa8)[i].z, 4);   // 0x10009088
-
-		w_ReadVector(pStream, &vJunk);       // 0x10009093, -0xd0
 	}
 
 	if (nFlags)                              // 0x100090a8
@@ -1706,11 +1711,15 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	// that is what the byte count picks up (+0x130 is m_Sub108 + 0x28, the
 	// cell count).
 	//
-	// NOTE THE LEAK: this failure arm jumps STRAIGHT to 0x100091fb, the
-	// bare `return 2`, and not to the delete at 0x100091e9.  Every other
-	// failure in the function deletes the world first.  Flagged below.
+	// RETAIL BUG: this failure arm jumps STRAIGHT to the bare `return 2`
+	// (AvP2 server.dll 0x1000bcb4 -> 0x1000bdd2), not to the delete; every
+	// other failure deletes the world first, so a bad cell grid leaks it.
 	if (!pWorld->m_Sub108.Load(pStream))     // 0x100090bf
+#ifdef AVP2_MODERN
+		goto fail;
+#else
 		return 2;
+#endif
 
 	pWorld->m_nBytes += pWorld->m_Sub108.m_nRecords * 8;      // 0x100090d5
 
@@ -1753,11 +1762,11 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	}
 
 	// --- T. 0x1000918a..0x1000922b -- timing, precalculation, exit -----
-#ifdef LT_SERVER_TIMERS
+#if defined(LT_SERVER_TIMERS) && defined(LT_SERVER_BUILD)
 	*pnLoadTicks += cnt_EndCounter(&counterLoad);          // 0x10009191
-#endif
 
-#ifdef LT_SERVER_TIMERS
+	{
+	CBaseCounter counterPrecalc(0);
 	cnt_StartCounter(&counterPrecalc);                     // 0x100091a2
 #endif
 
@@ -1773,8 +1782,9 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 
 	w_LinkSurfacePoliesQT1(pWorld);                        // 0x100091c6
 
-#ifdef LT_SERVER_TIMERS
+#if defined(LT_SERVER_TIMERS) && defined(LT_SERVER_BUILD)
 	*pnPrecalcTicks += cnt_EndCounter(&counterPrecalc);    // 0x100091d2
+	}
 #endif
 
 	if (pStream->ErrorStatus() != LT_OK)     // 0x100091e2, slot 0x10

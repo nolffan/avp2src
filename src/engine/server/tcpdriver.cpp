@@ -266,9 +266,10 @@ public:
 		{ return Insert2(iItem, toInsert, &g_MoAlloc); }
 	LTBOOL Append(const T& toAdd)
 		{ return Insert(m_nElements, toAdd); }
-#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
-	// AvP2 1.0.9.6's lithtech.exe has this expanded into StartQuery's
-	// address arm (0x00497e78), where its broadcast arm and UpdateQuery
+#ifndef LT_SERVER_BUILD
+	// Both Talon lithtech.exes have this expanded into StartQuery's
+	// address arm (AvP2 0x00497e78; Primal Hunt's BaseNew call at
+	// 0x004a1eed is the same expansion), where its broadcast arm and UpdateQuery
 	// call Insert2: collection.h's Insert2 at the end of the array, with
 	// the one read of m_nElements its expansion makes (name ours).
 	LTBOOL Add(const T& toAdd)
@@ -893,7 +894,7 @@ LTRESULT TCPDriver::StartQuery(char* pAddresses)
 					else if (tcp_BuildSockaddrFromString(pAddr, &resp.m_Addr))
 					{
 						resp.m_Time = dsi_GetTime();
-#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+#ifndef LT_SERVER_BUILD
 						m_Query.Add(resp);
 #else
 						m_Query.Append(resp);

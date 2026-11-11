@@ -599,7 +599,13 @@ public:
 	virtual void _p110() = 0;
 	virtual void _p114() = 0;
 	virtual void _p118() = 0;
-	virtual ~CUnknown928Obj();               // slot 71 (+0x11c)
+#ifdef PRIMAL_HUNT
+	// PH: two slots more in front of it, slot 73 (+0x124): Term's
+	// `call *0x124(%eax)` (server.dll 0x1003fadf).
+	virtual void _p11c() = 0;
+	virtual void _p120() = 0;
+#endif
+	virtual ~CUnknown928Obj();               // slot 71 (+0x11c; PH 73)
 
 	// 0x0c — a dword, not a slot: 0x10032332 reads it as
 	// `mov 0xc(%eax),%eax` straight off the object, with no vtable
@@ -1739,7 +1745,7 @@ public:
 	uint8              m_pad_1b4[0x210 - 0x1b4];  // (see also m_Flags1A0 below)
 	CUnknown210        m_Unknown210;         // 0x210
 	uint8              m_pad_214[0x28c - 0x214];
-	LTLink             m_ShadeLights;        // 0x28c  AVP2 1.0.9.6: lights the
+	LTLink             m_ShadeLights;        // 0x28c  lights the
 	                                         //        point-shade lookup adds in
 	                                         //        (si_GetPointShade, name ours)
 	uint8              m_pad_298[0x2a0 - 0x298];

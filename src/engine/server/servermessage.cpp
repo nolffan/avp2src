@@ -2573,6 +2573,39 @@ void ph_SetUnknown74(CPacketHolderView* pHolder, uint32 nValue)
 		pHolder->m_n74 = nValue;
 }
 
+// 0x1000e632 and 0x1000e641 — what a packet queue still owes: whether
+// anything is waiting, and whether anything is still unacknowledged (names
+// ours, from where the answers are used; smgr.cpp's client-entry check is
+// the caller). They follow ph_SetUnknown74 in every image (AvP2 1.0.9.6
+// lithtech.exe 0x00437350, Primal Hunt 0x0043ad50).
+// Nothing in the image names the queue; the two dwords the answers come
+// straight out of are reached through a view (offsets ours). Both are cdecl
+// with one argument and both duplicate their epilogue, so each is a positive
+// guard with the zero return after it, not a `return p ? ... : 0`.
+class CPacketQueueView
+{
+public:
+	uint8  m_pad_00[0x48];
+	uint32 m_nQueued;                        // +0x48
+	uint32 m_nUnacked;                       // +0x4c
+};
+
+int msg_HasQueuedPackets(void* pQueue)
+{
+	if (pQueue)
+		return ((CPacketQueueView*)pQueue)->m_nQueued;
+
+	return 0;
+}
+
+int msg_HasUnackedPackets(void* pQueue)
+{
+	if (pQueue)
+		return ((CPacketQueueView*)pQueue)->m_nUnacked;
+
+	return 0;
+}
+
 // 0x10027110 / 0x00463cf0 -- the descriptor's first hook, which the frame
 // pump calls to open a file for sending (CClientFiles::m_pfnOpen). The
 // holder's +0x74 is the server manager it was made for; the file comes out of

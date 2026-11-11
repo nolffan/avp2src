@@ -647,7 +647,7 @@ static CBindNodeOwnerQ438 g_BindNodeOwnerQ438;
 //  wrap-around every polygon edge walk starts with.
 //
 //  CONFIDENCE.  Lower than the rest of this file: the body is 340 bytes of
-//  x87 with four `__ftol` calls (0x004928c0) and an `%st` value (fDY) held
+//  x87 with four `__ftol` calls (0x004928c0) and an `%st` value (the height) held
 //  live ACROSS three of them, so register and x87-stack allocation carry
 //  more of the shape here than anywhere else in the file.  The statement
 //  set and its order are firm; the spill layout is not.
@@ -681,7 +681,7 @@ void cis_SetupWarpEdgesQ438(SWarpEdgeW12Q438* pLeft, SWarpEdgeW12Q438* pRight,
 	uint32 nYPrev, nYCur, nYTop, nYBottom;
 	int    n;
 	int32  nU, nV, nUStep, nVStep;
-	float  fX, fXStep, fDY;
+	float  fX, fXStep;
 
 	*pMinY = 5000;                           // 0x0043a39b  movl $0x1388
 	*pMaxY = 0;                              // 0x0043a3b2
@@ -729,18 +729,26 @@ void cis_SetupWarpEdgesQ438(SWarpEdgeW12Q438* pLeft, SWarpEdgeW12Q438* pRight,
 			// at both uses, VC6 CSEs it into edx's spill at 0x14(%esp).
 			if (nYBottom - nYTop)            // 0x0043a41d  je 0x0043a4c4
 			{
+				// The height is written at each of its three divides, not
+				// named: AvP2 1.0.9.6's cl 9044 turns three divides by one
+				// named float into a reciprocal and three multiplies
+				// (`fdivrs 1.0`, 346 bytes), where its lithtech.exe divides
+				// three times (0x004424d2, 0x004424fd, 0x00442514). The
+				// written-out difference is CSEd onto the same %st.
 				fX  = pTop->dest_x;                          // 0x0043a423
-				fDY = pBottom->dest_y - pTop->dest_y;        // 0x0043a426
 
-				fXStep = (pBottom->dest_x - pTop->dest_x) / fDY;  // 0x0043a42c
+				fXStep = (pBottom->dest_x - pTop->dest_x) /
+				         (pBottom->dest_y - pTop->dest_y);   // 0x0043a42c
 
 				nU = (int32)(pTop->source_x * 65536.0f);     // 0x0043a438
 				nV = (int32)(pTop->source_y * 65536.0f);     // 0x0043a445
 
 				nUStep = (int32)((pBottom->source_x - pTop->source_x) /
-				                 fDY * 65536.0f);            // 0x0043a455
+				                 (pBottom->dest_y - pTop->dest_y) *
+				                 65536.0f);                  // 0x0043a455
 				nVStep = (int32)((pBottom->source_y - pTop->source_y) /
-				                 fDY * 65536.0f);            // 0x0043a46a
+				                 (pBottom->dest_y - pTop->dest_y) *
+				                 65536.0f);                  // 0x0043a46a
 
 				pEnd = pEdge + (nYBottom - nYTop);           // 0x0043a489
 

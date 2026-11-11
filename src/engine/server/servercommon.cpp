@@ -308,28 +308,34 @@ LTRESULT ServerCommonLT::SetObjectFlags(HOBJECT hObj, const ObjFlagType flagType
 	return LT_OK;
 }
 
-#if !defined(LT_SERVER_BUILD) && defined(PRIMAL_HUNT)
-// PH: lithtech.exe 0x00480f10 CALLS the time reference's constructor
-// (0x00480f43 -> 0x004543d0, `ecx = &state+0x28`), where AvP2's /O2 build
-// expanded it: Primal Hunt's AnimTimeRef constructor is out of line, the
-// SDK body (both weight sets -1, m_bNormalize clear, then Init(NULL...)
+#if !defined(LT_SERVER_BUILD)
+// lithtech.exe CALLS the time reference's constructor, in both games:
+// Primal Hunt 0x00480f43 -> 0x004543d0 and AvP2 1.0.9.6 0x0047a1a1 ->
+// 0x0044f8f0, `ecx = &state+0x28` in each. The constructor is out of line,
+// the SDK body (both weight sets -1, m_bNormalize clear, then Init(NULL...)
 // expanded) in a COMDAT of its own that the model walker's eight records
 // call too (objbank.cpp, 0x0046d3d8). ltanimtracker.h's constructor is
 // in-class, so a type of ours with an out-of-line constructor stands for
-// it here (name ours). The record is server.dll's PH one: the time
-// reference at +0x28.
+// it here (name ours). The record is server.dll's: the time reference at
+// +0x28. (An expanding SDK-tracker record here left AvP2's copy 52 bytes
+// over, 603 of 551.)
 //
-// SetObjectFilenames stays NEAR there (642 of 648): the attachment loop's
-// two `m_iNode` stores are cross-jumped into one in ours (the socket arm
-// jumps to the node arm's `mov %eax,0x20(%esi)`), where shipped keeps the
-// socket arm's own store through %edx and jumps to the loop tail
-// (0x004810ed..0x004810f1); and the WriteWord argument and the client-loop
-// index take the other scratch register. A second found-index local for
-// the socket arm did not separate the stores.
+// SetObjectFilenames stays NEAR in both. Primal Hunt (642 of 648): the
+// attachment loop's two `m_iNode` stores are cross-jumped into one in ours
+// (the socket arm jumps to the node arm's `mov %eax,0x20(%esi)`), where
+// shipped keeps the socket arm's own store through %edx and jumps to the
+// loop tail (0x004810ed..0x004810f1); and the WriteWord argument and the
+// client-loop index take the other scratch register. A second found-index
+// local for the socket arm did not separate the stores. AvP2 (551 of 551,
+// no mnemonic difference): three locals rotate through the two dead
+// argument slots -- shipped gives pObj's slot to msg_AllocPacket's
+// returned reference and pStruct's to pOldModel, with nFound in the
+// frame; ours gives pObj's to pOldModel and pStruct's to nFound.
+// Declaration order is indifferent; scoping nFound in the loop is worse.
 class CAnimTimeRefPHQ542 : public AnimTimeRef
 {
 public:
-	CAnimTimeRefPHQ542();                    // 0x004543d0
+	CAnimTimeRefPHQ542();                    // 0x004543d0 (AvP2 0x0044f8f0)
 };
 
 CAnimTimeRefPHQ542::CAnimTimeRefPHQ542()
@@ -343,22 +349,6 @@ struct CSavedFileStateLT
 	uint8              m_pad_4c[0x50 - 0x4c];
 	void*              m_pModelFile;         // 0x50
 	void*              m_pSkinFile;          // 0x54
-};
-#elif !defined(LT_SERVER_BUILD)
-// lithtech.exe 0x0046c440: the /O2 build EXPANDS the time reference's
-// constructor and Clear() into SetObjectFilenames -- `movl $-1` into
-// m_iWeightSet and six zero pushes onto a CALL of AnimTimeRef::Init
-// (0x00447080) -- which is the SDK's own in-class AnimTimeRef
-// (ltanimtracker.h). servercommon.h's CAnimTimeRef keeps both out of line
-// for server.dll's /O1 calls (0x1002da31, 0x100175fd), so lithtech's
-// record holds the SDK type. Same 0x38-byte layout: the tracker's first
-// 0x1c bytes, the AnimTimeRef at +0x1c, then the two file identifiers.
-struct CSavedFileStateLT
-{
-	LTAnimTracker m_Tracker;                 // 0x00  its AnimTimeRef at +0x1c
-	uint8         m_pad_38[0x50 - 0x38];     // AVP2: the tracker is 0x50 bytes
-	void*         m_pModelFile;              // 0x50
-	void*         m_pSkinFile;               // 0x54
 };
 #else
 // AVP2: the same record, the tracker grown to 0x50 bytes (see

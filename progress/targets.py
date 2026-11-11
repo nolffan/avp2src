@@ -204,6 +204,12 @@ TARGETS = [
              # the content pass had crossed over.
              "?phys_ComputeFrameMove@@YAHPAVGlobalForceControl@@@Z": 0x00461650,
              "?wm_PushIntersectingObjects@@YAXPAUWMMoveState@@PAV?$_CVector@M@@1@Z": 0x00462e50,
+             # sweptsphere.cpp in its file order, edge, point, push-out:
+             # 0x00427780 solves the edge's quadratic (the edge length's
+             # sqrt and its reciprocal), 0x00427d80 is the ten-try
+             # push loop. The content pass had the two crossed.
+             "?sp_SweptSphereToEdge@@YAIPAV?$_CVector@M@@0M00PAM0@Z": 0x00427780,
+             "?sp_PushSphereOutQ533@@YAIPAV?$_CVector@M@@MPAPAVWorldPolyOwner@@H@Z": 0x00427d80,
          }),
     dict(label="server.dll", what="the server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
@@ -659,6 +665,10 @@ TARGETS = [
              # 0x0045ddf0 (its out-of-line wm_PushObject call 0x0045e701)
              "?phys_ComputeFrameMove@@YAHPAVGlobalForceControl@@@Z": 0x0045c600,
              "?wm_PushIntersectingObjects@@YAXPAUWMMoveState@@PAV?$_CVector@M@@1@Z": 0x0045ddf0,
+             # as Primal Hunt's: the edge test 0x00425000 (its 1/len at
+             # 0x00425092), the push loop 0x004253b0
+             "?sp_SweptSphereToEdge@@YAIPAV?$_CVector@M@@0M00PAM0@Z": 0x00425000,
+             "?sp_PushSphereOutQ533@@YAIPAV?$_CVector@M@@MPAPAVWorldPolyOwner@@H@Z": 0x004253b0,
              "?AllocVoid@?$CObjectBank@VCObjModel@@@@UAEPAXXZ": 0x00412a70,
              "?AllocVoid@?$CObjectBank@VCObjWorldModel@@@@UAEPAXXZ": 0x00412ab0,
              "?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ": 0x00412af0,

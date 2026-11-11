@@ -1071,50 +1071,42 @@ void* sub_10006fa5(void* hTree)
 // back through pnTrees counts only the trees that opened, so a name that
 // failed leaves a hole the caller cannot see.
 //
-// The out-pointer array advances only on success too, so it stays packed
-// against the answer rather than aligned with the input names. Whether the
-// caller wanted its handles back is decided from the original argument on
-// every iteration -- the walking copy would have been overwritten -- which
-// is what says the source kept the two separate.
+// The handles go out packed against the answer (indexed by the count of
+// trees opened, not by the name's index), and only when the caller passed an
+// array at all.
 //
-// ppOut is declared before ppName: that order homes the down-counter in the
-// dead pTrees parameter slot on lithtech.exe (0x24(%esp), 0x0046b713) as
-// shipped; ppName first put it in the pResources slot.
+// An indexed loop: AvP2 1.0.9.6's cl 9044 keeps both indices (lithtech.exe
+// 0x00479191 `mov (%ecx,%ebx,4)`, 0x004791d5 `mov %eax,(%edi,%ebp,4)`;
+// server.dll 0x10034a80, 0x10034abe), where Primal Hunt's cl 8966 turns the
+// same loop into two walking pointers and a down-counter (both images stay
+// byte-identical with it). AvP2 stays NEAR: server.dll is size-exact with
+// %ebx on the count opened rather than the name index (shipped homes the
+// count at -0x4(%ebp)); lithtech.exe is 130 of 134, holding hTree in a
+// register across the list insertion where shipped reloads it from its slot.
 void fs_AddResources(CFileMgr* pFileMgr, char** pResources, uint32 nResources,
                      void** pTrees, int* pnTrees)
 {
-	int nAdded = 0;
+	int   nAdded = 0;
+	int   i;
+	void* hTree;
 
-	if ((int)nResources > 0)
+	for (i = 0; i < (int)nResources; i++)
 	{
-		void**  ppOut  = pTrees;
-		char**  ppName = pResources;
-		uint32  nLeft  = nResources;
-
-		do
+		if (!fs_OpenTree(pResources[i], &hTree))
 		{
-			void* hTree;
+			CFileTreeMount* pRec =
+				(CFileTreeMount*)dalloc(sizeof(CFileTreeMount));
 
-			if (!fs_OpenTree(*ppName, &hTree))
-			{
-				CFileTreeMount* pRec =
-					(CFileTreeMount*)dalloc(sizeof(CFileTreeMount));
+			pRec->m_Link.m_pData = pRec;
+			pRec->m_hTree = hTree;
 
-				pRec->m_Link.m_pData = pRec;
-				pRec->m_hTree = hTree;
+			pFileMgr->m_Trees.AddAfter(&pRec->m_Link);
 
-				pFileMgr->m_Trees.AddAfter(&pRec->m_Link);
+			if (pTrees)
+				pTrees[nAdded] = sub_10006fa5(hTree);
 
-				if (pTrees)
-					*ppOut = sub_10006fa5(hTree);
-
-				nAdded++;
-				ppOut++;
-			}
-
-			ppName++;
+			nAdded++;
 		}
-		while (--nLeft);
 	}
 
 	*pnTrees = nAdded;

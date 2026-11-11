@@ -959,10 +959,12 @@ int CWorldModelHost::AttachWorldModel(LTObject* pObj, char* pName)
 // client: the record's address goes through `pWorld`, a copy of `this`
 // (with plain m_Anims, 0x0042e7a5 loads the array before the strength-
 // reduced offset; the same trick as worldbsp.cpp's CWorldSimple::Load), and
-// each k-loop declares its own pEntry. NEAR on server.dll 0x1000d248, 1046
-// of 1046 bytes: two frame slots swapped (-0x10 and -0xc, the cached
-// &m_nLights and the first loop's pEntry). One pEntry for the whole frame
-// fixes the slots and loses the client's add order, in both images.
+// the pEntry of the frame's two reading loops is one variable of the frame's
+// scope while the clearing loop declares its own. That is what both
+// server.dlls' frame slots say (Primal Hunt 0x1000d248 and AvP2 0x1000ceef,
+// byte-identical: the cached &m_nLights at -0x10 and pEntry at -0xc); a
+// pEntry per loop swaps the two, and one pEntry for all three loses
+// the record's add order (Primal Hunt 0x1000d32c).
 LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 {
 	uint32 iFrameEntry;
@@ -1044,6 +1046,7 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 		for (j = 0; j < pAnim->m_nFrames; j++)
 		{
 			CLAFrameEntry** ppFrame = &pAnim->m_ppFrames[j];
+			CLAFrameEntry*  pEntry;
 
 			*ppFrame = &m_FrameEntries.m_pItems[iFrameEntry];
 
@@ -1058,7 +1061,7 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 
 			for (k = 0; k < pAnim->m_nLights; k++)
 			{
-				CLAFrameEntry* pEntry = &(*ppFrame)[k];
+				pEntry = &(*ppFrame)[k];
 
 				pEntry->m_pData = m_Data.m_pItems + iData;
 
@@ -1081,7 +1084,7 @@ LTRESULT CWorldData::LoadObjects(ILTStream* pStream)
 			{
 				for (k = 0; k < pAnim->m_nLights; k++)
 				{
-					CLAFrameEntry* pEntry = &(*ppFrame)[k];
+					pEntry = &(*ppFrame)[k];
 
 					pStream->Read(&pEntry->m_n14, 1);
 

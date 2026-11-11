@@ -2773,6 +2773,14 @@ inline CCmgClientMgr::CCmgClientMgr()
 
 	m_pChain1264 = LTNULL;
 
+	// NEAR: both shipped factories store 1.0f to all SIX floats here,
+	// +0x76c..+0x780 (Primal Hunt 0x00412550..0x0041256e, AvP2 1.0.9.6
+	// 0x00411468..0x00411486). Writing the other three (m_Scale778/77c/780)
+	// tips this body over the inline budget: the force control's
+	// constructor (0x00412960 + 0x00411670, expanded in both images) goes
+	// out of line and AvP2's factory moves from 882 to 861 bytes against
+	// 900. Left at three until whatever else the original body spent less
+	// on is found.
 	m_Scale768 = 1.0f;
 	m_Scale76c = 1.0f;
 	m_Scale770 = 1.0f;

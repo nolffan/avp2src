@@ -115,8 +115,12 @@ uint32 dhash_HashString(void* pKey, uint32 nKeyLen)
 // character, so "Sounds/X.wav" and "sounds\x.wav" collide on purpose.
 // `inline`: lithtech.exe (/O2) expands it into dhash_HashFilename (0x42cc70)
 // and both sides of dhash_CmpFilename (0x42cd60); server.dll (/O1) keeps it
-// out of line and calls it (0x1000daf9).
-inline char dhash_FoldFileChar(char c)
+// out of line and calls it (0x1000daf9). `static`: AvP2 1.0.9.6's server.dll
+// (cl 9044) keeps the first fold's answer in %dl across the second call
+// (0x10011224), which it does only for a callee it knows, and it knows an
+// internal one: as an external inline the caller saves it in %bl instead
+// (77 bytes against 66).
+static inline char dhash_FoldFileChar(char c)
 {
 	if (c >= 'a' && c <= 'z')
 		c -= 'a' - 'A';

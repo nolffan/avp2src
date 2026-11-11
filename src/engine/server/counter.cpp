@@ -440,132 +440,15 @@ static bool cnt_PropTypesValid(CClassModuleView* pModule)
 }
 #endif
 
-// 0x10001583 — load a DLL and wrap it in a reference-counted record. Zero
-// means it would not load; -1 means it did, the same "nothing to report"
-// convention 0x10001635 and 0x10034ec6 answer with.
-//
-// The reference starts at one, and cb_ReleaseModule is what spends it: the
-// record is always freed and the library only unloaded on the last one. The
-// allocation is twelve bytes for two fields, so a word of the record is never
-// touched anywhere in the image.
-int sub_10001583(char* pFilename, CModuleRef** ppRef)
-{
-	HMODULE     hModule;
-	CModuleRef* pRef;
-
-	hModule = LoadLibrary(pFilename);
-
-	if (!hModule)
-		return 0;
-
-	pRef = (CModuleRef*)dalloc(12);
-
-	pRef->m_hModule = hModule;
-	pRef->m_nRefs = 1;
-
-	*ppRef = pRef;
-
-	return -1;
-}
-
-// 0x100015b2 is cb_ReleaseModule, above. 0x10001624 — resolve one export off
-// a module reference; a tail call, so it leaves no frame (name ours).
-void* sub_10001624(CModuleRef* pRef, char* pName)
-{
-	return GetProcAddress((HMODULE)pRef->m_hModule, pName);
-}
-
-// 0x100015ce — "bm_SetInstanceHandle", from its own error tag, and the only
-// function in this cluster whose name survived. A DLL that exports
-// SetInstanceHandle is handed its own module handle through it, which is how
-// a game DLL gets an HINSTANCE without a DllMain of its own. A DLL that does
-// not export it is not an error; a null reference is.
-LTRESULT bm_SetInstanceHandle(CModuleRef* pRef)
-{
-	void (*pfn)(void* hModule);
-
-	if (!pRef)
-		RETURN_ERROR(1, bm_SetInstanceHandle, LT_INVALIDPARAMS);
-
-	pfn = (void (*)(void*))GetProcAddress((HMODULE)pRef->m_hModule,
-	                                      "SetInstanceHandle");
-
-	if (pfn)
-		pfn(pRef->m_hModule);
-
-	return LT_OK;
-}
-
-// 0x10001635 — load the game's object DLL and take its class table.
-//
-// -1 means "nothing to report". 0 is a DLL that would not load at all, 1 a
-// DLL with no ObjectDLLSetup export, and 2 a DLL that reported an interface
-// version other than 1 — and all three release the module reference on the
-// way out, so a rejected DLL is unloaded before the caller sees the code.
-//
-// The module reference lives in the dead pFilename parameter slot for the
-// whole function. The record is twenty bytes: two words 0x100016be owns, the
-// reference, the class table and the count — and the count is filled by
-// ObjectDLLSetup writing through a pointer into the record itself, which is
-// why the shipped code takes the address of a field rather than of a local.
-//
-// The three failures are written out as separate `cb_ReleaseModule(pRef);
-// return N;` statements, not as one shared tail with a status variable. VC6
-// merges them itself and does it by materialising the differing constant
-// into a callee-saved register — `push $1 / pop %esi`, `push $2 / pop %esi`
-// — so the release, the `mov %esi,%eax` and the jump to the epilogue are
-// written once. A status local plus one exit sinks all three cold blocks
-// past the success path instead and misses by three blocks at the same size.
-int sub_10001635(char* pFilename, class CUnknown928Obj* pObj,
-                 CClassMgr* pClassMgr, int* pnVersion)
-{
-	CModuleRef*       pRef;
-	ObjectDLLSetupFn  pfnSetup;
-	CClassModuleView* pModule;
-
-	if (!sub_10001583(pFilename, &pRef))
-		return 0;
-
-	pfnSetup = (ObjectDLLSetupFn)sub_10001624(pRef, "ObjectDLLSetup");
-
-	if (!pfnSetup)
-	{
-		cb_ReleaseModule(pRef);
-
-		return 1;
-	}
-
-	pModule = (CClassModuleView*)malloc(0x14);
-
-	pModule->m_pModuleRef = pRef;
-	pModule->m_pClasses = pfnSetup(&pModule->m_nClasses, pObj, pnVersion);
-
-	if (*pnVersion != 1)
-	{
-		free(pModule);
-
-		cb_ReleaseModule(pRef);
-
-		return 2;
-	}
-
-#ifdef AVP2_MODERN
-	if (!cnt_PropTypesValid(pModule))
-	{
-		free(pModule);
-
-		cb_ReleaseModule(pRef);
-
-		return 1;
-	}
-#endif
-	sub_100016be(pModule);
-	w_NullLoadHook((int)pModule);
-
-	pClassMgr->m_pUnknown00 = pModule;
-
-	return -1;
-}
+// The module helpers below, defined after the plug-in load that uses them:
+// retail keeps 0x10034ec6 (with cb_FreeSoundTable and 0x10034f9b) in another
+// unit -- AvP2 1.0.9.6's lithtech.exe has it at 0x0048a640, far from these at
+// 0x00401760.. -- so its cl 9044 build cannot see what they do to the pRef it
+// hands them, and reloads it from its slot after every call (0x0048a661,
+// 0x0048a69d, 0x0048a6de).
+int      sub_10001583(char* pFilename, CModuleRef** ppRef);
+void*    sub_10001624(CModuleRef* pRef, char* pName);
+LTRESULT bm_SetInstanceHandle(CModuleRef* pRef);
 
 // 0x10034ec6 — the generic plug-in load, and the one cb_LoadServerObjects
 // uses for the server shell. The export names are built from the caller's
@@ -654,90 +537,164 @@ void sub_10034f9b(CModuleFuncs* pRec, void** ppCreate, void** ppDelete)
 	*ppDelete = pRec->m_pfnDelete;
 }
 
+// 0x10001635 — load the game's object DLL and take its class table.
+//
+// -1 means "nothing to report". 0 is a DLL that would not load at all, 1 a
+// DLL with no ObjectDLLSetup export, and 2 a DLL that reported an interface
+// version other than 1 — and all three release the module reference on the
+// way out, so a rejected DLL is unloaded before the caller sees the code.
+//
+// The module reference lives in the dead pFilename parameter slot for the
+// whole function. The record is twenty bytes: two words 0x100016be owns, the
+// reference, the class table and the count — and the count is filled by
+// ObjectDLLSetup writing through a pointer into the record itself, which is
+// why the shipped code takes the address of a field rather than of a local.
+//
+// The three failures are written out as separate `cb_ReleaseModule(pRef);
+// return N;` statements, not as one shared tail with a status variable. VC6
+// merges them itself and does it by materialising the differing constant
+// into a callee-saved register — `push $1 / pop %esi`, `push $2 / pop %esi`
+// — so the release, the `mov %esi,%eax` and the jump to the epilogue are
+// written once. A status local plus one exit sinks all three cold blocks
+// past the success path instead and misses by three blocks at the same size.
+int sub_10001635(char* pFilename, class CUnknown928Obj* pObj,
+                 CClassMgr* pClassMgr, int* pnVersion)
+{
+	CModuleRef*       pRef;
+	ObjectDLLSetupFn  pfnSetup;
+	CClassModuleView* pModule;
+
+	if (!sub_10001583(pFilename, &pRef))
+		return 0;
+
+	pfnSetup = (ObjectDLLSetupFn)sub_10001624(pRef, "ObjectDLLSetup");
+
+	if (!pfnSetup)
+	{
+		cb_ReleaseModule(pRef);
+
+		return 1;
+	}
+
+	pModule = (CClassModuleView*)malloc(0x14);
+
+	pModule->m_pModuleRef = pRef;
+	pModule->m_pClasses = pfnSetup(&pModule->m_nClasses, pObj, pnVersion);
+
+	if (*pnVersion != 1)
+	{
+		free(pModule);
+
+		cb_ReleaseModule(pRef);
+
+		return 2;
+	}
+
+#ifdef AVP2_MODERN
+	if (!cnt_PropTypesValid(pModule))
+	{
+		free(pModule);
+
+		cb_ReleaseModule(pRef);
+
+		return 1;
+	}
+#endif
+	sub_100016be(pModule);
+	w_NullLoadHook((int)pModule);
+
+	pClassMgr->m_pUnknown00 = pModule;
+
+	return -1;
+}
+
 ClassDef** cb_GetModuleClasses(void* pModule);   // 0x10001739 (name ours)
 int        cb_GetModuleClassCount(void* pModule);  // 0x10001731 (name ours)
 
 
-// 0x10001741 — the module's linear class lookup: walk its table comparing
-// each definition's name against the one asked for and hand back the first
-// that matches, LTNULL if none does.
-//
-// The count is *signed* (`jle` on the entry test, `jl` on the back edge), and
-// the loop is rotated, which is why the entry test compares memory against
-// the zero already in edi while the back edge compares the other way round.
-// The table and the index are re-read in the return block rather than kept
-// live — `pMod->m_pClasses[i]` written twice, once in the comparison and once
-// in the `return`.
-ClassDef* sub_10001741(void* pModule, char* pName)
-{
-	CClassModuleView* pMod = (CClassModuleView*)pModule;
-	int i;
+ClassDef*  sub_10001741(void* pModule, char* pName);  // defined last
 
-	for (i = 0; i < pMod->m_nClasses; i++)
+// The shell *creator*. servermgr.h leaves CClassMgr+0x0c inside the pad in
+// front of m_pDeleteShell because nothing else in the reconstruction reaches
+// it; cb_LoadModule calls through it, so this file needs a view of the record
+// that names it. Its one argument is the manager's 0x928 object.
+class CClassMgrCreateView
+{
+public:
+	uint8 m_pad_00[0x0c];
+	class IServerShell* (*m_pCreateShell)(class CUnknown928Obj* pArg);
+};
+
+// cb_LoadModule's callees: retail defines it ahead of all of them (AvP2
+// 1.0.9.6 lithtech.exe 0x004029b0, then 0x10001977 at 0x00402ab0, 0x10001ae6,
+// 0x10001b24 and 0x10001b54), and builds cb_LoadServerObjects in another unit
+// (0x00434570), so AvP2's cl 9044 sees none of them from its callers.
+int  cb_LoadServerObjects(CClassMgr* pClassMgr);
+int  sub_10001977(CClassMgr* pClassMgr);
+void sub_10001ae6(CClassMgr* pClassMgr);
+int  sub_10001b54(CClassMgr* pClassMgr);
+void sub_10001b24(ClassDef* pDef, int nOffset);
+
+// 0x10001894 — bring the class module up: load it, find the root class the
+// engine needs from it, and build the game's server shell.
+//
+// Three things the bytes say that are worth writing down.
+//
+// The lookup goes the long way round. The module record it searches is
+// `pClassMgr->m_pUnknown00`, but the shipped code does not read it off the
+// manager it was handed — it goes out through m_pServerMgr and back in
+// through CServerMgr+0x80c, which *is* this same CClassMgr. Two loads for a
+// field one load away, and reproducing it is the difference between matching
+// and not. It also needs the named local: written inline the expression is a
+// simple memory operand and VC6 pushes it in place (`push 0x80c(%eax)`),
+// which is a byte shorter than the `mov 0x80c(%eax),%eax; push %eax` the
+// shipped code has.
+//
+// Both failure sites report twice: once into the manager's own error string
+// (CServerMgr::SetupError, which the interface's GetErrorString hands back)
+// and once through the debug printer, at threshold 1. The first passes the
+// class name as the printer's description argument rather than the usual lone
+// space, which is what says the description really is a per-site argument.
+//
+// The second site's return code is a bare `1`, not the LT_CANTCREATESERVERSHELL
+// (53) it has just recorded in the error string — the code string in .data
+// reads "1", so the source wrote the literal. So a caller that only looks at
+// the return value cannot tell a missing shell from any other failure; the
+// distinction lives only in the error string.
+int cb_LoadModule(CClassMgr* pClassMgr)
+{
+	int nStatus;
+
+	nStatus = cb_LoadServerObjects(pClassMgr);
+	if (nStatus != 0)
+		return nStatus;
+
+	sub_10001977(pClassMgr);
+
+	void* pModule = pClassMgr->m_pServerMgr->m_ClassMgr.m_pUnknown00;
+
+	pClassMgr->m_Unknown18 = (uint32)sub_10001741(pModule, "BaseClass");
+
+	if (!pClassMgr->m_Unknown18)
 	{
-		if (strcmp(pMod->m_pClasses[i]->m_ClassName, pName) == 0)
-			return pMod->m_pClasses[i];
+		pClassMgr->m_pServerMgr->SetupError(LT_MISSINGCLASS, "%s", "BaseClass");
+
+		RETURN_ERROR_SYM_DESC(1, "LoadServerBinaries", LT_MISSINGCLASS, "BaseClass")
 	}
 
-	return LTNULL;
-}
+	sub_10001ae6(pClassMgr);
 
-// 0x10001739 and 0x10001731 — the two fields above, each behind a cdecl
-// accessor of its own (names ours).
-ClassDef** cb_GetModuleClasses(void* pModule)
-{
-	return ((CClassModuleView*)pModule)->m_pClasses;
-}
+	pClassMgr->m_pServerShell = ((CClassMgrCreateView*)pClassMgr)->m_pCreateShell(
+		pClassMgr->m_pServerMgr->m_pUnknown928);
 
-int cb_GetModuleClassCount(void* pModule)
-{
-	return ((CClassModuleView*)pModule)->m_nClasses;
-}
-
-
-// 0x10001b24 — fill one inherited slot of a class definition from its
-// parent's, recursively. The slot is named by its byte offset because that
-// is how the caller names it: 0x0c and 0x10 in a ClassDef are
-// m_ConstructFn and m_DestructFn, and the offset arrives as an ordinary
-// integer argument (it ends up as the *base* of the final load's
-// `mov (%ebx,%eax,1)`, with the parent pointer as the index).
-//
-// A slot that is already filled is left alone, and a class with no parent
-// has nothing to inherit; the recursion fills the parent's slot first so
-// that a chain resolves in one pass. The parent is re-read after the
-// recursive call because the call could have written it (name ours).
-void sub_10001b24(ClassDef* pDef, int nOffset)
-{
-	void** ppSlot = (void**)((uint8*)pDef + nOffset);
-
-	if (!*ppSlot && pDef->m_ParentClass)
+	if (!pClassMgr->m_pServerShell)
 	{
-		sub_10001b24(pDef->m_ParentClass, nOffset);
+		pClassMgr->m_pServerMgr->SetupError(LT_CANTCREATESERVERSHELL, "");
 
-		*ppSlot = *(void**)((uint8*)pDef->m_ParentClass + nOffset);
+		RETURN_ERROR_SYM(1, "LoadServerBinaries", 1)
 	}
-}
 
-
-// 0x10001ae6 — run once the base class is in hand: give every class in the
-// module the constructor and destructor it does not declare itself.
-//
-// The table and the count come out of the module record through their own
-// accessors, and the record is read off the manager twice — the shipped code
-// pushes `(%edi)` at both calls rather than caching it.
-void sub_10001ae6(CClassMgr* pClassMgr)
-{
-	ClassDef** ppClasses = cb_GetModuleClasses(pClassMgr->m_pUnknown00);
-	int        nClasses  = cb_GetModuleClassCount(pClassMgr->m_pUnknown00);
-	int        i;
-
-	for (i = 0; i < nClasses; i++)
-	{
-		ClassDef* pClass = ppClasses[i];
-
-		sub_10001b24(pClass, 0x0c);
-		sub_10001b24(pClass, 0x10);
-	}
+	return sub_10001b54(pClassMgr);
 }
 
 
@@ -884,6 +841,52 @@ int sub_10001977(CClassMgr* pClassMgr)
 }
 
 
+// 0x10001ae6 — run once the base class is in hand: give every class in the
+// module the constructor and destructor it does not declare itself.
+//
+// The table and the count come out of the module record through their own
+// accessors, and the record is read off the manager twice — the shipped code
+// pushes `(%edi)` at both calls rather than caching it.
+void sub_10001ae6(CClassMgr* pClassMgr)
+{
+	ClassDef** ppClasses = cb_GetModuleClasses(pClassMgr->m_pUnknown00);
+	int        nClasses  = cb_GetModuleClassCount(pClassMgr->m_pUnknown00);
+	int        i;
+
+	for (i = 0; i < nClasses; i++)
+	{
+		ClassDef* pClass = ppClasses[i];
+
+		sub_10001b24(pClass, 0x0c);
+		sub_10001b24(pClass, 0x10);
+	}
+}
+
+
+// 0x10001b24 — fill one inherited slot of a class definition from its
+// parent's, recursively. The slot is named by its byte offset because that
+// is how the caller names it: 0x0c and 0x10 in a ClassDef are
+// m_ConstructFn and m_DestructFn, and the offset arrives as an ordinary
+// integer argument (it ends up as the *base* of the final load's
+// `mov (%ebx,%eax,1)`, with the parent pointer as the index).
+//
+// A slot that is already filled is left alone, and a class with no parent
+// has nothing to inherit; the recursion fills the parent's slot first so
+// that a chain resolves in one pass. The parent is re-read after the
+// recursive call because the call could have written it (name ours).
+void sub_10001b24(ClassDef* pDef, int nOffset)
+{
+	void** ppSlot = (void**)((uint8*)pDef + nOffset);
+
+	if (!*ppSlot && pDef->m_ParentClass)
+	{
+		sub_10001b24(pDef->m_ParentClass, nOffset);
+
+		*ppSlot = *(void**)((uint8*)pDef->m_ParentClass + nOffset);
+	}
+}
+
+
 // 0x10001b54 — the last stage of the module load, and cb_LoadModule's
 // return value: every class the module declares with bit 2 of its
 // m_ClassFlags gets its single instance made now, at load time.
@@ -928,17 +931,6 @@ int sub_10001b54(CClassMgr* pClassMgr)
 
 	return 0;
 }
-
-// The shell *creator*. servermgr.h leaves CClassMgr+0x0c inside the pad in
-// front of m_pDeleteShell because nothing else in the reconstruction reaches
-// it; cb_LoadModule calls through it, so this file needs a view of the record
-// that names it. Its one argument is the manager's 0x928 object.
-class CClassMgrCreateView
-{
-public:
-	uint8 m_pad_00[0x0c];
-	class IServerShell* (*m_pCreateShell)(class CUnknown928Obj* pArg);
-};
 
 // The three file-manager entry points this file reaches, all of them in the
 // file manager's own run and declared here rather than defined (names by
@@ -1115,6 +1107,22 @@ int sub_1000e05b(CServerMgr* pMgr, char* pTempPath, char* pFilename,
 // status-1 arm -- only the `mov $0x36,%eax` moves across the pops. Measured
 // and not it: `else if` for the second arm (no change), the two arms in the
 // other order and a switch over them (both regress server.dll).
+// AVP2: AvP2 1.0.9.6's server.dll reports every failure here without
+// dsi_OnReturnError -- SetupError and then straight to the debug-level test
+// (0x10011838, 0x1001187a, 0x100118c0, 0x10011956..0x100119ed) -- where its
+// lithtech.exe (0x00434570) and both of Primal Hunt's images make the call,
+// as does its own cb_LoadModule (0x10001974).
+#if defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
+#define LOADSO_ERROR(level, fnName, code, desc) \
+	{ \
+		if (g_DebugLevel >= level) \
+			dsi_ServerError(g_pErrorFormat, fnName, #code, desc); \
+		return code; \
+	}
+#else
+#define LOADSO_ERROR RETURN_ERROR_SYM_DESC
+#endif
+
 int cb_LoadServerObjects(CClassMgr* pClassMgr)
 {
 	char sTempPath[200];
@@ -1146,7 +1154,7 @@ int cb_LoadServerObjects(CClassMgr* pClassMgr)
 			{
 				pMgr->SetupError(LT_MISSINGSHELLDLL, sFilename);
 
-				RETURN_ERROR_SYM_DESC(1, "LoadServerObjects",
+				LOADSO_ERROR(1, "LoadServerObjects",
 				                      LT_MISSINGSHELLDLL, "object.lto")
 			}
 
@@ -1154,7 +1162,7 @@ int cb_LoadServerObjects(CClassMgr* pClassMgr)
 			{
 				pMgr->SetupError(LT_INVALIDSHELLDLL, sFilename);
 
-				RETURN_ERROR_SYM_DESC(1, "LoadServerObjects",
+				LOADSO_ERROR(1, "LoadServerObjects",
 				                      LT_INVALIDSHELLDLL, "object.lto")
 			}
 
@@ -1163,7 +1171,7 @@ int cb_LoadServerObjects(CClassMgr* pClassMgr)
 				pMgr->SetupError(LT_INVALIDSHELLDLLVERSION, sFilename,
 				                 nVersion, 2);
 
-				RETURN_ERROR_SYM_DESC(1, "LoadServerObjects",
+				LOADSO_ERROR(1, "LoadServerObjects",
 				                      LT_INVALIDSHELLDLLVERSION, "object.lto")
 			}
 
@@ -1185,7 +1193,7 @@ int cb_LoadServerObjects(CClassMgr* pClassMgr)
 
 			pMgr->SetupError(LT_ERRORCOPYINGFILE, "sres.dll");
 
-			RETURN_ERROR_SYM_DESC(1, "LoadServerObjects", LT_ERRORCOPYINGFILE,
+			LOADSO_ERROR(1, "LoadServerObjects", LT_ERRORCOPYINGFILE,
 			                      "sres.dll")
 		}
 
@@ -1193,7 +1201,7 @@ int cb_LoadServerObjects(CClassMgr* pClassMgr)
 		{
 			pMgr->SetupError(LT_INVALIDOBJECTDLL, "object.lto");
 
-			RETURN_ERROR_SYM_DESC(1, "LoadObjectsInDirectory",
+			LOADSO_ERROR(1, "LoadObjectsInDirectory",
 			                      LT_INVALIDOBJECTDLL, "object.lto")
 		}
 
@@ -1201,83 +1209,20 @@ int cb_LoadServerObjects(CClassMgr* pClassMgr)
 		{
 			pMgr->SetupError(LT_INVALIDOBJECTDLL, "object.lto");
 
-			RETURN_ERROR_SYM_DESC(1, "LoadObjectsInDirectory",
+			LOADSO_ERROR(1, "LoadObjectsInDirectory",
 			                      LT_INVALIDOBJECTDLL, "object.lto")
 		}
 
 		pMgr->SetupError(LT_INVALIDOBJECTDLLVERSION, "object.lto", nVersion, 1);
 
-		RETURN_ERROR_SYM_DESC(1, "LoadObjectsInDirectory",
+		LOADSO_ERROR(1, "LoadObjectsInDirectory",
 		                      LT_INVALIDOBJECTDLLVERSION, "object.lto")
 	}
 
 	pMgr->SetupError(LT_ERRORCOPYINGFILE, "object.lto");
 
-	RETURN_ERROR_SYM_DESC(1, "LoadServerObjects", LT_ERRORCOPYINGFILE,
+	LOADSO_ERROR(1, "LoadServerObjects", LT_ERRORCOPYINGFILE,
 	                      "object.lto")
-}
-
-
-// 0x10001894 — bring the class module up: load it, find the root class the
-// engine needs from it, and build the game's server shell.
-//
-// Three things the bytes say that are worth writing down.
-//
-// The lookup goes the long way round. The module record it searches is
-// `pClassMgr->m_pUnknown00`, but the shipped code does not read it off the
-// manager it was handed — it goes out through m_pServerMgr and back in
-// through CServerMgr+0x80c, which *is* this same CClassMgr. Two loads for a
-// field one load away, and reproducing it is the difference between matching
-// and not. It also needs the named local: written inline the expression is a
-// simple memory operand and VC6 pushes it in place (`push 0x80c(%eax)`),
-// which is a byte shorter than the `mov 0x80c(%eax),%eax; push %eax` the
-// shipped code has.
-//
-// Both failure sites report twice: once into the manager's own error string
-// (CServerMgr::SetupError, which the interface's GetErrorString hands back)
-// and once through the debug printer, at threshold 1. The first passes the
-// class name as the printer's description argument rather than the usual lone
-// space, which is what says the description really is a per-site argument.
-//
-// The second site's return code is a bare `1`, not the LT_CANTCREATESERVERSHELL
-// (53) it has just recorded in the error string — the code string in .data
-// reads "1", so the source wrote the literal. So a caller that only looks at
-// the return value cannot tell a missing shell from any other failure; the
-// distinction lives only in the error string.
-int cb_LoadModule(CClassMgr* pClassMgr)
-{
-	int nStatus;
-
-	nStatus = cb_LoadServerObjects(pClassMgr);
-	if (nStatus != 0)
-		return nStatus;
-
-	sub_10001977(pClassMgr);
-
-	void* pModule = pClassMgr->m_pServerMgr->m_ClassMgr.m_pUnknown00;
-
-	pClassMgr->m_Unknown18 = (uint32)sub_10001741(pModule, "BaseClass");
-
-	if (!pClassMgr->m_Unknown18)
-	{
-		pClassMgr->m_pServerMgr->SetupError(LT_MISSINGCLASS, "%s", "BaseClass");
-
-		RETURN_ERROR_SYM_DESC(1, "LoadServerBinaries", LT_MISSINGCLASS, "BaseClass")
-	}
-
-	sub_10001ae6(pClassMgr);
-
-	pClassMgr->m_pServerShell = ((CClassMgrCreateView*)pClassMgr)->m_pCreateShell(
-		pClassMgr->m_pServerMgr->m_pUnknown928);
-
-	if (!pClassMgr->m_pServerShell)
-	{
-		pClassMgr->m_pServerMgr->SetupError(LT_CANTCREATESERVERSHELL, "");
-
-		RETURN_ERROR_SYM(1, "LoadServerBinaries", 1)
-	}
-
-	return sub_10001b54(pClassMgr);
 }
 
 
@@ -1293,16 +1238,6 @@ void cnt_Init()
 	g_CounterScale = 1;
 }
 
-
-// The last holder of a module is the one that unloads it; the record itself
-// always goes back to the engine's allocator.
-void cb_ReleaseModule(CModuleRef* pRef)
-{
-	if (pRef->m_nRefs == 1)
-		FreeLibrary((HMODULE)pRef->m_hModule);
-
-	dfree(pRef);
-}
 
 // The two wrappers around a module reference. Both let the module go and
 // hand their own record back to the CRT rather than to the engine — they
@@ -1340,3 +1275,120 @@ void CCounterBlockQ423::Clear()
 	m_Unknown18 = 0;
 }
 #endif
+
+
+// ======================================================================= //
+// The module binder: load, release, instance handle and export lookup, in
+// retail's order (AvP2 1.0.9.6 lithtech.exe 0x00401760, 0x004017a0,
+// 0x004017c0, 0x00401870). Retail builds these in a unit of their own --
+// they sit apart from the class manager's run that starts at 0x00402680 --
+// so they are defined last here: AvP2's cl 9044 allocates a caller's
+// registers around a callee defined earlier in the same file, and none of
+// their callers here can see them in retail.
+// ======================================================================= //
+
+// 0x10001583 — load a DLL and wrap it in a reference-counted record. Zero
+// means it would not load; -1 means it did, the same "nothing to report"
+// convention 0x10001635 and 0x10034ec6 answer with.
+//
+// The reference starts at one, and cb_ReleaseModule is what spends it: the
+// record is always freed and the library only unloaded on the last one. The
+// allocation is twelve bytes for two fields, so a word of the record is never
+// touched anywhere in the image.
+int sub_10001583(char* pFilename, CModuleRef** ppRef)
+{
+	HMODULE     hModule;
+	CModuleRef* pRef;
+
+	hModule = LoadLibrary(pFilename);
+
+	if (!hModule)
+		return 0;
+
+	pRef = (CModuleRef*)dalloc(12);
+
+	pRef->m_hModule = hModule;
+	pRef->m_nRefs = 1;
+
+	*ppRef = pRef;
+
+	return -1;
+}
+
+// The last holder of a module is the one that unloads it; the record itself
+// always goes back to the engine's allocator.
+void cb_ReleaseModule(CModuleRef* pRef)
+{
+	if (pRef->m_nRefs == 1)
+		FreeLibrary((HMODULE)pRef->m_hModule);
+
+	dfree(pRef);
+}
+
+// 0x100015ce — "bm_SetInstanceHandle", from its own error tag, and the only
+// function in this cluster whose name survived. A DLL that exports
+// SetInstanceHandle is handed its own module handle through it, which is how
+// a game DLL gets an HINSTANCE without a DllMain of its own. A DLL that does
+// not export it is not an error; a null reference is.
+LTRESULT bm_SetInstanceHandle(CModuleRef* pRef)
+{
+	void (*pfn)(void* hModule);
+
+	if (!pRef)
+		RETURN_ERROR(1, bm_SetInstanceHandle, LT_INVALIDPARAMS);
+
+	pfn = (void (*)(void*))GetProcAddress((HMODULE)pRef->m_hModule,
+	                                      "SetInstanceHandle");
+
+	if (pfn)
+		pfn(pRef->m_hModule);
+
+	return LT_OK;
+}
+
+// 0x100015b2 is cb_ReleaseModule, above. 0x10001624 — resolve one export off
+// a module reference; a tail call, so it leaves no frame (name ours).
+void* sub_10001624(CModuleRef* pRef, char* pName)
+{
+	return GetProcAddress((HMODULE)pRef->m_hModule, pName);
+}
+
+// 0x10001739 and 0x10001731 — the module record's class table and count,
+// each behind a cdecl accessor of its own (names ours). Defined after their
+// callers: AvP2's 0x10001ae6 (lithtech.exe 0x00402c30) re-reads
+// m_pUnknown00 after the first of them, which its cl 9044 does only for a
+// callee it has not seen.
+ClassDef** cb_GetModuleClasses(void* pModule)
+{
+	return ((CClassModuleView*)pModule)->m_pClasses;
+}
+
+int cb_GetModuleClassCount(void* pModule)
+{
+	return ((CClassModuleView*)pModule)->m_nClasses;
+}
+
+// 0x10001741 — the module's linear class lookup: walk its table comparing
+// each definition's name against the one asked for and hand back the first
+// that matches, LTNULL if none does.
+//
+// The count is *signed* (`jle` on the entry test, `jl` on the back edge), and
+// the loop is rotated, which is why the entry test compares memory against
+// the zero already in edi while the back edge compares the other way round.
+// The table and the index are re-read in the return block rather than kept
+// live — `pMod->m_pClasses[i]` written twice, once in the comparison and once
+// in the `return`. Defined last, beside the two accessors: AvP2's
+// cb_LoadModule (lithtech.exe 0x004029b0) re-reads m_pServerMgr after it.
+ClassDef* sub_10001741(void* pModule, char* pName)
+{
+	CClassModuleView* pMod = (CClassModuleView*)pModule;
+	int i;
+
+	for (i = 0; i < pMod->m_nClasses; i++)
+	{
+		if (strcmp(pMod->m_pClasses[i]->m_ClassName, pName) == 0)
+			return pMod->m_pClasses[i];
+	}
+
+	return LTNULL;
+}

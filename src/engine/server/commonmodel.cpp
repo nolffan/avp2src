@@ -2224,15 +2224,6 @@ LTBOOL CUnknownD974::sub_100166de(Model::CModelSub20C* pSub20c)
 }
 
 
-// 0x1001671c — seven bytes: the owner at +0x2c, and the model at +0x20 of it.
-// Defined after its callers, as every image places it (AvP2 1.0.9.6
-// lithtech.exe 0x0044e2d0, after sub_1001662c and sub_1001668a), which is
-// what cl 9044's register allocation in those callers follows.
-Model* CUnknownD974::sub_1001671c()
-{
-	return m_pOwner2c->m_pModel;
-}
-
 LTBOOL CUnknownD974::sub_1001bb37(ILTStream* pStream)
 {
 	uint32 i, j;
@@ -2305,6 +2296,19 @@ LTBOOL CUnknownD974::sub_1001bb37(ILTStream* pStream)
 	}
 
 	return LTTRUE;
+}
+
+// 0x1001671c — seven bytes: the owner at +0x2c, and the model at +0x20 of it.
+// Defined after its callers, as every image places it (AvP2 1.0.9.6
+// lithtech.exe 0x0044e2d0, after sub_1001662c and sub_1001668a), which is
+// what cl 9044's register allocation in those callers follows -- and after
+// sub_1001bb37 too, which retail builds in the model loader's own unit
+// (AvP2 lithtech.exe 0x004552c0.., past model.cpp's template run that ends
+// 0x00455260) and so cannot see it: 0x0045544d reloads `this` into %ecx
+// after the call.
+Model* CUnknownD974::sub_1001671c()
+{
+	return m_pOwner2c->m_pModel;
 }
 
 
@@ -5868,9 +5872,9 @@ public:
 	// empty before the worlds are read in.
 	LTBOOL SetSizeInit2(uint32 nItems, CServerWorldRec* val);
 	inline LTBOOL SetSizeInit2Inline(uint32 nItems, CServerWorldRec* val);
-#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
-	// AVP2: AvP2 1.0.9.6's lithtech.exe Load expands SetSize2 as well
-	// (0x004287ef..0x00428857), calling only the template's
+#if !defined(LT_SERVER_BUILD)
+	// lithtech.exe's Load expands SetSize2 as well (AvP2 1.0.9.6
+	// 0x004287ef..0x00428857, Primal Hunt 0x0042b456..0x0042b4c3), calling only the template's
 	// _DeleteAndDestroyArray (0x00414720) and BaseNew (0x00414860); its
 	// InheritWorld still calls SetSize2. The template's members for this
 	// table, written out (stand-in, as SetSizeInit2Inline is).
@@ -5922,7 +5926,7 @@ inline LTBOOL CWorldTable::SetSizeInit2Inline(uint32 nItems, CServerWorldRec* va
 	return LTTRUE;
 }
 
-#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
+#if !defined(LT_SERVER_BUILD)
 inline LTBOOL CWorldTable::SetSize2Expanded(uint32 newSize, LAlloc* pAlloc)
 {
 	if ((newSize == m_nWorlds) && (newSize != 0))
@@ -7103,8 +7107,6 @@ int CServerWorldFull::Load(WorldLoadRequest* pRequest)
 	// the /O2 image reaches an inline twin and the server the real member.
 #ifdef LT_SERVER_BUILD
 	if (!m_Worlds.SetSizeInit2(nNumWorlds, LTNULL))
-#elif defined(PRIMAL_HUNT)
-	if (!m_Worlds.SetSizeInit2Inline(nNumWorlds, LTNULL))
 #else
 	if (!m_Worlds.SetSizeInit2Expanded(nNumWorlds, LTNULL))
 #endif

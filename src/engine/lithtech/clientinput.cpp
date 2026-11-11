@@ -402,8 +402,7 @@ public:
 	// The object's slot in the device state -- a dword index; objects
 	// that share a name share the slot (0x00437d69).
 	uint32         m_nIndex;                 // 0x0e8
-#ifndef PRIMAL_HUNT
-	// AvP2 1.0.9.6's older algorithm: the object's value as a float with
+	// Talon's (AvP2 1.0.9.6's and Primal Hunt's): the object's value as a float with
 	// its two previous values and the times they came in; an axis is
 	// smoothed over the three (input_ReadActions, 0x0043f490).
 	float          m_fValue;                 // 0x0ec
@@ -414,17 +413,6 @@ public:
 	uint32         m_dwPrevTime2;            // 0x100
 	// Set by a button's press, cleared when the frame's bindings are done.
 	uint32         m_bPressed;               // 0x104
-#else
-	uint32         m_dwValue;                // 0x0ec
-	uint32         m_Unknown0f0;             // 0x0f0
-	uint32         m_Unknown0f4;             // 0x0f4
-	int32          m_nValue;                 // 0x0f8
-	uint32         m_Unknown0fc;             // 0x0fc
-	uint32         m_Unknown100;             // 0x100
-	// The per-millisecond rate slot 5 (0x00437160) spreads an axis's
-	// buffered movement over, in value units (x10000) per tick.
-	float          m_fRate;                  // 0x104
-#endif
 	// The scale and range-scale state input_ScaleTrigger (0x00438bb0) sets
 	// and GetDeviceBindings copies out (0x00439160..0x0043918a).  The
 	// range maps the object's own range [m_fRangeMin, m_fRangeMax] onto
@@ -1780,9 +1768,8 @@ inline float di_BindRecValue(CInputBindRec* pRec)
 	return pVar->m_FloatVal;
 }
 
-#ifndef PRIMAL_HUNT
-// 0x0043f490 -- AvP2 1.0.9.6's per-frame read, an older algorithm than
-// Primal Hunt's below.  An object keeps its value as a float with the two
+// 0x0043f490 (Primal Hunt 0x00443260) -- Talon's per-frame read (NOLF's spreads
+// an axis over a rate instead).  An object keeps its value as a float with the two
 // before it and the times they came in (+0xec..+0x100).  An event pushes a
 // button's or POV's raw value, or an axis's into the history; an axis's
 // value is then its latest moved towards the mean of the three by
@@ -2111,406 +2098,6 @@ void input_ReadActions(InputMgr* pMgr, uint8* pActions, float* pAxisOffsets)
 		pDevice->m_dwCreateTime = dwNow;
 	}
 }
-#else
-// 0x00437160 -- slot 5, the per-frame read (demodtx.cpp's m_ReadInput: the
-// manager, a 256-byte action array, three axis offsets).  2564 bytes:
-//
-//   * the axis offsets are cleared, and every console-variable binding
-//     record resets its variable to "%f" of 0 and re-finds it;
-//   * per created device (a joystick is skipped when JoystickDisable is on,
-//     and polled otherwise): the buffered events are read -- 64 at a time,
-//     or ONE at a time for the mouse, looping while events keep coming --
-//     with the same overflow / re-acquire handling as TrackDevice;
-//   * each event updates its object (the object map by dwOfs / 4): a button
-//     latches its value and a "pressed" flag at +0xf0, a POV stores
-//     value * 10000, an axis accumulates into a rate at +0x104 over the
-//     ticks since its last event (+0xfc), InputRate being the least time an
-//     event is spread over when the object is behind;
-//   * every object then turns its value into a float -- a button's scaled,
-//     an axis's drained at its rate for the elapsed time, clamped to its
-//     range and range-scaled -- and walks its bindings: a '*' command runs
-//     through the console on a press, actions of code -1/-2/-3 add to the
-//     axis offsets, other negative codes set their console variable
-//     ("rel"/"abs" Trigger ... with InputDebug), a POV steps the offsets by
-//     30 per 45-degree sector, and anything else ORs the action bit;
-//   * relative axes and released buttons are cleared again, and the device's
-//     time stamp (+0x2f8) becomes this frame's GetTickCount.
-void input_ReadActions(InputMgr* pMgr, uint8* pActions, float* pAxisOffsets)
-{
-	DIDEVICEOBJECTDATA data[64];
-	InputDevice*       pDevice;
-	CDeviceObject*     pObj;
-	CDeviceObject*     pos;
-	SInputBinding*     pBinding;
-	CInputBindRec*     pRec;
-	uint32             dwNow;
-	uint32             dwElapsed;
-	uint32             dwTime;
-	uint32             dwLeft;
-	DWORD              dwItems;
-	HRESULT            hResult;
-	uint32             i;
-	uint32             iObject;
-	int32              nOld;
-	int32              nNew;
-	int32              nCode;
-	uint32             nType;
-	float              fValue;
-	float              fVar;
-
-	pAxisOffsets[2] = 0.0f;
-	pAxisOffsets[1] = 0.0f;
-	pAxisOffsets[0] = 0.0f;
-
-	for (pRec = g_pBindRecHead; pRec; pRec = pRec->m_pNext)
-	{
-		if (pRec->m_n00)
-		{
-			char szValue[100];
-
-			_snprintf(szValue, 100, "%f", 0.0);
-			szValue[99] = '\0';
-
-			con_SetVar((ConsoleState*)g_pInputClient, di_BindRecVarName(pRec), szValue);
-		}
-
-		pRec->m_n04 = (uint32)con_FindVar((ConsoleState*)g_pInputClient,
-		                                  di_BindRecVarName(pRec));
-	}
-
-	dwNow = GetTickCount();
-
-	for (pDevice = g_pDeviceHead; pDevice; pDevice = pDevice->m_pNext)
-	{
-		while (pDevice->m_pDevice)
-		{
-#ifdef AVP2_MODERN
-			// M-P7-01: JoystickDisable (the launcher's "Disable joystick")
-			// was about DirectInput's joysticks, which are left out; not
-			// ##gamepad.
-			if (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK &&
-			    g_CV_JoystickDisable && !P7Pad_IsPad(pDevice->m_Guid))
-				break;
-#else
-			if (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK &&
-			    g_CV_JoystickDisable)
-				break;
-#endif
-
-			dwElapsed = dwNow - pDevice->m_dwCreateTime;
-
-			if (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK)
-				pDevice->m_pDevice->Poll();
-
-			memset(data, 0, sizeof(data));
-			dwItems = pDevice->m_bIsMouse ? 1 : 64;
-
-			hResult = pDevice->m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA),
-			                                            data, &dwItems, 0);
-			if (hResult != DI_OK)
-			{
-				if (hResult == DI_BUFFEROVERFLOW)
-				{
-					con_ConsolePrint("Input buffer overflow on %s", pDevice->m_Name);
-				}
-				else
-				{
-					pDevice->m_pDevice->Acquire();
-
-					hResult = pDevice->m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA),
-					                                            data, &dwItems, 0);
-					if (hResult != DI_OK && hResult != DI_BUFFEROVERFLOW)
-						break;
-				}
-			}
-
-			// The events, into their objects.
-			for (i = 0; i < dwItems; i++)
-			{
-				iObject = data[i].dwOfs >> 2;
-
-				if (iObject >= pDevice->m_Objects.m_nCount)
-					continue;
-
-				pObj = pDevice->m_ObjectMap[iObject];
-
-				if (g_CV_InputDebug)
-					con_ConsolePrint("%s (%s) generated %d", pObj->m_Name,
-					                 pObj->m_TriggerName, data[i].dwData);
-
-				nType = pObj->m_Type;
-
-				if (nType == 0)
-				{
-					if (data[i].dwData)
-					{
-						if (!pObj->m_dwValue)
-							pObj->m_Unknown0f0 = 1;
-
-						pObj->m_dwValue = data[i].dwData;
-					}
-				}
-				else if (nType == 4)
-				{
-					pObj->m_dwValue = data[i].dwData * 10000;
-				}
-				else
-				{
-					if (!pObj->m_Unknown0f4)
-					{
-						pObj->m_Unknown0f4 = 1;
-						pObj->m_fRate      = 0.0f;
-						pObj->m_Unknown100 = 0;
-						pObj->m_Unknown0fc = pDevice->m_dwCreateTime;
-					}
-					else
-					{
-						pObj->m_fRate *= pObj->m_Unknown100;
-					}
-
-					if (pObj->m_Unknown100 < dwElapsed * 2)
-					{
-						dwTime = data[i].dwTimeStamp - pObj->m_Unknown0fc;
-
-						if (dwTime <= (uint32)g_CV_InputRate)
-							dwTime = g_CV_InputRate;
-					}
-					else
-					{
-						dwTime = data[i].dwTimeStamp - pObj->m_Unknown0fc;
-					}
-
-					pObj->m_Unknown100 += dwTime;
-					pObj->m_Unknown0fc  = data[i].dwTimeStamp;
-
-					if (nType == 3)
-					{
-						pObj->m_fRate = ((int32)(data[i].dwData * 10000) + pObj->m_fRate) /
-						                pObj->m_Unknown100;
-					}
-					else
-					{
-						nNew = data[i].dwData;
-						nOld = pObj->m_nValue;
-						pObj->m_nValue = nNew;
-
-						pObj->m_fRate = ((nNew - nOld) * 10000 + pObj->m_fRate) /
-						                pObj->m_Unknown100;
-					}
-				}
-			}
-
-			// Every object: its value, then its bindings.
-			for (pos = pDevice->m_Objects.m_pHead; pos; )
-			{
-				pObj = pDevice->m_Objects.GetNext(pos);
-
-				if (pObj->m_Type == 0)
-				{
-					fValue = (int32)pObj->m_dwValue * pObj->m_fScale;
-				}
-				else
-				{
-					if (pObj->m_Type != 4 && pObj->m_Unknown0f4)
-					{
-						dwLeft = pObj->m_Unknown100;
-						dwTime = (dwLeft < dwElapsed) ? dwLeft : dwElapsed;
-
-						pObj->m_dwValue += (long)(dwTime * pObj->m_fRate);
-
-						if (dwLeft > dwTime)
-						{
-							dwLeft -= dwTime;
-						}
-						else
-						{
-							dwLeft = 0;
-							pObj->m_Unknown0f4 = 0;
-							pObj->m_nValue = (long)(pObj->m_dwValue * 0.0001f);
-							pObj->m_fRate  = 0;
-						}
-
-						pObj->m_Unknown100 = dwLeft;
-					}
-
-					fValue = (int32)pObj->m_dwValue * 0.0001f;
-
-					fValue = LTCLAMP(fValue, pObj->m_fRangeMin, pObj->m_fRangeMax);
-
-					if (pObj->m_fRangeScalePreCenterOffset != 0.0)
-					{
-						if (fValue <= pObj->m_fCenter)
-							fValue = fValue * pObj->m_fLowMult + pObj->m_fLowOffset;
-						else
-							fValue = fValue * pObj->m_fHighMult + pObj->m_fHighOffset;
-					}
-					else
-					{
-						fValue = fValue * pObj->m_fRangeScaleMult + pObj->m_fRangeScaleOffset;
-					}
-
-					fValue *= pObj->m_fScale;
-				}
-
-				for (pBinding = pObj->m_pBindings; pBinding; pBinding = pBinding->m_pNext)
-				{
-					if (pBinding->m_pData && pObj->m_Unknown0f0 && g_pInputClient)
-					{
-						con_RunString((ConsoleState*)g_pInputClient, (char*)pBinding->m_pData);
-						continue;
-					}
-
-					if (!pBinding->m_pAction)
-						continue;
-
-					nCode = pBinding->m_pAction->m_nCode;
-
-					if (pObj->m_Type == 3 && nCode < 0)
-					{
-						if (nCode == -1)
-							pAxisOffsets[0] += fValue;
-						else if (nCode == -2)
-							pAxisOffsets[1] += fValue;
-						else if (nCode == -3)
-							pAxisOffsets[2] += fValue;
-						else if (pRec = pBinding->m_pBind)
-						{
-							fVar = di_BindRecValue(pRec);
-
-							if (pRec->m_n00)
-							{
-								char szValue[100];
-
-								_snprintf(szValue, 100, "%f", fVar + fValue);
-								szValue[99] = '\0';
-
-								con_SetVar((ConsoleState*)g_pInputClient,
-								           di_BindRecVarName(pRec), szValue);
-							}
-
-							if (g_CV_InputDebug)
-							{
-								pRec = pBinding->m_pBind;
-
-								con_ConsolePrint("rel Trigger %s set console var %s to %22.12f",
-								                 pObj->m_Name, di_BindRecVarName(pRec),
-								                 di_BindRecValue(pRec));
-							}
-						}
-					}
-					else if (pObj->m_Type == 2)
-					{
-						if (nCode < 0)
-						{
-							if (nCode == -1)
-								pAxisOffsets[0] += fValue;
-							else if (nCode == -2)
-								pAxisOffsets[1] += fValue;
-							else if (nCode == -3)
-								pAxisOffsets[2] += fValue;
-							else if (pRec = pBinding->m_pBind)
-							{
-								fVar = di_BindRecValue(pRec);
-
-								if (pRec->m_n00)
-								{
-									char szValue[100];
-
-									_snprintf(szValue, 100, "%f", fVar + fValue);
-									szValue[99] = '\0';
-
-									con_SetVar((ConsoleState*)g_pInputClient,
-									           di_BindRecVarName(pRec), szValue);
-								}
-
-								if (g_CV_InputDebug)
-								{
-									pRec = pBinding->m_pBind;
-
-									con_ConsolePrint("abs Trigger %s set console var %s to %22.12f",
-									                 pObj->m_Name, di_BindRecVarName(pRec),
-									                 di_BindRecValue(pRec));
-								}
-							}
-						}
-						else if (fValue >= pBinding->m_fRangeLow &&
-						         fValue <= pBinding->m_fRangeHigh)
-						{
-							pActions[nCode] |= 1;
-						}
-					}
-					else if (pObj->m_Type == 4 && (pRec = pBinding->m_pBind))
-					{
-						fVar = di_BindRecValue(pRec);
-
-						if (pRec->m_n00)
-						{
-							char szValue[100];
-
-							_snprintf(szValue, 100, "%f", fVar + fValue);
-							szValue[99] = '\0';
-
-							con_SetVar((ConsoleState*)g_pInputClient,
-							           di_BindRecVarName(pRec), szValue);
-						}
-					}
-					else if (pObj->m_Type == 4 && nCode < 0 && fValue != 65536.0f)
-					{
-						if (fValue >= 4500.0f && fValue <= 13500.0f)
-							pAxisOffsets[0] += 30.0f;
-						else if (fValue >= 22500.0f && fValue <= 31500.0f)
-							pAxisOffsets[0] -= 30.0f;
-
-						if ((fValue >= 31500.0f && fValue <= 36000.0f) ||
-						    (fValue <= 4500.0f && fValue >= 0.0f))
-							pAxisOffsets[1] -= 30.0f;
-
-						if (fValue >= 13500.0f && fValue <= 22500.0f)
-							pAxisOffsets[1] += 30.0f;
-					}
-					else if (pBinding->m_fRangeLow == 0.0f && pBinding->m_fRangeHigh == 0.0f)
-					{
-						if (nCode >= 0)
-							pActions[nCode] |= (pObj->m_dwValue != 0);
-					}
-					else if (fValue >= pBinding->m_fRangeLow &&
-					         fValue <= pBinding->m_fRangeHigh)
-					{
-						pActions[nCode] |= 1;
-					}
-				}
-
-				if (pObj->m_Type == 3)
-					pObj->m_dwValue = 0;
-
-				pObj->m_Unknown0f0 = 0;
-			}
-
-			// Relative axes and released buttons, cleared for the next read.
-			for (i = 0; i < dwItems; i++)
-			{
-				iObject = data[i].dwOfs >> 2;
-
-				if (iObject >= pDevice->m_Objects.m_nCount)
-					continue;
-
-				pObj = pDevice->m_ObjectMap[iObject];
-
-				if (pObj->m_Type == 0 && !data[i].dwData)
-					pObj->m_dwValue = data[i].dwData;
-
-				if (pObj->m_Type == 3)
-					pObj->m_dwValue = 0;
-			}
-
-			if (!dwItems || !pDevice->m_bIsMouse)
-				break;
-		}
-
-		pDevice->m_dwCreateTime = dwNow;
-	}
-}
-#endif // PRIMAL_HUNT
 
 
 // 0x00437b70 -- slot 6.  Throw away everything in every device's buffer:
@@ -2583,9 +2170,7 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	DWORD              nOffset;
 	HRESULT            hr;
 	BOOL               bFound;
-#ifndef PRIMAL_HUNT
 	float              fCentre;
-#endif
 
 	pDevice->m_pDevice->Unacquire();
 
@@ -2634,7 +2219,6 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	}
 
 	memset(&df, 0, sizeof(df));
-#ifndef PRIMAL_HUNT
 	df.dwNumObjs  = nObjects;
 	df.dwFlags    = (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK) ?
 	                DIDF_ABSAXIS : DIDF_RELAXIS;
@@ -2642,24 +2226,11 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	df.dwSize     = sizeof(DIDATAFORMAT);
 	df.dwObjSize  = sizeof(DIOBJECTDATAFORMAT);
 	df.dwDataSize = nOffset;
-#else
-	df.dwSize     = sizeof(DIDATAFORMAT);
-	df.dwObjSize  = sizeof(DIOBJECTDATAFORMAT);
-	df.dwFlags    = (GET_DIDEVICE_TYPE(pDevice->m_dwDevType) == DIDEVTYPE_JOYSTICK) ?
-	                DIDF_ABSAXIS : DIDF_RELAXIS;
-	df.dwDataSize = nOffset;
-	df.dwNumObjs  = nObjects;
-	df.rgodf      = formats;
-#endif
 
 	if (pDevice->m_pDevice->SetDataFormat(&df) != DI_OK)
 		return LTFALSE;
 
-#ifndef PRIMAL_HUNT
 	pDevice->m_dwDataSize = nOffset;
-#else
-	pDevice->m_dwDataSize = df.dwDataSize;
-#endif
 
 	dipdw.diph.dwSize       = sizeof(DIPROPDWORD);
 	dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
@@ -2677,8 +2248,7 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 	{
 		pObject = pDevice->m_Objects.GetNext(pos);
 
-#ifndef PRIMAL_HUNT
-		// AvP2 1.0.9.6: the value and its history, centred.
+		// Talon: the value and its history, centred.
 		if (pObject->m_Type == 3 || pObject->m_Type == 2)
 		{
 			fCentre = (pObject->m_fRangeMax - pObject->m_fRangeMin) * 0.5f +
@@ -2694,22 +2264,6 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 			pObject->m_fPrevValue  = 0.0f;
 			pObject->m_fPrevValue2 = 0.0f;
 		}
-#else
-		if (pObject->m_Type == 3 || pObject->m_Type == 2)
-		{
-			pObject->m_dwValue = (long)((pObject->m_fRangeMax - pObject->m_fRangeMin) * 0.5f +
-			                            (long)pObject->m_fRangeScalePreCenterOffset) * 10000;
-			pObject->m_nValue  = (long)(pObject->m_dwValue * 0.0001f);
-		}
-		else
-		{
-			pObject->m_nValue  = 0;
-			pObject->m_dwValue = 0;
-		}
-
-		pObject->m_Unknown0f4 = 0;
-		pObject->m_Unknown100 = 0;
-#endif
 	}
 
 	hr = pDevice->m_pDevice->Acquire();
@@ -2722,8 +2276,7 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 		{
 			pObject = pDevice->m_Objects.GetNext(pos);
 
-#ifndef PRIMAL_HUNT
-			// AvP2 1.0.9.6: an axis and a button read the same way.
+			// Talon: an axis and a button read the same way.
 			if (pObject->m_Type == 3 || pObject->m_Type == 2)
 				pObject->m_fValue = (float)state[pObject->m_nIndex];
 			else
@@ -2731,17 +2284,6 @@ LTBOOL di_SetupDeviceFormat(InputDevice* pDevice)
 
 			pObject->m_fPrevValue  = pObject->m_fValue;
 			pObject->m_fPrevValue2 = pObject->m_fValue;
-#else
-			if (pObject->m_Type == 3 || pObject->m_Type == 2)
-			{
-				pObject->m_dwValue = state[pObject->m_nIndex] * 10000;
-				pObject->m_nValue  = (long)(pObject->m_dwValue * 0.0001f);
-			}
-			else
-			{
-				pObject->m_nValue = pObject->m_dwValue = state[pObject->m_nIndex];
-			}
-#endif
 		}
 	}
 

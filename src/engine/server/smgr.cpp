@@ -906,11 +906,85 @@ public:
 	}
 };
 
+extern "C" {
+__declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
+__declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
+}
+
+// A reference-counted object, released through its virtual destructor
+// when the last reference goes (server.dll 0x1003f2d1: InterlockedDecrement
+// of +0x04, then `delete this` -- the null test and slot 0 with 1 pushed).
+// What it is is not established; only the count at +0x04 and the virtual
+// destructor are read (names ours).
+class CRefObjQ523
+{
+public:
+	virtual ~CRefObjQ523();
+
+	CRefObjQ523* AddRef()
+	{
+		InterlockedIncrement(&m_nRefs);
+		return this;
+	}
+
+	void Release()                           // 0x1003f2d1
+	{
+		if (InterlockedDecrement(&m_nRefs) <= 0)
+			delete this;
+	}
+
+	long m_nRefs;                            // +0x04
+};
+
+// The one-pointer smart reference that holds one (names ours):
+// assignment (server.dll 0x10043361) releases what it held and takes a
+// reference on what it is given; the destructor (0x1003f2c5) releases.
+class CRefPtrQ523
+{
+public:
+	CRefPtrQ523();                           // 0x100430c1
+#ifdef PRIMAL_HUNT
+	~CRefPtrQ523();                          // 0x1003f2c5
+#else
+	// AvP2 1.0.9.6: inline. Both images expand it into the global's
+	// destructor thunk (lithtech.exe 0x004821f0, the release too; server.dll
+	// 0x1003bb00, calling Release out of line) where Primal Hunt's
+	// tail-jump to an out-of-line copy.
+	~CRefPtrQ523()
+	{
+		if (m_p)
+			m_p->Release();
+	}
+#endif
+
+	CRefObjQ523* operator=(CRefObjQ523* p)
+	{
+		if (m_p != p)
+		{
+			if (m_p)
+				m_p->Release();
+
+			m_p = p ? p->AddRef() : LTNULL;
+		}
+
+		return p;
+	}
+
+	CRefObjQ523* m_p;
+};
+
+// Defined with Init, below (name ours).
+extern CRefPtrQ523 g_RefQ523;
+
 // 0x1002ccee — the object map's resize is CMoArray<CObjectMapEntry>::SetSize2
 // (servermgr.h): lithtech.exe's Term carries it expanded, server.dll calls it.
 
 void CServerMgr::Term()
 {
+	// The authentication context goes first, before even SetupGlobals
+	// (server.dll 0x1003f8b4, AvP2 1.0.9.6 0x1003c0d1).
+	g_RefQ523 = LTNULL;
+
 	SetupGlobals();
 
 	m_Thread.Term(LTTRUE);
@@ -948,8 +1022,15 @@ void CServerMgr::Term()
 		while (pCur != &m_Link8c4)
 		{
 			LTLink* pNext = pCur->m_pNext;
+#ifdef PRIMAL_HUNT
+			// PH: through the null-tested sb_Free, as sm_DrainObjectQueue
+			// (server.dll 0x1003f95e..0x1003f967); AvP2 1.0.9.6 has the two
+			// bare stores.
+			sb_Free(&g_ObjQueueBank.m_Bank, pCur);
+#else
 			pCur->m_pPrev = SM_FREE_LINKS;
 			SM_FREE_LINKS = pCur;
+#endif
 			pCur = pNext;
 		}
 	}
@@ -1450,72 +1531,6 @@ public:
 	CServerMgr* m_pMgr;                      // +0x04
 };
 
-extern "C" {
-__declspec(dllimport) long __stdcall InterlockedIncrement(long* pAddend);
-__declspec(dllimport) long __stdcall InterlockedDecrement(long* pAddend);
-}
-
-// A reference-counted object, released through its virtual destructor
-// when the last reference goes (server.dll 0x1003f2d1: InterlockedDecrement
-// of +0x04, then `delete this` -- the null test and slot 0 with 1 pushed).
-// What it is is not established; only the count at +0x04 and the virtual
-// destructor are read (names ours).
-class CRefObjQ523
-{
-public:
-	virtual ~CRefObjQ523();
-
-	CRefObjQ523* AddRef()
-	{
-		InterlockedIncrement(&m_nRefs);
-		return this;
-	}
-
-	void Release()                           // 0x1003f2d1
-	{
-		if (InterlockedDecrement(&m_nRefs) <= 0)
-			delete this;
-	}
-
-	long m_nRefs;                            // +0x04
-};
-
-// The one-pointer smart reference that holds one (names ours):
-// assignment (server.dll 0x10043361) releases what it held and takes a
-// reference on what it is given; the destructor (0x1003f2c5) releases.
-class CRefPtrQ523
-{
-public:
-	CRefPtrQ523();                           // 0x100430c1
-#ifdef PRIMAL_HUNT
-	~CRefPtrQ523();                          // 0x1003f2c5
-#else
-	// AvP2 1.0.9.6: inline. Both images expand it into the global's
-	// destructor thunk (lithtech.exe 0x004821f0, the release too; server.dll
-	// 0x1003bb00, calling Release out of line) where Primal Hunt's
-	// tail-jump to an out-of-line copy.
-	~CRefPtrQ523()
-	{
-		if (m_p)
-			m_p->Release();
-	}
-#endif
-
-	CRefObjQ523* operator=(CRefObjQ523* p)
-	{
-		if (m_p != p)
-		{
-			if (m_p)
-				m_p->Release();
-
-			m_p = p ? p->AddRef() : LTNULL;
-		}
-
-		return p;
-	}
-
-	CRefObjQ523* m_p;
-};
 
 // Out of line: the global's initializer reaches both by a tail jump
 // (server.dll 0x1003f2aa, 0x1003f2c0), and the constructor's six bytes are
@@ -2445,10 +2460,12 @@ void sm_ApplyChangeFlags(CServerMgr* pMgr)
 				uint32 nIndex = ((uint32*)pSound->m_pUnknown0c)[2];
 				pClient->m_pObjInfos[(uint16)nIndex].m_ChangeFlags |= pSound->m_Unknown2c;
 #else
-				// AVP2 1.0.9.6: cl 9044 narrows the load either way
-				// (`xor ; mov 8(%ecx),%bp`, 0x00483338).
-				uint16 nIndex = (uint16)((uint32*)pSound->m_pUnknown0c)[2];
-				pClient->m_pObjInfos[nIndex].m_ChangeFlags |= pSound->m_Unknown2c;
+				// AVP2 1.0.9.6: the narrowed index straight in the
+				// subscript, no local: cl 9044 narrows the load
+				// (`xor ; mov 8(%ecx),%bp`, 0x00483338) ahead of the
+				// table's; through a uint16 local it reads the table first
+				// and zero-extends with `and`.
+				pClient->m_pObjInfos[(uint16)((uint32*)pSound->m_pUnknown0c)[2]].m_ChangeFlags |= pSound->m_Unknown2c;
 #endif
 				pSound = pSound->m_pNextChanged;
 			}
@@ -3596,8 +3613,7 @@ LPBASECLASS si_CreateObject(HCLASS hClass, ObjectCreateStruct* pStruct)
 LTBOOL si_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo);
 
 
-#ifndef PRIMAL_HUNT
-// AVP2 1.0.9.6: what the shade lookup's lights look like from here (names
+// What the shade lookup's lights look like from here (names
 // ours): a sphere of influence and, for a spot, a cone given by its cosine,
 // fading from the inner colour on the axis to the outer one at the edge.
 struct CShadeLight
@@ -3612,9 +3628,9 @@ struct CShadeLight
 };
 
 // The lookup answers in bytes and the caller wants floats, and the channels
-// come back the other way round. AvP2 1.0.9.6 then adds each light in
-// range (0x004795f0, server.dll 0x10036008) and clamps to 255; Primal Hunt
-// has only the lookup.
+// come back the other way round. It then adds each light in range and
+// clamps to 255 (AvP2 1.0.9.6 0x004795f0, server.dll 0x10036008; Primal
+// Hunt 0x00480280, server.dll 0x10038f36).
 LTBOOL si_GetPointShade(LTVector* pPoint, LTVector* pColor)
 {
 	uint8   color[4];
@@ -3664,21 +3680,6 @@ LTBOOL si_GetPointShade(LTVector* pPoint, LTVector* pColor)
 		pColor->z = 255.0f;
 	return LTTRUE;
 }
-#else
-// The lookup answers in bytes and the caller wants floats, and the channels
-// come back the other way round.
-LTBOOL si_GetPointShade(LTVector* pPoint, LTVector* pColor)
-{
-	uint8 color[4];
-
-	w_GetPointShade(g_pServerMgr->m_ShadeState, pPoint, color);
-
-	pColor->x = color[2];
-	pColor->y = color[1];
-	pColor->z = color[0];
-	return LTTRUE;
-}
-#endif
 
 // w_GetPointShade, the world light-grid trilinear sample, which
 // si_GetPointShade above calls: it follows si_GetPointShade in both
@@ -3898,14 +3899,10 @@ void w_GetPointShade(uint8* pShadeState, LTVector* pPoint, uint8* pColor)
 	// Declared at its initialisation, not in the `v, vLeft, vRight`
 	// statement: codegen-neutral on the frame but flips one SIB pair,
 	// `movzbl (%edx,%eax,1)` at 0x1002d093 / 0x1002d12d, to shipped order.
-#ifndef PRIMAL_HUNT
-	// AVP2: assigned, so the difference goes through its own temp
+	// Assigned, so the difference goes through its own temp
 	// (0x004059b6..0x004059eb).
 	LTVector v;
 	v = *pPoint - pShade->m_vBase;
-#else
-	LTVector v = *pPoint - pShade->m_vBase;
-#endif
 	v.x *= pShade->m_vScale.x;
 	v.y *= pShade->m_vScale.y;
 	v.z *= pShade->m_vScale.z;
@@ -3942,8 +3939,7 @@ void w_GetPointShade(uint8* pShadeState, LTVector* pPoint, uint8* pColor)
 	// against the slot.  The store of v.z is dead -- its value stays in
 	// st and -0x1c is reused for (1.0f - v.z) at 0x1002d041 -- which is
 	// why only two of the three have an `fstp` of their own.
-#ifndef PRIMAL_HUNT
-	// AVP2: a point on the grid's far face of an axis takes the last cell's
+	// A point on the grid's far face of an axis takes the last cell's
 	// far corner (weight 0 into the cell below), so the eight corners never
 	// reach past the grid (lithtech.exe 0x00405a6d..0x00405b21).
 	if (ix == pShade->m_nMaxX)
@@ -3981,25 +3977,6 @@ void w_GetPointShade(uint8* pShadeState, LTVector* pPoint, uint8* pColor)
 		v.z -= (float)floor(v.z);
 		vInv.z = 1.0f - v.z;
 	}
-#else
-	v.x -= (float)floor(v.x);
-	v.y -= (float)floor(v.y);
-	v.z -= (float)floor(v.z);
-
-	// THE WEIGHTS ARE A NAMED VECTOR, computed once, here (0x1002d027,
-	// 0x1002d02e, 0x1002d03d / client 0x004058b5..).  Written inline as
-	// (1.0f - v.y) at each use, VC6 builds them lazily at first use:
-	// 1060 bytes, 362 insns, 21 blocks.  As three named floats they hoist
-	// here (365 insns, lithtech mnemonic-identical) but the spilled z gets
-	// a slot of its own (frame 0x94).  As a VECTOR, x and y stay in st and
-	// only vInv.z is stored -- packed onto v's dead slot at v.z's offset,
-	// -0x1c, exactly as shipped -- which gives frame 0x9c and size-exact
-	// on both images.  A constructor `LTVector vInv(...)` is worse on the
-	// client (1390/380).
-	vInv.x = 1.0f - v.x;
-	vInv.y = 1.0f - v.y;
-	vInv.z = 1.0f - v.z;
-#endif
 
 	// 0x1002d014..0x1002d04b / 0x004058a0..0x004058e2.  Cells are four
 	// bytes, so the whole index folds into `lea eax,[eax+ecx*4]`.
@@ -5561,14 +5538,16 @@ public:
 	uint16 m_wIndex;                         // +0xf8
 };
 
-class CWMPolyObjQ502
+// The world model's hold on its BSP (name ours): an object of its own, at
+// +0x1b8 -- server.dll's expansion of GetIdle keeps its address
+// (`lea 0x1b8(%eax),%esi`, 0x1003d401) as the inline's `this`.
+class CWMPolyBspRefQ502
 {
 public:
-	uint8           m_pad_000[0x1b8];
-	CWMPolyBspQ502* m_pBsp;                  // +0x1b8
+	CWMPolyBspQ502* m_pBsp;
 
 	// The BSP, unless it is busy (name ours).
-	CWMPolyBspQ502* GetIdleBsp()
+	CWMPolyBspQ502* GetIdle()
 	{
 #ifdef AVP2_MODERN
 		if (!m_pBsp || m_pBsp->IsBusy())
@@ -5581,13 +5560,21 @@ public:
 	}
 };
 
+class CWMPolyObjQ502
+{
+public:
+	uint8             m_pad_000[0x1b8];
+	CWMPolyBspRefQ502 m_Bsp;                 // +0x1b8
+};
+
 // AVP2: ILTServer::GetNextWMPoly, 0x00486920 -- GetNextPoly over one world
 // model's polies: INVALID_HPOLY starts at its first, the last answers
 // LT_FINISHED with the handle set back to INVALID_HPOLY.
 //
 // The busy test is an inline that hands back the BSP or null: the virtual
 // call, then the pointer reloaded and tested (0x004869a5..0x004869bb), and
-// one error block after it.
+// one error block after it. It is a method of the BSP holder, not of the
+// world model: as the world model's, server.dll's /O1 calls it out of line.
 //
 // RETAIL BUG: the BSP's IsBusy is called before the BSP pointer is tested,
 // so a world model without one crashes instead of answering
@@ -5602,7 +5589,7 @@ LTRESULT si_GetNextWMPoly(HPOLY* hPoly, LTObject* hWorldModel)
 	if (!hWorldModel)
 		RETURN_ERROR(1, "ILTServer::GetNextWMPoly", LT_INVALIDPARAMS);
 
-	CWMPolyBspQ502* pBsp = pObj->GetIdleBsp();
+	CWMPolyBspQ502* pBsp = pObj->m_Bsp.GetIdle();
 	if (!pBsp)
 		RETURN_ERROR(1, "ILTServer::GetNextWMPoly", LT_INVALIDDATA);
 
@@ -6231,17 +6218,17 @@ LTRESULT sm_SetObjectRotation(LTObject* hObj, LTRotation* pRotation, int bGuaran
 	if (!hObj)
 		RETURN_ERROR(1, "ILTPhysics::SetObjectRotation", LT_ERROR);
 
-	if (hObj->m_Rotation.m_Quat[0] == pRotation->m_Quat[0] &&
-	    hObj->m_Rotation.m_Quat[1] == pRotation->m_Quat[1] &&
-	    hObj->m_Rotation.m_Quat[2] == pRotation->m_Quat[2] &&
-	    hObj->m_Rotation.m_Quat[3] == pRotation->m_Quat[3])
+	// LTRotation's operator== (Equals against FLT_MIN; server.dll's
+	// out-of-line copy at 0x1002a438, called from 0x1003e0f6; AvP2 1.0.9.6
+	// 0x10028ada from 0x1003af3c).
+	if (hObj->m_Rotation == *pRotation)
 		return LT_OK;
 
 	if (sm_IsWorldModelType(hObj))
 	{
 		sm_InitMoveState(&state, &g_pServerMgr->m_Unknown210,
 		                 g_pServerMgr->m_pUnknown6a8, hObj, hObj->m_BlockingPriority);
-		wm_RotateWorldModel(&state, pRotation, 1);
+		wm_RotateWorldModel(&state, pRotation, !bGuaranteed);
 	}
 	else
 	{
@@ -7622,35 +7609,13 @@ LTRESULT sm_StartCachePass(CServerMgr* pMgr, int bCaching)
 
 
 // 0x1000e632 and 0x1000e641 — what a packet queue still owes: whether
-// anything is waiting, and whether anything is still unacknowledged (names
-// ours, from where the answers are used).
-// Nothing in the image names the queue; the two dwords the answers come
-// straight out of are reached through a view (offsets ours). Both are cdecl
-// with one argument and both duplicate their epilogue, so each is a positive
-// guard with the zero return after it, not a `return p ? ... : 0`.
-class CPacketQueueView
-{
-public:
-	uint8  m_pad_00[0x48];
-	uint32 m_nQueued;                        // +0x48
-	uint32 m_nUnacked;                       // +0x4c
-};
-
-int msg_HasQueuedPackets(void* pQueue)
-{
-	if (pQueue)
-		return ((CPacketQueueView*)pQueue)->m_nQueued;
-
-	return 0;
-}
-
-int msg_HasUnackedPackets(void* pQueue)
-{
-	if (pQueue)
-		return ((CPacketQueueView*)pQueue)->m_nUnacked;
-
-	return 0;
-}
+// anything is waiting, and whether anything is still unacknowledged.
+// servermessage.cpp's: they sit among its packet-holder functions in every
+// image (AvP2 1.0.9.6 lithtech.exe 0x00437350, after ph_SetUnknown74), and
+// AvP2's cl 9044 reloads the queue pointer across them here, as it does
+// around a callee it has not seen defined.
+int msg_HasQueuedPackets(void* pQueue);
+int msg_HasUnackedPackets(void* pQueue);
 
 // 0x10027533 — may this client be let into the world yet? Not while the
 // manager is between worlds, and not unless the client has asked (bit 8).

@@ -58,6 +58,18 @@ garbage.
 Fixed in the modern build: tcpdriver.cpp, an unlisted code gives
 "<unknown>".
 
+### A world model whose cell grid fails to load leaks the model
+
+lithtech.exe 0x0042b740, server.dll 0x1000b1a1, AvP2 1.0.9.6 lithtech.exe
+0x00428ac0 and server.dll 0x1000af41 (`w_LoadWorldModel`,
+src/engine/server/worldbsp.cpp). Every failure while reading a world model
+deletes the half-built CWorldBsp and returns 2, except a failure of the
+cell grid's Load, which returns 2 straight away (AvP2 server.dll 0x1000bcb4
+jumps past the delete to 0x1000bdd2). The model and every array it owns
+leak; only a corrupt world file reaches it.
+
+Fixed in the modern build: worldbsp.cpp, that failure deletes the model too.
+
 ### The disconnect notice sends an uninitialised byte
 
 lithtech.exe 0x004a1c40, server.dll 0x10046175, AvP2 1.0.9.6 lithtech.exe

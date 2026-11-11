@@ -265,20 +265,32 @@ inline void ws_SetupBoxGeometry(LTVector* pMin, LTVector* pMax)
 // one the loop's exit test compares. Writing `g_BoxPlanes[i].m_Dist` at both
 // use sites gives the same instructions with two frame slots transposed and
 // the exit test on the other induction variable.
-// AVP2: not yet matched in any AvP2 image (AvP2 0x00416f10, PH 0x00418e80
-// with an exception frame, server.dll 0x10001db0). What is known and
-// written: the polygon layout (ltobject_internal.h's WorldPolyOwner), the two bounds
+// AVP2: byte-identical on both lithtech.exe images (PH 0x00418e80, 1113
+// bytes with an exception frame; AvP2 0x00416f10, 929). Besides the polygon
+// layout (ltobject_internal.h's WorldPolyOwner), the two bounds
 // out-parameters (filled from the surviving vertices only when both are
 // given; PH 0x0041ec79 and 0x004207f9 pass them, every other caller passes
-// null), and the client's timer (AvP2 0x00416f3e..0x00416f5d, a CountAdder
-// on 0x004e0490). Still different: the shipped
-// vertex lists are static arrays (0x004df018, 0x004df418, 0x004e0070), with
-// a static-local guard at 0x004df010 whose object this does not name.
+// null) and the client's timer (AvP2 0x00416f3e..0x00416f5d, a CountAdder on
+// 0x004e0490), three shapes closed it:
+//   * the three lists are static locals (AvP2 0x004df018, 0x004df418,
+//     0x004e0070): LTVector's empty constructor gives the clipped array the
+//     guard (0x004df010) and the atexit of an empty destructor (0x004172c0)
+//     the function opens with, ahead of the stat counter;
+//   * the copy loop re-reads m_nVertices for its test (the statics can
+//     alias the polygon, server.dll 0x10001e1e);
+//   * the bounds walk counts nVerts down and steps ppIn (`dec; jne`, and
+//     PH's `test; je` entry), each component an LTMIN/LTMAX of the bound
+//     and (*ppIn) -- re-read every time, `mov (%edi),%esi`.
+// NEAR on both server.dll images, the same 824 / 785 bytes: AvP2 1.0.9.6's
+// (0x10001d4e) differs in one instruction, the clip loop's `fmuls
+// (%esi,%eax,1)` (0x10001ea3), base and index the other way round from
+// ours; Primal Hunt's (0x10001db0) also swaps %ebx and %edi (ppIn, nVerts)
+// and the j / ppOut frame slots.
 int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax)
 {
-	LTVector   vClipped[WS_MAX_CLIP_VERTS];
-	LTVector*  pWork[WS_MAX_CLIP_VERTS];
-	LTVector*  pInList[WS_MAX_POLY_VERTS];
+	static LTVector   vClipped[WS_MAX_CLIP_VERTS];
+	static LTVector*  pWork[WS_MAX_CLIP_VERTS];
+	static LTVector*  pInList[WS_MAX_POLY_VERTS];
 	LTVector** ppIn;
 	LTVector** ppOut;
 	LTVector** ppOutBase;
@@ -335,7 +347,7 @@ int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax)
 		return 1;
 
 #endif
-	for (j = 0; j < nVerts; j++)
+	for (j = 0; j < pOwner->m_nVertices; j++)
 		pInList[j] = pOwner->m_Vertices[j].m_pPos;
 
 	for (i = 0; i < 6; i++)
@@ -419,16 +431,16 @@ int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax)
 		pMin->x = pMin->y = pMin->z =  1.0e37f;   // 0x7cf0bdc2
 		pMax->x = pMax->y = pMax->z = -1.0e37f;   // 0xfcf0bdc2
 
-		for (j = 0; j < nVerts; j++)
+		while (nVerts--)
 		{
-			LTVector* pPos = ppIn[j];
+			pMin->x = LTMIN(pMin->x, (*ppIn)->x);
+			pMin->y = LTMIN(pMin->y, (*ppIn)->y);
+			pMin->z = LTMIN(pMin->z, (*ppIn)->z);
+			pMax->x = LTMAX(pMax->x, (*ppIn)->x);
+			pMax->y = LTMAX(pMax->y, (*ppIn)->y);
+			pMax->z = LTMAX(pMax->z, (*ppIn)->z);
 
-			if (pPos->x < pMin->x) pMin->x = pPos->x;
-			if (pPos->y < pMin->y) pMin->y = pPos->y;
-			if (pPos->z < pMin->z) pMin->z = pPos->z;
-			if (pPos->x > pMax->x) pMax->x = pPos->x;
-			if (pPos->y > pMax->y) pMax->y = pPos->y;
-			if (pPos->z > pMax->z) pMax->z = pPos->z;
+			ppIn++;
 		}
 	}
 
@@ -658,13 +670,13 @@ uint32 g_nPhysMoveTime;
 // ours the other way round); with a separate scale server.dll keeps that
 // swap too, so it is slot assignment, not the scale.
 //
-// AVP2: `inline` in 1.0.9.6. Its lithtech.exe box move (0x0041cbda) carries
-// the body for the axis push-out and calls the copy (0x0041d640) only from
-// ws_HitPoly's, past where /O2 stops inlining.
-#ifndef PRIMAL_HUNT
-inline
-#endif
-void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
+// AVP2: `inline` in both engines. AvP2 1.0.9.6's lithtech.exe box move
+// (0x0041cbda) carries the body for the axis push-out and calls the copy
+// (0x0041d640) only from ws_HitPoly's, past where /O2 stops inlining;
+// Primal Hunt's lithtech.exe expands it in the box move and the new stair
+// step (0x00420d6b, 0x00420f0f), and its server.dll's /Ob1 expands it into
+// ws_HitPoly, which is then byte-identical (0x10005a58).
+inline void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 {
 	float fMag;
 	float fScale;
@@ -2718,7 +2730,13 @@ void ws_SetupSweptBox(LTVector* pMin, LTVector* pMax)
 //     the body, as shipped has it. Reading vBase[i] directly rather than
 //     through a pointer local takes lithtech from 20 differing instructions
 //     to 12.
-// What is left: the operand order of the commutative `fadds` in the corner
+// PH: Primal Hunt builds the three sums with Init() (z, y, x; server.dll
+// 0x1000251a) and keeps the swept bounds in the step sweep's globals as
+// AvP2 does (0x100027ea). With dims through a pointer local in the corner
+// loop its server.dll is byte-identical (0x100024f1, 1026 bytes); the
+// lithtech builds stay near either way (PH 1260 of 1261, AvP2 1193 of
+// 1200, against 1261 / 1200 size-exact with the member form).
+// What is left (AvP2): the operand order of the commutative `fadds` in the corner
 // sums (shipped loads dims first for x and y on server, and for y and z on
 // lithtech), plus one instruction scheduled differently on each image
 // (server's `mov $g_SweepPoints+0x14,%edx`, lithtech's `sub $0x3c,%esp`).
@@ -2727,10 +2745,8 @@ void ws_SetupSweptBox(LTVector* pMin, LTVector* pMax)
 // order (4 instructions left) but costs lithtech 5 bytes: shipped lithtech
 // addresses dims.y/z off g_pMoveState and dims.x through `lea 0x2c`, which is
 // the CSE of the member form used here.
-#ifndef PRIMAL_HUNT
 extern LTVector g_vStepSweepMinQ553;
 extern LTVector g_vStepSweepMaxQ553;
-#endif
 
 int ws_ShiftBox()
 {
@@ -2739,10 +2755,6 @@ int ws_ShiftBox()
 #endif
 	CMoveState* pState;
 	LTVector    vBase[2];
-#ifdef PRIMAL_HUNT
-	LTVector    vMax;
-	LTVector    vMin;
-#endif
 	LTVector    vP2;
 	LTVector    vP1;
 	LTVector    vDiff;
@@ -2751,9 +2763,19 @@ int ws_ShiftBox()
 	LTVector    vHalf;
 	uint32      i;
 
+#ifdef PRIMAL_HUNT
+	// PH: the three sums are Init()s: each is built z, y, x (the by-value
+	// arguments, right to left) and stored x, y, z (server.dll 0x1000251a,
+	// 0x100025ab, 0x100025f4). The SDK operators copy the right-hand global
+	// first, which shipped does not.
+	vDiff.Init(g_vMoveEnd.x - g_vMoveStart.x,
+	           g_vMoveEnd.y - g_vMoveStart.y,
+	           g_vMoveEnd.z - g_vMoveStart.z);
+#else
 	vDiff.x = g_vMoveEnd.x - g_vMoveStart.x;
 	vDiff.y = g_vMoveEnd.y - g_vMoveStart.y;
 	vDiff.z = g_vMoveEnd.z - g_vMoveStart.z;
+#endif
 
 	vLen = vDiff;
 
@@ -2766,6 +2788,19 @@ int ws_ShiftBox()
 
 	pState = g_pMoveState;
 
+#ifdef PRIMAL_HUNT
+	vP1.Init(g_vMoveBase.x + g_vMoveStart.x,
+	         g_vMoveBase.y + g_vMoveStart.y,
+	         g_vMoveBase.z + g_vMoveStart.z);
+
+	vBase[0] = vP1;
+
+	vP2.Init(g_vMoveBase.x + g_vMoveEnd.x,
+	         g_vMoveBase.y + g_vMoveEnd.y,
+	         g_vMoveBase.z + g_vMoveEnd.z);
+
+	vBase[1] = vP2;
+#else
 	vP1.x = g_vMoveBase.x + g_vMoveStart.x;
 	vP1.y = g_vMoveBase.y + g_vMoveStart.y;
 	vP1.z = g_vMoveBase.z + g_vMoveStart.z;
@@ -2777,35 +2812,37 @@ int ws_ShiftBox()
 	vP2.z = g_vMoveBase.z + g_vMoveEnd.z;
 
 	vBase[1] = vP2;
+#endif
 
 	for (i = 0; i < 2; i++)
 	{
-		LTVector* pOut = g_SweepPoints[i];
+		LTVector* pOut  = g_SweepPoints[i];
+		LTVector* pDims = &g_pMoveState->m_vDims;
 
-		pOut[0].Init(vBase[i].x - g_pMoveState->m_vDims.x,
-		             vBase[i].y + g_pMoveState->m_vDims.y,
-		             vBase[i].z - g_pMoveState->m_vDims.z);
-		pOut[1].Init(vBase[i].x - g_pMoveState->m_vDims.x,
-		             vBase[i].y + g_pMoveState->m_vDims.y,
-		             vBase[i].z + g_pMoveState->m_vDims.z);
-		pOut[2].Init(vBase[i].x + g_pMoveState->m_vDims.x,
-		             vBase[i].y + g_pMoveState->m_vDims.y,
-		             vBase[i].z + g_pMoveState->m_vDims.z);
-		pOut[3].Init(vBase[i].x + g_pMoveState->m_vDims.x,
-		             vBase[i].y + g_pMoveState->m_vDims.y,
-		             vBase[i].z - g_pMoveState->m_vDims.z);
-		pOut[4].Init(vBase[i].x - g_pMoveState->m_vDims.x,
-		             vBase[i].y - g_pMoveState->m_vDims.y,
-		             vBase[i].z - g_pMoveState->m_vDims.z);
-		pOut[5].Init(vBase[i].x - g_pMoveState->m_vDims.x,
-		             vBase[i].y - g_pMoveState->m_vDims.y,
-		             vBase[i].z + g_pMoveState->m_vDims.z);
-		pOut[6].Init(vBase[i].x + g_pMoveState->m_vDims.x,
-		             vBase[i].y - g_pMoveState->m_vDims.y,
-		             vBase[i].z + g_pMoveState->m_vDims.z);
-		pOut[7].Init(vBase[i].x + g_pMoveState->m_vDims.x,
-		             vBase[i].y - g_pMoveState->m_vDims.y,
-		             vBase[i].z - g_pMoveState->m_vDims.z);
+		pOut[0].Init(vBase[i].x - pDims->x,
+		             vBase[i].y + pDims->y,
+		             vBase[i].z - pDims->z);
+		pOut[1].Init(vBase[i].x - pDims->x,
+		             vBase[i].y + pDims->y,
+		             vBase[i].z + pDims->z);
+		pOut[2].Init(vBase[i].x + pDims->x,
+		             vBase[i].y + pDims->y,
+		             vBase[i].z + pDims->z);
+		pOut[3].Init(vBase[i].x + pDims->x,
+		             vBase[i].y + pDims->y,
+		             vBase[i].z - pDims->z);
+		pOut[4].Init(vBase[i].x - pDims->x,
+		             vBase[i].y - pDims->y,
+		             vBase[i].z - pDims->z);
+		pOut[5].Init(vBase[i].x - pDims->x,
+		             vBase[i].y - pDims->y,
+		             vBase[i].z + pDims->z);
+		pOut[6].Init(vBase[i].x + pDims->x,
+		             vBase[i].y - pDims->y,
+		             vBase[i].z + pDims->z);
+		pOut[7].Init(vBase[i].x + pDims->x,
+		             vBase[i].y - pDims->y,
+		             vBase[i].z - pDims->z);
 	}
 
 	g_SphereAtDelta.m_vPoint = vP1;
@@ -2820,25 +2857,12 @@ int ws_ShiftBox()
 	g_BoxSphere.m_vPoint = vMid;
 	g_BoxSphere.m_fRadius = vLen.Mag() + g_fBoxRadius;
 
-#ifdef PRIMAL_HUNT
-	VEC_MIN(vMin, vP1, vP2);
-	VEC_MAX(vMax, vP1, vP2);
-
-	vMin -= g_pMoveState->m_vDims;
-	vMax += g_pMoveState->m_vDims;
-
-	g_BoxPlanes[0].m_Dist =  vMin.x;
-	g_BoxPlanes[1].m_Dist = -vMax.x;
-	g_BoxPlanes[2].m_Dist =  vMin.y;
-	g_BoxPlanes[3].m_Dist = -vMax.y;
-	g_BoxPlanes[4].m_Dist =  vMin.z;
-	g_BoxPlanes[5].m_Dist = -vMax.z;
-#else
 	// AVP2: the swept box's bounds are kept, in the step sweep's globals,
 	// for the box move to measure its push-out against (AvP2 1.0.9.6's
-	// lithtech.exe 0x00418b1e..0x00418cc5). With them both AvP2 images are
-	// size-exact (lithtech.exe 1200, server.dll 991), the corner sums'
-	// operand order left as above.
+	// lithtech.exe 0x00418b1e..0x00418cc5; Primal Hunt's server.dll too,
+	// 0x100027ea / 0x10002842). With them both AvP2 images are size-exact
+	// (lithtech.exe 1200, server.dll 991), the corner sums' operand order
+	// left as above.
 	VEC_MIN(g_vStepSweepMinQ553, vP1, vP2);
 	VEC_MAX(g_vStepSweepMaxQ553, vP1, vP2);
 
@@ -2851,7 +2875,6 @@ int ws_ShiftBox()
 	g_BoxPlanes[3].m_Dist = -g_vStepSweepMaxQ553.y;
 	g_BoxPlanes[4].m_Dist =  g_vStepSweepMinQ553.z;
 	g_BoxPlanes[5].m_Dist = -g_vStepSweepMaxQ553.z;
-#endif
 
 	return 1;
 }
@@ -3509,10 +3532,28 @@ uint16 g_BlockStackQ534[WS_NODE_STACK];
 // bytes, called from ws_MoveObject at 0x10004eed) and lithtech.exe
 // 0x0041fdb0 (its enumeration splits it at 0x00420062). 0x100064fa, which
 // progress used to pair this with, is the "NewStairStep" step-up below
-// (ws_StairStepNewQ553). This body is still NOLF's: the AvP2 copy opens an
-// exception frame (0x10005ebc) and makes fifteen calls this one does not
-// have, so the notes below were measured against the wrong function.
-// (AvP2 body not reconstructed yet: server.dll 0x10005ebc..0x100064f9.)
+// (ws_StairStepNewQ553). AvP2 1.0.9.6's copy is server.dll 0x10005ea0
+// (1589 bytes) / lithtech.exe 0x0041da50 (2110).
+//
+// NEAR on all four images, closer this round (AvP2 server.dll 1498 -> 1575
+// of 1589 and 19 -> 4 blocks, PH server.dll 1535 -> 1590 of 1598, PH
+// lithtech.exe 2035 -> 2049 of 2071, AvP2 lithtech.exe 2067 -> 2079 of
+// 2110). Read off AvP2's server.dll:
+//  * the first ClassifyPlane looks the plane up again (0x10006279) rather
+//    than taking the sphere test's pPlane;
+//  * the two descend copies spell their dot products differently -- copy
+//    #2 reads z before y (0x10006357), copy #1 y first (0x10006306) -- so
+//    VC6 keeps both TestPoly calls and shares only the x term;
+//  * vFrom, vTo, vDelta and the three step scales are Init()s, and the
+//    step ends are `vAt + vDir * f`: AvP2's cl 9044 then rereads the
+//    globals for each component (0x10005f4b..) and keeps the scale's x and
+//    y on the FPU stack for the add (0x10006120..).
+// Left on AvP2's server.dll: the short step's add loads vAt first
+// (`flds; fadd %st(2)`, 0x10006138) where ours loads the scale. PH's builds
+// (cl 8966) also compute fFlat / radius before fDiag (PH server.dll
+// 0x1000609c), and
+// rebuild the start on a refused deflect z first.
+// The notes below are NOLF's, measured against its own copy.
 //
 // NEAR on both images: server 1472 of 1472 bytes with 2 mnemonic blocks
 // left, lithtech 1987 of 1983 bytes with the same 502 instructions and 17
@@ -3604,19 +3645,17 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 	{
 	if (!(sim.m_fHeight < 0.01f))
 	{
-		vFrom.x = g_vMoveBase.x + g_vMoveStart.x;
-		vFrom.y = g_vMoveBase.y + g_vMoveStart.y;
-		vFrom.z = g_vMoveBase.z + g_vMoveStart.z;
+		vFrom.Init(g_vMoveBase.x + g_vMoveStart.x,
+		           g_vMoveBase.y + g_vMoveStart.y,
+		           g_vMoveBase.z + g_vMoveStart.z);
 
 		vAt = vFrom;
 
-		vTo.x = g_vMoveBase.x + g_vMoveEnd.x;
-		vTo.y = g_vMoveBase.y + g_vMoveEnd.y;
-		vTo.z = g_vMoveBase.z + g_vMoveEnd.z;
+		vTo.Init(g_vMoveBase.x + g_vMoveEnd.x,
+		         g_vMoveBase.y + g_vMoveEnd.y,
+		         g_vMoveBase.z + g_vMoveEnd.z);
 
-		vDelta.x = vTo.x - vFrom.x;
-		vDelta.y = vTo.y - vFrom.y;
-		vDelta.z = vTo.z - vFrom.z;
+		vDelta.Init(vTo.x - vFrom.x, vTo.y - vFrom.y, vTo.z - vFrom.z);
 
 		vDir = vDelta;
 
@@ -3674,27 +3713,15 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 			{
 				if (fRemaining < fStepShort)
 				{
-					vScaledA.x = vDir.x * fRemaining;
-					vScaledA.y = vDir.y * fRemaining;
-					vScaledA.z = vDir.z * fRemaining;
+					vStep = vAt + vDir * fRemaining;
 
-					vTo.x = vAt.x + vScaledA.x;
-					vTo.y = vAt.y + vScaledA.y;
-					vTo.z = vAt.z + vScaledA.z;
-
-					vNext = vTo;
+					vNext = vStep;
 				}
 				else
 				{
-					vScaledB.x = fStepLong * vDir.x;
-					vScaledB.y = fStepLong * vDir.y;
-					vScaledB.z = fStepLong * vDir.z;
+					vTo = vAt + vDir * fStepLong;
 
-					vStep.x = vAt.x + vScaledB.x;
-					vStep.y = vAt.y + vScaledB.y;
-					vStep.z = vAt.z + vScaledB.z;
-
-					vNext = vStep;
+					vNext = vTo;
 				}
 
 				sim.m_vStart = vAt;
@@ -3742,7 +3769,11 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 				}
 				else
 				{
-					nStart = sim.ClassifyPlane(pPlane, &sim.m_vStart, 0, 1);
+					// The plane is looked up afresh for each classification,
+					// not reused from the sphere test (0x10006279,
+					// 0x100062a1).
+					nStart = sim.ClassifyPlane(ws_GetPlaneQ506(pRec->m_pOwner),
+					                           &sim.m_vStart, 0, 1);
 
 					pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
@@ -3804,12 +3835,16 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 							}
 						}
 
-						// descend copy #2 -- 0x00419ecc..0x00419f3a
+						// descend copy #2 -- 0x00419ecc..0x00419f3a. Its dot
+						// product reads z before y where copy #1 reads y first
+						// (AvP2 server.dll 0x10006357 against 0x10006306), so
+						// the two are spelled differently and share only
+						// their tails.
 						pPlane = ws_GetPlaneQ506(pRec->m_pOwner);
 
-						fDist = sim.m_vStart.z * pPlane->m_Normal.z +
-						        sim.m_vStart.y * pPlane->m_Normal.y +
-						        sim.m_vStart.x * pPlane->m_Normal.x -
+						fDist = sim.m_vStart.x * pPlane->m_Normal.x +
+						        (sim.m_vStart.y * pPlane->m_Normal.y +
+						         sim.m_vStart.z * pPlane->m_Normal.z) -
 						        pPlane->m_Dist;
 
 						if (fDist > WS_PLANE_SLOP)
@@ -3854,13 +3889,13 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 				break;
 			}
 
-			vScaled.x = fStepShort * vDir.x;
-			vScaled.y = fStepShort * vDir.y;
-			vScaled.z = fStepShort * vDir.z;
+			vScaled.Init(fStepShort * vDir.x,
+			             fStepShort * vDir.y,
+			             fStepShort * vDir.z);
 
-			vTmp.x = vAt.x + vScaled.x;
-			vTmp.y = vAt.y + vScaled.y;
-			vTmp.z = vAt.z + vScaled.z;
+			vTmp.Init(vAt.x + vScaled.x,
+			          vAt.y + vScaled.y,
+			          vAt.z + vScaled.z);
 
 			vAt = vTmp;
 
@@ -3918,10 +3953,8 @@ int ws_MoveCylinder(uint16 nBlock, CBounceState* pState, int bRetry)
 //     0x10006867), and the base takes -fHalf away (`fchs; fsubr`, 0x10006aa9).
 // NEAR on lithtech.exe (2159 of 2841): shipped expands ws_NudgeQ516 at both
 // calls (0x00420d6b.., 0x00420f0f..) and calls operator+ out of line for the
-// first one's inner sum (0x00420e3c). Marking ws_NudgeQ516 `inline` (it is
-// defined above) reaches 2802 of 2841 with no change to any image's count,
-// its standalone copies included; it is left for a pass that owns that
-// part of the file. Beyond it, shipped reads g_vMoveStart in place in the
+// first one's inner sum (0x00420e3c). With ws_NudgeQ516 `inline` (it is
+// defined above) this is 2802 of 2841. Beyond it, shipped reads g_vMoveStart in place in the
 // second expansion where ours copies it, keeps the lift's dot in a frame
 // slot (0x00420c77), and wants vMove.Dot(pPlane->m_Normal) for the facing
 // test -- the spelling server.dll does not take.

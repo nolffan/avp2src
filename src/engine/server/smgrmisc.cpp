@@ -260,10 +260,20 @@ LTRESULT FMConvertMgrQ468::Fill(FMFillRequestQ468* pRequest)
 
 			WritePixel(pRequest->m_pFormat, pRequest->m_Color, &nPixel);
 
+#ifdef PRIMAL_HUNT
 			pCur = pRequest->m_pData
 				 + pRequest->m_Rect.top * pRequest->m_nPitch;
 			pCur += pRequest->m_pFormat->GetBytesPerPixel()
 				  * pRequest->m_Rect.left;
+#else
+			// AVP2: one expression; the call comes first and the two
+			// products and the base are summed after it (AvP2 1.0.9.6
+			// lithtech.exe 0x0046c534..0x0046c54a).
+			pCur = pRequest->m_pData
+				 + pRequest->m_Rect.top * pRequest->m_nPitch
+				 + pRequest->m_pFormat->GetBytesPerPixel()
+				   * pRequest->m_Rect.left;
+#endif
 
 			nWidth  = pRequest->m_Rect.right  - pRequest->m_Rect.left;
 			nHeight = pRequest->m_Rect.bottom - pRequest->m_Rect.top;

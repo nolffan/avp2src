@@ -822,16 +822,17 @@ void cc_WriteHistory(int argc, char** argv)
 
 	nCount = 0;
 
-	while ((pName = pHist->GetName()) != LTNULL)
+	do
 	{
+		if ((pName = pHist->GetName()) == LTNULL)
+			break;
+
 		fputs(pName, pFile);
 		fputc('\n', pFile);
 
 		nCount++;
-
-		if (!pHist->FindNext(LTNULL))
-			break;
 	}
+	while (pHist->FindNext(LTNULL));
 
 	fclose(pFile);
 
