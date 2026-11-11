@@ -294,7 +294,13 @@ public:
 class CSoundInstanceLocalRef : public CSoundInstanceRef
 {
 public:
-	CSoundInstanceLocalRef();                                   // 0x00483630
+#ifndef PRIMAL_HUNT
+	// AvP2 1.0.9.6 only: PlaySoundFromFile (0x00494500) expands the bank's
+	// Allocate and CALLS this constructor, 0x004963c0.  Primal Hunt has no
+	// out-of-line copy: its PlaySoundFromFile calls the bank's Allocate
+	// (0x0049feb0), which expands the constructor.
+	CSoundInstanceLocalRef();
+#endif
 	virtual LTRESULT Init(CSoundDataRef* pData, PlaySoundInfo* pInfo,
 	                      uint32 nUnknown);                     // 0x0047e710
 	virtual void     Term();
@@ -1843,9 +1849,12 @@ extern int g_CV_SoundsPerBuffer;
 // the earliest inline sites of a function once its per-function budget is
 // spent; the expansions that spent it here
 // are not known, so -- STAND-IN -- the constructor is spelled out of line.
+
+#ifndef PRIMAL_HUNT
 CSoundInstanceLocalRef::CSoundInstanceLocalRef()
 {
 }
+#endif
 
 LTRESULT CSoundMgrView::PlaySoundFromFile(PlaySoundInfo* pInfo, void* pFileRec,
                                           uint32 nUnknown)

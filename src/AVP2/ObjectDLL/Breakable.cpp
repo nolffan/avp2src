@@ -429,6 +429,10 @@ void Breakable::StartBreak(HOBJECT hObj)
 				if (hClient)
 				{
                     HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(hClient, MID_SHAKE_SCREEN);
+#ifdef PRIMAL_HUNT
+                    // PH: nonzero, a plain shake (zero is the recoil kind; 0x100b02bb)
+                    g_pLTServer->WriteToMessageByte(hMessage, 1);
+#endif
                     g_pLTServer->WriteToMessageVector(hMessage, &m_vShakeAmount);
                     g_pLTServer->EndMessage(hMessage);
 				}

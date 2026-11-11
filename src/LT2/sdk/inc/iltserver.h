@@ -797,7 +797,14 @@
 
 		// OBSOLETE: use ILTCommon::SetObjectFilenames.
 		virtual LTRESULT SetModelFilenames(HOBJECT hObj, char *pFilename, char *pSkinName)=0;
+#ifdef PRIMAL_HUNT
+		// PH: the extra texture's name as well (server.dll's own view of
+		// this slot takes it); PHObject.lto's callers pass 0 for it
+		// (0x10121121, 0x10081854)
+		virtual LTRESULT SetObjectFilenames(HOBJECT hObj, char *pFilename, char *pSkinName, char *pExtraName = LTNULL)=0;
+#else
 		virtual LTRESULT SetObjectFilenames(HOBJECT hObj, char *pFilename, char *pSkinName)=0;
+#endif
 
 		// OBSOLETE: use ILTCommon.
 		virtual LTRESULT GetModelAnimUserDims(HOBJECT hObj, LTVector *pDims, HMODELANIM hAnim)=0;

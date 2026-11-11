@@ -226,7 +226,7 @@ void CharacterAnimation::Term()
 	while(pLayer)
 	{
 		AnimStyleLayer *pNext = pLayer->pNext;
-		delete pLayer;
+		if(pLayer) delete pLayer;
 		pLayer = pNext;
 	}
 

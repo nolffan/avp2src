@@ -1175,8 +1175,8 @@ void LithTrackMgr::UpdateGUIBars()
 	{
 		if(m_pGUIBars[i])
 		{
-			nY -= m_pGUIBars[i]->GetHeight();
-			m_pGUIBars[i]->SetPos(0, nY);
+			m_pGUIBars[i]->SetPos(0, nY - m_pGUIBars[i]->GetHeight());
+			nY = m_pGUIBars[i]->GetPosY();
 
 			int x = m_dCursor.m_nX - m_pGUIBars[i]->GetPosX();
 			int y = m_dCursor.m_nY - m_pGUIBars[i]->GetPosY();

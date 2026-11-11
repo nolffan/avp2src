@@ -77,7 +77,7 @@ extern CSphereQuery g_SphereAtDelta;
 extern float        g_fBoxRadius;
 
 // Below this, a move has not really moved and there is nothing to redo.
-#define WS_MOVE_EPSILON 0.0001
+#define WS_MOVE_EPSILON 0.0001f
 
 // The world's own cheap containment tests, which answer before any of the
 // box machinery is set up (0x10012c3a and 0x10012ba2; names ours).

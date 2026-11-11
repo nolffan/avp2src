@@ -1535,13 +1535,83 @@ LTRESULT se_RegisterModel(CServerMgr* pMgr, Model* pModel, void* pFile,
 // whose own first field is the tree list, so the callee reads it as a list
 // head (name ours; the function lives in the file manager's run).
 //
-// Defined in smgrmisc.cpp under that file's views of the two records
-// (0x1002bde9 is its placed address), so it is declared with them here and
-// the call below casts to them.
-class CFileMgrQ468;
-class CFileTreeRecQ468;
+// Defined here, under its own views of the records, IMMEDIATELY ABOVE
+// se_LoadFile as every image places it (AvP2 server.dll 0x10034be7 before
+// 0x10034c82, lithtech.exe 0x00479350 before 0x00479420): AvP2's cl 9044
+// allocates se_LoadFile's registers around a callee defined earlier in the
+// same file. The call below casts to the views.
+
+// stdlith's LTLink, as src/engine uses it.
+class LTLinkQ468
+{
+public:
+	LTLinkQ468* m_pPrev;                     // 0x00
+	LTLinkQ468* m_pNext;                     // 0x04
+	void*       m_pData;                     // 0x08
+};
+
+// src/engine/server/filemgr.cpp:66.
+class CFileFindStateQ468
+{
+public:
+	int    m_Type;                           // 0x000
+	char   m_Name[0x100];                    // 0x004
+	uint32 m_Time;                           // 0x104
+	uint32 m_nSize;                          // 0x108
+	void*  m_pCursor;                        // 0x10c
+#ifdef PRIMAL_HUNT
+	char   m_Unknown110[0x104];              // 0x110 (PH)
+#endif
+};                                           // 0x110, PH: 0x214
+
+// src/engine/server/serverengine.h:70.
+class CFileTreeRecQ468
+{
+public:
+	uint8 m_pad_00[0x0c];
+	void* m_pTree;                           // 0x0c
+};
+
+// src/engine/server/servermgr.h:1527, first field only.
+class CFileMgrQ468
+{
+public:
+	LTLinkQ468 m_Trees;                      // 0x00
+};
+
+// 0x00420d50 / server 0x10006fb4.
+int ar_GetFileInfoQ468(void* pTree, char* pFilename, CFileFindStateQ468* pState);
+
 int fs_FindFileInTreesQ468(CFileMgrQ468* pFileMgr, char* pFilename,
                            CFileTreeRecQ468** ppTreeRec, uint32* pUnknown);
+
+
+int fs_FindFileInTreesQ468(CFileMgrQ468* pFileMgr, char* pFilename,
+                           CFileTreeRecQ468** ppTreeRec, uint32* pUnknown)
+{
+	CFileFindStateQ468 state;
+	LTLinkQ468*        pCur;
+
+	for (pCur = pFileMgr->m_Trees.m_pNext;                   // 0x0046b900
+	     pCur != (LTLinkQ468*)pFileMgr;                      // 0x0046b904
+	     pCur = pCur->m_pNext)                               // 0x0046b928
+	{
+		CFileTreeRecQ468* pRec = (CFileTreeRecQ468*)pCur->m_pData;   // 0x0046b90f
+
+		if (ar_GetFileInfoQ468(pRec->m_pTree, pFilename, &state))    // 0x0046b91c
+		{
+			if (ppTreeRec)                                   // 0x0046b943
+				*ppTreeRec = pRec;                           // 0x0046b947
+
+			if (pUnknown)                                    // 0x0046b950
+				*pUnknown = state.m_nSize;                   // 0x0046b95b
+
+			return 1;                                        // 0x0046b960
+		}
+	}
+
+	return 0;                                                // 0x0046b932
+}
 
 // 0x1000e650 — tell one client's queue about a file. It allocates a record
 // out of the object at its first argument's +0x18, fills in the three values
@@ -1552,7 +1622,8 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
                  uint32 nFileID, uint16 nFlags);
 
 // BYTE-IDENTICAL on lithtech.exe (0x0046b9d0, 303 bytes) and server.dll
-// (0x1002be8c, 246 bytes).
+// (0x1002be8c, 246 bytes), and in AvP2 1.0.9.6's two images (0x00479420,
+// 0x10034c82) once fs_FindFileInTreesQ468 is defined above it.
 //
 // The first length is a NAMED LOCAL, `nLen = strlen(pFilename)`, with the +1
 // in the call. lithtech.exe proves it: its inlined first strlen ends
@@ -1590,9 +1661,7 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
 int se_LoadFile(CFileMgr* pFileMgr, char* pFilename, uint16 nFlags, void** ppFile)
 {
 	CFileRef*     pRef;
-#if defined(PRIMAL_HUNT) || !defined(LT_SERVER_BUILD)
 	uint32        nLen;
-#endif
 	CFileTreeRec* pTreeRec;
 	uint32        nUnknown;
 	void*         hElement;
@@ -1603,19 +1672,9 @@ int se_LoadFile(CFileMgr* pFileMgr, char* pFilename, uint16 nFlags, void** ppFil
 	if (ppFile)
 		*ppFile = LTNULL;
 
-#if !defined(PRIMAL_HUNT) && defined(LT_SERVER_BUILD)
-	// AVP2: AvP2 1.0.9.6's server.dll (cl 9044, 0x10034c82) measures the
-	// name inside the call; the named length costs it a frame slot (247
-	// bytes). NEAR, size-exact: the manager's load comes before the strlen
-	// call where shipped has it after, and the two out-values take each
-	// other's dead parameter slots (allocation; declaration order unmoved).
-	hElement = dhash_FindElement(pFileMgr->m_hFileHash, pFilename,
-	                             strlen(pFilename) + 1);
-#else
 	nLen = strlen(pFilename);
 
 	hElement = dhash_FindElement(pFileMgr->m_hFileHash, pFilename, nLen + 1);
-#endif
 
 	if (hElement)
 	{

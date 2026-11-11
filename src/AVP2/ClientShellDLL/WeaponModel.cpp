@@ -1252,7 +1252,8 @@ void CWeaponModel::CreateFlash()
 	if (!m_pWeapon || !m_pBarrel) return;
 
 #ifdef PRIMAL_HUNT
-	memset(m_fFlashStartTime, 0, sizeof(m_fFlashStartTime));
+	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+		m_fFlashStartTime[nMuzzle] = 0.0f;
 #else
 	m_fFlashStartTime = 0.0f;
 #endif
@@ -1285,7 +1286,7 @@ void CWeaponModel::CreateFlash()
 
 #ifdef PRIMAL_HUNT
 	// Primal Hunt: a flash for each muzzle (PHCShell.dll 0x100b4b4b)
-	for (int nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
+	for (nMuzzle = 0; nMuzzle < WM_MAX_MUZZLES; nMuzzle++)
 	{
 		delete m_pMuzzleFlash[nMuzzle];
 		m_pMuzzleFlash[nMuzzle] = new CMuzzleFlashFX();
@@ -6213,27 +6214,29 @@ void CWeaponModel::ResetModelSkins()
 
 #ifdef PRIMAL_HUNT
 	// a predator's weapon takes the cloaked predator's environment map
-	uint32 dwUserFlags;
-	HLOCALOBJ hClientObj = g_pLTClient->GetClientObject();
-	g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
-
-	if(m_nSkinMode == 1)
 	{
-		if(dwUserFlags & USRFLG_CHAR_CLOAKED)
+		uint32 dwUserFlags;
+		HLOCALOBJ hClientObj = g_pLTClient->GetClientObject();
+		g_pLTClient->GetObjectUserFlags(hClientObj, &dwUserFlags);
+
+		if(m_nSkinMode == 1)
 		{
-			const char* szEnvMap = LTNULL;
+			if(dwUserFlags & USRFLG_CHAR_CLOAKED)
+			{
+				const char* szEnvMap = LTNULL;
 
-			if(pStats)
-				szEnvMap = g_pCharacterButeMgr->GetCharacterButes(pStats->GetButeSet()).m_szDefaultEnvMap;
+				if(pStats)
+					szEnvMap = g_pCharacterButeMgr->GetCharacterButes(pStats->GetButeSet()).m_szDefaultEnvMap;
 
-			if(szEnvMap)
-				SAFE_STRCPY(createStruct.m_SkinNames[4], szEnvMap)
+				if(szEnvMap)
+					SAFE_STRCPY(createStruct.m_SkinNames[4], szEnvMap)
+				else
+					SAFE_STRCPY(createStruct.m_SkinNames[4], "")
+			}
 			else
-				SAFE_STRCPY(createStruct.m_SkinNames[4], "")
-		}
-		else
-		{
-			createStruct.m_SkinNames[4][0] = '\0';
+			{
+				createStruct.m_SkinNames[4][0] = '\0';
+			}
 		}
 	}
 #endif

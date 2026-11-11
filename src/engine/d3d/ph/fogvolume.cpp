@@ -268,44 +268,44 @@ int CFogBox::IntersectSegment(const LTVector* pA, const LTVector* pB,
 // if it straddles it.
 int CFogBox::ClassifyPlane(const LTPlane* pPlane, float fEpsilon)
 {
-	LTVector vMin, vMax;
+	LTVector vCorner[2];  // the corners farthest along the normal and against it
 	float fMin, fMax;
 
 	if (pPlane->m_Normal.x < 0.0f)
 	{
-		vMin.x = m_vMax.x;
-		vMax.x = m_vMin.x;
+		vCorner[1].x = m_vMax.x;
+		vCorner[0].x = m_vMin.x;
 	}
 	else
 	{
-		vMin.x = m_vMin.x;
-		vMax.x = m_vMax.x;
+		vCorner[1].x = m_vMin.x;
+		vCorner[0].x = m_vMax.x;
 	}
 
 	if (pPlane->m_Normal.y < 0.0f)
 	{
-		vMin.y = m_vMax.y;
-		vMax.y = m_vMin.y;
+		vCorner[1].y = m_vMax.y;
+		vCorner[0].y = m_vMin.y;
 	}
 	else
 	{
-		vMin.y = m_vMin.y;
-		vMax.y = m_vMax.y;
+		vCorner[1].y = m_vMin.y;
+		vCorner[0].y = m_vMax.y;
 	}
 
 	if (pPlane->m_Normal.z < 0.0f)
 	{
-		vMin.z = m_vMax.z;
-		vMax.z = m_vMin.z;
+		vCorner[1].z = m_vMax.z;
+		vCorner[0].z = m_vMin.z;
 	}
 	else
 	{
-		vMin.z = m_vMin.z;
-		vMax.z = m_vMax.z;
+		vCorner[1].z = m_vMin.z;
+		vCorner[0].z = m_vMax.z;
 	}
 
-	fMax = pPlane->DistTo(vMax);
-	fMin = pPlane->DistTo(vMin);
+	fMax = pPlane->DistTo(vCorner[0]);
+	fMin = pPlane->DistTo(vCorner[1]);
 
 	if (fMax > fEpsilon && fMin > fEpsilon)
 		return 1;

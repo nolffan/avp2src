@@ -2230,30 +2230,27 @@ int bspq_IntersectLineRecQ544(BSPNode* pNode, CLineQuery* pQuery,
 			continue;
 		}
 
-		if (fStart < -BSP_LINE_EPSILON)
+		if (fStart < -BSP_LINE_EPSILON && fEnd < -BSP_LINE_EPSILON)
 		{
-			if (fEnd < -BSP_LINE_EPSILON)
-			{
-				pNode = pNode->m_pChild[0];
+			pNode = pNode->m_pChild[0];
 
-				continue;
-			}
-
-			if (fStart > 0.0f)
-				nSide = 1;
-			else
-				nSide = 0;
+			continue;
 		}
-		else if (fStart <= BSP_LINE_EPSILON)
+
+		// AvP2 1.0.9.6's server.dll tests the start against -EPSILON a
+		// second time here (0x1001861e, the constant still on the FP
+		// stack from the test above): the two tests are separate
+		// statements, not one nested `if`.
+		if (fStart < -BSP_LINE_EPSILON || fStart > BSP_LINE_EPSILON)
 		{
-			if (fEnd < 0.0f)
+			if (fStart > 0.0f)
 				nSide = 1;
 			else
 				nSide = 0;
 		}
 		else
 		{
-			if (fStart > 0.0f)
+			if (fEnd < 0.0f)
 				nSide = 1;
 			else
 				nSide = 0;

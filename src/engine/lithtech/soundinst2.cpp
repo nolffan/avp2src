@@ -379,7 +379,15 @@ LTRESULT CSndInstanceLocalJ::Init(CSndDataJ* pData, PlaySoundInfo* pInfo,
 
 	m_StateFlags |= 0x10;
 
+#ifdef PRIMAL_HUNT
 	SetPosition(&sub_0040f7f0()->m_vListenerPos, LTTRUE);
+#else
+	// AVP2: the manager is fetched before the call is set up -- its vtable
+	// is read after it (AvP2 1.0.9.6 0x00491471..0x00491476), where Primal
+	// Hunt holds the vtable in %edi across it (0x0049ade1).
+	ILTSoundMgrJ* pMgr = sub_0040f7f0();
+	SetPosition(&pMgr->m_vListenerPos, LTTRUE);
+#endif
 
 	m_fInnerRadius = 5.0f;
 	m_fOuterRadius = 10.0f;
@@ -649,7 +657,16 @@ LTRESULT CSndInstanceAmbientJ::GetListenerOffset(CSndVec3J* pOffset)
 {
 	float     fDistance;
 
+#ifdef PRIMAL_HUNT
 	fDistance = SndAmbientDistQ(*(LTVector*)&m_vPos, *(LTVector*)&sub_0040f7f0()->m_vListenerPos);
+#else
+	// AVP2: the listener position is copied into a local first, through the
+	// member's address (`add $0x72c,%eax` then (%eax), 4(%eax), 8(%eax):
+	// AvP2 1.0.9.6 0x0049181e), where Primal Hunt's temporary reads it by
+	// displacement (0x0049b1ab).
+	CSndVec3J vListenerPos = sub_0040f7f0()->m_vListenerPos;
+	fDistance = SndAmbientDistQ(*(LTVector*)&m_vPos, *(LTVector*)&vListenerPos);
+#endif
 
 	*pOffset = sub_0040f7f0()->m_vListenerFront;
 
@@ -777,8 +794,15 @@ LTBOOL CSndInstanceAmbientJ::Update(uint32 nUnknown)
 			// Not LTVector's own Dist: with it the squares are summed z, y, x
 			// where 0x0047eb3b sums z, x, y (see SndDistQ above).  In the
 			// same function shipped's DistSqr (0x0047ebd5) sums z, y, x.
+#ifdef PRIMAL_HUNT
 			fDistance = SndDistQ(*(LTVector*)&m_vPos,
 			    *(LTVector*)&sub_0040f7f0()->m_vListenerPos);
+#else
+			// AVP2: through a copy of the listener position, as in
+			// GetListenerOffset above (AvP2 1.0.9.6 0x00491a38).
+			CSndVec3J vListenerPos = sub_0040f7f0()->m_vListenerPos;
+			fDistance = SndDistQ(*(LTVector*)&m_vPos, *(LTVector*)&vListenerPos);
+#endif
 
 			vListenerOffset = sub_0040f7f0()->m_vListenerFront;
 
@@ -819,8 +843,13 @@ LTBOOL CSndInstanceAmbientJ::Update(uint32 nUnknown)
 		// copied off the manager, the three differences, the squares summed
 		// z, y, x -- where the older engine called the three-float
 		// constructor out of line.
+#ifdef PRIMAL_HUNT
 		fDistanceSqr = ((LTVector*)&m_vPos)->DistSqr(
 		    *(LTVector*)&sub_0040f7f0()->m_vListenerPos);
+#else
+		CSndVec3J vListenerPos = sub_0040f7f0()->m_vListenerPos;
+		fDistanceSqr = ((LTVector*)&m_vPos)->DistSqr(*(LTVector*)&vListenerPos);
+#endif
 
 		if (fDistanceSqr <= m_fInnerRadius * m_fInnerRadius)
 		{

@@ -463,8 +463,14 @@ LTBOOL CNetMgr::GetPacket(ServerMessage* pMsg, uint32 nUnused)
 			pMsg->m_pConnection = pConn;
 			uint16 nLen = (uint16)pRec->m_Len;
 			pMsg->m_Unknown34 = nLen;
+#ifdef PRIMAL_HUNT
 			uint8** ppData = &pMsg->m_pData;
 			memcpy(*ppData, pRec->m_pData, nLen);
+#else
+			// AVP2: 1.0.9.6 loads m_pData ahead of the length store
+			// (lithtech.exe 0x00463bba), the plain spelling's order.
+			memcpy(pMsg->m_pData, pRec->m_pData, nLen);
+#endif
 
 			DebugPrint(pConn, 1, "Resolving guaranteed packet %d", pConn->m_PacketID);
 			pMsg->m_Unknown38 = 1;
@@ -1965,8 +1971,15 @@ void CNetMgr::WriteAckPacket(NetConnection* pConn, ServerMessage* pMsg)
 
 	pMsg->m_Unknown38 = 1;
 	pMsg->m_Unknown34 = 1;
+#ifdef PRIMAL_HUNT
 	uint8** ppData = &pMsg->m_pData;
 	(*ppData)[0] = 0x41;
+#else
+	// AVP2: 1.0.9.6 loads m_pData (and pushes %edi) ahead of the two
+	// stores (server.dll 0x10029846, lithtech.exe 0x00463380): the plain
+	// spelling's order.
+	pMsg->m_pData[0] = 0x41;
+#endif
 
 	pMsg->WriteByte(0);
 
@@ -3144,6 +3157,7 @@ CNetFragRec* CNetMgrSendView::sub_10023495()
 	CNetFragRec*     pRec;
 	CNetFragRec*     pCur;
 	uint32           nCount = 0;
+#ifdef PRIMAL_HUNT
 	LThreadMessage** ppTail = &m_QueueC4.m_pTail;
 
 	pCur = (CNetFragRec*)*ppTail;
@@ -3164,6 +3178,34 @@ CNetFragRec* CNetMgrSendView::sub_10023495()
 
 		pRec->Clear();
 	}
+#else
+	// AVP2: 1.0.9.6's server.dll reads the tail through the queue's
+	// address, the one Remove is handed (0x1002b51b..0x1002b521). Still
+	// near there: shipped keeps `this` in %esi and the record in %edi, ours
+	// the other way round (lithtech.exe identical either way).
+	LMessageList*    pList;
+	LThreadMessage** ppTail = &m_QueueC4.m_pTail;
+
+	pCur = (CNetFragRec*)*ppTail;
+
+	while (pCur)
+	{
+		pCur = (pCur->m_pPrev == *ppTail) ?
+		           LTNULL : (CNetFragRec*)pCur->m_pPrev;
+
+		nCount++;
+	}
+
+	if (nCount > 5)
+	{
+		pList = (LMessageList*)&m_QueueC4;
+		pRec = (CNetFragRec*)((CNetFragRec*)pList->m_pTail)->m_pNext;
+
+		pList->Remove((LThreadMessage*)pRec);
+
+		pRec->Clear();
+	}
+#endif
 	else
 	{
 		pRec = new CNetFragRec;
@@ -4276,7 +4318,15 @@ int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
 			pMsg->m_Unknown38 = 1;
 			pMsg->m_Unknown34 = 1;
 
+#ifdef PRIMAL_HUNT
+			// PH: through the field's address, as WriteAckPacket: the
+			// payload pointer is loaded after the two stores (server.dll
+			// 0x1002d5de).
+			uint8** ppData = &pMsg->m_pData;
+			(*ppData)[0] = pRec->m_pFrags[0].m_pMsg->m_pData[0];
+#else
 			pMsg->m_pData[0] = pRec->m_pFrags[0].m_pMsg->m_pData[0];
+#endif
 
 			for (i = 0; i < 4; i++)
 				((ServerMessageTypeView*)pMsg)->WriteData(

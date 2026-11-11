@@ -838,6 +838,13 @@ LTBOOL CRingCursorView::sub_41c0b0()
 //    under that name), so this is an extern of that definition.
 extern LTLink g_Un390List;                   // 0x004b40c8
 
+// Not a module hook: the "function-pointer table" that names the first of
+// the pair is the CRT's initialiser table (AvP2 1.0.9.6 0x004cf0d4 ->
+// 0x00466630, Primal Hunt 0x004e01a0 -> 0x0046ba80), and the pair is the
+// dynamic initialiser of netmgr.cpp's DECLARE_LTLINK(g_Un390List), its
+// `jmp` head and its TieOff body (0x00466640 / 0x0046ba90).  netmgr.obj
+// emits both; these two were a second copy of them.
+#if 0
 void sub_45a460();
 
 // Defined in the shipped order (0x0045a450 before 0x0045a460), which is the
@@ -851,6 +858,7 @@ void sub_45a460()
 {
 	g_Un390List.TieOff();
 }
+#endif
 
 
 // ---- 0x0048a620, 32 bytes -------------------------------------------- //

@@ -21,29 +21,219 @@
 #include <string>
 #endif
 
-// 0x10005bf8 — a console variable by name.
-HCONVAR con_FindVar(ConsoleState* pState, char* pName)
+// The tokenizer's states and helpers, defined at the foot of the
+// console's own code (see "the tokenizer" below).
+#define PARSE_DONE  0
+#define PARSE_ARG   1
+#define PARSE_END   2
+
+static int  parse_Token(char** ppPos, char** ppOut);
+static void parse_AddCharQ507(char** ppOut, char* pStart, char c);
+static int  parse_GroupQ507(char** ppPos, char** ppOut, char* pStart);
+static int  parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart);
+
+
+// THE DEFINITIONS ARE IN RETAIL'S ORDER (AvP2 1.0.9.6 server.dll
+// 0x10007322..0x10007d27, lithtech.exe 0x0041f870..0x004205bf): the runner
+// and its forwarders, the names and bindings, the state, the command list,
+// the lookup, the files, the parser and its tokenizer. AvP2's cl 9044
+// allocates a caller's registers around the callees defined above it, so
+// the order is load-bearing there: con_RunStringEx and con_FindBinding
+// match AvP2's server.dll only in it.
+
+// The two forwarders the rest of the engine reaches the runner through: the
+// source and the extra flag both default to nothing (names ours).
+void con_RunString(ConsoleState* pState, char* pString)
 {
-	void* hElement = dhash_FindElement(pState->m_hVarHash, pName, strlen(pName) + 1);
-
-	if (hElement)
-		return (HCONVAR)dhash_GetData(hElement);
-
-	return LTNULL;
+	con_RunString3(pState, pString, 0);
 }
 
-// 0x10005d3d — one command off the front of the parser's text. Running out
-// clears the position so the next call reports nothing left, and the zero
-// that says so is the same zero the test just produced.
-int CommandParser::Next()
+void con_RunString3(ConsoleState* pState, char* pString, int nSource)
 {
-	if (!m_pPos)
-		return 0;
+	con_RunStringEx(pState, pString, nSource, 0);
+}
 
-	if (!parse_Command(m_pPos, &m_pPos, m_ArgBuffer, m_ArgPointers, &m_nArgs))
-		m_pPos = LTNULL;
 
-	return 1;
+// ---- the runner --------------------------------------------------------- //
+
+// 0x10005623 — run a console string: one statement at a time, each either a
+// registered command or a variable assignment.
+//
+// nSource is a bit mask and not an enumeration: bit 1 says "commands only",
+// bit 2 says "variables only", and neither is checked for anything else. The
+// fourth argument is OR'd straight into the variable's flags, which is how a
+// caller marks everything a file sets as saveable.
+//
+// A leading '+' on the name adds flag bit 0 (the one con_SaveFile writes) and
+// a leading '-' takes it away, and either way the sign is not part of the
+// name. A value of "!" toggles: a variable with no text yet becomes "1", and
+// one holding a number becomes the number's logical negation. Anything else
+// under "!" is left alone -- the '!' itself is then stored as the value.
+//
+// The value is only re-stored when the text actually changed, and a value
+// shorter than sixteen characters is copied into the variable's own first
+// sixteen bytes rather than interned: m_pStringVal then points at the record
+// itself, which is why LTCommandVar begins with a run of otherwise unnamed
+// bytes.
+//
+// Two shapes in here are not free choices. The three flags are declared one
+// at a time with a statement between each, because that is what puts three
+// separate `and dword ptr [x],0` in the output: VC6 selects that four-byte
+// form per statement, but batches *consecutive* zero initialisers into one
+// `xor` plus three three-byte stores, which is a byte shorter and not what
+// ships. And the "!" handling is a positive `if (pVar->m_pStringVal)` with
+// an `else`, not a negative test with an `else if`: the shipped build defers
+// the "1" assignment to a block after the numeric one and falls through from
+// it into the join, which is the else arm's placement and not the then arm's.
+//
+// NEAR on lithtech.exe (0x0041ac20, 736/736): the reloads of pState for the
+// change callback and con_PrintVar rotate through edx/ecx/edx/eax where ours
+// uses ecx/edx/eax/ecx. Allocation; measured without effect: the callback
+// select as if/else, a fresh local for the one-argument lookup, pVar at
+// function scope.
+void con_RunStringEx(ConsoleState* pState, char* pString, int nSource, int nFlags)
+{
+	CommandParser parser;
+	char          szTemp[52];
+
+	parser.m_pPos = pString;
+
+	while (parser.Next())
+	{
+		LTCommandVar* pVar;
+		char*         pName;
+		uint32        nSet;
+
+		if (parser.m_nArgs <= 0)
+			continue;
+
+		if (!(nSource & 2))
+		{
+			LTLink* pCur;
+
+			for (pCur = pState->m_CommandHead.m_pNext;
+			     pCur != &pState->m_CommandHead;
+			     pCur = pCur->m_pNext)
+			{
+				ConsoleCommand* pCmd = (ConsoleCommand*)pCur->m_pData;
+
+				if (con_ICompare(pCmd->m_pName, parser.m_ArgPointers[0]))
+				{
+					((void (*)(int, char**))pCmd->m_pFn)(
+						parser.m_nArgs - 1, &parser.m_ArgPointers[1]);
+
+					goto next;
+				}
+			}
+		}
+
+		if (parser.m_nArgs == 2)
+		{
+			if (nSource & 1)
+				continue;
+
+			// Both flags before pName: lithtech's /O2 stores both slots and
+			// then copies pName (0x0041ad0f..0x0041ad17); server.dll matches
+			// either way.
+			int bChanged = 0;
+			int bCreated = 0;
+
+			pName = parser.m_ArgPointers[0];
+
+			nSet = nFlags;
+
+			int bMinus = 0;
+
+			if (pName[0] == '+')
+			{
+				nSet |= 1;
+				pName++;
+			}
+			else if (pName[0] == '-')
+			{
+				bMinus = 1;
+				pName++;
+			}
+
+			pVar = (LTCommandVar*)con_FindVar(pState, pName);
+
+			if (!pVar)
+			{
+				bChanged = 1;
+				bCreated = 1;
+
+				pVar = con_CreateVar(pState, pName);
+			}
+
+			pVar->m_Flags |= nSet;
+
+			if (bMinus)
+				pVar->m_Flags &= ~1;
+
+			if (parser.m_ArgPointers[1][0] == '!' &&
+			    parser.m_ArgPointers[1][1] == 0)
+			{
+				if (pVar->m_pStringVal)
+				{
+					if (isdigit(pVar->m_pStringVal[0]) ||
+					    pVar->m_pStringVal[0] == '-')
+					{
+						sprintf(szTemp, "%d", (int)pVar->m_FloatVal == 0);
+
+						parser.m_ArgPointers[1] = szTemp;
+					}
+				}
+				else
+				{
+					parser.m_ArgPointers[1] = "1";
+				}
+			}
+
+			if (!pVar->m_pStringVal ||
+			    strcmp(pVar->m_pStringVal, parser.m_ArgPointers[1]) != 0)
+			{
+				char* pNew;
+
+				if (strlen(parser.m_ArgPointers[1]) < 16)
+				{
+					strcpy((char*)pVar, parser.m_ArgPointers[1]);
+
+					pNew = (char*)pVar;
+				}
+				else
+				{
+					pNew = con_InternString(pState, parser.m_ArgPointers[1]);
+				}
+
+				pVar->m_pStringVal = pNew;
+
+				pVar->m_FloatVal = (float)atof(parser.m_ArgPointers[1]);
+
+				bChanged = 1;
+			}
+
+			con_ApplyBinding(pState, pVar);
+
+			if (bChanged)
+			{
+				void (*pFn)(ConsoleState*, LTCommandVar*) =
+					bCreated ? pState->m_pOnCreate : pState->m_pOnChange;
+
+				if (pFn)
+					pFn(pState, pVar);
+			}
+		}
+		else if (parser.m_nArgs == 1)
+		{
+			pVar = (LTCommandVar*)con_FindVar(pState, parser.m_ArgPointers[0]);
+
+			if (pVar)
+				con_PrintVar(pState, pVar);
+		}
+
+	next:
+		;
+	}
 }
 
 
@@ -186,11 +376,9 @@ void con_ApplyBinding(ConsoleState* pState, LTCommandVar* pVar)
 // table is small and fixed at startup. It follows its caller in every image
 // (AvP2 1.0.9.6 server.dll 0x10007681 then 0x100076d2).
 //
-// NEAR on AvP2 1.0.9.6's server.dll only (63 vs 67): shipped reads the size
-// and the table once, ahead of the loop (0x100076db, 0x100076e4). Written
-// with the two in locals, server.dll is 67 of 67 with the table's load one
-// instruction early, and AvP2's lithtech.exe (identical as it stands) stops
-// matching.
+// BYTE-IDENTICAL in every image with the file in retail's definition order
+// (below): AvP2 1.0.9.6's server.dll reads the size and the table once,
+// ahead of the loop (0x100076db, 0x100076e4), as ours then does too.
 ConsoleBinding* con_FindBinding(ConsoleState* pState, char* pName)
 {
 	int i;
@@ -252,44 +440,6 @@ void con_SetVar(ConsoleState* pState, char* pName, char* pVal)
 	}
 }
 
-
-// ---- the command list --------------------------------------------------- //
-
-// 0x10005b91 — register one command. A record that cannot be allocated is
-// simply not registered.
-//
-// It RETURNS the record (NULL when the allocation failed). Both images keep
-// pCmd in eax untouched to the final ret, and the null test's early exit
-// gets its own `pop esi; ret` because eax already holds the NULL it must
-// return; declared void, VC6 merged that exit into the tail and came out 61
-// bytes. The twin is lithtech 0x0041b2f0, identical with the same change.
-ConsoleCommand* con_AddCommand(ConsoleState* pState, char* pName, void* pFn, void* pUser)
-{
-	ConsoleCommand* pCmd = (ConsoleCommand*)pState->m_pAlloc(sizeof(ConsoleCommand));
-
-	if (!pCmd)
-		return NULL;
-
-	pCmd->m_pFn = pFn;
-	pCmd->m_pName = pName;
-	pCmd->m_pUser = pUser;
-	pCmd->m_Link.m_pData = pCmd;
-
-	dl_Insert(&pState->m_CommandHead, &pCmd->m_Link);
-	return pCmd;
-}
-
-// 0x10005bd0 — unregister one and hand the record back.
-void con_RemoveCommand(ConsoleState* pState, ConsoleCommand* pCmd)
-{
-	LTLink* pLink = &pCmd->m_Link;
-
-	pLink->m_pPrev->m_pNext = pLink->m_pNext;
-	pLink->m_pNext->m_pPrev = pLink->m_pPrev;
-	pLink->TieOff();
-
-	pState->m_pFree(pCmd);
-}
 
 // 0x10005a6b — the two hashes and the built-in commands. Both hashes are
 // case-insensitive string hashes of the same size: 500 buckets, of which the
@@ -367,6 +517,172 @@ void con_Term(ConsoleState* pState)
 }
 
 
+// ---- the command list --------------------------------------------------- //
+
+// 0x10005b91 — register one command. A record that cannot be allocated is
+// simply not registered.
+//
+// It RETURNS the record (NULL when the allocation failed). Both images keep
+// pCmd in eax untouched to the final ret, and the null test's early exit
+// gets its own `pop esi; ret` because eax already holds the NULL it must
+// return; declared void, VC6 merged that exit into the tail and came out 61
+// bytes. The twin is lithtech 0x0041b2f0, identical with the same change.
+ConsoleCommand* con_AddCommand(ConsoleState* pState, char* pName, void* pFn, void* pUser)
+{
+	ConsoleCommand* pCmd = (ConsoleCommand*)pState->m_pAlloc(sizeof(ConsoleCommand));
+
+	if (!pCmd)
+		return NULL;
+
+	pCmd->m_pFn = pFn;
+	pCmd->m_pName = pName;
+	pCmd->m_pUser = pUser;
+	pCmd->m_Link.m_pData = pCmd;
+
+	dl_Insert(&pState->m_CommandHead, &pCmd->m_Link);
+	return pCmd;
+}
+
+// 0x10005bd0 — unregister one and hand the record back.
+void con_RemoveCommand(ConsoleState* pState, ConsoleCommand* pCmd)
+{
+	LTLink* pLink = &pCmd->m_Link;
+
+	pLink->m_pPrev->m_pNext = pLink->m_pNext;
+	pLink->m_pNext->m_pPrev = pLink->m_pPrev;
+	pLink->TieOff();
+
+	pState->m_pFree(pCmd);
+}
+
+
+// 0x10005bf8 — a console variable by name.
+HCONVAR con_FindVar(ConsoleState* pState, char* pName)
+{
+	void* hElement = dhash_FindElement(pState->m_hVarHash, pName, strlen(pName) + 1);
+
+	if (hElement)
+		return (HCONVAR)dhash_GetData(hElement);
+
+	return LTNULL;
+}
+
+
+// ---- files -------------------------------------------------------------- //
+
+// 0x10005c25 — run a file a line at a time. A file that will not open is not
+// an error worth saying anything about: it simply did not run.
+LTBOOL con_RunFile(ConsoleState* pState, char* pFilename, int nSource, int n)
+{
+	char  szLine[500];
+	FILE* pFile;
+
+	pFile = fopen(pFilename, "rt");
+
+	if (!pFile)
+		return LTFALSE;
+
+	while (fgets(szLine, sizeof(szLine), pFile))
+		con_RunStringEx(pState, szLine, nSource, n);
+
+	fclose(pFile);
+
+	return LTTRUE;
+}
+
+// 0x10005c95 — write every variable that asked to be saved, then let the
+// registered writers add whatever else belongs in the file.
+LTBOOL con_SaveFile(ConsoleState* pState, char* pFilename)
+{
+	FILE*         pFile;
+	void*         hIter;
+	void*         hCur;
+	LTCommandVar* pVar;
+	int           i;
+
+	pFile = fopen(pFilename, "wt");
+
+	if (!pFile)
+		return LTFALSE;
+
+	hIter = dhash_GetFirst(pState->m_hVarHash);
+
+	while (hIter)
+	{
+		hCur = dhash_GetNext(&hIter);
+
+		if (hCur)
+		{
+			pVar = (LTCommandVar*)dhash_GetData(hCur);
+
+			if (pVar->m_Flags & 1)
+				fprintf(pFile, "\"%s\" \"%s\"\n", pVar->m_pName, pVar->m_pStringVal);
+		}
+	}
+
+	for (i = 0; i < pState->m_nSavers; i++)
+		pState->m_pSavers[i](pFile);
+
+	fclose(pFile);
+
+	return LTTRUE;
+}
+
+// 0x10005d1e — one variable, as the console shows it. A variable with no
+// text yet says nothing at all.
+void con_PrintVar(ConsoleState* pState, LTCommandVar* pVar)
+{
+	if (pVar->m_pStringVal)
+		pState->m_pPrint("%s = %s", pVar->m_pName, pVar->m_pStringVal);
+}
+
+
+// 0x10005d3d — one command off the front of the parser's text. Running out
+// clears the position so the next call reports nothing left, and the zero
+// that says so is the same zero the test just produced.
+int CommandParser::Next()
+{
+	if (!m_pPos)
+		return 0;
+
+	if (!parse_Command(m_pPos, &m_pPos, m_ArgBuffer, m_ArgPointers, &m_nArgs))
+		m_pPos = LTNULL;
+
+	return 1;
+}
+
+// The walk stops on the first command whose name matches; the parser is left
+// pointing past it, so the caller reads its arguments and calls again.
+// The flag says CASE SENSITIVE, and the name it used to carry here said the
+// opposite. Both arms of the ternary were wrong and wrong in opposite
+// directions, so the function was byte-identical either way -- the two calls
+// sit at the same offsets and only the relocation behind each one differs.
+// A check of the call targets is what separated them: the shipped call at +47 goes to
+// strcmp (0x1003e1f0) where ours named stricmp, and the one at +54 goes to
+// stricmp (0x10047080) where ours named strcmp. The one reconstructed call
+// site passes 0 and so wants the case-INSENSITIVE compare, which is what a
+// world file's "AmbientLight" property name needs.
+LTBOOL CommandParser::Find(char* pName, LTBOOL bCaseSensitive, int nMinArgs)
+{
+	if (nMinArgs == 0)
+		nMinArgs = 1;
+
+	while (Next())
+	{
+		if (m_nArgs >= nMinArgs)
+		{
+			int bMatch = bCaseSensitive ? (strcmp(m_ArgPointers[0], pName) == 0)
+			                            : (stricmp(m_ArgPointers[0], pName) == 0);
+
+			if (bMatch)
+				return LTTRUE;
+		}
+	}
+
+	return LTFALSE;
+}
+
+
 // ---- the tokenizer ------------------------------------------------------ //
 
 // AVP2: the tokenizer is not NOLF's single depth-counting loop. Brackets and
@@ -380,15 +696,6 @@ void con_Term(ConsoleState* pState)
 // A per-cent sign still escapes whatever follows it, a bracketed group keeps
 // its inner brackets, and an empty group or empty quote still yields an
 // argument -- a single space.
-#define PARSE_DONE  0
-#define PARSE_ARG   1
-#define PARSE_END   2
-
-static int  parse_Token(char** ppPos, char** ppOut);
-static void parse_AddCharQ507(char** ppOut, char* pStart, char c);
-static int  parse_GroupQ507(char** ppPos, char** ppOut, char* pStart);
-static int  parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart);
-
 // lithtech.exe 0x00422680, server.dll 0x10007b15 -- one statement's worth
 // of tokens, up to thirty arguments. The buffer cursor runs on across the
 // arguments, so each one keeps its own terminated copy and the pointers hand
@@ -610,302 +917,6 @@ static int parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart)
 	}
 
 	return 0;
-}
-
-// The walk stops on the first command whose name matches; the parser is left
-// pointing past it, so the caller reads its arguments and calls again.
-// The flag says CASE SENSITIVE, and the name it used to carry here said the
-// opposite. Both arms of the ternary were wrong and wrong in opposite
-// directions, so the function was byte-identical either way -- the two calls
-// sit at the same offsets and only the relocation behind each one differs.
-// A check of the call targets is what separated them: the shipped call at +47 goes to
-// strcmp (0x1003e1f0) where ours named stricmp, and the one at +54 goes to
-// stricmp (0x10047080) where ours named strcmp. The one reconstructed call
-// site passes 0 and so wants the case-INSENSITIVE compare, which is what a
-// world file's "AmbientLight" property name needs.
-LTBOOL CommandParser::Find(char* pName, LTBOOL bCaseSensitive, int nMinArgs)
-{
-	if (nMinArgs == 0)
-		nMinArgs = 1;
-
-	while (Next())
-	{
-		if (m_nArgs >= nMinArgs)
-		{
-			int bMatch = bCaseSensitive ? (strcmp(m_ArgPointers[0], pName) == 0)
-			                            : (stricmp(m_ArgPointers[0], pName) == 0);
-
-			if (bMatch)
-				return LTTRUE;
-		}
-	}
-
-	return LTFALSE;
-}
-
-
-// ---- the runner --------------------------------------------------------- //
-
-// 0x10005623 — run a console string: one statement at a time, each either a
-// registered command or a variable assignment.
-//
-// nSource is a bit mask and not an enumeration: bit 1 says "commands only",
-// bit 2 says "variables only", and neither is checked for anything else. The
-// fourth argument is OR'd straight into the variable's flags, which is how a
-// caller marks everything a file sets as saveable.
-//
-// A leading '+' on the name adds flag bit 0 (the one con_SaveFile writes) and
-// a leading '-' takes it away, and either way the sign is not part of the
-// name. A value of "!" toggles: a variable with no text yet becomes "1", and
-// one holding a number becomes the number's logical negation. Anything else
-// under "!" is left alone -- the '!' itself is then stored as the value.
-//
-// The value is only re-stored when the text actually changed, and a value
-// shorter than sixteen characters is copied into the variable's own first
-// sixteen bytes rather than interned: m_pStringVal then points at the record
-// itself, which is why LTCommandVar begins with a run of otherwise unnamed
-// bytes.
-//
-// Two shapes in here are not free choices. The three flags are declared one
-// at a time with a statement between each, because that is what puts three
-// separate `and dword ptr [x],0` in the output: VC6 selects that four-byte
-// form per statement, but batches *consecutive* zero initialisers into one
-// `xor` plus three three-byte stores, which is a byte shorter and not what
-// ships. And the "!" handling is a positive `if (pVar->m_pStringVal)` with
-// an `else`, not a negative test with an `else if`: the shipped build defers
-// the "1" assignment to a block after the numeric one and falls through from
-// it into the join, which is the else arm's placement and not the then arm's.
-//
-// NEAR on lithtech.exe (0x0041ac20, 736/736): the reloads of pState for the
-// change callback and con_PrintVar rotate through edx/ecx/edx/eax where ours
-// uses ecx/edx/eax/ecx. Allocation; measured without effect: the callback
-// select as if/else, a fresh local for the one-argument lookup, pVar at
-// function scope.
-void con_RunStringEx(ConsoleState* pState, char* pString, int nSource, int nFlags)
-{
-	CommandParser parser;
-	char          szTemp[52];
-
-	parser.m_pPos = pString;
-
-	while (parser.Next())
-	{
-		LTCommandVar* pVar;
-		char*         pName;
-		uint32        nSet;
-
-		if (parser.m_nArgs <= 0)
-			continue;
-
-		if (!(nSource & 2))
-		{
-			LTLink* pCur;
-
-			for (pCur = pState->m_CommandHead.m_pNext;
-			     pCur != &pState->m_CommandHead;
-			     pCur = pCur->m_pNext)
-			{
-				ConsoleCommand* pCmd = (ConsoleCommand*)pCur->m_pData;
-
-				if (con_ICompare(pCmd->m_pName, parser.m_ArgPointers[0]))
-				{
-					((void (*)(int, char**))pCmd->m_pFn)(
-						parser.m_nArgs - 1, &parser.m_ArgPointers[1]);
-
-					goto next;
-				}
-			}
-		}
-
-		if (parser.m_nArgs == 2)
-		{
-			if (nSource & 1)
-				continue;
-
-			// Both flags before pName: lithtech's /O2 stores both slots and
-			// then copies pName (0x0041ad0f..0x0041ad17); server.dll matches
-			// either way.
-			int bChanged = 0;
-			int bCreated = 0;
-
-			pName = parser.m_ArgPointers[0];
-
-			nSet = nFlags;
-
-			int bMinus = 0;
-
-			if (pName[0] == '+')
-			{
-				nSet |= 1;
-				pName++;
-			}
-			else if (pName[0] == '-')
-			{
-				bMinus = 1;
-				pName++;
-			}
-
-			pVar = (LTCommandVar*)con_FindVar(pState, pName);
-
-			if (!pVar)
-			{
-				bChanged = 1;
-				bCreated = 1;
-
-				pVar = con_CreateVar(pState, pName);
-			}
-
-			pVar->m_Flags |= nSet;
-
-			if (bMinus)
-				pVar->m_Flags &= ~1;
-
-			if (parser.m_ArgPointers[1][0] == '!' &&
-			    parser.m_ArgPointers[1][1] == 0)
-			{
-				if (pVar->m_pStringVal)
-				{
-					if (isdigit(pVar->m_pStringVal[0]) ||
-					    pVar->m_pStringVal[0] == '-')
-					{
-						sprintf(szTemp, "%d", (int)pVar->m_FloatVal == 0);
-
-						parser.m_ArgPointers[1] = szTemp;
-					}
-				}
-				else
-				{
-					parser.m_ArgPointers[1] = "1";
-				}
-			}
-
-			if (!pVar->m_pStringVal ||
-			    strcmp(pVar->m_pStringVal, parser.m_ArgPointers[1]) != 0)
-			{
-				char* pNew;
-
-				if (strlen(parser.m_ArgPointers[1]) < 16)
-				{
-					strcpy((char*)pVar, parser.m_ArgPointers[1]);
-
-					pNew = (char*)pVar;
-				}
-				else
-				{
-					pNew = con_InternString(pState, parser.m_ArgPointers[1]);
-				}
-
-				pVar->m_pStringVal = pNew;
-
-				pVar->m_FloatVal = (float)atof(parser.m_ArgPointers[1]);
-
-				bChanged = 1;
-			}
-
-			con_ApplyBinding(pState, pVar);
-
-			if (bChanged)
-			{
-				void (*pFn)(ConsoleState*, LTCommandVar*) =
-					bCreated ? pState->m_pOnCreate : pState->m_pOnChange;
-
-				if (pFn)
-					pFn(pState, pVar);
-			}
-		}
-		else if (parser.m_nArgs == 1)
-		{
-			pVar = (LTCommandVar*)con_FindVar(pState, parser.m_ArgPointers[0]);
-
-			if (pVar)
-				con_PrintVar(pState, pVar);
-		}
-
-	next:
-		;
-	}
-}
-
-
-// ---- files -------------------------------------------------------------- //
-
-// 0x10005c25 — run a file a line at a time. A file that will not open is not
-// an error worth saying anything about: it simply did not run.
-LTBOOL con_RunFile(ConsoleState* pState, char* pFilename, int nSource, int n)
-{
-	char  szLine[500];
-	FILE* pFile;
-
-	pFile = fopen(pFilename, "rt");
-
-	if (!pFile)
-		return LTFALSE;
-
-	while (fgets(szLine, sizeof(szLine), pFile))
-		con_RunStringEx(pState, szLine, nSource, n);
-
-	fclose(pFile);
-
-	return LTTRUE;
-}
-
-// 0x10005c95 — write every variable that asked to be saved, then let the
-// registered writers add whatever else belongs in the file.
-LTBOOL con_SaveFile(ConsoleState* pState, char* pFilename)
-{
-	FILE*         pFile;
-	void*         hIter;
-	void*         hCur;
-	LTCommandVar* pVar;
-	int           i;
-
-	pFile = fopen(pFilename, "wt");
-
-	if (!pFile)
-		return LTFALSE;
-
-	hIter = dhash_GetFirst(pState->m_hVarHash);
-
-	while (hIter)
-	{
-		hCur = dhash_GetNext(&hIter);
-
-		if (hCur)
-		{
-			pVar = (LTCommandVar*)dhash_GetData(hCur);
-
-			if (pVar->m_Flags & 1)
-				fprintf(pFile, "\"%s\" \"%s\"\n", pVar->m_pName, pVar->m_pStringVal);
-		}
-	}
-
-	for (i = 0; i < pState->m_nSavers; i++)
-		pState->m_pSavers[i](pFile);
-
-	fclose(pFile);
-
-	return LTTRUE;
-}
-
-// 0x10005d1e — one variable, as the console shows it. A variable with no
-// text yet says nothing at all.
-void con_PrintVar(ConsoleState* pState, LTCommandVar* pVar)
-{
-	if (pVar->m_pStringVal)
-		pState->m_pPrint("%s = %s", pVar->m_pName, pVar->m_pStringVal);
-}
-
-
-// The two forwarders the rest of the engine reaches the runner through: the
-// source and the extra flag both default to nothing (names ours).
-void con_RunString(ConsoleState* pState, char* pString)
-{
-	con_RunString3(pState, pString, 0);
-}
-
-void con_RunString3(ConsoleState* pState, char* pString, int nSource)
-{
-	con_RunStringEx(pState, pString, nSource, 0);
 }
 
 

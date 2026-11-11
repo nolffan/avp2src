@@ -178,6 +178,10 @@ void ScreenShake::Update()
 				if (hClient)
 				{
                     HMESSAGEWRITE hMessage = g_pLTServer->StartMessage(hClient, MID_SHAKE_SCREEN);
+#ifdef PRIMAL_HUNT
+                    // PH: nonzero, a plain shake (zero is the recoil kind; 0x101219b6)
+                    g_pLTServer->WriteToMessageByte(hMessage, 1);
+#endif
                     g_pLTServer->WriteToMessageVector(hMessage, &m_vAmount);
                     g_pLTServer->EndMessage(hMessage);
 				}

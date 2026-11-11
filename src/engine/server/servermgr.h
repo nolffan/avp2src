@@ -810,6 +810,36 @@ public:
 	}
 };
 
+// The manager's first message queue (CNetMgr below) is an LMessageList: CNetMgr's
+// constructor stores 0x1004dd2c into +0xb8 (0x1002141c), and 0x1004dd2c is
+// ??_7LMessageList@@6B@ (NetConnection's constructor stores it too, see
+// netmgr.cpp). So the class derives from LMessageList and adds nothing
+// virtual -- it used to be a standalone class with a VIRTUAL destructor,
+// whose `??_G` the shipped image does not have (slot 0 of every queue
+// vtable is GenBegin). It exists as a class of its own only for its
+// destructor: ~CNetMgr expands it as the vptr restore and the two clears,
+// m_pTail before m_nMessages, which LMessageList itself must not have (it
+// stays trivially destructible; see LThreadMsgList). The constructor repeats
+// the zeros, __forceinline, for the reason CNetQueueB's does below.
+class CNetQueueA : public LMessageList
+{
+public:
+	__forceinline CNetQueueA() { m_nMessages = 0; m_pTail = LTNULL; }
+
+	~CNetQueueA() { m_pTail = LTNULL; m_nMessages = 0; }
+};
+
+// AVP2: NetConnection's three message lists are this class too: 1.0.9.6's
+// ~NetConnection runs its destructor on each (server.dll 0x10029183..
+// 0x100291b0: vptr, m_pTail, m_nMessages), with the same table CNetMgr's
+// queue gets (0x10069e3c, stored by both constructors). Primal Hunt's
+// destructor expands LMessageList's teardown (lthread.h) instead.
+#ifdef PRIMAL_HUNT
+typedef LMessageList CNetConnQueue;
+#else
+typedef CNetQueueA   CNetConnQueue;
+#endif
+
 class NetConnection
 {
 public:
@@ -829,10 +859,10 @@ public:
 	CRateTracker  m_RecvBPS;                 // +0x18  push sequence
 	CRateTracker  m_RecvPPS;                 // +0x24
 	class CBaseDriver* m_pDriver;            // +0x30
-	LMessageList  m_SendQueue;               // +0x34  count printed as "Q Size"
-	LMessageList  m_GuaranteedQueue;         // +0x40  arrived out of order
+	CNetConnQueue m_SendQueue;               // +0x34  count printed as "Q Size"
+	CNetConnQueue m_GuaranteedQueue;         // +0x40  arrived out of order
 	CNetSentQueue m_SentList;                // +0x4c  awaiting ack; resent on a timer
-	LMessageList  m_RecvList;                // +0x58  arrived, not yet handed out
+	CNetConnQueue m_RecvList;                // +0x58  arrived, not yet handed out
 	uint32        m_Unknown64;               // +0x64
 	uint32        m_Unknown68;               // +0x68
 	uint32        m_Unknown6C;               // +0x6c
@@ -1234,24 +1264,6 @@ public:
 	uint8           m_Data0C[0x70 - 0x0c];   // +0x0c  the wire payload
 };
 
-// The manager's two message queues. The first is an LMessageList: CNetMgr's
-// constructor stores 0x1004dd2c into +0xb8 (0x1002141c), and 0x1004dd2c is
-// ??_7LMessageList@@6B@ (NetConnection's constructor stores it too, see
-// netmgr.cpp). So the class derives from LMessageList and adds nothing
-// virtual -- it used to be a standalone class with a VIRTUAL destructor,
-// whose `??_G` the shipped image does not have (slot 0 of every queue
-// vtable is GenBegin). It exists as a class of its own only for its
-// destructor: ~CNetMgr expands it as the vptr restore and the two clears,
-// m_pTail before m_nMessages, which LMessageList itself must not have (it
-// stays trivially destructible; see LThreadMsgList). The constructor repeats
-// the zeros, __forceinline, for the reason CNetQueueB's does below.
-class CNetQueueA : public LMessageList
-{
-public:
-	__forceinline CNetQueueA() { m_nMessages = 0; m_pTail = LTNULL; }
-
-	~CNetQueueA() { m_pTail = LTNULL; m_nMessages = 0; }
-};
 
 // Its vtable (0x1004dd5c) names CNetSentQueue's GenAppendList at 0x10023f87
 // but its own GenAppend at 0x100240db, so the class derives from that queue
@@ -1279,7 +1291,12 @@ public:
 
 	// Inline, and NOT empty: the manager's destructor expands it and the
 	// expansion clears both fields, m_pTail before m_nMessages.
+	// PH only. AVP2: the teardown ~CNetMgr expands is CNetSentQueue's alone
+	// (server.dll 0x10029293..0x1002929c); with this second level on top /O1
+	// calls the pair out of line.
+#ifdef PRIMAL_HUNT
 	~CNetQueueB() { m_pTail = LTNULL; m_nMessages = 0; }
+#endif
 };
 
 // What the manager's second queue holds: four polymorphic pieces it owns

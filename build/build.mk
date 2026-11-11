@@ -790,7 +790,7 @@ SERVER_SRC := server.cpp servermgr.cpp servermsg.cpp netmgr.cpp servermath.cpp l
     serverengine.cpp ltobject.cpp lmessage.cpp lmessage2.cpp soundinst.cpp spritecontrol.cpp tcpdriver.cpp stringbank.cpp dsi.cpp \
     genericprop.cpp dhash.cpp filemgr.cpp console.cpp structbank.cpp csbase.cpp sdkforce.cpp netobj.cpp \
     smgrnew.cpp modelnew.cpp objmover.cpp smgrmisc.cpp svnew.cpp svlast.cpp \
-    svtiny.cpp worldtree.cpp worldisect.cpp sweptsphere.cpp interlink.cpp sisegment.cpp serverthread.cpp \
+    svtiny.cpp worldtree.cpp transformmaker.cpp visquery.cpp worldtree2.cpp worldisect.cpp sweptsphere.cpp interlink.cpp sisegment.cpp serverthread.cpp \
     cacherec.cpp
 SERVER_OS_SRC := localdriver.cpp
 # the segment-query module, unoptimised in Primal Hunt and AvP2 1.0.9.6
@@ -1176,7 +1176,12 @@ endef
 LS_R := ..\..\LT2\lithshared\libs\Release
 LS_D := ..\..\LT2\lithshared\libs\Debug
 LT_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/Release)))
-SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(SERVER_SRC) $(SERVER_OS_SRC)))
+# worldtree.cpp's three sibling units follow it, in the order their code lies
+# in the retail image (transform maker 0x1004874d, visibility walk
+# 0x10048fa0, world tree 0x10049409).
+SV_WT_SPLIT := transformmaker visquery worldtree2
+SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(filter-out $(addsuffix .cpp,$(SV_WT_SPLIT)),$(SERVER_SRC) $(SERVER_OS_SRC)))) \
+    $(patsubst %,$(SERVER)/Release/%.obj,$(SV_WT_SPLIT))
 # lithtech.exe: our objects, then WON (the engine's VC6-STL build), RezMgr,
 # lith and StdLith, in the order their blocks lie in the retail image
 # (progress/targets.py, lib_range: 0x004aab40, 0x004ba2a0..)
@@ -1258,7 +1263,7 @@ SV_AVP_ORDER := \
     dalloc ltobject dhash dsi svlast worldisect saveio genericprop basestream servermath ltservermath svnew sharedcommon \
     lmessage lmessage2 localdriver lthread modelnew collection commonmodel modelloadstate sdkforce framemove commonphysics netmgr packet \
     serverengine netobj objtypes objbank serverlightanim smgrmisc filemgr servermgr server servercommon \
-    servermodel servermessage sisegment smgr smgrnew serverthread objmover cacherec soundinst spritecontrol streamsim stringbank tcpdriver worldtree
+    servermodel servermessage sisegment smgr smgrnew serverthread objmover cacherec soundinst spritecontrol streamsim stringbank tcpdriver worldtree transformmaker visquery worldtree2
 LT_AVP_OBJS := $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),AvP2Release)))
 LT_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER))) \
     $(filter-out $(addprefix AvP2Release/,$(addsuffix .obj,$(LT_AVP_ORDER) controlfile)),$(LT_AVP_OBJS)) AvP2Release/controlfile.obj

@@ -470,10 +470,17 @@ CSoundDataView::CSoundDataView()
 // The jump rather than a call is the tail-call VC6 emits when the destructor
 // body is one non-virtual call and nothing follows it. Free() is a virtual,
 // called here non-virtually because a destructor's calls always are.
+//
+// A duplicate of sndinst2.cpp's CSoundDataQ47C::~CSoundDataQ47C, which is the
+// image's one copy (Primal Hunt 0x00498bb0, AvP2 1.0.9.6 0x0048f2d0): the
+// images have seven destructors of this shape and the two views made
+// eight, so this one is left to that file.
+#if 0
 CSoundDataView::~CSoundDataView()
 {
 	Free();
 }
+#endif
 
 
 // 0x0047d020 — vtable slot +0x14 of the sample: throw away what is loaded and

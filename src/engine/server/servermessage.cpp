@@ -108,16 +108,11 @@ LTRESULT CLTServer::GetClassProp(const HCLASS hClass, const uint32 iProp, ClassP
 
 	pDef = ((CClassInfo*)hClass)->m_pClassDef;
 	nDefs = 0;
-	if (pDef)
+	while (pDef)
 	{
-		ppDef = pDefs;
-		do
-		{
-			*ppDef = pDef;
-			pDef = pDef->m_ParentClass;
-			nDefs++;
-			ppDef++;
-		} while (pDef);
+		pDefs[nDefs] = pDef;
+		pDef = pDef->m_ParentClass;
+		nDefs++;
 	}
 
 	// Index from the root ancestor down, so a derived class's own properties
@@ -663,86 +658,6 @@ LTBOOL CLTServer::GetContainerCode(HOBJECT hObj, uint16 *pCode)
 
 	*pCode = ((ContainerInstance*)hObj)->m_ContainerCode;
 	return LTTRUE;
-}
-
-// *********************************************************************** //
-//  0x10035caa — str_FormatMessage, the body behind CLTServer::FormatString.
-//
-//  Two Win32 calls in series: LoadString pulls the format out of the class
-//  module's string table, FormatMessage expands the caller's arguments into
-//  a buffer it allocates itself (FORMAT_MESSAGE_ALLOCATE_BUFFER, which is
-//  why lpBuffer is the *address* of the pointer and why the caller has to
-//  hand the result to str_FreeMessage).
-//
-//  The first parameter is not the HINSTANCE: the shipped code loads it and
-//  then dereferences it (`mov 0x8(%ebp),%eax` / `push (%eax)`), so
-//  CClassMgr::m_hModule is a pointer to a module record whose first field is
-//  the instance handle. FormatString pushes the field's value, so the extra
-//  indirection is here and not at the call site.
-//
-//  `*pLen` is FormatMessage's own return scaled by three plus one — the
-//  shipped `lea 0x1(%eax,%eax,2)`. Nothing in this function reads it back.
-//
-//  The two failure arms are one tail-merged block: the second pushes its
-//  literal and jumps backwards into the first's call. That direction comes
-//  from the single-return shape below -- one result pointer set on every
-//  path, the FormatMessage call inside the LoadString guard's `else`. With
-//  two early `return LTNULL`s cl 8447 kept the second site's tail and jumped
-//  the first forward (143/143, two blocks); the nested form with early
-//  returns and a `goto` were both worse. The literal order is unchanged by
-//  the single-return shape, and it is a check on any other: the LoadString
-//  guard has to come first to put the two literals into .data in the shipped order
-//  (VC6 emits them in reverse of their .text use, so "FormatMessage error on
-//  string %d" at 0x10055298 before "Couldn't get string %d" at 0x100552bc).
-// *********************************************************************** //
-
-// Both Win32 entry points come in through windows.h, which lthread.h (and so
-// servermgr.h) already pulls into this TU; the A-suffixed names are spelled
-// out so the header's UNICODE macros cannot pick the other one. Both are
-// dllimport there, which is the `call *[__imp__...]` the shipped code makes.
-
-// 0x10058500 — the console variable "DebugStrings". Its name and its slot
-// are in the console-variable record at 0x10052034, whose value pointer is
-// this address; nothing else in the image reads it. Integer, not float: the
-// shipped test is `cmp %edi,0x10058500` against a zeroed register.
-extern int g_CV_DebugStrings;
-
-void* str_FormatMessage(void* pModule, int messageCode, va_list* pMarker, uint32* pLen)
-{
-	char   szFormat[5000];
-	char*  pOut;
-	uint32 nLen;
-	void*  pRet;
-
-	*pLen = 0;
-
-	if (LoadStringA(*(HINSTANCE*)pModule, messageCode, szFormat, sizeof(szFormat)) == 0)
-	{
-		if (g_CV_DebugStrings)
-			dsi_ServerError("Couldn't get string %d", messageCode);
-
-		pRet = LTNULL;
-	}
-	else
-	{
-		nLen = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING,
-		                      szFormat, 0, 0, (char*)&pOut, 1, pMarker);
-
-		if (nLen == 0)
-		{
-			if (g_CV_DebugStrings)
-				dsi_ServerError("FormatMessage error on string %d", messageCode);
-
-			pRet = LTNULL;
-		}
-		else
-		{
-			*pLen = nLen * 3 + 1;
-			pRet = pOut;
-		}
-	}
-
-	return pRet;
 }
 
 
@@ -2012,8 +1927,13 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
 		pState->m_pNetMgr->SendToConnection(pMsg, pState->m_pConnection, 0x80);
 	}
 
+	// AVP2: AvP2 1.0.9.6's server.dll has no hook here (0x10011d4d goes
+	// straight from the send to the count); its lithtech.exe (0x00437370)
+	// and Primal Hunt's server.dll (0x1001259e) both have it.
+#if !defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
 	if (pState->m_Flags & 4)
 		xfer_OnFileAdded(nFileID, nUnknown, pName);
+#endif
 
 	pState->m_nFiles++;
 
@@ -2618,3 +2538,90 @@ void* ph_Forward74(void* pHolder, void* pArg)
 
 	return fs_OpenFile(&pMgr->m_FileMgr, (char*)pArg);
 }
+
+// *********************************************************************** //
+//  0x10035caa — str_FormatMessage, the body behind CLTServer::FormatString.
+//
+//  Defined last: every image places it beside stringbank.cpp's
+//  str_FreeMessage, in another unit, so none of this file's callers saw its
+//  body. AvP2 1.0.9.6's lithtech.exe shows it: with the body above it, cl
+//  9044 keeps WriteFormattedString's length in a register across the
+//  writer's first call, where the shipped code (0x0048eb12) re-reads it.
+//
+//  Two Win32 calls in series: LoadString pulls the format out of the class
+//  module's string table, FormatMessage expands the caller's arguments into
+//  a buffer it allocates itself (FORMAT_MESSAGE_ALLOCATE_BUFFER, which is
+//  why lpBuffer is the *address* of the pointer and why the caller has to
+//  hand the result to str_FreeMessage).
+//
+//  The first parameter is not the HINSTANCE: the shipped code loads it and
+//  then dereferences it (`mov 0x8(%ebp),%eax` / `push (%eax)`), so
+//  CClassMgr::m_hModule is a pointer to a module record whose first field is
+//  the instance handle. FormatString pushes the field's value, so the extra
+//  indirection is here and not at the call site.
+//
+//  `*pLen` is FormatMessage's own return scaled by three plus one — the
+//  shipped `lea 0x1(%eax,%eax,2)`. Nothing in this function reads it back.
+//
+//  The two failure arms are one tail-merged block: the second pushes its
+//  literal and jumps backwards into the first's call. That direction comes
+//  from the single-return shape below -- one result pointer set on every
+//  path, the FormatMessage call inside the LoadString guard's `else`. With
+//  two early `return LTNULL`s cl 8447 kept the second site's tail and jumped
+//  the first forward (143/143, two blocks); the nested form with early
+//  returns and a `goto` were both worse. The literal order is unchanged by
+//  the single-return shape, and it is a check on any other: the LoadString
+//  guard has to come first to put the two literals into .data in the shipped order
+//  (VC6 emits them in reverse of their .text use, so "FormatMessage error on
+//  string %d" at 0x10055298 before "Couldn't get string %d" at 0x100552bc).
+// *********************************************************************** //
+
+// Both Win32 entry points come in through windows.h, which lthread.h (and so
+// servermgr.h) already pulls into this TU; the A-suffixed names are spelled
+// out so the header's UNICODE macros cannot pick the other one. Both are
+// dllimport there, which is the `call *[__imp__...]` the shipped code makes.
+
+// 0x10058500 — the console variable "DebugStrings". Its name and its slot
+// are in the console-variable record at 0x10052034, whose value pointer is
+// this address; nothing else in the image reads it. Integer, not float: the
+// shipped test is `cmp %edi,0x10058500` against a zeroed register.
+extern int g_CV_DebugStrings;
+
+void* str_FormatMessage(void* pModule, int messageCode, va_list* pMarker, uint32* pLen)
+{
+	char   szFormat[5000];
+	char*  pOut;
+	uint32 nLen;
+	void*  pRet;
+
+	*pLen = 0;
+
+	if (LoadStringA(*(HINSTANCE*)pModule, messageCode, szFormat, sizeof(szFormat)) == 0)
+	{
+		if (g_CV_DebugStrings)
+			dsi_ServerError("Couldn't get string %d", messageCode);
+
+		pRet = LTNULL;
+	}
+	else
+	{
+		nLen = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING,
+		                      szFormat, 0, 0, (char*)&pOut, 1, pMarker);
+
+		if (nLen == 0)
+		{
+			if (g_CV_DebugStrings)
+				dsi_ServerError("FormatMessage error on string %d", messageCode);
+
+			pRet = LTNULL;
+		}
+		else
+		{
+			*pLen = nLen * 3 + 1;
+			pRet = pOut;
+		}
+	}
+
+	return pRet;
+}
+

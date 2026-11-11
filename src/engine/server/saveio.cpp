@@ -1504,6 +1504,12 @@ public:
 	// AVP2: the model file and its four skins (ltobject_internal.h's
 	// m_pModelFile and m_pSkinFiles), not NOLF's model and one skin.
 	void*            m_hFiles[1 + 4];        // 0x30
+#ifdef PRIMAL_HUNT
+	// PH: the extra texture after the skins, saved with a model (server.dll
+	// 0x10014337 pushes +0x44 after the skin loop); ltbasedefs.h's
+	// m_ExtraTextureName. Name ours.
+	void*            m_hExtraTexture;        // 0x44
+#endif
 };
 
 // worldbsp.h's world, at the one field the save reads: the name, inline at
@@ -1578,17 +1584,26 @@ public:
 // sm_RestoreNextObject does (0x10010e29).  m_SkyObjects is servermgr.h's
 // name for the thirty ids at 0x95c (0x1000ff3c adds 0x95c and 0x1000ff4f
 // compares the index against 0x1e).
-#ifndef PRIMAL_HUNT
 // AVP2 1.0.9.6: the model's layout as objbank.cpp's CObjModel (tracker
 // 0x1d0, hidden pieces 0x24c), and the server interface's ILTModel up to
 // WriteTracker, its slot 17 (`call *0x44(%eax)` at 0x10013bcf).
+// PH: Primal Hunt's model is four bytes longer ahead of the tracker
+// (0x1d4, server.dll 0x100145d0) and has the hidden pieces at 0x260
+// (0x100145ad).
 class SavModelSaveQ4S
 {
 public:
+#ifdef PRIMAL_HUNT
+	uint8  m_pad_00[0x1d4];
+	uint8  m_AnimTracker[0x50];              // 0x1d4
+	uint8  m_pad_224[0x260 - 0x224];
+	uint32 m_HiddenPieces;                   // 0x260
+#else
 	uint8  m_pad_00[0x1d0];
 	uint8  m_AnimTracker[0x50];              // 0x1d0
 	uint8  m_pad_220[0x24c - 0x220];
 	uint32 m_HiddenPieces;                   // 0x24c
+#endif
 };
 
 class SavModelLTSaveQ4S
@@ -1612,20 +1627,15 @@ public:
 	uint8               m_pad_00[0x10];
 	SavModelLTSaveQ4S*  m_pModelLT;          // 0x10
 };
-#endif
 
 class SavServerMgrQ4S
 {
 public:
 	uint8         m_pad_000[0xc14];
 	void*         m_pClassMgr;               // 0xc14
-#ifndef PRIMAL_HUNT
 	uint8         m_pad_c18[0xd38 - 0xc18];
 	SavServerLTSaveQ4S* m_pServerLT;         // 0xd38  (servermgr.h's m_pUnknown928)
 	uint8         m_pad_d3c[0xd6c - 0xd3c];
-#else
-	uint8         m_pad_c18[0xd6c - 0xc18];
-#endif
 	uint16        m_SkyObjects[30];          // 0xd6c
 	uint8         m_pad_da8[0xe3c - 0xda8];
 	SavFileMgrQ4S m_FileMgr;                 // 0xe3c
@@ -1751,7 +1761,6 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 	CSaveLoadMessageQ4S msg(pMgr->m_pClassMgr, pStream);
 	uint32 nEndFieldPos;
 	uint32 nSkyIndex;
-	uint32 nAnim;
 	uint32 nValue;
 	char   bHasSaveData;
 	char   bHasClient;
@@ -1810,6 +1819,12 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 				pName = fs_GetFileName(&pMgr->m_FileMgr, pObj->m_pSData->m_hFiles[i]);
 				pStream->WriteString(pName);
 			}
+#ifdef PRIMAL_HUNT
+			// PH: and the file after them (0x10014337; its WriteString is
+			// the else arm's, tail-merged).
+			pName = fs_GetFileName(&pMgr->m_FileMgr, pObj->m_pSData->m_hExtraTexture);
+			pStream->WriteString(pName);
+#endif
 		}
 		else
 		{
@@ -1824,12 +1839,11 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 			pStream->Write(&pObj->m_Container270, 2);    // 0x1000fe06
 
 		pStream->Write(&pObj->m_pSData->m_NextUpdate, 4);    // 0x1000fe18
-#ifndef PRIMAL_HUNT
-		// AVP2 1.0.9.6 (server.dll 0x1001398d..0x100139be): the
-		// deactivation time and the update timer after it.
+		// AVP2 1.0.9.6 (server.dll 0x1001398d..0x100139be) and Primal Hunt
+		// (0x100143a5..0x100143c6): the deactivation time and the update
+		// timer after it.
 		pStream->Write(&pObj->m_pSData->m_DeactivationTime, 4);
 		pStream->Write(&pObj->m_pSData->m_UpdateTimer, 4);
-#endif
 		pStream->Write(&pObj->m_BlockingPriority, 1);    // 0x1000fe28
 
 		bHasSaveData = (pObj->m_pSData->m_pSaveData != LTNULL);  // 0x1000fe37 setne
@@ -1888,20 +1902,6 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 			pStream->Write(&nSkyIndex, 2);               // 0x1000ff5f
 		}
 
-#ifdef PRIMAL_HUNT
-		if (pObj->m_ObjectType == SAV_OT_MODEL)          // 0x1000ff62
-		{
-			// 0x1000ff6b `movzx eax,WORD PTR [edi+0x1e8]` into a dword
-			// local that is then written four bytes wide: the widening is
-			// in the source, not in the write.
-			nAnim = pObj->m_Model1e8;
-
-			pStream->Write(&nAnim, 4);                   // 0x1000ff7e
-			pStream->Write(&pObj->m_Model1ec, 4);        // 0x1000ff8d
-			pStream->Write(&pObj->m_Model1d8, 2);        // 0x1000ff9d
-		}
-#endif
-
 		bHasClient = (pObj->m_pSData->m_pOwningClient != LTNULL);   // 0x1000ffac
 
 		pStream->Write(&bHasClient, 1);                  // 0x1000ffba
@@ -1929,10 +1929,10 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 		}
 	}
 
-#ifndef PRIMAL_HUNT
-	// AVP2 1.0.9.6 (server.dll 0x10013b9a..0x10013bcf): a model's hidden
-	// pieces and its main tracker go out ahead of the object's own data,
-	// where sm_RestoreNextObject (saveio.cpp) reads them back.
+	// AVP2 1.0.9.6 (server.dll 0x10013b9a..0x10013bcf) and Primal Hunt
+	// (0x100145a2..0x100145d7): a model's hidden pieces and its main
+	// tracker go out ahead of the object's own data, where
+	// sm_RestoreNextObject (saveio.cpp) reads them back.
 	if (pObj->m_ObjectType == SAV_OT_MODEL)
 	{
 		SavModelSaveQ4S* pModel = (SavModelSaveQ4S*)pObj;
@@ -1942,7 +1942,6 @@ void sav_SaveObject(SavServerMgrQ4S* pMgr, SavObjectQ4S* pObj,
 		if (pMgr->m_pServerLT->m_pModelLT)
 			pMgr->m_pServerLT->m_pModelLT->WriteTracker(&pModel->m_AnimTracker, &msg);
 	}
-#endif
 
 	{
 		uint32 nPos;
@@ -2066,7 +2065,13 @@ public:
 class SavObjDataRestQ4S
 {
 public:
+#ifdef PRIMAL_HUNT
+	// PH: no constructor of its own. Primal Hunt's restore expands the
+	// members' (server.dll 0x10014ca0..0x10014caf: `xor ; lea ; stos` x4 and
+	// the +0x44 store) where AvP2 1.0.9.6's calls 0x10014989.
+#else
 	SavObjDataRestQ4S();                     // out of class, below
+#endif
 
 	LTLink        m_Links;                   // 0x00
 	void*         m_hIdentifier;             // 0x0c
@@ -2086,8 +2091,11 @@ public:
 	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
 	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
 #ifdef PRIMAL_HUNT
-	SavFileSlotQ4S m_hFiles12[2];            // 0x34  ctor zeroes both
-	uint8       m_pad_3c[0x5c - 0x3c];
+	// PH: the four skin slots and the extra texture's (saved after the
+	// skins, sav_SaveObject above), all zeroed by the constructor.
+	SavFileSlotQ4S m_hFiles12[4];            // 0x34
+	SavFileSlotQ4S m_hExtraTexture;          // 0x44
+	uint8       m_pad_48[0x5c - 0x48];
 #else
 	// AVP2: four slots, as the constructor both this restore and the
 	// object-data bank call zeroes (server.dll 0x10014989, called from
@@ -2104,9 +2112,11 @@ public:
 // server.dll does instead of expanding the zero stores into
 // sav_RestoreObject's entry block.  The body is empty: the members'
 // constructors (CMessageRef at +0x2c, the slot array at +0x34) are all of it.
+#ifndef PRIMAL_HUNT
 SavObjDataRestQ4S::SavObjDataRestQ4S()
 {
 }
+#endif
 
 // The model object past LTObject's own fields: the animation tracker the
 // restore drives (0x10010c02 `lea esi,[edi+0x1c0]`) and the word that
@@ -2240,8 +2250,6 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	uint32         nEnd;
 	uint32         nStart;
 	uint32         nChangeFlags;
-	uint32         nAnim;
-	uint32         nAnimTime;
 	uint32         nClientFlags;
 	uint16         nDataLen;
 	uint16         nSkyIndex;
@@ -2319,6 +2327,11 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 			pStream->ReadString(createStruct.m_SkinNames[i],
 			                    MAX_CS_FILENAME_LEN);
+#ifdef PRIMAL_HUNT
+		// PH: and the extra texture's name (server.dll 0x10014ee2; its
+		// ReadString is the else arm's, tail-merged).
+		pStream->ReadString(createStruct.m_ExtraTextureName, MAX_CS_FILENAME_LEN);
+#endif
 	}
 	else
 	{
@@ -2332,18 +2345,15 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		pStream->Read(&createStruct.m_ContainerCode, 2);   // 0x10010901 (+0x02)
 
 	pStream->Read(&sData.m_NextUpdate, 4);        // 0x1001090e
-#ifndef PRIMAL_HUNT
-	// AVP2 1.0.9.6: the deactivation time and the update timer follow it
-	// (server.dll 0x10014488, 0x10014495), and the first goes into the
-	// create struct beside the next update (0x100144ac).
+	// AVP2 1.0.9.6 and Primal Hunt: the deactivation time and the update
+	// timer follow it (server.dll 0x10014488, 0x10014495; PH 0x10014f3b,
+	// 0x10014f4b), and the first goes into the create struct beside the
+	// next update (0x100144ac; PH 0x10014f73).
 	pStream->Read(&sData.m_DeactivationTime, 4);
 	pStream->Read(&sData.m_UpdateTimer, 4);
-#endif
 
 	createStruct.m_NextUpdate = sData.m_NextUpdate;    // 0x10010914 (+0x27c)
-#ifndef PRIMAL_HUNT
 	createStruct.m_fDeactivationTime = sData.m_DeactivationTime;
-#endif
 
 	// CALLED at /O1 (0x10010920); lithtech's /O2 carries the whole body at
 	// 0x00432b7f-0x00432bc4.  Do NOT make it `inline` for this build.
@@ -2373,12 +2383,10 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	if (pNewObject->m_ObjectType == OT_LIGHT)                 // 0x1001099c
 		pNewObject->m_LightRadius = fLightRadius;             // 0x100109a8
 
-#ifndef PRIMAL_HUNT
-	// AVP2 1.0.9.6 (0x10014549..0x1001455f): the saved timer comes back only
+	// AVP2 1.0.9.6 (0x10014549..0x1001455f) and Primal Hunt: the saved timer comes back only
 	// when the object kept the saved deactivation time.
 	if (pNewObject->m_pSData->m_DeactivationTime == sData.m_DeactivationTime)
 		pNewObject->m_pSData->m_UpdateTimer = sData.m_UpdateTimer;
-#endif
 
 	pStream->Read(&pNewObject->m_BlockingPriority, 1);        // 0x100109bf (+0xbd)
 	pStream->Read(&bHasSaveData, 1);                          // 0x100109cb
@@ -2446,25 +2454,6 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 			                  szClassName)
 		}
 	}
-
-#ifdef PRIMAL_HUNT
-	// (AvP2 1.0.9.6 restores a model's tracker in sm_RestoreNextObject
-	// instead, saveio.cpp, and has none of this here.)
-	if (pNewObject->m_ObjectType == OT_MODEL)                 // 0x10010bdb
-	{
-		SavModelObjQ4S* pModel = (SavModelObjQ4S*)pNewObject;
-
-		pStream->Read(&nAnim, 4);                             // 0x10010bf0
-		pStream->Read(&nAnimTime, 4);                         // 0x10010bfd
-
-		at_SetAnim((LTAnimTracker*)pModel->m_Tracker, nAnim, LTFALSE);
-		                                                      // 0x10010c0c
-		at_SetTime((LTAnimTracker*)pModel->m_Tracker, nAnimTime, LTFALSE);
-		                                                      // 0x10010c17
-
-		pStream->Read(&pModel->m_n1d8, 2);                    // 0x10010c2c
-	}
-#endif
 
 	// The six-field fill (0x10010c32..0x10010c77), interleaved by the
 	// scheduler with wm_SetObjectDims' argument pushes; see

@@ -320,27 +320,24 @@ LTRESULT ServerCommonLT::SetObjectFlags(HOBJECT hObj, const ObjFlagType flagType
 // +0x28. (An expanding SDK-tracker record here left AvP2's copy 52 bytes
 // over, 603 of 551.)
 //
-// SetObjectFilenames stays NEAR in both. Primal Hunt (642 of 648): the
+// SetObjectFilenames is NEAR on Primal Hunt (642 of 648): the
 // attachment loop's two `m_iNode` stores are cross-jumped into one in ours
 // (the socket arm jumps to the node arm's `mov %eax,0x20(%esi)`), where
 // shipped keeps the socket arm's own store through %edx and jumps to the
 // loop tail (0x004810ed..0x004810f1); and the WriteWord argument and the
 // client-loop index take the other scratch register. A second found-index
-// local for the socket arm did not separate the stores. AvP2 (551 of 551,
-// no mnemonic difference): three locals rotate through the two dead
-// argument slots -- shipped gives pObj's slot to msg_AllocPacket's
-// returned reference and pStruct's to pOldModel, with nFound in the
-// frame; ours gives pObj's to pOldModel and pStruct's to nFound.
-// Declaration order is indifferent; scoping nFound in the loop is worse.
+// local for the socket arm did not separate the stores. AvP2 1.0.9.6's
+// lithtech.exe (0x0047a190, 551 bytes) is BYTE-IDENTICAL once the
+// constructor below is defined AFTER SetObjectFilenames: retail places it
+// with the model code (0x0044f8f0), outside this file, and cl 9044 gives a
+// caller's dead argument slots to other locals when a callee is defined
+// earlier in the same file.
 class CAnimTimeRefPHQ542 : public AnimTimeRef
 {
 public:
 	CAnimTimeRefPHQ542();                    // 0x004543d0 (AvP2 0x0044f8f0)
 };
 
-CAnimTimeRefPHQ542::CAnimTimeRefPHQ542()
-{
-}
 
 struct CSavedFileStateLT
 {
@@ -467,6 +464,12 @@ LTRESULT ServerCommonLT::SetObjectFilenames(HOBJECT pObj, ObjectCreateStruct* pS
 
 	return LT_OK;
 }
+
+#if !defined(LT_SERVER_BUILD)
+CAnimTimeRefPHQ542::CAnimTimeRefPHQ542()
+{
+}
+#endif
 
 
 // A message to fill in is the manager's to hand out; what the caller gets is
@@ -706,85 +709,5 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
 }
 
 
-
-
-// 0x1000f878 is `MatVMul_H` — and that is not a name of ours, it is
-// ltmatrix.h's own inline (line 222). Referencing it from here makes VC6
-// emit the header's out-of-line COMDAT for it, and that COMDAT is
-// byte-identical to the shipped 128 bytes at 0x1000f878, term order and
-// reciprocal included. So the SDK header names a shipped function for free,
-// and this caller's bare `fstp %st(0)` is the discarded `one_over_w`.
-
-// 0x10012c3a — is a point inside a BSP tree? Zero means it is (worldsim.h
-// carries the same declaration as bsp_PointInside; that header is not
-// included here).
-int bsp_PointInside(class BSPNode* pRoot, LTVector* pPoint);
-
-// 0x10012c9c — the callback world_IsPointInside installs. One object gets
-// to veto the point, and only ever in that direction.
-//
-// Read off the bytes:
-//
-//   * the two guards are separate `return`s, not an `||`: each has its own
-//     jump to the epilogue, and the epilogue they reach is *past* the
-//     record store, not a shared tail.
-//   * the point is pushed into the object's own space through the second of
-//     the two world-model 4x4s (+0x230), which is the pair's inverse — the
-//     same matrix sm_GatherContainers uses for the same purpose, and an
-//     independent confirmation of which of +0x1f0/+0x230 is which.
-//   * `bsp_PointInside`'s two arguments are evaluated right to left with a
-//     call in between, which is why `&vLocal` is pushed BEFORE the
-//     `GetRoot()` that produces the first argument. Reading that push as
-//     the virtual's own argument makes the virtual look like it takes one,
-//     and it takes none (`ret`, not `ret $4`).
-//   * the veto is `and %eax,0xc(%edi)` — three bytes rather than the four
-//     an immediate zero would need, VC6 reusing the register the test
-//     already proved to be zero. It is a plain store of zero in source.
-//   * the source point goes through a named `pSrc` local. server.dll calls
-//     MatVMul_H (0x1000f878) either way; lithtech.exe expands it
-//     (0x004355fd..0x004356a6) and every row takes its z product before x
-//     and y last. With `&pQuery->m_vPoint` passed straight in, /O2 took y
-//     first and z last (16 differing instructions, zero mnemonic blocks);
-//     the named pointer flips that tie-break to the shipped order.
-void world_PointInsideCB(LTObject* pObj, CPointQuery* pQuery)
-{
-	LTVector vLocal;
-
-	if (pObj->m_Unknown54 != 0)
-		return;
-
-	if (!pObj->_p34())
-		return;
-
-	LTVector* pSrc = &pQuery->m_vPoint;
-	MatVMul_H(&vLocal, &((WorldModelObject*)pObj)->m_Transform230, pSrc);
-
-	if (!bsp_PointInside(pObj->m_pWorldBsp->GetRoot(), &vLocal))
-		pQuery->m_bInside = 0;
-}
-
-
-// 0x10012cf3 — is this point inside the world at all? (name ours)
-//
-// The container is asked for whatever is at the point and answers through a
-// callback; the query record carries both the point and the answer, and the
-// answer starts as "inside". 0x10012c9c is the only thing that ever changes
-// it, and only in one direction: it runs a test through each object it is
-// handed and, when that comes back zero, does `and %eax,0xc(%edi)` on the
-// record — one dword past the twelve bytes of the point, with eax already
-// zero. So a point nothing rejects stays inside, and the callback's argument
-// is the record itself.
-LTBOOL world_IsPointInside(CUnknown210* pWorld, LTVector* pPoint)
-{
-	CPointQuery query;
-
-	query.m_vPoint = *pPoint;
-	query.m_bInside = 1;
-
-	((IPointQueryWorld*)pWorld)->FindObjectsAtPoint(pPoint, world_PointInsideCB,
-	                                                &query, 0);
-
-	return query.m_bInside;
-}
-
-
+// world_PointInsideCB and world_IsPointInside live in serverlightanim.cpp,
+// after bsp_PointInside, where every image places them.

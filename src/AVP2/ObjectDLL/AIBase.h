@@ -504,10 +504,10 @@ struct AIBaseStateInfo
 		nParam = 0;
 	}
 
-	AIBaseStateInfo(int state, int next = 0)
+	AIBaseStateInfo(int state, int next = 0, const LTVector& pos = LTVector(0.0f, 0.0f, 0.0f))
 	{
 		eState = state;
-		vPos = LTVector(0.0f, 0.0f, 0.0f);
+		vPos = pos;
 		nParam = next;
 	}
 

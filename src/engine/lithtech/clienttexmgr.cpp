@@ -1472,3 +1472,136 @@ void sub_4209b0(CModeRecord9b0View* pRec, CModeTarget9b0View* pTarget)
 void sub_490200(CClientMgrTexBankView* pClientMgr)
 {
 }
+
+
+// ======================================================================= //
+//  BLOCK G -- src/engine/lithtech/clienttexmgr.cpp (the SharedTexture
+//  cache, between 0x004202f0 and tm_FreeUnmarkedTextures 0x00420420)
+//
+//  0x00420330 is cm_ReleaseObjectTexturesQ404, declared in cltapi.cpp
+//  and called by ClientCommonLT::SetObjectFilenames before a model's files
+//  are replaced (its other caller is 0x00411c55).  It is the last function
+//  of this unit in both images (AvP2 1.0.9.6 0x004263f0, after
+//  tm_ReloadTextures): cl 9044 keeps its walk's pointer and count in %ecx
+//  and %edx across tm_MarkTexture (0x00426497..0x004264a6), which it can
+//  only do for a callee defined above it in the same file.  The views
+//  below agree with
+//  clienttexmgr.cpp's SharedTextureView (+0x32 count/mark) and CClientMgr's
+//  object list at +0x420 (an LTList: head at +0x420, m_pNext at +0x424,
+//  m_pData at link+0x08).  The callees are clienttexmgr.cpp's
+//  tm_MarkTexture (0x00420060) and tm_FreeTexture (0x0041ffc0).
+// ======================================================================= //
+
+class SharedTextureQ3
+{
+public:
+	uint8  m_pad_00[0x32];
+	uint16 m_nRefCount : 15;                 // 0x32
+	uint16 m_bMarked   : 1;                  // 0x32 bit 15
+};
+
+// AVP2: four skins at +0x1c0 and a flag per skin behind them (AvP2
+// 0x004263fd `lea 0x1c0(%esi)`, 0x0042643a `lea 0x250(%esi)`; Primal Hunt
+// 0x00428bc8, 0x00428c0b `lea 0x264(%ebx)`); NOLF had two at +0x1b8 and
+// their flags at +0x208.
+class CTexObjectQ3
+{
+public:
+	uint8            m_pad_00[0x1c0];
+	SharedTextureQ3* m_pSkins[MAX_MODEL_TEXTURES];         // 0x1c0
+#ifdef PRIMAL_HUNT
+	// PH: the model's fifth texture and what follows it (clienttexmgr.cpp's
+	// CTexOwner1b8View) put the flags 0x14 further on.
+	uint8            m_pad_1d0[0x264 - 0x1d0];
+#else
+	uint8            m_pad_1d0[0x250 - 0x1d0];
+#endif
+	uint32           m_SkinFlags[MAX_MODEL_TEXTURES];      // non-zero keeps the skin
+};
+
+struct LTLinkQ3
+{
+	LTLinkQ3* m_pPrev;
+	LTLinkQ3* m_pNext;
+	void*     m_pData;
+};
+
+// AVP2: the object list is at +0x424 in both images (AvP2 0x00426475
+// `mov 0x428(%ebp)`, Primal Hunt 0x00428c46).
+class CClientMgrTexViewQ3
+{
+public:
+	uint8    m_pad_00[0x424];
+	LTLinkQ3 m_ObjectListHead;               // 0x424
+};
+
+
+// NOLF 0x00420330, 238 bytes; IDENTICAL on Primal Hunt's lithtech.exe at
+// 0x00428bc0 (249 bytes; AvP2 1.0.9.6 0x004263f0) with four skins.
+//   1. drop a skin that repeats an earlier one (0x00420348..0x00420379);
+//   2. mark each skin by the flag beside it (0x0042037b..0x004203a5); AVP2:
+//      an unflagged skin is unmarked only while nothing holds it (`testw
+//      $0x7fff,0x32` then a whole-word zero store, PH 0x00428c30);
+//   3. mark every skin any OTHER object on the list still uses;
+//   4. free the skins left unmarked and clear the slot.
+// Two spellings are load-bearing (each measured): step 2 reads the skin into
+// pTex once (with pObj->m_pSkins[i] written out three times the induction
+// pointer moves onto the skin array and the loop stays 9 blocks off), and
+// step 3 takes the list head into pHead FIRST and walks from pHead->m_pNext
+// -- shipped's `mov 0x424(%ecx)` + `lea 0x420(%ecx)` pair; the inline
+// `&pClientMgr->m_ObjectListHead` condition gives `add $0x420,%ebp` instead.
+class CClientMgr;
+class CClientObject;
+
+void cm_ReleaseObjectTexturesQ404(CClientMgr* pClientMgrIn, CClientObject* hObj)
+{
+	CClientMgrTexViewQ3* pClientMgr = (CClientMgrTexViewQ3*)pClientMgrIn;
+	CTexObjectQ3*        pObj = (CTexObjectQ3*)hObj;
+	CTexObjectQ3*        pOther;
+	LTLinkQ3*            pCur;
+	LTLinkQ3*            pHead;
+	uint32               i, j;
+	SharedTextureQ3*     pTex;
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+	{
+		for (j = i + 1; j < MAX_MODEL_TEXTURES; j++)
+		{
+			if (pObj->m_pSkins[i] == pObj->m_pSkins[j] && pObj->m_pSkins[i])
+				pObj->m_pSkins[j] = LTNULL;
+		}
+	}
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+	{
+		pTex = pObj->m_pSkins[i];
+		if (pTex)
+		{
+			if (pObj->m_SkinFlags[i])
+				pTex->m_bMarked = 1;
+			else if (!pTex->m_nRefCount)
+				pTex->m_bMarked = 0;
+		}
+	}
+
+	pHead = &pClientMgr->m_ObjectListHead;
+	for (pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+	{
+		pOther = (CTexObjectQ3*)pCur->m_pData;
+		if (pOther != pObj)
+		{
+			for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+				tm_MarkTexture((SharedTextureView*)pOther->m_pSkins[i]);
+		}
+	}
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+	{
+		if (pObj->m_pSkins[i] && !pObj->m_pSkins[i]->m_bMarked)
+		{
+			tm_FreeTexture((CClientMgrTexBankView*)pClientMgr,
+			               (SharedTextureView*)pObj->m_pSkins[i]);
+			pObj->m_pSkins[i] = LTNULL;
+		}
+	}
+}

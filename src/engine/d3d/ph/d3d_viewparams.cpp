@@ -108,15 +108,12 @@ class LTObject;
 extern LTObject*     g_DynamicLights[];                     // 0x1005c168
 extern uint32        g_nDynamicLights;                      // 0x1005bcb0
 
-// 0x10010010 -- NEAR in Primal Hunt (two squares' sums in the other order,
-// 298 bytes against 296); AvP2's 0x1000f270 is identical.
-// The dynamic lights' colour at a model: each light in
+// 0x10010010 (AvP2 0x1000f270) -- the dynamic lights' colour at a model: each light in
 // range adds its colour (0..255 mapped to -1..1) by how close it is.
 void d3d_GetDynamicLightAdd(ModelInstance* pInstance, LTVector* pAdd)
 {
 	uint32 i;
 	DynamicLight* pLight;
-	LTVector vDelta;
 	float fDistSqr, fScale;
 
 	pAdd->Init();
@@ -127,8 +124,7 @@ void d3d_GetDynamicLightAdd(ModelInstance* pInstance, LTVector* pAdd)
 	{
 		pLight = (DynamicLight*)g_DynamicLights[i];
 
-		vDelta = pLight->m_Pos - pInstance->m_Pos;
-		fDistSqr = VEC_MAGSQR(vDelta);
+		fDistSqr = pLight->m_Pos.DistSqr(pInstance->m_Pos);
 		if (fDistSqr < pLight->m_LightRadius * pLight->m_LightRadius)
 		{
 			fScale = (1.0f - (float)sqrt(fDistSqr) / pLight->m_LightRadius) * 0.7f;

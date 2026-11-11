@@ -314,15 +314,15 @@ class CLeashGroup
 		CLeashNode* GetNode(int nID)
 		{
 			CLeashNode* pNode = GetPoint(nID);
-			if (!pNode) pNode = GetVolume(nID);
-			return pNode;
+			if (pNode) return pNode;
+			return GetVolume(nID);
 		}
 
 		CLeashNode* FindNode(const LTVector& vPos)
 		{
 			CLeashNode* pNode = FindPoint(vPos);
-			if (!pNode) pNode = FindVolume(vPos);
-			return pNode;
+			if (pNode) return pNode;
+			return FindVolume(vPos);
 		}
 
 		TLinkList<CLeashNode*>		m_Points;		// +0x00, CLeashPoints

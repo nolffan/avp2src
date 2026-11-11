@@ -462,12 +462,15 @@ uint32 wt_ProcessNodeSegN48D(CWTNodeN48D *pNode, CWTSegInfoN48D *pInfo)
 	if (!pNode->m_Children[0])
 		return nRet;
 
-	nX = 1;
-	if (pInfo->m_vPt1.x <= pNode->m_vCenter.x)
+	if (pInfo->m_vPt1.x > pNode->m_vCenter.x)
+		nX = 1;
+	else
 		nX = 0;
-	nZ = 0;
+
 	if (pInfo->m_vPt1.z > pNode->m_vCenter.z)
 		nZ = 1;
+	else
+		nZ = 0;
 
 	nHit  = wt_TestNodeSegN48D(pNode->m_Children[nX * 2 + nZ], pInfo);
 	nHit |= wt_TestNodeSegN48D(pNode->m_Children[(nX == 0) * 2 + nZ], pInfo);

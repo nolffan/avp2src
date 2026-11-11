@@ -1,7 +1,7 @@
 // *********************************************************************** //
 //
 //  MODULE:   D3D_INIT (.CPP) -- Primal Hunt's d3d.ren, TU17
-//            (0x1001a720..0x1001cb13, docs/D3D_OBJECTS.md)
+//            (0x1001a720..0x1001ca2f, docs/D3D_OBJECTS.md)
 //
 //  PURPOSE:  Device start-up: the DirectDraw/Direct3D error strings, the
 //            device's console variables, card detection, the z-buffer and
@@ -9,16 +9,20 @@
 //            entry points and the renderer's console commands.
 //
 //  The device bring-up (d3d_InitDevice), the console commands
-//  (d3d_RenderCommand, LISTDEVICECAPS inline) and the gamma ramp loader
-//  (0x1001ca40, after the TU's last function: /O2 code padded to 16)
-//  follow AvP2 1.0.9.6's (w38_100322c0_qip.cpp, w26_10031e10.cpp),
+//  (d3d_RenderCommand, LISTDEVICECAPS inline) follow AvP2 1.0.9.6's (w38_100322c0_qip.cpp, w26_10031e10.cpp),
 //  Primal Hunt's evolution of them.  The fog, dither and filter states'
 //  "last set" globals are common_stuff.cpp's (TU12's .bss), so this file
 //  reads them as externs.
 //
-//  Flags: /O2 (so /Ob1), not /Ob2: under /Ob2 the gamma ramp loader is
-//  expanded into both its callers, which retail calls.  The render-state
-//  helpers of d3d_ReadExtraConsoleVariables are `inline`.
+//  Flags: /O2 /Ob2: the four console variables' initialisers are single
+//  functions (0x1001af90..0x1001aff0, each named by the CRT's table), as
+//  in the renderer's other /Ob2 objects; /Ob1 makes each a `jmp` stub over
+//  a body.  The gamma ramp loader both d3d_InitDevice and
+//  d3d_RenderCommand CALL (0x1001ca40) is therefore not this file's:
+//  /Ob2 expands it into both when it is, so it is the unit after this
+//  one, d3d_loadgamma.cpp, with the function ahead of it (0x1001ca30).
+//  The render-state helpers of d3d_ReadExtraConsoleVariables are
+//  `inline`.
 //
 //  Near: 0x1001b4c0 (the card detection): every instruction matches but
 //  the blocks after the vendor tests are laid out differently -- retail's
@@ -1393,47 +1397,4 @@ LTBOOL d3d_End3D()
 	}
 
 	return LTTRUE;
-}
-
-// 0x1001ca30
-LTBOOL d3d_IsIn3D()
-{
-	return g_bIn3D;
-}
-
-// 0x1001ca40 -- LOADGAMMA: set the primary surface's gamma ramp from a
-// file (the three 256-entry tables of a DDGAMMARAMP, as written).
-LTBOOL d3d_LoadGammaRamp(const char* pFilename)
-{
-	DDGAMMARAMP ramp;
-	LPDIRECTDRAWGAMMACONTROL pGamma;
-	FILE* fp;
-
-	if (!pFilename)
-		return LTFALSE;
-
-	fp = fopen(pFilename, "r");
-	if (!fp)
-		return LTFALSE;
-
-	if (fread(&ramp, sizeof(ramp), 1, fp) != 1)
-	{
-		fclose(fp);
-		return LTFALSE;
-	}
-
-	fclose(fp);
-
-	if (g_bRunWindowed)
-	{
-		if (g_pFrontBuffer->QueryInterface(IID_IDirectDrawGammaControl, (void**)&pGamma) != DD_OK)
-			return LTFALSE;
-	}
-	else
-	{
-		if (g_pPrimarySurface->QueryInterface(IID_IDirectDrawGammaControl, (void**)&pGamma) != DD_OK)
-			return LTFALSE;
-	}
-
-	return pGamma->SetGammaRamp(0, &ramp) == DD_OK;
 }

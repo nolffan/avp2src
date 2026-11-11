@@ -526,19 +526,17 @@ void d3d_InitModelLists()
 	g_ModelLights.TieOff();
 }
 
-// 0x1000b67d -- the sun's brightness through a model's turn. NEAR: the
-// x87 stack shape of the sum (the clamp's result is dropped and the
-// unclamped variance reused from the stack).
+// 0x1000b67d -- the sun's brightness through a model's turn (the sine
+// stays a double, so the sum is not refactored).
 void d3d_InitModelSun()
 {
 	int i;
 
 	for (i = 0; i < 32; i++)
 	{
-		float fSin = (float)sin(((float)i / 32.0f) * MATH_CIRCLE);
-		float fVariance = g_CV_ModelSunVarianceClamp;
-		float fBase = (1.0f - LTCLAMP(fVariance, 0.0f, 1.0f)) * 0.5f;
-		g_fModelSun[i] = fVariance + fBase + fBase * fSin;
+		double dSin = sin(((float)i / 32.0f) * MATH_CIRCLE);
+		float fBase = (1.0f - LTCLAMP(g_CV_ModelSunVarianceClamp, 0.0f, 1.0f)) * 0.5f;
+		g_fModelSun[i] = g_CV_ModelSunVarianceClamp + fBase + fBase * dSin;
 	}
 
 	for (i = 0; i < 32; i++)
@@ -576,7 +574,7 @@ CD3DModelDraw::CD3DModelDraw()
 
 	m_vLightDir.Init(0.0f, -1.0f, 0.0f);
 	m_vShadowDir.Init(-2.0f, -2.0f, -2.0f);
-	m_vSpecularLight.Init(2.0f, -2.0f, -2.0f);
+	m_vSpecularLight.Init(2.0f, -2.0f, -1.0f);
 	m_vLightDir.Norm();
 	m_vShadowDir.Norm();
 	m_vSpecularLight.Norm();
@@ -1770,8 +1768,9 @@ void __fastcall d3d_WarbleTransform(void* pVert, TLVert* pOut, LTMatrix* pMat)
 	float fScale;
 	LTVector vScaled;
 
-	i = g_iModelWarble++ & 31;
+	i = g_iModelWarble & 31;
 	fScale = g_fWarbleFrac * g_fModelSunDelta[i] + g_fModelSun[i];
+	g_iModelWarble++;
 	VEC_MULSCALAR(vScaled, ((ModelSrcVert*)pVert)->m_Vec, fScale);
 	pOut->m_RHW = MatVMul_H(&pOut->m_Vec, pMat, &vScaled);
 }

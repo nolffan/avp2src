@@ -10262,8 +10262,11 @@ ICacheSource* fs_OpenCacheSource(CFileMgr* pFileMgr, char* pFilename);  // 0x100
 // pass sweeper (0x10034757) later walks, so AddCachedFile is the accurate
 // one and is what is defined here.
 //
-// The bank pointer is named in the source and lands in the dead hFile
-// argument slot -- the handle itself is in ebp by then. The filename lookup
+// The bank is written as &m_Bank0C at both uses, not through a named
+// pointer: with an `StructBank* pBank` local AvP2 1.0.9.6's cl 9044 drops
+// sb_Free's test of the bank and swaps the manager and bank registers
+// (shipped keeps `test %edi,%edi` at 0x0048615e); the other three images
+// are identical either way. The filename lookup
 // happens *before* the null test on the handle, which is not an ordering the
 // compiler could have chosen: the source really does ask for the name first.
 CCacheRec* CServerMgr::AddCachedFile(void* hFile)
@@ -10280,10 +10283,9 @@ CCacheRec* CServerMgr::AddCachedFile(void* hFile)
 
 			if (pSource)
 			{
-				StructBank* pBank = &m_Bank0C;
 				int         bOK;
 
-				pRec = (CCacheRecView*)sm_sb_Allocate(pBank);
+				pRec = (CCacheRecView*)sm_sb_Allocate(&m_Bank0C);
 
 				bOK = pRec->Init(hFile, pSource, ((void**)hFile)[1]);
 
@@ -10291,7 +10293,7 @@ CCacheRec* CServerMgr::AddCachedFile(void* hFile)
 
 				if (!bOK)
 				{
-					sb_Free(pBank, pRec);
+					sb_Free(&m_Bank0C, pRec);
 
 					return LTNULL;
 				}

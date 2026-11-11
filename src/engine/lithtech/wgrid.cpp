@@ -157,6 +157,21 @@ public:
 };
 
 
+// The constructor and the destructor come first, as both images have them
+// (AvP2 1.0.9.6 0x00444ad0 and 0x00444ae0, ahead of Init 0x00444af0, Clear
+// 0x00444be0 and Term 0x00444c20; Primal Hunt 0x00448920): AvP2's cl 9044
+// keeps `this` in %esi across the call to a Clear it has not compiled yet
+// (12 bytes), where behind Clear it knows %ecx survives (8).
+CWorldGridQ43C::CWorldGridQ43C()             // 0x0043c6d0
+{
+	Clear();
+}
+
+CWorldGridQ43C::~CWorldGridQ43C()            // 0x0043c6e0
+{
+	Term();
+}
+
 // 0x0043c7e0.  The store order is the shipped one and it is NOT the layout
 // order: 0x00, 0x04, then 0x10 / 0x0c / 0x08 descending, then 0x1c / 0x18 /
 // 0x14 descending, then the three vectors.  `Init()` on each vector rather
@@ -188,16 +203,6 @@ void CWorldGridQ43C::Term()
 	dfree_directQ43C(m_pCells);
 
 	Clear();
-}
-
-CWorldGridQ43C::CWorldGridQ43C()             // 0x0043c6d0
-{
-	Clear();
-}
-
-CWorldGridQ43C::~CWorldGridQ43C()            // 0x0043c6e0
-{
-	Term();
 }
 
 

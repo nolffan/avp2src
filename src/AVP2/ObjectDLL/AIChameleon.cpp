@@ -1046,7 +1046,7 @@ void CAIChameleon::UpdateSwipe(LTFLOAT fFrameTime)
 {
 	m_MoveMgr.m_eMoveType = 1;
 
-	AIBaseStateInfo idle;
+	AIBaseStateInfo idle(eStateIdle);
 
 	if (g_pLTServer->GetTime() < m_tmrSwipe.m_fTime && !(m_Animator.GetPlaybackState(0) & MS_PLAYDONE))
 	{
@@ -1098,7 +1098,7 @@ void CAIChameleon::UpdateLeap(LTFLOAT fFrameTime)
 {
 	m_MoveMgr.m_eMoveType = 8;
 
-	AIBaseStateInfo idle;
+	AIBaseStateInfo idle(eStateIdle);
 
 	LTVector vTargetPos;
 	g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);

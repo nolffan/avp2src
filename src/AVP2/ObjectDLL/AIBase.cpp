@@ -1611,6 +1611,7 @@ void CAIBase::UpdateMoving(LTFLOAT fFrameTime)
 
 	switch (m_Move.m_eMode)
 	{
+		case 0: SetState(&info); return;
 		case 1: UpdateMoveToward(fFrameTime); return;
 		case 2: UpdateMoveAway(fFrameTime); return;
 		case 3: UpdateMoveTo(fFrameTime); return;
@@ -1810,19 +1811,19 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 	{
 		if (m_Leash.m_nCurNode != m_Move.m_nNode)
 		{
-			if (SetState(&m_MoveState) == LTTRUE) return;
+			if (SetStateMoving(&m_MoveState) == LTTRUE) return;
 
 			AIBaseStateInfo home(eStateIdle);
 			home.eState = eStateMoving;
 			home.vPos = m_Leash.m_vHomePos;
 			home.nParam = 0;
-			if (SetState(&home)) return;
+			if (SetStateMoving(&home)) return;
 
 			SetState(&info);
 			return;
 		}
 
-		int nStart = -1, nNext = -1, nDest = -1;
+		int nNext = -1, nStart = -1, nDest = -1;
 		LTVector vTarget = m_Move.m_vTarget;
 		if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), vTarget, &nNext, &nStart, &nDest))
 		{
@@ -1830,21 +1831,18 @@ void CAIBase::UpdateMoveAway(LTFLOAT fFrameTime)
 			return;
 		}
 
-		if (nNext == m_Move.m_nTo)
+		if (nNext != m_Move.m_nTo)
 		{
-			if (HasMoveTarget() == LTTRUE)
-			{
-				MoveToPos(nDest, GetMoveTarget());
-			}
-			else
-			{
-				SetState(&m_NextState);
-				return;
-			}
+			MoveToNode(nStart, nNext);
+		}
+		else if (HasMoveTarget() == LTTRUE)
+		{
+			MoveToPos(nDest, GetMoveTarget());
 		}
 		else
 		{
-			MoveToNode(nStart, nNext);
+			SetState(&m_NextState);
+			return;
 		}
 	}
 

@@ -162,8 +162,13 @@ CVertexBuffer::~CVertexBuffer()
 HRESULT CVertexBuffer::Flush(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE type, uint32 nVerts)
 {
 	HRESULT hResult;
+	LPDIRECT3DVERTEXBUFFER7 pVB;
+	uint32 iFirst;
 
-	if(!m_bInitted || !m_bLocked)
+	if(!m_bInitted)
+		return 0;
+
+	if(!m_bLocked)
 		return 0;
 
 	m_VBs[m_iCurVB]->Unlock();
@@ -173,7 +178,9 @@ HRESULT CVertexBuffer::Flush(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE type, u
 	if(!nVerts)
 		return 0;
 
-	hResult = pDevice->DrawPrimitiveVB(type, m_VBs[m_iCurVB], m_nCurVertex, nVerts, 0);
+	iFirst = m_nCurVertex;
+	pVB = m_VBs[m_iCurVB];
+	hResult = pDevice->DrawPrimitiveVB(type, pVB, iFirst, nVerts, 0);
 
 	m_nCurVertex += nVerts;
 	if(m_nCurVertex >= m_nVertsPerVB)
@@ -198,8 +205,13 @@ HRESULT CVertexBuffer::FlushIndexed(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE 
 	uint32 nVerts, uint16 *pIndices, uint32 nIndices)
 {
 	HRESULT hResult;
+	LPDIRECT3DVERTEXBUFFER7 pVB;
+	uint32 iFirst;
 
-	if(!m_bInitted || !m_bLocked)
+	if(!m_bInitted)
+		return 0;
+
+	if(!m_bLocked)
 		return 0;
 
 	m_VBs[m_iCurVB]->Unlock();
@@ -209,7 +221,9 @@ HRESULT CVertexBuffer::FlushIndexed(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE 
 	if(!nVerts)
 		return 0;
 
-	hResult = pDevice->DrawIndexedPrimitiveVB(type, m_VBs[m_iCurVB], m_nCurVertex, nVerts,
+	iFirst = m_nCurVertex;
+	pVB = m_VBs[m_iCurVB];
+	hResult = pDevice->DrawIndexedPrimitiveVB(type, pVB, iFirst, nVerts,
 		pIndices, nIndices, 0);
 
 	m_nCurVertex += nVerts;
@@ -275,17 +289,21 @@ LTBOOL CVertexBuffer::Init(LPDIRECT3D7 pD3D, uint32 nVertsPerVB, uint32 nVBs,
 void* CVertexBuffer::Lock()
 {
 	HRESULT hResult;
+	uint32 flags, nCurVertex;
+	uint8 *pData;
 
 	if(m_bLocked)
 		return m_pLockedData;
 
-	hResult = m_VBs[m_iCurVB]->Lock(
-		m_nCurVertex ? (DDLOCK_WAIT|DDLOCK_WRITEONLY|DDLOCK_NOOVERWRITE) : (DDLOCK_WAIT|DDLOCK_WRITEONLY|DDLOCK_DISCARDCONTENTS),
-		&m_pLockedData, LTNULL);
+	flags = m_nCurVertex ? (DDLOCK_WAIT|DDLOCK_WRITEONLY|DDLOCK_NOOVERWRITE) : (DDLOCK_WAIT|DDLOCK_WRITEONLY|DDLOCK_DISCARDCONTENTS);
+	hResult = m_VBs[m_iCurVB]->Lock(flags, &m_pLockedData, LTNULL);
 	if(FAILED(hResult))
 		return LTNULL;
 
-	m_pLockedData = (uint8*)m_pLockedData + GetVertexSize() * m_nCurVertex;
+	// Past the vertices already drawn from this buffer.
+	pData = (uint8*)m_pLockedData;
+	nCurVertex = m_nCurVertex;
+	m_pLockedData = pData + GetVertexSize() * nCurVertex;
 	m_bLocked = LTTRUE;
 	return m_pLockedData;
 }
@@ -340,23 +358,25 @@ void* CVertexBufferCache::Lock()
 	D3DVERTEXBUFFERDESC desc;
 	LPDIRECT3DVERTEXBUFFER7 pVB;
 
-	if(!m_VBs[m_iCurVB])
-	{
-		memset(&desc, 0, sizeof(desc));
-		desc.dwSize = sizeof(desc);
-		desc.dwCaps = D3DVBCAPS_WRITEONLY;
-		if(!m_bVideoMem)
-			desc.dwCaps = D3DVBCAPS_WRITEONLY | D3DVBCAPS_SYSTEMMEMORY;
-		desc.dwFVF = m_FVF;
-		desc.dwNumVertices = m_nVertsPerVB;
+	if(m_VBs[m_iCurVB])
+		return CVertexBuffer::Lock();
 
-		if(SUCCEEDED(m_pD3D->CreateVertexBuffer(&desc, &pVB, 0)))
-			m_VBs[m_iCurVB] = pVB;
-		else
-			return LTNULL;
+	// Make this slot's buffer the first time it's used.
+	memset(&desc, 0, sizeof(desc));
+	desc.dwSize = sizeof(desc);
+	desc.dwCaps = D3DVBCAPS_WRITEONLY;
+	if(!m_bVideoMem)
+		desc.dwCaps = D3DVBCAPS_WRITEONLY | D3DVBCAPS_SYSTEMMEMORY;
+	desc.dwFVF = m_FVF;
+	desc.dwNumVertices = m_nVertsPerVB;
+
+	if(SUCCEEDED(m_pD3D->CreateVertexBuffer(&desc, &pVB, 0)))
+	{
+		m_VBs[m_iCurVB] = pVB;
+		return CVertexBuffer::Lock();
 	}
 
-	return CVertexBuffer::Lock();
+	return LTNULL;
 }
 
 // 0x1003b7cd
@@ -470,7 +490,8 @@ void CVertexBufferCache::Optimize()
 HRESULT CVertexBufferCache::Flush(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE type, uint32 nVerts)
 {
 	HRESULT hResult;
-	uint32 iVB;
+	LPDIRECT3DVERTEXBUFFER7 pVB;
+	uint32 iVB, iFirst;
 
 	m_pDevice = pDevice;
 	m_Cache[m_iCurVB].m_nAge = m_nCacheDelay;
@@ -484,7 +505,9 @@ HRESULT CVertexBufferCache::Flush(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE ty
 	}
 	else
 	{
-		hResult = pDevice->DrawPrimitiveVB(type, m_VBs[m_iCurVB], m_nCurVertex, nVerts, 0);
+		iFirst = m_nCurVertex;
+		pVB = m_VBs[m_iCurVB];
+		hResult = pDevice->DrawPrimitiveVB(type, pVB, iFirst, nVerts, 0);
 		m_nCurVertex += nVerts;
 	}
 

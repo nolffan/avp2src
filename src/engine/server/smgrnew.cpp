@@ -587,8 +587,11 @@ public:
 	CSObjDataRefQ474 m_Ref2c;                // +0x2c
 	void*            m_pModelFile;           // +0x30  untouched
 #ifdef PRIMAL_HUNT
-	// PH: five (lithtech.exe 0x00418d40, five zero stores from 0x34).
-	CSObjDataRefQ474 m_Files[5];             // +0x34
+	// PH: four and one more reference after them (server.dll 0x10038c3b:
+	// `lea 0x34(%ecx),%edi`, four stos, then `andl $0x0,0x44(%ecx)`;
+	// lithtech.exe 0x00418d40, five zero stores from 0x34).
+	CSObjDataRefQ474 m_Files[4];             // +0x34
+	CSObjDataRefQ474 m_Ref44;                // +0x44
 	uint8            m_pad_48[0x54 - 0x48];
 #else
 	// AVP2: four (server.dll 0x10014989: `lea 0x34(%ecx),%edi`, four stos).
@@ -597,6 +600,9 @@ public:
 #endif
 };
 
+// PH: server.dll's allocate, 0x10038c26, EXPANDS this (0x10038c36..
+// 0x10038c44) where /O1 here calls it: the implicit constructor is called
+// too, and so is the template's with this record as its element.
 inline CSObjDataCtorQ474::CSObjDataCtorQ474()
 {
 }

@@ -5889,7 +5889,15 @@ public:
 #endif
 
 	// Inline, for the same reason as CWorldPolyList's.
+#ifdef LT_SERVER_BUILD
 	~CWorldTable() { SetSize2(0, (class CMoAllocator*)&g_DefAlloc); }
+#else
+	// lithtech.exe: the table is the template's array of world pointers,
+	// and its destructor the template's with the resize expanded, as the
+	// world's constructor's unwind reaches it (Primal Hunt 0x004cfc80
+	// jumps to 0x00414f30).
+	~CWorldTable() { ((CMoArray<CServerWorldRec*>*)this)->Term(); }
+#endif
 	virtual void _v00();                     // the collection's vptr
 	CServerWorldRec** m_pWorlds;             // 0x04
 	uint32            m_nWorlds;             // 0x08
@@ -6346,54 +6354,7 @@ void w_ReadRotation(class ILTStream* pStream, LTRotation* pRot)
 	pStream->Read(&pRot->m_Quat[2], 4);
 	pStream->Read(&pRot->m_Quat[3], 4);
 }
-// 0x10026261 — the world's ambient light, out of its own property text. The
-// world name is handed to the console's command tokenizer (servermgr.h's
-// CommandParser, whose 0x1508 bytes are this function's whole frame — hence
-// the `__chkstk`), which is walked until an "AmbientLight" command with at
-// least four arguments turns up; its three arguments are then `atof`-ed into
-// the colour and clamped. A world with no such command keeps the zeroes and
-// answers 0; Load does not look at the answer.
-//
-// Read off the bytes rather than guessed:
-//
-//   * the clamp is the SDK's VEC_CLAMP over 0 and 255 — one `fstps` per
-//     component shared by all three arms of one conditional expression, and
-//     the upper bound hoisted into `%st` before the branch (which is what
-//     reverses the second compare into `fcoms` against memory).
-//   * the third component's value is kept in the dead `pWorldName`
-//     parameter slot and clamped from there, where the first two are
-//     re-read out of the caller's vector. It is a compiler temporary, not a
-//     third variable — and WHICH dead parameter slot it lands in is decided
-//     by source statement order: with `pColor->Init()` written first the
-//     temp takes pColor's slot (0xc) and the function is 239 of 239 bytes
-//     with four displacement bytes wrong; with the parser's `m_pPos` store
-//     first it takes pWorldName's slot (0x8) and the function is exact.
-//     VC6 loads both parameters in the same order either way, so it is the
-//     order the source *consumes* them that picks the slot, not the order
-//     the prologue reads them.
-//   * `atof` returns a double and every store is an `fstps`, so the source
-//     narrows to float at each assignment.
-int w_GetAmbientLight(char* pWorldName, LTVector* pColor)
-{
-	CommandParser parser;
 
-	parser.m_pPos = pWorldName;
-
-	pColor->Init();
-
-	if (parser.Find("AmbientLight", 0, 4))
-	{
-		pColor->x = (float)atof(parser.m_ArgPointers[1]);
-		pColor->y = (float)atof(parser.m_ArgPointers[2]);
-		pColor->z = (float)atof(parser.m_ArgPointers[3]);
-
-		VEC_CLAMP(*pColor, 0.0f, 255.0f);
-
-		return 1;
-	}
-
-	return 0;
-}
 void w_SetupPointShade(CWorldSubFC* pShade, char* pName, LTVector* pMin,
                        LTVector* pMax, LTVector* pColor);
 // 0x100083c9 — NOT RECONSTRUCTED (3683 bytes), and the reason is where it
@@ -6685,6 +6646,313 @@ void w_SetNodeProjectionsQT1(void* pNodes, uint32 nNodes, int bCurrent)
 }
 
 
+
+
+// One sample of the point-shade grid: four bytes, and only three of them are
+// ever written. The fourth is left holding whatever the stack slot the local
+// occupies happened to contain — the high byte of the `pColor` parameter,
+// which is dead by then — and the whole four bytes are then written into
+// every cell of the grid. That is in the shipped bytes, not ours: the three
+// stores go to +2, +1 and +0 of a four-byte slot and the fill reads the slot
+// as a dword. Names ours.
+class CShadeSample
+{
+public:
+	uint8 m_b;                               // 0x00
+	uint8 m_g;                               // 0x01
+	uint8 m_r;                               // 0x02
+	uint8 m_a;                               // 0x03  never assigned
+};
+
+// 0x10026350 — the grid's cell size for a named world, off the world's own
+// properties. Declared, not reconstructed; it answers a float and takes the
+// name (name ours).
+float w_GetShadeCellSize(char* pWorldName);
+
+// 0x10058360 — a running total of the grid cells every world has taken. The
+// count is added, not the byte size (name ours). It is worldbsp.cpp's g_WorldBytes.
+extern uint32 g_WorldBytes;                 // worldbsp.cpp defines it
+
+
+// Defined after Load, as retail places them (AvP2 1.0.9.6 server.dll
+// 0x1000c0c1, and w_GetAmbientLight in another unit, 0x1002eb2e).
+void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
+                       CWorldSubFC* pShade);
+int  w_GetAmbientLight(char* pWorldName, LTVector* pColor);
+
+// 0x1000804e — read one world file into this world.
+//
+// The return value is an internal code, not an LTRESULT: 0 is success, and 3,
+// 1, 4 and 2 are the failures, in the order they appear. Everything that
+// fails after the world has started being built goes through one shared
+// `Term(); return code;` tail — the codes are materialised into a register
+// and jumped in, which is how VC6 tail-merges four identical exits.
+//
+// Read off the bytes rather than guessed:
+//
+//   * the tick counter is a CBaseCounter built with mode 0 at the very top,
+//     which is why the constructor call comes before even the null check.
+//   * the box the rest of the engine uses is the file's box grown by a
+//     hundred units each way, and the reciprocals beside it are 1.0f over
+//     each axis's extent. The grow is `_CVector::operator-(T)` and
+//     `operator+(T)` — the scalar overloads, which is why there is no
+//     twelve-byte by-value copy in front of them, only the operator's return
+//     temporary and the copy out.
+//   * the constant 100.0f is loaded once and left in %st(1) across both
+//     vector expressions, and 1.0f likewise across all three divides. That
+//     is VC6 commoning the literal, not a local.
+//   * the second geometry copy is only read when the first one's flags say
+//     bit 1, and the stream is rewound to the position GetPos gave before the
+//     first read to do it.
+//   * the debug print's threshold is 1 and the flag stored at +0x1cc is also
+//     1, and the shipped code keeps that single 1 in %esi and reuses it for
+//     both — the same register the merged failure tail returns.
+int CServerWorldFull::Load(WorldLoadRequest* pRequest)
+{
+	ILTStream*   pStream;
+	CServerWorldRec* pRec;
+	CWorldGeom*  pOriginal;
+	LTVector     vScratch;
+	uint32       nHeader24;
+	uint32       nHeader20;
+	uint32       nNameLen;
+	uint32       nNumWorlds;
+	uint32       nNextOffset;
+	uint32       nPos;
+	uint32       nLoadTicks;
+	uint32       nPrecalcTicks;
+	uint32       i;
+	int          nErr;
+
+	if (!pRequest->m_pStream)
+		return 3;
+
+	Term();
+
+	pStream = pRequest->m_pStream;
+
+	if (!pRequest->m_LoadHook)
+		pRequest->m_LoadHook = w_NullLoadHook;
+
+	if (!w_ReadWorldHeader(pStream, &nHeader24, &nHeader20, &m_n068))
+		return 1;
+
+	m_n1ec = nHeader24;
+
+	nLoadTicks = 0;
+	nPrecalcTicks = 0;
+
+	pStream->Read(&nNameLen, 4);
+
+	m_pWorldName = (char*)dalloc(nNameLen + 1);
+
+	if (!m_pWorldName)
+	{
+		Term();
+
+		return 4;
+	}
+
+	pStream->Read(m_pWorldName, nNameLen);
+
+	m_pWorldName[nNameLen] = 0;
+
+	pStream->Read(&m_f0f8, 4);
+
+	w_ReadVector(pStream, &m_vMin);
+	w_ReadVector(pStream, &m_vMax);
+
+	m_vBoxMin = m_vMin - 100.0f;
+	m_vBoxMax = m_vMax + 100.0f;
+
+	m_v15c.x = 1.0f / (m_vMax.x - m_vMin.x);
+	m_v15c.y = 1.0f / (m_vMax.y - m_vMin.y);
+	m_v15c.z = 1.0f / (m_vMax.z - m_vMin.z);
+
+	if (!m_Sub6C.sub_1003a473(pStream))
+	{
+		Term();
+
+		return 4;
+	}
+
+	pStream->Read(&nNumWorlds, 4);
+
+	// The two images genuinely inline differently here: server.dll CALLS
+	// 0x1000c504 (Load matches at 0x1000804e), lithtech.exe carries the
+	// body expanded (0x004224d0). Marking the one definition `inline`
+	// expands it at /O1 too and costs server.dll this Load (measured), so
+	// the /O2 image reaches an inline twin and the server the real member.
+#ifdef LT_SERVER_BUILD
+	if (!m_Worlds.SetSizeInit2(nNumWorlds, LTNULL))
+#else
+	if (!m_Worlds.SetSizeInit2Expanded(nNumWorlds, LTNULL))
+#endif
+	{
+		Term();
+
+		return 4;
+	}
+
+	for (i = 0; i < nNumWorlds; i++)
+	{
+		pRec = new CServerWorldRec;
+
+		m_Worlds.m_pWorlds[i] = pRec;
+
+		if (!pRec)
+		{
+			Term();
+
+			return 4;
+		}
+
+		pStream->Read(&nNextOffset, 4);
+		pStream->GetPos(&nPos);
+
+		nErr = w_LoadWorldModel(pRequest, this, 0, (CWorldBsp**)&pRec->m_pWorldBsp,
+		                        &nLoadTicks, &nPrecalcTicks, 1);
+
+		if (nErr)
+		{
+			Term();
+
+			return nErr;
+		}
+
+		if (pRec->m_pWorldBsp->m_Flags & 2)
+		{
+			pStream->SeekTo(nPos);
+
+			nErr = w_LoadWorldModel(pRequest, this, 0, (CWorldBsp**)&pRec->m_pOriginal,
+			                        &nLoadTicks, &nPrecalcTicks, 0);
+
+			if (nErr)
+			{
+				Term();
+
+				return nErr;
+			}
+		}
+
+		if (pRec->m_pWorldBsp->_v1c())
+			m_n180 |= 2;
+
+		pRec->m_Flags |= 3;
+
+		pRec->m_pCurrent = pRec->m_pOriginal ? pRec->m_pOriginal : pRec->m_pWorldBsp;
+
+		pRec->m_pWorldBsp->m_iModel = (uint16)i;
+
+		pOriginal = pRec->m_pOriginal;
+
+		if (pOriginal)
+			pOriginal->m_iModel = (uint16)i;
+
+		pRequest->m_LoadHook(pRequest->m_Unknown0c);
+
+		pStream->SeekTo(nNextOffset);
+	}
+
+	w_GetAmbientLight(m_pWorldName, &vScratch);
+
+#ifdef LT_SERVER_BUILD
+	// Server-only (lithtech.exe has no CBaseCounter in its world load).
+	// The precalculation counter is declared HERE, where it starts: Primal
+	// Hunt's server.dll constructs it after the ambient light (0x1000b0cf),
+	// not in the prologue.  NEAR there (0x1000adff, 930 of 930 bytes, 0
+	// mnemonic blocks): shipped's frame is four bytes smaller -- its nPos
+	// shares the slot pStream is spilled to (-0x2c), where ours gives every
+	// local its own.  Not moved by declaring nPos/nNextOffset first or in
+	// the loop (the latter is 945 bytes).
+	CBaseCounter counter(0);
+
+	cnt_StartCounter(&counter);
+#endif
+
+	if (!ResolvePolyKeys())
+	{
+		Term();
+
+		return 2;
+	}
+
+	ResetAll();
+
+	if (!CollectFlaggedPolies())
+	{
+		Term();
+
+		return 4;
+	}
+
+	w_SetupPointShade(&m_SubFC, m_pWorldName, &m_vMin, &m_vMax, &vScratch);
+
+	w_ReadWorldLights(pStream, this, &m_SubFC);
+
+#ifdef LT_SERVER_BUILD
+	nPrecalcTicks += cnt_EndCounter(&counter);
+#endif
+
+	if (g_DebugLevel > 1)
+		dsi_ServerError("World load: %d ticks, precalculate: %d ticks",
+		                nLoadTicks, nPrecalcTicks);
+
+	pRequest->m_LoadHook(pRequest->m_Unknown0c);
+
+	if (pStream->ErrorStatus() != LT_OK)
+	{
+		Term();
+
+		return 2;
+	}
+
+	m_bLoaded = 1;
+
+	return 0;
+}
+
+// 0x100093f0 — build the world's point-shade grid: size it from the two
+// corners and the world's own cell size, allocate one sample per cell and
+// fill every one of them with the colour the properties gave.
+//
+// Read off the bytes rather than guessed:
+//
+//   * the colour's three components are converted with `__ftol` and only the
+//     low byte of each is kept, so the source casts to a byte; the
+//     conversions run in x, y, z order and the stores land on +2, +1, +0.
+//   * the local sample lives in the dead `pColor` argument slot, which is
+//     why the function has an `ebp` frame and no `sub %esp`.
+//   * the cell size is computed *before* the two corners are pushed —
+//     right-to-left argument evaluation — and its `push` of the world name
+//     doubles as the four bytes the float argument then goes into, which is
+//     how the pending cdecl cleanup disappears.
+//   * the allocation's null check guards the fill and the running total but
+//     not the store into the object: the pointer is stored either way.
+void w_SetupPointShade(CWorldSubFC* pShade, char* pName, LTVector* pMin,
+                       LTVector* pMax, LTVector* pColor)
+{
+	CShadeSample sample;
+	uint32       i;
+
+	sample.m_r = (uint8)pColor->x;
+	sample.m_g = (uint8)pColor->y;
+	sample.m_b = (uint8)pColor->z;
+
+	pShade->Setup(pMin, pMax, w_GetShadeCellSize(pName));
+
+	pShade->m_pData = (CShadeSample*)dalloc(pShade->m_n04 * sizeof(CShadeSample));
+
+	if (pShade->m_pData)
+	{
+		for (i = 0; i < pShade->m_n04; i++)
+			pShade->m_pData[i] = sample;
+
+		g_WorldBytes += pShade->m_n04;
+	}
+}
+
+
 // 0x10009466 — the world's lights, out of the same object list
 // sm_LoadWorldObjects reads: every record whose class is Light, DirLight or
 // ObjectLight has its properties walked, and what comes out either goes
@@ -6937,302 +7205,55 @@ void w_ReadWorldLights(class ILTStream* pStream, CServerWorldFull* pWorld,
 }
 
 
-// One sample of the point-shade grid: four bytes, and only three of them are
-// ever written. The fourth is left holding whatever the stack slot the local
-// occupies happened to contain — the high byte of the `pColor` parameter,
-// which is dead by then — and the whole four bytes are then written into
-// every cell of the grid. That is in the shipped bytes, not ours: the three
-// stores go to +2, +1 and +0 of a four-byte slot and the fill reads the slot
-// as a dword. Names ours.
-class CShadeSample
-{
-public:
-	uint8 m_b;                               // 0x00
-	uint8 m_g;                               // 0x01
-	uint8 m_r;                               // 0x02
-	uint8 m_a;                               // 0x03  never assigned
-};
-
-// 0x10026350 — the grid's cell size for a named world, off the world's own
-// properties. Declared, not reconstructed; it answers a float and takes the
-// name (name ours).
-float w_GetShadeCellSize(char* pWorldName);
-
-// 0x10058360 — a running total of the grid cells every world has taken. The
-// count is added, not the byte size (name ours). It is worldbsp.cpp's g_WorldBytes.
-extern uint32 g_WorldBytes;                 // worldbsp.cpp defines it
-
-// 0x100093f0 — build the world's point-shade grid: size it from the two
-// corners and the world's own cell size, allocate one sample per cell and
-// fill every one of them with the colour the properties gave.
+// 0x10026261 — the world's ambient light, out of its own property text. The
+// world name is handed to the console's command tokenizer (servermgr.h's
+// CommandParser, whose 0x1508 bytes are this function's whole frame — hence
+// the `__chkstk`), which is walked until an "AmbientLight" command with at
+// least four arguments turns up; its three arguments are then `atof`-ed into
+// the colour and clamped. A world with no such command keeps the zeroes and
+// answers 0; Load does not look at the answer.
 //
 // Read off the bytes rather than guessed:
 //
-//   * the colour's three components are converted with `__ftol` and only the
-//     low byte of each is kept, so the source casts to a byte; the
-//     conversions run in x, y, z order and the stores land on +2, +1, +0.
-//   * the local sample lives in the dead `pColor` argument slot, which is
-//     why the function has an `ebp` frame and no `sub %esp`.
-//   * the cell size is computed *before* the two corners are pushed —
-//     right-to-left argument evaluation — and its `push` of the world name
-//     doubles as the four bytes the float argument then goes into, which is
-//     how the pending cdecl cleanup disappears.
-//   * the allocation's null check guards the fill and the running total but
-//     not the store into the object: the pointer is stored either way.
-void w_SetupPointShade(CWorldSubFC* pShade, char* pName, LTVector* pMin,
-                       LTVector* pMax, LTVector* pColor)
+//   * the clamp is the SDK's VEC_CLAMP over 0 and 255 — one `fstps` per
+//     component shared by all three arms of one conditional expression, and
+//     the upper bound hoisted into `%st` before the branch (which is what
+//     reverses the second compare into `fcoms` against memory).
+//   * the third component's value is kept in the dead `pWorldName`
+//     parameter slot and clamped from there, where the first two are
+//     re-read out of the caller's vector. It is a compiler temporary, not a
+//     third variable — and WHICH dead parameter slot it lands in is decided
+//     by source statement order: with `pColor->Init()` written first the
+//     temp takes pColor's slot (0xc) and the function is 239 of 239 bytes
+//     with four displacement bytes wrong; with the parser's `m_pPos` store
+//     first it takes pWorldName's slot (0x8) and the function is exact.
+//     VC6 loads both parameters in the same order either way, so it is the
+//     order the source *consumes* them that picks the slot, not the order
+//     the prologue reads them.
+//   * `atof` returns a double and every store is an `fstps`, so the source
+//     narrows to float at each assignment.
+int w_GetAmbientLight(char* pWorldName, LTVector* pColor)
 {
-	CShadeSample sample;
-	uint32       i;
+	CommandParser parser;
 
-	sample.m_r = (uint8)pColor->x;
-	sample.m_g = (uint8)pColor->y;
-	sample.m_b = (uint8)pColor->z;
+	parser.m_pPos = pWorldName;
 
-	pShade->Setup(pMin, pMax, w_GetShadeCellSize(pName));
+	pColor->Init();
 
-	pShade->m_pData = (CShadeSample*)dalloc(pShade->m_n04 * sizeof(CShadeSample));
-
-	if (pShade->m_pData)
+	if (parser.Find("AmbientLight", 0, 4))
 	{
-		for (i = 0; i < pShade->m_n04; i++)
-			pShade->m_pData[i] = sample;
+		pColor->x = (float)atof(parser.m_ArgPointers[1]);
+		pColor->y = (float)atof(parser.m_ArgPointers[2]);
+		pColor->z = (float)atof(parser.m_ArgPointers[3]);
 
-		g_WorldBytes += pShade->m_n04;
-	}
-}
+		VEC_CLAMP(*pColor, 0.0f, 255.0f);
 
-// 0x1000804e — read one world file into this world.
-//
-// The return value is an internal code, not an LTRESULT: 0 is success, and 3,
-// 1, 4 and 2 are the failures, in the order they appear. Everything that
-// fails after the world has started being built goes through one shared
-// `Term(); return code;` tail — the codes are materialised into a register
-// and jumped in, which is how VC6 tail-merges four identical exits.
-//
-// Read off the bytes rather than guessed:
-//
-//   * the tick counter is a CBaseCounter built with mode 0 at the very top,
-//     which is why the constructor call comes before even the null check.
-//   * the box the rest of the engine uses is the file's box grown by a
-//     hundred units each way, and the reciprocals beside it are 1.0f over
-//     each axis's extent. The grow is `_CVector::operator-(T)` and
-//     `operator+(T)` — the scalar overloads, which is why there is no
-//     twelve-byte by-value copy in front of them, only the operator's return
-//     temporary and the copy out.
-//   * the constant 100.0f is loaded once and left in %st(1) across both
-//     vector expressions, and 1.0f likewise across all three divides. That
-//     is VC6 commoning the literal, not a local.
-//   * the second geometry copy is only read when the first one's flags say
-//     bit 1, and the stream is rewound to the position GetPos gave before the
-//     first read to do it.
-//   * the debug print's threshold is 1 and the flag stored at +0x1cc is also
-//     1, and the shipped code keeps that single 1 in %esi and reuses it for
-//     both — the same register the merged failure tail returns.
-int CServerWorldFull::Load(WorldLoadRequest* pRequest)
-{
-	ILTStream*   pStream;
-	CServerWorldRec* pRec;
-	CWorldGeom*  pOriginal;
-	LTVector     vScratch;
-	uint32       nHeader24;
-	uint32       nHeader20;
-	uint32       nNameLen;
-	uint32       nNumWorlds;
-	uint32       nNextOffset;
-	uint32       nPos;
-	uint32       nLoadTicks;
-	uint32       nPrecalcTicks;
-	uint32       i;
-	int          nErr;
-
-	if (!pRequest->m_pStream)
-		return 3;
-
-	Term();
-
-	pStream = pRequest->m_pStream;
-
-	if (!pRequest->m_LoadHook)
-		pRequest->m_LoadHook = w_NullLoadHook;
-
-	if (!w_ReadWorldHeader(pStream, &nHeader24, &nHeader20, &m_n068))
 		return 1;
-
-	m_n1ec = nHeader24;
-
-	nLoadTicks = 0;
-	nPrecalcTicks = 0;
-
-	pStream->Read(&nNameLen, 4);
-
-	m_pWorldName = (char*)dalloc(nNameLen + 1);
-
-	if (!m_pWorldName)
-	{
-		Term();
-
-		return 4;
 	}
-
-	pStream->Read(m_pWorldName, nNameLen);
-
-	m_pWorldName[nNameLen] = 0;
-
-	pStream->Read(&m_f0f8, 4);
-
-	w_ReadVector(pStream, &m_vMin);
-	w_ReadVector(pStream, &m_vMax);
-
-	m_vBoxMin = m_vMin - 100.0f;
-	m_vBoxMax = m_vMax + 100.0f;
-
-	m_v15c.x = 1.0f / (m_vMax.x - m_vMin.x);
-	m_v15c.y = 1.0f / (m_vMax.y - m_vMin.y);
-	m_v15c.z = 1.0f / (m_vMax.z - m_vMin.z);
-
-	if (!m_Sub6C.sub_1003a473(pStream))
-	{
-		Term();
-
-		return 4;
-	}
-
-	pStream->Read(&nNumWorlds, 4);
-
-	// The two images genuinely inline differently here: server.dll CALLS
-	// 0x1000c504 (Load matches at 0x1000804e), lithtech.exe carries the
-	// body expanded (0x004224d0). Marking the one definition `inline`
-	// expands it at /O1 too and costs server.dll this Load (measured), so
-	// the /O2 image reaches an inline twin and the server the real member.
-#ifdef LT_SERVER_BUILD
-	if (!m_Worlds.SetSizeInit2(nNumWorlds, LTNULL))
-#else
-	if (!m_Worlds.SetSizeInit2Expanded(nNumWorlds, LTNULL))
-#endif
-	{
-		Term();
-
-		return 4;
-	}
-
-	for (i = 0; i < nNumWorlds; i++)
-	{
-		pRec = new CServerWorldRec;
-
-		m_Worlds.m_pWorlds[i] = pRec;
-
-		if (!pRec)
-		{
-			Term();
-
-			return 4;
-		}
-
-		pStream->Read(&nNextOffset, 4);
-		pStream->GetPos(&nPos);
-
-		nErr = w_LoadWorldModel(pRequest, this, 0, (CWorldBsp**)&pRec->m_pWorldBsp,
-		                        &nLoadTicks, &nPrecalcTicks, 1);
-
-		if (nErr)
-		{
-			Term();
-
-			return nErr;
-		}
-
-		if (pRec->m_pWorldBsp->m_Flags & 2)
-		{
-			pStream->SeekTo(nPos);
-
-			nErr = w_LoadWorldModel(pRequest, this, 0, (CWorldBsp**)&pRec->m_pOriginal,
-			                        &nLoadTicks, &nPrecalcTicks, 0);
-
-			if (nErr)
-			{
-				Term();
-
-				return nErr;
-			}
-		}
-
-		if (pRec->m_pWorldBsp->_v1c())
-			m_n180 |= 2;
-
-		pRec->m_Flags |= 3;
-
-		pRec->m_pCurrent = pRec->m_pOriginal ? pRec->m_pOriginal : pRec->m_pWorldBsp;
-
-		pRec->m_pWorldBsp->m_iModel = (uint16)i;
-
-		pOriginal = pRec->m_pOriginal;
-
-		if (pOriginal)
-			pOriginal->m_iModel = (uint16)i;
-
-		pRequest->m_LoadHook(pRequest->m_Unknown0c);
-
-		pStream->SeekTo(nNextOffset);
-	}
-
-	w_GetAmbientLight(m_pWorldName, &vScratch);
-
-#ifdef LT_SERVER_BUILD
-	// Server-only (lithtech.exe has no CBaseCounter in its world load).
-	// The precalculation counter is declared HERE, where it starts: Primal
-	// Hunt's server.dll constructs it after the ambient light (0x1000b0cf),
-	// not in the prologue.  NEAR there (0x1000adff, 930 of 930 bytes, 0
-	// mnemonic blocks): shipped's frame is four bytes smaller -- its nPos
-	// shares the slot pStream is spilled to (-0x2c), where ours gives every
-	// local its own.  Not moved by declaring nPos/nNextOffset first or in
-	// the loop (the latter is 945 bytes).
-	CBaseCounter counter(0);
-
-	cnt_StartCounter(&counter);
-#endif
-
-	if (!ResolvePolyKeys())
-	{
-		Term();
-
-		return 2;
-	}
-
-	ResetAll();
-
-	if (!CollectFlaggedPolies())
-	{
-		Term();
-
-		return 4;
-	}
-
-	w_SetupPointShade(&m_SubFC, m_pWorldName, &m_vMin, &m_vMax, &vScratch);
-
-	w_ReadWorldLights(pStream, this, &m_SubFC);
-
-#ifdef LT_SERVER_BUILD
-	nPrecalcTicks += cnt_EndCounter(&counter);
-#endif
-
-	if (g_DebugLevel > 1)
-		dsi_ServerError("World load: %d ticks, precalculate: %d ticks",
-		                nLoadTicks, nPrecalcTicks);
-
-	pRequest->m_LoadHook(pRequest->m_Unknown0c);
-
-	if (pStream->ErrorStatus() != LT_OK)
-	{
-		Term();
-
-		return 2;
-	}
-
-	m_bLoaded = 1;
 
 	return 0;
 }
+
 
 // 0x10009e07 — every light the object list produced, handed to the
 // sub-object at +0x6c. IDENTICAL, 42 of 42 bytes.

@@ -491,9 +491,9 @@ LTBOOL CLeashGroup::GetNextNode(const LTVector& vFrom, const LTVector& vTo, int*
 
 	*pnStart = pStart->m_nID;
 
-	if (pStart->m_nID == *pnDest)
+	if (*pnStart == *pnDest)
 	{
-		*pnNext = pStart->m_nID;
+		*pnNext = *pnStart;
 		return LTTRUE;
 	}
 
@@ -501,7 +501,7 @@ LTBOOL CLeashGroup::GetNextNode(const LTVector& vFrom, const LTVector& vTo, int*
 	if (!pRoute) return LTFALSE;
 
 	*pnNext = pRoute->m_nNext;
-	return (pRoute->m_nNext >= 0);
+	return (*pnNext >= 0);
 }
 
 // ----------------------------------------------------------------------- //

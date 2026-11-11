@@ -256,9 +256,18 @@ int sm_ClaimObjectID(CServerMgr* pMgr, void** ppRec, uint16 nID)
 	{
 		CObjIDRec* pCur;
 
+#ifdef PRIMAL_HUNT
 		for (pCur = (CObjIDRec*)pMgr->m_Link8c4.m_pNext;
 		     pCur != (CObjIDRec*)&pMgr->m_Link8c4;
 		     pCur = pCur->m_pNext)
+#else
+		// AVP2: the free list's head is a named local, as the client list's
+		// below (`lea 0xcd4(%esi),%ecx; mov 0x4(%ecx),%eax`, AvP2 1.0.9.6
+		// server.dll 0x1003bb98).
+		CObjIDRec* pFreeHead = (CObjIDRec*)&pMgr->m_Link8c4;
+
+		for (pCur = pFreeHead->m_pNext; pCur != pFreeHead; pCur = pCur->m_pNext)
+#endif
 		{
 			*ppRec = pCur;
 

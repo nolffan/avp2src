@@ -135,9 +135,10 @@ CLeashPoint::~CLeashPoint()
 LTBOOL CLeashPoint::Overlaps(const LTVector& vPos, LTFLOAT fRadius)
 {
 	LTVector vMyPos = m_vPos;
-	LTFLOAT fDist = (vPos - vMyPos).Mag();
+	LTVector vDiff = vPos - vMyPos;
+	LTFLOAT fDist = vDiff.Mag();
 
-	if (fRadius + m_fRadius > fDist) return LTTRUE;
+	if (fDist < fRadius + m_fRadius) return LTTRUE;
 
 	return LTFALSE;
 }

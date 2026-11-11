@@ -1056,6 +1056,7 @@ void* sm_FindObjectIDRecQ468(CServerMgrIDListQ468* pMgr, uint16 nID)
 //
 // ======================================================================= //
 
+#ifdef PRIMAL_HUNT
 // src/engine/server/filemgr.cpp:66.
 class CFileFindStateQ468
 {
@@ -1153,33 +1154,14 @@ LTRESULT fs_FileExistsQ468(CFileMgrQ468* pFileMgr, char* pFilename)
 	return fs_FindFileInTreesQ468(pFileMgr, pFilename, &pTreeRec, &nSize) ? LT_OK : LT_NOTFOUND;
 }
 #endif
+#endif
 
-int fs_FindFileInTreesQ468(CFileMgrQ468* pFileMgr, char* pFilename,
-                           CFileTreeRecQ468** ppTreeRec, uint32* pUnknown)
-{
-	CFileFindStateQ468 state;
-	LTLinkQ468*        pCur;
-
-	for (pCur = pFileMgr->m_Trees.m_pNext;                   // 0x0046b900
-	     pCur != (LTLinkQ468*)pFileMgr;                      // 0x0046b904
-	     pCur = pCur->m_pNext)                               // 0x0046b928
-	{
-		CFileTreeRecQ468* pRec = (CFileTreeRecQ468*)pCur->m_pData;   // 0x0046b90f
-
-		if (ar_GetFileInfoQ468(pRec->m_pTree, pFilename, &state))    // 0x0046b91c
-		{
-			if (ppTreeRec)                                   // 0x0046b943
-				*ppTreeRec = pRec;                           // 0x0046b947
-
-			if (pUnknown)                                    // 0x0046b950
-				*pUnknown = state.m_nSize;                   // 0x0046b95b
-
-			return 1;                                        // 0x0046b960
-		}
-	}
-
-	return 0;                                                // 0x0046b932
-}
+//  MOVED.  fs_FindFileInTreesQ468 now lives in
+//  src/engine/server/serverengine.cpp, immediately above se_LoadFile, where
+//  every image places it.  Primal Hunt's two file queries above (retail has
+//  them directly before it, 0x10037780 / 0x10037808) stay here: cl 8966
+//  allocates the same either way, and moving them too reshuffles which of
+//  our folded GenRemoveAll stubs the scorer credits.
 
 
 // *********************************************************************** //

@@ -180,6 +180,18 @@ TARGETS = [
                     "lith": (0x004ba2a0, 0x004bf4c0),
                     "StdLith": (0x004ba2a0, 0x004bf4c0)},
          built="src/engine/lithtech/Release/lithtech.exe", optional=True,
+         # localdriver.cpp is the image's one /Od object, and its base
+         # class's destructor and deleting destructor are COMDATs every
+         # object that constructs a driver emits: the shipped link kept an
+         # /O2 object's copies, not localdriver.obj's. CLocalDriver's
+         # constructor and destructor store the base vtable 0x004d538c
+         # (0x0044a6c2, 0x0044a86e), whose slot 0 is the /O2 deleting
+         # destructor 0x00437550, and their unwinds call the /O2
+         # destructor 0x004374d0 (0x004d01e3, 0x004d0203), seven bytes
+         # where /Od's is twenty. Our localdriver.cpp names the base
+         # CLocalDriverBase, a view of its own, so its /Od copies have no
+         # other object's to lose to and stay in our image.
+         discarded=r"^localdriver\.obj:\?\?(1|_G|_E)CLocalDriverBase@@",
          cites=True, cited_src=["src/engine"],
          # provisional: libcmt.lib (msvc-6.00-8966's) from ftol.obj's
          # __ftol (0x4bf918), 353 members to initcon.obj (0x4ceaeb), as
@@ -623,6 +635,11 @@ TARGETS = [
          # (build/build.mk, avp2-engine-link: `built`, its .rsp and .map);
          # its objects alone (partial_objs) until that link has been made
          built="src/engine/lithtech/AvP2Release/lithtech.exe", optional=True,
+         # localdriver.obj's /Od copy of the driver base's deleting
+         # destructor, as in Primal Hunt's lithtech.exe: CLocalDriver's
+         # constructor and destructor store the base vtable 0x004c7370
+         # (0x004467f1), whose slot 0 is an /O2 object's copy.
+         discarded=r"^localdriver\.obj:\?\?(_G|_E)CLocalDriverBase@@",
          partial_objs=["src/engine/lithtech/AvP2Release/*.obj",
                        # and the libraries it links: WON (the release's
                        # STLport build), then lith, RezMgr and StdLith
