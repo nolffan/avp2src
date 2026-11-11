@@ -1838,10 +1838,12 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	cnt_StartCounter(&counterPrecalc);                     // 0x100091a2
 #endif
 
-#ifdef LT_SERVER_BUILD
-	// server.dll's only: both Talon lithtech.exe builds go from the size
-	// sum straight to the surface linking (Primal Hunt 0x0042c9e6, AvP2
-	// 1.0.9.6 0x00429c96).
+#if 0
+	// NOLF's server.dll only: both Talon lithtech.exe builds go from the
+	// size sum straight to the surface linking (Primal Hunt 0x0042c9e6, AvP2
+	// 1.0.9.6 0x00429c96), and so do both Talon server.dll builds (the
+	// precalculation counter's start, then w_LinkSurfacePoliesQT1: Primal
+	// Hunt 0x1000c03d -> 0x1000c043, AvP2 0x1000bd9a -> 0x1000bda0).
 	for (i = 0; i < nNumPolies; i++)         // 0x100091aa / 0x100091c0
 		w_SetupPolyTexCoordsQT1(pWorld->m_ppParts[i]);     // 0x100091b9
 #endif

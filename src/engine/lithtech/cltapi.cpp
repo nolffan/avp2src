@@ -964,6 +964,13 @@ public:
 	// destructor is CALLED, so every one of them is inline.  The body frees
 	// +0x36c through bare `operator delete` (0x004290c0) with no destructor
 	// call in front of it, and clears the field.
+	//
+	// PH: out of line.  Primal Hunt's ??_G (0x00408830) CALLS the
+	// destructor, at 0x00408850, the one copy in the image (no EH frame,
+	// and nothing else reaches it); cltnew.cpp writes that body.
+#ifdef PRIMAL_HUNT
+	virtual ~CLTClientQ404();
+#else
 	virtual ~CLTClientQ404()
 	{
 		if (m_pMusicMgr)
@@ -972,6 +979,7 @@ public:
 			m_pMusicMgr = LTNULL;
 		}
 	}
+#endif
 
 	// AVP2: the SDK's entry table is four entries longer than NOLF's, so
 	// everything from here on is 0x10 further on: the object is 0x3d8 bytes

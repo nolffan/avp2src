@@ -241,7 +241,26 @@ TARGETS = [
          # been placed on them was smgr.obj's copies of the inline
          # ??_GCFileBank, ??_GCMessageBank and a pair<string, map>'s, a
          # generic 28-byte shape of which the image has 55 more
-         app=[(0x10001000, 0x10060bf0)]),
+         app=[(0x10001000, 0x10060bf0)],
+         own_symbols={
+             # slots 4 and 5 of the 0x1c DefaultCache array's vtable
+             # 0x10074a0c (Model's CModelSub1D4::m_Array00, which the
+             # array's constructor 0x1001df79 stores): the one GenAppend
+             # and GenRemoveAt whose calls reach the image's 0x1c
+             # Insert2 (0x1002054b) and Remove2 (0x100206bc). The bodies
+             # are one shape with every array's
+             "?GenAppend@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEIAAVCChildNodeXform@@@Z": 0x1001dfef,
+             "?GenRemoveAt@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEXVGenListPos@@@Z": 0x1001e004,
+             # slot 6, GenRemoveAll, and the SetSize2 it calls
+             "?GenRemoveAll@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEXXZ": 0x1001e015,
+             "?SetSize2@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z": 0x1001f736,
+             # slots 8 and 9, GenCopyList and GenAppendList: they call
+             # that SetSize2 too
+             "?GenCopyList@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEIABV?$GenList@VCChildNodeXform@@@@@Z": 0x1001e026,
+             "?GenAppendList@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEIABV?$GenList@VCChildNodeXform@@@@@Z": 0x1001e0cf,
+             # and Init, which calls it twice
+             "?Init@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@QAEIKK@Z": 0x1001f701,
+         }),
     dict(label="d3d.ren", what="the Direct3D renderer", kind="image",
          shipped=REFERENCE + "/d3d.ren", stem="d3d",
          # nolfsrc's renderer compiled for Primal Hunt, and linked with
@@ -687,7 +706,31 @@ TARGETS = [
          # libcmt.lib from fpinit.obj's __fpmath (0x10057b50; __ftol
          # 0x10057ba0), 467 of its members placed in one run to initcon.obj
          # (0x10066f95; tools/libscan.py --min=1), lith inside it
-         app=[(0x10001000, 0x10057b50)]),
+         app=[(0x10001000, 0x10057b50)],
+         own_symbols={
+             # as Primal Hunt's: slots 4 and 5 of the 0x1c DefaultCache
+             # array's vtable 0x100699f8 (stored by the constructor
+             # 0x1001ceb9), whose calls reach the 0x1c Insert2
+             # (0x1001f4e5) and Remove2 (0x1001f656)
+             "?GenAppend@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEIAAVCChildNodeXform@@@Z": 0x1001cedb,
+             "?GenRemoveAt@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEXVGenListPos@@@Z": 0x1001cef0,
+             # slot 6, GenRemoveAll, and the SetSize2 it calls
+             "?GenRemoveAll@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEXXZ": 0x1001cf01,
+             "?SetSize2@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z": 0x1001e580,
+             # slots 8 and 9, GenCopyList and GenAppendList: they call
+             # that SetSize2 too
+             "?GenCopyList@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEIABV?$GenList@VCChildNodeXform@@@@@Z": 0x1001cf0e,
+             "?GenAppendList@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@UAEIABV?$GenList@VCChildNodeXform@@@@@Z": 0x1001cfb7,
+             # and Init, which calls it twice
+             "?Init@?$CMoArray@VCChildNodeXform@@VDefaultCache@@@@QAEIKK@Z": 0x1001e54b,
+             # CWorldItem18's array likewise: its SetSize2 (0x1000f167,
+             # identical) is called by its GenCopyList and GenAppendList
+             # (identical at 0x1000e2b9, 0x1000e36d), by the GenRemoveAll
+             # before them and by the Init at 0x1000f132, which look-alikes
+             # of other element types had held
+             "?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ": 0x1000e2ac,
+             "?Init@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@QAEIKK@Z": 0x1000f132,
+         }),
     dict(label="AvP2 d3d.ren", what="AvP2's Direct3D renderer", kind="image",
          shipped=REFERENCE + "/avp2/d3d.ren", stem="AVP2d3d",
          built="src/engine/d3d/AvP2Release/d3d.ren", optional=True,
@@ -698,6 +741,17 @@ TARGETS = [
          partial_objs=["src/engine/d3d/AvP2Release/ph/*.obj",
                        "src/LT2/lithshared/libs/Release/StdLith.lib"],
          lib_range={"StdLith": (0x1003b520, 0x1003b70a)},
+         # d3d_TermTranslucentStates (Primal Hunt's 0x10014550) was compiled
+         # into this d3d_draw.obj too, and /OPT:REF removed it: d3d_Term
+         # (0x10010b13, identical) does not call it, and the two set
+         # pointers it frees (0x1005a36c, 0x1005a370) are read by
+         # d3d_SetTranslucentObjectStates (0x10013ba0) alone. Yet the
+         # image keeps d3d_draw's /O2 copy of the STLport node allocator's
+         # deallocate (0x10018f80, identical; skyobjects' and statelist's
+         # /O1 copies, its callers, are 67 bytes), which d3d_draw.obj
+         # emits only for allocator<StageState>::deallocate, which only
+         # d3d_TermTranslucentStates calls.
+         discarded=r"^d3d_draw\.obj:\?d3d_TermTranslucentStates@@YAXXZ$",
          cites=True, cited_src=["src/engine"],
          # 2002-02-07, older than the patch's engine. Microsoft's, not Intel
          # C/C++ as NOLF's renderer was: none of Intel's lea padding (2

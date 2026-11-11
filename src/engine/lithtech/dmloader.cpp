@@ -1798,6 +1798,10 @@ void dm_CheckPlatform()
 }
 
 
+// NOLF's, not Talon's: neither engine has a `mov 0xa0/0xa4/0xa8(%ecx),%eax; ret`
+// anywhere. Primal Hunt and AvP2 moved the three to 0xb0..0xb8, and those are
+// dmextra.cpp's CDMMgrGettersQ522 (0x0044eba0..0x0044ebc0).
+#if 0
 // --------------------------------------------------------------------- //
 // The three CLTDirectMusicMgr slots that only read a number out of the
 // manager. iltdirectmusic.h's declaration order is the vtable order, and the
@@ -1847,6 +1851,7 @@ long CDMMgrIntensityView::GetInitialVolume()
 {
 	return m_nInitialVolume;
 }
+#endif
 
 
 // --------------------------------------------------------------------- //

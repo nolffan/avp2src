@@ -1480,7 +1480,13 @@ public:
 // PH: Primal Hunt's lithtech.exe calls it out of line (0x00468fd0 ->
 // 0x0046b5c0, with an exception frame for the packet's constructor), where
 // AvP2 1.0.9.6's expands it into SendPacket (0x00463cb5..0x00463cd5).
-#if !defined(LT_SERVER_BUILD) && !defined(PRIMAL_HUNT)
+// That out-of-line copy is not this TU's: it sits with the bank's slots
+// (CNetBank's slot 1, 0x0046b200, is a `jmp` onto it) and startload.cpp
+// writes it, ServerMessage's constructor expanded, as CNetBankQ11::Allocate
+// (near, 312 bytes to 312).  So Primal Hunt's lithtech.exe build only
+// declares it here.
+#if defined(LT_SERVER_BUILD) || !defined(PRIMAL_HUNT)
+#if !defined(LT_SERVER_BUILD)
 inline
 #endif
 CNetSentPacketView* CNetBankAllocView::Allocate()
@@ -1492,6 +1498,7 @@ CNetSentPacketView* CNetBankAllocView::Allocate()
 
 	return pRec;
 }
+#endif
 
 
 // 0x10022ac2 — the in-order step, run when the packet just received is the

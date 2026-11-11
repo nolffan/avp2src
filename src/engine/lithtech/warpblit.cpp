@@ -473,6 +473,13 @@ struct CBindRecQ438
 // 0x00436ae0, 82 bytes.  0x00436ae0..0x00436b31 inclusive.  EXTENT CLEAN:
 // one inbound displacement in the whole image (0x004369dd), every other
 // branch internal, `ret $0x4` at 0x00436b2f..0x00436b31 on the boundary.
+// (AvP2 1.0.9.6: 0x0043ee10, identical.)
+//
+// PH: no such function.  Primal Hunt's input-device teardown deletes the
+// record as destructor-then-free, the destructor out of line (0x00442b87 ->
+// 0x00442c00, clientinput.cpp's ~CInputBindRec, then operator delete), and
+// no scalar-deleting wrapper of this shape is anywhere in its image.
+#ifndef PRIMAL_HUNT
 void* CBindRecQ438::DeleteQ438(uint32 nFlags)
 {
 	this->~CBindRecQ438();
@@ -482,6 +489,7 @@ void* CBindRecQ438::DeleteQ438(uint32 nFlags)
 
 	return this;                             // 0x00436b2c
 }
+#endif
 
 
 // One node of the list 0x004368c0 walks.  0x18 bytes; the three fields

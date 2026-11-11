@@ -71,6 +71,7 @@
 
 #include "ltbasedefs.h"
 #include "ltrect.h"
+#include "cltdib.h"                 // the bitmap (CObj4a1ab4View)
 #include "cluglob.h"                // g_CluClientGlob, 0x004b0ac0
 
 
@@ -198,58 +199,18 @@ public:
 	                      uint32* pOut);                       // 0x0045f5e0
 };
 
-// The 0x45c-byte DIB the bitmap loader builds on the stack.  cltcursor.cpp
-// found the two vptrs (0x004a1ab4 at +0x000, 0x004a1ab8 at +0x444) and the
-// three dwords at +0x438..+0x440; this run adds what they are.  The FIRST
-// vptr is the PFormat one, and 0x0040c437 hands `pDib` itself to
-// BlitRequest::m_pSrcFormat -- so the DIB IS-A PFormat.  0x0040c451 hands
-// pDib+0x38 to m_pSrcPalette, and 0x0040c42d adds the source rect's LEFT to
-// the bit pointer with NO bytes-per-pixel multiply, so the DIB is 8-bit
-// paletted and the palette is 256 entries filling 0x38..0x437.
-// The DIB's pixel array: collection.h's CMoArray<uint8> shape (vptr,
-// buffer, count, cache size, wanted cache -- 0x14 bytes, 0x444..0x457,
-// which is the 0x458 frame 0x0040d010 reserves).  Its teardown is INLINE
-// at every stack DIB's exit (0x0040d032..0x0040d09a): re-store the vptr
-// 0x004a1ab8, then `if (m_pArray)` BaseDelete(&g_DefAlloc, m_pArray,
-// m_nElements + m_nCache) through the out-of-line 0x004152b0.  A view in
-// clientmgr3.cpp's CCmgArray04 manner: the vptr is a plain field and the
-// destructor re-stores it by hand (a real virtual would drag a vtable and
-// its slots into this TU).
-class LAlloc;
-void BaseDelete(LAlloc* pAlloc, uint8* pArray, uint32 nElements);        // 0x004152b0
-extern uint8 g_DefAllocQ40C[];                                           // 0x004b4e88
-extern void* g_CMoByteArrayVtblQ40C[];                                   // 0x004a1ab8
-
-class CDibDataQ40C
-{
-public:
-	~CDibDataQ40C()
-	{
-		m_pVtable = g_CMoByteArrayVtblQ40C;
-		if (m_pArray)
-			BaseDelete((LAlloc*)g_DefAllocQ40C, m_pArray, m_nElements + m_nCache);
-	}
-
-	void**  m_pVtable;                       // 0x00
-	uint8*  m_pArray;                        // 0x04
-	uint32  m_nElements;                     // 0x08
-	uint32  m_nCache;                        // 0x0c
-	uint32  m_nWantedCache;                  // 0x10
-};
-
-class CDIBQ40C
-{
-public:
-	CDIBQ40C();                              // 0x0043de60
-
-	uint8   m_PFormat[0x38];                 // 0x000  vptr 0x004a1ab4
-	uint32  m_Palette[256];                  // 0x038  0x0040c43f/0x0040c451
-	uint32  m_nWidth;                        // 0x438  0x0040c266
-	uint32  m_nHeight;                       // 0x43c  0x0040c266
-	uint32  m_nPitch;                        // 0x440  0x0040c407
-	CDibDataQ40C m_Data;                     // 0x444  vptr 0x004a1ab8; the
-	                                         //        bits at 0x448 (0x0040c417)
-};
+// The 0x45c-byte DIB the bitmap loader builds on the stack: cltdib.h's
+// bitmap, the class cltcursor.cpp and clientconsole.cpp build too.  This
+// run reads what its three dwords are: +0x438 the width and +0x43c the
+// height (0x0040c266), +0x440 the pitch (0x0040c407).  The FIRST member
+// is the PFormat, and 0x0040c437 hands `pDib` itself to
+// BlitRequest::m_pSrcFormat; 0x0040c451 hands pDib+0x38 to m_pSrcPalette,
+// and 0x0040c42d adds the source rect's LEFT to the bit pointer with NO
+// bytes-per-pixel multiply, so the DIB is 8-bit paletted.  Its implicit
+// destructor is expanded at every stack DIB's exit (0x0040d032..0x0040d09a)
+// and its out-of-line copy is the one cltcursor.cpp's callers share
+// (Primal Hunt 0x0040e000, the unwind 0x004cecb6 reaches): one class, so
+// one COMDAT.
 
 // stdlith's struct bank, as clientwin.cpp models it.  0x004b1600 is the
 // surface bank: +0x08 is the grow count (0x0040c1ab) and +0x18 the free
@@ -428,7 +389,7 @@ LTBOOL cis_ClipBlitQ40C(uint32 nSrcW, uint32 nSrcH,
                         LTRect* pOutSrc, LTRect* pOutDest);  // 0x0043a2a0
 
 // 0x0043df40 -- fill a DIB from a stream; answers non-zero on success.
-LTBOOL dib_LoadQ40C(class ILTStreamQ40C* pStream, CDIBQ40C* pDib);
+LTBOOL dib_LoadQ41C(ILTStream* pStream, CObj4a1ab4View* pDib);
 
 // 0x004048c0 -- clientworldinfo.cpp's: open one CClientFileRef, or LTNULL.
 class CClientFileRefQ40C
@@ -715,7 +676,7 @@ LTBOOL cis_IsRowColorQ40C(uint8* pPixels, uint32 nColor, uint32 nCount)
 //  -- the result lives in %edi across the call.
 // ======================================================================= //
 
-LTBOOL cis_LoadDIBQ40C(char* pBitmapName, CDIBQ40C* pDib)
+LTBOOL cis_LoadDIBQ40C(char* pBitmapName, CObj4a1ab4View* pDib)
 {
 	CClientFileRefQ40C ref;
 	ILTStreamQ40C*     pStream;
@@ -728,7 +689,7 @@ LTBOOL cis_LoadDIBQ40C(char* pBitmapName, CDIBQ40C* pDib)
 	if (!pStream)                                         // 0x0040cf67
 		return LTFALSE;
 
-	bOk = dib_LoadQ40C(pStream, pDib);                    // 0x0040cf77
+	bOk = dib_LoadQ41C((ILTStream*)pStream, pDib);                    // 0x0040cf77
 
 	pStream->Release();                                   // 0x0040cf85
 
@@ -774,13 +735,13 @@ void* ci_GetSurfaceUserData(HSURFACE hSurface)
 //  the DIB's inline teardown; the two failures share `xor %eax,%eax`.
 // ======================================================================= //
 
-void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CDIBQ40C* pDib,
+void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CObj4a1ab4View* pDib,
                               LTRect* pSrcRect, int destX, int destY);  // 0x0040c2a0
 
 LTBOOL ci_DrawBitmapToSurface(HSURFACE hDest, char* pSourceBitmapName,
                               LTRect* pSrcRect, int destX, int destY)
 {
-	CDIBQ40C dib;                                         // 0x0040d01b
+	CObj4a1ab4View dib;                                         // 0x0040d01b
 
 	if (!hDest)                                           // 0x0040d027
 		return LTFALSE;
@@ -835,7 +796,7 @@ LTBOOL ci_DrawBitmapToSurface(HSURFACE hDest, char* pSourceBitmapName,
 //  formats) is the one measured to reproduce it.
 // ======================================================================= //
 
-void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CDIBQ40C* pDib,
+void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CObj4a1ab4View* pDib,
                               LTRect* pSrcRect, int destX, int destY)
 {
 	LTRect          srcRect, destRect;                    // 0x0040c2af..0x0040c2cb
@@ -844,7 +805,7 @@ void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CDIBQ40C* pDib,
 
 	if (pSrcRect)                                         // 0x0040c2dd
 	{
-		cis_ClipBlitQ40C(pDib->m_nWidth, pDib->m_nHeight,
+		cis_ClipBlitQ40C(pDib->m_Unknown438, pDib->m_Unknown43c,
 		                 pSrcRect->left, pSrcRect->top,
 		                 pSrcRect->right, pSrcRect->bottom,
 		                 hDest->m_nWidth, hDest->m_nHeight, destX, destY,
@@ -852,8 +813,8 @@ void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CDIBQ40C* pDib,
 	}
 	else
 	{
-		cis_ClipBlitQ40C(pDib->m_nWidth, pDib->m_nHeight,
-		                 0, 0, pDib->m_nWidth, pDib->m_nHeight,
+		cis_ClipBlitQ40C(pDib->m_Unknown438, pDib->m_Unknown43c,
+		                 0, 0, pDib->m_Unknown438, pDib->m_Unknown43c,
 		                 hDest->m_nWidth, hDest->m_nHeight, destX, destY,
 		                 &srcRect, &destRect);            // 0x0040c32d..0x0040c36f
 	}
@@ -871,10 +832,10 @@ void cis_DrawDIBToSurfaceQ40C(CSurfaceQ40C* hDest, CDIBQ40C* pDib,
 		                       + destRect.left * g_nBytesPerPixel;          // 0x0040c3ef / 0x0040c405
 		request.m_pSrcFormat   = (PFormatQ40C*)pDib;      // 0x0040c437
 		request.m_pDestFormat  = &g_ScreenFormat;         // 0x0040c445
-		request.m_pSrc         = pDib->m_Data.m_pArray
-		                       + srcRect.top * pDib->m_nPitch
+		request.m_pSrc         = pDib->m_Data.GetArray()
+		                       + srcRect.top * pDib->m_Unknown440
 		                       + srcRect.left;            // 0x0040c407..0x0040c44d
-		request.m_nSrcPitch    = pDib->m_nPitch;          // 0x0040c423
+		request.m_nSrcPitch    = pDib->m_Unknown440;          // 0x0040c423
 		request.m_pSrcPalette  = pDib->m_Palette;         // 0x0040c43f / 0x0040c451
 		request.m_nWidth       = srcRect.right - srcRect.left;      // 0x0040c433
 		request.m_nHeight      = srcRect.bottom - srcRect.top;      // 0x0040c455
@@ -1005,11 +966,11 @@ CSurfaceQ40C* cis_CreateSurfaceQ40C(uint32 nWidth, uint32 nHeight)
 //  `mov %esi,%eax` only because the inner call clobbered %eax.
 // ======================================================================= //
 
-CSurfaceQ40C* cis_CreateSurfaceFromDIBQ40C(CDIBQ40C* pDib)
+CSurfaceQ40C* cis_CreateSurfaceFromDIBQ40C(CObj4a1ab4View* pDib)
 {
 	CSurfaceQ40C* pSurface;
 
-	pSurface = cis_CreateSurfaceQ40C(pDib->m_nWidth, pDib->m_nHeight);  // 0x0040c274
+	pSurface = cis_CreateSurfaceQ40C(pDib->m_Unknown438, pDib->m_Unknown43c);  // 0x0040c274
 
 	// AN EARLY RETURN, not a guarded call. This is the merge-the-exits rule
 	// running BACKWARDS, and the two-image note explains why: /O1 tail-merges

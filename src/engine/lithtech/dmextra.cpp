@@ -1407,9 +1407,8 @@ LTRESULT CLTDirectMusicMgr::Init()
 // That file's note says of the ??_E COMDATs at 0x00413080 and 0x00413110:
 // "the shipped ones are in the registry teardown at 0x0043fb80, which is not
 // in this run" -- 0x0043fb80 is INSIDE this function, so these are them. Its
-// stand-in drivers pool_FreeArray54/pool_FreeArray50 can go once this object
-// is credited with the COMDATs; left in place for now so clientshell.cpp does
-// not lose them in the same commit that grows them here.
+// stand-in drivers pool_FreeArray54/pool_FreeArray50 are retired (#if 0):
+// this object is credited with the COMDATs.
 //
 // That file's two `extern void*` free-list heads turn out to be fields we
 // already have: g_pFree54 at 0x004b3f60 is g_SegmentBank(0x004b3f50)+0x10 and

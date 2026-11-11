@@ -100,6 +100,24 @@ public:
 // 0x10037d51 GenGetSize, 0x10037d55 GenCopyList, 0x10037e1a GenAppendList,
 // 0x10037eea GenFindElement, 0x10037f14 Init, 0x10037f49 SetSize2,
 // 0x10037fb9 InternalNiceSetSize (and 0x100380c9 Insert2 in section B).
+#ifdef PRIMAL_HUNT
+// tcpdriver.cpp's body (0x10046422), compiled here before the array is.
+// Primal Hunt's /GX build has one BaseNew for the response array
+// (0x1004841e, 63 bytes, called by this array's Insert2, Remove2 and
+// SetSize2) with no EH frame around the constructor calls, which is VC6
+// knowing the body cannot throw. Declared only, ours framed them (99 bytes)
+// and was a second copy of it.
+TCPQueryResponse_A::TCPQueryResponse_A()
+{
+	m_pData = LTNULL;
+	m_Unknown9c = 0.0f;
+	m_Unknown80 = 0;
+	memset(m_Text, 0, sizeof(m_Text));
+	m_UnknownA0 = 0.0f;
+	m_Time = 0.0f;
+}
+#endif
+
 template class CMoArray<TCPQueryResponse_A, DefaultCache>;
 
 // Just enough of TCPDriver (tcpdriver.cpp) for the two slots below: 0xb0

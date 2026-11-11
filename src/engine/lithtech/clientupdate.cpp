@@ -377,33 +377,7 @@ void cs_UpdateSpritesQ414(CClientMgrQ414* pMgr)
 //  skins (0x0041a3e0); one `add $0x20` pops the six arguments and the
 //  counter's two.
 // ======================================================================= //
-class CBaseCounter
-{
-public:
-	CBaseCounter(int nMode);                                   // 0x00426060
-
-	uint32 m_Data[2];
-};
-void   cnt_StartCounter(CBaseCounter* pCounter);               // 0x00426150
-uint32 cnt_EndCounter(CBaseCounter* pCounter);                 // 0x00426160
-
-class CountAdderQ525
-{
-public:
-	CountAdderQ525(uint32* pTotal) : m_Counter(0)
-	{
-		m_pTotal = pTotal;
-		cnt_StartCounter(&m_Counter);
-	}
-
-	~CountAdderQ525()
-	{
-		*m_pTotal += cnt_EndCounter(&m_Counter);
-	}
-
-	CBaseCounter m_Counter;                                    // 0x00
-	uint32*      m_pTotal;                                     // 0x08
-};
+#include "countadder.h"                // CBaseCounter, CountAdder
 
 extern uint32 g_Unknown4b1800;                                 // 0x004f15f8
 
@@ -418,7 +392,7 @@ void CClientMgrQ414::RunFrameUpdates()
 {
 	g_Unknown4b1800 = 0;
 
-	CountAdderQ525 cntAdder(&g_Unknown4b1800);
+	CountAdder cntAdder(&g_Unknown4b1800);
 
 	cs_UpdateSpritesQ414(this);
 	cs_UpdateAnimations((CClientMgrView*)this);

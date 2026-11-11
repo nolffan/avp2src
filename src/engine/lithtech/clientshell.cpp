@@ -62,6 +62,7 @@
 #include "ltcodes.h"          // LT_OK, LT_SERVERERROR, LT_CANTCREATESERVER
 #include "de_error.h"         // REPORT_ERROR / RETURN_ERROR (src/engine/server)
 #include "collection.h"       // CMoArray, g_DefAlloc (src/engine/server)
+#include "serverworld.h"      // the world's light-animation arrays
 
 
 // ======================================================================= //
@@ -319,6 +320,12 @@ public:
 	uint8* m_pOwned4c;                             // 0x4c
 };
 
+// RETIRED: dmextra.cpp's CLTDirectMusicMgr::Term now has the shipped `delete[]`
+// sites, and its own CPooled54Q440 / CPooled50Q440 ??_E COMDATs are identical
+// at 0x00416420 / 0x00416490 (AvP2 0x00414750 / 0x004147e0). Neither engine
+// has a function of these stand-ins' shape (`mov 0x4(%esp),%ecx; test; je;
+// push 3; call ??_E; ret`).
+#if 0
 // The two `delete[]` sites that make VC6 emit the destructors above.  The
 // shipped callers are CLTDirectMusicMgr::Term's bank teardown (0x0043fba4,
 // 0x0043fc54, src/engine/lithtech/dmextra.cpp); these stand in for them so
@@ -358,6 +365,7 @@ void pool_FreeArray50(CPooled50* pArray)
 {
 	pool_Del8(pArray);
 }
+#endif
 
 
 // ======================================================================= //
@@ -784,28 +792,13 @@ public:
 	float m_x, m_y, m_z;
 };
 
-// The collection members, one class per instantiation because each has its
-// own out-of-line Term.  All are 0x14 bytes: vptr, m_pArray, m_nElements,
-// m_CacheSize, m_WantedCache (src/engine/server/collection.h's CMoArray<T>,
-// which cltnew.cpp already pinned field for field at CPacket+0x50).
-#define DECLARE_MOARRAY(cls)                                 \
-	class cls                                                \
-	{                                                        \
-	public:                                                  \
-		~cls() { Term(); }                                   \
-		void  Term() { SetSize2(0, &g_DefAlloc); }           \
-		int   SetSize2(uint32 nNewSize, LAlloc* pAlloc);     \
-		virtual void _g00();                                 \
-		uint8 m_pad_04[0x14 - 0x04];                         \
-	}
-
-DECLARE_MOARRAY(CArray1a8);                                    // Term 0x00414f00
-DECLARE_MOARRAY(CArray1bc);                                    // Term 0x00414fa0
-DECLARE_MOARRAY(CArray1d0);                                    // Term 0x00414fa0
-DECLARE_MOARRAY(CArray1e4);                                    // Term 0x0040bfe0
-DECLARE_MOARRAY(CArray1f8);                                    // Term 0x00415050
-DECLARE_MOARRAY(CArray32c);                                    // Term 0x00414fa0
-DECLARE_MOARRAY(CArray340);                                    // Term 0x00414fa0
+// The collection members are CMoArrays: the five light-animation arrays
+// are serverworld.h's, the world table and the polygon list arrays of
+// pointers (clientmgr3.cpp, the notes above CCmgWorld's members).  The
+// world's destructor is then the one clientmgr3.cpp's CCmgWorld compiles
+// to, Primal Hunt's 0x00412820, which this file's unwinds reach too.
+class CServerWorldRec;
+class CWorldPolyRec;
 
 // servermgr.h's CServerWorld.  Its constructor is out of line (0x004222f0)
 // and it has no destructor of its own; what the shipped teardown runs is
@@ -907,16 +900,16 @@ public:
 	~CWorld1a4() {}
 
 	uint32     m_Unknown00;                                    // 0x1a4
-	CArray1a8  m_Array1a8;                                     // 0x1a8
-	CArray1bc  m_Array1bc;                                     // 0x1bc
-	CArray1d0  m_Array1d0;                                     // 0x1d0
-	CArray1e4  m_Array1e4;                                     // 0x1e4
-	CArray1f8  m_Array1f8;                                     // 0x1f8
+	CWorldSub04 m_Array1a8;                                    // 0x1a8
+	CWorldSub18 m_Array1bc;                                    // 0x1bc
+	CWorldSub2C m_Array1d0;                                    // 0x1d0
+	CWorldSub40 m_Array1e4;                                    // 0x1e4
+	CWorldSub54 m_Array1f8;                                    // 0x1f8
 	uint8      m_pad_20c[0x21c - 0x20c];
 	CSub21c    m_Sub21c;                                       // 0x21c
 	CSub2a0    m_Sub2a0;                                       // 0x2a0
-	CArray32c  m_Array32c;                                     // 0x32c
-	CArray340  m_Array340;                                     // 0x340
+	CMoArray<CServerWorldRec*> m_Array32c;                     // 0x32c
+	CMoArray<CWorldPolyRec*>   m_Array340;                     // 0x340
 	// AVP2: the object manager follows at 0x394, not NOLF's 0x390
 	// (servermgr.h; lea 0x394 at 0x00416a12 in CreateServerMgr).
 	uint8      m_pad_354[0x394 - 0x354];
@@ -1520,37 +1513,7 @@ void cs_UpdateAttachPositions(CClientShell* pShell);                // 0x00413b4
 // zero-initialised .data dwords nothing else in the image references
 // (0x004efe80, 0x004efd54, 0x004efeec).  AvP2 1.0.9.6 has the same
 // (0x004150e0, without exception frames).  (names ours)
-class CBaseCounter
-{
-public:
-	CBaseCounter(int nMode);                 // 0x00426060
-
-	void   Start();
-	uint32 Read();
-	uint32 ReadRaw();
-
-	uint32 m_Data[2];
-};
-void   cnt_StartCounter(CBaseCounter* pCounter);               // 0x00426150
-uint32 cnt_EndCounter(CBaseCounter* pCounter);                 // 0x00426160
-
-class CountAdderQ514
-{
-public:
-	CountAdderQ514(uint32* pTotal) : m_Counter(0)
-	{
-		m_pTotal = pTotal;
-		cnt_StartCounter(&m_Counter);
-	}
-
-	~CountAdderQ514()
-	{
-		*m_pTotal += cnt_EndCounter(&m_Counter);
-	}
-
-	CBaseCounter m_Counter;                  // 0x00
-	uint32*      m_pTotal;                   // 0x08
-};
+#include "countadder.h"                // CBaseCounter, CountAdder
 
 // collelem.cpp's counter table entries.
 extern uint32 g_nCntNetQ428, g_nCntServerQ428, g_nCntProcessPacketsQ428;
@@ -1580,14 +1543,14 @@ LTRESULT CClientShell::Update()
 	pClientShell = m_pClientMgr->m_pClientShell;
 
 	{
-		CountAdderQ514 cNet(&g_nCntNetQ428);
+		CountAdder cNet(&g_nCntNetQ428);
 
 		m_pClientMgr->m_NetMgr.Update("Client: ", m_pClientMgr->m_Unknown125c, 1);
 	}
 
 	{
-		CountAdderQ514 cTicks(&g_nTicks4efe80Q514);
-		CountAdderQ514 cServer(&g_nCntServerQ428);
+		CountAdder cTicks(&g_nTicks4efe80Q514);
+		CountAdder cServer(&g_nCntServerQ428);
 
 		if (m_pServerMgr && g_nUnknown4a9efc)
 		{
@@ -1615,8 +1578,8 @@ LTRESULT CClientShell::Update()
 	m_Unknown1c = 0.0f;
 
 	{
-		CountAdderQ514 cTicks(&g_nTicks4efd54Q514);
-		CountAdderQ514 cPackets(&g_nCntProcessPacketsQ428);
+		CountAdder cTicks(&g_nTicks4efd54Q514);
+		CountAdder cPackets(&g_nCntProcessPacketsQ428);
 
 		dResult = Sub47bab0();
 
@@ -1631,8 +1594,8 @@ LTRESULT CClientShell::Update()
 		sub_461270Q1S((CClientShellQ1S*)this);
 
 	{
-		CountAdderQ514 cTicks(&g_nTicks4efeecQ514);
-		CountAdderQ514 cGame(&g_nCntGameClientShellQ428);
+		CountAdder cTicks(&g_nTicks4efeecQ514);
+		CountAdder cGame(&g_nCntGameClientShellQ428);
 
 		pClientShell->PreUpdate();
 		pClientShell->Update();
@@ -1651,8 +1614,8 @@ LTRESULT CClientShell::Update()
 	}
 
 	{
-		CountAdderQ514 cTicks(&g_nTicks4efeecQ514);
-		CountAdderQ514 cGame(&g_nCntGameClientShellQ428);
+		CountAdder cTicks(&g_nTicks4efeecQ514);
+		CountAdder cGame(&g_nCntGameClientShellQ428);
 
 		pClientShell->PostUpdate();
 	}

@@ -444,6 +444,10 @@ uint32 CModelAnimsView::CountOwnAnims()
 }
 
 
+// RETIRED (#if 0): this is commonmodel.cpp's Model::sub_10017b69, which is
+// identical at Primal Hunt 0x00454ad0 (the roots at +0x2c4, not NOLF's
+// +0x2c0) and at AvP2's; nothing calls this copy.
+#if 0
 // commonmodel.h:978 already declares this, as a friend of
 // Model::CModelSub20C, at server.dll's 0x10016304; commonmodel.cpp:1526
 // defines it.  In lithtech.exe it is 0x004451c0, and 0x00447750 is its only
@@ -485,6 +489,7 @@ LTBOOL CModelNodeTreeView::SameNodeTree(CModelNodeTreeView* pOther,
 {
 	return mod_SameNodeTree(m_pSub20c, pOther->m_pSub20c, ppMismatch);
 }
+#endif // retired
 
 
 // ======================================================================= //

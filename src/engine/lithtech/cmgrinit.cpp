@@ -54,12 +54,9 @@ typedef unsigned long  LTBOOL;
 //  Shared declarations
 // ======================================================================= //
 
-// 0x004b0ab8 / 0x004b13e8 -- the command line clu_BuildCommandLine built.
-// clientwin.cpp already declares both at these addresses (g_pCluArgList /
-// g_nCluArgCount) and ltnew2.cpp the same pair under g_pLTArgList /
-// g_nLTArgCount.  Same objects; the names below are clientwin.cpp's.
-extern char** g_pCluArgList;                                  // 0x004b0ab8
-extern int    g_nCluArgCount;                                 // 0x004b13e8
+// The command line: the CRT's own __argv / __argc (Primal Hunt 0x004f7c64 /
+// 0x004f7c60), which the image's readers load directly.
+#include <stdlib.h>
 
 // 0x004b2f00 -- the client's global ConsoleState, clientmgr2.cpp's opaque
 // ConsoleStateRef.  NOT the same object as CClientMgr+0x1268 below: that
@@ -270,12 +267,12 @@ void cm_RunPlusCommandsQ46C(CClientMgrQ46C* /*pClientMgr*/, int nSource)
 	char buf[512];
 	int  i;
 
-	for (i = 0; i < g_nCluArgCount - 1; i++)
+	for (i = 0; i < __argc - 1; i++)
 	{
-		if (g_pCluArgList[i][0] == '+')
+		if (__argv[i][0] == '+')
 		{
-			sprintf(buf, "(%s) (%s)", g_pCluArgList[i] + 1,
-			        g_pCluArgList[i + 1]);
+			sprintf(buf, "(%s) (%s)", __argv[i] + 1,
+			        __argv[i + 1]);
 
 			con_RunString3((ConsoleStateRef*)&g_ClientConsoleState, buf, nSource);
 		}

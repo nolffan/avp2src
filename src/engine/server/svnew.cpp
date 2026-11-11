@@ -690,12 +690,19 @@ public:
 // sb_Free is servermgr.h's inline: the freed record's first dword becomes
 // the next-free link. m_Bank.m_pFreeList is at this+0x1c, which is what the
 // shipped `mov 0x1c(%esi),%eax` / `mov %edi,0x1c(%esi)` pair says.
+// AvP2 1.0.9.6's (0x10035d4b, slot 2 of the bank's vtable 0x1006a438 as
+// `jmp`). Not Primal Hunt's: its bank (vtable 0x10075488) forwards slot 2 to
+// 0x10038c4c, which calls the record's destructor 0x10015563 with no flags
+// word pushed -- smgr.cpp's CMessageBankFreeQ523::Free, identical there --
+// and no function of this shape is in that image.
+#ifndef PRIMAL_HUNT
 void CMsgRecordBank::Free(void* pObj)
 {
 	((CBankElem54View*)pObj)->Release(0);
 
 	sb_Free(&m_Bank, pObj);
 }
+#endif
 
 
 

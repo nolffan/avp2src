@@ -1039,7 +1039,16 @@ DECLARE_COLLPOD (CCollElem18PQ514, 0x18);
 // the class. Only the /O2 image can tell, because the difference is whether
 // the element's copy constructor and assignment are expansion candidates at
 // all, and /O1 declines the expansion either way.
-#ifdef COLL_WHOLE_CLASSES
+//
+// Not in server.dll, either image: its one 0x1c DefaultCache array is
+// commonmodel.h's CMoArray<CChildNodeXform, DefaultCache> (Model's
+// CModelSub1D4::m_Array00). That vtable (AvP2 0x100699f8, Primal Hunt
+// 0x10074a0c) is the only one whose GenAppend and GenRemoveAt reach a 0x1c
+// Insert2 and Remove2 (AvP2 0x1001f4e5 and 0x1001f656, Primal Hunt
+// 0x1002054b and 0x100206bc; no other function of either image scales by
+// 0x1c with those shapes), and the bodies ours are folded with
+// CChildNodeXform's in our link. This array duplicated it there.
+#if defined(COLL_WHOLE_CLASSES) && !defined(LT_SERVER_BUILD)
 template class CMoArray<CCollElem1CS, DefaultCache>;
 #endif
 // No NoCache array of it: the shipped NoCache 0x1c array is commonmodel.h's
@@ -1661,7 +1670,6 @@ void coll_ForceInstantiationSizedAvP2Srv(uint32 nCacheSize)
 
 void coll_ForceInstantiationAvP2Srv(
 	CMoArray<uint8, DefaultCache>&          aBytes,
-	CMoArray<CCollElem1CS, DefaultCache>&   a1CSRef,
 	CMoArray<CCollElemA4, DefaultCache>&    aA4Ref)
 {
 	CMoArray<uint32, DefaultCache>          aDword;
@@ -1670,7 +1678,6 @@ void coll_ForceInstantiationAvP2Srv(
 	CMoArray<CCollElem04F, DefaultCache>    a04F;
 	CMoArray<CCollElem08, DefaultCache>     a08;
 	CMoArray<CCollElem14, NoCache>          a14;
-	CMoArray<CCollElem1CS, DefaultCache>    a1CS;
 	CMoArray<CCollElem20A, NoCache>         a20A;
 	CMoArray<CCollElem20C, NoCache>         a20C;
 	CMoArray<CCollElem24Rec, NoCache>       a24Rec;
@@ -1683,18 +1690,12 @@ void coll_ForceInstantiationAvP2Srv(
 		&CMoArray<float, DefaultCache>::Insert2;
 	void (CMoArray<float, DefaultCache>::*pRemoveFloat)(uint32, LAlloc*) =
 		&CMoArray<float, DefaultCache>::Remove2;
-	LTBOOL (CMoArray<CCollElem1CS, DefaultCache>::*pCopy1CS)(const CMoArray<CCollElem1CS, DefaultCache>&, LAlloc*) =
-		&CMoArray<CCollElem1CS, DefaultCache>::CopyArray2;
-	LTBOOL (CMoArray<CCollElem1CS, DefaultCache>::*pInsert1CS)(uint32, const CCollElem1CS&, LAlloc*) =
-		&CMoArray<CCollElem1CS, DefaultCache>::Insert2;
 	LTBOOL (CMoArray<CCollElemA4, DefaultCache>::*pInsertA4)(uint32, const CCollElemA4&, LAlloc*) =
 		&CMoArray<CCollElemA4, DefaultCache>::Insert2;
 
 	(aBytes.*pBytes)();
 	(aFloat.*pInsertFloat)(0, 0.0f, &g_DefAlloc);
 	(aFloat.*pRemoveFloat)(0, &g_DefAlloc);
-	(a1CSRef.*pCopy1CS)(a1CS, &g_DefAlloc);
-	(a1CSRef.*pInsert1CS)(0, CCollElem1CS(), &g_DefAlloc);
 	(aA4Ref.*pInsertA4)(0, CCollElemA4(), &g_DefAlloc);
 }
 #endif

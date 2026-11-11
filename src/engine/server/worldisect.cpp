@@ -62,9 +62,11 @@
 float g_fIsectLength;
 float g_fIsectStartFrac;
 // 0x10058548 — the direction scaled by the reciprocal of its squared length,
-// and 0x10058558 the normalised direction itself.
-LTVector g_vIsectScaledDir;
-LTVector g_vIsectDir;
+// and 0x10058558 the normalised direction itself. One declaration: every
+// shipped engine has three of this file's empty-constructor initialisers, not
+// four (VC6 gives a declaration one; lithtech.exe 0x0043b750, server.dll
+// 0x10012de7).
+LTVector g_vIsectScaledDir, g_vIsectDir;
 // 0x10058564 — the polygon handle the walk found, seeded to -1 (no poly).
 int g_hIsectPoly;
 // 0x10058568 and 0x10058578 — where and on what the segment stopped.

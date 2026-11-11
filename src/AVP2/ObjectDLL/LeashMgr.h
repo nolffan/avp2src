@@ -325,8 +325,8 @@ class CLeashGroup
 			return pNode;
 		}
 
-		TLinkList<CLeashPoint*>		m_Points;		// +0x00
-		TLinkList<CLeashVolume*>	m_Volumes;		// +0x10
+		TLinkList<CLeashNode*>		m_Points;		// +0x00, CLeashPoints
+		TLinkList<CLeashNode*>		m_Volumes;		// +0x10, CLeashVolumes
 		char						m_szName[32];	// +0x20
 		HLEASHGROUP					m_hGroup;		// +0x40
 		int							m_nNextID;		// +0x44

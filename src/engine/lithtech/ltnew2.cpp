@@ -234,9 +234,7 @@ LTRESULT sub_00404af0(CClientMgr *pClientMgr, uint32 index, LAInfo *pInfo, int b
 //  passes "launch" and then loads "launch.dll".
 // ======================================================================= //
 
-// clientwin.cpp's argument vector and count, which it defines.
-extern char** g_pCluArgList;   // 0x004b0ab8 -- loaded as a value, so a pointer
-extern int    g_nCluArgCount;  // 0x004b13e8
+// The CRT's argument vector and count (stdlib.h's __argv / __argc).
 
 // 0x00490cd0 -- case-insensitive string EQUALITY (1 when equal; see
 // clientinput.cpp's sub_490cd0).  __cdecl, `add $0x8,%esp` after it.
@@ -284,7 +282,7 @@ char* sub_00402ec0(char *pName, int argc, char **argv)
 //     `char**` variable, not a `char*[]` array.
 char* sub_00402f70(char *pArgName)
 {
-	return sub_00402ec0(pArgName, g_nCluArgCount, g_pCluArgList);
+	return sub_00402ec0(pArgName, __argc, __argv);
 }
 
 

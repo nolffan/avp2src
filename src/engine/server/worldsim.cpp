@@ -170,35 +170,18 @@ int CSimContext::ClassifyAxis(float f)
 float g_fStepMinNormalY = 0.1f;
 float g_fStepSlopeLimit = 0.7071f;
 
-CSphereQuery g_BoxSphere;
-CSphereQuery g_SphereAtOffset;
-CSphereQuery g_SphereAtDelta;
+// The file's class-typed globals, and how they are declared, are read off the
+// shipped initialiser table: VC6 gives each DECLARATION (not each declarator)
+// a dynamic initialiser, an empty constructor's being a `jmp` to a `ret`.
+// Every shipped engine has six of those for this file, then g_BoxPlanes' own
+// (Primal Hunt's lithtech.exe 0x0041a4d0-0x0041a590, server.dll
+// 0x1000211b-0x1000213f; AvP2's 0x004182b0, 0x10002071), and none after: so
+// the three spheres are one declaration, as are the three move vectors, and
+// g_BoxPlanes is defined after all of them (below the step-up's two vectors).
+CSphereQuery g_BoxSphere, g_SphereAtOffset, g_SphereAtDelta;
 float        g_fBoxRadius;
 
 LTVector g_SweepPoints[2][8];
-// The box's own six faces as planes. Only the distances ever change --
-// ws_SetupBoxGeometry touches nothing but m_Dist -- so the six axis normals
-// have to be written once, and the initialiser below is where this
-// reconstruction does it.
-//
-// The shipped source did NOT: the array is at 0x10057fc8 (read off
-// ws_SetupBoxGeometry's own six stores, which land on +0xc, +0x1c, ... +0x5c),
-// and .data's raw data stops at 0x10057000 — so g_BoxPlanes is in the
-// uninitialised tail and its normals are set somewhere that has not been
-// found yet -- some world- or physics-init the reconstruction has not reached
-// -- and not at file scope. Keeping the initialiser here costs nothing for
-// byte-matching, because every function that reads the array reads it through
-// a masked relocation and only the section the array lands in differs, and it
-// keeps the array correct when the game runs. Move it to whatever
-// initialiser turns up rather than deleting it.
-LTPlane  g_BoxPlanes[6] = {
-	LTPlane( 1.0f,  0.0f,  0.0f, 0.0f),
-	LTPlane(-1.0f,  0.0f,  0.0f, 0.0f),
-	LTPlane( 0.0f,  1.0f,  0.0f, 0.0f),
-	LTPlane( 0.0f, -1.0f,  0.0f, 0.0f),
-	LTPlane( 0.0f,  0.0f,  1.0f, 0.0f),
-	LTPlane( 0.0f,  0.0f, -1.0f, 0.0f)
-};
 
 // Turning a box into something the tree walk can test. Only the two faces
 // square to Y are built: the walk needs a wound face to clip against and the
@@ -641,9 +624,7 @@ int CSimContext::ClassifyPlane(LTPlane* pPlane, LTVector* pPoint,
 int       g_nContacts;
 WSContact g_Contacts[WS_MAX_CONTACTS];
 
-LTVector    g_vMoveBase;
-LTVector    g_vMoveStart;
-LTVector    g_vMoveEnd;
+LTVector    g_vMoveBase, g_vMoveStart, g_vMoveEnd;
 CMoveState*    g_pMoveState;
 CBounceState*  g_pMoveResult;
 CPhysicsBlock* g_pPBlock;
@@ -697,15 +678,18 @@ void ws_NudgeQ516(LTVector* pOut, LTVector vStart, LTVector vStep)
 	{
 		*pOut += vStep;
 
-		if (*pOut == vStart)
-		{
-			fScale = vStart.Mag() * 1.192092896e-07f;
-			fScale /= fMag;
+		// The test is `!=`: AvP2 1.0.9.6's box move, past where /O2 stops
+		// inlining, CALLS _CVector::operator!= here (0x0041cc7d onto
+		// 0x0041f7e0) and branches away on true.
+		if (*pOut != vStart)
+			return;
 
-			vStep *= fScale;
+		fScale = vStart.Mag() * 1.192092896e-07f;
+		fScale /= fMag;
 
-			*pOut = vStart + vStep;
-		}
+		vStep *= fScale;
+
+		*pOut = vStart + vStep;
 	}
 }
 
@@ -2897,6 +2881,21 @@ extern int g_CV_NewStairStepQ537;
 // mover's frame (0x1008bb68, 0x1008bb90; names ours).
 LTVector g_vStepSweepMinQ553;
 LTVector g_vStepSweepMaxQ553;
+
+// The box's own six faces as planes. Only the distances ever change --
+// ws_SetupBoxGeometry touches nothing but m_Dist -- so the six axis normals
+// are written once, by this initialiser (the shipped one: lithtech.exe
+// 0x0041a590, server.dll 0x1000213f, the last of this file's). The array is
+// at 0x10057fc8 in .data's uninitialised tail, where every dynamically
+// initialised global is.
+LTPlane  g_BoxPlanes[6] = {
+	LTPlane( 1.0f,  0.0f,  0.0f, 0.0f),
+	LTPlane(-1.0f,  0.0f,  0.0f, 0.0f),
+	LTPlane( 0.0f,  1.0f,  0.0f, 0.0f),
+	LTPlane( 0.0f, -1.0f,  0.0f, 0.0f),
+	LTPlane( 0.0f,  0.0f,  1.0f, 0.0f),
+	LTPlane( 0.0f,  0.0f, -1.0f, 0.0f)
+};
 
 // AVP2: every physics block the move overlaps (0x10089b88, 0x200 entries,
 // which run exactly up to g_pPBlock at 0x1008a388; name ours).

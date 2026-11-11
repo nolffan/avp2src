@@ -401,114 +401,43 @@ public:
 // ======================================================================= //
 
 // ----------------------------------------------------------------------- //
-//  The collection members.  All five instantiations have a vptr at +0x00,
-//  the array at +0x04 and two counts at +0x08/+0x0c, which is src/engine/
-//  server/collection.h's CMoArray<T> (cltnew.cpp pinned the same shape at
-//  CPacket+0x50).  Three have an out-of-line Term and two are expanded
-//  inline; both expansions are written out because their bodies DIFFER, and
-//  the difference is in the shipped bytes.
+//  The collection members.  All seven have a vptr at +0x00, the array at
+//  +0x04 and two counts at +0x08/+0x0c: src/engine/server/collection.h's
+//  CMoArray<T> (cltnew.cpp pinned the same shape at CPacket+0x50), and
+//  they are real instantiations of it.  The destructors that expand them
+//  do so to different depths (Term -> SetSize2 -> _DeleteAndDestroyArray
+//  -> BaseDelete), which is the inline budget, not a different class.
 //
-//  Each is polymorphic (one virtual standing for the GenList table), so
-//  each destructor restores its vptr on the way out (`movl $0x4a1b34,
+//  Each destructor restores its vptr on the way out (`movl $0x4a1b34,
 //  0x4(%ebx)` and friends).  That costs the factory nothing because none of
 //  them is a direct member of CClientMgr: they live in the world object
 //  (CCmgWorld below), whose out-of-line constructor 0x004222f0 stores them.
 // ----------------------------------------------------------------------- //
 
-// 0x004152b0 -- clientstreams.cpp reads the same three-argument shape:
-// (&g_DefAlloc, p, n).  It is the deallocator the inline Term at 0x004112e5
-// ends in.
-void cmg_FreeArray(void* pAlloc, void* pArray, uint32 nElements);   // 0x004152b0
+// The five light-animation arrays at +0x04..+0x54 are serverworld.h's
+// CMoArray instantiations, the very types commonmodel.cpp's world holds:
+// the one copy of the world's destructor Primal Hunt keeps (0x00412820,
+// reached from the unwinds of CClientMgr's and CServerMgr's constructor
+// and destructor) expands each array's ~CMoArray -> Term -> SetSize2 to
+// the depth the inline budget leaves it (+0x04 down to BaseDelete,
+// 0x00433210; +0x18..+0x54 to _DeleteAndDestroyArray, 0x0040d020), and
+// its unwind funclets call the five instances' own out-of-line
+// destructors (0x00414300, 0x004148e0, 0x00414980, 0x004140c0,
+// 0x004149c0).  Hand-written views of them (CCmgArray04/18, and
+// DECLARE_MOARRAY classes shared with clientshell.cpp) had out-of-line
+// destructors that retail has no copy of.
+#include "serverworld.h"
 
-// The array at +0x04, inside the world object.  Its Term is INLINE: the
-// shipped tail at 0x004112e5..0x00411313 is `if (m_pArray) { free; m_pArray
-// = 0; m_nCache = 0; } m_nElements = 0;` -- the null arm jumps straight to
-// the LAST store, which is what puts m_nElements outside the if.
-class CCmgArray04
-{
-public:
-	~CCmgArray04()
-	{
-		if (m_pArray)
-		{
-			cmg_FreeArray(&g_DefAlloc, m_pArray, m_nElements + m_nCache);
-			m_pArray = LTNULL;
-			m_nCache = 0;
-		}
-
-		m_nElements = 0;
-	}
-
-	virtual void _g00();                                        // 0x00 vptr
-	void*  m_pArray;                                            // 0x04
-	uint32 m_nElements;                                         // 0x08
-	uint32 m_nCache;                                            // 0x0c
-	// FIFTH DWORD, and it was missing. This is collection.h's
-	// CMoArray<T,C> shape exactly -- vptr, buffer, count, cache size,
-	// WANTED cache -- which is 0x14, not 0x10. Without it every field of
-	// CCmgClientMgr after m_World sat four bytes low, which is what the
-	// offsetof audit caught at the very first composite.
-	uint32 m_nWantedCache;                                      // 0x10
-};
-
-// The array at +0x18.  Also inline, and NOT the same body: the deallocation
-// is a __thiscall member (0x00413050, which cltnew.cpp already reads as
-// "thiscall, (pAlloc, nElements)"), and only m_nElements is cleared
-// afterwards -- so the pointer is cleared by the callee.
-class CCmgArray18
-{
-public:
-	void Free(void* pAlloc, uint32 nElements);                  // 0x00413050
-
-	~CCmgArray18()
-	{
-		if (m_pArray)
-			Free(&g_DefAlloc, m_nElements + m_nCache);
-
-		m_nElements = 0;
-	}
-
-	virtual void _g00();                                        // 0x00 vptr
-	void*  m_pArray;                                            // 0x04
-	uint32 m_nElements;                                         // 0x08
-	uint32 m_nCache;                                            // 0x0c
-	// FIFTH DWORD -- the same omission as CCmgArray04. The
-	// DECLARE_CMG_ARRAY macro below already uses 0x14; only the two
-	// hand-written classes were short.
-	uint32 m_nWantedCache;                                      // 0x10
-};
-
-// The five with an out-of-line resize.  They ARE clientshell.cpp's
-// DECLARE_MOARRAY classes -- the same five collections of the same world
-// object, which CServerMgr carries at +0x1a4 and CClientMgr at +0x00 -- so
-// they are declared here with that file's names and bodies, token for token,
-// and the linker folds the two TUs' copies.  Each teardown is the vptr
-// restore (0x004a1b94 / 0x004a1ab8 / 0x004a1bc4 / 0x004a1bf4 / 0x004a1c24),
-// then `SetSize2(0, &g_DefAlloc)` -- `push $0x4b4e88; push $0x0; call` with
-// `this` in %ecx.  The one virtual stands for the collection's GenList table
-// and is what makes VC6 restore the vptr in the destructor.
-#define DECLARE_MOARRAY(cls)                                 \
-	class cls                                                \
-	{                                                        \
-	public:                                                  \
-		~cls() { Term(); }                                   \
-		void  Term() { SetSize2(0, &g_DefAlloc); }           \
-		int   SetSize2(uint32 nNewSize, LAlloc* pAlloc);     \
-		virtual void _g00();                                 \
-		uint8 m_pad_04[0x14 - 0x04];                         \
-	}
-
-DECLARE_MOARRAY(CArray1d0);                                    // Term 0x00414fa0
-DECLARE_MOARRAY(CArray1e4);                                    // Term 0x0040bfe0
-DECLARE_MOARRAY(CArray1f8);                                    // Term 0x00415050
-DECLARE_MOARRAY(CArray32c);                                    // Term 0x00414fa0
-DECLARE_MOARRAY(CArray340);                                    // Term 0x00414fa0
-
-typedef CArray1d0 CCmgArray2C;                                  // +0x2c
-typedef CArray1e4 CCmgArray40;                                  // +0x40
-typedef CArray1f8 CCmgArray54;                                  // +0x54
-typedef CArray32c CCmgArray188;                                 // +0x188
-typedef CArray340 CCmgArray19C;                                 // +0x19c
+// The table of loaded worlds at +0x188 and the polygon list at +0x19c:
+// CMoArrays of pointers too (vptr 0x004d4ca4 / 0x004d4cd4 in Primal Hunt).
+// The world's destructor CALLS their resize, the one 4-byte-pointer
+// SetSize2 the image folds them onto (0x00418bf0), and the unwinds call the
+// table's own ~CMoArray (0x00414f30).  commonmodel.cpp's CWorldTable and
+// CWorldPolyList are wider views of the same two.
+class CServerWorldRec;
+class CWorldPolyRec;
+typedef CMoArray<CServerWorldRec*> CCmgArray188;                // +0x188
+typedef CMoArray<CWorldPolyRec*>   CCmgArray19C;                // +0x19c
 
 // The members with a plain out-of-line destructor and nothing else reached.
 #define DECLARE_CMG_DTOR(cls, size)                           \
@@ -657,19 +586,11 @@ CCmgBank113C::CCmgBank113C()
 	sb_Init(&m_Bank, 0x40, 32);
 }
 
-// The twelve-byte vector of the force control's local (LTVector's shape).
-// Its constructor is INLINE, as LTVector's is, and /O2 still CALLS
-// 0x00411d40 for it. With a body here, the refused copy is emitted as a
-// COMDAT, and that COMDAT pairs with 0x00411d40. The factory is identical
-// with a declaration only as well.
-class CCmgVec3
-{
-public:
-	CCmgVec3(float x, float y, float z) { m_x = x; m_y = y; m_z = z; } // 0x00411d40
-
-	float m_x, m_y, m_z;
-};
-
+// The force control's local is an LTVector: its three-float constructor is
+// called out of line, the image's one _CVector<float> copy (AvP2 1.0.9.6
+// 0x00412960 and Primal Hunt
+// 0x004140a0, where cmg_CreateClientMgr expands the force control's
+// constructor around the call, 0x00412399).
 // 0x4c4 -- commonphysics.h's GlobalForceControl (CServerMgr has it at 0x668,
 // offset by the same 0x1a4).  Its constructor is the server's one: a NAMED
 // local vector (0x00410ab7 re-takes its address with `lea 0xc(%esp)` rather
@@ -682,7 +603,7 @@ class CCmgForceControl
 public:
 	CCmgForceControl()
 	{
-		CCmgVec3 vForce(0.0f, -2000.0f, 0.0f);
+		LTVector vForce(0.0f, -2000.0f, 0.0f);
 
 		Set(&vForce);
 
@@ -691,7 +612,7 @@ public:
 		m_Unknown30 = -0.7071f;
 	}
 
-	void Set(CCmgVec3* pVec);                                   // 0x00410e20
+	void Set(LTVector* pVec);                                     // 0x00410e20
 
 	uint8       m_pad_00[0x30];                                 // 0x00
 	float       m_Unknown30;                                    // 0x30
@@ -1156,33 +1077,7 @@ uint32 g_nCntUpdateSoundsQ513;
 // wrappers are calls (PH 0x00426060 / 0x00426150 / 0x00426160), and the
 // adder's destructor is INLINE here (`push; call 0x426160; mov 8(..),%ecx;
 // add %eax,(%ecx)`), where the server calls its out-of-line copy.
-class CBaseCounter
-{
-public:
-	CBaseCounter(int nMode);
-
-	uint32 m_Data[2];
-};
-void   cnt_StartCounter(CBaseCounter* pCounter);
-uint32 cnt_EndCounter(CBaseCounter* pCounter);
-
-class CCmgCountAdderQ513
-{
-public:
-	CCmgCountAdderQ513(uint32* pTotal) : m_Counter(0)
-	{
-		m_pTotal = pTotal;
-		cnt_StartCounter(&m_Counter);
-	}
-
-	~CCmgCountAdderQ513()
-	{
-		*m_pTotal += cnt_EndCounter(&m_Counter);
-	}
-
-	CBaseCounter m_Counter;                                     // 0x00
-	uint32*      m_pTotal;                                      // 0x08
-};
+#include "countadder.h"                // CBaseCounter, CountAdder
 
 // The client's worker thread at +0x15a8.  src/engine/server/lthread.h's
 // LThread laid out field for field: the OUTGOING queue at +0x2c is exactly
@@ -1418,11 +1313,11 @@ public:
 	CCmgWorld();                                                // 0x004222f0
 
 	uint32           m_Unknown00;                               // 0x000
-	CCmgArray04      m_Array04;                                 // 0x004
-	CCmgArray18      m_Array18;                                 // 0x018
-	CCmgArray2C      m_Array2c;                                 // 0x02c
-	CCmgArray40      m_Array40;                                 // 0x040
-	CCmgArray54      m_Array54;                                 // 0x054
+	CWorldSub04      m_Array04;                                 // 0x004
+	CWorldSub18      m_Array18;                                 // 0x018
+	CWorldSub2C      m_Array2c;                                 // 0x02c
+	CWorldSub40      m_Array40;                                 // 0x040
+	CWorldSub54      m_Array54;                                 // 0x054
 	uint8            m_pad_68[0x6c - 0x68];
 	// clientmgr2.cpp's world tree at +0x6c; Init sets its code source.
 	CCmgWorldTree6C  m_WorldTree;                               // 0x06c
@@ -2207,7 +2102,7 @@ LTRESULT CCmgClientMgr::Update()
 	// The CD-audio module, latched against its console variable.
 	if (m_bCDAudioReady)
 	{
-		CCmgCountAdderQ513 cntAdder(&g_nCntMusicQ428);
+		CountAdder cntAdder(&g_nCntMusicQ428);
 
 		if (g_CV_MusicEnable != m_nCDAudioEnabled)
 		{
@@ -2228,7 +2123,7 @@ LTRESULT CCmgClientMgr::Update()
 	// clientsoundmgr.cpp's PauseSounds and ResumeSounds.
 	if (m_SoundMgr.m_pSoundDriver)
 	{
-		CCmgCountAdderQ513 cntAdder(&g_nCntSoundQ428);
+		CountAdder cntAdder(&g_nCntSoundQ428);
 
 #ifdef PRIMAL_HUNT
 		if (g_CV_SoundEnable != m_SoundMgr.IsEnabledQ548())
@@ -2252,14 +2147,14 @@ LTRESULT CCmgClientMgr::Update()
 
 	if (dsi_IsClientActive())
 	{
-		CCmgCountAdderQ513 cntAdder(&g_nCntInputQ428);
+		CountAdder cntAdder(&g_nCntInputQ428);
 
 		UpdateCounters(LTFALSE);
 	}
 
 	if (m_pShell)
 	{
-		CCmgCountAdderQ513 cntAdder(&g_nCntClientShellQ428);
+		CountAdder cntAdder(&g_nCntClientShellQ428);
 
 		dResult = m_pShell->Update();
 
@@ -2275,8 +2170,8 @@ LTRESULT CCmgClientMgr::Update()
 	}
 
 	{
-		CCmgCountAdderQ513 cntSound(&g_nCntSoundQ428);
-		CCmgCountAdderQ513 cntUpdate(&g_nCntUpdateSoundsQ513);
+		CountAdder cntSound(&g_nCntSoundQ428);
+		CountAdder cntUpdate(&g_nCntUpdateSoundsQ513);
 
 		UpdateSounds(m_fFrameTime);
 	}

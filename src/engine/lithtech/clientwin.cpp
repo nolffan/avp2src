@@ -547,12 +547,8 @@ CluClientGlob g_CluClientGlob;               // 0x004b0ac0
 // (0x004f7c64 / 0x004f7c60 in Primal Hunt's image) -- nothing in the engine
 // parses the command line any more (see clu_dsi_BuildCommandLine), and
 // every reader in the image (0x00403300, cmgrinit.cpp's 0x004137cd) loads
-// the CRT's pair.  cmgrinit.cpp and ltnew2.cpp still read them under these
-// two names, so until they say __argv / __argc themselves these are the
-// CRT's values, taken once at start-up (the CRT fills its pair before it
-// runs the C++ initialisers).
-char** g_pCluArgList = __argv;
-int    g_nCluArgCount = __argc;
+// the CRT's pair, and so do ours: no global of the engine's holds them, and
+// the image has no initialiser copying them.
 
 // 0x004b13e4 -- timeGetTime() at the moment WinMain finished parsing.  The
 // "Running for %.1f seconds" line subtracts it.

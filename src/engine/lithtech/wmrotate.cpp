@@ -159,6 +159,12 @@
 //  The stand-in here exists so this file compiles on its own.
 // ======================================================================= //
 
+// RETIRED (#if 0): NOLF's out-of-line copy.  Neither Talon image has one:
+// no `fdivs 0x8(%esp)` triple ending `ret $0x8` exists in Primal Hunt's or
+// AvP2 1.0.9.6's lithtech.exe (the only such body is operator*(float),
+// 0x00421ab0 / 0x0041f770, worldsim.cpp's).  Forcing this stand-in out of
+// line built a function retail does not have.
+#if 0
 template <class T>
 class _QVector4545
 {
@@ -179,6 +185,7 @@ typedef _QVector4545<float> LTVectorQ4545;
 // Forced out of line the way the shipped image has it.
 static LTVectorQ4545 (LTVectorQ4545::*s_pDivQ4545)(float) const =
 	&LTVectorQ4545::operator/;
+#endif // retired
 
 
 // ======================================================================= //

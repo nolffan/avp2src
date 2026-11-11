@@ -72,7 +72,7 @@ LTBOOL CLeashGroup::AddPoint(CLeashNode* pNode)
 
 	int nID = m_nNextID++;
 	pNode->m_nID = nID;
-	m_Points.AddHead((CLeashPoint*)pNode);
+	m_Points.AddHead(pNode);
 
 	return LTTRUE;
 }
@@ -89,7 +89,7 @@ LTBOOL CLeashGroup::AddVolume(CLeashNode* pNode)
 
 	int nID = m_nNextID++;
 	pNode->m_nID = nID;
-	m_Volumes.AddTail((CLeashVolume*)pNode);
+	m_Volumes.AddTail(pNode);
 
 	return LTTRUE;
 }
@@ -128,13 +128,13 @@ void CLeashGroup::Clear()
 
 LTBOOL CLeashGroup::BuildRoutes()
 {
-	TLinkNode<CLeashPoint*>* pPoint;
+	TLinkNode<CLeashNode*>* pPoint;
 	for (pPoint = m_Points.GetHead(); pPoint != m_Points.GetEnd(); pPoint = pPoint->m_pNext)
 	{
 		BuildPointRoutes(pPoint->m_Data);
 	}
 
-	TLinkNode<CLeashVolume*>* pVolume;
+	TLinkNode<CLeashNode*>* pVolume;
 	for (pVolume = m_Volumes.GetHead(); pVolume != m_Volumes.GetEnd(); pVolume = pVolume->m_pNext)
 	{
 		BuildVolumeRoutes(pVolume->m_Data);
@@ -151,7 +151,7 @@ LTBOOL CLeashGroup::BuildRoutes()
 
 CLeashNode* CLeashGroup::GetPoint(int nID)
 {
-	for (TLinkNode<CLeashPoint*>* pNode = m_Points.GetHead(); pNode != m_Points.GetEnd(); pNode = pNode->m_pNext)
+	for (TLinkNode<CLeashNode*>* pNode = m_Points.GetHead(); pNode != m_Points.GetEnd(); pNode = pNode->m_pNext)
 	{
 		if (pNode->m_Data->m_nID == nID) return pNode->m_Data;
 	}
@@ -167,7 +167,7 @@ CLeashNode* CLeashGroup::GetPoint(int nID)
 
 CLeashNode* CLeashGroup::GetVolume(int nID)
 {
-	for (TLinkNode<CLeashVolume*>* pNode = m_Volumes.GetHead(); pNode != m_Volumes.GetEnd(); pNode = pNode->m_pNext)
+	for (TLinkNode<CLeashNode*>* pNode = m_Volumes.GetHead(); pNode != m_Volumes.GetEnd(); pNode = pNode->m_pNext)
 	{
 		if (pNode->m_Data->m_nID == nID) return pNode->m_Data;
 	}
@@ -186,7 +186,7 @@ CLeashNode* CLeashGroup::GetVolume(int nID)
 
 LTBOOL CLeashGroup::BuildPointRoutes(CLeashNode* pDest)
 {
-	TLinkNode<CLeashPoint*>* pNode;
+	TLinkNode<CLeashNode*>* pNode;
 	for (pNode = m_Points.GetHead(); pNode != m_Points.GetEnd(); pNode = pNode->m_pNext)
 	{
 		pNode->m_Data->m_bVisited = LTFALSE;
@@ -199,7 +199,7 @@ LTBOOL CLeashGroup::BuildPointRoutes(CLeashNode* pDest)
 	while (m_Points.GetCount() > 0)
 	{
 		int nVisited = 0;
-		TLinkNode<CLeashPoint*>* pBest = LTNULL;
+		TLinkNode<CLeashNode*>* pBest = LTNULL;
 
 		for (pNode = m_Points.GetHead(); pNode != m_Points.GetEnd(); pNode = pNode->m_pNext)
 		{
@@ -277,7 +277,7 @@ LTBOOL CLeashGroup::BuildPointRoutes(CLeashNode* pDest)
 
 LTBOOL CLeashGroup::BuildVolumeRoutes(CLeashNode* pDest)
 {
-	TLinkNode<CLeashVolume*>* pNode;
+	TLinkNode<CLeashNode*>* pNode;
 	for (pNode = m_Volumes.GetHead(); pNode != m_Volumes.GetEnd(); pNode = pNode->m_pNext)
 	{
 		pNode->m_Data->m_bVisited = LTFALSE;
@@ -290,7 +290,7 @@ LTBOOL CLeashGroup::BuildVolumeRoutes(CLeashNode* pDest)
 	while (m_Volumes.GetCount() > 0)
 	{
 		int nVisited = 0;
-		TLinkNode<CLeashVolume*>* pBest = LTNULL;
+		TLinkNode<CLeashNode*>* pBest = LTNULL;
 
 		for (pNode = m_Volumes.GetHead(); pNode != m_Volumes.GetEnd(); pNode = pNode->m_pNext)
 		{
@@ -380,14 +380,14 @@ void CLeashGroup::BuildNeighbors()
 
 void CLeashGroup::BuildPointNeighbors()
 {
-	for (TLinkNode<CLeashPoint*>* pA = m_Points.GetHead(); pA != m_Points.GetEnd(); pA = pA->m_pNext)
+	for (TLinkNode<CLeashNode*>* pA = m_Points.GetHead(); pA != m_Points.GetEnd(); pA = pA->m_pNext)
 	{
-		for (TLinkNode<CLeashPoint*>* pB = m_Points.GetHead(); pB != m_Points.GetEnd(); pB = pB->m_pNext)
+		for (TLinkNode<CLeashNode*>* pB = m_Points.GetHead(); pB != m_Points.GetEnd(); pB = pB->m_pNext)
 		{
 			if (pA == pB) continue;
 
-			CLeashPoint* pPoint = pA->m_Data;
-			CLeashPoint* pOther = pB->m_Data;
+			CLeashPoint* pPoint = (CLeashPoint*)pA->m_Data;
+			CLeashPoint* pOther = (CLeashPoint*)pB->m_Data;
 			if (pPoint->Overlaps(pOther) == LTTRUE)
 			{
 				pPoint->AddNeighbor(pOther);
@@ -404,20 +404,22 @@ void CLeashGroup::BuildPointNeighbors()
 
 void CLeashGroup::BuildVolumeNeighbors()
 {
-	for (TLinkNode<CLeashVolume*>* pA = m_Volumes.GetHead(); pA != m_Volumes.GetEnd(); pA = pA->m_pNext)
+	for (TLinkNode<CLeashNode*>* pA = m_Volumes.GetHead(); pA != m_Volumes.GetEnd(); pA = pA->m_pNext)
 	{
-		for (TLinkNode<CLeashVolume*>* pB = m_Volumes.GetHead(); pB != m_Volumes.GetEnd(); pB = pB->m_pNext)
+		for (TLinkNode<CLeashNode*>* pB = m_Volumes.GetHead(); pB != m_Volumes.GetEnd(); pB = pB->m_pNext)
 		{
 			if (pB == pA) continue;
 			if (pA->m_Data->IsNeighbor(pB->m_Data) == LTTRUE) continue;
 
-			LeashBox boxB = pB->m_Data->m_Box;
-			LeashBox boxA = pA->m_Data->m_Box;
+			CLeashVolume* pVolA = (CLeashVolume*)pA->m_Data;
+			CLeashVolume* pVolB = (CLeashVolume*)pB->m_Data;
+			LeashBox boxB = pVolB->m_Box;
+			LeashBox boxA = pVolA->m_Box;
 
 			if (boxB.m_vMin.x <= boxA.m_vMax.x && boxB.m_vMin.y <= boxA.m_vMax.y && boxB.m_vMin.z <= boxA.m_vMax.z &&
 				boxB.m_vMax.x >= boxA.m_vMin.x && boxB.m_vMax.y >= boxA.m_vMin.y && boxB.m_vMax.z >= boxA.m_vMin.z)
 			{
-				pA->m_Data->FindPortals(pB->m_Data);
+				pVolA->FindPortals(pVolB);
 			}
 		}
 	}
@@ -433,12 +435,12 @@ CLeashNode* CLeashGroup::FindPoint(const LTVector& vPos)
 {
 	CLeashNode* pFound = LTNULL;
 
-	for (TLinkNode<CLeashPoint*>* pNode = m_Points.GetHead(); pNode != m_Points.GetEnd(); pNode = pNode->m_pNext)
+	for (TLinkNode<CLeashNode*>* pNode = m_Points.GetHead(); pNode != m_Points.GetEnd(); pNode = pNode->m_pNext)
 	{
 		LTFLOAT fX = pNode->m_Data->GetPos().x - vPos.x;
 		LTFLOAT fZ = pNode->m_Data->GetPos().z - vPos.z;
 
-		CLeashPoint* pPoint = pNode->m_Data;
+		CLeashPoint* pPoint = (CLeashPoint*)pNode->m_Data;
 		if (fZ*fZ + fX*fX <= pPoint->m_fRadius*pPoint->m_fRadius)
 		{
 			if (pPoint->GetPos().y - vPos.y <= pPoint->m_fRadius)
@@ -459,7 +461,7 @@ CLeashNode* CLeashGroup::FindPoint(const LTVector& vPos)
 
 CLeashNode* CLeashGroup::FindVolume(const LTVector& vPos)
 {
-	for (TLinkNode<CLeashVolume*>* pNode = m_Volumes.GetHead(); pNode != m_Volumes.GetEnd(); pNode = pNode->m_pNext)
+	for (TLinkNode<CLeashNode*>* pNode = m_Volumes.GetHead(); pNode != m_Volumes.GetEnd(); pNode = pNode->m_pNext)
 	{
 		if (pNode->m_Data->Contains(vPos, 0.1f)) return pNode->m_Data;
 	}

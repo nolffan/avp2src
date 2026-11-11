@@ -51,12 +51,16 @@ float g_CV_DefaultDrawIndexedDist = 500.0f;
 // One element of the intersector's triangle table: a corner and the two
 // edges out of it (0x00460480 stores v0, then v1 - v0 at +0x0c and v2 - v0
 // at +0x18). (name ours)
+//
+// The three vectors are ONE array member: Primal Hunt's BaseNew for the
+// table (0x00461600, 41 bytes, which its InternalNiceSetSize 0x00461390
+// calls) keeps the bare `add $0x24,%ecx; dec %esi; jne` walk that an
+// array of LTVectors' empty constructors leaves behind; three separate
+// members leave nothing, and a 25-byte BaseNew retail has no copy of.
 class CModelRayTriQ554
 {
 public:
-	LTVector m_vOrigin;                      // 0x00
-	LTVector m_vEdge1;                       // 0x0c
-	LTVector m_vEdge2;                       // 0x18
+	LTVector m_v[3];                         // 0x00 origin, 0x0c and 0x18 the edges
 };
 
 class CRayLodQ554;
@@ -2397,13 +2401,32 @@ public:
 	CModelVertQ44C* m_pVerts;                // 0x00  into Model::m_Unknown054
 	uint16 m_nVerts;                         // 0x04
 	uint16 m_n06;                            // 0x06  NOT zeroed by the ctor
-	uint32 m_n08;                            // 0x08
-	uint32 m_n0c;                            // 0x0c
-	uint32 m_n10;                            // 0x10
-	uint32 m_n14;                            // 0x14
-	uint32 m_n18;                            // 0x18
-	uint32 m_n1c;                            // 0x1c
+	float  m_f08;                            // 0x08
+	float  m_f0c;                            // 0x0c
+	float  m_f10;                            // 0x10
+	float  m_f14;                            // 0x14
+	float  m_f18;                            // 0x18
+	float  m_f1c;                            // 0x1c
 };
+
+// 0x00445410 (Primal Hunt 0x00452260) -- out of line, and DEFINED here,
+// ahead of the readers: Primal Hunt's /GX BaseNew for the table (0x0045a010,
+// 60 bytes) calls it with no EH frame, which VC6 drops only for a callee it
+// has already compiled.  Declared-only, the BaseNew grew a frame (138 bytes)
+// that retail has no copy of.  The dword, the WORD at +0x04 (not +0x06) and
+// the six floats, in field order (server.dll's /O1 build stores them with
+// `fldz; fstp`, 0x1001bfa6).
+CPieceLodQ44C::CPieceLodQ44C()
+{
+	m_pVerts = LTNULL;
+	m_nVerts = 0;
+	m_f08 = 0.0f;
+	m_f0c = 0.0f;
+	m_f10 = 0.0f;
+	m_f14 = 0.0f;
+	m_f18 = 0.0f;
+	m_f1c = 0.0f;
+}
 
 class CPieceDimQ44C
 {
@@ -2778,9 +2801,9 @@ void CModelRayIntersectQ504::BuildTrisQ554(CRayLodQ554* pLOD)
 
 		pV0 = &pVerts[pSrc->m_Indices[0]];
 
-		pTri->m_vOrigin = *pV0;
-		pTri->m_vEdge1 = pVerts[pSrc->m_Indices[1]] - *pV0;
-		pTri->m_vEdge2 = pVerts[pSrc->m_Indices[2]] - pTri->m_vOrigin;
+		pTri->m_v[0] = *pV0;
+		pTri->m_v[1] = pVerts[pSrc->m_Indices[1]] - *pV0;
+		pTri->m_v[2] = pVerts[pSrc->m_Indices[2]] - pTri->m_v[0];
 	}
 }
 
@@ -2802,28 +2825,28 @@ void CModelRayIntersectQ504::IntersectRayQ554(ILTModel::LTRayResult* pRay)
 	{
 		pTri = &s_TrisQ554.GetArray()[i];
 
-		vP = pRay->m_vDir.Cross(pTri->m_vEdge2);
-		fInvDet = 1.0f / pTri->m_vEdge1.Dot(vP);
+		vP = pRay->m_vDir.Cross(pTri->m_v[2]);
+		fInvDet = 1.0f / pTri->m_v[1].Dot(vP);
 
-		vT = pRay->m_vOrigin - pTri->m_vOrigin;
+		vT = pRay->m_vOrigin - pTri->m_v[0];
 
 		fU = vT.Dot(vP) * fInvDet;
 		if (fU < 0.0f || fU > 1.0f)
 			continue;
 
-		vQ = pTri->m_vEdge1.Cross(vT);
+		vQ = pTri->m_v[1].Cross(vT);
 
 		fV = pRay->m_vDir.Dot(vQ) * fInvDet;
 		if (fV < 0.0f || fU + fV > 1.0f)
 			continue;
 
-		fT = pTri->m_vEdge2.Dot(vQ) * fInvDet;
+		fT = pTri->m_v[2].Dot(vQ) * fInvDet;
 		if (fT < pRay->m_fDistance && fT > pRay->m_fMinDist)
 		{
 			pRay->m_fDistance = fT;
 			pRay->m_bIntersect = LTTRUE;
 
-			vNormal = pTri->m_vEdge1.Cross(pTri->m_vEdge2);
+			vNormal = pTri->m_v[1].Cross(pTri->m_v[2]);
 			vNormal.Norm();
 
 			pRay->m_vNormal = vNormal;
@@ -2949,12 +2972,12 @@ LTBOOL CPieceDataQ44C::sub_1001bf85Q44C(ILTStream* pStream, uint32* pnBase)
 			}
 		}
 
-		*pStream >> pLod->m_n08;
-		*pStream >> pLod->m_n0c;
-		*pStream >> pLod->m_n10;
-		*pStream >> pLod->m_n14;
-		*pStream >> pLod->m_n18;
-		*pStream >> pLod->m_n1c;
+		*pStream >> pLod->m_f08;
+		*pStream >> pLod->m_f0c;
+		*pStream >> pLod->m_f10;
+		*pStream >> pLod->m_f14;
+		*pStream >> pLod->m_f18;
+		*pStream >> pLod->m_f1c;
 	}
 
 	return LTTRUE;
@@ -5035,64 +5058,9 @@ LTRESULT CommonModelLT::UpdateMainTracker(HOBJECT hObj, float fUpdateDelta)
 //  out, the wide view lives here and the two functions that need it cast.
 // ======================================================================== //
 
-// The nine sub-objects the constructor builds, in the order it builds them,
-// which is member declaration order. Each is named for its offset and sized
-// by where the next one starts — nothing proves an extent, only a start. The
-// constructor addresses are the evidence and are recorded beside each one
-// (names ours).
-//
-// The first five are stdlith's own CMoArray<T, DefaultCache> (collection.h),
-// and lithtech.exe 0x004222f0 is what says so. /O2 spends its inline budget
-// on this constructor and the shipped bytes show every CMoArray piece where
-// VC6 left it: each array's vptr, then Clear()'s four zeroes or a call to the
-// folded out-of-line Clear (0x004283a0), then Init(0, 0) as a call -- except
-// at +0x18, where Init itself is expanded down to Term's SetSize2
-// (0x00414fa0), _InitArray (0x00433570) and SetSize's SetSize2. Declared-only
-// stand-in classes could not produce any of that (101 bytes against 260);
-// the real template does, identical on the first build, with no source
-// steering. server.dll's /O1 still calls the five constructors (0x1000b7e6
-// ...) and its teardown (0x1002c9e3) still expands `~CMoArray() { Term(); }`
-// as a vptr restore and one SetSize2 call per array.
-//
-// The element types come off the resizes. +0x04's BaseNew (0x00413190)
-// strides 0x60 bytes and runs the constructor at 0x00422240 over each slot
-// (collection.cpp's CCollElem60C has that body): worldmodels.cpp's CLARecord,
-// the light-animation record. +0x18 is four bytes (the CLALight pair of
-// words), +0x2c four (a pointer: CLAFrameEntry*), +0x40 one byte (no scale
-// in its allocation), +0x54 eight (lea 0(,%eax,8): CLAFrameEntry). The
-// classes below carry only size and constructor profile (names ours; the
-// real ones live in worldmodels.cpp, another TU).
-class CWorldAnimRecQ
-{
-public:
-	CWorldAnimRecQ();                        // 0x00422240
-	uint8 m_pad[0x60];
-};
-
-class CWorldAnimLightQ
-{
-public:
-	uint16 m_n00;
-	uint16 m_n02;
-};
-
-// AVP2: twenty-four bytes, not NOLF's eight: the +0x54 array's Init strides
-// `lea (%eax,%eax,2); shl $3` (Primal Hunt lithtech.exe 0x00432ddb, its
-// server.dll's BaseNew 0x10010d5e, AvP2 1.0.9.6's server.dll 0x100103ea).
-// What the extra sixteen bytes hold is not read anywhere here.
-class CWorldAnimFrameQ
-{
-public:
-	void*  m_pData;
-	uint32 m_nSize;
-	uint8  m_pad_08[0x18 - 0x08];
-};
-
-typedef CMoArray<CWorldAnimRecQ>     CWorldSub04;   // ctor 0x1000b7e6, SetSize2 0x1000c267
-typedef CMoArray<CWorldAnimLightQ>   CWorldSub18;   // ctor 0x1000ba1c, SetSize2 0x1000c470
-typedef CMoArray<CWorldAnimFrameQ*>  CWorldSub2C;   // ctor 0x1000ba6d, SetSize2 0x1000c470
-typedef CMoArray<uint8>              CWorldSub40;   // ctor 0x1000af9a, SetSize2 0x1000be59
-typedef CMoArray<CWorldAnimFrameQ>   CWorldSub54;   // ctor 0x1000bb45, SetSize2 0x1002ccee
+// The nine sub-objects the constructor builds, in the order it builds them:
+// the first five, the light-animation arrays, are serverworld.h's.
+#include "serverworld.h"
 
 // InheritWorld's CopyPointers (0x004248d0) CALLS the +0x04 array's resize
 // (0x00414f00). Spelled as the template's own `m_Sub04.Term()` it expands at
@@ -5133,7 +5101,9 @@ public:
 class CWorldPolyRec
 {
 public:
-	uint8             m_pad_00[0x2c];
+	uint8             m_pad_00[0x28];
+	// The node projection pass's plane (CWorldTreeNodeQT1::GetPlane).
+	LTPlane*          m_pPlane;              // 0x28
 	CWorldSurfaceRec* m_pSurface;            // 0x2c
 };
 
@@ -6040,10 +6010,19 @@ public:
 // where the nine offsets run past in the same order (0x19c and 0x188 with
 // their vptrs restored first, then 0xfc, 0x78, 0x54, 0x40 ...) inside a
 // function that is plainly not this one. So the only image this body can
-// win or lose in is server.dll.
+// win or lose in is server.dll, and only server.dll's build has it.
+// (Primal Hunt's /GX lithtech.exe does keep one out-of-line copy, at
+// 0x00412820, but only the unwind funclets of the client and server
+// managers reach it -- 0x004cee0e, 0x004cf003, 0x004cf5bc, 0x004cf641 --
+// and that is the managers' TUs' copy of the world's implicit destructor
+// (clientmgr3.cpp's CCmgWorld, clientshell.cpp's CWorld1a4), not this
+// TU's: nothing here calls this one.  Built for lithtech.exe it had taken
+// AvP2's w_SetNodeProjectionsQT1 slot, 0x00429de0, as a false near.)
+#ifdef LT_SERVER_BUILD
 CServerWorldTeardown::~CServerWorldTeardown()
 {
 }
+#endif
 
 
 // 0x10007f0e — build one. Nine sub-object constructors in offset order, the
@@ -6496,10 +6475,15 @@ WorldClassQT1* w_FindWorldClassQT1(void* pList, char* pName)
 
 
 // ======================================================================= //
-//  0x10009361, 143 bytes — w_LoadWorldModel's sixth helper, and the last
+//  0x10009361 — w_LoadWorldModel's sixth helper, and the last
 //  function before w_ReadWorldLights below.  worldbsp.cpp declares it in the
 //  run of six it read off that function's call sites; this is the
-//  reconstruction.
+//  reconstruction.  IDENTICAL in all four images: Primal Hunt lithtech.exe
+//  0x0042cba0 (293 bytes) and server.dll 0x1000c22d (249), AvP2 1.0.9.6's
+//  lithtech.exe 0x00429de0 (299) and server.dll 0x1000bf43 (264).  The
+//  plane is fetched afresh, null-checked, at every test (the node's
+//  GetPlane), and the node pointer is the array indexed by the counter,
+//  which is what puts its load after the count test.
 //
 //  Every tree node gets a projection code in its byte at +0x17: 6 unless
 //  the node's plane normal is within 0.99999 of an axis, in which case
@@ -6523,6 +6507,16 @@ WorldClassQT1* w_FindWorldClassQT1(void* pList, char* pName)
 class CWorldTreeNodeQT1
 {
 public:
+	// The polygon's own plane pointer, read only when there is a polygon
+	// and it has a surface: every image expands it at each of the six tests
+	// below (`test %ecx; je; mov 0x2c(%ecx); test; je; mov 0x28(%ecx)`,
+	// Primal Hunt lithtech.exe 0x0042cbc6, server.dll 0x1000c25b, AvP2
+	// 0x00429e06), the node's polygon pointer loaded once.
+	LTPlane* GetPlane()
+	{
+		return (m_pPoly && m_pPoly->m_pSurface) ? m_pPoly->m_pPlane : LTNULL;
+	}
+
 	CWorldPolyRec* m_pPoly;                  // 0x00
 	uint8          m_pad_04[0x17 - 0x04];
 	uint8          m_nProjection;            // 0x17
@@ -6531,34 +6525,28 @@ public:
 void w_SetNodeProjectionsQT1(void* pNodes, uint32 nNodes, int bCurrent)
 {
 	CWorldTreeNodeQT1* pNode;
-	LTPlane* pPlane;
 	uint32 i;
-
-	pNode = (CWorldTreeNodeQT1*)pNodes;
 
 	for (i = 0; i < nNodes; i++)
 	{
+		pNode = &((CWorldTreeNodeQT1*)pNodes)[i];
 		pNode->m_nProjection = 6;
 
 		if (bCurrent)
 		{
-			pPlane = pNode->m_pPoly->m_pSurface->m_pPlane;
-
-			if (pPlane->m_Normal.x > 0.99999f)
+			if (pNode->GetPlane()->m_Normal.x > 0.99999f)
 				pNode->m_nProjection = 0;
-			else if (pPlane->m_Normal.x < -0.99999f)
+			else if (pNode->GetPlane()->m_Normal.x < -0.99999f)
 				pNode->m_nProjection = 1;
-			else if (pPlane->m_Normal.y > 0.99999f)
+			else if (pNode->GetPlane()->m_Normal.y > 0.99999f)
 				pNode->m_nProjection = 2;
-			else if (pPlane->m_Normal.y < -0.99999f)
+			else if (pNode->GetPlane()->m_Normal.y < -0.99999f)
 				pNode->m_nProjection = 3;
-			else if (pPlane->m_Normal.z > 0.99999f)
+			else if (pNode->GetPlane()->m_Normal.z > 0.99999f)
 				pNode->m_nProjection = 4;
-			else if (pPlane->m_Normal.z < -0.99999f)
+			else if (pNode->GetPlane()->m_Normal.z < -0.99999f)
 				pNode->m_nProjection = 5;
 		}
-
-		pNode++;
 	}
 }
 
@@ -7356,8 +7344,11 @@ class CWorldPart : public CWorldPolyOwnerView
 // server.dll's only (called per poly at 0x100091b9): neither Talon
 // lithtech.exe's w_LoadWorldModel has the per-poly pass (each goes from the
 // size sum straight to w_LinkSurfacePoliesQT1: Primal Hunt 0x0042c9e6, AvP2
-// 1.0.9.6 0x00429c96), and neither has a copy of this body.
-#ifdef LT_SERVER_BUILD
+// 1.0.9.6 0x00429c96), and neither has a copy of this body. NOR do the
+// Talon server.dll builds: their w_LoadWorldModel has no per-poly pass
+// either (worldbsp.cpp), and neither image has a function of this shape.
+// NOLF's server.dll only.
+#if 0
 void w_SetupPolyTexCoordsQT1(CWorldPart* pPoly)
 {
 	CWorldPolyVertexQT1* pVert;
@@ -7377,7 +7368,7 @@ void w_SetupPolyTexCoordsQT1(CWorldPart* pPoly)
 		pVert++;
 	}
 }
-#endif // LT_SERVER_BUILD
+#endif // NOLF only
 
 
 // 0x10007da5 — one world's portal table, by name: a run of 0x24-byte records

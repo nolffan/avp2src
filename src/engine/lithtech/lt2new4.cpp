@@ -462,7 +462,13 @@ void CUnknown41CD10::ClearMode()
 //  10.  0x00445250 -- free every node on a singly-linked list
 //
 //  HOME: the object/world file around 0x00445000.  One caller, 0x00446911.
+//
+//  RETIRED (#if 0): this is commonmodel.cpp's CMoDataRef::sub_10016366
+//  (the owner is the model's allocator and the call LDelete), identical
+//  at Primal Hunt 0x004520a0 and at AvP2's 0x0044dc10, where our link
+//  folds the two copies.  Nothing calls this one.
 // ======================================================================= //
+#if 0
 
 class CUnknown445250Node;
 
@@ -530,6 +536,7 @@ void CUnknown445250List::FreeAll()
 
 	m_pHead = LTNULL;
 }
+#endif // retired
 
 
 // ======================================================================= //
@@ -640,6 +647,10 @@ CUnknown4789A0::CUnknown4789A0()
 // two functions are the same nine instructions apart from the vtable slot
 // they end on (0x20 vs 0x24), which is what makes the pair a dispatch
 // table rather than a vtable (a vtable would live in .rdata).
+// RETIRED (#if 0): this is binkvideo.cpp's CVideoBindingK constructor,
+// identical at Primal Hunt 0x0049d090 and AvP2 0x004a7560 (the two sinks
+// are the binding's poly and texture hooks).  Nothing calls this copy.
+#if 0
 struct CUnknown48A5F0Dispatch
 {
 	void* m_pFn;
@@ -704,6 +715,7 @@ CUnknown48A5F0::CUnknown48A5F0(CUnknown48A5F0Owner* pOwner)
 	  m_SinkB(&g_Dispatch_004af4e0, pOwner)
 {
 }
+#endif // retired
 
 
 // ======================================================================= //

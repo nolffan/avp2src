@@ -2808,8 +2808,7 @@ public:
 	int    m_nArgs;                          // +0x04
 };
 
-extern char** g_pCluArgList;                 // PH 0x004f7c64
-extern int    g_nCluArgCount;                // PH 0x004f7c60
+#include <stdlib.h>                          // __argv / __argc: the CRT's (PH 0x004f7c64 / 0x004f7c60)
 void con_RunString3(ConsoleStateRef* pState, char* pString, int nSource);  // PH 0x00421c00
 
 void cm_RunPlusCommandsQ546(CClientMgrView* /*pClientMgr*/, int nSource,
@@ -2837,12 +2836,12 @@ void cm_RunPlusCommandsQ546(CClientMgrView* /*pClientMgr*/, int nSource,
 	}
 	else
 	{
-		for (i = 0; i < g_nCluArgCount - 1; i++)
+		for (i = 0; i < __argc - 1; i++)
 		{
-			if (g_pCluArgList[i][0] == '+')
+			if (__argv[i][0] == '+')
 			{
-				sprintf(buf, "(%s) (%s)", g_pCluArgList[i] + 1,
-				        g_pCluArgList[i + 1]);
+				sprintf(buf, "(%s) (%s)", __argv[i] + 1,
+				        __argv[i + 1]);
 
 				con_RunString3(&g_ClientConsoleStateRef, buf, nSource);
 			}

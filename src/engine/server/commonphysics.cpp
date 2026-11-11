@@ -997,6 +997,14 @@ void CObjDimsSetterQG9::SetDims(LTVector vDims)
 // into %al and compared twice, which is a named local rather than two compares
 // against memory; the two values are 2 and 9, i.e. OT_WORLDMODEL and
 // OT_CONTAINER.
+//
+// server.dll's only. Neither Talon lithtech.exe has an out-of-line copy:
+// the `cmp $2,%al; je; cmp $9,%al; jne` pair occurs only inside larger
+// bodies (Primal Hunt 0x00462610 and its neighbours, AvP2 1.0.9.6
+// 0x0045d5b0 ...), where the client build expands the inline twin above
+// (WM_RETRANSFORM), and nothing in the client build calls this one.
+// (NOLF's client kept one, called from wm_PushIntersectingObjects.)
+#ifdef LT_SERVER_BUILD
 void obj_MaybeRetransformWorldModel(LTObject* pObj, int bFlag)
 {
 	if (bFlag)
@@ -1007,6 +1015,7 @@ void obj_MaybeRetransformWorldModel(LTObject* pObj, int bFlag)
 			obj_RetransformWorldModel(pObj);
 	}
 }
+#endif
 
 
 // 0x1002082b — grow the object along one axis, by bisection.

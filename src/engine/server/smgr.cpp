@@ -4736,27 +4736,14 @@ public:
 };
 
 // The box's six faces as planes whose normals are fixed and whose distances
-// each query sets (server.dll 0x1008c608, lithtech.exe 0x004f4088, 0x10
-// apart), and the box's bounding sphere (server.dll 0x1008bb48 radius,
-// 0x1008bb4c centre; lithtech.exe 0x004f35c8, 0x004f35cc). The walk's
-// callback reads them; names ours. The sphere is ONE object: as two
-// separate globals server.dll's /O1 scheduled the first dword of the
-// centre's copy ahead of the radius store (0x1003ce42), which it does not
-// do into one aggregate.
-struct CPolyBoxPlaneQ523
-{
-	float m_Normal[3];
-	float m_Dist;
-};
-
-CPolyBoxPlaneQ523 g_PolyBoxPlanesQ523[6];
-struct CPolyBoxSphereQ523
-{
-	float    m_fRadius;
-	LTVector m_vCenter;
-};
-
-CPolyBoxSphereQ523 g_PolyBoxSphereQ523;
+// each query sets (server.dll 0x1008c608, lithtech.exe 0x004f4088), and the
+// box's bounding sphere (server.dll 0x1008bb48 radius, 0x1008bb4c centre;
+// lithtech.exe 0x004f35c8, 0x004f35cc): worldsim.cpp's g_BoxPlanes and
+// g_BoxSphere, the very globals w_IsPolyBlocking tests the walk's polygons
+// against. The sphere is ONE object (as two separate globals server.dll's
+// /O1 scheduled the first dword of the centre's copy ahead of the radius
+// store, 0x1003ce42, which it does not do into one aggregate).
+#include "worldsim.h"
 
 // The world tree's per-object callback for the walk (server.dll 0x1003bf5a,
 // lithtech.exe 0x00484f50; defined below, before sm_SphereGather): world
@@ -4788,15 +4775,15 @@ void si_FindPoliesTouchingBox(const LTVector& vBoxMin, const LTVector& vBoxMax,
 	query.m_FilterFn  = FilterFn;
 	query.m_pUserData = pUserData;
 
-	g_PolyBoxSphereQ523.m_fRadius = query.m_fRadius;
-	g_PolyBoxSphereQ523.m_vCenter = query.m_vCenter;
+	g_BoxSphere.m_fRadius = query.m_fRadius;
+	g_BoxSphere.m_vPoint = query.m_vCenter;
 
-	g_PolyBoxPlanesQ523[0].m_Dist = vBoxMin.x;
-	g_PolyBoxPlanesQ523[1].m_Dist = -vBoxMax.x;
-	g_PolyBoxPlanesQ523[2].m_Dist = vBoxMin.y;
-	g_PolyBoxPlanesQ523[3].m_Dist = -vBoxMax.y;
-	g_PolyBoxPlanesQ523[4].m_Dist = vBoxMin.z;
-	g_PolyBoxPlanesQ523[5].m_Dist = -vBoxMax.z;
+	g_BoxPlanes[0].m_Dist = vBoxMin.x;
+	g_BoxPlanes[1].m_Dist = -vBoxMax.x;
+	g_BoxPlanes[2].m_Dist = vBoxMin.y;
+	g_BoxPlanes[3].m_Dist = -vBoxMax.y;
+	g_BoxPlanes[4].m_Dist = vBoxMin.z;
+	g_BoxPlanes[5].m_Dist = -vBoxMax.z;
 
 	((IObjectQuery*)&g_pServerMgr->m_Unknown210)->FindObjectsInBox(
 		(LTVector*)&vBoxMin, (LTVector*)&vBoxMax,
@@ -12170,6 +12157,11 @@ LTRESULT sm_ReadClientCommands(CServerMgr* pMgr, ServerMessage* pMsg,
 //  credited before the 1,300-byte function that constructs it is written.
 // *********************************************************************** //
 
+// Neither is in a server.dll: Primal Hunt's has one `mov %ecx,%eax; and $0,(%eax);
+// ret` (CMsgCursor's constructor, 0x100430c1) and one release-through-a-holder
+// (tcpdriver.cpp's ~CMessageRef, 0x10012b8b), AvP2's neither, and nothing here
+// calls these two: the server's /OPT:REF link dropped them.
+#ifndef LT_SERVER_BUILD
 // 0x00463ce0, 9 bytes — a one-pointer constructor, run over an array of four.
 //
 //      8b c1                  mov %ecx,%eax
@@ -12242,6 +12234,7 @@ void CRefHolder4666F0::ReleaseRef()
 	if (m_pRef)
 		m_pRef->Release();
 }
+#endif // !LT_SERVER_BUILD
 
 
 // 0x00476770, 19 bytes — a lazy-init guard.
