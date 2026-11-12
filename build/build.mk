@@ -1088,7 +1088,9 @@ launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.
 #   - the import libraries the retail import tables name, and MFC's and the
 #     C runtime's (SP5's, from the environment's LIB)
 REGMGR32 := src/lithshared/RegMgr32
-LAUNCHER_REF := $(firstword $(wildcard $(ROOT)/out/reference $(ROOT)/../reference))
+# (the installed retail games', which every tree has -- ext/rez/, linked into a
+# variant's -- not out/reference/'s copies, which a fresh tree lacks)
+LAUNCHER_REF := ext/rez/games
 LAUNCHER_LIBS := nafxcw.lib libcmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib \
     comctl32.lib comdlg32.lib winmm.lib
 # $(call launcher_link,<object dir>,<image>,<retail image>,<rc defines>)
@@ -1109,8 +1111,8 @@ $(eval $(call tool,$(LAUNCHER)/$(1)/$(2),$(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/$(1)/%
     { $(ENV_GAME) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(LAUNCHER)/$(1)/$(2)).rsp' > $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt 2>&1 || \
       { grep -i 'error\|fatal' $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt | head -20 >&2; false; }; }))
 endef
-$(eval $(call launcher_link,Release,AVP2.exe,AVP2.exe,))
-$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,PrimalHunt.exe,/d PRIMAL_HUNT))
+$(eval $(call launcher_link,Release,AVP2.exe,avp2-eu-1.0.9.6/AVP2.exe,))
+$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,avp2-ph-eu/PrimalHunt.exe,/d PRIMAL_HUNT))
 .PHONY: launchers
 launchers: $(LAUNCHER)/Release/AVP2.exe $(LAUNCHER)/PrimalHunt/PrimalHunt.exe
 
@@ -1538,7 +1540,10 @@ $(eval $(call tool,$(LOUT)/RegMgr32.lib,src/lithshared/RegMgr32/Release/regmgr32
     cd $(REGMGR32) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\RegMgr32.lib' 'Release\regmgr32.obj'))
 # Its splash screen is Primal Hunt's (ServerApp.rc, PRIMAL_HUNT): read out
 # of the retail image (ext/tools/rsrc2rc.py) into PrimalHunt/res/, not the tree.
-SVPH_REF := $(firstword $(wildcard $(ROOT)/out/reference $(ROOT)/../reference))
+# (the installed retail game's, which every tree has -- ext/rez/, linked into
+# a variant's -- not out/reference/'s copy of it, which a fresh tree lacks:
+# the path was /AVP2XServ.exe in CI's)
+SVPH_REF := ext/rez/games/avp2-ph-eu
 $(eval $(call tool,src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp,$(SVPH_REF)/AVP2XServ.exe,\
     python3 ext/tools/rsrc2rc.py $(SVPH_REF)/AVP2XServ.exe src/AVP2/AVP2Serv/PrimalHunt/res/retail.rc --res-dir=. --name=retail >/dev/null && \
     cp src/AVP2/AVP2Serv/PrimalHunt/res/retail_142.bmp src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp))
