@@ -649,7 +649,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 			}
 		}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: wm_ResetGeometry's unguarded divisions and missing null
 		// check (RETAIL_BUGS.md). A block with no vertices keeps the zero
 		// centre. (The centre still weights a shared vertex once per polygon;
@@ -691,7 +691,7 @@ void wm_ResetGeometry(CWorldModelData* pData)
 	for (i = 0; i < ((CWMGeom*)pData)->m_nPolies; i++)
 	{
 		WorldPolyOwner* pPoly = ((CWMGeom*)pData)->m_ppPolies[i];
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		LTVector*       pCentre;
 		float           fCount;
 

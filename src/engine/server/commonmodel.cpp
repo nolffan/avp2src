@@ -856,7 +856,7 @@ LTRESULT CommonModelLT::GetSocketTransform(HOBJECT hObj, HMODELSOCKET hSocket,
 		// size, so a socket naming the node one past the end is let through
 		// to the object's matrix cache (0x0045ebd8 `jbe`, server.dll
 		// 0x10024d43).
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		if (pSocket->m_iNode >= pModel->m_NodeTransforms.m_nElements)
 #else
 		if (pSocket->m_iNode > pModel->m_NodeTransforms.m_nElements)
@@ -958,7 +958,7 @@ LTRESULT ci_GetModelNodeName(HOBJECT hObject, HMODELNODE hNode, char* pName, uin
 {
 	Model* pModel;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: ci_GetModelNodeName refuses node 0 and does not terminate
 	// (RETAIL_BUGS.md). Node 0 is a valid node; only the bound below can
 	// refuse a node handle.
@@ -967,7 +967,7 @@ LTRESULT ci_GetModelNodeName(HOBJECT hObject, HMODELNODE hNode, char* pName, uin
 	if (!hNode || !maxLen || !hObject || hObject->m_ObjectType != OT_MODEL)
 #endif
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "GetModelNodeName", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "GetNextModelNode", LT_INVALIDPARAMS);
@@ -978,7 +978,7 @@ LTRESULT ci_GetModelNodeName(HOBJECT hObject, HMODELNODE hNode, char* pName, uin
 
 	if (hNode >= pModel->m_NodeTransforms.m_nElements)
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "GetModelNodeName", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "GetNextModelNode", LT_INVALIDPARAMS);
@@ -986,7 +986,7 @@ LTRESULT ci_GetModelNodeName(HOBJECT hObject, HMODELNODE hNode, char* pName, uin
 	}
 
 	strncpy(pName, pModel->m_Nodes.m_pArray[hNode]->m_pName, maxLen - 1);
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	pName[maxLen - 1] = '\0';
 #endif
 	return LT_OK;
@@ -3801,7 +3801,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 	uint32            nInner;
 	uint32            k;
 	uint8             nError;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: the pass-1 records leak on every failure (RETAIL_BUGS.md); at
 	// function scope here so that the shared failure path can free them.
 	std::vector<CModelSub1D4*> recs;
@@ -3852,7 +3852,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 	// The one failure that answers LT_OK without even the release (0x100226ab
 	// jumps to the success return).
 	if (!m_Unknown08c.SetSize2(nOOBB, (LAlloc*)m_pDataBlock))
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	{
 		// fixed: a table that cannot be allocated loads as success
 		// (RETAIL_BUGS.md).
@@ -3963,7 +3963,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 	{
 		std::vector<char*>         names;
 		std::vector<char*>         loadNames;
-#ifndef AVP2_MODERN
+#ifndef AVP2SRC_MODERN
 		std::vector<CModelSub1D4*> recs;
 #endif
 		std::vector<CModelSub1D4*> loadRecs;
@@ -4002,7 +4002,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 			names.push_back(pName);
 
 			CModelSub1D4* pRec = new CModelSub1D4;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 			// fixed: the record is used unchecked (RETAIL_BUGS.md).
 			if (!pRec)
 			{
@@ -4014,7 +4014,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 
 			if (!pRec->sub_1001bf0d(pStream))
 			{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				delete pRec;
 #endif
 				nError = 16;
@@ -4123,7 +4123,7 @@ LTRESULT Model::LoadChildModels(CModelLoadRequest* pRequest)
 		// The records read in pass 1 were only templates.
 		for (i = 0; i < recs.size(); i++)
 			delete recs[i];
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		recs.clear();
 #endif
 	}
@@ -4223,7 +4223,7 @@ done:
 
 fail:
 	sub_10017016(0);
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	for (i = 0; i < recs.size(); i++)
 		delete recs[i];
 

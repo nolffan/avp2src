@@ -1639,7 +1639,7 @@ LTRESULT BinkVideoInstK::UpdateOnScreen()
 		destRect.right = g_RenderStructK.m_Width;
 		destRect.bottom = g_RenderStructK.m_Height;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// M-P1-27: the movie keeps its shape -- the largest rectangle of
 		// its proportions that fits the screen, centred. Retail stretched
 		// it over the whole screen, so on a wide one the 4:3 intro movies

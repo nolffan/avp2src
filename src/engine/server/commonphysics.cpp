@@ -2852,7 +2852,7 @@ LTVector wm_SeparateFromBoxQ555(LTObject* pObj, LTObject* pOther,
 	{
 		float fMag = -vSep.Mag();
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		if (fMag < 0.0f)
 #else
 		if (fMag > 0.0f)

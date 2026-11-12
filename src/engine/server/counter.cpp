@@ -416,7 +416,7 @@ void sub_100016be(CClassModuleView* pModule)
 	}
 }
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // fixed: the property-type guard normalises to a value that is also out of
 // range (RETAIL_BUGS.md). The modern build checks first, and an object DLL
 // declaring any type outside PT_STRING..PT_ROTATION is refused as invalid.
@@ -590,7 +590,7 @@ int sub_10001635(char* pFilename, class CUnknown928Obj* pObj,
 		return 2;
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	if (!cnt_PropTypesValid(pModule))
 	{
 		free(pModule);
@@ -1000,7 +1000,7 @@ int sub_1000e05b(CServerMgr* pMgr, char* pTempPath, char* pFilename,
 	if (fs_FindFileInTrees(pFileMgr, pFilename, &pTreeRec, LTNULL) &&
 	    sub_10006fa5(((CFileTreeRecView*)pTreeRec)->m_pTree) == (void*)1)
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: the object-DLL temp name, one copy unterminated, two
 		// unbounded (RETAIL_BUGS.md). A path that does not fit the caller's
 		// buffer fails like a copy that did not work.
@@ -1016,7 +1016,7 @@ int sub_1000e05b(CServerMgr* pMgr, char* pTempPath, char* pFilename,
 	}
 	else
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		int nLen = _snprintf(pOutPath, nOutLen, "%s%s", pTempPath, pFilename);
 
 		if (nLen < 0 || (uint32)nLen >= nOutLen)
@@ -1047,7 +1047,7 @@ int sub_1000e05b(CServerMgr* pMgr, char* pTempPath, char* pFilename,
 			else
 			{
 				strncpy(pOutPath, sUnique, nOutLen - 1);
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				pOutPath[nOutLen - 1] = '\0';
 #endif
 

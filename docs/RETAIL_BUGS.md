@@ -8,8 +8,8 @@ fixed yet.
 
 The legacy build reproduces every one of them, on purpose: compiling to the
 retail machine code means compiling its mistakes too. They are fixed in the
-**modern build** (`make modern`, the `AVP2_MODERN` define; `MODERN.md`):
-each fix goes behind `#ifdef AVP2_MODERN`, with the retail code kept in
+**modern build** (`make modern`, the `AVP2SRC_MODERN` define; `MODERN.md`):
+each fix goes behind `#ifdef AVP2SRC_MODERN`, with the retail code kept in
 the `#else`, so the legacy build is unchanged and still matches
 (`make progress`).
 

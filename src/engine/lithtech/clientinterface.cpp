@@ -1453,7 +1453,7 @@ LTBOOL ci_GetCameraLightAdd(HLOCALOBJ hCamera, LTVector* pAdd)
 // byte is read straight off it with no null check first.
 void ci_SetLightRadius(HLOCALOBJ hObj, float radius)
 {
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: a null handle is ignored, as every other accessor does (RETAIL_BUGS.md)
 	if (!hObj) return;
 #endif
@@ -1485,7 +1485,7 @@ void ci_GetSurfaceDims(HSURFACE hSurf, uint32* pWidth, uint32* pHeight)
 	}
 	else
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: only the pointers given are written (RETAIL_BUGS.md)
 		if (pWidth) *pWidth = 0;
 		if (pHeight) *pHeight = 0;
@@ -1556,7 +1556,7 @@ LTRESULT ci_GetParticleLifetime(HLOCALOBJ hSystem, LTParticle* pParticle, LTFLOA
 LTRESULT ci_GetParticleTotalLifetime(HLOCALOBJ hSystem, LTParticle* pParticle, LTFLOAT& fTotalLifetime)
 {
 	if (!pParticle)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "CLTClient::GetParticleTotalLifetime", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "CLTClient::GetParticleLifetime", LT_INVALIDPARAMS);
@@ -1610,7 +1610,7 @@ LTRESULT ci_ShutdownRender(uint32 flags)
 LTRESULT ci_FreeServiceList(NetService* pListHead)
 {
 	if (!pListHead)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(2, "CLTClient::FreeServiceList", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(2, "CLTClient::GetServiceList", LT_INVALIDPARAMS);
@@ -1740,7 +1740,7 @@ RMode* ci_GetRenderModes()
 		}
 		while (_findnext(hFind, &findData) != -1);
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: the find handle is closed (RETAIL_BUGS.md)
 		_findclose(hFind);
 #endif
@@ -1809,7 +1809,7 @@ LTRESULT ci_OptimizeParticles(HLOCALOBJ hSystem)
 LTRESULT ci_UnoptimizeSurface(HSURFACE hSurface)
 {
 	if (!hSurface)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "UnoptimizeSurface", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "OptimizeSurface", LT_INVALIDPARAMS);
@@ -1840,7 +1840,7 @@ LTRESULT ci_ScaleSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc, LTRect* pDestRe
                                   LTRect* pSrcRect)
 {
 	if (!g_pRender)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: checks reported at the wrong debug level (RETAIL_BUGS.md).
 		RETURN_ERROR(1, "ScaleSurfaceToSurface", LT_NOTINITIALIZED);
 #else
@@ -1988,7 +1988,7 @@ LTRESULT sub_40dcc0(HSURFACE hDest, HSURFACE hSrc, LTRect* pDestRect,
 			return ci_WarpSurfaceToSurfaceSolidColor(hDest, hSrc, warpPts, 4, hTransColor, hFillColor);
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	RETURN_ERROR(1, "InternalScaleSurfaceToSurface", LT_INVALIDPARAMS);
 #else
 	RETURN_ERROR(4, "InternalScaleSurfaceToSurface", LT_INVALIDPARAMS);
@@ -2611,7 +2611,7 @@ LTRESULT ci_SetOptimized2DColor(HLTCOLOR hColor)
 LTRESULT ci_RenderCamera(HLOCALOBJ hCamera)
 {
 	if (!g_RenderStruct.m_bInited)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: checks reported at the wrong debug level (RETAIL_BUGS.md).
 		RETURN_ERROR(1, "RenderCamera", LT_NOTINITIALIZED);
 #else
@@ -2619,7 +2619,7 @@ LTRESULT ci_RenderCamera(HLOCALOBJ hCamera)
 #endif
 
 	if (!g_RenderStruct.IsIn3D())
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "RenderCamera", LT_NOTIN3D);
 #else
 		RETURN_ERROR(15, "RenderCamera", LT_NOTIN3D);
@@ -2631,7 +2631,7 @@ LTRESULT ci_RenderCamera(HLOCALOBJ hCamera)
 		return LT_OK;
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	RETURN_ERROR(1, "RenderCamera", LT_INVALIDPARAMS);
 #else
 	RETURN_ERROR(15, "RenderCamera", LT_INVALIDPARAMS);
@@ -2668,21 +2668,21 @@ LTRESULT ci_EndOptimized2D()
 LTRESULT ci_RenderObjects(HLOCALOBJ hCamera, HLOCALOBJ* pObjects, int nObjects)
 {
 	if (!g_RenderStruct.m_bInited)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "RenderObjects", LT_NOTINITIALIZED);
 #else
 		RETURN_ERROR(1, "RenderCamera", LT_NOTINITIALIZED);
 #endif
 
 	if (!g_RenderStruct.IsIn3D())
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "RenderObjects", LT_NOTIN3D);
 #else
 		RETURN_ERROR(1, "RenderCamera", LT_NOTIN3D);
 #endif
 
 	if (!hCamera || ((CClientObject*)hCamera)->m_ObjectType != OT_CAMERA)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "RenderObjects", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "RenderCamera", LT_INVALIDPARAMS);
@@ -2806,7 +2806,7 @@ LTRESULT ci_DrawSurfaceToSurfaceTransparent(HSURFACE hDest, HSURFACE hSrc, LTRec
 LTRESULT ci_SetSurfaceAlpha(HSURFACE hSurface, float alpha)
 {
 	if (!hSurface)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR_NAMED(2, "ILTClient::SetSurfaceAlpha", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR_NAMED(2, "ILTClient::GetSurfaceAlpha", LT_INVALIDPARAMS);
@@ -2851,7 +2851,7 @@ LTRESULT ci_GetPolyGridInfo(HLOCALOBJ hObj, char** pBytes, uint32* pWidth, uint3
 		return LT_OK;
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: checks reported at the wrong debug level (RETAIL_BUGS.md).
 	RETURN_ERROR(1, "GetPolyGridInfo", LT_INVALIDPARAMS);
 #else
@@ -2885,7 +2885,7 @@ LTRESULT ci_GetModelNodeName(HLOCALOBJ hObject, HMODELNODE hNode, char* pName, u
 {
 	Model* pModel;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: node 0 is valid, and the copy is terminated (RETAIL_BUGS.md).
 	if (!maxLen || !hObject
 	    || ((CClientObject*)hObject)->m_ObjectType != OT_MODEL)
@@ -2893,7 +2893,7 @@ LTRESULT ci_GetModelNodeName(HLOCALOBJ hObject, HMODELNODE hNode, char* pName, u
 	if (!hNode || !maxLen || !hObject
 	    || ((CClientObject*)hObject)->m_ObjectType != OT_MODEL)
 #endif
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "GetModelNodeName", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "GetNextModelNode", LT_INVALIDPARAMS);
@@ -2908,14 +2908,14 @@ LTRESULT ci_GetModelNodeName(HLOCALOBJ hObject, HMODELNODE hNode, char* pName, u
 	// the choice is invisible at runtime and visible in one displacement
 	// byte.
 	if (hNode >= pModel->m_NodeTransforms.m_nElements)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "GetModelNodeName", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, "GetNextModelNode", LT_INVALIDPARAMS);
 #endif
 
 	strncpy(pName, pModel->m_Nodes.m_pArray[hNode]->m_pName, maxLen - 1);
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	pName[maxLen - 1] = '\0';
 #endif
 	return LT_OK;

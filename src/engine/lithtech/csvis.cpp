@@ -125,7 +125,7 @@
 
 #include "ltbasedefs.h"
 #include "ltlink.h"
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
 #endif
 

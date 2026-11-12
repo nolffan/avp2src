@@ -12,7 +12,7 @@
  *
  * lithtech.exe does this in WinMain (src/engine/lithtech/clientwin.cpp); the
  * handler covers the whole process, so server code, d3d.ren and the game
- * DLLs too. Release builds get nothing: without AVP2_DEBUG the macro is
+ * DLLs too. Release builds get nothing: without AVP2SRC_DEBUG the macro is
  * empty and this header includes nothing.
  *
  * The names and lines come from the .pdb files build/variant.sh puts beside
@@ -24,7 +24,7 @@
 #ifndef AVP2SRC_CRASH_H
 #define AVP2SRC_CRASH_H
 
-#ifdef AVP2_DEBUG
+#ifdef AVP2SRC_DEBUG
 
 #include <imagehlp.h>
 #include "avp2src_debug.h"
@@ -150,6 +150,6 @@ static LONG WINAPI Avp2srcCrashFilter(EXCEPTION_POINTERS *ep)
 
 #define AVP2SRC_INSTALL_CRASH_HANDLER() ((void)0)
 
-#endif /* AVP2_DEBUG */
+#endif /* AVP2SRC_DEBUG */
 
 #endif /* AVP2SRC_CRASH_H */

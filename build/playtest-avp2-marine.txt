@@ -1,0 +1,32 @@
+# AvP2 from its main menu to the first Marine mission, played a little,
+# quicksaved and quickloaded (make test TEST_WHICH=avp2
+# TEST_SCRIPT=build/playtest-avp2-marine.txt). The clicks are the retail
+# menus' places on the 640x480 page; F6 quicksave, F7 quickload
+# (ClientButeMgr.cpp's defaults).
+window 120
+wait 20
+shot menu
+mclick 128 175
+wait 3
+mclick 85 245
+wait 3
+shot marine
+mclick 497 434
+wait 60
+shot loaded
+key space
+wait 10
+shot started
+hold w 2
+turn 300 0
+wait 2
+shot moved
+key F6
+wait 8
+shot saved
+key F7
+wait 40
+shot reloaded
+key space
+wait 10
+shot reloaded-started

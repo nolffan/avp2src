@@ -4,7 +4,7 @@ Aliens versus Predator 2 and its expansion Primal Hunt from source, split
 into packages that can each be picked up again after an interruption. The
 first aim is **a game that runs** with every binary built here; the second
 is **byte-identity** with the retail binaries (the legacy build), ratcheted
-by `make progress`. The modern build (`AVP2_MODERN`) comes after.
+by `make progress`. The modern build (`AVP2SRC_MODERN`) comes after.
 
 ## What "the game" is
 
@@ -121,11 +121,11 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
   libraries. Prove the flags per binary, as nolfsrc did.
 - **Project files.** The release's VC6 `.dsw`/`.dsp` (`tools/dsp2mk.py`),
   with a Primal Hunt configuration added beside Release.
-- **Legacy vs modern.** `AVP2_MODERN` gates every fix and feature, and
-  `AVP2_DEBUG` the debug build's logging; the legacy build must keep
+- **Legacy vs modern.** `AVP2SRC_MODERN` gates every fix and feature, and
+  `AVP2SRC_DEBUG` the debug build's logging; the legacy build must keep
   compiling to the retail bytes.
 - **Retail bugs.** Every bug found goes into `RETAIL_BUGS.md`, fixed (if at
-  all) only behind `AVP2_MODERN`.
+  all) only behind `AVP2SRC_MODERN`.
 - **Commits.** Small commits, each leaving the tree building.
 
 ## Packages
@@ -134,17 +134,17 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), both installs in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
 | 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | done (below) |
-| 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (cjacksrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | compiling (below); game directories and variants to do |
+| 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (cjacksrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | done (below) |
 | 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 (WONAPI from the release's source, the rest from nolfsrc's and nolf2src's) and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
 | 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
 | 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | `ltmsg.dll` done (below) |
 | 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | started (below) |
 | 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | linked (below) |
-| 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | |
+| 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | harness done; both engines stop before WinMain (below) |
 | 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | answered: not as shipped (package 7); 1.0.9.6's engine to be targeted |
 | 11 | `match`: byte-matching, module by module, ratcheted by `make progress` | 4-8 | |
-| 12 | `modern`: the modern build (`AVP2_MODERN`, `MODERN.md`) | 9 | |
-| 13 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and patch (`tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 9, 12 | |
+| 12 | `modern`: the modern build (`AVP2SRC_MODERN`, `MODERN.md`) | 9 | built (`make modern`); no item done yet |
+| 13 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and patch (`tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 9, 12 | done (below); the workflow not yet run on GitHub |
 
 ## Notes per package
 
@@ -197,10 +197,20 @@ only, as NOLF's did.
 through `tools/dsp2mk.py`, which expands the project files' `$(LT2_DIR)`
 to `S:\LT2` (`--macro`, `--drive`), as Developer Studio would with the
 release's `SetBuildVars.bat`. `build/compile.sh` builds in
-`out/release-tree/` (without the `AVP2_MODERN`/`AVP2_DEBUG` blocks, as
-cjacksrc's). `make` compiles and links; `build/all.sh` does not yet
-assemble a game directory, and `build/variant.sh` (`make debug`, `make
-modern`) does not exist yet.
+`out/release-tree/` (without the `AVP2SRC_MODERN`/`AVP2SRC_DEBUG` blocks, as
+cjacksrc's). `make` (`build/all.sh`) builds both games into one game
+directory, `out/avp2-legacy-release/`, laid out as the retail setups
+install them -- `AVP2/` (AvP2 1.0.9.6: its own engine, launcher, server,
+game DLLs) and `PrimalHunt/` (Primal Hunt's), each with its game DLLs in
+`custom/`, the last in its rez stack (`build/avp2cmds.sh`; Primal Hunt
+reads AvP2's archives from `../AVP2/`) -- from our binaries and the
+retail data (`.rez` archives with the retail game DLLs zeroed, movies,
+loose files, readmes, shipped settings; Bink, Smacker and Miles as
+third-party runtime), audited and packaged (`build/package.sh`: -private,
+and -public with the install scripts of `build/mkinstall.py`).
+`build/variant.sh` builds `make debug` (`AVP2SRC_DEBUG`, symbols),
+`make modern` (`AVP2SRC_MODERN`) and `make modern-debug` in copies of the
+tree under `out/build-<variant>/`.
 
 - Which configuration: **Final** for the game DLLs (`_FINAL`): none of the
   diagnostics the release keeps under `#ifndef _FINAL` is in either game's
@@ -576,6 +586,32 @@ few (`progress/targets.py`); five pages of each image's `.text` are kept
 encrypted by the protection wrapper (`encrypted`), and the functions in
 them (the rest of `RezFind.cpp`, `StaticEx.cpp`, `Utils.cpp`) are
 unverifiable. To come: the modern launchers (below).
+
+### 9. boot
+
+`make test` (`build/playtest.sh`: tools/playtest.sh, adapted) runs each
+game of a game directory under Xvfb and Wine, from its own run directory
+(`out/play/test/AVP2/`, `.../PrimalHunt/`: the result, `wine.log`, a
+screenshot). Both of our engines stop at once: `lithtech.exe` is linked
+with `/FORCE` for the scoreboard (build.mk, "Primal Hunt's lithtech.exe
+and server.dll, linked from our objects: not to run"), and every
+unresolved symbol is the image base, so the first call to one jumps to
+0x00400000 and dies on the header's bytes (illegal instruction at
+0x0040000C). The first is in the C runtime's static initialisers, before
+WinMain: `CConsoleView::CConsoleView` (our AvP2 lithtech.exe 0x00422140,
+Primal Hunt's 0x0040a380) constructing the global `g_Console` calls
+`CConsoleCritSec::CConsoleCritSec` (nolfsrc's 0x00444150), which no object
+defines. The links leave 1,377 (AvP2's) and 1,379 (Primal Hunt's) symbols
+unresolved in `lithtech.exe`, 316 and 311 in `server.dll`, 198 and 391 in
+`d3d.ren` (`<dir>/<image>-link.txt`): the engines run only once those are
+written or bound (nolfsrc's link-time stand-ins name NOLF's addresses).
+
+The layout, the rez stacks and our game DLLs are shown sound with the
+retail engines put in their place (`lithtech.exe`, `server.dll`,
+`d3d.ren` of each retail game, in a scratch copy only): both games reach
+their main menus, and AvP2 through its menus (`build/playtest-avp2-marine.txt`)
+loads the first Marine mission, plays its cinematic and gives the player
+control, with our `CShell.dll` and `Object.lto`.
 
 ### 12. modern
 

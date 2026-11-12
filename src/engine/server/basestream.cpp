@@ -57,7 +57,7 @@ LTRESULT CBaseStream::ReadString(char* pStr, unsigned long maxBytes)
 	unsigned long nMaxChars;
 	LTRESULT dResult;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: CBaseStream::ReadString never reports a short read
 	// (RETAIL_BUGS.md). A length that cannot be read is an error.
 	dResult = Read(&nLen, 2);
@@ -157,7 +157,7 @@ LTRESULT CBaseStream::WriteStream(ILTStream& dsSource, unsigned long dwMin,
 	unsigned long nLeft;
 	unsigned long nChunk;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: CBaseStream::WriteStream ignores the source offset
 	// (RETAIL_BUGS.md). A start the caller gives is sought to; the default
 	// still copies from wherever the source is, as every caller expects.

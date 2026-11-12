@@ -29,7 +29,7 @@
 #
 # From the environment (build/variant.sh sets them; empty for the legacy
 # build, whose command lines are then exactly the project files' ones):
-#   AVP2SRC_CFLAGS   appended to every compile (/D AVP2_MODERN, /Z7 ...)
+#   AVP2SRC_CFLAGS   appended to every compile (/D AVP2SRC_MODERN, /Z7 ...)
 #   AVP2SRC_LDFLAGS  put first on every link
 #   AVP2SRC_RCFLAGS  put first on every resource compile
 

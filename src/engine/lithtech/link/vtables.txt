@@ -385,7 +385,7 @@ vtable ??_7CLTClientQ404@@6B@ 0x004a14e0  # compiled with 2 slots
     ?UpdateQuery@CLTClient@@QAEKXZ
     ?GetQueryResults@CLTClient@@QAEKAAPAVNetSession@@@Z
     ?EndQuery@CLTClient@@QAEKXZ
-%ifdef AVP2_MODERN
+%ifdef AVP2SRC_MODERN
     # M-P0-02 / M-P2-04: the modern build's ILTClient additions (iltclient.h),
     # after the last retail slot; bodies in clientconsole.cpp
     ?SetConsoleOutputFn@CLTClientModern@@QAEKP6AXPAXKHPBD@Z0@Z

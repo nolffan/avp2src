@@ -1513,7 +1513,7 @@ char* tcp_GetErrorText()
 		if (g_WSAErrors[i].m_nCode == nErr)
 			return g_WSAErrors[i].m_pText;
 	}
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: an unlisted code gets a string, not its own value.
 	return "<unknown>";
 #endif
@@ -1599,7 +1599,7 @@ void TCPDriver::SendDisconnect(NetConnection* pConn)
 
 	packet[0] = 0;
 	packet[1] = 0;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: the third byte is defined.
 	packet[2] = 0;
 #endif

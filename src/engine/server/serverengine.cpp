@@ -1157,7 +1157,7 @@ void CServerMgr::OnModelLoaded(LThreadMessage* pMsg)
 // comes out six bytes long.
 LTRESULT se_ModelHashCleanup(void* pArg1, CDepLink* pLink, int nArg3)
 {
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: se_ModelHashCleanup leaks its record (RETAIL_BUGS.md). The
 	// record is freed whether or not there is still a manager. The hash is
 	// still reached through the global, not the record's copy: once the

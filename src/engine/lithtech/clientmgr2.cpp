@@ -62,7 +62,7 @@
 #include "packet.h"            // CPacket::WriteType                   (server/)
 #include "wonptrq503.h"        // the WON AuthContext pointers below
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
 #endif
 
@@ -2819,7 +2819,7 @@ void cm_RunPlusCommandsQ546(CClientMgrView* /*pClientMgr*/, int nSource,
 
 	if (pArgs)
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		for (i = 0; i < pArgs->m_nArgs - 1; i++)
 #else
 		for (i = 0; i < pArgs->m_nArgs; i++)
@@ -3478,7 +3478,7 @@ void cs_UpdateAnimations(CClientMgrView* pMgr)
 	CAnimTrackerView* pTracker;
 	int msDelta;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P1-23: the fraction of a millisecond carried to the next frame
 	static float s_fP1Carry;
 	msDelta = (int)P1_FrameMs(pMgr->m_fFrameTime, &s_fP1Carry);
@@ -3866,7 +3866,7 @@ void r_GetRequestedMode(RMode* pMode)
 		strncpy(pMode->m_RenderDLL, pVar->m_pStringVal, sizeof(pMode->m_RenderDLL) - 1);
 	else
 		strcpy(pMode->m_RenderDLL, "d3d.ren");
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// The modern build ships d3d9.ren as its default and our d3d.ren as
 	// d3d7.ren: a config naming d3d.ren gets the default.
 	if (!_stricmp(pMode->m_RenderDLL, "d3d.ren"))

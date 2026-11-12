@@ -637,7 +637,7 @@ void sm_WriteObjectFiles(LTObject* pObj, ServerMessage* pMsg, uint32* pnSize)
 	// RETAIL BUG: the model file is dereferenced without the null test the
 	// skins get (RETAIL_BUGS.md).
 	if (pMsg)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	{
 		CFileIdentifier* pFile = ((CObjFilesPHQ532*)pObj->m_pSData)->m_pModelFile;
 		uint16 nFileID = pFile ? pFile->m_FileID : (uint16)0xffff;

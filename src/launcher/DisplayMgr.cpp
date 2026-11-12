@@ -265,7 +265,7 @@ BOOL CCard::FillModeList(HWND hList)
 }
 
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // *********************************************************************** //
 //
 //	The modern launcher's modes (MODERN.md, M-P1-07 and M-L-01): every mode
@@ -404,7 +404,7 @@ BOOL CRenderer::Init(const char* sDll)
 	RMode* pMode = pModes;
 	do
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		if (pMode->m_Width >= 640 && pMode->m_Height >= 480 &&
 			(pMode->m_BitDepth >= 32 || !ModernHasDeeperMode(pModes, pMode)))
 #else
@@ -795,7 +795,7 @@ CRenderer* CDisplayModes::AddRenderer(const char* sDll)
 CRenderer* CDisplayModes::FindRenderer(const char* sDll)
 {
 	if (!sDll) return(NULL);
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// as the engine: d3d.ren is d3d9.ren in the modern build
 	if (_stricmp(sDll, "d3d.ren") == 0) sDll = "d3d9.ren";
 #endif
@@ -1146,7 +1146,7 @@ void CDisplayModes::SetDefaultModes()
 				}
 				else
 				{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 					pMode = ModernDefaultMode(pCard);
 					if (!pMode)
 #endif

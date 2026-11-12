@@ -188,7 +188,7 @@ LTRESULT CSoundMgr::GetReverbProperties(ReverbProperties* pReverbProperties)
 		if (pReverbProperties->m_dwParams & REVERBPARAM_DECAYTIME)
 			pReverbProperties->m_fDecayTime = m_fDecayTime;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: damping has its own flag, as SetReverbProperties uses (RETAIL_BUGS.md)
 		if (pReverbProperties->m_dwParams & REVERBPARAM_DAMPING)
 #else
@@ -525,7 +525,7 @@ LTRESULT CSoundMgr::GetFilterParamIndex(const char* pFilter, const char* pParam,
 // asked for is reported as found, at whatever index the walk had reached, and
 // a name that actually matches makes the walk carry on past it. Only running
 // out of filters answers LT_NOTFOUND - which, with this test, is what happens
-// when every filter matches. AVP2_MODERN fixes it (RETAIL_BUGS.md).
+// when every filter matches. AVP2SRC_MODERN fixes it (RETAIL_BUGS.md).
 LTRESULT CSoundMgr::GetFilterIndex(const char* pFilter, uint32* pIndex)
 {
 	void*  hFilter;
@@ -540,7 +540,7 @@ LTRESULT CSoundMgr::GetFilterIndex(const char* pFilter, uint32* pIndex)
 
 	while (AIL_enumerate_filters(&nNext, &hFilter, &pName))
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		if (stricmp(pFilter, pName) == 0)       // fixed: report the filter that matches
 #else
 		if (stricmp(pFilter, pName))            // retail: reports the first that does not

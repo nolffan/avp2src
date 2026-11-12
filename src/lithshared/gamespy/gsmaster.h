@@ -4,7 +4,7 @@
 //
 //  PURPOSE:  M-P6-02. Shared by GameSpyMgr.cpp (a server reporting to the
 //            master) and GameSpyClientMgr.cpp (the browser asking the
-//            master for its list). Only the modern build (AVP2_MODERN)
+//            master for its list). Only the modern build (AVP2SRC_MODERN)
 //            includes it; the release build's stand-ins talk to no master.
 //
 //  THE PROTOCOL (the GameSpy "version 1" master protocol of 1999-2000, as
@@ -37,7 +37,7 @@
 #ifndef _GSMASTER_H_
 #define _GSMASTER_H_
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 
 #include <windows.h>
 #include <winsock.h>
@@ -180,6 +180,6 @@ static BOOL GSM_FindKey(const char* sData, const char* sKey, char* sOut, int nOu
 	return(FALSE);
 }
 
-#endif // AVP2_MODERN
+#endif // AVP2SRC_MODERN
 
 #endif // _GSMASTER_H_

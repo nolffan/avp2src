@@ -206,7 +206,7 @@ LTBOOL sub_10020c00(void* pArg0, uint32 nArg1, uint32 nArg2, float fArg3,
                     float fArg8, Vec10020c00* pPos,
                     Rot10020c00* pRot);                 // 0x10020c00
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // M-P0-01: widescreen (Hor+) field of view.  The game picks its horizontal
 // field of view for a 4:3 screen (FovX 90, FovY 75 degrees), and the
 // renderer uses it as given, so on a wider screen the picture is stretched
@@ -344,7 +344,7 @@ unsigned int sub_1001eb90(SceneDesc* pScene, void* pMem, unsigned long nMemSize)
 	g_nTextureUploadSaves   = 0;
 	g_1008be30              = 0.0f;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P0-01: widescreen (Hor+) field of view
 	{
 		float fFovX = ModernHorPlusFovX(pScene);

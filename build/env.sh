@@ -21,7 +21,7 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 # project files put their outputs in (every one of them a build output,
 # never a source), and the project's own header directory tools/mkdeps.py
 # follows
-export RELEASESRC_VARIANTS="AVP2_MODERN AVP2_DEBUG"
+export RELEASESRC_VARIANTS="AVP2SRC_MODERN AVP2SRC_DEBUG"
 export RELEASESRC_OUTPUT_DIRS="built final release release8168 clientshelldll___win32_final object___win32_final primalhunt avp2release libs"
 # ... and Launch.dll's Debug build (not every Debug/: STLport has a source
 # directory of that name), and the libraries build/build.mk puts in the
@@ -40,7 +40,7 @@ export AVP2SRC_CFLAGS="${AVP2SRC_CFLAGS:-}"
 export AVP2SRC_LDFLAGS="${AVP2SRC_LDFLAGS:-}"
 export AVP2SRC_RCFLAGS="${AVP2SRC_RCFLAGS:-}"    # resource scripts: /d NAME
 # They are only allowed in the trees build/variant.sh makes (out/build-*/):
-# anywhere else they would put AVP2_DEBUG or AVP2_MODERN code into the
+# anywhere else they would put AVP2SRC_DEBUG or AVP2SRC_MODERN code into the
 # objects `make progress` scores, which must only ever be the legacy build.
 if [ -n "$AVP2SRC_CFLAGS$AVP2SRC_LDFLAGS$AVP2SRC_RCFLAGS" ]; then
     case "$REPO" in
@@ -51,7 +51,7 @@ if [ -n "$AVP2SRC_CFLAGS$AVP2SRC_LDFLAGS$AVP2SRC_RCFLAGS" ]; then
     esac
 fi
 
-# The legacy build compiles src/ WITHOUT its AVP2_MODERN / AVP2_DEBUG
+# The legacy build compiles src/ WITHOUT its AVP2SRC_MODERN / AVP2SRC_DEBUG
 # blocks, not merely with them switched off: a block the compiler skips
 # still moves everything below it, and VC6 lets the file's layout decide
 # where some out-of-line inline functions go, so enough skipped blocks can

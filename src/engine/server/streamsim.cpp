@@ -65,7 +65,7 @@ ILTStream* streamsim_Open(char* pFilename, char* pAccess)
 
 	if (pStream)
 		pStream->m_pFile = pFile;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	else
 		fclose(pFile);	// fixed: the file is not leaked (RETAIL_BUGS.md)
 #endif

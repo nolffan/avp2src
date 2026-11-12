@@ -339,7 +339,7 @@ inline LTRESULT CLTServer::UnloadModel(char *pFilename)
 	CFileIdentifier* pFile;
 
 	if (!fs_GetFileIdentifier(&m_pServerMgr->m_FileMgr, pFilename, 0, (void**)&pFile))
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR_INFO(1, "UnloadModel", LT_MISSINGFILE, pFilename);
 #else
 		RETURN_ERROR_INFO(1, "ThreadLoadTexture", LT_MISSINGFILE, pFilename);
@@ -358,7 +358,7 @@ inline LTRESULT CLTServer::UnloadTexture(char *pFilename)
 	CFileIdentifier* pFile;
 
 	if (!fs_GetFileIdentifier(&m_pServerMgr->m_FileMgr, pFilename, 0, (void**)&pFile))
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR_INFO(1, "UnloadTexture", LT_MISSINGFILE, pFilename);
 #else
 		RETURN_ERROR_INFO(1, "ThreadLoadTexture", LT_MISSINGFILE, pFilename);

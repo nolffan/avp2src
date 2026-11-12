@@ -1,0 +1,293 @@
+# The public archives of every build variant, as workflow artifacts (each
+# the .tar.gz itself, not a zip around it):
+# out/avp2-{legacy,modern}-{release,debug}-public.tar.gz (build/package.sh),
+# the game directory -- both games, AVP2/ and PrimalHunt/ -- without
+# anything from the retail games, with the scripts that install that from
+# the player's own disc images (build/mkinstall.py). The -private archives,
+# which hold the retail data, are not made here. The legacy release build
+# is also checked for byte regressions (make progress).
+#
+# The build needs, from archive.org, the redump zips of the European discs
+# of AvP2 and Primal Hunt (the retail games: `make retail` installs them
+# from them, and AvP2's 1.0.9.6 patch, which rez/ carries) and of the USA
+# discs (the install scripts are made against both releases'): about 2.6
+# GB, checked against rez/isos/SHA256SUMS. The build itself needs no retail
+# file beyond those: the compilers are the toolchains/ submodule's. The job
+# "prepare" fetches them once, into a cache keyed on that file, and builds
+# the docker image into a layer cache; then the four builds run at the same
+# time, each in a job of its own that restores both. None of the builds
+# needs another's output.
+#
+# Pushing a tag (v*, e.g. v0.1.0-alpha) also makes a GitHub release of it,
+# with the modern build's public archives attached (the job "release"),
+# named for the tag: avp2-modern-release-public.tar.gz as
+# avp2src-<tag>.tar.gz and avp2-modern-debug-public.tar.gz as
+# avp2src-debug-<tag>.tar.gz, each repacked to unpack to a directory of
+# that name. The legacy build is not attached. A tag with a hyphen in it is
+# marked a pre-release. A release of that tag made by hand beforehand is
+# kept, with its text; the archives are added to it, replacing ones of the
+# same name. A new release's text is .github/release_notes.md, followed by
+# GitHub's generated list of changes.
+#
+# A push to master whose four builds pass updates the pre-release "nightly"
+# the same way: the tag nightly is moved to the commit, its archives are
+# replaced by the commit's -- named for it, avp2src-nightly-<commit>.tar.gz
+# and avp2src-debug-nightly-<commit>.tar.gz (the first 7 digits of the
+# hash), each unpacking to a directory of that name, so a download and an
+# install say what they were built from -- and the text is
+# .github/nightly_notes.md (the commit and date) followed by
+# release_notes.md. The new archives go up before the old ones are deleted.
+# It is edited in place, not made anew, so its page stays the same and
+# watchers are not notified of every merge, and it is never marked the
+# latest release. A run whose commit is no longer master's head (one re-run
+# later, say) leaves it alone.
+name: Public archives
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: public-archives-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      discs-key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # .gitmodules names the submodules by SSH; all of them are public, so
+      # fetch them over HTTPS instead, at the commit this one records. Only
+      # rez/ (the disc list and fetch-isos.sh) is needed here.
+      - name: Submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync
+          git submodule update --init --depth 1 rez
+
+      # hashFiles() sees only the checkout, so the key is made once the
+      # submodule is there, and handed to the builds.
+      - name: Cache key
+        id: key
+        run: echo "key=redump-avp2-eu-usa-$(sha256sum rez/isos/SHA256SUMS | cut -c1-64)" >> "$GITHUB_OUTPUT"
+
+      # Only whether the cache has them: nothing is downloaded on a hit.
+      - name: Look for the disc images
+        id: discs
+        uses: actions/cache/restore@v4
+        with:
+          path: rez/isos/*.zip
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
+
+      # Checked against SHA256SUMS before it is saved.
+      - name: Fetch the disc images
+        if: steps.discs.outputs.cache-hit != 'true'
+        run: rez/fetch-isos.sh avp2-eu avp2-ph-eu avp2-usa avp2-ph-usa
+
+      - name: Save the disc images
+        if: steps.discs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: rez/isos/*.zip
+          key: ${{ steps.key.outputs.key }}
+
+      # Written to the layer cache here, once; the builds only read it.
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          tags: avp2src-build
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false         # one build failing still lets the others finish
+      matrix:
+        include:
+          - name: avp2-legacy-release
+            target: all
+          - name: avp2-legacy-debug
+            target: debug
+          - name: avp2-modern-release
+            target: modern
+          - name: avp2-modern-debug
+            target: modern-debug
+    name: ${{ matrix.name }}
+    env:
+      AVP2_ARCHIVES: public
+      IMAGE_BUILD: 0           # the step "Build image" loads it, cached
+    steps:
+      # The runner's preinstalled SDKs we never use: about 30 GB, where a
+      # build needs about 12 (the image, the discs and the retail game, a
+      # game directory and its build tree).
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      # toolchains/ (the compilers, the DirectX 8.1 SDK), rez/ (the discs'
+      # installer and AvP2's 1.0.9.6 patch) and tools/ (the reconstruction
+      # tools).
+      - name: Submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync
+          git submodule update --init --depth 1 --jobs 4
+
+      - name: Restore the disc images
+        uses: actions/cache/restore@v4
+        with:
+          path: rez/isos/*.zip
+          key: ${{ needs.prepare.outputs.discs-key }}
+          fail-on-cache-miss: true
+
+      # Loaded as avp2src-build, which the Makefile then uses (IMAGE_BUILD=0).
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          tags: avp2src-build
+          load: true
+          cache-from: type=gha
+
+      # Checks the zips against SHA256SUMS, converts them to .iso, then
+      # installs the retail game.
+      - name: Install the retail game
+        run: make retail
+
+      - name: Build ${{ matrix.name }}
+        run: make ${{ matrix.target }}
+
+      # The release build scored against the retail binaries: fails if a
+      # function recorded in progress/identical.txt is no longer
+      # byte-identical (build/progress.sh).
+      - name: Byte regressions (make progress)
+        if: matrix.name == 'avp2-legacy-release'
+        run: make progress
+
+      # Uploaded as the .tar.gz itself (archive: false), not zipped again;
+      # the artifact takes the file's name.
+      - uses: actions/upload-artifact@v7
+        with:
+          path: out/${{ matrix.name }}-public.tar.gz
+          archive: false
+          if-no-files-found: error
+
+  release:
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write          # create the release and upload to it
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+          sparse-checkout-cone-mode: false
+
+      # Each by its name: the build jobs upload the .tar.gz itself
+      # (archive: false), which download-artifact reads from v8 on.
+      - uses: actions/download-artifact@v8
+        with:
+          name: avp2-modern-release-public.tar.gz
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: avp2-modern-debug-public.tar.gz
+          path: dist
+
+      - name: Release ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'nightly' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'nightly' }}
+        run: |
+          # The archives' names after avp2src-: the tag, or for the nightly
+          # the commit it was built from.
+          ARCHIVE="$TAG"
+          if [ "$TAG" = nightly ]; then ARCHIVE="nightly-${SHA:0:7}"; fi
+
+          find dist -type f -ls
+          notes() {   # the release text for $TAG, into notes.md
+            sed -e "s|{{TAG}}|$TAG|g" -e "s|{{ARCHIVE}}|$ARCHIVE|g" -e "s|{{REPO}}|$GH_REPO|g" \
+                .github/release_notes.md | sed '/^<!--/,/^-->/d' > body.md
+            if [ "$TAG" = nightly ]; then
+              sed -e "s|{{SHA}}|$SHA|g" -e "s|{{SHORT}}|${SHA:0:7}|g" \
+                  -e "s|{{REPO}}|$GH_REPO|g" -e "s|{{DATE}}|$(date -u '+%Y-%m-%d %H:%M UTC')|g" \
+                  .github/nightly_notes.md | cat - body.md > notes.md
+            else
+              mv body.md notes.md
+            fi
+          }
+          if [ "$TAG" = nightly ]; then
+            head="$(gh api "repos/$GH_REPO/git/ref/heads/master" --jq .object.sha)"
+            if [ "$head" != "$SHA" ]; then
+              echo "master is at $head now, not $SHA: the nightly is left as it is"
+              exit 0
+            fi
+            notes
+            if gh release view nightly >/dev/null 2>&1; then
+              # Moved, or made again if it was deleted by hand.
+              gh api -X PATCH "repos/$GH_REPO/git/refs/tags/nightly" \
+                  -f sha="$SHA" -F force=true >/dev/null ||
+                gh api -X POST "repos/$GH_REPO/git/refs" \
+                    -f ref=refs/tags/nightly -f sha="$SHA" >/dev/null
+              gh release edit nightly --prerelease --latest=false \
+                  --title "Nightly (${SHA:0:7})" --notes-file notes.md
+            else
+              gh release create nightly --target "$SHA" --prerelease --latest=false \
+                  --title "Nightly (${SHA:0:7})" --notes-file notes.md
+            fi
+          elif ! gh release view "$TAG" >/dev/null 2>&1; then
+            pre=; case "$TAG" in *-*) pre=--prerelease ;; esac
+            notes
+            gh release create "$TAG" --verify-tag --notes-file notes.md \
+                --generate-notes $pre --title "$TAG"
+          fi
+          # Repacked so that each unpacks to a directory of its own name,
+          # not the build's avp2-modern-release/ or avp2-modern-debug/.
+          repack() {   # <build name> <release name>
+            rm -rf x && mkdir x
+            tar -C x -xzpf "$(find dist -name "$1-public.tar.gz")"
+            mv "x/$1" "x/$2"
+            tar -C x -cf - "$2" | gzip -6 > "up/$2.tar.gz"
+          }
+          mkdir up
+          repack avp2-modern-release "avp2src-$ARCHIVE"
+          repack avp2-modern-debug "avp2src-debug-$ARCHIVE"
+          for f in up/*.tar.gz; do echo "$f: $(tar -tzf "$f" | head -1)"; done
+          gh release upload "$TAG" up/*.tar.gz --clobber
+          # The nightly keeps only this commit's archives, deleted once the
+          # new ones are up so the page is never without a download.
+          if [ "$TAG" = nightly ]; then
+            gh release view nightly --json assets --jq '.assets[].name' |
+              while read -r a; do
+                case "$a" in "avp2src-nightly-${SHA:0:7}.tar.gz"|"avp2src-debug-nightly-${SHA:0:7}.tar.gz") ;;
+                  *) echo "deleting $a"; gh release delete-asset nightly "$a" --yes < /dev/null ;;
+                esac
+              done
+          fi

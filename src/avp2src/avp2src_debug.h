@@ -2,7 +2,7 @@
  * avp2src_debug.h -- diagnostics for the debug build, and nothing in release.
  *
  * The release build has to compile to the retail bytes, so nothing here may
- * reach it: without AVP2_DEBUG (which only the debug build defines, see
+ * reach it: without AVP2SRC_DEBUG (which only the debug build defines, see
  * build/variant.sh) every macro below expands to nothing and this header
  * includes nothing. Arguments are not evaluated in release either, so never
  * put a side effect in them.
@@ -15,7 +15,7 @@
  *   AVP2SRC_LOG(("loading world %s, %d objects", pName, nObjects));
  *   AVP2SRC_ASSERT(pObj != NULL);
  *
- *   #ifdef AVP2_DEBUG
+ *   #ifdef AVP2SRC_DEBUG
  *       ... any other debug-only code ...
  *   #endif
  *
@@ -30,10 +30,10 @@
  * Win32 functions it calls rather than including <windows.h>, which MFC
  * files must not see before their own headers.
  */
-#ifndef AVP2_DEBUG_H
-#define AVP2_DEBUG_H
+#ifndef AVP2SRC_DEBUG_H
+#define AVP2SRC_DEBUG_H
 
-#ifdef AVP2_DEBUG
+#ifdef AVP2SRC_DEBUG
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -103,6 +103,6 @@ static void __cdecl Avp2srcLogf(const char *fmt, ...)
 #define AVP2SRC_LOG(args) ((void)0)
 #define AVP2SRC_ASSERT(expr) ((void)0)
 
-#endif /* AVP2_DEBUG */
+#endif /* AVP2SRC_DEBUG */
 
-#endif /* AVP2_DEBUG_H */
+#endif /* AVP2SRC_DEBUG_H */

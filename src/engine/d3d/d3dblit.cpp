@@ -650,7 +650,7 @@ void d3d_UnlockScreen()
 }
 #endif // Primal Hunt: ph/d3d_surface.cpp
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // ---------------------------------------------------------------------- //
 //  M-P0-03: fast FillRect onto the screen
 // ---------------------------------------------------------------------- //

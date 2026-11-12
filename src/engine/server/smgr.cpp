@@ -28,7 +28,7 @@
 #include "servermsg.h"
 #include "commonmodel.h"
 #include "servermodel.h"
-#ifdef AVP2_DEBUG
+#ifdef AVP2SRC_DEBUG
 #include "avp2src_debug.h"
 #endif
 #include "commonphysics.h"
@@ -632,7 +632,7 @@ LTRESULT CServerMgrQ502::CreateStringCRC()
 		{
 			char* pStar = strstr(pTok, "*");
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 			// RETAIL BUG: a pattern's prefix and suffix are copied into
 			// 0x80-byte buffers unchecked, from a token of up to 0x3ff
 			// characters; the modern build skips a pattern that will not fit.
@@ -1164,7 +1164,7 @@ LTRESULT sm_UnloadModelFileQ523(CServerMgr* pMgr, char* pFilename)
 	CFileIdentifier* pFile;
 
 	if (!fs_GetFileIdentifier(&pMgr->m_FileMgr, pFilename, 0, (void**)&pFile))
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR_INFO(1, "UnloadModel", LT_MISSINGFILE, pFilename);
 #else
 		RETURN_ERROR_INFO(1, "ThreadLoadTexture", LT_MISSINGFILE, pFilename);
@@ -1492,7 +1492,7 @@ void sm_LoadChildModelMapQ523()
 			g_ChildModelMapQ523[pWorld][pModel] = pChild;
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	fclose(pFile);
 #endif
 }
@@ -1807,7 +1807,7 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 	// Everything below runs on accumulated server time.
 	fTime += m_Unknown6b8;
 	m_Unknown6d4 = fTime - m_Unknown6d8;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P1-23: a game tick takes at least 10 ms (the clamp below), and the
 	// client calls this every frame: above 100 frames a second the world
 	// ran faster than real time (3x at 300).  So a tick runs only once
@@ -1844,7 +1844,7 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 	{
 		if (!(flags & 1) && !(m_ServerFlags & 1))
 		{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		  // M-P1-23: see above
 		  if (bP1Tick)
 		  {
@@ -1911,7 +1911,7 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 
 			m_Unknown6c4 += nUpdates;
 			m_Unknown6c0 = m_Unknown6bc + (float)m_Unknown6c4 * fInv;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		  }
 #endif
 		}
@@ -2572,7 +2572,7 @@ int sm_ProcessPackets(CServerMgr* pMgr)
 			nResult = (*ppHandler)(pMgr, msg.m_pMsg, pClient);
 			if (nResult)
 			{
-#ifdef AVP2_DEBUG
+#ifdef AVP2SRC_DEBUG
 				AVP2SRC_LOG(("packet %d: its handler failed (%d), the server stops", nPacketID, nResult));
 #endif
 				pMgr->m_NetMgr.EndGettingPackets();
@@ -5549,7 +5549,7 @@ public:
 	// The BSP, unless it is busy (name ours).
 	CWMPolyBspQ502* GetIdle()
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		if (!m_pBsp || m_pBsp->IsBusy())
 #else
 		if (m_pBsp->IsBusy())
@@ -5873,7 +5873,7 @@ LTRESULT si_RemoveAttachment(Attachment* hAttachment)
 	if (!pParent)
 		RETURN_ERROR(1, "ILTPhysics::RemoveAttachment", LT_ERROR);
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	uint16 nChildID = hAttachment->m_nChildID;
 #endif
 
@@ -5888,7 +5888,7 @@ LTRESULT si_RemoveAttachment(Attachment* hAttachment)
 		// AFTER am_RemoveAttachment has handed it back to its bank. Only the
 		// record's first dword is written by the free, so the id survives,
 		// but it is a read of freed memory; the modern build reads it first.
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		LTObject* pChild = sm_FindObjectByID(g_pServerMgr, nChildID);
 #else
 		LTObject* pChild = sm_FindObjectByID(g_pServerMgr, hAttachment->m_nChildID);

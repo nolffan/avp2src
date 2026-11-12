@@ -12,7 +12,7 @@
 #include "servermsg.h"
 #include "de_error.h"
 #include "packet.h"
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // Declared rather than taken from <windows.h>, as avp2src_debug.h does.
 extern "C" __declspec(dllimport) void __stdcall OutputDebugStringA(const char* lpOutputString);
 #endif
@@ -925,7 +925,7 @@ void ServerMessage::ReadData(void* pData, uint32 nBytes)
 	{
 		uint32 nAlloc = m_DataSize;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: ServerMessage::ReadData and WriteData bound-check a
 		// truncated size (RETAIL_BUGS.md). The allocation is compared at its
 		// full 32 bits, as CPacket::WriteType does.
@@ -980,7 +980,7 @@ void ServerMessage::WriteData(void* pData, uint32 nBytes)
 	uint16 nCount = (uint16)nBytes;
 
 	if (nPos + nCount >= nLimit)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	{
 		nCount = (uint16)(m_MaxDataLen - m_Unknown38);
 		// fixed: ServerMessage::WriteData clips the count, then grows the
@@ -1004,7 +1004,7 @@ void ServerMessage::WriteData(void* pData, uint32 nBytes)
 	// GetSize(), not the bare m_DataSize: lithtech.exe's /O2 copy reads the
 	// dword and masks it (0x0045c3ce / 0x0045c4ad `mov 0x58 ; and $0xffff`)
 	// where a bare member narrows to a 16-bit load.
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	while (m_Unknown38 + nCount >= ((CMoArray<uint8>*)&m_PacketData)->GetSize())
 #else
 	while (m_Unknown38 + nCount >= (uint16)((CMoArray<uint8>*)&m_PacketData)->GetSize())

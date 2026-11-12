@@ -20,6 +20,9 @@
 #                 both from them (and AvP2's patch, rez/patches/), unless
 #                 they are installed already
 #                 (rez/fetch-isos.sh, rez/install-games.sh; `make` runs it)
+# retail_discs    fetches the disc images the public archive's install
+#                 scripts are made against, unless they are there: both
+#                 games' European and USA releases' (build/mkinstall.py)
 # retail_verify   checks every installed file against rez/games.sha256 (the
 #                 Makefile runs it before every build;
 #                 AVP2_SKIP_RETAIL_CHECK=1 skips it)
@@ -62,6 +65,18 @@ retail_install() {
         echo "== fetching and installing $rel (rez/: from archive.org, once)"
         "$rez/fetch-isos.sh" "$rel" && "$rez/install-games.sh" "$rel" || return 1
     done
+}
+
+RETAIL_DISCS="avp2-eu avp2-ph-eu avp2-usa avp2-ph-usa"
+retail_discs() {
+    local rez name missing=0
+    rez="$(retail_rez)" || return 1
+    while IFS= read -r name; do
+        [ -f "$rez/isos/$name.iso" ] || missing=1
+    done < <(python3 -I "$rez/tools/install.py" --discs $RETAIL_DISCS)
+    [ $missing = 0 ] && return 0
+    echo "== fetching the disc images of $RETAIL_DISCS (rez/: the USA releases' are about 1.3 GB more, once)"
+    "$rez/fetch-isos.sh" $RETAIL_DISCS
 }
 
 retail_verify() {

@@ -28,8 +28,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "GameSpyMgr.h"
-#ifdef AVP2_MODERN
-//  THE MODERN BUILD (AVP2_MODERN, M-P6-02) does report to a master: a
+#ifdef AVP2SRC_MODERN
+//  THE MODERN BUILD (AVP2SRC_MODERN, M-P6-02) does report to a master: a
 //  heartbeat every minute to the address the game sets with
 //  SetGameSpyAddr (default master.openspy.net), and the answer to its
 //  \secure\ challenge; see gsmaster.h.
@@ -39,7 +39,7 @@
 #define GSM_PACKET_LIMIT	1300	// flush before a UDP datagram grows past this
 
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // M-P6-02: the master's address, resolved at the first heartbeat and again
 // every 30 minutes (or after a failure).
 static char          s_sMasterAddr[128];
@@ -78,7 +78,7 @@ BOOL CGameSpyMgr::Init(const char* sGameName, const char* sGameVer, const char* 
                        int nGameLoc, int nGamePort, int nSpyPort, DWORD dwFlags)
 {
 	Term();
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P6-02: name lookups need Winsock (the engine has it running
 	// already; this only takes a reference)
 	if (!s_bWinsock)
@@ -105,7 +105,7 @@ BOOL CGameSpyMgr::Init(const char* sGameName, const char* sGameVer, const char* 
 
 void CGameSpyMgr::Term()
 {
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P6-02: tell the master we are gone (statechanged 2), so the server
 	// leaves the list at once rather than when it expires
 	if (m_bInit && m_pSender && m_timerHeartbeat)
@@ -133,7 +133,7 @@ void CGameSpyMgr::Update()
 
 BOOL CGameSpyMgr::UpdateHeartbeat()
 {
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P6-02: a heartbeat every TIMER_HEARTBEAT, sent from the game port
 	// (the port the master is told to query, GSMF_USEGAMEPORTFORHEARTBEAT)
 	if (!m_pSender) return(FALSE);
@@ -185,7 +185,7 @@ BOOL CGameSpyMgr::OnQuery(char* sAddr, DWORD dwPort, char* sData, int nLen)
 	StartResponse(sAddr, dwPort);
 
 	BOOL bAnswered = FALSE;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P6-02: the master reads \validate\ as the first key of the reply,
 	// so a challenge is answered before anything else asked with it
 	char sChallenge[80];
@@ -226,7 +226,7 @@ BOOL CGameSpyMgr::OnQuery(char* sAddr, DWORD dwPort, char* sData, int nLen)
 		else if (sToken.CompareNoCase("secure") == 0)
 		{
 			CString sValue = GetNextQueryToken();
-#ifndef AVP2_MODERN
+#ifndef AVP2SRC_MODERN
 			bAnswered |= OnSecureQuery(sValue);
 #endif
 		}
@@ -247,7 +247,7 @@ BOOL CGameSpyMgr::OnEchoQuery(const char* sQuery)
 
 BOOL CGameSpyMgr::OnSecureQuery(const char* sValue)
 {
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P6-02: prove to the master that we know the game's secret key
 	if (!sValue || !sValue[0] || m_sGameKey.IsEmpty()) return(FALSE);
 

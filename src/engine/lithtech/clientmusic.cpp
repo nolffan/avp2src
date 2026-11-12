@@ -91,7 +91,7 @@ LTRESULT CLTDirectMusicMgr::SetVolume(const long nVolume)
 //   test. The unguarded tail is `test %eax,%eax`, reached straight from the
 //   segment-state `je`. So a node with no segment state would spin forever;
 //   that is the same list invariant the by-name loop relies on.
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // fixed: StopSecondary and StopMotif test the wrong object when given a name
 // (RETAIL_BUGS.md). One walk for both cases: each node is visited once, the
 // next link read before the node can go back to the bank, and only a node
@@ -146,7 +146,7 @@ LTRESULT CLTDirectMusicMgr::StopSecondary(const char* sSecondarySegment,
 
 	EnterCriticalSection(&m_CriticalSection);
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	dm_StopPlayingNodes(this, m_SecondaryList, sSecondarySegment, nStart);
 #else
 	if (!sSecondarySegment)
@@ -214,7 +214,7 @@ LTRESULT CLTDirectMusicMgr::StopMotif(const char* sMotifName, const LTDMEnactTyp
 
 	EnterCriticalSection(&m_CriticalSection);
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	dm_StopPlayingNodes(this, m_MotifList, sMotifName, nStart);
 #else
 	if (!sMotifName)
@@ -658,7 +658,7 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 	static char sSeparator[] = "\\";
 #endif
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: "sDefine3", not "sDeine3" (RETAIL_BUGS.md)
 	dm_Printf(3, "CLTDirectMusicMgr::InitLevel sWorkingDirectory=%s sControlFileName=%s sDefine1=%s sDefine2=%s sDefine3=%s\n",
 	          sWorkingDirectory, sControlFileName, sDefine1, sDefine2, sDefine3);
@@ -736,7 +736,7 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 		if (!controlFile.Init(sFullName))
 		{
 			dm_Error(sReadError);
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 			delete [] sFullName;	// fixed: not leaked (RETAIL_BUGS.md)
 #endif
 			return LT_ERROR;
@@ -1176,7 +1176,7 @@ void __cdecl dm_NotificationThread(void* pParam)
 					// RETAIL BUG: those notifications leak.
 					if (g_pDirectMusicMgr->m_SecondaryList.FindBySegState(pSegState))
 					{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 						g_pDirectMusicMgr->m_pPerformance->FreePMsg(pMsg);
 #endif
 						continue;
@@ -1184,7 +1184,7 @@ void __cdecl dm_NotificationThread(void* pParam)
 
 					if (g_pDirectMusicMgr->m_MotifList.FindBySegState(pSegState))
 					{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 						g_pDirectMusicMgr->m_pPerformance->FreePMsg(pMsg);
 #endif
 						continue;
@@ -1193,7 +1193,7 @@ void __cdecl dm_NotificationThread(void* pParam)
 					if (g_pDirectMusicMgr->m_PrimaryList.m_pHead &&
 					    g_pDirectMusicMgr->m_PrimaryList.m_pHead->m_pSegState != pSegState)
 					{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 						g_pDirectMusicMgr->m_pPerformance->FreePMsg(pMsg);
 #endif
 						continue;

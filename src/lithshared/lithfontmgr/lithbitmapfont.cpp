@@ -18,7 +18,7 @@
 
 //*********************************************************************************
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // A new version, so a FontData.fnt the scan wrote before the modern build
 // fixed HUD_CHOOSER.pcx's shadow colour (M-P4-10) is dropped and rescanned:
 // the cache is matched on the name and width alone, which did not change.

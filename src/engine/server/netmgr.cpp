@@ -3211,7 +3211,7 @@ CNetFragRec* CNetMgrSendView::sub_10023495()
 		pRec = new CNetFragRec;
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: the fragment-record allocator passes a null to the list splice
 	// (RETAIL_BUGS.md). Out of memory, there is no record to queue.
 	if (pRec)
@@ -4297,7 +4297,7 @@ int CNetMgrSendView::sub_100235e8(NetConnection* pConn, ServerMessage* pMsg)
 		{
 			pRec = sub_10023495();
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 			// No record: the fragment is dropped, like any packet the
 			// reassembly cannot take.
 			if (!pRec)

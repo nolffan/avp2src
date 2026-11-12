@@ -338,7 +338,7 @@ int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax)
 
 	nStored = 0;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: w_IsPolyBlocking has no bounds checks (RETAIL_BUGS.md). A
 	// polygon too big for the lists, or a clip that would run out of room,
 	// is answered as blocking: it has already passed the sphere test, and
@@ -367,7 +367,7 @@ int w_IsPolyBlocking(WorldPolyOwner* pOwner, LTVector* pMin, LTVector* pMax)
 
 		for (j = 0; j < nVerts; j++)
 		{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 			// Room for this step's two pointers and one new vertex.
 			if (ppOut + 2 > pWork + WS_MAX_CLIP_VERTS ||
 			    nStored >= WS_MAX_CLIP_VERTS)
@@ -1752,7 +1752,7 @@ void ws_AddClippedContact(LTPlane* pPlane, void* pObject, float fDist)
 
 	fNew = fDist - fDot;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: ws_AddClippedContact divides by a dot product that can be zero
 	// (RETAIL_BUGS.md). The divisor, fDist - fNew, is fDot: a move parallel
 	// to the plane never reaches it, so the move is left as it is.
@@ -4231,7 +4231,7 @@ void ws_StairStepNewQ553(uint16 nBlock, CBounceState* pState, int* pbNoStep)
 // %ax (allocation), and shipped's g_vMoveStart copy completes before the
 // g_vMoveEnd loads (one store-scheduling block; operator/component spellings
 // of both sums and statement order did not move it).
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // M-P5-20: the highest point of a polygon over the rectangle x0..x1, z0..z1,
 // or 0 when none of it is over it. The polygon is clipped to the rectangle
 // seen from above (its height carried along each edge) and the highest of
@@ -4484,7 +4484,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 					g_pMoveState->m_pInfo->m_hPoly =
 					    g_pMoveState->m_pWorldBsp->MakeHPoly((WorldPoly*)pRec);
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 					// M-P5-20: a floor or a slope one can walk on lifts the
 					// feet onto the highest point of it that is under them.
 					// The lift was measured from the swept box's corners to
@@ -4518,7 +4518,7 @@ int ws_StairStep(uint16 nBlock, CBounceState* pState)
 					{
 						vFlat = pInfo->m_Plane.m_Normal;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 						if (vPush.y == 0.0f)
 #endif
 						vPush = vFlat * -fBest;

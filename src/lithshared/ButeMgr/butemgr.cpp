@@ -1991,7 +1991,7 @@ void CButeMgr::GetString(const char* szTagName, const char* szAttName, const cha
 			maxLen = sRet.GetLength() + 1;
 		strncpy(szResult, (const char*)sRet, maxLen);
 	}
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	else if (defVal)
 	{
 		strncpy(szResult, defVal, maxLen);

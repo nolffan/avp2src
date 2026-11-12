@@ -937,7 +937,7 @@ inline void cis_UnlockSurfaceQ40E(CSurfaceQ40E* pSurface)
 		g_pRenderQ40E->UnlockSurface(pSurface->m_pRenderData);
 }
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // M-P0-03: fast FillRect.  A fill of the SCREEN locks the whole back buffer
 // and writes the pixels in software, which costs the video card a round
 // trip of the frame per rectangle -- menus, sliders, the scope and the
@@ -1017,7 +1017,7 @@ LTRESULTQ40E ci_FillRectQ40E(CSurfaceQ40E* hDest, LTRectQ438* pRect,
 		rect.right = pSurface->m_nWidth;
 		rect.bottom = pSurface->m_nHeight;
 	}
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P0-03: fast FillRect
 	if (pSurface == &g_ScreenSurfaceQ40E && ci_ModernFillScreen(&rect, hColor))
 		return 0;

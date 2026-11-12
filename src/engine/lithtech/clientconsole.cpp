@@ -1367,7 +1367,7 @@ void con_Print(char* pFormat, ...)
 // under the server's name.
 extern int g_CV_TraceConsole;                                // 0x004b327c
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // M-P0-02: the game's console hook (ILTClient::SetConsoleOutputFn, defined
 // at the bottom of this file).
 typedef void (*ModernConsoleOutputFn)(void* pUser, uint32 nColor, int nLevel,
@@ -1385,7 +1385,7 @@ void CConsoleView::Sub41d1c0(uint32 nColor, int nLevel, char* pText)
 		return;
 
 	m_CS.Enter();
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P0-02: every console line also goes to the game DLL's console
 	if (g_pfnModernConsoleOutput)
 		g_pfnModernConsoleOutput(g_pModernConsoleOutputUser, nColor, nLevel, pText);
@@ -2150,16 +2150,16 @@ LTBOOL con_ICompare(char* p1, char* p2)
 		p2++;
 	}
 }
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // ======================================================================= //
-//  The modern build's additions to ILTClient (AVP2_MODERN only)
+//  The modern build's additions to ILTClient (AVP2SRC_MODERN only)
 // ======================================================================= //
 //
 // src/LT2/sdk/inc/iltclient.h declares these three as virtual methods appended
 // after EndQuery, the last retail slot, so every retail slot keeps its
 // place. lithtech.exe's ILTClient vtable is not compiled from a class but
 // assembled by tools/mkvtabobj.py from link/vtables.txt, whose
-// "%ifdef AVP2_MODERN" block names the three members below as slots 113
+// "%ifdef AVP2SRC_MODERN" block names the three members below as slots 113
 // to 115. They are plain (non-virtual) thiscall members of a class of their
 // own: `this` is the CLTClient object, which none of them reads.
 

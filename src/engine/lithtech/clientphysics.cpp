@@ -154,7 +154,7 @@ LTRESULT CPhysicsLT::SetObjectDims(HOBJECT hObj, LTVector* pNewDims, uint32 flag
 	CUnknown210* pWorld;
 
 	if (!hObj || !pNewDims)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		RETURN_ERROR(1, "CPhysicsLT::SetObjectDims", LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(2, "SPhysicsLT::SetObjectDims", LT_INVALIDPARAMS);

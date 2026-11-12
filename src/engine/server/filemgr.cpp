@@ -746,7 +746,7 @@ int ar_FindFile(COpenTree* pTree, char* pFilename, CFileFindState* pState)
 			nRet = _findnext(hFind, &fd);
 		}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: no close for a find that never opened (RETAIL_BUGS.md)
 		if (hFind != -1)
 #endif
@@ -804,7 +804,7 @@ int sub_100070b6(void* hTree, char* pFilename, char* pOutPath, uint32 nOutLen)
 	if (pTree->m_nKind != 1)
 		return 0;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// fixed: the tree-path builder ignores the buffer length it is given
 	// (RETAIL_BUGS.md). A path that does not fit is cut short, terminated,
 	// and reported as a failure.

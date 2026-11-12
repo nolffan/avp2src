@@ -851,7 +851,7 @@ extern "C" __declspec(dllimport) unsigned long __stdcall timeGetTime(void);
 // 0x004b4d28; its dynamic initialiser is 0x004895e0 -> 0x004895f0.
 static uint32 g_StartTime = timeGetTime();
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // M-P1-23: the clock from the performance counter.  timeGetTime counts
 // whole milliseconds, so at 300 frames a second (3.3 ms) frames measured 3
 // or 4 ms in turn, and every frame-time user jittered with it.

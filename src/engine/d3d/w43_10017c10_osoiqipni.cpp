@@ -1065,7 +1065,7 @@ extern struct Bank10021f40 g_1008afd4;
 #define g_f1008afd8 (*(float*)((char*)&g_1008afd4 + 4))
 extern float    g_f1008b8cc;                            // 0x1008b8cc
 extern float    g_f1008b8d0;                            // 0x1008b8d0
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 extern float    g_fModernFovX4x3;                       // M-P0-01, w4_1001eb90_os.cpp
 extern float    g_fModernFovXScale;                     // M-P0-01, w4_1001eb90_os.cpp
 #endif
@@ -1824,7 +1824,7 @@ void CD3DModelDraw::sub_10017c10(D3DObject* pObject)
 	{
 		LTMat   matFov;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// M-P0-01: widescreen (Hor+) field of view.  A model with a field
 		// of view of its own (the player-view weapons) is scaled across by
 		// tan(fovX/2) of the SCENE's field of view plus its offset, so the
@@ -1884,7 +1884,7 @@ void CD3DModelDraw::sub_10017c10(D3DObject* pObject)
 		// between the two: `fmuls 0.5` on the value already in %st for X,
 		// `flds 0.5 ; fmull` for Y, whose operand had to be spilled as a
 		// double across the first call.
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// M-P0-01: narrowed as the scene was widened (see above)
 		matFov.m[0][0] = (float)tan((double)(fFovX * 0.5f)) / g_fModernFovXScale;
 #else

@@ -11,7 +11,7 @@
 #include "servermgr.h"
 #include "de_error.h"
 #include <stdio.h>
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
 #endif
 
@@ -236,7 +236,7 @@ inline void sm_UpdateObjectTrackers(CServerMgr* pMgr, LTObject* pObject)
 
 	if (pObject->m_ObjectType == OT_MODEL)
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// M-P1-23: the tick's fraction of a millisecond carried to the
 		// next tick (once per tick, whichever object asks first)
 		static P1TickMs s_P1Ms;

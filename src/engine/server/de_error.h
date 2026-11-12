@@ -142,7 +142,7 @@ extern char g_ShutdownMessage[];
 // and those report the code by name and pass the message buffer as the
 // description rather than the lone space. Which form a wrapper uses follows
 // from its return type alone, across all forty-four of them.
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 // fixed: the value-returning readers quote the shutdown message
 // (RETAIL_BUGS.md). They pass the description every other check passes.
 #define RETURN_ERROR_MSG_VOID(level, fnName, code) \

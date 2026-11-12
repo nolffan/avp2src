@@ -83,7 +83,7 @@
 #include "de_error.h"
 #include "packet.h"
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 #include "..\..\modern\engine\p7_gamepad.h"   // M-P7-01: ##gamepad
 #endif
 
@@ -977,7 +977,7 @@ BOOL PASCAL di_CreateDeviceCallback(LPCDIDEVICEINSTANCEA lpddi, LPVOID pvRef)
 {
 	InputDevice* pDevice;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P7-01: the joystick is ##gamepad, read through XInput; DirectInput's
 	// joysticks are left out (one of them may be the same pad).
 	if (GET_DIDEVICE_TYPE(lpddi->dwDevType) == DIDEVTYPE_JOYSTICK && !P7Pad_IsPad(lpddi->guidInstance))
@@ -1023,7 +1023,7 @@ LTBOOL input_Init(InputMgr* pMgr, void* pClient)
 		}
 	}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	// M-P7-01: ##gamepad, the only joystick (DirectInput's are left out).
 	if (P7Pad_Available())
 	{
@@ -1598,7 +1598,7 @@ LTBOOL input_EnableDevice(InputMgr* pMgr, char* strDeviceName)
 					guid = GUID_SysKeyboard;
 				}
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				// M-P7-01: ##gamepad is ours, not DirectInput's.
 				if (P7Pad_CreateDevice(g_pDirectInput, guid, &pCreated) != DI_OK)
 					return LTFALSE;
@@ -1819,7 +1819,7 @@ void input_ReadActions(InputMgr* pMgr, uint8* pActions, float* pAxisOffsets)
 	{
 		while (pDevice->m_pDevice)
 		{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 			// M-P7-01: JoystickDisable (the launcher's "Disable joystick")
 			// was about DirectInput's joysticks, which are left out; not
 			// ##gamepad.

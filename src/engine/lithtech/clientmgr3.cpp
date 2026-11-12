@@ -1880,7 +1880,7 @@ void CCmgClientMgr::OnPeerAuthPacketQ548(CCmgMsg* pPacket)
 
 	CWonConstSmartPtrQ503<CWonByteBufferQ548> aOut;
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	if (!g_pPeerAuthClientQ548)
 		return;
 #endif
@@ -1888,7 +1888,7 @@ void CCmgClientMgr::OnPeerAuthPacketQ548(CCmgMsg* pPacket)
 	g_pPeerAuthClientQ548->HandleRecvMsg(aData + 4, nLen - 4, aOut);
 
 	delete g_pPeerAuthClientQ548;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 	g_pPeerAuthClientQ548 = LTNULL;
 #endif
 

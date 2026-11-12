@@ -213,7 +213,7 @@ void CLTGUIColumnTextCtrl::Render(HSURFACE hDestSurf)
 				// RETAIL BUG: the column's width is passed where its
 				// justification belongs, so a menu font always draws the
 				// column left-justified (from nX)
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				m_pFont->DrawMenu(m_columnArray[i]->m_hString, hDestSurf, nX, y, m_columnArray[i]->m_nJustify, GetState());
 #else
 				m_pFont->DrawMenu(m_columnArray[i]->m_hString, hDestSurf, nX, y, m_columnArray[i]->m_nWidth, GetState());

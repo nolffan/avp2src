@@ -548,7 +548,7 @@ void at_Advance(LTAnimTracker* pTracker, uint32 nTime, int nFlags)
 
 	if (pTracker->m_CurKey == iLast + 1 && (pTracker->m_Flags & AT_LOOPING))
 	{
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: an animation whose keyframes are all at time 0 wraps to 0
 		// instead of dividing by zero (RETAIL_BUGS.md)
 		pTracker->m_TimeRef.m_Cur.m_Time =

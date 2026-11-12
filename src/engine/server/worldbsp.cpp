@@ -1715,7 +1715,7 @@ int w_LoadWorldModel(WorldLoadRequest* pRequest, CServerWorldFull* pServerWorld,
 	// (AvP2 server.dll 0x1000bcb4 -> 0x1000bdd2), not to the delete; every
 	// other failure deletes the world first, so a bad cell grid leaks it.
 	if (!pWorld->m_Sub108.Load(pStream))     // 0x100090bf
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		goto fail;
 #else
 		return 2;

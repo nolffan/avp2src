@@ -15,18 +15,15 @@ REZ = ["ALIEN.REZ", "AVP2.REZ", "AVP2DLL.REZ", "AVP2L.REZ", "MARINE.REZ",
        "MULTI.REZ", "PREDATOR.REZ", "SOUNDS.REZ", "AVP2P1.REZ"]
 
 DATA_DIRS = ["Movies"]
-# Setup installs no default player profile (Profiles/ is empty).
-RETAIL_COPIES = [("autoexec.cfg", "autoexec.cfg.retail")]
+RETAIL_COPIES = [("autoexec.cfg", "autoexec.cfg.retail"), ("Profiles/Default.prf", "Default.prf.retail")]
 
-# Bink and Smacker (the movies), Miles (mss32.dll and its MP3 decoder),
-# and the Sierra updater the launcher can run (SierraUp.exe, SierraPt.dll).
-# Every binary of Monolith's links the C runtime statically: setup installs
-# no Microsoft runtime DLL.
-THIRD_PARTY_NAMES = {"binkw32.dll", "smackw32.dll", "mss32.dll", "mp3dec.asi", "mp3dec.as6",
-                     "sierraup.exe", "sierrapt.dll"}
+# Bink and Smacker (the movies) and Miles (mss32.dll and its MP3 decoder),
+# as build/retail.py's; the Sierra updater is left out.
+THIRD_PARTY_NAMES = {"binkw32.dll", "smackw32.dll", "mss32.dll", "mp3dec.asi", "mp3dec.as6"}
 
-# The engine is Primal Hunt's (build/retail.py): nothing of AvP2's is
-# built here beside the game.
+# AvP2 1.0.9.6's engine is built here too (Primal Hunt's cannot run AvP2's
+# game DLLs: docs/PLAN.md, package 10), but scored from out/reference/avp2/
+# (build/reference.sh), not through this layout.
 BUILT_ENGINE = []
 
 # The retail images the checks compare against: the launcher, AVP2.exe,

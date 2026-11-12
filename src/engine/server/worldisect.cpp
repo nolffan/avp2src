@@ -570,7 +570,7 @@ uint8 w_IsectObjectShape(LTVector* pFrom, LTVector* pTo, LTObject* pObj,
 				pPlane->m_Normal.x = 1.0f;
 				pPlane->m_Normal.y = 0.0f;
 				pPlane->m_Normal.z = 0.0f;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				// fixed: the box-intersect test reports the wrong plane on three
 				// of six faces (RETAIL_BUGS.md). The positive face is at the maximum.
 				pPlane->m_Dist = pObj->m_BBoxMax.x * 1.0f;
@@ -633,7 +633,7 @@ uint8 w_IsectObjectShape(LTVector* pFrom, LTVector* pTo, LTObject* pObj,
 				pPlane->m_Normal.x = 0.0f;
 				pPlane->m_Normal.y = 1.0f;
 				pPlane->m_Normal.z = 0.0f;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				pPlane->m_Dist = pObj->m_BBoxMax.y * 1.0f;
 #else
 				pPlane->m_Dist = pObj->m_BBoxMin.y * 1.0f;
@@ -694,7 +694,7 @@ uint8 w_IsectObjectShape(LTVector* pFrom, LTVector* pTo, LTObject* pObj,
 				pPlane->m_Normal.x = 0.0f;
 				pPlane->m_Normal.y = 0.0f;
 				pPlane->m_Normal.z = 1.0f;
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 				pPlane->m_Dist = pObj->m_BBoxMax.z * 1.0f;
 #else
 				pPlane->m_Dist = pObj->m_BBoxMin.z * 1.0f;
@@ -784,7 +784,7 @@ uint8 w_IsectObjectGeometry(LTObject* pObj)
 		            &((WorldModelObject*)pObj)->m_Transform1f0,
 		            &pWorldPoly->GetPlane()->m_Normal);
 
-#ifdef AVP2_MODERN
+#ifdef AVP2SRC_MODERN
 		// fixed: LTMatrix::TransformPlane never transforms the point it dots
 		// (RETAIL_BUGS.md). The point goes through the same transform as the
 		// normal, as the SDK's ltmatrix.h has it.
