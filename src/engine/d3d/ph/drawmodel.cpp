@@ -258,7 +258,11 @@ struct ViewParams
 
 extern ViewParams g_ViewParams;                             // 0x1005b790
 extern uint32   g_ClipFlags;                                // 0x1005bd0c
-extern float    g_CV_ModelSunVarianceClamp;                 // 0x1005d8b4
+// RETAIL BUG: the model sun's variance (d3d_InitModelSun, 0x1000b67d)
+// reads WarbleScale's value (common_stuff.cpp's g_CV_WarbleScale,
+// 0x1005d8b4, 0.92 by default), not ModelSunVariance's (this file's,
+// 0x10058888, 0.05).
+extern float    g_CV_WarbleScale;                           // 0x1005d8b4 (common_stuff.cpp)
 
 void d3d_InitModelVBs();                                    // 0x10001230
 void d3d_TermModelVBs();                                    // 0x10001340
@@ -535,8 +539,8 @@ void d3d_InitModelSun()
 	for (i = 0; i < 32; i++)
 	{
 		double dSin = sin(((float)i / 32.0f) * MATH_CIRCLE);
-		float fBase = (1.0f - LTCLAMP(g_CV_ModelSunVarianceClamp, 0.0f, 1.0f)) * 0.5f;
-		g_fModelSun[i] = g_CV_ModelSunVarianceClamp + fBase + fBase * dSin;
+		float fBase = (1.0f - LTCLAMP(g_CV_WarbleScale, 0.0f, 1.0f)) * 0.5f;
+		g_fModelSun[i] = g_CV_WarbleScale + fBase + fBase * dSin;
 	}
 
 	for (i = 0; i < 32; i++)
@@ -748,7 +752,7 @@ struct SceneWorld
 extern SceneWorld* g_pSceneWorld;                      // 0x1005c208
 
 LTBOOL  i_IntersectSegment(IntersectQuery* pQuery, IntersectInfo* pInfo,
-                           void* pWorldTree, void* pUser);  // 0x10031a5d
+                           WorldTree* pWorldTree, void* pUser);  // 0x10031a5d (fullintersectline.cpp)
 
 // 0x1000bcff -- does the segment from pPos along pDir end on the sky?
 LTBOOL d3d_SegmentHitsSky(LTVector* pPos, LTVector* pDir)
@@ -800,7 +804,7 @@ inline int32 RoundFloatToInt(float f)
 extern LTVector g_vGlobalLightColor;                        // 0x1005b780
 
 // What the lighting reads of the engine's render struct.
-struct ModelRenderStruct
+struct RenderStruct
 {
 	uint8       m_pad_000[0x10c];
 	LTBOOL      m_bEnvMapEnable;                            // +0x10c
@@ -840,11 +844,11 @@ struct ModelLightCBData
 	LTMatrix    m_mWorldToModel;
 };
 
-extern ModelRenderStruct* g_pStruct;                        // 0x1005df08 (common_stuff.cpp)
+extern RenderStruct* g_pStruct;                             // 0x1005df08 (common_stuff.cpp)
 extern int32    g_CV_MaxModelLights;                        // 0x1005dad4
 extern int32    g_CV_Saturate;                              // 0x1005d384
 extern uint32   g_nDynamicLights;                           // 0x1005bcb0
-extern DynamicLight* g_DynamicLights[];                     // 0x1005c168
+extern LTObject* g_DynamicLights[];                         // 0x1005c168 (common_draw.cpp)
 
 // 0x1000c860 -- the world's light grid at a point: the eight cells around
 // it, blended along y, then x, then z (server.dll's w_GetPointShade, the
@@ -1289,7 +1293,7 @@ void CD3DModelDraw::SetupLighting()
 	vZero.Init();
 	for (i = 0; i < g_nDynamicLights; i++)
 	{
-		DynamicLight* pLight = g_DynamicLights[i];
+		DynamicLight* pLight = (DynamicLight*)g_DynamicLights[i];
 
 		AddLight(&mWorldToModel, &pLight->m_Pos, pLight->m_LightRadius,
 			(float)pLight->m_ColorR, (float)pLight->m_ColorG, (float)pLight->m_ColorB,
@@ -1377,9 +1381,11 @@ public:
 	LTBOOL      Find(uint32 key1, uint32 key2);             // 0x1003b81b
 	LTBOOL      Alloc(uint32 key1, uint32 key2, uint32 nVerts, LTBOOL bGrow);  // 0x1003b862
 	void        AgeCache();                                 // 0x1003ba10
+
+	static CVertexBufferCache s_ModelVBCache;               // 0x100995a8
 };
 
-extern CVertexBufferCache g_ModelVBCache;                   // 0x100995a8
+// The model vertex-buffer cache: vertexbuffer.cpp's CVertexBufferCache::s_ModelVBCache (0x100995a8).
 extern LPDIRECT3DDEVICE7 g_pD3DDevice;                      // 0x100638c8
 extern uint32   g_iCurTextureStage;                         // 0x100638c0
 extern uint16   g_CurFrameCode;                             // 0x1005d238
@@ -1392,14 +1398,20 @@ extern CD3DConVar g_CV_ReallyCloseNearZ;                    // 0x1005a328 (d3d_v
 extern uint8    g_LightTableR[256];                         // 0x1005fa9c
 extern uint8    g_LightTableG[256];
 extern uint8    g_LightTableB[256];
-extern float    g_fTexelSizeU;                              // 0x100672a8
-extern float    g_fTexelSizeV;                              // 0x100672ac
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float   u, v;
+};
+
+extern TexPair  g_TexelSize[];                              // 0x100672a8 (d3d_texture.cpp)
 extern void     (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular); // 0x1005e1c4
 extern uint32   g_nModelsClipped;                           // 0x1005e278
 extern uint32   g_nModelsUnclipped;                         // 0x1005e774
 
 int     d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
-LTBOOL  d3d_ClipTLVerts(ModelSpriteVert** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6
+struct TLVertex;
+LTBOOL  d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6 (drawworld.cpp)
 void    d3d_SetupTransformation(LTVector* pPos, LTRotation* pRot, LTVector* pScale, LTMatrix* pMat); // 0x100091f0
 
 static uint32   g_iModelWarble;                             // 0x100572c4
@@ -1446,10 +1458,10 @@ void CD3DModelDraw::DrawSprite(ModelInstance* pInstance, uint8 nAlpha)
 	verts[3].m_Vec = m_vPos - vRight * pModel->m_fSpriteWidth * pInstance->m_Scale.x -
 		LTVector(0.0f, pModel->m_fSpriteHeight, 0.0f) * pInstance->m_Scale.y;
 
-	verts[0].SetUV(g_fTexelSizeU, g_fTexelSizeV);
-	verts[1].SetUV(1.0f - g_fTexelSizeU, g_fTexelSizeV);
-	verts[2].SetUV(1.0f - g_fTexelSizeU, 1.0f - g_fTexelSizeV);
-	verts[3].SetUV(g_fTexelSizeU, 1.0f - g_fTexelSizeV);
+	verts[0].SetUV(g_TexelSize[0].u, g_TexelSize[0].v);
+	verts[1].SetUV(1.0f - g_TexelSize[0].u, g_TexelSize[0].v);
+	verts[2].SetUV(1.0f - g_TexelSize[0].u, 1.0f - g_TexelSize[0].v);
+	verts[3].SetUV(g_TexelSize[0].u, 1.0f - g_TexelSize[0].v);
 
 	if (g_CV_LightModelSprites.m_nValue && g_pSceneWorld)
 	{
@@ -1470,7 +1482,7 @@ void CD3DModelDraw::DrawSprite(ModelInstance* pInstance, uint8 nAlpha)
 	nVerts = 4;
 	g_ClipFlags = 0x3f;
 	pVerts = verts;
-	if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+	if (d3d_ClipTLVerts((TLVertex**)&pVerts, &nVerts, &g_ViewParams, 0))
 		d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, pVerts, nVerts, 0);
 }
 
@@ -1597,16 +1609,16 @@ void CD3DModelDraw::DrawModel(ModelInstance* pInstance)
 		key = d3d_GetModelCacheKey(m_FogColor, m_iLOD);
 		if (!m_bBlendLOD && m_nAlpha == m_pInstance->m_ColorA)
 		{
-			if (g_ModelVBCache.Find((uint32)m_pInstance, key))
+			if (CVertexBufferCache::s_ModelVBCache.Find((uint32)m_pInstance, key))
 				m_iCacheState = MCS_CACHED;
-			else if (g_ModelVBCache.Alloc((uint32)m_pInstance, key, GetNumIndices(), LTFALSE))
+			else if (CVertexBufferCache::s_ModelVBCache.Alloc((uint32)m_pInstance, key, GetNumIndices(), LTFALSE))
 				m_iCacheState = MCS_FILL;
 		}
 	}
 
 	if (g_ModelCacheFrameCode != g_CurFrameCode)
 	{
-		g_ModelVBCache.AgeCache();
+		CVertexBufferCache::s_ModelVBCache.AgeCache();
 		g_ModelCacheFrameCode = g_CurFrameCode;
 	}
 
@@ -1818,4 +1830,32 @@ void CD3DModelDraw::SetupNodeTransforms(LTMatrix* pMat)
 
 	for (i = 0; i < m_pModel->m_nNodes; i++)
 		MatMul((LTMatrix*)&m_ClipVerts[i], pMat, &m_pModel->m_Transforms[i]);
+}
+
+
+// The out-of-line transform the /O2 files call (d3d_draw.cpp,
+// drawlight.cpp): ltmatrix.h's MatVMul_H, written once here, which the
+// link folds with this file's own copy of the inline (0x1000dcec).
+float d3d_MatVMul_H(LTVector* pDest, LTMatrix* pMat, LTVector* pSrc)
+{
+	float one_over_w = 1.0f / (pMat->m[3][0]*pSrc->x + pMat->m[3][1]*pSrc->y + pMat->m[3][2]*pSrc->z + pMat->m[3][3]);
+
+	pDest->x = one_over_w * (pMat->m[0][0]*pSrc->x + pMat->m[0][1]*pSrc->y + pMat->m[0][2]*pSrc->z + pMat->m[0][3]);
+	pDest->y = one_over_w * (pMat->m[1][0]*pSrc->x + pMat->m[1][1]*pSrc->y + pMat->m[1][2]*pSrc->z + pMat->m[1][3]);
+	pDest->z = one_over_w * (pMat->m[2][0]*pSrc->x + pMat->m[2][1]*pSrc->y + pMat->m[2][2]*pSrc->z + pMat->m[2][3]);
+
+	return one_over_w;
+}
+
+
+// drawmodelshadows.cpp's shadow description: its constructor is empty and
+// out of line (0x1000b981), defined here, where the link folds it with
+// this file's identical empty constructors.
+struct ModelShadowInfo
+{
+	ModelShadowInfo();
+};
+
+ModelShadowInfo::ModelShadowInfo()
+{
 }

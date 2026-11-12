@@ -60,10 +60,11 @@
 
 
 // A console variable (common_stuff.cpp's registrar, 0x10011f36).
-struct CConVar
+class CD3DConVar
 {
-	CConVar(const char* pszName, float fDefault, int32* pnValue,
-	        float* pfValue);                                // 0x10011f36
+public:
+	CD3DConVar(const char* pszName, float fDefault, int32* pnValue,
+	           float* pfValue);                             // 0x10011f36
 
 	int32       m_nValue;                                   // +0x00
 	float       m_fValue;                                   // +0x04
@@ -72,26 +73,27 @@ struct CConVar
 	float*      m_pfValue;                                  // +0x10
 	const char* m_pszName;                                  // +0x14
 	void*       m_hVar;                                     // +0x18
-	CConVar*    m_pNext;                                    // +0x1c
+	CD3DConVar*    m_pNext;                                    // +0x1c
 };
 
 
-// The vertex-buffer controller (TU43, 0x1003b3e0..): a ring of
-// m_nBuffers Direct3D vertex buffers of m_nVerts vertices each.
-class CVertexBufferController
+// The vertex-buffer controller (vertexbuffer.cpp's CVertexBuffer, TU43,
+// 0x1003b3e0..): a ring of m_nBuffers Direct3D vertex buffers of m_nVerts
+// vertices each.
+class CVertexBuffer
 {
 public:
-	CVertexBufferController();                              // 0x1003b3e0
-	virtual ~CVertexBufferController();                     // 0x1003b436
+	CVertexBuffer();                                        // 0x1003b3e0
+	virtual ~CVertexBuffer();                               // 0x1003b436
 
-	virtual long    DrawPrimitive(void* pDevice, uint32 nPrimType,
-	                              uint32 nVerts);           // 0x1003b45b
-	virtual long    DrawIndexedPrimitive(void* pDevice, uint32 nPrimType,
-	                                     uint32 nVerts, uint16* pIndices,
-	                                     uint32 nIndices);  // 0x1003b4dc
+	virtual HRESULT Flush(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE type,
+	                      uint32 nVerts);                   // 0x1003b45b
+	virtual HRESULT FlushIndexed(LPDIRECT3DDEVICE7 pDevice, D3DPRIMITIVETYPE type,
+	                             uint32 nVerts, uint16* pIndices,
+	                             uint32 nIndices);          // 0x1003b4dc
 	virtual void    Term();                                 // 0x1003b565
 	virtual LTBOOL  Init(IDirect3D7* pD3D, uint32 nVerts, uint32 nBuffers,
-	                     LTBOOL bTnL, LTBOOL bSysMem);      // 0x1003b59d
+	                     uint32 bTnL, uint32 bSysMem);      // 0x1003b59d
 	virtual void*   Lock();                                 // 0x1003b611
 	virtual uint32  GetVertexSize() = 0;
 	virtual LTBOOL  CreateBuffers(IDirect3D7* pD3D) = 0;
@@ -110,10 +112,13 @@ public:
 		return (pEnd - (uint8*)Lock()) / GetVertexSize();
 	}
 
-	void            NextBuffer();                           // 0x1003b4cc
-	void            Flush();                                // 0x1003b557
-	void            ReleaseBuffers();                       // 0x1003b66f
+	void            NextVB();                               // 0x1003b4cc
+	void            Discard();                              // 0x1003b557
 
+protected:
+	void            ReleaseVBs();                           // 0x1003b66f
+
+public:
 	void*       m_pBuffersVtbl;                             // +0x04 CMoArray
 	LPDIRECT3DVERTEXBUFFER7* m_pBuffers;                    // +0x08
 	uint8       m_pad_0c[0x18 - 0x0c];                      // +0x0c
@@ -130,7 +135,7 @@ public:
 
 // The model vertex cache (TU43's 0x100995a8): a controller that keeps
 // whole models' vertices between frames.
-class CVertexBufferCache : public CVertexBufferController
+class CVertexBufferCache : public CVertexBuffer
 {
 public:
 	virtual uint32  GetVertexSize();
@@ -141,6 +146,9 @@ public:
 	uint32      m_nFVF;                                     // +0x58
 	uint8       m_pad_5c[0x60 - 0x5c];                      // +0x5c
 	uint32      m_nCacheDelay;                              // +0x60
+
+	// The model vertex-buffer cache (vertexbuffer.cpp's, 0x100995a8).
+	static CVertexBufferCache s_ModelVBCache;
 };
 
 // The model banks: one and two texture stage vertices (the vertex format
@@ -160,7 +168,7 @@ struct ModelVBVert2
 };
 
 template<class TVert, int bTnL>
-class CModelVB : public CVertexBufferController
+class CModelVB : public CVertexBuffer
 {
 public:
 	CModelVB() { m_bTnL = bTnL; }
@@ -200,7 +208,7 @@ public:
 		}
 
 		if (!bOK)
-			ReleaseBuffers();
+			ReleaseVBs();
 
 		return bOK;
 	}
@@ -209,29 +217,28 @@ public:
 
 extern IDirect3D7*          g_pD3D;                         // 0x100638cc
 extern long                 g_CV_TnLRast;                   // 0x1005df2c
-extern CVertexBufferCache   g_ModelVBCache;                 // 0x100995a8
 
 // The half-texel offsets the texture coordinate generators add.
-extern float                g_fTexelOffsetU;                // 0x10052b70
-extern float                g_fTexelOffsetV;                // 0x10052b74
+float                       g_fTexelOffsetU;                // 0x10052b70
+float                       g_fTexelOffsetV;                // 0x10052b74
 
 
 // ----------------------------------------------------------------------- //
 //  The file's globals, in construction order (0x10001030..0x10001229).
 // ----------------------------------------------------------------------- //
 
-CConVar         g_CV_ModelMinTri("ModelMinTri", 0.2f, LTNULL, LTNULL);             // 0x10051610
+CD3DConVar         g_CV_ModelMinTri("ModelMinTri", 0.2f, LTNULL, LTNULL);             // 0x10051610
 CModelVB<ModelVBVert, LTFALSE>  g_ModelVB;                                         // 0x10051650
 CModelVB<ModelVBVert2, LTFALSE> g_ModelVB2;                                        // 0x10051ab0
 CModelVB<ModelVBVert, LTTRUE>   g_ModelVBTnL;                                      // 0x10052b78
 CModelVB<ModelVBVert2, LTTRUE>  g_ModelVB2TnL;                                     // 0x10051b10
-CConVar         g_CV_ModelDetailTextureScale("ModelDetailTextureScale", 3.0f, LTNULL, LTNULL); // 0x100515f0
-CConVar         g_CV_SpecularPowerTest("SpecularPowerTest", 0.0f, LTNULL, LTNULL); // 0x10052b50
-CConVar         g_CV_SpecularScaleTest("SpecularScaleTest", 0.0f, LTNULL, LTNULL); // 0x10051af0
-CConVar         g_CV_ModelVBSize("ModelVBSize", 126.0f, LTNULL, LTNULL);           // 0x10051630
-CConVar         g_CV_ModelVBCount("ModelVBCount", 1.0f, LTNULL, LTNULL);           // 0x10052bb8
-CConVar         g_CV_ModelVBCache("ModelVBCache", 128.0f, LTNULL, LTNULL);         // 0x10051690
-CConVar         g_CV_ModelVBCacheDelay("ModelVBCacheDelay", 4.0f, LTNULL, LTNULL); // 0x100515d0
+CD3DConVar         g_CV_ModelDetailTextureScale("ModelDetailTextureScale", 3.0f, LTNULL, LTNULL); // 0x100515f0
+CD3DConVar         g_CV_SpecularPowerTest("SpecularPowerTest", 0.0f, LTNULL, LTNULL); // 0x10052b50
+CD3DConVar         g_CV_SpecularScaleTest("SpecularScaleTest", 0.0f, LTNULL, LTNULL); // 0x10051af0
+CD3DConVar         g_CV_ModelVBSize("ModelVBSize", 126.0f, LTNULL, LTNULL);           // 0x10051630
+CD3DConVar         g_CV_ModelVBCount("ModelVBCount", 1.0f, LTNULL, LTNULL);           // 0x10052bb8
+CD3DConVar         g_CV_ModelVBCache("ModelVBCache", 128.0f, LTNULL, LTNULL);         // 0x10051690
+CD3DConVar         g_CV_ModelVBCacheDelay("ModelVBCacheDelay", 4.0f, LTNULL, LTNULL); // 0x100515d0
 
 
 // 0x10001230 -- (re)allocate the model vertex buffers: at least one
@@ -251,10 +258,10 @@ void d3d_InitModelVBs()
 	g_ModelVB2TnL.Init(g_pD3D, g_CV_ModelVBSize.m_nValue, g_CV_ModelVBCount.m_nValue,
 		LTTRUE, g_CV_TnLRast);
 
-	CVertexBufferController* pCache = &g_ModelVBCache;
+	CVertexBuffer* pCache = &CVertexBufferCache::s_ModelVBCache;
 	pCache->Init(g_pD3D, g_CV_ModelVBSize.m_nValue, g_CV_ModelVBCache.m_nValue,
 		LTTRUE, g_CV_TnLRast);
-	g_ModelVBCache.m_nCacheDelay = g_CV_ModelVBCacheDelay.m_nValue;
+	CVertexBufferCache::s_ModelVBCache.m_nCacheDelay = g_CV_ModelVBCacheDelay.m_nValue;
 }
 
 // 0x10001340 -- free them. Only the pre-transformed banks and the cache.
@@ -263,7 +270,7 @@ void d3d_TermModelVBs()
 	g_ModelVB.Term();
 	g_ModelVB2.Term();
 
-	CVertexBufferController* pCache = &g_ModelVBCache;
+	CVertexBuffer* pCache = &CVertexBufferCache::s_ModelVBCache;
 	pCache->Term();
 }
 
@@ -487,12 +494,15 @@ struct ViewParams
 	float       m_NearZ;                                    // +0x88
 	float       m_FarZ;                                     // +0x8c
 	float       m_FarZ2;                                    // +0x90
+	uint8       m_pad_094[0x19c - 0x94];                    // +0x94
+	LTMatrix    m_DeviceTimesProjection;                    // +0x19c (0x1005b92c)
+	uint8       m_pad_1dc[0x4cc - 0x1dc];                   // +0x1dc
+	LTBOOL      m_bMirrorView;                              // +0x4cc (0x1005bc5c)
 };
 
 extern ViewParams   g_ViewParams;                           // 0x1005b790
 extern uint32       g_ClipFlags;                            // 0x1005bd0c
 extern int32        g_nModelTriangles;                      // 0x1005bd04
-extern LTBOOL       g_bMirrorView;                          // 0x1005bc5c
 extern LPDIRECT3DDEVICE7 g_pD3DDevice;                      // 0x100638c8
 
 class CD3DModelDraw
@@ -512,31 +522,31 @@ public:
 	                           LTMatrix* pTransforms, LTVector* pColorSum,
 	                           bool bBounds, LTVector* pMin, LTVector* pMax); // 0x10004660
 	void        DrawLOD();                                  // 0x10005700
-	void        SetupTextureStages(uint32* pnValue);        // 0x10025193
+	void        SetupModelStates(LTBOOL* pTranslucent);     // 0x10025193 (drawmodel_env.cpp)
 
 	// Send the vertices through the model cache, which keeps them in the
 	// bank's format, less the rhw: the device transforms them.
 	void        UseModelVBCache(uint32 nFVF, uint32 nVertSize)
 	{
-		m_pVB = &g_ModelVBCache;
-		g_ModelVBCache.m_nFVF = (nFVF & ~D3DFVF_XYZRHW) | D3DFVF_XYZ;
-		g_ModelVBCache.m_nVertSize = nVertSize - sizeof(float);
+		m_pVB = &CVertexBufferCache::s_ModelVBCache;
+		CVertexBufferCache::s_ModelVBCache.m_nFVF = (nFVF & ~D3DFVF_XYZRHW) | D3DFVF_XYZ;
+		CVertexBufferCache::s_ModelVBCache.m_nVertSize = nVertSize - sizeof(float);
 	}
-	void        SetupTexture(uint32 iTexture);              // 0x10025269
+	void        SetupSkin(uint32 iSkin);                    // 0x10025269 (drawmodel_env.cpp)
 
 	// Draw the bank's vertices up to pOut.
 	void        FlushVerts(uint8* pOut)
 	{
 		uint32 nVerts = m_pVB->GetVertCount(pOut);
 		g_nModelTriangles += nVerts / 3;
-		m_pVB->DrawPrimitive(g_pD3DDevice, D3DPT_TRIANGLELIST, nVerts);
+		m_pVB->Flush(g_pD3DDevice, D3DPT_TRIANGLELIST, nVerts);
 	}
 
 	// Draw the full bank (the next triangle does not fit).
 	void        FlushFullVB()
 	{
 		g_nModelTriangles += (m_pVB->m_nVerts - m_pVB->m_nUsed) / 3;
-		m_pVB->DrawPrimitive(g_pD3DDevice, D3DPT_TRIANGLELIST,
+		m_pVB->Flush(g_pD3DDevice, D3DPT_TRIANGLELIST,
 			m_pVB->m_nVerts - m_pVB->m_nUsed);
 	}
 
@@ -557,13 +567,13 @@ public:
 	uint8       m_pad_5d0[0x5e8 - 0x5d0];                   // +0x5d0
 	uint32      m_nVertFormat;                              // +0x5e8
 	GenSpecularFn m_pfnGenSpecular;                         // +0x5ec
-	uint32      m_nValue;                                   // +0x5f0
+	LTBOOL      m_nValue;                                   // +0x5f0 (the pieces' translucency)
 	GenUVFn     m_pfnGenUV;                                 // +0x5f4
 	uint32      m_nVertSize;                                // +0x5f8
 	CopyVertFn  m_pfnCopyVert;                              // +0x5fc
 	ClipPolyFn  m_pfnClipPoly;                              // +0x600
 	uint32      m_nFVF;                                     // +0x604
-	CVertexBufferController* m_pVB;                         // +0x608
+	CVertexBuffer* m_pVB;                         // +0x608
 	uint32      m_iLOD;                                     // +0x60c
 	LTBOOL      m_bBlendLOD;                                // +0x610
 	float       m_fLODBlend;                                // +0x614
@@ -661,10 +671,12 @@ void __fastcall d3d_CopyVert2(BankVert2* pDst, BankVert2* pSrc)
 //  (0x100063e0..0x10007924).
 // ======================================================================= //
 
+extern CD3DConVar g_CV_UseD3DClip;                          // 0x100622b0 (d3d_init.cpp)
+
 #include "d3d_clip.h"
 
-extern LTMatrix g_mModelTransform;                          // 0x1005b92c
-extern float    g_fReallyClosePushZ;                        // 0x1005b74c
+// The near clip the really-close geometry is pushed to: NearZ's value.
+extern CD3DConVar g_CV_NearZ;                               // 0x1005b748 (d3d_viewparams.cpp)
 
 // 0x10001530 -- the drawer's clipper for the one-stage vertex. The driver
 // is an inline under it: written in the function itself, cl 8966 inlines
@@ -685,7 +697,7 @@ inline float TriFacing(ModelTLVert* pV0, ModelTLVert* pV1, ModelTLVert* pV2)
 {
 	float fCross = (pV1->m_vPos.x - pV0->m_vPos.x) * (pV2->m_vPos.y - pV0->m_vPos.y)
 	             - (pV2->m_vPos.x - pV0->m_vPos.x) * (pV1->m_vPos.y - pV0->m_vPos.y);
-	if (g_bMirrorView)
+	if (g_ViewParams.m_bMirrorView)
 		fCross = -fCross;
 	return fCross;
 }
@@ -719,8 +731,8 @@ inline float TriFacing(ModelTLVert* pV0, ModelTLVert* pV1, ModelTLVert* pV2)
 #define INSIDE_RIGHT(v)     ((v)->m_vPos.x < (v)->m_vPos.z)
 #define INSIDE_TOP(v)       ((v)->m_vPos.y < (v)->m_vPos.z)
 #define INSIDE_BOTTOM(v)    (-(v)->m_vPos.z < (v)->m_vPos.y)
-#define INSIDE_NEAR(v)      ((v)->m_vPos.z >= g_fNearZ)
-#define INSIDE_FAR(v)       ((v)->m_vPos.z <= g_fFarZ)
+#define INSIDE_NEAR(v)      ((v)->m_vPos.z >= g_ViewParams.m_NearZ)
+#define INSIDE_FAR(v)       ((v)->m_vPos.z <= g_ViewParams.m_FarZ2)
 
 // Classify a view-space triangle against the planes in nFlags: 0 wholly
 // inside, 1 wholly outside one of them, 2 straddling one, *pnClip then
@@ -764,7 +776,7 @@ inline float ProjFacing(TLVert* pV0, TLVert* pV1, TLVert* pV2)
 	v2.y = pV2->m_vPos.y * fRHW[2] - v0.y;
 
 	float fCross = v2.x * v1.y - v2.y * v1.x;
-	if (g_bMirrorView)
+	if (g_ViewParams.m_bMirrorView)
 		fCross = -fCross;
 	return fCross;
 }
@@ -772,22 +784,22 @@ inline float ProjFacing(TLVert* pV0, TLVert* pV1, TLVert* pV2)
 // Project a view-space vertex into a bank vertex.
 #define PROJECT_VERT(pOut, pIn) \
 { \
-	float fRHW = 1.0f / (g_mModelTransform.m[3][0] * (pIn)->m_vPos.x \
-	                   + g_mModelTransform.m[3][1] * (pIn)->m_vPos.y \
-	                   + g_mModelTransform.m[3][2] * (pIn)->m_vPos.z \
-	                   + g_mModelTransform.m[3][3]); \
-	(pOut)->m_vPos.x = (g_mModelTransform.m[0][0] * (pIn)->m_vPos.x \
-	                  + g_mModelTransform.m[0][1] * (pIn)->m_vPos.y \
-	                  + g_mModelTransform.m[0][2] * (pIn)->m_vPos.z \
-	                  + g_mModelTransform.m[0][3]) * fRHW; \
-	(pOut)->m_vPos.y = (g_mModelTransform.m[1][0] * (pIn)->m_vPos.x \
-	                  + g_mModelTransform.m[1][1] * (pIn)->m_vPos.y \
-	                  + g_mModelTransform.m[1][2] * (pIn)->m_vPos.z \
-	                  + g_mModelTransform.m[1][3]) * fRHW; \
-	(pOut)->m_vPos.z = (g_mModelTransform.m[2][0] * (pIn)->m_vPos.x \
-	                  + g_mModelTransform.m[2][1] * (pIn)->m_vPos.y \
-	                  + g_mModelTransform.m[2][2] * (pIn)->m_vPos.z \
-	                  + g_mModelTransform.m[2][3]) * fRHW; \
+	float fRHW = 1.0f / (g_ViewParams.m_DeviceTimesProjection.m[3][0] * (pIn)->m_vPos.x \
+	                   + g_ViewParams.m_DeviceTimesProjection.m[3][1] * (pIn)->m_vPos.y \
+	                   + g_ViewParams.m_DeviceTimesProjection.m[3][2] * (pIn)->m_vPos.z \
+	                   + g_ViewParams.m_DeviceTimesProjection.m[3][3]); \
+	(pOut)->m_vPos.x = (g_ViewParams.m_DeviceTimesProjection.m[0][0] * (pIn)->m_vPos.x \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[0][1] * (pIn)->m_vPos.y \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[0][2] * (pIn)->m_vPos.z \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[0][3]) * fRHW; \
+	(pOut)->m_vPos.y = (g_ViewParams.m_DeviceTimesProjection.m[1][0] * (pIn)->m_vPos.x \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[1][1] * (pIn)->m_vPos.y \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[1][2] * (pIn)->m_vPos.z \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[1][3]) * fRHW; \
+	(pOut)->m_vPos.z = (g_ViewParams.m_DeviceTimesProjection.m[2][0] * (pIn)->m_vPos.x \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[2][1] * (pIn)->m_vPos.y \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[2][2] * (pIn)->m_vPos.z \
+	                  + g_ViewParams.m_DeviceTimesProjection.m[2][3]) * fRHW; \
 	(pOut)->m_fRHW = fRHW; \
 }
 
@@ -797,22 +809,22 @@ inline void ProjectVertInPlace(TLVert* pVert)
 	LTVector vPos;
 	float fRHW;
 
-	fRHW = 1.0f / (g_mModelTransform.m[3][0] * pVert->m_vPos.x
-	             + g_mModelTransform.m[3][1] * pVert->m_vPos.y
-	             + g_mModelTransform.m[3][2] * pVert->m_vPos.z
-	             + g_mModelTransform.m[3][3]);
-	vPos.x = (g_mModelTransform.m[0][0] * pVert->m_vPos.x
-	        + g_mModelTransform.m[0][1] * pVert->m_vPos.y
-	        + g_mModelTransform.m[0][2] * pVert->m_vPos.z
-	        + g_mModelTransform.m[0][3]) * fRHW;
-	vPos.y = (g_mModelTransform.m[1][0] * pVert->m_vPos.x
-	        + g_mModelTransform.m[1][1] * pVert->m_vPos.y
-	        + g_mModelTransform.m[1][2] * pVert->m_vPos.z
-	        + g_mModelTransform.m[1][3]) * fRHW;
-	vPos.z = (g_mModelTransform.m[2][0] * pVert->m_vPos.x
-	        + g_mModelTransform.m[2][1] * pVert->m_vPos.y
-	        + g_mModelTransform.m[2][2] * pVert->m_vPos.z
-	        + g_mModelTransform.m[2][3]) * fRHW;
+	fRHW = 1.0f / (g_ViewParams.m_DeviceTimesProjection.m[3][0] * pVert->m_vPos.x
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][1] * pVert->m_vPos.y
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][2] * pVert->m_vPos.z
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][3]);
+	vPos.x = (g_ViewParams.m_DeviceTimesProjection.m[0][0] * pVert->m_vPos.x
+	        + g_ViewParams.m_DeviceTimesProjection.m[0][1] * pVert->m_vPos.y
+	        + g_ViewParams.m_DeviceTimesProjection.m[0][2] * pVert->m_vPos.z
+	        + g_ViewParams.m_DeviceTimesProjection.m[0][3]) * fRHW;
+	vPos.y = (g_ViewParams.m_DeviceTimesProjection.m[1][0] * pVert->m_vPos.x
+	        + g_ViewParams.m_DeviceTimesProjection.m[1][1] * pVert->m_vPos.y
+	        + g_ViewParams.m_DeviceTimesProjection.m[1][2] * pVert->m_vPos.z
+	        + g_ViewParams.m_DeviceTimesProjection.m[1][3]) * fRHW;
+	vPos.z = (g_ViewParams.m_DeviceTimesProjection.m[2][0] * pVert->m_vPos.x
+	        + g_ViewParams.m_DeviceTimesProjection.m[2][1] * pVert->m_vPos.y
+	        + g_ViewParams.m_DeviceTimesProjection.m[2][2] * pVert->m_vPos.z
+	        + g_ViewParams.m_DeviceTimesProjection.m[2][3]) * fRHW;
 	pVert->m_fRHW = fRHW;
 	pVert->m_vPos = vPos;
 }
@@ -825,27 +837,27 @@ inline void ProjectVertPushed(TLVert* pOut, LTVector* pIn, float fPushZ)
 	float fRHW;
 	float fZ;
 
-	fRHW = 1.0f / (g_mModelTransform.m[3][0] * pIn->x
-	             + g_mModelTransform.m[3][1] * pIn->y
-	             + g_mModelTransform.m[3][2] * pIn->z
-	             + g_mModelTransform.m[3][3]);
-	vPos.x = (g_mModelTransform.m[0][0] * pIn->x
-	        + g_mModelTransform.m[0][1] * pIn->y
-	        + g_mModelTransform.m[0][2] * pIn->z
-	        + g_mModelTransform.m[0][3]) * fRHW;
-	vPos.y = (g_mModelTransform.m[1][0] * pIn->x
-	        + g_mModelTransform.m[1][1] * pIn->y
-	        + g_mModelTransform.m[1][2] * pIn->z
-	        + g_mModelTransform.m[1][3]) * fRHW;
+	fRHW = 1.0f / (g_ViewParams.m_DeviceTimesProjection.m[3][0] * pIn->x
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][1] * pIn->y
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][2] * pIn->z
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][3]);
+	vPos.x = (g_ViewParams.m_DeviceTimesProjection.m[0][0] * pIn->x
+	        + g_ViewParams.m_DeviceTimesProjection.m[0][1] * pIn->y
+	        + g_ViewParams.m_DeviceTimesProjection.m[0][2] * pIn->z
+	        + g_ViewParams.m_DeviceTimesProjection.m[0][3]) * fRHW;
+	vPos.y = (g_ViewParams.m_DeviceTimesProjection.m[1][0] * pIn->x
+	        + g_ViewParams.m_DeviceTimesProjection.m[1][1] * pIn->y
+	        + g_ViewParams.m_DeviceTimesProjection.m[1][2] * pIn->z
+	        + g_ViewParams.m_DeviceTimesProjection.m[1][3]) * fRHW;
 	fZ = fPushZ + pIn->z;
-	fRHW = 1.0f / (g_mModelTransform.m[3][0] * pIn->x
-	             + g_mModelTransform.m[3][1] * pIn->y
-	             + g_mModelTransform.m[3][2] * fZ
-	             + g_mModelTransform.m[3][3]);
-	vPos.z = (g_mModelTransform.m[2][0] * pIn->x
-	        + g_mModelTransform.m[2][1] * pIn->y
-	        + g_mModelTransform.m[2][2] * fZ
-	        + g_mModelTransform.m[2][3]) * fRHW;
+	fRHW = 1.0f / (g_ViewParams.m_DeviceTimesProjection.m[3][0] * pIn->x
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][1] * pIn->y
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][2] * fZ
+	             + g_ViewParams.m_DeviceTimesProjection.m[3][3]);
+	vPos.z = (g_ViewParams.m_DeviceTimesProjection.m[2][0] * pIn->x
+	        + g_ViewParams.m_DeviceTimesProjection.m[2][1] * pIn->y
+	        + g_ViewParams.m_DeviceTimesProjection.m[2][2] * fZ
+	        + g_ViewParams.m_DeviceTimesProjection.m[2][3]) * fRHW;
 	pOut->m_fRHW = fRHW;
 	pOut->m_vPos = vPos;
 }
@@ -859,7 +871,7 @@ inline void ProjectVertPushed(TLVert* pOut, LTVector* pIn, float fPushZ)
 
 // 0x10002050 -- as DrawTLVertsClipped, for a model drawn really close to
 // the camera (the weapon in view): its depth is projected pushed back by
-// g_fReallyClosePushZ, so it is not cut by the near plane.
+// g_CV_NearZ.m_fValue, so it is not cut by the near plane.
 LTBOOL CD3DModelDraw::DrawTLVertsReallyClose(ModelVertSet* pSet, ModelTLVert* pVerts)
 {
 	uint8* pOut = (uint8*)m_pVB->Lock();
@@ -881,13 +893,13 @@ LTBOOL CD3DModelDraw::DrawTLVertsReallyClose(ModelVertSet* pSet, ModelTLVert* pV
 			if (ProjFacing((TLVert*)pV0, (TLVert*)pV1, (TLVert*)pV2) <= 0.0f)
 				continue;
 
-			ProjectVertPushed((TLVert*)pOut, &pV0->m_vPos, g_fReallyClosePushZ);
+			ProjectVertPushed((TLVert*)pOut, &pV0->m_vPos, g_CV_NearZ.m_fValue);
 			SETUP_TL_VERT(pOut, pV0, 0)
 			pOut += m_nVertSize;
-			ProjectVertPushed((TLVert*)pOut, &pV1->m_vPos, g_fReallyClosePushZ);
+			ProjectVertPushed((TLVert*)pOut, &pV1->m_vPos, g_CV_NearZ.m_fValue);
 			SETUP_TL_VERT(pOut, pV1, 1)
 			pOut += m_nVertSize;
-			ProjectVertPushed((TLVert*)pOut, &pV2->m_vPos, g_fReallyClosePushZ);
+			ProjectVertPushed((TLVert*)pOut, &pV2->m_vPos, g_CV_NearZ.m_fValue);
 			SETUP_TL_VERT(pOut, pV2, 2)
 			pOut += m_nVertSize;
 
@@ -927,7 +939,7 @@ LTBOOL CD3DModelDraw::DrawTLVertsReallyClose(ModelVertSet* pSet, ModelTLVert* pV
 			for (p = pClip; p < pEnd; p += m_nVertSize)
 			{
 				LTVector vPos = ((TLVert*)p)->m_vPos;
-				ProjectVertPushed((TLVert*)p, &vPos, g_fReallyClosePushZ);
+				ProjectVertPushed((TLVert*)p, &vPos, g_CV_NearZ.m_fValue);
 			}
 
 			// Not enough room for the fan: draw what there is and go on
@@ -935,7 +947,7 @@ LTBOOL CD3DModelDraw::DrawTLVertsReallyClose(ModelVertSet* pSet, ModelTLVert* pV
 			if (pOut + (nVerts - 2) * 3 * m_nVertSize > pLast)
 			{
 				FlushVerts(pOut);
-				m_pVB->Flush();
+				m_pVB->Discard();
 				pOut = (uint8*)m_pVB->Lock();
 				pLast = m_pVB->GetLastVert();
 			}
@@ -1033,7 +1045,7 @@ LTBOOL CD3DModelDraw::DrawTLVertsClipped(ModelVertSet* pSet, ModelTLVert* pVerts
 			if (pOut + (nVerts - 2) * 3 * m_nVertSize > pLast)
 			{
 				FlushVerts(pOut);
-				m_pVB->Flush();
+				m_pVB->Discard();
 				pOut = (uint8*)m_pVB->Lock();
 				pLast = m_pVB->GetLastVert();
 			}
@@ -1229,7 +1241,7 @@ LTBOOL CD3DModelDraw::DrawCachedVerts(ModelVertSet* pSet, ModelTLVert* pVerts)
 {
 	uint32 nVerts = pSet->m_nTris * 3;
 	g_nModelTriangles += nVerts / 3;
-	m_pVB->DrawPrimitive(g_pD3DDevice, D3DPT_TRIANGLELIST, nVerts);
+	m_pVB->Flush(g_pD3DDevice, D3DPT_TRIANGLELIST, nVerts);
 	return LTTRUE;
 }
 
@@ -1301,8 +1313,8 @@ void CD3DModelDraw::DrawVerts(DrawVertsFn fn, DrawVertsFn fnClip, uint32 nValue)
 
 		if (pPiece->m_iTexture != m_iCurTexture)
 		{
-			SetupTexture(pPiece->m_iTexture);
-			SetupTextureStages(&m_nValue);
+			SetupSkin(pPiece->m_iTexture);
+			SetupModelStates(&m_nValue);
 
 			RenderTexture* pTexture = m_pInstance->m_pSkins[pPiece->m_iTexture];
 			if (pTexture)

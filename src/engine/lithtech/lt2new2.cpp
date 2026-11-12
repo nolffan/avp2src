@@ -272,23 +272,26 @@ LTRESULT CLTClientFiles::CopyFile(const char* pszSourceFile,
 //   0x00404e30  walks the tree list (`mov 0x4(%edi)`, `cmp %edi`) and fills
 //               the caller's record, LT_NOTFOUND (0x3d) when no tree has it
 //   0x00404ed0  `neg; sbb; and $0xc3; add $0x3d` -> LT_OK / LT_NOTFOUND
-extern LTRESULT sub_00404e30Q502(class CFileMgrView* pFileMgr,
-                             const char* pszFilename,
-                             struct LTFileInfo* pInfo);
-extern LTRESULT sub_00404ed0Q502(class CFileMgrView* pFileMgr,
-                             const char* pszFilename);
+//  The first is servermgr.h's fs_GetFileInfo (smgrmisc.cpp: lithtech.exe has
+//  the one copy, which CLTServer's slot calls too), the second
+//  clientfilemgr.cpp's clu_fm_FileExistsQ511; the client manager's file
+//  manager is the CFileMgr / CluFileMgr either names.
+extern LTRESULT fs_GetFileInfo(class CFileMgr* pFileMgr,
+                               const char* pszFilename,
+                               struct LTFileInfo* pInfo);
+extern LTRESULT clu_fm_FileExistsQ511(class CluFileMgr* pMgr, char* pszFilename);
 
 // 0x004072f0, 34 bytes: ret $0x8, pushes arg2, arg1, m_pFileMgr.
 LTRESULT CLTClientFiles::GetFileInfo(const char* pszFilename,
                                      struct LTFileInfo* pInfo)
 {
-	return sub_00404e30Q502(m_pClientMgr->m_pFileMgr, pszFilename, pInfo);
+	return fs_GetFileInfo((class CFileMgr*)m_pClientMgr->m_pFileMgr, pszFilename, pInfo);
 }
 
 // 0x00407320, 29 bytes: ret $0x4, pushes arg1, m_pFileMgr.
 LTRESULT CLTClientFiles::DoesFileExist(const char* pszFilename)
 {
-	return sub_00404ed0Q502(m_pClientMgr->m_pFileMgr, pszFilename);
+	return clu_fm_FileExistsQ511((class CluFileMgr*)m_pClientMgr->m_pFileMgr, (char*)pszFilename);
 }
 #endif
 

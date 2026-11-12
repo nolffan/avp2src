@@ -39,7 +39,6 @@
 
 #include "ltbasedefs.h"
 #include "..\..\LT2\lithshared\stdlith\struct_bank.h"
-#include "d3d_clip.h"
 
 
 
@@ -410,7 +409,11 @@ struct FogColor
 // The scene's view (common_draw.cpp's g_ViewParams).
 struct ViewParams
 {
-	uint8       m_pad_000[0x15c];                           // +0x000
+	uint8       m_pad_000[0x88];                            // +0x000
+	float       m_NearZ;                                    // +0x088
+	uint8       m_pad_08c[0x90 - 0x8c];                     // +0x08c
+	float       m_FarZ2;                                    // +0x090 (the far clip)
+	uint8       m_pad_094[0x15c - 0x94];                    // +0x094
 	LTMatrix    m_mWorldToCamera;                           // +0x15c
 	uint8       m_pad_19c[0x1dc - 0x19c];                   // +0x19c
 	LTMatrix    m_mFullTransform;                           // +0x1dc
@@ -420,7 +423,7 @@ extern uint8            g_LightTableR[256];                 // 0x1005fa9c
 extern uint8            g_LightTableG[256];                 // 0x1005fb9c
 extern uint8            g_LightTableB[256];                 // 0x1005fc9c
 extern uint8            g_VertexAlpha;                      // 0x1005d20c
-extern void             (__fastcall *g_pfnSetupSpecular)(TLVertex* pVert, uint32* pSpecular);  // 0x1005e1c4
+extern void             (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4 (d3d_draw.cpp)
 extern FogColor         g_FogColor;                         // 0x1005dad8
 extern int32            g_CV_FixTJunc;                      // 0x1005dbb4
 extern int32            g_CV_Saturate;                      // 0x1005d384
@@ -428,8 +431,13 @@ extern CD3DConVar       g_CV_LMDynamic;                     // 0x1007c220
 extern CD3DConVar       g_CV_LMDynamicScale;                // 0x1007c200
 extern CD3DConVar       g_CV_LMDynamicSize;                 // 0x1007c640
 extern ViewParams     g_ViewParams;                     // 0x1005b790
+extern CD3DConVar       g_CV_UseD3DClip;                    // 0x100622b0 (d3d_init.cpp)
+
+#include "d3d_clip.h"
+
 extern CRenderStateList g_SavedStates;                      // 0x10069728
-extern QueuedPoly*      g_LightmapPolyList;                 // 0x1005fda0
+struct LMBucket;
+extern LMBucket*        g_LightmapPolyList;                 // 0x1005fda0 (drawlightmaps.cpp)
 extern uint32           g_nTLVertsUsed;                     // 0x1005e27c
 extern uint32           g_nTLVertPool;                      // 0x1005fe00
 extern TLVertex*        g_TLVertPool;                       // 0x1005e294
@@ -512,7 +520,7 @@ void d3d_DrawDeferredPiece(RenderPoly* pPoly)
 		pVert->m_Diffuse.m_b[1] = g_LightTableG[pPolyVerts->m_Color[1]];
 		pVert->m_Diffuse.m_b[0] = g_LightTableB[pPolyVerts->m_Color[0]];
 		pVert->m_Diffuse.m_b[3] = g_VertexAlpha;
-		g_pfnSetupSpecular((TLVertex*)pVert, &pVert->m_Specular.m_n);
+		g_pfnCalcFog((const LTVector*)pVert, &pVert->m_Specular.m_n);
 		pVert->SetUV((pVec->x + g_fScreenCenterX) * g_fScreenScaleX,
 		             (pVec->z + g_fScreenCenterY) * g_fScreenScaleY);
 		pVert->m_fU2 = pPolyVerts->m_U;
@@ -555,7 +563,7 @@ void d3d_DrawDeferredPiece(RenderPoly* pPoly)
 	if (pPoly->m_pLights)
 		d3d_DrawLMPolyLights(pPoly, pOut, nVerts);
 
-	pQueued = d3d_QueuePoly(pPoly, &g_LightmapPolyList, 0);
+	pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 	pQueued->m_iFirstVert = g_nTLVertsUsed;
 	pQueued->m_nVerts = nVerts;
 	pQueued->m_ClipFlags = g_ClipFlags;
@@ -960,4 +968,22 @@ LTBOOL d3d_ClipLMVerts(ClipVert2** ppVerts, int32* pnVerts, ViewParams* pContext
 	}
 
 	return LTTRUE;
+}
+
+
+// The out-of-line transform the /O2 files call (d3d_draw.cpp,
+// drawmodelshadows.cpp, drawmodel_env.cpp): ltmatrix.h's
+// MatVMul_InPlace_H, written once here, which the link folds with the
+// inline's out-of-line copy (0x1000868d).
+float d3d_MatVMul_InPlace_H(LTMatrix* pMat, LTVector* pSrc)
+{
+	float one_over_w = 1.0f / (pMat->m[3][0]*pSrc->x + pMat->m[3][1]*pSrc->y + pMat->m[3][2]*pSrc->z + pMat->m[3][3]);
+	LTVector temp;
+
+	temp.x = one_over_w * (pMat->m[0][0]*pSrc->x + pMat->m[0][1]*pSrc->y + pMat->m[0][2]*pSrc->z + pMat->m[0][3]);
+	temp.y = one_over_w * (pMat->m[1][0]*pSrc->x + pMat->m[1][1]*pSrc->y + pMat->m[1][2]*pSrc->z + pMat->m[1][3]);
+	temp.z = one_over_w * (pMat->m[2][0]*pSrc->x + pMat->m[2][1]*pSrc->y + pMat->m[2][2]*pSrc->z + pMat->m[2][3]);
+
+	*pSrc = temp;
+	return one_over_w;
 }

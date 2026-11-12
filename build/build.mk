@@ -1130,10 +1130,18 @@ engine-objs: ph-engine-objs avp2-engine-objs
 # with /FORCE: an image is written whatever is unresolved or defined twice.
 # An unresolved symbol then resolves to the image's base, RVA 0 (our
 # lithtech.exe's calls to unresolved functions all reach 0x00400000),
-# which tools/progress.py never takes as naming anything. Neither link takes nolfsrc's link-time stand-ins
-# (link/aliases.rsp, link/vtables.txt): they name NOLF's symbols and
-# addresses, and an alias or a stand-in vtable that is wrong for Primal
-# Hunt would make our image name a thing it does not have. No resources:
+# which tools/progress.py never takes as naming anything. Each link takes
+# its own alias file (link/aliases-ph.rsp, link/aliases-avp2.rsp: the
+# image's <dir>/aliases.obj, weak externals by tools/mkaliasobj.py), made
+# from nolfsrc's link/aliases.rsp (NOLF's) by checking every binding
+# against the retail image: each referencing site the scoreboard places is
+# read back out of the retail bytes, and a binding stays only where its
+# target is placed at the address the sites reach (or is retargeted to
+# what is placed there); the head of each file says how. An alias wrong
+# for the image would make our image name a thing it does not have, so
+# the four images have a file each (one source tree, four builds: a
+# symbol can mean another function per game, or per client and server).
+# nolfsrc's stand-in vtables (link/vtables.txt) are not taken. No resources:
 # they are no code. /OPT:NOREF keeps every function of ours in the image,
 # where the retail link's /OPT:REF (the default) dropped what nothing
 # reaches: with so much unresolved, nothing reaches most of the engine, and
@@ -1146,6 +1154,9 @@ engine-objs: ph-engine-objs avp2-engine-objs
 # The import libraries are what the retail images' import tables name:
 #   lithtech.exe  WINMM DINPUT KERNEL32 USER32 GDI32 ole32 mss32 WSOCK32
 #   server.dll    WINMM KERNEL32 USER32 ole32 WSOCK32
+# and ADVAPI32, last: WON's Common.obj keeps its registry helpers under
+# /OPT:NOREF (retail's /OPT:REF dropped them, and with them the import), so
+# without it they are the only unresolved references left in the library.
 # Miles' mss32.dll exports its functions under their decorated names, and
 # lithtech.exe imports them so (_AIL_startup@0): its import libraries are
 # made from src/launcher/libs/mss32.def (lib.exe for the descriptor,
@@ -1185,10 +1196,18 @@ SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(filter-out $(addsuf
 # lithtech.exe: our objects, then WON (the engine's VC6-STL build), RezMgr,
 # lith and StdLith, in the order their blocks lie in the retail image
 # (progress/targets.py, lib_range: 0x004aab40, 0x004ba2a0..)
+# $(call eng_aliases,<engine dir>,<object dir>,<alias file>)
+define eng_aliases
+$(call tool,$(1)/$(2)/aliases.obj,$(1)/link/$(3),python3 tools/mkaliasobj.py $(1)/link/$(3) $(1)/$(2)/aliases.obj)
+endef
+$(eval $(call eng_aliases,$(LITHTECH),Release,aliases-ph.rsp))
+$(eval $(call eng_aliases,$(LITHTECH),AvP2Release,aliases-avp2.rsp))
+$(eval $(call eng_aliases,$(SERVER),Release,aliases-ph.rsp))
+$(eval $(call eng_aliases,$(SERVER),AvP2Release,aliases-avp2.rsp))
 $(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:windows,\
-    $(LT_OBJS:$(LITHTECH)/%=%) Release/wonapi/WONAPI.lib $(LS_R)\RezMgr.lib $(LS_R)\lith.lib $(LS_R)\StdLith.lib \
-    winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib wsock32.lib,\
-    $(LT_OBJS) $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/RezMgr.lib $(LOUT)/lith.lib $(LOUT)/StdLith.lib \
+    $(LT_OBJS:$(LITHTECH)/%=%) Release/aliases.obj Release/wonapi/WONAPI.lib $(LS_R)\RezMgr.lib $(LS_R)\lith.lib $(LS_R)\StdLith.lib \
+    winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib wsock32.lib advapi32.lib,\
+    $(LT_OBJS) $(LITHTECH)/Release/aliases.obj $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/RezMgr.lib $(LOUT)/lith.lib $(LOUT)/StdLith.lib \
     $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib))
 # server.dll: our objects, then the debug RezMgr and StdLith (one block from
 # 0x1004a6e0), WON (0x10051e10) and the release lith (0x10060940, which the
@@ -1199,9 +1218,9 @@ $(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:w
 # libcmt.lib's assert.c; no "Debug Assertion Failed!", nothing of the
 # debug heap or _CrtDbgReport), so not LIBCMTD.
 $(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\server.def /nodefaultlib:libcmtd.lib,\
-    $(SV_OBJS:$(SERVER)/%=%) $(LS_D)\RezMgr.lib $(LS_D)\StdLith.lib ..\lithtech\Release\wonapi\WONAPI.lib \
-    $(LS_R)\lith.lib winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib,\
-    $(SV_OBJS) $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/lith.lib \
+    $(SV_OBJS:$(SERVER)/%=%) Release/aliases.obj $(LS_D)\RezMgr.lib $(LS_D)\StdLith.lib ..\lithtech\Release\wonapi\WONAPI.lib \
+    $(LS_R)\lith.lib winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib advapi32.lib,\
+    $(SV_OBJS) $(SERVER)/Release/aliases.obj $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/lith.lib \
     $(SERVER)/link/server.def))
 .PHONY: engine-link
 engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
@@ -1273,15 +1292,15 @@ SV_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(SV_AVP_ORDER))) \
 LS_A := ..\..\LT2\lithshared\libs\AvP2Release
 ENG_AVP_LINK_ENV := $(subst LIB=',LIB='$(call ws,$(ROOT)/$(ENG_IMPLIB));,$(ENG_AVP_ENV))
 $(eval $(call eng_link,$(LITHTECH)/AvP2Release/lithtech.exe,$(LITHTECH),/subsystem:windows,\
-    $(LT_AVP_LINK) ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
+    $(LT_AVP_LINK) AvP2Release/aliases.obj ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
     winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib \
-    $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib wsock32.lib,\
-    $(addprefix $(LITHTECH)/,$(LT_AVP_LINK)) $(LOUT)/wonapi/WONAPI.lib $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib \
+    $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib wsock32.lib advapi32.lib,\
+    $(addprefix $(LITHTECH)/,$(LT_AVP_LINK) AvP2Release/aliases.obj) $(LOUT)/wonapi/WONAPI.lib $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib \
     $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib,$(ENG_AVP_LINK_ENV)))
 $(eval $(call eng_link,$(SERVER)/AvP2Release/server.dll,$(SERVER),/dll /def:link\server.def,\
-    $(SV_AVP_LINK) $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
-    winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib,\
-    $(addprefix $(SERVER)/,$(SV_AVP_LINK)) $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib $(LOUT)/wonapi/WONAPI.lib \
+    $(SV_AVP_LINK) AvP2Release/aliases.obj $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
+    winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib advapi32.lib,\
+    $(addprefix $(SERVER)/,$(SV_AVP_LINK) AvP2Release/aliases.obj) $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib $(LOUT)/wonapi/WONAPI.lib \
     $(SERVER)/link/server.def,$(ENG_AVP_LINK_ENV)))
 .PHONY: avp2-engine-link
 avp2-engine-link: $(LITHTECH)/AvP2Release/lithtech.exe $(SERVER)/AvP2Release/server.dll
@@ -1290,10 +1309,12 @@ engine-link: avp2-engine-link
 
 # Primal Hunt's d3d.ren, linked from our objects as lithtech.exe and
 # server.dll are (engine-link, above): for the scoreboard, not to run, with
-# /FORCE and /OPT:NOREF /OPT:ICF for the same reasons. Unresolved symbols
-# resolve to the image base; Release/d3d-link.txt lists them. nolfsrc's
-# link-time stand-ins (link/aliases.rsp, link/d3dviews.txt) are not taken:
-# they name NOLF's renderer's addresses, not Primal Hunt's.
+# /FORCE and /OPT:NOREF /OPT:ICF for the same reasons. It is the ph/
+# objects alone (below), in TU order, and it links with no unresolved
+# symbol (Release/d3d-link.txt). nolfsrc's files are compiled and scored
+# as objects only, and their link-time stand-ins (link/aliases.rsp,
+# link/d3dviews.txt), which name NOLF's renderer's addresses, are not
+# taken; the ph/ objects' own are link/phviews.txt (below).
 #
 # As the retail image has it (its headers, export and import tables, Rich
 # header): a DLL at 0x10000000 linked by link 6.00.8447, exporting
@@ -1313,60 +1334,9 @@ engine-link: avp2-engine-link
 # at 0x1003c150..0x1003c58b, unoptimised and int3-padded (tools/libscan.py
 # finds the release's prebuilt debug build there, function for function),
 # and then libcmt.lib. So $(LS_D)\StdLith.lib follows the import
-# libraries, without its default LIBCMTD, and nolfsrc's w12_7fae0.cpp
-# (NOLF's renderer's /O2 build of l_allocator.cpp) is left out of the
-# link. Our objects still call DefaultCache's members out of line, which
-# draws in the library's CompressedIO.obj too (and through it zlib's
-# deflate, unresolved); retail has no such member. dxguid.lib (DirectX
-# 8.1, @comp.id cl 13.00.9178: the header's one C++ object of that
-# compiler) is offered last; d3dguid.obj still defines the GUIDs the
-# renderer names, so nothing is drawn from it yet.
-#
-# Objects in the order the scoreboard's identical and near pairs place
-# them in the retail image (MS link lays objects out in command-line
-# order): each object by the median retail address of its identical
-# functions, else its nears, else its small ones; an object with no
-# evidence beside the one whose NOLF address (its file name) is nearest
-# its own, an _os/_o2 sibling beside its sibling; the rest, which have
-# neither, last. nolfsrc's files are split by Intel flag groups, not by
-# Primal Hunt's translation units, so this approximates retail's order
-# only. Objects not listed (new files) follow, sorted.
-D3D_LINK_ORDER := \
-    w6_10034f10_osoi w14_10008a40_qipni w2_10008da0 big8fd0 w57_10009860 w2_10009ae0 w64_10009f10_qip \
-    w2_1000a110 w2_1000a770 w3_1000a7d0_os w2_1000a8a0_os w54_1000ae20_osoiqip w2_1000d940_os \
-    w15_1000d9f0_os w2_10003a10 w14_10003bb0 big3c40 w9_1006f540_os w53_10070d10_os big729c0 big73140 \
-    w10_10073400_osoiqip w59_10073640_osoi w56_10073700_osoiqipsf w29_10073c00_osoiqip big051a0 \
-    w57_10053e20_os w57_100553d0_os w14_10006840 big7cc90 w22_1007dbd0_os w35_1007dc54_os w1_10001000 \
-    w44_10001670 w1_10002310 w44_10002d40 w57_100037f0 d3dr5c_o2 big24090 w54_1000daa0_qipsf \
-    w30_1000f020_osqipni w2_1000f2c0_os w14_10011980_osoiqip w56_1002ec60_osoiqipsf w28_1002ef30_osqipni \
-    w26_100371e0_osoi w12_374a0 w18_10037570 w25_10037bf0_qipni d3dbatchb_os w3_10014580_os \
-    w43_10017c10_osoiqipni d3dr2c d3dbatchb w24_10068c80_osqipni w17_10069a10_osoi w18_1001dc70_os \
-    w32_1001e210 w31_1001e360 w17_10023930 w13_1006c6e0_osoiqip w9_1006d210_osoi w48_1006d3e0_os \
-    w57_1006d500_os big6d910 w4_1001eb90_os big1ef30 d3dr2b d3dbatcha d3dbatcha_o2 d3dr5c \
-    w17_10020e80_osoi w26_10020fd0_osoiqip w12_21c50_osoi w4_10021cb0_os w34_10021dc0_ossf \
-    w15_10021e50_os w57_1003b1c0 w12_3b3d0_os big21f90 w15_10022e90_osoiqip big2b1b0 w57_1002db00 \
-    w5_1002e4c0 w4_10023c40_os d3dr3a w4_10023fb0 big24020 w4_100234d0 w15_100235d0 w8_10069ca0_osoiqip \
-    w8_10069ed0_osoi w8_1006a5f0_osoiqip w8_1006a860_os w4_1001e4a0_os d3dbatchd d3dbatchd_o2 \
-    w28_100256d0_qipni w26_100262f0 w4_100265a0_qip w29_10027f70 w38_10028030_qip d3dr4a d3dneutral \
-    w5_10033ba0 w53_10033f30_osoiqip d3dr2a d3dr2a_os d3ddraw d3ddraw_os w5_10030f30 w15_100316e0 \
-    w26_10031e10 w38_100322c0_qip w31_10032a00_qip w81_10034ed0_osg5 w4_1001cd40_osoi w18_1001d180_os \
-    w12_1d370 w45_1001d810_osoi d3dqip3 w18_10035a70_osoiqip w6_10035ab0_os w18_10035e20_osoi \
-    w12_36320_os d3dmisc w6_1003acf0 w57_1007e830_osoiqip d3dr4b d3dr4b_o2 d3dqip2 \
-    w6_10039730_qip w19_1003b6f0_osoiqip w6_1003b9c4_os w18_1003bb10_os w34_1003e620_osoiqipsf \
-    w7_10040cc0 big40e10 d3dr3b d3dr5a_o2 d3dr5a d3dqip d3dr4a_o2 w27_1005dae0 w16_10042e80 \
-    w35_10043e10_qip w31_10044ff0_qipni big47230 w7_10047d80_os w54_10048180_osoiqipsf w7_1004b5c0_os \
-    big4b720 d3dr2b_o2 d3dr2d d3dr2d_os w35_1004e360_os big4e3e4 w16_1004fea4_qip w7_100500a0_qip \
-    w19_10050450 d3dr5b w11_1007e9f0_osoi d3dr4c w17_1001c760_os w12_1c7e0_os w4_1001c8d0_os \
-    w27_10050900_os w19_10050e10_os w23_10050e60_os w23_100525b0_os w27_10056ab0_osqipni w24_10059380_os \
-    w24_10059980_osoi w27_10059c80_osoi w7_1005a550 w40_1005a960_qipni w8_1005d650 d3dr3c d3dr3c_os \
-    w19_1005db50 big5dca0 w17_1005f580 w8_1005f9a0 w8_1005fb70 w63_10060010_qip d3dr5b_o2 w16_10064720 \
-    w8_10064800 w31_10066d10_qipni d3dr3a_os d3dr3b_o2 w17_1006ad20_qip d3dr2c_os d3dbatchc_o2 \
-    w57_1007bb20_qipni w26_1007be90 w10_1007c250 w22_1007c580 w10_1007cab4_os d3dqip4 w49_1007a700 \
-    d3dblit d3dbatchc d3dhigh w12_15950_os w32_10015d60_osoi w27_10015e80_osoiqip w3_10016234_os \
-    w55_10016324_os w29_10079fd0_osoiqip w10_1007a280_os w22_1007a3f0_os w59_1007dd24_osoi \
-    w22_1007dde0_os d3d d3ddata d3dguid d3dinit d3dlow d3dmid d3dmid_os d3dopt2d d3dr3d d3dr5d d3dr5d_os \
-    wC1_r5c
-D3D_LINK_NOT := w12_7fae0
+# libraries, without its default LIBCMTD. dxguid.lib (DirectX 8.1,
+# @comp.id cl 13.00.9178: the header's one C++ object of that compiler) is
+# offered last, for the GUIDs the renderer names.
 #
 # Primal Hunt's own translation units, src/engine/d3d/ph/: one file for
 # each object of the retail image (docs/D3D_OBJECTS.md, its TU numbers),
@@ -1377,8 +1347,8 @@ D3D_LINK_NOT := w12_7fae0
 #   D3D_PH_CL_<name>  := <its flags, e.g. /O1>
 #   D3D_PH_INC_<name> := <include paths it alone needs, ahead of the SDK's;
 #                         optional>
-# They link first, in TU order, ahead of nolfsrc's files. A function one of
-# them takes over stays in nolfsrc's file for AvP2 1.0.9.6's Intel build,
+# They are the link, in TU order. A function one of
+# them takes over stays in nolfsrc's file (scored as an object only),
 # behind #ifndef PRIMAL_HUNT.
 D3D_PH :=
 include $(sort $(wildcard $(D3D)/ph/*.mk))
@@ -1399,16 +1369,21 @@ $(foreach n,$(D3D_AVP_PH),$(eval $(call compile,$(D3D)/AvP2Release/ph/$(n).obj,$
     $(D3D_PH_INC_$(n)) $(D3D_BASE) $(D3D_PH_CL_$(n)) /FoAvP2Release/ph/,wine-drives)))
 .PHONY: avp2-d3d
 avp2-d3d: $(D3D_AVP_PH:%=$(D3D)/AvP2Release/ph/%.obj)
-D3D_LINK_OBJS := $(D3D_PH_ORDER:%=ph/%.obj) $(addsuffix .obj,$(D3D_LINK_ORDER)) \
-    $(sort $(filter-out $(addsuffix .obj,$(D3D_LINK_ORDER) $(D3D_LINK_NOT)),$(D3D_SRC:.cpp=.obj)))
+D3D_LINK_OBJS := $(D3D_PH_ORDER:%=ph/%.obj)
 D3D_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib $(LS_D)\StdLith.lib dxguid.lib
 D3D_EXPORTS := FreeModeList GetSupportedModes RenderDLLSetup
+# The view regions (link/phviews.txt): shipped objects the ph/ files reach
+# under several names at several offsets (the view's near and far clips,
+# the fog colour's bytes), and two vectors with no initialiser. One object
+# of named .bss sections, linked after the ph/ objects in both renderers.
+$(foreach d,Release AvP2Release,$(eval $(call tool,$(D3D)/$(d)/phviews.obj,$(D3D)/link/phviews.txt tools/mkviewobj.py,\
+    mkdir -p $(D3D)/$(d) && python3 tools/mkviewobj.py $(D3D)/link/phviews.txt $(D3D)/$(d)/phviews.obj >/dev/null)))
 $(eval $(call tool,$(D3D)/Release/d3d.res,$(D3D)/d3d.rc | wine-drives,\
     cd $(D3D) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /foRelease/d3d.res d3d.rc))
-$(eval $(call tool,$(D3D)/Release/d3d.ren,$(addprefix $(D3D)/Release/,$(D3D_LINK_OBJS) d3d.res) $(LDOUT)/StdLith.lib $(call nlink,$(V8966)) | wine-drives,\
+$(eval $(call tool,$(D3D)/Release/d3d.ren,$(addprefix $(D3D)/Release/,$(D3D_LINK_OBJS) phviews.obj d3d.res) $(LDOUT)/StdLith.lib $(call nlink,$(V8966)) | wine-drives,\
     cd $(D3D) && { printf '%s\n' $(call q,/nologo /dll /base:0x10000000 /nodefaultlib:libcmtd.lib /FORCE /OPT:NOREF /OPT:ICF /machine:I386 \
     /out:Release\d3d.ren /map:Release\d3d.map $(addprefix /export:,$(D3D_EXPORTS)) \
-    $(subst /,\,$(addprefix Release/,$(D3D_LINK_OBJS) d3d.res)) $(D3D_LINK_LIBS)) > $(ROOT)/$(D3D)/Release/d3d.ren.rsp; } && \
+    $(subst /,\,$(addprefix Release/,$(D3D_LINK_OBJS) phviews.obj d3d.res)) $(D3D_LINK_LIBS)) > $(ROOT)/$(D3D)/Release/d3d.ren.rsp; } && \
     { $(call nlink_env,$(V8966)) $(WINE) $(ROOT)/$(call nlink,$(V8966)) '@$(call ws,$(ROOT)/$(D3D)/Release/d3d.ren).rsp' \
       > $(ROOT)/$(D3D)/Release/d3d-link.txt 2>&1 || true; } && \
     grep -c 'error LNK2001\|error LNK2019' $(ROOT)/$(D3D)/Release/d3d-link.txt | sed 's/^/   LINK d3d.ren: unresolved references: /' ; \
@@ -1427,10 +1402,10 @@ D3D_AVP_LINK_OBJS := $(filter-out fogvolume,$(D3D_PH_ORDER))
 D3D_AVP_LINK_LIBS := ddraw.lib winmm.lib kernel32.lib user32.lib ..\..\LT2\lithshared\libs\Release\StdLith.lib dxguid.lib
 $(eval $(call tool,$(D3D)/AvP2Release/d3d.res,$(D3D)/d3d.rc | wine-drives,\
     mkdir -p $(D3D)/AvP2Release && cd $(D3D) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /foAvP2Release/d3d.res d3d.rc))
-$(eval $(call tool,$(D3D)/AvP2Release/d3d.ren,$(D3D_AVP_LINK_OBJS:%=$(D3D)/AvP2Release/ph/%.obj) $(D3D)/AvP2Release/d3d.res $(LOUT)/StdLith.lib $(call nlink,$(V8168)) | wine-drives,\
+$(eval $(call tool,$(D3D)/AvP2Release/d3d.ren,$(D3D_AVP_LINK_OBJS:%=$(D3D)/AvP2Release/ph/%.obj) $(D3D)/AvP2Release/phviews.obj $(D3D)/AvP2Release/d3d.res $(LOUT)/StdLith.lib $(call nlink,$(V8168)) | wine-drives,\
     cd $(D3D) && { printf '%s\n' $(call q,/nologo /dll /base:0x10000000 /FORCE /OPT:NOREF /OPT:ICF /machine:I386 \
     /out:AvP2Release\d3d.ren /map:AvP2Release\d3d.map $(addprefix /export:,$(D3D_EXPORTS)) \
-    $(subst /,\,$(D3D_AVP_LINK_OBJS:%=AvP2Release/ph/%.obj) AvP2Release/d3d.res) $(D3D_AVP_LINK_LIBS)) > $(ROOT)/$(D3D)/AvP2Release/d3d.ren.rsp; } && \
+    $(subst /,\,$(D3D_AVP_LINK_OBJS:%=AvP2Release/ph/%.obj) AvP2Release/phviews.obj AvP2Release/d3d.res) $(D3D_AVP_LINK_LIBS)) > $(ROOT)/$(D3D)/AvP2Release/d3d.ren.rsp; } && \
     { $(call nlink_env,$(V8168)) $(WINE) $(ROOT)/$(call nlink,$(V8168)) '@$(call ws,$(ROOT)/$(D3D)/AvP2Release/d3d.ren).rsp' \
       > $(ROOT)/$(D3D)/AvP2Release/d3d-link.txt 2>&1 || true; } && \
     grep -c 'error LNK2001\|error LNK2019' $(ROOT)/$(D3D)/AvP2Release/d3d-link.txt | sed 's/^/   LINK AvP2 d3d.ren: unresolved references: /' ; \

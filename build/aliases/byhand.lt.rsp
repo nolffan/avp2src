@@ -1,0 +1,16 @@
+# 0x430560 I: ours (wgrid.obj) placed there, its calls reaching 0x479ee0
+# (operator delete) and 0x46b990 as retail's do; nolfsrc bound the view's
+# destructor to the second callee
+/ALTERNATENAME:??1SharedTextureView@@QAE@XZ=??1SharedTextureQ517@@QAE@XZ
+# 0x430560 I (as above)
+/ALTERNATENAME:??1SharedTextureK@@QAE@XZ=??1SharedTextureQ517@@QAE@XZ
+# 0x46b990 I: ??1SharedTextureQ517's second call (0x00430571)
+/ALTERNATENAME:??1CBankLinkQ517@@QAE@XZ=??1CModelSub14@Model@@QAE@XZ
+# 0x49ef80 D: the sound manager's table has one slot more than NOLF's
+# before it (every slot from 0x14 on reaches nolfsrc's slot-before
+# function); the retail function's shape is ReleaseSound3DProviderList's
+# (if no list, LT_INVALIDPARAMS; free the chain through +0x110)
+/ALTERNATENAME:?_v1c@CCmgSoundMgr@@UAEXXZ=?ReleaseSound3DProviderList@CSoundMgrView@@UAEKPAUSound3DProvider@@@Z
+# 0x4bd270: RezMgr.lib's CRezFileSingleFile::ReallyClose, its masked bytes
+# matching there (build/aliases/libat.py); the call from CChain14View::sub_490710 (0x4bceda)
+/ALTERNATENAME:?sub_490ac0@CChain14Item@@QAEXXZ=?ReallyClose@CRezFileSingleFile@@AAEHXZ

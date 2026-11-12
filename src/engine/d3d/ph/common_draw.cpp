@@ -142,6 +142,10 @@ struct ViewParams
 	uint32      m_4cc;                                      // +0x4cc
 	float       m_4d0;                                      // +0x4d0
 	uint32      m_4d4;                                      // +0x4d4
+	LTVector    m_vPortalPos;                               // +0x4d8
+	LTVector    m_vViewPos;                                 // +0x4e4 (the camera, for the fog)
+	float       m_fVFog;                                    // +0x4f0 (the camera's vertical fog)
+	uint32      m_nVFogMode;                                // +0x4f4
 };
 
 #define MAX_FARZ            100000.0f
@@ -154,7 +158,9 @@ struct ViewParams
 #define CPLANE_BOTTOM_INDEX 5
 #define NUM_CLIPPLANES      6
 
-ViewParams g_ViewParams;                                // 0x1005b790
+// 0x1005b790 -- defined in link/phviews.txt, where the near and far clips
+// (+0x88, +0x90) are also the scalars g_fNearZ and g_fFarZ.
+extern ViewParams g_ViewParams;
 
 ViewParams::ViewParams()
 {
@@ -694,15 +700,15 @@ RenderContext*  g_pRenderContext;                           // 0x1005b778
 RenderWorld*    g_pRenderWorld;                             // 0x1005bd1c
 uint32          g_nFrameTime;                               // 0x1005bc88
 uint16          g_CurTextureFrameCode;                      // 0x1005d250
-extern LTVector g_1005d240;                                 // 0x1005d240 (common_init.cpp's range)
+extern LTVector g_1005d240;                                 // 0x1005d240 (the scene's m_v38; link/phviews.txt)
 uint32          g_LightAddColor;                            // 0x1005c130
 uint8           g_VertexAlpha;                              // 0x1005d20c
-extern LTVector g_vGlobalLightColor;                        // 0x1005b780 (d3d_viewparams.cpp's range)
+extern LTVector g_vGlobalLightColor;                        // 0x1005b780 (link/phviews.txt)
 uint32          g_FogColorRGB;                              // 0x1005d230
 float           g_fFillArea;                                // 0x1005c12c
 uint32          g_nWorldPoliesDrawn;                        // 0x1005c120
 uint32          g_nDrawPrimCalls;                           // 0x1005c144
-uint32          g_1005b770;                                 // 0x1005b770
+uint32          g_nParticlesDrawn;                                 // 0x1005b770
 int32           g_nModelTriangles;                          // 0x1005bd04
 uint32          g_1005d234;                                 // 0x1005d234
 uint32          g_nSkyLightsApplied;                        // 0x1005c164
@@ -713,7 +719,7 @@ uint32          g_nTrianglesDrawn;                          // 0x1005c148
 uint32          g_nVisibleLeaves;                           // 0x1005b78c
 uint32          g_1005bd18;                                 // 0x1005bd18
 uint32          g_nTextureChanges;                          // 0x1005d22c
-uint32          g_1005bd10;                                 // 0x1005bd10
+uint32          g_nLitPolysUploaded;                                 // 0x1005bd10
 uint32          g_1005b774;                                 // 0x1005b774
 
 void    d3d_ReadConsoleVariables();                         // 0x10013bcd (common_stuff.cpp)
@@ -798,7 +804,7 @@ int32 d3d_InitFrame(SceneDesc* pDesc, void* pClipScratch, uint32 param3)
 	g_fFillArea = 0.0f;
 	g_nWorldPoliesDrawn = 0;
 	g_nDrawPrimCalls = 0;
-	g_1005b770 = 0;
+	g_nParticlesDrawn = 0;
 	g_nModelTriangles = 0;
 	g_1005d234 = 0;
 	g_nSkyLightsApplied = 0;
@@ -811,7 +817,7 @@ int32 d3d_InitFrame(SceneDesc* pDesc, void* pClipScratch, uint32 param3)
 	g_nVisibleLeaves = 0;
 	g_1005bd18 = 0;
 	g_nTextureChanges = 0;
-	g_1005bd10 = 0;
+	g_nLitPolysUploaded = 0;
 	g_1005b774 = 0;
 
 	// The view.

@@ -32,7 +32,6 @@
 #include "ltbasedefs.h"
 #include <d3d.h>
 #include "../../LT2/lithshared/stdlith/struct_bank.h"
-#include "d3d_clip.h"
 #include "ph_decls.h"
 
 
@@ -188,15 +187,20 @@ class RTexture;
 extern RTexture*            g_pCurTextures[];               // 0x10067270 (d3d_texture.cpp)
 extern uint16               g_CurFrameCode;                 // 0x1005d238
 extern uint32               g_WorldColor;                   // 0x1005c154
-extern float                g_fTexelSizeU;                  // 0x100672a8
-extern float                g_fTexelSizeV;                  // 0x100672ac
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float   u, v;
+};
+
+extern TexPair              g_TexelSize[];                  // 0x100672a8 (d3d_texture.cpp)
 extern uint32               g_nTLVertPool;                  // 0x1005fe00
 extern uint32               g_nTLVertsUsed;                 // 0x1005e27c
 extern TLVertex*            g_TLVertPool;                   // 0x1005e294
-extern void                 (__fastcall *g_pfnSetupSpecular)(TLVertex* pVert, uint32* pSpecular);  // 0x1005e1c4
+extern void                 (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4 (d3d_draw.cpp)
 
 LTBOOL  d3d_UpdateAnimatedLightmap(SceneWorld* pWorld, WorldPoly* pPoly, LTBOOL bForce);   // 0x10034000 (lightanim.cpp)
-void    d3d_GetLightmapVectors(uint32 iScale, void* pLMInfo, LTVector* pP, LTVector* pQ);  // 0x10035860
+void    d3d_GetLMAxes(int iScale, LTVector* pNormal, LTVector* pP, LTVector* pQ);  // 0x10035860 (lmsurfaces.cpp)
 LTBOOL  d3d_GrowTLVertPool(uint32 nWanted);                 // 0x10014900
 void    d3d_DisableTexture(uint32 iStage);                  // 0x1000a22b
 
@@ -246,7 +250,11 @@ public:
 // The view (common_draw.cpp's).
 struct ViewParams
 {
-	uint8       m_pad_000[0x15c];
+	uint8       m_pad_000[0x88];
+	float       m_NearZ;                                    // +0x088
+	uint8       m_pad_08c[0x90 - 0x8c];
+	float       m_FarZ2;                                    // +0x090 (the far clip)
+	uint8       m_pad_094[0x15c - 0x94];
 	LTMatrix    m_mWorldToCamera;                           // +0x15c
 	uint8       m_pad_19c[0x1dc - 0x19c];
 	LTMatrix    m_mFullTransform;                           // +0x1dc
@@ -262,6 +270,8 @@ extern LTBOOL   g_100638c4;                                 // 0x100638c4 (d3d_i
 extern uint32   g_TextureStage;                             // 0x100622d0
 extern uint32   g_nDrawPrimCalls;                           // 0x1005c144 (common_draw.cpp)
 extern ViewParams g_ViewParams;                             // 0x1005b790 (common_draw.cpp)
+
+#include "d3d_clip.h"
 extern int32    g_CV_FixTJunc;                              // 0x1005dbb4
 
 // The queue of the frame's lightmapped pieces (drawlightmaps.cpp's).
@@ -275,11 +285,12 @@ struct QueuedPoly
 	uint32      m_Type;                                     // +0x14
 };
 
-extern QueuedPoly*  g_LightmapPolyList;                     // 0x1005fda0 (drawlightmaps.cpp)
+struct LMBucket;
+extern LMBucket*    g_LightmapPolyList;                     // 0x1005fda0 (drawlightmaps.cpp)
 
 QueuedPoly* d3d_QueuePoly(void* pPoly, void* pList, uint32 nType);     // 0x10007ddb (drawmodel_clip.cpp)
 void    d3d_DeferPoly(RenderPoly* pPoly);                   // 0x10014970 (d3d_draw.cpp)
-LTBOOL  d3d_UpdateLightmap(WorldPoly* pPoly, LTBOOL bNew);  // 0x10021cd0 (d3d_texture.cpp)
+LTBOOL  d3d_DrawPolyLightmap(WorldPoly* pPoly, LTBOOL bNew);  // 0x10021cd0 (d3d_texture.cpp)
 void    dd_ConsolePrint(const char* pMsg, ...);             // 0x10013ade (common_stuff.cpp)
 
 void    d3d_CheckLightmap(SceneWorld* pWorld, WorldPoly* pPoly);
@@ -291,7 +302,7 @@ void    d3d_SetupLMUVs(WorldPoly* pPoly, LMVertex* pOut, WorldVertex* pVerts, in
 TLVertex* d3d_GetTLVerts(uint32 nVerts);
 void    d3d_DrawLMPieces();                                 // 0x1000a257
 void    d3d_DrawTLPolyTris(TLVertex* pVerts, int nVerts, ViewParams* pParams, uint32 fvf);
-LTBOOL  d3d_ClipLMVerts(LMVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x100085f2 (drawmodel_clip.cpp)
+LTBOOL  d3d_ClipLMVerts(ClipVert2** ppVerts, int32* pnVerts, ViewParams* pParams, uint32 flags);  // 0x100085f2 (drawmodel_clip.cpp)
 
 #define MAX_LMPOLY_VERTS    128
 #define SURF_LMFLAGS        0x100000
@@ -355,7 +366,7 @@ void d3d_DrawLightmappedPoly(RenderPoly* pPoly)
 
 	if (g_ClipFlags && !bEnvMap)
 	{
-		if (!d3d_ClipLMVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+		if (!d3d_ClipLMVerts((ClipVert2**)&pVerts, (int32*)&nVerts, &g_ViewParams, 0))
 			return;
 
 		bProject = LTFALSE;
@@ -370,7 +381,7 @@ void d3d_DrawLightmappedPoly(RenderPoly* pPoly)
 		pPoly->m_pLightmap->m_bValid = LTTRUE;
 
 	if (pPoly->m_pLights)
-		bNew = d3d_UpdateLightmap(pPoly, bNew);
+		bNew = d3d_DrawPolyLightmap(pPoly, bNew);
 	else
 		pPoly->m_pLightmap->m_bValid = LTTRUE;
 
@@ -392,7 +403,7 @@ void d3d_DrawLightmappedPoly(RenderPoly* pPoly)
 
 	if (bProject && !bEnvMap)
 	{
-		if (!d3d_ClipLMVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+		if (!d3d_ClipLMVerts((ClipVert2**)&pVerts, (int32*)&nVerts, &g_ViewParams, 0))
 			return;
 	}
 
@@ -413,7 +424,7 @@ void d3d_DrawLightmappedPoly(RenderPoly* pPoly)
 			pIn++;
 		}
 
-		pQueued = d3d_QueuePoly(pPoly, &g_LightmapPolyList, 0);
+		pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 		pQueued->m_iFirstVert = g_nTLVertsUsed;
 		pQueued->m_nVerts = nVerts;
 		pQueued->m_ClipFlags = bLightmap ? g_ClipFlags : 0;
@@ -496,7 +507,7 @@ void d3d_DrawLightmappedPoly(RenderPoly* pPoly)
 			pIn++;
 		}
 
-		pQueued = d3d_QueuePoly(pPoly, &g_LightmapPolyList, 0);
+		pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 		pQueued->m_iFirstVert = g_nTLVertsUsed;
 		pQueued->m_nVerts = nVerts;
 		pQueued->m_ClipFlags = g_ClipFlags;
@@ -557,7 +568,7 @@ void d3d_SetupLMVerts(uint32 nFlags, LMVertex* pOut, WorldVertex* pVerts, int nV
 		pOut->m_Vec.y = pVerts->m_Vec->y;
 		pOut->m_Vec.z = pVerts->m_Vec->z;
 		pOut->m_Color = g_WorldColor;
-		g_pfnSetupSpecular(pOut, &pOut->m_Specular);
+		g_pfnCalcFog(&pOut->m_Vec, &pOut->m_Specular);
 		pOut->SetUV(pVerts->m_TU, pVerts->m_TV);
 		pOut->m_LMU = pVerts->m_LMU;
 		pOut->m_LMV = pVerts->m_LMV;
@@ -575,7 +586,7 @@ void d3d_SetupLMVertsCalc(uint32 nFlags, WorldPoly* pPoly, LMVertex* pOut,
 {
 	LTVector vP, vQ, vPos;
 
-	d3d_GetLightmapVectors((pPoly->m_Flags >> 11) & 7, pPoly->m_pPlane, &vP, &vQ);
+	d3d_GetLMAxes((pPoly->m_Flags >> 11) & 7, (LTVector*)pPoly->m_pPlane, &vP, &vQ);
 
 	while (nVerts > 0)
 	{
@@ -583,15 +594,15 @@ void d3d_SetupLMVertsCalc(uint32 nFlags, WorldPoly* pPoly, LMVertex* pOut,
 		pOut->m_Vec.y = pVerts->m_Vec->y;
 		pOut->m_Vec.z = pVerts->m_Vec->z;
 		pOut->m_Color = g_WorldColor;
-		g_pfnSetupSpecular(pOut, &pOut->m_Specular);
+		g_pfnCalcFog(&pOut->m_Vec, &pOut->m_Specular);
 
 		vPos.x = pVerts->m_Vec->x - pPoly->m_vLMOrigin.x;
 		vPos.y = pVerts->m_Vec->y - pPoly->m_vLMOrigin.y;
 		vPos.z = pVerts->m_Vec->z - pPoly->m_vLMOrigin.z;
 
 		pOut->SetUV(pVerts->m_TU, pVerts->m_TV);
-		pOut->m_LMU = (vPos.Dot(vP) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_fTexelSizeU;
-		pOut->m_LMV = (vPos.Dot(vQ) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_fTexelSizeV;
+		pOut->m_LMU = (vPos.Dot(vP) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_TexelSize[0].u;
+		pOut->m_LMV = (vPos.Dot(vQ) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_TexelSize[0].v;
 
 		pVerts++;
 		pOut++;
@@ -604,13 +615,13 @@ void d3d_SetupLMUVs(WorldPoly* pPoly, LMVertex* pOut, WorldVertex* pVerts, int n
 {
 	LTVector vP, vQ, vPos;
 
-	d3d_GetLightmapVectors((pPoly->m_Flags >> 11) & 7, pPoly->m_pPlane, &vP, &vQ);
+	d3d_GetLMAxes((pPoly->m_Flags >> 11) & 7, (LTVector*)pPoly->m_pPlane, &vP, &vQ);
 
 	while (nVerts > 0)
 	{
 		vPos = *pVerts->m_Vec - pPoly->m_vLMOrigin;
-		pOut->m_LMU = (vPos.Dot(vP) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_fTexelSizeU;
-		pOut->m_LMV = (vPos.Dot(vQ) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_fTexelSizeV;
+		pOut->m_LMU = (vPos.Dot(vP) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_TexelSize[0].u;
+		pOut->m_LMV = (vPos.Dot(vQ) / g_pSceneWorld->m_fLMGridSize + 0.5f) * g_TexelSize[0].v;
 
 		pOut++;
 		pVerts++;
@@ -756,8 +767,6 @@ extern CRenderStateList g_SavedStates;                      // 0x10069728 (d3d_s
 extern StructBank   g_ClipPointBank;                        // 0x1005e730
 extern int32        g_CV_LightmapsOnly;                     // 0x1005df78 (common_stuff.cpp)
 extern CD3DConVar   g_CV_DetailTextureScale;                // 0x100742b8 (drawpolymgr.cpp)
-extern float        g_fDetailTexelU;                        // 0x100672b0
-extern float        g_fDetailTexelV;                        // 0x100672b4
 
 float   g_fDetailScale;                                     // 0x100554d8
 float   g_fDetailCos;                                       // 0x10055900
@@ -985,7 +994,7 @@ void d3d_DrawPieceList(TexQueue* pQueue, LTBOOL bFree, LTBOOL bNoScale)
 				if (!bLit)
 					pVert->m_Color = 0xFFFFFFFF;
 
-				pVert->SetUV(pVert->m_TU * g_fTexelSizeU, pVert->m_TV * g_fTexelSizeV);
+				pVert->SetUV(pVert->m_TU * g_TexelSize[0].u, pVert->m_TV * g_TexelSize[0].v);
 				pVert++;
 			}
 		}
@@ -1048,8 +1057,8 @@ void d3d_DrawDetailPieces(TexQueue* pQueue, LTBOOL bFree, LTBOOL bNoScale)
 	int nVerts, i;
 	float fScaleU, fScaleV, fCosU, fNegSinV, fSinU, fCosV;
 
-	fScaleU = g_fDetailTexelU * g_fDetailScale;
-	fScaleV = g_fDetailTexelV * g_fDetailScale;
+	fScaleU = g_TexelSize[1].u * g_fDetailScale;
+	fScaleV = g_TexelSize[1].v * g_fDetailScale;
 	fCosU = g_fDetailCos * fScaleU;
 	fNegSinV = -(g_fDetailSin * fScaleV);
 	fSinU = g_fDetailSin * fScaleU;
@@ -1117,9 +1126,9 @@ void d3d_DrawDetailPieces(TexQueue* pQueue, LTBOOL bFree, LTBOOL bNoScale)
 					pDst->m_Color = g_WorldColor;
 				}
 
-				pDst->m_LMU = g_fDetailTexelU * pPolyVert->m_TU;
-				pDst->m_LMV = g_fDetailTexelV * pPolyVert->m_TV;
-				g_pfnSetupSpecular(pDst, &pDst->m_Specular);
+				pDst->m_LMU = g_TexelSize[1].u * pPolyVert->m_TU;
+				pDst->m_LMV = g_TexelSize[1].v * pPolyVert->m_TV;
+				g_pfnCalcFog(&pDst->m_Vec, &pDst->m_Specular);
 				d3d_CalcEnvMapUV(&g_ViewParams.m_Pos, pPolyVert->m_Vec, pRenderPoly->m_pPlane,
 					&pDst->m_TU, &pDst->m_TV);
 				pDst->m_TU *= g_fDetailScale;
@@ -1144,7 +1153,7 @@ void d3d_DrawDetailPieces(TexQueue* pQueue, LTBOOL bFree, LTBOOL bNoScale)
 				if (!bLit)
 					pDst->m_Color = 0xFFFFFFFF;
 
-				pDst->SetUV(pSrc->m_TU * g_fTexelSizeU, pSrc->m_TV * g_fTexelSizeV);
+				pDst->SetUV(pSrc->m_TU * g_TexelSize[0].u, pSrc->m_TV * g_TexelSize[0].v);
 				pDst->m_LMU = pSrc->m_TU * fCosU + pSrc->m_TV * fNegSinV;
 				pDst->m_LMV = pSrc->m_TU * fSinU + pSrc->m_TV * fCosV;
 
@@ -1270,7 +1279,7 @@ void d3d_DrawLMPolyTris(LMVertex* pVerts, int nVerts, ViewParams* pParams, uint3
 			verts[2] = pVerts[i];
 			pClipVerts = verts;
 			nClipVerts = 3;
-			if (d3d_ClipLMVerts(&pClipVerts, &nClipVerts, pParams, 0))
+			if (d3d_ClipLMVerts((ClipVert2**)&pClipVerts, (int32*)&nClipVerts, pParams, 0))
 				g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, fvf, pClipVerts, nClipVerts, 0);
 
 			i++;
@@ -1279,7 +1288,7 @@ void d3d_DrawLMPolyTris(LMVertex* pVerts, int nVerts, ViewParams* pParams, uint3
 	}
 	else
 	{
-		if (d3d_ClipLMVerts(&pVerts, &nVerts, pParams, 0))
+		if (d3d_ClipLMVerts((ClipVert2**)&pVerts, (int32*)&nVerts, pParams, 0))
 			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, fvf, pVerts, nVerts, 0);
 	}
 }

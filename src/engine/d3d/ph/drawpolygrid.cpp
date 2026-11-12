@@ -30,7 +30,6 @@
 #include <d3d.h>
 
 #include "ltbasedefs.h"
-#include "d3d_clip.h"
 
 
 // The renderer's console variable (TU12's, constructor 0x10011f36).
@@ -130,7 +129,11 @@ struct LTObject
 
 struct ViewParams
 {
-	uint8		m_pad_000[0x15c];
+	uint8		m_pad_000[0x88];
+	float		m_NearZ;                                // +0x088
+	uint8		m_pad_08c[0x90 - 0x8c];
+	float		m_FarZ2;                                // +0x090 (the far clip)
+	uint8		m_pad_094[0x15c - 0x94];
 	LTMatrix	m_mWorldToCamera;                       // +0x15c
 	LTMatrix	m_mProjection;                          // +0x19c
 	uint8		m_pad_1dc[0x3d0 - 0x1dc];
@@ -216,7 +219,9 @@ public:
 extern ObjectDrawList*	g_pObjectDrawList;              // 0x100713cc
 extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern int32			g_CV_DrawPolyGrids;             // 0x1004a768
-extern LTMatrix			g_mFullTransform;               // 0x1005b92c
+extern CD3DConVar		g_CV_UseD3DClip;                // 0x100622b0 (d3d_init.cpp)
+
+#include "d3d_clip.h"
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 extern void			dfree(void* ptr);                   // 0x10013ac5
@@ -257,7 +262,7 @@ extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
 extern RTexture*			g_pCurTextures[];           // 0x10067270
 extern uint32				g_iCurTextureStage;         // 0x100638c0
 extern uint16				g_CurTextureFrameCode;      // 0x1005d250
-extern LTBOOL				g_bCanEnvMap;               // 0x100638c4
+extern LTBOOL				g_100638c4;                 // 0x100638c4 (d3d_init.cpp): env maps work
 extern CRenderStateList		g_SavedStates;              // 0x10069728
 extern uint8				g_LightTableR[256];         // 0x1005fa9c
 extern uint8				g_LightTableG[256];         // 0x1005fb9c
@@ -275,7 +280,8 @@ extern void			d3d_SetTextureDirect(RTexture* pTexture);   // 0x10007a89
 extern void			d3d_RotationToMatrix(LTRotation* pRot, LTMatrix* pMat);  // 0x1003655d
 extern void			d3d_SetDetailTextureStage(int nMode);       // 0x1000a172
 extern void			d3d_UnsetDetailTextureStage();              // 0x1000a1c1
-extern void			d3d_ProjectTLVert(ClipVert2* pVert, ViewParams* pParams);  // 0x1002739d
+struct TLVertex;
+extern void			d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);  // 0x1002739d (drawmodelshadows.cpp)
 extern void*		dalloc(uint32 size);                        // 0x10013a66
 
 int d3d_ClassifyTriangle(uint32 nClipMask, uint32* pOutMask,
@@ -534,7 +540,7 @@ void d3d_DrawPolyGrid(ViewParams* pContext, LTObject* pObject)
 	if (pObject->m_pSprite && pObject->m_SpriteTracker.m_pCurFrame &&
 		(pTex = pObject->m_SpriteTracker.m_pCurFrame->m_pTex) != LTNULL)
 	{
-		if (g_bCanEnvMap && g_pCurTextures[0] && pTex->m_pDetailTexture && pTex->m_DetailTextureMode &&
+		if (g_100638c4 && g_pCurTextures[0] && pTex->m_pDetailTexture && pTex->m_DetailTextureMode &&
 			g_CV_EnvMapPolyGrids.m_nValue)
 		{
 			bEnvMap = d3d_SetTexture(pTex->m_pDetailTexture, 0, 0) != 0;
@@ -734,7 +740,7 @@ void d3d_DrawPolyGrid(ViewParams* pContext, LTObject* pObject)
 							pClipVert = pClipVerts;
 							for (i=nClipVerts; i; i--)
 							{
-								d3d_ProjectTLVert(pClipVert, &g_ViewParams);
+								d3d_ProjectTLVert((TLVertex*)pClipVert, &g_ViewParams);
 								pClipVert++;
 							}
 
@@ -788,15 +794,13 @@ void d3d_DrawPolyGrid(ViewParams* pContext, LTObject* pObject)
 //  *pOutMask) or is inside (0).
 // ---------------------------------------------------------------------- //
 // (d3d_clip.h's ClipVert: only its position is read.)
-extern float g_NearZ;                                   // 0x1005b818
-extern float g_FarZ;                                    // 0x1005b820
 
-#define CLIP_NEAR(v)	((v)->m_vPos.z >= g_NearZ)
+#define CLIP_NEAR(v)	((v)->m_vPos.z >= g_ViewParams.m_NearZ)
 #define CLIP_LEFT(v)	(-(v)->m_vPos.z < (v)->m_vPos.x)
 #define CLIP_TOP(v)		((v)->m_vPos.y < (v)->m_vPos.z)
 #define CLIP_RIGHT(v)	((v)->m_vPos.x < (v)->m_vPos.z)
 #define CLIP_BOTTOM(v)	(-(v)->m_vPos.z < (v)->m_vPos.y)
-#define CLIP_FAR(v)		((v)->m_vPos.z <= g_FarZ)
+#define CLIP_FAR(v)		((v)->m_vPos.z <= g_ViewParams.m_FarZ2)
 
 #define CLIP_TEST(bit, test, remaining)                                  \
 	if (nClipMask & (bit))                                               \
@@ -982,7 +986,7 @@ void d3d_TransformPolyGridVerts(PolyGridVert* pVerts, uint32 nVerts)
 {
 	for (; nVerts; nVerts--)
 	{
-		pVerts->m_RHW = MatVMul_InPlace_H(&g_mFullTransform, &pVerts->m_Vec);
+		pVerts->m_RHW = MatVMul_InPlace_H(&g_ViewParams.m_mProjection, &pVerts->m_Vec);
 		pVerts++;
 	}
 }

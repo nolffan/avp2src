@@ -1110,8 +1110,18 @@ public:
 	uint32 m_Unknown10c;                     // 0x10c
 };
 
-LTRESULT fs_GetFileInfoQ468(CFileMgrQ468* pFileMgr, char* pFilename, CLTFileInfoQ468* pInfo)
+// servermgr.h's fs_GetFileInfo and fs_FileExists, under their own names
+// (servermessage.cpp and servermgr.cpp call them; lithtech.exe's client
+// interface too, lt2new2.cpp) and over this file's views of the manager and
+// the record.
+class CFileMgr;
+struct LTFileInfo;
+
+LTRESULT fs_GetFileInfo(CFileMgr* pFileMgrIn, const char* pFilenameIn, LTFileInfo* pInfoIn)
 {
+	CFileMgrQ468*      pFileMgr  = (CFileMgrQ468*)pFileMgrIn;
+	char*              pFilename = (char*)pFilenameIn;
+	CLTFileInfoQ468*   pInfo     = (CLTFileInfoQ468*)pInfoIn;
 	CFileFindStateQ468 state;
 	LTLinkQ468*        pCur;
 
@@ -1146,12 +1156,12 @@ LTRESULT fs_GetFileInfoQ468(CFileMgrQ468* pFileMgr, char* pFilename, CLTFileInfo
 }
 
 // 0x10037808 -- does any tree have the file?
-LTRESULT fs_FileExistsQ468(CFileMgrQ468* pFileMgr, char* pFilename)
+LTRESULT fs_FileExists(CFileMgr* pFileMgr, const char* pFilename)
 {
 	uint32            nSize    = 0;
 	CFileTreeRecQ468* pTreeRec = LTNULL;
 
-	return fs_FindFileInTreesQ468(pFileMgr, pFilename, &pTreeRec, &nSize) ? LT_OK : LT_NOTFOUND;
+	return fs_FindFileInTreesQ468((CFileMgrQ468*)pFileMgr, (char*)pFilename, &pTreeRec, &nSize) ? LT_OK : LT_NOTFOUND;
 }
 #endif
 #endif

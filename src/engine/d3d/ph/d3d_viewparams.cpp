@@ -31,14 +31,16 @@ public:
 CD3DConVar     g_CV_NearZ("NearZ", 7.0f, LTNULL, LTNULL);                       // 0x1005b748
 CD3DConVar     g_CV_ReallyCloseNearZ("ReallyCloseNearZ", 0.01f, LTNULL, LTNULL);  // 0x1005a328
 
+uint32         g_nLightmapUploadSaves;                          // 0x1005b774 (d3d_texture.cpp counts them)
+
 
 // The vertical fog console variables (d3d_draw.cpp's).
 extern CD3DConVar g_CV_VFogMinY;                            // 0x1005fde0
 extern CD3DConVar g_CV_VFogMaxY;                            // 0x1005fda8
 extern CD3DConVar g_CV_VFogMinYVal;                         // 0x1005e1d0
 extern CD3DConVar g_CV_VFogMaxYVal;                         // 0x1005e078
-extern float    g_fVFogRangeScale;                          // 0x1005e210
-extern float    g_fVFogValScale;                            // 0x1005df90
+extern float    g_fVFogRangeScale;                          // 0x1005df90 (d3d_draw.cpp)
+extern float    g_fVFogValScale;                            // 0x1005e210 (d3d_draw.cpp)
 
 struct ViewParams
 {
@@ -103,7 +105,7 @@ struct ModelInstance
 	LTVector m_Pos;                                         // +0x194
 };
 
-extern int32         g_bDynamicLightModels;                 // 0x1004a770
+extern int32         g_CV_LightModels;                      // 0x1004a770 (common_stuff.cpp: "LightModels")
 class LTObject;
 extern LTObject*     g_DynamicLights[];                     // 0x1005c168
 extern uint32        g_nDynamicLights;                      // 0x1005bcb0
@@ -117,7 +119,7 @@ void d3d_GetDynamicLightAdd(ModelInstance* pInstance, LTVector* pAdd)
 	float fDistSqr, fScale;
 
 	pAdd->Init();
-	if (!g_bDynamicLightModels)
+	if (!g_CV_LightModels)
 		return;
 
 	for (i = 0; i < g_nDynamicLights; i++)

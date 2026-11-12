@@ -134,9 +134,11 @@ struct ViewParams
 {
 	uint8       m_Reserved000[0x1c];
 	LTRect      m_Rect;                                     // +0x01c
-	uint8       m_Reserved02c[0x8c - 0x2c];
+	uint8       m_Reserved02c[0x88 - 0x2c];
+	float       m_NearZ;                                    // +0x088
 	float       m_FarZ;                                     // +0x08c
-	uint8       m_Reserved090[0xdc - 0x90];
+	float       m_FarZ2;                                    // +0x090 (the far clip)
+	uint8       m_Reserved094[0xdc - 0x94];
 	LTMatrix    m_mView;                                    // +0x0dc
 	LTMatrix    m_mProjection;                              // +0x11c
 	LTMatrix    m_mWorldToCamera;                           // +0x15c
@@ -145,7 +147,12 @@ struct ViewParams
 	LTMatrix    m_mDeviceTransform;                         // +0x21c
 	uint8       m_Reserved25c[0x2dc - 0x25c];
 	LTMatrix    m_mReallyCloseToCamera;                     // +0x2dc
-	uint8       m_Reserved31c[0x334 - 0x31c];
+	float       m_fProjScaleX;                              // +0x31c (the projection, as
+	float       m_fProjCenterX;                             // +0x320  the clipped polygons
+	float       m_fProjScaleY;                              // +0x324  are projected)
+	float       m_fProjCenterY;                             // +0x328
+	float       m_fProjScaleZ;                              // +0x32c
+	float       m_fProjOffsetZ;                             // +0x330
 	LTVector    m_ViewPoints[5];                            // +0x334
 	LTPlane     m_ViewPlanes[6];                            // +0x370
 	LTPlane     m_ClipPlanes[6];                            // +0x3d0
@@ -165,8 +172,7 @@ struct ViewParams
 };
 
 extern ViewParams   g_ViewParams;                           // 0x1005b790
-extern LTVector g_vViewPos;                                 // 0x1005bc74 (g_ViewParams+0x4e4)
-extern float    g_fSkyFogScale;                             // 0x1005e0b8
+float           g_fSkyFogScale;                             // 0x1005e0b8
 
 // 0x10014230 -- the fog of a point by its distance from the viewer, into
 // the specular colour's alpha.
@@ -174,7 +180,7 @@ void __fastcall d3d_CalcFog(const LTVector* pPos, uint32* pSpecular)
 {
 	float fDist;
 
-	fDist = (*pPos - g_vViewPos).Mag();
+	fDist = (*pPos - g_ViewParams.m_vViewPos).Mag();
 	if (fDist < g_CV_FogNearZ)
 	{
 		*pSpecular = 0xFFFFFFFF;
@@ -213,14 +219,18 @@ void __fastcall d3d_CalcSkyFog(const LTVector* pPos, uint32* pSpecular)
 }
 
 
+// The vertical fog's scales (d3d_RenderScene sets them; d3d_viewparams.cpp
+// reads the camera's).
+float           g_fVFogRangeScale;                          // 0x1005df90
+float           g_fVFogValScale;                            // 0x1005e210
+float           g_fVFogDensityScale;                        // 0x1005e20c
+
+
 #ifndef PRIMAL_HUNT
 // ---------------------------------------------------------------------- //
 //  AvP2's vertical fog (Primal Hunt's fog volumes replace it,
 //  fogvolume.cpp).
 // ---------------------------------------------------------------------- //
-extern float    g_fVFogValScale;                            // 0x1005df90
-extern float    g_fVFogRangeScale;                          // 0x1005e210
-extern float    g_fVFogDensityScale;                        // 0x1005e20c
 
 // Where a height is against the fog: 0 below it, 1 above it, 2 in it.
 inline uint32 d3d_GetVFogMode(float y)
@@ -383,7 +393,7 @@ public:
 	std::vector<StageState>     m_StageStates;              // +0x0c
 
 	void    Restore();                                      // 0x10022a86
-	void    Apply(RenderStateSet* pSet, uint32 iStage);     // 0x10022a97
+	void    Apply(CRenderStateList* pList, uint32 iStage);  // 0x10022a97
 	void    SetState(RenderState* pState);                  // 0x10022b08
 };
 
@@ -424,7 +434,7 @@ void d3d_SetTranslucentObjectStates(LTBOOL bAdditive)
 		}
 
 		if (g_pAdditiveSet)
-			g_TranslucentStates.Apply(g_pAdditiveSet, 0);
+			g_TranslucentStates.Apply((CRenderStateList*)g_pAdditiveSet, 0);
 	}
 	else
 	{
@@ -437,7 +447,7 @@ void d3d_SetTranslucentObjectStates(LTBOOL bAdditive)
 		}
 
 		if (g_pTranslucentSet)
-			g_TranslucentStates.Apply(g_pTranslucentSet, 0);
+			g_TranslucentStates.Apply((CRenderStateList*)g_pTranslucentSet, 0);
 	}
 }
 
@@ -609,17 +619,18 @@ extern uint32   g_nTrianglesDrawn;                          // 0x1005c148
 
 // The texture stages' bound textures (d3d_texture.cpp).
 extern uint32               g_iCurTextureStage;             // 0x100638c0
-extern LPDIRECTDRAWSURFACE7 g_BoundTextures[];              // 0x10067270
+class RTexture;
+extern RTexture*     g_pCurTextures[];                       // 0x10067270 (d3d_texture.cpp)
 
 // Unbind a stage's texture (d3d_DisableTexture, 0x1000a22b, spelt inline).
 void d3d_DisableTexture(uint32 iStage);                     // 0x1000a22b
 
 inline void d3d_UnsetTexture(uint32 iStage)
 {
-	if (g_BoundTextures[iStage])
+	if (g_pCurTextures[iStage])
 	{
 		g_pD3DDevice->SetTexture(iStage, LTNULL);
-		g_BoundTextures[iStage] = LTNULL;
+		g_pCurTextures[iStage] = LTNULL;
 	}
 }
 
@@ -627,7 +638,8 @@ inline void d3d_UnsetTexture(uint32 iStage)
 float   d3d_MatVMul_InPlace_H(LTMatrix* pMat, LTVector* pSrc);              // 0x1000868d
 void    d3d_TransformToCamera(TLVertex* pVert, LTMatrix* pMat);             // 0x10008719
 LTBOOL  d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6
-LTBOOL  d3d_ClipTLVertsRC(uint32 clipFlags, TLVertex** ppVerts, int* pnVerts);  // 0x1000af61
+struct ClipVert;
+LTBOOL  ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts);  // 0x1000af61 (drawworld.cpp; d3d_clip.h's, for the 32-byte vertex)
 void    d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);            // 0x1002739d
 
 
@@ -661,7 +673,7 @@ void d3d_DrawPolyFillInfo(RenderPoly* pPoly)
 		for (i = 0; i < (uint32)nVerts; i++)
 			d3d_TransformToCamera(&pVerts[i], &g_ViewParams.m_mWorldToCamera);
 
-		if (!d3d_ClipTLVertsRC(g_ClipFlags, &pVerts, &nVerts))
+		if (!ClipPoly(g_ClipFlags, (ClipVert**)&pVerts, (int32*)&nVerts))
 			return;
 
 		for (i = 0; i < (uint32)nVerts; i++)
@@ -782,9 +794,9 @@ extern ScreenFormat             g_ScreenFormat;             // 0x1005d260
 extern LPDIRECTDRAWSURFACE7     g_pBackBuffer;              // 0x1005d2b4
 extern uint32                   g_ScreenWidth;              // 0x1005d8cc
 extern uint32                   g_ScreenHeight;             // 0x1005d9c0
-extern uint32                   g_bSceneCleared;            // 0x1005e1c0
+uint32                          g_bSceneCleared;            // 0x1005e1c0
 
-LTBOOL  d3d_HasStencilBuffer();                             // 0x1001b460
+LTBOOL  d3d_HasStencil();                                   // 0x1001b460 (d3d_init.cpp)
 void    InvalidateRect(LTRect* pRect);                      // 0x10022e31
 
 // A 0..255 colour component as 0..1.
@@ -861,7 +873,7 @@ void d3d_Clear(LTRect* pRect, uint32 flags, LTVector* pClearColor)
 	if (flags & CLEARSCREEN_RENDER)
 	{
 		realFlags |= D3DCLEAR_ZBUFFER;
-		if (d3d_HasStencilBuffer())
+		if (d3d_HasStencil())
 			realFlags |= D3DCLEAR_STENCIL;
 	}
 
@@ -910,9 +922,9 @@ extern LTBOOL           g_bFogCapable;                      // 0x10062888
 
 void    d3d_QueueGouraudPoly(void* pPoly);                  // 0x100238c5 (drawgouraud.cpp)
 void    d3d_DrawLightmapPoly(RenderPoly* pPoly);            // 0x100083bf
-void    d3d_DrawMultiPassPoly(RenderPoly* pPoly);           // 0x1003647b
+void    d3d_QueueLightmapPoly(void* pPoly);                 // 0x1003647b
 void    d3d_DrawTexturedPoly(RenderPoly* pPoly);            // 0x1000a11b
-void    d3d_MultiPassModeChange();                          // 0x10036498
+void    d3d_SetLightmapStages();                            // 0x10036498
 void    d3d_CanvasPreFrame();                               // 0x1002377f
 
 float   d3d_MatVMul_H(LTVector* pDest, LTMatrix* pMat, LTVector* pSrc);  // 0x1000dcec
@@ -937,7 +949,7 @@ static void d3d_SetDrawFunctions(int32 nMode)
 
 	if (g_bMultiPass)
 	{
-		pfn = (DrawPolyFn)d3d_DrawMultiPassPoly;
+		pfn = (DrawPolyFn)d3d_QueueLightmapPoly;
 		g_pfnDrawLightmapPoly = pfn;
 		g_pfnDrawTexturedPoly = pfn;
 	}
@@ -1002,7 +1014,7 @@ void d3d_SetDrawMode(int32 nMode)
 		g_bDrawWorldFog = 0;
 
 	if (g_bMultiPass)
-		d3d_MultiPassModeChange();
+		d3d_SetLightmapStages();
 	else
 		d3d_CanvasPreFrame();
 }
@@ -1017,7 +1029,8 @@ public:
 	void    Flush();                                        // 0x1002aee2
 };
 
-extern int32        g_GouraudPolyList;                      // 0x1005e728
+struct GouraudBucket;
+GouraudBucket*      g_GouraudPolyList;                      // 0x1005e728
 extern CD3DConVar   g_CV_DrawPolyMgr;                       // 0x10074258
 extern DrawPolyMgr  g_DrawPolyMgr;                          // 0x100746d8
 
@@ -1027,7 +1040,7 @@ void    d3d_DrawWorldPieces();                              // 0x1000ac3a
 void    d3d_DrawDeferredPieces();                           // 0x10007976
 void    d3d_MultiPassFlush();                               // 0x10035c7e
 void    d3d_FlushWorldPieces();                             // 0x1000ac2b
-void    d3d_MultiPassEnd();                                 // 0x10036534
+void    d3d_ResetLightmapStages();                          // 0x10036534
 
 // 0x10015070
 void d3d_FlushDeferredPolies(LTBOOL bAdditive)
@@ -1055,7 +1068,7 @@ void d3d_FlushDeferredPolies(LTBOOL bAdditive)
 		d3d_FlushWorldPieces();
 
 	if (g_bMultiPass)
-		d3d_MultiPassEnd();
+		d3d_ResetLightmapStages();
 	else
 		d3d_CanvasPreFrame();
 
@@ -1137,7 +1150,7 @@ LTBOOL d3d_DrawTLPoly(TLVertex** ppVerts, int* pnVerts)
 			pVert++;
 		}
 
-		if (!d3d_ClipTLVertsRC(g_ClipFlags, ppVerts, pnVerts))
+		if (!ClipPoly(g_ClipFlags, (ClipVert**)ppVerts, (int32*)pnVerts))
 			return FALSE;
 
 		pVert = *ppVerts;
@@ -1316,7 +1329,7 @@ struct PortalRef
 
 struct VisibleSet
 {
-	void    ClearSets();                                    // 0x10039e80
+	void    ClearSet();                                     // 0x10039e80
 
 	uint8       m_Reserved000[0x40];
 	PortalRef   m_Portals[MAX_VISIBLE_PORTALS];             // +0x040
@@ -1325,13 +1338,13 @@ struct VisibleSet
 
 extern RenderStruct*    g_pStruct;                          // 0x1005df08
 extern ObjectHandler    g_ObjectHandlers[NUM_OBJECTTYPES];  // 0x1004da94
-extern LTBOOL           g_bHWClipping;                      // 0x100622b0
 
 VisibleSet* d3d_GetVisibleSet();                            // 0x1003abb0
 void    d3d_InitObjectQueues();                             // 0x10029430
 void    d3d_FlushObjectQueues();                            // 0x10029450
 void    d3d_InitFrameState();                               // 0x1001159b (common_draw.cpp)
-void    d3d_DrawWorld();                                    // 0x1003a2c0
+void    d3d_QueueVisibleObjects();                          // 0x1003a2c0
+extern CD3DConVar g_CV_UseD3DClip;                          // 0x100622b0 (d3d_init.cpp)
 void    d3d_FreeLitObjects();                               // 0x10011517 (common_draw.cpp)
 
 // The objects of an object-list scene.
@@ -1372,7 +1385,7 @@ static void d3d_EndWorldDraw()
 		d3d_FlushWorldPieces();
 
 	if (g_bMultiPass)
-		d3d_MultiPassEnd();
+		d3d_ResetLightmapStages();
 	else
 		d3d_CanvasPreFrame();
 
@@ -1393,7 +1406,7 @@ void d3d_FullDrawScene(SceneDesc* pDesc)
 	Counter cTicks;
 	D3DMATRIX mat;
 
-	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_CLIPPING, g_bHWClipping != 0);
+	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_CLIPPING, g_CV_UseD3DClip.m_nValue != 0);
 
 	d3d_SetD3DMat(&g_ViewParams.m_mDeviceTransform, &mat);
 	g_pD3DDevice->SetTransform(D3DTRANSFORMSTATE_WORLD, &mat);
@@ -1407,7 +1420,7 @@ void d3d_FullDrawScene(SceneDesc* pDesc)
 
 	if (pDesc->m_DrawMode == DRAWMODE_OBJECTLIST)
 	{
-		d3d_GetVisibleSet()->ClearSets();
+		d3d_GetVisibleSet()->ClearSet();
 		d3d_ProcessObjectList(pDesc->m_pObjectList, pDesc->m_ObjectListSize);
 	}
 	else
@@ -1415,7 +1428,7 @@ void d3d_FullDrawScene(SceneDesc* pDesc)
 		CountAdder cntWorld(&g_pStruct->m_WorldTicks);
 
 		d3d_SetDrawMode(0);
-		d3d_DrawWorld();
+		d3d_QueueVisibleObjects();
 		d3d_EndWorldDraw();
 	}
 
@@ -1614,8 +1627,12 @@ struct SharedTexture
 
 extern RTexture*    g_pCurTextures[];                       // 0x10067270
 extern uint16       g_CurTextureFrameCode;                  // 0x1005d250
-extern float        g_fTexelSizeU;                          // 0x100672a8
-extern float        g_fTexelSizeV;                          // 0x100672ac
+struct TexPair
+{
+	float   u, v;
+};
+
+extern TexPair      g_TexelSize[];                          // 0x100672a8 (d3d_texture.cpp)
 extern void         (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4
 
 RTexture*   d3d_CreateRenderTexture(SharedTexture* pTexture, uint32 iStage, LTBOOL bStageCopy);  // 0x10020cd0
@@ -1701,7 +1718,7 @@ void d3d_DrawPortalPoly(RenderPoly* pPoly, LTMatrix* pTransform)
 	{
 		MatVMul_H(&pVert->m_Vec, pTransform, &pPolyVerts->m_pVert->m_Vec);
 		pVert->color = 0xFFFFFFFF;
-		pVert->SetTexCoords(pPolyVerts->tu * g_fTexelSizeU, pPolyVerts->tv * g_fTexelSizeV);
+		pVert->SetTexCoords(pPolyVerts->tu * g_TexelSize[0].u, pPolyVerts->tv * g_TexelSize[0].v);
 		g_pfnCalcFog(&pPolyVerts->m_pVert->m_Vec, &pVert->specular);
 		pVert++;
 		pPolyVerts++;
@@ -1749,7 +1766,6 @@ struct ProjectParams
 	float   m_fOffsetZ;                                     // +0x330
 };
 
-extern ProjectParams    g_ProjectParams;                    // 0x1005baac (g_ViewParams+0x31c)
 extern void         (*g_pfnPostQueueHook)();                // 0x10072808
 extern int32        g_CV_LightMap;                          // 0x1004a790
 
@@ -1860,7 +1876,7 @@ void d3d_DrawPortals(SceneDesc* pDesc, VisibleSet* pVisibleSet)
 			// polygon, and find its screen box.
 			fZ = g_ViewParams.m_FarZ - 1.0f;
 			fRHW = 1.0f / fZ;
-			fZ = (fZ * g_ProjectParams.m_fScaleZ + g_ProjectParams.m_fOffsetZ) * fRHW;
+			fZ = (fZ * g_ViewParams.m_fProjScaleZ + g_ViewParams.m_fProjOffsetZ) * fRHW;
 
 			fMinX = fMinY = fMinZ = 100000.0f;
 			fMaxX = fMaxY = -100000.0f;
@@ -1941,8 +1957,6 @@ void d3d_DrawVisiblePortals()
 //  Debug lines and boxes.
 // ---------------------------------------------------------------------- //
 
-extern float    g_fNearZ;                                   // 0x1005b818
-extern float    g_fFarZ;                                    // 0x1005b820
 
 // A clipped line end's texture coordinates, colour and specular alpha,
 // interpolated from a to b (d3d_clip.h's LerpClipVert over a TLVertex).
@@ -1970,25 +1984,25 @@ LTBOOL d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags)
 
 	if (clipFlags & 1)
 	{
-		if (v[0].m_Vec.z >= g_fNearZ)
+		if (v[0].m_Vec.z >= g_ViewParams.m_NearZ)
 		{
-			if (v[1].m_Vec.z < g_fNearZ)
+			if (v[1].m_Vec.z < g_ViewParams.m_NearZ)
 			{
-				t = (g_fNearZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				t = (g_ViewParams.m_NearZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
 				v[1].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
 				v[1].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
-				v[1].m_Vec.z = g_fNearZ;
+				v[1].m_Vec.z = g_ViewParams.m_NearZ;
 				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
 			}
 		}
 		else
 		{
-			if (v[1].m_Vec.z >= g_fNearZ)
+			if (v[1].m_Vec.z >= g_ViewParams.m_NearZ)
 			{
-				t = (g_fNearZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				t = (g_ViewParams.m_NearZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
 				v[0].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
 				v[0].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
-				v[0].m_Vec.z = g_fNearZ;
+				v[0].m_Vec.z = g_ViewParams.m_NearZ;
 				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
 			}
 			else
@@ -2110,25 +2124,25 @@ LTBOOL d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags)
 
 	if (clipFlags & 2)
 	{
-		if (v[0].m_Vec.z <= g_fFarZ)
+		if (v[0].m_Vec.z <= g_ViewParams.m_FarZ2)
 		{
-			if (v[1].m_Vec.z > g_fFarZ)
+			if (v[1].m_Vec.z > g_ViewParams.m_FarZ2)
 			{
-				t = (g_fFarZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				t = (g_ViewParams.m_FarZ2 - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
 				v[1].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
 				v[1].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
-				v[1].m_Vec.z = g_fFarZ;
+				v[1].m_Vec.z = g_ViewParams.m_FarZ2;
 				d3d_LerpLineVert(&v[0], &v[1], &v[1], t);
 			}
 		}
 		else
 		{
-			if (v[1].m_Vec.z <= g_fFarZ)
+			if (v[1].m_Vec.z <= g_ViewParams.m_FarZ2)
 			{
-				t = (g_fFarZ - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
+				t = (g_ViewParams.m_FarZ2 - v[0].m_Vec.z) / (v[1].m_Vec.z - v[0].m_Vec.z);
 				v[0].m_Vec.x = (v[1].m_Vec.x - v[0].m_Vec.x) * t + v[0].m_Vec.x;
 				v[0].m_Vec.y = (v[1].m_Vec.y - v[0].m_Vec.y) * t + v[0].m_Vec.y;
-				v[0].m_Vec.z = g_fFarZ;
+				v[0].m_Vec.z = g_ViewParams.m_FarZ2;
 				d3d_LerpLineVert(&v[0], &v[1], &v[0], t);
 			}
 			else
@@ -2155,14 +2169,14 @@ void d3d_DrawLine(LTVector vStart, LTVector vEnd, uint32 color0, uint32 color1)
 	if (d3d_ClipLine(verts, 0x3F))
 	{
 		verts[0].rhw = 1.0f / verts[0].m_Vec.z;
-		verts[0].m_Vec.x = (verts[0].m_Vec.x * g_ProjectParams.m_fScaleX + verts[0].m_Vec.z * g_ProjectParams.m_fCenterX) * verts[0].rhw;
-		verts[0].m_Vec.y = (verts[0].m_Vec.y * g_ProjectParams.m_fScaleY + verts[0].m_Vec.z * g_ProjectParams.m_fCenterY) * verts[0].rhw;
-		verts[0].m_Vec.z = (verts[0].m_Vec.z * g_ProjectParams.m_fScaleZ + g_ProjectParams.m_fOffsetZ) * verts[0].rhw;
+		verts[0].m_Vec.x = (verts[0].m_Vec.x * g_ViewParams.m_fProjScaleX + verts[0].m_Vec.z * g_ViewParams.m_fProjCenterX) * verts[0].rhw;
+		verts[0].m_Vec.y = (verts[0].m_Vec.y * g_ViewParams.m_fProjScaleY + verts[0].m_Vec.z * g_ViewParams.m_fProjCenterY) * verts[0].rhw;
+		verts[0].m_Vec.z = (verts[0].m_Vec.z * g_ViewParams.m_fProjScaleZ + g_ViewParams.m_fProjOffsetZ) * verts[0].rhw;
 
 		verts[1].rhw = 1.0f / verts[1].m_Vec.z;
-		verts[1].m_Vec.x = (verts[1].m_Vec.x * g_ProjectParams.m_fScaleX + verts[1].m_Vec.z * g_ProjectParams.m_fCenterX) * verts[1].rhw;
-		verts[1].m_Vec.y = (verts[1].m_Vec.y * g_ProjectParams.m_fScaleY + verts[1].m_Vec.z * g_ProjectParams.m_fCenterY) * verts[1].rhw;
-		verts[1].m_Vec.z = (verts[1].m_Vec.z * g_ProjectParams.m_fScaleZ + g_ProjectParams.m_fOffsetZ) * verts[1].rhw;
+		verts[1].m_Vec.x = (verts[1].m_Vec.x * g_ViewParams.m_fProjScaleX + verts[1].m_Vec.z * g_ViewParams.m_fProjCenterX) * verts[1].rhw;
+		verts[1].m_Vec.y = (verts[1].m_Vec.y * g_ViewParams.m_fProjScaleY + verts[1].m_Vec.z * g_ViewParams.m_fProjCenterY) * verts[1].rhw;
+		verts[1].m_Vec.z = (verts[1].m_Vec.z * g_ViewParams.m_fProjScaleZ + g_ViewParams.m_fProjOffsetZ) * verts[1].rhw;
 
 		g_pD3DDevice->DrawPrimitive(D3DPT_LINELIST, D3DFVF_TLVERTEX, verts, 2, 0);
 	}
@@ -2340,23 +2354,25 @@ extern int32        g_CV_Wireframe;                         // 0x1005df64
 extern int32        g_CV_ShowTextureCounts;                 // 0x1005df5c
 extern int32        g_CV_ShowPolyCounts;                    // 0x1005df70
 extern int32        g_CV_ModelProfile;                      // 0x1005da08
-extern float        g_fVFogValScale;                        // 0x1005df90
-extern float        g_fVFogRangeScale;                      // 0x1005e210
+extern float        g_fVFogValScale;                        // 0x1005e210
+extern float        g_fVFogRangeScale;                      // 0x1005df90
 extern float        g_fVFogDensityScale;                    // 0x1005e20c
 extern LTVector     g_vGlobalLightColor;                    // 0x1005b780
 extern LTVector     g_vLightAdd;                            // 0x1005bc90
 extern uint32       g_WorldColor;                           // 0x1005c154
-extern uint8        g_GammaTableR[256];                     // 0x1005f79c
-extern uint8        g_GammaTableG[256];                     // 0x1005f89c
-extern uint8        g_GammaTableB[256];                     // 0x1005f99c
-extern uint8        g_LightTableR[256];                     // 0x1005fa9c
-extern uint8        g_LightTableG[256];                     // 0x1005fb9c
-extern uint8        g_LightTableB[256];                     // 0x1005fc9c
-extern void*        g_LightmapPolyList;                     // 0x1005fda0
-extern int32        g_GouraudPolyList;                      // 0x1005e728
-extern uint32       g_nTLVertsUsed;                         // 0x1005e27c
-extern uint32       g_nModelsClipped;                       // 0x1005e278
-extern uint32       g_nModelsUnclipped;                     // 0x1005e774
+uint8               g_GammaTableR[256];                     // 0x1005f79c
+uint8               g_GammaTableG[256];                     // 0x1005f89c
+uint8               g_GammaTableB[256];                     // 0x1005f99c
+uint8               g_LightTableR[256];                     // 0x1005fa9c
+uint8               g_LightTableG[256];                     // 0x1005fb9c
+uint8               g_LightTableB[256];                     // 0x1005fc9c
+struct LMBucket;
+extern LMBucket*    g_LightmapPolyList;                     // 0x1005fda0 (drawlightmaps.cpp)
+struct GouraudBucket;
+extern GouraudBucket* g_GouraudPolyList;                   // 0x1005e728
+uint32              g_nTLVertsUsed;                         // 0x1005e27c
+uint32              g_nModelsClipped;                       // 0x1005e278
+uint32              g_nModelsUnclipped;                     // 0x1005e774
 extern float        g_fWarbleTime;                          // 0x100572b0 (drawmodel.cpp)
 extern float        g_fWarbleFrac;                          // 0x100588a8 (drawmodel.cpp)
 extern uint32       g_nTextureChanges;                      // 0x1005d22c
@@ -2365,9 +2381,9 @@ extern uint32       g_nWorldPoliesDrawn;                    // 0x1005c120
 extern uint32       g_nDrawPrimCalls;                       // 0x1005c144
 extern uint32       g_nSkyLightsApplied;                    // 0x1005c164
 extern uint32       g_nLitObjects;                          // 0x1005bcac
-extern uint32       g_1005bd10;                             // 0x1005bd10
+extern uint32       g_nLitPolysUploaded;                             // 0x1005bd10
 extern int32        g_nModelTriangles;                      // 0x1005bd04
-extern uint32       g_1005b770;                             // 0x1005b770 (particles drawn)
+extern uint32       g_nParticlesDrawn;                             // 0x1005b770 (particles drawn)
 extern uint32       g_nClipPasses;                          // 0x1005c124
 extern uint32       g_nVisibleLeaves;                       // 0x1005b78c
 extern uint32       g_nSkyPortalPoliesDrawn;                // 0x1005c150
@@ -2394,7 +2410,7 @@ extern uint32   g_LastWorldColor;                           // 0x1005fdc8
 static int32    g_LastRenderToFront;                        // 0x1005fe10
 static LTBOOL   g_bSaturateTableValid;                      // 0x1005df0c
 static float    g_fSaturateTableLast;                       // 0x1005d72c
-static LTBOOL   g_bWarbleTableValid;                        // 0x1005df7c
+LTBOOL          g_bWarbleTableValid;                        // 0x1005df7c (common_init.cpp resets it)
 static float    g_fWarbleScaleLast;                         // 0x1005d4f0
 static float    g_fFogRange;                                // 0x1005d338
 
@@ -2453,7 +2469,7 @@ LTBOOL d3d_RenderScene(SceneDesc* pDesc)
 		g_LastRenderToFront = g_CV_RenderToFront.m_nValue;
 	}
 
-	g_bAnimateLightmaps = g_CV_DrawPortals.m_nValue && d3d_HasStencilBuffer();
+	g_bAnimateLightmaps = g_CV_DrawPortals.m_nValue && d3d_HasStencil();
 
 	if (!g_bSaturateTableValid || g_CV_LightSaturate != g_fSaturateTableLast)
 	{
@@ -2559,9 +2575,9 @@ LTBOOL d3d_RenderScene(SceneDesc* pDesc)
 			g_pStruct->ConsolePrint("World Polies Processed: %d", g_nWorldPoliesDrawn);
 			g_pStruct->ConsolePrint("World Polies Drawn: %d", g_nDrawPrimCalls);
 			g_pStruct->ConsolePrint("Num Light Tests: %d", g_nSkyLightsApplied);
-			g_pStruct->ConsolePrint("Num Lit Polies: %d (textured and uploaded: %d)", g_nLitObjects, g_1005bd10);
+			g_pStruct->ConsolePrint("Num Lit Polies: %d (textured and uploaded: %d)", g_nLitObjects, g_nLitPolysUploaded);
 			g_pStruct->ConsolePrint("Model triangles drawn: %d", g_nModelTriangles);
-			g_pStruct->ConsolePrint("Particles drawn: %d", g_1005b770);
+			g_pStruct->ConsolePrint("Particles drawn: %d", g_nParticlesDrawn);
 			g_pStruct->ConsolePrint("Num Clip Tests: %d", g_nClipPasses);
 			g_pStruct->ConsolePrint("Visible Leaves: %d", g_nVisibleLeaves);
 			g_pStruct->ConsolePrint("Sky Portals: %d", g_nSkyPortalPoliesDrawn);
@@ -2722,7 +2738,18 @@ public:
 };
 
 extern CMulTable g_MulTable;                                // 0x10087c00
-extern uint8    g_SatTable[512];                            // 0x10097c00
+// d3d_tables.cpp's saturating add: an identity table, then 256 bytes of
+// 0xFF, so a sum of two bytes indexes it (into m_Full) clamped.
+class CIdentTable
+{
+public:
+			CIdentTable();
+
+	uint8	m_Ident[256];
+	uint8	m_Full[256];
+};
+
+extern CIdentTable g_IdentTable;                            // 0x10097c00 (d3d_tables.cpp)
 
 // 0x10019040 -- add a light animation's blended frame to the vertices'
 // colours.
@@ -2753,9 +2780,9 @@ LTBOOL d3d_AddLightAnim(LitVertex* pVerts, uint32 nVerts, LightAnim* pAnim, Ligh
 	{
 		for (i = 0; i < nVerts; i++)
 		{
-			pVerts[i].m_Color[2] = g_SatTable[pFrame1->m_R[i] + pVerts[i].m_Color[2]];
-			pVerts[i].m_Color[1] = g_SatTable[pFrame1->m_G[i] + pVerts[i].m_Color[1]];
-			pVerts[i].m_Color[0] = g_SatTable[pFrame1->m_B[i] + pVerts[i].m_Color[0]];
+			pVerts[i].m_Color[2] = g_IdentTable.m_Ident[pFrame1->m_R[i] + pVerts[i].m_Color[2]];
+			pVerts[i].m_Color[1] = g_IdentTable.m_Ident[pFrame1->m_G[i] + pVerts[i].m_Color[1]];
+			pVerts[i].m_Color[0] = g_IdentTable.m_Ident[pFrame1->m_B[i] + pVerts[i].m_Color[0]];
 		}
 	}
 	else
@@ -2763,9 +2790,9 @@ LTBOOL d3d_AddLightAnim(LitVertex* pVerts, uint32 nVerts, LightAnim* pAnim, Ligh
 		invBlend = 255 - blend;
 		for (i = 0; i < nVerts; i++)
 		{
-			pVerts[i].m_Color[2] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_R[i]][blend] + g_MulTable.m_Table[pFrame1->m_R[i]][invBlend]] + pVerts[i].m_Color[2]];
-			pVerts[i].m_Color[1] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_G[i]][blend] + g_MulTable.m_Table[pFrame1->m_G[i]][invBlend]] + pVerts[i].m_Color[1]];
-			pVerts[i].m_Color[0] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_B[i]][blend] + g_MulTable.m_Table[pFrame1->m_B[i]][invBlend]] + pVerts[i].m_Color[0]];
+			pVerts[i].m_Color[2] = g_IdentTable.m_Ident[g_IdentTable.m_Ident[g_MulTable.m_Table[pFrame2->m_R[i]][blend] + g_MulTable.m_Table[pFrame1->m_R[i]][invBlend]] + pVerts[i].m_Color[2]];
+			pVerts[i].m_Color[1] = g_IdentTable.m_Ident[g_IdentTable.m_Ident[g_MulTable.m_Table[pFrame2->m_G[i]][blend] + g_MulTable.m_Table[pFrame1->m_G[i]][invBlend]] + pVerts[i].m_Color[1]];
+			pVerts[i].m_Color[0] = g_IdentTable.m_Ident[g_IdentTable.m_Ident[g_MulTable.m_Table[pFrame2->m_B[i]][blend] + g_MulTable.m_Table[pFrame1->m_B[i]][invBlend]] + pVerts[i].m_Color[0]];
 		}
 	}
 

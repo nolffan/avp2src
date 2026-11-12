@@ -30,3 +30,18 @@ CD3DConVar g_CV_PortalFlow("PortalFlow", 0.0f, LTNULL, LTNULL);		// 0x1002ddc5
 CD3DConVar g_CV_PortalGraph("PortalGraph", 0.0f, LTNULL, LTNULL);	// 0x1002dde4
 CD3DConVar g_CV_PortalsOnly("PortalsOnly", 0.0f, LTNULL, LTNULL);	// 0x1002de03
 CD3DConVar g_CV_BlockersOnly("BlockersOnly", 0.0f, LTNULL, LTNULL);	// 0x1002de22
+
+
+// The PortalFile console command's handlers (d3d_init.cpp's
+// d3d_HandleCommand). The portal files are gone from this renderer: both
+// are empty, and the link folds them into identical code elsewhere --
+// d3d_LoadPortalFile with a `return 0` (0x100442c3), d3d_UnloadPortalFile
+// with a bare `ret` (0x1002377f).
+LTBOOL d3d_LoadPortalFile(const char* pFilename)
+{
+	return LTFALSE;
+}
+
+void d3d_UnloadPortalFile()
+{
+}

@@ -81,7 +81,7 @@ extern LPDIRECTDRAWSURFACE7 g_pBackBuffer;                  // 0x1005d2b4
 extern LPDIRECTDRAWSURFACE7 g_pZBuffer;                     // 0x1005d2b8
 extern LPDIRECTDRAW7        g_pDirectDraw;                  // 0x1005d2a8 (common_init.cpp)
 extern uint32               g_1005d2c0;                     // 0x1005d2c0 (common_init.cpp: the surfaces' memory caps)
-extern LTBOOL g_bInOptimized2D;                             // 0x100638dc
+// g_bInOptimized2D (0x100638dc): this file's, below.
 extern uint32               g_ScreenWidth;                  // 0x1005d8cc (common_init.cpp)
 extern uint32               g_ScreenHeight;                 // 0x1005d9c0
 
@@ -177,6 +177,10 @@ LTBOOL              g_bNoFullbrites;                        // 0x100622ac
 LTBOOL              g_bRage128;                             // 0x100638d4
 LTBOOL              g_100638c4;                             // 0x100638c4
 LTBOOL              g_bIn3D;                                // 0x100638d8
+LTBOOL              g_bInOptimized2D;                       // 0x100638dc (an optimised 2D surface is being drawn)
+LTBOOL              g_100638d4;                             // 0x100638d4 (lmsurfaces.cpp reads it)
+LTBOOL              g_bMultiPass;                           // 0x10062278 (the lightmaps are a second pass)
+uint32              g_bAnimateLightmaps;                    // 0x100628b0
 LTBOOL              g_bLightmapPages;                       // 0x100638b8
 
 // The z-buffer formats, as the device enumerates them.
@@ -777,7 +781,7 @@ extern int32                g_CV_RGBRast;                   // 0x1005df20
 extern int32                g_CV_RefRast;                   // 0x1005df24
 extern int32                g_CV_MMXRast;                   // 0x1005df28
 extern int32                g_CV_TnLRast;                   // 0x1005df2c
-extern LTBOOL               g_bMultiPass;                   // 0x10062278
+// g_bMultiPass (0x10062278): this file's, above.
 
 void    d3d_SetDefaultBlend();                              // 0x100143a0 (d3d_draw.cpp)
 void    d3d_SetEnvMapStage(uint32* pSaved);                 // 0x10025397 (drawmodel_env.cpp)
@@ -1258,8 +1262,8 @@ LTBOOL d3d_InitSubsystems()
 // The console commands' handlers in the other files.
 void    d3d_ListDevices();                                  // 0x1001172f (common_init.cpp)
 void    d3d_ListTextureFormats();                           // 0x10020690 (d3d_texture.cpp)
-void    d3d_LoadPortalFile(const char* pFilename);          // 0x100442c3
-void    d3d_UnloadPortalFile();                             // 0x1002377f (empty: folded)
+LTBOOL  d3d_LoadPortalFile(const char* pFilename);          // 0x100442c3 (d3d_portal.cpp; folded with a "return 0")
+void    d3d_UnloadPortalFile();                             // 0x1002377f (d3d_portal.cpp; empty: folded)
 
 #define YESNO(x)    ((x) ? "Yes" : "No")
 

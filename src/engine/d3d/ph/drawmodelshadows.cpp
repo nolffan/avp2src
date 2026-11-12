@@ -97,10 +97,10 @@ struct ViewParams
 
 extern uint32	g_ClipFlags;                            // 0x1005bd0c
 extern uint32	g_nClipPasses;                          // 0x1005c124
-extern int32	g_bUseD3DClip;                          // 0x100622b0
+extern CD3DConVar g_CV_UseD3DClip;                      // 0x100622b0 (d3d_init.cpp)
 extern void*	g_pClipScratch;                         // 0x1005bd14
-extern float	g_fNearZ;                               // 0x1005b818
-extern float	g_fFarZ;                                // 0x1005b820
+extern float	g_fNearZ;                               // 0x1005b818 (g_ViewParams +0x88: link/phviews.txt)
+extern float	g_fFarZ;                                // 0x1005b820 (g_ViewParams +0x90)
 
 extern float	d3d_MatVMul_InPlace_H(LTMatrix* pMat, LTVector* pSrc);     // 0x1000868d
 extern void		d3d_TransformToCamera(TLVertex* pVert, LTMatrix* pMat);    // 0x10008719
@@ -318,7 +318,7 @@ struct WorldPoly
 };
 
 // The shadow being cast: its frustum and its texture projection.  Its
-// (empty) constructor is out of line, folded with drawmodel.cpp's empty
+// (empty) constructor is out of line (drawmodel.cpp), folded with that file's empty
 // ones (0x1000b981).
 struct ModelShadowInfo
 {
@@ -977,7 +977,7 @@ LTBOOL d3d_ClipShadowPoly(uint32 nClipFlags, ShadowVert** ppVerts, int32* pnVert
 	ClipPlaneBottom planeBottom;
 	ClipPlaneFar planeFar;
 
-	if (g_bUseD3DClip)
+	if (g_CV_UseD3DClip.m_nValue)
 	{
 		nClipFlags &= 1;
 		if (!nClipFlags)

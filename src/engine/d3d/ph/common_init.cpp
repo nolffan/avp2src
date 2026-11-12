@@ -140,14 +140,17 @@ extern RenderStruct* g_pStruct;                             // 0x1005df08 (commo
 extern int32 g_1005d4a8;                                    // 0x1005d4a8 (common_stuff.cpp)
 
 extern LTBOOL g_bRunWindowed;                               // 0x1005d538
-extern int32  g_CV_SysMem;                                  // 0x1005d8c8
+extern int32  g_CV_SysMem;                                  // 0x1005d8c8 (common_stuff.cpp)
 extern HWND   g_hWnd;                                       // 0x1005d430
-extern uint32 g_1005d2c0;                                   // 0x1005d2c0
-extern uint32 g_ScreenWidth, g_ScreenHeight;                // 0x1005d8cc, 0x1005d9c0
-extern uint32 g_1005d8bc, g_1005d8c0;                       // 0x1005d8bc, 0x1005d8c0
-extern uint32 g_1005d5f0;                                   // 0x1005d5f0
-extern uint32 g_1005df7c, g_1005df80, g_1005df84, g_1005df88;
-extern LPDIRECTDRAWSURFACE4 g_100638d0;                     // 0x100638d0 (d3d_init.cpp)
+uint32        g_1005d2c0;                                   // 0x1005d2c0: the surfaces' memory caps
+extern uint32 g_ScreenWidth, g_ScreenHeight;                // 0x1005d8cc, 0x1005d9c0 (common_stuff.cpp)
+extern uint32 g_ScreenScaleX, g_ScreenScaleY;               // 0x1005d8bc, 0x1005d8c0 (common_stuff.cpp)
+extern uint32 g_1005d5f0;                                   // 0x1005d5f0 (common_stuff.cpp): the frames begun
+extern LTBOOL g_bWarbleTableValid;                          // 0x1005df7c (d3d_draw.cpp)
+extern LTBOOL g_bFogStatesSet;                              // 0x1005df80 (common_stuff.cpp)
+extern LTBOOL g_bDitherStateSet;                            // 0x1005df84
+extern LTBOOL g_bFilterStatesSet;                           // 0x1005df88
+extern LPDIRECTDRAWCLIPPER g_pClipper;                       // 0x100638d0 (d3d_init.cpp)
 
 void    d3d_CreateConsoleVariables();                       // 0x10013ba7
 void    d3d_ReadConsoleVariables();                         // 0x10013bcd
@@ -163,8 +166,8 @@ void    d3d_TermTranslucentStates();                        // 0x10014550 (d3d_d
 VisibleSet* d3d_GetVisibleSet();                            // 0x1003abb0
 
 // The RenderStruct functions in other modules.
-void    BindTexture(SharedTexture* pTexture, LTBOOL bTextureChanged);   // 0x10022830
-void    UnbindTexture(SharedTexture* pTexture);             // 0x10022940
+void    d3d_BindTexture(SharedTexture* pTexture, LTBOOL bTextureChanged);   // 0x10022830 (d3d_texture.cpp)
+void    d3d_UnbindTexture(SharedTexture* pTexture);         // 0x10022940 (d3d_texture.cpp)
 void    d3d_RebindWorld(void* pWorld);                      // 0x1001c3a0 (d3d_init.cpp)
 void*   d3d_CreateWorld(void** pWorldData);                 // 0x1001c310
 void    d3d_DestroyWorld(void* pWorld);                     // 0x1001c380
@@ -211,6 +214,8 @@ LPDIRECTDRAW7           g_pDirectDraw;                      // 0x1005d2a8
 LPDIRECTDRAWSURFACE7    g_pFrontBuffer;                     // 0x1005d2ac
 LPDIRECTDRAWSURFACE7    g_pPrimarySurface;                  // 0x1005d2b0
 LPDIRECTDRAWSURFACE7    g_pBackBuffer;                      // 0x1005d2b4
+LPDIRECTDRAWSURFACE7    g_pZBuffer;                         // 0x1005d2b8
+LTBOOL                  g_bCanBilinear;                     // 0x1005d2c4
 
 
 // 0x100116fe
@@ -297,10 +302,10 @@ void d3d_FreeDevice()
 
 		g_pBackBuffer = LTNULL;
 
-		if (g_100638d0)
+		if (g_pClipper)
 		{
-			g_100638d0->Release();
-			g_100638d0 = LTNULL;
+			g_pClipper->Release();
+			g_pClipper = LTNULL;
 		}
 	}
 	else
@@ -363,7 +368,7 @@ int d3d_Init(RenderStructInit* pInit)
 	g_hWnd = (HWND)pInit->m_hWnd;
 	g_1005d4a8 = 0;
 	g_1005d2c0 = 0x4000;
-	g_1005d8c0 = g_1005d8bc = 1;
+	g_ScreenScaleY = g_ScreenScaleX = 1;
 	g_ScreenWidth = pInit->m_Mode.m_Width;
 	g_ScreenHeight = pInit->m_Mode.m_Height;
 
@@ -411,10 +416,10 @@ DEVICE_OK:
 	AddDebugMessage(0, "Using Direct3D Device %s", pDevice->m_Name);
 
 	g_1005d5f0 = 0;
-	g_1005df7c = 0;
-	g_1005df80 = 0;
-	g_1005df84 = 0;
-	g_1005df88 = 0;
+	g_bWarbleTableValid = 0;
+	g_bFogStatesSet = 0;
+	g_bDitherStateSet = 0;
+	g_bFilterStatesSet = 0;
 
 	// Either maximize the window or set its size.
 	if (g_bRunWindowed || d3d_IsNullRenderOn())
@@ -461,8 +466,8 @@ DEVICE_OK:
 
 	d3d_InitSubsystems();
 
-	g_pStruct->m_Width /= g_1005d8bc;
-	g_pStruct->m_Height /= g_1005d8c0;
+	g_pStruct->m_Width /= g_ScreenScaleX;
+	g_pStruct->m_Height /= g_ScreenScaleY;
 
 	if (!d3d_GetVisibleSet()->Init())
 	{
@@ -587,8 +592,8 @@ __declspec(dllexport) void RenderDLLSetup(RenderStruct* pStruct)
 
 	pStruct->Init                   = d3d_Init;
 	pStruct->Term                   = d3d_Term;
-	pStruct->BindTexture            = BindTexture;
-	pStruct->UnbindTexture          = UnbindTexture;
+	pStruct->BindTexture            = d3d_BindTexture;
+	pStruct->UnbindTexture          = d3d_UnbindTexture;
 	pStruct->RebindWorld            = d3d_RebindWorld;
 	pStruct->CreateWorld            = d3d_CreateWorld;
 	pStruct->DestroyWorld           = d3d_DestroyWorld;

@@ -139,14 +139,14 @@ struct ClipVert
 // The clip planes (TU06's ClipNear 0x1000b07d and ClipLeft 0x1000b1bc,
 // TU03's ClipTop 0x100063e0, ClipRight 0x10006670, ClipBottom 0x10006900,
 // ClipFar 0x10006ba0).
-template<class V> LTBOOL ClipNear(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipLeft(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipTop(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipRight(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipBottom(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
-template<class V> LTBOOL ClipFar(uint32* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipNear(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipLeft(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipTop(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipRight(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipBottom(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
+template<class V> LTBOOL ClipFar(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
 
-struct FrameCounters
+struct SceneDesc
 {
 	uint8		m_pad_00[0xb8];
 	int32		m_nSkyPortals;                          // +0xb8
@@ -163,8 +163,8 @@ struct RenderStruct
 extern RenderStruct*	g_pStruct;                      // 0x1005df08
 extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
-extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
-extern int32			g_bUseD3DClip;                  // 0x100622b0
+extern SceneDesc*		g_pSceneDesc;                   // 0x1005c14c (common_draw.cpp)
+extern CD3DConVar		g_CV_UseD3DClip;                // 0x100622b0 (d3d_init.cpp)
 extern void*			g_pClipScratch;                 // 0x1005bd14
 extern uint32			g_nSkyPortalPoliesDrawn;        // 0x1005c150
 extern int32			g_CV_DrawSky;                   // 0x1004a758
@@ -223,7 +223,7 @@ inline LTBOOL d3d_ClipSkyPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVe
 	int32 nVerts;
 	uint8 nearPlane, leftPlane, topPlane, rightPlane, bottomPlane, farPlane;
 
-	if (g_bUseD3DClip)
+	if (g_CV_UseD3DClip.m_nValue)
 	{
 		nClipFlags &= 1;
 		if (!nClipFlags)
@@ -236,32 +236,32 @@ inline LTBOOL d3d_ClipSkyPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVe
 
 	if (nClipFlags & 0x01)
 	{
-		if (!ClipNear((uint32*)&nearPlane, &pVerts, &nVerts, &pOut))
+		if (!ClipNear(&nearPlane, &pVerts, &nVerts, &pOut))
 			return LTFALSE;
 	}
 	if (nClipFlags & 0x04)
 	{
-		if (!ClipLeft((uint32*)&leftPlane, &pVerts, &nVerts, &pOut))
+		if (!ClipLeft(&leftPlane, &pVerts, &nVerts, &pOut))
 			return LTFALSE;
 	}
 	if (nClipFlags & 0x08)
 	{
-		if (!ClipTop((uint32*)&topPlane, &pVerts, &nVerts, &pOut))
+		if (!ClipTop(&topPlane, &pVerts, &nVerts, &pOut))
 			return LTFALSE;
 	}
 	if (nClipFlags & 0x10)
 	{
-		if (!ClipRight((uint32*)&rightPlane, &pVerts, &nVerts, &pOut))
+		if (!ClipRight(&rightPlane, &pVerts, &nVerts, &pOut))
 			return LTFALSE;
 	}
 	if (nClipFlags & 0x20)
 	{
-		if (!ClipBottom((uint32*)&bottomPlane, &pVerts, &nVerts, &pOut))
+		if (!ClipBottom(&bottomPlane, &pVerts, &nVerts, &pOut))
 			return LTFALSE;
 	}
 	if (nClipFlags & 0x02)
 	{
-		if (!ClipFar((uint32*)&farPlane, &pVerts, &nVerts, &pOut))
+		if (!ClipFar(&farPlane, &pVerts, &nVerts, &pOut))
 			return LTFALSE;
 	}
 
@@ -357,13 +357,13 @@ void d3d_DrawSky()
 	if (!g_CV_DrawSky || !g_CV_EnableSky)
 		return;
 
-	if (g_pFrameCounters->m_nSkyPortals <= 0)
+	if (g_pSceneDesc->m_nSkyPortals <= 0)
 		return;
 
 	if (!d3d_GetSkyPortalExtents())
 		return;
 
-	d3d_InitViewBox(&box, 0.01f, g_pFrameCounters->m_fSkyFarZ, &g_ViewParams,
+	d3d_InitViewBox(&box, 0.01f, g_pSceneDesc->m_fSkyFarZ, &g_ViewParams,
 		g_SkyMinX, g_SkyMinY, g_SkyMaxX, g_SkyMaxY);
 
 	mCamera = g_ViewParams.m_mCamera;

@@ -1,0 +1,3 @@
+AvP2 1.0.9.6's server.dll: proven 212, retargeted 21, new 15, unproven 45, dropped 2
+  DROP	??0CWorldAnimRecQ@@QAE@XZ	??0CCollElem60C@@QAE@XZ	UNDEF		-
+  DROP	?sm_Sub34688@@YAXPAVSavServerMgr@@@Z	?sm_CheckObjectIntegrityQ474@@YAKPAVCServerMgr@@@Z	CONFLICT	0x10001c6a,0x1003ec10	0x1003ec10

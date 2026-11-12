@@ -392,6 +392,18 @@ void TCPQueryArrayT<T>::_InitArray(uint32 wantedCache)
 	m_Cache.SetWantedCache(wantedCache);
 	m_Cache.SetCacheSize(0);
 }
+
+// collection.h's CMoArray<T, C>::_AllocateTArray, for Add above: both
+// lithtech.exes expand it into StartQuery's address arm (AvP2 0x00497e78,
+// Primal Hunt's BaseNew call at 0x004a1eed) and keep no copy. server.dll
+// never reaches it (its Insert2 is above the app-region cut).
+template<class T>
+T* TCPQueryArrayT<T>::_AllocateTArray(uint32 nElements, LAlloc* pAlloc)
+{
+	T* tPtr = LNew_Array(pAlloc, T, nElements);
+
+	return tPtr;
+}
 #endif
 
 // A template of one instantiation. The name the rest of this file uses.

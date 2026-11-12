@@ -292,14 +292,14 @@ TARGETS = [
          }),
     dict(label="d3d.ren", what="the Direct3D renderer", kind="image",
          shipped=REFERENCE + "/d3d.ren", stem="d3d",
-         # nolfsrc's renderer compiled for Primal Hunt, and linked with
+         # Primal Hunt's renderer source (src/engine/d3d/ph/), linked with
          # /FORCE for the scoreboard (build/build.mk, d3d-link: `built`,
          # its .rsp and .map, through which the small functions are
          # verified); its objects alone (partial_objs) until that link has
          # been made
          # and the debug build of StdLith it links after the import
          # thunks, as server.dll does (build/build.mk, "The debug builds")
-         partial_objs=["src/engine/d3d/Release/*.obj",
+         partial_objs=["src/engine/d3d/Release/ph/*.obj",
                        "src/LT2/lithshared/libs/Debug/StdLith.lib"],
          lib_range={"StdLith": (0x1003c150, 0x1003c58b)},
          built="src/engine/d3d/Release/d3d.ren", optional=True,

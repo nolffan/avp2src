@@ -104,14 +104,6 @@ struct SharedTexture
 	CRenderStateList* m_pStateList;                         // +0x34
 };
 
-// The engine's rotation, as the transform reads it.
-struct Rotation
-{
-	float   x;
-	float   y;
-	float   z;
-	float   w;
-};
 
 // A particle system, as its draw reads it.
 
@@ -126,7 +118,7 @@ public:
 	uint8       m_ColorB;                                   // +0x096
 	uint8       m_ColorA;                                   // +0x097
 	uint8       m_Reserved098[0x9c - 0x98];
-	Rotation    m_Rotation;                                 // +0x09c
+	LTRotation    m_Rotation;                                 // +0x09c
 	LTVector    m_Scale;                                    // +0x0ac
 	uint8       m_Reserved0b8[0x194 - 0xb8];
 	LTVector    m_SystemCenter;                             // +0x194
@@ -158,6 +150,8 @@ struct ViewParams
 	uint8       m_Reserved098[0x15c - 0x98];
 	LTMatrix    m_mWorldToCamera;                           // +0x15c
 	LTMatrix    m_mProjection;                              // +0x19c
+	uint8       m_Reserved1dc[0x2dc - 0x1dc];
+	LTMatrix    m_mReallyCloseToCamera;                     // +0x2dc
 };
 
 // The profiling counters (TU14: 0x10013fb7, 0x10013fd5, 0x10013fe0).
@@ -216,15 +210,14 @@ extern RTexture*        g_pCurTextures[];                   // 0x10067270
 extern TexPair          g_TexelSize[];                      // 0x100672a8
 extern CRenderStateList g_SavedStates;                      // 0x10069728
 extern ViewParams     g_ViewParams;                     // 0x1005b790
-extern ViewParams     g_ReallyCloseContext;               // 0x1005b910
-extern void             (__fastcall *g_pfnSetupSpecular)(TLVertex* pVert, uint32* pSpecular);  // 0x1005e1c4
-extern uint32           g_nParticlesDrawn;                  // 0x1005b770
+extern void             (__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4 (d3d_draw.cpp)
+extern uint32           g_nParticlesDrawn;                  // 0x1005b770 (common_draw.cpp)
 extern uint16           g_ParticleIndices[];                // 0x10072c50
 
 RTexture*   d3d_CreateRenderTexture(SharedTexture* pTexture, uint32 iStage, LTBOOL bStageCopy); // 0x10020cd0
 void        d3d_SetTextureDirect(RTexture* pTexture);       // 0x10007a89
 RTexture*   d3d_GetStageTexture(RTexture* pTexture, uint8 iStage); // 0x10009300
-void        d3d_SetupTransformation(LTVector* pPos, Rotation* pRot, LTVector* pScale, LTMatrix* pMat); // 0x100091f0
+void        d3d_SetupTransformation(LTVector* pPos, LTRotation* pRot, LTVector* pScale, LTMatrix* pMat); // 0x100091f0
 PSParticle* d3d_DrawParticleBatch(LTObject* pSystem, PSParticle* pParticle, int32 nParticles,
                                   LTMatrix* pMat, LTBOOL bScreenSize, float fSizeScale); // 0x10009320
 
@@ -382,11 +375,11 @@ void d3d_DrawParticles(LTObject* pSystem)
 	d3d_SetupTransformation(&pSystem->m_SystemCenter, &pSystem->m_Rotation, &pSystem->m_Scale, &mTransform);
 
 	if (pSystem->m_Flags & FLAG_REALLYCLOSE)
-		MatMul(&mFull, &g_ReallyCloseContext.m_mWorldToCamera, &mTransform);
+		MatMul(&mFull, &g_ViewParams.m_mReallyCloseToCamera, &mTransform);
 	else
 		MatMul(&mFull, &g_ViewParams.m_mWorldToCamera, &mTransform);
 
-	g_pfnSetupSpecular((TLVertex*)&pSystem->m_SystemCenter, &g_ParticleSpecular);
+	g_pfnCalcFog(&pSystem->m_SystemCenter, &g_ParticleSpecular);
 
 	g_vParticleColorScale.x = 1.0f / 255.0f;
 	g_vParticleColorScale.y = 1.0f / 255.0f;
@@ -405,24 +398,24 @@ void d3d_DrawParticles(LTObject* pSystem)
 
 
 
-void d3d_RotationToMatrix(Rotation* pRot, LTMatrix* pMat);  // 0x1003655d
+void d3d_RotationToMatrix(LTRotation* pRot, LTMatrix* pMat);  // 0x1003655d
 
 
 // 0x100091f0 -- position, rotation and scale to a transform: the rotation
 // is sanitised first (a component out of range is reset).
-void d3d_SetupTransformation(LTVector* pPos, Rotation* pRot, LTVector* pScale, LTMatrix* pMat)
+void d3d_SetupTransformation(LTVector* pPos, LTRotation* pRot, LTVector* pScale, LTMatrix* pMat)
 {
-	if (pRot->x > 100000.0f || pRot->x < -100000.0f)
-		pRot->x = 0.0f;
+	if (pRot->m_Quat[0] > 100000.0f || pRot->m_Quat[0] < -100000.0f)
+		pRot->m_Quat[0] = 0.0f;
 
-	if (pRot->y > 100000.0f || pRot->y < -100000.0f)
-		pRot->y = 0.0f;
+	if (pRot->m_Quat[1] > 100000.0f || pRot->m_Quat[1] < -100000.0f)
+		pRot->m_Quat[1] = 0.0f;
 
-	if (pRot->z > 100000.0f || pRot->z < -100000.0f)
-		pRot->z = 0.0f;
+	if (pRot->m_Quat[2] > 100000.0f || pRot->m_Quat[2] < -100000.0f)
+		pRot->m_Quat[2] = 0.0f;
 
-	if (pRot->w > 100000.0f || pRot->w < -100000.0f)
-		pRot->w = 1.0f;
+	if (pRot->m_Quat[3] > 100000.0f || pRot->m_Quat[3] < -100000.0f)
+		pRot->m_Quat[3] = 1.0f;
 
 	d3d_RotationToMatrix(pRot, pMat);
 

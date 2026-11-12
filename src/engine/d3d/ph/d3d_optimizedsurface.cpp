@@ -143,13 +143,21 @@ extern LTBOOL					g_bInOptimized2D;       // 0x100638dc
 extern int32					g_CV_OptimizeSurfaces;  // 0x1005d750
 extern int32					g_CV_Bilinear;          // 0x1005dbb0
 extern LTBOOL					g_bCanBilinear;         // 0x1005d2c4
-extern uint32					g_DeviceTextureCaps;    // 0x1006241c (D3DPTEXTURECAPS_)
+// The device's capabilities (d3d_init.cpp's g_D3DCaps), as far as they
+// are read here: the triangle caps (D3DPTEXTURECAPS_ in dwTextureCaps).
+struct D3DCaps
+{
+	uint8					m_pad_000[0x124];
+	D3DPRIMCAPS				m_TriCaps;              // +0x124
+};
+
+extern D3DCaps					g_D3DCaps;              // 0x100622d8 (d3d_init.cpp)
 extern D3DTextureFormat*		g_TextureFormats[];     // 0x100682c8 (d3d_texture.cpp)
 extern FormatMgr				g_FormatMgr;            // 0x100661a8 (d3d_texture.cpp)
 
 void*	dalloc_z(uint32 size);                          // 0x10013a7f
 void	dfree(void* ptr);                               // 0x10013ac5
-void	d3d_SetTextureStateDefaults();                  // 0x100143a0
+void	d3d_SetDefaultBlend();                          // 0x100143a0 (d3d_draw.cpp)
 void	d3d_GetScreenFormat(PFormat *pFormat);          // 0x1001eab3 (d3d_surface.cpp)
 void	r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat);  // 0x10011794
 
@@ -419,7 +427,7 @@ LTBOOL d3d_OptimizeSurface(D3DRenderData *pData, uint32 transparentColor)
 	DDSURFACEDESC2 ddsd;
 	uint32 nTilesX, nTilesY, x, y, width, height;
 
-	if (!pData || !g_CV_OptimizeSurfaces || (g_DeviceTextureCaps & D3DPTEXTURECAPS_SQUAREONLY))
+	if (!pData || !g_CV_OptimizeSurfaces || (g_D3DCaps.m_TriCaps.dwTextureCaps & D3DPTEXTURECAPS_SQUAREONLY))
 		return LTFALSE;
 
 	pFormat = g_TextureFormats[FORMAT_INTERFACE];
@@ -457,7 +465,7 @@ LTBOOL d3d_OptimizeSurface(D3DRenderData *pData, uint32 transparentColor)
 				height = d3d_GetTileSize(height);
 
 				pTile = &pData->m_pOptimized->m_Tiles[y * nTilesX + x];
-				if (g_DeviceTextureCaps & D3DPTEXTURECAPS_SQUAREONLY)
+				if (g_D3DCaps.m_TriCaps.dwTextureCaps & D3DPTEXTURECAPS_SQUAREONLY)
 				{
 					pTile->m_Width = LTMAX(width, height);
 					pTile->m_Height = LTMAX(width, height);
@@ -520,7 +528,7 @@ LTBOOL d3d_StartOptimized2D()
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTFP_POINT);
 	}
 
-	d3d_SetTextureStateDefaults();
+	d3d_SetDefaultBlend();
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, TRUE);
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);

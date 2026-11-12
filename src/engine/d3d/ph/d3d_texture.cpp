@@ -362,14 +362,32 @@ extern uint32				g_TextureStage;             // 0x100622d0
 extern LTBOOL				g_bLightmapPages;           // 0x100638b8
 extern CLightmapPages		g_LightmapPages;            // 0x1008067c
 extern int32				g_CV_MaxTextureSize;        // 0x1005d998 (common_stuff.cpp)
-extern uint32				g_MaxTextureWidth;          // 0x10062394
-extern uint32				g_MaxTextureHeight;         // 0x10062398
-extern LTBOOL				g_bWindowedTextures;        // 0x1006230c
+// The device's capabilities (d3d_init.cpp's g_D3DCaps, 0x100622d8).
+struct D3DCaps
+{
+	LTBOOL          m_bSrcBlendSrcColor;                    // +0x000
+	LTBOOL          m_bDestBlendSrcAlpha;                   // +0x004
+	LTBOOL          m_bTBlendAdd;                           // +0x008
+	LTBOOL          m_bTBlendModulate;                      // +0x00c
+	LTBOOL          m_bDither;                              // +0x010
+	LTBOOL          m_bDrawPrim;                            // +0x014
+	LTBOOL          m_bVidMemTextures;                      // +0x018
+	LTBOOL          m_bSysMemTextures;                      // +0x01c
+	LTBOOL          m_bAGPTextures;                         // +0x020
+	int32           m_nZBufferBits;                         // +0x024
+	int32           m_nDeviceBits;                          // +0x028
+	uint32          m_dwTextureMem;                         // +0x02c
+	uint32          m_dwVideoMem;                           // +0x030
+	LTBOOL          m_bSurfacesLargerThanScreen;            // +0x034
+	D3DDEVICEDESC7  m_Desc;                                 // +0x038
+	D3DPRIMCAPS     m_TriCaps;                              // +0x124
+};
+
+extern D3DCaps				g_D3DCaps;                  // 0x100622d8
 extern uint32				g_ScreenWidth;              // 0x1005d8cc
 extern uint32				g_ScreenHeight;             // 0x1005d9c0
-extern uint32				g_BindTextureStage;         // 0x100638c0
-extern uint32				g_DeviceTextureCaps;        // 0x1006241c (D3DPTEXTURECAPS_)
-extern int32				g_CV_MaxAspectRatio;        // 0x1005d4f4
+extern uint32				g_iCurTextureStage;         // 0x100638c0 (d3d_init.cpp)
+extern int32				g_CV_MaxTexAspectRatio;     // 0x1005d4f4 (common_stuff.cpp)
 extern int32				g_CV_32BitTextures;         // 0x1005d8c4
 extern int32				g_CV_GroupOffset[10];       // 0x1005d7dc
 extern int32				g_CV_MipmapOffset;          // 0x1005df44
@@ -380,7 +398,7 @@ void	dfree(void* ptr);                               // 0x10013ac5
 void	AddDebugMessage(int32 debugLevel, const char* pMsg, ...);  // 0x10013b13
 uint32	CountBits(uint32 val);                          // 0x10013c60
 void	r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat);  // 0x10011794
-void	d3d_InitLightmapTables();                       // 0x10033810
+void	d3d_InitLMClampTable();                        // 0x10033810 (lightanim.cpp)
 uint32	CalcImageSize(BPPIdent bpp, uint32 width, uint32 height);  // 0x100377ae
 
 
@@ -397,6 +415,15 @@ CD3DConVar		g_CV_S3TCEnable("S3TCEnable", 1.0f, LTNULL, LTNULL);  // 0x10067250 
 
 D3DTextureFormat*	g_TextureFormats[NUM_TEXTUREFORMATS];   // 0x100682c8
 RTexture*		g_pCurTextures[MAX_TEXTURESTAGES];      // 0x10067270
+
+// A texture stage's texel size (1 / the bound texture's width, height).
+struct TexPair
+{
+	float	u, v;
+};
+
+TexPair			g_TexelSize[MAX_TEXTURESTAGES];         // 0x100672a8
+LTBOOL			g_bLightmapTextures;                    // 0x100682dc
 uint32			g_bS3TCDXT5;                            // 0x100682e4
 uint32			g_bS3TCDXT3;                            // 0x100682e8
 uint32			g_bS3TCDXT1;                            // 0x100682ec
@@ -766,7 +793,7 @@ LTBOOL d3d_InitTextures()
 		return LTFALSE;
 
 	d3d_ResetLightmapPages();
-	d3d_InitLightmapTables();
+	d3d_InitLMClampTable();
 	d3d_CreateFalloffTexture();
 	d3d_SetGammaTexture(5.0f);
 	return LTTRUE;
@@ -1595,8 +1622,8 @@ inline int32 d3d_GetFirstUsableMipmap(TextureData *pTexture)
 {
 	uint32 maxWidth, maxHeight, i;
 
-	maxWidth = LTMIN(g_CV_MaxTextureSize, g_MaxTextureWidth);
-	maxHeight = LTMIN(g_CV_MaxTextureSize, g_MaxTextureHeight);
+	maxWidth = LTMIN(g_CV_MaxTextureSize, g_D3DCaps.m_Desc.dwMaxTextureWidth);
+	maxHeight = LTMIN(g_CV_MaxTextureSize, g_D3DCaps.m_Desc.dwMaxTextureHeight);
 
 	if (!maxWidth)
 		maxWidth = 256;
@@ -1604,7 +1631,7 @@ inline int32 d3d_GetFirstUsableMipmap(TextureData *pTexture)
 	if (!maxHeight)
 		maxHeight = 256;
 
-	if (!g_bWindowedTextures)
+	if (!g_D3DCaps.m_bSurfacesLargerThanScreen)
 	{
 		maxWidth = LTMIN(maxWidth, g_ScreenWidth);
 		// RETAIL BUG: clamps the width, not the height, to the screen
@@ -1651,7 +1678,7 @@ class CountAdder
 		uint32 *m_pNum;
 };
 
-struct FrameCounters
+struct SceneDesc
 {
 	uint8		m_pad_00[0x18];
 	uint32*		m_pLightmapTicks;                       // +0x18
@@ -1682,7 +1709,7 @@ struct LMDrawDesc
 	RTexture	*m_pScratch;                            // +0x50
 };
 
-extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneDesc*	g_pSceneDesc;                   // 0x1005c14c (common_draw.cpp)
 extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
 extern uint32			g_nLitPolysUploaded;            // 0x1005bd10
 extern uint32			g_nLightmapUploadSaves;         // 0x1005b774
@@ -1694,7 +1721,7 @@ uint32	d3d_DrawAnimatedLightmap(SceneWorld *pWorld, WorldPoly *pPoly, void *pDat
 
 LTBOOL d3d_DrawPolyLightmap(WorldPoly *pPoly, LTBOOL bToTexture)
 {
-	CountAdder cntLightmap(g_pFrameCounters->m_pLightmapTicks);
+	CountAdder cntLightmap(g_pSceneDesc->m_pLightmapTicks);
 
 	if (bToTexture)
 	{
@@ -1950,18 +1977,18 @@ void d3d_AdjustAspectRatio(uint32 width, uint32 height, uint32 *pOutWidth, uint3
 	uint32 *pSmall, *pLarge;
 	int32 ratio;
 
-	if (g_DeviceTextureCaps & D3DPTEXTURECAPS_SQUAREONLY)
+	if (g_D3DCaps.m_TriCaps.dwTextureCaps & D3DPTEXTURECAPS_SQUAREONLY)
 	{
 		width = height = (width > height) ? width : height;
 	}
-	else if (g_CV_MaxAspectRatio > 0)
+	else if (g_CV_MaxTexAspectRatio > 0)
 	{
 		pSmall = (width > height) ? &height : &width;
 		pLarge = (width > height) ? &width : &height;
 
 		ratio = *pLarge / *pSmall;
-		if (ratio > g_CV_MaxAspectRatio)
-			*pSmall = *pLarge / g_CV_MaxAspectRatio;
+		if (ratio > g_CV_MaxTexAspectRatio)
+			*pSmall = *pLarge / g_CV_MaxTexAspectRatio;
 	}
 
 	*pOutWidth = width;
@@ -2034,7 +2061,7 @@ void d3d_BindTexture(SharedTexture *pSharedTexture, LTBOOL bTextureChanged)
 	}
 	else
 	{
-		d3d_CreateAndLoadTexture(pSharedTexture, g_BindTextureStage);
+		d3d_CreateAndLoadTexture(pSharedTexture, g_iCurTextureStage);
 	}
 }
 

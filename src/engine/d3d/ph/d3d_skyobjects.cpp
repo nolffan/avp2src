@@ -228,7 +228,7 @@ public:
 	};
 };
 
-struct FrameCounters
+struct SceneDesc
 {
 	uint8		m_pad_00[0xb4];
 	LTObject**	m_SkyObjects;                           // +0xb4
@@ -246,8 +246,13 @@ struct ViewParams
 
 extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
 extern uint32		g_iCurTextureStage;                 // 0x100638c0
-extern float		g_fTexelSizeU;                      // 0x100672a8
-extern float		g_fTexelSizeV;                      // 0x100672ac
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float	u, v;
+};
+
+extern TexPair		g_TexelSize[];                      // 0x100672a8 (d3d_texture.cpp)
 extern uint8		g_VertexAlpha;                      // 0x1005d20c
 extern int32		g_CV_FixTJunc;                      // 0x1005dbb4
 extern int32		g_CV_ShowSkySplits;                 // 0x1005dad0
@@ -256,13 +261,14 @@ extern float		g_CV_SkyFogNearZ;                   // 0x1005d8b8
 extern float		g_CV_SkyFogFarZ;                    // 0x1005d7d8
 extern uint32		g_nSkyLightsApplied;                // 0x1005c164
 extern LTVector		g_vGlobalLightColor;                // 0x1005b780
-extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneDesc*	g_pSceneDesc;                   // 0x1005c14c (common_draw.cpp)
 extern ViewParams	g_SkyContext;                       // 0x10079450
 extern void			(__fastcall *g_pfnCalcSkyFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e6d8 (d3d_draw.cpp)
 
 extern void		dd_ConsolePrint(const char* pMsg, ...);  // 0x10013ade
 extern void		d3d_TransformToCamera(TLVertex* pVert, LTMatrix* pMat);  // 0x10008719
-extern LTBOOL	d3d_ClipTLVertsRC(uint32 clipFlags, TLVertex** ppVerts, int* pnVerts);  // 0x1000af61
+struct ClipVert;
+extern LTBOOL	ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts);  // 0x1000af61 (drawworld.cpp; d3d_clip.h's)
 extern void		d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pContext);  // 0x1002739d
 extern int		d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
 extern void		d3d_DisableTexture(uint32 iStage);      // 0x1000a22b
@@ -337,7 +343,7 @@ void d3d_DrawSkyPoly(RenderPoly* pPoly)
 	for (i = 0; i < nVerts; i++)
 		d3d_TransformToCamera(&pVerts[i], &g_SkyContext.m_mWorldToCamera);
 
-	if (!d3d_ClipTLVertsRC(0x3F, &pVerts, (int*)&nVerts))
+	if (!ClipPoly(0x3F, (ClipVert**)&pVerts, (int32*)&nVerts))
 		return;
 
 	if (g_CV_ShowSkySplits || !pPoly->m_pSurface->m_pTexture ||
@@ -351,8 +357,8 @@ void d3d_DrawSkyPoly(RenderPoly* pPoly)
 		pVert = &pVerts[i];
 		g_pfnCalcSkyFog(&pVert->m_Vec, &pVert->specular);
 		d3d_ProjectTLVert(pVert, &g_SkyContext);
-		pVert->tu *= g_fTexelSizeU;
-		pVert->tv *= g_fTexelSizeV;
+		pVert->tu *= g_TexelSize[0].u;
+		pVert->tv *= g_TexelSize[0].v;
 	}
 
 	g_SavedStates.Restore();
@@ -464,9 +470,9 @@ void d3d_DrawSkyObjects()
 	g_pD3DDevice->GetRenderState(D3DRENDERSTATE_FOGENABLE, (unsigned long*)&oldFogEnable);
 	g_pD3DDevice->GetTextureStageState(1, D3DTSS_COLOROP, (unsigned long*)&oldColorOp);
 
-	for (i = 0; i < g_pFrameCounters->m_nSkyObjects; i++)
+	for (i = 0; i < g_pSceneDesc->m_nSkyObjects; i++)
 	{
-		pObject = g_pFrameCounters->m_SkyObjects[i];
+		pObject = g_pSceneDesc->m_SkyObjects[i];
 		if (!(pObject->m_Flags & FLAG_VISIBLE))
 			continue;
 

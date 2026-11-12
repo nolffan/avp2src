@@ -12372,22 +12372,36 @@ public:
 
 // AVP2 1.0.9.6 and Primal Hunt: a packet slot emptied -- its reference dropped through the
 // cursor's Init (server.dll calls 0x1002be8b with a null) and both numbers
-// zeroed. lithtech.exe has it out of line, 0x00470b70, called four times
-// from the constructor below (name ours).
+// zeroed. lithtech.exe has it out of line, AvP2 1.0.9.6 0x00470b70 and
+// Primal Hunt 0x00476f70, called four times from the constructor below, with
+// the cursor's Init expanded into it (name ours).
 class CClientPacketSetClearView
 {
 public:
+#ifdef LT_SERVER_BUILD
 	void Clear()
 	{
 		m_Ref.Init(LTNULL);
 		m_fRate = 0.0f;
 		m_nSize = 0;
 	}
+#else
+	void Clear();
+#endif
 
 	CMsgCursor m_Ref;                        // +0x00
 	float      m_fRate;                      // +0x04
 	uint32     m_nSize;                      // +0x08
 };
+
+#ifndef LT_SERVER_BUILD
+void CClientPacketSetClearView::Clear()
+{
+	m_Ref.Init(LTNULL);
+	m_fRate = 0.0f;
+	m_nSize = 0;
+}
+#endif
 
 #ifdef PRIMAL_HUNT
 // PH: a packet slot gives up its message when it goes (servermgr.h). The

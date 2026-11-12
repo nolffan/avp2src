@@ -60,8 +60,9 @@ public:
 };
 
 // d3d_texture.cpp's RTexture, as far as it is used here.
-struct RTexture
+class RTexture
 {
+public:
 	void*					m_pVTable;
 	float					m_fInvWidth;                // +0x04
 	float					m_fInvHeight;               // +0x08

@@ -610,6 +610,26 @@ public:
 	ServerMessage* m_pMsg;
 };
 
+// lithtech.exe keeps no copy of the cursor's Init: its /O2 build expands it
+// at every site (smgr.cpp's packet-slot clear, AvP2 1.0.9.6 0x00470b70;
+// sm_AddClientForConnection), so for that build the body is here, inline
+// and ahead of every caller. server.dll's /O1 calls servermessage.cpp's
+// 0x10023e86.
+#ifndef LT_SERVER_BUILD
+inline ServerMessage* CMsgCursor::Init(ServerMessage* pMsg)
+{
+	if (m_pMsg)
+		m_pMsg->Release();
+
+	m_pMsg = pMsg;
+
+	if (m_pMsg)
+		m_pMsg->AddRef();
+
+	return m_pMsg;
+}
+#endif
+
 // Everything sm_WriteClientUpdate's writers pass around (names ours; the
 // constructor is 0x1002860b and the destructor 0x1002861f releases both
 // message refs).

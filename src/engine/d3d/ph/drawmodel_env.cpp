@@ -167,8 +167,8 @@ public:
 extern ObjectDrawList*	g_pObjectDrawList;              // 0x100713cc
 extern ViewParams		g_ViewParams;                 // 0x1005b790
 extern int32			g_CV_DrawModels;                // 0x1004a788
-extern uint32			g_FillMode;                     // 0x1006dac8
-extern uint32			g_EnvMapColorOp;                // 0x1006d680
+uint32			g_FillMode;                            // 0x1006dac8
+uint32			g_EnvMapColorOp;                       // 0x1006d680
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 
@@ -195,7 +195,9 @@ struct TLVertex
 
 struct ViewParams
 {
-	uint8		m_pad_000[0x15c];
+	uint8		m_pad_000[0x88];
+	float		m_NearZ;                                // +0x88
+	uint8		m_pad_08c[0x15c - 0x8c];
 	LTMatrix	m_mWorldToCamera;                      // +0x15c
 	uint8		m_pad_19c[0x4a8 - 0x19c];
 	LTVector	m_Forward;                              // +0x4a8
@@ -279,13 +281,13 @@ class CD3DModelDraw
 public:
 	void		DrawModelBox();                         // 0x10024efe
 	void		DrawPasses();                           // 0x100254d8
-	void		DrawShadow();                           // 0x1002611f (drawmodelshadows.cpp)
+	void		DrawShadows();                          // 0x1002611f (drawmodelshadows.cpp)
 	void		SetupModelStates(LTBOOL* pTranslucent); // 0x10025193
 	void		SetupSkin(uint32 iSkin);                // 0x10025269
 	void		DrawPieces(uint32 a, uint32 b, LTBOOL bLOD);  // 0x10025acf
 
 	void		DrawLOD();                              // 0x10005700
-	void		DrawPiece(struct ModelVertSet* pSet);   // 0x100045a0 (d3d_modelvb.cpp)
+	void		DrawPiece(uint32 nValue);               // 0x100045a0 (d3d_modelvb.cpp)
 
 	ModelDrawParams*	m_pParams;                      // +0x000
 	ModelInstance*	m_pInstance;                        // +0x004
@@ -324,23 +326,29 @@ public:
 };
 
 extern ViewParams	g_ViewParams;                       // 0x1005b790
-extern uint32		g_BindTextureStage;                 // 0x100638c0
+extern uint32		g_iCurTextureStage;                 // 0x100638c0 (d3d_init.cpp)
 extern RTexture*	g_pCurTextures[];                   // 0x10067270
-extern float		g_fTexelSizeU;                      // 0x100672a8
-extern float		g_fTexelSizeV;                      // 0x100672ac
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float	u, v;
+};
+
+extern TexPair		g_TexelSize[];                      // 0x100672a8 (d3d_texture.cpp)
 extern float		g_fTexelOffsetU;                    // 0x10052b70
 extern float		g_fTexelOffsetV;                    // 0x10052b74
-extern float		g_fTexelOffsetScale;                // 0x100638b4
+extern float		g_fLightmapOffset;                  // 0x100638b4 (d3d_init.cpp)
 extern float		g_fEnvMapOffsetU;                   // 0x100588c4
 extern float		g_fEnvMapOffsetV;                   // 0x100588c8
 extern int32		g_CV_TextureModels;                 // 0x1004a760
 extern int32		g_CV_ModelFullbrite;                // 0x1004a774
 extern int32		g_CV_ShowFullbriteModels;           // 0x1005df40
-extern uint32		g_bFullbriteCapable;                // 0x100622a0
+extern LTBOOL		g_bFullbriteCapable;                // 0x100622a0 (d3d_init.cpp)
 
 extern void		d3d_DisableTexture(uint32 iStage);      // 0x1000a22b
 extern int		d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
-extern float	d3d_MatVMul_InPlace_H(LTMatrix* pMat, LTVector* pSrc);              // 0x1000868d
+extern float	d3d_MatVMul_InPlace_H(LTMatrix* pMat, LTVector* pSrc);              // 0x1000868d (drawmodel_clip.cpp)
+
 extern LTBOOL	d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags);                   // 0x10016c60
 extern void		d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);            // 0x1002739d
 
@@ -360,7 +368,7 @@ void CD3DModelDraw::DrawModelBox()
 	LTVector box[8];
 	int i;
 
-	d3d_DisableTexture(g_BindTextureStage);
+	d3d_DisableTexture(g_iCurTextureStage);
 
 	pInstance = m_pInstance;
 	pPos = &pInstance->m_Pos;
@@ -426,7 +434,7 @@ void CD3DModelDraw::SetupModelStates(LTBOOL* pTranslucent)
 	if (g_CV_TextureModels && (m_ModelFlags & 1))
 		m_bTextured = LTTRUE;
 	else
-		d3d_DisableTexture(g_BindTextureStage);
+		d3d_DisableTexture(g_iCurTextureStage);
 
 	g_pD3DDevice->GetRenderState(D3DRS_FILLMODE, &g_FillMode);
 	if (m_ModelFlags2 & 0x10)
@@ -435,14 +443,14 @@ void CD3DModelDraw::SetupModelStates(LTBOOL* pTranslucent)
 	g_pD3DDevice->GetRenderState(D3DRS_ALPHABLENDENABLE, &alphaBlend);
 
 	bTranslucent = LTFALSE;
-	if (g_bFullbriteCapable && g_CV_ModelFullbrite && g_pCurTextures[g_BindTextureStage] &&
-		g_pCurTextures[g_BindTextureStage]->IsTranslucent() && !alphaBlend)
+	if (g_bFullbriteCapable && g_CV_ModelFullbrite && g_pCurTextures[g_iCurTextureStage] &&
+		g_pCurTextures[g_iCurTextureStage]->IsTranslucent() && !alphaBlend)
 	{
 		bTranslucent = LTTRUE;
 		if (g_CV_ShowFullbriteModels)
 		{
 			bTranslucent = LTFALSE;
-			d3d_DisableTexture(g_BindTextureStage);
+			d3d_DisableTexture(g_iCurTextureStage);
 		}
 	}
 
@@ -465,13 +473,13 @@ void CD3DModelDraw::SetupSkin(uint32 iSkin)
 	{
 		if (g_CV_ModelTexture.m_nValue && d3d_SetTexture(pSkin, m_iSkinStage, m_TextureFlags))
 		{
-			fScale = g_fTexelOffsetScale;
-			g_fTexelOffsetU = g_fTexelSizeU * fScale;
-			g_fTexelOffsetV = g_fTexelSizeV * fScale;
+			fScale = g_fLightmapOffset;
+			g_fTexelOffsetU = g_TexelSize[0].u * fScale;
+			g_fTexelOffsetV = g_TexelSize[0].v * fScale;
 		}
 		else
 		{
-			d3d_DisableTexture(g_BindTextureStage);
+			d3d_DisableTexture(g_iCurTextureStage);
 		}
 
 		if (m_iDetailStage != (uint32)-1)
@@ -493,7 +501,7 @@ void CD3DModelDraw::SetupSkin(uint32 iSkin)
 	}
 	else
 	{
-		d3d_DisableTexture(g_BindTextureStage);
+		d3d_DisableTexture(g_iCurTextureStage);
 	}
 }
 
@@ -593,13 +601,12 @@ struct IDirectDrawSurface7;
 
 extern int32				g_CV_EnvMapAll;             // 0x1005d868 (common_stuff.cpp)
 extern int32				g_CV_ModelBoxes;            // 0x1005df68 (common_stuff.cpp)
-extern uint32				g_bCanBumpMap;              // 0x1006eacc (drawmodelshadows.cpp)
-extern float				g_fBumpMat01;               // 0x1006ead0 (drawmodelshadows.cpp)
-extern float				g_fBumpMat10;               // 0x1006ead4 (drawmodelshadows.cpp)
-extern uint32				g_bCanSpecular;             // 0x100622a4
+uint32				g_bCanBumpMap;                     // 0x1006eacc
+float				g_fBumpMat01;                      // 0x1006ead0
+float				g_fBumpMat10;                      // 0x1006ead4
+extern LTBOOL				g_bCanValidateEnvMap;       // 0x100622a4 (d3d_init.cpp)
 extern IDirectDrawSurface7*	g_pGammaTexture;            // 0x10068318 (d3d_texture.cpp)
-extern float				g_fReallyClosePushZ;        // 0x1005b74c
-extern float				g_fNearZ;                   // 0x1005b818
+extern CD3DConVar			g_CV_NearZ;                 // 0x1005b748 (d3d_viewparams.cpp)
 
 struct RenderStruct
 {
@@ -682,11 +689,11 @@ void CD3DModelDraw::DrawPasses()
 
 		DrawLOD();
 		if (m_pInstance->m_pEnvMap)
-			d3d_SetTexture(m_pInstance->m_pEnvMap, g_BindTextureStage, 0);
+			d3d_SetTexture(m_pInstance->m_pEnvMap, g_iCurTextureStage, 0);
 		else
-			d3d_SetTexture(g_pStruct->m_pEnvMap, g_BindTextureStage, 0);
+			d3d_SetTexture(g_pStruct->m_pEnvMap, g_iCurTextureStage, 0);
 		m_bSetupSkins = LTFALSE;
-		DrawPiece(LTNULL);
+		DrawPiece(0);
 		bLOD = LTFALSE;
 		g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
 	}
@@ -715,9 +722,9 @@ void CD3DModelDraw::DrawPasses()
 		m_5ec = (uint32)d3d_GenUVEnvMap;
 
 		DrawLOD();
-		d3d_SetTexture(g_pStruct->m_pEnvMap, g_BindTextureStage, 0);
+		d3d_SetTexture(g_pStruct->m_pEnvMap, g_iCurTextureStage, 0);
 		m_bSetupSkins = LTFALSE;
-		DrawPiece(LTNULL);
+		DrawPiece(0);
 		bLOD = LTFALSE;
 		g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, LTTRUE);
 	}
@@ -766,7 +773,7 @@ void CD3DModelDraw::DrawPasses()
 
 			g_pD3DDevice->SetTexture(2, pOldTexture);
 		}
-		else if (g_CV_ModelSpecular.m_nValue && g_bCanSpecular && m_pParams->m_bSpecular && g_pGammaTexture)
+		else if (g_CV_ModelSpecular.m_nValue && g_bCanValidateEnvMap && m_pParams->m_bSpecular && g_pGammaTexture)
 		{
 			m_nEnvMapPasses = 2;
 
@@ -807,13 +814,13 @@ void CD3DModelDraw::DrawPasses()
 	g_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlend);
 
 	if (m_ModelFlags2 & 2)
-		DrawShadow();
+		DrawShadows();
 
 	if (g_CV_ModelBoxes)
 		DrawModelBox();
 
 	if (m_ModelFlags2 & 0x40)
-		g_fNearZ = g_fReallyClosePushZ;
+		g_ViewParams.m_NearZ = g_CV_NearZ.m_fValue;
 }
 
 
@@ -832,7 +839,7 @@ void CD3DModelDraw::DrawPieces(uint32 a, uint32 b, LTBOOL bLOD)
 	if (bLOD)
 		DrawLOD();
 
-	DrawPiece((ModelVertSet*)bTranslucent);
+	DrawPiece(bTranslucent);
 	d3d_ResetFillMode();
 }
 

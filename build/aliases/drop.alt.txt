@@ -1,0 +1,6 @@
+AvP2 1.0.9.6's lithtech.exe: proven 1047, retargeted 65, new 43, unproven 191, dropped 5
+  DROP	?Clear@CWorldSubFCView@@QAEXXZ	?Clear@CWorldSubFC@@QAEXXZ	UNDEF		0x444be0
+  DROP	?InitArray@CSFXPacketDataView@@QAEXK@Z	?_InitArray@?$CMoArray@EVDefaultCache@@@@AAEXK@Z	UNDEF		-
+  DROP	?_v04@CUnknown4A147C@@UAEXXZ	?Release@VideoInstK@@UAEXXZ	CONFLICT	0x49ddf0,0x4a4ad0	-
+  DROP	?msg_StartWriteQ2B@@YA?AVCMsgRefQ2B@@KK@Z	?msg_AllocPacket@@YA?AVCMsgRefQG9@@KK@Z	UNDEF		-
+  DROP	?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVLTObject@@HH@Z	?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVCLinkedObject@@HH@Z	UNDEF		-

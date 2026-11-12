@@ -977,6 +977,12 @@ public:
 	uint8  m_nFlags;                                           // +0x00
 	uint8  m_pad_01[0x04 - 0x01];
 	void*  m_pRecord;                                          // +0x04
+
+	// For the explicit instantiation at the end of this file only.
+	int operator==(const CObjectMapEntryQ514& other) const
+	{
+		return m_nFlags == other.m_nFlags && m_pRecord == other.m_pRecord;
+	}
 };
 
 class CObjectMapQ514 : public CMoArray<CObjectMapEntryQ514>
@@ -2185,3 +2191,12 @@ CMessageBankView::CMessageBankView()
 	sb_Init(&m_Bank, 0x5c, 0x20);
 #endif
 }
+
+
+// The object map's constructor (0x004189a0; AvP2 1.0.9.6 0x00416930) is
+// the template's own, out of line -- vptr 0x004d4e44, Clear's four zero
+// stores, Init -- and CObjectMapQ514 reaches it through link/aliases.rsp.
+// Every use of it here is expanded, so this is what emits the COMDAT (VC6
+// cannot instantiate a constructor alone; the record's operator== is only
+// for the template's FindElement, which nothing calls).
+template class CMoArray<CObjectMapEntryQ514, DefaultCache>;

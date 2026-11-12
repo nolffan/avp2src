@@ -254,7 +254,9 @@ struct FindObjInfo
 						m_PortalFilterCB = LTNULL;
 					}
 
-	// Two do-nothing defaults, which the link folds (0x1003530c).
+	// Two do-nothing defaults and a yes, which the link folds into
+	// lmpaging.cpp's identical LMPager_End and LMPager_True (0x1003530c);
+	// lmpaging.cpp defines them, /O1 as they are.
 	static void		DefaultObjectCB(LTObject *pObject);
 	static void		DefaultLeafCB(WorldLeaf *pLeaf);
 	static int		ReturnTrue();                       // 0x1003530d
@@ -314,16 +316,21 @@ extern int32			g_CV_DrawAll;                   // 0x1005df50
 extern int32			g_CV_DrawWorld;                 // 0x1004a730
 
 // The polygon draw functions the surface selects.
-extern void (*g_pDrawPolyFn)(WorldPoly *pPoly);         // 0x1005e280
-extern void (*g_pDrawFlashPolyFn)(WorldPoly *pPoly);    // 0x1005fd9c
-extern void (*g_pDrawSkyPolyFn)(WorldPoly *pPoly);      // 0x1005e6bc
-extern void (*g_pDrawUntexturedPolyFn)(WorldPoly *pPoly);   // 0x1005e770
+// The world-poly drawers d3d_draw.cpp and drawlightmaps.cpp set up.
+struct RenderPoly;
+extern void (*g_pfnDrawGouraudPoly)(RenderPoly *pPoly);     // 0x1005e280 (d3d_draw.cpp)
+extern void (*g_pfnDrawLightmapPoly)(RenderPoly *pPoly);    // 0x1005fd9c (d3d_draw.cpp)
+extern void (*g_pfnDrawTexturedPoly)(RenderPoly *pPoly);    // 0x1005e6bc (d3d_draw.cpp)
+extern void (*g_pfnDrawDeferredPoly)(RenderPoly *pPoly);    // 0x1005e770 (d3d_draw.cpp)
 
 extern void		dd_ConsolePrint(const char* pMsg, ...); // 0x10013ade
 extern void		d3d_DrawSky();                   // 0x1002e280
 extern void		d3d_ProcessLights();                    // 0x10024990
-extern void		d3d_LightPolyVerts(PolyVert *pVerts, uint32 nVerts,
-					WorldLight *pLight, uint32 *pIndex);    // 0x10019040
+struct LitVertex;
+struct LightAnim;
+struct LightAnimRef;
+extern LTBOOL	d3d_AddLightAnim(LitVertex *pVerts, uint32 nVerts,
+					LightAnim *pAnim, LightAnimRef *pRef);  // 0x10019040 (d3d_draw.cpp)
 extern int		d3d_NodeFilter(VisNode *pNode);         // 0x100101f8
 
 
@@ -890,7 +897,7 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 		{
 			if(flags & PHSURF_SKY)
 			{
-				g_pDrawSkyPolyFn(pPoly);
+				g_pfnDrawTexturedPoly((RenderPoly*)pPoly);
 				continue;
 			}
 
@@ -919,7 +926,7 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 					{
 						pLight = &pWorld->m_Lights[iLight];
 						if(pLight->m_iFrame != -1 && pLight->m_fBrightness >= 0.02f)
-							d3d_LightPolyVerts(pVerts, nVerts, pLight, &pPoly->m_pLightIndices[i]);
+							d3d_AddLightAnim((LitVertex*)pVerts, nVerts, (LightAnim*)pLight, (LightAnimRef*)&pPoly->m_pLightIndices[i]);
 					}
 				}
 
@@ -927,13 +934,13 @@ static void d3d_TagVisibleLeaves(LTBOOL bAll)
 			}
 
 			if(flags & PHSURF_FLASH)
-				g_pDrawFlashPolyFn(pPoly);
+				g_pfnDrawLightmapPoly((RenderPoly*)pPoly);
 			else
-				g_pDrawPolyFn(pPoly);
+				g_pfnDrawGouraudPoly((RenderPoly*)pPoly);
 		}
 		else
 		{
-			g_pDrawUntexturedPolyFn(pPoly);
+			g_pfnDrawDeferredPoly((RenderPoly*)pPoly);
 		}
 
 NextPoly:;

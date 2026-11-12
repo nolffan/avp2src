@@ -444,6 +444,33 @@ static LTBOOL LMPager_True()
 	return LTTRUE;
 }
 
+// The world tree walk's do-nothing defaults (tagnodes.cpp's FindObjInfo):
+// /O1 code like the pager's hooks, which the link folds them with.
+class LTObject;
+struct WorldLeaf;
+
+struct FindObjInfo
+{
+	static void		DefaultObjectCB(LTObject *pObject);
+	static void		DefaultLeafCB(WorldLeaf *pLeaf);
+	static int		ReturnTrue();
+};
+
+// 0x1003530c
+void FindObjInfo::DefaultObjectCB(LTObject *pObject)
+{
+}
+
+void FindObjInfo::DefaultLeafCB(WorldLeaf *pLeaf)
+{
+}
+
+// 0x1003530d
+int FindObjInfo::ReturnTrue()
+{
+	return 1;
+}
+
 struct LMPagerHooks
 {
 					LMPagerHooks();

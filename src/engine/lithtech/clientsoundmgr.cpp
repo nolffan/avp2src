@@ -156,11 +156,20 @@ struct ObjectBankView
 	uint32         m_CS;         // +0x20  the empty CS member's padding
 
 	// The sample bank's ObjectBank<CSoundData>::Allocate.  Primal Hunt's
-	// /GX build keeps it out of line (0x00499780, sndinst2.cpp's
-	// ObjectBankQ47C::Allocate) and GetSoundData calls it (0x0049d459);
-	// AvP2 1.0.9.6 expands it in place.
-	class CSoundDataRef* Allocate();
+	// /GX build keeps it out of line (0x00499780, constructing through
+	// 0x00498b30) and GetSoundData calls it (0x0049d459): sndinst2.cpp's
+	// ObjectBankQ47C::Allocate, the one definition, reached through the
+	// declaration below.  AvP2 1.0.9.6 expands it in place.
 };                               // 0x24
+
+#ifdef PRIMAL_HUNT
+class CSoundDataQ47C;
+
+struct ObjectBankQ47C
+{
+	CSoundDataQ47C* Allocate();              // 0x00499780, sndinst2.cpp
+};
+#endif
 
 
 // ---- the sample and the sound, from the manager's side ------------------- //
@@ -2548,7 +2557,7 @@ CSoundDataRef* CSoundMgrView::GetSoundData(void* pFileRec)
 		return pSoundData;
 	}
 
-	pSoundData = m_SoundDataBank.Allocate();
+	pSoundData = (CSoundDataRef*)((ObjectBankQ47C*)&m_SoundDataBank)->Allocate();
 	if (!pSoundData)
 		return LTNULL;
 

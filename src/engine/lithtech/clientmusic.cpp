@@ -321,7 +321,10 @@ LTRESULT CLTDirectMusicMgr::PlaySecondary(const char* sSecondarySegment,
 		if (pPending)
 		{
 			pPending->m_pSegment = pSegment;
-			m_PendingSecondaryList.AddTail(pPending);
+			// at the head: retail's call reaches CBaseList::InsertFirst
+			// (Primal Hunt's lithtech.exe 0x0044cc7d and 0x0044cf1a,
+			// AvP2's 0x00448e6d and 0x0044910a)
+			m_PendingSecondaryList.AddHead(pPending);
 		}
 	}
 
@@ -384,7 +387,10 @@ LTRESULT CLTDirectMusicMgr::PlayMotif(const char* sMotifName,
 		if (pPending)
 		{
 			pPending->m_pSegment = pSegment;
-			m_PendingSecondaryList.AddTail(pPending);
+			// at the head: retail's call reaches CBaseList::InsertFirst
+			// (Primal Hunt's lithtech.exe 0x0044cc7d and 0x0044cf1a,
+			// AvP2's 0x00448e6d and 0x0044910a)
+			m_PendingSecondaryList.AddHead(pPending);
 		}
 	}
 

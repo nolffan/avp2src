@@ -150,12 +150,12 @@ extern StructBank			g_DeferredPolyBank;         // 0x1005e1f0
 extern int32				g_CV_LightmapsOnly;         // 0x1005df78
 
 extern SceneWorld*			g_pSceneWorld;              // 0x1005c208
-extern uint32				g_VertexColor;              // 0x1005c154
+extern uint32				g_WorldColor;               // 0x1005c154 (common_draw.cpp)
 extern TexPair				g_TexelSize[];              // 0x100672a8
 
 extern uint32				g_nDrawPrimCalls;           // 0x1005c144
 extern uint32				g_TextureStage;             // 0x100622d0
-extern uint32				g_BindTextureStage;         // 0x100638c0
+extern uint32				g_iCurTextureStage;         // 0x100638c0 (d3d_init.cpp)
 extern StructBank			g_ClipPointBank;            // 0x1005e730
 extern float				g_fScreenScaleX;            // 0x10052bd8
 extern float				g_fScreenScaleY;            // 0x10052bdc
@@ -187,12 +187,14 @@ struct ViewParams;
 extern ViewParams			g_ViewParams;             // 0x1005b790
 
 LTBOOL	d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6
-int		d3d_ClipLMVerts(void* ppVerts, void* pnVerts, ViewParams* pContext, uint32 flags);  // 0x100085f2
+struct ClipVert2;
+LTBOOL	d3d_ClipLMVerts(ClipVert2** ppVerts, int32* pnVerts, ViewParams* pContext, uint32 flags);  // 0x100085f2 (drawmodel_clip.cpp)
 void d3d_GetLMAxes(int iBasis, LTVector *pNormal, LTVector *pRight, LTVector *pUp);	// 0x10035860
 extern QueuedPoly*	d3d_QueuePoly(void* pPoly, void* pList, uint32 nType);  // 0x10007ddb
 int		d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 iLOD); // 0x100079e4
 void	d3d_SetupScreenScale();                         // 0x10007930
-void	d3d_SetupScreenLMVerts(WorldPoly *pPoly, LMTLVertex *pVerts, int nVerts);  // 0x100083ec
+struct RenderPoly;
+void	d3d_LightLMPoly(RenderPoly* pPoly, ClipVert2* pVerts, uint32 nVerts);  // 0x100083ec (drawmodel_clip.cpp)
 uint32	d3d_SetLightmapTexture(WorldPoly* pPoly, uint32 iStage);  // 0x10009e55
 void	dd_ConsolePrint(const char* pMsg, ...);         // 0x10013ade
 struct RenderPoly;
@@ -200,7 +202,7 @@ struct DeferredPoly;
 void	d3d_DeferPoly(RenderPoly* pPoly);               // 0x10014970
 void	d3d_FreeDeferredPolies(DeferredPoly* pList);    // 0x10014d30
 uint32	d3d_GetTextureFlags(SharedTexture *pSharedTexture, uint32 stage);  // 0x10021eb0
-LTBOOL	d3d_SetDynamicLightmap(WorldPoly *pPoly, uint32 iStage);  // 0x10021cd0
+LTBOOL	d3d_DrawPolyLightmap(WorldPoly* pPoly, LTBOOL bNew);  // 0x10021cd0 (d3d_texture.cpp)
 
 LMBucket*	g_LightmapPolyList;                         // 0x1005fda0
 LTBOOL		g_bLightmapModulate2X;                      // 0x10082ebc
@@ -235,7 +237,7 @@ void d3d_MultiPassFlush()
 
 		if(pCur->m_pPolies)
 		{
-			if(d3d_GetTextureFlags(pCur->m_pPolies->m_pPoly->m_pSurface->m_pTexture, g_BindTextureStage))
+			if(d3d_GetTextureFlags(pCur->m_pPolies->m_pPoly->m_pSurface->m_pTexture, g_iCurTextureStage))
 			{
 				if(d3d_FlushPolyQueue(pCur->m_pPolies, d3d_DrawLightmapPoly, LTFALSE, &pDeferred))
 				{
@@ -280,7 +282,7 @@ void d3d_MultiPassFlush()
 
 			if(pCur->m_pPolies && pCur->m_pPolies->m_pPoly->m_pSurface->m_pTexture)
 			{
-				d3d_SetTexture(pCur->m_pPolies->m_pPoly->m_pSurface->m_pTexture, g_BindTextureStage, 0);
+				d3d_SetTexture(pCur->m_pPolies->m_pPoly->m_pSurface->m_pTexture, g_iCurTextureStage, 0);
 				d3d_FlushPolyQueue(pCur->m_pPolies, d3d_DrawLightmapOnly, LTTRUE, (QueuedPoly**)-1);
 			}
 
@@ -322,7 +324,7 @@ LTBOOL d3d_DrawLightmapPoly(WorldPoly *pPoly)
 		pOut->m_Vec.x = pIn->m_pVec->x;
 		pOut->m_Vec.y = pIn->m_pVec->y;
 		pOut->m_Vec.z = pIn->m_pVec->z;
-		pOut->m_Color = g_VertexColor;
+		pOut->m_Color = g_WorldColor;
 		pOut->SetUV(pIn->m_U, pIn->m_V);
 		pOut->m_LMU = pIn->m_LMU;
 		pOut->m_LMV = pIn->m_LMV;
@@ -332,10 +334,10 @@ LTBOOL d3d_DrawLightmapPoly(WorldPoly *pPoly)
 
 	pVerts = verts;
 	nVerts = pPoly->m_nVertices;
-	if(!d3d_ClipLMVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+	if(!d3d_ClipLMVerts((ClipVert2**)&pVerts, (int32*)&nVerts, &g_ViewParams, 0))
 		return LTFALSE;
 
-	if(pPoly->m_pLMData && d3d_SetDynamicLightmap(pPoly, 0))
+	if(pPoly->m_pLMData && d3d_DrawPolyLightmap(pPoly, 0))
 	{
 		if(pVerts == verts)
 		{
@@ -346,7 +348,7 @@ LTBOOL d3d_DrawLightmapPoly(WorldPoly *pPoly)
 			pVerts = verts;
 			nVerts = pPoly->m_nVertices;
 			d3d_SetupLMPolyVerts(pPoly, verts, (SPolyVertex*)pPoly->m_Vertices, nVerts);
-			if(!d3d_ClipLMVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+			if(!d3d_ClipLMVerts((ClipVert2**)&pVerts, (int32*)&nVerts, &g_ViewParams, 0))
 				return LTFALSE;
 		}
 	}
@@ -356,7 +358,7 @@ LTBOOL d3d_DrawLightmapPoly(WorldPoly *pPoly)
 		return LTFALSE;
 	}
 
-	d3d_SetTexture(pPoly->m_pSurface->m_pTexture, g_BindTextureStage, 0);
+	d3d_SetTexture(pPoly->m_pSurface->m_pTexture, g_iCurTextureStage, 0);
 
 	pOut = pVerts;
 	for(i=nVerts; i; i--)
@@ -370,7 +372,7 @@ LTBOOL d3d_DrawLightmapPoly(WorldPoly *pPoly)
 	g_SavedStates.Restore();
 	pStateList = pPoly->m_pSurface->m_pTexture->m_pStateList;
 	if(pStateList)
-		g_SavedStates.Apply(pStateList, g_BindTextureStage);
+		g_SavedStates.Apply(pStateList, g_iCurTextureStage);
 
 	g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, FVF_LMTLVERTEX, pVerts, nVerts, 0);
 	g_SavedStates.Restore();
@@ -392,7 +394,7 @@ void d3d_SetupLMPolyVerts(WorldPoly *pPoly, LMTLVertex *pOut, SPolyVertex *pIn, 
 		pOut->m_Vec.x = pIn->m_pVec->x;
 		pOut->m_Vec.y = pIn->m_pVec->y;
 		pOut->m_Vec.z = pIn->m_pVec->z;
-		pOut->m_Color = g_VertexColor;
+		pOut->m_Color = g_WorldColor;
 		pOut->SetUV(pIn->m_U, pIn->m_V);
 
 		vec = *pIn->m_pVec - pPoly->m_LMOrigin;
@@ -442,7 +444,7 @@ LTBOOL d3d_DrawLightmapOnly(WorldPoly *pPoly)
 		pOut->m_Vec.z = pIn->m_pVec->z;
 		pOut->m_TU = g_TexelSize[0].u * pIn->m_U;
 		pOut->m_TV = g_TexelSize[0].v * pIn->m_V;
-		pOut->m_Color = g_VertexColor;
+		pOut->m_Color = g_WorldColor;
 		pIn++;
 		pOut++;
 	}
@@ -492,11 +494,11 @@ LTBOOL d3d_DrawScreenLMPoly(WorldPoly *pPoly)
 
 	pVerts = verts;
 	nVerts = pPoly->m_nVertices;
-	d3d_SetupScreenLMVerts(pPoly, verts, nVerts);
-	if(!d3d_ClipLMVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+	d3d_LightLMPoly((RenderPoly*)pPoly, (ClipVert2*)verts, nVerts);
+	if(!d3d_ClipLMVerts((ClipVert2**)&pVerts, (int32*)&nVerts, &g_ViewParams, 0))
 		return LTFALSE;
 
-	d3d_SetTexture(pPoly->m_pSurface->m_pTexture, g_BindTextureStage, 0);
+	d3d_SetTexture(pPoly->m_pSurface->m_pTexture, g_iCurTextureStage, 0);
 
 	pOut = pVerts;
 	for(i=nVerts; i; i--)
@@ -510,7 +512,7 @@ LTBOOL d3d_DrawScreenLMPoly(WorldPoly *pPoly)
 	g_SavedStates.Restore();
 	pStateList = pPoly->m_pSurface->m_pTexture->m_pStateList;
 	if(pStateList)
-		g_SavedStates.Apply(pStateList, g_BindTextureStage);
+		g_SavedStates.Apply(pStateList, g_iCurTextureStage);
 
 	g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, FVF_LMTLVERTEX, pVerts, nVerts, 0);
 	g_SavedStates.Restore();
@@ -599,33 +601,29 @@ void d3d_ResetLightmapStages()
 // ---------------------------------------------------------------------- //
 //  0x1003655d -- a rotation (quaternion) to a matrix.
 // ---------------------------------------------------------------------- //
-struct Rotation
-{
-	float	x, y, z, w;
-};
 
-void d3d_RotationToMatrix(Rotation *pRot, LTMatrix *pMat)
+void d3d_RotationToMatrix(LTRotation *pRot, LTMatrix *pMat)
 {
 	static float s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
 
-	s = 2.0f / ((pRot->x*pRot->x) + (pRot->y*pRot->y) + (pRot->z*pRot->z) + (pRot->w*pRot->w));
+	s = 2.0f / ((pRot->m_Quat[0]*pRot->m_Quat[0]) + (pRot->m_Quat[1]*pRot->m_Quat[1]) + (pRot->m_Quat[2]*pRot->m_Quat[2]) + (pRot->m_Quat[3]*pRot->m_Quat[3]));
 
-	xs = pRot->x * s;
-	ys = pRot->y * s;
-	zs = pRot->z * s;
+	xs = pRot->m_Quat[0] * s;
+	ys = pRot->m_Quat[1] * s;
+	zs = pRot->m_Quat[2] * s;
 
-	wx = pRot->w * xs;
-	wy = pRot->w * ys;
-	wz = pRot->w * zs;
+	wx = pRot->m_Quat[3] * xs;
+	wy = pRot->m_Quat[3] * ys;
+	wz = pRot->m_Quat[3] * zs;
 
-	xx = pRot->x * xs;
-	xy = pRot->x * ys;
-	xz = pRot->x * zs;
+	xx = pRot->m_Quat[0] * xs;
+	xy = pRot->m_Quat[0] * ys;
+	xz = pRot->m_Quat[0] * zs;
 
-	yy = pRot->y * ys;
-	yz = pRot->y * zs;
+	yy = pRot->m_Quat[1] * ys;
+	yz = pRot->m_Quat[1] * zs;
 
-	zz = pRot->z * zs;
+	zz = pRot->m_Quat[2] * zs;
 
 	pMat->m[0][0] = 1.0f - (yy + zz);
 	pMat->m[0][1] = xy - wz;
@@ -751,7 +749,7 @@ struct ViewParams
 	LTVector	m_vViewPos;                             // +0x4b4
 };
 
-extern uint16	g_wCurFrameCode;                        // 0x1005d238
+extern uint16	g_CurFrameCode;                         // 0x1005d238 (common_draw.cpp)
 
 #define OT_WORLDMODEL	2
 
@@ -805,7 +803,7 @@ void d3d_GetSegmentPolies(SegmentObject *pObject, SegmentQuery *pQuery)
 
 			vMid = pt1 + (pt2 - pt1) * t;
 
-			if (pNode->m_pPoly->m_wFrameCode == g_wCurFrameCode &&
+			if (pNode->m_pPoly->m_wFrameCode == g_CurFrameCode &&
 				pQuery->m_pList->m_nPolies < MAX_SEGMENT_POLIES &&
 				pNode->GetPlane()->DistTo(g_ViewParams.m_vViewPos) > 1.0f &&
 				pNode->GetPlane()->m_Normal.Dot(vDir) < 0.7f &&

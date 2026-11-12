@@ -261,7 +261,18 @@ public:
 };
 
 extern CMulTable	g_MulTable;                         // 0x10087c00
-extern uint8		g_SatTable[512];                    // 0x10097c00
+// d3d_tables.cpp's saturating add: an identity table, then 256 bytes of
+// 0xFF, so a sum of two bytes indexes it (into m_Full) clamped.
+class CIdentTable
+{
+public:
+			CIdentTable();
+
+	uint8	m_Ident[256];
+	uint8	m_Full[256];
+};
+
+extern CIdentTable	g_IdentTable;                       // 0x10097c00 (d3d_tables.cpp)
 
 class WorldBsp
 {
@@ -485,13 +496,19 @@ extern LTBOOL		g_100638c4;                         // 0x100638c4 (d3d_init.cpp)
 extern uint32		g_iCurTextureStage;                 // 0x100638c0
 extern uint16		g_CurTextureFrameCode;              // 0x1005d250
 extern RTexture*	g_pCurTextures[];                   // 0x10067270
-extern float		g_fTexelSizeU;                      // 0x100672a8
-extern float		g_fTexelSizeV;                      // 0x100672ac
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float	u, v;
+};
+
+extern TexPair		g_TexelSize[];                      // 0x100672a8 (d3d_texture.cpp)
 extern CRenderStateList	g_SavedStates;                  // 0x10069728 (d3d_savedstates.cpp)
-extern void			(__fastcall *g_pfnSetupSpecular)(TLVertex* pVert, uint32* pSpecular);  // 0x1005e1c4
+extern void			(__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4 (d3d_draw.cpp)
 
 extern void		dd_ConsolePrint(const char* pMsg, ...); // 0x10013ade
-extern void		d3d_GetLightTableColor(void *pTable, LTVector *pPos, ColorBytes *pColor);  // 0x1000c818 (drawmodel.cpp)
+struct LightTable;
+extern void		d3d_GetLightGridColor(LightTable* pTable, LTVector* pPos, uint8* pColor);  // 0x1000c818 (drawmodel.cpp)
 extern void		d3d_CalcEnvMapUV(const LTVector* pEye, const LTVector* pPos,
 					const LTVector* pNormal, float* pU, float* pV);     // 0x100115fe (common_draw.cpp)
 extern void		d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);   // 0x1002739d
@@ -504,10 +521,12 @@ extern void		d3d_SetTextureDirect(RTexture* pTexture);   // 0x10007a89
 extern RTexture*	d3d_GetStageTexture(RTexture* pTexture, uint8 iStage);  // 0x10009300
 
 // The polygon draw functions the surface selects.
-extern void (*g_pDrawPolyFn)(WorldPoly *pPoly);         // 0x1005e280
-extern void (*g_pDrawFlashPolyFn)(WorldPoly *pPoly);    // 0x1005fd9c
-extern void (*g_pDrawSkyPolyFn)(WorldPoly *pPoly);      // 0x1005e6bc
-extern void (*g_pDrawUntexturedPolyFn)(WorldPoly *pPoly);   // 0x1005e770
+// The world-poly drawers d3d_draw.cpp and drawlightmaps.cpp set up.
+struct RenderPoly;
+extern void (*g_pfnDrawGouraudPoly)(RenderPoly *pPoly);     // 0x1005e280 (d3d_draw.cpp)
+extern void (*g_pfnDrawLightmapPoly)(RenderPoly *pPoly);    // 0x1005fd9c (d3d_draw.cpp)
+extern void (*g_pfnDrawTexturedPoly)(RenderPoly *pPoly);    // 0x1005e6bc (d3d_draw.cpp)
+extern void (*g_pfnDrawDeferredPoly)(RenderPoly *pPoly);    // 0x1005e770 (d3d_draw.cpp)
 
 
 // This can be used to set a state, and it will automatically restore the
@@ -720,7 +739,7 @@ inline void d3d_DrawWorldModelPoly(WorldPoly *pPoly, LTBOOL bAnimated)
 	{
 		if (flags & PHSURF_SKY)
 		{
-			g_pDrawSkyPolyFn(pPoly);
+			g_pfnDrawTexturedPoly((RenderPoly*)pPoly);
 			return;
 		}
 
@@ -734,13 +753,13 @@ inline void d3d_DrawWorldModelPoly(WorldPoly *pPoly, LTBOOL bAnimated)
 		}
 
 		if (flags & PHSURF_FLASH)
-			g_pDrawFlashPolyFn(pPoly);
+			g_pfnDrawLightmapPoly((RenderPoly*)pPoly);
 		else
-			g_pDrawPolyFn(pPoly);
+			g_pfnDrawGouraudPoly((RenderPoly*)pPoly);
 	}
 	else
 	{
-		g_pDrawUntexturedPolyFn(pPoly);
+		g_pfnDrawDeferredPoly((RenderPoly*)pPoly);
 	}
 }
 
@@ -841,9 +860,9 @@ static inline LTBOOL d3d_AddLightAnimFrame(LitVertex* pVerts, uint32 nVerts, Lig
 	{
 		for (i = 0; i < nVerts; i++)
 		{
-			pVerts[i].m_Color[2] = g_SatTable[pFrame1->m_R[i] + pVerts[i].m_Color[2]];
-			pVerts[i].m_Color[1] = g_SatTable[pFrame1->m_G[i] + pVerts[i].m_Color[1]];
-			pVerts[i].m_Color[0] = g_SatTable[pFrame1->m_B[i] + pVerts[i].m_Color[0]];
+			pVerts[i].m_Color[2] = g_IdentTable.m_Ident[pFrame1->m_R[i] + pVerts[i].m_Color[2]];
+			pVerts[i].m_Color[1] = g_IdentTable.m_Ident[pFrame1->m_G[i] + pVerts[i].m_Color[1]];
+			pVerts[i].m_Color[0] = g_IdentTable.m_Ident[pFrame1->m_B[i] + pVerts[i].m_Color[0]];
 		}
 	}
 	else
@@ -851,9 +870,9 @@ static inline LTBOOL d3d_AddLightAnimFrame(LitVertex* pVerts, uint32 nVerts, Lig
 		invBlend = 255 - blend;
 		for (i = 0; i < nVerts; i++)
 		{
-			pVerts[i].m_Color[2] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_R[i]][blend] + g_MulTable.m_Table[pFrame1->m_R[i]][invBlend]] + pVerts[i].m_Color[2]];
-			pVerts[i].m_Color[1] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_G[i]][blend] + g_MulTable.m_Table[pFrame1->m_G[i]][invBlend]] + pVerts[i].m_Color[1]];
-			pVerts[i].m_Color[0] = g_SatTable[g_SatTable[g_MulTable.m_Table[pFrame2->m_B[i]][blend] + g_MulTable.m_Table[pFrame1->m_B[i]][invBlend]] + pVerts[i].m_Color[0]];
+			pVerts[i].m_Color[2] = g_IdentTable.m_Ident[g_IdentTable.m_Ident[g_MulTable.m_Table[pFrame2->m_R[i]][blend] + g_MulTable.m_Table[pFrame1->m_R[i]][invBlend]] + pVerts[i].m_Color[2]];
+			pVerts[i].m_Color[1] = g_IdentTable.m_Ident[g_IdentTable.m_Ident[g_MulTable.m_Table[pFrame2->m_G[i]][blend] + g_MulTable.m_Table[pFrame1->m_G[i]][invBlend]] + pVerts[i].m_Color[1]];
+			pVerts[i].m_Color[0] = g_IdentTable.m_Ident[g_IdentTable.m_Ident[g_MulTable.m_Table[pFrame2->m_B[i]][blend] + g_MulTable.m_Table[pFrame1->m_B[i]][invBlend]] + pVerts[i].m_Color[0]];
 		}
 	}
 
@@ -1191,7 +1210,7 @@ static void d3d_DrawTranslucentWorldModelPoly(WorldPoly *pPoly)
 		pPoly->m_Flags &= ~WPF_DYNAMICLIGHT;
 	}
 
-	d3d_GetLightTableColor(g_pSceneWorld->m_LightTable, &pPoly->m_vCenter, &color);
+	d3d_GetLightGridColor((LightTable*)g_pSceneWorld->m_LightTable, &pPoly->m_vCenter, (uint8*)&color);
 
 	pTexture = pPoly->m_pSurface->m_pTexture;
 	if (pTexture)
@@ -1306,7 +1325,7 @@ static void d3d_DrawTranslucentWorldModelPoly(WorldPoly *pPoly)
 	for (i=nVerts; i; i--)
 	{
 		d3d_TransformToCamera((TLVertex*)pVert, &g_ViewParams.m_mWorldToCamera);
-		g_pfnSetupSpecular((TLVertex*)pVert, &pVert->m_Specular.m_n);
+		g_pfnCalcFog((const LTVector*)pVert, &pVert->m_Specular.m_n);
 		pVert++;
 	}
 
@@ -1355,8 +1374,8 @@ static void d3d_DrawTranslucentWorldModelPoly(WorldPoly *pPoly)
 		pVert = pVerts;
 		for (i=nVerts; i; i--)
 		{
-			pVert->m_fU *= g_fTexelSizeU;
-			pVert->m_fV *= g_fTexelSizeV;
+			pVert->m_fU *= g_TexelSize[0].u;
+			pVert->m_fV *= g_TexelSize[0].v;
 			pVert++;
 		}
 

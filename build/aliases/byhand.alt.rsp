@@ -1,0 +1,8 @@
+# 0x495450 D: the sound manager's table has one slot more than NOLF's
+# before it (every slot from 0x14 on reaches nolfsrc's slot-before
+# function); the retail function's shape is ReleaseSound3DProviderList's
+# (if no list, LT_INVALIDPARAMS; free the chain through +0x110)
+/ALTERNATENAME:?_v1c@CCmgSoundMgr@@UAEXXZ=?ReleaseSound3DProviderList@CSoundMgrView@@UAEKPAUSound3DProvider@@@Z
+# 0x4b2620: RezMgr.lib's CRezFileSingleFile::ReallyClose, its masked bytes
+# matching there (build/aliases/libat.py); the call from CChain14View::sub_490710 (0x4b228a)
+/ALTERNATENAME:?sub_490ac0@CChain14Item@@QAEXXZ=?ReallyClose@CRezFileSingleFile@@AAEHXZ

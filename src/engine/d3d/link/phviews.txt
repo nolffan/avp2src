@@ -1,0 +1,37 @@
+# src/engine/d3d/link/phviews.txt -- the renderers' view regions (the
+# ph/ objects', both Primal Hunt's d3d.ren and AvP2's): one shipped object
+# that the ph/ files reach under several names at several offsets, which
+# C++ cannot define. tools/mkviewobj.py turns this into <dir>/phviews.obj
+# at link time (build/build.mk, d3d-link and avp2-d3d-link), linked after
+# the objects. Addresses are Primal Hunt's (AvP2's are the same objects,
+# lower); each name's evidence is the shipped image's relocations, from
+# the identical functions that read them.
+#
+# The fog colour (Primal Hunt 0x1005dad8, AvP2 0x10058040): d3d_init.cpp's
+# d3d_ReadExtraConsoleVariables writes it as a struct (identical), while
+# drawworld.cpp's four lightmap draws read its three bytes one by one
+# (identical only so: cl merges two bytes of one struct into a word load).
+region 0x1005dad8 0x4 bss 4
+sym 0x0 ?g_FogColor@@3UFogColor@@A
+sym 0x0 ?g_FogR@@3EA
+sym 0x1 ?g_FogG@@3EA
+sym 0x2 ?g_FogB@@3EA
+#
+# The view (common_draw.cpp's ViewParams, Primal Hunt 0x1005b790, AvP2
+# 0x10055cf8): the files read its fields, but the shadow projector's frustum
+# planes (drawmodelshadows.cpp's d3d_ClipToPlane<ClipPlaneNear>, AvP2
+# 0x100265c9, identical) read its near and far clips (+0x88, +0x90) as
+# scalars. Its constructor (0x1001014f) only zeroes four fields .bss holds
+# zero already, so nothing is lost with it not run.
+region 0x1005b790 0x4f8 bss 4
+sym 0x0 ?g_ViewParams@@3UViewParams@@A
+sym 0x88 ?g_fNearZ@@3MA
+sym 0x90 ?g_fFarZ@@3MA
+#
+# Two of common_draw.cpp's vectors with no initialiser in the shipped image
+# (its five LTVector constructors' `ret` stubs, 0x10010140..0x10010144, are
+# the other five's): defined here, with no constructor to run.
+region 0x1005b780 0xc bss 4
+sym 0x0 ?g_vGlobalLightColor@@3V?$_CVector@M@@A
+region 0x1005d240 0xc bss 4
+sym 0x0 ?g_1005d240@@3V?$_CVector@M@@A

@@ -66,10 +66,12 @@ struct ClipVert2
 };
 
 extern uint32   g_nClipPasses;                              // 0x1005c124
-extern int32    g_bUseD3DClip;                              // 0x100622b0
 extern void*    g_pClipScratch;                             // 0x1005bd14
-extern float    g_fNearZ;                                   // 0x1005b818
-extern float    g_fFarZ;                                    // 0x1005b820
+
+// The includer declares, ahead of this header, the draw state and the
+// console variable the clippers read: g_ViewParams (0x1005b790; its near
+// and far clip distances m_NearZ +0x88 and m_FarZ2 +0x90) and
+// g_CV_UseD3DClip (d3d_init.cpp's CD3DConVar, 0x100622b0).
 
 inline void LerpClipVert(ClipVert* a, ClipVert* b, ClipVert* dst, float t)
 {
@@ -101,13 +103,13 @@ inline float ClipEdgeNear(LTVector* a, LTVector* b, LTVector* dst)
 	float t;
 
 	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = (g_fNearZ - a->z) / fDenom;
+		t = (g_ViewParams.m_NearZ - a->z) / fDenom;
 	else
 		t = 0.0f;
 
 	dst->x = (b->x - a->x) * t + a->x;
 	dst->y = (b->y - a->y) * t + a->y;
-	dst->z = g_fNearZ;
+	dst->z = g_ViewParams.m_NearZ;
 
 	return t;
 }
@@ -194,13 +196,13 @@ inline float ClipEdgeFar(LTVector* a, LTVector* b, LTVector* dst)
 	float t;
 
 	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = (g_fFarZ - a->z) / fDenom;
+		t = (g_ViewParams.m_FarZ2 - a->z) / fDenom;
 	else
 		t = 0.0f;
 
 	dst->x = (b->x - a->x) * t + a->x;
 	dst->y = (b->y - a->y) * t + a->y;
-	dst->z = g_fFarZ;
+	dst->z = g_ViewParams.m_FarZ2;
 
 	return t;
 }
@@ -329,14 +331,14 @@ inline LTBOOL NAME(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut) \
 	return LTTRUE; \
 }
 
-CLIP_PLANE_V(ClipNear, ClipVert, (pV->m_vPos.z >= g_fNearZ), ClipEdgeNear)
+CLIP_PLANE_V(ClipNear, ClipVert, (pV->m_vPos.z >= g_ViewParams.m_NearZ), ClipEdgeNear)
 CLIP_PLANE_V(ClipLeft, ClipVert, (-pV->m_vPos.z < pV->m_vPos.x), ClipEdgeLeft)
-CLIP_PLANE_V(ClipNear, ClipVert2, (pV->m_vPos.z >= g_fNearZ), ClipEdgeNear)
+CLIP_PLANE_V(ClipNear, ClipVert2, (pV->m_vPos.z >= g_ViewParams.m_NearZ), ClipEdgeNear)
 CLIP_PLANE_V(ClipLeft, ClipVert2, (-pV->m_vPos.z < pV->m_vPos.x), ClipEdgeLeft)
 CLIP_PLANE(ClipTop,    (pV->m_vPos.y < pV->m_vPos.z),  ClipEdgeTop)
 CLIP_PLANE(ClipRight,  (pV->m_vPos.x < pV->m_vPos.z),  ClipEdgeRight)
 CLIP_PLANE(ClipBottom, (-pV->m_vPos.z < pV->m_vPos.y), ClipEdgeBottom)
-CLIP_PLANE(ClipFar,    (pV->m_vPos.z <= g_fFarZ),      ClipEdgeFar)
+CLIP_PLANE(ClipFar,    (pV->m_vPos.z <= g_ViewParams.m_FarZ2),      ClipEdgeFar)
 
 
 
@@ -350,7 +352,7 @@ inline LTBOOL ClipPoly(uint32 nClipFlags, V** ppVerts, int32* pnVerts)
 	int32 nVerts;
 	uint8 cNear, cLeft, cTop, cRight, cBottom, cFar;
 
-	if (g_bUseD3DClip)
+	if (g_CV_UseD3DClip.m_nValue)
 	{
 		nClipFlags &= 1;
 		if (!nClipFlags)

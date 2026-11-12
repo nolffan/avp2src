@@ -52,7 +52,7 @@ extern CD3DDevice*				g_pD3DDevice;           // 0x100638c8
 extern LPDIRECTDRAW7			g_pDirectDraw;          // 0x1005d2a8
 extern LPDIRECTDRAWSURFACE7		g_pBackBuffer;          // 0x1005d2b4
 extern LTBOOL					g_bIn3D;                // 0x100638d8
-extern uint32					g_bOptimizeSurfaces;    // 0x100638dc
+extern LTBOOL					g_bInOptimized2D;       // 0x100638dc (d3d_init.cpp)
 
 extern void*	dalloc_z(uint32 size);                  // 0x10013a7f (common_stuff.cpp)
 extern void		dfree(void* ptr);                       // 0x10013ac5
@@ -69,8 +69,8 @@ extern LTBOOL					g_bRunWindowed;         // 0x1005d538
 extern HWND						g_hWnd;                 // 0x1005d430
 extern uint32					g_ScreenWidth;          // 0x1005d8cc
 extern uint32					g_ScreenHeight;         // 0x1005d9c0
-extern int32					g_ScreenScaleX;         // 0x1005d8bc
-extern int32					g_ScreenScaleY;         // 0x1005d8c0
+extern uint32					g_ScreenScaleX;         // 0x1005d8bc (common_stuff.cpp)
+extern uint32					g_ScreenScaleY;         // 0x1005d8c0
 
 // d3d_SwapBuffers' flags.
 #define RSWAP_BLIT			2
@@ -363,10 +363,10 @@ void d3d_BlitToScreen(RenderBlitRequest *pRequest)
 
 	if (g_pBackBuffer && pRequest && (pData = pRequest->m_pSurface) != LTNULL)
 	{
-		if (g_bOptimizeSurfaces && g_bIn3D && !pData->m_pOptimized)
+		if (g_bInOptimized2D && g_bIn3D && !pData->m_pOptimized)
 			d3d_OptimizeSurface(pData, pRequest->m_TransparentColor);
 
-		if (pData->m_pOptimized && g_bOptimizeSurfaces && g_bIn3D)
+		if (pData->m_pOptimized && g_bInOptimized2D && g_bIn3D)
 			d3d_BlitOptimized(pRequest);
 		else
 			d3d_BlitToScreen_NonOptimized(pRequest);
@@ -382,7 +382,7 @@ LTBOOL d3d_WarpToScreen(RenderBlitRequest *pRequest)
 	D3DRenderData *pData;
 
 	if (g_pBackBuffer && pRequest && (pData = pRequest->m_pSurface) != LTNULL &&
-		pData->m_pOptimized && g_bOptimizeSurfaces && g_bIn3D)
+		pData->m_pOptimized && g_bInOptimized2D && g_bIn3D)
 	{
 		d3d_WarpOptimized(pRequest);
 		return LTTRUE;

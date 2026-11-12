@@ -19,7 +19,6 @@
 #include "ltbasedefs.h"
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include "../../LT2/lithshared/stdlith/object_bank.h"
-#include "d3d_clip.h"
 
 
 // The renderer's console variable (TU12's, constructor 0x10011f36).
@@ -552,21 +551,33 @@ void d3d_GetSurfaceFlags(Surface* pSurface, uint32* pType, uint32* pFlags)
 // ---------------------------------------------------------------------- //
 //  The clippers (0x1004dc58..0x1004dc84).
 // ---------------------------------------------------------------------- //
-struct ViewParams;
+// The view (common_draw.cpp's), as far as the clippers read it.
+struct ViewParams
+{
+	uint8		m_pad_000[0x88];
+	float		m_NearZ;                                // +0x088
+	uint8		m_pad_08c[0x90 - 0x8c];
+	float		m_FarZ2;                                // +0x090 (the far clip)
+};
 extern ViewParams	g_ViewParams;                     // 0x1005b790
 extern uint32		g_ClipFlags;                        // 0x1005bd0c
+extern CD3DConVar	g_CV_UseD3DClip;                    // 0x100622b0 (d3d_init.cpp)
 
-extern int	d3d_ClipTLVerts(void* ppVerts, void* pnVerts, ViewParams* pContext, uint32 flags);     // 0x1000aec6
+#include "d3d_clip.h"
+
+
+struct TLVertex;
+extern LTBOOL	d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6 (drawworld.cpp)
 struct RenderPoly;
 extern LTBOOL	d3d_ClipLMVerts(ClipVert2** ppVerts, int32* pnVerts, ViewParams* pContext, uint32 flags);  // 0x100085f2 (drawmodel_clip.cpp)
-extern int	d3d_ClipTLVertsRC(uint32 clipFlags, void* ppVerts, void* pnVerts);    // 0x1000af61
+// ClipPoly<ClipVert> (d3d_clip.h's, 0x1000af61) is drawworld.cpp's copy.
 extern void	d3d_LightLMPoly(RenderPoly* pPoly, ClipVert2* pVerts, uint32 nVerts);  // 0x100083ec (drawmodel_clip.cpp)
 
 // 0x1002ac73
 int __fastcall d3d_ClipTL(uint32 clipFlags, void* ppVerts, void* pnVerts)
 {
 	g_ClipFlags = clipFlags;
-	return d3d_ClipTLVerts(ppVerts, pnVerts, &g_ViewParams, 0);
+	return d3d_ClipTLVerts((TLVertex**)ppVerts, (int*)pnVerts, &g_ViewParams, 0);
 }
 
 // 0x1002ac90
@@ -579,7 +590,7 @@ int __fastcall d3d_ClipLM(uint32 clipFlags, void* ppVerts, void* pnVerts)
 // 0x1002acad
 int __fastcall d3d_ClipTLRC(uint32 clipFlags, void* ppVerts, void* pnVerts)
 {
-	return d3d_ClipTLVertsRC(clipFlags, ppVerts, pnVerts);
+	return ClipPoly(clipFlags, (ClipVert**)ppVerts, (int32*)pnVerts);
 }
 
 // 0x1002acbe -- ClipPoly<ClipVert2> (d3d_clip.h; its copy is TU04's
@@ -712,12 +723,12 @@ struct TLVertex;
 typedef uint32 (DrawPolyMgr::*SetTextureFn)(WorldPoly* pPoly, uint32 iStage);
 typedef uint32 (DrawPolyMgr::*SetTextureFn2)(WorldPoly* pPoly, uint32 iStage, uint32 flags);
 typedef void (DrawPolyMgr::*SetColorFn)(PolyVert* pSrc, uint8* pDest);
-typedef void (__fastcall *SpecularFn)(TLVertex* pVert, uint32* pSpecular);
+typedef void (__fastcall *SpecularFn)(const LTVector* pPos, uint32* pSpecular);
 typedef int (__fastcall *ClipFn)(uint32 clipFlags, void* ppVerts, void* pnVerts);
 typedef void (DrawPolyMgr::*DrawBatchFn)(PolyBatch* pBatch);
 
-extern SpecularFn	g_pfnSetupSpecular;                 // 0x1005e1c4
-extern SpecularFn	g_pfnSetupFogSpecular;              // 0x1005e6d8
+extern SpecularFn	g_pfnCalcFog;                       // 0x1005e1c4 (d3d_draw.cpp)
+extern SpecularFn	g_pfnCalcSkyFog;                    // 0x1005e6d8 (d3d_draw.cpp)
 
 GetFlagsFn g_GetFlagsFns[2] =                           // 0x1004dbe8
 {
@@ -766,8 +777,8 @@ SetColorFn g_SetColorFns[3] =                           // 0x1004dc30
 
 SpecularFn* g_SpecularFns[3] =                          // 0x1004dc3c
 {
-	&g_pfnSetupSpecular,
-	&g_pfnSetupFogSpecular,
+	&g_pfnCalcFog,
+	&g_pfnCalcSkyFog,
 };
 
 // The rest by stage count (1..3).
@@ -809,7 +820,7 @@ struct RenderWorld
 
 extern RenderWorld*	g_pRenderWorld;                     // 0x1005bd1c
 extern int32		g_CV_FixTJunc;                      // 0x1005dbb4
-extern void		AddDebugMessage(int level, const char* pMsg, ...);  // 0x10013b13
+extern void		AddDebugMessage(int32 level, const char* pMsg, ...);  // 0x10013b13 (common_stuff.cpp)
 extern void		dd_ConsolePrint(const char* pMsg, ...); // 0x10013ade
 
 void DrawPolyMgr::Flush()
@@ -1022,7 +1033,7 @@ void DrawPolyMgr::DrawPolyFirstPass(WorldPoly* pPoly, PassDesc* pDesc, uint32 iN
 	{
 		*(LTVector*)pOut = *pPolyVerts->m_pVec;
 		(this->*pSetColor)(pPolyVerts, pOut);
-		pSpecular((TLVertex*)pOut, (uint32*)(pOut + 0x14));
+		pSpecular((const LTVector*)pOut, (uint32*)(pOut + 0x14));
 		(this->*m_GenTexCoordsAll)(pPolyVerts, (TexPair*)(pOut + 0x18), 0);
 		pPolyVerts++;
 		pOut += batch.m_VertSize;
@@ -1106,7 +1117,7 @@ void DrawPolyMgr::DrawPolyAdditionalPass(WorldPoly* pPoly, PassDesc* pDesc, uint
 		{
 			*(LTVector*)pVerts = *pPolyVerts->m_pVec;
 			(this->*pSetColor)(pPolyVerts, pVerts);
-			pSpecular((TLVertex*)pVerts, (uint32*)(pVerts + 0x14));
+			pSpecular((const LTVector*)pVerts, (uint32*)(pVerts + 0x14));
 			(this->*m_GenTexCoordsAll)(pPolyVerts, (TexPair*)(pVerts + 0x18), 0);
 			pPolyVerts++;
 			pVerts += vertSize;
@@ -1139,7 +1150,7 @@ void DrawPolyMgr::DrawPolyAdditionalPass(WorldPoly* pPoly, PassDesc* pDesc, uint
 			*(LTVector*)pOut = pStored->m_Vec;
 			((float*)pOut)[3] = pStored->m_RHW;
 			(this->*pSetColor)(pPolyVerts, pOut);
-			pSpecular((TLVertex*)pOut, (uint32*)(pOut + 0x14));
+			pSpecular((const LTVector*)pOut, (uint32*)(pOut + 0x14));
 			(this->*m_GenTexCoordsAll)(pPolyVerts, (TexPair*)(pOut + 0x18), 0);
 			pStored++;
 			pOut += vertSize;
@@ -1199,7 +1210,7 @@ void DrawPolyMgr::DrawNodeFlat(PolyNode* pNode)
 		}
 
 		g_ClipFlags = 0x3f;
-		if (d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
+		if (d3d_ClipTLVerts((TLVertex**)&pVerts, &nVerts, &g_ViewParams, 0))
 			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, 0x1c4, pVerts, nVerts, 0);
 
 		pPoly = (WorldPoly*)pPoly->m_Link.m_pNext;

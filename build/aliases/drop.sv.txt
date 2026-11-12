@@ -1,0 +1,3 @@
+Primal Hunt's server.dll: proven 214, retargeted 20, new 15, unproven 37, dropped 2
+  DROP	??0CWorldAnimRecQ@@QAE@XZ	??0CCollElem60C@@QAE@XZ	UNDEF		-
+  DROP	??0CWorldTable@@QAE@XZ	??0?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAE@XZ	WRONG	0x1000f2ba	0x1000e60a

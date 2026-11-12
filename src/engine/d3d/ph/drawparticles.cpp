@@ -98,8 +98,15 @@ struct LTObject
 	float		m_SystemRadius;                         // +0x21c
 };
 
-struct ViewParams;
-struct ViewParams;
+// The view (common_draw.cpp's), as far as it is read here: its frustum
+// planes, and the really-close (the player-view) ones.
+struct ViewParams
+{
+	uint8		m_pad_000[0x3d0];
+	LTPlane		m_ClipPlanes[6];                        // +0x3d0 (0x1005bb60)
+	LTPlane		m_ReallyClosePlanes[6];                 // +0x430 (0x1005bbc0)
+};
+
 struct VisibleSet;
 
 class BaseObjectSet
@@ -125,13 +132,11 @@ public:
 
 extern ObjectDrawList*	g_pObjectDrawList;           // 0x100713cc
 extern ViewParams			g_ViewParams;             // 0x1005b790
-extern ViewParams			g_ViewParams;               // 0x1005bb60
-extern ViewParams			g_ReallyCloseParams;        // 0x1005bbc0
 extern int32				g_CV_DrawParticles;         // 0x1004a784
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
-extern int			d3d_ShouldDrawSphere(LTVector* pCenter, float fRadius,
-					                     ViewParams* pParams, uint32* pOut);  // 0x1000b5eb
+extern LTBOOL		d3d_ClipSphere(LTVector* pCenter, float fRadius,
+					               LTPlane* pPlanes, uint32* pOut);  // 0x1000b5eb (drawworld.cpp)
 extern void			d3d_GetBlendStates(LTObject* pObject, uint32* pSrcBlend,
 					                   uint32* pDestBlend, uint32* pFogEnable,
 					                   uint32* pFogColor);                    // 0x10025de5
@@ -206,8 +211,8 @@ static void d3d_DrawParticleSystem(ViewParams* pContext, LTObject* pSystem)
 	uint32 srcBlend, destBlend, fogEnable, fogColor;
 
 	fRadius = MAX(pSystem->m_Scale.x, MAX(pSystem->m_Scale.y, pSystem->m_Scale.z)) * pSystem->m_SystemRadius;
-	if (!d3d_ShouldDrawSphere(&pSystem->m_SystemCenter, fRadius,
-		(pSystem->m_Flags & FLAG_REALLYCLOSE) ? &g_ReallyCloseParams : &g_ViewParams, &visOut))
+	if (!d3d_ClipSphere(&pSystem->m_SystemCenter, fRadius,
+		(pSystem->m_Flags & FLAG_REALLYCLOSE) ? g_ViewParams.m_ReallyClosePlanes : g_ViewParams.m_ClipPlanes, &visOut))
 		return;
 
 	pSystem->m_Flags |= 0x40000000;

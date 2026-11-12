@@ -456,6 +456,18 @@ engine still has the same code.
 
 Not fixed yet (the renderer has no modern build).
 
+### The model sun's variance reads the warble scale
+
+d3d.ren 0x1000b67d (`d3d_InitModelSun`, src/engine/d3d/ph/drawmodel.cpp;
+AvP2's the same). The table of sun intensities the models are lit by
+spreads its sine by a clamped console value. The value it reads is
+0x1005d8b4, the one the `WarbleScale` variable (common_stuff.cpp,
+default 0.92) writes, not `ModelSunVariance`'s (this file's own, default
+0.05): the sun's flicker follows the world-warble setting. Identical, in
+both renderers.
+
+Not fixed yet (the renderer has no modern build).
+
 ### A lightmap page leaks its allocation bitmap when there is no lightmap format
 
 d3d.ren 0x10034f32 (the lightmap pager's page allocator,

@@ -90,7 +90,7 @@ struct RenderStruct
 	uint32		m_FlushTicks;                           // +0x68
 };
 
-struct FrameCounters
+struct SceneDesc
 {
 	uint8		m_pad_00[0x10];
 	uint32*		m_pVisTicks;                            // +0x10
@@ -120,30 +120,30 @@ struct VisibleSet
 };
 
 extern RenderStruct*	g_pStruct;                      // 0x1005df08
-extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneDesc*	g_pSceneDesc;                   // 0x1005c14c (common_draw.cpp)
 extern ViewParams		g_ViewParams;                 // 0x1005b790
-extern void				(*g_pfnPostQueueHook)();        // 0x10072808
+void				(*g_pfnPostQueueHook)();               // 0x10072808
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 
-extern void		sub_10030830();
-extern void		sub_10025b66();
-extern void		sub_1002db40();
+extern void		d3d_DrawSolidWorldModels();
+extern void		d3d_DrawSolidModels();
+extern void		d3d_DrawSolidPolyGrids();
 extern void		d3d_DrawSolidCanvases();                // 0x100237c4
-extern void		sub_10014880();
-extern void		sub_10030cb0();
-extern void		sub_10025c04();
-extern void		sub_100148c0();
-extern void		sub_10014620(uint32 bAdditive);
+extern void		d3d_EnablePunchThrough();
+extern void		d3d_DrawChromakeyWorldModels();
+extern void		d3d_DrawChromakeyModels();
+extern void		d3d_DisablePunchThrough();
+extern void		d3d_SetTranslucentObjectStates(LTBOOL bAdditive);
 extern void		d3d_DrawParticleSystems();              // 0x1002a6d6
-extern void		sub_1002dc20();
-extern void		sub_10024a10();
-extern void		sub_10030ce0();
-extern void		sub_10025c2f();
+extern void		d3d_DrawTranslucentPolyGrids();
+extern void		d3d_DrawLineSystems();
+extern void		d3d_QueueTranslucentWorldModels();
+extern void		d3d_QueueTranslucentModels();
 extern void		d3d_DrawTranslucentCanvases();          // 0x100237f6
-extern void		sub_1002f800();
-extern void		sub_1002f850();
-extern void		sub_10014870(uint32 bZWrite);
+extern void		d3d_QueueTranslucentSprites();
+extern void		d3d_DrawNoZSprites();
+extern void		d3d_UnsetTranslucentObjectStates(LTBOOL bZWrite);
 
 
 // ---------------------------------------------------------------------- //
@@ -165,9 +165,9 @@ struct ObjectHandler
 	void		(*m_ProcessObjectFn)(LTObject *pObject);
 };
 
-extern void d3d_ModelModuleInit();                      // 0x1000b722
-extern void d3d_ModelModuleTerm();                      // 0x1000b75a
-extern void d3d_ModelPreFrame();                        // 0x1000b65e
+extern void d3d_InitModels();                           // 0x1000b722 (drawmodel.cpp)
+extern void d3d_TermModels();                           // 0x1000b75a (drawmodel.cpp)
+extern void d3d_InitModelLists();                       // 0x1000b65e (drawmodel.cpp)
 extern void d3d_ProcessModel(LTObject *pObject);        // 0x10025b2f
 extern void d3d_NullPreFrame();                         // 0x10030120
 extern void d3d_ProcessWorldModel(LTObject *pObject);   // 0x10030130
@@ -187,7 +187,7 @@ ObjectHandler g_ObjectHandlers[NUM_OBJECTTYPES] =       // 0x1004da88
 	// OT_NORMAL
 	LTNULL, LTNULL, 0, LTNULL, LTNULL,
 	// OT_MODEL
-	d3d_ModelModuleInit, d3d_ModelModuleTerm, 0, d3d_ModelPreFrame, d3d_ProcessModel,
+	d3d_InitModels, d3d_TermModels, 0, d3d_InitModelLists, d3d_ProcessModel,
 	// OT_WORLDMODEL
 	LTNULL, LTNULL, 0, d3d_NullPreFrame, d3d_ProcessWorldModel,
 	// OT_SPRITE
@@ -326,25 +326,25 @@ void d3d_FlushObjectQueues()
 	{
 		CountAdder cntObjects(&g_pStruct->m_ObjectTicks);
 		{
-			CountAdder cntVis(g_pFrameCounters->m_pVisTicks);
-			sub_10030830();
+			CountAdder cntVis(g_pSceneDesc->m_pVisTicks);
+			d3d_DrawSolidWorldModels();
 			g_pStruct->m_pfnPoll();
 		}
 	}
 
 	{
 		CountAdder cntSorted(&g_pStruct->m_SortedTicks);
-		sub_10025b66();
+		d3d_DrawSolidModels();
 		g_pStruct->m_pfnPoll();
 	}
 
-	sub_1002db40();
+	d3d_DrawSolidPolyGrids();
 	g_pStruct->m_pfnPoll();
 	d3d_DrawSolidCanvases();
-	sub_10014880();
-	sub_10030cb0();
-	sub_10025c04();
-	sub_100148c0();
+	d3d_EnablePunchThrough();
+	d3d_DrawChromakeyWorldModels();
+	d3d_DrawChromakeyModels();
+	d3d_DisablePunchThrough();
 
 	if (g_pfnPostQueueHook)
 		g_pfnPostQueueHook();
@@ -364,19 +364,19 @@ void d3d_FlushObjectQueues()
 		if (nObjects > s_DrawList.GetSize())
 			s_DrawList.SetSize(nObjects);
 
-		sub_10014620(0);
+		d3d_SetTranslucentObjectStates(0);
 		d3d_DrawParticleSystems();
 		g_pStruct->m_pfnPoll();
-		sub_1002dc20();
+		d3d_DrawTranslucentPolyGrids();
 		g_pStruct->m_pfnPoll();
-		sub_10024a10();
+		d3d_DrawLineSystems();
 		g_pStruct->m_pfnPoll();
-		sub_10030ce0();
+		d3d_QueueTranslucentWorldModels();
 		g_pStruct->m_pfnPoll();
-		sub_10025c2f();
+		d3d_QueueTranslucentModels();
 		g_pStruct->m_pfnPoll();
 		d3d_DrawTranslucentCanvases();
-		sub_1002f800();
+		d3d_QueueTranslucentSprites();
 
 		if (s_DrawList.m_nUsed)
 		{
@@ -398,8 +398,8 @@ void d3d_FlushObjectQueues()
 
 		s_DrawList.m_nUsed = 0;
 
-		sub_1002f850();
-		sub_10014870(1);
+		d3d_DrawNoZSprites();
+		d3d_UnsetTranslucentObjectStates(1);
 	}
 }
 

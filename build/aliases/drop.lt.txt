@@ -1,0 +1,7 @@
+Primal Hunt's lithtech.exe: proven 1005, retargeted 82, new 41, unproven 211, dropped 6
+  DROP	??0CCollElem60@@QAE@XZ	??0CCollElem60C@@QAE@XZ	UNDEF		-
+  DROP	?AllocVoid@CCmgBank113C@@UAEPAXXZ	?Allocate@CCmgBank113CQ46C@@QAEPAVSharedTextureQ46C@@XZ	UNDEF	0x415050	-
+  DROP	?AllocVoid@CCmgSndBank284@@UAEPAXXZ	?AllocVoid@?$ObjectBankL10@VCSoundDataL10@@VNullCSL10@@@@UAEPAXXZ	WRONG	0x49fd80	0x415310
+  DROP	?_v04@CUnknown4A147C@@UAEXXZ	?Release@VideoInstK@@UAEXXZ	CONFLICT	0x401790,0x402530	-
+  DROP	?cmg_CreateClientDE@@YAPAVCCmgSub4C0@@PAVCCmgClientMgr@@@Z	?clt_CreateClientQ404@@YAPAVCLTClientQ404@@PAVCClientMgr@@@Z	WRONG	0x4051d0	0x46cac0
+  DROP	?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVLTObject@@HH@Z	?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVCLinkedObject@@HH@Z	UNDEF		-

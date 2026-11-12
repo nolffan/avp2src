@@ -175,8 +175,19 @@ float    g_LastFogFarZ;                          // 0x1005d380
 int32    g_LastTableFog;                         // 0x1005dd78
 int32    g_LastDither;                           // 0x1005d970
 int32    g_LastBilinear;                         // 0x1005d484
-FogColor g_FogColor;                             // 0x1005dad8
+extern FogColor g_FogColor;                      // 0x1005dad8 (link/phviews.txt: its bytes are also g_FogR/G/B)
 float    g_FogColorR, g_FogColorG, g_FogColorB;  // 0x1005d478..
+
+// The display, as d3d_Init (common_init.cpp) set it up.
+struct HWND__;
+HWND__*  g_hWnd;                                 // 0x1005d430 (the HWND)
+LTBOOL   g_bRunWindowed;                         // 0x1005d538
+int32    g_CV_SysMem;                            // 0x1005d8c8 (the "SysMem" parameter)
+uint32   g_ScreenWidth;                          // 0x1005d8cc
+uint32   g_ScreenHeight;                         // 0x1005d9c0
+uint32   g_ScreenScaleX, g_ScreenScaleY;         // 0x1005d8bc, 0x1005d8c0 (the screen's divisors)
+uint32   g_1005d5f0;                             // 0x1005d5f0: the frames begun
+float    g_fFogScale;                            // 0x1005d428 (1 / the fog's depth range)
 
 
 // ======================================================================= //

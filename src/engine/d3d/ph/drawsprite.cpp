@@ -20,11 +20,6 @@
 #include "ltbasedefs.h"
 
 
-// An object's rotation (the engine's quaternion).
-struct Rotation
-{
-	float		m_Quat[4];
-};
 
 struct LTObject
 {
@@ -34,7 +29,7 @@ struct LTObject
 	uint8		m_pad_090[0x94 - 0x90];
 	uint8		m_ColorR, m_ColorG, m_ColorB, m_ColorA;     // +0x094
 	uint8		m_pad_098[0x9c - 0x98];
-	Rotation	m_Rotation;                             // +0x09c
+	LTRotation	m_Rotation;                             // +0x09c
 	float		m_ScaleX;                               // +0x0ac
 	float		m_ScaleY;                               // +0x0b0
 	float		m_ScaleZ;                               // +0x0b4
@@ -69,7 +64,9 @@ struct SpriteEntry
 // The view being drawn (common_draw.cpp's g_ViewParams).
 struct ViewParams
 {
-	uint8		m_pad_000[0x94];
+	uint8		m_pad_000[0x88];
+	float		m_NearZ;                                // +0x088
+	uint8		m_pad_08c[0x94 - 0x8c];
 	float		m_fScaleX;                              // +0x094 the view's sprite scale
 	float		m_fScaleY;                              // +0x098
 	uint8		m_pad_09c[0x15c - 0x9c];
@@ -196,16 +193,22 @@ extern CRenderStateList		g_SavedStates;              // 0x10069728 (d3d_savedsta
 extern uint32				g_iCurTextureStage;         // 0x100638c0
 extern uint16				g_CurTextureFrameCode;      // 0x1005d250
 extern RTexture*			g_pCurTextures[];           // 0x10067270
-extern float				g_fTexelSizeU;              // 0x100672a8
-extern float				g_fTexelSizeV;              // 0x100672ac
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float	u, v;
+};
+
+extern TexPair				g_TexelSize[];              // 0x100672a8 (d3d_texture.cpp)
 extern LTVector				g_vGlobalLightColor;        // 0x1005b780
 extern void					(__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4
 
 extern RTexture*	d3d_CreateRenderTexture(SharedTexture* pTexture, uint32 iStage, LTBOOL bStageCopy);  // 0x10020cd0
 extern void			d3d_SetTextureDirect(RTexture* pTexture);   // 0x10007a89
 extern RTexture*	d3d_GetStageTexture(RTexture* pTexture, uint8 iStage);  // 0x10009300
-extern void			d3d_RotationToMatrix(Rotation* pRot, LTMatrix* pMat);   // 0x1003655d
-extern void			d3d_GetLightTableColor(void *pTable, LTVector *pPos, ColorBytes *pColor);  // 0x1000c818 (drawmodel.cpp)
+extern void			d3d_RotationToMatrix(LTRotation* pRot, LTMatrix* pMat);   // 0x1003655d
+struct LightTable;
+extern void			d3d_GetLightGridColor(LightTable* pTable, LTVector* pPos, uint8* pColor);  // 0x1000c818 (drawmodel.cpp)
 extern void			d3d_GetDynamicLightAdd(ModelInstance* pInstance, LTVector* pAdd);  // 0x10010010 (d3d_viewparams.cpp)
 extern LTBOOL		d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6
 HRESULT			d3d_DrawPrimitive(D3DPRIMITIVETYPE type, DWORD fvf, LPVOID pVerts, DWORD nVerts, DWORD flags);  // 0x1000d26f (drawmodel.cpp)
@@ -428,10 +431,19 @@ static const float SPRITE_MAXFACTORDIST		= 500.0f;
 static const float SPRITE_MINFACTOR			= 0.1f;
 static const float SPRITE_MAXFACTOR			= 2.0f;
 
-extern float			g_NearZ;                        // 0x1005b818
-extern float			g_fReallyCloseNearZ;            // 0x1005a32c (g_CV_ReallyCloseNearZ's value)
-extern float			g_fSpriteNearZ;                 // 0x1005b74c (g_CV_NearZ's value)
-extern void				d3d_ProjectTLVert(ClipVert* pVert, ViewParams* pParams);  // 0x1002739d
+// The renderer's console variables (common_stuff.cpp's CD3DConVar), as
+// far as they are read here.
+class CD3DConVar
+{
+public:
+	int32		m_nValue;                               // +0x00
+	float		m_fValue;                               // +0x04
+};
+
+extern CD3DConVar		g_CV_ReallyCloseNearZ;          // 0x1005a328 (d3d_viewparams.cpp)
+extern CD3DConVar		g_CV_NearZ;                     // 0x1005b748 (d3d_viewparams.cpp)
+struct TLVertex;
+extern void				d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);  // 0x1002739d (drawmodelshadows.cpp)
 
 inline LTBOOL d3d_ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts);
 
@@ -475,12 +487,12 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 	if (pObject->m_Flags & PHFLAG_REALLYCLOSE)
 	{
 		MatVMul(&vCamPos, &pContext->m_mReallyCloseToCamera, pPos);
-		fNearZ = g_fReallyCloseNearZ;
+		fNearZ = g_CV_ReallyCloseNearZ.m_fValue;
 	}
 	else
 	{
 		MatVMul(&vCamPos, &pContext->m_mWorldToCamera, pPos);
-		fNearZ = g_fSpriteNearZ;
+		fNearZ = g_CV_NearZ.m_fValue;
 	}
 
 	g_pfnCalcFog(&pObject->m_Pos, &specular);
@@ -538,10 +550,10 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 	fHeight = (float)g_pCurTextures[g_iCurTextureStage]->GetHeight();
 
 	// A texel in from each edge.
-	uStart = g_fTexelSizeU * 2.0f;
-	uEnd = (fWidth - 2.0f) * g_fTexelSizeU;
-	vStart = g_fTexelSizeV * 2.0f;
-	vEnd = (fHeight - 2.0f) * g_fTexelSizeV;
+	uStart = g_TexelSize[0].u * 2.0f;
+	uEnd = (fWidth - 2.0f) * g_TexelSize[0].u;
+	vStart = g_TexelSize[0].v * 2.0f;
+	vEnd = (fHeight - 2.0f) * g_TexelSize[0].v;
 
 	fSizeX = fWidth * pContext->m_fScaleX * scaleX;
 	fSizeY = fHeight * pContext->m_fScaleY * scaleY;
@@ -561,7 +573,7 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 	color.a = pObject->m_ColorA;
 	if (!(pObject->m_Flags & PHFLAG_NOLIGHT) && g_pSceneWorld)
 	{
-		d3d_GetLightTableColor(g_pSceneWorld->m_LightTable, &pObject->m_Pos, &lightColor);
+		d3d_GetLightGridColor((LightTable*)g_pSceneWorld->m_LightTable, &pObject->m_Pos, (uint8*)&lightColor);
 		d3d_GetDynamicLightAdd((ModelInstance*)pObject, &vAdd);
 
 		r = ((float)pObject->m_ColorR * g_vGlobalLightColor.x + vAdd.x) * ((float)lightColor.r * (1.0f / 255.0f));
@@ -644,12 +656,12 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_CLAMP);
 	}
 
-	fOldNearZ = g_NearZ;
+	fOldNearZ = g_ViewParams.m_NearZ;
 	pVerts = verts;
 	nVerts = 4;
 
 	if (pObject->m_Flags & PHFLAG_REALLYCLOSE)
-		g_NearZ = g_fReallyCloseNearZ;
+		g_ViewParams.m_NearZ = g_CV_ReallyCloseNearZ.m_fValue;
 
 	if (d3d_ClipPoly(g_ClipFlags, &pVerts, &nVerts))
 	{
@@ -657,8 +669,8 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 		{
 			// Pull it towards the camera, up to but not past the near plane.
 			fBias = SPRITE_POSITION_ZBIAS;
-			if (fBias + vCamPos.z < g_fSpriteNearZ)
-				fBias = g_fSpriteNearZ - vCamPos.z;
+			if (fBias + vCamPos.z < g_CV_NearZ.m_fValue)
+				fBias = g_CV_NearZ.m_fValue - vCamPos.z;
 
 			for (i=0; i < nVerts; i++)
 				d3d_ProjectBiasedVert(&pVerts[i], fBias);
@@ -666,12 +678,12 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 		else if (pObject->m_Flags & PHFLAG_REALLYCLOSE)
 		{
 			for (i=0; i < nVerts; i++)
-				d3d_ProjectBiasedVert(&pVerts[i], g_fSpriteNearZ);
+				d3d_ProjectBiasedVert(&pVerts[i], g_CV_NearZ.m_fValue);
 		}
 		else
 		{
 			for (i=0; i < nVerts; i++)
-				d3d_ProjectTLVert(&pVerts[i], &g_ViewParams);
+				d3d_ProjectTLVert((TLVertex*)&pVerts[i], &g_ViewParams);
 		}
 
 		g_SavedStates.Restore();
@@ -684,7 +696,7 @@ void d3d_DrawFlatSprite(ViewParams *pContext, LTObject *pObject, LTVector *pPos,
 	if (pObject->m_Flags2 & PHFLAG2_SPRITETEXROTATE)
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_ADDRESS, D3DTADDRESS_WRAP);
 
-	g_NearZ = fOldNearZ;
+	g_ViewParams.m_NearZ = fOldNearZ;
 }
 
 
@@ -776,10 +788,10 @@ void d3d_DrawRotatableSprite(ViewParams *pContext, LTObject *pObject, LTVector *
 	g_pfnCalcFog(&pObject->m_Pos, &specular);
 
 	// A texel in from the edges.
-	uMin = g_fTexelSizeU + g_fTexelSizeU;
-	uMax = (fWidth - 2.0f) * g_fTexelSizeU;
-	vMin = g_fTexelSizeV + g_fTexelSizeV;
-	vMax = (fHeight - 2.0f) * g_fTexelSizeV;
+	uMin = g_TexelSize[0].u + g_TexelSize[0].u;
+	uMax = (fWidth - 2.0f) * g_TexelSize[0].u;
+	vMin = g_TexelSize[0].v + g_TexelSize[0].v;
+	vMax = (fHeight - 2.0f) * g_TexelSize[0].v;
 
 	// A rotation gone bad is reset.
 	if (pObject->m_Rotation.m_Quat[0] > 100000.0f || pObject->m_Rotation.m_Quat[0] < -100000.0f)
@@ -817,7 +829,7 @@ void d3d_DrawRotatableSprite(ViewParams *pContext, LTObject *pObject, LTVector *
 	color.a = pObject->m_ColorA;
 	if (!(pObject->m_Flags & PHFLAG_NOLIGHT) && g_pSceneWorld)
 	{
-		d3d_GetLightTableColor(g_pSceneWorld->m_LightTable, &pObject->m_Pos, &lightColor);
+		d3d_GetLightGridColor((LightTable*)g_pSceneWorld->m_LightTable, &pObject->m_Pos, (uint8*)&lightColor);
 		d3d_GetDynamicLightAdd((ModelInstance*)pObject, &vAdd);
 
 		r = ((float)pObject->m_ColorR * g_vGlobalLightColor.x + vAdd.x) * ((float)lightColor.r * (1.0f / 255.0f));
@@ -970,7 +982,6 @@ void d3d_TransformSpriteVerts(SpriteVert *pVerts, uint32 nVerts, LTMatrix *pMat)
 
 // 0x1002fdd0 -- the sprite's vertices to camera space, clipped, and
 // projected with the Z bias (held off the near plane).
-extern float			g_fSpriteNearZ;                 // 0x1005b74c
 
 // The clip vertex, and the clip planes (TU06's ClipNear 0x1000b07d and
 // ClipLeft 0x1000b1bc, TU03's ClipTop 0x100063e0, ClipRight 0x10006670,
@@ -1108,7 +1119,7 @@ template<class V> LTBOOL ClipRight(uint8* pUnused, V** ppVerts, int32* pnVerts, 
 template<class V> LTBOOL ClipBottom(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
 template<class V> LTBOOL ClipFar(uint8* pUnused, V** ppVerts, int32* pnVerts, V** ppOut);
 
-extern int32			g_bUseD3DClip;                  // 0x100622b0
+extern CD3DConVar		g_CV_UseD3DClip;                // 0x100622b0 (d3d_init.cpp)
 extern void*			g_pClipScratch;                 // 0x1005bd14
 
 // Clip a polygon against the planes in nClipFlags, into the clip scratch
@@ -1120,7 +1131,7 @@ inline LTBOOL d3d_ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts
 	int32 nVerts;
 	uint8 nearPlane, leftPlane, topPlane, rightPlane, bottomPlane, farPlane;
 
-	if (g_bUseD3DClip)
+	if (g_CV_UseD3DClip.m_nValue)
 	{
 		nClipFlags &= 1;
 		if (!nClipFlags)
@@ -1194,7 +1205,7 @@ LTBOOL d3d_ClipSpriteVerts(ClipVert **ppVerts, int32 *pnVerts, ViewParams *pPara
 	pVert = *ppVerts;
 	for (i=*pnVerts; i; i--)
 	{
-		bias = (fZBias + pVert->m_vPos.z < g_fSpriteNearZ) ? g_fSpriteNearZ - pVert->m_vPos.z : fZBias;
+		bias = (fZBias + pVert->m_vPos.z < g_CV_NearZ.m_fValue) ? g_CV_NearZ.m_fValue - pVert->m_vPos.z : fZBias;
 		rhw = 1.0f / (pMat->m[3][0]*pVert->m_vPos.x + pMat->m[3][1]*pVert->m_vPos.y + pMat->m[3][2]*pVert->m_vPos.z + pMat->m[3][3]);
 		x = rhw * (pMat->m[0][0]*pVert->m_vPos.x + pMat->m[0][1]*pVert->m_vPos.y + pMat->m[0][2]*pVert->m_vPos.z + pMat->m[0][3]);
 		y = rhw * (pMat->m[1][0]*pVert->m_vPos.x + pMat->m[1][1]*pVert->m_vPos.y + pMat->m[1][2]*pVert->m_vPos.z + pMat->m[1][3]);

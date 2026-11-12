@@ -293,7 +293,18 @@ public:
 };
 
 extern CMulTable	g_MulTable;                         // 0x10087c00 (d3d_tables.cpp): a * b / 255
-extern uint8		g_SatTable[512];                    // 0x10097c00
+// d3d_tables.cpp's saturating add: an identity table, then 256 bytes of
+// 0xFF, so a sum of two bytes indexes it (into m_Full) clamped.
+class CIdentTable
+{
+public:
+			CIdentTable();
+
+	uint8	m_Ident[256];
+	uint8	m_Full[256];
+};
+
+extern CIdentTable	g_IdentTable;                       // 0x10097c00 (d3d_tables.cpp)
 extern FormatMgr	g_FormatMgr;                        // 0x100661a8 (d3d_texture.cpp)
 extern LPDIRECTDRAWSURFACE7	g_pLightmapScratch;         // 0x10068310 (d3d_texture.cpp)
 extern int32		g_CV_FastLight;                     // 0x1005df58 (common_stuff.cpp)
@@ -573,9 +584,9 @@ LTBOOL d3d_UpdateAnimatedLightmap(SceneWorld *pWorld, WorldPoly *pPoly, LTBOOL b
 			{
 				src = layer[n];
 				dest = accum[n];
-				accum[n] = ((uint32)g_SatTable[g_MulTable.m_Table[(src >> 16) & 0xff][scale] + ((dest >> 16) & 0xff)] << 16) |
-					((uint32)g_SatTable[g_MulTable.m_Table[(src >> 8) & 0xff][scale] + ((dest >> 8) & 0xff)] << 8) |
-					(uint32)g_SatTable[g_MulTable.m_Table[src & 0xff][scale] + (dest & 0xff)];
+				accum[n] = ((uint32)g_IdentTable.m_Ident[g_MulTable.m_Table[(src >> 16) & 0xff][scale] + ((dest >> 16) & 0xff)] << 16) |
+					((uint32)g_IdentTable.m_Ident[g_MulTable.m_Table[(src >> 8) & 0xff][scale] + ((dest >> 8) & 0xff)] << 8) |
+					(uint32)g_IdentTable.m_Ident[g_MulTable.m_Table[src & 0xff][scale] + (dest & 0xff)];
 			}
 		}
 

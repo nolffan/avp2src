@@ -256,8 +256,9 @@ static void i_FindIntersections(WorldBsp *pWorldBsp, Node **pNodeIntersectionPtr
 static LTBOOL i_ISCallback(LTObject *pObj, void *pCBUser);
 
 
-// 0x10031a5d
-LTBOOL i_IntersectSegment(IntersectQuery *pQuery, IntersectInfo *pInfo, WorldTree *pWorldTree)
+// 0x10031a5d -- pUser is unused: the renderer's one caller
+// (drawmodel.cpp's d3d_SegmentHitsSky) passes LTNULL for it.
+LTBOOL i_IntersectSegment(IntersectQuery *pQuery, IntersectInfo *pInfo, WorldTree *pWorldTree, void *pUser)
 {
 	float InvVV, VP, testMag;
 

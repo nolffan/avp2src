@@ -115,10 +115,10 @@ struct LightLink
 	LTVector	m_vPos;                                 // +0x08
 };
 
-struct LitPoly
+struct LitObjectRef
 {
 	WorldPoly*	m_pPoly;                                // +0x00
-	LitPoly*	m_pNext;                                // +0x04
+	LitObjectRef*	m_pNext;                                // +0x04
 };
 
 struct LTObject
@@ -141,9 +141,9 @@ struct LTObject
 
 #define NODE_FLAGS_LEAF		3
 
-extern StructBank	g_LitPolyBank;                      // 0x1005bcd8
+extern StructBank	g_LitObjectBank;                   // 0x1005bcd8 (common_draw.cpp)
 extern StructBank	g_LightLinkBank;                    // 0x1005bcb8
-extern LitPoly*		g_pLitPolies;                       // 0x1005d24c
+extern LitObjectRef*	g_pLitObjects;                      // 0x1005d24c (common_draw.cpp)
 extern uint16		g_CurFrameCode;                     // 0x1005d238
 extern uint32		g_nLightPolyRejects;                // 0x1005c128
 
@@ -162,7 +162,7 @@ void d3d_LightWorldModel(LTObject* pLight, LTObject* pWorldModel)
 	WorldPoly* pPoly;
 	LTPlane* pPlane;
 	LightLink* pLink;
-	LitPoly* pLitPoly;
+	LitObjectRef* pLitPoly;
 
 	vPos = pLight->m_Pos;
 	d3d_MatVMul_H(&vLightPos, &pWorldModel->m_BackTransform, &vPos);
@@ -204,12 +204,12 @@ void d3d_LightWorldModel(LTObject* pLight, LTObject* pWorldModel)
 			{
 				if (!pPoly->m_pLights)
 				{
-					pLitPoly = (LitPoly*)sb_Allocate(&g_LitPolyBank);
+					pLitPoly = (LitObjectRef*)sb_Allocate(&g_LitObjectBank);
 					if (pLitPoly)
 					{
 						pLitPoly->m_pPoly = pPoly;
-						pLitPoly->m_pNext = g_pLitPolies;
-						g_pLitPolies = pLitPoly;
+						pLitPoly->m_pNext = g_pLitObjects;
+						g_pLitObjects = pLitPoly;
 					}
 				}
 				else
@@ -294,7 +294,7 @@ class CountAdder
 		uint32 *m_pNum;
 };
 
-struct FrameCounters
+struct SceneDesc
 {
 	uint8		m_pad_00[0x18];
 	uint32*		m_pLightTicks;                          // +0x18
@@ -334,7 +334,7 @@ public:
 	virtual void	FindObjectsInBox(FindBoxInfo *pInfo);   // +0x08
 };
 
-class SceneWorld
+struct SceneWorld
 {
 public:
 	uint8		m_pad_00[0x6c];
@@ -344,7 +344,7 @@ public:
 #define MAX_VISIBLE_LIGHTS	40
 #define FLAG_DONTLIGHTWORLD	0x80
 
-extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneDesc*	g_pSceneDesc;                   // 0x1005c14c (common_draw.cpp)
 extern SceneWorld*		g_pSceneWorld;                  // 0x1005c208
 extern LTObject*		g_DynamicLights[];              // 0x1005c168
 extern uint32			g_nDynamicLights;               // 0x1005bcb0
@@ -352,7 +352,7 @@ extern uint32			g_nDynamicLights;               // 0x1005bcb0
 void d3d_ProcessLightSet(ViewParams* pContext, LTObject* pLight)
 {
 	FindBoxInfo info;
-	CountAdder cntAdd(g_pFrameCounters->m_pLightTicks);
+	CountAdder cntAdd(g_pSceneDesc->m_pLightTicks);
 
 	if (!(pLight->m_Flags & FLAG_ONLYLIGHTWORLD))
 	{
@@ -443,11 +443,6 @@ struct ViewParams
 	LTMatrix	m_mWorldToCamera;                      // +0x15c
 };
 
-// The engine's rotation, as the transform reads it.
-struct Rotation
-{
-	float		x, y, z, w;
-};
 
 struct LSLinePoint
 {
@@ -467,7 +462,7 @@ struct LineSystem
 	uint8		m_pad_000[0x97];
 	uint8		m_ColorA;                               // +0x097
 	uint8		m_pad_098[0x9c - 0x98];
-	Rotation	m_Rotation;                             // +0x09c
+	LTRotation	m_Rotation;                             // +0x09c
 	LTVector	m_Scale;                                // +0x0ac
 	uint8		m_pad_0b8[0x194 - 0xb8];
 	LTVector	m_Pos;                                  // +0x194
@@ -482,12 +477,12 @@ class RTexture;
 extern LPDIRECT3DDEVICE7	g_pD3DDevice;               // 0x100638c8
 extern ViewParams			g_ViewParams;               // 0x1005b790
 extern int32				g_CV_FogEnable;             // 0x1005df34
-extern uint32				g_BindTextureStage;         // 0x100638c0
+extern uint32				g_iCurTextureStage;         // 0x100638c0 (d3d_init.cpp)
 extern RTexture*			g_pCurTextures[];           // 0x10067270
 
 extern LTBOOL	d3d_ClipLine(TLVertex* pVerts, uint32 clipFlags);          // 0x10016c60
 extern void		d3d_ProjectTLVert(TLVertex* pVert, ViewParams* pParams);   // 0x1002739d
-extern void		d3d_RotationToMatrix(Rotation* pRot, LTMatrix* pMat);      // 0x1003655d
+extern void		d3d_RotationToMatrix(LTRotation* pRot, LTMatrix* pMat);      // 0x1003655d
 
 // Round to nearest in the current FPU mode (LithTech's RoundFloatToInt).
 inline int32 RoundFloatToInt(float f)
@@ -509,19 +504,19 @@ inline void d3d_DisableTexture(uint32 iStage)
 }
 
 // TU05's 0x100091f0, expanded here.
-inline void d3d_SetupTransformation(LTVector* pPos, Rotation* pRot, LTVector* pScale, LTMatrix* pMat)
+inline void d3d_SetupTransformation(LTVector* pPos, LTRotation* pRot, LTVector* pScale, LTMatrix* pMat)
 {
-	if (pRot->x > 100000.0f || pRot->x < -100000.0f)
-		pRot->x = 0.0f;
+	if (pRot->m_Quat[0] > 100000.0f || pRot->m_Quat[0] < -100000.0f)
+		pRot->m_Quat[0] = 0.0f;
 
-	if (pRot->y > 100000.0f || pRot->y < -100000.0f)
-		pRot->y = 0.0f;
+	if (pRot->m_Quat[1] > 100000.0f || pRot->m_Quat[1] < -100000.0f)
+		pRot->m_Quat[1] = 0.0f;
 
-	if (pRot->z > 100000.0f || pRot->z < -100000.0f)
-		pRot->z = 0.0f;
+	if (pRot->m_Quat[2] > 100000.0f || pRot->m_Quat[2] < -100000.0f)
+		pRot->m_Quat[2] = 0.0f;
 
-	if (pRot->w > 100000.0f || pRot->w < -100000.0f)
-		pRot->w = 1.0f;
+	if (pRot->m_Quat[3] > 100000.0f || pRot->m_Quat[3] < -100000.0f)
+		pRot->m_Quat[3] = 1.0f;
 
 	d3d_RotationToMatrix(pRot, pMat);
 
@@ -553,7 +548,7 @@ void d3d_DrawLineSystem(ViewParams* pContext, LTObject* pObject)
 	if (g_CV_FogEnable)
 		g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGENABLE, FALSE);
 
-	d3d_DisableTexture(g_BindTextureStage);
+	d3d_DisableTexture(g_iCurTextureStage);
 
 	pSystem = (LineSystem*)pObject;
 

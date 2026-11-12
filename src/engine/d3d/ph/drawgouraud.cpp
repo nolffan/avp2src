@@ -125,10 +125,14 @@ extern uint8	g_LightTableR[256];                     // 0x1005fa9c
 extern uint8	g_LightTableG[256];                     // 0x1005fb9c
 extern uint8	g_LightTableB[256];                     // 0x1005fc9c
 extern uint8	g_VertexAlpha;                          // 0x1005d20c
-extern void		(__fastcall *g_pfnSetupSpecular)(TLVertex* pVert, uint32* pSpecular);  // 0x1005e1c4
+extern void		(__fastcall *g_pfnCalcFog)(const LTVector* pPos, uint32* pSpecular);  // 0x1005e1c4 (d3d_draw.cpp)
 extern uint32	g_ClipFlags;                            // 0x1005bd0c
-extern float	g_fTexelSizeU;                          // 0x100672a8
-extern float	g_fTexelSizeV;                          // 0x100672ac
+struct TexPair
+{
+	float	u, v;
+};
+
+extern TexPair	g_TexelSize[];                          // 0x100672a8 (d3d_texture.cpp)
 extern GouraudBucket*	g_GouraudPolyList;              // 0x1005e728
 
 extern QueuedPoly*	d3d_QueuePoly(void* pPoly, void* pList, uint32 nType);  // 0x10007ddb
@@ -157,12 +161,13 @@ extern ViewParams		g_ViewParams;                   // 0x1005b790
 extern CRenderStateList	g_SavedStates;                  // 0x10069728
 extern StructBank		g_DeferredPolyBank;             // 0x1005e1f0
 extern StructBank		g_ClipPointBank;                // 0x1005e730
-extern QueuedPoly*		g_WorldPolyList;                // 0x1005fda0
+struct LMBucket;
+extern LMBucket*		g_LightmapPolyList;             // 0x1005fda0 (drawlightmaps.cpp)
 extern uint32			g_nTLVertsUsed;                 // 0x1005e27c
 extern uint32			g_nDrawPrimCalls;               // 0x1005c144
-extern uint32			g_bCanEnvMap;                   // 0x100638c4
+extern LTBOOL			g_100638c4;                     // 0x100638c4 (d3d_init.cpp): env maps work
 extern uint32			g_bDrawWorldFog;                // 0x1005e798
-extern uint32			g_BindTextureStage;             // 0x100638c0
+extern uint32			g_iCurTextureStage;             // 0x100638c0 (d3d_init.cpp)
 extern RTexture*		g_pCurTextures[];               // 0x10067270
 extern int32			g_CV_FixTJunc;                  // 0x1005dbb4
 extern int32			g_CV_Saturate;                  // 0x1005d384
@@ -187,7 +192,7 @@ extern void			d3d_DisableTexture(uint32 iStage);                         // 0x10
 extern void			d3d_FlushWorldPieces();                                    // 0x1000ac2b
 extern void			d3d_DrawTLPolyTris(TLVertex* pVerts, int nVerts, ViewParams* pParams, uint32 fvf);  // 0x1000acf8
 extern LTBOOL		d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6
-extern void			d3d_LightPolyDynamic(RenderPoly* pPoly, TLVertex* pVerts, int nVerts);  // 0x1001a533
+extern void			d3d_LightSkyPoly(RenderPoly* pPoly, TLVertex* pVerts, uint32 nVerts);  // 0x1001a533 (d3d_draw.cpp)
 extern int			d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
 
 void d3d_SetupGouraudVerts(TLVertex* pOut, SPolyVertex* pIn, int nVerts);
@@ -274,7 +279,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 	uint32 fogColor;
 
 	bProject = TRUE;
-	if (pPoly->m_pSurface->m_pTexture->m_pEnvMap && g_CV_EnvMapWorld.m_nValue && g_bCanEnvMap)
+	if (pPoly->m_pSurface->m_pTexture->m_pEnvMap && g_CV_EnvMapWorld.m_nValue && g_100638c4)
 		bEnvMap = TRUE;
 	else
 		bEnvMap = FALSE;
@@ -302,7 +307,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 	}
 
 	if (!g_CV_LMDynamic.m_nValue)
-		d3d_LightPolyDynamic(pPoly, pVerts, nVerts);
+		d3d_LightSkyPoly(pPoly, pVerts, nVerts);
 
 	if (bProject && !bEnvMap)
 	{
@@ -318,7 +323,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 
 	if (d3d_GetWorldFlags())
 	{
-		pQueued = d3d_QueuePoly(pPoly, &g_WorldPolyList, 0);
+		pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 		pQueued->m_iFirstVert = g_nTLVertsUsed;
 		pQueued->m_nVerts = nVerts;
 		pQueued->m_ClipFlags = g_ClipFlags;
@@ -346,7 +351,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 		fogColor = d3d_GammaRGB(g_FogColor.m_Color[0], g_FogColor.m_Color[1], g_FogColor.m_Color[2]);
 		StateSet fogState(D3DRENDERSTATE_FOGCOLOR, fogColor);
 
-		d3d_DisableTexture(g_BindTextureStage);
+		d3d_DisableTexture(g_iCurTextureStage);
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG2);
 
 		if (bEnvMap)
@@ -368,7 +373,7 @@ void d3d_DrawMultipassGouraud(RenderPoly* pPoly, LTBOOL bLightmap)
 	}
 	else
 	{
-		pQueued = d3d_QueuePoly(pPoly, &g_WorldPolyList, 0);
+		pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 		pQueued->m_iFirstVert = g_nTLVertsUsed;
 		pQueued->m_nVerts = nVerts;
 		pQueued->m_ClipFlags = g_ClipFlags;
@@ -424,13 +429,13 @@ class CountAdder
 		uint32 *m_pNum;
 };
 
-struct FrameCounters
+struct SceneDesc
 {
 	uint8		m_pad_00[0x18];
 	uint32*		m_pLightTicks;                          // +0x18
 };
 
-extern FrameCounters*	g_pFrameCounters;               // 0x1005c14c
+extern SceneDesc*	g_pSceneDesc;                   // 0x1005c14c (common_draw.cpp)
 
 // Save a texture stage state, set it, and put it back when the scope closes
 // (drawworld.cpp's, 0x1000a48c and 0x1000a4d1, out of line).
@@ -536,7 +541,7 @@ void d3d_DrawPolyLights(RenderPoly* pPoly, TLVertex* pVerts, int nVerts)
 	if (!g_CV_LMDynamic.m_nValue)
 		return;
 
-	CountAdder cntLights(g_pFrameCounters->m_pLightTicks);
+	CountAdder cntLights(g_pSceneDesc->m_pLightTicks);
 
 	pPoly->m_LMWidth = (uint8)g_CV_LMDynamicSize.m_nValue;
 	pPoly->m_LMHeight = (uint8)g_CV_LMDynamicSize.m_nValue;
@@ -595,11 +600,11 @@ void d3d_SetupGouraudVerts(TLVertex* pOut, SPolyVertex* pIn, int nVerts)
 		pOut->m_Vec.x = pIn->m_pVec->x;
 		pOut->m_Vec.y = pIn->m_pVec->y;
 		pOut->m_Vec.z = pIn->m_pVec->z;
-		pOut->m_Color[2] = g_GammaTableR[pIn->m_Color[2]];
-		pOut->m_Color[1] = g_GammaTableG[pIn->m_Color[1]];
-		pOut->m_Color[0] = g_GammaTableB[pIn->m_Color[0]];
+		pOut->m_Color[2] = g_LightTableR[pIn->m_Color[2]];
+		pOut->m_Color[1] = g_LightTableG[pIn->m_Color[1]];
+		pOut->m_Color[0] = g_LightTableB[pIn->m_Color[0]];
 		pOut->m_Color[3] = g_VertexAlpha;
-		g_pfnSetupSpecular(pOut, &pOut->m_Specular);
+		g_pfnCalcFog(&pOut->m_Vec, &pOut->m_Specular);
 		pOut->SetUV(pIn->m_U, pIn->m_V);
 		pIn++;
 		pOut++;
@@ -615,11 +620,11 @@ void d3d_SetupLightmapVerts(TLVertex* pOut, SPolyVertex* pIn, int nVerts)
 		pOut->m_Vec.x = pIn->m_pVec->x;
 		pOut->m_Vec.y = pIn->m_pVec->y;
 		pOut->m_Vec.z = pIn->m_pVec->z;
-		pOut->m_Color[2] = g_LightTableR[pIn->m_Color[2]];
-		pOut->m_Color[1] = g_LightTableG[pIn->m_Color[1]];
-		pOut->m_Color[0] = g_LightTableB[pIn->m_Color[0]];
+		pOut->m_Color[2] = g_GammaTableR[pIn->m_Color[2]];
+		pOut->m_Color[1] = g_GammaTableG[pIn->m_Color[1]];
+		pOut->m_Color[0] = g_GammaTableB[pIn->m_Color[0]];
 		pOut->m_Color[3] = g_VertexAlpha;
-		g_pfnSetupSpecular(pOut, &pOut->m_Specular);
+		g_pfnCalcFog(&pOut->m_Vec, &pOut->m_Specular);
 		pOut->SetUV(pIn->m_U, pIn->m_V);
 		pIn++;
 		pOut++;
@@ -660,12 +665,12 @@ void d3d_DrawGouraudPoly(RenderPoly* pPoly)
 	d3d_SetupGouraudVerts(verts, pPolyVerts, nVerts);
 
 	if (!g_CV_LMDynamic.m_nValue)
-		d3d_LightPolyDynamic(pPoly, pVerts, nVerts);
+		d3d_LightSkyPoly(pPoly, pVerts, nVerts);
 
 	if (!d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
 		return;
 
-	if (!d3d_SetTexture(pPoly->m_pSurface->m_pTexture, g_BindTextureStage, 0))
+	if (!d3d_SetTexture(pPoly->m_pSurface->m_pTexture, g_iCurTextureStage, 0))
 	{
 		d3d_DrawPolyFlat(pPoly);
 		return;
@@ -673,7 +678,7 @@ void d3d_DrawGouraudPoly(RenderPoly* pPoly)
 
 	d3d_ScaleTexCoords(pVerts, nVerts);
 
-	if (g_pCurTextures[g_BindTextureStage]->IsTranslucent() && g_bDrawWorldFog)
+	if (g_pCurTextures[g_iCurTextureStage]->IsTranslucent() && g_bDrawWorldFog)
 	{
 		g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, FVF_TLVERTEX, pVerts, nVerts, 0);
 
@@ -681,9 +686,9 @@ void d3d_DrawGouraudPoly(RenderPoly* pPoly)
 			g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGENABLE, FALSE);
 
 		color[3] = 0xFF;
-		color[2] = g_GammaTableR[255];
-		color[1] = g_GammaTableG[255];
-		color[0] = g_GammaTableB[255];
+		color[2] = g_LightTableR[255];
+		color[1] = g_LightTableG[255];
+		color[0] = g_LightTableB[255];
 		pVert = pVerts;
 		for (i=nVerts; i; i--)
 		{
@@ -723,7 +728,7 @@ void d3d_ScaleTexCoords(TLVertex* pVerts, uint32 nVerts)
 	{
 		tu = pVerts->m_TU;
 		tv = pVerts->m_TV;
-		pVerts->SetUV(tu * g_fTexelSizeU, tv * g_fTexelSizeV);
+		pVerts->SetUV(tu * g_TexelSize[0].u, tv * g_TexelSize[0].v);
 		pVerts++;
 	}
 }
@@ -786,7 +791,7 @@ static void d3d_DrawGouraudList(QueuedPoly* pList)
 		else
 		{
 			pTexture = pCur->m_pPoly->m_pSurface->m_pTexture;
-			if (g_bCanEnvMap && pTexture && pTexture->m_pDetailTexture)
+			if (g_100638c4 && pTexture && pTexture->m_pDetailTexture)
 			{
 				if (pTexture->m_pEnvMap)
 					d3d_DrawGouraudEnvMap(pCur->m_pPoly);
@@ -832,9 +837,9 @@ void d3d_DrawGouraudEnvMap(RenderPoly* pPoly)
 	d3d_SetupGouraudVerts(pVerts, pPolyVerts, nVerts);
 
 	if (!g_CV_LMDynamic.m_nValue)
-		d3d_LightPolyDynamic(pPoly, pVerts, nVerts);
+		d3d_LightSkyPoly(pPoly, pVerts, nVerts);
 
-	pQueued = d3d_QueuePoly(pPoly, &g_WorldPolyList, 0);
+	pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 	pQueued->m_iFirstVert = g_nTLVertsUsed;
 	pQueued->m_nVerts = nVerts;
 	pQueued->m_ClipFlags = g_ClipFlags;
@@ -869,7 +874,7 @@ void d3d_DrawGouraudDetail(RenderPoly* pPoly)
 
 	pVerts = verts;
 	if (!g_CV_LMDynamic.m_nValue)
-		d3d_LightPolyDynamic(pPoly, verts, nVerts);
+		d3d_LightSkyPoly(pPoly, verts, nVerts);
 
 	if (!d3d_ClipTLVerts(&pVerts, &nVerts, &g_ViewParams, 0))
 		return;
@@ -880,7 +885,7 @@ void d3d_DrawGouraudDetail(RenderPoly* pPoly)
 
 	memcpy(pOut, pVerts, nVerts * sizeof(TLVertex));
 
-	pQueued = d3d_QueuePoly(pPoly, &g_WorldPolyList, 0);
+	pQueued = d3d_QueuePoly(pPoly, (QueuedPoly**)&g_LightmapPolyList, 0);
 	pQueued->m_iFirstVert = g_nTLVertsUsed;
 	pQueued->m_nVerts = nVerts;
 	pQueued->m_ClipFlags = 0;

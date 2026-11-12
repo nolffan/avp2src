@@ -605,6 +605,26 @@ defines. The links leave 1,377 (AvP2's) and 1,379 (Primal Hunt's) symbols
 unresolved in `lithtech.exe`, 316 and 311 in `server.dll`, 198 and 391 in
 `d3d.ren` (`<dir>/<image>-link.txt`): the engines run only once those are
 written or bound (nolfsrc's link-time stand-ins name NOLF's addresses).
+Both `d3d.ren` now link with none: Primal Hunt's from the ph/ objects
+alone (as AvP2's), every reference bound to its definition by the
+shipped image's relocations, what was missing written, and the few
+shipped objects C++ cannot name twice in `src/engine/d3d/link/phviews.txt`.
+
+Bound since: each of the four exe/server links takes an alias file of its
+own (`src/engine/{lithtech,server}/link/aliases-{ph,avp2}.rsp`, weak
+externals by tools/mkaliasobj.py), made from nolfsrc's `aliases.rsp` by
+reading every referencing site the scoreboard places back out of the
+retail image and keeping a binding only where its target is placed at the
+address the sites reach (or retargeting it to what is placed there; the
+head of each file says how). nolfsrc's bindings no placed site can confirm
+are taken as well, in a section of their own ("Unproven"). The links also
+take ADVAPI32 (WON's registry helpers, kept by /OPT:NOREF). This leaves
+27 (Primal Hunt's) and 21 (AvP2's) unresolved in `lithtech.exe`, 16 and
+14 in `server.dll`, nearly all of them functions not yet written.
+Still unchecked: where a view class is bound onto a real class's
+constructor and the caller isn't byte-identical (about 45 such bindings
+per `lithtech.exe`, 19 per `server.dll`), whether the view's size and
+member offsets are the real class's.
 
 The layout, the rez stacks and our game DLLs are shown sound with the
 retail engines put in their place (`lithtech.exe`, `server.dll`,

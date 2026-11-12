@@ -137,7 +137,11 @@ typedef LTObject Canvas;
 
 struct ViewParams
 {
-	uint8		m_pad_000[0x4d4];
+	uint8		m_pad_000[0x88];
+	float		m_NearZ;                                // +0x088
+	uint8		m_pad_08c[0x2dc - 0x8c];
+	LTMatrix	m_mReallyCloseToCamera;                 // +0x2dc
+	uint8		m_pad_31c[0x4d4 - 0x31c];
 	uint32		m_bDrawHidden;                          // +0x4d4
 };
 
@@ -238,22 +242,29 @@ public:
 extern CRenderStateList	g_SavedStates;              // 0x10069728
 extern ObjectDrawList*	g_pObjectDrawList;           // 0x100713cc
 extern ViewParams			g_ViewParams;             // 0x1005b790
-extern uint32				g_iCanvasTexStage;          // 0x100638c0
-extern float				g_fTexelSizeU;              // 0x100672a8
-extern float				g_fTexelSizeV;              // 0x100672ac
+extern uint32				g_iCurTextureStage;         // 0x100638c0 (d3d_init.cpp)
+// A texture stage's texel size (d3d_texture.cpp's, one per stage).
+struct TexPair
+{
+	float	u, v;
+};
+
+extern TexPair				g_TexelSize[];              // 0x100672a8 (d3d_texture.cpp)
 extern uint32				g_ClipFlags;                // 0x1005bd0c
-extern uint32				g_1005b818;                 // 0x1005b818
-extern uint32				g_1005a32c;                 // 0x1005a32c
-extern uint8				g_1005ba6c[];               // 0x1005ba6c
-extern float				g_1005b74c;                 // 0x1005b74c
+// The near clip distances (d3d_viewparams.cpp's console variables).
+extern CD3DConVar			g_CV_NearZ;                 // 0x1005b748
+extern CD3DConVar			g_CV_ReallyCloseNearZ;      // 0x1005a328
 
 extern VisibleSet*	d3d_GetVisibleSet();                // 0x1003abb0
 extern void			d3d_DisableTexture(uint32 iStage);  // 0x1000a22b
 extern int			d3d_SetTexture(SharedTexture* pTexture, uint32 iStage, uint32 flags);  // 0x100079e4
-extern int			d3d_ClipCanvasVerts(LTVertex** ppVerts, int* pnVerts, ViewParams* pContext, uint32 flags);  // 0x1000aec6
-extern void			d3d_TransformCanvasVert(LTVertex* pVert, void* pMat);  // 0x10008719
-extern int			d3d_ClipCanvasVertsRC(uint32 clipFlags, LTVertex** ppVerts, int* pnVerts);  // 0x1000af61
-extern void			d3d_ProjectCanvasVert(LTVertex* pOut, LTVertex* pIn, float f);  // 0x100062e0
+struct TLVertex;
+struct ClipVert;
+struct TLVert;
+extern LTBOOL		d3d_ClipTLVerts(TLVertex** ppVerts, int* pnVerts, ViewParams* pParams, uint32 flags);  // 0x1000aec6 (drawworld.cpp)
+extern void			d3d_TransformToCamera(ClipVert* pVert, LTMatrix* pMat);  // 0x10008719 (drawworld.cpp)
+extern LTBOOL		ClipPoly(uint32 nClipFlags, ClipVert** ppVerts, int32* pnVerts);  // 0x1000af61 (drawworld.cpp; d3d_clip.h's)
+extern void			ProjectVertPushed(TLVert* pOut, LTVector* pPos, float fPush);  // 0x100062e0 (d3d_modelvb.cpp)
 
 
 class CustomDrawMgr : public ILTCustomDraw
@@ -360,7 +371,7 @@ void CustomDrawMgr::SaveStates(Canvas *pCanvas)
 
 	m_bReallyClose = (pCanvas->m_Flags >> 6) & 1;
 
-	d3d_DisableTexture(g_iCanvasTexStage);
+	d3d_DisableTexture(g_iCurTextureStage);
 }
 
 
@@ -385,14 +396,14 @@ void CustomDrawMgr::RestoreStates()
 //  0x100233c9
 //
 //  RETAIL BUG: when the clipper rejects a really-close (or untransformed)
-//  primitive, g_1005b818 is left holding g_1005a32c: the early return
+//  primitive, g_ViewParams.m_NearZ is left holding g_CV_ReallyCloseNearZ.m_fValue: the early return
 //  skips the restore.
 // ---------------------------------------------------------------------- //
 LTRESULT CustomDrawMgr::DrawPrimitive(LTVertex *pVerts, uint32 nVerts, uint32 flags)
 {
 	LTVertex *pClipped;
 	int nClipped;
-	uint32 saved;
+	float saved;
 	int i;
 
 	pClipped = pVerts;
@@ -404,7 +415,7 @@ LTRESULT CustomDrawMgr::DrawPrimitive(LTVertex *pVerts, uint32 nVerts, uint32 fl
 
 	if (!m_bReallyClose && !(flags & 0x40))
 	{
-		if (d3d_ClipCanvasVerts(&pClipped, &nClipped, &g_ViewParams, 0))
+		if (d3d_ClipTLVerts((TLVertex**)&pClipped, &nClipped, &g_ViewParams, 0))
 		{
 			g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, CANVASVERTEX_FORMAT,
 				pClipped, nClipped, 0);
@@ -412,22 +423,22 @@ LTRESULT CustomDrawMgr::DrawPrimitive(LTVertex *pVerts, uint32 nVerts, uint32 fl
 	}
 	else
 	{
-		saved = g_1005b818;
-		g_1005b818 = g_1005a32c;
+		saved = g_ViewParams.m_NearZ;
+		g_ViewParams.m_NearZ = g_CV_ReallyCloseNearZ.m_fValue;
 
 		for (i=0; i < nClipped; i++)
-			d3d_TransformCanvasVert(&pClipped[i], g_1005ba6c);
+			d3d_TransformToCamera((ClipVert*)&pClipped[i], &g_ViewParams.m_mReallyCloseToCamera);
 
-		if (!d3d_ClipCanvasVertsRC(g_ClipFlags, &pClipped, &nClipped))
+		if (!ClipPoly(g_ClipFlags, (ClipVert**)&pClipped, (int32*)&nClipped))
 			return LT_OK;
 
 		for (i=0; i < nClipped; i++)
-			d3d_ProjectCanvasVert(&pClipped[i], &pClipped[i], g_1005b74c);
+			ProjectVertPushed((TLVert*)&pClipped[i], (LTVector*)&pClipped[i], g_CV_NearZ.m_fValue);
 
 		g_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLEFAN, CANVASVERTEX_FORMAT,
 			pClipped, nClipped, 0);
 
-		g_1005b818 = saved;
+		g_ViewParams.m_NearZ = saved;
 	}
 
 	return LT_OK;
@@ -558,27 +569,27 @@ LTRESULT CustomDrawMgr::SetTexture(const char *pTexture)
 
 	if (!pTexture)
 	{
-		d3d_DisableTexture(g_iCanvasTexStage);
+		d3d_DisableTexture(g_iCurTextureStage);
 		return LT_OK;
 	}
 
 	pShared = g_pStruct->GetSharedTexture(pTexture);
 	if (!pShared)
 	{
-		d3d_DisableTexture(g_iCanvasTexStage);
+		d3d_DisableTexture(g_iCurTextureStage);
 		return LT_ERROR;
 	}
 
-	if (!d3d_SetTexture(pShared, g_iCanvasTexStage, 0))
+	if (!d3d_SetTexture(pShared, g_iCurTextureStage, 0))
 	{
-		d3d_DisableTexture(g_iCanvasTexStage);
+		d3d_DisableTexture(g_iCurTextureStage);
 		return LT_ERROR;
 	}
 
 	g_SavedStates.Restore();
 	pRenderTexture = pShared->m_pRenderData;
 	if (pRenderTexture)
-		g_SavedStates.Apply((CRenderStateList*)pRenderTexture, g_iCanvasTexStage);
+		g_SavedStates.Apply((CRenderStateList*)pRenderTexture, g_iCurTextureStage);
 
 	return LT_OK;
 }
@@ -589,8 +600,8 @@ LTRESULT CustomDrawMgr::SetTexture(const char *pTexture)
 // ---------------------------------------------------------------------- //
 LTRESULT CustomDrawMgr::GetTexelSize(float &fSizeU, float &fSizeV)
 {
-	fSizeU = g_fTexelSizeU;
-	fSizeV = g_fTexelSizeV;
+	fSizeU = g_TexelSize[0].u;
+	fSizeV = g_TexelSize[0].v;
 	return LT_OK;
 }
 
