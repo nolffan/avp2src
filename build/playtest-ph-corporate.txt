@@ -1,0 +1,33 @@
+# Primal Hunt from its main menu to the first Corporate mission ("Zeta
+# Site"), played a little, quicksaved and quickloaded (make test
+# TEST_WHICH=ph TEST_SCRIPT=build/playtest-ph-corporate.txt). The clicks
+# are the retail menus' places on the 640x480 page (Single Player,
+# Corporate, Launch -- where AvP2's Single Player, Marine and Launch are);
+# F6 quicksave, F7 quickload (ClientButeMgr.cpp's defaults).
+window 120
+wait 20
+shot menu
+mclick 128 175
+wait 3
+mclick 100 245
+wait 3
+shot corporate
+mclick 497 434
+wait 60
+shot loaded
+key space
+wait 10
+shot started
+hold w 2
+turn 300 0
+wait 2
+shot moved
+key F6
+wait 8
+shot saved
+key F7
+wait 40
+shot reloaded
+key space
+wait 10
+shot reloaded-started

@@ -1,0 +1,7 @@
+# AvP2 1.0.9.6's lithtech.exe: the tables tools/vtabcheck.py cannot map (no
+# function the scoreboard places installs them), by hand.
+#
+# the client object's common interface (clientmgr3.cpp's CCmgCSBase, the
+# mover the client physics reaches at the manager's +0x50c): the factory
+# stores this vptr itself (0x004115bc; Primal Hunt 0x004126bd, 0x004d4bac)
+??_7CCmgCSBase@@6B@             0x004c6ba4

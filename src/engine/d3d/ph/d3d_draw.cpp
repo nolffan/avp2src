@@ -1311,11 +1311,19 @@ struct RenderStruct
 
 typedef void (*ProcessObjectFn)(LTObject* pObject);
 
+// drawobjects.cpp's record, whole: the table's symbol is its start
+// (0x1004da88), and the frame's two hooks sit at +0x0c and +0x10. (This
+// view had them at +0x00/+0x04 against the table's +0x0c: displacements
+// are masked relocations, so the bytes matched, but the link resolves the
+// symbol to the table's start, and every visible model ran
+// d3d_TermModels, OT_MODEL's m_ModuleTerm, in place of d3d_ProcessModel.)
 struct ObjectHandler
 {
-	void            (*m_PreFrameFn)();                      // +0x00
-	ProcessObjectFn m_ProcessObjectFn;                      // +0x04
-	uint8           m_Reserved08[0x0c];
+	void            (*m_ModuleInit)();                      // +0x00
+	void            (*m_ModuleTerm)();                      // +0x04
+	uint32          m_bModuleInitted;                       // +0x08
+	void            (*m_PreFrameFn)();                      // +0x0c
+	ProcessObjectFn m_ProcessObjectFn;                      // +0x10
 };
 
 // A visible portal: its polygon and the transform it's drawn through.
@@ -1337,7 +1345,7 @@ struct VisibleSet
 };
 
 extern RenderStruct*    g_pStruct;                          // 0x1005df08
-extern ObjectHandler    g_ObjectHandlers[NUM_OBJECTTYPES];  // 0x1004da94
+extern ObjectHandler    g_ObjectHandlers[NUM_OBJECTTYPES];  // 0x1004da88
 
 VisibleSet* d3d_GetVisibleSet();                            // 0x1003abb0
 void    d3d_InitObjectQueues();                             // 0x10029430

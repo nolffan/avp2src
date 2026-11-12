@@ -2779,11 +2779,18 @@ inline CCmgClientMgr::CCmgClientMgr()
 	// tips this body over the inline budget: the force control's
 	// constructor (0x00412960 + 0x00411670, expanded in both images) goes
 	// out of line and AvP2's factory moves from 882 to 861 bytes against
-	// 900. Left at three until whatever else the original body spent less
-	// on is found.
+	// 900. They are written anyway: +0x778 is the scene's second light
+	// scale (clientmgr2.cpp's m_GlobalLightScale2, copied into every
+	// SceneDesc at +0x5c), and left uninitialised it scaled the renderer's
+	// world, models and sprites by heap garbage -- AvP2 drew its menus'
+	// backgrounds and its levels black. Whatever else the original body
+	// spent less on is still to be found.
 	m_Scale768 = 1.0f;
 	m_Scale76c = 1.0f;
 	m_Scale770 = 1.0f;
+	m_Scale778 = 1.0f;
+	m_Scale77c = 1.0f;
+	m_Scale780 = 1.0f;
 
 	m_Unknown750[0] = 0;
 	m_Unknown750[1] = 0;
@@ -2799,9 +2806,14 @@ inline CCmgClientMgr::CCmgClientMgr()
 	sb_Init2(&m_Bank1120, 10, 0x20, 0x20);
 
 	// The bank at +0x113c is re-initialised on top of the one its own
-	// constructor made: chunks back first, then a fresh 0x34-byte pool.
+	// constructor made: chunks back first, then a fresh pool. AVP2: of the
+	// 0x40-byte SharedTexture (`push $0x40` three times, AvP2 1.0.9.6
+	// 0x004114e9, Primal Hunt 0x004125d1); NOLF's 0x34 overlapped each
+	// texture's +0x34..+0x3f with the next one's first twelve bytes, and
+	// an environment-mapped texture's header byte (+0x3c) became its
+	// neighbour's engine data.
 	sb_FreeChunks(&m_Bank113c.m_Bank, 1);
-	sb_Init2(&m_Bank113c.m_Bank, 0x34, 0x40, 0x40);
+	sb_Init2(&m_Bank113c.m_Bank, 0x40, 0x40, 0x40);
 
 	dl_InitList(&m_List1110);
 
@@ -3554,7 +3566,7 @@ LTRESULT ci_FitPolyGrid(HLOCALOBJ hObj, LTVector* pMin, LTVector* pMax,
 //      0x0045bb30  cmg_Sub45bb30(&m_Sub1ec, 1)
 //      0x00490ba0  sb_Init2(&m_Bank1120, 10, 0x20, 0x20)
 //      0x00490bd0  sb_FreeChunks(&m_Bank113c.m_Bank, 1)
-//      0x00490ba0  sb_Init2(&m_Bank113c.m_Bank, 0x34, 0x40, 0x40)
+//      0x00490ba0  sb_Init2(&m_Bank113c.m_Bank, 0x40, 0x40, 0x40)
 //      0x00439fb0  input_GetTable(&m_pInput)
 //      0x004554d0  m_NetMgr.SetName("Player")
 //      0x004290b0 0x00446360  new CCmgRefCounted

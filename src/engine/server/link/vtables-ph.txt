@@ -180,19 +180,19 @@ vtable ??_7CObjContainer@@6B@ 0x10075340  # compiled with 14 slots
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
 vtable ??_7CObjWorldModel@@6B@ 0x100750d4  # compiled with 14 slots
     ??_GCObjWorldModel@@UAEPAXI@Z  # the compiled slot, kept over ?DeleteQ458@CNetMsgRecordQ458@@QAEPAXI@Z placed there
-    ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z  # the compiled slot, kept over ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z placed there
-    ?_v08@CObjBase@@UAEXXZ  # the compiled slot, kept over ?sub_10024d41@CObjWorldModel@@QAEXXZ placed there
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z  # the class's own, placed here, over the inherited ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v08@CObjBase@@UAEXXZ
     ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
-    ?_v10@CObjBase@@UAEIXZ  # the compiled slot, kept over ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ placed there
-    ?_v14@CObjBase@@UAEPAXK@Z  # the compiled slot, kept over ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z placed there
-    ?_v18@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z placed there
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v10@CObjBase@@UAEIXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z  # the class's own, placed here, over the inherited ?_v14@CObjBase@@UAEPAXK@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z  # the class's own, placed here, over the inherited ?_v18@CObjBase@@UAEXPAX@Z
     ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
     ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
     ?IsInWorld@CObjBase@@UAEIXZ
     ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
     ?_v2c@CObjBase@@UAEMXZ
-    ?_v30@CObjBase@@UAEIXZ  # the compiled slot, kept over ?HasOriginalBsp@CObjWorldModel@@QAEIXZ placed there
-    ?_v34@CObjBase@@UAEIXZ  # the compiled slot, kept over ?GetWorldFlag4@CObjWorldModel@@QAEKXZ placed there
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ  # the class's own, placed here, over the inherited ?_v30@CObjBase@@UAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ  # the class's own, placed here, over the inherited ?_v34@CObjBase@@UAEIXZ
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
 vtable ??_7CObjectMoverQ47C@@6B@ 0x10075a80  # compiled with 13 slots
     ?SetObjectChangeFlags@CObjectMoverQ47C@@UAEXPAVLTObject@@K@Z
@@ -210,8 +210,8 @@ vtable ??_7CObjectMoverQ47C@@6B@ 0x10075a80  # compiled with 13 slots
     ?_v30@CObjectMoverQ47C@@UAEKXZ  # the compiled slot, kept over ?GetUnknown928Value@CObjectMover@@UAEKXZ placed there
     ?_v34@CObjectMoverQ47C@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
 vtable ??_7CSaveLoadMessage@@6B@ 0x10074700  # compiled with 1 slots
-    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
-    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ  # placed by shape
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ  # placed by shape
     ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
     ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
     ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
@@ -244,12 +244,12 @@ vtable ??_7CSaveLoadMessage@@6B@ 0x10074700  # compiled with 1 slots
     ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
     ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
     ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
-    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ  # placed by shape
     ?GetNothing@CSaveIO@@QAEKPAK@Z
     ?IsBusy@CWorldSimple@@UAEKXZ  # the same code as what is placed there
 vtable ??_7CSaveLoadMessageQ4S@@6B@ 0x10074700  # compiled with 1 slots
-    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
-    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ  # placed by shape
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ  # placed by shape
     ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
     ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
     ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
@@ -282,7 +282,7 @@ vtable ??_7CSaveLoadMessageQ4S@@6B@ 0x10074700  # compiled with 1 slots
     ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
     ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
     ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
-    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ
+    ?WantsExtraLink@CWorldLightRoot@@UAEIXZ  # placed by shape
     ?GetNothing@CSaveIO@@QAEKPAK@Z
     ?IsBusy@CWorldSimple@@UAEKXZ  # the same code as what is placed there
 vtable ??_7CServerMgr@@6BCServerSoundMgr@@@ 0x1007545c  # compiled with 5 slots
@@ -397,7 +397,7 @@ vtable ??_7TCPDriver@@6B@ 0x10075b18  # compiled with 27 slots; 10 _purecall whe
     __purecall  # the shipped slot is 0x1004076f, which nothing of ours is placed at
     ?Connect@CLocalDriverBase@@UAEXPAVCBaseDriver@@@Z
     ?GetServiceList@TCPDriver@@UAEKPAPAVNetService@@@Z
-    ?_v14@CObjBase@@UAEPAXK@Z
+    ?_v14@CObjBase@@UAEPAXK@Z  # placed by shape
     ?GetSessionList@TCPDriver@@UAEKPAPAVNetSession@@PAD@Z
     ?StartQuery@TCPDriver@@UAEKPAD@Z
     ?UpdateQuery@TCPDriver@@UAEKXZ

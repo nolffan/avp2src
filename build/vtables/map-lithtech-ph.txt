@@ -30,3 +30,7 @@
 ??_7CMsgWriteQ18@@6B@           0x004d5d64
 # the local sound instance's, as CSoundInstanceLocalL10's (AvP2's two share 0x004c8940)
 ??_7CSoundInstanceLocalRef@@6B@ 0x004d6988
+# the client object's common interface (clientmgr3.cpp's CCmgCSBase, the
+# mover the client physics reaches at the manager's +0x50c): the factory
+# stores this vptr itself (0x004126bd; AvP2 1.0.9.6 0x004115bc, 0x004c6ba4)
+??_7CCmgCSBase@@6B@             0x004d4bac

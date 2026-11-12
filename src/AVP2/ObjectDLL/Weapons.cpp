@@ -8,6 +8,8 @@
 //
 // ----------------------------------------------------------------------- //
 
+// PH: ILTServer::SetModelFilenames with its fourth argument (iltserver.h).
+#define ILTSERVER_PH_MODELFILENAMES
 #include "stdafx.h"
 #include "WeaponMgr.h"
 #include "Weapons.h"

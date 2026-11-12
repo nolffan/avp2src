@@ -248,15 +248,23 @@ def main():
         for off, t in calls(s2a[n]):
             if (ship_img.dword(st + off) or 0) & 0xFF != 0xE8:
                 continue
+            rel = ship_img.dword(st + off + 1)
+            got = (st + off + 5 + rel - (1 << 32 if rel & 0x80000000 else 0)) & 0xFFFFFFFF
             # (the shipped engine has two copies of the allocator front end
-            # where our link has one: tools/vtabcheck.py's TWINS)
+            # where our link has one: tools/vtabcheck.py's TWINS, so where
+            # ours calls one its shipped address is no evidence -- unless
+            # the shipped call reaches a function placed as something
+            # else of ours: AvP2's ILTServer::CreateString (slot 46,
+            # `push; call sb_CreateString; ret 4`) has LAlloc::Alloc's
+            # bytes, `push; call dalloc; ret 4`, and is placed as it)
             if set(a2s.get(t, ())) & vtabcheck.TWINS:
+                there = {n_ for r_, n_ in ship2sym.get(got, ()) if r_ == 0}
+                if there and not there & vtabcheck.TWINS:
+                    return False
                 continue
             want = set()
             for x in a2s.get(t, ()):
                 want |= sym2ship.get(x, set())
-            rel = ship_img.dword(st + off + 1)
-            got = (st + off + 5 + rel - (1 << 32 if rel & 0x80000000 else 0)) & 0xFFFFFFFF
             if want:
                 told = True
                 if got not in want:
@@ -302,6 +310,27 @@ def main():
                 return x, "%s is placed here, but its data operands read back elsewhere; this twin's read back right" % n
         return n, "its data operands do not read back right here, and no twin's do"
 
+    def cls(n):
+        """the class of a member's decorated name (`?f@C@@...` -> C), or None"""
+        if n.startswith("??_"):          # ??_7C@@6B@, ??_GC@@UAEPAXI@Z
+            return n[4:].split("@@")[0] or None
+        m = re.match(r"\?[^@?]+@([^@?]+)@@", n)
+        return m.group(1) if m else None
+
+    def own_override(table, c, n, st):
+        """the compiled slot c is a base class's (not the table's class's)
+        member, and n, placed identically at the shipped target and not
+        refuted by its operands, is a member of the table's class or of a
+        view of it (its name extending the class's: CObjWorldModelQ458)"""
+        tc = cls(table)
+        cc, nc = cls(c), cls(n)
+        # (a base's member with the placed one's very bytes -- CLTServer's
+        # ILTCSBase message writers -- runs the same code: kept)
+        return (tc and cc and nc and cc != tc and not cc.startswith(tc) and
+                nc.startswith(tc) and rank_of(st, n) == 0 and
+                fits(n, st) is not False and c in s2a and n in s2a and
+                masked(s2a[c]) != masked(s2a[n]))
+
     out = ["# %s: full-length tables for the stand-in classes (build/vtables/mkvtables.py;" % label,
            "# tools/mkvtabobj.py makes them an object linked ahead of ours). One slot",
            "# per line: the symbol of ours the scoreboard places at the shipped slot's target.",
@@ -330,6 +359,13 @@ def main():
             cand = placed_at(st)
             if pc and st == pc:
                 out.append("    __purecall")
+            elif c and cand and c not in cand and own_override(sym, c, cand[0], st):
+                # the class's own function is placed where the compiled
+                # table inherits its base's: the declaration lacks the
+                # override (CObjWorldModel's table had CObjBase's _v04
+                # where the shipped one has WantsTree, so the world tree
+                # linked AvP2's VisBSP into the box queries)
+                out.append("    %s  # the class's own, placed here, over the inherited %s" % (cand[0], c))
             elif c and c != "__purecall" and c in defined and (
                     c in cand or not cand or fits(c, st) or
                     # a real declaration (three slots or more) is the

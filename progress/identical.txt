@@ -3073,7 +3073,6 @@ AvP2 lithtech.exe	sub_433c70
 AvP2 lithtech.exe	sub_433c90
 AvP2 lithtech.exe	sub_433cd0
 AvP2 lithtech.exe	sub_433ce0
-AvP2 lithtech.exe	sub_433cf0
 AvP2 lithtech.exe	sub_433d00
 AvP2 lithtech.exe	sub_433d10
 AvP2 lithtech.exe	sub_433d30
@@ -32477,6 +32476,7 @@ PHObject.lto	sub_1009d0c0
 PHObject.lto	sub_1009d150
 PHObject.lto	sub_1009d1b0
 PHObject.lto	sub_1009d210
+PHObject.lto	sub_1009d530
 PHObject.lto	sub_1009d7e0
 PHObject.lto	sub_1009d880
 PHObject.lto	sub_1009d920
@@ -46186,14 +46186,11 @@ lithtech.exe	sub_46d650
 lithtech.exe	sub_46d670
 lithtech.exe	sub_46d6e0
 lithtech.exe	sub_46d710
-lithtech.exe	sub_46d730
 lithtech.exe	sub_46d740
 lithtech.exe	sub_46d760
 lithtech.exe	sub_46d770
-lithtech.exe	sub_46d790
 lithtech.exe	sub_46d7a0
 lithtech.exe	sub_46d800
-lithtech.exe	sub_46d820
 lithtech.exe	sub_46d950
 lithtech.exe	sub_46d970
 lithtech.exe	sub_46da10
@@ -46207,11 +46204,11 @@ lithtech.exe	sub_46dc90
 lithtech.exe	sub_46dcf0
 lithtech.exe	sub_46dd20
 lithtech.exe	sub_46dd40
+lithtech.exe	sub_46dd60
 lithtech.exe	sub_46dd70
 lithtech.exe	sub_46dda0
 lithtech.exe	sub_46ddd0
 lithtech.exe	sub_46dde0
-lithtech.exe	sub_46de00
 lithtech.exe	sub_46de10
 lithtech.exe	sub_46df50
 lithtech.exe	sub_46dfd0

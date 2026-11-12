@@ -796,7 +796,19 @@
 		LTBOOL	(*GetModelFilenames2)(HOBJECT hObj, ObjectCreateStruct *pStruct);
 
 		// OBSOLETE: use ILTCommon::SetObjectFilenames.
+#if defined(PRIMAL_HUNT) && defined(ILTSERVER_PH_MODELFILENAMES)
+		// PH: the extra texture's name as well -- lithtech.exe's slot
+		// (0x00483f10) hands all four arguments on to SetObjectFilenames,
+		// and CWeapons::ChangeWeapon pushes a zero for it (PHObject.lto
+		// 0x1009d60a); with three, the engine read the caller's frame as
+		// the name and strncpy faulted. Only the caller's file (Weapons.cpp)
+		// opts in: declared so in every PHObject.lto file, VC6 compiles
+		// three unrelated static initialisers (CinematicTrigger's,
+		// Civilian's and turret.cpp's) differently from the shipped ones.
+		virtual LTRESULT SetModelFilenames(HOBJECT hObj, char *pFilename, char *pSkinName, char *pExtraName = LTNULL)=0;
+#else
 		virtual LTRESULT SetModelFilenames(HOBJECT hObj, char *pFilename, char *pSkinName)=0;
+#endif
 #ifdef PRIMAL_HUNT
 		// PH: the extra texture's name as well (server.dll's own view of
 		// this slot takes it); PHObject.lto's callers pass 0 for it

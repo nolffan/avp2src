@@ -927,6 +927,16 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		for (i = 0; i < MAX_MODEL_TEXTURES; i++)
 			pStream->ReadString(createStruct.m_SkinNames[i],
 			                    MAX_CS_FILENAME_LEN);
+
+#ifdef PRIMAL_HUNT
+		// PH: and the extra texture's name, which the save half writes
+		// after the skins (0x0043df1a..0x0043df29, into the create
+		// struct's +0x300). Without it every later field of a model's
+		// record was read one string early, and the tracker restore
+		// below ran on an object with no model.
+		pStream->ReadString(createStruct.m_ExtraTextureName,
+		                    MAX_CS_FILENAME_LEN);
+#endif
 	}
 	else
 	{

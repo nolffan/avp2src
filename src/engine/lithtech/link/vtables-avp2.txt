@@ -49,11 +49,37 @@ vtable ??_7CBaseMgrView@@6B@ 0x004c6dd4  # compiled with 1 slots
     __purecall
     __purecall
     ?_p00@CClientCSBase@@UAEXPAX0@Z
+vtable ??_7CClass4A38A4@@6B@ 0x004c8b20  # compiled with 10 slots; 8 _purecall where the shipped slot is concrete
+    ??_GCClass4A38A4@@UAEPAXI@Z  # the compiled slot, kept over ??_GCObjBase@@UAEPAXI@Z placed there
+    ?_v04@CUnknown4A147C@@UAEXXZ  # the compiled slot, kept over ?Release@BinkVideoInstK@@UAEXXZ placed there
+    ?Restore@SmackVideoInstQ428@@UAEXXZ
+    ?FreeSurfaces@SmackVideoInstQ428@@UAEXXZ
+    ?Slot04@CClass4A38A4@@QAEKXZ
+    ?Update@SmackVideoInst@@QAEKXZ
+    ?GetStatus@SmackVideoInst@@QAEKXZ
+    ?BindToSurface@SmackVideoInst@@UAEKPAVCVideoPolyS@@@Z  # near pairing only
+    ?UnbindFromSurface@BinkVideoInstK@@UAEXPAVCVideoPolyK@@@Z
+    ?OnTextureFreed@BinkVideoInstK@@UAEXPAVSharedTextureK@@@Z
 vtable ??_7CCmgAbstractIO@@6B@ 0x004c7d28  # compiled with 1 slots
     ??_GCCmgAbstractIO@@UAEPAXI@Z  # the compiled slot, kept over ??_GCBaseStream@@UAEPAXI@Z placed there
     ?AddRef@CAbstractIO@@UAEXXZ  # placed by shape
     ?Release@CAbstractIO@@UAEXXZ
     ?Release@CFileStream@@UAEXXZ
+vtable ??_7CCmgCSBase@@6B@ 0x004c6ba4  # compiled with 1 slots
+    ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
+    ?GetCollisionInfo@CClientCSBase@@UAEPAPAVCollisionInfo@@XZ
+    ?TouchNotify@CClientCSBase@@UAEXPAVLTObject@@0PAV?$_CVector@M@@M@Z
+    ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
+    ?GenSetCacheSize@?$CMoArray@VCCollElem14P@@VNoCache@@@@UAEXK@Z  # placed by shape
+    ?UpdateAttachments@CClientCSBase@@UAEXPAUWMMoveState@@@Z
+    ?IsMatch@CClientCSBase@@UAEIPAXK0@Z
+    ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
+    ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
+    ?_v34@CObjBase@@UAEIXZ  # placed by shape
+    ?_v14@CObjBase@@UAEPAXK@Z  # placed by shape
+    ?GetSideName@CClientCSBase@@UAEPBDPAX@Z  # placed by shape
+    ?GetUnknown4c0_0c@CClientCSBase@@UAEKXZ
+    ?GetUnknown4dc@CClientCSBase@@UAEKPAXPAV?$_CVector@M@@@Z
 vtable ??_7CCmgMusicMgr@@6B@ 0x004c7688  # compiled with 1 slots
     ?Init@CCmgMusicMgr@@UAEKXZ  # the compiled slot, kept over ?Init@CLTDirectMusicMgr@@UAEKXZ placed there
     ?Term@CLTDirectMusicMgr@@UAEKXZ
@@ -295,7 +321,7 @@ vtable ??_7CLTServer@@6B@ 0x004c8110  # compiled with 125 slots; 79 _purecall wh
     ?CopyFile@CLTServer@@QAEKPBD0@Z
     ?FormatString@CLTServer@@QAAPAUHSTRING_t@@HZZ
     ?CopyString@CLTServer@@QAEPAUHSTRING_t@@PAU2@@Z
-    ?Alloc@LAlloc@@UAEPAXK@Z
+    ?CreateString@CLTServer@@QAEPAUHSTRING_t@@PAD@Z  # ?Alloc@LAlloc@@UAEPAXK@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?FreeString@CLTServer@@QAEXPAUHSTRING_t@@@Z
     ?CompareStringsUpper@CLTServer@@QAEIPAUHSTRING_t@@0@Z  # ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z  # ?CompareStringsUpper@CLTServer@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
@@ -430,19 +456,19 @@ vtable ??_7CObjContainer@@6B@ 0x004c8068  # compiled with 14 slots
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
 vtable ??_7CObjWorldModel@@6B@ 0x004c7e2c  # compiled with 14 slots
     ??_GCObjWorldModel@@UAEPAXI@Z  # the compiled slot, kept over ??_GCUnknownD9E4@@UAEPAXI@Z placed there
-    ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z  # the compiled slot, kept over ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z placed there
-    ?_v08@CObjBase@@UAEXXZ  # the compiled slot, kept over ?sub_10024d41@CObjWorldModel@@QAEXXZ placed there
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z  # the class's own, placed here, over the inherited ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v08@CObjBase@@UAEXXZ
     ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
-    ?_v10@CObjBase@@UAEIXZ  # the compiled slot, kept over ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ placed there
-    ?_v14@CObjBase@@UAEPAXK@Z  # the compiled slot, kept over ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z placed there
-    ?_v18@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z placed there
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v10@CObjBase@@UAEIXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z  # the class's own, placed here, over the inherited ?_v14@CObjBase@@UAEPAXK@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z  # the class's own, placed here, over the inherited ?_v18@CObjBase@@UAEXPAX@Z
     ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
     ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
     ?IsInWorld@CObjBase@@UAEIXZ
     ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
     ?_v2c@CObjBase@@UAEMXZ
-    ?_v30@CObjBase@@UAEIXZ  # the compiled slot, kept over ?HasOriginalBsp@CObjWorldModel@@QAEIXZ placed there
-    ?_v34@CObjBase@@UAEIXZ  # the compiled slot, kept over ?GetWorldFlag4@CObjWorldModel@@QAEKXZ placed there
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ  # the class's own, placed here, over the inherited ?_v30@CObjBase@@UAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ  # the class's own, placed here, over the inherited ?_v34@CObjBase@@UAEIXZ
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
 vtable ??_7CObjectMoverQ47C@@6B@ 0x004c8658  # compiled with 13 slots
     ?SetObjectChangeFlags@CObjectMoverQ47C@@UAEXPAVLTObject@@K@Z
