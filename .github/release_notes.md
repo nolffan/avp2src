@@ -34,10 +34,10 @@ There's no native Linux build; the games are Windows programs, run under Wine or
 tar xzf avp2src-{{ARCHIVE}}.tar.gz
 cd avp2src-{{ARCHIVE}}
 ./linux-install.sh /path/to/avp2-disc1.zip /path/to/avp2-disc2.zip /path/to/primalhunt.zip
-./linux-run.sh avp2      # or: ./linux-run.sh ph
+./linux-run-avp2.sh      # or: ./linux-run-ph.sh for Primal Hunt
 ```
 
-`./linux-run.sh --help` lists its options (a Wine prefix of its own, `~/.wine-avp2`; the launchers).
+`./linux-run-avp2.sh --help` lists its options (a Wine prefix of its own, `~/.wine-avp2`; the launchers).
 
 ### Mac
 

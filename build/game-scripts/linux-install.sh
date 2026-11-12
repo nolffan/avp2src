@@ -23,7 +23,8 @@
 # the shipped settings, and Bink, Smacker and Miles where this build uses
 # them -- and checks every file it writes. Nothing is installed or run from
 # the discs, and nothing else is changed. It can be run again: a file
-# already in place is checked and kept. Then play with ./linux-run.sh.
+# already in place is checked and kept. Then play with ./linux-run-avp2.sh or
+# ./linux-run-ph.sh.
 #
 # The games' setups store their files compressed, in InstallShield cabinets
 # (AvP2's span both its discs, and the patch packs its own into a Microsoft
@@ -340,6 +341,6 @@ for l in lines:
 for g in ("AVP2", "PrimalHunt"):
     os.makedirs(os.path.join(here, g, "Save"), exist_ok=True)
 print(f"done: {written} files written, {kept} already in place."
-      + (" Play with ./linux-run.sh" if os.path.exists(os.path.join(here, "linux-run.sh")) else ""))
+      + (" Play with ./linux-run-avp2.sh or ./linux-run-ph.sh" if os.path.exists(os.path.join(here, "linux-run-avp2.sh")) else ""))
 PY
 exit 0

@@ -411,8 +411,8 @@ foreach ($g in 'AVP2', 'PrimalHunt') {
     if (-not (Test-Path -LiteralPath $save)) { New-Item -ItemType Directory -Path $save | Out-Null }
 }
 
-# The registry, as the retail setups left it (linux-run.sh writes the same
-# values in its Wine prefix): AvP2's launcher, AVP2\AVP2.exe, reads its key's
+# The registry, as the retail setups left it (linux-run-*.sh write the same
+# values in their Wine prefix): AvP2's launcher, AVP2\AVP2.exe, reads its key's
 # InstallDir and the 1.0.9.6 patch's "Update Command Line" (its archive,
 # AVP2P1.REZ, last in the rez stack); Primal Hunt's, PrimalHunt\PrimalHunt.exe,
 # refuses to start without AvP2's InstallDir (the archives it plays on) and

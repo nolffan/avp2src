@@ -29,7 +29,7 @@
 #                  dedicated server (AVP2XServ.exe), its game DLLs in
 #                  custom/, and its own archives; AvP2's it reads from
 #                  ../AVP2/ (avp2cmds.txt: build/avp2cmds.sh)
-#   linux-run.sh, windows-run.bat   start either game (build/game-scripts/)
+#   linux-run-avp2.sh, linux-run-ph.sh, windows-run.bat   start a game (build/game-scripts/)
 #
 # The steps, in order (each for both games):
 #   1. resources          the games' data from the retail games: the .rez
@@ -151,11 +151,18 @@ game_data "AvP2 1.0.9.6" AVP2 "$RETAIL_AVP2" build/retail_avp2.py "${LOOSE_AVP2[
 bash build/avp2cmds.sh avp2 > "$OUT/AVP2/avp2cmds.txt"
 game_data "Primal Hunt" PrimalHunt "$RETAIL_PH" build/retail.py "${LOOSE_PH[@]}"
 bash build/avp2cmds.sh ph > "$OUT/PrimalHunt/avp2cmds.txt"
-# linux-run.sh: start either game with the host's Wine; windows-run.bat:
-# either game straight from its avp2cmds.txt (build/game-scripts/; usage in
-# their headers). On Windows the launchers are the way in.
-cp build/game-scripts/linux-run.sh "$OUT/linux-run.sh"
-chmod +x "$OUT/linux-run.sh"
+# linux-run-avp2.sh, linux-run-ph.sh: start AvP2 or Primal Hunt with the
+# host's Wine, both from one template (build/game-scripts/linux-run.sh);
+# windows-run.bat: either game straight from its avp2cmds.txt (usage in their
+# headers). On Windows the launchers are the way in.
+runscript() {   # <script> <game directory> <title> <launcher>
+    sed -e "s|@SCRIPT@|$1|g" -e "s|@GAME@|$2|g" -e "s|@TITLE@|$3|g" \
+        -e "s|@LAUNCHER@|$4|g" build/game-scripts/linux-run.sh > "$OUT/$1"
+    chmod +x "$OUT/$1"
+}
+rm -f "$OUT/linux-run.sh"     # (one script for both, before linux-run-avp2/-ph.sh)
+runscript linux-run-avp2.sh AVP2 "Aliens versus Predator 2" AVP2.exe
+runscript linux-run-ph.sh PrimalHunt "Aliens versus Predator 2: Primal Hunt" PrimalHunt.exe
 sed 's/$/\r/' build/game-scripts/windows-run.bat > "$OUT/windows-run.bat"     # (CRLF)
 
 step "3. compile: the workspaces (build/compile.sh: build/build.mk, ${AVP2SRC_JOBS:-$(nproc)} jobs)"
@@ -201,7 +208,7 @@ done
 # nothing but the two games' directories and the run scripts at the top
 for f in "$OUT"/*; do
     case "$(basename "$f")" in
-        AVP2|PrimalHunt|linux-run.sh|windows-run.bat) ;;
+        AVP2|PrimalHunt|linux-run-avp2.sh|linux-run-ph.sh|windows-run.bat) ;;
         *) echo "error: $f: not a file the build puts there" >&2; exit 1 ;;
     esac
 done
@@ -213,4 +220,4 @@ if [ "${AVP2_PACKAGE:-1}" = 1 ]; then
     bash "$REPO/build/package.sh" "$OUT"
 fi
 
-step "done: $OUT ($(( $(date +%s) - T0 ))s)${MODERN:+ (the modern build)} -- play it with $OUT/linux-run.sh [avp2|ph], or test it with make test"
+step "done: $OUT ($(( $(date +%s) - T0 ))s)${MODERN:+ (the modern build)} -- play it with $OUT/linux-run-avp2.sh or linux-run-ph.sh, or test it with make test"

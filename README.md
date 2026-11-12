@@ -158,7 +158,7 @@ images in the game directory or the one above it by itself, and can be run
 again.
 
 Both archives carry the scripts that start the games
-(`build/game-scripts/`): `linux-run.sh [avp2|ph]` (the game under Wine, in
+(`build/game-scripts/`): `linux-run-avp2.sh` and `linux-run-ph.sh` (each game under Wine, in
 a prefix of its own, `~/.wine-avp2`, with the registry values the retail
 setups wrote; `--launcher` for the launcher; `--help`), and on Windows
 `windows-run.bat [avp2|ph]`, or the launchers `AVP2\AVP2.exe` and

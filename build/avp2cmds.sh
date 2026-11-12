@@ -6,7 +6,7 @@
 #
 # Both retail launchers (AVP2.exe, PrimalHunt.exe) write the engine's
 # command line to avp2cmds.txt and run "lithtech.exe -cmdfile avp2cmds.txt"
-# (src/launcher/LauncherDlg.cpp, LaunchGame); linux-run.sh and
+# (src/launcher/LauncherDlg.cpp, LaunchGame); linux-run-*.sh and
 # build/playtest.sh start the engine the same way with this one. Later
 # archives override earlier ones; custom/ holds the game DLLs built from
 # source, and no archive after it holds one (the retail ones are zeroed:
@@ -26,7 +26,7 @@
 #     " -rez dialogue.rez", PatchRez, " -rez custom") after AvP2's.
 #
 # +DisableMovies skips the intro logos (RAD's Bink under Wine: as
-# nolfsrc's). The display is the harness's (linux-run.sh, playtest.sh).
+# nolfsrc's). The display is the harness's (linux-run-*.sh, playtest.sh).
 set -e
 case "${1:-}" in
 avp2)
