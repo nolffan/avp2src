@@ -1,0 +1,982 @@
+# lithtech.exe: full-length tables for the stand-in classes (build/vtables/mkvtables.py;
+# tools/mkvtabobj.py makes them an object linked ahead of ours). One slot
+# per line: the symbol of ours the scoreboard places at the shipped slot's target.
+
+vtable ??_7?$CWorldPolyArray@PAVCWorldPolyRec@@@@6B@ 0x004d4cd4  # compiled with 1 slots
+    ?GenBegin@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7?$TCPQueryArrayT@VTCPQueryResponse@@@@6B@ 0x004d6ad4  # compiled with 2 slots
+    ?GenBegin@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBE?AVTCPQueryResponseC4@@AAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBE?AVTCPQueryResponseC4@@AAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIAAVTCPQueryResponseC4@@@Z
+    ?GenRemoveAt@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponseC4@@@@@Z
+    ?GenAppendList@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponseC4@@@@@Z
+    ?GenFindElement@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEIABVTCPQueryResponseC4@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CAbstractIO@@6B@ 0x004d5d40  # compiled with 4 slots; 1 _purecall where the shipped slot is concrete
+    ??_GCAbstractIO@@UAEPAXI@Z  # the compiled slot, kept over ??_GILTCSBaseQ404@@UAEPAXI@Z placed there
+    ?AddRef@CAbstractIO@@UAEXXZ
+    ?Release@CAbstractIO@@UAEXXZ
+    ?Release@CFileStream@@UAEXXZ
+vtable ??_7CBaseMgrView@@6B@ 0x004d4dec  # compiled with 1 slots
+    ??_GCBaseMgrView@@UAEPAXI@Z  # the compiled slot, kept over ??_GBaseObjectBankView@@UAEPAXI@Z placed there
+    __purecall
+    __purecall
+    __purecall
+    ?_Destroy@?$vector@PADV?$allocator@PAD@std@@@std@@IAEXPAPAD0@Z
+vtable ??_7CClass4A3BB4@@6B@ 0x004d7f54  # compiled with 1 slots
+    ?_v00@CUnknown4901B0@@UAEXXZ  # nothing placed at 0x00429410: compiled slot kept
+    ??_GCRezFile@@UAEPAXI@Z
+    ?Read@CRezFile@@UAEKKKKPAX@Z
+    ?Write@CRezFile@@UAEKKKKPAX@Z
+    ?Open@CRezFile@@UAEHPBDHH@Z
+    ?Close@CRezFile@@UAEHXZ
+    ?Flush@CRezFile@@UAEHXZ
+    ?VerifyFileOpen@CRezFile@@UAEHXZ
+    ?GetFileName@CRezFile@@UAEPADXZ  # placed by shape
+vtable ??_7CCmgAbstractIO@@6B@ 0x004d5d40  # compiled with 1 slots
+    ??_GCCmgAbstractIO@@UAEPAXI@Z  # the compiled slot, kept over ??_GILTCSBaseQ404@@UAEPAXI@Z placed there
+    ?AddRef@CAbstractIO@@UAEXXZ
+    ?Release@CAbstractIO@@UAEXXZ
+    ?Release@CFileStream@@UAEXXZ
+vtable ??_7CCmgMusicMgr@@6B@ 0x004d56a4  # compiled with 1 slots
+    ?Init@CLTDirectMusicMgr@@UAEKXZ
+    ?Term@CLTDirectMusicMgr@@UAEKXZ
+    ?InitLevel@CLTDirectMusicMgr@@UAEKPBD0000@Z
+    ?TermLevel@CLTDirectMusicMgr@@UAEKXZ
+    ?Play@CLTDirectMusicMgr@@UAEKXZ
+    ?Stop@CLTDirectMusicMgr@@UAEKW4LTDMEnactTypes@@@Z
+    ?Pause@CLTDirectMusicMgrView@@QAEKH@Z
+    ?UnPause@CLTDirectMusicMgrView@@QAEKXZ
+    ?SetVolume@CLTDirectMusicMgr@@UAEKJ@Z
+    ?ChangeIntensity@CLTDirectMusicMgr@@UAEKHW4LTDMEnactTypes@@@Z
+    ?PlaySecondary@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+    ?StopSecondary@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+    ?PlayMotif@CLTDirectMusicMgr@@UAEKPBD0W4LTDMEnactTypes@@@Z
+    ?StopMotif@CLTDirectMusicMgr@@UAEKPBD0W4LTDMEnactTypes@@@Z
+    ?GetCurIntensity@CDMMgrGettersQ522@@QAEHXZ
+    ?StringToEnactType@CLTDirectMusicMgr@@UAE?AW4LTDMEnactTypes@@PBD@Z
+    ?EnactTypeToString@CLTDirectMusicMgr@@UAEXW4LTDMEnactTypes@@PAD@Z
+    ?GetNumIntensities@CDMMgrGettersQ522@@QAEHXZ
+    ?GetInitialIntensity@CDMMgrGettersQ522@@QAEHXZ
+    ?GetInitialVolume@CDMMgrGettersQ522@@QAEHXZ
+    ?GetVolumeOffset@CDMMgrGettersQ522@@QAEHXZ
+    ?PlayMotif@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+    ?StopMotif@CLTDirectMusicMgr@@UAEKPBDW4LTDMEnactTypes@@@Z
+vtable ??_7CCmgSoundMgr@@6B@ 0x004d6844  # compiled with 28 slots
+    ?PlaySound@CCmgSoundMgr@@UAEKPAUPlaySoundInfo@@AAPAUHLTSOUND_t@@@Z
+    ?_v04@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetSoundDuration@CSoundMgr@@QAEKPAUHLTSOUND_t@@AAM@Z placed there
+    ?_v08@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?IsSoundDone@CSoundMgrView@@UAEKPAUHLTSOUND_t@@AAI@Z placed there
+    ?_v0c@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?KillSound@CSoundMgrView@@UAEKPAUHLTSOUND_t@@@Z placed there
+    ?_v10@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?KillSoundLoop@CSoundMgrView@@UAEKPAUHLTSOUND_t@@@Z placed there
+    ?_v14@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?KillSoundFade@CSoundMgrView@@UAEKPAUHLTSOUND_t@@M@Z placed there
+    ?_v18@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetSound3DProviderLists@CSoundMgrView@@UAEKAAPAUSound3DProvider@@I@Z placed there
+    ?_v1c@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?ReleaseSound3DProviderList@CSoundMgrView@@UAEKPAUSound3DProvider@@@Z placed there
+    ?_v20@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?InitSound@CSoundMgr@@QAEKPAUInitSoundInfo@@@Z placed there
+    ?_v24@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetVolume@CSoundMgrView@@UAEKAAG@Z placed there
+    ?_v28@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetVolume@CSoundMgrView@@UAEKG@Z placed there
+    ?_v2c@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetVolumeByType@CSoundMgrView@@UAEKAAGE@Z placed there
+    ?_v30@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetVolumeByType@CSoundMgrView@@UAEKGE@Z placed there
+    ?_v34@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetReverbProperties@CSoundMgr@@QAEKPAUReverbProperties@@@Z placed there
+    ?_v38@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetReverbProperties@CSoundMgr@@QAEKPAUReverbProperties@@@Z placed there
+    ?_v3c@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetSoundOcclusion@CSoundMgr@@QAEKPAUHLTSOUND_t@@M@Z placed there
+    ?_v40@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetSoundOcclusion@CSoundMgr@@QAEKPAUHLTSOUND_t@@PAM@Z placed there
+    ?_v44@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetSoundObstruction@CSoundMgr@@QAEKPAUHLTSOUND_t@@M@Z placed there
+    ?_v48@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetSoundObstruction@CSoundMgr@@QAEKPAUHLTSOUND_t@@PAM@Z placed there
+    ?_v4c@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetSoundFilter@CSoundMgr@@QAEKPAUHLTSOUND_t@@PBD@Z placed there
+    ?_v50@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetSoundFilterParam@CSoundMgr@@QAEKPAUHLTSOUND_t@@PBDM@Z placed there
+    ?_v54@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetSoundFilterParam@CSoundMgr@@QAEKPAUHLTSOUND_t@@PBDPAM@Z placed there
+    ?_v58@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetFilterName@CSoundMgr@@QAEKKPAPBD@Z placed there
+    ?_v5c@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetFilterParamName@CSoundMgr@@QAEKKPBDPAPBD@Z placed there
+    ?_v60@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?SetSoundPosition@CSoundMgr@@QAEKPAUHLTSOUND_t@@PAV?$_CVector@M@@@Z placed there
+    ?_v64@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?GetSoundPosition@CSoundMgr@@QAEKPAUHLTSOUND_t@@PAV?$_CVector@M@@@Z placed there
+    ?PauseSounds@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?PauseSounds@CSoundMgrView@@UAEKXZ placed there
+    ?ResumeSounds@CCmgSoundMgr@@UAEXXZ  # the compiled slot, kept over ?ResumeSounds@CSoundMgrView@@UAEKXZ placed there
+    ?SetListener@CSoundMgrQ480@@UAEKIPAV?$_CVector@M@@PAVLTRotation@@I@Z
+    ?ReleaseSoundHandle@CSoundMgrQ480@@UAEKPAUHLTSOUND_t@@@Z
+    ?GetFilterIndex@CSoundMgr@@QAEKPBDPAK@Z
+    ?GetFilterParamIndex@CSoundMgr@@QAEKPBD0PAK@Z  # near pairing only
+vtable ??_7CConsoleLineList@@6B@ 0x004d4f94  # compiled with 1 slots
+    ?GenBegin@CMessageQueueBase@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenGetAt@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
+    ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
+    ?GetLockCount@CUnknown390@@QAEHXZ  # placed by shape
+    ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@PAVCModelSub20C@Model@@VNoCache@@@@UAEXK@Z  # placed by shape
+vtable ??_7CDeviceObjectList@@6B@ 0x004d5580  # compiled with 1 slots
+    ?GenBegin@CMessageQueueBase@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenGetAt@CMessageQueueBase@@UBEPAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
+    ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
+    ?GetLockCount@CUnknown390@@QAEHXZ  # placed by shape
+    ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
+    ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@PAVCModelSub20C@Model@@VNoCache@@@@UAEXK@Z  # placed by shape
+vtable ??_7CLTClientQ404@@6B@ 0x004d452c  # compiled with 2 slots
+    ?StartHMessageWrite@CLTClientQ404@@UAEPAXXZ  # the compiled slot, kept over ?StartHMessageWrite@CLTClient@@QAEPAVILTMessage@@XZ placed there
+    ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z
+    ?WriteToMessageByte@CLTServer@@QAEKPAVIMessageWrite@@E@Z
+    ?WriteToMessageWord@CLTServer@@QAEKPAVIMessageWrite@@G@Z
+    ?WriteToMessageDWord@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?WriteToMessageString@CLTServer@@QAEKPAVIMessageWrite@@PAD@Z
+    ?WriteToMessageVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@CLTServer@@QAEKPAVIMessageWrite@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@CLTServer@@QAEKPAVIMessageWrite@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z
+    ?WriteToMessageHMessageRead@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z  # ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z  # ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z  # ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z  # ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z  # ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z  # ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z  # ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z  # ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetModelAnimation@CLTClient@@QAEXPAVLTObject@@K@Z
+    ?GetModelAnimation@CLTClient@@QAEKPAVLTObject@@@Z
+    ?SetModelLooping@CLTClient@@QAEXPAVLTObject@@I@Z
+    ?GetModelLooping@CLTClient@@QAEIPAVLTObject@@@Z
+    ?ResetModelAnimation@CLTClientView3@@QAEKPAVLTObject@@@Z
+    ?GetModelPlaybackState@CLTClient@@QAEKPAVLTObject@@@Z
+    ?FreeUnusedModels@CLTClient@@QAEKXZ
+    ?CPrint@CLTClient@@QAAXPADZZ
+    ?GetPointContainers@CLTClient@@QAEKPAV?$_CVector@M@@PAPAVLTObject@@K@Z
+    ?GetContainerCode@CLTClient@@QAEIPAVLTObject@@PAG@Z
+    ?OpenFile@CLTClient@@QAEKPADPAPAVILTStream@@@Z
+    ?CopyFile@CLTClientFiles@@QAEKPBD0@Z  # ?GetFileInfo@CLTClientFiles@@QAEKPBDPAULTFileInfo@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GetFileInfo@CLTClientFiles@@QAEKPBDPAULTFileInfo@@@Z  # ?CopyFile@CLTClientFiles@@QAEKPBD0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?DoesFileExist@CLTClientFiles@@QAEKPBD@Z
+    ?FormatString@CLTClient@@QAAPAUHSTRING_t@@HZZ
+    ?CopyString@CLTClientView@@QAEPAUHSTRING_t@@PAU2@@Z
+    ?CreateString@CLTClientView@@QAEPAUHSTRING_t@@PAD@Z
+    ?FreeString@CLTServer@@QAEXPAUHSTRING_t@@@Z
+    ?CompareStrings@CLTClient@@QAEIPAUHSTRING_t@@0@Z  # ?CompareStringsUpper@CLTClient@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?CompareStringsUpper@CLTClient@@QAEIPAUHSTRING_t@@0@Z  # ?CompareStrings@CLTClient@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GetStringData@CLTClient_Strings@@QAEPADPAUHSTRING_t@@@Z
+    ?GetVarValueFloat@CLTClient@@QAEMPAUHCONSOLEVAR_t@@@Z
+    ?GetVarValueString@CLTClient@@QAEPADPAUHCONSOLEVAR_t@@@Z
+    ?GetTime@CLTClient@@QAEMXZ
+    ?GetFrameTime@CLTClient@@QAEMXZ
+    ?RemoveObject@CLTClient@@QAEKPAVLTObject@@@Z
+    ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z  # ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z  # ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z  # ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z  # ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z  # ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z  # ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z  # ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z  # ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GCLTClientDtorQ527@@UAEPAXI@Z  # ??_GCConsoleHistory@@UAEPAXI@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GetPointStatus@CLTClient@@QAEKPAV?$_CVector@M@@@Z
+    ?GetPointShade@CLTClient@@QAEKPAV?$_CVector@M@@0@Z
+    ?GetSConValueFloat@CLTClientConsoleView@@QAEKPADAAM@Z
+    ?GetSConValueString@CLTClientConsoleView@@QAEKPAD0K@Z
+    ?GetServerConVarValueFloat@CLTClient@@QAEMPAD@Z
+    ?GetServerConVarValueString@CLTClient@@QAEPADPAD@Z
+    ?GetGlobalLightDir@CLTClient@@QAEKAAV?$_CVector@M@@@Z  # ?GetGlobalLightColor@CLTClient@@QAEKAAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetGlobalLightDir@CLTClient@@QAEKV?$_CVector@M@@@Z
+    ?GetGlobalLightColor@CLTClient@@QAEKAAV?$_CVector@M@@@Z  # ?GetGlobalLightDir@CLTClient@@QAEKAAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetGlobalLightColor@CLTClient@@QAEKV?$_CVector@M@@@Z
+    ?GetAmbientLight@CLTClient@@QAEKAAM@Z
+    ?SetAmbientLight@CLTClient@@QAEKM@Z
+    ?StartVideo@CLTClientView@@QAEKPADK@Z
+    ?StopVideo@CLTClientConsoleView@@QAEKXZ
+    ?UpdateVideo@CLTClient@@QAEKXZ
+    ?IsVideoPlaying@CLTClient@@QAEKXZ
+    ?StartMessage@CLTClientView3@@QAEPAVILTMessage@@E@Z
+    ?EndMessage@CLTClient@@QAEKPAVILTMessage@@@Z
+    ?EndMessage2@CLTClient@@QAEKPAVIMessageWriteView@@K@Z
+    ?SendToServer@CLTClient@@QAEKAAVIMessageWriteView@@EK@Z
+    ?GetAttachments@CLTClient@@QAEKPAVLTObject@@PAPAV2@KAAK2@Z
+    ?ProcessAttachments@CLTClientView@@QAEKPAVLTObject@@@Z
+    ?SetObjectPos@CLTClient@@QAEKPAVLTObject@@PAV?$_CVector@M@@I@Z
+    ?GetObjectFlags@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetObjectFlags@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?AddParticle@CLTClient@@QAEPAULTParticle@@PAVLTObject@@PAV?$_CVector@M@@11M@Z
+    ?GetSpriteControl@CLTClientView@@QAEKPAVLTObject@@AAPAVILTSpriteControl@@@Z
+    ?GetCanvasFn@CLTClient@@QAEKPAVLTObject@@AAP6AXPAVILTCustomDraw@@0PAX@ZAAPAX@Z
+    ?SetCanvasFn@CLTClient@@QAEKPAVLTObject@@P6AXPAVILTCustomDraw@@0PAX@Z2@Z
+    ?GetCanvasRadius@CLTClient@@QAEKPAVLTObject@@AAM@Z
+    ?SetCanvasRadius@CLTClient@@QAEKPAVLTObject@@M@Z
+    ?ModelNodeControl@CLTClient@@QAEKPAVLTObject@@P6AX0KPAVLTMatrix@@PAX@Z2@Z
+    ?GetModelPlaying@CLTClient@@QAEIPAVLTObject@@@Z
+    ?SetModelPlaying@CLTClient@@QAEXPAVLTObject@@I@Z
+    ?GetPolyTextureName@CLTClientPolyViewQ527@@QAEKKPADK@Z
+    ?StartQuery@CLTClient@@QAEKPAD@Z
+    ?UpdateQuery@CLTClient@@QAEKXZ
+    ?GetQueryResults@CLTClient@@QAEKAAPAVNetSession@@@Z
+    ?EndQuery@CLTClient@@QAEKXZ
+vtable ??_7CLTServer@@6B@ 0x004d6150  # compiled with 128 slots; 82 _purecall where the shipped slot is concrete
+    ?StartHMessageWrite@CLTServerWriteView@@QAEPAVILTMessage@@XZ
+    ?WriteToMessageFloat@ILTCSBase@@UAEKPAVILTMessage@@M@Z  # the compiled slot, kept over ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z placed there
+    ?WriteToMessageByte@ILTCSBase@@UAEKPAVILTMessage@@E@Z  # the compiled slot, kept over ?WriteToMessageByte@CLTServer@@QAEKPAVIMessageWrite@@E@Z placed there
+    ?WriteToMessageWord@ILTCSBase@@UAEKPAVILTMessage@@G@Z  # the compiled slot, kept over ?WriteToMessageWord@CLTServer@@QAEKPAVIMessageWrite@@G@Z placed there
+    ?WriteToMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@K@Z  # the compiled slot, kept over ?WriteToMessageDWord@CLTServer@@QAEKPAVIMessageWrite@@K@Z placed there
+    ?WriteToMessageString@ILTCSBase@@UAEKPAVILTMessage@@PAD@Z  # the compiled slot, kept over ?WriteToMessageString@CLTServer@@QAEKPAVIMessageWrite@@PAD@Z placed there
+    ?WriteToMessageVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?WriteToMessageVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z placed there
+    ?WriteToMessageCompVector@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?WriteToMessageCompVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z placed there
+    ?WriteToMessageCompPosition@ILTCSBase@@UAEKPAVILTMessage@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?WriteToMessageCompPosition@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z placed there
+    ?WriteToMessageRotation@ILTCSBase@@UAEKPAVILTMessage@@PAVLTRotation@@@Z  # the compiled slot, kept over ?WriteToMessageRotation@CLTServer@@QAEKPAVIMessageWrite@@PAVLTRotation@@@Z placed there
+    ?WriteToMessageHString@ILTCSBase@@UAEKPAVILTMessage@@PAUHSTRING_t@@@Z  # the compiled slot, kept over ?WriteToMessageHString@CLTServer@@QAEKPAVIMessageWrite@@PAUHSTRING_t@@@Z placed there
+    ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z  # the compiled slot, kept over ?WriteToMessageHMessageWrite@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z placed there
+    ?WriteToMessageHMessageRead@ILTCSBase@@UAEKPAVILTMessage@@0@Z  # the compiled slot, kept over ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z placed there
+    ?WriteToMessageFormattedHString@ILTCSBase@@UAAKPAVILTMessage@@HZZ  # the compiled slot, kept over ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ placed there
+    ?WriteToMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z  # the compiled slot, kept over ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z placed there
+    ?WriteToLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z  # the compiled slot, kept over ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z placed there
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z  # the compiled slot, kept over ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z placed there
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z  # the compiled slot, kept over ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z placed there
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z  # the compiled slot, kept over ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z placed there
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z  # the compiled slot, kept over ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z placed there
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z placed there
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z placed there
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z placed there
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z  # the compiled slot, kept over ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z placed there
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z  # the compiled slot, kept over ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z placed there
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # the compiled slot, kept over ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z placed there
+    ?ReadFromLoadSaveMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAPAVLTObject@@@Z  # the compiled slot, kept over ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z placed there
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # the compiled slot, kept over ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z placed there
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # the compiled slot, kept over ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z placed there
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # the compiled slot, kept over ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z placed there
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # the compiled slot, kept over ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z placed there
+    ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z  # ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetModelAnimation@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?GetModelAnimation@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetModelLooping@CLTServer@@QAEXPAVLTObject@@I@Z
+    ?GetModelLooping@CLTServer@@QAEIPAVLTObject@@@Z
+    ?ResetModelAnimation@CLTServer@@QAEKPAVLTObject@@@Z
+    ?GetModelPlaybackState@CLTServer@@QAEKPAVLTObject@@@Z
+    ?FreeUnusedModels@CLTServer@@QAEKXZ
+    ?CPrint@CLTServer@@QAAXPADZZ
+    ?GetPointContainers@CLTServer@@QAEKPAV?$_CVector@M@@PAPAVLTObject@@K@Z
+    ?GetContainerCode@CLTServer@@QAEIPAVLTObject@@PAG@Z
+    ?OpenFile@CLTServer@@QAEKPADPAPAVILTStream@@@Z
+    ?CopyFile@CLTServer@@QAEKPBD0@Z  # ?GetFileInfo@CLTServer@@QAEKPBDPAULTFileInfo@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GetFileInfo@CLTServer@@QAEKPBDPAULTFileInfo@@@Z  # ?CopyFile@CLTServer@@QAEKPBD0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?DoesFileExist@CLTServer@@QAEKPBD@Z
+    ?FormatString@CLTServer@@QAAPAUHSTRING_t@@HZZ
+    ?CopyString@CLTServer@@QAEPAUHSTRING_t@@PAU2@@Z
+    ?Alloc@LAlloc@@UAEPAXK@Z
+    ?FreeString@CLTServer@@QAEXPAUHSTRING_t@@@Z
+    ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z  # ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?CompareStringsUpper@CLTServer@@QAEIPAUHSTRING_t@@0@Z
+    ?GetStringData@CLTServer@@QAEPADPAUHSTRING_t@@@Z
+    ?GetVarValueFloat@CLTServer@@QAEMPAUHCONSOLEVAR_t@@@Z
+    ?GetVarValueString@CLTServer@@QAEPADPAUHCONSOLEVAR_t@@@Z
+    ?GetTime@CLTServer@@QAEMXZ
+    ?GetFrameTime@CLTServer@@QAEMXZ
+    ?RemoveObject@CLTServer@@QAEKPAVLTObject@@@Z
+    ?GetRotationVectors@ILTCSBase@@UAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z  # the compiled slot, kept over ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z placed there
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z  # the compiled slot, kept over ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z placed there
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z  # the compiled slot, kept over ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z placed there
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # the compiled slot, kept over ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z placed there
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # the compiled slot, kept over ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z placed there
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # the compiled slot, kept over ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z placed there
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z  # the compiled slot, kept over ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z placed there
+    ?SetupEuler@ILTCSBase@@UAEKPAVLTRotation@@MMM@Z  # the compiled slot, kept over ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z placed there
+    ?InterpolateRotation@ILTCSBase@@UAEKPAVLTRotation@@00M@Z  # the compiled slot, kept over ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z placed there
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z  # the compiled slot, kept over ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z placed there
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z placed there
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z  # the compiled slot, kept over ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z placed there
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z  # the compiled slot, kept over ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z placed there
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z  # the compiled slot, kept over ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z placed there
+    ?SetupRotationAroundPoint@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z  # the compiled slot, kept over ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z placed there
+    ??_GCLTServer@@UAEPAXI@Z
+    ?GetNumClassProps@CLTServer@@QAEKQAUHCLASS_t@@AAK@Z
+    ?GetClassProp@CLTServer@@QAEKQAUHCLASS_t@@KAAVClassPropInfo@@@Z
+    ?GetClassName@CLTServer@@QAEKQAUHCLASS_t@@PADK@Z
+    ?GetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
+    ?SetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
+    ?ThreadLoadFile@CLTServer@@QAEKPADK@Z
+    ?UnloadFile@CLTServer@@QAEKPADK@Z
+    ?GetHPolyObject@CLTServer@@QAEKKAAPAVLTObject@@@Z
+    ?FindNamedObjects@CLTServer@@QAEKPADAAV?$BaseObjArray@PAVLTObject@@@@PAK@Z
+    ?FindWorldModelObjectIntersections@CLTServer@@QAEKPAVLTObject@@V?$_CVector@M@@VLTRotation@@AAV?$BaseObjArray@PAVLTObject@@@@@Z
+    ?GetWorldBox@CLTServer@@QAEKAAV?$_CVector@M@@0@Z
+    ?StartSpecialEffectMessage@CLTServer@@QAEPAVILTMessage@@PAVBaseClass@@@Z
+    ?StartInstantSpecialEffectMessage@CLTServer@@QAEPAVILTMessage@@PAV?$_CVector@M@@@Z
+    ?StartMessageToObject@CLTServer@@QAEPAVILTMessage@@PAVBaseClass@@PAVLTObject@@K@Z
+    ?StartMessageToServer@CLTServer@@QAEKPAVBaseClass@@KPAPAVILTMessage@@@Z
+    ?StartMessage@CLTServer@@QAEPAVILTMessage@@PAUHCLIENT_t@@E@Z
+    ?EndMessage2@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?EndMessage@CLTServer@@QAEKPAVIMessageWrite@@@Z
+    ?SetObjectSFXMessage@CLTServer@@QAEKPAVLTObject@@AAVIMessageWrite@@@Z
+    ?SendToObject@CLTServer@@QAEKAAVIMessageWrite@@KPAVLTObject@@1K@Z
+    ?SendToServer@CLTServer@@QAEKAAVIMessageWrite@@KPAVLTObject@@K@Z
+    ?SendToClient@CLTServer@@QAEKAAVIMessageWrite@@EPAUHCLIENT_t@@K@Z
+    ?SendSFXMessage@CLTServer@@QAEKAAVIMessageWrite@@AAV?$_CVector@M@@K@Z
+    ?SendTo@CLTServer@@QAEKPBXKPBDK@Z
+    ?GetClientPing@CLTServer@@QAEKPAUHCLIENT_t@@AAM@Z
+    ?AddStrings@CLTServerStringSetViewQ526@@QAEXPBDPAPBDH@Z
+    ?ClearStrings@CLTServerStringSetViewQ526@@QAEXXZ
+    ?GetStrings@CLTServerStringSetViewQ526@@QAEPAV?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$set@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@2@U?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@V?$set@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$less@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@@2@@std@@XZ
+    ?GetObjectMass@CLTServer@@QAEMPAVLTObject@@@Z
+    ?SetObjectMass@CLTServer@@QAEXPAVLTObject@@M@Z
+    ?GetForceIgnoreLimit@CLTServer@@QAEMPAVLTObject@@AAM@Z
+    ?SetForceIgnoreLimit@CLTServer@@QAEXPAVLTObject@@M@Z
+    ?GetObjectName@CLTServer@@QAEKPAVLTObject@@PADK@Z
+    ?GetObjectName@CLTServer@@QAEPADPAVLTObject@@@Z
+    ?SetFrictionCoefficient@CLTServer@@QAEKPAVLTObject@@M@Z
+    ?MoveObject@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetStandingOn@CLTServer@@QAEKPAVLTObject@@PAVCollisionInfo@@@Z
+    ?GetObjectFlags@CLTServer@@QAEKPAVLTObject@@@Z
+    ?SetObjectFlags@CLTServer@@QAEXPAVLTObject@@K@Z
+    ?GetNetFlags@CLTServer@@QAEKPAVLTObject@@AAK@Z
+    ?SetNetFlags@CLTServer@@QAEKPAVLTObject@@K@Z
+    ?GetObjectDims@CLTServer@@QAEXPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims2@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetVelocity@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetVelocity@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetAcceleration@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetAcceleration@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetModelFilenames@CLTServerModelView@@UAEKPAVLTObject@@PAD11@Z
+    ?SetObjectFilenames@CLTServerModelView@@UAEKPAVLTObject@@PAD11@Z
+    ?GetModelAnimUserDims@CLTServer@@QAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetPolyTextureFlags@CLTServer@@QAEKKPAK@Z
+    ?GetPolyTextureName@CLTServer@@QAEKKPADK@Z
+    ?GetClientData@CLTServer@@QAEKPAUHCLIENT_t@@AAPAXAAK@Z
+vtable ??_7CObjContainer@@6B@ 0x004d60ac  # compiled with 14 slots
+    ??_GCObjContainer@@UAEPAXI@Z  # the compiled slot, kept over ??_GModel@@UAEPAXI@Z placed there
+    ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z  # the compiled slot, kept over ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z placed there
+    ?_v08@CObjBase@@UAEXXZ  # the compiled slot, kept over ?sub_10024d41@CObjWorldModel@@QAEXXZ placed there
+    ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
+    ?_v10@CObjBase@@UAEIXZ  # the compiled slot, kept over ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ placed there
+    ?_v14@CObjBase@@UAEPAXK@Z  # the compiled slot, kept over ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z placed there
+    ?_v18@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z placed there
+    ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
+    ?_v20@CObjContainer@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
+    ?IsInWorld@CObjBase@@UAEIXZ
+    ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
+    ?_v2c@CObjBase@@UAEMXZ
+    ?_v30@CObjBase@@UAEIXZ  # the compiled slot, kept over ?HasOriginalBsp@CObjWorldModel@@QAEIXZ placed there
+    ?_v34@CObjBase@@UAEIXZ  # the compiled slot, kept over ?GetWorldFlag4@CObjWorldModel@@QAEKXZ placed there
+    ?IsWorldIdle@CObjWorldModel@@QAEIXZ
+vtable ??_7CObjWorldModel@@6B@ 0x004d5e40  # compiled with 14 slots
+    ??_GCObjWorldModel@@UAEPAXI@Z  # the compiled slot, kept over ??_GClientCommonLTQ404@@UAEPAXI@Z placed there
+    ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z  # the compiled slot, kept over ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z placed there
+    ?_v08@CObjBase@@UAEXXZ  # the compiled slot, kept over ?sub_10024d41@CObjWorldModel@@QAEXXZ placed there
+    ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
+    ?_v10@CObjBase@@UAEIXZ  # the compiled slot, kept over ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ placed there
+    ?_v14@CObjBase@@UAEPAXK@Z  # the compiled slot, kept over ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z placed there
+    ?_v18@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z placed there
+    ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
+    ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
+    ?IsInWorld@CObjBase@@UAEIXZ
+    ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
+    ?_v2c@CObjBase@@UAEMXZ
+    ?_v30@CObjBase@@UAEIXZ  # the compiled slot, kept over ?HasOriginalBsp@CObjWorldModel@@QAEIXZ placed there
+    ?_v34@CObjBase@@UAEIXZ  # the compiled slot, kept over ?GetWorldFlag4@CObjWorldModel@@QAEKXZ placed there
+    ?IsWorldIdle@CObjWorldModel@@QAEIXZ
+vtable ??_7CObjectMoverQ47C@@6B@ 0x004d66a8  # compiled with 13 slots
+    ?SetObjectChangeFlags@CObjectMoverQ47C@@UAEXPAVLTObject@@K@Z
+    ?GetCollisionInfo@CObjectMoverQ47C@@UAEPAPAVCollisionInfo@@XZ
+    ?TouchNotify@CObjectMoverQ47C@@UAEXPAVLTObject@@0PAV?$_CVector@M@@M@Z
+    ?Attach@CObjectMoverQ47C@@UAEXPAVLTObject@@0@Z
+    ?Detach@CObjectMoverQ47C@@UAEXPAVLTObject@@@Z
+    ?UpdateAttachments@CObjectMoverQ47C@@UAEXPAUWMMoveState@@@Z
+    ?_v18@CObjectMoverQ47C@@UAEHXZ  # the compiled slot, kept over ?ObjectBlocks@CObjectMover@@UAEHPAVCMoveRequest@@PAXPAVLTObject@@@Z placed there
+    ?Crush@CObjectMoverQ47C@@UAEKPAVLTObject@@PAX@Z
+    ?_v20@CObjectMoverQ47C@@UAEXXZ  # the compiled slot, kept over ?CheckMaxPos@CObjectMover@@UAEXPAVCMoveRequest@@PAV?$_CVector@M@@@Z placed there
+    ?_v24@CObjectMoverQ47C@@UAEHXZ  # the compiled slot, kept over ?Flush@CRezFileDirectoryEmulation@@UAEHXZ placed there
+    ?CanDeactivate@CObjectMoverQ47C@@UAEIPAVLTObject@@@Z
+    ?GetObjectClassName@CObjectMoverQ47C@@UAEPADPAVLTObject@@@Z
+    ?_v30@CObjectMoverQ47C@@UAEKXZ  # the compiled slot, kept over ?GetUnknown928Value@CObjectMover@@UAEKXZ placed there
+    ?_v34@CObjectMoverQ47C@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+vtable ??_7CPacketDataQG9@@6B@ 0x004d4b70  # compiled with 1 slots
+    ?GenBegin@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@EVDefaultCache@@@@UBEEAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@EVDefaultCache@@@@UBEEAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@EVDefaultCache@@@@UAEIAAE@Z
+    ?GenRemoveAt@?$CMoArray@EVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
+    ?GenAppendList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
+    ?GenFindElement@?$CMoArray@EVDefaultCache@@@@UBEIABEAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7CPhysicsLTQ404@@6B@ 0x004d47f0  # compiled with 2 slots
+    ?_p00@ILTClientPhysicsQ404@@UAEXXZ  # the compiled slot, kept over ?GetFrictionCoefficient@CommonPhysicsLT@@UAEKPAVLTObject@@AAM@Z placed there
+    ?_p01@CPhysicsLTQ404@@UAEXXZ  # the compiled slot, kept over ?SetFrictionCoefficient@CommonPhysicsLT@@UAEKPAVLTObject@@M@Z placed there
+    ?GetForceIgnoreLimit@CommonPhysicsLT@@UAEKPAVLTObject@@AAM@Z
+    ?SetForceIgnoreLimit@CommonPhysicsLT@@UAEKPAVLTObject@@M@Z
+    ?GetVelocity@CommonPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetVelocity@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetAcceleration@CommonPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetAcceleration@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?GetObjectMass@CommonPhysicsLT@@UAEKPAVLTObject@@AAM@Z
+    ?SetObjectMass@CommonPhysicsLT@@UAEKPAVLTObject@@M@Z
+    ?GetObjectDims@CommonPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@@Z
+    ?SetObjectDims@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?MoveObject@CPhysicsLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z  # near pairing only
+    ?GetStandingOn@CommonPhysicsLT@@UAEKPAVLTObject@@PAVCollisionInfo@@@Z
+    ?IsWorldObject@CommonPhysicsLT@@UAEKPAVLTObject@@@Z
+    ?GetGlobalForce@CPhysicsLTView@@QAEKAAV?$_CVector@M@@@Z
+    ?SetGlobalForce@CPhysicsLTView@@QAEKAAV?$_CVector@M@@@Z
+    ?GetPos@CMemStream@@UAEKPAK@Z
+    ?SetStairHeight@SPhysicsLT@@UAEKM@Z
+    ?UpdateMovement@CPhysicsLTView@@QAEKPAVMoveInfoView@@@Z
+    ?MovePushObjects@CPhysicsLT@@QAEKPAVLTObject@@AAV?$_CVector@M@@PAPAV2@K@Z
+    ?RotatePushObjects@CPhysicsLT@@QAEKPAVLTObject@@AAVLTRotation@@PAPAV2@K@Z
+vtable ??_7CSaveLoadMessage@@6B@ 0x004d5458  # compiled with 1 slots
+    ?IsBusy@CWorldBsp@@UAEKXZ  # placed by shape
+    ?IsBusy@CWorldBsp@@UAEKXZ  # placed by shape
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadChecked@CSaveIO@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteChecked@CSaveIO@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?IsBusy@CWorldBsp@@UAEKXZ  # placed by shape
+    ?GetNothing@CSaveIO@@QAEKPAK@Z
+    ?_v30@CObjBase@@UAEIXZ  # placed by shape
+vtable ??_7CServerMgrView@@6BCBaseMgrView@@@ 0x004d4e18  # compiled with 1 slots
+    ??_GCServerMgrView@@UAEPAXI@Z  # the compiled slot, kept over ??_GCCmgElem1C@@QAEPAXI@Z placed there
+    ?_v04@CServerMgr@@UAEIPAX0@Z
+    ?_v08@CServerMgr@@UAEXPAVNetConnection@@@Z
+    ?ProcessPacket@CServerMgr@@UAEXPAVCPacket@@PAEG@Z
+    ?_Destroy@?$vector@PADV?$allocator@PAD@std@@@std@@IAEXPAPAD0@Z
+vtable ??_7CServerMgrView@@6BCServerSoundMgrView@@@ 0x004d4e00  # compiled with 1 slots
+    ?_s00@CServerMgrView@@UAEXXZ  # the compiled slot, kept over ?PlaySound@CServerMgr@@UAEKPAUPlaySoundInfo@@AAPAUHLTSOUND_t@@@Z placed there
+    ?GetSoundDuration@CServerMgr@@UAEKPAUHLTSOUND_t@@AAM@Z
+    ?IsSoundDone@CServerMgr@@UAEKPAUHLTSOUND_t@@AAI@Z
+    ?KillSound@CServerMgr@@UAEKPAUHLTSOUND_t@@@Z
+    ?KillSoundLoop@CServerMgr@@UAEKPAUHLTSOUND_t@@@Z
+    ?KillSoundFade@CServerSoundFadeQ551@@QAEKPAUHLTSOUND_t@@M@Z
+vtable ??_7CServerSoundMgrView@@6B@ 0x004d4e2c  # compiled with 1 slots
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7CServerWorldFull@@6B@ 0x004d50f4  # compiled with 3 slots; 3 _purecall where the shipped slot is concrete
+    ?FindLightAnim@CWorldData@@UAEPAVCLARecord@@PADPAK@Z
+    ?FindFlagged20@CWorldModelList@@QAEPAVCWorldModelData@@XZ
+    ?FindFlagged10@CWorldModelList@@QAEPAVCWorldModelData@@XZ
+vtable ??_7CSoundInstance1@@6B@ 0x004d6780  # compiled with 23 slots; 8 _purecall where the shipped slot is concrete
+    ??_GCSoundInstance1@@UAEPAXI@Z  # the compiled slot, kept over ??_GCClass4A38A4@@UAEPAXI@Z placed there
+    ?Init@CSoundInstanceView@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z  # the compiled slot, kept over ?Init@CSndInstanceAmbientJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z placed there
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ
+    ?Update@CSndInstanceAmbientJ@@UAEIK@Z
+    ?UpdateImportance@CSndInstanceAmbientJ@@UAEKPAVCSndVec3J@@@Z
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstanceAmbientJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstance2@@6B@ 0x004d67e0  # compiled with 23 slots; 4 _purecall where the shipped slot is concrete
+    ??_GCSoundInstance2@@UAEPAXI@Z  # the compiled slot, kept over ??_GCClass4A38A4@@UAEPAXI@Z placed there
+    ?Init@CSoundInstanceView@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z  # the compiled slot, kept over ?Init@CSndInstance3DJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z placed there
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ
+    ?Update@CSndInstance3DJ@@UAEIK@Z  # near pairing only
+    ?UpdateImportance@CSndInstanceAmbientJ@@UAEKPAVCSndVec3J@@@Z
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?SetObstruction@CSoundInstance2@@UAEKM@Z
+    ?GetObstruction@CSoundInstance2@@UAEKPAM@Z  # the compiled slot, kept over ?GetOcclusion@CSoundInstance2@@UAEKPAM@Z placed there
+    ?SetOcclusion@CSoundInstance2@@UAEKM@Z
+    ?GetOcclusion@CSoundInstance2@@UAEKPAM@Z
+    ?SetPosition@CSoundInstance2@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstance3DJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstanceLocalL10@@6B@ 0x004d6988  # compiled with 1 slots
+    ??_GCSoundInstanceLocalL10@@UAEPAXI@Z  # the compiled slot, kept over ??_GCClass4A38A4@@UAEPAXI@Z placed there
+    ?Init@CSndInstanceLocalJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ
+    ?Update@CSndInstanceLocalJ@@UAEIK@Z
+    ?sub_0048fa90@CLTCursor@@QAEKW4CursorMode@@@Z  # placed by shape
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstanceLocalJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstanceLocalRef@@6B@ 0x004d6988  # compiled with 10 slots
+    ??_GCSoundInstanceLocalRef@@UAEPAXI@Z  # the compiled slot, kept over ??_GCClass4A38A4@@UAEPAXI@Z placed there
+    ?Init@CSoundInstanceLocalRef@@UAEKPAVCSoundDataRef@@PAUPlaySoundInfo@@K@Z  # the compiled slot, kept over ?Init@CSndInstanceLocalJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z placed there
+    ?Term@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?Term@CSoundInstanceView@@UAEXXZ placed there
+    ?_v0c@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?_v0c@CSoundInstanceView@@UAEKXZ placed there
+    ?_v10@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?Update@CSndInstanceLocalJ@@UAEIK@Z placed there
+    ?_v14@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?sub_0048fa90@CLTCursor@@QAEKW4CursorMode@@@Z placed there
+    ?Stop@CSoundInstanceLocalRef@@UAEKH@Z  # the compiled slot, kept over ?Stop@CSoundInstanceView@@UAEKH@Z placed there
+    ?_v1c@CSoundInstanceLocalRef@@UAEXH@Z  # the compiled slot, kept over ?_v1c@CSoundInstanceView@@UAEKH@Z placed there
+    ?Hold@CSoundInstanceLocalRef@@UAEKXZ  # the compiled slot, kept over ?Hold@CSoundInstanceView@@UAEKXZ placed there
+    ?ReleaseHold@CSoundInstanceLocalRef@@UAEKXZ  # the compiled slot, kept over ?ReleaseHold@CSoundInstanceView@@UAEKXZ placed there
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?GetListenerOffset@CSndInstanceLocalJ@@UAEKPAVCSndVec3J@@@Z
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CSoundInstanceView@@6B@ 0x004d6724  # compiled with 23 slots; 6 _purecall where the shipped slot is concrete
+    ??_GCSoundInstanceView@@UAEPAXI@Z  # the compiled slot, kept over ??_GCMemStreamBank@@UAEPAXI@Z placed there
+    ?Init@CSoundInstanceView@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z
+    ?Term@CSoundInstanceView@@UAEXXZ
+    ?_v0c@CSoundInstanceView@@UAEKXZ
+    __purecall
+    __purecall
+    ?Stop@CSoundInstanceView@@UAEKH@Z
+    ?_v1c@CSoundInstanceView@@UAEKH@Z
+    ?Hold@CSoundInstanceView@@UAEKXZ
+    ?ReleaseHold@CSoundInstanceView@@UAEKXZ
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
+    ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
+    ?sub_0048fa90@CLTCursor@@QAEKW4CursorMode@@@Z  # placed by shape
+    ?SetFilter@CSoundInstanceView@@UAEKPBD@Z
+    ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
+    ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
+    ?sub_47d3b0@CSoundInstanceView@@UAEIXZ
+    ?Play@CSoundInstanceView@@UAEKXZ
+    ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
+vtable ??_7CTCPDriverBase@@6B@ 0x004d538c  # compiled with 27 slots; 19 _purecall where the shipped slot is concrete
+    ??_GCTCPDriverBase@@UAEPAXI@Z  # the compiled slot, kept over ??_GCBaseMgrView@@UAEPAXI@Z placed there
+    __purecall
+    __purecall
+    __purecall
+    ?GenSetCacheSize@?$CMoArray@PAVCModelSub20C@Model@@VNoCache@@@@UAEXK@Z  # placed by shape
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?_v30@CObjBase@@UAEIXZ  # placed by shape
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?_v30@CObjBase@@UAEIXZ  # placed by shape
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
+    ?IsBusy@CWorldBsp@@UAEKXZ  # placed by shape
+    ?sub_0048fa90@CLTCursor@@QAEKW4CursorMode@@@Z  # placed by shape
+    ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
+    ?IsBusy@CWorldBsp@@UAEKXZ  # placed by shape
+    ?GetTcpIpAddress@CBaseDriverDefaultsView@@UAEIPADKAAG@Z
+    ?sub_0048fa90@CLTCursor@@QAEKW4CursorMode@@@Z  # placed by shape
+    ?SendTo@CBaseDriverDefaultsView@@UAEIPBXKPBDK@Z
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7CUnknown3b8Q404@@6B@ 0x004d46f0  # compiled with 1 slots
+    ?SetCursorMode@CClientCursorProxy@@QAEKW4CursorMode@@@Z
+    ?GetCursorMode@CClientCursorProxy@@QAEKAAW4CursorMode@@@Z
+    ?IsCursorModeAvailable@CClientCursorProxy@@QAEKW4CursorMode@@@Z
+    ?LoadCursorBitmapResource@CClientCursorProxy3@@QAEKPBDAAPAVILTCursorInst@@@Z
+    ?FreeCursor@CClientCursorProxy@@QAEKQAVILTCursorInst@@@Z
+    ?SetCursor@CClientCursorProxy@@QAEKPAVILTCursorInst@@@Z
+    ?IsValidCursor@CClientCursorProxy@@QAEKPAVILTCursorInst@@@Z
+    ?RefreshCursor@CClientCursorProxy@@QAEKXZ
+vtable ??_7CUnknown48CCE0@@6B@ 0x004d6bbc  # compiled with 1 slots; 1 _purecall where the shipped slot is concrete
+    ?FindNodeFromPath@CWorldTreeN48C@@QAEPAVCWTNodeN48C@@PAUWTPathN48C@@@Z
+    ?FindObjectsInBoxQ@CWorldTreeN48D@@UAEKPAV?$_CVector@M@@0PAX1K@Z
+    ?Slot10@CClass4A38D8Slot10@@QAEXPAX@Z
+    ?Slot11@CClass4A38D8@@UAEKPAX000@Z
+    ?FindObjectsOnSegment@CWorldTreeN48D@@UAEKPAVCWTVecN48D@@0P6AKPAVCWTObjectN48D@@PAX@Z2K@Z
+    ?FindObjectsInBox@CWorldTreeN48D@@UAEXPAVCWTBoxInfoN48D@@@Z
+    ?_Destroy@?$vector@PADV?$allocator@PAD@std@@@std@@IAEXPAPAD0@Z
+vtable ??_7CWorldTable@@6B@ 0x004d4ca4  # compiled with 1 slots
+    ?GenBegin@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBE?AVGenListPos@@XZ
+    ?GenIsValid@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UBEIABVGenListPos@@@Z
+    ?GenGetNext@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
+    ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
+    ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
+    ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
+    ?GenGetSize@?$CMoArray@EVDefaultCache@@@@UBEKXZ
+    ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
+    ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
+    ?GenSetCacheSize@?$CMoArray@VCWorldSimple@@VDefaultCache@@@@UAEXK@Z
+vtable ??_7ClientCommonLTQ404@@6B@ 0x004d4848  # compiled with 3 slots
+    ??_GClientCommonLTQ404@@UAEPAXI@Z  # the compiled slot, kept over ??_GCBankA44@@UAEPAXI@Z placed there
+    ?_c01@ClientCommonLTQ404@@UAEXXZ  # the compiled slot, kept over ?SetObjectFilenames@ClientCommonLT@@QAEIPAVCClientObject@@PAVObjectCreateStruct@@@Z placed there
+    ?_cc0@ClientCommonLTQ404@@UAEXXZ  # the compiled slot, kept over ?GetObjectFlags@SharedCommonLT@@UAEKQAVLTObject@@W4ObjFlagType@@AAK@Z placed there
+    ?SetObjectFlags@SharedCommonLT@@UAEKPAVLTObject@@W4ObjFlagType@@K@Z
+    ?GetAttachmentObjects@ClientCommonLT@@QAEIPAVAttachmentQ405c@@AAPAVCClientObject@@1@Z
+    ?GetAttachments@SharedCommonLT@@UAEKPAVLTObject@@PAPAV2@KAAK2@Z
+    ?GetAttachmentTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@AAVLTransform@@I@Z
+    ?GetAttachedModelNodeTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@KAAVLTransform@@@Z
+    ?GetAttachedModelSocketTransform@SharedCommonLT@@UAEKPAUHATTACHMENT_t@@KAAVLTransform@@@Z
+    ?Parse@SharedCommonLT@@UAEKPAVConParse@@@Z
+    ?GetObjectType@SharedCommonLT@@UAEKPAVLTObject@@PAK@Z
+    ?GetModelAnimUserDims@SharedCommonLT@@UAEKPAVLTObject@@PAV?$_CVector@M@@K@Z
+    ?GetRotationVectors@SharedCommonLT@@UAEKAAVLTRotation@@AAV?$_CVector@M@@11@Z
+    ?SetupEuler@SharedCommonLT@@UAEKAAVLTRotation@@MMM@Z
+    ?CreateMessage@ClientCommonLT@@QAEIAAPAVILTMessage@@@Z
+    ?GetCRC@SharedCommonLT@@UAEKPAVILTStream@@AAK@Z
+    ?GetPointStatus@ClientCommonLT@@QAEIPAVLTVector@@@Z
+    ?GetPointShade@ClientCommonLT@@QAEIPAVLTVector@@0@Z
+    ?GetPolyTextureFlags@ClientCommonLT@@QAEIIPAI@Z
+    ?GetPolyTextureName@ClientCommonLT@@QAEIIPADI@Z  # near pairing only
+    ?GetPolyInfo@ClientCommonLT@@QAEIIPAPAULTPlaneQ512@@PAVLTVector@@IPAI@Z  # near pairing only
+    ?GetPolySurfaceFlags@ClientCommonLT@@QAEIIAAI@Z
+vtable ??_7ClientLightAnimLTQ404@@6B@ 0x004d4710  # compiled with 1 slots
+    ?FindLightAnim@CLTLightAnimClient@@QAEKPBDAAK@Z
+    ?GetNumFrames@CLTLightAnimClient@@QAEKKAAK@Z
+    ?GetLightAnimInfo@CLTLightAnimClient@@QAEKKAAVLAInfo@@@Z
+    ?SetLightAnimInfo@CLTLightAnimClient@@QAEKKAAVLAInfo@@@Z
+vtable ??_7ClientModelLTQ404@@6B@ 0x004d4744  # compiled with 1 slots
+    ?_v00@ClientModelLTQ404@@UAEXXZ  # the compiled slot, kept over ?GetSocket@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z placed there
+    ?GetNode@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
+    ?GetPiece@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
+    ?FindWeightSet@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
+    ?GetModelLighting@CommonModelLT@@UAEKPAVLTObject@@AAV?$_CVector@M@@@Z
+    ?GetPieceHideStatus@CommonModelLT@@UAEKPAVLTObject@@KAAI@Z
+    ?SetPieceHideStatus@CommonModelLT@@UAEKPAVLTObject@@KI@Z
+    ?GetNodeTransform@CommonModelLT@@UAEKPAVLTObject@@KAAVLTransform@@I@Z
+    ?GetSocketTransform@CommonModelLT@@UAEKPAVLTObject@@KAAVLTransform@@I@Z
+    ?GetInstanceHookFn@CommonModelLT@@UAEKPAVLTObject@@AAP6AX0PAVModelInstanceHookData@@K@Z@Z
+    ?SetInstanceHookFn@CommonModelLT@@UAEKPAVLTObject@@P6AX0PAVModelInstanceHookData@@K@Z@Z
+    ?GetMainTracker@CommonModelLT@@UAEKPAVLTObject@@AAPAVLTAnimTracker@@@Z
+    ?UpdateMainTracker@CommonModelLT@@UAEKPAVLTObject@@M@Z
+    ?GetPlaybackState@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?AddTracker@CommonModelLT@@UAEKPAVLTObject@@PAVLTAnimTracker@@@Z
+    ?RemoveTracker@CommonModelLT@@UAEKPAVLTObject@@PAVLTAnimTracker@@@Z
+    ?ReadTracker@CommonModelLT@@UAEKPAVLTAnimTracker@@PAVILTMessage@@@Z
+    ?WriteTracker@CommonModelLT@@UAEKPAVLTAnimTracker@@PAVILTMessage@@@Z
+    ?GetCurAnim@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?SetCurAnim@ClientModelLTV@@UAEHPAVLTAnimTrackerV@@K@Z
+    ?ResetAnim@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?GetLooping@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?SetLooping@CommonModelLT@@UAEKPAVLTAnimTracker@@I@Z
+    ?GetPlaying@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?SetPlaying@CommonModelLT@@UAEKPAVLTAnimTracker@@I@Z
+    ?GetWeightSet@CommonModelLT@@UAEKPAVLTAnimTracker@@AAK@Z
+    ?SetWeightSet@CommonModelLT@@UAEKPAVLTAnimTracker@@K@Z
+    ?GetAllowTransition@CommonModelLT@@UAEKPAVLTAnimTracker@@AAI@Z
+    ?SetAllowTransition@CommonModelLT@@UAEKPAVLTAnimTracker@@I@Z
+    ?GetTimeScale@CommonModelLT@@UAEKPAVLTAnimTracker@@AAM@Z
+    ?SetTimeScale@CommonModelLT@@UAEKPAVLTAnimTracker@@M@Z
+    ?GetCurAnimLength@CommonModelLT@@UAEKPAVLTAnimTracker@@AAKI@Z
+    ?GetCurAnimTime@CommonModelLT@@UAEKPAVLTAnimTracker@@AAKI@Z
+    ?SetCurAnimTime@CommonModelLT@@UAEKPAVLTAnimTracker@@KI@Z
+    ?GetNormalize@CommonModelLT@@UAEKPAVLTAnimTracker@@@Z
+    ?SetNormalize@CommonModelLT@@UAEKPAVLTAnimTracker@@I@Z
+    ?IntersectRays@CommonModelLT@@UAEKPAVLTObject@@ABV?$_CVector@M@@JPAKKPAULTRayResult@ILTModel@@K@Z
+vtable ??_7ILTCSBaseQ404@@6B@ 0x004d48a0  # compiled with 2 slots
+    __purecall
+    ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z
+    ?WriteToMessageByte@CLTServer@@QAEKPAVIMessageWrite@@E@Z
+    ?WriteToMessageWord@CLTServer@@QAEKPAVIMessageWrite@@G@Z
+    ?WriteToMessageDWord@CLTServer@@QAEKPAVIMessageWrite@@K@Z
+    ?WriteToMessageString@CLTServer@@QAEKPAVIMessageWrite@@PAD@Z
+    ?WriteToMessageVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompVector@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageCompPosition@CLTServer@@QAEKPAVIMessageWrite@@PAV?$_CVector@M@@@Z
+    ?WriteToMessageRotation@CLTServer@@QAEKPAVIMessageWrite@@PAVLTRotation@@@Z
+    ?WriteToMessageHString@CLTServer@@QAEKPAVIMessageWrite@@PAUHSTRING_t@@@Z
+    ?WriteToMessageHMessageWrite@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z
+    ?WriteToMessageHMessageRead@CLTServer@@QAEKPAVIMessageWrite@@PAX@Z  # ?WriteToMessageHMessageWrite@ILTCSBase@@UAEKPAVILTMessage@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
+    ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z  # ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z  # ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z  # ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z  # ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z  # ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z  # ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z  # ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z  # ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z  # ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z
+    ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z  # ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z  # ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z  # ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z  # ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z  # ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ??_GCLTClientBaseDtorQ527@@UAEPAXI@Z  # ??_GCConsoleNameList@@UAEPAXI@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7ILTCommonQ404@@6B@ 0x004d4ab4  # compiled with 2 slots
+    ??_GCClientCommonLTDtorQ527@@UAEPAXI@Z  # ??_GCBankBase@@UAEPAXI@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+    __purecall
+vtable ??_7ILTMathQ404@@6B@ 0x004d4a64  # compiled with 1 slots
+    ?_m00@ILTMathQ404@@UAEXXZ  # the compiled slot, kept over ?GetRotationVectors@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@11@Z placed there
+    ?InterpolateRotation@ILTMath@@UAEKAAVLTRotation@@00M@Z
+    ?SetupEuler@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@@Z
+    ?SetupEuler@ILTMath@@UAEKAAVLTRotation@@MMM@Z
+    ?GetEulerAngles@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@@Z
+    ?GetEulerAngles@ILTMath@@UAEKAAVLTRotation@@PAM11@Z  # near pairing only
+    ?SetupTransformationMatrix@ILTMath@@UAEKAAVLTMatrix@@AAV?$_CVector@M@@AAVLTRotation@@@Z
+    ?SetupTranslationMatrix@ILTMath@@UAEKAAVLTMatrix@@AAV?$_CVector@M@@@Z
+    ?SetupRotationMatrix@ILTMath@@UAEKAAVLTMatrix@@AAVLTRotation@@@Z
+    ?SetupTranslationFromMatrix@ILTMath@@UAEKAAV?$_CVector@M@@AAVLTMatrix@@@Z
+    ?SetupRotationFromMatrix@ILTMath@@UAEKAAVLTRotation@@AAVLTMatrix@@@Z
+    ?SetupRotationAroundPoint@ILTMath@@UAEKAAVLTMatrix@@AAVLTRotation@@AAV?$_CVector@M@@@Z
+    ?AlignRotation@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@1@Z
+    ?EulerRotateX@ILTMath@@UAEKAAVLTRotation@@M@Z
+    ?EulerRotateY@ILTMath@@UAEKAAVLTRotation@@M@Z
+    ?EulerRotateZ@ILTMath@@UAEKAAVLTRotation@@M@Z
+    ?RotateAroundAxis@ILTMath@@UAEKAAVLTRotation@@AAV?$_CVector@M@@M@Z
+    ?GetRotationVectorsFromMatrix@ILTMath@@UAEKAAVLTMatrix@@AAV?$_CVector@M@@11@Z
+vtable ??_7ILTTransformQ404@@6B@ 0x004d4720  # compiled with 1 slots
+    ?Get@CLTTransform@@QAEKAAVLTransform@@AAV?$_CVector@M@@AAVLTRotation@@@Z
+    ?Set@CLTTransform@@QAEKAAVLTransform@@AAV?$_CVector@M@@AAVLTRotation@@@Z
+    ?GetPos@CLTTransform@@QAEKAAVLTransform@@AAV?$_CVector@M@@@Z
+    ?GetRot@CLTTransform@@QAEKAAVLTransform@@AAVLTRotation@@@Z
+    ?ToMatrix@CLTTransform@@QAEKAAVLTransform@@AAVLTMatrix@@@Z
+    ?FromMatrix@CLTTransform@@QAEKAAVLTransform@@AAVLTMatrix@@@Z
+    ?Inverse@CLTTransform@@QAEKAAVLTransform@@0@Z
+    ?Multiply@CLTTransform@@QAEKAAVLTransform@@00@Z
+    ?Difference@CLTTransform@@QAEKAAVLTransform@@00@Z
+vtable ??_7LMessageImpl@@6B@ 0x004d5d64  # compiled with 1 slots
+    ?Release@LMessageImpl@@QAEKXZ
+    ?ReadString@CLMessageStrQ528@@QAEPBDXZ
+    ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
+    ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
+    ?ReadStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadHStringFL@LMessageImpl@@QAEKAAPAUHSTRING_t@@@Z
+    ?ReadHStringAsStringFL@LMessageImpl@@QAEKPADK@Z
+    ?ReadRawFL@LMessageImpl@@QAEKPAXK@Z
+    ?ReadVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompVectorFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadCompPosFL@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?ReadRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadCompRotationFL@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?ReadMessageFL@LMessageImpl@@QAEKAAPAV1@@Z
+    ?ReadObjectFL@LMessageImpl@@QAEKAAPAVLTObject@@@Z
+    ?WriteByte@LMessageImpl@@QAEKE@Z
+    ?WriteWord@LMessageImpl@@QAEKG@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteFloat@LMessageImpl@@QAEKM@Z
+    ?WriteString@LMessageImpl@@QAEKPAD@Z
+    ?WriteVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompVector@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteCompPos@LMessageImpl@@QAEKAAV?$_CVector@M@@@Z
+    ?WriteRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteCompRotation@LMessageImpl@@QAEKAAVLTRotation@@@Z
+    ?WriteRaw@LMessageImpl@@QAEKPAXK@Z
+    ?WriteMessage@LMessageImpl@@QAEKPAVIMessageWrite@@@Z
+    ?WriteHString@LMessageImpl@@QAEKPAUHSTRING_t@@@Z
+    ?WriteHStringFormatted@LMessageImpl@@QAAKHZZ
+    ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
+    ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
+    ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
+    ?ResetPos@LMessageImpl@@QAEKXZ
+    ?GetStatus@LMessageImpl@@QAEKAAK@Z
+    ?IsFlagSet@CWorldSimple@@UAEKXZ  # placed by shape
+vtable ??_7LVideoMgrQ404@@6B@ 0x004d47d8  # compiled with 1 slots
+    ?_v00@LVideoMgrQ404@@UAEXXZ  # the compiled slot, kept over ?StartOnScreenVideo@LVideoMgrV@@UAEHPADKAAPAVVideoInstV@@@Z placed there
+    ?StartTextureVideo@LVideoMgrV@@UAEHPADKAAPAVVideoInstV@@@Z
+    ?UpdateVideo@LVideoMgrV@@UAEHPAVVideoInstV@@@Z
+    ?GetVideoStatus@LVideoMgrV@@UAEHPAVVideoInstV@@@Z
+    ?StopVideo@LVideoMgrV@@UAEHPAVVideoInstV@@@Z
+    ?BindTextureVideoToPoly@LVideoMgrV@@UAEHPAVVideoInstV@@K@Z

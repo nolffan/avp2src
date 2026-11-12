@@ -537,8 +537,9 @@ public:
 class RenderStruct
 {
 public:
-	uint8       m_pad_000[0x108];
-	PanInfoQ440 m_GlobalPanInfo[2];          // 0x108  0x004b4460
+	// AVP2 and Primal Hunt: +0x110, NOLF's +0x108 plus 8 (clientrender.cpp)
+	uint8       m_pad_000[0x110];
+	PanInfoQ440 m_GlobalPanInfo[2];          // 0x110  (NOLF 0x108, 0x004b4460)
 };
 
 extern RenderStruct g_RenderStruct;              // 0x004b4358

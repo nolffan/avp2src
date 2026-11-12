@@ -1048,6 +1048,23 @@ inline CLTClientQ404::CLTClientQ404(CClientMgr* pClientMgr)
 }
 
 
+// PH: 0x004051d0, 14 bytes -- what CluClientMgrView::Init (clientmgr3.cpp)
+// calls for its +0x4c4 client interface: a __cdecl forwarder onto the
+// creator below (0x004051e0), out of line, where AvP2 1.0.9.6's Init calls
+// the creator itself (its link binds the name onto clt_CreateClientQ404,
+// link/aliases-avp2.rsp). Its two types are the caller's names for the
+// client manager and the interface.
+#ifdef PRIMAL_HUNT
+class CCmgSub4C0;
+class CCmgClientMgr;
+CLTClientQ404* clt_CreateClientQ404(CClientMgr* pClientMgr);
+
+CCmgSub4C0* cmg_CreateClientDE(CCmgClientMgr* pClientMgr)
+{
+	return (CCmgSub4C0*)clt_CreateClientQ404((CClientMgr*)pClientMgr);
+}
+#endif
+
 // 0x00404b90, 349 bytes.  Extent verified: 0x00404b90..0x00404cec with nops
 // to 0x00404cef; one caller, no e8/e9 lands inside, and the two `ret`s are
 // the /O2 success and allocation-failure epilogues (a `new` with

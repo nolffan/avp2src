@@ -1,0 +1,32 @@
+# Primal Hunt's lithtech.exe: the tables tools/vtabcheck.py cannot map (no
+# function the scoreboard places installs them), by hand.
+#
+# The client interface and its parts, installed by the creator at 0x004051e0
+# (cltapi.cpp's clt_CreateClientQ404, AvP2 1.0.9.6's 0x00404ac0) in the
+# order AvP2's stores them: +0x04 0x004d4a64, +0x00 0x004d48a0, m_CommonLT
+# 0x004d4848, m_PhysicsLT 0x004d47f0, +0x3a4 0x004d47d8, +0x3ac 0x004d4744,
+# +0x3b4 0x004d4720, +0x3b8 0x004d4710, +0x3c8 0x004d46f0, and last the
+# client's own, 0x004d452c (113 slots: Primal Hunt's ILTClient is the LT2
+# SDK header's, three longer than AvP2's 110).
+??_7ILTMathQ404@@6B@            0x004d4a64
+??_7ILTCSBaseQ404@@6B@          0x004d48a0
+??_7ClientCommonLTQ404@@6B@     0x004d4848
+??_7CPhysicsLTQ404@@6B@         0x004d47f0
+??_7LVideoMgrQ404@@6B@          0x004d47d8
+??_7ClientModelLTQ404@@6B@      0x004d4744
+??_7ILTTransformQ404@@6B@       0x004d4720
+??_7ClientLightAnimLTQ404@@6B@  0x004d4710
+??_7CUnknown3b8Q404@@6B@        0x004d46f0
+??_7CLTClientQ404@@6B@          0x004d452c
+# ILTCommon's abstract table: after ILTMath's, as AvP2's 0x004c6aa8 follows
+# 0x004c6a58 (22 slots here, 21 there, as ClientCommonLT's)
+??_7ILTCommonQ404@@6B@          0x004d4ab4
+# The stream and message tables: AvP2's 0x004c7d28 (CCmgAbstractIO's, which
+# vtabcheck maps here to 0x004d5d40), 0x004c7d3c and 0x004c7d50 (LMessageImpl's,
+# here 0x004d5d64) lie the same way here; 0x004d5d54's slots 1-2 are
+# 0x004d5d40's AddRef/Release, as AvP2's
+??_7CAbstractIOQ18@@6B@         0x004d5d40
+??_7CServerMessageQ18@@6B@      0x004d5d54
+??_7CMsgWriteQ18@@6B@           0x004d5d64
+# the local sound instance's, as CSoundInstanceLocalL10's (AvP2's two share 0x004c8940)
+??_7CSoundInstanceLocalRef@@6B@ 0x004d6988

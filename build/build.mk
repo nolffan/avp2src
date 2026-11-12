@@ -1141,7 +1141,9 @@ engine-objs: ph-engine-objs avp2-engine-objs
 # for the image would make our image name a thing it does not have, so
 # the four images have a file each (one source tree, four builds: a
 # symbol can mean another function per game, or per client and server).
-# nolfsrc's stand-in vtables (link/vtables.txt) are not taken. No resources:
+# nolfsrc's stand-in vtables (link/vtables.txt, NOLF's) are not taken: each
+# image has its own, checked against its retail tables (eng_aliases, below).
+# No resources:
 # they are no code. /OPT:NOREF keeps every function of ours in the image,
 # where the retail link's /OPT:REF (the default) dropped what nothing
 # reaches: with so much unresolved, nothing reaches most of the engine, and
@@ -1196,18 +1198,27 @@ SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(filter-out $(addsuf
 # lithtech.exe: our objects, then WON (the engine's VC6-STL build), RezMgr,
 # lith and StdLith, in the order their blocks lie in the retail image
 # (progress/targets.py, lib_range: 0x004aab40, 0x004ba2a0..)
-# $(call eng_aliases,<engine dir>,<object dir>,<alias file>)
+# $(call eng_aliases,<engine dir>,<object dir>,<alias file>,<vtable spec>)
+# The vtable spec (link/vtables-ph.txt, link/vtables-avp2.txt; drafted by
+# build/vtables/gen4.sh) is the shipped table, slot for slot, of every
+# stand-in class whose compiled table is shorter: the game DLLs call the
+# engine's interfaces through the shipped layout, and a call past a
+# stand-in's last slot runs the next table in .rdata (AvP2's cshell called
+# ILTClient slot 53 through CLTClientQ404's two). tools/mkvtabobj.py makes
+# it <object dir>/vtables.obj, pick-any COMDATs linked ahead of our
+# objects, so its copy of each table is the one kept.
 define eng_aliases
 $(call tool,$(1)/$(2)/aliases.obj,$(1)/link/$(3),python3 tools/mkaliasobj.py $(1)/link/$(3) $(1)/$(2)/aliases.obj)
+$(call tool,$(1)/$(2)/vtables.obj,$(1)/link/$(4),python3 tools/mkvtabobj.py $(1)/link/$(4) $(1)/$(2)/vtables.obj >/dev/null)
 endef
-$(eval $(call eng_aliases,$(LITHTECH),Release,aliases-ph.rsp))
-$(eval $(call eng_aliases,$(LITHTECH),AvP2Release,aliases-avp2.rsp))
-$(eval $(call eng_aliases,$(SERVER),Release,aliases-ph.rsp))
-$(eval $(call eng_aliases,$(SERVER),AvP2Release,aliases-avp2.rsp))
+$(eval $(call eng_aliases,$(LITHTECH),Release,aliases-ph.rsp,vtables-ph.txt))
+$(eval $(call eng_aliases,$(LITHTECH),AvP2Release,aliases-avp2.rsp,vtables-avp2.txt))
+$(eval $(call eng_aliases,$(SERVER),Release,aliases-ph.rsp,vtables-ph.txt))
+$(eval $(call eng_aliases,$(SERVER),AvP2Release,aliases-avp2.rsp,vtables-avp2.txt))
 $(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:windows,\
-    $(LT_OBJS:$(LITHTECH)/%=%) Release/aliases.obj Release/wonapi/WONAPI.lib $(LS_R)\RezMgr.lib $(LS_R)\lith.lib $(LS_R)\StdLith.lib \
+    Release/vtables.obj $(LT_OBJS:$(LITHTECH)/%=%) Release/aliases.obj Release/wonapi/WONAPI.lib $(LS_R)\RezMgr.lib $(LS_R)\lith.lib $(LS_R)\StdLith.lib \
     winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib wsock32.lib advapi32.lib,\
-    $(LT_OBJS) $(LITHTECH)/Release/aliases.obj $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/RezMgr.lib $(LOUT)/lith.lib $(LOUT)/StdLith.lib \
+    $(LITHTECH)/Release/vtables.obj $(LT_OBJS) $(LITHTECH)/Release/aliases.obj $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/RezMgr.lib $(LOUT)/lith.lib $(LOUT)/StdLith.lib \
     $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib))
 # server.dll: our objects, then the debug RezMgr and StdLith (one block from
 # 0x1004a6e0), WON (0x10051e10) and the release lith (0x10060940, which the
@@ -1218,9 +1229,9 @@ $(eval $(call eng_link,$(LITHTECH)/Release/lithtech.exe,$(LITHTECH),/subsystem:w
 # libcmt.lib's assert.c; no "Debug Assertion Failed!", nothing of the
 # debug heap or _CrtDbgReport), so not LIBCMTD.
 $(eval $(call eng_link,$(SERVER)/Release/server.dll,$(SERVER),/dll /def:link\server.def /nodefaultlib:libcmtd.lib,\
-    $(SV_OBJS:$(SERVER)/%=%) Release/aliases.obj $(LS_D)\RezMgr.lib $(LS_D)\StdLith.lib ..\lithtech\Release\wonapi\WONAPI.lib \
+    Release/vtables.obj $(SV_OBJS:$(SERVER)/%=%) Release/aliases.obj $(LS_D)\RezMgr.lib $(LS_D)\StdLith.lib ..\lithtech\Release\wonapi\WONAPI.lib \
     $(LS_R)\lith.lib winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib advapi32.lib,\
-    $(SV_OBJS) $(SERVER)/Release/aliases.obj $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/lith.lib \
+    $(SERVER)/Release/vtables.obj $(SV_OBJS) $(SERVER)/Release/aliases.obj $(LDOUT)/RezMgr.lib $(LDOUT)/StdLith.lib $(LITHTECH)/Release/wonapi/WONAPI.lib $(LOUT)/lith.lib \
     $(SERVER)/link/server.def))
 .PHONY: engine-link
 engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
@@ -1292,15 +1303,15 @@ SV_AVP_LINK := $(addprefix AvP2Release/,$(addsuffix .obj,$(SV_AVP_ORDER))) \
 LS_A := ..\..\LT2\lithshared\libs\AvP2Release
 ENG_AVP_LINK_ENV := $(subst LIB=',LIB='$(call ws,$(ROOT)/$(ENG_IMPLIB));,$(ENG_AVP_ENV))
 $(eval $(call eng_link,$(LITHTECH)/AvP2Release/lithtech.exe,$(LITHTECH),/subsystem:windows,\
-    $(LT_AVP_LINK) AvP2Release/aliases.obj ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
+    AvP2Release/vtables.obj $(LT_AVP_LINK) AvP2Release/aliases.obj ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
     winmm.lib dinput.lib dxguid.lib kernel32.lib user32.lib gdi32.lib ole32.lib uuid.lib mss32dec.lib mss32.lib \
     $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib wsock32.lib advapi32.lib,\
-    $(addprefix $(LITHTECH)/,$(LT_AVP_LINK) AvP2Release/aliases.obj) $(LOUT)/wonapi/WONAPI.lib $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib \
+    $(addprefix $(LITHTECH)/,AvP2Release/vtables.obj $(LT_AVP_LINK) AvP2Release/aliases.obj) $(LOUT)/wonapi/WONAPI.lib $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib \
     $(ENG_IMPLIB)/mss32.lib $(ENG_IMPLIB)/mss32dec.lib,$(ENG_AVP_LINK_ENV)))
 $(eval $(call eng_link,$(SERVER)/AvP2Release/server.dll,$(SERVER),/dll /def:link\server.def,\
-    $(SV_AVP_LINK) AvP2Release/aliases.obj $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
+    AvP2Release/vtables.obj $(SV_AVP_LINK) AvP2Release/aliases.obj $(LS_A)\lith.lib $(LS_A)\RezMgr.lib $(LS_A)\StdLith.lib ..\..\LT2\lithshared\libs\Release\wonapi\WONAPI.lib \
     winmm.lib kernel32.lib user32.lib ole32.lib wsock32.lib advapi32.lib,\
-    $(addprefix $(SERVER)/,$(SV_AVP_LINK) AvP2Release/aliases.obj) $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib $(LOUT)/wonapi/WONAPI.lib \
+    $(addprefix $(SERVER)/,AvP2Release/vtables.obj $(SV_AVP_LINK) AvP2Release/aliases.obj) $(LAOUT)/RezMgr.lib $(LAOUT)/lith.lib $(LAOUT)/StdLith.lib $(LOUT)/wonapi/WONAPI.lib \
     $(SERVER)/link/server.def,$(ENG_AVP_LINK_ENV)))
 .PHONY: avp2-engine-link
 avp2-engine-link: $(LITHTECH)/AvP2Release/lithtech.exe $(SERVER)/AvP2Release/server.dll

@@ -413,15 +413,18 @@ struct RenderStructViewQ2C
 {
 	uint8   m_pad_000[0x44];
 	int     m_bInited;                                       // 0x044  0x004b439c
-	uint8   m_pad_048[0x7c - 0x48];
-	void*   (*CreateWorld)(RenderWorldRequest* pRequest);    // 0x07c  0x004b43d4
-	void    (*DestroyWorld)(void* pRenderWorld);             // 0x080  0x004b43d8
-	uint8   m_pad_084[0xb0 - 0x84];
-	LTBOOL  (*RenderScene)(SceneDescQ5* pScene);             // 0x0b0  0x004b4408
-	uint8   m_pad_0b4[0xf8 - 0xb4];
-	void    (*ReadConsoleVars)();                            // 0x0f8  0x004b4450
-	uint8   m_pad_0fc[0x14c - 0xfc];
-	uint32  m_dwDirtyFlags;                                  // 0x14c  0x004b44a4
+	// AVP2 and Primal Hunt: from the renderer's CreateWorld on, NOLF's
+	// offset plus 8 (two more renderer entries; clientrender.cpp), as
+	// clientmgr2.cpp's copy of this view.
+	uint8   m_pad_048[0x84 - 0x48];
+	void*   (*CreateWorld)(RenderWorldRequest* pRequest);    // 0x084  (NOLF 0x07c, 0x004b43d4)
+	void    (*DestroyWorld)(void* pRenderWorld);             // 0x088  (NOLF 0x080, 0x004b43d8)
+	uint8   m_pad_08c[0xb8 - 0x8c];
+	LTBOOL  (*RenderScene)(SceneDescQ5* pScene);             // 0x0b8  (NOLF 0x0b0, 0x004b4408)
+	uint8   m_pad_0bc[0x100 - 0xbc];
+	void    (*ReadConsoleVars)();                            // 0x100  (NOLF 0x0f8, 0x004b4450)
+	uint8   m_pad_104[0x154 - 0x104];
+	uint32  m_dwDirtyFlags;                                  // 0x154  (NOLF 0x14c, 0x004b44a4)
 };
 #define g_RenderStructQ2C (*(RenderStructViewQ2C*)&g_RenderStruct)
 #define g_pRenderCreateWorld          (g_RenderStructQ2C.CreateWorld)

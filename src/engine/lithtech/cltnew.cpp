@@ -395,8 +395,10 @@ LTRESULT sub_411bf0(CClientMgrView* pClientMgr, HOBJECT hObj);
 class RenderStruct
 {
 public:
-	uint8    m_pad_000[0x130];
-	LTVector m_GlobalLightDir;                  // 0x130  0x004b4488
+	// AVP2 and Primal Hunt: +0x138, eight further on than NOLF's (the
+	// renderer's half of the struct is two entries longer; clientrender.cpp)
+	uint8    m_pad_000[0x138];
+	LTVector m_GlobalLightDir;                  // 0x138  (NOLF 0x130, 0x004b4488)
 };
 
 extern RenderStruct g_RenderStruct;             // 0x004b4358

@@ -351,8 +351,10 @@ public:
 	int    m_Width;                          // 0x3c  -> 0x004b4394
 	int    m_Height;                         // 0x40  -> 0x004b4398
 	uint32 m_bInited;                        // 0x44  -> 0x004b439c
-	uint8  m_pad_48[0xb8 - 0x48];
-	void*  (*GetHook)(char* pName);          // 0xb8  -> 0x004b4410
+	// AVP2 and Primal Hunt: +0xc0, NOLF's +0xb8 plus 8 (two more renderer
+	// entries; clientrender.cpp)
+	uint8  m_pad_48[0xc0 - 0x48];
+	void*  (*GetHook)(char* pName);          // 0xc0  (NOLF 0xb8 -> 0x004b4410)
 };
 
 extern RenderStruct g_RenderStruct;                      // 0x004b4358

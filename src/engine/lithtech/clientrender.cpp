@@ -335,28 +335,36 @@ public:
 	uint32   m_nModels;                                         // 0x060
 	uint32   m_nWorldModels;                                    // 0x064
 	uint32   m_nTranslucent;                                    // 0x068
+	// AVP2 and Primal Hunt: one more dword ahead of the renderer's part,
+	// which d3d.ren's RenderDLLSetup fills from +0x70 (AvP2 0x10010ffa,
+	// Primal Hunt's the same), not NOLF's +0x6c: r_InitRender calls Init
+	// through +0x70 (AvP2 0x0046f29a), r_TermRender Term through +0x74.
+	// Nothing in either engine reads or writes it.
+	uint32   m_Unknown06c;                                      // 0x06c
 
 	// ---- part 3: what d3d.ren installs -------------------------------- //
-	int      (*Init)(RenderStructInit* pInit);                  // 0x06c
-	void     (*Term)();                                         // 0x070
-	void     (*BindTexture)(SharedTexture* pTexture, LTBOOL bChanged);// 0x074
-	void     (*UnbindTexture)(SharedTexture* pTexture);         // 0x078
-	uint8    m_pad_07c[0xc4 - 0x7c];                            // 0x07c
-	// AVP2: as Primal Hunt (PH addresses) -- two more entries before GetScreenFormat (cissurf.cpp and
-	// warpblit.cpp call every renderer slot from here 8 further in), so the
+	int      (*Init)(RenderStructInit* pInit);                  // 0x070
+	void     (*Term)();                                         // 0x074
+	void     (*BindTexture)(SharedTexture* pTexture, LTBOOL bChanged);// 0x078
+	void     (*UnbindTexture)(SharedTexture* pTexture);         // 0x07c
+	uint8    m_pad_080[0xcc - 0x80];                            // 0x080
+	// AVP2: as Primal Hunt -- the renderer's part is 38 entries, +0x70 to
+	// +0x104, so from CreateWorld on every slot is NOLF's plus 8 (cissurf.cpp
+	// and warpblit.cpp call every renderer slot from here 8 further in), the
 	// partial clear below runs to +0x108 (0x00475030) and the whole one is
 	// 0x158 bytes (0x00475029).
-	uint8 m_padExtra[8];
 	// Handed the screen PFormat to fill in; 0x0040eeb0 is its one caller.
-	void     (*GetScreenFormat)(void* pFormat);                 // 0x0c4
-	uint8    m_pad_0c8[0x100 - 0xc8];                           // 0x0c8
+	void     (*GetScreenFormat)(void* pFormat);                 // 0x0cc
+	uint8    m_pad_0d0[0x108 - 0xd0];                           // 0x0d0
 
-	// ---- part 4: engine data ------------------------------------------ //
-	uint8    m_pad_100[0x130 - 0x100];                          // 0x100
-	LTVector m_GlobalLightDir;                                  // 0x130
-	LTVector m_GlobalLightColor;                                // 0x13c
-	uint32   m_Unknown148;                                      // 0x148
-	uint32   m_Unknown14c;                                      // 0x14c
+	// ---- part 4: engine data, NOLF's plus 8 --------------------------- //
+	uint8    m_pad_108[0x138 - 0x108];                          // 0x108
+	// CLTClient's light getters and setters (cltnew.cpp) read and write
+	// these at +0x138 and +0x144 (AvP2 retail; NOLF's +0x130, +0x13c).
+	LTVector m_GlobalLightDir;                                  // 0x138
+	LTVector m_GlobalLightColor;                                // 0x144
+	uint32   m_Unknown148;                                      // 0x150
+	uint32   m_Unknown14c;                                      // 0x154
 };
 
 extern RenderStruct g_RenderStruct;                             // 0x004b4358
@@ -843,7 +851,7 @@ void r_InitRenderStruct(int bFullClear)
 	if (bFullClear)
 		memset(&g_RenderStruct, 0, sizeof(g_RenderStruct));
 	else
-		memset(&g_RenderStruct, 0, offsetof(RenderStruct, m_pad_100));
+		memset(&g_RenderStruct, 0, offsetof(RenderStruct, m_pad_108));
 
 	g_RenderStruct.m_pfnCreateClientObject_00 = rs_ProcessAttachment;
 	g_RenderStruct.m_pfnLoadTexture_04        = rs_GetSharedTexture;

@@ -138,7 +138,14 @@ public:
 	LTRESULT		ConvertPixels(FMConvertRequest *pRequest);  // 0x1003764c
 	LTRESULT		PValueToFormatColor(PFormat *pFormat, PValue in, GenericColor &out);  // 0x10037780
 
-	uint8			m_Data[0x9a8];
+	// pixelformat.cpp's FormatMgr: the two PFormats (0x70), the nine
+	// 256-byte scale-from-8 tables (to 0x970), the nine scale-to-8 pointers
+	// (to 0x994) and the 0..8-bit tables they point at, 1+2+...+256 bytes
+	// (to 0xb93). Its constructor (0x10037600) fills all of it; 0x9a8 here
+	// let it write the pointers and tables over the texture globals that
+	// followed (AvP2: g_FormatMgr 0x10060710, the next global referenced
+	// +0xc98 on).
+	uint8			m_Data[0xb94];
 };
 
 // The lightmap page manager (TU17's object at 0x1008067c).

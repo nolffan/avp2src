@@ -455,10 +455,12 @@ extern CClientMgrView* g_pClientMgr;         // 0x004b17e0
 class RenderStruct
 {
 public:
-	uint8    m_pad_000[0x130];
-	LTVector m_GlobalLightDir;               // 0x130  0x004b4488
-	LTVector m_GlobalLightColor;             // 0x13c  0x004b4494
-	uint32   m_Unknown148;                   // 0x148  0x004b44a0
+	// AVP2 and Primal Hunt: each eight further on than NOLF's (the
+	// renderer's half of the struct is two entries longer; clientrender.cpp)
+	uint8    m_pad_000[0x138];
+	LTVector m_GlobalLightDir;               // 0x138  (NOLF 0x130, 0x004b4488)
+	LTVector m_GlobalLightColor;             // 0x144  (NOLF 0x13c, 0x004b4494)
+	uint32   m_Unknown148;                   // 0x150  (NOLF 0x148, 0x004b44a0)
 	// lt2new4.cpp's GetAmbientLight (0x00407320) reads m_Unknown148 back
 	// with a `fildll` whose high dword is explicitly zeroed -- VC6's
 	// UNSIGNED widening -- so the type is uint32 and not int32.  It is the

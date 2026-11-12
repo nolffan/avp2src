@@ -611,8 +611,10 @@ struct CluRenderStructView
 {
 	uint8 m_pad_00[0x44];
 	int   m_bInited;                                         // +0x44  0x004b439c
-	uint8 m_pad_48[0xf4 - 0x48];
-	void (*m_pfnMakeScreenShot)(char* pFilename);            // +0xf4  0x004b444c
+	// AVP2 and Primal Hunt: +0xfc, NOLF's +0xf4 plus 8 (two more renderer
+	// entries; clientrender.cpp) -- +0xf4 is BlitToScreen there (clientmgr.h)
+	uint8 m_pad_48[0xfc - 0x48];
+	void (*m_pfnMakeScreenShot)(char* pFilename);            // +0xfc  (NOLF +0xf4, 0x004b444c)
 };
 extern char  g_szScreenshotName[];           // 0x004a9f18
 #define g_CluScreenShotDir    ((CluRenderStructView*)&g_RenderStruct)

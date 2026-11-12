@@ -2662,3 +2662,26 @@
 /ALTERNATENAME:?sub_100386c6@ModelWalkerQ521@@QAEIXZ=?SetupTransforms@CTransformMakerK@@QAEIXZ
 /ALTERNATENAME:?sub_100386c6@ModelWalkerQ554@@QAEIXZ=?SetupTransforms@CTransformMakerK@@QAEIXZ
 #
+# 0x444be0: CWorldSubFC::Clear, eighteen zeroed dwords; LoadWorld's world Term
+# (smgr.cpp CWorldSubFCView::Term) reaches it; bound, as CWorldSubFC::Clear
+# itself is (a weak external cannot chain), to CWorldGridQ43C::Clear (wgrid.obj),
+# which the scoreboard places there. It was
+# dropped as UNDEF while nothing of ours defined it in this image.
+/ALTERNATENAME:?Clear@CWorldSubFCView@@QAEXXZ=?Clear@CWorldGridQ43C@@QAEXXZ
+# 0x42f7c0: the packet data's 21-byte reset, which sm_SetObjectSFXMessage
+# calls between its SetSize(0)s and SetSize(n) (retail 0x00477f3f); the
+# scoreboard places CMoArray<void*>::_InitArray there. (The PH binding,
+# CMoArray<uint8>::_InitArray, has no definition in this image.)
+/ALTERNATENAME:?InitArray@CSFXPacketDataView@@QAEXK@Z=?_InitArray@?$CMoArray@PAXVDefaultCache@@@@AAEXK@Z
+# sm_BreakAttachments as ltnew1.cpp's RemoveAttachments names it (packet.cpp's
+# signature, which neither lithtech.exe compiles): its 21-byte body,
+# found by its bytes in both retail engines (AvP2 0x0048ee00, Primal Hunt
+# 0x00498680), calls 0x00443ff0 / 0x00447e50, where the scoreboard places
+# interlink.cpp's sm_BreakAttachments.
+/ALTERNATENAME:?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVLTObject@@HH@Z=?sm_BreakAttachments@@YAXPAVCServerMgr@@PAVLTObject@@HH@Z
+# msg_StartWriteQ2B, StartGame's (0x44c, 0x44c) packet: every retail site
+# with its bytes (push 0x44c; lea eax,[esp+0x1c]; push 0x44c; push eax;
+# AvP2 0x004704c6, 0x0047c3de, 0x004861e2, 0x0048dc71) calls 0x00469120,
+# where the scoreboard places msg_AllocPacket -- as its siblings
+# msg_StartWrite and msg_StartWriteQ411 are bound.
+/ALTERNATENAME:?msg_StartWriteQ2B@@YA?AVCMsgRefQ2B@@KK@Z=?msg_AllocPacket@@YA?AVCMessageRef@@KK@Z

@@ -122,8 +122,10 @@ public:
 class RenderStruct
 {
 public:
-	uint8  m_pad_000[0x148];
-	uint32 m_Unknown148;                      // 0x148  0x004b44a0
+	// AVP2 and Primal Hunt: +0x150, eight further on than NOLF's
+	// (clientrender.cpp)
+	uint8  m_pad_000[0x150];
+	uint32 m_Unknown148;                      // 0x150  (NOLF 0x148, 0x004b44a0)
 };
 extern RenderStruct g_RenderStruct;           // 0x004b4358
 

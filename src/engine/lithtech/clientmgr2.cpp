@@ -461,15 +461,18 @@ struct RenderStructViewQ2C
 {
 	uint8   m_pad_000[0x44];
 	int     m_bInited;                                       // 0x044  0x004b439c
-	uint8   m_pad_048[0x7c - 0x48];
-	void*   (*CreateWorld)(RenderWorldRequest* pRequest);    // 0x07c  0x004b43d4
-	void    (*DestroyWorld)(void* pRenderWorld);             // 0x080  0x004b43d8
-	uint8   m_pad_084[0xb0 - 0x84];
-	LTBOOL  (*RenderScene)(SceneDescQ5* pScene);             // 0x0b0  0x004b4408
-	uint8   m_pad_0b4[0xf8 - 0xb4];
-	void    (*ReadConsoleVars)();                            // 0x0f8  0x004b4450
-	uint8   m_pad_0fc[0x14c - 0xfc];
-	uint32  m_dwDirtyFlags;                                  // 0x14c  0x004b44a4
+	// AVP2 and Primal Hunt: from the renderer's CreateWorld on, NOLF's
+	// offset plus 8 (two more renderer entries; clientrender.cpp): AvP2's
+	// CreateRenderWorld calls +0x84, cm_RenderCamera +0xb8 and reads +0x154.
+	uint8   m_pad_048[0x84 - 0x48];
+	void*   (*CreateWorld)(RenderWorldRequest* pRequest);    // 0x084  (NOLF 0x07c, 0x004b43d4)
+	void    (*DestroyWorld)(void* pRenderWorld);             // 0x088  (NOLF 0x080, 0x004b43d8)
+	uint8   m_pad_08c[0xb8 - 0x8c];
+	LTBOOL  (*RenderScene)(SceneDescQ5* pScene);             // 0x0b8  (NOLF 0x0b0, 0x004b4408)
+	uint8   m_pad_0bc[0x100 - 0xbc];
+	void    (*ReadConsoleVars)();                            // 0x100  (NOLF 0x0f8, 0x004b4450)
+	uint8   m_pad_104[0x154 - 0x104];
+	uint32  m_dwDirtyFlags;                                  // 0x154  (NOLF 0x14c, 0x004b44a4)
 };
 #define g_RenderStructQ2C (*(RenderStructViewQ2C*)&g_RenderStruct)
 #define g_pRenderCreateWorld          (g_RenderStructQ2C.CreateWorld)
@@ -2279,13 +2282,14 @@ struct SceneDescQ5
 	LTVector     m_GlobalLightDir;                 // 0x38  mgr+0x760
 	LTVector     m_GlobalLightColor;               // 0x44  mgr+0x754
 	LTVector     m_GlobalLightScale;               // 0x50  mgr+0x76c
-#ifndef PRIMAL_HUNT
-	// AVP2: two more vectors, the manager's at +0x778 and ccclient.cpp's
+	// AVP2 and Primal Hunt alike (PH's RenderCamera copies the manager's
+	// +0x778 at 0x00413ae0 and stores the object list at +0xf4, where both
+	// retail renderers read it; with the PH build's 0x18 bytes fewer its
+	// d3d.ren read the list pointer out of m_Rotation): two more vectors, the manager's at +0x778 and ccclient.cpp's
 	// "WMAmbient" triple (cc_WMAmbient, 0x00422480), which push everything
 	// after them 0x18 bytes on (0x00412461, 0x004124e1; names ours).
 	LTVector     m_GlobalLightScale2;              // 0x5c  mgr+0x778
 	LTVector     m_WMAmbient;                      // 0x68  g_fWMAmbientR/G/B
-#endif
 	LTVector     m_GlobalLightAdd;                 // 0x5c  camera+0x1c4
 	float        m_FrameTime;                      // 0x68
 	SkyDef       m_SkyDef;                         // 0x6c
@@ -2334,12 +2338,8 @@ public:
 	LTVector     m_GlobalLightColor;               // 0x754
 	LTVector     m_GlobalLightDir;                 // 0x760
 	LTVector     m_GlobalLightScale;               // 0x76c
-#ifndef PRIMAL_HUNT
 	LTVector     m_GlobalLightScale2;              // 0x778  (name ours)
 	uint8        m_pad_784[0x1270 - 0x784];
-#else
-	uint8        m_pad_778[0x1270 - 0x778];
-#endif
 	uint16       m_ObjectIDs[30];                  // 0x1270
 	uint8        m_pad_12ac[0x12b0 - 0x12ac];
 	SkyDef       m_SkyDef;                         // 0x12b0
@@ -2386,7 +2386,6 @@ inline void VecCopyQ5(LTVector& vDest, const LTVector& vSrc)
 	vDest = vSrc;
 }
 
-#ifndef PRIMAL_HUNT
 // AVP2: counter.cpp's timer and clientmgr3.cpp's adder, as AvP2 1.0.9.6's
 // RenderCamera uses them, and the two totals it adds to (0x004defa8,
 // 0x004ded10; names ours).
@@ -2425,16 +2424,13 @@ extern float g_fWMAmbientB;
 
 uint32 g_nRenderTicksQ5;                           // 0x004defa8
 uint32 g_nSceneTicksQ5;                            // 0x004ded10
-#endif
 
 LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
                        int nDrawMode, void* pUser4, void* pUser5)
 {
-#ifndef PRIMAL_HUNT
 	// AVP2: a timer built first (0x00412272, before m_Rect's constructor)
 	// and never started or read; it sits above sceneDesc in the frame.
 	CBaseCounter cntUnused(0);
-#endif
 	SceneDescQ5 sceneDesc;
 	HLOCALOBJ   objectList[30];
 	int         i;
@@ -2484,17 +2480,13 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 			sceneDesc.m_pTicks[5] = &g_TicksQ5[0];
 			VecCopyQ5(sceneDesc.m_GlobalLightColor, pClientMgr->m_GlobalLightColor);
 			VecCopyQ5(sceneDesc.m_GlobalLightScale, pClientMgr->m_GlobalLightScale);
-#ifndef PRIMAL_HUNT
 			VecCopyQ5(sceneDesc.m_GlobalLightScale2, pClientMgr->m_GlobalLightScale2);
-#endif
 			VecCopyQ5(sceneDesc.m_GlobalLightAdd, pCamera->m_LightAdd);
 			VecCopyQ5(sceneDesc.m_ModelAdd, g_ModelAdd);
 			VecCopyQ5(sceneDesc.m_ModelDirAdd, g_ModelDirAdd);
-#ifndef PRIMAL_HUNT
 			sceneDesc.m_WMAmbient.x = g_fWMAmbientR;
 			sceneDesc.m_WMAmbient.y = g_fWMAmbientG;
 			sceneDesc.m_WMAmbient.z = g_fWMAmbientB;
-#endif
 			sceneDesc.m_FrameTime = pClientMgr->m_FrameTime;
 			sceneDesc.m_pUser4 = pUser4;
 			sceneDesc.m_pUser5 = pUser5;
@@ -2515,7 +2507,6 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 			sceneDesc.m_ModelHookUser = pClientMgr->m_ModelHookUser;
 
 			pClientMgr->m_bRendering = LTTRUE;
-#ifndef PRIMAL_HUNT
 			{
 				// AVP2: the render is timed into two totals
 				// (0x004125ad..0x00412628).
@@ -2525,10 +2516,6 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 				if (g_CV_RenderEnable)
 					g_pfnRenderSceneQ5(&sceneDesc);
 			}
-#else
-			if (g_CV_RenderEnable)
-				g_pfnRenderSceneQ5(&sceneDesc);
-#endif
 			pClientMgr->m_bRendering = LTFALSE;
 
 			pClientMgr->m_RenderFrame.Inc();

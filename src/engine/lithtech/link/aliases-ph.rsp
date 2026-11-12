@@ -2643,3 +2643,21 @@
 # 0x00408850 -- ~CLTClient, out of line there (its ??_G 0x00408830 calls
 # it): cltnew.cpp's; AvP2's is inline in cltapi.cpp.
 /ALTERNATENAME:??1CLTClientQ404@@UAE@XZ=??1CLTClientDtorQ527@@UAE@XZ
+# sm_BreakAttachments as ltnew1.cpp's RemoveAttachments names it (packet.cpp's
+# signature, which neither lithtech.exe compiles): its 21-byte body,
+# found by its bytes in both retail engines (AvP2 0x0048ee00, Primal Hunt
+# 0x00498680), calls 0x00443ff0 / 0x00447e50, where the scoreboard places
+# interlink.cpp's sm_BreakAttachments.
+/ALTERNATENAME:?sm_BreakAttachments@@YAXPAVCLinkMgrView@@PAVLTObject@@HH@Z=?sm_BreakAttachments@@YAXPAVCServerMgr@@PAVLTObject@@HH@Z
+# 0x42af40: the 0x60-byte collision element's constructor, which BaseNew
+# (collection.cpp) runs per element; retail's copy, found by its bytes
+# (0x0041656c), calls 0x0042af40, where the scoreboard places
+# CWorldRec60Q546's (as AvP2's binding).
+/ALTERNATENAME:??0CCollElem60@@QAE@XZ=??0CWorldRec60Q546@@QAE@XZ
+# 0x415050 / 0x49fd80: the texture and sound-data banks' AllocVoid slots
+# are tail jumps in retail, to 0x00415f60 and 0x00499780, where the
+# scoreboard places CTextureObjBankQ544::Allocate and
+# LThreadMessageBank::Allocate (the bank allocators the shipped link
+# folded). nolfsrc's targets: one undefined here, one placed elsewhere.
+/ALTERNATENAME:?AllocVoid@CCmgBank113C@@UAEPAXXZ=?Allocate@CTextureObjBankQ544@@QAEPAVSharedTextureView@@XZ
+/ALTERNATENAME:?AllocVoid@CCmgSndBank284@@UAEPAXXZ=?Allocate@LThreadMessageBank@@QAEPAVLThreadMessage@@XZ

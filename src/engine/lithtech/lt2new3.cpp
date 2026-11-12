@@ -820,6 +820,13 @@ public:
 	uint8  m_pad_04[0x10 - 0x04];
 };
 
+// Slot 1 of the base table, its one non-pure virtual: a bare `ret` (AvP2
+// 0x004a4ad0, where the shipped link folded it with WON's SetCanonical;
+// NOLF's 0x00491b40).
+void CUnknown4A147C::_v04()
+{
+}
+
 class CUnknownPair48AC
 {
 public:

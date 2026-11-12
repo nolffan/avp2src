@@ -8682,7 +8682,10 @@ void sm_SetObjectSFXMessage(CServerMgr* pMgr, LTObject* pObj, ServerMessage* pMs
 #ifdef LT_SERVER_BUILD
 	pObj->m_pSData->m_pSFXMessage->Init(pMsg->m_Unknown34, 0x1000);
 #else
-	sm_SFXMsgInit(pObj->m_pSData->m_pSFXMessage, pMsg->m_Unknown34, 0x1000);
+	// The packet data grows by 0x44c, the size it was allocated with: both
+	// retail engines push 0x44c for the InitArray here (PH 0x0047e92d, AvP2
+	// 0x00477f38), not 0x1000.
+	sm_SFXMsgInit(pObj->m_pSData->m_pSFXMessage, pMsg->m_Unknown34, 0x44c);
 #endif
 
 	memcpy(pObj->m_pSData->m_pSFXMessage->m_pData,
