@@ -2,7 +2,7 @@
 # address of OUR image, and what the retail operand at the same place is
 import sys, os, re, struct, collections
 W = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-sys.path.insert(0, W + "/tools"); sys.path.insert(0, W + "/build/aliases")
+sys.path.insert(0, W + "/ext/tools"); sys.path.insert(0, W + "/build/aliases")
 from exedump import Pe
 from linkresolve import parse_obj
 from aliascheck import IMG, read_aliases

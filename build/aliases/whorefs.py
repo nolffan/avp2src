@@ -1,6 +1,6 @@
 # whorefs.py <objdir> <symbol-substring>: functions and data (by section owner) whose relocations name it
 import sys, os, glob
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../ext/tools"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from linkresolve import parse_obj
 from aliascheck import data_refs

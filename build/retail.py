@@ -1,6 +1,6 @@
-# The retail game's layout, for tools/retailextract.py (it reads this file
+# The retail game's layout, for ext/tools/retailextract.py (it reads this file
 # from build/; see its header): Aliens versus Predator 2: Primal Hunt
-# (Europe), version 1.0.2.2, as rez/ installs it (rez/games/avp2-ph-eu,
+# (Europe), version 1.0.2.2, as ext/rez/ installs it (ext/rez/games/avp2-ph-eu,
 # build/retail.sh). Primal Hunt (Third Law, June 2002) is the last release
 # of the game: it "includes all of the changes made in Aliens Versus
 # Predator 2 patches up to version 1.0.9.6" (its readme), and its engine,
@@ -65,7 +65,7 @@ OPEN_RUNTIME = [
 # build/game-scripts/linux-install.sh, windows-install.ps1 and
 # mac-install.command with the list build/mkinstall.py writes. AvP2's
 # 1.0.9.6 patch is on Primal Hunt's disc (Updates/avp2_en_096.exe, the same
-# file as rez/'s patches/avp2_en_096.exe), so the scripts read it from
+# file as ext/rez/'s patches/avp2_en_096.exe), so the scripts read it from
 # there and ask for the three discs alone. The European release is first;
 # the USA one is the fallback, where its files are the same ones (mkinstall
 # leaves out a set that does not have them all).

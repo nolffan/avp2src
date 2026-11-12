@@ -1,7 +1,7 @@
-# AvP2's own layout, for tools/retailextract.py with
+# AvP2's own layout, for ext/tools/retailextract.py with
 # RETAIL_LAYOUT=build/retail_avp2.py (build/retail.py is Primal Hunt's):
-# Aliens versus Predator 2 (Europe) with the English 1.0.9.6 patch, as rez/
-# installs it (rez/games/avp2-eu-1.0.9.6, build/retail.sh). Primal Hunt's
+# Aliens versus Predator 2 (Europe) with the English 1.0.9.6 patch, as ext/rez/
+# installs it (ext/rez/games/avp2-eu-1.0.9.6, build/retail.sh). Primal Hunt's
 # engine supersedes this one; what is AvP2's alone, and so still a target,
 # is its game -- the DLLs that play its campaigns -- and its launcher and
 # dedicated server. Its engine stays a second witness, not a target.

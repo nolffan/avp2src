@@ -10,7 +10,7 @@ both games' rules), its "Final" configuration defining PRIMAL_HUNT (the
 macro Primal Hunt's changes go behind: docs/PLAN.md, ground rules) and
 putting its objects and output in <output dir>. A project with no "Final"
 (the dedicated server, ServerApp.dsp) is given its "Release" instead, the
-configuration tools/dsp2mk.py builds of it. The other configurations
+configuration ext/tools/dsp2mk.py builds of it. The other configurations
 are left as they are, unused. Run once to start a project; from then on the
 _PH project is a source file of its own (Third Law's new files go into it
 alone).

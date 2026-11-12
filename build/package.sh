@@ -18,7 +18,7 @@
 #                               own disc images (build/mkinstall.py): the one
 #                               to give to other people. It needs the images
 #                               of the European and the USA releases' discs
-#                               in rez/isos/ (build/retail.sh, retail_discs);
+#                               in ext/rez/isos/ (build/retail.sh, retail_discs);
 #                               without them it is skipped.
 #
 # AVP2_ARCHIVES (default "private public") says which to write; with

@@ -1,12 +1,12 @@
 # Which compiler built what
 
 Every retail PE carries a Rich header, the linker's inventory of the tool
-builds that produced its objects (`python3 tools/richhdr.py <image>`). It is
+builds that produced its objects (`python3 ext/tools/richhdr.py <image>`). It is
 all Visual C++ 6.0, but not one revision: the binaries were built at
 different times, from October 2001 (AvP2's launcher) to June 2002 (Primal
 Hunt's game DLLs), and the headers show four back ends (`c2.dll` builds,
 which decide the codegen): **8168** (VC6 RTM), **8447** (SP3), **8966**
-(SP5) and **9044** (SP5 with the Processor Pack), all in `toolchains/`.
+(SP5) and **9044** (SP5 with the Processor Pack), all in `ext/toolchains/`.
 Where a revision or flag set has been *proven* by byte-matching, this file
 says so; until then the attribution is the header's own testimony.
 
@@ -55,7 +55,7 @@ package 7).
 
 * **Primal Hunt's game DLLs mix the same two revisions, in other
   proportions.** Their 8966 objects are both the `lithshared` libraries (the release's
-  prebuilt ones: `tools/libscan.py` places ButeMgr, CryptMgr, GameSpy,
+  prebuilt ones: `ext/tools/libscan.py` places ButeMgr, CryptMgr, GameSpy,
   LithFontMgr, LTGUIMgr and StdLith functions in `PHCShell.dll` as in
   1.0.9.6's `CShell.dll`; WONAPI's far fewer -- about 280 against 978 --
   and linked above the runtime, not below it) and Third Law's own code; a residue of 21 C++
@@ -69,13 +69,13 @@ package 7).
 * **The game DLLs mix two revisions.** Their own code is 8168's; their 8966
   objects are the `lithshared` libraries, which the source release ships
   prebuilt in `LT2/lithshared/libs/{release,debug}/` (`ButeMgr.lib`,
-  `CryptMgr.lib`, `GameSpyClientMgr.lib`, ...): `tools/compid.py` gives
+  `CryptMgr.lib`, `GameSpyClientMgr.lib`, ...): `ext/tools/compid.py` gives
   every one of their objects `@comp.id` build 8966. Whether those prebuilt
   libraries are the very ones linked (they are dated August 2002, after the
   DLLs) is for the scoreboard to show.
 * **The 1.0.9.6 engine is the Processor Pack's.** `lithtech.exe` and
   `server.dll` are mostly 9044 objects, the compiler of the AvP2 "Talon"
-  DEdit and ModelEdit (`toolchains/COMPILERS.md`). The stray C object of
+  DEdit and ModelEdit (`ext/toolchains/COMPILERS.md`). The stray C object of
   8799 in `lithtech.exe` is the one NOLF's engine has too, for which no
   compiler is held. Its lithshared libraries are 9044 builds too: lith,
   RezMgr and StdLith compiled with 9044 and their release flags are
@@ -110,6 +110,6 @@ package 7).
   0x25/8755 x3 and 13.00.8830 x1 rows are, by analogy with Primal Hunt's
   DirectX 8.1 rows, the DirectX 8.0 SDK's `ddraw.lib` import objects and
   `dxguid.lib`. The 8.0 SDK isn't here to confirm it.
-* nolfsrc's codegen lore (its `guides/`, and `toolchains/COMPILERS.md`'s
+* nolfsrc's codegen lore (its `guides/`, and `ext/toolchains/COMPILERS.md`'s
   NOLF map: 8168, 8447, Intel 4.0) is the nearest; NOLF2's (8966) covers
   the libraries. Neither carries over unchecked.

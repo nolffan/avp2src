@@ -1,4 +1,4 @@
-# AvP2 1.0.9.6's lithtech.exe: the tables tools/vtabcheck.py cannot map (no
+# AvP2 1.0.9.6's lithtech.exe: the tables ext/tools/vtabcheck.py cannot map (no
 # function the scoreboard places installs them), by hand.
 #
 # the client object's common interface (clientmgr3.cpp's CCmgCSBase, the

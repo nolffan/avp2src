@@ -15,18 +15,18 @@ This file says which is which; it is not legal advice and grants nothing.
 | `src/engine/` | the LithTech engine (`lithtech.exe`, `server.dll`, `d3d.ren`): nolfsrc's reconstruction of NOLF's, written for that project from the retail NOLF binaries, being brought to Primal Hunt's. It implements Monolith's engine and interfaces | written for this project and nolfsrc; no licence is declared |
 | `src/launch/` | `Launch.dll`, NOLF's launcher DLL as AvP2 and Primal Hunt ship it: written for this project from the retail DLL; `RezFind.cpp` follows nolfsrc's launcher's `RezFind.cpp`, which is Monolith's (from the *No One Lives Forever 2* source release's launcher), and `cdcheck.cpp` the shape of nolfsrc's `cdcheck.cpp` | `RezFind.cpp` Monolith's code under the terms of the release it came from; the rest written for this project, no licence is declared |
 | `src/engine/cdaudio/`, `src/lithshared/redmgr/` | `cdaudio.dll`, the engine's CD-audio music driver, and the `Redmgr.lib` it links: reconstructed for this project from the retail Primal Hunt `cdaudio.dll` and the release's prebuilt `Redmgr.lib` (against the release's `redmgr.h`), Monolith's interfaces. `musicmgr.h` is the music-driver interface of Monolith's public *No One Lives Forever 2* source release (`runtime/shared/src/musicmgr.h`, by way of nolf2src), brought back to this engine's | Monolith's interfaces under the terms of the releases they came from; the rest written for this project; no licence is declared |
-| `src/launcher/` | the launchers, `AVP2.exe` and `PrimalHunt.exe`: **Monolith Productions**' launcher source from the public *No One Lives Forever 2* source release (its `Game/Launcher`, by way of nolf2src: the dialogs and controls, `Launcher.cpp`, `RezFind.cpp`, `Utils.cpp`, `resource.h`'s names), brought back to the 2001 AvP2 launcher it descends from, from the retail `AVP2.exe` and `PrimalHunt.exe`; `DisplayMgr.cpp` is nolfsrc's reconstruction of NOLF's display-mode code (its `dlgdisplay.cpp`, from the retail `NOLF.exe`); `launcher.rc` is read out of the retail images by `tools/rsrc2rc.py` (Monolith's strings and dialogs; the art is not in the tree) | Monolith's code under the terms of the NOLF2 release; the rest written for this project and nolfsrc; no licence is declared |
+| `src/launcher/` | the launchers, `AVP2.exe` and `PrimalHunt.exe`: **Monolith Productions**' launcher source from the public *No One Lives Forever 2* source release (its `Game/Launcher`, by way of nolf2src: the dialogs and controls, `Launcher.cpp`, `RezFind.cpp`, `Utils.cpp`, `resource.h`'s names), brought back to the 2001 AvP2 launcher it descends from, from the retail `AVP2.exe` and `PrimalHunt.exe`; `DisplayMgr.cpp` is nolfsrc's reconstruction of NOLF's display-mode code (its `dlgdisplay.cpp`, from the retail `NOLF.exe`); `launcher.rc` is read out of the retail images by `ext/tools/rsrc2rc.py` (Monolith's strings and dialogs; the art is not in the tree) | Monolith's code under the terms of the NOLF2 release; the rest written for this project and nolfsrc; no licence is declared |
 | `src/lithshared/RegMgr32/` | the launchers' registry class, `CRegMgr32`: **Monolith Productions**' `Libs/RegMgr32` from the same NOLF2 source release (by way of nolf2src), unmodified but for line endings | as that release's |
-| `src/engine/ltmsg/` | `ltmsg.dll`: its resource script read out of the retail DLL by `tools/rsrc2rc.py` (Monolith's strings), and nolfsrc's one-line source | the strings Monolith's; the rest written for this project |
-| `src/AVP2/AVP2Up/` | `AVP2Up.dll` and `AVP2XUp.dll`, the Sierra updater's resources for AvP2 and Primal Hunt: their resource scripts read out of the retail DLLs by `tools/rsrc2rc.py`, and the icons and bitmaps in `res/` extracted from them byte for byte (**Monolith Productions**' for AvP2; **Third Law Interactive**'s for Primal Hunt; game data, as the retail DLLs ship them); the DLL's few lines of source (an empty `DllMain`, Visual C++'s wizard `StdAfx` files) written for this project | the resources Monolith's and Third Law's, as the games' data; the rest written for this project |
+| `src/engine/ltmsg/` | `ltmsg.dll`: its resource script read out of the retail DLL by `ext/tools/rsrc2rc.py` (Monolith's strings), and nolfsrc's one-line source | the strings Monolith's; the rest written for this project |
+| `src/AVP2/AVP2Up/` | `AVP2Up.dll` and `AVP2XUp.dll`, the Sierra updater's resources for AvP2 and Primal Hunt: their resource scripts read out of the retail DLLs by `ext/tools/rsrc2rc.py`, and the icons and bitmaps in `res/` extracted from them byte for byte (**Monolith Productions**' for AvP2; **Third Law Interactive**'s for Primal Hunt; game data, as the retail DLLs ship them); the DLL's few lines of source (an empty `DllMain`, Visual C++'s wizard `StdAfx` files) written for this project | the resources Monolith's and Third Law's, as the games' data; the rest written for this project |
 | `src/avp2src/` | the project's own headers (debug logging, crash backtraces), from nolfsrc's | written for this project; no licence is declared |
-| `build/`, `tools/`, `docker/`, `progress/` (but the above), `Makefile`, the documentation | written for this project | no licence is declared |
+| `build/`, `ext/tools/`, `docker/`, `progress/` (but the above), `Makefile`, the documentation | written for this project | no licence is declared |
 
 ## Not in this repository, taken from the retail games at build time
 
 The build takes these from Primal Hunt and from AvP2 with its 1.0.9.6
-patch as the `rez/` submodule installs them, from the redump images of
-their discs that it fetches from archive.org (`rez/README.md`).
+patch as the `ext/rez/` submodule installs them, from the redump images of
+their discs that it fetches from archive.org (`ext/rez/README.md`).
 
 | What | Origin | Where it goes |
 |---|---|---|
@@ -40,5 +40,5 @@ never go into a game directory.
 
 ## Not in this repository, provided by you
 
-The compilers in `toolchains/` (Microsoft Visual C++ 6.0; see
-`toolchains/README.md`), under their own licences.
+The compilers in `ext/toolchains/` (Microsoft Visual C++ 6.0; see
+`ext/toolchains/README.md`), under their own licences.

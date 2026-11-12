@@ -4,7 +4,7 @@ and game DLLs), and those of AvP2 1.0.9.6 that Primal Hunt does not
 replace (the game DLLs, launcher and dedicated server that play AvP2's own
 campaigns) -- and where each one's own code, and ours, is.
 
-tools/progress.py and tools/ratchet.py read this file and nothing else
+ext/tools/progress.py and ext/tools/ratchet.py read this file and nothing else
 about the project, so they know no binary by name: a binary is added here,
 not in the tools. Plain data, with the evidence for every address beside
 it (the CSVs in this directory are the rest of the evidence).
@@ -46,10 +46,10 @@ TARGETS, one dict per shipped binary, in the README's order:
   cited_src  the source trees whose comments cite it (default CITED_SRC):
              per target, because the DLLs share the 0x10000000 range
   purecall   the shipped address of the CRT's `_purecall` (every abstract
-             vtable's filler), where tools/vtabcheck.py cannot find its
+             vtable's filler), where ext/tools/vtabcheck.py cannot find its
              `jmp [IAT]` thunk itself
 
-The reconstruction tools (tools/tgt.py) read the same entries: a tool is
+The reconstruction tools (ext/tools/tgt.py) read the same entries: a tool is
 given a target by label or stem (`Lithtech`, `server`), and its image,
 build, link inputs and regions come from here.
 
@@ -57,9 +57,9 @@ Optional per target, for what NOLF's scoreboard needs and this one does
 not yet: icl (Intel C/C++ padding and /Qip names), linked_oracle (compare
 relocation-free functions against our linked image too), lib_range,
 lib_block, own_names / own_symbols (names that say a function's shipped
-address) -- see tools/progress.py.
+address) -- see ext/tools/progress.py.
 
-How the ranges were found: `tools/libscan.py <image> <lib>...` puts each
+How the ranges were found: `ext/tools/libscan.py <image> <lib>...` puts each
 library's functions in the image. Every binary of AvP2's and Primal
 Hunt's links the C runtime statically, as NOLF's do: `libcmt.lib`, and
 MFC's `nafxcw.lib` in the launchers, the dedicated servers and
@@ -238,7 +238,7 @@ TARGETS = [
          # debug builds")
          # and, after WON, the release lith.lib (basehash.obj, baselist.obj
          # and virtlist.obj: 0x10060940..0x10060be4, its 13 functions each
-         # matched at one address by tools/libscan.py, as lithtech.exe's
+         # matched at one address by ext/tools/libscan.py, as lithtech.exe's
          # 0x004bd300..0x004bd5c4 are), which the debug RezMgr calls
          partial_objs=["src/engine/server/Release/*.obj",
                        "src/engine/lithtech/Release/wonapi/WONAPI.lib",
@@ -317,7 +317,7 @@ TARGETS = [
          # 0x1003c300), l_allocator.obj (LAlloc's vtable 0x10048654:
          # 0x1003c4f0, Alloc 0x1003c3d0, Free 0x1003c400; g_DefAlloc's
          # initialisers from 0x1003c430) and dynarray.obj
-         # (MoArray_FindElementMemcmp 0x1003c530) -- tools/libscan.py finds
+         # (MoArray_FindElementMemcmp 0x1003c530) -- ext/tools/libscan.py finds
          # the release's prebuilt debug StdLith.lib there, 18 functions at
          # one address each, and our link's build of it is identical at
          # all 15 rows. Then libcmt.lib (msvc-6.00-8966's): delete.obj's
@@ -459,7 +459,7 @@ TARGETS = [
     # Third Law's, from Monolith's AvP2 1.0.9.6 code: no source was
     # released. Their own code is C++ 8966 (with 21 objects of 8168 in the
     # client, 24 in the server objects); the lithshared libraries are the
-    # release's prebuilt ones, as for 1.0.9.6 (tools/libscan.py places
+    # release's prebuilt ones, as for 1.0.9.6 (ext/tools/libscan.py places
     # their functions in both).
     dict(label="PHCShell.dll", what="Primal Hunt's game: client", kind="image",
          shipped=REFERENCE + "/PHCShell.dll", stem="PHCShell",
@@ -649,7 +649,7 @@ TARGETS = [
                        "src/LT2/lithshared/libs/AvP2Release/lith.lib",
                        "src/LT2/lithshared/libs/AvP2Release/RezMgr.lib",
                        "src/LT2/lithshared/libs/AvP2Release/StdLith.lib"],
-         # each library's block (tools/libscan.py): WON, then from the
+         # each library's block (ext/tools/libscan.py): WON, then from the
          # DINPUT thunk (dinput.lib's data formats and an atexit
          # initialiser of AIL_shutdown after it) lith's baselist, RezMgr and
          # StdLith, up to controlfile.cpp's code (0x004b3490: ours)
@@ -661,7 +661,7 @@ TARGETS = [
          # libcmt.lib (SP5's: the Rich header's C 8047) from fpinit.obj's
          # __fpmath (0x4b42e0; __cfltcvt_init 0x4b42f8, then ftol.obj's
          # __ftol 0x4b4330), 486 of its members placed in one run to
-         # initcon.obj (0x4c3675; tools/libscan.py --min=1), lith's
+         # initcon.obj (0x4c3675; ext/tools/libscan.py --min=1), lith's
          # basehash and virtlist inside it. The DINPUT import thunk at
          # 0x004af950 (`jmp [0x004c6000]`, DINPUT.dll!DirectInputCreateA's
          # IAT slot; input_Init's two calls, 0x0043ee95 and 0x0043eeb0) is
@@ -747,7 +747,7 @@ TARGETS = [
          cites=True, cited_src=["src/engine"],
          # libcmt.lib from fpinit.obj's __fpmath (0x10057b50; __ftol
          # 0x10057ba0), 467 of its members placed in one run to initcon.obj
-         # (0x10066f95; tools/libscan.py --min=1), lith inside it
+         # (0x10066f95; ext/tools/libscan.py --min=1), lith inside it
          app=[(0x10001000, 0x10057b50)],
          own_symbols={
              # as Primal Hunt's: slots 4 and 5 of the 0x1c DefaultCache

@@ -1,4 +1,4 @@
-# Primal Hunt's lithtech.exe: the tables tools/vtabcheck.py cannot map (no
+# Primal Hunt's lithtech.exe: the tables ext/tools/vtabcheck.py cannot map (no
 # function the scoreboard places installs them), by hand.
 #
 # The client interface and its parts, installed by the creator at 0x004051e0

@@ -44,7 +44,7 @@ import struct
 import sys
 
 W = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(W, "tools"))
+sys.path.insert(0, os.path.join(W, "ext", "tools"))
 from exedump import Pe  # noqa: E402
 from linkresolve import parse_obj  # noqa: E402
 from callseq import disasm_calls  # noqa: E402

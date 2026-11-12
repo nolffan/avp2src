@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draft an engine image's full-length vtables (tools/mkvtabobj.py specs).
+"""Draft an engine image's full-length vtables (ext/tools/mkvtabobj.py specs).
 
 Why: much of the engine is reconstructed through stand-in ("view") classes
 that declare only the virtual slots their own code touches. The table such
@@ -8,15 +8,15 @@ and the game DLLs call through the shipped layout: AvP2's cshell called
 ILTClient slot 53 through CLTClientQ404's two-slot table and ran
 CObjectBank0c::Term, the next table in .rdata, on the client interface.
 
-How: tools/vtabcheck.py --all maps each of our `??_7` tables to the shipped
+How: ext/tools/vtabcheck.py --all maps each of our `??_7` tables to the shipped
 table it stands for (through the placed functions' relocations); the
 shipped table's slots are build/reference.sh's <stem>-vtables.csv
-(tools/vtabaudit.py, every run of code pointers in .rdata). A table goes in
+(ext/tools/vtabaudit.py, every run of code pointers in .rdata). A table goes in
 the spec when our compiled one is SHORTER than the shipped one (a stand-in;
 a full-length compiled table is the source's own declaration and stays,
 unless it has a `_purecall` where the shipped slot is concrete).
 Each shipped slot becomes the symbol of ours the scoreboard places at the
-slot's target (tools/progress.py: identical functions first, then the
+slot's target (ext/tools/progress.py: identical functions first, then the
 small ones placed by shape, then the near pairings); a compiled slot is
 kept where it is placed there or nothing is; `_purecall` stays
 `__purecall`. A slot with nothing of ours placed at its target is written
@@ -24,7 +24,7 @@ kept where it is placed there or nothing is; `_purecall` stays
 write (or to bind with evidence), so this tool exits 1 when there is one.
 
 Usage (from the repository root, in the build container or wherever
-tools/progress.py runs):
+ext/tools/progress.py runs):
   build/vtables/mkvtables.py <target label> <vtabcheck --all output> <out spec>
       [--drop=SYM,...]   tables never to replace
       [--purecall=0x..]  the shipped _purecall (default: the commonest slot target,
@@ -39,7 +39,7 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(REPO, "tools"))
+sys.path.insert(0, os.path.join(REPO, "ext", "tools"))
 import progress  # noqa: E402
 import tgt as tgt_mod  # noqa: E402
 import vtabcheck  # noqa: E402
@@ -99,7 +99,7 @@ def main():
     # what our compiled objects declare
     compiled = {}
     for o in progress.image_objs(tgt, ours_img):
-        # (not our own tables' object, tools/mkvtabobj.py's, once linked)
+        # (not our own tables' object, ext/tools/mkvtabobj.py's, once linked)
         if o.lower().endswith(".obj") and os.path.basename(o).lower() != "vtables.obj":
             for k, v in vtabcheck.compiled_vtables(open(os.path.join(REPO, o), "rb").read()).items():
                 if len(v) > len(compiled.get(k, [])):
@@ -257,7 +257,7 @@ def main():
             rel = ship_img.dword(st + off + 1)
             got = (st + off + 5 + rel - (1 << 32 if rel & 0x80000000 else 0)) & 0xFFFFFFFF
             # (the shipped engine has two copies of the allocator front end
-            # where our link has one: tools/vtabcheck.py's TWINS, so where
+            # where our link has one: ext/tools/vtabcheck.py's TWINS, so where
             # ours calls one its shipped address is no evidence -- unless
             # the shipped call reaches a function placed as something
             # else of ours: AvP2's ILTServer::CreateString (slot 46,
@@ -392,7 +392,7 @@ def main():
                 not same_shape(s2a[c], s2a[n]))
 
     out = ["# %s: full-length tables for the stand-in classes (build/vtables/mkvtables.py;" % label,
-           "# tools/mkvtabobj.py makes them an object linked ahead of ours). One slot",
+           "# ext/tools/mkvtabobj.py makes them an object linked ahead of ours). One slot",
            "# per line: the symbol of ours the scoreboard places at the shipped slot's target.",
            ""]
     missing = 0

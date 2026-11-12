@@ -47,7 +47,7 @@ for line in open(chk):
 
 with open(out, "w") as f:
     f.write(f"""# {label}: link aliases, /ALTERNATENAME:<unresolved>=<defined>, made into
-# weak externals by tools/mkaliasobj.py (VC6 LINK has no /ALTERNATENAME).
+# weak externals by ext/tools/mkaliasobj.py (VC6 LINK has no /ALTERNATENAME).
 # Taken from nolfsrc's link/aliases.rsp (NOLF's) and checked against this
 # image's retail bytes by reading each referencing site's call or reference
 # out of the retail image where the scoreboard places the function

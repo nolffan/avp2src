@@ -16,6 +16,6 @@ under the release's licences, as `src/AVP2/` is (`docs/LICENSE_NOTES.md`).
 Nothing is built from them. They are what our libraries, rebuilt from the
 release's source, are to be checked against (`docs/PLAN.md`, package 4):
 the game DLLs of both AvP2 1.0.9.6 and Primal Hunt place functions of
-these very libraries (`tools/libscan.py`), and a static library holds more
+these very libraries (`ext/tools/libscan.py`), and a static library holds more
 than any one program takes from it, so the library itself is the only
 witness to the rest.

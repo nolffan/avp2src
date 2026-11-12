@@ -1,7 +1,7 @@
 # sites.py <img> <score-stem> <symbol>: each placed site that references the symbol, and the retail target there
 import sys, os, struct
 W = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-sys.path.insert(0, W + "/tools"); sys.path.insert(0, W + "/build/aliases")
+sys.path.insert(0, W + "/ext/tools"); sys.path.insert(0, W + "/build/aliases")
 from exedump import Pe
 from linkresolve import parse_obj
 from aliascheck import IMG

@@ -1,6 +1,6 @@
 # libat.py <lib> <retail image> <hexaddr> [name-substring]: library functions whose masked bytes match at the address
 import sys, os, tempfile
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ext", "tools"))
 from libextract import extract
 from linkresolve import parse_obj
 from exedump import Pe

@@ -9,11 +9,11 @@
 #   build/all.sh            (inside the build container, e.g. `make shell`)
 #   make test               (then: play it -- build/playtest.sh)
 #
-# Needs: the toolchain (toolchains/, see toolchains/README.md), Wine (the
-# build container has it), and the two retail games as the rez/ submodule
+# Needs: the toolchain (ext/toolchains/, see ext/toolchains/README.md), Wine (the
+# build container has it), and the two retail games as the ext/rez/ submodule
 # installs them (build/retail.sh): Primal Hunt (Europe) 1.0.2.2,
-# rez/games/avp2-ph-eu/, and AvP2 (Europe) with the English 1.0.9.6 patch,
-# rez/games/avp2-eu-1.0.9.6/. It only reads them.
+# ext/rez/games/avp2-ph-eu/, and AvP2 (Europe) with the English 1.0.9.6 patch,
+# ext/rez/games/avp2-eu-1.0.9.6/. It only reads them.
 #
 # The game directory holds both games, each in a directory of its own, as
 # their setups install them (Primal Hunt installs beside AvP2, never over
@@ -136,7 +136,7 @@ game_data() {
     local name=$1 g="$OUT/$2" r=$3 layout=$4
     shift 4
     step "1. resources ($name): game data from $r -> $g"
-    RETAIL_LAYOUT=$layout python3 tools/retailextract.py resources "$r" "$g"
+    RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py resources "$r" "$g"
     loose "$r" "$g" "$@"
     # autoexec.cfg and the default profile start as the shipped ones (the
     # games rewrite them); a rebuild keeps the player's.
@@ -144,7 +144,7 @@ game_data() {
     mkdir -p "$g/Save" "$g/custom" "$g/Profiles"
     [ -f "$g/Profiles/Default.prf" ] || cp "$g/Default.prf.retail" "$g/Profiles/Default.prf"
     step "2. THIRD-PARTY RUNTIME ($name): Bink, Smacker and Miles from $r"
-    RETAIL_LAYOUT=$layout python3 tools/retailextract.py thirdparty "$r" "$g"
+    RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py thirdparty "$r" "$g"
 }
 mkdir -p "$OUT/AVP2" "$OUT/PrimalHunt"
 game_data "AvP2 1.0.9.6" AVP2 "$RETAIL_AVP2" build/retail_avp2.py "${LOOSE_AVP2[@]}"
@@ -196,7 +196,7 @@ assemble PrimalHunt "${BUILT_PH[@]}"
 step "5. audit: every PE file in $OUT"
 for g in AVP2 PrimalHunt; do
     echo "== $g/"
-    python3 tools/retailextract.py audit "$OUT/$g"
+    python3 ext/tools/retailextract.py audit "$OUT/$g"
 done
 # nothing but the two games' directories and the run scripts at the top
 for f in "$OUT"/*; do

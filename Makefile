@@ -7,11 +7,11 @@
 #   make help     everything else
 #
 # Needs only docker on the host and the three submodules (`git submodule
-# update --init`): the compilers, toolchains/ (toolchains/README.md); rez/,
+# update --init`): the compilers, ext/toolchains/ (ext/toolchains/README.md); ext/rez/,
 # which fetches the redump images of the European discs from archive.org
 # and installs Primal Hunt, and AvP2 with its English 1.0.9.6 patch, from
-# them (rez/README.md;
-# `make retail`, which every build runs first, does it once); and tools/, the
+# them (ext/rez/README.md;
+# `make retail`, which every build runs first, does it once); and ext/tools/, the
 # reconstruction tools. Every step runs in a throwaway container of the image
 # docker/Dockerfile describes, with this checkout mounted at /repo, as you.
 
@@ -22,7 +22,7 @@ JOBS ?=
 # The game directory `make test` plays: the release build's, or a variant's
 # (make test TEST_GAME=out/avp2-modern-release; build/variant.sh), which of
 # its games (avp2, ph, or both in turn), the world (- : the main menu) and
-# the input script (tools/playtest-*.txt; empty: none, idle TEST_SECS)
+# the input script (build/playtest-*.txt; empty: none, idle TEST_SECS)
 TEST_GAME ?= out/avp2-legacy-release
 TEST_WHICH ?= avp2 ph
 TEST_WORLD ?= -
@@ -39,8 +39,8 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 # 8966 for Primal Hunt's engine and game DLLs (and the lithshared
 # libraries), 8168 for AvP2 1.0.9.6's game DLLs, the Processor Pack's back
 # end (9044) for AvP2's launcher.
-TOOLCHAIN_FILES = toolchains/msvc-6.00-9044/BIN/cl.exe toolchains/msvc-6.00-8966/BIN/cl.exe \
-	toolchains/msvc-6.00-8168/BIN/cl.exe toolchains/msvc-6.00-8168/BIN/link.exe
+TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-9044/BIN/cl.exe ext/toolchains/msvc-6.00-8966/BIN/cl.exe \
+	ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain \
 	test reference progress progress-update shell clean distclean help
@@ -64,8 +64,8 @@ help:
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     fetch the disc images and install Primal Hunt, and AvP2 with its"
 	@echo "                1.0.9.6 patch, from them, and fetch the USA releases' discs too, for"
-	@echo "                the public archive (rez/, once; every build runs it); check them"
-	@echo "make shell      a shell in the build container (build/*.sh, tools/ work there)"
+	@echo "                the public archive (ext/rez/, once; every build runs it); check them"
+	@echo "make shell      a shell in the build container (build/*.sh, ext/tools/ work there)"
 	@echo "make image      (re)build the docker image $(IMAGE)"
 	@echo "make clean      remove out/ and every build output in the source tree"
 	@echo "make distclean  clean, and remove the docker image too"
@@ -105,7 +105,7 @@ endif
 	@echo "== docker image $(IMAGE) ready"
 
 # The retail games the build takes its data from (build/retail.sh): installed
-# by rez/ the first time, checked against rez/games.sha256 every time; and
+# by ext/rez/ the first time, checked against ext/rez/games.sha256 every time; and
 # the USA releases' disc images, which the public archive's install scripts
 # read too.
 retail: check-rez check-tools image
@@ -115,17 +115,17 @@ reference: retail
 	$(DOCKER_RUN) bash build/reference.sh
 
 check-rez:
-	@[ -f rez/install-games.sh ] || { echo "error: rez/ is empty -- the disc images and their installer are the rez/ submodule: run git submodule update --init (see rez/README.md)" >&2; exit 1; }
+	@[ -f ext/rez/install-games.sh ] || { echo "error: ext/rez/ is empty -- the disc images and their installer are the ext/rez/ submodule: run git submodule update --init (see ext/rez/README.md)" >&2; exit 1; }
 
 check-tools:
-	@[ -f tools/progress.py ] || { echo "error: tools/ is empty -- the reconstruction tools are the tools/ submodule: run git submodule update --init" >&2; exit 1; }
+	@[ -f ext/tools/progress.py ] || { echo "error: ext/tools/ is empty -- the reconstruction tools are the ext/tools/ submodule: run git submodule update --init" >&2; exit 1; }
 
 check-toolchain:
 	@for f in $(TOOLCHAIN_FILES); do \
-	  [ -f "$$f" ] || { echo "error: $$f is missing -- the compilers are the toolchains/ submodule: run git submodule update --init (see toolchains/README.md)" >&2; exit 1; }; \
+	  [ -f "$$f" ] || { echo "error: $$f is missing -- the compilers are the ext/toolchains/ submodule: run git submodule update --init (see ext/toolchains/README.md)" >&2; exit 1; }; \
 	done
 
-# what tools/evidence.py cannot ask git for in the container (the build
+# what ext/tools/evidence.py cannot ask git for in the container (the build
 # image has no git)
 EVIDENCE_ENV = EVIDENCE_REVISION=$(shell git rev-parse HEAD 2>/dev/null) \
 	EVIDENCE_MODIFIED=$(shell git status --porcelain --untracked-files=no 2>/dev/null | wc -l) \

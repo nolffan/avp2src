@@ -58,7 +58,7 @@ and the two rows to identify. NOLF's renderer has the same two rows.
   `winmm.lib` each carry 3 objects of implib 8034 (two of each are linked: 6).
   The remaining three are DDRAW's. Primal Hunt has the same structure with the
   DirectX **8.1** SDK's `ddraw.lib`, whose three objects are `(25, 9210)`
-  (`toolchains/dxsdk-8.1/lib/ddraw.lib`, checked). 0x25 is the import-library
+  (`ext/toolchains/dxsdk-8.1/lib/ddraw.lib`, checked). 0x25 is the import-library
   tool id of the VC7 betas the DirectX 8.0 SDK was built with. Its thunks are
   at 0x1003b502..0x1003b514 (`DirectDrawCreate`, `...CreateEx`,
   `...EnumerateA`, in PH's order). **Medium-high** (the DX 8.0 SDK itself is

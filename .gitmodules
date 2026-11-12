@@ -1,9 +1,9 @@
 [submodule "tools"]
-	path = tools
+	path = ext/tools
 	url = git@github.com:nolffan/tools.git
 [submodule "rez"]
-	path = rez
+	path = ext/rez
 	url = git@github.com:nolffan/rez.git
 [submodule "toolchains"]
-	path = toolchains
+	path = ext/toolchains
 	url = git@github.com:nolffan/toolchains.git

@@ -19,7 +19,7 @@ src/LT2/lithshared/libs/
 __pycache__/
 *.log
 !src/**/*.log
-# agents' worktrees (tools/agentwt.sh)
+# agents' worktrees (ext/tools/agentwt.sh)
 /.worktrees/
 src/engine/*/[Rr]elease/
 src/engine/*/AvP2Release/

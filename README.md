@@ -36,7 +36,7 @@ the legacy build keeps matching the retail one.
 ## Where it stands
 
 Started. Both retail games are installed from their discs (and AvP2's
-patch) by `rez/`, the compilers are in `toolchains/` (`msvc-6.00-8168`,
+patch) by `ext/rez/`, the compilers are in `ext/toolchains/` (`msvc-6.00-8168`,
 `-8966`, `-9044`), the scoreboard scores every retail binary against our
 build, and Monolith's source release is in `src/` (`src/AVP2`, `src/LT2`;
 `docs/LICENSE_NOTES.md` says what is whose). `make` builds AvP2's game
@@ -99,9 +99,9 @@ the evidence, is `progress/COMPILERS.md`.
 ## Building
 
 Needs docker and the three submodules (`git submodule update --init`):
-`toolchains/` (the compilers), `rez/` (which fetches the discs from
+`ext/toolchains/` (the compilers), `ext/rez/` (which fetches the discs from
 archive.org and installs AvP2 with its 1.0.9.6 patch, and Primal Hunt
-beside it) and `tools/` (the reconstruction tools).
+beside it) and `ext/tools/` (the reconstruction tools).
 
 ```sh
 make            # out/avp2-legacy-release/: both games, built here, with the retail data
@@ -145,7 +145,7 @@ data out of the player's own images of AvP2's two discs and Primal Hunt's
 disc (European, or USA where the scripts list a USA set; a plain `.iso`,
 redump's `.bin`/`.cue` or its `.zip`), AvP2's 1.0.9.6 patch from the
 Primal Hunt disc, checking every file they write (`build/mkinstall.py`,
-on `tools/mkinstall.py`):
+on `ext/tools/mkinstall.py`):
 
 ```sh
 avp2-modern-release/linux-install.sh avp2-1.zip avp2-2.zip ph.zip      # Linux

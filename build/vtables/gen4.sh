@@ -10,7 +10,7 @@ rc=0
 for i in lithtech:ph:"lithtech.exe" lithtech:avp2:"AvP2 lithtech.exe" server:ph:"server.dll" server:avp2:"AvP2 server.dll"; do
   IFS=: read d g label <<< "$i"
   link=$W/src/engine/$d/link
-  python3 "$W/tools/vtabcheck.py" "$label" --all --aliases="$link/aliases-$g.rsp" > "$W/out/vtables/vtabcheck.$d-$g.txt" 2>&1
+  python3 "$W/ext/tools/vtabcheck.py" "$label" --all --aliases="$link/aliases-$g.rsp" > "$W/out/vtables/vtabcheck.$d-$g.txt" 2>&1
   if python3 "$W/build/vtables/mkvtables.py" "$label" "$W/out/vtables/vtabcheck.$d-$g.txt" "$W/out/vtables/vtables-$d-$g.txt" --map="$W/build/vtables/map-$d-$g.txt"; then
     cp "$W/out/vtables/vtables-$d-$g.txt" "$link/vtables-$g.txt"
   else

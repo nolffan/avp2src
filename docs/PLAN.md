@@ -55,9 +55,9 @@ could be found (2026-11), nor any Primal Hunt game source.
 
 ## The retail games
 
-Both are installed by `rez/` (`build/retail.sh`), the European releases:
+Both are installed by `ext/rez/` (`build/retail.sh`), the European releases:
 
-- `rez/games/avp2-ph-eu`: Primal Hunt (Europe) 1.0.2.2, "Typical" (its
+- `ext/rez/games/avp2-ph-eu`: Primal Hunt (Europe) 1.0.2.2, "Typical" (its
   layout, for the tools: `build/retail.py`). The European and USA releases
   are the same files; the Italian one differs in its language archive,
   launcher and dedicated server only. Its archives: `AVP2DLL.REZ` (its own
@@ -66,7 +66,7 @@ Both are installed by `rez/` (`build/retail.sh`), the European releases:
   (Primal Hunt's worlds and data), `MULTI.REZ`, `DIALOGUE.REZ`. Its
   launcher builds the rez stack from these and AvP2's install
   (`InstallDir` in AvP2's registry key).
-- `rez/games/avp2-eu-1.0.9.6`: AvP2 (Europe) with the English 1.0.9.6 patch
+- `ext/rez/games/avp2-eu-1.0.9.6`: AvP2 (Europe) with the English 1.0.9.6 patch
   (April 2002), the last, which includes the earlier ones (its layout:
   `build/retail_avp2.py`). AvP2 had no GOTY edition. The patch put a new
   engine, renderer and dedicated server over the install, with
@@ -119,7 +119,7 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
   dedicated server whose header says so), 8168 for AvP2's game DLLs and
   dedicated server, 9044 for AvP2's launcher, 8966 for the `lithshared`
   libraries. Prove the flags per binary, as nolfsrc did.
-- **Project files.** The release's VC6 `.dsw`/`.dsp` (`tools/dsp2mk.py`),
+- **Project files.** The release's VC6 `.dsw`/`.dsp` (`ext/tools/dsp2mk.py`),
   with a Primal Hunt configuration added beside Release.
 - **Legacy vs modern.** `AVP2SRC_MODERN` gates every fix and feature, and
   `AVP2SRC_DEBUG` the debug build's logging; the legacy build must keep
@@ -136,15 +136,15 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 | 2 | `import`: the source release into `src/`, as it is (`src/AVP2`, `src/LT2`), with its EULA, and `docs/LICENSE_NOTES.md`, as nolfsrc's | 1 | done (below) |
 | 3 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (cjacksrc's, with each binary's revision), `build/all.sh` assembling a game directory for each game (with the loose files the games read: `console.PCX`, `childmodel.map`, Primal Hunt's `FontData.fnt`), `build/variant.sh` (debug, modern) | 2 | done (below) |
 | 4 | `game`: AvP2's `CShell.dll`, `Object.lto`, `CRes.dll`, `SRes.dll` and `AVP2Serv.exe` from the release, with 8168; the `lithshared` libraries rebuilt with 8966 (WONAPI from the release's source, the rest from nolfsrc's and nolf2src's) and checked against the prebuilt ones; which configuration shipped (Release or Final); GameSpy and WON placed as `middleware` | 3 | |
-| 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`tools/rsrcdiff.py`) | 4 | |
+| 5 | `ph-game`: Primal Hunt's game DLLs and `AVP2XServ.exe` from the same tree with `PRIMAL_HUNT`, with 8966: what Third Law added and changed, from the retail images (their strings name new classes: `CAITentacle`, `CAIChameleon`, `CMiniTurret`, `CTurretSpawner`, `CArtifactField`, dual pistols, the Corporate missions, ...); `PHCRes.dll`/`PHSRes.dll` from the release's `.rc` and the retail resources (`ext/tools/rsrcdiff.py`) | 4 | |
 | 6 | `small`: `ltmsg.dll`, `AVP2XUp.dll` and `AVP2Up.dll` (resource scripts from the retail resources), `Launch.dll` (a Debug build of NOLF's LauncherDLL) | 3 | `ltmsg.dll` done (below) |
 | 7 | `engine`: `lithtech.exe`, `server.dll` and `d3d.ren` (8966) from nolfsrc's engine, toward Primal Hunt's; `cdaudio.dll` from the disassembly and `lithshared`'s `redmgr.h` | 3 | started (below) |
 | 8 | `launcher`: `PrimalHunt.exe` and `AVP2.exe` from the retail disassembly and NOLF's launcher, without the wrapper; the rez stacks they build | 3 | linked (below) |
-| 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 4-8 | harness done; both engines stop before WinMain (below) |
+| 9 | `boot`: the built binaries in both games under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 4-8 | harness done; both engines stop before WinMain (below) |
 | 10 | `one engine`: AvP2's 1.0.9.6 game DLLs on Primal Hunt's engine, both retail and ours (if not, 1.0.9.6's engine becomes a target) | 9 | answered: not as shipped (package 7); 1.0.9.6's engine to be targeted |
 | 11 | `match`: byte-matching, module by module, ratcheted by `make progress` | 4-8 | |
 | 12 | `modern`: the modern build (`AVP2SRC_MODERN`, `MODERN.md`) | 9 | built (`make modern`); no item done yet |
-| 13 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and patch (`tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 9, 12 | done (below); the workflow not yet run on GitHub |
+| 13 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and patch (`ext/tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 9, 12 | done (below); the workflow not yet run on GitHub |
 
 ## Notes per package
 
@@ -152,13 +152,13 @@ Primal Hunt's `SuDE.dll`, `SuES.dll`, `SuFR.dll`, `SuIT.dll`).
 
 Done.
 
-- `rez/` installs `avp2-ph-eu` (`rez/tools/install.py`: the European
+- `ext/rez/` installs `avp2-ph-eu` (`ext/rez/tools/install.py`: the European
   release, "Typical") and `avp2-eu-1.0.9.6` (the European release,
   "Typical", then the patch's `Update Files`; `Update Command Line` `-rez
-  AVP2P1.REZ`), both recorded in `rez/games.sha256`.
-- `toolchains/` has every revision the headers name: `msvc-6.00-8168`,
+  AVP2P1.REZ`), both recorded in `ext/rez/games.sha256`.
+- `ext/toolchains/` has every revision the headers name: `msvc-6.00-8168`,
   `-8447`, `-8966`, `-9044`, and `icl-4.0`.
-- `tools/retailextract.py` reads Primal Hunt's layout from
+- `ext/tools/retailextract.py` reads Primal Hunt's layout from
   `build/retail.py`, and AvP2's from `build/retail_avp2.py`
   (`RETAIL_LAYOUT`); `build/reference.sh` runs it on both into one
   `out/reference/`, Primal Hunt's game DLLs under `PH` names.
@@ -194,7 +194,7 @@ only, as NOLF's did.
 ### 3. build
 
 `build/build.mk` builds the release's own workspace (`src/AVP2/AVP2.dsw`)
-through `tools/dsp2mk.py`, which expands the project files' `$(LT2_DIR)`
+through `ext/tools/dsp2mk.py`, which expands the project files' `$(LT2_DIR)`
 to `S:\LT2` (`--macro`, `--drive`), as Developer Studio would with the
 release's `SetBuildVars.bat`. `build/compile.sh` builds in
 `out/release-tree/` (without the `AVP2SRC_MODERN`/`AVP2SRC_DEBUG` blocks, as
@@ -360,7 +360,7 @@ Still to do:
 ### 6. small
 
 `ltmsg.dll`, both releases': `src/engine/ltmsg/ltmsg.rc` is read out of the
-retail DLLs by `tools/rsrc2rc.py` (Primal Hunt's and 1.0.9.6's carry the
+retail DLLs by `ext/tools/rsrc2rc.py` (Primal Hunt's and 1.0.9.6's carry the
 same resources), around nolfsrc's `ltmsg.cpp`; Primal Hunt's built with
 SP5's tools into `Release/`, 1.0.9.6's with RTM's into `AvP2Release/`.
 Every resource byte-identical in both.
@@ -589,7 +589,7 @@ unverifiable. To come: the modern launchers (below).
 
 ### 9. boot
 
-`make test` (`build/playtest.sh`: tools/playtest.sh, adapted) runs each
+`make test` (`build/playtest.sh`: ext/tools/playtest.sh, adapted) runs each
 game of a game directory under Xvfb and Wine, from its own run directory
 (`out/play/test/AVP2/`, `.../PrimalHunt/`: the result, `wine.log`, a
 screenshot). Both of our engines stop at once: `lithtech.exe` is linked
@@ -612,7 +612,7 @@ shipped objects C++ cannot name twice in `src/engine/d3d/link/phviews.txt`.
 
 Bound since: each of the four exe/server links takes an alias file of its
 own (`src/engine/{lithtech,server}/link/aliases-{ph,avp2}.rsp`, weak
-externals by tools/mkaliasobj.py), made from nolfsrc's `aliases.rsp` by
+externals by ext/tools/mkaliasobj.py), made from nolfsrc's `aliases.rsp` by
 reading every referencing site the scoreboard places back out of the
 retail image and keeping a binding only where its target is placed at the
 address the sites reach (or retargeting it to what is placed there; the

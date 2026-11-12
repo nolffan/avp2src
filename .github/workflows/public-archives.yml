@@ -9,10 +9,10 @@
 #
 # The build needs, from archive.org, the redump zips of the European discs
 # of AvP2 and Primal Hunt (the retail games: `make retail` installs them
-# from them, and AvP2's 1.0.9.6 patch, which rez/ carries) and of the USA
+# from them, and AvP2's 1.0.9.6 patch, which ext/rez/ carries) and of the USA
 # discs (the install scripts are made against both releases'): about 2.6
-# GB, checked against rez/isos/SHA256SUMS. The build itself needs no retail
-# file beyond those: the compilers are the toolchains/ submodule's. The job
+# GB, checked against ext/rez/isos/SHA256SUMS. The build itself needs no retail
+# file beyond those: the compilers are the ext/toolchains/ submodule's. The job
 # "prepare" fetches them once, into a cache keyed on that file, and builds
 # the docker image into a layer cache; then the four builds run at the same
 # time, each in a job of its own that restores both. None of the builds
@@ -68,38 +68,38 @@ jobs:
 
       # .gitmodules names the submodules by SSH; all of them are public, so
       # fetch them over HTTPS instead, at the commit this one records. Only
-      # rez/ (the disc list and fetch-isos.sh) is needed here.
+      # ext/rez/ (the disc list and fetch-isos.sh) is needed here.
       - name: Submodules
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule sync
-          git submodule update --init --depth 1 rez
+          git submodule update --init --depth 1 ext/rez
 
       # hashFiles() sees only the checkout, so the key is made once the
       # submodule is there, and handed to the builds.
       - name: Cache key
         id: key
-        run: echo "key=redump-avp2-eu-usa-$(sha256sum rez/isos/SHA256SUMS | cut -c1-64)" >> "$GITHUB_OUTPUT"
+        run: echo "key=redump-avp2-eu-usa-$(sha256sum ext/rez/isos/SHA256SUMS | cut -c1-64)" >> "$GITHUB_OUTPUT"
 
       # Only whether the cache has them: nothing is downloaded on a hit.
       - name: Look for the disc images
         id: discs
         uses: actions/cache/restore@v4
         with:
-          path: rez/isos/*.zip
+          path: ext/rez/isos/*.zip
           key: ${{ steps.key.outputs.key }}
           lookup-only: true
 
       # Checked against SHA256SUMS before it is saved.
       - name: Fetch the disc images
         if: steps.discs.outputs.cache-hit != 'true'
-        run: rez/fetch-isos.sh avp2-eu avp2-ph-eu avp2-usa avp2-ph-usa
+        run: ext/rez/fetch-isos.sh avp2-eu avp2-ph-eu avp2-usa avp2-ph-usa
 
       - name: Save the disc images
         if: steps.discs.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: rez/isos/*.zip
+          path: ext/rez/isos/*.zip
           key: ${{ steps.key.outputs.key }}
 
       # Written to the layer cache here, once; the builds only read it.
@@ -144,8 +144,8 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      # toolchains/ (the compilers, the DirectX 8.1 SDK), rez/ (the discs'
-      # installer and AvP2's 1.0.9.6 patch) and tools/ (the reconstruction
+      # ext/toolchains/ (the compilers, the DirectX 8.1 SDK), ext/rez/ (the discs'
+      # installer and AvP2's 1.0.9.6 patch) and ext/tools/ (the reconstruction
       # tools).
       - name: Submodules
         run: |
@@ -156,7 +156,7 @@ jobs:
       - name: Restore the disc images
         uses: actions/cache/restore@v4
         with:
-          path: rez/isos/*.zip
+          path: ext/rez/isos/*.zip
           key: ${{ needs.prepare.outputs.discs-key }}
           fail-on-cache-miss: true
 

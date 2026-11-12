@@ -72,15 +72,15 @@ if ! command -v wine >/dev/null 2>&1; then
 fi
 
 TREE="$REPO/out/build-$VARIANT"
-echo "== $VARIANT tree: src/ build/ tools/ -> out/build-$VARIANT/ (sources only; its outputs kept)"
+echo "== $VARIANT tree: src/ build/ ext/tools/ -> out/build-$VARIANT/ (sources only; its outputs kept)"
 mkdir -p "$TREE"
-python3 tools/releasesrc.py mirror "$REPO/src" "$TREE/src"
-rm -rf "$TREE/build" "$TREE/tools"
-tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build tools | tar -C "$TREE" -xf -
+python3 ext/tools/releasesrc.py mirror "$REPO/src" "$TREE/src"
+rm -rf "$TREE/build" "$TREE/tools" "$TREE/ext/tools"; rm -f "$TREE/toolchains" "$TREE/rez"
+tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build ext/tools | tar -C "$TREE" -xf -
 # the compilers, the retail games where build/retail.sh looks for them, and
 # the prebuilt libraries build/build.mk takes from progress/reference/
-[ -L "$TREE/toolchains" ] || ln -s ../../toolchains "$TREE/toolchains"
-[ -L "$TREE/rez" ] || ln -s ../../rez "$TREE/rez"
+[ -L "$TREE/ext/toolchains" ] || ln -s ../../../ext/toolchains "$TREE/ext/toolchains"
+[ -L "$TREE/ext/rez" ] || ln -s ../../../ext/rez "$TREE/ext/rez"
 [ -L "$TREE/progress" ] || ln -s ../../progress "$TREE/progress"
 
 export AVP2SRC_CFLAGS="$CFLAGS"

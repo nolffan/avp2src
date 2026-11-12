@@ -3,11 +3,11 @@
 
   build/mkinstall.py <gamedir> <outdir> [isodir]
 
-tools/mkinstall.py's scripts and list format (its docstring documents both),
+ext/tools/mkinstall.py's scripts and list format (its docstring documents both),
 for a game directory that holds two retail games, each in a directory of its
 own (build/all.sh): AVP2/, Aliens versus Predator 2 (Europe) with the English
 1.0.9.6 patch, and PrimalHunt/, Primal Hunt (Europe). build/retail.py's
-INSTALL_* names say which: INSTALL_GAMES (each game's directory, the rez/
+INSTALL_* names say which: INSTALL_GAMES (each game's directory, the ext/rez/
 release its data came from, the disc images of each region it installs
 from, and its update), INSTALL_DISCS, INSTALL_SETS, INSTALL_TAG,
 INSTALL_BAT_HEADER, and INSTALL_UPDATE_ON: the update -- AvP2's 1.0.9.6
@@ -19,7 +19,7 @@ in it came from the retail game; the list's paths are the game directory's
 
 A set whose images do not hold every retail file (another region's release
 that differs) is left out of the list, and said so; the first set must be
-complete. Exits 3 if an image is missing, as tools/mkinstall.py does.
+complete. Exits 3 if an image is missing, as ext/tools/mkinstall.py does.
 """
 import hashlib
 import os
@@ -28,8 +28,8 @@ import sys
 import tarfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(REPO, "tools"))
-import mkinstall as M  # noqa: E402  (tools/mkinstall.py)
+sys.path.insert(0, os.path.join(REPO, "ext", "tools"))
+import mkinstall as M  # noqa: E402  (ext/tools/mkinstall.py)
 
 REZ = M.REZ
 SCRIPTS = os.path.join(REPO, "build", "game-scripts")
@@ -73,13 +73,13 @@ def main():
     retail = {g["release"]: os.path.join(REZ, "games", g["release"]) for g in games}
     nogame = [r for r, d in retail.items() if not os.path.isfile(os.path.join(d, "MANIFEST.txt"))]
     if missing or nogame:
-        print("mkinstall: no disc images (%s) or no rez/games/%s/ -- "
-              "rez/fetch-isos.sh and rez/install-games.sh"
+        print("mkinstall: no disc images (%s) or no ext/rez/games/%s/ -- "
+              "ext/rez/fetch-isos.sh and ext/rez/install-games.sh"
               % (", ".join(missing) or "-", ", ".join(nogame) or "-"), file=sys.stderr)
         sys.exit(3)
     discs = {i: M.Disc(i, discnames[i], p) for i, p in paths.items()}
 
-    # The update, from rez/'s copy: its payload unpacked, its cabinets; and
+    # The update, from ext/rez/'s copy: its payload unpacked, its cabinets; and
     # where each disc that carries it has it (checked to be the same file).
     upd = pay = ucabs = None
     mlines = []

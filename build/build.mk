@@ -1,7 +1,7 @@
 # build/build.mk -- every compile and link of the game, as one Makefile.
 #
 # Monolith's Visual C++ 6 workspace (src/AVP2/AVP2.dsw, the source release's
-# own) as Developer Studio would build it: tools/dsp2mk.py reads the
+# own) as Developer Studio would build it: ext/tools/dsp2mk.py reads the
 # workspace and its project files and writes the rules (.build/*.mk) --
 # every compile with the flags its project's configuration gives it
 # ("Final", what the retail game DLLs are: none of the strings the release
@@ -9,7 +9,7 @@
 # no "Final"), one source per compile, every library and link. `make -j`
 # then runs the compiles of every binary at once, and a rebuild redoes only
 # what changed: an object is rebuilt when its source, a header it includes
-# (tools/mkdeps.py finds them), or its command line changes (the line is
+# (ext/tools/mkdeps.py finds them), or its command line changes (the line is
 # kept in <object>.cmd), a binary when any of its inputs does.
 #
 # It is run from the root of the tree being built, never from a checkout:
@@ -21,7 +21,7 @@
 # Targets: all (the default: the workspace's wanted projects, below); a
 # project by its workspace name; any single output.
 #
-# The compilers see the tree's src/ as drive S: and toolchains/ as T:, so
+# The compilers see the tree's src/ as drive S: and ext/toolchains/ as T:, so
 # they see the same paths wherever the tree is. The project files name the
 # SDK and the libraries through $(LT2_DIR), which Monolith's machines set to
 # C:\PROJ\LT2 (src/AVP2/SetBuildVars.bat): here it is S:\LT2 (dsp2mk.py
@@ -91,7 +91,7 @@ PFX := $(ROOT)/.wine/drives
 # (CL_ServerApp, LINK_ServerApp, ENV_ServerApp). The resource compiler is
 # SP6's (msvc-6.00-9782), as nolfsrc's. The DirectX 8.1 SDK comes first on
 # the paths, as the release's readme sets it up.
-TC      := $(ROOT)/toolchains
+TC      := $(ROOT)/ext/toolchains
 V8168   := $(TC)/msvc-6.00-8168
 V8966   := $(TC)/msvc-6.00-8966
 DXSDK   := $(TC)/dxsdk-8.1
@@ -100,7 +100,7 @@ LINK    := $(V8966)/BIN/link.exe
 LIBEXE  := $(V8966)/BIN/lib.exe
 RC      := $(TC)/msvc-6.00-9782/Common/MSDev98/Bin/RC.EXE
 
-# Windows paths: src/ is S:, toolchains/ T:, the rest Z:
+# Windows paths: src/ is S:, ext/toolchains/ T:, the rest Z:
 wz = z:$(subst /,\,$(1))
 ws = $(if $(filter $(ROOT)/src $(ROOT)/src/%,$(1)),s:$(subst /,\,$(patsubst $(ROOT)/src%,%,$(1))),$(if $(filter $(TC) $(TC)/%,$(1)),t:$(subst /,\,$(patsubst $(TC)%,%,$(1))),$(call wz,$(1))))
 
@@ -208,7 +208,7 @@ TOOLS += $(1)
 endef
 
 # $(call rcfile,<res>,<project dir>,<rc as spelled>,<rc in the tree>,<flags>)
-# What the script can include tools/mkdeps.py finds, as it finds a
+# What the script can include ext/tools/mkdeps.py finds, as it finds a
 # compile's headers.
 define rcfile
 DEPSPEC += $(subst $(space),|,$(1)$(tab)$(2)$(tab)$(3)$(tab)$(strip $(AVP2SRC_RCFLAGS) $(5)))
@@ -613,7 +613,7 @@ gamespyobjs: $(LSOBJ_gamespy/gamespymgr) $(LSOBJ_gamespy/gamespyclientmgr)
 # "WONAPI.lib"), so the links take a copy of ours of it. AvP2 1.0.9.6's
 # game DLLs hold that build. Primal Hunt's hold Third Law's build of the
 # same source with VC6's own STL, as Primal Hunt's engine's
-# (tools/libscan.py: PHObject.lto holds 657 of the functions of our VC6-STL
+# (ext/tools/libscan.py: PHObject.lto holds 657 of the functions of our VC6-STL
 # build and 317 of the STLport one's, PHCShell.dll 722 against 205, the
 # latter above its runtime), but the _PH projects cannot link that build
 # yet: the release's prebuilt GameSpyMgr.lib and GameSpyClientMgr.lib call
@@ -709,21 +709,21 @@ src/AVP2/AVP2Serv/server.lib: progress/reference/AVP2/AVP2Serv/server.lib
 prebuilt: $(PREBUILT)
 
 # ---------------------------------------------------------------------------
-# The projects (tools/dsp2mk.py)
+# The projects (ext/tools/dsp2mk.py)
 
 DEPDIR := $(ROOT)/.build
 $(shell mkdir -p $(DEPDIR))
 PROJECTS :=
 WANTED :=
-DSP2MK := python3 tools/dsp2mk.py --macro 'LT2_DIR=s:\LT2' --drive s=src
+DSP2MK := python3 ext/tools/dsp2mk.py --macro 'LT2_DIR=s:\LT2' --drive s=src
 # $(call workspace,<dsw>,<projects, comma-separated>): its rules, from
-# tools/dsp2mk.py, which gets the projects earlier workspaces already build
+# ext/tools/dsp2mk.py, which gets the projects earlier workspaces already build
 # (--have), so that a library two workspaces share is built once.
 define workspace
 ifneq ($(wildcard $(ROOT)/$(1)),)
 DSP_OK := $$(shell $(DSP2MK) --have "$$(PROJECTS)" $(1) Final $(DEPDIR)/$(basename $(notdir $(1))).mk $(subst $(comma), ,$(2)) 2>$(DEPDIR)/dsp2mk-$(basename $(notdir $(1))).log && echo ok)
 ifneq ($$(DSP_OK),ok)
-$$(error tools/dsp2mk.py failed on $(1): $$(file <$(DEPDIR)/dsp2mk-$(basename $(notdir $(1))).log))
+$$(error ext/tools/dsp2mk.py failed on $(1): $$(file <$(DEPDIR)/dsp2mk-$(basename $(notdir $(1))).log))
 endif
 include $(DEPDIR)/$(basename $(notdir $(1))).mk
 WANTED += $$(filter $$(PROJECTS),$(subst $(comma), ,$(2)))
@@ -917,7 +917,7 @@ eng_objs = $(sort $(patsubst %.cpp,$(SERVER)/$(1)/%.obj,$(SERVER_SRC) $(SERVER_O
     $(sort $(foreach s,$(LITHTECH_ALL),$(call c_obj,$(s),$(LITHTECH)/$(1)))) \
     $(sort $(D3D_SRC:%.cpp=$(D3D)/$(1)/%.obj))
 # ltmsg.dll: the engine's message strings (ltmsg.rc, read out of the retail
-# DLLs by tools/rsrc2rc.py: Primal Hunt's and 1.0.9.6's are the same
+# DLLs by ext/tools/rsrc2rc.py: Primal Hunt's and 1.0.9.6's are the same
 # resources) around the C runtime's DLL startup (ltmsg.cpp, nolfsrc's).
 # Primal Hunt's is SP5's tools' (its Rich header: C++ 8966), 1.0.9.6's RTM's
 # (C++ 8168, its runtime 8168's). Linked under Microsoft's msvcrt.dll
@@ -1083,7 +1083,7 @@ launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.
 #     object of it) into a library of its own; its code lies between the C
 #     runtime and MFC in the retail images, outside their own code
 #   - launcher.res: launcher.rc, with the art read out of the retail image
-#     the variant is built against (tools/rsrc2rc.py, into <dir>/res/: not in
+#     the variant is built against (ext/tools/rsrc2rc.py, into <dir>/res/: not in
 #     the tree), compiled in the object directory, where res\ is
 #   - the import libraries the retail import tables name, and MFC's and the
 #     C runtime's (SP5's, from the environment's LIB)
@@ -1098,7 +1098,7 @@ $(eval $(call compile,$(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,$(REGMGR32),regmgr3
 $(eval $(call library,$(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib,$(LAUNCHER)/$(1)/regmgr32,/nologo /out:RegMgr32.lib,\
     $(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,regmgr32.obj,$(ENV_GAME),$(LIBEXE)))
 $(eval $(call tool,$(LAUNCHER)/$(1)/res/retail.rc,$(LAUNCHER_REF)/$(3),\
-    python3 tools/rsrc2rc.py $(LAUNCHER_REF)/$(3) $(LAUNCHER)/$(1)/res/retail.rc --res-dir=. --name=launcher >/dev/null))
+    python3 ext/tools/rsrc2rc.py $(LAUNCHER_REF)/$(3) $(LAUNCHER)/$(1)/res/retail.rc --res-dir=. --name=launcher >/dev/null))
 $(eval $(call tool,$(LAUNCHER)/$(1)/launcher.res,$(LAUNCHER)/launcher.rc $(LAUNCHER)/resource.h $(LAUNCHER)/$(1)/res/retail.rc | wine-drives,\
     cd $(LAUNCHER)/$(1) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG $(4) /folauncher.res '..\launcher.rc'))
 $(eval $(call tool,$(LAUNCHER)/$(1)/$(2),$(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/$(1)/%.obj) $(LAUNCHER)/$(1)/launcher.res \
@@ -1124,15 +1124,15 @@ engine-objs: ph-engine-objs avp2-engine-objs
 # what our link put where -- progress/targets.py's `built` images, their
 # response files (<image>.rsp: what was linked) and maps. In a linked image
 # the relocations are resolved, which is what verifies the "small"
-# functions (tools/progress.py, VERIFYING THE SMALL ONES).
+# functions (ext/tools/progress.py, VERIFYING THE SMALL ONES).
 #
 # $(LINK), link.exe 6.00.8447 (SP5's, as the rest of Primal Hunt's build),
 # with /FORCE: an image is written whatever is unresolved or defined twice.
 # An unresolved symbol then resolves to the image's base, RVA 0 (our
 # lithtech.exe's calls to unresolved functions all reach 0x00400000),
-# which tools/progress.py never takes as naming anything. Each link takes
+# which ext/tools/progress.py never takes as naming anything. Each link takes
 # its own alias file (link/aliases-ph.rsp, link/aliases-avp2.rsp: the
-# image's <dir>/aliases.obj, weak externals by tools/mkaliasobj.py), made
+# image's <dir>/aliases.obj, weak externals by ext/tools/mkaliasobj.py), made
 # from nolfsrc's link/aliases.rsp (NOLF's) by checking every binding
 # against the retail image: each referencing site the scoreboard places is
 # read back out of the retail bytes, and a binding stays only where its
@@ -1162,7 +1162,7 @@ engine-objs: ph-engine-objs avp2-engine-objs
 # Miles' mss32.dll exports its functions under their decorated names, and
 # lithtech.exe imports them so (_AIL_startup@0): its import libraries are
 # made from src/launcher/libs/mss32.def (lib.exe for the descriptor,
-# tools/mkimplib.py --keep-decoration for the names), into Release/implib/
+# ext/tools/mkimplib.py --keep-decoration for the names), into Release/implib/
 # on the link's LIB path, where the scoreboard does not take them for an
 # input of ours (link_inputs reads only the directory the link runs in
 # and its /libpath:s).
@@ -1173,7 +1173,7 @@ $(eval $(call tool,$(ENG_IMPLIB)/mss32.lib,$(MSS32_DEF) | wine-drives,\
     mkdir -p $(ENG_IMPLIB) && cd src/launcher && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo /machine:i386 '/def:libs\mss32.def' \
     '/out:$(call ws,$(ROOT)/$(ENG_IMPLIB))\mss32.lib' >/dev/null))
 $(eval $(call tool,$(ENG_IMPLIB)/mss32dec.lib,$(MSS32_DEF),\
-    python3 tools/mkimplib.py --keep-decoration $(ENG_IMPLIB)/mss32dec.lib mss32.dll $$(MSS32_DECORATED) >/dev/null))
+    python3 ext/tools/mkimplib.py --keep-decoration $(ENG_IMPLIB)/mss32dec.lib mss32.dll $$(MSS32_DECORATED) >/dev/null))
 ENG_LINK_ENV := $(subst LIB=',LIB='$(call ws,$(ROOT)/$(ENG_IMPLIB));,$(ENG_PH_ENV))
 
 # $(call eng_link,<image>,<link dir>,<flags>,<inputs as the link dir sees them>,<prerequisites>[,<env>])
@@ -1204,12 +1204,12 @@ SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(filter-out $(addsuf
 # stand-in class whose compiled table is shorter: the game DLLs call the
 # engine's interfaces through the shipped layout, and a call past a
 # stand-in's last slot runs the next table in .rdata (AvP2's cshell called
-# ILTClient slot 53 through CLTClientQ404's two). tools/mkvtabobj.py makes
+# ILTClient slot 53 through CLTClientQ404's two). ext/tools/mkvtabobj.py makes
 # it <object dir>/vtables.obj, pick-any COMDATs linked ahead of our
 # objects, so its copy of each table is the one kept.
 define eng_aliases
-$(call tool,$(1)/$(2)/aliases.obj,$(1)/link/$(3),python3 tools/mkaliasobj.py $(1)/link/$(3) $(1)/$(2)/aliases.obj)
-$(call tool,$(1)/$(2)/vtables.obj,$(1)/link/$(4),python3 tools/mkvtabobj.py $(1)/link/$(4) $(1)/$(2)/vtables.obj >/dev/null)
+$(call tool,$(1)/$(2)/aliases.obj,$(1)/link/$(3),python3 ext/tools/mkaliasobj.py $(1)/link/$(3) $(1)/$(2)/aliases.obj)
+$(call tool,$(1)/$(2)/vtables.obj,$(1)/link/$(4),python3 ext/tools/mkvtabobj.py $(1)/link/$(4) $(1)/$(2)/vtables.obj >/dev/null)
 endef
 $(eval $(call eng_aliases,$(LITHTECH),Release,aliases-ph.rsp,vtables-ph.txt))
 $(eval $(call eng_aliases,$(LITHTECH),AvP2Release,aliases-avp2.rsp,vtables-avp2.txt))
@@ -1248,7 +1248,7 @@ engine-link: $(LITHTECH)/Release/lithtech.exe $(SERVER)/Release/server.dll
 # one C++ and one C object: dxguid.lib's and, by the data formats it puts
 # in .text, dinput.lib's) and SP5's libcmt.lib (C 8047), and their
 # import tables are Primal Hunt's: the same import libraries, Miles' from
-# Release/implib/. The libraries are release configurations (tools/libscan.py
+# Release/implib/. The libraries are release configurations (ext/tools/libscan.py
 # finds none of the debug builds' functions in either image, where Primal
 # Hunt's server.dll links them), built with cl 9044 as the engine is
 # ($(LAOUT), above: "AvP2 1.0.9.6's engine's builds"); and WON is the
@@ -1342,7 +1342,7 @@ engine-link: avp2-engine-link
 # After the objects and the three DDRAW import thunks (0x1003c136) the
 # retail image has the DEBUG StdLith.lib, as server.dll does:
 # struct_bank.obj, l_allocator.obj (LAlloc, g_DefAlloc) and dynarray.obj
-# at 0x1003c150..0x1003c58b, unoptimised and int3-padded (tools/libscan.py
+# at 0x1003c150..0x1003c58b, unoptimised and int3-padded (ext/tools/libscan.py
 # finds the release's prebuilt debug build there, function for function),
 # and then libcmt.lib. So $(LS_D)\StdLith.lib follows the import
 # libraries, without its default LIBCMTD. dxguid.lib (DirectX 8.1,
@@ -1387,8 +1387,8 @@ D3D_EXPORTS := FreeModeList GetSupportedModes RenderDLLSetup
 # under several names at several offsets (the view's near and far clips,
 # the fog colour's bytes), and two vectors with no initialiser. One object
 # of named .bss sections, linked after the ph/ objects in both renderers.
-$(foreach d,Release AvP2Release,$(eval $(call tool,$(D3D)/$(d)/phviews.obj,$(D3D)/link/phviews.txt tools/mkviewobj.py,\
-    mkdir -p $(D3D)/$(d) && python3 tools/mkviewobj.py $(D3D)/link/phviews.txt $(D3D)/$(d)/phviews.obj >/dev/null)))
+$(foreach d,Release AvP2Release,$(eval $(call tool,$(D3D)/$(d)/phviews.obj,$(D3D)/link/phviews.txt ext/tools/mkviewobj.py,\
+    mkdir -p $(D3D)/$(d) && python3 ext/tools/mkviewobj.py $(D3D)/link/phviews.txt $(D3D)/$(d)/phviews.obj >/dev/null)))
 $(eval $(call tool,$(D3D)/Release/d3d.res,$(D3D)/d3d.rc | wine-drives,\
     cd $(D3D) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG /foRelease/d3d.res d3d.rc))
 $(eval $(call tool,$(D3D)/Release/d3d.ren,$(addprefix $(D3D)/Release/,$(D3D_LINK_OBJS) phviews.obj d3d.res) $(LDOUT)/StdLith.lib $(call nlink,$(V8966)) | wine-drives,\
@@ -1501,7 +1501,7 @@ all game: cdaudio avp2up launch-dll launchers
 # CString), from the same sources and flags as ButeMgrNoMFC less _NOMFC,
 # and CryptMgr and StdLith from theirs, into the project's own directory,
 # where link.exe looks before the /libpath the project names (and where
-# server.lib is already). tools/progress.py looks there too.
+# server.lib is already). ext/tools/progress.py looks there too.
 SVLIB_OUT := src/AVP2/AVP2Serv
 SV_LIBS :=
 # $(call svlib,<dir under src/lithshared>,<library>,<flags>,<sources>)
@@ -1537,10 +1537,10 @@ $(eval $(call compile,src/lithshared/RegMgr32/Release/regmgr32.obj,$(REGMGR32),r
 $(eval $(call tool,$(LOUT)/RegMgr32.lib,src/lithshared/RegMgr32/Release/regmgr32.obj | wine-drives,\
     cd $(REGMGR32) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\RegMgr32.lib' 'Release\regmgr32.obj'))
 # Its splash screen is Primal Hunt's (ServerApp.rc, PRIMAL_HUNT): read out
-# of the retail image (tools/rsrc2rc.py) into PrimalHunt/res/, not the tree.
+# of the retail image (ext/tools/rsrc2rc.py) into PrimalHunt/res/, not the tree.
 SVPH_REF := $(firstword $(wildcard $(ROOT)/out/reference $(ROOT)/../reference))
 $(eval $(call tool,src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp,$(SVPH_REF)/AVP2XServ.exe,\
-    python3 tools/rsrc2rc.py $(SVPH_REF)/AVP2XServ.exe src/AVP2/AVP2Serv/PrimalHunt/res/retail.rc --res-dir=. --name=retail >/dev/null && \
+    python3 ext/tools/rsrc2rc.py $(SVPH_REF)/AVP2XServ.exe src/AVP2/AVP2Serv/PrimalHunt/res/retail.rc --res-dir=. --name=retail >/dev/null && \
     cp src/AVP2/AVP2Serv/PrimalHunt/res/retail_142.bmp src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp))
 src/AVP2/AVP2Serv/PrimalHunt/ServerApp.res: src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp
 .PHONY: servers
@@ -1579,10 +1579,10 @@ $(TOOLS):
 
 FORCE:
 
-# Header dependencies (tools/mkdeps.py), brought up to date on every run
+# Header dependencies (ext/tools/mkdeps.py), brought up to date on every run
 $(file >$(DEPDIR)/deps.spec,$(subst |, ,$(subst $(space),$(nl),$(DEPSPEC))))
-DEPS_OK := $(shell python3 tools/mkdeps.py $(DEPDIR)/deps.spec $(DEPDIR)/deps.mk && echo ok)
+DEPS_OK := $(shell python3 ext/tools/mkdeps.py $(DEPDIR)/deps.spec $(DEPDIR)/deps.mk && echo ok)
 ifneq ($(DEPS_OK),ok)
-$(error tools/mkdeps.py failed)
+$(error ext/tools/mkdeps.py failed)
 endif
 include $(DEPDIR)/deps.mk
