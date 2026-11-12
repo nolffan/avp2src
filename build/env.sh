@@ -85,6 +85,13 @@ avp2src_release_tree() {
 # avp2src_release_tree): every listed target, AVP2SRC_JOBS at a time
 # (default: one per CPU), each job's output kept together.
 avp2src_make() {
+    # Monolith's prebuilt libraries first: build/build.mk turns the project
+    # files into make rules (ext/tools/dsp2mk.py) as it reads itself, and
+    # spells each library as the disk does, matching case-insensitively as
+    # Windows would -- the release ships lithtrackmgr.lib, the projects name
+    # LithTrackMgr.lib. In a fresh tree (CI, a variant's) the copy is not
+    # there yet, the project's spelling is kept, and no rule makes it.
+    make -C "$REPO" -f build/build.mk --no-print-directory prebuilt >/dev/null &&
     make -C "$REPO" -f build/build.mk --no-print-directory -Otarget \
         -j"${AVP2SRC_JOBS:-$(nproc)}" "$@"
 }
