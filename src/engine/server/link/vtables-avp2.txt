@@ -9,7 +9,7 @@ vtable ??_7?$CWorldPolyArray@PAVCWorldPolyRec@@@@6B@ 0x10069430  # compiled with
     ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
     ?GenAppend@?$CMoArray@VCCollElem04@@VDefaultCache@@@@UAEIAAVCCollElem04@@@Z
     ?GenRemoveAt@?$CMoArray@VCCollElem04@@VDefaultCache@@@@UAEXVGenListPos@@@Z
-    ?GenRemoveAll@?$CMoArray@KVDefaultCache@@@@UAEXXZ  # ?GenRemoveAll@?$CMoArray@VCCollElem18PQ514@@VDefaultCache@@@@UAEXXZ is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GenRemoveAll@?$CMoArray@VCCollElem18PQ514@@VDefaultCache@@@@UAEXXZ  # placed by shape
     ?GenGetSize@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@UBEKXZ
     ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
     ?GenAppendList@?$CMoArray@KVDefaultCache@@@@UAEIABV?$GenList@K@@@Z
@@ -111,8 +111,8 @@ vtable ??_7CLTServer@@6B@ 0x1006a4b8  # compiled with 125 slots; 79 _purecall wh
     ?GetClassName@CLTServer@@QAEKQAUHCLASS_t@@PADK@Z
     ?GetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
     ?SetGlobalForce@CLTServer@@QAEKPAV?$_CVector@M@@@Z
-    ?UnloadFile@CLTServer@@QAEKPADK@Z
-    ?ThreadLoadFile@CLTServer@@QAEKPADK@Z
+    ?ThreadLoadFile@CLTServer@@QAEKPADK@Z  # ?UnloadFile@CLTServer@@QAEKPADK@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?UnloadFile@CLTServer@@QAEKPADK@Z  # ?ThreadLoadFile@CLTServer@@QAEKPADK@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?GetHPolyObject@CLTServer@@QAEKKAAPAVLTObject@@@Z
     ?FindNamedObjects@CLTServer@@QAEKPADAAV?$BaseObjArray@PAVLTObject@@@@PAK@Z
     ?FindWorldModelObjectIntersections@CLTServer@@QAEKPAVLTObject@@V?$_CVector@M@@VLTRotation@@AAV?$BaseObjArray@PAVLTObject@@@@@Z
@@ -161,19 +161,19 @@ vtable ??_7CLTServer@@6B@ 0x1006a4b8  # compiled with 125 slots; 79 _purecall wh
     ?GetClientData@CLTServer@@QAEKPAUHCLIENT_t@@AAPAXAAK@Z
 vtable ??_7CObjContainer@@6B@ 0x1006a2f8  # compiled with 14 slots
     ??_GCObjContainer@@UAEPAXI@Z  # the compiled slot, kept over ??_GCObjSprite@@UAEPAXI@Z placed there
-    ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z  # the compiled slot, kept over ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z placed there
-    ?_v08@CObjBase@@UAEXXZ  # the compiled slot, kept over ?sub_10024d41@CObjWorldModel@@QAEXXZ placed there
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z  # the class's own, placed here, over the inherited ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v08@CObjBase@@UAEXXZ
     ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
-    ?_v10@CObjBase@@UAEIXZ  # the compiled slot, kept over ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ placed there
-    ?_v14@CObjBase@@UAEPAXK@Z  # the compiled slot, kept over ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z placed there
-    ?_v18@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z placed there
-    ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v10@CObjBase@@UAEIXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z  # the class's own, placed here, over the inherited ?_v14@CObjBase@@UAEPAXK@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z  # the class's own, placed here, over the inherited ?_v18@CObjBase@@UAEXPAX@Z
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z  # the class's own, placed here, over the inherited ?_v1c@CObjBase@@UAEXPAX@Z
     ?_v20@CObjContainer@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
     ?IsInWorld@CObjBase@@UAEIXZ
     ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
     ?_v2c@CObjBase@@UAEMXZ
-    ?_v30@CObjBase@@UAEIXZ  # the compiled slot, kept over ?HasOriginalBsp@CObjWorldModel@@QAEIXZ placed there
-    ?_v34@CObjBase@@UAEIXZ  # the compiled slot, kept over ?GetWorldFlag4@CObjWorldModel@@QAEKXZ placed there
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ  # the class's own, placed here, over the inherited ?_v30@CObjBase@@UAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ  # the class's own, placed here, over the inherited ?_v34@CObjBase@@UAEIXZ
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
 vtable ??_7CObjWorldModel@@6B@ 0x1006a0bc  # compiled with 14 slots
     ??_GCObjWorldModel@@UAEPAXI@Z  # the compiled slot, kept over ??_GCStreamFields@@UAEPAXI@Z placed there
@@ -183,7 +183,7 @@ vtable ??_7CObjWorldModel@@6B@ 0x1006a0bc  # compiled with 14 slots
     ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v10@CObjBase@@UAEIXZ
     ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z  # the class's own, placed here, over the inherited ?_v14@CObjBase@@UAEPAXK@Z
     ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z  # the class's own, placed here, over the inherited ?_v18@CObjBase@@UAEXPAX@Z
-    ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z  # the class's own, placed here, over the inherited ?_v1c@CObjBase@@UAEXPAX@Z
     ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
     ?IsInWorld@CObjBase@@UAEIXZ
     ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
@@ -335,7 +335,7 @@ vtable ??_7CWorldTable@@6B@ 0x1006963c  # compiled with 1 slots
     ?GenGetAt@?$CMoArray@PAXVDefaultCache@@@@UBEPAXAAVGenListPos@@@Z
     ?GenAppend@?$CMoArray@VCCollElem04@@VDefaultCache@@@@UAEIAAVCCollElem04@@@Z
     ?GenRemoveAt@?$CMoArray@VCCollElem04@@VDefaultCache@@@@UAEXVGenListPos@@@Z
-    ?GenRemoveAll@?$CMoArray@KVDefaultCache@@@@UAEXXZ  # ?GenRemoveAll@?$CMoArray@VCCollElem18PQ514@@VDefaultCache@@@@UAEXXZ is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?GenRemoveAll@?$CMoArray@VCCollElem18PQ514@@VDefaultCache@@@@UAEXXZ  # placed by shape
     ?GenGetSize@?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@UBEKXZ
     ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
     ?GenAppendList@?$CMoArray@KVDefaultCache@@@@UAEIABV?$GenList@K@@@Z

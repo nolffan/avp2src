@@ -10,7 +10,7 @@ vtable ??_7?$CWorldPolyArray@PAVCWorldPolyRec@@@@6B@ 0x004c6ccc  # compiled with
     ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
     ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
     ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
-    ?GenGetSize@?$CMoArray@MVDefaultCache@@@@UBEKXZ
+    ?GenGetSize@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEKXZ
     ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
     ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
     ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
@@ -23,7 +23,7 @@ vtable ??_7?$TCPQueryArrayT@VTCPQueryResponse@@@@6B@ 0x004c8a8c  # compiled with
     ?GenAppend@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIAAVTCPQueryResponseC4@@@Z
     ?GenRemoveAt@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEXVGenListPos@@@Z
     ?GenRemoveAll@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEXXZ
-    ?GenGetSize@?$CMoArray@MVDefaultCache@@@@UBEKXZ
+    ?GenGetSize@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEKXZ
     ?GenCopyList@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponseC4@@@@@Z
     ?GenAppendList@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UAEIABV?$GenList@VTCPQueryResponseC4@@@@@Z
     ?GenFindElement@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEIABVTCPQueryResponseC4@@AAVGenListPos@@@Z
@@ -70,13 +70,13 @@ vtable ??_7CCmgCSBase@@6B@ 0x004c6ba4  # compiled with 1 slots
     ?GetCollisionInfo@CClientCSBase@@UAEPAPAVCollisionInfo@@XZ
     ?TouchNotify@CClientCSBase@@UAEXPAVLTObject@@0PAV?$_CVector@M@@M@Z
     ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
-    ?GenSetCacheSize@?$CMoArray@VCCollElem14P@@VNoCache@@@@UAEXK@Z  # placed by shape
+    ?_p10@TCPDriver@@UAEXPAX@Z  # placed by shape
     ?UpdateAttachments@CClientCSBase@@UAEXPAUWMMoveState@@@Z
     ?IsMatch@CClientCSBase@@UAEIPAXK0@Z
     ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
     ?_p0c@CClientCSBase@@UAEXPAX0@Z  # placed by shape
-    ?_v34@CObjBase@@UAEIXZ  # placed by shape
-    ?_v14@CObjBase@@UAEPAXK@Z  # placed by shape
+    ?WantsExtraLink@CWTObjN48C@@UAEIXZ  # placed by shape
+    ?sub_0048fa90@CLTCursor@@QAEKW4CursorMode@@@Z  # placed by shape
     ?GetSideName@CClientCSBase@@UAEPBDPAX@Z  # placed by shape
     ?GetUnknown4c0_0c@CClientCSBase@@UAEKXZ
     ?GetUnknown4dc@CClientCSBase@@UAEKPAXPAV?$_CVector@M@@@Z
@@ -145,11 +145,11 @@ vtable ??_7CConsoleLineList@@6B@ 0x004c6f80  # compiled with 1 slots
     ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
     ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
     ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
-    ?GetLockCount@CUnknown390@@QAEHXZ  # placed by shape
+    ?GetData@CLTCursorInst@@UAEPAXXZ  # placed by shape
     ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
     ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
     ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
-    ?GenSetCacheSize@?$CMoArray@VCCollElem20A@@VNoCache@@@@UAEXK@Z  # placed by shape
+    ?NotifyInserted@CWTObjN48C@@UAEXPAV1@@Z  # placed by shape
 vtable ??_7CDeviceObjectList@@6B@ 0x004c7560  # compiled with 1 slots
     ?GenBegin@CMessageQueueBase@@UBE?AVGenListPos@@XZ
     ?GenIsValid@CMessageQueueBase@@UBEIABVGenListPos@@@Z
@@ -158,11 +158,11 @@ vtable ??_7CDeviceObjectList@@6B@ 0x004c7560  # compiled with 1 slots
     ?GenAppend@LMessageList@@UAEIAAPAVLThreadMessage@@@Z
     ?GenRemoveAt@CMessageQueueBase@@UAEXVGenListPos@@@Z
     ?GenRemoveAll@CMessageQueueBase@@UAEXXZ
-    ?GetLockCount@CUnknown390@@QAEHXZ  # placed by shape
+    ?GetData@CLTCursorInst@@UAEPAXXZ  # placed by shape
     ?GenCopyList@CMessageQueueBase@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
     ?GenAppendList@LMessageList@@UAEIABV?$GenList@PAVLThreadMessage@@@@@Z
     ?GenFindElement@CMessageQueueBase@@UBEIABQAVLThreadMessage@@AAVGenListPos@@@Z
-    ?GenSetCacheSize@?$CMoArray@VCCollElem20A@@VNoCache@@@@UAEXK@Z  # placed by shape
+    ?NotifyInserted@CWTObjN48C@@UAEXPAV1@@Z  # placed by shape
 vtable ??_7CLTClientQ404@@6B@ 0x004c6530  # compiled with 2 slots
     ?StartHMessageWrite@CLTClientQ404@@UAEPAXXZ  # the compiled slot, kept over ?StartHMessageWrite@CLTClient@@QAEPAVILTMessage@@XZ placed there
     ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z
@@ -180,21 +180,21 @@ vtable ??_7CLTClientQ404@@6B@ 0x004c6530  # compiled with 2 slots
     ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ
     ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
     ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
-    ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z
-    ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z
-    ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z
-    ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z
-    ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
-    ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
-    ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
-    ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z
-    ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z
-    ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z  # ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z  # ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z  # ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z  # ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z  # ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z  # ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
-    ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z
-    ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
-    ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z  # ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?SetModelAnimation@CLTClient@@QAEXPAVLTObject@@K@Z
     ?GetModelAnimation@CLTClient@@QAEKPAVLTObject@@@Z
@@ -221,20 +221,20 @@ vtable ??_7CLTClientQ404@@6B@ 0x004c6530  # compiled with 2 slots
     ?GetFrameTime@CLTClient@@QAEMXZ
     ?RemoveObject@CLTClient@@QAEKPAVLTObject@@@Z
     ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
-    ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
-    ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
-    ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z
-    ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z
-    ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z
-    ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z  # ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z  # ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z  # ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z
     ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z
-    ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
-    ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
-    ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z
-    ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
-    ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z
-    ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z  # ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z  # ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z  # ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z  # ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z  # ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationAroundPoint@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z  # ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ??_GCLTClientQ404@@UAEPAXI@Z
     ?GetPointStatus@CLTClient@@QAEKPAV?$_CVector@M@@@Z
     ?GetPointShade@CLTClient@@QAEKPAV?$_CVector@M@@0@Z
@@ -437,22 +437,22 @@ vtable ??_7CMsgWriteQ18@@6B@ 0x004c7d50  # compiled with 1 slots
     ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
     ?ResetPos@LMessageImpl@@QAEKXZ
     ?GetStatus@LMessageImpl@@QAEKAAK@Z
-    ?_v34@CObjBase@@UAEIXZ  # placed by shape
+    ?WantsExtraLink@CWTObjN48C@@UAEIXZ  # placed by shape
 vtable ??_7CObjContainer@@6B@ 0x004c8068  # compiled with 14 slots
     ??_GCObjContainer@@UAEPAXI@Z  # the compiled slot, kept over ??_GCBankElem54@@UAEPAXI@Z placed there
-    ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z  # the compiled slot, kept over ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z placed there
-    ?_v08@CObjBase@@UAEXXZ  # the compiled slot, kept over ?sub_10024d41@CObjWorldModel@@QAEXXZ placed there
+    ?WantsTreeQ458@CObjWorldModelQ458@@QAEIPAVCWorldTreeQ458@@@Z  # the class's own, placed here, over the inherited ?_v04@CObjBase@@UAEIPAVCObjVisitor@@@Z
+    ?sub_10024d41@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v08@CObjBase@@UAEXXZ
     ?GetDims@CObjBase@@UAEXPAV?$_CVector@M@@0@Z
-    ?_v10@CObjBase@@UAEIXZ  # the compiled slot, kept over ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ placed there
-    ?_v14@CObjBase@@UAEPAXK@Z  # the compiled slot, kept over ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z placed there
-    ?_v18@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z placed there
-    ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
+    ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v10@CObjBase@@UAEIXZ
+    ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z  # the class's own, placed here, over the inherited ?_v14@CObjBase@@UAEPAXK@Z
+    ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z  # the class's own, placed here, over the inherited ?_v18@CObjBase@@UAEXPAX@Z
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z  # the class's own, placed here, over the inherited ?_v1c@CObjBase@@UAEXPAX@Z
     ?_v20@CObjContainer@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
     ?IsInWorld@CObjBase@@UAEIXZ
     ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
     ?_v2c@CObjBase@@UAEMXZ
-    ?_v30@CObjBase@@UAEIXZ  # the compiled slot, kept over ?HasOriginalBsp@CObjWorldModel@@QAEIXZ placed there
-    ?_v34@CObjBase@@UAEIXZ  # the compiled slot, kept over ?GetWorldFlag4@CObjWorldModel@@QAEKXZ placed there
+    ?HasOriginalBsp@CObjWorldModel@@QAEIXZ  # the class's own, placed here, over the inherited ?_v30@CObjBase@@UAEIXZ
+    ?GetWorldFlag4@CObjWorldModel@@QAEKXZ  # the class's own, placed here, over the inherited ?_v34@CObjBase@@UAEIXZ
     ?IsWorldIdle@CObjWorldModel@@QAEIXZ
 vtable ??_7CObjWorldModel@@6B@ 0x004c7e2c  # compiled with 14 slots
     ??_GCObjWorldModel@@UAEPAXI@Z  # the compiled slot, kept over ??_GCUnknownD9E4@@UAEPAXI@Z placed there
@@ -462,7 +462,7 @@ vtable ??_7CObjWorldModel@@6B@ 0x004c7e2c  # compiled with 14 slots
     ?ForwardToWorldBsp@CObjWorldModel@@QAEXXZ  # the class's own, placed here, over the inherited ?_v10@CObjBase@@UAEIXZ
     ?GetLink@CObjWorldModel@@QAEPAVLTLink@@K@Z  # the class's own, placed here, over the inherited ?_v14@CObjBase@@UAEPAXK@Z
     ?LinkIntoTree@CObjWorldModel@@QAEXPAVLTObject@@@Z  # the class's own, placed here, over the inherited ?_v18@CObjBase@@UAEXPAX@Z
-    ?_v1c@CObjBase@@UAEXPAX@Z  # the compiled slot, kept over ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z placed there
+    ?OnFoundInBoxQ458@CObjWorldModelQ458@@QAEXPAUWTFindInfoQ458@@@Z  # the class's own, placed here, over the inherited ?_v1c@CObjBase@@UAEXPAX@Z
     ?_v20@CObjWorldModel@@UAEXPAVCAttachMgrView@@PAUObjectCreateStruct@@@Z
     ?IsInWorld@CObjBase@@UAEIXZ
     ?GetTransform@CObjBase@@UAEXPAVLTMatrix@@@Z
@@ -493,7 +493,7 @@ vtable ??_7CPacketDataQG9@@6B@ 0x004c6b58  # compiled with 1 slots
     ?GenAppend@?$CMoArray@EVDefaultCache@@@@UAEIAAE@Z
     ?GenRemoveAt@?$CMoArray@EVDefaultCache@@@@UAEXVGenListPos@@@Z
     ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
-    ?GenGetSize@?$CMoArray@MVDefaultCache@@@@UBEKXZ
+    ?GenGetSize@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEKXZ
     ?GenCopyList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
     ?GenAppendList@?$CMoArray@EVDefaultCache@@@@UAEIABV?$GenList@E@@@Z
     ?GenFindElement@?$CMoArray@EVDefaultCache@@@@UBEIABEAAVGenListPos@@@Z
@@ -522,8 +522,8 @@ vtable ??_7CPhysicsLTQ404@@6B@ 0x004c67f0  # compiled with 2 slots
     ?MovePushObjects@CPhysicsLT@@QAEKPAVLTObject@@AAV?$_CVector@M@@PAPAV2@K@Z
     ?RotatePushObjects@CPhysicsLT@@QAEKPAVLTObject@@AAVLTRotation@@PAPAV2@K@Z
 vtable ??_7CSaveLoadMessage@@6B@ 0x004c7438  # compiled with 1 slots
-    ?_v10@CObjBase@@UAEIXZ  # placed by shape
-    ?_v10@CObjBase@@UAEIXZ  # placed by shape
+    ?_p4c@TCPDriver@@UAEIXZ  # placed by shape
+    ?_p4c@TCPDriver@@UAEIXZ  # placed by shape
     ?ReadByteFL@LMessageImpl@@QAEKAAE@Z
     ?ReadWordFL@LMessageImpl@@QAEKAAG@Z
     ?ReadFloatFL@LMessageImpl@@QAEKAAM@Z
@@ -556,9 +556,9 @@ vtable ??_7CSaveLoadMessage@@6B@ 0x004c7438  # compiled with 1 slots
     ?WriteHStringArgList@LMessageImpl@@QAEKHPAPAD@Z
     ?WriteStringAsHString@LMessageImpl@@QAEKPAD@Z
     ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
-    ?_v10@CObjBase@@UAEIXZ  # placed by shape
+    ?_p4c@TCPDriver@@UAEIXZ  # placed by shape
     ?GetNothing@CSaveIO@@QAEKPAK@Z
-    ?_v30@CObjBase@@UAEIXZ  # placed by shape
+    ?Flush@CRezFileDirectoryEmulation@@UAEHXZ  # the same code as what is placed there
 vtable ??_7CServerMessageQ18@@6B@ 0x004c7d3c  # compiled with 1 slots
     ??_GCServerMessageQ18@@UAEPAXI@Z  # the compiled slot, kept over ??_GServerMessageQG9@@UAEPAXI@Z placed there
     ?AddRef@CAbstractIO@@UAEXXZ  # placed by shape
@@ -642,7 +642,7 @@ vtable ??_7CSoundInstanceLocalL10@@6B@ 0x004c8940  # compiled with 1 slots
     ?Term@CSoundInstanceView@@UAEXXZ
     ?_v0c@CSoundInstanceView@@UAEKXZ  # near pairing only
     ?Update@CSndInstanceLocalJ@@UAEIK@Z  # near pairing only
-    ?GetLobbyLaunchInfo@TCPDriver@@UAEIPAPAX@Z  # placed by shape
+    ?MakeExtraLink@CWTObjN48C@@UAEPAVCWTLinkN48C@@K@Z  # placed by shape
     ?Stop@CSoundInstanceView@@UAEKH@Z
     ?_v1c@CSoundInstanceView@@UAEKH@Z
     ?Hold@CSoundInstanceView@@UAEKXZ
@@ -666,7 +666,7 @@ vtable ??_7CSoundInstanceLocalRef@@6B@ 0x004c8940  # compiled with 10 slots
     ?Term@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?Term@CSoundInstanceView@@UAEXXZ placed there
     ?_v0c@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?_v0c@CSoundInstanceView@@UAEKXZ placed there
     ?_v10@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?Update@CSndInstanceLocalJ@@UAEIK@Z placed there
-    ?_v14@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?GetLobbyLaunchInfo@TCPDriver@@UAEIPAPAX@Z placed there
+    ?_v14@CSoundInstanceLocalRef@@UAEXXZ  # the compiled slot, kept over ?MakeExtraLink@CWTObjN48C@@UAEPAVCWTLinkN48C@@K@Z placed there
     ?Stop@CSoundInstanceLocalRef@@UAEKH@Z  # the compiled slot, kept over ?Stop@CSoundInstanceView@@UAEKH@Z placed there
     ?_v1c@CSoundInstanceLocalRef@@UAEXH@Z  # the compiled slot, kept over ?_v1c@CSoundInstanceView@@UAEKH@Z placed there
     ?Hold@CSoundInstanceLocalRef@@UAEKXZ  # the compiled slot, kept over ?Hold@CSoundInstanceView@@UAEKXZ placed there
@@ -701,7 +701,7 @@ vtable ??_7CSoundInstanceView@@6B@ 0x004c86d0  # compiled with 23 slots; 6 _pure
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
     ?SetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@H@Z
     ?GetPosition@CSoundInstanceView@@UAEKPAV?$_CVector@M@@@Z
-    ?GetLobbyLaunchInfo@TCPDriver@@UAEIPAPAX@Z  # placed by shape
+    ?MakeExtraLink@CWTObjN48C@@UAEPAVCWTLinkN48C@@K@Z  # placed by shape
     ?SetFilter@CSoundInstanceView@@UAEKPBD@Z
     ?SetFilterParam@CSoundInstanceView@@UAEKPBDM@Z
     ?GetFilterParam@CSoundInstanceView@@UAEKPBDPAM@Z
@@ -713,24 +713,24 @@ vtable ??_7CTCPDriverBase@@6B@ 0x004c7370  # compiled with 27 slots; 19 _purecal
     __purecall
     __purecall
     __purecall
-    ?GenSetCacheSize@?$CMoArray@VCCollElem20A@@VNoCache@@@@UAEXK@Z  # placed by shape
+    ?NotifyInserted@CWTObjN48C@@UAEXPAV1@@Z  # placed by shape
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
     ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
-    ?_v30@CObjBase@@UAEIXZ  # placed by shape
+    ?Flush@CRezFileDirectoryEmulation@@UAEHXZ  # the same code as what is placed there
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
-    ?_v30@CObjBase@@UAEIXZ  # placed by shape
+    ?Flush@CRezFileDirectoryEmulation@@UAEHXZ  # the same code as what is placed there
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
     ?GetSessionName@CBaseDriverDefaultsView@@UAEIPADK@Z
-    ?_v10@CObjBase@@UAEIXZ  # placed by shape
-    ?GetLobbyLaunchInfo@TCPDriver@@UAEIPAPAX@Z  # placed by shape
+    ?_p4c@TCPDriver@@UAEIXZ  # placed by shape
+    ?MakeExtraLink@CWTObjN48C@@UAEPAVCWTLinkN48C@@K@Z  # placed by shape
     ?GetServiceList@CBaseDriverDefaultsView@@UAEIPAPAX@Z
-    ?_v10@CObjBase@@UAEIXZ  # placed by shape
-    ?GetTcpIpAddress@CBaseDriverDefaultsView@@UAEIPADKAAG@Z
-    ?GetLobbyLaunchInfo@TCPDriver@@UAEIPAPAX@Z  # placed by shape
+    ?_p4c@TCPDriver@@UAEIXZ  # placed by shape
+    ?GetTcpIpAddress@CBaseDriverDefaultsView@@UAEIPADKAAG@Z  # placed by shape
+    ?MakeExtraLink@CWTObjN48C@@UAEPAVCWTLinkN48C@@K@Z  # placed by shape
     ?SendTo@CBaseDriverDefaultsView@@UAEIPBXKPBDK@Z
     __purecall
     __purecall
@@ -761,7 +761,7 @@ vtable ??_7CWorldTable@@6B@ 0x004c6c9c  # compiled with 1 slots
     ?GenAppend@?$CMoArray@PAXVDefaultCache@@@@UAEIAAPAX@Z
     ?GenRemoveAt@?$CMoArray@PAXVDefaultCache@@@@UAEXVGenListPos@@@Z
     ?GenRemoveAll@?$CMoArray@VCWorldItem18@@VDefaultCache@@@@UAEXXZ
-    ?GenGetSize@?$CMoArray@MVDefaultCache@@@@UBEKXZ
+    ?GenGetSize@?$CMoArray@VTCPQueryResponseC4@@VDefaultCache@@@@UBEKXZ
     ?GenCopyList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
     ?GenAppendList@?$CMoArray@PAXVDefaultCache@@@@UAEIABV?$GenList@PAX@@@Z
     ?GenFindElement@?$CMoArray@PAXVDefaultCache@@@@UBEIABQAXAAVGenListPos@@@Z
@@ -794,8 +794,8 @@ vtable ??_7ClientLightAnimLTQ404@@6B@ 0x004c6708  # compiled with 1 slots
     ?GetLightAnimInfo@CLTLightAnimClient@@QAEKKAAVLAInfo@@@Z
     ?SetLightAnimInfo@CLTLightAnimClient@@QAEKKAAVLAInfo@@@Z
 vtable ??_7ClientModelLTQ404@@6B@ 0x004c6740  # compiled with 1 slots
-    ?GetNode@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
-    ?GetSocket@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
+    ?_v00@ClientModelLTQ404@@UAEXXZ  # the compiled slot, kept over ?GetNode@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z placed there
+    ?GetNode@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z  # ?GetSocket@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?GetPiece@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
     ?FindWeightSet@CommonModelLT@@UAEKPAVLTObject@@PADAAK@Z
     ?GetModelLighting@CommonModelLT@@UAEKPAVLTObject@@AAV?$_CVector@M@@@Z
@@ -848,21 +848,21 @@ vtable ??_7ILTCSBaseQ404@@6B@ 0x004c68a0  # compiled with 2 slots
     ?WriteToMessageFormattedHString@CLTServer@@QAAKPAVIMessageWrite@@PADZZ
     ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
     ?WriteToMessageObject@CLTServer@@QAEKPAVIMessageWrite@@PAVLTObject@@@Z
-    ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z
-    ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z
-    ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z
-    ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z
-    ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
-    ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
-    ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z
-    ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z
-    ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z
-    ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z
+    ?ReadFromMessageFloat@ILTCSBase@@UAEMPAVILTMessage@@@Z  # ?ReadFromMessageFloat@CLTServer@@QAEMPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageByte@ILTCSBase@@UAEEPAVILTMessage@@@Z  # ?ReadFromMessageByte@CLTServer@@QAEEPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageWord@ILTCSBase@@UAEGPAVILTMessage@@@Z  # ?ReadFromMessageWord@CLTServer@@QAEGPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageDWord@ILTCSBase@@UAEKPAVILTMessage@@@Z  # ?ReadFromMessageDWord@CLTServer@@QAEKPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompVector@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompVector@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageCompPosition@ILTCSBase@@UAEXPAVILTMessage@@PAV?$_CVector@M@@@Z  # ?ReadFromMessageCompPosition@CLTServer@@QAEXPAVIMessageRead@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageRotation@ILTCSBase@@UAEXPAVILTMessage@@PAVLTRotation@@@Z  # ?ReadFromMessageRotation@CLTServer@@QAEXPAVIMessageRead@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageObject@ILTCSBase@@UAEPAVLTObject@@PAVILTMessage@@@Z  # ?ReadFromMessageObject@CLTServer@@QAEPAVLTObject@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
-    ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z
-    ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z
+    ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
-    ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z
+    ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     __purecall
     __purecall
     __purecall
@@ -889,20 +889,20 @@ vtable ??_7ILTCSBaseQ404@@6B@ 0x004c68a0  # compiled with 2 slots
     __purecall
     __purecall
     ?GetRotationVectors@CLTServerMath@@QAEKPAVLTRotation@@PAV?$_CVector@M@@11@Z
-    ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z
-    ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z
-    ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z
-    ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z
-    ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z
-    ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z
+    ?GetRotationVectorsFromMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z  # ?GetRotationVectorsFromMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@11@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?RotateAroundAxis@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z  # ?RotateAroundAxis@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateX@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateX@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateY@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateY@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?EulerRotateZ@ILTCSBase@@UAEXPAVLTRotation@@M@Z  # ?EulerRotateZ@CLTServerMath@@QAEXPAVLTRotation@@M@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?AlignRotation@ILTCSBase@@UAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z  # ?AlignRotation@CLTServerMath@@QAEXPAVLTRotation@@PAV?$_CVector@M@@1@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?SetupEuler@CLTServerMath@@QAEKPAVLTRotation@@MMM@Z
     ?InterpolateRotation@CLTServerMath@@QAEKPAVLTRotation@@00M@Z
-    ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z
-    ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z
-    ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z
-    ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z
-    ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z
-    ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z
+    ?SetupTransformationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z  # ?SetupTransformationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z  # ?SetupTranslationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationMatrix@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@@Z  # ?SetupRotationMatrix@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupTranslationFromMatrix@ILTCSBase@@UAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z  # ?SetupTranslationFromMatrix@CLTServerMath@@QAEXPAV?$_CVector@M@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationFromMatrix@ILTCSBase@@UAEXPAVLTRotation@@PAVLTMatrix@@@Z  # ?SetupRotationFromMatrix@CLTServerMath@@QAEXPAVLTRotation@@PAVLTMatrix@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
+    ?SetupRotationAroundPoint@ILTCSBase@@UAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z  # ?SetupRotationAroundPoint@CLTServerMath@@QAEXPAVLTMatrix@@PAVLTRotation@@PAV?$_CVector@M@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ??_GILTCSBaseQ404@@UAEPAXI@Z  # ??_GCConsoleNameList@@UAEPAXI@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     __purecall
     __purecall
@@ -1030,7 +1030,7 @@ vtable ??_7LMessageImpl@@6B@ 0x004c7d50  # compiled with 1 slots
     ?WriteObject@LMessageImpl@@QAEKPAVLTObject@@@Z
     ?ResetPos@LMessageImpl@@QAEKXZ
     ?GetStatus@LMessageImpl@@QAEKAAK@Z
-    ?_v34@CObjBase@@UAEIXZ  # placed by shape
+    ?WantsExtraLink@CWTObjN48C@@UAEIXZ  # placed by shape
 vtable ??_7LVideoMgrQ404@@6B@ 0x004c67d4  # compiled with 1 slots
     ?_v00@LVideoMgrQ404@@UAEXXZ  # the compiled slot, kept over ?StartOnScreenVideo@LVideoMgrV@@UAEHPADKAAPAVVideoInstV@@@Z placed there
     ?StartTextureVideo@LVideoMgrV@@UAEHPADKAAPAVVideoInstV@@@Z

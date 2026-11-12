@@ -80,6 +80,13 @@ struct ViewParams
 	LTMatrix	m_mFullTransform;                       // +0x19c
 	uint8		m_pad_1dc[0x4c0 - 0x1dc];
 	LTVector	m_SkyViewPos;                           // +0x4c0
+	// The rest of the view, to its full 0x4f8 (src/engine/d3d/link/
+	// phviews.txt's g_ViewParams region): g_SkyContext below is one, and
+	// d3d_InitSceneContext fills it whole (`andl $0,0x4d4(%ebx)`, AvP2
+	// 0x1000f73a, and the frustum after it). Declared 0x4cc long it ran
+	// into g_CV_AllSkyPortals, the global after it, and the renderer's next
+	// d3d_ReadConsoleVariables read that variable through a float.
+	uint8		m_pad_4cc[0x4f8 - 0x4cc];
 };
 
 // The view rectangle the sky is projected into (TU10's 0x10010383).

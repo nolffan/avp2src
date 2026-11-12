@@ -197,25 +197,6 @@ def main():
     def dsym(v):
         i = bisect.bisect_right(dstarts, v) - 1
         return dsyms[i] if i >= 0 else (None, None)
-    votes = collections.defaultdict(collections.Counter)
-    for (lb, sa), n in progress.PLACED_SYMS.items():
-        if lb != label or n.split(":", 1)[1] not in s2a:
-            continue
-        a, e = body(s2a[n.split(":", 1)[1]])
-        for q in range(a, e - 3):
-            v = our_img.dword(q)
-            if isdata(our_img, v):
-                sv = ship_img.dword(sa + q - a)
-                if isdata(ship_img, sv):
-                    da, dn = dsym(v)
-                    if dn:
-                        votes[dn][sv - (v - da)] += 1
-    dbase = {dn: c.most_common(1)[0][0] for dn, c in votes.items()}
-
-    def refs(a):
-        a, e = body(a)
-        return [(q - a, v) for q in range(a, e - 3) for v in [our_img.dword(q)] if isdata(our_img, v)]
-
     sym2ship = collections.defaultdict(set)
     for st_, names in ship2sym.items():
         for r_, n_ in names:
@@ -233,18 +214,43 @@ def main():
                     out_.append((q - a, (q + 5 + rel - (1 << 32 if rel & 0x80000000 else 0)) & 0xFFFFFFFF))
         return out_
 
-    def fits(n, st):
-        """None: nothing to tell by; else whether every data operand of ours
-        with a known shipped base, and every call of ours to a function the
-        scoreboard places, reads back the same in the shipped body (a
-        deleting destructor's twins differ only in the destructor called)"""
+    def refs(a):
+        a, e = body(a)
+        return [(q - a, v) for q in range(a, e - 3) for v in [our_img.dword(q)] if isdata(our_img, v)]
+
+    def masked(a):
+        a, e = body(a)
+        b = bytearray(e - a)
+        for i in range(e - a):
+            b[i] = (our_img.dword(a + i) or 0) & 0xFF
+        for off, _v in refs(a):
+            b[off:off + 4] = b"\0\0\0\0"
+        for off, _t in calls(a):
+            b[off + 1:off + 5] = b"\0\0\0\0"
+        return bytes(b)
+
+    def same_shape(a1, a2):
+        """the bodies at a1 and a2 agree outside what either one's mask
+        hides (a data-looking dword inside a jump displacement or a call's
+        neighbour is masked in one body and not the other: AvP2 server.dll's
+        ThreadLoadFile and UnloadFile)"""
+        (r1, e1), (r2, e2) = body(a1), body(a2)
+        if e1 - r1 != e2 - r2:
+            return False
+        hide = set()
+        for a_ in (a1, a2):
+            for off, _v in refs(a_):
+                hide.update(range(off, off + 4))
+            for off, _t in calls(a_):
+                hide.update(range(off + 1, off + 5))
+        return all(i in hide or (our_img.dword(r1 + i) or 0) & 0xFF == (our_img.dword(r2 + i) or 0) & 0xFF
+                   for i in range(e1 - r1))
+
+    def calls_fit(n, st):
+        """None: no call of ours to tell by; else whether every call of
+        ours to a function the scoreboard places reaches that function's
+        shipped address from the shipped body at st"""
         told = None
-        for off, v in refs(s2a[n]):
-            da, dn = dsym(v)
-            if dn in dbase:
-                told = True
-                if ship_img.dword(st + off) != dbase[dn] + (v - da):
-                    return False
         for off, t in calls(s2a[n]):
             if (ship_img.dword(st + off) or 0) & 0xFF != 0xE8:
                 continue
@@ -275,30 +281,57 @@ def main():
                 there = {s2a.get(n_) for r_, n_ in ship2sym.get(got, ()) if r_ == 0} - {None}
                 if there:
                     told = True
-                    if t not in there:
+                    # (unless that function is ours called through another
+                    # view, the same body: server.dll's OnFoundInBox builds
+                    # its query with CObjWorldQueryQ458's constructor, and
+                    # CObjWorldQuery's is placed there)
+                    if t not in there and not any(same_shape(t, x) for x in there):
                         return False
         return told
 
-    def masked(a):
-        a, e = body(a)
-        b = bytearray(e - a)
-        for i in range(e - a):
-            b[i] = (our_img.dword(a + i) or 0) & 0xFF
-        for off, _v in refs(a):
-            b[off:off + 4] = b"\0\0\0\0"
-        for off, _t in calls(a):
-            b[off + 1:off + 5] = b"\0\0\0\0"
-        return bytes(b)
+    votes = collections.defaultdict(collections.Counter)
+    for (lb, sa), n in progress.PLACED_SYMS.items():
+        if lb != label or n.split(":", 1)[1] not in s2a:
+            continue
+        if calls_fit(n.split(":", 1)[1], sa) is False:
+            # (a placement its own calls refute -- AvP2's GetNode placed
+            # at the shipped GetSocket, the same masked bytes calling
+            # FindSocket -- casts no votes: the strings it reaches would
+            # read back as its twin's and vouch for the swap)
+            continue
+        a, e = body(s2a[n.split(":", 1)[1]])
+        for q in range(a, e - 3):
+            v = our_img.dword(q)
+            if isdata(our_img, v):
+                sv = ship_img.dword(sa + q - a)
+                if isdata(ship_img, sv):
+                    da, dn = dsym(v)
+                    if dn:
+                        votes[dn][sv - (v - da)] += 1
+    dbase = {dn: c.most_common(1)[0][0] for dn, c in votes.items()}
+
+    def fits(n, st):
+        """None: nothing to tell by; else whether every data operand of ours
+        with a known shipped base, and every call of ours to a function the
+        scoreboard places, reads back the same in the shipped body (a
+        deleting destructor's twins differ only in the destructor called)"""
+        told = None
+        for off, v in refs(s2a[n]):
+            da, dn = dsym(v)
+            if dn in dbase:
+                told = True
+                if ship_img.dword(st + off) != dbase[dn] + (v - da):
+                    return False
+        c = calls_fit(n, st)
+        return told if c is None else c
 
     def twin_fix(n, st):
         if n not in s2a or fits(n, st) is not False:
             return n, None
-        mine = masked(s2a[n])
         for a, ns in a2s.items():
             if a == s2a[n] or not any(x in defined for x in ns):
                 continue
-            b = body(a)
-            if b[1] - b[0] != len(mine) or masked(a) != mine:
+            if not same_shape(a, s2a[n]):
                 continue
             # (a ??_E is a weak external of the object that compiled it:
             # name its ??_G)
@@ -317,19 +350,46 @@ def main():
         m = re.match(r"\?[^@?]+@([^@?]+)@@", n)
         return m.group(1) if m else None
 
+    # The source's own class hierarchy (`class D : public B`), for a table
+    # whose class inherits another's overrides: a container is a world
+    # model, and its shipped table holds CObjWorldModel's functions where
+    # our compiled one has CObjBase's stubs.
+    bases = {}
+    for root, _dirs, files in os.walk(os.path.join(REPO, "src", "engine")):
+        for f in files:
+            if f.endswith((".h", ".cpp")):
+                for m in re.finditer(r"^\s*class\s+(\w+)\s*:\s*public\s+(\w+)",
+                                     open(os.path.join(root, f), errors="replace").read(), re.M):
+                    bases.setdefault(m.group(1), m.group(2))
+
+    def chain(c):
+        out_ = [c]
+        while out_[-1] in bases and bases[out_[-1]] not in out_:
+            out_.append(bases[out_[-1]])
+        return out_
+
     def own_override(table, c, n, st):
         """the compiled slot c is a base class's (not the table's class's)
-        member, and n, placed identically at the shipped target and not
-        refuted by its operands, is a member of the table's class or of a
-        view of it (its name extending the class's: CObjWorldModelQ458)"""
+        member, and n, placed at the shipped target (identically, or as its
+        near pairing: CObjWorldModel's OnFoundInBox, the slot the world
+        tree's box and frustum walks call on every world model) and not
+        refuted by its operands, is a member of the table's class, or of a
+        class between it and c's (CObjContainer's CObjWorldModel), or of a
+        view of one (its name extending the class's: CObjWorldModelQ458)"""
         tc = cls(table)
         cc, nc = cls(c), cls(n)
+        if not (tc and cc and nc) or cc == tc or cc.startswith(tc):
+            return False
+        ch = chain(tc)
+        own = [i for i, b in enumerate(ch) if nc.startswith(b)]
+        base = [i for i, b in enumerate(ch) if cc.startswith(b)]
+        if not own or (base and base[0] <= own[0]):
+            return False
         # (a base's member with the placed one's very bytes -- CLTServer's
         # ILTCSBase message writers -- runs the same code: kept)
-        return (tc and cc and nc and cc != tc and not cc.startswith(tc) and
-                nc.startswith(tc) and rank_of(st, n) == 0 and
+        return (rank_of(st, n) in (0, 2) and
                 fits(n, st) is not False and c in s2a and n in s2a and
-                masked(s2a[c]) != masked(s2a[n]))
+                not same_shape(s2a[c], s2a[n]))
 
     out = ["# %s: full-length tables for the stand-in classes (build/vtables/mkvtables.py;" % label,
            "# tools/mkvtabobj.py makes them an object linked ahead of ours). One slot",

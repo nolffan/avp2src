@@ -687,13 +687,10 @@ public:
 	// its class is separate, so this spelling does not reach server.dll.)
 	SavObjDataQ430()
 	{
-#ifdef PRIMAL_HUNT
-		memset(&m_hFiles[1], 0, 8);
-#else
 		// AVP2: the four skins (0x00439f77..0x00439f80; its server.dll's
-		// constructor, 0x10014989, stores four dwords from +0x34 too).
+		// constructor, 0x10014989, stores four dwords from +0x34 too;
+		// Primal Hunt 0x0043dafb..0x0043db1f, the same four).
 		memset(&m_hFiles[1], 0, 16);
-#endif
 	}
 
 	LTLink      m_Links;                     // 0x00
@@ -706,15 +703,12 @@ public:
 	class CClassInfo* m_pClass;              // 0x24
 	void*       m_Unknown28;                 // 0x28
 	CMessageRef m_SaveData;                  // 0x2c
-#ifdef PRIMAL_HUNT
-	void*       m_hFiles[3];                 // 0x30
-#else
 	void*       m_hFiles[1 + 4];             // 0x30  the model and four skins
-#endif
 	// AVP2: ltobject_internal.h's SObjData -- +8 from the state link on
-	// (PH +0xc): the change flags at 0x58 (PH 0x5c), the net flags 0x5a (PH 0x5e).
+	// (PH +0xc, past its extra file at +0x44): the change flags at 0x58
+	// (PH 0x5c), the net flags 0x5a (PH 0x5e).
 #ifdef PRIMAL_HUNT
-	uint8       m_pad_3c[0x5c - 0x3c];
+	uint8       m_pad_44[0x5c - 0x44];
 #else
 	uint8       m_pad_44[0x58 - 0x44];
 #endif
@@ -857,10 +851,6 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	uint32         nEnd;
 	uint32         nStart;
 	uint32         nChangeFlags;
-#ifdef PRIMAL_HUNT
-	uint32         nAnim;
-	uint32         nAnimTime;
-#endif
 	uint32         nClientFlags;
 	uint16         nDataLen;
 	uint16         nSkyIndex;
@@ -950,18 +940,15 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		pStream->Read(&createStruct.m_ContainerCode, 2);
 
 	pStream->Read(&sData.m_NextUpdate, 4);
-#ifndef PRIMAL_HUNT
-	// AVP2 1.0.9.6: the deactivation time and the update timer follow it
-	// (0x0043a392, 0x0043a3a0), and the first goes into the create struct
-	// beside the next update (0x0043a3c3).
+	// AVP2: the deactivation time and the update timer follow it (AvP2
+	// 1.0.9.6 0x0043a392, 0x0043a3a0; Primal Hunt 0x0043df8b, 0x0043df9a:
+	// both engines read what both saves write), and the first goes into
+	// the create struct beside the next update (0x0043a3c3; PH 0x0043dfaa).
 	pStream->Read(&sData.m_DeactivationTime, 4);
 	pStream->Read(&sData.m_UpdateTimer, 4);
-#endif
 
 	createStruct.m_NextUpdate = sData.m_NextUpdate;
-#ifndef PRIMAL_HUNT
 	createStruct.m_fDeactivationTime = sData.m_DeactivationTime;
-#endif
 
 	// EXPANDED, NOT CALLED, in lithtech.exe: 0x00432b7f-0x00432bc4 carries
 	// sm_AllocateObject's whole body -- hence the file-local inline copy.
@@ -992,12 +979,10 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 	if (pNewObject->m_ObjectType == OT_LIGHT)
 		pNewObject->m_LightRadius = fLightRadius;
 
-#ifndef PRIMAL_HUNT
-	// AVP2 1.0.9.6 (0x0043a496..0x0043a4ae): the saved timer comes back only
-	// when the object kept the saved deactivation time.
+	// AVP2 (0x0043a496..0x0043a4ae; PH 0x0043e0a8): the saved timer comes
+	// back only when the object kept the saved deactivation time.
 	if (pNewObject->m_pSData->m_DeactivationTime == sData.m_DeactivationTime)
 		pNewObject->m_pSData->m_UpdateTimer = sData.m_UpdateTimer;
-#endif
 
 	pStream->Read(&pNewObject->m_BlockingPriority, 1);
 	pStream->Read(&bHasSaveData, 1);
@@ -1013,12 +998,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 		SAV_SAVEDATA(pNewObject).Init(msg_AllocPacket(0x44c, 0x44c));
 
-#ifdef PRIMAL_HUNT
-		SAV_SAVEDATA(pNewObject).m_pMsg->Init(nDataLen, 0x1000);
-#else
-		// AVP2 1.0.9.6 grows it by the packet size (0x0043a593, 0x0043a5ae).
+		// AVP2: grown by the packet size (0x0043a593, 0x0043a5ae; PH
+		// 0x0043e1b2, 0x0043e1cd).
 		SAV_SAVEDATA(pNewObject).m_pMsg->Init(nDataLen, 0x44c);
-#endif
 
 		SAV_SAVEDATA(pNewObject).m_pMsg->m_Unknown34 = nDataLen;
 
@@ -1036,10 +1018,8 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 	pStream->Read(&pNewObject->m_Velocity, 0x0c);
 	pStream->Read(&pNewObject->m_Acceleration, 0x0c);
-#ifndef PRIMAL_HUNT
-	// AVP2: the byte before the friction (0x0043a6c3).
+	// AVP2: the byte before the friction (0x0043a6c3; PH 0x0043e303).
 	pStream->Read(&pNewObject->m_Unknowndc, 1);
-#endif
 	pStream->Read(&pNewObject->m_FrictionCoefficient, 4);
 	pStream->Read(&pNewObject->m_Mass, 4);
 	pStream->Read(&pNewObject->m_ForceIgnoreLimitSqr, 4);
@@ -1063,22 +1043,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		}
 	}
 
-#ifdef PRIMAL_HUNT
-	// (AvP2 1.0.9.6 restores a model's tracker in sm_RestoreNextObject
-	// instead, and has none of this here.)
-	if (pNewObject->m_ObjectType == OT_MODEL)
-	{
-		SavModelObjQ430* pModel = (SavModelObjQ430*)pNewObject;
-
-		pStream->Read(&nAnim, 4);
-		pStream->Read(&nAnimTime, 4);
-
-		at_SetAnim((LTAnimTracker*)pModel->m_Tracker, nAnim, LTFALSE);
-		at_SetTime((LTAnimTracker*)pModel->m_Tracker, nAnimTime, LTFALSE);
-
-		pStream->Read(&pModel->m_n1d8, 2);
-	}
-#endif
+	// (NOLF's restore read a model's animation, its time and a word here;
+	// both AvP2 engines restore the model's tracker in sm_RestoreNextObject
+	// instead -- Primal Hunt 0x0043e7b3 -- and read nothing here.)
 
 	// savrest.cpp's sav_InitMoveState: an inline helper, not six stores.
 	sav_InitMoveState(&moveState, &pMgr->m_Unknown210, pMgr->m_pUnknown6a8,
@@ -1090,12 +1057,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 
 	pNewObject->m_ChangeFlags = nChangeFlags;
 
-#ifdef PRIMAL_HUNT
-	sm_MoveObject((IWorldSim*)pMgr, pNewObject, &createStruct.m_Pos, 0x0a);
-#else
-	// AVP2 1.0.9.6 pushes 0x22 (0x0043a880; its server.dll 0x1001480c too).
+	// AVP2 pushes 0x22 (0x0043a880, its server.dll 0x1001480c; Primal
+	// Hunt 0x0043e4c2).
 	sm_MoveObject((IWorldSim*)pMgr, pNewObject, &createStruct.m_Pos, 0x22);
-#endif
 
 	if (nChangeFlags & SAVCHANGE_SKYOBJECT)
 	{
@@ -1104,10 +1068,9 @@ LTRESULT sav_RestoreObject(CServerMgr* pMgr, ILTStream* pStream,
 		sm_MarkSkyChanged(g_pServerMgr);
 	}
 
-#ifndef PRIMAL_HUNT
+	// (Primal Hunt too: 0x0043e50d, sm_SetObjectChangeFlag expanded.)
 	if (nChangeFlags & SAVCHANGE_RESEND)
 		sm_SetObjectChangeFlag(pMgr, pNewObject, 0x100);
-#endif
 
 	pStream->Read(&bHasClient, 1);
 
