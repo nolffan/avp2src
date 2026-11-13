@@ -18,6 +18,9 @@
 #include "PlayerStats.h"
 #include "SFXMgr.h"
 #include "BodyPropFX.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m1_widescreen.h"	// M-1: the target box's angle
+#endif
 
 const LTFLOAT g_cvarSADARLockTime = 2.0f;
 const LTFLOAT g_cvarPounceDeadZone = 1.0f;
@@ -1237,8 +1240,12 @@ void CAutoTargetMgr::UpdateMarineSmartgun()
 											
 											g_pClientDE->GetSurfaceDims(hScreen, &nScreenWidth, &nScreenHeight);
 											
+#ifdef AVP2SRC_MODERN
+											if( M1_InTargetBox(ptTemp.x, ptTemp.y, nScreenWidth, nScreenHeight) )	// M-1: retail's angle on a wide screen
+#else
 											if( ptTemp.x > nScreenWidth*0.3 && ptTemp.x < nScreenWidth*0.7
 												&& ptTemp.y > nScreenHeight*0.3 && ptTemp.y < nScreenHeight*0.7)
+#endif
 											{
 												fMinRange = fMagSq;
 												hTarget = hCharacter;
@@ -1417,8 +1424,12 @@ void CAutoTargetMgr::UpdateMarineSADAR()
 								nHalfWidth = (LTFLOAT)(nScreenWidth>>1);
 								nHalfHeight = (LTFLOAT)(nScreenHeight>>1);
 
+#ifdef AVP2SRC_MODERN
+								if( M1_InTargetBox(ptTemp.x, ptTemp.y, nScreenWidth, nScreenHeight) )	// M-1: retail's angle on a wide screen
+#else
 								if( ptTemp.x > nScreenWidth*0.3 && ptTemp.x < nScreenWidth*0.7
 									&& ptTemp.y > nScreenHeight*0.3 && ptTemp.y < nScreenHeight*0.7)
+#endif
 								{
 									LTFLOAT fX = (LTFLOAT)(ptTemp.x - nHalfWidth);
 									LTFLOAT fY = (LTFLOAT)(ptTemp.y - nHalfHeight);

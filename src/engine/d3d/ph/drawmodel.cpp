@@ -41,6 +41,10 @@
 #include <d3d.h>
 #include "../../LT2/lithshared/stdlith/dynarray.h"
 #include <math.h>
+#ifdef AVP2SRC_MODERN
+#include "../../modern/engine/m1_horplus.h"         // M-1
+extern uint32 g_ScreenWidth, g_ScreenHeight;        // common_stuff.cpp
+#endif
 
 
 // A console variable (common_stuff.cpp's registrar, 0x10011f36).
@@ -1647,6 +1651,30 @@ void CD3DModelDraw::DrawModel(ModelInstance* pInstance)
 			fFovY = MATH_DEGREES_TO_RADIANS(g_CV_ExtraFOVYOffset.m_fValue) + m_pModel->m_fFovY + g_ViewParams.m_yFov;
 		}
 		fFovY = LTCLAMP(fFovY, MIN_MODEL_FOV, MAX_MODEL_FOV);
+
+#ifdef AVP2SRC_MODERN
+		// M-1: the scene's horizontal field of view is the camera's widened
+		// to the screen (Hor+, the engine's cm_RenderCamera), and the game
+		// sets these models' offsets (ExtraFOVXOffset, WeaponModel.cpp)
+		// against the camera's own, so the model's field of view is worked
+		// out at 4:3 as retail does and widened the same way: the weapon
+		// keeps its 4:3 shape and size whatever the screen.
+		{
+			float fWide = M1_WideFactor(g_ScreenWidth, g_ScreenHeight);
+
+			if (fWide != 1.0f)
+			{
+				float fViewFovX43 = 2.0f * (float)atan(tan(g_ViewParams.m_xFov * 0.5f) / fWide);
+
+				if (g_CV_ModelFovTest.m_nValue)
+					fFovX = (g_CV_ExtraFOVXOffset.m_fValue + m_pModel->m_fFovX) * fViewFovX43;
+				else
+					fFovX = MATH_DEGREES_TO_RADIANS(g_CV_ExtraFOVXOffset.m_fValue) + m_pModel->m_fFovX + fViewFovX43;
+				fFovX = LTCLAMP(fFovX, MIN_MODEL_FOV, MAX_MODEL_FOV);
+				fFovX = M1_HorPlusFovX(fFovX, fWide);
+			}
+		}
+#endif
 
 		mFov.Init(
 			(float)tan(fFovX * 0.5f), 0.0f, 0.0f, 0.0f,

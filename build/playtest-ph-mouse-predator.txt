@@ -1,0 +1,65 @@
+# The modern build's mouse look (docs/MODERN.md, M-6), Primal Hunt: the menus
+# with the cursor to the first Predator mission, then the mouse moved by
+# known amounts (xdotool's relative motion, which reaches the game as
+# WM_INPUT under Wine) -- 200 counts right, 200 left, 100 down, 100 up,
+# each in 10 moves 30 ms apart, then the same in 40 moves
+# (make test TEST_GAME=out/avp2-modern-release TEST_WHICH=ph
+# TEST_SCRIPT=build/playtest-ph-mouse-predator.txt; PLAYTEST_CFG sets the frame
+# rate limit, OldMouseLook). AvP2's: build/playtest-avp2-mouse.txt.
+window 120
+wait 20
+shot menu
+mclick 128 175
+wait 3
+mclick 85 290
+wait 3
+shot predator
+mclick 497 434
+wait 60
+shot loaded
+# the intro cinematic and its lines skipped (Space; in play, a jump)
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+wait 2
+shot started
+turn 200 0 10
+wait 1.5
+turn -200 0 10
+wait 1.5
+turn 0 100 10
+wait 1.5
+turn 0 -100 10
+wait 1.5
+shot turned
+turn 200 0 40
+wait 1.5
+turn -200 0 40
+wait 1.5
+turn 0 100 40
+wait 1.5
+turn 0 -100 40
+wait 1.5
+shot turned-fine
+# the mask's zoom (Page Up, Zoom In; Page Down back out): the look slows
+key Prior
+wait 2
+shot zoomed
+turn 200 0 10
+wait 1.5
+turn -200 0 10
+wait 1.5
+key Next
+wait 2
+key Escape
+wait 2
+shot escape

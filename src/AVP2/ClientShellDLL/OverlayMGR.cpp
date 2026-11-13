@@ -26,6 +26,10 @@
 #include "GameClientShell.h"
 #endif
 
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m1_widescreen.h"	// M-1: the screen's shape
+#endif
+
 #pragma warning (disable : 4503)
 #include <deque>
 
@@ -238,6 +242,14 @@ LTBOOL OverlayMGR::GetRailMode()
 {
 	return m_pData->m_bRailMode;
 }
+#ifdef AVP2SRC_MODERN
+// M-1: a scope's overlay is shown (first person): what is beside its 4:3
+// area on a wide screen is blacked out (InterfaceMgr.cpp)
+LTBOOL OverlayMGR::M1_ScopeShown()
+{
+	return !m_bHidden && m_pData->m_bRailMode;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // This is called when we want the predator zoom mode changed
@@ -772,6 +784,15 @@ void UpdateScale(OverlayData* data)
 
 		scale.x = cameraX / pOverlay->fSize;
 		scale.y = cameraY / pOverlay->fSize;
+#ifdef AVP2SRC_MODERN
+		// M-1: the camera's view is widened to a wide screen (Hor+), so an
+		// overlay sized to it covers the whole screen, stretched with it as
+		// retail's is to 4:3; the rail gun's scope keeps its 4:3 shape, in
+		// the middle (the Predator's zoom overlay, shown only while the zoom
+		// changes, is a full-screen effect like the others)
+		if (pOverlay->eType == Overlay::Type::RAIL)
+			scale.x /= M1_ScreenWideFactor();
+#endif
 
 		g_pLTClient->SetObjectScale(pOverlay->hObj, &scale);
 	}

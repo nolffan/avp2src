@@ -1,0 +1,82 @@
+# The modern build's mouse options and the menus' cursor (docs/MODERN.md,
+# M-6), either game (make test TEST_GAME=out/avp2-modern-release
+# TEST_SCRIPT=build/playtest-mouse-menus.txt): Options, Controls, Mouse
+# with the cursor; Legacy mouse look turned on; the first Marine
+# (Corporate) mission, where the mouse turns the view the retail way; the
+# pause menu with the cursor, back to the Mouse page, Legacy mouse look
+# off; and in play again the raw look. The clicks are the menus' places on
+# the 640x480 page.
+window 120
+wait 20
+mclick 60 340
+wait 3
+mclick 90 178
+wait 3
+mclick 260 80
+wait 3
+shot mouse
+mmove 180 209
+wait 1
+shot legacy-help
+mclick 180 209
+wait 1
+shot legacy-on
+mmove 180 234
+wait 1
+shot smoothing-help
+mclick 45 452
+wait 2
+mclick 45 452
+wait 2
+shot main
+mclick 128 175
+wait 3
+mclick 85 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 6
+shot started
+# the legacy look: 200 counts right, then back
+turn 200 0 10
+wait 1.5
+turn -200 0 10
+wait 1.5
+shot legacy-turned
+# the pause menu, Options, Controls, Mouse: Legacy mouse look off
+key Escape
+wait 2
+shot pause
+mclick 90 284
+wait 3
+mclick 90 178
+wait 3
+mclick 260 80
+wait 3
+mclick 180 209
+wait 1
+shot legacy-off
+mclick 45 452
+wait 2
+mclick 45 452
+wait 2
+mclick 60 452
+wait 3
+shot resumed
+# the raw look: 200 counts right, then back
+turn 200 0 10
+wait 1.5
+turn -200 0 10
+wait 1.5
+shot raw-turned

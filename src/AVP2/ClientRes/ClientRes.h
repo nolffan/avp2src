@@ -3326,6 +3326,18 @@
 #define IDS_M7_MOVEDEADZONE             31106
 #define IDS_HELP_M7_MOVEDEADZONE        31107
 #define IDS_HELP_M7_RESTORE             31108
+// M-1..M-3, widescreen (Display)
+#define IDS_M3_FOV                      31200
+#define IDS_HELP_M3_FOV                 31201
+#define IDS_M3_FOV_DEGREES              31202
+#define IDS_M2_CINEMATICS               31203
+#define IDS_HELP_M2_CINEMATICS          31204
+#define IDS_M2_CINEMATICS_WIDE          31205
+#define IDS_M2_CINEMATICS_4X3           31206
+// M-6, raw mouse input
+#define IDS_M6_LEGACYLOOK               31600
+#define IDS_HELP_M6_LEGACYLOOK          31601
+#define IDS_HELP_M6_SMOOTHING           31602
 #endif
 // Next default values for new objects
 // 

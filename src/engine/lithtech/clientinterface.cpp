@@ -29,6 +29,9 @@
 #include "commonmodel.h"
 #include "de_error.h"
 #include "iclientshell.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\engine\m1_horplus.h"     // M-1
+#endif
 
 
 // clientrender.cpp's renderer table (0x004b4358), through clientmgr.h's view.
@@ -1412,7 +1415,13 @@ LTRESULT ci_Get3DCameraPt(HLOCALOBJ hCamera, int sx, int sy, LTVector* pOut)
 		halfH = (float)((bottom - top) >> 1);
 
 		xRatio = ((float)sx - ((float)left + halfW)) / halfW;
+#ifdef AVP2SRC_MODERN
+		// M-1: the field of view the camera is drawn with (cm_RenderCamera)
+		xRatio = xRatio / (1.0f / (1.0f / (float)tan(MATH_HALFPI -
+			M1_HorPlusFovX(pCamera->m_fFovX, M1_WideFactor(g_RenderStruct.m_Width, g_RenderStruct.m_Height)) * 0.5f)));
+#else
 		xRatio = xRatio / (1.0f / (1.0f / (float)tan(MATH_HALFPI - pCamera->m_fFovX * 0.5f)));
+#endif
 
 		yRatio = ((float)sy - ((float)top + halfH)) / halfH;
 		yRatio = -(yRatio / (1.0f / (1.0f / (float)tan(MATH_HALFPI - pCamera->m_fFovY * 0.5f))));

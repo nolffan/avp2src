@@ -64,6 +64,7 @@
 
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\engine\p1_frametime.h"   // M-11
+#include "..\..\modern\engine\m1_horplus.h"     // M-1
 #endif
 
 
@@ -2452,7 +2453,12 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 
 			VecCopyQ5(sceneDesc.m_Pos, pCamera->m_Pos);
 			sceneDesc.m_Rotation = pCamera->m_Rotation;
+#ifdef AVP2SRC_MODERN
+			// M-1: the 4:3 field of view widened to the screen (Hor+)
+			sceneDesc.m_xFov = M1_HorPlusFovX(pCamera->m_xFov, M1_WideFactor(nScreenWidth, nScreenHeight));
+#else
 			sceneDesc.m_xFov = pCamera->m_xFov;
+#endif
 			sceneDesc.m_yFov = pCamera->m_yFov;
 
 			if (pCamera->m_bFullScreen)
@@ -3853,12 +3859,11 @@ void r_GetRequestedMode(RMode* pMode)
 		strncpy(pMode->m_RenderDLL, pVar->m_pStringVal, sizeof(pMode->m_RenderDLL) - 1);
 	else
 		strcpy(pMode->m_RenderDLL, "d3d.ren");
-#ifdef AVP2SRC_MODERN
-	// The modern build ships d3d9.ren as its default and our d3d.ren as
-	// d3d7.ren: a config naming d3d.ren gets the default.
-	if (!_stricmp(pMode->m_RenderDLL, "d3d.ren"))
-		strcpy(pMode->m_RenderDLL, "d3d9.ren");
-#endif
+	// (nolfsrc's modern engine asks for its d3d9.ren here in place of
+	// d3d.ren. AvP2's modern build has no d3d9.ren, and with that block the
+	// engine's own mode failed to come up, the game's fallback to 640x480x16
+	// with it, and every modern game ran in the last fallback, 640x480x16
+	// with d3d.ren, whatever the mode asked for: dropped, M-1.)
 
 	pVar = con_FindVarQ40F(&g_ClientConsoleStateRef, "carddesc");
 	if (pVar && pVar->m_pStringVal)

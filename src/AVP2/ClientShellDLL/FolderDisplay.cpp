@@ -12,6 +12,7 @@
 #include "PerformanceMgr.h"
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m10_timing.h"	// M-13: the frame-rate limit
+#include "..\..\modern\cshell\m1_widescreen.h"	// M-2, M-3: the cinematics, the field of view
 #endif
 extern CGameClientShell* g_pGameClientShell;
 
@@ -34,6 +35,13 @@ namespace
 	// the one it was when the folder opened
 	int nM13Framerate = 0;
 	int nM13InitFramerate = 0;
+	// M-3: the field of view's choice (g_nM3FovChoices), M-2: the
+	// cinematics' (0 wide, 1 4:3), and what they were when the folder opened
+	int nM3Fov = 0;
+	int nM3InitFov = 0;
+	int nM2Cinematics = 0;
+	int nM1Lines = 0;		// the page's lines for them: Custom performance moves down as much
+	int nM2InitCinematics = 0;
 #endif
 
 }
@@ -144,6 +152,25 @@ LTBOOL CFolderDisplay::Build()
 		m_PageRect.bottom += nM13Line;
 		ptAdditionalPerformance.y += nM13Line;
 	}
+	// M-3, M-2: the field of view and the cinematics, under it (two
+	// lines more, as M-13's)
+	{
+		CCycleCtrl* pFov = AddCycleItem(IDS_M3_FOV, IDS_HELP_M3_FOV, kGap-25, 25, &nM3Fov, LTFALSE);
+		for (int i = 0; i < (int)M3_NUM_FOV_CHOICES; i++)
+		{
+			HSTRING hText = g_pLTClient->FormatString(IDS_M3_FOV_DEGREES, g_nM3FovChoices[i]);
+			pFov->AddString(hText);
+			g_pLTClient->FreeString(hText);
+		}
+
+		CCycleCtrl* pCinematics = AddCycleItem(IDS_M2_CINEMATICS, IDS_HELP_M2_CINEMATICS, kGap-25, 25, &nM2Cinematics, LTFALSE);
+		pCinematics->AddString(IDS_M2_CINEMATICS_WIDE);
+		pCinematics->AddString(IDS_M2_CINEMATICS_4X3);
+
+		nM1Lines = (pFov->GetHeight() + m_nItemSpacing) + (pCinematics->GetHeight() + m_nItemSpacing);
+		m_PageRect.bottom += nM1Lines;
+		ptAdditionalPerformance.y += nM1Lines;
+	}
 #endif
 
 
@@ -164,6 +191,9 @@ LTBOOL CFolderDisplay::Build()
 	m_pPerformance->AddString(IDS_PERFORMANCE_CUSTOM);
 
 	LTIntPt pos = g_pLayoutMgr->GetFolderCustomPoint(FOLDER_ID_DISPLAY,"CustomPos");
+#ifdef AVP2SRC_MODERN
+	pos.y += nM1Lines;	// M-2, M-3: under the note, which moved down
+#endif
 	CLTGUITextItemCtrl* pCtrl = CreateTextItem(IDS_CUSTOM_PERFORM,CMD_PERFORM,IDS_HELP_CUSTOM_PERFORM, LTFALSE, GetLargeFont());
 	AddFixedControl(pCtrl,kCustomGroup0,pos);	
 
@@ -289,6 +319,7 @@ void CFolderDisplay::GetRendererData()
 	{
 		if (pCurrentMode->m_Width >= 640 && pCurrentMode->m_Height >= 480)
 		{
+#ifndef AVP2SRC_MODERN
 			// disallow non-standard aspect ratios
 			uint32 testWidth = (pCurrentMode->m_Height * 4 / 3);
 			if (pCurrentMode->m_Width != testWidth)
@@ -298,6 +329,7 @@ void CFolderDisplay::GetRendererData()
 				pCurrentMode=pCurrentMode->m_pNext;
 				continue;
 			}
+#endif	// M-1: every shape of screen (the field of view widens, Hor+)
 
 			// see if we need to specify the card..
 			if(bSpecifyCard)
@@ -515,6 +547,7 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 			RMode currentMode;
 			g_pLTClient->GetRenderMode(&currentMode);
 
+#ifndef AVP2SRC_MODERN
 			// Read in any changes
 			HCONSOLEVAR	hVar;
 			hVar					= g_pLTClient->GetConsoleVar("GameScreenWidth");
@@ -523,6 +556,10 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 			currentMode.m_Height	= (DDWORD) g_pLTClient->GetVarValueFloat(hVar);
 			hVar					= g_pLTClient->GetConsoleVar("GameBitDepth");
 			currentMode.m_BitDepth	= (DDWORD) g_pLTClient->GetVarValueFloat(hVar);
+#endif	// M-1: the mode in use, not the one this folder last set (GameScreen*):
+			// a command line's (++screenwidth: AVP2.exe's, a wide one) is
+			// shown, and leaving the folder no longer changes the mode to
+			// whichever of the list was left selected
 
 			// Set the renderer controls so that they match the currently selected renderer
 			unsigned int i;
@@ -556,6 +593,8 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 			m_nOverall = kNumCfg;
 #ifdef AVP2SRC_MODERN
 		nM13Framerate = nM13InitFramerate = M10_FramerateChoice(M10_GetFramerateLimit());	// M-13
+		nM3Fov = nM3InitFov = M3_FovChoice(M3_GetFov());	// M-3
+		nM2Cinematics = nM2InitCinematics = M2_RestrictCinematics() ? 1 : 0;	// M-2
 #endif
 
         UpdateData(LTFALSE);
@@ -569,6 +608,15 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 		// not one of the choices stays, unless another is chosen
 		if (nM13Framerate != nM13InitFramerate)
 			M10_SetFramerateLimit(g_nM10FramerateChoices[nM13Framerate]);
+		// M-3: likewise a field of view set elsewhere; the player's camera
+		// takes a new one at once
+		if (nM3Fov != nM3InitFov)
+		{
+			M1_SetIntVar(M3_FOV_VAR, g_nM3FovChoices[nM3Fov]);
+			M3_ReapplyPlayerFov();
+		}
+		if (nM2Cinematics != nM2InitCinematics)	// M-2
+			M1_SetIntVar(M2_CINEMATICS_VAR, nM2Cinematics);
 #endif
 
 		g_pPerformanceMgr->SetPerformanceCfg(m_nOverall);

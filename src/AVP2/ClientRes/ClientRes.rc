@@ -4756,6 +4756,25 @@ BEGIN
     IDS_HELP_M7_MOVEDEADZONE "How far the left stick moves before you move."
     IDS_HELP_M7_RESTORE     "Restore the controller's default settings and buttons."
 END
+// M-1..M-3, widescreen (Display)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M3_FOV              "Field of view"
+    IDS_HELP_M3_FOV         "How wide you see, in degrees across a 4:3 screen (a wider screen sees more at the sides). 90 is the original's; an Alien's view is wider with it."
+    IDS_M3_FOV_DEGREES      "%1!d!"
+    IDS_M2_CINEMATICS       "Cinematics"
+    IDS_HELP_M2_CINEMATICS  "Show the cutscenes across the whole screen, or in the middle at 4:3, as they were made."
+    IDS_M2_CINEMATICS_WIDE  "Widescreen"
+    IDS_M2_CINEMATICS_4X3   "4:3"
+END
+
+// M-6, raw mouse input (Controls, Mouse)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M6_LEGACYLOOK       "Legacy mouse look"
+    IDS_HELP_M6_LEGACYLOOK  "No: the mouse's own motion, the same at any frame rate. Yes: the original mouse look."
+    IDS_HELP_M6_SMOOTHING   "Smooths the legacy mouse look. The mouse's own motion is not smoothed."
+END
 #endif
 
 #endif    // English (U.S.) resources

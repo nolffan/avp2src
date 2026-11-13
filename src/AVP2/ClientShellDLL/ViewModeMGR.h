@@ -55,6 +55,9 @@ class ViewModeMGR
 		void ResetEnvMap();
 
 		LTBOOL GetRailMode();
+#ifdef AVP2SRC_MODERN
+		LTBOOL M1_ScopeShown();	// M-1: a scope's overlay is up (OverlayMGR)
+#endif
 
 		const std::string GetCurrentModeName();
 		const std::string GetLastModeName();

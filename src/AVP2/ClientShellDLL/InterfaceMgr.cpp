@@ -31,6 +31,8 @@
 #include "FolderEscape.h"
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\engine\p1_frametime.h"	// M-12: whole milliseconds
+#include "..\..\modern\cshell\m1_widescreen.h"	// M-1, M-2: the bars beside 4:3
+#include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
 #endif
 #ifdef PRIMAL_HUNT
 #include "TurretInfoMgr.h"
@@ -3090,6 +3092,22 @@ void CInterfaceMgr::HandleCinematicBorders()
 DBOOL CInterfaceMgr::Draw()
 {
 	HandleCinematicBorders();
+#ifdef AVP2SRC_MODERN
+	// M-2: a cinematic kept to the 4:3 area of a wide screen; M-1: so is
+	// the view through the rail gun's scope
+	if (m_eGameState == GS_PLAYING)
+	{
+		LTBOOL bM1Bars = LTFALSE;
+
+		if (g_pCameraMgr->GetCameraActive(g_pGameClientShell->GetCinematicCamera()))
+			bM1Bars = M2_RestrictCinematics();
+		else if (g_pGameClientShell->GetVisionModeMgr()->M1_ScopeShown())
+			bM1Bars = LTTRUE;
+
+		if (bM1Bars)
+			M1_FillBeside4x3(g_pLTClient->GetScreenSurface());
+	}
+#endif
 
 	// Check for interface drawing override...
 	if (g_vtDrawInterface.GetFloat())
@@ -4473,6 +4491,12 @@ void CInterfaceMgr::OnMouseWheel(int x, int y, int delta)
 void CInterfaceMgr::UseCursor(DBOOL bUseCursor)
 {
 	m_bUseCursor = bUseCursor;
+#ifdef AVP2SRC_MODERN
+	// M-6: the raw mouse look takes the mouse (or OldMouseLook's retail
+	// CursorCenter 1), and gives the menus their cursor back
+	M6Mouse_UseCursor(bUseCursor);
+	g_pClientDE->Cursor()->SetCursorMode(m_bUseCursor ? CM_Hardware : CM_None);
+#else
 	if (m_bUseCursor)
 	{
 		g_pClientDE->RunConsoleString("CursorCenter 0");
@@ -4484,6 +4508,7 @@ void CInterfaceMgr::UseCursor(DBOOL bUseCursor)
 		g_pClientDE->Cursor()->SetCursorMode(CM_None);
 
 	}
+#endif
 }
 
 

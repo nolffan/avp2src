@@ -12,11 +12,18 @@
 #include "GameSettings.h"
 
 #include "profileMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m6_mouse.h"	// M-6: the legacy mouse look
+#endif
 
 namespace
 {
 	int kGap = 200;
 	int kWidth = 200;
+#ifdef AVP2SRC_MODERN
+	// M-6: Legacy mouse look (OldMouseLook), as the folder shows it
+	LTBOOL bM6Legacy = LTFALSE;
+#endif
 }
 
 
@@ -67,8 +74,18 @@ LTBOOL CFolderMouse::Build()
 	m_pSensitivityCtrl->SetSliderRange(0, 20);
 	m_pSensitivityCtrl->SetSliderIncrement(1);
 
+#ifdef AVP2SRC_MODERN
+	// M-6: the retail mouse look in place of raw input
+	pToggle = AddToggle(IDS_M6_LEGACYLOOK, IDS_HELP_M6_LEGACYLOOK, kGap, &bM6Legacy );
+	pToggle->SetOnString(IDS_YES);
+	pToggle->SetOffString(IDS_NO);
+
+	// mouse smoothing: the legacy look's only (raw input is not smoothed)
+	m_pInputCtrl=AddSlider(IDS_MOUSE_INPUTRATE, IDS_HELP_M6_SMOOTHING, kGap, kWidth, &m_nInputRate);
+#else
 	//mouse responsiveness
 	m_pInputCtrl=AddSlider(IDS_MOUSE_INPUTRATE, IDS_HELP_MOUSE_INPUT, kGap, kWidth, &m_nInputRate);
+#endif
 	m_pInputCtrl->SetSliderRange(0, 100);
 	m_pInputCtrl->SetSliderIncrement(5);
 
@@ -111,6 +128,10 @@ uint32 CFolderMouse::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam
 				m_bInvertY = pProfile->m_bInvertY;
 				m_nInputRate = pProfile->m_nInputRate;
 				m_nSensitivity = pProfile->m_nSensitivity;
+#ifdef AVP2SRC_MODERN
+				bM6Legacy = LTFALSE;	// M-6: raw input
+				M6Mouse_SetFlag(M6_VAR_OLDMOUSELOOK, LTFALSE);
+#endif
 
 				UpdateData(LTFALSE);
 			}
@@ -141,12 +162,19 @@ void CFolderMouse::OnFocus(LTBOOL bFocus)
 			m_nInputRate = pProfile->m_nInputRate;
 			m_nSensitivity = pProfile->m_nSensitivity;
 		}
+#ifdef AVP2SRC_MODERN
+		bM6Legacy = M6Mouse_GetFlag(M6_VAR_OLDMOUSELOOK);	// M-6
+#endif
 
         UpdateData(LTFALSE);
 	}
 	else
 	{
 		UpdateData();
+#ifdef AVP2SRC_MODERN
+		if (bM6Legacy != M6Mouse_GetFlag(M6_VAR_OLDMOUSELOOK))	// M-6
+			M6Mouse_SetFlag(M6_VAR_OLDMOUSELOOK, bM6Legacy);
+#endif
 
 		if (pProfile)
 		{

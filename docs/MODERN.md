@@ -43,8 +43,10 @@ items are AvP2's own.
 `out/avp2-modern-debug/`, both games each). Done: the frame timing
 (M-10..M-14), the open middleware (M-X1..M-X3, with OpenMiles' fixes
 M-X5 and M-X6), so a modern game directory holds no RAD or Miles binary,
-the music through Microsoft's DirectMusic (M-X4), controllers through
-XInput (M-7), the launchers and the games started directly (M-8), and every
+the music through Microsoft's DirectMusic (M-X4), raw mouse input (M-6),
+controllers through XInput (M-7), the launchers and the games started
+directly (M-8), widescreen, 4:3 cinematics and the field of view
+(M-1..M-3), and every
 retail bug docs/RETAIL_BUGS.md lists either fixed (M-B01..M-B107) or shown
 not to need it (under Done); the rest of the items below are not.
 
@@ -72,8 +74,9 @@ what came in with nolfsrc's code: the `AVP2SRC_MODERN` blocks of its engine
 libraries (`src/lithshared/`: ButeMgr, GameSpy, LithFontMgr, LTGUIMgr),
 renamed from `NOLFSRC_MODERN` and still citing nolfsrc's `MODERN.md` ids
 (M-P6-02, ...). They are NOLF's fixes, not yet checked against AvP2, and
-some assume nolfsrc's modern files (the engine and the launcher name
-`d3d9.ren`, nolfsrc's Direct3D 9 renderer, which is not built here): each
+some assume nolfsrc's modern files (the engine and the launcher named
+`d3d9.ren`, nolfsrc's Direct3D 9 renderer, which is not built here; both
+dropped, M-8 and M-1): each
 is to be checked, kept or dropped, as the items land.
 
 Each item's id is a series and a number (M-1, ..., and M-X for the
@@ -87,12 +90,12 @@ yet.
 
 | Id | What | Status |
 |---|---|---|
-| M-1 | Widescreen: menus, HUD and field of view at any aspect ratio | not implemented yet |
-| M-2 | An option to keep the cinematics at 4:3 (pillarboxed) on a wide screen | not implemented yet |
-| M-3 | A field-of-view setting | not implemented yet |
+| M-1 | Widescreen: menus, HUD and field of view at any aspect ratio | done (under Done) |
+| M-2 | An option to keep the cinematics at 4:3 (pillarboxed) on a wide screen | done (under Done) |
+| M-3 | A field-of-view setting | done (under Done) |
 | M-4 | Up to 16x anisotropic filtering, by way of nolfsrc's modern Direct3D 9 renderer | not implemented yet |
 | M-5 | Up to 8x antialiasing (the same renderer) | not implemented yet |
-| M-6 | Raw mouse input (WM_INPUT), in place of DirectInput's mouse | not implemented yet |
+| M-6 | Raw mouse input (WM_INPUT), in place of DirectInput's mouse | done (under Done) |
 | M-7 | Controllers through XInput, in place of DirectInput joysticks | done (under Done) |
 | M-8 | The launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch had been clicked in the launcher (no registry, no disc check) | done (under Done) |
 | M-9 | From nolfsrc's modern build, where AvP2 has the same code: windowed modes at any size, Internet play without the dead GameSpy and WON master servers (its frame limiter is M-13) | not implemented yet |
@@ -136,7 +139,7 @@ per format), under Xvfb and Wine in the build container.
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-7, M-8 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing (the user's report on the first modern build: "the high
 framerate means all the timing is wrong"). nolfsrc found the same in NOLF
@@ -256,6 +259,252 @@ Not done: the per-frame review covered the movement, physics and effects
 that nolfsrc's NOLF findings pointed at; other client effects that step
 once a frame without the frame time have not all been looked at, nor
 measured above about 80 frames a second in play.
+
+### M-1..M-3: widescreen, 4:3 cinematics, the field of view
+
+nolfsrc's NOLF items were the guide (its M-P0-01 Hor+ field of view,
+M-P1-07 the resolution list, M-P3-08 4:3 cinematics, M-P3-21 the zoom
+beside the 4:3 area); each was checked against AvP2's and Primal Hunt's
+own code, which differ from NOLF's where it matters, and the code is ours.
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-1 | Widescreen: any shape of screen in the resolution list; the view widened to it (Hor+: the vertical field of view kept, the horizontal one widened by the screen's aspect ratio over 4:3), the player-view weapons and the camera overlays with it, a scope's overlay kept 4:3 with black beside it; the modern engine's own mode taken (it asked for nolfsrc's `d3d9.ren`, so every modern game ran at 640x480x16) | `src/modern/engine/m1_horplus.h`, `src/modern/cshell/m1_widescreen.h`; `src/engine/lithtech/clientmgr2.cpp` (`cm_RenderCamera`, `r_GetRequestedMode`), `clientinterface.cpp` (`Get3DCameraPt`); `src/engine/d3d/ph/drawmodel.cpp`; `FolderDisplay.cpp`, `OverlayMGR.cpp`/`.h`, `ViewModeMGR.cpp`/`.h`, `InterfaceMgr.cpp`, `AutoTargetMgr.cpp` | done |
+| M-2 | `RestrictCinematicsTo4x3`: the cinematics in the centred 4:3 area of a wide screen, black beside it; Options, Graphics, "Cinematics" (Widescreen, 4:3) | `m1_widescreen.h`; `InterfaceMgr.cpp` (`Draw`), `FolderDisplay.cpp`; `ClientRes.rc`, `ClientRes.h` (31200-31206) | done |
+| M-3 | `FieldOfView`: the player's horizontal field of view at 4:3, 75 to 120 degrees (90, retail's, the default); Options, Graphics, "Field of view" | `m1_widescreen.h`; `src/AVP2/Shared/PlayerMovement.cpp`, `CameraMgrFX.cpp` (`CameraMgrFX_ZoomUpdate`), `FolderDisplay.cpp`; `ClientRes.rc`, `ClientRes.h` | done |
+
+**M-1.** Retail gives every camera a field of view for a 4:3 screen (the
+player's is the character's `FOV` in CharacterButes.txt: 90 by 78 degrees
+for a human or a Predator, 95 by 85 for an Alien, 75 by 65 for an
+Exosuit, the same in both games; a cinematic camera's is its object's, 75
+by 60 by default) and draws it across whatever screen there is, so a 16:9
+screen showed the 4:3 picture stretched sideways; and Options, Graphics
+listed only modes of exactly 4:3 (`CFolderDisplay::GetRendererData`). The
+modern build lists every mode of at least 640x480, and the engine widens
+the horizontal field of view by the screen's aspect ratio over 4:3,
+`fovX' = 2 atan(tan(fovX/2) * aspect/(4/3))`, keeping the vertical one:
+where it hands a camera to the renderer (`cm_RenderCamera`) and where it
+turns a screen point into a direction (`Get3DCameraPt`), so the picture
+and what the game measures against it agree, while the cameras, and what
+the client reads back from them, keep the game's 4:3 values. nolfsrc's
+M-P0-01 does the sum in NOLF's renderer from the scene rectangle; here
+the factor is the screen's, because AvP2 letterboxes a cinematic by
+shrinking the camera's rectangle with the same field of view
+(`CameraMgrFX_WidescreenUpdate`, and the Predator's vision change narrows
+it): a 4:3 screen keeps every view exactly as retail draws it.
+
+The player-view weapons have a field of view of their own: the client
+sets `ExtraFOVXOffset` each frame to `ViewModelBaseFOVX` (95) less the
+camera's (`CWeaponModel`), and the renderer adds the scene's (`DrawModel`,
+`m_bFovScale`). With the scene's widened that sum is off, so the renderer
+works the model's field of view out at 4:3 as retail does (the scene's
+narrowed back by the screen's factor) and widens it the same way: the
+weapon keeps its 4:3 shape and size on any screen, and still ignores the
+player's field of view (M-3).
+
+The camera overlays (`OverlayMGR`: the vision modes' frames, the net, the
+fire, the Evac and orientation ones) are sprites sized to the view through
+`Get3DCameraPt` (`GetCameraScale`), so they now cover a wide screen,
+stretched with it as retail's are stretched to 4:3 (the Predator's zoom
+overlay, `predzoom.spr`, is one of them: it is up only while the zoom
+changes, `CPlayerStats`). The rail gun's scope (`railgunoverlay.spr`,
+up while it is zoomed) keeps its 4:3 shape in the middle, and the screen
+beside the 4:3 area is filled black while it is up and the view is first
+person (`InterfaceMgr::Draw`; nolfsrc's M-P3-21 found the same gap in
+NOLF's sunglasses zoom).
+
+What the client places on the screen from the world goes through
+`Get3DCameraPt` too (`GetScreenPos`: the Predator's target lock,
+`PredTargetFx`, and the auto-targeting), so it lands right on a wide
+screen. The auto-targeting takes a target only inside a box of 30% to
+70% of the screen's width and height (`CAutoTargetMgr`); across a wide
+screen that is a wider angle than retail's, so the box is now that share
+of the centred 4:3 area's width (`M1_InTargetBox`), the same angle.
+
+The menus are retail's 640x480 page, centred and unscaled at any
+resolution, which serves any shape of screen as it is; the HUD is
+anchored to the screen's corners and edges (`CHudElement`'s
+`m_ptOffset` from each corner, the screen's centre for the centred ones)
+and is placed right on any shape too, at its retail size.
+
+Options, Graphics shows the mode in use (the folder showed the mode it
+had last set itself, `GameScreenWidth`/`Height`/`BitDepth`, which a
+command line's mode -- AVP2.exe's -- is not: it showed another entry and
+leaving the folder switched to it).
+
+Also found: the modern engine's `r_GetRequestedMode` (nolfsrc's block)
+asked for `d3d9.ren`, nolfsrc's Direct3D 9 renderer, in place of
+`d3d.ren`. AvP2 ships none, so the engine's mode, and the client shell's
+first fallback (640x480x16, the same DLL) failed, and every modern game
+ran in its last fallback, 640x480x16 through `d3d.ren`, whatever mode was
+asked for (`OnEngineInitialized`; the debug output says "Couldn't set
+render mode", then "Setting render mode to D3D Emulation mode"). The
+block is dropped.
+
+Checked under Xvfb and Wine (`build/playtest.sh`, `PLAYTEST_RES`): AvP2's
+first Marine mission standing at its start, 1024x768 and 1280x720. The
+4:3 shot scaled to 720 lines against centre crops of the 16:9 one, 2% of
+width apart: the best match is the centre 960 columns (RMSE 0.014; the
+crops either side 0.026), so the 16:9 view shows the 4:3 one in its
+middle at the same scale, with the vertical field of view unchanged, and
+its horizontal one is 106.3 degrees (Hor+: 2 atan(tan 45 x 4/3) =
+106.26). The weapon is the same size in both. At 2560x1080 (21:9) the
+best match is the centre 1440 columns (RMSE 0.012; either side 0.025):
+121.3 degrees (Hor+: 121.28). Primal Hunt's first Corporate mission
+("Zeta Site"), 1024x768 against 1280x720: the centre 960 (RMSE 0.029;
+either side 0.070), 106.3 degrees. Shown at 1280x720 in both games: the
+main menu and Options, Graphics (the page centred), the Marine's,
+Predator's, Alien's, Corporate's and Predalien's HUDs in their corners,
+the Predator's zoom and three vision modes, the Alien's and the
+Predalien's vision, their overlays across the whole screen. The rail
+gun's scope was not reached in play (it is the Marine's last weapon), so
+its 4:3 shape and bars are checked from the code only.
+
+**M-2.** `RestrictCinematicsTo4x3` 1 (0 by default): while the cinematic
+camera is active, the screen beside its centred 4:3 area is filled black
+after the scene is drawn (`CInterfaceMgr::Draw`, after retail's own
+borders), so a wide screen shows what a 4:3 one does; the subtitles are
+drawn over it, inside the area. nolfsrc's M-P3-08 has the same name and
+meaning. Checked in AvP2's opening cinematic at 1280x720: 160 columns
+black at each side (mean 0 in the left 150 columns) with it, the full
+width without; once the player is in control, nothing beside the area is
+filled (mean 0.056). Primal Hunt's Predalien opening at 1280x720 the
+same (mean 0 in the left 150 columns).
+
+**M-3.** `FieldOfView` (degrees, 60..130; the menu offers 75 to 120 in
+fives): the horizontal field of view at 4:3 of a human or a Predator.
+Every character's own is scaled with it, both ways alike, so each keeps
+its shape: `tan(fov'/2) = tan(fov/2) x tan(FieldOfView/2)` (an Alien's 95
+by 85 at 90 is 114.4 by 105.1 at 110). It is set where the client gives
+the player's cameras the character's field of view
+(`PlayerMovement::HandleMessage_Physics_Update`, `SetMPButes`), and at
+once when the option changes. A wide screen widens it again (M-1). The
+zoom (the Predator's, the rail gun's) magnifies over the camera's own
+field of view (`CameraMgrFX_ZoomUpdate`); its magnitude is made one over
+retail's (times the setting's factor, which comes in over the first
+doubling), so a zoomed view is retail's whatever the setting. The
+cinematics keep their own, and the weapons theirs (M-1). Checked at
+1024x768 in the same place as M-1: the shot at 90 matches the centre
+716x537 of the one at 110 (RMSE 0.019; either side 0.032), which makes
+the latter's horizontal field of view 110.1 degrees.
+
+Not done: the menus and the HUD keep their retail size in pixels, so on
+a large screen they are small (the 640x480 page is a third of a 1920x1080
+screen's height); scaling them (nolfsrc's M-P3-01 and M-P3-12) is for
+later. Windowed and borderless-window modes are M-9's.
+
+### M-6: raw mouse input
+
+Retail turns the view by the engine's axis offsets
+(`ILTClient::GetAxisOffsets`), built once a frame from DirectInput's
+buffered mouse data, with the cursor put back in the middle of the
+desktop every frame (`CursorCenter 1`). How far a count of mouse motion
+turns the view there depends on the frame rate and on how the motion is
+cut into events (RETAIL_BUGS.md, "The mouse look turns further at a
+higher frame rate"). The modern build reads the mouse's own motion
+instead, in both games. nolfsrc did this for NOLF (its M-P1-03, the raw
+mouse look, and M-P1-04, the Mouse options); its design -- `WM_INPUT` on
+the window the client shell already subclasses, VC6's missing raw-input
+declarations written out and the two functions looked up in user32.dll,
+the cursor hidden and confined in play and given back in the menus,
+`OldMouseLook` and `NoRawInput` -- was taken as the model, and its file
+read for it; the code is AvP2's own, made against AvP2's and Primal
+Hunt's hooks, which differ: the look is `PlayerMovement`'s (an offset of
+1 is 90 degrees of yaw about the character's own up axis, so the Alien's
+wall walking, and 45 of pitch), read twice a frame (`UpdateRotation`,
+`UpdateAiming`) and by the camera editor (`CameraMgrFX`), and Primal
+Hunt's turrets aim by it; the scale is AvP2's own
+(`SetMouseSensitivityScale`: the sensitivity, the Predator's zoom and the
+EMP's slowing); and NOLF's halving of its scale did not carry over (the
+gain below is measured here).
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-6 | The mouse look from raw input (`WM_INPUT`), a count the same turn at any frame rate; the cursor hidden and kept to the window in play, given back in the menus; `OldMouseLook 1` the retail look, `NoRawInput 1` the cursor's motion | `src/modern/cshell/m6_mouse.h`; `GameClientShell.cpp` (`HookedWindowProc`, `Update`, `OnEvent`, `SetMouseSensitivityScale`, `UnhookWindow`), `InterfaceMgr.cpp` (`UseCursor`), `src/AVP2/Shared/PlayerMovement.cpp` (`UpdateRotation`, `UpdateAiming`), `CameraMgrFX.cpp` | done |
+| M-6 | Controls, Mouse: "Legacy mouse look" (`OldMouseLook`), and "Mouse smoothing" explained as the legacy look's | `FolderMouse.cpp`; `src/AVP2/ClientRes/ClientRes.rc`, `ClientRes.h` (31600-31602) | done |
+
+**The look.** The mouse's `WM_INPUT` (relative counts; an absolute
+device's -- a tablet, a remote desktop -- turned into motion) is summed
+between frames and taken once a frame (`M6Mouse_Update`, in
+`CGameClientShell::Update` beside the controller's read), so both of
+`PlayerMovement`'s reads see the same frame's look, as they do the
+engine's offsets. A count is the retail scale's offset,
+`(0.166 + MouseSensitivity / 2.75) * scale * 0.001` across and 1.1 times
+that up and down, times 2: the retail look turned about twice its own
+scale at 60 frames a second or less (below), the frame rates it was
+played at, so at the default sensitivity (7) a count turns 0.49 degrees
+across and 0.27 up and down. The engine's offsets are not read in this
+look: they hold only the mouse's axes (M-7's sticks are read by the
+client shell, and added as before), and DirectInput still gives the
+mouse's buttons and wheel to the bindings. `InputRate` (Mouse smoothing)
+applies only to the legacy look.
+
+**The cursor.** In play (`CInterfaceMgr::UseCursor(FALSE)`) the cursor is
+hidden, clipped to the window's client area and kept in its middle (so a
+pointer-made raw input, as Wine's without a clip or a remote desktop's,
+never meets an edge), and `CursorCenter` is 0; in the menus it is shown
+and given the retail clip back (the full-screen clip, none in a window).
+While another application is in front (`WM_ACTIVATEAPP`) the clip is let
+go and the motion ignored; a new display mode (`LTEVENT_RENDERINIT`)
+clips to the new window. `OldMouseLook 1` is the retail look and
+`CursorCenter 1`, unchanged; `NoRawInput 1` reads the cursor's motion
+from the window's middle each frame, as is also done if raw input cannot
+be registered. Either can be changed in play (the console); the look
+follows the next frame.
+
+**The Mouse page** (Options, Controls, Mouse; both games, one source):
+"Legacy mouse look" (No/Yes, `OldMouseLook`) under the sensitivity, with
+the help "No: the mouse's own motion, the same at any frame rate. Yes:
+the original mouse look."; "Mouse smoothing" keeps its name and slider,
+with the help "Smooths the legacy mouse look. The mouse's own motion is
+not smoothed."; Restore defaults turns the legacy look off. The page has
+room for the line (five controls, as shown).
+
+**Checked** under Wine in the build container (Ubuntu 24.04's Wine 9.0,
+Xvfb): `xdotool`'s relative motion reaches the game as `WM_INPUT` (Wine
+makes raw input from the X pointer's motion), so the playtests move the
+mouse by known counts (`turn`): `build/playtest-avp2-mouse.txt`,
+`-mouse-predator.txt`, `-mouse-alien.txt` and Primal Hunt's
+`build/playtest-ph-mouse*.txt` go through the menus with the cursor to
+each species' first mission and turn 200 counts across and back, 100 up
+and down, in 20-count and in 5-count moves; the Predator's then zoom
+(Page Up) and turn again, the Alien's turn with wall walking on (G). A
+temporary probe logged the player's view each frame and the counts the
+game took (its lines were removed):
+
+| Game, species, limit | frames a second in play | degrees a count across | up and down |
+|---|---|---|---|
+| AvP2, Marine, 60 | 12-40 | 0.488 | 0.268 |
+| AvP2, Marine, 240 | 22-37 | 0.488 | 0.268 |
+| AvP2, Predator, 60 | 20-35 | 0.488; zoomed 0.390 | 0.268 |
+| AvP2, Predator, 240 | 40-77 | 0.488; zoomed 0.390 | 0.268 |
+| AvP2, Alien (facehugger), 60 | 32-45 | 0.488, wall walking too | 0.268 |
+| Primal Hunt, Corporate, 60 | 23-57 | 0.488 | 0.268 |
+| Primal Hunt, Corporate, 240 | 25-56 | 0.488 | 0.268 |
+| Primal Hunt, Predator, 60 | 40-49 | 0.488; zoomed 0.390 | 0.268 |
+| Primal Hunt, Predalien (facehugger), 60 | 60 | 0.488, wall walking too | 0.268 |
+
+-- every move, in every run, to the third decimal: the turn is the
+counts', whatever the frame rate or the moves' size, and 200 counts
+right and 200 left come back to where they started. The retail look
+(`OldMouseLook 1`, the same scripts): AvP2's Marine 0.39-0.43 degrees a
+count at 20-40 frames a second, 0.55-0.57 at 30-55, 0.61-0.70 at 60-140;
+Primal Hunt's Corporate 0.32-0.58 at 32-46, and 200 counts right and
+back left 29 degrees off where it began. The other machines' builds
+loaded the container's host throughout: no run reached more than about
+140 frames a second in play (none in raw input above 77), so the 240
+limit was measured at what the host gave.
+
+`build/playtest-mouse-menus.txt`, both games: Options, Controls, Mouse
+with the cursor; Legacy mouse look turned on (its help shown); the first
+Marine (Corporate) mission, where 200 counts right and back turned 82 and 96 degrees in AvP2, 36 and 92 in Primal Hunt; the
+pause menu with the cursor, back to the Mouse page, Legacy mouse look
+off, Resume; and 200 counts then turned 97.6 degrees right and 97.6 back in both. The setting is saved (`"OldMouseLook" "0"` in autoexec.cfg).
+
+Not done: a real mouse on Windows (the raw input path is the same; under
+Wine, raw input made from a real device was not tried), and
+`RIDEV_NOLEGACY` (the mouse's own messages are kept, for DirectInput's
+buttons and the menus).
 
 ### M-7: controllers through XInput
 
@@ -622,9 +871,13 @@ Each in `RETAIL_BUGS.md`; checked as the table says.
 
 | Variable | Type | Default | What | Id |
 |---|---|---|---|---|
+| `FieldOfView` | int | 90 | the player's horizontal field of view at 4:3, degrees (60..130; every character's scaled with it; a wide screen widens it again); Options, Graphics, "Field of view" (75..120); saved in autoexec.cfg | M-3 |
+| `RestrictCinematicsTo4x3` | int | 0 | 1: black beside the centred 4:3 area while a cinematic plays; Options, Graphics, "Cinematics" (Widescreen, 4:3); saved in autoexec.cfg | M-2 |
 | `FramerateLimit` | int | 240 | the client's frames a second at most (0: no limit), single player and multiplayer, not while loading; Options, Graphics, "Frame rate limit" (60, 120, 144, 240, None); saved in autoexec.cfg | M-13 |
 | `PadLookSpeed` | float | 1 | the controller's right stick: turn rate, times 180 degrees a second across and 120 up and down; Controller, "Look speed" | M-7 |
 | `PadInvertY` | int | 0 | the right stick's up looks down; Controller, "Invert look" | M-7 |
 | `PadLookCurve` | float | 2 | the right stick's response: its deflection past the dead zone raised to this (1: linear) | M-7 |
 | `PadLookDeadZone` | float | 0.15 | the right stick's radial dead zone (0..0.9 of its travel); Controller | M-7 |
 | `PadMoveDeadZone` | float | 0.2 | the left stick's radial dead zone; Controller | M-7 |
+| `OldMouseLook` | int | 0 | the retail mouse look (the engine's DirectInput offsets, `CursorCenter 1`) in place of raw input; Controls, Mouse, "Legacy mouse look"; saved in autoexec.cfg | M-6 |
+| `NoRawInput` | int | 0 | the new mouse look from the cursor's motion (put back in the window's middle each frame) instead of raw input; saved in autoexec.cfg | M-6 |

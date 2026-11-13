@@ -26,6 +26,8 @@
 #include "MultiplayerClientMgr.h"
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m7_pad.h"		// M-7: the controller's sticks
+#include "..\..\modern\cshell\m1_widescreen.h"	// M-3: the field of view
+#include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
 #endif
 
 // ----------------------------------------------------------------------- //
@@ -653,9 +655,11 @@ void PlayerMovement::UpdateRotation()
 	{
 		// Set the rotation based off the gameclientshell values temporarily
 		LTFLOAT pOffsets[3];
-		g_pLTClient->GetAxisOffsets(pOffsets);
 #ifdef AVP2SRC_MODERN
+		M6Mouse_GetAxisOffsets(pOffsets);	// M-6: the raw mouse look (or OldMouseLook's)
 		M7Pad_AddLook(pOffsets);	// M-7: and the right stick's
+#else
+		g_pLTClient->GetAxisOffsets(pOffsets);
 #endif
 
 		// Get the rotation vectors of the character
@@ -716,9 +720,11 @@ void PlayerMovement::UpdateAiming()
 	{
 		// Set the rotation based off the gameclientshell values temporarily
 		LTFLOAT pOffsets[3];
-		g_pLTClient->GetAxisOffsets(pOffsets);
 #ifdef AVP2SRC_MODERN
+		M6Mouse_GetAxisOffsets(pOffsets);	// M-6, as UpdateRotation
 		M7Pad_AddLook(pOffsets);	// M-7: and the right stick's
+#else
+		g_pLTClient->GetAxisOffsets(pOffsets);
 #endif
 
 		LTFLOAT fAimDir = pSettings->MouseInvertY() ? -1.0f : 1.0f;
@@ -1221,8 +1227,12 @@ LTBOOL PlayerMovement::HandleMessage_Physics_Update(HMESSAGEREAD hRead, uint32 d
 
 		// Set the new default camera FOV
 		CPoint ptFOV = GetCharacterButes()->m_ptFOV;
+#ifdef AVP2SRC_MODERN
+		M3_SetPlayerFov(ptFOV);	// M-3: scaled for FieldOfView
+#else
 		g_pGameClientShell->GetCameraMgr()->SetCameraFOV(g_pGameClientShell->GetPlayerCamera(), (DFLOAT)ptFOV.x, (DFLOAT)ptFOV.y);
 		g_pGameClientShell->GetCameraMgr()->SetCameraFOV(g_pGameClientShell->Get3rdPersonCamera(), (DFLOAT)ptFOV.x, (DFLOAT)ptFOV.y);
+#endif
 
 		// Setup the player stats
 		g_pGameClientShell->GetPlayerStats()->SetCharacterButes(nCharacter);
@@ -1780,8 +1790,12 @@ void PlayerMovement::SetMPButes(uint8 nCharacter)
 
 	// Set the new default camera FOV
 	CPoint ptFOV = GetCharacterButes()->m_ptFOV;
+#ifdef AVP2SRC_MODERN
+	M3_SetPlayerFov(ptFOV);	// M-3: scaled for FieldOfView
+#else
 	g_pGameClientShell->GetCameraMgr()->SetCameraFOV(g_pGameClientShell->GetPlayerCamera(), (DFLOAT)ptFOV.x, (DFLOAT)ptFOV.y);
 	g_pGameClientShell->GetCameraMgr()->SetCameraFOV(g_pGameClientShell->Get3rdPersonCamera(), (DFLOAT)ptFOV.x, (DFLOAT)ptFOV.y);
+#endif
 
 	// Setup the player stats
 	g_pGameClientShell->GetPlayerStats()->SetCharacterButes(nCharacter);

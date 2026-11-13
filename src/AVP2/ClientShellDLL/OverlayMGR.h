@@ -48,6 +48,9 @@ public:
 	void SetOrientAngle(LTFLOAT fAngle);
 
 	void SetNormalOverlayVisible(LTBOOL bVis);
+#ifdef AVP2SRC_MODERN
+	LTBOOL M1_ScopeShown();	// M-1: the rail gun's scope overlay is up
+#endif
 };
 
 #endif		// OVERLAY_MGR_H

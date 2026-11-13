@@ -412,6 +412,12 @@ LTBOOL ViewModeMGR::GetRailMode()
 {
 	return m_pData->m_OverlayMGR.GetRailMode();
 }
+#ifdef AVP2SRC_MODERN
+LTBOOL ViewModeMGR::M1_ScopeShown()
+{
+	return m_pData->m_OverlayMGR.M1_ScopeShown();
+}
+#endif
 
 void ViewModeMGR::SetPredZoomMode(LTBOOL bOn)
 {

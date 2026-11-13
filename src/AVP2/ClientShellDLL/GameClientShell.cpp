@@ -73,6 +73,8 @@
 #include "..\..\modern\cshell\m10_framelimit.h"	// M-13: the frame-rate limit
 #define M7_PAD_IMPLEMENTATION
 #include "..\..\modern\cshell\m7_pad.h"			// M-7: the controller
+#define M6_MOUSE_IMPLEMENTATION
+#include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
 #endif
 
 static _timeb g_StartTimeB;
@@ -2040,6 +2042,9 @@ void CGameClientShell::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 				GetWindowRect(g_hMainWnd, g_prcClip);
 				ClipCursor(g_prcClip);
 			}
+#ifdef AVP2SRC_MODERN
+			M6Mouse_OnRenderInit();	// M-6: the game's clip, if it has the mouse
+#endif
 		}
 		break;
 	}
@@ -2340,6 +2345,8 @@ void CGameClientShell::Update()
 	// M-7: the controller, read once a frame (its sticks, and the menus'
 	// keys), before the interface takes the frame
 	M7Pad_Update(m_fFrameTime);
+	// M-6: the mouse's motion since the last frame, this frame's look
+	M6Mouse_Update();
 #endif
 	if (m_InterfaceMgr.Update())
 	{
@@ -6786,6 +6793,11 @@ void DefaultModelHook (ModelHookData *pData, void *pUser)
 
 LRESULT CALLBACK HookedWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+#ifdef AVP2SRC_MODERN
+	// M-6: raw input, the cursor and the focus (the message goes on to
+	// the engine as before: DefWindowProc cleans up after WM_INPUT)
+	M6Mouse_OnWindowMessage(hWnd, uMsg, wParam, lParam);
+#endif
 	if(uMsg == WM_MOUSEWHEEL)
 	{
 		CGameClientShell::OnMouseWheel(hWnd, (int)(short)LOWORD(lParam), (int)(short)HIWORD(lParam), (UINT)(wParam));
@@ -6890,6 +6902,7 @@ void CGameClientShell::SetMouseSensitivityScale(LTFLOAT fSensScale)
 #ifdef AVP2SRC_MODERN
 	// M-7: the controller's look slows with the zoom as the mouse does
 	M7Pad_SetLookScale(fSensScale);
+	M6Mouse_SetLookScale(fSensScale);	// M-6: and the raw mouse look
 #endif
 	// Get the mouse sensitivity setting
 	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("MouseSensitivity");
@@ -7033,6 +7046,9 @@ void UnhookWindow()
 {
 	if(g_pfnMainWndProc && g_hMainWnd)
 	{
+#ifdef AVP2SRC_MODERN
+		M6Mouse_OnWindowUnhooked();	// M-6: raw input off, the clip let go
+#endif
 		SetWindowLong(g_hMainWnd, GWL_WNDPROC, (LONG)g_pfnMainWndProc);
 		g_hMainWnd = 0;
 		g_pfnMainWndProc = NULL;

@@ -32,7 +32,8 @@ looks again.
 
 **Fixed so far** (in the modern build): every entry below is either fixed
 or says why it is not. With an id: the world running fast above 100 frames
-a second (M-10); a joystick button bound twice (M-7); the engine's
+a second (M-10); a joystick button bound twice (M-7); the mouse look's
+turn depending on the frame rate (M-6); the engine's
 (M-B01..M-B09), the renderers' (M-B20..M-B26), the client shells' and
 lithshared's (M-B40..M-B63), the object DLLs' and shared code's
 (M-B70..M-B85) and the launchers' and Launch.dll's (M-B100..M-B107)
@@ -72,6 +73,32 @@ server limits its own loop, and is not affected.)
 
 Fixed in the modern build: smgr.cpp, a tick runs only once 10 ms have
 passed since the last; MODERN.md M-10.
+
+### The mouse look turns further at a higher frame rate
+
+lithtech.exe of both games (`input_ReadActions`, AvP2 0x0043f490, Primal
+Hunt 0x00443260; src/engine/lithtech/clientinput.cpp; read off the retail
+AvP2 image -- one event a read for the mouse at 0x0043f593, the smoothing
+at 0x0043f747..0x0043f792 -- the function not yet byte-identical). Once a frame the
+engine reads DirectInput's buffered mouse data one event at a time, and
+after each event adds every object's current value into the axis offsets
+the game turns the view by (`GetAxisOffsets`). A mouse axis keeps its
+last motion (smoothed towards the mean of its last three by `InputRate`
+percent) until a tenth of `InputRate`'s milliseconds of `GetTickCount`
+pass with no event, and is zeroed only after it has been added that frame:
+so one event's motion is added in its own frame, again in the next, and
+again for every other event (the other axis's, a button's) read in
+between. How far a count of mouse motion turns the view depends on the
+frame rate and on how the motion is cut into events, not on the motion
+alone. Measured with the modern build's `OldMouseLook 1` (the retail
+path, unchanged) in AvP2's first Marine mission, sensitivity 7 (the
+default profile), 200 counts of motion in 20-count moves: 78-87 degrees
+at 20-40 frames a second, 109-114 at 30-55, 121-139 at 60-140; the
+sensitivity's scale itself is 49 degrees for 200 counts.
+
+Fixed in the modern build: the mouse look reads the mouse's own motion
+(raw input), a count the same turn at any frame rate, in place of the
+engine's offsets (src/modern/cshell/m6_mouse.h); MODERN.md M-6.
 
 ### Binding a joystick button in Customize Controls leaves its old command bound too
 

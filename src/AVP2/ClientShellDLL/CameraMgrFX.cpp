@@ -17,6 +17,10 @@
 #include "volumebrushfx.h"
 #include "clientsoundmgr.h"
 #include "ContainerCodes.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m1_widescreen.h"	// M-3: the zoom over FieldOfView
+#include "..\..\modern\cshell\m6_mouse.h"	// M-6: raw mouse input
+#endif
 #ifdef PRIMAL_HUNT
 #include "ClientTurretMgr.h"
 
@@ -408,7 +412,11 @@ LTBOOL CameraMgrFX_3rdPersonUpdate(HCAMERA hCamera, void *pEffect)
 			LTFLOAT fNewAxis = g_vt3rdPersonAxis.GetFloat();
 			LTFLOAT fScale = g_pLTClient->IsCommandOn(COMMAND_ID_RUN) ? 2.0f : 1.0f;
 			LTFLOAT pOffsets[NUM_AXIS_OFFSETS];
+#ifdef AVP2SRC_MODERN
+			M6Mouse_GetAxisOffsets(pOffsets);	// M-6: the raw mouse look (or OldMouseLook's)
+#else
 			g_pLTClient->GetAxisOffsets(pOffsets);
+#endif
 
 			if(pOffsets[0])
 				fNewAxis += (pOffsets[0] * g_vt3rdPersonMult.GetFloat());
@@ -977,12 +985,25 @@ LTBOOL CameraMgrFX_ZoomUpdate(HCAMERA hCamera, void *pEffect)
 		return LTFALSE;
 	}
 
+#ifdef AVP2SRC_MODERN
+	// M-3: the player's camera zooms to retail's view whatever FieldOfView
+	LTFLOAT fM3Magnitude = (hCamera == g_pGameClientShell->GetPlayerCamera()) ?
+		M3_ZoomMagnitude(pData->fMagnitude) : pData->fMagnitude;
+
+	// Find 'A' assuming that our original FOV represents an 'O' of 1
+	LTFLOAT fAX = 1.0f / (LTFLOAT)tan(pCamera->cidOriginal.fFOVX / 2.0f);
+	LTFLOAT fFOVXDest = (LTFLOAT)atan(1.0f / fM3Magnitude / fAX);
+
+	LTFLOAT fOY = fAX * (LTFLOAT)tan(pCamera->cidOriginal.fFOVY / 2.0f);
+	LTFLOAT fFOVYDest = (LTFLOAT)atan(fOY / fM3Magnitude / fAX);
+#else
 	// Find 'A' assuming that our original FOV represents an 'O' of 1
 	LTFLOAT fAX = 1.0f / (LTFLOAT)tan(pCamera->cidOriginal.fFOVX / 2.0f);
 	LTFLOAT fFOVXDest = (LTFLOAT)atan(1.0f / pData->fMagnitude / fAX);
 
 	LTFLOAT fOY = fAX * (LTFLOAT)tan(pCamera->cidOriginal.fFOVY / 2.0f);
 	LTFLOAT fFOVYDest = (LTFLOAT)atan(fOY / pData->fMagnitude / fAX);
+#endif
 
 	// Set the final FOV offset values
 	pFX->ceCS.fFOVX = ((fFOVXDest * 2.0f) - pCamera->cidOriginal.fFOVX);
