@@ -718,6 +718,11 @@ LTRESULT CServerMgrQ502::CreateWorldCRC()
 	if (m_bWorldLoaded && m_hWorldFile && m_pServer)
 	{
 		strncpy(szName, fs_GetFileName((CFileMgr*)m_FileMgr, m_hWorldFile), 0xff);
+#ifdef AVP2SRC_MODERN
+		// M-B04.  RETAIL BUG (RETAIL_BUGS.md): a name of 0xff characters or
+		// more is left unterminated.
+		szName[0xff] = 0;
+#endif
 		_strupr(szName);
 
 		ILTStream* pStream = fs_OpenFile((CFileMgr*)m_FileMgr, szName);
@@ -14256,6 +14261,11 @@ LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 
 		if (pClient->m_pUnknown3AC)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B09.  RETAIL BUG (RETAIL_BUGS.md): the message is made,
+			// as sm_AttachClient makes its own.
+			msg.Init(msg_AllocPacket(0x44c, 0x44c));
+#endif
 			{
 				ServerMessage* pMsg = msg.m_pMsg;
 
@@ -14272,6 +14282,9 @@ LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 	return LT_OK;
 #else
 	ServerMessage* pMsg = LTNULL;
+#ifdef AVP2SRC_MODERN
+	CMessageRef msg;
+#endif
 
 	if (pClient->m_pViewClient)
 	{
@@ -14281,6 +14294,11 @@ LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 
 		if (pClient->m_pUnknown3AC)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B09, as above.
+			msg.Init(msg_AllocPacket(0x44c, 0x44c));
+			pMsg = msg.m_pMsg;
+#endif
 			pMsg->m_Unknown38 = 1;
 			pMsg->m_Unknown34 = 1;
 

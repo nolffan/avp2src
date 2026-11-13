@@ -421,7 +421,12 @@ void CClientTurret::Rotate(LTFLOAT fPitch, LTFLOAT fYaw, LTFLOAT fSpin)
 	{
 		// RETAIL BUG: the turret was meant to wrap all the way around here,
 		// but the result is thrown away
+#ifdef AVP2SRC_MODERN
+		// M-B55 (RETAIL_BUGS.md): wrapped into one turn, [0, 2 pi)
+		m_fYaw -= (LTFLOAT)floor(m_fYaw * (1.0f / MATH_CIRCLE)) * MATH_CIRCLE;
+#else
 		floor(m_fYaw * (1.0f / MATH_CIRCLE));
+#endif
 	}
 	else
 	{

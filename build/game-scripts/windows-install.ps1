@@ -464,6 +464,10 @@ Write-Host ''
 Write-Host "done: $written files written, $kept already in place." -ForegroundColor Green
 Write-Host 'Start AvP2 with AVP2\AVP2.exe and Primal Hunt with PrimalHunt\PrimalHunt.exe,'
 Write-Host 'or either straight from its command file with windows-run.bat avp2 / windows-run.bat ph.'
+if (Test-Path -LiteralPath (Join-Path (Join-Path $here 'AVP2') 'AVP2Launcher.exe')) {
+    # the modern build (docs/MODERN.md M-8): those two start the game directly
+    Write-Host 'Their launchers are AVP2\AVP2Launcher.exe and PrimalHunt\PrimalHuntLauncher.exe.'
+}
 if ($machine) {
     Write-Host 'The games are registered for all users of this PC.'
 } elseif ($user) {

@@ -60,6 +60,11 @@ vtable ??_7CClass4A38A4@@6B@ 0x004c8b20  # compiled with 10 slots; 8 _purecall w
     ?BindToSurface@SmackVideoInst@@UAEKPAVCVideoPolyS@@@Z  # near pairing only
     ?UnbindFromSurface@BinkVideoInstK@@UAEXPAVCVideoPolyK@@@Z
     ?OnTextureFreed@BinkVideoInstK@@UAEXPAVSharedTextureK@@@Z
+vtable ??_7CClientMsgObjectHelper@@6B@ 0x004c6e7c  # compiled with 2 slots (by hand: the generator missed it; vtables.txt's NOLF entry)
+    ?ReadObjectID@CClientMsgObjectHelper@@UAEKPAVCClientMsgWriteView@@PAPAVCClientObjIDView@@@Z
+    ?WriteObjectID@CClientMsgObjectHelper@@UAEKPAVCClientMsgWriteView@@PAVCClientObjIDView@@@Z
+    ?WriteFormattedString@CMessageObjectHelperQ414@@QAEKPAVIMessageWriteQ414@@KPAPAD@Z
+    ?GetLen@CStreamFields@@UAEKPAK@Z
 vtable ??_7CCmgAbstractIO@@6B@ 0x004c7d28  # compiled with 1 slots
     ??_GCCmgAbstractIO@@UAEPAXI@Z  # the compiled slot, kept over ??_GCBaseStream@@UAEPAXI@Z placed there
     ?AddRef@CAbstractIO@@UAEXXZ  # placed by shape

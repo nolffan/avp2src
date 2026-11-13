@@ -239,8 +239,14 @@ uint32 CTentacle::OnUpdate(LTFLOAT fFrameTime)
 		case eHidden:		UpdateHidden(fFrameTime);		break;
 		case eWaiting:		UpdateWaiting(fFrameTime);		break;
 		case eErupting:		UpdateErupting(fFrameTime);		break;
+#ifdef AVP2SRC_MODERN
+		// M-B82 (RETAIL_BUGS.md): each state its own update
+		case eBurrowing:	UpdateBurrowing(fFrameTime);	break;
+		case eAttacking:	UpdateAttacking(fFrameTime);	break;
+#else
 		case eBurrowing:	UpdateAttacking(fFrameTime);	break;
 		case eAttacking:	UpdateBurrowing(fFrameTime);	break;
+#endif
 		case eUnused:		UpdateUnused(fFrameTime);		break;
 		case eDying:		UpdateDying(fFrameTime);		break;
 		case eDead:			UpdateDead(fFrameTime);			break;

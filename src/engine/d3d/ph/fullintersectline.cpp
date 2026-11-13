@@ -179,6 +179,66 @@ static LTVector g_V, g_VTimesInvVV;                     // 0x1007c180, 0x1007c19
 static float g_VPTimesInvVV, g_LineLen;                 // 0x1007c1d4, 0x1007c1b4
 
 
+#ifdef AVP2SRC_MODERN
+// Each face's plane at that face (planeCoord), not at the minimum corner.
+// Get the intersection point and see if it's inside the other dimensions.
+#define DO_PLANE_TEST_X(planeCoord, coord0, coord1, coord2, normalDirection) \
+	t = (planeCoord - Point1.coord0) / (Point2.coord0 - Point1.coord0);\
+	testCoords[0] = Point1.coord1 + ((Point2.coord1 - Point1.coord1) * t);\
+	if (testCoords[0] > pServerObj->m_MinBox.coord1 && testCoords[0] < pServerObj->m_MaxBox.coord1)\
+	{\
+		testCoords[1] = Point1.coord2 + ((Point2.coord2 - Point1.coord2) * t);\
+		if (testCoords[1] > pServerObj->m_MinBox.coord2 && testCoords[1] < pServerObj->m_MaxBox.coord2)\
+		{\
+			pIntersectPt->coord0 = planeCoord;\
+			pIntersectPt->coord1 = testCoords[0];\
+			pIntersectPt->coord2 = testCoords[1];\
+			pIntersectPlane->m_Normal.x = normalDirection;\
+			pIntersectPlane->m_Normal.y = 0.0f;\
+			pIntersectPlane->m_Normal.z = 0.0f;\
+			pIntersectPlane->m_Dist = (planeCoord) * normalDirection;\
+			return true;\
+		}\
+	}
+
+#define DO_PLANE_TEST_Y(planeCoord, coord0, coord1, coord2, normalDirection) \
+	t = (planeCoord - Point1.coord0) / (Point2.coord0 - Point1.coord0);\
+	testCoords[0] = Point1.coord1 + ((Point2.coord1 - Point1.coord1) * t);\
+	if (testCoords[0] > pServerObj->m_MinBox.coord1 && testCoords[0] < pServerObj->m_MaxBox.coord1)\
+	{\
+		testCoords[1] = Point1.coord2 + ((Point2.coord2 - Point1.coord2) * t);\
+		if (testCoords[1] > pServerObj->m_MinBox.coord2 && testCoords[1] < pServerObj->m_MaxBox.coord2)\
+		{\
+			pIntersectPt->coord0 = planeCoord;\
+			pIntersectPt->coord1 = testCoords[0];\
+			pIntersectPt->coord2 = testCoords[1];\
+			pIntersectPlane->m_Normal.x = 0.0f;\
+			pIntersectPlane->m_Normal.y = normalDirection;\
+			pIntersectPlane->m_Normal.z = 0.0f;\
+			pIntersectPlane->m_Dist = (planeCoord) * normalDirection;\
+			return true;\
+		}\
+	}
+
+#define DO_PLANE_TEST_Z(planeCoord, coord0, coord1, coord2, normalDirection) \
+	t = (planeCoord - Point1.coord0) / (Point2.coord0 - Point1.coord0);\
+	testCoords[0] = Point1.coord1 + ((Point2.coord1 - Point1.coord1) * t);\
+	if (testCoords[0] > pServerObj->m_MinBox.coord1 && testCoords[0] < pServerObj->m_MaxBox.coord1)\
+	{\
+		testCoords[1] = Point1.coord2 + ((Point2.coord2 - Point1.coord2) * t);\
+		if (testCoords[1] > pServerObj->m_MinBox.coord2 && testCoords[1] < pServerObj->m_MaxBox.coord2)\
+		{\
+			pIntersectPt->coord0 = planeCoord;\
+			pIntersectPt->coord1 = testCoords[0];\
+			pIntersectPt->coord2 = testCoords[1];\
+			pIntersectPlane->m_Normal.x = 0.0f;\
+			pIntersectPlane->m_Normal.y = 0.0f;\
+			pIntersectPlane->m_Normal.z = normalDirection;\
+			pIntersectPlane->m_Dist = (planeCoord) * normalDirection;\
+			return true;\
+		}\
+	}
+#else
 // Get the intersection point and see if it's inside the other dimensions.
 #define DO_PLANE_TEST_X(planeCoord, coord0, coord1, coord2, normalDirection) \
 	t = (planeCoord - Point1.coord0) / (Point2.coord0 - Point1.coord0);\
@@ -236,6 +296,7 @@ static float g_VPTimesInvVV, g_LineLen;                 // 0x1007c1d4, 0x1007c1b
 			return true;\
 		}\
 	}
+#endif
 
 
 // Just sets up the current 'closest object'.

@@ -215,6 +215,9 @@ CScaleFX::CScaleFX()
 	szSkin2[0]		= '\0';
 	szSkin3[0]		= '\0';
 	fRotationY		= 0.0f;
+#ifdef AVP2SRC_MODERN
+	bAdditiveAlpha	= LTFALSE;	// M-B74 (RETAIL_BUGS.md)
+#endif
 #endif
 }
 
@@ -270,6 +273,9 @@ LTBOOL CScaleFX::Write(CMultiFile* pFile)
 	// RETAIL BUG: bAdditiveAlpha is neither written nor read (nor set by
 	// the constructor), so a scale fx read from the cache has whatever the
 	// allocation held.
+#ifdef AVP2SRC_MODERN
+	pFile->WriteBool(bAdditiveAlpha);	// M-B74: kept, after the rest
+#endif
 
 	return LTTRUE;
 }
@@ -311,6 +317,9 @@ LTBOOL CScaleFX::Read(CMultiFile* pFile)
 	pFile->ReadFloat(&fLifeTime);
 	pFile->ReadFloat(&fDelayTime);
 	pFile->ReadFloat(&fRotationY);
+#ifdef AVP2SRC_MODERN
+	pFile->ReadBool(&bAdditiveAlpha);	// M-B74 (RETAIL_BUGS.md)
+#endif
 
 	return LTTRUE;
 }

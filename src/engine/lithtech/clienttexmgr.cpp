@@ -517,8 +517,15 @@ void tm_UnmarkTextures(CClientMgrTexBankView* pClientMgr)
 	{
 		SharedTextureView* pTexture = (SharedTextureView*)pCur->m_pData;
 
+#ifdef AVP2SRC_MODERN
+		// M-B01.  RETAIL BUG (RETAIL_BUGS.md): the count is the texture's
+		// reference count (LTTexMod's Get/ReleaseTextureHandle), not a
+		// per-sweep one; only the mark is cleared.
+		pTexture->m_bMarked   = 0;
+#else
 		pTexture->m_bMarked   = 0;
 		pTexture->m_nRefCount = 0;
+#endif
 	}
 }
 

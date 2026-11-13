@@ -427,6 +427,10 @@ static GError ServerListLANList(GServerList serverlist)
 			continue;
 		/* RETAIL BUG: indata is not null terminated before it is searched
 		   (ServerListQueryLoop does terminate its replies) */
+#ifdef AVP2SRC_MODERN
+		/* M-B48 (RETAIL_BUGS.md): terminated (recvfrom leaves room) */
+		indata[error] = 0;
+#endif
 		if (strstr(indata, "\\final\\") != NULL) /* we got a reply: add the server */
 			ServerListAddServer(serverlist, saddr.sin_addr.s_addr, ntohs(saddr.sin_port), qt_status);
 	}
@@ -661,6 +665,10 @@ void ServerListSort(GServerList serverlist, gbool ascending, char *sortkey, GCom
 		break;
 	/* RETAIL BUG: no default; an unknown comparemode sorts with an
 	   uninitialised comparator */
+#ifdef AVP2SRC_MODERN
+	default: /* M-B49 (RETAIL_BUGS.md): an unknown mode leaves the list as it is */
+		return;
+#endif
 	}
 	serverlist->sortkey = sortkey;
 	serverlist->sortascending = ascending;

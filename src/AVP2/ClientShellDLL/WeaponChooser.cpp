@@ -913,6 +913,10 @@ LTBOOL CMarineWepChooser::IsDualPistols(int nWeaponID)
 
 	// RETAIL BUG: no null test
 	WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(nWeaponID);
+#ifdef AVP2SRC_MODERN
+	// M-B62 (RETAIL_BUGS.md): no weapon is not the dual pistols
+	if(!pWeapon) return LTFALSE;
+#endif
 
 	if(!_stricmp(pWeapon->szName, "Dual_Pistols") || !_stricmp(pWeapon->szName, "Dual_Pistols_MP"))
 		return LTTRUE;

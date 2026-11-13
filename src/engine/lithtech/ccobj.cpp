@@ -839,6 +839,11 @@ LTRESULT sm_DetachClient(CServerMgr* pMgr, Client* pClient)
 
 		if (pClient->m_pUnknown3AC)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B09.  RETAIL BUG (RETAIL_BUGS.md): the message is made,
+			// as sm_AttachClient makes its own.
+			msg.Init(msg_AllocPacket(0x44c, 0x44c));
+#endif
 			{
 				ServerMessage* pMsg = msg.m_pMsg;
 

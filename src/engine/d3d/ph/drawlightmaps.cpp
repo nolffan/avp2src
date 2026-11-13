@@ -436,6 +436,14 @@ LTBOOL d3d_DrawLightmapOnly(WorldPoly *pPoly)
 	int nVerts;
 
 	pIn = (SPolyVertex*)pPoly->m_Vertices;
+#ifdef AVP2SRC_MODERN
+	// The same unchecked copy as d3d_DrawScreenLMPoly's (below).
+	if(pPoly->m_nVertices > MAX_LMPOLY_VERTS)
+	{
+		dd_ConsolePrint("Error: vertex buffer overflow");
+		return LTFALSE;
+	}
+#endif
 	pOut = verts;
 	for(i=0; i < pPoly->m_nVertices; i++)
 	{
@@ -475,6 +483,13 @@ LTBOOL d3d_DrawScreenLMPoly(WorldPoly *pPoly)
 	int nVerts;
 
 	pIn = (SPolyVertex*)pPoly->m_Vertices;
+#ifdef AVP2SRC_MODERN
+	if(pPoly->m_nVertices > MAX_LMPOLY_VERTS)
+	{
+		dd_ConsolePrint("Error: vertex buffer overflow");
+		return LTFALSE;
+	}
+#endif
 	pOut = verts;
 	for(i=0; i < pPoly->m_nVertices; i++)
 	{

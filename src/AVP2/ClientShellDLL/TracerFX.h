@@ -45,6 +45,13 @@ class CTracerFX : public CSpecialFX
 			m_fVelocity		= 0.0f;
 			m_vDir.Init(0, 0, 0);
 			m_vTracerPos.Init();
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+			// M-B63 (RETAIL_BUGS.md): no flares until Init makes them
+			for (int i = 0; i < 3; i++)
+				m_hFlares[i] = LTNULL;
+#endif
+#endif
 		}
 
 #ifdef PRIMAL_HUNT

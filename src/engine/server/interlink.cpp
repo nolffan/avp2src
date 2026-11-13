@@ -331,12 +331,25 @@ LTRESULT sm_CreateInterObjectLink(CServerMgr* pMgr, LTObject* pOwner,
 		return LT_ERROR;
 
 	pLink = (InterObjectLink*)sb_Allocate(&pMgr->m_Bank848);
+#ifdef AVP2SRC_MODERN
+	// M-B05.  RETAIL BUG (RETAIL_BUGS.md): no allocation was checked; one
+	// that fails now gives back what was taken and LT_ERROR.
+	if (!pLink)
+		return LT_ERROR;
+#endif
 
 	pLink->m_Type    = nType;
 	pLink->m_pOwner  = pOwner;
 	pLink->m_pLinked = pLinked;
 
 	pNode = g_ObjQueueBank.Allocate();
+#ifdef AVP2SRC_MODERN
+	if (!pNode)
+	{
+		sb_Free(&pMgr->m_Bank848, pLink);
+		return LT_ERROR;
+	}
+#endif
 	pNode->m_pData = pLink;
 	pLink->m_pOwnerLink = pNode;
 	dl_Insert(&pOwner->m_pSData->m_Links, pNode);
@@ -348,6 +361,15 @@ LTRESULT sm_CreateInterObjectLink(CServerMgr* pMgr, LTObject* pOwner,
 	else if (nType == 0 || nType == 1)
 	{
 		pNode = g_ObjQueueBank.Allocate();
+#ifdef AVP2SRC_MODERN
+		if (!pNode)
+		{
+			dl_Remove(pLink->m_pOwnerLink);
+			sb_Free(&g_ObjQueueBank.m_Bank, pLink->m_pOwnerLink);
+			sb_Free(&pMgr->m_Bank848, pLink);
+			return LT_ERROR;
+		}
+#endif
 		pNode->m_pData = pLink;
 		pLink->m_pLinkedLink = pNode;
 		dl_Insert(&pLinked->m_pSData->m_Links, pNode);

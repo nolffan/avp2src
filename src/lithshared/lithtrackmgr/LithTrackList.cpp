@@ -142,8 +142,16 @@ DBOOL LithTrackList::Delete(int nTrack)
 		// RETAIL BUG: the tracks after the deleted one are moved down a slot,
 		// but the last slot is never cleared, so it and the one below it hold
 		// the same track (Term deletes it twice).
+#ifdef AVP2SRC_MODERN
+		// M-B43 (RETAIL_BUGS.md): and the last slot moved from is cleared
+		int i;
+		for(i = nTrack; (i + 1 < TRACKMGR_MAX_TRACKS) && m_pList[i + 1]; i++)
+			m_pList[i] = m_pList[i + 1];
+		m_pList[i] = DNULL;
+#else
 		for(int i = nTrack; (i + 1 < TRACKMGR_MAX_TRACKS) && m_pList[i + 1]; i++)
 			m_pList[i] = m_pList[i + 1];
+#endif
 
 		return DTRUE;
 	}

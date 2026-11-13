@@ -75,7 +75,12 @@ DBOOL LithTrackDrawObj::Init(INTERFACE *pInterface)
 	}
 
 	// RETAIL BUG: Init reports failure even when the line system was created
+#ifdef AVP2SRC_MODERN
+	// M-B46 (RETAIL_BUGS.md): success when it was
+	return m_hObj ? DTRUE : DFALSE;
+#else
 	return DFALSE;
+#endif
 }
 
 //*********************************************************************************

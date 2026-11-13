@@ -34,3 +34,6 @@
 # mover the client physics reaches at the manager's +0x50c): the factory
 # stores this vptr itself (0x004126bd; AvP2 1.0.9.6 0x004115bc, 0x004c6ba4)
 ??_7CCmgCSBase@@6B@             0x004d4bac
+# the client's message-object helper (AvP2 1.0.9.6 0x004c6e7c): two slots
+# compiled; slot 3 is GetPosRef, which ReadCompPos/WriteCompPos call
+??_7CClientMsgObjectHelper@@6B@ 0x004d4e94

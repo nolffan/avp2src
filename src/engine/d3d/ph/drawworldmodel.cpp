@@ -1399,6 +1399,22 @@ static void d3d_DrawTranslucentWorldModelPoly(WorldPoly *pPoly)
 static void d3d_DrawNoSortWorldModel(ViewParams *pContext, LTObject *pObject)
 {
 #ifdef PRIMAL_HUNT
+#ifdef AVP2SRC_MODERN
+	// The draw inside each arm, so it is made with that arm's states.
+	if (pObject->m_Flags2 & PHFLAG2_ADDITIVE)
+	{
+		StateSet ssSrcBlend(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+		StateSet ssDestBlend(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE);
+		d3d_DrawTranslucentWorldModel(pContext, pObject);
+	}
+	else
+	{
+		StateSet ssSrcBlend(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE);
+		StateSet ssDestBlend(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE);
+		StateSet ssFogColor(D3DRENDERSTATE_FOGCOLOR, 0);
+		d3d_DrawTranslucentWorldModel(pContext, pObject);
+	}
+#else
 	if (pObject->m_Flags2 & PHFLAG2_ADDITIVE)
 	{
 		StateSet ssSrcBlend(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
@@ -1412,6 +1428,7 @@ static void d3d_DrawNoSortWorldModel(ViewParams *pContext, LTObject *pObject)
 	}
 
 	d3d_DrawTranslucentWorldModel(pContext, pObject);
+#endif
 #else
 	// AvP2's: additively, with no fog colour, over the draw.
 	StateSet ssSrcBlend(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE);

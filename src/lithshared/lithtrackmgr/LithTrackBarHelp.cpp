@@ -39,6 +39,17 @@ void LithTrackBarHelp::SetupLines(int nWidth, int nHeight)
 	// RETAIL BUG: every line passes nWidth where CreateTextItem takes its
 	// justification, so the lines are never word wrapped to the bar's width
 	// and a width whose low byte is 1 or 2 centres or right-justifies them.
+#ifdef AVP2SRC_MODERN
+	// M-B45 (RETAIL_BUGS.md): left-justified, wrapped to the bar's width
+	rect = CreateTextItem(HELPBAR_TEXT_TITLE, TITLE_TRACK_HELP, m_cTitle, TRACKMGR_GUI_BAR_EDGE_SPACE, TRACKMGR_GUI_BAR_EDGE_SPACE, GUI_JUSTIFY_LEFT, nWidth);
+
+	int x = rect.right + (nFontHeight * 2);
+
+	rect = CreateTextItem(HELPBAR_TEXT_GENERAL1, HELP_TEXT_GENERAL1, m_cText, x, TRACKMGR_GUI_BAR_EDGE_SPACE, GUI_JUSTIFY_LEFT, nWidth);
+	rect = CreateTextItem(HELPBAR_TEXT_GENERAL2, HELP_TEXT_GENERAL2, m_cText, x, rect.bottom + nFontHeight, GUI_JUSTIFY_LEFT, nWidth);
+	rect = CreateTextItem(HELPBAR_TEXT_COMMANDS, HELP_TEXT_COMMANDS, m_cText, x, rect.bottom + nFontHeight, GUI_JUSTIFY_LEFT, nWidth);
+	rect = CreateTextItem(HELPBAR_TEXT_EXT_COMMANDS, HELP_TEXT_EXT_COMMANDS, m_cText, x, rect.bottom, GUI_JUSTIFY_LEFT, nWidth);
+#else
 	rect = CreateTextItem(HELPBAR_TEXT_TITLE, TITLE_TRACK_HELP, m_cTitle, TRACKMGR_GUI_BAR_EDGE_SPACE, TRACKMGR_GUI_BAR_EDGE_SPACE, nWidth);
 
 	int x = rect.right + (nFontHeight * 2);
@@ -47,6 +58,7 @@ void LithTrackBarHelp::SetupLines(int nWidth, int nHeight)
 	rect = CreateTextItem(HELPBAR_TEXT_GENERAL2, HELP_TEXT_GENERAL2, m_cText, x, rect.bottom + nFontHeight, nWidth);
 	rect = CreateTextItem(HELPBAR_TEXT_COMMANDS, HELP_TEXT_COMMANDS, m_cText, x, rect.bottom + nFontHeight, nWidth);
 	rect = CreateTextItem(HELPBAR_TEXT_EXT_COMMANDS, HELP_TEXT_EXT_COMMANDS, m_cText, x, rect.bottom, nWidth);
+#endif
 
 	m_nNumLines = (m_pTextItems[HELPBAR_TEXT_EXT_COMMANDS].m_rRect.bottom - m_pTextItems[HELPBAR_TEXT_GENERAL1].m_rRect.top) / m_pFont->Height();
 }

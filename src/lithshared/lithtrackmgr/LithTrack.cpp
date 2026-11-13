@@ -170,8 +170,16 @@ LTBOOL LithTrack::DeleteKey(int nKey)
 		// RETAIL BUG: the keys after the deleted one are moved down a slot, but
 		// the last slot is never cleared, so it and the one below it hold the
 		// same key (Term deletes it twice).
+#ifdef AVP2SRC_MODERN
+		// M-B42 (RETAIL_BUGS.md): and the last slot moved from is cleared
+		int i;
+		for(i = nKey; (i + 1 < TRACKMGR_MAX_TRACK_KEYS) && m_pList[i + 1]; i++)
+			m_pList[i] = m_pList[i + 1];
+		m_pList[i] = LTNULL;
+#else
 		for(int i = nKey; (i + 1 < TRACKMGR_MAX_TRACK_KEYS) && m_pList[i + 1]; i++)
 			m_pList[i] = m_pList[i + 1];
+#endif
 
 		return LTTRUE;
 	}

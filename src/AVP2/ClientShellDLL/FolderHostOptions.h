@@ -78,6 +78,12 @@ protected:
 	void	AddClassBox(uint32 dwCommand, int x, int y, int nStringID, LTBOOL bChecked);
 	void	AddWeaponBox(uint32 dwCommand, int x, int y, char *szText, LTBOOL bChecked);
 	void	RemoveBoxes();
+#ifdef AVP2SRC_MODERN
+public:
+	void	Term();					// M-B59: the boxes' bitmaps
+protected:
+	void	DeleteBoxBitmaps();
+#endif
 #endif
 
 protected:

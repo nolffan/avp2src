@@ -1381,6 +1381,9 @@ void CheatMgr::Cheat_Nelno()
 			(char)0xd3, (char)0xd2, (char)0x32, (char)0xd2, (char)0x32, (char)0x13, (char)0xfb, (char)0x71,
 			(char)0x12, (char)0xfb, (char)0x73, (char)0x53, (char)0x33, (char)0x53, (char)0xd3, (char)0x71,
 			(char)0xfb, (char)0x52, (char)0x53, (char)0xdb, (char)0x5e
+#ifdef AVP2SRC_MODERN
+			, (char)0x00	// M-B52 (RETAIL_BUGS.md): terminated
+#endif
 		};
 
 		ScrambleString(szNelnoOn, s_szNelnoMessage, sizeof(s_szNelnoMessage)-1, SCRAMBLE_BOTH);

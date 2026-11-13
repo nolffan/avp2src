@@ -795,10 +795,6 @@ CRenderer* CDisplayModes::AddRenderer(const char* sDll)
 CRenderer* CDisplayModes::FindRenderer(const char* sDll)
 {
 	if (!sDll) return(NULL);
-#ifdef AVP2SRC_MODERN
-	// as the engine: d3d.ren is d3d9.ren in the modern build
-	if (_stricmp(sDll, "d3d.ren") == 0) sDll = "d3d9.ren";
-#endif
 
 	POSITION pos = m_renderers.GetHeadPosition();
 	while (pos)

@@ -1629,7 +1629,12 @@ LTBOOL CameraMgrFX_RecoilUpdate(HCAMERA hCamera, void *pEffect)
 			g_pLTClient->GetObjectPos(hWeapon, &vWeaponPos);
 			// RETAIL BUG: this moves the weapon by the offset plus 0.95 on
 			// every axis; it was surely meant to be scaled by 0.95
+#ifdef AVP2SRC_MODERN
+			// M-B56 (RETAIL_BUGS.md): the offset, scaled by 0.95
+			vPos *= 0.95f;
+#else
 			vPos += 0.95f;
+#endif
 			vWeaponPos += vPos;
 			g_pLTClient->SetObjectPos(hWeapon, &vWeaponPos);
 		}

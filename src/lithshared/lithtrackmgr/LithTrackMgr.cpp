@@ -741,7 +741,17 @@ DBOOL LithTrackMgr::Ext_Type(int nToks, char **szToks, char *szType)
 	// RETAIL BUG: this only changes the local copy of the pointer, so the
 	// font type is never changed ('TrackEdit Font Type <x>' just recreates
 	// the same font).
+#ifdef AVP2SRC_MODERN
+	// M-B44 (RETAIL_BUGS.md): the setting itself takes the new type (its
+	// only caller passes m_lfCS.szFontName), from a copy that outlives the
+	// command's tokens
+	static char s_szType[128];
+	strncpy(s_szType, szToks[0], sizeof(s_szType) - 1);
+	s_szType[sizeof(s_szType) - 1] = '\0';
+	m_lfCS.szFontName = s_szType;
+#else
 	szType = szToks[0];
+#endif
 	return DTRUE;
 }
 

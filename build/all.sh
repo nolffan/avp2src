@@ -29,6 +29,9 @@
 #                  dedicated server (AVP2XServ.exe), its game DLLs in
 #                  custom/, and its own archives; AvP2's it reads from
 #                  ../AVP2/ (avp2cmds.txt: build/avp2cmds.sh)
+#                  (the modern build: AVP2.exe and PrimalHunt.exe start
+#                  the game directly, and AVP2Launcher.exe and
+#                  PrimalHuntLauncher.exe are the launchers; MODERN.md M-8)
 #   linux-run-avp2.sh, linux-run-ph.sh, windows-run.bat   start a game (build/game-scripts/)
 #
 # The steps, in order (each for both games):
@@ -118,6 +121,12 @@ BUILT_PH=(
     "$P/ClientRes/PrimalHunt/CRes.dll"       custom/cres.dll
     "$P/ServerRes/PrimalHunt/SRes.dll"       custom/sres.dll
 )
+# The modern build's launchers (docs/MODERN.md M-8): AVP2.exe and
+# PrimalHunt.exe start the game directly; these are the launchers
+if [ -n "$MODERN" ]; then
+    BUILT_AVP2+=(src/launcher/Release/AVP2Launcher.exe        AVP2Launcher.exe)
+    BUILT_PH+=(src/launcher/PrimalHunt/PrimalHuntLauncher.exe PrimalHuntLauncher.exe)
+fi
 LOOSE_AVP2=(console.PCX childmodel.map readme.txt readme1096.txt changelog.txt EULA.txt)
 LOOSE_PH=(console.PCX childmodel.map FontData.fnt readme.txt license.txt)
 
@@ -180,8 +189,9 @@ runscript() {   # <script> <game directory> <title> <launcher>
     chmod +x "$OUT/$1"
 }
 rm -f "$OUT/linux-run.sh"     # (one script for both, before linux-run-avp2/-ph.sh)
-runscript linux-run-avp2.sh AVP2 "Aliens versus Predator 2" AVP2.exe
-runscript linux-run-ph.sh PrimalHunt "Aliens versus Predator 2: Primal Hunt" PrimalHunt.exe
+L=; [ -z "$MODERN" ] || L=Launcher      # (the launchers' names: M-8)
+runscript linux-run-avp2.sh AVP2 "Aliens versus Predator 2" "AVP2$L.exe"
+runscript linux-run-ph.sh PrimalHunt "Aliens versus Predator 2: Primal Hunt" "PrimalHunt$L.exe"
 sed 's/$/\r/' build/game-scripts/windows-run.bat > "$OUT/windows-run.bat"     # (CRLF)
 
 step "3. compile: the workspaces (build/compile.sh: build/build.mk, ${AVP2SRC_JOBS:-$(nproc)} jobs)"

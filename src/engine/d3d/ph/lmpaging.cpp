@@ -176,6 +176,9 @@ static CLMPage* d3d_AddLMPage(LMPager *pPager)
 	pFormat = d3d_GetLightmapFormat();
 	if(!pFormat)
 	{
+#ifdef AVP2SRC_MODERN
+		dfree(pPage->m_pBits);
+#endif
 		dfree(pPage);
 		return LTNULL;
 	}

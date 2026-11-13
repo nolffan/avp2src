@@ -725,7 +725,13 @@ void CTurretGun::Rotate(LTFLOAT fYaw, LTFLOAT fPitch)
 	{
 		// RETAIL BUG: meant to wrap the yaw into one turn, but the result
 		// is thrown away
+#ifdef AVP2SRC_MODERN
+		// M-B83 (RETAIL_BUGS.md): whole turns taken off (only a rotation
+		// is made of it, so where it wraps does not show)
+		m_fYaw = (LTFLOAT)fmod(m_fYaw, MATH_CIRCLE);
+#else
 		ceil(m_fYaw * (1.0f / MATH_CIRCLE));
+#endif
 	}
 	else
 	{

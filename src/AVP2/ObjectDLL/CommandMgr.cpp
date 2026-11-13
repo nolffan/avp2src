@@ -632,7 +632,13 @@ DBOOL CCommandMgr::ProcessSVar(const ConParse & parse, int nCmdIndex)
 		// RETAIL BUG: CreateMessage's result is not checked, so a message
 		// that cannot be made is written through a null pointer.
 		ILTMessage* pMsg = LTNULL;
+#ifdef AVP2SRC_MODERN
+		// M-B70 (RETAIL_BUGS.md): no message, nothing sent
+		if (g_pLTServer->Common()->CreateMessage(pMsg) != LT_OK || !pMsg)
+			return DTRUE;
+#else
 		g_pLTServer->Common()->CreateMessage(pMsg);
+#endif
 		pMsg->WriteFloat(fValue);
 		g_pLTServer->SendToClient(*pMsg, MID_CONSOLE_COMMAND, LTNULL, MESSAGE_GUARANTEED);
 		pMsg->Release();

@@ -136,7 +136,13 @@ public:
 	// past the interface's thirty-seven (server.dll 0x100757b8 slot 37 is
 	// 0x1003a130, slot 33 CommonModelLT's own 0x100252b9), so the
 	// interface's SetCurAnimTime never reaches it (RETAIL_BUGS.md).
+#ifdef AVP2SRC_MODERN
+	// M-B03.  The interface's signature, so this is what a game reaches.
+	LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime,
+	                        LTBOOL bIncorporateScale = LTTRUE);
+#else
 	virtual LTRESULT SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime);
+#endif
 	LTRESULT SetCurAnim(LTAnimTracker* pTracker, HMODELANIM hAnim);
 	LTRESULT ResetAnim(LTAnimTracker* pTracker);
 	LTRESULT SetWeightSet(LTAnimTracker* pTracker, HMODELWEIGHTSET hSet);

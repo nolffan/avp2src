@@ -69,11 +69,22 @@ class CMPAllowList : public CMPRestrictList
 		// 0x100a88d0)
 		LTBOOL	Insert(int i, int nId, LTBOOL bAllowed, const char* szName)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B75 (RETAIL_BUGS.md): moved up from the top, and counted
+			if((i >= MAX_MP_RESTRICT_ENTRIES) || (m_nNumEntries >= MAX_MP_RESTRICT_ENTRIES))
+				return LTFALSE;
+
+			for(int j = m_nNumEntries; j > i; j--)
+				m_aEntries[j] = m_aEntries[j - 1];
+
+			m_nNumEntries++;
+#else
 			if(i >= MAX_MP_RESTRICT_ENTRIES)
 				return LTFALSE;
 
 			for(int j = i; j < m_nNumEntries; j++)
 				m_aEntries[j + 1] = m_aEntries[j];
+#endif
 
 			m_aEntries[i].nId = nId;
 			m_aEntries[i].bAllowed = bAllowed;

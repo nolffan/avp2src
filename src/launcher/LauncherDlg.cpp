@@ -311,6 +311,13 @@ void CLauncherDlg::OnPlay()
 			EndDialog(ACTION_PLAY);
 		}
 #else
+#ifdef AVP2SRC_MODERN
+		// M-8: no disc check (MODERN.md, the rules)
+		if(LaunchGame(ACTION_PLAY))
+		{
+			EndDialog(ACTION_PLAY);
+		}
+#else
 		if(theApp.CD_VerifyGame())
 		{
 			if(LaunchGame(ACTION_PLAY))
@@ -318,6 +325,7 @@ void CLauncherDlg::OnPlay()
 				EndDialog(ACTION_PLAY);
 			}
 		}
+#endif
 #endif
 	}
 	else
@@ -455,7 +463,12 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	}
 
 	// See if we need to bring up the detail settings dialog box
+#ifdef AVP2SRC_MODERN
+	// M-8: not for the direct start, which keeps the game's own settings
+	if(!g_bM8Direct && ((theApp.m_dwNumGameRuns <= 0) || (theApp.m_dwNumLauncherRuns <= 0) || (theApp.m_bRestoreDefaults)))
+#else
 	if((theApp.m_dwNumGameRuns <= 0) || (theApp.m_dwNumLauncherRuns <= 0) || (theApp.m_bRestoreDefaults))
+#endif
 	{
 		CDetailSettingsDlg dlg;
 		int nRet = dlg.DoModal();
@@ -479,7 +492,16 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	char* sAvP2XRez = GetAvP2XRezFile();	// PH: (not used)
 #endif
 
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+	// M-8: Primal Hunt's worlds here and AvP2's archives beside it
+	if (!M8FileExists("AVP2X.REZ") || !M8FileExists(M8Path(theApp.m_csAvP2InstallDir, "AVP2.REZ")))
+#else
 	if (!sGameRez || sGameRez[0] == '\0')
+#endif
+#else
+	if (!sGameRez || sGameRez[0] == '\0')
+#endif
 	{
 		theApp.MessageBox(IDS_CANTFINDREZFILE, IDS_APPNAME, MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
@@ -493,6 +515,39 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	sNewCmdLine += "\"";
 
 #ifdef PRIMAL_HUNT
+#ifdef AVP2SRC_MODERN
+	// M-8: the rez stack of build/avp2cmds.sh -- AvP2's archives from
+	// AvP2's directory, then Primal Hunt's own, then a patch's, custom last
+	static const char* const s_aM8AvP2Rez[] = { "AVP2.REZ", "SOUNDS.REZ", "ALIEN.REZ", "MARINE.REZ", "PREDATOR.REZ", "MULTI.REZ" };
+	static const char* const s_aM8Rez[] = { "AVP2P.REZ", "AVP2P1.REZ", "AVP2X.REZ", "MULTI.REZ", "AVP2DLL.REZ", "AVP2L.REZ", "DIALOGUE.REZ" };
+	int iM8;
+	for (iM8 = 0; iM8 < sizeof(s_aM8AvP2Rez) / sizeof(s_aM8AvP2Rez[0]); iM8++)
+	{
+		CString csRez = M8Path(theApp.m_csAvP2InstallDir, s_aM8AvP2Rez[iM8]);
+		if (M8FileExists(csRez))
+		{
+			sNewCmdLine += " -rez \"";
+			sNewCmdLine += csRez;
+			sNewCmdLine += "\"";
+		}
+	}
+	for (iM8 = 0; iM8 < sizeof(s_aM8Rez) / sizeof(s_aM8Rez[0]); iM8++)
+	{
+		if (M8FileExists(s_aM8Rez[iM8]))
+		{
+			sNewCmdLine += " -rez ";
+			sNewCmdLine += s_aM8Rez[iM8];
+		}
+	}
+
+	if (!theApp.m_csPatchRez.IsEmpty())
+	{
+		sNewCmdLine += " ";
+		sNewCmdLine += theApp.m_csPatchRez;
+	}
+
+	sNewCmdLine += " -rez custom";
+#else
 	// Set rez files... (PH: quoted, and AvP2's multiplayer, dialogue and
 	// patch rez files)
 	sNewCmdLine += " -rez \"";
@@ -550,6 +605,7 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	sNewCmdLine += theApp.m_csPatchRez;
 
 	sNewCmdLine += " -rez custom";
+#endif
 
 #else
 	// Set rez files...
@@ -659,6 +715,36 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	{
 		CString sDetail = " ++PerformanceConfig ";
 
+#ifdef AVP2SRC_MODERN
+		// RETAIL BUG fixed (MODERN.md M-B102): Low is the low-detail
+		// profile, High the high one
+		switch(theApp.m_dwDetailSetting)
+		{
+			case DETAIL_LOW:
+			{
+				sDetail += ".DefaultLow";
+				break;
+			}
+
+			case DETAIL_MEDIUM:
+			{
+				sDetail += ".DefaultMid";
+				break;
+			}
+
+			case DETAIL_HIGH:
+			{
+				sDetail += ".DefaultHigh";
+				break;
+			}
+
+			default:
+			{
+				sDetail += ".DefaultMid";
+				break;
+			}
+		}
+#else
 		// RETAIL BUG: low and high are the wrong way round -- the detail
 		// dialog's "Low" button gives the game the high-detail profile and
 		// "High" the low one
@@ -688,6 +774,7 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 				break;
 			}
 		}
+#endif
 
 		sNewCmdLine += sDetail;
 	}
@@ -716,6 +803,21 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 
 	GetStartupInfo(&si);
 
+#ifdef AVP2SRC_MODERN
+	// RETAIL BUGS fixed (MODERN.md M-B103, M-B107): the command line is
+	// written as it is, not as a format string, and from the CString,
+	// whatever its length, not a copy in 1024 bytes of stack
+	FILE* pFile = fopen("avp2cmds.txt", "w");
+	if (!pFile)
+	{
+		return FALSE;
+	}
+
+	fputs(sNewCmdLine, pFile);
+	fclose(pFile);
+#else
+	// RETAIL BUG: the command line, whatever its length, is copied into
+	// 1024 bytes of stack
 	char sString[1024];
 	strcpy(sString, sNewCmdLine);
 
@@ -730,6 +832,7 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 
 	fprintf(pFile, sString);
 	fclose(pFile);
+#endif
 
 	CString sRun;
 	if (theApp.m_bCDLauncherRunning && !theApp.m_csInstallDir.IsEmpty())
@@ -746,6 +849,17 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 		theApp.MessageBox(IDS_CANTLAUNCHCLIENTEXE, IDS_APPNAME, MB_OK | MB_ICONEXCLAMATION);
 		return(FALSE);
 	}
+
+#ifdef AVP2SRC_MODERN
+	// M-8: the direct start waits for the game and takes its exit code
+	if (g_bM8Direct)
+	{
+		if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_OBJECT_0)
+			GetExitCodeProcess(pi.hProcess, &g_dwM8ExitCode);
+	}
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+#endif
 
 	return TRUE;
 }

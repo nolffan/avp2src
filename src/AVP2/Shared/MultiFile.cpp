@@ -218,12 +218,20 @@ void CMultiFile_FILE::ReadString(char* szVal, uint16 nMaxLen)
 
 	uint16 nLen;
 	fread(&nLen, sizeof(nLen), 1, m_pFile);
+#ifdef AVP2SRC_MODERN
+	uint16 nFullLen = nLen;	// M-B79 (RETAIL_BUGS.md)
+#endif
 
 	if(nLen > nMaxLen - 1)
 		nLen = nMaxLen - 1;
 
 	fread(szVal, nLen, 1, m_pFile);
 	szVal[nLen] = 0;
+#ifdef AVP2SRC_MODERN
+	// M-B79: and the rest of a string too long for the buffer passed over
+	if(nFullLen > nLen)
+		fseek(m_pFile, nFullLen - nLen, SEEK_CUR);
+#endif
 }
 
 LTFLOAT CMultiFile_FILE::ReadFloat()
@@ -416,12 +424,20 @@ void CMultiFile_LITH::ReadString(char* szVal, uint16 nMaxLen)
 
 	uint16 nLen;
 	m_pStream->Read(&nLen, sizeof(nLen));
+#ifdef AVP2SRC_MODERN
+	uint16 nFullLen = nLen;	// M-B79 (RETAIL_BUGS.md)
+#endif
 
 	if(nLen > nMaxLen - 1)
 		nLen = nMaxLen - 1;
 
 	m_pStream->Read(szVal, nLen);
 	szVal[nLen] = 0;
+#ifdef AVP2SRC_MODERN
+	// M-B79: and the rest of a string too long for the buffer passed over
+	if(nFullLen > nLen)
+		Seek(nFullLen - nLen, MULTIFILE_SEEK_CUR);
+#endif
 }
 
 LTFLOAT CMultiFile_LITH::ReadFloat()

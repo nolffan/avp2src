@@ -1,0 +1,28 @@
+# The modern build's launcher (docs/MODERN.md M-8, M-B102, M-B104), with
+#   PLAYTEST_LAUNCH=AVP2Launcher.exe    (or PrimalHuntLauncher.exe)
+# on the harness's 640x480 display, with no window manager: the dialogs
+# are where the launcher centres them. A fresh PLAYTEST_PREFIX: no
+# registry (the display warning shows; the game's first run asks for the
+# detail level). Display, its warning's OK, then the display dialog's
+# close button in its corner (M-B104: back to the launcher); Play, Low in
+# the detail dialog (M-B102: avp2cmds.txt has ++PerformanceConfig
+# .DefaultLow), and the game's window.
+wfocus ^Aliens.vs..Predator$ 90
+wait 3
+screen launcher
+wclick ^Aliens.vs..Predator$ 450 100
+wait 3
+key Return
+wait 8
+screen display
+sclick 606 50
+wait 3
+screen display-closed
+wclick ^Aliens.vs..Predator$ 450 28
+wait 3
+screen detail
+sclick 314 198
+wait 2
+wfocus ^Aliens.v.*Predator.2 120
+wait 10
+screen game

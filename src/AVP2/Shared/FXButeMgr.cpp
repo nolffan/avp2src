@@ -1061,7 +1061,14 @@ LTBOOL PROJECTILEFX::Read(CMultiFile* pFile)
 			break;
 		}
 
+#ifdef AVP2SRC_MODERN
+		// M-B72 (RETAIL_BUGS.md): no class data made, none read (kind 0
+		// is written as its kind alone)
+		if (pClassData)
+			pClassData->Read(pFile);
+#else
 		pClassData->Read(pFile);
+#endif
 	}
 
 	bFromFile = LTTRUE;
@@ -4441,6 +4448,26 @@ LTBOOL PVFX::Write(CMultiFile* pFile)
 
 	// RETAIL BUG: each of these loops has a stray semicolon, so it writes
 	// one type, the one after the last (and reads it back the same way).
+#ifdef AVP2SRC_MODERN
+	// M-B71 (RETAIL_BUGS.md): every type, without the semicolons
+	pFile->WriteInt(nNumScaleFXTypes);
+	for (i=0; i < nNumScaleFXTypes; i++)
+	{
+		pFile->WriteInt(aScaleFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumDLightFX);
+	for (i=0; i < nNumDLightFX; i++)
+	{
+		pFile->WriteInt(aDLightFXTypes[i]);
+	}
+
+	pFile->WriteInt(nNumSoundFX);
+	for (i=0; i < nNumSoundFX; i++)
+	{
+		pFile->WriteInt(aSoundFXTypes[i]);
+	}
+#else
 	pFile->WriteInt(nNumScaleFXTypes);
 	for (i=0; i < nNumScaleFXTypes; i++);
 	{
@@ -4458,6 +4485,7 @@ LTBOOL PVFX::Write(CMultiFile* pFile)
 	{
 		pFile->WriteInt(aSoundFXTypes[i]);
 	}
+#endif
 
 	return LTTRUE;
 }
@@ -4472,6 +4500,29 @@ LTBOOL PVFX::Read(CMultiFile* pFile)
 	pFile->ReadString(szName, ARRAY_LEN(szName));
 	pFile->ReadString(szSocket, ARRAY_LEN(szSocket));
 
+#ifdef AVP2SRC_MODERN
+	// M-B71 (RETAIL_BUGS.md): every type, and no more than the lists hold
+	pFile->ReadInt(&nNumScaleFXTypes);
+	if (nNumScaleFXTypes < 0 || nNumScaleFXTypes > PV_MAX_SCALEFX_TYPES) nNumScaleFXTypes = 0;
+	for (i=0; i < nNumScaleFXTypes; i++)
+	{
+		pFile->ReadInt(&aScaleFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumDLightFX);
+	if (nNumDLightFX < 0 || nNumDLightFX > PV_MAX_DLIGHTFX_TYPES) nNumDLightFX = 0;
+	for (i=0; i < nNumDLightFX; i++)
+	{
+		pFile->ReadInt(&aDLightFXTypes[i]);
+	}
+
+	pFile->ReadInt(&nNumSoundFX);
+	if (nNumSoundFX < 0 || nNumSoundFX > PV_MAX_SOUNDFX_TYPES) nNumSoundFX = 0;
+	for (i=0; i < nNumSoundFX; i++)
+	{
+		pFile->ReadInt(&aSoundFXTypes[i]);
+	}
+#else
 	pFile->ReadInt(&nNumScaleFXTypes);
 	for (i=0; i < nNumScaleFXTypes; i++);
 	{
@@ -4489,6 +4540,7 @@ LTBOOL PVFX::Read(CMultiFile* pFile)
 	{
 		pFile->ReadInt(&aSoundFXTypes[i]);
 	}
+#endif
 
 	return LTTRUE;
 }
@@ -4949,6 +5001,18 @@ TRACERFX::TRACERFX()
 	fInitialAlpha	= 0.0f;
 	fFinalAlpha		= 0.0f;
 	vColor.Init();
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+
+	// M-B73, M-B85 (RETAIL_BUGS.md): Primal Hunt's members start cleared,
+	// so a tracer without SingleSegment is multi-segment and one without
+	// a Flare has no flares
+	bSingleSegment	= LTFALSE;
+	fHeadVelocity	= 0.0f;
+	szFlare[0]		= '\0';
+	fFlareScale		= 0.0f;
+#endif
+#endif
 }
 
 #ifdef PRIMAL_HUNT

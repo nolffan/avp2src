@@ -1,0 +1,10 @@
+# The modern build's direct start (docs/MODERN.md M-8): run with
+#   PLAYTEST_LAUNCH="AVP2.exe +DisableMovies 1"    (or PrimalHunt.exe)
+# and, to show it needs no registry, PLAYTEST_PREFIX=<a new directory>.
+# The program writes avp2cmds.txt as the launcher's Launch does (its
+# arguments last) and starts lithtech.exe; the engine's window comes up and
+# the game reaches its main menu (its window has the launcher's -windowtitle,
+# not "LithTech", so `wfocus`, not `window`).
+wfocus ^Aliens.v.*Predator.2 120
+wait 15
+screen menu

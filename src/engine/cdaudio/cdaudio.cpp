@@ -214,7 +214,13 @@ static LRESULT CALLBACK cdaudio_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 {
 	if (uMsg == MM_MCINOTIFY && g_RedMgr.IsValid())
 	{
+#ifdef AVP2SRC_MODERN
+		// M-B06.  Only a play that ran to its end moves the list on.
+		if (wParam == MCI_NOTIFY_SUCCESSFUL)
+			cdaudio_OnMCINotify();
+#else
 		cdaudio_OnMCINotify();
+#endif
 		return 0;
 	}
 
@@ -309,6 +315,14 @@ static void* cdaudio_GetSongFromList(void *pPlayList, unsigned long dwIndex)
 {
 	if (!pPlayList || !g_pMusicMgr) return NULL;
 
+#ifdef AVP2SRC_MODERN
+	// M-B07.  The song at that index of the list (from 0), as the
+	// DirectMusic driver answers; NULL past its end.
+	CPlayList *pList = (CPlayList*)pPlayList;
+	if (dwIndex < pList->m_Songs.GetSize())
+		return (void*)pList->m_Songs[dwIndex];
+#endif
+
 	return NULL;
 }
 
@@ -324,6 +338,11 @@ static void cdaudio_RemoveList(void *pPlayList)
 	if (!g_pMusicMgr) return;
 
 	CPlayList *pList = (CPlayList*)pPlayList;
+#ifdef AVP2SRC_MODERN
+	// M-B08.  The list playing is forgotten with it.
+	if (g_PlayLists.m_pCurPlayList == pList)
+		g_PlayLists.m_pCurPlayList = NULL;
+#endif
 	pList->m_Link.Remove();
 	delete pList;
 }

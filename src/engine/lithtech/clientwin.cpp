@@ -1321,6 +1321,11 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 	{
 		for (i = 0; i < __argc; i++)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B02.  As in the -cmdfile loop: no store past the table.
+			if (nArgs >= 150)
+				break;
+#endif
 			if (CHelpers::UpperStrcmp(__argv[i], "-cmdfile"))
 			{
 				i++;
@@ -1340,6 +1345,11 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 						if (!fgets(pBuffer, nLen, pFile))
 						{
 							fclose(pFile);
+#ifdef AVP2SRC_MODERN
+							// M-B02.  RETAIL BUG (RETAIL_BUGS.md): the
+							// buffer is left allocated.
+							clu_sub_429080(pBuffer);
+#endif
 							return LTFALSE;
 						}
 
@@ -1348,6 +1358,13 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 						pToken = strtok(pBuffer, " ");
 						while (pToken)
 						{
+#ifdef AVP2SRC_MODERN
+							// M-B02.  RETAIL BUG (RETAIL_BUGS.md): the
+							// bound below lets a 151st argument be stored,
+							// past the table; stop once it is full.
+							if (nArgs >= 150)
+								break;
+#endif
 							if (!bInQuote)
 							{
 								if (*pToken == '"')

@@ -1001,6 +1001,10 @@ bool CD3DLMTexture::Init(uint32 width, uint32 height)
 		m_Height = height;
 		m_pSurface = pSurface;
 	}
+#ifdef AVP2SRC_MODERN
+	else
+		return false;
+#endif
 
 	rect.left = 0;
 	rect.top = 0;

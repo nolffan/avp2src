@@ -30,8 +30,15 @@ AvP2 runs on the same engine generation: check each against the retail
 binary before listing it. Those AvP2 does not have go at the end, so nobody
 looks again.
 
-**Fixed so far** (in the modern build): the world running fast above 100
-frames a second (M-10); a joystick button bound twice (M-7). The entries below that say "Fixed in the modern
+**Fixed so far** (in the modern build): every entry below is either fixed
+or says why it is not. With an id: the world running fast above 100 frames
+a second (M-10); a joystick button bound twice (M-7); the engine's
+(M-B01..M-B09), the renderers' (M-B20..M-B26), the client shells' and
+lithshared's (M-B40..M-B63), the object DLLs' and shared code's
+(M-B70..M-B85) and the launchers' and Launch.dll's (M-B100..M-B107)
+(MODERN.md). The flare crash that the controller work found was a
+reconstruction error, not a retail bug, and is fixed in both builds (the
+client's message-object vtable). The entries that say "Fixed in the modern
 build" without an id are nolfsrc's engine fixes, imported with its code
 and not yet checked here (MODERN.md, Where it stands).
 
@@ -130,8 +137,16 @@ referenced only through that count can be freed by the following sweep.
 Not yet shown to happen in the game; the bytes alone do not say whether
 it is deliberate. Reproduced: the retail build clears the mark and the
 count as two statements, which VC6 merges into the one word store.
+The count is a real reference count, not a per-sweep one: its only
+writers are `LTTexMod::GetTextureHandle` (+1) and `ReleaseTextureHandle`
+(-1, the texture data freed at zero; lttexmod.cpp), and its readers take
+zero for "no handle" (`tm_IsValidTextureHandle`). So after a sweep a
+texture-mod handle a game still holds is refused and its texture can be
+freed under it. Neither game's DLLs ask for one, so it does not show in
+AvP2 or Primal Hunt; a mod's would.
 
-Not fixed in the modern build yet.
+Fixed in the modern build: clienttexmgr.cpp, the sweep clears only the
+mark; MODERN.md M-B01.
 
 ### A command line of more than 150 arguments overruns the argument table
 
@@ -142,7 +157,10 @@ the increment with `cmp $0x96; jg`, so the 151st argument is copied into
 command line and from a `-cmdfile`. A `-cmdfile` whose read fails also
 leaks the buffer allocated for it.
 
-Not fixed yet.
+Fixed in the modern build: clientwin.cpp, both loops stop once the table
+holds 150 arguments (the bound is tested at the top of each, which also
+covers Primal Hunt's quoted argument that is stored without the test),
+and the failed read frees its buffer; MODERN.md M-B02.
 
 ### A socket naming the node one past the end is accepted
 
@@ -204,9 +222,13 @@ of its own past the interface (slot 37 of server.dll's vtable 0x100757b8,
 where slot 33 is still `CommonModelLT::SetCurAnimTime`, 0x100252b9). A game
 calling the interface gets the shared accessor: the time is set, but the
 string keys are not re-walked and the object is not flagged (change flag
-0x2000), so clients do not hear of the change.
+0x2000), so clients do not hear of the change. (The object DLLs do call
+it: `CharacterAnimation.cpp` randomises a character's first animation
+time, and carries the time over when it changes animation.)
 
-Not fixed yet: the override's signature has to follow the interface's.
+Fixed in the modern build: servermodel.h/.cpp, the override takes the
+interface's three arguments and hands `bIncorporateScale` on, so it is
+the interface's slot 33; MODERN.md M-B03.
 
 ### A long wildcard in the CRC string list overruns two buffers
 
@@ -225,7 +247,8 @@ lithtech.exe 0x0048bd70, server.dll 0x10040a44
 copied with `strncpy` limited to 0xff into a 0x100-byte buffer that is
 never cleared, so a name that long has no terminator.
 
-Not fixed yet.
+Fixed in the modern build: smgr.cpp, the last byte is zeroed; MODERN.md
+M-B04.
 
 ### The packet trace reads past a truncated flag record
 
@@ -286,7 +309,14 @@ The ray-vs-triangle worker behind `IntersectRays` (CalcLOD: lithtech.exe
 The level-of-detail distance lookup reads through a null pointer when the
 level is past the end of the distance array.
 
-Not fixed yet.
+Not fixed: not a bug. The null read is there (`xor %eax,%eax; fadds
+(%eax)` at lithtech.exe 0x0045ff7b, and at 0x0045ffbf and 0x0045fffc; the
+same in server.dll), but no level reaches it: it is the inline lookup's
+answer for a level past `n` (the array's count), and every level handed
+to it is in 0..n -- both offsets are clamped to 0..n first (`cmp; jle` at
+0x0045ff4a and 0x0045ff94, the negative one through `neg; jns`), and the
+loop runs i = 0..n (`lea 0x1(%eax)`, `jb`). It is code the compiler kept
+for a branch that cannot be taken.
 
 ### A world model pushing a no-slide object never corrects it
 
@@ -351,7 +381,9 @@ type and both ends are stored through it unchecked; the node allocations
 after it are not checked either. Out of memory, `CreateInterObjectLink` or
 `GetSmartLinkBody` crashes instead of failing with `LT_ERROR`.
 
-Not fixed yet.
+Fixed in the modern build: interlink.cpp, each of the three allocations is
+checked, and a failure gives back what was already taken and answers
+`LT_ERROR`; MODERN.md M-B05.
 
 ### A command-line argument of 200 characters or more is left unterminated
 
@@ -364,7 +396,8 @@ nMaxArgLen)`, and lithtech.exe passes 200-byte slots and `nMaxArgLen` 200
 copied without its terminator, and the engine reads it on into the next
 slot.
 
-Not fixed yet (Launch.dll has no modern build).
+Fixed in the modern build: launch.cpp, an argument too long for its slot
+is cut to 199 characters and terminated; MODERN.md M-B100.
 
 ### Every rez-file check leaks a find handle
 
@@ -374,7 +407,11 @@ gives the handle back with `_findclose`; `FindRezFiles` makes up to five
 such checks every time the engine asks for its command line. Harmless in
 practice (once per start), but a leak.
 
-Not fixed yet (Launch.dll has no modern build).
+Fixed in the modern build: Launch.dll's RezFind.cpp, each handle is given
+back (`_findclose`) once the check has its answer; MODERN.md M-B101. The
+launchers' own `ExistRezFile` and `ExistRezDir` (src/launcher/RezFind.cpp)
+are the same code and get the same fix, though theirs lie in the pages the
+protection wrapper keeps encrypted, so it is not known from their bytes.
 
 ### Starting a CD play list while a track plays can skip its first track
 
@@ -384,14 +421,17 @@ track finished" without checking wParam, so the notification for a play
 that was superseded or stopped also advances the list: starting a play
 list while a track is playing can skip to its second track.
 
-Not fixed yet.
+Fixed in the modern build: cdaudio.cpp, only `MCI_NOTIFY_SUCCESSFUL` (the
+track played to its end) moves the list on; MODERN.md M-B06.
 
 ### The CD driver's GetSongFromList always answers nothing
 
 cdaudio.dll 0x10001600 (`GetSongFromList`, src/engine/cdaudio/cdaudio.cpp)
 returns NULL whatever it is asked.
 
-Not fixed yet.
+Fixed in the modern build: cdaudio.cpp, it answers the list's song (its
+track number) at that index, counted from 0, and NULL past the end;
+MODERN.md M-B07.
 
 ### Removing the playing CD list leaves a dangling pointer
 
@@ -399,7 +439,9 @@ cdaudio.dll 0x10001610 (`RemoveList`, src/engine/cdaudio/cdaudio.cpp) does
 not clear the current-list pointer, so removing the list that is playing
 leaves a pointer that `OnMCINotify` and `Resume` read later.
 
-Not fixed yet.
+Fixed in the modern build: cdaudio.cpp, removing the current list clears
+the pointer (the track playing plays on; at its end nothing follows, as
+after the last track of a list); MODERN.md M-B08.
 
 ### The launcher's Low and High detail buttons give the opposite profile
 
@@ -411,7 +453,8 @@ Medium and 2 for High (`CDetailSettingsDlg`'s handlers, AVP2.exe 0x00402170,
 run (or after "restore defaults"), a player who picks Low detail starts with
 the high-detail profile, and High with the low one.
 
-Not fixed yet: the launchers have no modern build yet.
+Fixed in the modern build: LauncherDlg.cpp, Low gives `.DefaultLow` and
+High `.DefaultHigh`; MODERN.md M-B102.
 
 ### The launcher writes the command line as a format string
 
@@ -423,7 +466,22 @@ dialog, the registry's update and content command lines -- is taken for a
 conversion and garbles the file, or reads arguments that were never passed.
 It should be `fputs` (or a `"%s"` format).
 
-Not fixed yet: the launchers have no modern build yet.
+Fixed in the modern build: LauncherDlg.cpp, the command line is written
+with `fputs`; MODERN.md M-B103.
+
+### The launcher copies its command line into 1024 bytes of stack
+
+AVP2.exe 0x00406a40, PrimalHunt.exe 0x00406d70 (`CLauncherDlg::LaunchGame`,
+src/launcher/LauncherDlg.cpp). Before it writes avp2cmds.txt, the command
+line it has built in a `CString` is copied with `strcpy` into `char
+sString[1024]` on the stack, whatever its length. It holds the launcher's
+own command line (`m_lpCmdLine`, as long as Windows allows), the saved
+commands and the registry's update and content command lines (up to 259
+characters each) besides the rez files and options, so a long enough
+command line or set of commands overruns the stack frame.
+
+Fixed in the modern build: LauncherDlg.cpp, the file is written from the
+`CString` itself, with no copy; MODERN.md M-B107.
 
 ### The display dialog's close button does nothing
 
@@ -433,7 +491,9 @@ Cancel (1041) and none for its close button (1034), so clicking the "x" in
 the display dialog's corner is ignored; NOLF2's launcher, the same code a
 year on, adds `OnClose`.
 
-Not fixed yet: the launchers have no modern build yet.
+Fixed in the modern build: DisplayDlg.cpp, the close button is mapped to
+`OnCancel`, as the main dialog's close button is (`CLauncherDlg::OnClose`
+cancels); MODERN.md M-B104.
 
 ### A launcher string that will not load hides the message it was for
 
@@ -443,7 +503,9 @@ load, the error is formatted into the text's `CString`, not the caption's, so
 the box that follows shows the caption error as its message, with an empty
 caption, and the message itself is lost.
 
-Not fixed yet: the launchers have no modern build yet.
+Fixed in the modern build: Launcher.cpp, the caption's error goes into the
+caption, as the text's goes into the text, so the box keeps its message;
+MODERN.md M-B105.
 
 ### The launcher's already-running checks ignore the directory they build
 
@@ -454,7 +516,10 @@ bare names (`sprintf(sExe, "LITHTECH.EXE")`), never using it: any process of
 those names -- another LithTech game's included -- keeps the launcher from
 starting.
 
-Not fixed yet: the launchers have no modern build yet.
+Fixed in the modern build: Launcher.cpp, both checks look for the
+process by the full path the directory was built for, so only this
+directory's `lithtech.exe` or `setup.exe` stops the launcher; MODERN.md
+M-B106.
 
 ### A dynamic lightmap is cleared only a quarter of the way (probable)
 
@@ -465,8 +530,14 @@ that is a quarter of the buffer. The fill then writes only the pixels
 inside the light's sphere, so below the cleared quarter, the texels outside
 the sphere keep whatever the buffer held before. Probable: it rests on
 `m_Pitch` being in bytes, as it is wherever else the renderer uses it.
+(It is: `LMDrawDesc::Begin` takes it from the lock's `lPitch`, and both
+fills divide it by the pixel size for their row step.) `Begin` has
+already copied the polygon's lightmap into the buffer, or filled it black
+where there is none, so it shows only on a polygon with a lightmap page:
+the static lightmap's texels added below the light's quarter.
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: lmdynamic.cpp, both fills clear the whole
+`m_Pitch * height`; MODERN.md M-B20.
 
 ### Unsorted translucent world models lose their blend states before drawing
 
@@ -478,9 +549,11 @@ function, which picks additive blend states (SRCALPHA/ONE for
 `StateSet`s scoped to its `if`/`else` arms. The states are restored as the
 arms end, before the one draw call after them, so these world models are
 drawn with whatever blend was set already (the ordinary translucent one),
-not additively.
+not additively. Primal Hunt's only: AvP2's renderer holds its one set of
+states over the draw.
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: drawworldmodel.cpp, the draw is made inside
+each arm, with its states; MODERN.md M-B21.
 
 ### The renderer's box test builds three of a box's six faces at the wrong place
 
@@ -489,9 +562,12 @@ src/engine/d3d/ph/fullintersectline.cpp). The segment-against-box test
 takes every face's plane distance from the box's minimum corner, so the
 planes of the +X, +Y and +Z faces are wrong. A segment through one of
 those faces gets an intersection point and plane that are off. NOLF2's
-engine still has the same code.
+engine still has the same code. (The point is right, the face's own
+coordinate; the plane's distance is the wrong one: the box's width too
+small along its normal.)
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: fullintersectline.cpp, each face's plane
+distance from that face's own coordinate; MODERN.md M-B22.
 
 ### The model sun's variance reads the warble scale
 
@@ -503,7 +579,12 @@ default 0.92) writes, not `ModelSunVariance`'s (this file's own, default
 0.05): the sun's flicker follows the world-warble setting. Identical, in
 both renderers.
 
-Not fixed yet (the renderer has no modern build).
+Not fixed: not a bug. The table (`g_fModelSun`, named for the sun by us)
+is the `ModelWarble` curve: only `d3d_WarbleTransform` reads it, scaling
+each vertex between WarbleScale and 1, and RenderScene rebuilds it when
+WarbleScale changes ("Rebuilding warble table"). `ModelSunVariance` is
+the sun-visibility search's step, read there, and with it the table would
+squash a model to 0.05 of its size. The source's comment is corrected.
 
 ### A lightmap page leaks its allocation bitmap when there is no lightmap format
 
@@ -512,7 +593,8 @@ src/engine/d3d/ph/lmpaging.cpp). When the device offers no lightmap
 texture format, the new page is freed but its allocation bitmap is not.
 The surface-creation failure path just below frees both.
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: lmpaging.cpp, the bitmap is freed too;
+MODERN.md M-B23.
 
 ### A dynamic-lightmap texture whose surface cannot be made locks a null surface
 
@@ -521,7 +603,8 @@ src/engine/d3d/ph/d3d_optimizedsurface.cpp). When DirectDraw's
 `CreateSurface` fails, Init carries on and locks the surface it never got,
 calling through a null pointer.
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: d3d_optimizedsurface.cpp, Init fails there
+(its caller already tests it); MODERN.md M-B24.
 
 ### The models' specular pass sets its texture-stage states and undoes them at once
 
@@ -531,9 +614,14 @@ stage-1 states (colour op ADD, texture and current arguments, clamp
 addressing) as unnamed `StageStateSet` temporaries. Each one restores the
 state it set as soon as it is made, so the pass draws with stage 1 as it
 was before. These should be named objects that live until the draw is
-done.
+done. Stage 1's colour op is DISABLE when the solid models are drawn
+(`d3d_DrawSolidModels`), so the specular texture is bound and never
+blended: no model shows its specular highlight. Only a model whose
+command string says `SpecularEnable` takes this pass, and none of either
+game's shipped models does.
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: drawmodel_env.cpp, named objects, as the bump
+pass above it has; MODERN.md M-B25.
 
 ### A screen-space lightmap polygon is copied without checking its vertex count
 
@@ -541,9 +629,14 @@ d3d.ren 0x10036282 (`d3d_DrawScreenLMPoly`,
 src/engine/d3d/ph/drawlightmaps.cpp). The polygon's vertices are copied
 into a 64-entry stack buffer without testing the count. The world-space
 lightmap draw beside it (0x10035e34) does test its count. A polygon of
-more than 64 vertices overruns the stack.
+more than 64 vertices overruns the stack. The lightmap-only draw
+(0x100361d9, the same file) copies into a 64-entry buffer unchecked too;
+our function is near, not identical (the loop's stores are scheduled
+differently), so that one rests on our reading of it.
 
-Not fixed yet (the renderer has no modern build).
+Fixed in the modern build: drawlightmaps.cpp, both test the count and
+fail as 0x10035e34 does ("Error: vertex buffer overflow"); MODERN.md
+M-B26.
 
 ### SVAR OldCloak writes through a null message if one cannot be made
 
@@ -555,7 +648,8 @@ message can be made the float is written, and the message sent and
 released, through a null pointer. It should give up when `CreateMessage`
 fails.
 
-Not fixed yet (Primal Hunt's game DLLs have no modern build yet).
+Fixed in the modern build: CommandMgr.cpp, nothing is sent when no
+message can be made; MODERN.md M-B70.
 
 ### The player-view fx cache writes and reads one type, past the end of each list
 
@@ -568,7 +662,11 @@ past the end of the ten-entry array when the list is full. Reading back
 does the same, so a PVFX loaded from the cache keeps only that one
 (garbage) entry.
 
-Not fixed yet.
+Fixed in the modern build: FXButeMgr.cpp, the loops without their
+semicolons, and a count read back larger than its list taken as none;
+MODERN.md M-B71. (No cache is ever written or read: `CGameButeMgr`'s
+`WriteCache`/`ReadCache`, which every manager's calls first, return
+false.)
 
 ### A scale fx loaded from the bute cache has an undefined additive-alpha flag
 
@@ -579,7 +677,8 @@ attributes; `Init` reads it, but the constructor does not clear it and the
 cache's `Write`/`Read` leave it out, so a scale fx read from the cache
 renders with additive alpha or not depending on what the allocation held.
 
-Not fixed yet.
+Fixed in the modern build: FXStructs.cpp, the constructor clears it and
+the cache writes and reads it, after the rest; MODERN.md M-B74.
 
 ### A cached projectile fx with class data of kind 0 crashes on load
 
@@ -591,7 +690,9 @@ unknown kind) and then calls `Read` through the pointer regardless. A cache
 holding such a record dereferences null. (`Write` never writes kind 0 for a
 real class, so it takes a damaged cache file.)
 
-Not fixed yet.
+Fixed in the modern build: FXButeMgr.cpp, no class data made, none read
+(kind 0 is written as its kind byte alone, so the file stays in step);
+MODERN.md M-B72.
 
 ### A menu font draws every column of a column control left-justified
 
@@ -616,9 +717,19 @@ tag but not the attribute, `GetSymTabItem` (behind every `Set*`) finds the
 second table's TableOfItems but searches the main table's again, twice,
 and so creates the attribute in the auxiliary table; `FindSymTabItem`
 (behind every `Get*`) looks in the second table before the auxiliary one,
-so it keeps returning the old value.
+so it keeps returning the old value. (That branch cannot be reached as
+described: `Tag` refuses a tag already in either table, so no tag is in
+both. What does happen is the case the branch was meant for: an expansion
+tag is only in the second table, so `GetSymTabItem` takes it for a new
+tag and creates the attribute in the new-tag table, behind the second
+table's, and `Get*` keeps the old value all the same.)
 
-Not fixed yet.
+Fixed in the modern build: butemgr.cpp, `GetSymTabItem` takes a tag
+missing from the main table from the second one, so the attribute is
+found and set where `FindSymTabItem` reads it, and a new attribute of an
+expansion tag goes in the auxiliary table like any other existing tag's
+(not in the new-tag table, which `Save` would write out as a second,
+duplicate section). MODERN.md M-B40.
 
 ### The attribute tables leak on every Term
 
@@ -628,7 +739,10 @@ butemgr.cpp). Term frees each tag's items and clears the four tag tables,
 but never deletes the TableOfItems each tag owns. NOLF2's ButeMgr deletes
 them.
 
-Not fixed yet.
+Fixed in the modern build: butemgr.cpp, Term's traversal deletes each
+tag's TableOfItems after its items (the callback is Term's alone).
+MODERN.md M-B41. (Object.lto and PHObject.lto link the same library, so
+the fix reaches the server's managers too.)
 
 ### GetString into a buffer leaves the buffer untouched when the symbol is missing
 
@@ -679,7 +793,10 @@ The server's own copies have it too: PHObject.lto 0x10155bc0 and
 0x10155cf0 (`MPRestrict_AddClass`, `MPRestrict_AddWeapon`,
 src/AVP2/ObjectDLL/MPRestrictions.cpp), filled from the game info.
 
-Not fixed yet (Primal Hunt's lists, MPRestrictList.h).
+Fixed in the modern build: MPRestrictList.h, ServerOptions.h
+(`CMPAllowList`, the client's and the dedicated server's copy, PHCShell.dll
+0x100a88d0) and MPRestrictions.cpp, the entries moved up from the top and
+the count raised; MODERN.md M-B75.
 
 ### A cached string longer than its buffer throws every later read off
 
@@ -691,7 +808,9 @@ place. CCharacterButeMgr never reads its cache (its ReadCache, 0x1000e580,
 first calls the base class's, which always fails); whether another manager
 does is not checked yet.
 
-Not fixed yet.
+Fixed in the modern build: MultiFile.cpp, the rest of the string is
+skipped; MODERN.md M-B79. (No manager's cache is ever read: see the
+player-view fx's entry.)
 
 ### Losing a carried turret drops the player's last one too
 
@@ -702,7 +821,8 @@ are moved down, and the move stops at the new count less one, so the last
 turret is never moved down and falls off the list: a player carrying two
 whose first is destroyed is left carrying none.
 
-Not fixed yet.
+Fixed in the modern build: PlayerObj.cpp, every turret above the lost one
+moves down and the slot left is cleared; MODERN.md M-B80.
 
 ### A fading fog volume takes its blue for its red
 
@@ -712,7 +832,8 @@ the volume, its color is set to (blue, green, blue) instead of (red,
 green, blue), so a colored fog volume changes color as it fades; only a
 grey one looks right.
 
-Not fixed yet.
+Fixed in the modern build: VolumetricFog.cpp, (red, green, blue);
+MODERN.md M-B81.
 
 ### A tentacle's attack and burrow updates are swapped
 
@@ -724,7 +845,8 @@ update (wait for the attack timer, then burrow) for state 3. An attack
 ends on its first update, since the burrow timer ran out long ago, and a
 burrow restarts on every update once the attack timer has run out.
 
-Not fixed yet.
+Fixed in the modern build: Tentacle.cpp, each state runs its own update;
+MODERN.md M-B82.
 
 ### A turret gun that can turn all the way round never wraps its yaw
 
@@ -733,7 +855,8 @@ src/AVP2/ObjectDLL/TurretGun.cpp). With a Yaw Range of a full turn the
 yaw is meant to be wrapped into one turn, but the ceil() that would do it
 has its result thrown away, so the yaw grows without bound.
 
-Not fixed yet.
+Fixed in the modern build: TurretGun.cpp, whole turns are taken off the
+yaw (`fmod`); MODERN.md M-B83.
 
 ### A restriction list's "allowed" check reads one past its last entry
 
@@ -744,7 +867,8 @@ entry just past the list is read; it is always cleared, so it reads as
 not allowed. Harmless with the callers' indices (from the Find
 functions), but wrong.
 
-Not fixed yet.
+Fixed in the modern build: MPRestrictions.cpp, `i >= count`; MODERN.md
+M-B76.
 
 ### Deleting a track key leaves a duplicate that is freed twice
 
@@ -753,7 +877,8 @@ src/lithshared/lithtrackmgr/LithTrack.cpp). The keys after the deleted one
 move down a slot, but the last slot is never cleared, so two slots point at
 the same key and `Term` deletes it twice.
 
-Not fixed yet.
+Fixed in the modern build: LithTrack.cpp, the last slot moved from is
+cleared. MODERN.md M-B42.
 
 ### Deleting a track leaves a duplicate that is freed twice
 
@@ -761,7 +886,7 @@ LithTrackMgrClient.lib, linked into CShell.dll (`LithTrackList::Delete(int)`,
 src/lithshared/lithtrackmgr/LithTrackList.cpp). The same as the key list:
 the last slot is never cleared after the tracks move down.
 
-Not fixed yet.
+Fixed in the modern build: LithTrackList.cpp, the same. MODERN.md M-B43.
 
 ### The track editor's "Font Type" command never changes the font
 
@@ -770,7 +895,9 @@ src/lithshared/lithtrackmgr/LithTrackMgr.cpp). It assigns the new type to
 its own pointer parameter instead of the setting, so `TrackEdit Font Type
 <x>` rebuilds the same font.
 
-Not fixed yet.
+Fixed in the modern build: LithTrackMgr.cpp, the new type goes in the
+setting itself (`m_lfCS.szFontName`, the only one passed), from a copy
+that outlives the command's tokens. MODERN.md M-B44.
 
 ### The track editor's help text ignores the bar's width
 
@@ -780,7 +907,8 @@ All five `CreateTextItem` calls pass the width where the justification
 goes, so the width is the default 0: the help is never wrapped to the bar,
 and a width whose low byte is 1 or 2 centres or right-justifies the lines.
 
-Not fixed yet.
+Fixed in the modern build: LithTrackBarHelp.cpp, the lines are
+left-justified and wrapped to the width. MODERN.md M-B45.
 
 ### The track editor's draw object always reports failure
 
@@ -788,7 +916,9 @@ LithTrackMgrClient.lib, linked into CShell.dll (`LithTrackDrawObj::Init`,
 src/lithshared/lithtrackmgr/LithTrackDrawObj.cpp). It returns `DFALSE` even
 when its line system was created.
 
-Not fixed yet.
+Fixed in the modern build: LithTrackDrawObj.cpp, it reports success when
+the line system was made. (Its one caller, `LithTrackMgr::Init`, ignores
+the result, so nothing changes in play.) MODERN.md M-B46.
 
 ### A GameSpy secure query can overrun the server's buffer
 
@@ -797,7 +927,8 @@ GameSpyMgr.lib, linked into Object.lto and PHObject.lto
 The `secure` value from the network packet is copied with `strcpy` into a
 64-byte buffer with no length check; a long value overruns the stack.
 
-Not fixed yet.
+Fixed in the modern build: GameSpyMgr.cpp (gamespymgr/), the value is
+cut to the buffer. MODERN.md M-B47.
 
 ### The LAN server list searches an unterminated reply
 
@@ -807,7 +938,9 @@ The reply buffer is searched with `strstr` without being null-terminated
 first (the query loop does terminate its replies), so a full buffer is read
 past its end.
 
-Not fixed yet.
+Fixed in the modern build: gserverlist.c, the reply is terminated at its
+length (`recvfrom` is given one byte less than the buffer, for that).
+MODERN.md M-B48.
 
 ### Sorting the server list by an unknown mode uses an uninitialised comparator
 
@@ -815,7 +948,8 @@ GameSpyClientMgr.lib (`ServerListSort`, gserverlist.c). The switch on the
 compare mode has no default case, so an unknown mode sorts with whatever
 the comparator variable holds.
 
-Not fixed yet.
+Fixed in the modern build: gserverlist.c, an unknown mode leaves the list
+unsorted. (The game passes only the four known modes.) MODERN.md M-B49.
 
 ### The server browser never checks or closes sierraup.cfg
 
@@ -825,7 +959,8 @@ result is used unchecked, so a missing file crashes, and the file is never
 closed. Primal Hunt's build (PHCShell.dll 0x10138830, byte-identical)
 checks the open but still never closes the file.
 
-Not fixed yet.
+Fixed in the modern build: GameSpyClientMgr.cpp, AvP2 checks the open
+as Primal Hunt does, and both close the file. MODERN.md M-B50.
 
 ### Refreshing LAN servers removes other games' servers by the wrong port
 
@@ -834,7 +969,9 @@ other games are removed by their game port, but `ServerListRemoveServer`
 looks them up by query port. A server it misses stays in the list while
 the count still drops, so the servers after it go unchecked.
 
-Not fixed yet.
+Fixed in the modern build: GameSpyClientMgr.cpp, a server is removed by
+its query port (`ServerGetQueryPort`), which the list finds it by.
+MODERN.md M-B51.
 
 ### A tracer without SingleSegment takes whatever its memory held
 
@@ -843,8 +980,27 @@ Primal Hunt's tracer gains SingleSegment, HeadVelocity, Flare and FlareScale,
 but its constructor never sets `bSingleSegment`, so a tracer whose bute
 has no SingleSegment attribute keeps the allocation's leftover value.
 
-Not fixed yet.
+Fixed in the modern build: FXButeMgr.cpp, the constructor clears Primal
+Hunt's four tracer members; MODERN.md M-B73.
 
+
+### A tracer without a Flare names its flare sprites from uninitialised memory
+
+PHCShell.dll 0x1012cc70 (`CTracerFX::Update`,
+src/AVP2/ClientShellDLL/TracerFX.cpp; read off the retail image, the
+function not yet byte-identical) and PHObject.lto 0x1001a480
+(`TRACERFX::Init`, src/AVP2/Shared/FXButeMgr.cpp; byte-identical). Every
+Primal Hunt tracer, single-segment or not, makes its three flares on its
+first update (0x1012d0b7: `_snprintf(name, 127, szFlare, i + 1)`, then
+`CreateFlare`, 0x1012da40, which skips an empty name). `TRACERFX`'s
+constructor leaves `szFlare` as the allocation held, and Init sets it only
+when the bute has a Flare, which only EnergyFlechetteTracer has: the
+Standard and Laser tracers (FX.txt's TracerFX0 and 1) format their sprite
+names from leftover heap bytes -- nothing when the first is a zero, else a
+sprite load that fails, or worse for a `%s` among them.
+
+Fixed in the modern build: FXButeMgr.cpp, the constructor clears it (with
+M-B73's members); MODERN.md M-B85.
 ### The "nelno" cheat's message isn't terminated
 
 PHCShell.dll 0x10076180 (`CheatMgr::Cheat_Nelno`, name ours,
@@ -855,7 +1011,8 @@ the three padding bytes and whatever follows them on the stack, until it
 meets a zero or fills the 255-character buffer; the message can end in
 garbage.
 
-Not fixed yet.
+Fixed in the modern build: CheatMgr.cpp, the array ends in a zero.
+MODERN.md M-B52.
 
 ### Naming the console's actions leaks a string per command
 
@@ -865,7 +1022,8 @@ Primal Hunt's start-up runs "AddAction <name> <id>" for every command,
 taking each name from `FormatString`, and never frees the HSTRING it gets:
 one string leaks for each command, every time the client shell starts.
 
-Not fixed yet.
+Fixed in the modern build: GameClientShell.cpp, each name's string is
+freed once its command has run. MODERN.md M-B53.
 
 ### The multiplayer class check takes an index one past the list
 
@@ -879,7 +1037,8 @@ test is `index > count`, not `>=`, so the entry one past the last would be
 read. Harmless as shipped: the index always comes from a search of the
 same list, which gives a real entry or -1.
 
-Not fixed yet.
+Fixed in the modern build: MPRestrictList.h, `IsAllowed` tests `i >=
+count`; MODERN.md M-B77.
 
 ### The cloaked weapon's alpha floor writes the red channel
 
@@ -891,7 +1050,8 @@ branch compares and stores the colour's red (the first `GetObjectColor`
 output), not its alpha, and skips the 0.2 alpha floor, so a cloaked
 weapon's alpha is not floored at all and its red is raised instead. Near.
 
-Not fixed yet.
+Fixed in the modern build: WeaponModel.cpp, the 0.35 floor is the
+alpha's. MODERN.md M-B54.
 
 ## NOLF's bugs AvP2 does not have
 
@@ -907,7 +1067,8 @@ wrapped nor clamped and grows without bound as the player turns. Harmless
 in practice (the angle is only fed to a rotation), but the wrap was
 plainly meant.
 
-Not fixed yet: the modern build's turret fixes are still to come.
+Fixed in the modern build: ClientTurretMgr.cpp, the yaw is wrapped into
+[0, 2 pi) (`m_fYaw -= floor(m_fYaw / 2 pi) * 2 pi`). MODERN.md M-B55.
 
 ### The turret recoil pushes the first-person weapon off by 0.95 on every axis
 
@@ -918,7 +1079,8 @@ recoil offset *plus* 0.95 on each axis (`vPos += 0.95f`), where scaling the
 offset by 0.95 was surely meant: the weapon jumps up, right and forward by
 nearly a unit for the effect's life.
 
-Not fixed yet.
+Fixed in the modern build: CameraMgrFX.cpp, the offset is scaled by 0.95
+(`vPos *= 0.95f`). MODERN.md M-B56.
 
 ### Putting the weapon away for a turret hides muzzle flashes it may not have (probable)
 
@@ -928,7 +1090,8 @@ flashes the function calls `Hide()` before testing the pointer, then
 deletes it; `Hide` writes the flash's members, so a weapon with no flash
 on a muzzle writes through a null pointer.
 
-Not fixed yet.
+Fixed in the modern build: WeaponModel.cpp, only a flash that is there is
+hidden. MODERN.md M-B57.
 
 ### The host options' class and weapon lists accept the index one past the last entry
 
@@ -937,9 +1100,13 @@ src/AVP2/ClientShellDLL/FolderHostOptions.cpp; the check is
 `CMPRestrictList::SetAllowed`, src/AVP2/Shared/MPRestrictList.h, and
 `GetId` and `IsAllowed` beside it share it). The index is tested with
 `i > m_nNumEntries` where `>=` was meant, so the entry just past the last
-one is written; with a full list (32 entries) that is the count itself.
+one is written; with a full list (32 entries) that entry is the count
+itself (`GetId` returns 32) and its allowed flag the four bytes after the
+list, which `SetAllowed` writes.
 
-Not fixed yet.
+Fixed in the modern build: MPRestrictList.h, `SetAllowed`, `GetId` and
+`GetName` test `i >= count`; MODERN.md M-B78. (The commands past the last
+check box are the host options' own entry.)
 
 ### The host options take check-box commands past the end of their boxes
 
@@ -949,7 +1116,9 @@ accepted up to `CMD_CLASS_FIRST + 32`, but there are only 24 class boxes, and
 a weapon box command up to `CMD_WEAPON_FIRST + 64` (inclusive) for 64 weapon
 boxes, so a stray command indexes past `m_aClassBoxes` or `m_aWeaponBoxes`.
 
-Not fixed yet.
+Fixed in the modern build: FolderHostOptions.cpp, a command is taken
+only for a box there is (below `CMD_CLASS_FIRST + 24`, `CMD_WEAPON_FIRST +
+64`). MODERN.md M-B58.
 
 ### The host options' check boxes leak their bitmaps
 
@@ -957,7 +1126,10 @@ PHCShell.dll 0x10018690 (`CHostCheckBox::CHostCheckBox`, name ours,
 src/AVP2/ClientShellDLL/FolderHostOptions.h). Each of the 88 check boxes
 news a `CBitmapCtrl` that its (empty) destructor never deletes.
 
-Not fixed yet.
+Fixed in the modern build: FolderHostOptions.cpp/.h, the folder's `Term`
+(and destructor) takes each box's bitmap out of the fixed controls, which
+hold it only while its page shows, and deletes it, so it is deleted once
+whichever page was last shown. MODERN.md M-B59.
 
 ### The server list's no-entry surface is never deleted
 
@@ -966,7 +1138,8 @@ src/AVP2/ClientShellDLL/FolderJoin.cpp). Build creates
 `Interface\Exp\Menus\noentry.pcx` each time it runs; the destructor
 deletes only the lock surface.
 
-Not fixed yet.
+Fixed in the modern build: FolderJoin.cpp, the destructor deletes it (and
+the constructor clears its handle, which it left unset). MODERN.md M-B60.
 
 ### The server list checks the wrong number against a server's class list
 
@@ -975,8 +1148,15 @@ src/AVP2/ClientShellDLL/FolderJoin.cpp). To mark the servers that do not
 allow the player's class it looks up the profile's `m_nChar[m_nRace]`, an
 index into that race's list of characters, among the class list's
 character-set IDs, so the no-entry mark is shown for the wrong servers.
+(So it was thought; see below.)
 
-Not fixed yet.
+Not fixed: not a bug. The profile's `m_nChar[race]` is the race's
+character set, not an index into its characters: Choose Character
+(`FolderPlayer.cpp`, `FolderPlayerJoin.cpp`) stores
+`m_nCharList[race][index]` in it, and `ProfileMgr.cpp`'s defaults are
+sets (`GetSetFromModelType`). So it is the class list's own ID, as
+`CBaseFolder::IsCharacterAllowed` and `CFolderHost::IsCharacterAllowed`
+take it.
 
 ### The Corporate motion detector settings check the Marine's tag
 
@@ -986,7 +1166,10 @@ Corporate motion detector each tests that `HUDMotionDetector` exists, then
 reads `HUDMotionDetector_Corporate`; a layout without the Corporate tag reads
 nothing (or zeros) instead of falling back.
 
-Not fixed yet.
+Fixed in the modern build: LayoutMgr.cpp, all seventeen test the
+Corporate tag, so a layout without it falls back to the Marine's. (Primal
+Hunt's own layout has both, so nothing changes with its data.) MODERN.md
+M-B61.
 
 ### The Marine weapon chooser's dual pistols check has no null test
 
@@ -995,7 +1178,8 @@ src/AVP2/ClientShellDLL/WeaponChooser.cpp). It reads the weapon's name
 without testing the `GetWeapon` result, so an invalid weapon ID reads through
 a null pointer.
 
-Not fixed yet.
+Fixed in the modern build: WeaponChooser.cpp, no weapon is not the dual
+pistols. MODERN.md M-B62.
 
 
 ### A tracer whose Init fails removes three garbage flare handles
@@ -1007,7 +1191,8 @@ clears them only after it has the tracer's TRACERFX, and Term (from the
 destructor) deletes every non-null one. A tracer whose Init fails before that
 point hands three uninitialised handles to `DeleteObject`. Identical.
 
-Not fixed yet.
+Fixed in the modern build: TracerFX.h, the constructor clears them.
+MODERN.md M-B63.
 
 ### Detaching a client from another's view writes through a null message
 
@@ -1022,7 +1207,9 @@ and the null message is then handed to `sm_SendToClient`. Its sibling
 `sm_AttachClient` allocates with `msg_AllocPacket` first. Detaching such a
 client crashes the server. All four copies are identical.
 
-Not fixed yet.
+Fixed in the modern build: ccobj.cpp and smgr.cpp, the message is
+allocated (`msg_AllocPacket(0x44c, 0x44c)`, as `sm_AttachClient` does)
+before it is written; MODERN.md M-B09.
 
 ### A facehugger whose target is not a character crashes its attack
 
@@ -1034,7 +1221,9 @@ target is not already dead before rolling the facehug chance, but reads
 facehugger attacking a target that is not a character (a `GetTarget()`
 with no character pointer) dereferences null. Identical.
 
-Not fixed yet.
+Fixed in the modern build: SimpleAIAlien.cpp, the dead test only for a
+character (any other target rolls the chance as in AvP2, and the test
+after it turns it down); MODERN.md M-B84.
 
 ### AvP2's player code casts its attachments without testing the cast
 
@@ -1049,4 +1238,8 @@ without a null test (some test `m_pAttachments` first, none the cast), so a
 player whose attachments are not a `CPlayerAttachments` dereferences null.
 Primal Hunt casts once and tests the result everywhere. All identical.
 
-Not fixed yet.
+Not fixed: the cast cannot fail. A player's attachments are made only by
+`CPlayerObj::CreateAttachments` (virtual: from `CCharacter`'s
+`MID_PRECREATE`, and again after `ResetCharacter` destroys them), always as
+a `CPlayerAttachments`, before any of these runs; only a failed `new` would
+leave them null.

@@ -6629,8 +6629,17 @@ void CPlayerObj::RemoveTurret(HOBJECT hTurret)
 	// RETAIL BUG: the count is lowered first, so the loop stops one short:
 	// the last turret is never moved down and falls off the end of the list
 	// (removing the first of two leaves the list holding only the empty slot)
+#ifdef AVP2SRC_MODERN
+	// M-B80 (RETAIL_BUGS.md): every turret above it moved down, and the
+	// slot they leave cleared
+	for (i = nIndex; i < m_nNumTurrets; i++)
+		m_hTurrets[i] = m_hTurrets[i + 1];
+
+	m_hTurrets[m_nNumTurrets] = LTNULL;
+#else
 	for (i = nIndex; i < m_nNumTurrets - 1; i++)
 		m_hTurrets[i] = m_hTurrets[i + 1];
+#endif
 }
 
 // ----------------------------------------------------------------------- //

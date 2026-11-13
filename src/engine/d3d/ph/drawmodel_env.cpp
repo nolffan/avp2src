@@ -782,10 +782,17 @@ void CD3DModelDraw::DrawPasses()
 
 			// RETAIL BUG: each of these is a temporary, so it puts its
 			// state back as soon as it has set it.
+#ifdef AVP2SRC_MODERN
+			StageStateSet ssColorOp1(1, TSS(D3DTSS_COLOROP), D3DTOP_ADD);
+			StageStateSet ssColorArg11(1, TSS(D3DTSS_COLORARG1), D3DTA_TEXTURE);
+			StageStateSet ssColorArg21(1, TSS(D3DTSS_COLORARG2), D3DTA_CURRENT);
+			StageStateSet ssAddress1(1, TSS(D3DTSS_ADDRESS), D3DTADDRESS_CLAMP);
+#else
 			StageStateSet(1, TSS(D3DTSS_COLOROP), D3DTOP_ADD);
 			StageStateSet(1, TSS(D3DTSS_COLORARG1), D3DTA_TEXTURE);
 			StageStateSet(1, TSS(D3DTSS_COLORARG2), D3DTA_CURRENT);
 			StageStateSet(1, TSS(D3DTSS_ADDRESS), D3DTADDRESS_CLAMP);
+#endif
 
 			DrawPieces((uint32)d3d_GenUVVert2, (uint32)d3d_GenUVSpecular, LTTRUE);
 

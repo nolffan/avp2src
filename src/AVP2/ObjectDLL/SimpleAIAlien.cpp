@@ -1053,7 +1053,13 @@ void SimpleAIFacehugger::UpdateAttack(RootFSM * fsm)
 		// PH: not at a dead target (0x10214eb7).
 		// RETAIL BUG: the character pointer is read before the null test
 		// below; a target that is not a character crashes here.
+#ifdef AVP2SRC_MODERN
+		// M-B84 (RETAIL_BUGS.md): only a character can be dead; any other
+		// target rolls as in AvP2 (and the test below turns it down)
+		if ((!GetCharTargetPtr() || !GetCharTargetPtr()->IsDead()) && m_pAttackButes->fFacehugChance > GetRandom(0.0f, 1.0f))
+#else
 		if (!GetCharTargetPtr()->IsDead() && m_pAttackButes->fFacehugChance > GetRandom(0.0f, 1.0f))
+#endif
 #else
 		if (m_pAttackButes->fFacehugChance > GetRandom(0.0f, 1.0f))
 #endif

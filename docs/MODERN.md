@@ -43,8 +43,10 @@ items are AvP2's own.
 `out/avp2-modern-debug/`, both games each). Done: the frame timing
 (M-10..M-14), the open middleware (M-X1..M-X3, with OpenMiles' fixes
 M-X5 and M-X6), so a modern game directory holds no RAD or Miles binary,
-the music through Microsoft's DirectMusic (M-X4), and controllers through
-XInput (M-7) (under Done); the rest of the items below are not.
+the music through Microsoft's DirectMusic (M-X4), controllers through
+XInput (M-7), the launchers and the games started directly (M-8), and every
+retail bug docs/RETAIL_BUGS.md lists either fixed (M-B01..M-B107) or shown
+not to need it (under Done); the rest of the items below are not.
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
 `d3d.ren`, both games'): `build/all.sh` builds `engine-link`, `d3d-link`
@@ -92,7 +94,7 @@ yet.
 | M-5 | Up to 8x antialiasing (the same renderer) | not implemented yet |
 | M-6 | Raw mouse input (WM_INPUT), in place of DirectInput's mouse | not implemented yet |
 | M-7 | Controllers through XInput, in place of DirectInput joysticks | done (under Done) |
-| M-8 | The launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch had been clicked in the launcher (no registry, no disc check) | not implemented yet |
+| M-8 | The launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch had been clicked in the launcher (no registry, no disc check) | done (under Done) |
 | M-9 | From nolfsrc's modern build, where AvP2 has the same code: windowed modes at any size, Internet play without the dead GameSpy and WON master servers (its frame limiter is M-13) | not implemented yet |
 
 ## Open middleware
@@ -134,6 +136,7 @@ per format), under Xvfb and Wine in the build container.
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
+M-7, M-8 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing (the user's report on the first modern build: "the high
 framerate means all the timing is wrong"). nolfsrc found the same in NOLF
@@ -379,9 +382,241 @@ every species); the Controller page's look speed a step up (saved:
 Not done: rumble (nothing in either game asks for force feedback),
 button prompts in hints, and a real pad (Windows, or Wine with a kernel
 device). Found on the way, not the pad's: throwing a flare (the d-pad
-left's Marine binding, or the keyboard's F) crashes the modern AvP2 and
-Primal Hunt engines in `lmsg_ReadCompPos` (servermsg.cpp), to be looked
-into separately.
+left's Marine binding, or the keyboard's F) crashed the modern AvP2 and
+Primal Hunt engines. Not a modern change and not a retail bug: the
+legacy build crashed the same way and the retail binaries do not
+(`build/playtest-avp2-flare.txt`, `playtest-ph-flare.txt`). It was a
+reconstruction error, fixed in both builds: the client's message-object
+helper (`clientmsghelper.cpp`, the `m_pObjectIO` of every message the
+client reads) compiles a two-slot vtable, and the full-length table the
+link puts in its place (`src/engine/lithtech/link/vtables-avp2.txt`,
+`vtables-ph.txt`; `build/vtables/map-lithtech-*.txt`) had no entry for
+it, so a projectile's `WeaponSoundFX` message, which reads a compressed
+position (`ReadCompPos`, its slot 3, `GetPosRef`), called the next table
+in `.rdata` instead (`LThread::ThreadTerm`) on it.
+
+### Retail-bug fixes: the engine (M-B01..M-B09)
+
+The bugs `RETAIL_BUGS.md` lists, fixed: each entry there names its id.
+Every fix is an `AVP2SRC_MODERN` block with the retail code in its
+`#else`, or modern-only lines the retail code does not have.
+
+| Id | What | Files | Checked | Status |
+|---|---|---|---|---|
+| M-B01 | The texture sweep clears only its mark, not the texture's reference count | `src/engine/lithtech/clienttexmgr.cpp` (`tm_UnmarkTextures`) | from the code: the count's only writers are LTTexMod's Get/ReleaseTextureHandle, which neither game's DLLs call, so nothing in play reaches it; both games load and play their first missions as before (the flare scripts; the sweep runs at every load) | done |
+| M-B02 | The command line: at most 150 arguments stored, from the real command line and from `-cmdfile`; a failed `-cmdfile` read frees its buffer | `src/engine/lithtech/clientwin.cpp` (`clu_dsi_BuildCommandLine`) | AvP2, `build/playtest.sh` to the main menu with `PLAYTEST_ARGS` of 70 `+x<n> 1` pairs (163 arguments in the command file): the legacy build crashes in `clu_dsi_BuildCommandLine` (it reads argument text as a pointer, then the stack's handler chain is overwritten); the modern build runs, the arguments past the 150th dropped | done |
+| M-B03 | `ServerModelLT::SetCurAnimTime` overrides the interface's three-argument one, so a game's call flags the object for its clients | `src/engine/server/servermodel.h`, `servermodel.cpp` | the four modern engines' `ServerModelLT` tables (both games' `lithtech.exe` and `server.dll`): slot 33 is now `ServerModelLT::SetCurAnimTime`, and there is no slot 37; both games load and play their first missions (`build/playtest-avp2-flare.txt`, `playtest-ph-flare.txt`) | done |
+| M-B04 | `CreateWorldCRC`'s world name always terminated | `src/engine/server/smgr.cpp` | from the code (a name of 255 characters or more cannot be made in play) | done |
+| M-B05 | `sm_CreateInterObjectLink` checks its three allocations, and fails with `LT_ERROR` | `src/engine/server/interlink.cpp` | from the code (out of memory only) | done |
+| M-B06 | The CD driver moves its play list on only when a track played to its end (`MCI_NOTIFY_SUCCESSFUL`), not when a play is superseded or stopped | `src/engine/cdaudio/cdaudio.cpp` (Primal Hunt's `cdaudio.dll`) | from the code: neither game in our tests plays CD audio (Wine has no Red Book drive; the music is DirectMusic and Miles), so the driver is not reached | done |
+| M-B07 | The CD driver's `GetSongFromList` answers the song at the index | `src/engine/cdaudio/cdaudio.cpp` | from the code: neither game in our tests plays CD audio (Wine has no Red Book drive; the music is DirectMusic and Miles), so the driver is not reached | done |
+| M-B08 | The CD driver forgets the current play list when it is removed | `src/engine/cdaudio/cdaudio.cpp` | from the code: neither game in our tests plays CD audio (Wine has no Red Book drive; the music is DirectMusic and Miles), so the driver is not reached | done |
+| M-B09 | `sm_DetachClient` allocates the message it sends | `src/engine/lithtech/ccobj.cpp`, `src/engine/server/smgr.cpp` | from the code: only `ILTServer::AttachClient` gives a client a view client, and neither game's DLLs call it, so play never reaches the detach | done |
+
+### Retail-bug fixes: the renderers (M-B20..M-B26)
+
+The `RETAIL_BUGS.md` entries in `src/engine/d3d/ph/` (both games'
+`d3d.ren`, unless the row says otherwise), each confirmed against the
+retail code first. A pure addition (a test, a free) is an `#ifdef` alone;
+anything else keeps retail's lines in the `#else`. One entry was not a
+bug ("The model sun's variance reads the warble scale": the table is
+ModelWarble's), and is not fixed.
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-B20 | A dynamic lightmap cleared all the way, not a quarter (RETAIL_BUGS.md: "A dynamic lightmap is cleared only a quarter of the way") | `lmdynamic.cpp` (`d3d_FillDynamicLM16`, `d3d_FillDynamicLM32`) | done |
+| M-B21 | Primal Hunt's unsorted translucent world models drawn with their additive states ("Unsorted translucent world models lose their blend states before drawing") | `drawworldmodel.cpp` (`d3d_DrawNoSortWorldModel`) | done |
+| M-B22 | The box test's +X, +Y and +Z planes at their faces ("The renderer's box test builds three of a box's six faces at the wrong place") | `fullintersectline.cpp` (`DO_PLANE_TEST_X/Y/Z`) | done |
+| M-B23 | A lightmap page's bitmap freed when there is no lightmap format ("A lightmap page leaks its allocation bitmap ...") | `lmpaging.cpp` (`d3d_AddLMPage`) | done |
+| M-B24 | `CD3DLMTexture::Init` fails when its surface cannot be made, not locking null ("A dynamic-lightmap texture whose surface cannot be made locks a null surface") | `d3d_optimizedsurface.cpp` | done |
+| M-B25 | The models' specular pass keeps its stage-1 states over its draw ("The models' specular pass sets its texture-stage states and undoes them at once") | `drawmodel_env.cpp` (`CD3DModelDraw::DrawPasses`) | done |
+| M-B26 | The screen-space and lightmap-only polygon draws test the vertex count against their 64-entry buffers ("A screen-space lightmap polygon is copied without checking its vertex count") | `drawlightmaps.cpp` (`d3d_DrawScreenLMPoly`, `d3d_DrawLightmapOnly`) | done |
+
+Checked: the modern build compiles them (`make modern`) and both games
+run on it (`build/playtest-avp2-marine.txt` and
+`build/playtest-ph-corporate.txt`: the first mission of each loaded,
+played, saved and reloaded, rendered as before). None of them can be seen in the shipped
+games' ordinary play, so each rests on the code: M-B20 shows only on a
+polygon with a lightmap page that is lit dynamically (`LMDrawDesc::Begin`
+fills the buffer black otherwise, so the stale three quarters are
+black); M-B21 on a Primal Hunt world model whose first surface is
+unsorted; M-B22 is the plane `IntersectSegment` returns for an object's
+box (n.p = d: a +X face at MaxBox.x has d = MaxBox.x, -X d = -MinBox.x,
+which is `planeCoord * normalDirection` for all six); M-B23 and M-B24 need
+a device with no lightmap format or a failing CreateSurface; M-B25 only a
+model with `SpecularEnable` in its command string, which no shipped model
+of either game has; M-B26 a polygon of more than 64 vertices.
+
+### Retail-bug fixes: the client shells and the lithshared libraries (M-B40..M-B63)
+
+Each a `RETAIL_BUGS.md` entry (its heading in the second column), fixed
+behind `AVP2SRC_MODERN` with the retail code in the `#else`; the
+libraries' fixes reach every DLL that links them (ButeMgr: the client
+shells and object DLLs; GameSpyMgr: the object DLLs; GameSpyClientMgr and
+LithTrackMgrClient: the client shells), in both games.
+
+| Id | What (RETAIL_BUGS.md) | Files | Checked | Status |
+|---|---|---|---|---|
+| M-B40 | Setting an attribute that only an expansion tag holds does not take | `src/lithshared/ButeMgr/butemgr.cpp` (`GetSymTabItem`) | test program (below): AvP2 retail 2 after setting 20, modern 20 | done |
+| M-B41 | The attribute tables leak on every Term | `butemgr.cpp` (`TraverseTableOfTagsDeleteSymTab`) | test program: retail +2749 bytes of heap a Parse/Term of three tags, modern +0 | done |
+| M-B42 | Deleting a track key leaves a duplicate that is freed twice | `src/lithshared/lithtrackmgr/LithTrack.cpp` | code (the editor's key delete) | done |
+| M-B43 | Deleting a track leaves a duplicate that is freed twice | `LithTrackList.cpp` | code | done |
+| M-B44 | The track editor's "Font Type" command never changes the font | `LithTrackMgr.cpp` (`Ext_Type`) | code | done |
+| M-B45 | The track editor's help text ignores the bar's width | `LithTrackBarHelp.cpp` | code | done |
+| M-B46 | The track editor's draw object always reports failure | `LithTrackDrawObj.cpp` | code (its caller ignores the result) | done |
+| M-B47 | A GameSpy secure query can overrun the server's buffer | `src/lithshared/gamespy/gamespymgr/GameSpyMgr.cpp` (`OnSecureQuery`) | code | done |
+| M-B48 | The LAN server list searches an unterminated reply | `src/lithshared/gamespy/gamespyclientmgr/gserverlist.c` (`ServerListLANList`) | code | done |
+| M-B49 | Sorting the server list by an unknown mode uses an uninitialised comparator | `gserverlist.c` (`ServerListSort`) | code | done |
+| M-B50 | The server browser never checks or closes sierraup.cfg | `GameSpyClientMgr.cpp` (`SetupDirServers`) | code | done |
+| M-B51 | Refreshing LAN servers removes other games' servers by the wrong port | `GameSpyClientMgr.cpp` (`RefreshLANServers`) | code | done |
+| M-B52 | The "nelno" cheat's message isn't terminated | `src/AVP2/ClientShellDLL/CheatMgr.cpp` | code | done |
+| M-B53 | Naming the console's actions leaks a string per command | `GameClientShell.cpp` (`OnEngineInitialized`) | code | done |
+| M-B54 | The cloaked weapon's alpha floor writes the red channel | `WeaponModel.cpp` (`UpdateWeaponModel`) | code | done |
+| M-B55 | A mounted turret with a full circle of yaw never wraps its yaw | `ClientTurretMgr.cpp` (`CClientTurret::Rotate`) | code | done |
+| M-B56 | The turret recoil pushes the first-person weapon off by 0.95 on every axis | `CameraMgrFX.cpp` (`CameraMgrFX_RecoilUpdate`) | code | done |
+| M-B57 | Putting the weapon away for a turret hides muzzle flashes it may not have | `WeaponModel.cpp` (`Holster`) | code | done |
+| M-B58 | The host options take check-box commands past the end of their boxes | `FolderHostOptions.cpp` (`OnCommand`) | code | done |
+| M-B59 | The host options' check boxes leak their bitmaps | `FolderHostOptions.cpp`, `.h` (`Term`, `DeleteBoxBitmaps`) | code | done |
+| M-B60 | The server list's no-entry surface is never deleted | `FolderJoin.cpp` | code | done |
+| M-B61 | The Corporate motion detector settings check the Marine's tag | `LayoutMgr.cpp` (the seventeen `GetMD...`/`...SurfaceName` functions) | code; Primal Hunt's layout has both tags, so nothing changes with its data | done |
+| M-B62 | The Marine weapon chooser's dual pistols check has no null test | `WeaponChooser.cpp` (`IsDualPistols`) | code | done |
+| M-B63 | A tracer whose Init fails removes three garbage flare handles | `TracerFX.h` (the constructor) | code | done |
+
+**Checked.** `make modern` builds both games with them. The ButeMgr
+fixes with a test program (`cl` 8966 under Wine, linking each build's
+`ButeMgrNoMFC.lib`): a buffer with `[Weapon]`, `[Weapon_EXPANSION]` and
+`[Other_EXPANSION]` parsed, `SetInt` on each, `GetInt` back, then 100
+`Term`s and `Parse`s with the CRT heap walked before and after. The
+legacy library reads the expansion tag's old value (2 for 20) and holds
+274880 bytes more after the 100; the modern one reads 20 and holds none
+more. The rest fix crashes, leaks and bounds on paths that the retail
+data and menus do not reach in a scripted run (a missing `sierraup.cfg`,
+a LAN reply that fills its buffer, a weapon ID with no weapon, a turret's
+yaw past a full turn, the track editor's deletes and font command, a
+tracer whose Init fails, ...): each was checked from the code, and the
+games still run (`make modern`, then AvP2's first Marine mission under
+Wine). Primal Hunt's layout has both motion-detector tags, so M-B61
+changes nothing with its data.
+
+### Retail-bug fixes: the object DLLs and the shared code (M-B70..M-B85)
+
+Fixes of `RETAIL_BUGS.md` entries in the object DLLs and the code they
+share with the client (`src/AVP2/ObjectDLL/`, `src/AVP2/Shared/`), each
+under the entry's heading there. Each is behind `AVP2SRC_MODERN` with the
+retail code in the `#else`. Primal Hunt's unless it says otherwise (the
+code is Primal Hunt's own).
+
+| Id | What | Files | Checked | Status |
+|---|---|---|---|---|
+| M-B70 | `SVAR OldCloak` sends nothing when no message can be made, instead of writing through null | `ObjectDLL/CommandMgr.cpp` | code (`CreateMessage` fails only when the engine is out of messages) | done |
+| M-B71 | The player-view fx cache writes and reads every type, not one past the last | `Shared/FXButeMgr.cpp` (`PVFX::Write`, `Read`) | code: no bute cache is ever written or read (`CGameButeMgr::WriteCache`/`ReadCache` return false first) | done |
+| M-B72 | A cached projectile fx with class data of kind 0 (or an unknown kind) reads none, instead of reading through null | `Shared/FXButeMgr.cpp` (`PROJECTILEFX::Read`) | code (as M-B71) | done |
+| M-B73 | A tracer without SingleSegment is multi-segment, not what its memory held | `Shared/FXButeMgr.cpp` (`TRACERFX::TRACERFX`) | code: every shipped tracer names SingleSegment | done |
+| M-B74 | A scale fx's AdditiveAlpha starts cleared and is kept by the bute cache | `Shared/FXStructs.cpp` (`CScaleFX`) | code (as M-B71) | done |
+| M-B75 | Inserting into a restriction list moves the entries up from the top and counts the new one | `Shared/MPRestrictList.h`, `Shared/ServerOptions.h`, `ObjectDLL/MPRestrictions.cpp` | code: the shipped bute files list the "_MP" sets and weapons in ID order, so only a custom one or a server's game info out of order reaches it. Host test (below): IDs 5, 1, 3, 2, 4 added give 1 2 4 (retail), 1 2 3 4 5 (modern) | done |
+| M-B76 | The server's class and weapon "allowed" checks take only the list's entries | `ObjectDLL/MPRestrictions.cpp` | code: the callers' indices come from the Find functions | done |
+| M-B77 | `CMPRestrictList::IsAllowed` takes only the list's entries (both games' shared header; the client's multiplayer class checks) | `Shared/MPRestrictList.h` | code (as M-B76); host test: `IsAllowed(32)` on a full list false | done |
+| M-B78 | `CMPRestrictList::SetAllowed`, `GetId` and `GetName` take only the list's entries: the host options no longer write past a full list | `Shared/MPRestrictList.h` | host test: on a full list `GetId(32)` gave the count, 32 (retail), now -1, and `SetAllowed(32)` writes nothing | done |
+| M-B79 | A cached string too long for its buffer is read past whole | `Shared/MultiFile.cpp` (`CMultiFile_FILE`, `CMultiFile_LITH::ReadString`) | host test: a 16-character string read into 8 bytes, then an int written as 42: retail reads 1094268983, modern 42, through both classes; no cache is read in play (as M-B71) | done |
+| M-B80 | Losing a carried turret keeps the others | `ObjectDLL/PlayerObj.cpp` (`CPlayerObj::RemoveTurret`) | code: two turrets, the first lost, now leaves the second (it left none) | done |
+| M-B81 | A fading fog volume keeps its red | `ObjectDLL/VolumetricFog.cpp` | code | done |
+| M-B82 | A tentacle's attack and burrow each run their own update: an attack lasts its second, then the tentacle burrows | `ObjectDLL/Tentacle.cpp` | code | done |
+| M-B83 | A turret gun with a full turn of yaw wraps it | `ObjectDLL/TurretGun.cpp` | code | done |
+| M-B84 | A facehugger whose target is not a character no longer crashes its attack | `ObjectDLL/SimpleAIAlien.cpp` | code | done |
+| M-B85 | A tracer without a Flare has no flares, not sprite names from leftover memory (found here) | `Shared/FXButeMgr.cpp` (`TRACERFX::TRACERFX`) | code: the Standard and Laser tracers have no Flare | done |
+
+**Checked.** Both games' modern builds compile (`make modern`) and play
+`build/playtest-ph-corporate.txt` to the end (AvP2's Marine and Primal
+Hunt's Corporate first missions, quicksave and quickload; no crash). None of
+these has an effect the shipped games show: the bute caches are never
+read or written; every shipped tracer names SingleSegment; every
+VolumetricFog in Primal Hunt's levels (EXA1S1, EXH2S1, EXP1S1, EXP2S1,
+EXP2S2) has Use_Fog_Color off, so it is white and fades the same either
+way; the tentacles (EXH2S1, EXP1S1), carried turrets and turret guns were
+not reached by a script. Those are checked from the code. The restriction
+lists and the cache's strings were run in a host test: the tree's
+`MultiFile.cpp` and `MPRestrictList.h` built with g++ (stub types for the
+engine's), with and without `AVP2SRC_MODERN`.
+
+Not fixed, of these files' entries: "AvP2's player code casts its
+attachments without testing the cast" (the cast cannot fail; the entry
+says why).
+
+### M-8: the launchers, and the game straight from AVP2.exe / PrimalHunt.exe
+
+nolfsrc did the same for NOLF (`NOLF.exe` and `NOLFLauncher.exe`, one
+launcher's objects with two entry points); AvP2's launchers are MFC
+applications, so here it is one object, `src/modern/launcher/m8_entry.cpp`,
+compiled twice, that tells the two programs apart (`g_bM8Direct`).
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-8 | `AVP2.exe` and `PrimalHunt.exe` start the game directly, as Launch does, and wait for it (their exit code is the game's); `AVP2Launcher.exe` and `PrimalHuntLauncher.exe` are the launchers. Neither needs the registry or a disc | `src/modern/launcher/` (`m8_entry.cpp`, `m8_launch.h`); `src/launcher/Launcher.cpp`, `LauncherDlg.cpp`, `LauncherDlg.h`, `DisplayMgr.cpp`; `build/build.mk` (`launcher_exe`, `launcher_modern`), `build/all.sh`; `build/game-scripts/linux-run.sh`, `windows-run.bat`, `windows-install.ps1`, `mac-install.command` | done |
+
+**The direct start** goes through the launcher's own code, as its `-GOGAME`
+does, without showing the dialog: `InitInstance` reads what it always reads
+and calls `LaunchGame(ACTION_PLAY)`, which writes `avp2cmds.txt` and starts
+`lithtech.exe -cmdfile avp2cmds.txt`. So the launcher's settings, where the
+registry holds them (its Options, saved commands), apply to it, and its own
+arguments go last on the game's command line, as the launcher's do. It
+does not ask for a detail level (the game keeps its own settings) and
+shows no dialog unless something is missing.
+
+**Without the registry** (both programs): the program first makes its own
+directory the current one. With no `InstallDir` the game is taken to be
+there; with no launcher record only the game's own first run (autoexec.cfg's
+`NumRuns`) brings up the detail dialog, not every Play. AvP2's 1.0.9.6
+archive, which its patch names in the registry ("Update Command Line"), is
+taken from the directory (`-rez AVP2P1.REZ`) when the registry does not
+name one. Primal Hunt plays on the AvP2 beside it, `..\AVP2` (the layout the
+build installs), if `AVP2.REZ` is there, and on the registry's AvP2
+otherwise; its rez stack is `build/avp2cmds.sh`'s: AvP2's six archives from
+AvP2's directory, then its own `AVP2P`, `AVP2P1`, `AVP2X`, `MULTI`,
+`AVP2DLL`, `AVP2L` and `DIALOGUE`, a registry `PatchRez`, `custom`. (The
+reconstructed retail code looks for `AVP2.rez` in Primal Hunt's own
+directory and never names `AVP2X.REZ`: what the retail launcher does there
+lies in the pages its protection wrapper keeps encrypted.) The launcher
+still keeps its settings in the registry when the key is there; nothing
+creates it.
+
+**No disc check**: AvP2's Play no longer calls `CD_VerifyGame` (Primal
+Hunt's never did). And the launcher's display code no longer maps
+`d3d.ren` to `d3d9.ren` (a block that came in with nolfsrc's
+`DisplayMgr.cpp`): this build has no `d3d9.ren`, and the mapping left the
+configured renderer unfound.
+
+**Checked** under Wine in the build container, `build/playtest.sh` with
+`PLAYTEST_LAUNCH` and a new Wine prefix (no registry values):
+`build/playtest-direct.txt` with `AVP2.exe +DisableMovies 1` and
+`PrimalHunt.exe +DisableMovies 1`: each writes the command line above
+(`... -rez custom -rez AVP2p.rez -rez AVP2p2.rez -rez AVP2P1.REZ ...
++DisableMovies 1` for AvP2; `-rez "Z:\...\AVP2\AVP2.REZ" ... -rez
+DIALOGUE.REZ -rez custom ... +DisableMovies 1` for Primal Hunt) and the game
+reaches its main menu (v1.0.9.6, v1.0.2.2F). `build/playtest-launcher.txt`
+with `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`: the launcher opens,
+Display lists the renderer and the modes, its close button closes it
+(M-B104), Play asks for the detail level (the game's first run), Low starts
+the game (`++PerformanceConfig .DefaultLow`, M-B102; the same rez stack as
+the direct start's) and it runs (AvP2 to its main menu, Primal Hunt
+through its first splash screen in the time the script gives it). The
+release build's launchers and command lines are unchanged: `make progress`
+keeps every recorded function of `AVP2.exe`, `PrimalHunt.exe` and
+`Launch.dll` (184, 187 and 28 identical, as before).
+
+### Retail-bug fixes: the launchers and Launch.dll (M-B100..M-B107)
+
+Each in `RETAIL_BUGS.md`; checked as the table says.
+
+| Id | What | Files | Checked | Status |
+|---|---|---|---|---|
+| M-B100 | Launch.dll: an argument of 200 characters or more was copied into its 200-byte slot unterminated; now cut to 199 and terminated (the call sites' `strncpy` left as they were, redirected to one bounded copy) | `src/launch/launch.cpp` | a Windows harness (`zig cc`, Wine) calling `GetLithTechCommandLine` as `lithtech.exe` does (150 slots of 200 bytes) with a 250-character argument: retail's slot is not terminated (runs on into the next), the modern build's holds 199 characters and its terminator | done |
+| M-B101 | Launch.dll (and the launchers' copy of the same code): every rez-file check leaked its `_findfirst` handle; now closed | `src/launch/RezFind.cpp`, `src/launcher/RezFind.cpp` | the same harness, with Launch.dll's `FindFirstFileA`/`FindClose` imports patched to counters, ten calls: retail 20 handles opened, none closed; modern 20 and 20 | done |
+| M-B102 | The launchers' Low and High detail buttons gave the opposite profile | `src/launcher/LauncherDlg.cpp` | `build/playtest-launcher.txt`: Low writes `++PerformanceConfig .DefaultLow` | done |
+| M-B103 | The launchers wrote the command line as `fprintf`'s format; now `fputs` | `src/launcher/LauncherDlg.cpp` | from the code (no `%` in the test's command line); the file the playtests read back is the command line as built | done |
+| M-B104 | The display dialog's close button did nothing; now cancels | `src/launcher/DisplayDlg.cpp` | `build/playtest-launcher.txt`: a click on it returns to the launcher | done |
+| M-B105 | A launcher string whose caption would not load lost the message; the caption's error now goes into the caption | `src/launcher/Launcher.cpp` | from the code: every caption the launchers pass is in their string tables, so the path is not reached in play | done |
+| M-B106 | The launchers' already-running checks matched any `LITHTECH.EXE` or `SETUP.EXE`; now this directory's, by full path | `src/launcher/Launcher.cpp` | under Wine, with Wine's notepad running as `LITHTECH.EXE` from another directory: the release build's `AVP2.exe` does not open (and opens without it), the modern `AVP2Launcher.exe` opens; `ExistProcess` compares a name with a `\` against each process's full module path, so this directory's engine still stops it | done |
+| M-B107 | The launchers copied the command line into 1024 bytes of stack (`strcpy`), whatever its length (new, `RETAIL_BUGS.md`); now written from the `CString` | `src/launcher/LauncherDlg.cpp` | from the code; the playtests' command files are whole | done |
 
 ## New console variables
 

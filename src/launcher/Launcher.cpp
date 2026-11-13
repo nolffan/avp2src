@@ -91,6 +91,14 @@ BOOL CLauncherApp::InitInstance()
 	Enable3dControlsStatic();	// Call this when linking to MFC statically
 #endif
 
+#ifdef AVP2SRC_MODERN
+	// M-8: the game is where the program is (avp2cmds.txt, the archives,
+	// lithtech.exe), however it was started
+	CString csM8Dir;
+	if(M8ProgramDir(csM8Dir))
+		SetCurrentDirectory(csM8Dir);
+#endif
+
 	// Load some strings
 #ifdef PRIMAL_HUNT
 	m_csAvP2Name.LoadString(IDS_AVP2NAME);
@@ -117,6 +125,28 @@ BOOL CLauncherApp::InitInstance()
 		return FALSE;
 	}
 
+#ifdef AVP2SRC_MODERN
+	// RETAIL BUG fixed (MODERN.md M-B106): the two checks look for this
+	// directory's LITHTECH.EXE and SETUP.EXE, by their full paths, as the
+	// directory was built for -- not for any process of those names
+	char sDir[MAX_PATH] = { "" };
+	DWORD dwDirLen = GetCurrentDirectory(MAX_PATH - 1, sDir);
+	if(dwDirLen == 0 || dwDirLen >= MAX_PATH - 1) sDir[0] = '\0';
+	if(sDir[0] && sDir[strlen(sDir) - 1] != '\\') strcat(sDir, "\\");
+
+	char sFullExe[MAX_PATH + 16];
+	sprintf(sFullExe, "%sLITHTECH.EXE", sDir);
+	if(ExistProcess(sFullExe, 1))
+	{
+		return FALSE;
+	}
+
+	sprintf(sFullExe, "%sSETUP.EXE", sDir);
+	if(ExistProcess(sFullExe, 1))
+	{
+		return FALSE;
+	}
+#else
 	// RETAIL BUG: sDir is built and then not used -- the two checks below
 	// look for the processes by their bare names
 	char sDir[128] = { "" };
@@ -134,6 +164,7 @@ BOOL CLauncherApp::InitInstance()
 	{
 		return FALSE;
 	}
+#endif
 
 	// Set the CD-ROM root directory string...
 	BOOL bBogus;
@@ -167,6 +198,17 @@ BOOL CLauncherApp::InitInstance()
 		}
 	}
 
+#ifdef AVP2SRC_MODERN
+	// M-8: the AvP2 beside us first (..\AVP2, as the build installs the
+	// two games), the registry's only when there is none
+	CString csM8AvP2;
+	if(M8AvP2Beside(csM8AvP2))
+	{
+		m_csAvP2InstallDir = csM8AvP2;
+		bAvP2Installed = TRUE;
+	}
+#endif
+
 	if(!bAvP2Installed)
 	{
 		MessageBox(IDS_AVP2NOTINSTALLED, IDS_AVP2NOTFOUND, MB_OK | MB_ICONSTOP);
@@ -174,7 +216,14 @@ BOOL CLauncherApp::InitInstance()
 	}
 #endif
 
+#ifdef AVP2SRC_MODERN
+	// M-8: the settings are read from the registry when the key is there,
+	// and the rest is done without it
+	BOOL bM8Key = OpenRegistryKey();
+	if(TRUE)
+#else
 	if(OpenRegistryKey())
+#endif
 	{
 		char p[MAX_PATH];
 		DWORD dwSize = sizeof(char) * MAX_PATH;
@@ -191,6 +240,18 @@ BOOL CLauncherApp::InitInstance()
 		}
 
 		m_dwNumLauncherRuns = GetRegistryDWord("Num Launcher Runs");
+#ifdef AVP2SRC_MODERN
+		// M-8: no install record -- the game is here; and with no
+		// launcher record, only the game's own first run (autoexec.cfg's
+		// NumRuns) asks for the detail level
+		if(!m_bInstalled)
+		{
+			m_bInstalled = TRUE;
+			m_csInstallDir = csM8Dir;
+		}
+		if(!bM8Key)
+			m_dwNumLauncherRuns = 1;
+#endif
 		m_bDisableSound = GetRegistryBool("Disable Sound");
 		m_bDisableMusic = GetRegistryBool("Disable Music");
 		m_bDisableMovies = GetRegistryBool("Disable Movies");
@@ -212,6 +273,15 @@ BOOL CLauncherApp::InitInstance()
 		{
 			m_csContentCmdLine = p;
 		}
+
+#ifdef AVP2SRC_MODERN
+#ifndef PRIMAL_HUNT
+		// M-8: the 1.0.9.6 patch's archive, which its installer names in
+		// the registry, from the game directory when the registry does not
+		if(m_csUpdateCmdLine.IsEmpty() && M8FileExists("AVP2P1.REZ"))
+			m_csUpdateCmdLine = "-rez AVP2P1.REZ";
+#endif
+#endif
 
 #ifdef PRIMAL_HUNT
 		// PH: a patch's own rez file
@@ -270,9 +340,23 @@ BOOL CLauncherApp::InitInstance()
 	strcpy(lf.lfFaceName,"Arial Narrow");
 	m_Font.CreateFontIndirect(&lf);
 
+#ifdef AVP2SRC_MODERN
+	// M-8: AVP2.exe / PrimalHunt.exe start the game as Launch would, with
+	// no dialog, and wait for it
+	if(g_bM8Direct)
+	{
+		CLauncherDlg dlg;
+		dlg.M8LaunchDirect();
+	}
+	else
+	{
+#endif
 	CLauncherDlg dlg;
 	m_pMainWnd = &dlg;
 	int nResponse = dlg.DoModal();
+#ifdef AVP2SRC_MODERN
+	}
+#endif
 
 	m_dwNumLauncherRuns++;
 
@@ -295,6 +379,13 @@ BOOL CLauncherApp::InitInstance()
 	m_RegMgr.Term();
 	m_BkBrush.DeleteObject();
 	m_Font.DeleteObject();
+
+#ifdef AVP2SRC_MODERN
+	// M-8: the direct start exits with the game's exit code (what
+	// CWinApp::ExitInstance returns)
+	if(g_bM8Direct)
+		m_msgCur.wParam = g_dwM8ExitCode;
+#endif
 
 	// Since the dialog has been closed, return FALSE so that we exit the
 	//  application, rather than start the application's message pump.
@@ -334,6 +425,15 @@ int CLauncherApp::MessageBox(UINT nIDText, UINT nIDCaption, DWORD dwType)
 		MessageBox(csText,"ERROR");
 	}
 
+#ifdef AVP2SRC_MODERN
+	// RETAIL BUG fixed (MODERN.md M-B105): the caption's error goes in the
+	// caption, as the text's does in the text, and the message is kept
+	if(!csCaption.LoadString(nIDCaption))
+	{
+		csCaption.Format("ERROR - Could not load string id: %d",nIDCaption);
+		MessageBox(csCaption,"ERROR");
+	}
+#else
 	// RETAIL BUG: a caption that will not load overwrites the text, not the
 	// caption, so the message itself is lost
 	if(!csCaption.LoadString(nIDCaption))
@@ -341,6 +441,7 @@ int CLauncherApp::MessageBox(UINT nIDText, UINT nIDCaption, DWORD dwType)
 		csText.Format("ERROR - Could not load string id: %d",nIDCaption);
 		MessageBox(csText,"ERROR");
 	}
+#endif
 	
 	return MessageBox(csText,csCaption,dwType);
 }

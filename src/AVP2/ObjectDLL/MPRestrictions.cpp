@@ -72,11 +72,22 @@ class CMPServerList : public CMPRestrictList
 		// over all the ones above it and the count is not raised
 		void	Insert(int i, int nId, LTBOOL bAllowed, const char* szName)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B75 (RETAIL_BUGS.md): moved up from the top, and counted
+			if((i >= MAX_MP_RESTRICT_ENTRIES) || (m_nNumEntries >= MAX_MP_RESTRICT_ENTRIES))
+				return;
+
+			for(int j = m_nNumEntries; j > i; j--)
+				m_aEntries[j] = m_aEntries[j - 1];
+
+			m_nNumEntries++;
+#else
 			if(i >= MAX_MP_RESTRICT_ENTRIES)
 				return;
 
 			for(int j = i; j < m_nNumEntries; j++)
 				m_aEntries[j + 1] = m_aEntries[j];
+#endif
 
 			MPRestrictEntry & entry = m_aEntries[i];
 			entry.nId = nId;
@@ -136,14 +147,24 @@ void MPRestrict_AddWeapon(int nId, LTBOOL bAllowed, const char* szName)
 // (that entry is cleared, so it reads as not allowed)
 LTBOOL MPRestrict_IsClassAllowed(int i)
 {
+#ifdef AVP2SRC_MODERN
+	// M-B76 (RETAIL_BUGS.md): the last entry is the count less one
+	if (i >= s_MPRestrictLists.m_ClassList.m_nNumEntries || i < 0) return LTFALSE;
+#else
 	if (i > s_MPRestrictLists.m_ClassList.m_nNumEntries || i < 0) return LTFALSE;
+#endif
 
 	return s_MPRestrictLists.m_ClassList.m_aEntries[i].bAllowed;
 }
 
 LTBOOL MPRestrict_IsWeaponAllowed(int i)
 {
+#ifdef AVP2SRC_MODERN
+	// M-B76 (RETAIL_BUGS.md): the last entry is the count less one
+	if (i >= s_MPRestrictLists.m_WeaponList.m_nNumEntries || i < 0) return LTFALSE;
+#else
 	if (i > s_MPRestrictLists.m_WeaponList.m_nNumEntries || i < 0) return LTFALSE;
+#endif
 
 	return s_MPRestrictLists.m_WeaponList.m_aEntries[i].bAllowed;
 }

@@ -336,7 +336,11 @@ void d3d_FillDynamicLM16(uint16 *pData, LMDrawDesc *pDesc, float fDistSqr, LMCol
 	// RETAIL BUG (probable): m_Pitch is in bytes, so this clears only the
 	// first quarter of the lightmap; pixels outside the sphere below it keep
 	// whatever was there.
+#ifdef AVP2SRC_MODERN
+	memset(pData, 0, pDesc->m_Pitch * height);
+#else
 	memset(pData, 0, (pDesc->m_Pitch * height) >> 2);
+#endif
 
 	width -= 2;
 	height -= 2;
@@ -387,7 +391,11 @@ void d3d_FillDynamicLM32(uint32 *pData, LMDrawDesc *pDesc, float fDistSqr, LMCol
 	// RETAIL BUG (probable): m_Pitch is in bytes, so this clears only the
 	// first quarter of the lightmap; pixels outside the sphere below it keep
 	// whatever was there.
+#ifdef AVP2SRC_MODERN
+	memset(pData, 0, pDesc->m_Pitch * height);
+#else
 	memset(pData, 0, (pDesc->m_Pitch * height) >> 2);
+#endif
 
 	width -= 2;
 	height -= 2;

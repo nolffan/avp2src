@@ -189,6 +189,11 @@ CFolderJoin::CFolderJoin()
 	m_bEscape = LTFALSE;
 
 	m_hLock = LTNULL;
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+	m_hNoEntry = LTNULL;	// M-B60: (Build makes it)
+#endif
+#endif
 }
 
 
@@ -199,6 +204,16 @@ CFolderJoin::~CFolderJoin()
 		g_pLTClient->DeleteSurface(m_hLock);
 		m_hLock = LTNULL;
 	}
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+	// M-B60 (RETAIL_BUGS.md): and the no-entry mark
+	if(m_hNoEntry)
+	{
+		g_pLTClient->DeleteSurface(m_hNoEntry);
+		m_hNoEntry = LTNULL;
+	}
+#endif
+#endif
 }
 
 
@@ -1793,8 +1808,11 @@ LTBOOL CFolderJoin::IsClassAllowed(uint32 dwAllowedClasses)
 
 	CMPRestrictList classList = pOptions->m_ClassList;
 
-	// RETAIL BUG: this is the profile's index into its race's characters,
-	// not the character set the class list holds
+	// (Not a bug, though RETAIL_BUGS.md once listed it as one: the profile
+	// keeps each race's character set, not an index into the race's
+	// characters -- FolderPlayer.cpp and FolderPlayerJoin.cpp store
+	// m_nCharList[race][index] in it, ProfileMgr.cpp's defaults are sets --
+	// so this is the class list's ID, as in CBaseFolder::IsCharacterAllowed)
 	int nCharacter = pProfile->m_nChar[pProfile->m_nRace];
 
 	if(nCharacter < 0)

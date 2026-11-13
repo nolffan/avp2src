@@ -58,13 +58,27 @@ LTRESULT ServerModelLT::SetPlaying(LTAnimTracker* pTracker, LTBOOL bPlaying)
 	return dResult;
 }
 
+#ifdef AVP2SRC_MODERN
+// M-B03.  RETAIL BUG (RETAIL_BUGS.md): retail's two-argument override
+// overrode nothing, so the interface's call set the time without flagging
+// the object for its clients; it now takes the interface's third argument
+// and hands it on.
+LTRESULT ServerModelLT::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime,
+                                       LTBOOL bIncorporateScale)
+#else
 LTRESULT ServerModelLT::SetCurAnimTime(LTAnimTracker* pTracker, uint32 curTime)
+#endif
 {
 	LTObject* pObj = (LTObject*)pTracker->GetModelInstance();
 	if (!pTracker || !pObj)
 		RETURN_ERROR_NAMED(2, "ServerModelLT::SetCurAnimTime", LT_INVALIDPARAMS);
 
+#ifdef AVP2SRC_MODERN
+	LTRESULT dResult = CommonModelLT::SetCurAnimTime(pTracker, curTime,
+	                                                 bIncorporateScale);
+#else
 	LTRESULT dResult = CommonModelLT::SetCurAnimTime(pTracker, curTime);
+#endif
 	if (dResult == LT_OK)
 	{
 		at_UpdateStringKeys(pTracker, pTracker->m_TimeRef.m_Cur.m_Time);

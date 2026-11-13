@@ -85,6 +85,11 @@ BEGIN_MESSAGE_MAP(CDisplayDlg, CMoveDialog)
 	ON_BN_CLICKED(IDC_DD_OK, OnOK)
 	ON_BN_CLICKED(IDC_DD_CANCEL, OnCancel)
 	//}}AFX_MSG_MAP
+#ifdef AVP2SRC_MODERN
+	// RETAIL BUG fixed (MODERN.md M-B104): the close button cancels, as
+	// the launcher's own close button does
+	ON_BN_CLICKED(IDC_DD_CLOSE, OnCancel)
+#endif
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////

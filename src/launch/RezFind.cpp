@@ -156,6 +156,9 @@ BOOL ExistRezFile(const char* sFile)
 
     hFile = _findfirst(sFile, &c_file);
 	if (hFile == -1L) return(FALSE);
+#ifdef AVP2SRC_MODERN
+	_findclose(hFile);	// RETAIL BUG fixed (MODERN.md M-B101): the handle given back
+#endif
 
 	if (c_file.attrib & _A_SUBDIR)
 	{
@@ -192,6 +195,9 @@ BOOL ExistRezDir(const char* sDir)
 
     hFile = _findfirst(sDir, &c_file);
 	if (hFile == -1L) return(FALSE);
+#ifdef AVP2SRC_MODERN
+	_findclose(hFile);	// RETAIL BUG fixed (MODERN.md M-B101): the handle given back
+#endif
 
 	if (!(c_file.attrib & _A_SUBDIR))
 	{

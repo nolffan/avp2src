@@ -10,7 +10,10 @@ rem lithtech.exe, starts with the game's avp2cmds.txt (the rez stack, with
 rem custom\ -- the game DLLs built from source -- last) and your arguments,
 rem written to run-cmds.txt. The launchers (AVP2\AVP2.exe,
 rem PrimalHunt\PrimalHunt.exe) are the other way in; they need the registry
-rem values windows-install.bat writes.
+rem values windows-install.bat writes. In the modern build AVP2\AVP2.exe and
+rem PrimalHunt\PrimalHunt.exe start the game directly, as the launcher's
+rem Launch would, and need no registry; its launchers are
+rem AVP2\AVP2Launcher.exe and PrimalHunt\PrimalHuntLauncher.exe.
 setlocal
 set "GAME=AVP2"
 if /i "%~1"=="avp2" shift

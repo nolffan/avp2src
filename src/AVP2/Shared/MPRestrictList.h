@@ -111,11 +111,22 @@ class CMPRestrictList
 		// comes out wrong (PHObject.lto 0x10032a9d, 0x1000bee5)
 		void	Insert(int i, int nId, const char* szName)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B75 (RETAIL_BUGS.md): moved up from the top, and counted
+			if((i >= MAX_MP_RESTRICT_ENTRIES) || (m_nNumEntries >= MAX_MP_RESTRICT_ENTRIES))
+				return;
+
+			for(int j = m_nNumEntries; j > i; j--)
+				m_aEntries[j] = m_aEntries[j - 1];
+
+			m_nNumEntries++;
+#else
 			if(i >= MAX_MP_RESTRICT_ENTRIES)
 				return;
 
 			for(int j = i; j < m_nNumEntries; j++)
 				m_aEntries[j + 1] = m_aEntries[j];
+#endif
 
 #ifdef _CLIENTBUILD
 			m_aEntries[i].Set(nId, LTTRUE, szName);
@@ -136,7 +147,12 @@ class CMPRestrictList
 		// entry just past the last one passes
 		int		GetId(int i)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B78 (RETAIL_BUGS.md): the last entry is the count less one
+			if((i >= m_nNumEntries) || (i < 0))
+#else
 			if((i > m_nNumEntries) || (i < 0))
+#endif
 				return -1;
 
 			return m_aEntries[i].nId;
@@ -146,7 +162,12 @@ class CMPRestrictList
 		// 0x100a4fb0); the index is checked as GetId's is
 		const char*	GetName(int i)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B78 (RETAIL_BUGS.md): the last entry is the count less one
+			if((i >= m_nNumEntries) || (i < 0))
+#else
 			if((i > m_nNumEntries) || (i < 0))
+#endif
 				return LTNULL;
 
 			return m_aEntries[i].szName;
@@ -168,7 +189,12 @@ class CMPRestrictList
 		// (harmless: FindIndex never returns it)
 		LTBOOL	IsAllowed(int i)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B77 (RETAIL_BUGS.md): the last entry is the count less one
+			if((i >= m_nNumEntries) || (i < 0))
+#else
 			if((i > m_nNumEntries) || (i < 0))
+#endif
 				return LTFALSE;
 
 			return m_aEntries[i].bAllowed;
@@ -176,7 +202,12 @@ class CMPRestrictList
 
 		void	SetAllowed(int i, LTBOOL bAllowed)
 		{
+#ifdef AVP2SRC_MODERN
+			// M-B78 (RETAIL_BUGS.md): the last entry is the count less one
+			if((i >= m_nNumEntries) || (i < 0))
+#else
 			if((i > m_nNumEntries) || (i < 0))
+#endif
 				return;
 
 			m_aEntries[i].bAllowed = bAllowed;

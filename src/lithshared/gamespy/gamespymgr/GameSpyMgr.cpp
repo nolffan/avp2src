@@ -556,7 +556,13 @@ BOOL CGameSpyMgr::OnSecureQuery(const char* sValue)
 	// sEncrypt.
 
 	char sEncrypt[64];
+#ifdef AVP2SRC_MODERN
+	// M-B47 (RETAIL_BUGS.md): as much of it as fits
+	strncpy(sEncrypt, sValue, sizeof(sEncrypt) - 1);
+	sEncrypt[sizeof(sEncrypt) - 1] = '\0';
+#else
 	strcpy(sEncrypt, sValue);
+#endif
 
 	gs_encrypt((unsigned char*)sEncrypt, VALIDATE_SIZE, m_sGameKey);
 

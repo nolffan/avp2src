@@ -18,6 +18,9 @@
 #endif // _MSC_VER > 1000
 
 #include "MoveDlg.h"
+#ifdef AVP2SRC_MODERN
+#include "../modern/launcher/m8_launch.h"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // CLauncherDlg dialog
@@ -28,6 +31,11 @@ class CLauncherDlg : public CMoveDialog
 // Construction
 public:
 	CLauncherDlg(CWnd* pParent = NULL);	// standard constructor
+#ifdef AVP2SRC_MODERN
+	// M-8: AVP2.exe / PrimalHunt.exe -- Launch, without the dialog; the
+	// exit code is 1 if the game could not be started
+	void			M8LaunchDirect() { if(!LaunchGame(ACTION_PLAY)) g_dwM8ExitCode = 1; }
+#endif
 
 // Dialog Data
 	//{{AFX_DATA(CLauncherDlg)

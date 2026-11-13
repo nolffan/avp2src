@@ -108,8 +108,45 @@ CFolderHostOptions::CFolderHostOptions()
 
 CFolderHostOptions::~CFolderHostOptions()
 {
-
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+	DeleteBoxBitmaps();
+#endif
+#endif
 }
+
+#ifdef AVP2SRC_MODERN
+#ifdef PRIMAL_HUNT
+// M-B59 (RETAIL_BUGS.md): each check box's bitmap is the box's own, and the
+// folder's fixed controls hold it only while its page shows: take every one
+// out of them before the folder deletes its controls, then delete it once
+void CFolderHostOptions::Term()
+{
+	DeleteBoxBitmaps();
+	CBaseFolder::Term();
+}
+
+void CFolderHostOptions::DeleteBoxBitmaps()
+{
+	CHostCheckBox *aBoxes[2] = { m_aClassBoxes, m_aWeaponBoxes };
+	int anBoxes[2] = { MAX_HOST_CLASS_BOXES, MAX_HOST_WEAPON_BOXES };
+
+	for(int nList = 0; nList < 2; nList++)
+	{
+		for(int i = 0; i < anBoxes[nList]; i++)
+		{
+			CHostCheckBox &box = aBoxes[nList][i];
+			if(!box.m_pBitmap) continue;
+
+			RemoveFixedControl(box.m_pBitmap);
+			box.m_pBitmap->Destroy();
+			delete box.m_pBitmap;
+			box.m_pBitmap = LTNULL;
+		}
+	}
+}
+#endif
+#endif
 
 
 // Build the folder
@@ -348,7 +385,12 @@ uint32 CFolderHostOptions::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 			// a class check box
 			// RETAIL BUG: both ranges run one past the last box (and the
 			// class one past its 24 boxes, to the class list's 32)
+#ifdef AVP2SRC_MODERN
+			// M-B58 (RETAIL_BUGS.md): only the boxes there are
+			if((dwCommand >= CMD_CLASS_FIRST) && (dwCommand < CMD_CLASS_FIRST + MAX_HOST_CLASS_BOXES))
+#else
 			if((dwCommand >= CMD_CLASS_FIRST) && (dwCommand <= CMD_CLASS_FIRST + MAX_MP_RESTRICT_ENTRIES))
+#endif
 			{
 				// the classes are fixed in these games
 				if(	(m_Options.nGameType == MP_OVERRUN) || (m_Options.nGameType == MP_EVAC) ||
@@ -368,7 +410,11 @@ uint32 CFolderHostOptions::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 			}
 
 			// a weapon check box
+#ifdef AVP2SRC_MODERN
+			if((dwCommand >= CMD_WEAPON_FIRST) && (dwCommand < CMD_WEAPON_FIRST + MAX_HOST_WEAPON_BOXES))
+#else
 			if((dwCommand >= CMD_WEAPON_FIRST) && (dwCommand <= CMD_WEAPON_FIRST + MAX_HOST_WEAPON_BOXES))
+#endif
 			{
 				int i = dwCommand - CMD_WEAPON_FIRST;
 				m_aWeaponBoxes[i].SetCheck(m_aWeaponBoxes[i].m_bChecked != LTTRUE, dwCommand);

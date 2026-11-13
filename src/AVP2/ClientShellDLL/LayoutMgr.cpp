@@ -1500,10 +1500,16 @@ DDWORD	CLayoutMgr::GetHUDCfg(DDWORD nType, DDWORD nIndex)
 
 #ifdef PRIMAL_HUNT
 // PH: the Corporate HUD has its own motion detector (HUD_MD_CORP_TAG,
-// nType 1). RETAIL BUG: the tag checked is still the Marine's
+// nType 1). RETAIL BUG: the tag checked is still the Marine's (M-B61,
+// RETAIL_BUGS.md: the modern build checks the Corporate tag, and without
+// it falls back to the Marine's)
 void CLayoutMgr::GetMDLargeFontName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_LARGE_NUMS, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_LARGE_NUMS, pBuf, nBufLen);
@@ -1511,7 +1517,11 @@ void CLayoutMgr::GetMDLargeFontName(char *pBuf, int nBufLen, int nType)
 
 void CLayoutMgr::GetMDSmallFontName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_SMALL_NUMS, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_SMALL_NUMS, pBuf, nBufLen);
@@ -1520,7 +1530,11 @@ void CLayoutMgr::GetMDSmallFontName(char *pBuf, int nBufLen, int nType)
 DDWORD		CLayoutMgr::GetNumMDBlipImages(int nType)
 {
 	//check to see that the page exists
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return m_buteMgr.GetInt(HUD_MD_CORP_TAG, HUD_MD_NUM_BLIP_IMAGES);
 
 	if(m_buteMgr.Exist(HUD_MD_TAG))
@@ -1532,7 +1546,11 @@ DDWORD		CLayoutMgr::GetNumMDBlipImages(int nType)
 DDWORD		CLayoutMgr::GetNumMDGridImages(int nType)
 {
 	//check to see that the page exists
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return m_buteMgr.GetInt(HUD_MD_CORP_TAG, HUD_MD_NUM_GRID_IMAGES);
 
 	if(m_buteMgr.Exist(HUD_MD_TAG))
@@ -1543,7 +1561,11 @@ DDWORD		CLayoutMgr::GetNumMDGridImages(int nType)
 
 DIntPt		CLayoutMgr::GetMDGridOffset(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_GRID_OFFSET);
 
 	return GetPoint(HUD_MD_TAG, HUD_MD_GRID_OFFSET);
@@ -1551,7 +1573,11 @@ DIntPt		CLayoutMgr::GetMDGridOffset(int nType)
 
 DIntPt		CLayoutMgr::GetMDBaseOffset(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_BASE_OFFSET);
 
 	return GetPoint(HUD_MD_TAG, HUD_MD_BASE_OFFSET);
@@ -1559,7 +1585,11 @@ DIntPt		CLayoutMgr::GetMDBaseOffset(int nType)
 
 DFLOAT CLayoutMgr::GetMDGridTranslucency(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_CORP_TAG, HUD_MD_GRID_TRANS, 0.0f);
 
 	return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_TAG, HUD_MD_GRID_TRANS, 0.0f);
@@ -1567,7 +1597,11 @@ DFLOAT CLayoutMgr::GetMDGridTranslucency(int nType)
 
 DFLOAT CLayoutMgr::GetMDBaseTranslucency(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_CORP_TAG, HUD_MD_BASE_TRANS, 0.0f);
 
 	return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_TAG, HUD_MD_BASE_TRANS, 0.0f);
@@ -1575,7 +1609,11 @@ DFLOAT CLayoutMgr::GetMDBaseTranslucency(int nType)
 
 DFLOAT CLayoutMgr::GetMDArcTranslucency(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_CORP_TAG, HUD_MD_ARC_TRANS, 0.0f);
 
 	return (DFLOAT)m_buteMgr.GetDouble(HUD_MD_TAG, HUD_MD_ARC_TRANS, 0.0f);
@@ -1583,7 +1621,11 @@ DFLOAT CLayoutMgr::GetMDArcTranslucency(int nType)
 
 DIntPt		CLayoutMgr::GetMDRangeOffset(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_RANGE_OFFSET);
 
 	return GetPoint(HUD_MD_TAG, HUD_MD_RANGE_OFFSET);
@@ -1591,7 +1633,11 @@ DIntPt		CLayoutMgr::GetMDRangeOffset(int nType)
 
 DIntPt		CLayoutMgr::GetMDRangeSmallOffset(int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		return GetPoint(HUD_MD_CORP_TAG, HUD_MD_RANGE_SMALL_OFFSET);
 
 	return GetPoint(HUD_MD_TAG, HUD_MD_RANGE_SMALL_OFFSET);
@@ -1599,7 +1645,11 @@ DIntPt		CLayoutMgr::GetMDRangeSmallOffset(int nType)
 
 void CLayoutMgr::GetArcSurfaceName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_ARC_FILE, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_ARC_FILE, pBuf, nBufLen);
@@ -1607,7 +1657,11 @@ void CLayoutMgr::GetArcSurfaceName(char *pBuf, int nBufLen, int nType)
 
 void CLayoutMgr::GetBaseSurfaceName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_BASE_FILE, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_BASE_FILE, pBuf, nBufLen);
@@ -1615,7 +1669,11 @@ void CLayoutMgr::GetBaseSurfaceName(char *pBuf, int nBufLen, int nType)
 
 void CLayoutMgr::GetGridSurfaceName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_GRID_FILE, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_GRID_FILE, pBuf, nBufLen);
@@ -1623,7 +1681,11 @@ void CLayoutMgr::GetGridSurfaceName(char *pBuf, int nBufLen, int nType)
 
 void CLayoutMgr::GetBlipSurfaceName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_BLIP_FILE, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_BLIP_FILE, pBuf, nBufLen);
@@ -1631,7 +1693,11 @@ void CLayoutMgr::GetBlipSurfaceName(char *pBuf, int nBufLen, int nType)
 
 void CLayoutMgr::GetTrackerBlipSurfaceName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_TRACKER_BLIP_FILE, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_TRACKER_BLIP_FILE, pBuf, nBufLen);
@@ -1639,7 +1705,11 @@ void CLayoutMgr::GetTrackerBlipSurfaceName(char *pBuf, int nBufLen, int nType)
 
 void CLayoutMgr::GetTrackerArrowSurfaceName(char *pBuf, int nBufLen, int nType)
 {
+#ifdef AVP2SRC_MODERN
+	if(nType == 1 && m_buteMgr.Exist(HUD_MD_CORP_TAG))	// M-B61
+#else
 	if(nType == 1 && m_buteMgr.Exist(HUD_MD_TAG))
+#endif
 		GetString(HUD_MD_CORP_TAG, HUD_MD_TRACKER_ARROW_FILE, pBuf, nBufLen);
 	else if(m_buteMgr.Exist(HUD_MD_TAG))
 		GetString(HUD_MD_TAG, HUD_MD_TRACKER_ARROW_FILE, pBuf, nBufLen);

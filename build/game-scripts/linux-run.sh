@@ -20,7 +20,10 @@
 #
 # --launcher starts @LAUNCHER@ (built from src/launcher/), whose Display and
 # Advanced pages set the renderer, the resolution and the engine's options;
-# it rewrites avp2cmds.txt.
+# it rewrites avp2cmds.txt. (In the modern build the launchers are
+# AVP2Launcher.exe and PrimalHuntLauncher.exe, and AVP2.exe and
+# PrimalHunt.exe start the game directly, as Launch would, with no registry
+# needed.)
 #
 # Environment:
 #   WINEPREFIX   the Wine prefix to use (default: $HOME/.wine-avp2, created

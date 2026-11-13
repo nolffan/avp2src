@@ -326,6 +326,11 @@ bool CButeMgr::TraverseTableOfTagsDeleteSymTab( char const* pszTagName, TableOfI
 											   void* pContext )
 {
 	TraverseTableOfItems( theTableOfItems, TraverseTableOfItemsDeleteSymTab, pContext );
+#ifdef AVP2SRC_MODERN
+	// M-B41 (RETAIL_BUGS.md): the table of items goes too (only Term
+	// traverses with this, and clears the tables of tags after it)
+	delete &theTableOfItems;
+#endif
 	return true;
 }
 
@@ -1532,6 +1537,14 @@ CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( CString const& sTagName, CString
 
 	// Find table of items in main tag table.
 	TableOfItems* pTabOfItems = FindTableOfItems( m_tagTab, sTagName );
+#ifdef AVP2SRC_MODERN
+	// M-B40 (RETAIL_BUGS.md): or, for an expansion's tag, in the second
+	// tag table (a tag is in only one of the two: Tag refuses a duplicate),
+	// so its attribute is found and set where FindSymTabItem reads it, and
+	// a new one goes in the auxiliary table as for any existing tag
+	if( !pTabOfItems )
+		pTabOfItems = FindTableOfItems( m_tagTab2, sTagName );
+#endif
 	if( pTabOfItems )
 	{
 		// Find attribute in table of items.

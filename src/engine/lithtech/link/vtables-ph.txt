@@ -60,6 +60,11 @@ vtable ??_7CClass4A3BB4@@6B@ 0x004d7f54  # compiled with 1 slots
     ?Flush@CRezFile@@UAEHXZ
     ?VerifyFileOpen@CRezFile@@UAEHXZ
     ?GetFileName@CRezFile@@UAEPADXZ  # placed by shape
+vtable ??_7CClientMsgObjectHelper@@6B@ 0x004d4e94  # compiled with 2 slots (by hand: the generator missed it; vtables.txt's NOLF entry)
+    ?ReadObjectID@CClientMsgObjectHelper@@UAEKPAVCClientMsgWriteView@@PAPAVCClientObjIDView@@@Z
+    ?WriteObjectID@CClientMsgObjectHelper@@UAEKPAVCClientMsgWriteView@@PAVCClientObjIDView@@@Z
+    ?WriteFormattedString@CMessageObjectHelperQ414@@QAEKPAVIMessageWriteQ414@@KPAPAD@Z
+    ?GetLen@CStreamFields@@UAEKPAK@Z
 vtable ??_7CCmgAbstractIO@@6B@ 0x004d5d40  # compiled with 1 slots
     ??_GCCmgAbstractIO@@UAEPAXI@Z  # the compiled slot, kept over ??_GILTCSBaseQ404@@UAEPAXI@Z placed there
     ?AddRef@CAbstractIO@@UAEXXZ

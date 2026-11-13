@@ -1035,10 +1035,18 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	// Cap it off so we can always see our weapon at least a little bit
 	// RETAIL BUG: the floor for a model with flag 2 bit 11 set lands on
 	// red, not on the alpha (PHCShell 0x100b46c2 reads and writes r)
+#ifdef AVP2SRC_MODERN
+	// M-B54 (RETAIL_BUGS.md): the floor is the alpha's, 0.35 or 0.2
+	if((dwFlags2 & 0x800) && a < 0.35f)
+		a = 0.35f;
+	else if(a < 0.2f)
+		a = 0.2f;
+#else
 	if((dwFlags2 & 0x800) && r < 0.35f)
 		r = 0.35f;
 	else if(a < 0.2f)
 		a = 0.2f;
+#endif
 
 	if(dwUserFlags & USRFLG_GLOW)
 		a = 0.5f;
@@ -4880,7 +4888,13 @@ void CWeaponModel::Holster()
 	for(int i = 0; i < WM_MAX_MUZZLES; i++)
 	{
 		// RETAIL BUG: the flash is hidden before it is checked for
+#ifdef AVP2SRC_MODERN
+		// M-B57 (RETAIL_BUGS.md): only a flash there is
+		if(m_pMuzzleFlash[i])
+			m_pMuzzleFlash[i]->Hide();
+#else
 		m_pMuzzleFlash[i]->Hide();
+#endif
 		delete m_pMuzzleFlash[i];
 		m_pMuzzleFlash[i] = LTNULL;
 	}

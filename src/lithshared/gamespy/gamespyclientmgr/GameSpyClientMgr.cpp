@@ -253,8 +253,13 @@ BOOL CGameSpyClientMgr::SetupDirServers()
 	// having opened either).
 
 	fp = fopen("sierraup.cfg", "r");
+#ifdef AVP2SRC_MODERN
+	// M-B50 (RETAIL_BUGS.md): checked in both games, and closed (below)
+	if (!fp) return(FALSE);
+#else
 #ifdef PRIMAL_HUNT
 	if (!fp) return(FALSE);
+#endif
 #endif
 
 	while (fgets(szLine, 256, fp))
@@ -273,6 +278,9 @@ BOOL CGameSpyClientMgr::SetupDirServers()
 		}
 	}
 
+#ifdef AVP2SRC_MODERN
+	fclose(fp);
+#endif
 	return(nServers > 0);
 }
 
@@ -917,7 +925,13 @@ BOOL CGameSpyClientMgr::RefreshLANServers()
 		if (stricmp(m_sGameName, ServerGetStringValue(pServer, "gamename", "")) != 0)
 		{
 			char* sAddress = ServerGetAddress(pServer);
+#ifdef AVP2SRC_MODERN
+			// M-B51 (RETAIL_BUGS.md): by the query port, which the list
+			// knows its servers by
+			int   nPort    = ServerGetQueryPort(pServer);
+#else
 			int   nPort    = atoi(ServerGetStringValue(pServer, "hostport", ""));
+#endif
 
 			ServerListRemoveServer(m_pServerList, sAddress, nPort);
 			nCount--;

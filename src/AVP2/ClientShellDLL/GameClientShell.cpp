@@ -1391,6 +1391,11 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 			HSTRING hString = g_pLTClient->FormatString(g_CommandArray[i].nActionStringID);
 			_snprintf(szAction, 255, "AddAction %s %i", g_pLTClient->GetStringData(hString), nCommand);
 			g_pLTClient->RunConsoleString(szAction);
+#ifdef AVP2SRC_MODERN
+			// M-B53 (RETAIL_BUGS.md): RETAIL BUG: the name's string was
+			// never freed
+			g_pLTClient->FreeString(hString);
+#endif
 		}
 	}
 

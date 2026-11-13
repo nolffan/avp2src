@@ -149,7 +149,12 @@ uint32 VolumetricFog::OnUpdate(LTFLOAT fFrameTime)
 
 		// RETAIL BUG: the red channel is given the blue one, so a fading
 		// fog volume turns magenta or cyan unless its color is grey
+#ifdef AVP2SRC_MODERN
+		// M-B81 (RETAIL_BUGS.md): red, green, blue
+		g_pLTServer->SetObjectColor(m_hObject, m_vFogColor.x, m_vFogColor.y, m_vFogColor.z, fAlpha);
+#else
 		g_pLTServer->SetObjectColor(m_hObject, m_vFogColor.z, m_vFogColor.y, m_vFogColor.z, fAlpha);
+#endif
 	}
 
 	return 0;

@@ -5,3 +5,8 @@
 # mover the client physics reaches at the manager's +0x50c): the factory
 # stores this vptr itself (0x004115bc; Primal Hunt 0x004126bd, 0x004d4bac)
 ??_7CCmgCSBase@@6B@             0x004c6ba4
+# the client's message-object helper at the manager's +0x4c0, the
+# m_pObjectIO of every message the client reads: its constructor
+# (0x004172d0) stores this vptr. Two slots compiled; slot 3 is GetPosRef,
+# which ReadCompPos/WriteCompPos call (a flare's WeaponSoundFX)
+??_7CClientMsgObjectHelper@@6B@ 0x004c6e7c

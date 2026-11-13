@@ -447,5 +447,8 @@ make_path("$HERE/AVP2/Save", "$HERE/PrimalHunt/Save");
 print "\ndone: $written files written, $kept already in place.\n",
       "Play by running AVP2/AVP2.exe (AvP2) or PrimalHunt/PrimalHunt.exe (Primal Hunt)\n",
       "in CrossOver (or another Wine); or, in each, lithtech.exe -cmdfile avp2cmds.txt.\n";
+# the modern build (docs/MODERN.md M-8): those two start the game directly
+print "Their launchers are AVP2/AVP2Launcher.exe and PrimalHunt/PrimalHuntLauncher.exe.\n"
+    if -f "$HERE/AVP2/AVP2Launcher.exe";
 exit 0;
 __END__

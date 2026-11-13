@@ -12,6 +12,22 @@
 
 #include "launch.h"
 
+#ifdef AVP2SRC_MODERN
+// RETAIL BUG fixed (MODERN.md M-B100): an argument too long for its slot
+// is cut to nMaxArgLen - 1 characters and terminated. Every copy into the
+// slots below is strncpy(pArgs[n], s, nMaxArgLen), and nothing else in
+// this file uses strncpy, so it is that copy, left as it was, that is
+// redirected here.
+static char* ModernCopyArg(char* pDest, const char* pSrc, int nMax)
+{
+	if (nMax <= 0) return(pDest);
+	strncpy(pDest, pSrc, nMax - 1);
+	pDest[nMax - 1] = '\0';
+	return(pDest);
+}
+#define strncpy ModernCopyArg
+#endif
+
 
 // Globals...
 

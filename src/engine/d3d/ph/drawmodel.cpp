@@ -258,10 +258,11 @@ struct ViewParams
 
 extern ViewParams g_ViewParams;                             // 0x1005b790
 extern uint32   g_ClipFlags;                                // 0x1005bd0c
-// RETAIL BUG: the model sun's variance (d3d_InitModelSun, 0x1000b67d)
-// reads WarbleScale's value (common_stuff.cpp's g_CV_WarbleScale,
-// 0x1005d8b4, 0.92 by default), not ModelSunVariance's (this file's,
-// 0x10058888, 0.05).
+// d3d_InitModelSun (0x1000b67d) builds the ModelWarble table from
+// WarbleScale (common_stuff.cpp's g_CV_WarbleScale, 0x1005d8b4, 0.92 by
+// default), as RenderScene's "Rebuilding warble table" expects: its
+// g_fModelSun is the warble's curve, not the sun's, and ModelSunVariance
+// (this file's, 0x10058888) is the sun test's step (not a bug).
 extern float    g_CV_WarbleScale;                           // 0x1005d8b4 (common_stuff.cpp)
 
 void d3d_InitModelVBs();                                    // 0x10001230

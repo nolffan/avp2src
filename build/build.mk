@@ -1093,7 +1093,30 @@ REGMGR32 := src/lithshared/RegMgr32
 LAUNCHER_REF := ext/rez/games
 LAUNCHER_LIBS := nafxcw.lib libcmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib \
     comctl32.lib comdlg32.lib winmm.lib
-# $(call launcher_link,<object dir>,<image>,<retail image>,<rc defines>)
+# The modern build (AVP2SRC_MODERN, docs/MODERN.md M-8) links two programs
+# of each launcher's objects: <image> (AVP2.exe, PrimalHunt.exe) starts the
+# game directly, <launcher image> (AVP2Launcher.exe, PrimalHuntLauncher.exe)
+# is the launcher; one object, src/modern/launcher/m8_entry.cpp compiled
+# twice (M8_DIRECT 1 or 0), tells them apart. The release build links
+# <image> alone, from the objects above, as before.
+MODERN_BUILD := $(findstring AVP2SRC_MODERN,$(AVP2SRC_CFLAGS))
+# $(call launcher_exe,<object dir>,<image>,<more objects>)
+define launcher_exe
+$(eval $(call tool,$(LAUNCHER)/$(1)/$(2),$(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/$(1)/%.obj) $(addprefix $(LAUNCHER)/$(1)/,$(3)) $(LAUNCHER)/$(1)/launcher.res \
+    $(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib | wine-drives,\
+    cd $(LAUNCHER) && { printf '%s\n' $(call q,/nologo $(AVP2SRC_LDFLAGS) /subsystem:windows /machine:I386 /out:$(1)\$(2) \
+    /map:$(1)\$(basename $(2)).map $(addprefix $(1)\,$(LAUNCHER_SRC:.cpp=.obj) $(3)) $(1)\launcher.res $(1)\regmgr32\RegMgr32.lib $(LAUNCHER_LIBS)) \
+    > $(ROOT)/$(LAUNCHER)/$(1)/$(2).rsp; } && \
+    { $(ENV_GAME) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(LAUNCHER)/$(1)/$(2)).rsp' > $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt 2>&1 || \
+      { grep -i 'error\|fatal' $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt | head -20 >&2; false; }; }))
+endef
+# $(call launcher_modern,<object dir>,<launcher image>)
+define launcher_modern
+$(foreach e,game:1 launcher:0,$(eval $(call compile,$(LAUNCHER)/$(1)/m8_$(firstword $(subst :, ,$(e))).obj,$(LAUNCHER),..\modern\launcher\m8_entry.cpp,\
+    $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LAUNCHER_CL) /D M8_DIRECT=$(lastword $(subst :, ,$(e))) /Fo$(1)/m8_$(firstword $(subst :, ,$(e))).obj,wine-drives)))
+$(call launcher_exe,$(1),$(2),m8_launcher.obj)
+endef
+# $(call launcher_link,<object dir>,<image>,<retail image>,<rc defines>,<launcher image>)
 define launcher_link
 $(eval $(call compile,$(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,$(REGMGR32),regmgr32.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
     /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /c /Fo..\..\launcher\$(1)\regmgr32\regmgr32.obj,wine-drives))
@@ -1103,18 +1126,14 @@ $(eval $(call tool,$(LAUNCHER)/$(1)/res/retail.rc,$(LAUNCHER_REF)/$(3),\
     python3 ext/tools/rsrc2rc.py $(LAUNCHER_REF)/$(3) $(LAUNCHER)/$(1)/res/retail.rc --res-dir=. --name=launcher >/dev/null))
 $(eval $(call tool,$(LAUNCHER)/$(1)/launcher.res,$(LAUNCHER)/launcher.rc $(LAUNCHER)/resource.h $(LAUNCHER)/$(1)/res/retail.rc | wine-drives,\
     cd $(LAUNCHER)/$(1) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG $(4) /folauncher.res '..\launcher.rc'))
-$(eval $(call tool,$(LAUNCHER)/$(1)/$(2),$(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/$(1)/%.obj) $(LAUNCHER)/$(1)/launcher.res \
-    $(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib | wine-drives,\
-    cd $(LAUNCHER) && { printf '%s\n' $(call q,/nologo $(AVP2SRC_LDFLAGS) /subsystem:windows /machine:I386 /out:$(1)\$(2) \
-    /map:$(1)\$(basename $(2)).map $(addprefix $(1)\,$(LAUNCHER_SRC:.cpp=.obj)) $(1)\launcher.res $(1)\regmgr32\RegMgr32.lib $(LAUNCHER_LIBS)) \
-    > $(ROOT)/$(LAUNCHER)/$(1)/$(2).rsp; } && \
-    { $(ENV_GAME) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(LAUNCHER)/$(1)/$(2)).rsp' > $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt 2>&1 || \
-      { grep -i 'error\|fatal' $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt | head -20 >&2; false; }; }))
+$(call launcher_exe,$(1),$(2),$(if $(MODERN_BUILD),m8_game.obj))
+$(if $(MODERN_BUILD),$(call launcher_modern,$(1),$(5)))
 endef
-$(eval $(call launcher_link,Release,AVP2.exe,avp2-eu-1.0.9.6/AVP2.exe,))
-$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,avp2-ph-eu/PrimalHunt.exe,/d PRIMAL_HUNT))
+$(eval $(call launcher_link,Release,AVP2.exe,avp2-eu-1.0.9.6/AVP2.exe,,AVP2Launcher.exe))
+$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,avp2-ph-eu/PrimalHunt.exe,/d PRIMAL_HUNT,PrimalHuntLauncher.exe))
 .PHONY: launchers
-launchers: $(LAUNCHER)/Release/AVP2.exe $(LAUNCHER)/PrimalHunt/PrimalHunt.exe
+launchers: $(LAUNCHER)/Release/AVP2.exe $(LAUNCHER)/PrimalHunt/PrimalHunt.exe \
+    $(if $(MODERN_BUILD),$(LAUNCHER)/Release/AVP2Launcher.exe $(LAUNCHER)/PrimalHunt/PrimalHuntLauncher.exe)
 
 .PHONY: engine-objs ph-engine-objs avp2-engine-objs
 ph-engine-objs: $(call eng_objs,Release) src/engine/lithtech/Release/wonapi/WONAPI.lib

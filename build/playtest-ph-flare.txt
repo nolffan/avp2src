@@ -1,0 +1,27 @@
+# Primal Hunt from its main menu into the first Corporate mission, then a
+# flare thrown (F) -- the engines once crashed on it (a reconstruction error: MODERN.md,
+# M-7's notes) (make test TEST_WHICH=ph
+# TEST_SCRIPT=build/playtest-ph-flare.txt). The clicks are
+# build/playtest-ph-corporate.txt's.
+window 120
+wait 20
+mclick 128 175
+wait 3
+mclick 100 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 5
+key space
+wait 5
+key space
+wait 20
+shot started
+key f
+wait 3
+shot flare
+wait 5
+key f
+wait 5
+shot flare2
