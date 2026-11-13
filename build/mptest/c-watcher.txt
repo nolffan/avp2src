@@ -1,0 +1,21 @@
+# the watching client: joins the same way, spawns, stands and watches (its
+# NetPosLog, in the debug build, logs where it sees the runner)
+window 120
+wait 20
+mclick 128 295
+wait 3
+mclick 130 245
+wait 8
+mclick 100 146
+wait 1
+mclick 590 452
+wait 30
+key space
+wait 5
+shot watching
+wait 30
+shot watching2
+wait 30
+shot watching3
+wait 30
+shot watching4

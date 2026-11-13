@@ -16,6 +16,9 @@
 
 #include "MultiplayerMgrDefs.h"
 #include "ServerOptionMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m17_master.h"	// M-17: the master server
+#endif
 
 
 #define DIALOGSTATE_NONE			0
@@ -234,11 +237,21 @@ uint32 CFolderMulti::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam
 			pOpt->bLANConnection = m_bLAN;
 			g_pServerOptionMgr->SaveCurrentCfg();
 
+#ifdef AVP2SRC_MODERN
+			// M-17: the master the hosted game reports to
+			M17_ApplyMasterServer();
+#endif
+
 			return CBaseFolder::OnCommand(dwCommand, dwParam1, dwParam2);
 		}
 
 		case FOLDER_CMD_MP_JOIN:
 		{
+#ifdef AVP2SRC_MODERN
+			// M-17/M-18: no WON certificate first (WON is gone); the
+			// list comes from the master server MasterServer names
+			M17_ApplyMasterServer();
+#else
 			char szFailedMsg[256];
 
 			if(!m_GameSpyClientMgr.SetupAuthentication(szFailedMsg, 256))
@@ -250,6 +263,7 @@ uint32 CFolderMulti::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam
 
 				return 1;
 			}
+#endif
 
 			SetLogo(LOGO_SCALEFX_SIERRA);
 
@@ -449,6 +463,14 @@ LTBOOL CFolderMulti::Render(HSURFACE hDestSurf)
 
 #ifdef _DEMO
 	bBypass = LTTRUE;
+#endif
+#ifdef AVP2SRC_MODERN
+	// M-18 (docs/MODERN.md): no CD key, and none of WON's checks (directory
+	// servers, messages of the day, the version check): WON is gone, and
+	// without it the version check failed and left Internet play off
+	bBypass = LTTRUE;
+	if(m_nVerifyState == VERIFYSTATE_NONE)
+		m_nVerifyState = VERIFYSTATE_COMPLETE;
 #endif
 
 
@@ -901,8 +923,13 @@ void CFolderMulti::OnFocus(LTBOOL bFocus)
 			AddFixedControl(m_pJoinSpeed, kLinkGroup, m_LinkPos[2]);
 #endif
 
+#ifndef AVP2SRC_MODERN
 #ifndef _DEMO
+			// (M-18, docs/MODERN.md: the modern build has no CD key, so no
+			// "Update CD key" link; the folder still enables and disables
+			// the control, unshown)
 			AddFixedControl(m_pUpdateCDK, kLinkGroup, m_LinkPos[3]);
+#endif
 #endif
 		}
 

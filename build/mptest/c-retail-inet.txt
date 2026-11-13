@@ -1,0 +1,13 @@
+window 120
+wait 20
+mclick 128 255
+wait 5
+type VALIDCDKEY
+key Return
+wait 5
+shot after-key
+wait 60
+shot after-checks
+key Return
+wait 3
+shot final

@@ -17,6 +17,9 @@
 #include "ProfileMgr.h"
 #include "ServerOptionMgr.h"
 #endif
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m17_master.h"	// M-17: the master server
+#endif
 
 
 namespace
@@ -1486,6 +1489,11 @@ void CFolderJoin::SetState(int nNewState)
 //			SetCurGameServerHandle(LTNULL);
             m_bNeedServerSorting = LTTRUE;
 
+#ifdef AVP2SRC_MODERN
+			// M-17: MasterServer as it is now
+			if (!m_bLANOnly)
+				M17_ApplyMasterServer();
+#endif
 			if (m_bLANOnly)
 				GetGameSpyMgr()->RefreshLANServers();
 			else

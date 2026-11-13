@@ -1,0 +1,20 @@
+# Internet: Multiplayer Internet (no CD key, no WON), Find Internet games
+# (the list from MasterServer), the first server, Join
+window 120
+wait 20
+mclick 128 255
+wait 4
+shot multi
+mclick 130 245
+wait 15
+shot list
+mclick 100 146
+wait 1
+mclick 590 452
+wait 30
+shot joined
+key space
+wait 5
+shot spawned
+hold w 2
+shot moved

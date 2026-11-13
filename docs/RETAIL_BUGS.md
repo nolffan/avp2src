@@ -1000,6 +1000,47 @@ Fixed in the modern build: GameSpyClientMgr.cpp, a server is removed by
 its query port (`ServerGetQueryPort`), which the list finds it by.
 MODERN.md M-B51.
 
+### Hosting an Internet game without SierraUp.cfg crashes the server
+
+GameSpyMgr.lib, linked into Object.lto and PHObject.lto
+(`InitSierraMultiplayer`, src/lithshared/gamespy/gamespymgr/GameSpyMgr.cpp).
+A server that is not LAN-only registers with WON's directory, whose
+addresses it reads from SierraUp.cfg: the `fopen` result is never
+checked (`fgets` on a null file), the file is never closed, and a
+`DirectoryServer` line without two quotes (or with a quoted address of
+256 characters or more) runs off the `strstr` results or the end of the
+address buffer. Our game directories have no SierraUp.cfg. Tested: the
+retail AVP2Serv.exe, server.dll and game DLLs, a config with
+`LANConnection = 0`: a page fault reading 0x34 as the game starts (the
+same fault as the browser's, M-B50, which with a CD key accepted crashes
+the retail client's Multiplayer Internet folder too).
+
+Fixed in the modern build by M-18: the server registers with WON no more
+(WON is gone), so the file is not read. MODERN.md M-18.
+
+### The dedicated server prints the game's text as a format
+
+AVP2Serv.exe and AVP2XServ.exe (`CServerDlg::UpdateUI`, `OnConsoleSend`,
+src/AVP2/AVP2Serv/ServerDlg.cpp). Every line the game sends the server's
+console -- the engine's and the game DLL's console output, and each chat
+message, as "<< name >>  text" -- and the command typed in the console
+are passed to `WriteConsoleString` as its `printf` format. A player who
+chats (or is named) `%n%n%n%n` makes the server write through whatever
+the stack holds; `%s` reads through it.
+
+Fixed in the modern build: ServerDlg.cpp, the text goes through `"%s"`.
+MODERN.md M-20.
+
+### A dedicated-server console line of 499 characters or more is not terminated
+
+AVP2Serv.exe and AVP2XServ.exe (`CServerDlg::WriteConsoleString`). The
+line is formatted with `_vsnprintf(str, 499, ...)` into 500 bytes, which
+leaves no terminator when the text fills it, and `"\r\n"` is then
+appended with `strcat`, past the buffer's end for a line of 498 or more.
+
+Fixed in the modern build: ServerDlg.cpp, the line is cut to 497
+characters and terminated. MODERN.md M-20.
+
 ### A tracer without SingleSegment takes whatever its memory held
 
 PHObject.lto 0x1001a480 (`TRACERFX::Init`, src/AVP2/Shared/FXButeMgr.cpp).

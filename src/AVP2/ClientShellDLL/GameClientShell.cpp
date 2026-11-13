@@ -75,6 +75,7 @@
 #include "..\..\modern\cshell\m7_pad.h"			// M-7: the controller
 #define M6_MOUSE_IMPLEMENTATION
 #include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
+#include "..\..\modern\cshell\m19_netposlog.h"	// M-19: the measuring aid (debug)
 #endif
 
 static _timeb g_StartTimeB;
@@ -1480,8 +1481,27 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	{
 		// Initialize the update rate.
 		g_pLTClient->RunConsoleString("+UpdateRateInitted 1");
+#ifdef AVP2SRC_MODERN
+		// M-19: 30 world updates a second from the server, not 6
+		g_pLTClient->RunConsoleString("+UpdateRate 30");
+#else
 		g_pLTClient->RunConsoleString("+UpdateRate 6");
+#endif
 	}
+
+#ifdef AVP2SRC_MODERN
+	// M-19: a config from before (retail's first run set 6) is raised to
+	// 30 once; the player's own choice in Player setup applies from then on
+	hIsSet = g_pLTClient->GetConsoleVar("UpdateRate30");
+	if(!hIsSet || g_pLTClient->GetVarValueFloat(hIsSet) != 1.0f)
+	{
+		g_pLTClient->RunConsoleString("+UpdateRate30 1");
+
+		HCONSOLEVAR hRate = g_pLTClient->GetConsoleVar("UpdateRate");
+		if(!hRate || g_pLTClient->GetVarValueFloat(hRate) < 30.0f)
+			g_pLTClient->RunConsoleString("+UpdateRate 30");
+	}
+#endif
 
 
 	m_CheatMgr.Init();
@@ -2655,6 +2675,11 @@ void CGameClientShell::PostUpdate()
 	
 	
 	m_InterfaceMgr.PostUpdate();
+#ifdef AVP2SRC_MODERN
+#ifdef AVP2SRC_DEBUG
+	M19_LogRemotePlayers(&m_sfxMgr);	// M-19: NetPosLog 1
+#endif
+#endif
 #ifdef AVP2SRC_MODERN
 	// M-13: the frame-rate limit, once the frame is drawn
 	M10_EndFrame(m_InterfaceMgr.GetGameState() == GS_LOADINGLEVEL);

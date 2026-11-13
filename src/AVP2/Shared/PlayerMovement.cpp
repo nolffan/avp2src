@@ -405,9 +405,21 @@ LTBOOL PlayerMovement::Init(INTERFACE *pInterface, HOBJECT hObj, CharacterAnimat
 	SetTouchNotifyFunc(CMS_POUNCE_FALL, Touch_Notify_Pounce_Jump);
 
 	// Init our client update send rate variable
+#ifdef AVP2SRC_MODERN
+	// M-19 (docs/MODERN.md): the player's position and turn reach the
+	// server about 30 times a second (a message only when they changed),
+	// not 4 (standing), 8 (moving) or 12 (in the air): the other players
+	// saw each step as a jump. A send goes once the time has passed
+	// (UpdateClientToServer's `>`), so 0.03 is 30 a second at 60 frames
+	// a second, not the 20 that 1/30 would give.
+	g_vtClientUpdateLowSendRate.Init(g_pLTClient, "ClientUpdateLowSendRate", NULL, 0.03f);
+	g_vtClientUpdateSendRate.Init(g_pLTClient, "ClientUpdateSendRate", NULL, 0.03f);
+	g_vtClientUpdateHighSendRate.Init(g_pLTClient, "ClientUpdateHighSendRate", NULL, 0.03f);
+#else
 	g_vtClientUpdateLowSendRate.Init(g_pLTClient, "ClientUpdateLowSendRate", NULL, 0.25f);
 	g_vtClientUpdateSendRate.Init(g_pLTClient, "ClientUpdateSendRate", NULL, 0.125f);
 	g_vtClientUpdateHighSendRate.Init(g_pLTClient, "ClientUpdateHighSendRate", NULL, 0.08f);
+#endif
 
 	g_vtHeadCanting.Init(g_pLTClient, "HeadCanting", NULL, 1.0f);
 

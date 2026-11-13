@@ -177,6 +177,13 @@ game_data() {
 mkdir -p "$OUT/AVP2" "$OUT/PrimalHunt"
 game_data "AvP2 1.0.9.6" AVP2 "$RETAIL_AVP2" build/retail_avp2.py "${LOOSE_AVP2[@]}"
 bash build/avp2cmds.sh avp2 ${MODERN:+open} > "$OUT/AVP2/avp2cmds.txt"
+# customrez.txt: AvP2's dedicated server (AVP2Serv.exe, ServerDlg.cpp's
+# AddResources) looks for custom.rez, not the custom/ directory our game
+# DLLs are in (Primal Hunt's names custom/); the file it reads for more
+# archives names it, or the server finds retail's zeroed binaries and stops
+# ("Unable to load the game binaries")
+printf '[Rez]\r\nRez0 = "custom"\r\n' > "$OUT/AVP2/customrez.txt"
+printf 'ours build/all.sh (the dedicated server reads custom/)\tcustomrez.txt\n' >> "$OUT/AVP2/MANIFEST.txt"
 game_data "Primal Hunt" PrimalHunt "$RETAIL_PH" build/retail.py "${LOOSE_PH[@]}"
 bash build/avp2cmds.sh ph ${MODERN:+open} > "$OUT/PrimalHunt/avp2cmds.txt"
 # linux-run-avp2.sh, linux-run-ph.sh: start AvP2 or Primal Hunt with the

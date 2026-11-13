@@ -20,6 +20,9 @@
 #ifdef PRIMAL_HUNT
 #include "regmgr32.h"
 #endif
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\server\m20_serverlog.h"	// M-20: the console's log
+#endif
 
 #define MIN_SERVER_UPDATE 33 // At least 33 ms between server updates = cap at 30fps
 
@@ -594,13 +597,27 @@ void CServerDlg::WriteConsoleString(LPCTSTR pMsg, ...)
 	}
 
 	va_start(marker, pMsg);
+#ifdef AVP2SRC_MODERN
+	// M-20 (RETAIL_BUGS.md): a line too long for str was left without its
+	// terminator, and the "\r\n" below could run past str's end: cut to
+	// 497 characters, terminated
+	_vsnprintf( str, sizeof( str ) - 3, pMsg, marker );
+	str[sizeof( str ) - 3] = '\0';
+#else
 	_vsnprintf( str, sizeof( str ) - 1, pMsg, marker );
+#endif
 	va_end(marker);
 
 	int len = strlen(str);
 	if (len > 0)
 	{
 		if (len > 0 && str[len-1] < 32) str[len-1] = '\0';
+
+#ifdef AVP2SRC_MODERN
+		// M-20: every console line in the log as well (a server run with
+		// nobody watching its window keeps a record)
+		M20_LogConsoleLine(str);
+#endif
 
 		strcat(str, "\r\n");
 
@@ -989,7 +1006,13 @@ void CServerDlg::UpdateUI()
 	pos = lstShellMsgs.GetHeadPosition( );
 	while( pos )
 	{
+#ifdef AVP2SRC_MODERN
+		// M-20 (RETAIL_BUGS.md): the game's text is not a format (a '%' in a
+		// player's name or chat crashed the server)
+		WriteConsoleString( "%s", ( LPCTSTR )lstShellMsgs.GetNext( pos ));
+#else
 		WriteConsoleString( lstShellMsgs.GetNext( pos ));
+#endif
 	}
 
 	// Send data to dialog.
@@ -1194,7 +1217,11 @@ void CServerDlg::OnConsoleSend()
 	sprintf(sMsg, "<< %s >>  %s", sServer, sCmd);
 
 	// Update the UI with string.
+#ifdef AVP2SRC_MODERN
+	WriteConsoleString("%s", sMsg);		// M-20: not a format either
+#else
 	WriteConsoleString(sMsg);
+#endif
 
 	// Clear out the string from the control.
 	SetDlgItemText(IDC_CONSOLE_COMMAND, "");
@@ -1586,6 +1613,16 @@ void CServerDlg::ParseCommandLine( CString* pConfig, MPGameInfo* pGameInfo )
 				// Skip the value.
 				nArg++;
 			}
+#ifdef AVP2SRC_MODERN
+			// M-17 (docs/MODERN.md): the master server the game reports to
+			// (host or host:port; none: not listed), for the game DLL
+			// (MultiplayerMgr::Setup), which reads it from the environment
+			else if( stricmp( __argv[nArg], "-MasterServer" ) == 0 )
+			{
+				SetEnvironmentVariable( "AVP2_MASTERSERVER", __argv[nArg + 1] );
+				nArg++;
+			}
+#endif
 		}
 	}
 }

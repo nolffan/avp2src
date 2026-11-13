@@ -44,7 +44,13 @@ namespace
 
 
 	//56k,ISDN, DSL, T1, T3
+#ifdef AVP2SRC_MODERN
+	// M-19 (docs/MODERN.md): the fastest choice is 30 updates a second
+	// (the first run's rate now), not 19; the others are retail's
+	const int kConnectSpeeds[5] = {4, 6, 9, 13, 30};
+#else
 	const int kConnectSpeeds[5] = {4, 6, 9, 13, 19};
+#endif
 
 	char szWheelUp[32] = "";
 	char szWheelDown[32] = "";
@@ -166,6 +172,12 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 	m_fMessageDisplay = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName,"MessageDisplay",0.2f);
 	m_fMessageTime = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName,"MessageTime",1.0f);
 	m_nConnection = (uint8)m_buteMgr.GetInt(s_aTagName,"Connection",0);
+#ifdef AVP2SRC_MODERN
+	// M-19: a profile from before is raised to the fastest choice once
+	// (retail's first run left most at 6 updates a second, unchosen)
+	if(!m_buteMgr.GetInt(s_aTagName,"Connection30",0))
+		m_nConnection = 4;
+#endif
 	m_bIgnoreTaunts = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"IgnoreTaunts",0);
 
 
@@ -298,6 +310,9 @@ void CUserProfile::Save()
 	m_buteMgr.SetDouble(s_aTagName,"MessageTime",m_fMessageTime);
 	m_buteMgr.SetInt(s_aTagName,"IgnoreTaunts",m_bIgnoreTaunts);
 	m_buteMgr.SetInt(s_aTagName,"Connection",m_nConnection);
+#ifdef AVP2SRC_MODERN
+	m_buteMgr.SetInt(s_aTagName,"Connection30",1);		// M-19: raised
+#endif
 
 
 	// Store the mission completion status per species
@@ -633,7 +648,11 @@ void CUserProfile::ApplyMultiplayer()
 		else if (nBandwidth <= 9999999)
 			nBandwidth = 2;
 		else
+#ifdef AVP2SRC_MODERN
+			nBandwidth = 4;		// M-19: the host's top choice allows the top rate
+#else
 			nBandwidth = 3;
+#endif
 
 		if(m_nConnection <= nBandwidth)
 			WriteConsoleInt("UpdateRate",kConnectSpeeds[m_nConnection]);
@@ -1394,7 +1413,11 @@ void CProfileMgr::ApplyBandwidthThrottle()
 		else if (nBandwidth <= 9999999)
 			nBandwidth = 2;
 		else
+#ifdef AVP2SRC_MODERN
+			nBandwidth = 4;		// M-19
+#else
 			nBandwidth = 3;
+#endif
 
 		if(m_profile.m_nConnection > nBandwidth)
 			WriteConsoleInt("UpdateRate",kConnectSpeeds[nBandwidth]);

@@ -234,10 +234,16 @@ public:
 	virtual void _v030()=0;
 	virtual void _v034()=0;
 	virtual void _v038()=0;
+	// AVP2: two slots further on than NOLF's, as predobj.cpp's
+	// IClientShellQ460 has them (AvP2 1.0.9.6 0x0046e5a2 `call *0x44(%eax)`,
+	// 0x0046e6e6 `call *0x48(%eax)`): with NOLF's slots the prediction
+	// called the shell's 0x3c and 0x40, other functions.
+	virtual void _v03c()=0;
+	virtual void _v040()=0;
 	virtual LTRESULT OnObjectMove(LTObjectQ1S* hObj, LTBOOL bTeleport,
-	                              LTVector* pNewPos)=0;      // 0x3c
+	                              LTVector* pNewPos)=0;      // 0x44
 	virtual LTRESULT OnObjectRotate(LTObjectQ1S* hObj, LTBOOL bTeleport,
-	                                LTRotation* pNewRot)=0;  // 0x40
+	                                LTRotation* pNewRot)=0;  // 0x48
 };
 
 
@@ -250,12 +256,18 @@ public:
 class CClientMgrQ1S
 {
 public:
-	uint8             m_pad_000[0x4c0];
-	CLTClientQ1S*     m_pClientDE;                           // 0x4c0
-	uint8             m_pad_4c4[0x61c - 0x4c4];
-	IClientShellQ1S*  m_pClientShell;                        // 0x61c
-	uint8             m_pad_620[0x125c - 0x620];
-	float             m_Time;                                // 0x125c
+	// AVP2: CClientMgr's layout is AvP2's (clientmgr2.cpp's CClientMgr
+	// view: 0x4c4, 0x620, 0x136c; AvP2 1.0.9.6 0x0046e260..0x0046e2b4 reads
+	// them here), not NOLF's 0x4c0, 0x61c and 0x125c this view had: a
+	// client that predicted (every multiplayer client) read the time and
+	// the interfaces from the wrong fields and crashed at the first frame
+	// in a server's world (0x0fe84796, GetGlobalForce's interface).
+	uint8             m_pad_000[0x4c4];
+	CLTClientQ1S*     m_pClientDE;                           // 0x4c4
+	uint8             m_pad_4c8[0x620 - 0x4c8];
+	IClientShellQ1S*  m_pClientShell;                        // 0x620
+	uint8             m_pad_624[0x136c - 0x624];
+	float             m_Time;                                // 0x136c
 };
 
 
@@ -302,6 +314,11 @@ public:
 	uint8      m_pad_ac[0xc4 - 0xac];
 	LTVector   m_Velocity;                                   // 0x0c4
 	LTVector   m_Acceleration;                               // 0x0d0
+	// AVP2: four bytes before the friction, which is at 0x0e0 (AvP2
+	// 1.0.9.6's prediction reads 0x0e0 and its record at 0x128): without
+	// them every field from here on was 4 low, NOLF's places, though the
+	// comments gave AvP2's
+	uint8      m_pad_dc[0xe0 - 0xdc];
 	float      m_FrictionCoefficient;                        // 0x0e0
 	uint8      m_pad_e4[0x124 - 0xe4];
 	uint32     m_ChangeFlags;                                // 0x124
@@ -312,6 +329,8 @@ public:
 	LTVector   m_vPredictBase;                               // 0x148
 	LTLink     m_PosPredictLink;                             // 0x154
 	float      m_fRotPredictTime;                            // 0x160
+	// AVP2: a float NOLF does not have (predobj.cpp's m_fRotStampQ534)
+	float      m_fRotStampQ534;                              // 0x164
 	LTRotation m_PredictRot;                                 // 0x168
 	LTLink     m_RotPredictLink;                             // 0x178
 	HLOCALOBJ  m_hPredictLines;                              // 0x184
@@ -329,10 +348,13 @@ public:
 	float    m_fPredictStamp;                                // 0x04 (+0x128)
 	LTVector m_vPos;                                         // 0x08 (+0x12c)
 	LTVector m_vVel;                                         // 0x14 (+0x138)
-	uint8    m_pad_20[0x58 - 0x20];
+	// AVP2: the record is LTObject+0x128 and its handle LTObject+0x184
+	// (the object above; NOLF's +0x124 and +0x17c), so +0x5c here, not
+	// NOLF's +0x58 (the AvP2 record has predobj.cpp's extra float before it)
+	uint8    m_pad_20[0x5c - 0x20];
 	// 0x0046168b / 0x00461733 / 0x00461837 read +0x17c through the record
 	// pointer, so the record runs at least to the debug-line handle.
-	HLOCALOBJ m_hPredictLines;                               // 0x58 (+0x17c)
+	HLOCALOBJ m_hPredictLines;                               // 0x5c (+0x184)
 };
 
 

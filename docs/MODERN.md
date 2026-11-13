@@ -46,8 +46,9 @@ M-X5 and M-X6), so a modern game directory holds no RAD or Miles binary,
 the music through Microsoft's DirectMusic (M-X4), raw mouse input (M-6),
 controllers through XInput (M-7), the launchers and the games started
 directly (M-8), widescreen, 4:3 cinematics and the field of view
-(M-1..M-3), the menus and the HUD scaled to the screen (M-15, M-16), and
-every
+(M-1..M-3), the menus and the HUD scaled to the screen (M-15, M-16),
+Internet multiplayer through a GameSpy master server such as OpenSpy's,
+without WON or a CD key (M-17..M-20), and every
 retail bug docs/RETAIL_BUGS.md lists either fixed (M-B01..M-B108) or shown
 not to need it (under Done); the rest of the items below are not.
 
@@ -99,7 +100,7 @@ yet.
 | M-6 | Raw mouse input (WM_INPUT), in place of DirectInput's mouse | done (under Done) |
 | M-7 | Controllers through XInput, in place of DirectInput joysticks | done (under Done) |
 | M-8 | The launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch had been clicked in the launcher (no registry, no disc check) | done (under Done) |
-| M-9 | From nolfsrc's modern build, where AvP2 has the same code: windowed modes at any size, Internet play without the dead GameSpy and WON master servers (its frame limiter is M-13) | not implemented yet |
+| M-9 | From nolfsrc's modern build, where AvP2 has the same code: windowed modes at any size (its frame limiter is M-13; Internet play without the dead GameSpy and WON servers is M-17..M-20) | not implemented yet |
 
 ## Open middleware
 
@@ -140,7 +141,7 @@ per format), under Xvfb and Wine in the build container.
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-15, M-16 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-15, M-16, M-17..M-20 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing (the user's report on the first modern build: "the high
 framerate means all the timing is wrong"). nolfsrc found the same in NOLF
@@ -990,12 +991,119 @@ Each in `RETAIL_BUGS.md`; checked as the table says.
 | M-B106 | The launchers' already-running checks matched any `LITHTECH.EXE` or `SETUP.EXE`; now this directory's, by full path | `src/launcher/Launcher.cpp` | under Wine, with Wine's notepad running as `LITHTECH.EXE` from another directory: the release build's `AVP2.exe` does not open (and opens without it), the modern `AVP2Launcher.exe` opens; `ExistProcess` compares a name with a `\` against each process's full module path, so this directory's engine still stops it | done |
 | M-B107 | The launchers copied the command line into 1024 bytes of stack (`strcpy`), whatever its length (new, `RETAIL_BUGS.md`); now written from the `CString` | `src/launcher/LauncherDlg.cpp` | from the code; the playtests' command files are whole | done |
 
+### M-17..M-20: Internet multiplayer
+
+The retail games played on the Internet through two services, both gone:
+**WON** (Sierra's), which held the server list, the CD-key certificates,
+the messages of the day and the version check, and **GameSpy**, whose
+master (`master<n>.gamespy.com`) took the servers' heartbeats. In the
+retail code (both games):
+
+* A server not LAN-only registers with WON's directory
+  (`InitSierraMultiplayer`, GameSpyMgr.lib: addresses from SierraUp.cfg,
+  then auth servers, a certificate, `AddServiceOp` every 90 s) and sends
+  GameSpy heartbeats to `master0.gamespy.com:27900` from its game port.
+  Neither decides anything: a server with no WON never refuses a player.
+* The browser (GameSpyClientMgr.lib) reads the Internet list from **WON's
+  directory** (`/AliensVsPredator2`, Primal Hunt `/avp2primalhunt`), not
+  from GameSpy's master, then queries each server itself (GameSpy's
+  `\status\`, UDP). The Multiplayer Internet folder first wants a CD key
+  (WON's `CDKey`, checked locally; `VALIDCDKEY` passes), then reads
+  sierraup.cfg, the messages of the day (blocking, 30 s) and runs the
+  version check; a failed check leaves Internet play off (`SetLANOnly`),
+  and Find Internet Games first fetches a WON certificate
+  (`SetupAuthentication`, blocking) and refuses with its error. Tested
+  (the retail engine and game DLLs from `out/reference/`, in the
+  container): without a key the folder's Host and Find links stay off;
+  with `VALIDCDKEY` the game crashes reading the missing sierraup.cfg
+  (M-B50). So a dead WON leaves the Internet half of the menus unusable;
+  the LAN half works.
+* Joining any server, the engine starts WON's peer authentication when
+  the client shell hands it an auth context (`StartPeerAuthQ548`, packet
+  13); the server answers it (`Sub48f570`) and marks the client in two
+  fields nothing reads, and without an auth context of its own (a LAN
+  server, or no WON) sends an empty answer. Nothing is enforced: a retail
+  client with no certificate joins a server with none (tested: LAN).
+  What does gate a join is the engine's file check (below).
+
+The modern build, both games (nolfsrc's M-P6-02 and M-P6-13 were the
+model -- the protocol notes, the `MasterServer` variable and its values,
+`\secure\` answered first, the two-container test with a master stub --
+and nolfsrc's files were read for it; AvP2's code is its own: its GameSpy
+libraries are the real SDK's, which nolfsrc's stand-ins were not, so here
+the retail protocol code is kept and pointed elsewhere, and the list comes
+from GameSpy's master in place of WON's directory):
+
+| Id | What | Files | Checked | Status |
+|---|---|---|---|---|
+| M-17 | The master server. `MasterServer` (client console variable, `+MasterServer host[:port]`; empty: `master.openspy.net`; `none`: no Internet list and no reports): the browser asks it for the list (the GameSpy SDK's own `ServerListUpdate2`: TCP 28900, `\secure\` answered with the game's key, `\list\cmp\`), with a 6 s limit on the connection and each read; a hosted game's server, in this process or `AVP2Serv.exe`/`AVP2XServ.exe` started from it, reads it from the environment (`AVP2_MASTERSERVER`), a dedicated server started by hand from `-MasterServer <host[:port]>`; the server resolves it once, heartbeats it every 90 s from the game port (retail's `\heartbeat\`, with `\gamename\`), answers its `\secure\` first in a reply (OnSecureQuery's `\validate\`, retail's), says `\statechanged\2` on shutdown, and prints `Master server: <name>` (or why none) to its console | `src/lithshared/gamespy/gamespymgr/GameSpyMgr.cpp`, `gamespyclientmgr/GameSpyClientMgr.cpp`, `gamespyclientmgr/gserverlist.c`; `src/AVP2/ObjectDLL/MultiplayerMgr.cpp` (`Setup`); `src/AVP2/ClientShellDLL/FolderMulti.cpp`, `FolderJoin.cpp`; `src/AVP2/AVP2Serv/ServerDlg.cpp` (`ParseCommandLine`); `src/modern/cshell/m17_master.h` | containers on one network, a local master (`masterstub.py`, below): both games' dedicated servers heartbeat it, answer `\secure\` with a `\validate\` it accepts (AvP2's key `Df3M6Z`, Primal Hunt's `P4fR9w`) and its `\status\` (name, map, players); each game's client lists its server through Find Internet Games and joins and plays; against master.openspy.net, a modern AvP2 server was accepted and listed (an independent list request, `gsprobe.py`, saw it). The `\statechanged\2` was not seen at the stub when the dedicated server was stopped (the engine's socket is closed by then): the master drops a silent server itself | done |
+| M-18 | No WON and no CD key: the Multiplayer Internet folder goes straight to its links (no key dialog, no directory servers, messages of the day or version check), has no Update CD key link, and Find Internet Games fetches no certificate; the client shell hands the engine no auth context, so joining starts no WON peer authentication; servers register with WON no more (so never read SierraUp.cfg: RETAIL_BUGS.md) | `GameSpyClientMgr.cpp` (`Init`), `GameSpyMgr.cpp` (`Init`, `UpdateHeartbeat`); `FolderMulti.cpp` (`Render`, `OnCommand`, `OnFocus`) | the Internet folder (shot), the joins above, both games | done |
+| M-19 | Other players move smoothly. Each client sent its position 4 (standing), 8 (moving) or 12 (in the air) times a second (`ClientUpdateLowSendRate` 0.25, `ClientUpdateSendRate` 0.125, `ClientUpdateHighSendRate` 0.08 s) and asked for 6 world updates a second (the first run's `UpdateRate`; Player setup's connection speeds 4, 6, 9, 13, 19); and a client's rate is held to what the server's bandwidth allows, where a new server's default (16000, the host options' 56k) allows only the slowest, 4: every update moved another player a step prediction had not foreseen. Now all three send rates are 0.03 s (a message only when something changed, so about 30 a second while moving), the first run's `UpdateRate` is 30 and an older config's lower one is raised once (`UpdateRate30`), Player setup's fastest choice (T3) is 30 (the four others are retail's) and an older profile is raised to it once (`Connection30`), a new server's bandwidth is the host options' top choice (10000000) and an older config saved with retail's default is raised once (`Bandwidth30`; any other choice stays), and that top choice allows the top rate (retail capped every server at the fourth). The host's choices of bandwidth and the player's of speed are all kept | `src/AVP2/Shared/PlayerMovement.cpp` (the send rates), `src/AVP2/ClientShellDLL/GameClientShell.cpp` (the first run's `UpdateRate`, the raise), `ProfileMgr.cpp` (`kConnectSpeeds`, the profile's raise, the server bandwidth's cap), `src/AVP2/Shared/MultiplayerMgrDefs.h` (`DEFAULT_BANDWIDTH`), `ServerOptions.cpp` (the config's raise); `src/modern/cshell/m19_netposlog.h` (the measuring aid, debug build only) | measured with the modern debug build (`NetPosLog 1`: the watching client logs each frame where it sees the other player), a dedicated server, one client running in circles for 47 s, another watching at about 70 frames a second: with retail's rates (send rates 0.25/0.125/0.08, the server at its old default bandwidth, so 4 updates a second) the runner's frame steps were more than twice their median 7.9 times a second (0.6% of frames without movement); with the new defaults 0.3 times a second (0.3%). The watcher's config, retail's `UPDATERATE 6`, came out of the run as 30 | done |
+| M-20 | The dedicated servers' console: the game's text (chat, names, the engine's lines) and the typed command no longer passed as `printf` formats; a line cut to 497 characters and terminated; every line also in `server-console.log` in the game directory (timed; emptied by each run's first line) | `ServerDlg.cpp` (`WriteConsoleString`, `UpdateUI`, `OnConsoleSend`), `src/modern/server/m20_serverlog.h` | a player chatting `hello from the runner %n%s%n%s`: retail's AVP2Serv.exe crashed (page fault in its `_vsnprintf`), the modern one printed the text; the logs of every test above | done |
+
+**What else was found and put right (not modern-only).** Each is a
+reconstruction error, so it is fixed in both builds:
+
+* **Primal Hunt's GameSpy name and key.** `MultiplayerMgrDefs.h` gave both
+  games AvP2's (`avp2`, `Df3M6Z`); retail Primal Hunt's PHObject.lto and
+  PHCShell.dll hold `avp2ph` and `P4fR9w`, which OpenSpy knows. Primal
+  Hunt's servers and browser now use them (`#elif defined(PRIMAL_HUNT)`).
+* **Multiplayer prediction crashed our engines.** `predtick.cpp` (the
+  client's per-frame prediction of other objects, which only multiplayer
+  runs) read CClientMgr and LTObject with NOLF's layout: the time at
+  0x125c (AvP2 0x136c), the interfaces at 0x4c0/0x61c (0x4c4/0x620), the
+  shell's OnObjectMove/OnObjectRotate two slots early, and every
+  prediction field from the friction on 4 bytes low. Every client of
+  ours crashed at its first frame in a server's world (page fault at
+  0x004ab9dd, `sub_461270Q1S`); the views now have AvP2's places, as
+  predobj.cpp's already did and AvP2 1.0.9.6's own (0x0046e250) reads
+  them: the function's displacements are now the set retail's has.
+* **AvP2's dedicated server found none of our game DLLs.** AVP2Serv.exe
+  looks for `custom.rez`, not the `custom/` directory a game directory
+  keeps them in, and stopped ("Unable to load the game binaries");
+  `build/all.sh` now writes `customrez.txt` (`Rez0 = "custom"`), the file
+  it reads for more archives.
+
+**Still open.** Our `server.dll` (the dedicated server's engine) links
+with two unresolved references and stops with "pure virtual function
+call" when a world loads; the tests ran the dedicated servers on the
+retail `server.dll` (with our AVP2Serv.exe/AVP2XServ.exe and game DLLs).
+A Primal Hunt server on `DM_Compound` refuses a Primal Hunt client
+("world version is different"): the world is in AvP2's MULTI.REZ and
+AVP2P1.REZ, and the server's archive order differs from the client's;
+the Primal Hunt tests used `DM_Aizin`.
+
+**Retail players.** The engine compares the server's CRC of `CShell.dll`
+and the attribute files with the client's (`SetCRCString`,
+`DoLoadWorld`), and our `CShell.dll` is not retail's: a retail client
+joining a modern server is disconnected with "Some game resources differ
+from the server" (tested), and a modern client would be by a retail
+server. The handshake is otherwise retail's, so the two would play if
+the modern build reported retail's CRC; that is a decision, not made
+here (nolfsrc's M-P6-04 found the same). The master server is shared:
+a modern server is in the list a retail-patched browser reads, and the
+other way round, under the same game names.
+
+**The test** (`out/mp/`, not kept in the tree): `dock.sh` runs the build
+image on a docker network; `srv.sh` a dedicated server under Xvfb and
+Wine from a game directory (a config in ServerData/, `-config`; Primal
+Hunt's install key for AvP2's archives added to the Wine prefix for the
+run and removed after); `masterstub.py` the master (UDP 27900, TCP
+28900, logging each heartbeat, challenge, validate, status reply and
+list); the clients are `build/playtest.sh` with scripts (Multiplayer
+LAN or Internet, Find, the first server, Join, Space, chat, run) and
+`PLAYTEST_CFG` for `MasterServer`; `gsprobe.py` one list request to a
+master.
+
 ## New console variables
 
 | Variable | Type | Default | What | Id |
 |---|---|---|---|---|
 | `MenuScale` | int | 100 | the menus' page, percent of filling the screen's height (0: retail's size; never below it, never wider than the screen); Options, Graphics, "Menu size"; saved in autoexec.cfg | M-15 |
 | `HUDScale` | int | 75 | the HUD's scale, percent of the screen's height over 480 (0: retail's size; never below it); Options, Graphics, "HUD size"; saved in autoexec.cfg | M-16 |
+| `MasterServer` | string | (empty = `master.openspy.net`) | the GameSpy master server the Internet list is read from and a hosted Internet game reports to (host or host:port; `none`: neither); `+MasterServer`, saved in autoexec.cfg; a dedicated server's is `-MasterServer` | M-17 |
+| `UpdateRate30`, `Connection30` (profile), `Bandwidth30` (server config) | flags | -- | M-19's one-time raises done | M-19 |
+| `NetPosLog` | int | 0 | (modern debug build only) 1: each multiplayer frame, where the other characters are, to netpos.log | M-19 |
 | `FieldOfView` | int | 90 | the player's horizontal field of view at 4:3, degrees (60..130; every character's scaled with it; a wide screen widens it again); Options, Graphics, "Field of view" (75..120); saved in autoexec.cfg | M-3 |
 | `RestrictCinematicsTo4x3` | int | 0 | 1: black beside the centred 4:3 area while a cinematic plays; Options, Graphics, "Cinematics" (Widescreen, 4:3); saved in autoexec.cfg | M-2 |
 | `FramerateLimit` | int | 240 | the client's frames a second at most (0: no limit), single player and multiplayer, not while loading; Options, Graphics, "Frame rate limit" (60, 120, 144, 240, None); saved in autoexec.cfg | M-13 |

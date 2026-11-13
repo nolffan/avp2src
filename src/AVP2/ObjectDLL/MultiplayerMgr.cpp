@@ -27,6 +27,12 @@
 
 #include "ServerOptions.h"
 
+#ifdef AVP2SRC_MODERN
+// M-17 (docs/MODERN.md): the master server, in GameSpyMgr.lib
+void GameSpyServer_SetMasterServer(const char* sAddr);
+BOOL GameSpyServer_IsMasterOff();
+#endif
+
 // -------------------------------------------------------------------- //
 
 #define MPMGR_FORCE_VERIFY_TIME		15.0f
@@ -161,6 +167,26 @@ LTBOOL MultiplayerMgr::Setup()
 
 	// Init the GameSpy manager
 	LTBOOL bReturn = LTFALSE;
+
+#ifdef AVP2SRC_MODERN
+	// M-17: the master server the hosting game named (the client's, or the
+	// dedicated server's -MasterServer, in the process's environment:
+	// AVP2_MASTERSERVER), empty for master.openspy.net, "none" for none
+	{
+		char szMaster[128];
+		szMaster[0] = '\0';
+		if (GetEnvironmentVariable("AVP2_MASTERSERVER", szMaster, sizeof(szMaster)) >= sizeof(szMaster))
+			szMaster[0] = '\0';
+		GameSpyServer_SetMasterServer(szMaster);
+
+		if (m_GameInfo.m_bLANConnection)
+			g_pLTServer->CPrint("Master server: none (a LAN game)");
+		else if (GameSpyServer_IsMasterOff())
+			g_pLTServer->CPrint("Master server: none (MasterServer none)");
+		else
+			g_pLTServer->CPrint("Master server: %s", szMaster[0] ? szMaster : "master.openspy.net");
+	}
+#endif
 
 #ifdef _WIN32
 	HSTRING hStr = g_pLTServer->FormatString(IDS_VERSION);

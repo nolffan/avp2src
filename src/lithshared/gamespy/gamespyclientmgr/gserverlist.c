@@ -105,12 +105,64 @@ GError InitUpdateList(GServerList serverlist)
 	return 0;
 }
 
+#ifdef AVP2SRC_MODERN
+/* M-17 (docs/MODERN.md): the master is the one the game names
+   (ServerListSetMaster: its MasterServer console variable), not
+   master.gamespy.com, which is gone; and the connection gives up after a
+   few seconds instead of holding the menus for as long as Windows tries. */
+static char g_szMasterHost[128] = MSHOST;
+static int g_nMasterPort = MSPORT;
+#define MS_TIMEOUT_MS 6000
+
+void ServerListSetMaster(const char *host, int port)
+{
+	strncpy(g_szMasterHost, host ? host : "", sizeof(g_szMasterHost) - 1);
+	g_szMasterHost[sizeof(g_szMasterHost) - 1] = 0;
+	g_nMasterPort = port > 0 ? port : MSPORT;
+}
+#endif
+
 /* connects to the master server */
 GError CreateServerListSocket(GServerList serverlist)
 {
 	struct sockaddr_in saddr;
 	struct hostent *hent;
+#ifdef AVP2SRC_MODERN
+	fd_set set;
+	struct timeval timeout;
+	int ms = MS_TIMEOUT_MS;
 
+	saddr.sin_family = AF_INET;
+	saddr.sin_port = htons((unsigned short)g_nMasterPort);
+	saddr.sin_addr.s_addr = inet_addr(g_szMasterHost);
+	if (saddr.sin_addr.s_addr == INADDR_NONE)
+	{
+		hent = gethostbyname(g_szMasterHost);
+		if (!hent)
+			return GE_NODNS;
+		saddr.sin_addr.s_addr = *(u_long *)hent->h_addr_list[0];
+	}
+	serverlist->slsocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (serverlist->slsocket == INVALID_SOCKET)
+		return GE_NOSOCKET;
+	/* connect without blocking, wait for it at most MS_TIMEOUT_MS */
+	SetSockBlocking(serverlist->slsocket, 0);
+	connect(serverlist->slsocket, (struct sockaddr *)&saddr, sizeof saddr);
+	FD_ZERO(&set);
+	FD_SET(serverlist->slsocket, &set);
+	timeout.tv_sec = MS_TIMEOUT_MS / 1000;
+	timeout.tv_usec = 0;
+	if (select(FD_SETSIZE, NULL, &set, NULL, &timeout) <= 0)
+	{
+		closesocket(serverlist->slsocket);
+		serverlist->slsocket = INVALID_SOCKET;
+		return GE_NOCONNECT;
+	}
+	SetSockBlocking(serverlist->slsocket, 1);
+	/* the challenge and the list: no read waits longer than that either */
+	setsockopt(serverlist->slsocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&ms, sizeof(ms));
+	return 0;
+#else
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(MSPORT);
 	saddr.sin_addr.s_addr = inet_addr(MSHOST);
@@ -130,6 +182,7 @@ GError CreateServerListSocket(GServerList serverlist)
 		return GE_NOCONNECT;
 	}
 	return 0;
+#endif
 }
 
 /* sets the list's state and tells the app */
@@ -166,7 +219,17 @@ GError ServerListUpdate2(GServerList serverlist, gbool async, char *filter, GQue
 	error = CreateServerListSocket(serverlist);
 	if (error) return error;
 	error = SendListRequest(serverlist, filter);
+#ifdef AVP2SRC_MODERN
+	/* M-17: a master that does not answer is let go of */
+	if (error)
+	{
+		closesocket(serverlist->slsocket);
+		serverlist->slsocket = INVALID_SOCKET;
+		return error;
+	}
+#else
 	if (error) return error;
+#endif
 	error = InitUpdateList(serverlist);
 	if (error) return error;
 	serverlist->nextupdate = 0;

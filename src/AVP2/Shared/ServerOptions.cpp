@@ -206,6 +206,9 @@ void CServerOptions::SaveToBute(CButeMgr& buteMgr)
 	buteMgr.SetInt("Settings","GameType",nGameType);
 	buteMgr.SetInt("Settings","PortID",nPortID);
 	buteMgr.SetInt("Settings","Bandwidth",nBandwidth);
+#ifdef AVP2SRC_MODERN
+	buteMgr.SetInt("Settings","Bandwidth30",1);		// M-19
+#endif
 
 
 	// Advanced options
@@ -420,6 +423,12 @@ void CServerOptions::LoadFromBute(CButeMgr& buteMgr)
 	nGameType = buteMgr.GetInt("Settings","GameType",nGameType);
 	nPortID = buteMgr.GetInt("Settings","PortID",nPortID);
 	nBandwidth = buteMgr.GetInt("Settings","Bandwidth",nBandwidth);
+#ifdef AVP2SRC_MODERN
+	// M-19: a config saved with retail's default bandwidth gets the new
+	// default once (Bandwidth30 marks it done; a choice made after stays)
+	if(!buteMgr.GetInt("Settings","Bandwidth30",0) && nBandwidth == RETAIL_DEFAULT_BANDWIDTH)
+		nBandwidth = DEFAULT_BANDWIDTH;
+#endif
 
 
 	// Advanced options

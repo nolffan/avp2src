@@ -70,6 +70,68 @@ static void GetCertOpCompletion(AsyncOpPtr theOp, CGameSpyMgr* pGameSpyMgr);
 static void AddRegistration(CGameSpyMgr* pGameSpyMgr);
 static void RegisterCompletion(AsyncOpPtr theOp, CGameSpyMgr* pGameSpyMgr);
 
+#ifdef AVP2SRC_MODERN
+// M-17 (docs/MODERN.md): the master server a server reports to. The
+// retail heartbeat went to master<location>.gamespy.com, and the server
+// registered with WON's directory too, which is where the retail browser
+// read its list from; both are gone. The modern server sends GameSpy's
+// heartbeat (\heartbeat\<game port>\gamename\<game>, every
+// TIMER_HEARTBEAT, from the game port) to the master the game names
+// (GameSpyServer_SetMasterServer: "host" or "host:port", empty for
+// master.openspy.net, "none" for none), answers its \secure\ challenge
+// (OnSecureQuery, retail's) ahead of the rest of a query, says
+// \statechanged\2 when the game ends, and registers with WON no more.
+#define GSM_DEFAULT_MASTER		"master.openspy.net"
+#define GSM_HEARTBEAT_PORT		27900
+
+static char  s_szMasterServer[128] = "";
+static char  s_szMasterIP[32]      = "";
+static DWORD s_dwMasterPort        = GSM_HEARTBEAT_PORT;
+
+void GameSpyServer_SetMasterServer(const char* sAddr)
+{
+	strncpy(s_szMasterServer, sAddr ? sAddr : "", sizeof(s_szMasterServer) - 1);
+	s_szMasterServer[sizeof(s_szMasterServer) - 1] = '\0';
+	s_szMasterIP[0] = '\0';
+}
+
+BOOL GameSpyServer_IsMasterOff()
+{
+	return(stricmp(s_szMasterServer, "none") == 0);
+}
+
+// The master's address, looked up once (and again until it is found)
+static BOOL ResolveMaster()
+{
+	if (s_szMasterIP[0]) return(TRUE);
+	if (GameSpyServer_IsMasterOff()) return(FALSE);
+
+	char sHost[128];
+	strncpy(sHost, s_szMasterServer[0] ? s_szMasterServer : GSM_DEFAULT_MASTER, sizeof(sHost) - 1);
+	sHost[sizeof(sHost) - 1] = '\0';
+
+	s_dwMasterPort = GSM_HEARTBEAT_PORT;
+	char* pColon = strchr(sHost, ':');
+	if (pColon)
+	{
+		*pColon = '\0';
+		if (atoi(pColon + 1) > 0) s_dwMasterPort = atoi(pColon + 1);
+	}
+
+	unsigned long nAddr = inet_addr(sHost);
+	if (nAddr == INADDR_NONE)
+	{
+		hostent* pHost = gethostbyname(sHost);
+		if (!pHost || !pHost->h_addr_list[0]) return(FALSE);
+		memcpy(&nAddr, pHost->h_addr_list[0], 4);
+	}
+
+	unsigned char* b = (unsigned char*)&nAddr;
+	sprintf(s_szMasterIP, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
+	return(TRUE);
+}
+#endif
+
 
 // Functions...
 
@@ -148,10 +210,21 @@ BOOL CGameSpyMgr::Init(const char* sGameName, const char* sGameVer, const char* 
 
 	g_SierraInitCompleted = FALSE;
 
+#ifdef AVP2SRC_MODERN
+	// M-17/M-18: no WON; the master's address instead (none for a LAN
+	// game, or with "none")
+	m_sGameSpyAddr.Empty();
+
+	if (!bLANOnly && ResolveMaster())
+	{
+		m_sGameSpyAddr = s_szMasterIP;
+	}
+#else
 	if (!bLANOnly)
 	{
 		InitSierraMultiplayer(this);
 	}
+#endif
 
 
 	// All done...
@@ -172,6 +245,23 @@ BOOL CGameSpyMgr::Init(const char* sGameName, const char* sGameVer, const char* 
 
 void CGameSpyMgr::Term()
 {
+#ifdef AVP2SRC_MODERN
+	// M-17: tell the master the game is over
+	if (m_bInit && m_pSender && !m_sGameSpyAddr.IsEmpty())
+	{
+		StartResponse(m_sGameSpyAddr, s_dwMasterPort);
+
+		DWORD dwPort = GetSpyPort();
+		if (UseGamePortForHeartbeat()) dwPort = GetGamePort();
+
+		SendResponseInfo("heartbeat", dwPort);
+		SendResponseInfo("gamename", m_sGameName);
+		SendResponseInfo("statechanged", 2);
+
+		FlushResponse();
+	}
+#endif
+
 	// Release the WON objects...
 
 	gDirContext     = NULL;
@@ -419,7 +509,32 @@ BOOL CGameSpyMgr::OnQuery(CGameSpyQueryInfo* pQueryInfo)
 	// Get each query element and process it...
 
 	CString sQuery = pQueryInfo->GetData();
+#ifdef AVP2SRC_MODERN
+	CString sToken;
+	// M-17: a master's \secure\ is answered first, whatever comes before
+	// it in the query (OpenSpy's after a heartbeat: \status\\secure\...),
+	// so that \validate\ is in the reply's first packet
+	sToken = GetFirstQueryToken(sQuery);
+
+	while (!sToken.IsEmpty())
+	{
+		if (stricmp(sToken, "secure") == 0)
+		{
+			CString sValue = GetNextQueryToken();
+			if (!sValue.IsEmpty())
+			{
+				OnSecureQuery(sValue);
+			}
+			break;
+		}
+
+		sToken = GetNextQueryToken();
+	}
+
+	sToken = GetFirstQueryToken(sQuery);
+#else
 	CString sToken = GetFirstQueryToken(sQuery);
+#endif
 
 	while (!sToken.IsEmpty())
 	{
@@ -435,10 +550,12 @@ BOOL CGameSpyMgr::OnQuery(CGameSpyQueryInfo* pQueryInfo)
 		else if (stricmp(sToken, "secure") == 0)
 		{
 			CString sValue = GetNextQueryToken();
+#ifndef AVP2SRC_MODERN
 			if (!sValue.IsEmpty())
 			{
 				OnSecureQuery(sValue);
 			}
+#endif
 		}
 
 		else if (stricmp(sToken, "basic") == 0)
@@ -655,7 +772,9 @@ BOOL CGameSpyMgr::UpdateHeartbeat()
 	{
 		m_timerHeartbeat = TIMER_HEARTBEAT;
 
+#ifndef AVP2SRC_MODERN
 		RenewRegistration(this);
+#endif
 	}
 	else
 	{
@@ -666,7 +785,18 @@ BOOL CGameSpyMgr::UpdateHeartbeat()
 
 	// Update the heartbeat with a response...
 
+#ifdef AVP2SRC_MODERN
+	// M-17: to the master named, once its address is known
+	if (m_sGameSpyAddr.IsEmpty())
+	{
+		if (!ResolveMaster()) return(FALSE);
+		m_sGameSpyAddr = s_szMasterIP;
+	}
+
+	StartResponse(m_sGameSpyAddr, s_dwMasterPort);
+#else
 	StartResponse(m_sGameSpyAddr, 27900);
+#endif
 
 	DWORD dwPort = GetSpyPort();
 	if (UseGamePortForHeartbeat()) dwPort = GetGamePort();

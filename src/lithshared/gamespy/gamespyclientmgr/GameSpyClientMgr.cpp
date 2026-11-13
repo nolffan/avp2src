@@ -39,7 +39,28 @@ extern "C"
 	void	DoSyncLoop(GServerList serverlist);
 	void	ServerListAddServer(GServerList serverlist, unsigned long ip, unsigned short port, GQueryType qtype);
 	void	ServerListSetQueryType(GServerList serverlist, GQueryType querytype);
+#ifdef AVP2SRC_MODERN
+	void	ServerListSetMaster(const char *host, int port);
+#endif
 }
+
+#ifdef AVP2SRC_MODERN
+// M-17 (docs/MODERN.md): the Internet list comes from a GameSpy master
+// server (the protocol is gserverlist.c's, the GameSpy SDK's own), not from
+// WON's directory, which is gone. The game names the master
+// (GameSpyClient_SetMasterServer, from its MasterServer console variable):
+// "host" or "host:port", empty for master.openspy.net, "none" for no
+// Internet list at all.
+#define GSCM_DEFAULT_MASTER		"master.openspy.net"
+#define GSCM_LIST_PORT			28900
+static char s_szMasterServer[128] = "";
+
+void GameSpyClient_SetMasterServer(const char* sAddr)
+{
+	strncpy(s_szMasterServer, sAddr ? sAddr : "", sizeof(s_szMasterServer) - 1);
+	s_szMasterServer[sizeof(s_szMasterServer) - 1] = '\0';
+}
+#endif
 
 
 // Globals...
@@ -120,12 +141,23 @@ BOOL CGameSpyClientMgr::Init(const char* sGameName, const char* sSecretKey, cons
 	GSClient_gDirContext  = new ServerContext;
 	GSClient_gAuthContext = new AuthContext;
 
+#ifdef AVP2SRC_MODERN
+	// M-18 (docs/MODERN.md): the game shell hands the engine no auth
+	// context (GetAuthContext), so that joining a server starts no WON peer
+	// authentication: the context never gets a certificate, WON being gone.
+	// The contexts are still made, for the WON calls left (none in the
+	// modern menus).
+	m_pAuthContext = NULL;
+
+	if (GSClient_gAuthContext.get()) m_bInitialized = TRUE;
+#else
 	m_pAuthContext = GSClient_gAuthContext;
 
 
 	// Flag that we are initialized...
 
 	if (m_pAuthContext) m_bInitialized = TRUE;
+#endif
 
 	m_bForceCDKeyValid = FALSE;
 
@@ -734,7 +766,36 @@ BOOL CGameSpyClientMgr::RefreshServers(BOOL bAsync)
 
 	ClearServers();
 
+#ifdef AVP2SRC_MODERN
+	// M-17: from the master server. An update still running is let finish
+	// (the list is not idle: the folder asks again); "none" leaves the list
+	// empty.
 
+	m_nProgress = 0;
+
+	if (GetState() != sl_idle) return(FALSE);
+	if (stricmp(s_szMasterServer, "none") == 0) return(TRUE);
+
+	char sHost[128];
+	int  nPort = GSCM_LIST_PORT;
+	strncpy(sHost, s_szMasterServer[0] ? s_szMasterServer : GSCM_DEFAULT_MASTER, sizeof(sHost) - 1);
+	sHost[sizeof(sHost) - 1] = '\0';
+
+	char* pColon = strchr(sHost, ':');
+	if (pColon)
+	{
+		*pColon = '\0';
+		if (atoi(pColon + 1) > 0) nPort = atoi(pColon + 1);
+	}
+
+	ServerListSetMaster(sHost, nPort);
+
+	GError nError = ServerListUpdate2(m_pServerList, bAsync ? 1 : 0, NULL, qt_status);
+	if (nError) return(FALSE);
+
+	m_bNewServer = TRUE;
+	return(TRUE);
+#else
 	// Get the list from the directory server...
 
 	m_nProgress = 0;
@@ -756,6 +817,7 @@ BOOL CGameSpyClientMgr::RefreshServers(BOOL bAsync)
 		GSClient_gGetAVP2ServersOp->Run(OP_MODE_BLOCK, OP_TIMEOUT_INFINITE);
 		GetAVP2ServersOpCompletion(GSClient_gGetAVP2ServersOp.get(), this);
 	}
+#endif
 
 
 	// All done...

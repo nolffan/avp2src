@@ -22,6 +22,11 @@
 #ifdef _DEMO
 	#define GAMESPY_GAME_NAME				"avp2demo"
 	#define GAMESPY_SECRET_KEY				"Df3M6Z"
+#elif defined(PRIMAL_HUNT)
+	// Primal Hunt's own GameSpy name and key (PHObject.lto 0x2d33e0,
+	// PHCShell.dll 0x1d0bec): its servers are listed apart from AvP2's
+	#define GAMESPY_GAME_NAME				"avp2ph"
+	#define GAMESPY_SECRET_KEY				"P4fR9w"
 #else
 	#define GAMESPY_GAME_NAME				"avp2"
 	#define GAMESPY_SECRET_KEY				"Df3M6Z"
@@ -177,7 +182,16 @@
 #else
 #define DEFAULT_PORT					27888
 #endif
+#ifdef AVP2SRC_MODERN
+// M-19 (docs/MODERN.md): a new server's bandwidth is the host options' top
+// choice (T3), not 56k's: the clients' update rate is held to what the
+// server's bandwidth allows (ProfileMgr.cpp), and 16000 held every client
+// to 4 updates a second
+#define DEFAULT_BANDWIDTH				10000000
+#define RETAIL_DEFAULT_BANDWIDTH		16000
+#else
 #define DEFAULT_BANDWIDTH				16000
+#endif
 
 // ----------------------------------------------------------------------- //
 
