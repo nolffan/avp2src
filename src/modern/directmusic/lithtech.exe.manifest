@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  lithtech.exe.manifest: the modern build's DirectMusic, from the game
+  directory, for AvP2's and Primal Hunt's lithtech.exe alike
+  (src/modern/directmusic/README.md). The 46 COM classes Microsoft's nine
+  DirectMusic DLLs serve, mapped to the copies the build installs beside
+  lithtech.exe as ms_<name>.dll. The names are not Wine's, so Wine loads
+  Microsoft's code rather than its own builtin of the same name.
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="AVP2SRC.lithtech" version="1.0.0.0" processorArchitecture="x86"/>
+  <file name="ms_dmband.dll">
+    <comClass clsid="{79BA9E00-B6EE-11D1-86BE-00C04FBF8FEF}" threadingModel="Both" description="DirectMusicBand"/>
+    <comClass clsid="{D2AC2894-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicBandTrack"/>
+  </file>
+  <file name="ms_dmcompos.dll">
+    <comClass clsid="{D2AC288F-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicChordMap"/>
+    <comClass clsid="{D2AC2890-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicComposer"/>
+    <comClass clsid="{D2AC2896-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicChordMapTrack"/>
+    <comClass clsid="{D30BCC65-60E8-11D1-A7CE-00A0C913F73C}" threadingModel="Both" description="DirectMusicTemplate"/>
+    <comClass clsid="{F17E8672-C3B4-11D1-870B-00600893B1BD}" threadingModel="Both" description="DirectMusicSignPostTrack"/>
+  </file>
+  <file name="ms_dmime.dll">
+    <comClass clsid="{4BE0537B-5C19-11D3-8BDC-00600893B1B6}" threadingModel="Both" description="DirectMusicParamControlTrack"/>
+    <comClass clsid="{55A8FD00-4288-11D3-9BD1-8A0D61C88835}" threadingModel="Both" description="DirectMusicMarkerTrack"/>
+    <comClass clsid="{995C1CF5-54FF-11D3-8BDA-00600893B1B6}" threadingModel="Both" description="DirectMusicLyricsTrack"/>
+    <comClass clsid="{BAE4D665-4EA1-11D3-8BDA-00600893B1B6}" threadingModel="Both" description="DirectMusicSegTriggerTrack"/>
+    <comClass clsid="{D2AC2881-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicPerformance"/>
+    <comClass clsid="{D2AC2882-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicSegment"/>
+    <comClass clsid="{D2AC2883-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicSegmentState"/>
+    <comClass clsid="{D2AC2884-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicGraph"/>
+    <comClass clsid="{D2AC2885-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicTempoTrack"/>
+    <comClass clsid="{D2AC2886-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicSeqTrack"/>
+    <comClass clsid="{D2AC2887-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicSysExTrack"/>
+    <comClass clsid="{D2AC2888-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicTimeSigTrack"/>
+    <comClass clsid="{EE0B9CA0-A81E-11D3-9BD1-0080C7150A74}" threadingModel="Both" description="DirectMusicAudioPath"/>
+    <comClass clsid="{EED36461-9EA5-11D3-9BD1-0080C7150A74}" threadingModel="Both" description="DirectMusicWaveTrack"/>
+  </file>
+  <file name="ms_dmloader.dll">
+    <comClass clsid="{9301E380-1F22-11D3-8226-D2FA76255D47}" threadingModel="Both" description="DirectMusicContainer"/>
+    <comClass clsid="{D2AC2892-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicLoader"/>
+  </file>
+  <file name="ms_dmscript.dll">
+    <comClass clsid="{1CEBDE3E-6B91-484A-AF48-5E4F4ED6B1E1}" threadingModel="Both" description="DirectMusic Script AutoImp AudioPathConfig"/>
+    <comClass clsid="{2C5F9B72-7148-4D97-BFC9-68A0E076BEBD}" threadingModel="Both" description="DirectMusic Script AutoImp AudioPath"/>
+    <comClass clsid="{4062C116-0270-11D3-8BCB-00600893B1B6}" threadingModel="Both" description="DirectMusic Script AutoImp Segment"/>
+    <comClass clsid="{4108FA85-3586-11D3-8BD7-00600893B1B6}" threadingModel="Both" description="DirectMusicScriptTrack"/>
+    <comClass clsid="{4EE17959-931E-49E4-A2C6-977ECF3628F3}" threadingModel="Both" description="DirectMusic Audio VB Script Language"/>
+    <comClass clsid="{810B5013-E88D-11D2-8BC1-00600893B1B6}" threadingModel="Both" description="DirectMusic Script Object"/>
+    <comClass clsid="{A16F1761-B6D8-42EB-8D57-4A44FEDD3BD2}" threadingModel="Both" description="DirectMusic Script AutoImp Song"/>
+    <comClass clsid="{A861C6E2-FCFC-11D2-8BC9-00600893B1B6}" threadingModel="Both" description="DirectMusic Script AutoImp Performance"/>
+    <comClass clsid="{C70EB77F-EFD4-4678-A27B-BF1648F30D04}" threadingModel="Both" description="DirectMusic Script Source Code Loader"/>
+    <comClass clsid="{EBF2320A-2502-11D3-8BD1-00600893B1B6}" threadingModel="Both" description="DirectMusic Script AutoImp SegmentState"/>
+  </file>
+  <file name="ms_dmstyle.dll">
+    <comClass clsid="{3F037241-414E-11D1-A7CE-00A0C913F73C}" threadingModel="Both" description="DirectMusicSection"/>
+    <comClass clsid="{D2AC288A-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicStyle"/>
+    <comClass clsid="{D2AC288B-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicChordTrack"/>
+    <comClass clsid="{D2AC288C-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicCommandTrack"/>
+    <comClass clsid="{D2AC288D-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicStyleTrack"/>
+    <comClass clsid="{D2AC288E-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicMotifTrack"/>
+    <comClass clsid="{D2AC2897-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicAuditionTrack"/>
+    <comClass clsid="{D2AC2898-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicMuteTrack"/>
+  </file>
+  <file name="ms_dmsynth.dll">
+    <comClass clsid="{58C2B4D0-46E7-11D1-89AC-00A0C9054129}" threadingModel="Both" description="DirectMusicSynth"/>
+    <comClass clsid="{AEC17CE3-A514-11D1-AFA6-00AA0024D8B6}" threadingModel="Both" description="DirectMusicSynthSink"/>
+  </file>
+  <file name="ms_dmusic.dll">
+    <comClass clsid="{480FF4B0-28B2-11D1-BEF7-00C04FBF8FEF}" threadingModel="Both" description="DirectMusicCollection"/>
+    <comClass clsid="{636B9F10-0C7D-11D1-95B2-0020AFDC7421}" threadingModel="Both" description="DirectMusic"/>
+  </file>
+  <file name="ms_dswave.dll">
+    <comClass clsid="{8A667154-F9CB-11D2-AD8A-0060B0575ABC}" threadingModel="Both" description="Microsoft DirectSound Wave"/>
+  </file>
+</assembly>

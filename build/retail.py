@@ -120,3 +120,7 @@ exit /b %AVP2_RC%
 echo Could not start PowerShell.
 pause
 exit /b 1"""
+
+# Microsoft's DirectMusic in the modern build's game directory, with the
+# manifest that points lithtech.exe's COM at it (src/modern/directmusic/).
+DIRECTMUSIC_MANIFESTS = [("src/modern/directmusic/lithtech.exe.manifest", "lithtech.exe.manifest")]

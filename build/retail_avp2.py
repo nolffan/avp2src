@@ -40,3 +40,7 @@ OPEN_RUNTIME = [
     ("binkw32.dll", "src/modern/binkw32 + ext/ffmpeg: our Bink player"),
     ("mss32.dll", "ext/openmiles: OpenMiles"),
 ]
+
+# Microsoft's DirectMusic in the modern build's game directory, with the
+# manifest that points lithtech.exe's COM at it (src/modern/directmusic/).
+DIRECTMUSIC_MANIFESTS = [("src/modern/directmusic/lithtech.exe.manifest", "lithtech.exe.manifest")]
