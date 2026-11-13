@@ -46,8 +46,9 @@ M-X5 and M-X6), so a modern game directory holds no RAD or Miles binary,
 the music through Microsoft's DirectMusic (M-X4), raw mouse input (M-6),
 controllers through XInput (M-7), the launchers and the games started
 directly (M-8), widescreen, 4:3 cinematics and the field of view
-(M-1..M-3), and every
-retail bug docs/RETAIL_BUGS.md lists either fixed (M-B01..M-B107) or shown
+(M-1..M-3), the menus and the HUD scaled to the screen (M-15, M-16), and
+every
+retail bug docs/RETAIL_BUGS.md lists either fixed (M-B01..M-B108) or shown
 not to need it (under Done); the rest of the items below are not.
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
@@ -139,7 +140,7 @@ per format), under Xvfb and Wine in the build container.
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-15, M-16 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing (the user's report on the first modern build: "the high
 framerate means all the timing is wrong"). nolfsrc found the same in NOLF
@@ -388,10 +389,131 @@ cinematics keep their own, and the weapons theirs (M-1). Checked at
 716x537 of the one at 110 (RMSE 0.019; either side 0.032), which makes
 the latter's horizontal field of view 110.1 degrees.
 
-Not done: the menus and the HUD keep their retail size in pixels, so on
-a large screen they are small (the 640x480 page is a third of a 1920x1080
-screen's height); scaling them (nolfsrc's M-P3-01 and M-P3-12) is for
-later. Windowed and borderless-window modes are M-9's.
+The menus and the HUD kept their retail size in pixels, so on a large
+screen they were small (the 640x480 page a third of a 1920x1080 screen's
+height): they are scaled now, M-15 and M-16 (below). Windowed and
+borderless-window modes are M-9's.
+
+### M-15, M-16: the menus and the HUD scaled to the screen
+
+nolfsrc's M-P3-01 (the menus in the 4:3 area, scaled) and M-P3-12 (HUD
+scaling) were read for what to do; how is AvP2's own, because its
+interface is built differently. NOLF's HUD is a handful of hand-placed
+draws in `PlayerStats.cpp`, which nolfsrc scaled one by one, and it left
+all text at its bitmap font's size. AvP2's HUD is data: `CHudMgr` builds
+each species' HUD from the layout (`CHudElement`s with an offset from a
+corner, an edge or the centre, and some forty draw and update functions:
+the health, armour and energy bars, the Marine's EKG and ammo counters,
+the Predator's energy and skull counter, the Alien's health, the
+Exosuit's, the pickup list, the air and battery meters, the boss meter,
+Primal Hunt's Predalien and Corporate HUDs and turret ammo), beside the
+motion tracker (`CMotionDetector`), the crosshairs (`CCrosshairMgr`), the
+messages (`CMessageMgr`), subtitles, teletype, objectives and weapon
+choosers, with text in bitmap fonts drawn a glyph at a time
+(`lithbitmapfont.cpp`). Scaling each draw would touch hundreds of places.
+
+So each is drawn on a smaller virtual screen scaled onto the real one (a
+"space", `src/modern/cshell/m15_uiscale.h`). The client shell puts
+wrappers into the engine's `ILTClient` table once (`M15_Install`,
+`OnEngineInitialized`; the engine's own back at `OnEngineTerm`): while a
+space is entered, `GetSurfaceDims` of the screen surface answers the
+space's size, and every blit onto the screen surface -- `Draw*` (made a
+`Scale*`), `Scale*`, `Warp*`, `Transform*` (the origin scaled, the
+destination kept at its offset from it, the scales multiplied) and
+`FillRect` -- has its destination scaled. The game's layout code then
+runs unchanged: an element anchored to the bottom-right corner lands in
+the corner, larger, and its text with it. Outside a space, for any other
+destination, or where a space's scale is 1, every call goes through
+untouched: at 640x480 always, so a 640x480 game is retail's, draw for
+draw. `CInterfaceResMgr` reports the 640x480 page's offsets, ratios and
+screen size in the space being drawn (its retail values otherwise). The
+space is per thread (the loading screen draws from its own).
+
+* The menu space (M-15): the page fills the screen's height (`MenuScale`
+  100, percent of that; never wider than the screen, never below 1, 0 is
+  retail's unscaled page), centred: 2.25 at 1080 lines, the page
+  1440x1080 in the middle of 1920 or 2560. Drawn in it: the folders
+  (`UpdateFolderState`), the message box (and centred in it,
+  `CMessageBox::Show`), the loading screen (its own thread), the pause
+  notice, the mission-failure screen and Primal Hunt's unscaled splash
+  screens. The mouse's point is taken into it (`CInterfaceMgr::On*Button*`,
+  `OnMouseMove`, `OnMouseWheel`), and the folders' keys, focus and
+  updates run in it for input only (the page's offsets, not the screen's
+  size, so a folder command that sets a camera rectangle from the
+  screen still gets the real one; `CInterfaceMgr::ScreenDimsChanged`
+  runs in screen pixels whatever called it): the cursor clicks a
+  control where it is drawn. The menus' 3D parts (the background sprite,
+  the scale FX, the character models; `CreateInterfaceBackground`,
+  `CBaseFolder::CreateScaleFX`/`CreateCharFX`, `FolderPlayer`,
+  `FolderPlayerJoin`, `LoadingScreen`) are pushed back by the menu
+  space's height over 480 (`M15_MenuDepth`) where retail used its X
+  ratio, so with M-1's Hor+ they line up with the page (1 when it fills
+  the height). The cursor is the system's, at its own size.
+* The HUD space (M-16): `HUDScale` percent (75 by default) of the
+  screen's height over 480, never below 1 or wider than the screen: 1.69
+  at 1080 lines, 1.125 at 720, 1 at 640x480 and 800x600. Drawn in it
+  (`CInterfaceMgr::Draw`): the HUD (`CHudMgr`, the motion tracker), the
+  scope's mask, the crosshairs (the smart gun's target, a point of the
+  screen, taken into the space), the objectives and their notice, the
+  weapon choosers, the credits, the timer, the subtitles; and the
+  messages and chat line (`CMessageMgr`), teletype, story items and
+  Primal Hunt's turret ammo. Laid out in it: `CHudMgr::Init` (each
+  element's place, the tracker's), the pickup list, a message's lines, a
+  subtitle's place. A new `HUDScale` (or screen) lays the HUD out again
+  on the next frame (`M15_Refresh` in `CInterfaceMgr::PreUpdate`).
+* Left in screen pixels: what is placed against the 3D view or the
+  camera (the cinematic borders, M-1/M-2's 4:3 bars, the overlays, the
+  Predator's target lock and vision wipe), and the multiplayer
+  scoreboard and its class menus (`MultiplayerClientMgr`), which already
+  scale themselves: retail picks their fonts by the screen's width (its
+  largest set above 1024).
+
+The scale is smooth, not a whole number: the page must fill the height
+(2.25 at 1080 lines; a whole 2 would leave bands, 3 would not fit), and
+the art is painted 16-bit bitmaps and antialiased fonts, not pixel art,
+which nearest-neighbour at 2.25 would draw with uneven columns. The
+renderer draws the interface in its optimized 2D mode, as textured quads
+filtered by its `Bilinear` variable (on by default): bilinear. The space's
+size is rounded to whole pixels and its two factors taken from it, so
+its edges are exactly the screen's.
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-15 | The menus scaled: the 640x480 page fills the screen's height (`MenuScale`, percent, 100; 0 retail's size), centred, with its 3D parts, the message box, loading, pause, failure and splash screens; the cursor's clicks taken onto it; Options, Graphics, "Menu size" (Unscaled, 50%..100%) | `src/modern/cshell/m15_uiscale.h`; `InterfaceMgr.cpp`, `InterfaceResMgr.h`, `GameClientShell.cpp` (`OnEngineInitialized`, `OnEngineTerm`), `BaseFolder.cpp`, `FolderPlayer.cpp`, `FolderPlayerJoin.cpp`, `LoadingScreen.cpp`, `MessageBox.cpp`, `FolderDisplay.cpp`; `ClientRes.rc`, `ClientRes.h` (31800-31805) | done |
+| M-16 | The HUD scaled: every species' HUD, the motion tracker, crosshairs, messages, subtitles, teletype, objectives, weapon choosers and story items by `HUDScale` percent (75) of the screen's height over 480, never below retail's size, anchored as retail anchors them; Options, Graphics, "HUD size" (Unscaled, 50%..100%) | `m15_uiscale.h`; `InterfaceMgr.cpp` (`Draw`, `PreUpdate`), `HudMgr.cpp` (`Init`, `AddPickupIcon`), `CrosshairMgr.cpp`, `MessageMgr.cpp`, `Subtitle.cpp`, `TeleType.cpp`, `StoryElement.cpp`, `ClientTurretMgr.cpp`, `FolderDisplay.cpp`; `ClientRes.rc`, `ClientRes.h` | done |
+
+Checked under Xvfb and Wine (`build/playtest.sh`, `PLAYTEST_RES`,
+`PLAYTEST_MAP=modern` -- the playtest's page map for the centred 4:3
+area scaled by the height, which is now where the page is), defaults
+(`MenuScale` 100, `HUDScale` 75):
+
+* AvP2 at 1920x1080: the main menu, Options and Graphics drawn 2.25
+  times, the page 1440 wide in the middle, the 3D backgrounds and the
+  facehugger egg with it; the cursor clicked Options and Graphics at their
+  page places and, hovering on Graphics at the page's (120, 238),
+  highlighted Performance; the new Menu size and HUD size lines show
+  100% and 75%. At 2560x1080 Single Player's page in the middle 1440
+  columns, the Marine's head beside it. At 640x480 the pages as retail
+  (scale 1: every call passed through).
+* AvP2's first Marine, Predator and Alien missions at 1920x1080, and the
+  Marine's at 1280x720: each HUD in its corners at 1.69 (1.125), the
+  motion tracker and its range, the health/armour numbers, the flare
+  count, the Predator's health and energy columns and skull, the Alien's
+  health bar, the "objectives updated" notices, the training message,
+  the Predator's teletype, the crosshairs.
+* Primal Hunt at 1920x1080: the main menu and its folders (as AvP2's),
+  the first Corporate mission's HUD (its motion tracker, health, armour,
+  flares); at 2560x1080 the Predalien's; at 1280x720 the Predator's.
+* A cinematic's subtitles (`Subtitles 1`, `RestrictCinematicsTo4x3 1`):
+  AvP2's first Marine mission's opening at 1920x1080, the line drawn at
+  1.69 in the centred 4:3 area.
+* Not reached: the multiplayer scoreboard (left at retail's own
+  font-by-width scaling, unchanged), the rail gun's scope mask, Primal
+  Hunt's turret ammo and the boss meter (from the code: they are drawn
+  in the HUD space like the rest).
+
+Also: the folders' paging and focus handed the cursor's screen point
+where they take a page point (M-B108, below).
 
 ### M-6: raw mouse input
 
@@ -730,6 +852,7 @@ LithTrackMgrClient: the client shells), in both games.
 | M-B61 | The Corporate motion detector settings check the Marine's tag | `LayoutMgr.cpp` (the seventeen `GetMD...`/`...SurfaceName` functions) | code; Primal Hunt's layout has both tags, so nothing changes with its data | done |
 | M-B62 | The Marine weapon chooser's dual pistols check has no null test | `WeaponChooser.cpp` (`IsDualPistols`) | code | done |
 | M-B63 | A tracer whose Init fails removes three garbage flare handles | `TracerFX.h` (the constructor) | code | done |
+| M-B108 | The folders' paging, `ForceMouseUpdate` and a group control's focus handed `OnMouseMove` the cursor's screen point (`CInterfaceMgr::GetCursorPos`) where it takes a page point; now the page's (with M-15) | `BaseFolder.cpp` (`NextPage`, `PreviousPage`, `ForceMouseUpdate`), `GroupCtrl.cpp` (`OnSelChange`) | from the code; at 640x480 the two are the same | done |
 
 **Checked.** `make modern` builds both games with them. The ButeMgr
 fixes with a test program (`cl` 8966 under Wine, linking each build's
@@ -871,6 +994,8 @@ Each in `RETAIL_BUGS.md`; checked as the table says.
 
 | Variable | Type | Default | What | Id |
 |---|---|---|---|---|
+| `MenuScale` | int | 100 | the menus' page, percent of filling the screen's height (0: retail's size; never below it, never wider than the screen); Options, Graphics, "Menu size"; saved in autoexec.cfg | M-15 |
+| `HUDScale` | int | 75 | the HUD's scale, percent of the screen's height over 480 (0: retail's size; never below it); Options, Graphics, "HUD size"; saved in autoexec.cfg | M-16 |
 | `FieldOfView` | int | 90 | the player's horizontal field of view at 4:3, degrees (60..130; every character's scaled with it; a wide screen widens it again); Options, Graphics, "Field of view" (75..120); saved in autoexec.cfg | M-3 |
 | `RestrictCinematicsTo4x3` | int | 0 | 1: black beside the centred 4:3 area while a cinematic plays; Options, Graphics, "Cinematics" (Widescreen, 4:3); saved in autoexec.cfg | M-2 |
 | `FramerateLimit` | int | 240 | the client's frames a second at most (0: no limit), single player and multiplayer, not while loading; Options, Graphics, "Frame rate limit" (60, 120, 144, 240, None); saved in autoexec.cfg | M-13 |

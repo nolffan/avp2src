@@ -1405,6 +1405,9 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 #endif
 
 	*pAppGuid = AVP2GUID;
+#ifdef AVP2SRC_MODERN
+	M15_Install();	// M-15, M-16: the menus and the HUD scaled (m15_uiscale.h)
+#endif
 
 	char strTimeDiff[64];
 	float fStartTime = CWinUtil::GetTime();
@@ -1989,6 +1992,9 @@ void CGameClientShell::OnEngineTerm()
 	m_InterfaceMgr.Term();
 
 	m_Music.Term();
+#ifdef AVP2SRC_MODERN
+	M15_Uninstall();	// M-15, M-16: the engine's own surface functions back
+#endif
 }
 
 // ----------------------------------------------------------------------- //

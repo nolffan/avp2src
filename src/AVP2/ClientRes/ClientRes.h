@@ -3338,6 +3338,13 @@
 #define IDS_M6_LEGACYLOOK               31600
 #define IDS_HELP_M6_LEGACYLOOK          31601
 #define IDS_HELP_M6_SMOOTHING           31602
+// M-15, M-16, the menus' and the HUD's size (Display)
+#define IDS_M15_MENUSIZE                31800
+#define IDS_HELP_M15_MENUSIZE           31801
+#define IDS_M16_HUDSIZE                 31802
+#define IDS_HELP_M16_HUDSIZE            31803
+#define IDS_M15_PERCENT                 31804
+#define IDS_M15_UNSCALED                31805
 #endif
 // Next default values for new objects
 // 

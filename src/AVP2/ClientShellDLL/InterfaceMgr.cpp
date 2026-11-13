@@ -11,6 +11,9 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+#ifdef AVP2SRC_MODERN
+#define M15_UISCALE_IMPLEMENTATION		// M-15, M-16: m15_uiscale.h's code is here
+#endif
 #include "InterfaceMgr.h"
 #include "GameClientShell.h"
 #include "MsgIDs.h"
@@ -726,6 +729,13 @@ DBOOL CInterfaceMgr::PreUpdate()
 	if (m_LoadingScreen.IsVisible())
 		return LTTRUE;
 
+#ifdef AVP2SRC_MODERN
+	// M-15, M-16: the spaces follow the screen and MenuScale/HUDScale; a
+	// new HUD size lays the HUD out again
+	if (M15_Refresh())
+		ScreenDimsChanged();
+#endif
+
 	if (m_bClearScreenAlways)
 	{
 		g_pClientDE->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
@@ -864,6 +874,9 @@ DBOOL CInterfaceMgr::Update()
 	// otherwise draw it here
 	if (m_eGameState != GS_PLAYING && m_MessageBox.IsVisible())
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU);	// M-15: the message box with the page
+#endif
         g_pLTClient->Start3D();
         g_pLTClient->StartOptimized2D();
         m_MessageBox.Draw(g_pLTClient->GetScreenSurface());
@@ -917,6 +930,9 @@ void CInterfaceMgr::UpdateFolderState()
 	// NOLF
 	if (m_eGameState == GS_FOLDER)
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU);	// M-15: the page scaled
+#endif
 		m_InterfaceResMgr.DrawFolder();
 	}
 
@@ -1032,6 +1048,9 @@ void CInterfaceMgr::UpdatePausedState()
 
 	if (m_hGamePausedSurface)
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU);	// M-15: the notice with the page (the background is the screen's)
+#endif
 		DDWORD nSurfaceWidth = 0, nSurfaceHeight = 0;
 		DDWORD nScreenWidth, nScreenHeight;
 
@@ -1073,6 +1092,9 @@ void CInterfaceMgr::UpdateSplashScreenState()
 	// centred on a 640x480 screen
 	if(g_nSplashCount > 0)
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU);	// M-15: scaled as the menus' page
+#endif
 		uint32 nScreenWidth, nScreenHeight;
 		g_pClientDE->GetSurfaceDims(g_pClientDE->GetScreenSurface(), &nScreenWidth, &nScreenHeight);
 
@@ -1126,6 +1148,9 @@ void CInterfaceMgr::UpdateFailureState()
 {
 	LTFLOAT fTime = g_pClientDE->GetFrameTime();
 	g_fFailScreenDuration += fTime > 0.1f ? 0.1f : fTime;
+#ifdef AVP2SRC_MODERN
+	int nM15Space = M15_Enter(M15_SPACE_MENU);	// M-15: its text scaled as the menus' page
+#endif
 	HSURFACE hScreen = g_pClientDE->GetScreenSurface();
 	DDWORD nScrnWidth = 0;
 	DDWORD nScrnHeight = 0;
@@ -1176,6 +1201,9 @@ void CInterfaceMgr::UpdateFailureState()
 
 	g_pLTClient->EndOptimized2D();
 	g_pLTClient->End3D();
+#ifdef AVP2SRC_MODERN
+	M15_Leave(nM15Space);
+#endif
 
 
 	g_pClientDE->FreeString(hStr);
@@ -2713,6 +2741,9 @@ DBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 		// NOLF
 	case GS_FOLDER :
 		{
+#ifdef AVP2SRC_MODERN
+			CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);	// M-15
+#endif
 			if (key != g_pClientButeMgr->GetEscapeKey() || !g_bLockFolder)
 				m_FolderMgr.HandleKeyDown(key,rep);
             return LTTRUE;
@@ -2948,6 +2979,9 @@ DBOOL CInterfaceMgr::OnKeyUp(int key)
 
 	if (m_eGameState == GS_FOLDER)
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);	// M-15
+#endif
 		m_FolderMgr.HandleKeyUp(key);
         return LTTRUE;
 	}
@@ -3136,9 +3170,15 @@ DBOOL CInterfaceMgr::Draw()
 		//TEMP
 		g_pGameClientShell->GetSFXMgr()->PostRenderDraw();
 
+#ifdef AVP2SRC_MODERN
+		// M-16: the HUD and what goes with it scaled, to the subtitles;
+		// the Predator's vision wipe and the fade stay the screen's
+		int nM16Space = M15_Enter(M15_SPACE_HUD);
+#endif
+
 		// Draw the player stats (health,armor,ammo) if appropriate...
-		
-		if (m_bDrawInterface) 
+
+		if (m_bDrawInterface)
 		{
 			m_stats.Draw(m_bDrawPlayerStats);
 			m_pCrosshairMgr->DrawCrosshair();
@@ -3208,6 +3248,9 @@ DBOOL CInterfaceMgr::Draw()
 
 		if(m_bPredVisionTransition)
 		{
+#ifdef AVP2SRC_MODERN
+			CM15Space space(M15_SPACE_SCREEN);	// M-16: against the camera's rectangle
+#endif
 			HCAMERA hCam = g_pGameClientShell->GetPlayerCamera();
 			DrawPredTransition(hCam);
 		}
@@ -3220,6 +3263,9 @@ DBOOL CInterfaceMgr::Draw()
 		if(m_bDrawCloseCaption)
 			m_Subtitle.Draw();
 
+#ifdef AVP2SRC_MODERN
+		M15_Leave(nM16Space);
+#endif
 
 
 		// Update the screen fade...
@@ -3229,6 +3275,9 @@ DBOOL CInterfaceMgr::Draw()
 
 	if (m_MessageBox.IsVisible())
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU);	// M-15: the message box with the page
+#endif
         g_pLTClient->Start3D();
         g_pLTClient->StartOptimized2D();
         m_MessageBox.Draw(g_pLTClient->GetScreenSurface());
@@ -4162,6 +4211,9 @@ LTBOOL CInterfaceMgr::SwitchToFolder(eFolderID folderID)
         if (!ChangeState(GS_FOLDER)) return LTFALSE;
 	}
 
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);	// M-15: the folder lays itself out on the page
+#endif
 	m_FolderMgr.SetCurrentFolder(folderID);
 
     return LTTRUE;
@@ -4179,6 +4231,9 @@ LTBOOL CInterfaceMgr::ForceFolderUpdate(eFolderID folderID)
 {
     if (m_eGameState != GS_FOLDER) return LTFALSE;
 
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);	// M-15
+#endif
 	return m_FolderMgr.ForceFolderUpdate(folderID);
 }
 
@@ -4227,7 +4282,13 @@ void CInterfaceMgr::MissionFailed(int nFailStringId)
 // --------------------------------------------------------------------------- //
 
 void CInterfaceMgr::ScreenDimsChanged()
-{ 
+{
+#ifdef AVP2SRC_MODERN
+	// M-15, M-16: the spaces for the new screen; the cameras take its
+	// real size, whatever space a folder's command came from
+	M15_Refresh();
+	CM15Space space(M15_SPACE_SCREEN);
+#endif
 	m_InterfaceResMgr.ScreenDimsChanged();
 
 	// Update the camera rect...
@@ -4263,6 +4324,11 @@ void CInterfaceMgr::ScreenDimsChanged()
 
 void CInterfaceMgr::OnLButtonUp(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		m_MessageBox.OnLButtonUp(x,y);
@@ -4279,6 +4345,11 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 
 void CInterfaceMgr::OnLButtonDown(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		m_MessageBox.OnLButtonDown(x,y);
@@ -4354,6 +4425,11 @@ void CInterfaceMgr::OnLButtonDown(int x, int y)
 
 void CInterfaceMgr::OnLButtonDblClick(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		return;
@@ -4369,6 +4445,11 @@ void CInterfaceMgr::OnLButtonDblClick(int x, int y)
 
 void CInterfaceMgr::OnRButtonUp(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		return;
@@ -4384,6 +4465,11 @@ void CInterfaceMgr::OnRButtonUp(int x, int y)
 
 void CInterfaceMgr::OnRButtonDown(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		return;
@@ -4442,6 +4528,11 @@ void CInterfaceMgr::OnRButtonDown(int x, int y)
 
 void CInterfaceMgr::OnRButtonDblClick(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		return;
@@ -4457,6 +4548,11 @@ void CInterfaceMgr::OnRButtonDblClick(int x, int y)
 
 void CInterfaceMgr::OnMouseMove(int x, int y)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		m_MessageBox.OnMouseMove(x,y);
@@ -4475,6 +4571,11 @@ void CInterfaceMgr::OnMouseMove(int x, int y)
 
 void CInterfaceMgr::OnMouseWheel(int x, int y, int delta)
 {
+#ifdef AVP2SRC_MODERN
+	// M-15: the point on the menus' scaled page
+	M15_ScreenToSpace(M15_SPACE_MENU, x, y);
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);
+#endif
 	if (m_MessageBox.IsVisible())
 	{
 		return;
@@ -4919,7 +5020,11 @@ void CInterfaceMgr::CreateInterfaceBackground()
 
 
 	VEC_MULSCALAR(vTemp, vF, g_fBackDist);
+#ifdef AVP2SRC_MODERN
+	VEC_MULSCALAR(vTemp, vTemp, M15_MenuDepth());	// M-15: the depth for the scaled page
+#else
 	VEC_MULSCALAR(vTemp, vTemp, g_pInterfaceResMgr->GetXRatio());
+#endif
 	VEC_ADD(vPos, vPos, vTemp);
 
 	VEC_COPY(bcs.vPos, vPos);
@@ -4980,7 +5085,11 @@ void CInterfaceMgr::UpdateInterfaceBackground()
     g_pLTClient->GetRotationVectors(&rRot, &vU, &vR, &vF);
 
 	VEC_MULSCALAR(vTemp, vF, g_fBackDist);
+#ifdef AVP2SRC_MODERN
+	VEC_MULSCALAR(vTemp, vTemp, M15_MenuDepth());	// M-15: the depth for the scaled page
+#else
 	VEC_MULSCALAR(vTemp, vTemp, g_pInterfaceResMgr->GetXRatio());
+#endif
 	VEC_ADD(vPos, vPos, vTemp);
 
     g_pLTClient->SetObjectPos(m_BackSprite.GetObject(), &vPos);
@@ -5575,6 +5684,9 @@ void CInterfaceMgr::OnChar(char c)
 	
 	if (m_eGameState == GS_FOLDER)
 	{
+#ifdef AVP2SRC_MODERN
+		CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);	// M-15
+#endif
 		m_FolderMgr.HandleChar(c);
 	}
 }

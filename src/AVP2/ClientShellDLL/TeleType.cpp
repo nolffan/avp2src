@@ -330,6 +330,9 @@ void TeleType::Update()
 	// Just return if it's off...
 	if((m_nState == TELETYPE_STATE_OFF) || !m_hString || !m_pFont)
 		return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: scaled with the HUD
+#endif
 
 
 	// Update based on style type

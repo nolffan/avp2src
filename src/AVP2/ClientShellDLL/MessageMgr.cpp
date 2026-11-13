@@ -783,6 +783,9 @@ void CMessageMgr::AddMessage(char *szMsg, HLTCOLOR clrMsg, char *szFrom, HLTCOLO
 {
 	// If the message doesn't exist... just boot out
 	if(!szMsg) return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: formatted for the HUD's space, where it is drawn
+#endif
 
 
 	// If our message list is full... go ahead and remove one
@@ -898,6 +901,9 @@ void CMessageMgr::Draw()
 {
 	// Make sure the vitals are ok...
 	if(!m_pFont) return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: the messages scaled with the HUD
+#endif
 
 	// Get information about the screen
 	HSURFACE hScreen = g_pLTClient->GetScreenSurface();

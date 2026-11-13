@@ -355,6 +355,12 @@ void CCrosshairMgr::DrawTargetingCrosshair()
 	//find the center of the crosshair dest
 	int cx = m_bCustomCrosshairPos?m_ptCHPos.x:nHalfScreenWidth;
 	int cy = m_bCustomCrosshairPos?m_ptCHPos.y:nHalfScreenHeight;
+#ifdef AVP2SRC_MODERN
+	// M-16: the smart gun's target is a point of the screen (GetScreenPos);
+	// the crosshair is drawn in the HUD's space
+	if (m_bCustomCrosshairPos)
+		M15_ScreenToSpace(M15_SPACE_HUD, cx, cy);
+#endif
 
 
 	//draw the crosshair to the screen

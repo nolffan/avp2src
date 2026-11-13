@@ -460,6 +460,9 @@ void CClientTurret::SetRotation(LTFLOAT fPitch, LTFLOAT fYaw)
 
 void CClientTurret::DrawAmmo()
 {
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: scaled with the HUD
+#endif
 	HSURFACE hScreen = g_pLTClient->GetScreenSurface();
 
 	uint32 nScreenWidth, nScreenHeight;

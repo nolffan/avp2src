@@ -11,6 +11,9 @@
 
 #include "LTGUIMgr.h"
 #include "InterfaceSurfMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m15_uiscale.h"	// M-15, M-16: the menus and HUD scaled
+#endif
 
 #include <string>
 
@@ -71,10 +74,19 @@ public:
 
 	DBOOL				IsEnglish()							{ return m_bEnglish; }
 
+#ifdef AVP2SRC_MODERN
+	// M-15, M-16: the 640x480 page in the space being drawn (the scaled
+	// menus', the HUD's), or, as retail, on the screen
+	int					GetXOffset()						{return M15_PageScaled() ? M15_PageXOffset() : m_Offset.x;}
+	int					GetYOffset()						{return M15_PageScaled() ? M15_PageYOffset() : m_Offset.y;}
+    LTFLOAT				GetXRatio()							{return M15_PageScaled() ? M15_XRatio() : m_fXRatio;}
+    LTFLOAT				GetYRatio()							{return M15_PageScaled() ? M15_YRatio() : m_fYRatio;}
+#else
 	int					GetXOffset()						{return m_Offset.x;}
 	int					GetYOffset()						{return m_Offset.y;}
     LTFLOAT				GetXRatio()							{return m_fXRatio;}
     LTFLOAT				GetYRatio()							{return m_fYRatio;}
+#endif
 
     uint32              GetScreenWidth();
     uint32              GetScreenHeight();
@@ -150,12 +162,20 @@ protected:
 
 inline uint32 CInterfaceResMgr::GetScreenWidth()
 {
+#ifdef AVP2SRC_MODERN
+	if (M15_PageScaled())
+		return M15_Width();	// M-15, M-16
+#endif
 	if (m_dwScreenWidth < 0)
 		ScreenDimsChanged();
 	return m_dwScreenWidth;
 }
 inline uint32 CInterfaceResMgr::GetScreenHeight()
 {
+#ifdef AVP2SRC_MODERN
+	if (M15_PageScaled())
+		return M15_Height();	// M-15, M-16
+#endif
 	if (m_dwScreenHeight < 0)
 		ScreenDimsChanged();
 	return m_dwScreenHeight;

@@ -96,6 +96,9 @@ void CSubtitle::Show(int nStringId, LTVector vSpeakerPos, LTFLOAT fRadius, LTFLO
 {
 	HSTRING hText = g_pLTClient->FormatString(nStringId);
 	if (!hText) return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: placed in the HUD's space, where it is drawn
+#endif
 
 	
 	m_vSpeakerPos = vSpeakerPos;
@@ -245,6 +248,9 @@ void CSubtitle::ScreenDimsChanged()
 {
 	if (!m_bVisible) return;
 	if (!GetConsoleInt("Subtitles", defSubtitles)) return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16
+#endif
 
 	uint32 width = 0;
 	if ( g_pGameClientShell->IsCinematic() || g_pGameClientShell->Is3rdPerson())

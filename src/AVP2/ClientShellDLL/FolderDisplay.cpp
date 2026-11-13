@@ -42,6 +42,12 @@ namespace
 	int nM2Cinematics = 0;
 	int nM1Lines = 0;		// the page's lines for them: Custom performance moves down as much
 	int nM2InitCinematics = 0;
+	// M-15, M-16: the menus' and the HUD's size (g_nM15MenuChoices,
+	// g_nM16HudChoices), and what they were when the folder opened
+	int nM15Menu = 0;
+	int nM15InitMenu = 0;
+	int nM16Hud = 0;
+	int nM16InitHud = 0;
 #endif
 
 }
@@ -170,6 +176,41 @@ LTBOOL CFolderDisplay::Build()
 		nM1Lines = (pFov->GetHeight() + m_nItemSpacing) + (pCinematics->GetHeight() + m_nItemSpacing);
 		m_PageRect.bottom += nM1Lines;
 		ptAdditionalPerformance.y += nM1Lines;
+	}
+	// M-15, M-16: the menus' and the HUD's size, under them (two lines
+	// more again)
+	{
+		int i;
+		CCycleCtrl* pMenu = AddCycleItem(IDS_M15_MENUSIZE, IDS_HELP_M15_MENUSIZE, kGap-25, 25, &nM15Menu, LTFALSE);
+		for (i = 0; i < (int)M15_NUM_MENU_CHOICES; i++)
+		{
+			if (g_nM15MenuChoices[i] > 0)
+			{
+				HSTRING hText = g_pLTClient->FormatString(IDS_M15_PERCENT, g_nM15MenuChoices[i]);
+				pMenu->AddString(hText);
+				g_pLTClient->FreeString(hText);
+			}
+			else
+				pMenu->AddString(IDS_M15_UNSCALED);
+		}
+
+		CCycleCtrl* pHud = AddCycleItem(IDS_M16_HUDSIZE, IDS_HELP_M16_HUDSIZE, kGap-25, 25, &nM16Hud, LTFALSE);
+		for (i = 0; i < (int)M16_NUM_HUD_CHOICES; i++)
+		{
+			if (g_nM16HudChoices[i] > 0)
+			{
+				HSTRING hText = g_pLTClient->FormatString(IDS_M15_PERCENT, g_nM16HudChoices[i]);
+				pHud->AddString(hText);
+				g_pLTClient->FreeString(hText);
+			}
+			else
+				pHud->AddString(IDS_M15_UNSCALED);
+		}
+
+		int nM15Lines = (pMenu->GetHeight() + m_nItemSpacing) + (pHud->GetHeight() + m_nItemSpacing);
+		m_PageRect.bottom += nM15Lines;
+		ptAdditionalPerformance.y += nM15Lines;
+		nM1Lines += nM15Lines;
 	}
 #endif
 
@@ -595,6 +636,10 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 		nM13Framerate = nM13InitFramerate = M10_FramerateChoice(M10_GetFramerateLimit());	// M-13
 		nM3Fov = nM3InitFov = M3_FovChoice(M3_GetFov());	// M-3
 		nM2Cinematics = nM2InitCinematics = M2_RestrictCinematics() ? 1 : 0;	// M-2
+		nM15Menu = nM15InitMenu = M15_Choice(g_nM15MenuChoices, M15_NUM_MENU_CHOICES,
+		                                     M15_GetPercent(M15_VAR_MENUSCALE, M15_MENUSCALE_DEFAULT));	// M-15
+		nM16Hud = nM16InitHud = M15_Choice(g_nM16HudChoices, M16_NUM_HUD_CHOICES,
+		                                   M15_GetPercent(M16_VAR_HUDSCALE, M16_HUDSCALE_DEFAULT));		// M-16
 #endif
 
         UpdateData(LTFALSE);
@@ -617,6 +662,12 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 		}
 		if (nM2Cinematics != nM2InitCinematics)	// M-2
 			M1_SetIntVar(M2_CINEMATICS_VAR, nM2Cinematics);
+		// M-15, M-16: likewise; the spaces follow on the next frame
+		// (CInterfaceMgr::PreUpdate), the HUD laid out again
+		if (nM15Menu != nM15InitMenu)
+			M15_SetPercent(M15_VAR_MENUSCALE, g_nM15MenuChoices[nM15Menu]);
+		if (nM16Hud != nM16InitHud)
+			M15_SetPercent(M16_VAR_HUDSCALE, g_nM16HudChoices[nM16Hud]);
 #endif
 
 		g_pPerformanceMgr->SetPerformanceCfg(m_nOverall);

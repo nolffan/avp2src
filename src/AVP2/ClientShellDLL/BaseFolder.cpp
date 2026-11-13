@@ -1606,6 +1606,11 @@ LTBOOL CBaseFolder::NextPage(LTBOOL bChangeSelection)
 		if (bChangeSelection)
 		{
             LTIntPt cPos = g_pInterfaceMgr->GetCursorPos();
+#ifdef AVP2SRC_MODERN
+            // M-B108 (RETAIL_BUGS.md): the cursor's point on the page, as the folder takes it
+            cPos.x -= g_pInterfaceResMgr->GetXOffset();
+            cPos.y -= g_pInterfaceResMgr->GetYOffset();
+#endif
 			OnMouseMove(cPos.x,cPos.y);
 		}
 	}
@@ -1633,6 +1638,11 @@ LTBOOL CBaseFolder::PreviousPage(LTBOOL bChangeSelection)
 		if (bChangeSelection)
 		{
             LTIntPt cPos = g_pInterfaceMgr->GetCursorPos();
+#ifdef AVP2SRC_MODERN
+            // M-B108 (RETAIL_BUGS.md): the cursor's point on the page, as the folder takes it
+            cPos.x -= g_pInterfaceResMgr->GetXOffset();
+            cPos.y -= g_pInterfaceResMgr->GetYOffset();
+#endif
 			OnMouseMove(cPos.x,cPos.y);
 		}
 	}
@@ -2681,6 +2691,11 @@ void CBaseFolder::ForceMouseUpdate()
 //	SetSelection(kNoSelection);
 	m_dwCurrHelpID = 0;
     LTIntPt cPos = g_pInterfaceMgr->GetCursorPos();
+#ifdef AVP2SRC_MODERN
+    // M-B108 (RETAIL_BUGS.md): the cursor's point on the page, as the folder takes it
+    cPos.x -= g_pInterfaceResMgr->GetXOffset();
+    cPos.y -= g_pInterfaceResMgr->GetYOffset();
+#endif
 	OnMouseMove(cPos.x,cPos.y);
 }
 
@@ -3064,7 +3079,11 @@ CBaseScaleFX* CBaseFolder::CreateScaleFX(char *szFXName)
 		{
 			LTVector vNewPos;
 			g_pLTClient->GetObjectPos(hSFX, &vNewPos);
+#ifdef AVP2SRC_MODERN
+			vNewPos.z *= M15_MenuDepth();	// M-15: the depth for the scaled page
+#else
 			vNewPos.z *= g_pInterfaceResMgr->GetXRatio();
+#endif
 			g_pLTClient->SetObjectPos(hSFX, &vNewPos);
 		}
 
@@ -3103,7 +3122,11 @@ void CBaseFolder::CreateCharFX(INT_CHAR *pChar)
 	    g_pLTClient->RotateAroundAxis(&rRot, &g_vU, fRot);
 
 		VEC_MULSCALAR(vTemp, g_vF, vModPos.z);
+#ifdef AVP2SRC_MODERN
+		VEC_MULSCALAR(vTemp, vTemp, M15_MenuDepth());	// M-15: the depth for the scaled page
+#else
 		VEC_MULSCALAR(vTemp, vTemp, g_pInterfaceResMgr->GetXRatio());
+#endif
 		VEC_ADD(vPos, vPos, vTemp);
 
 		VEC_MULSCALAR(vTemp, g_vR, vModPos.x);

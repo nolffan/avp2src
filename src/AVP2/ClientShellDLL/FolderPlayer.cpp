@@ -582,7 +582,11 @@ void CFolderPlayer::CreatePlayerModel()
 	bcs.vPos = vPos;
 	bcs.vPos += vR * (sChar.vPos.x + vOffset.x);
 	bcs.vPos += vU * (sChar.vPos.y + vOffset.y);
+#ifdef AVP2SRC_MODERN
+	bcs.vPos += vF * (sChar.vPos.z + vOffset.z) * M15_MenuDepth();	// M-15: the depth for the scaled page
+#else
 	bcs.vPos += vF * (sChar.vPos.z + vOffset.z) * g_pInterfaceResMgr->GetXRatio();
+#endif
 
 	// Rotation
 	LTFLOAT fRot = MATH_PI + DEG2RAD(g_pCharacterButeMgr->GetSelectRot(characterSet));

@@ -95,7 +95,14 @@ void CMessageBox::Show(HSTRING hString, eMBType eType, MBCallBackFn pFn, void *p
 		pFont = g_pInterfaceResMgr->GetSmallFont();
 	}
     m_MsgBox.Create(g_pLTClient, hSurf, pFont, hString, this);
+#ifdef AVP2SRC_MODERN
+	{
+	CM15Space space(M15_SPACE_MENU);	// M-15: centred on the scaled page, where it is drawn
     m_MsgBox.SetPos(LTGUI_MB_CENTER,LTGUI_MB_CENTER,g_pLTClient->GetScreenSurface());
+	}
+#else
+    m_MsgBox.SetPos(LTGUI_MB_CENTER,LTGUI_MB_CENTER,g_pLTClient->GetScreenSurface());
+#endif
 
 
 	m_MsgBox.SetTextColor(g_pLayoutMgr->GetFolderNormalColor(FOLDER_ID_NONE));

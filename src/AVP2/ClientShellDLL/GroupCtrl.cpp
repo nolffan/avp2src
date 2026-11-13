@@ -283,6 +283,11 @@ void CGroupCtrl::OnSelChange()
 		if (m_bSubSelect)
 		{
             LTIntPt mPos = g_pInterfaceMgr->GetCursorPos();
+#ifdef AVP2SRC_MODERN
+            // M-B108 (RETAIL_BUGS.md): the cursor's point on the page, as the folder takes it
+            mPos.x -= g_pInterfaceResMgr->GetXOffset();
+            mPos.y -= g_pInterfaceResMgr->GetYOffset();
+#endif
 			OnMouseMove(mPos.x,mPos.y);
 		}
 	}

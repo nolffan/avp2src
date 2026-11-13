@@ -81,6 +81,9 @@ CHudMgr::CHudMgr()
 LTBOOL CHudMgr::Init(uint32 nIndex, LTBOOL bRestore, LTBOOL bForce)
 {
 	char		s_aTagName[30];	//temp var for bute info
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: laid out on the HUD's space, where it is drawn
+#endif
 
 	//sanity check
 	if(!g_pGameClientShell || !g_pLayoutMgr) return LTFALSE;
@@ -2458,6 +2461,9 @@ void CHudMgr::AddPickupIcon (char *szIcon)
 {
 	if(!m_pPlayerStats)
 		return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: placed on the HUD's space
+#endif
 
 	//set some info
 	PickupList NewItem;

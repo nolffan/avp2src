@@ -149,6 +149,9 @@ void StoryElement::Update()
 {
 	//sanity check
 	if ( !g_pClientDE ) return;
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_HUD);	// M-16: scaled with the HUD
+#endif
 
 	if(m_hSurface)
 	{

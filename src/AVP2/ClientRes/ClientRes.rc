@@ -4775,6 +4775,17 @@ BEGIN
     IDS_HELP_M6_LEGACYLOOK  "No: the mouse's own motion, the same at any frame rate. Yes: the original mouse look."
     IDS_HELP_M6_SMOOTHING   "Smooths the legacy mouse look. The mouse's own motion is not smoothed."
 END
+
+// M-15, M-16, the menus' and the HUD's size (Display)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M15_MENUSIZE        "Menu size"
+    IDS_HELP_M15_MENUSIZE   "How large the menus are drawn: at 100% they fill the screen's height. Unscaled is the original's size in pixels."
+    IDS_M16_HUDSIZE         "HUD size"
+    IDS_HELP_M16_HUDSIZE    "How large the HUD and its text are drawn: at 100% they take as much of the screen as at 640x480. Unscaled is the original's size in pixels."
+    IDS_M15_PERCENT         "%1!d!%%"
+    IDS_M15_UNSCALED        "Unscaled"
+END
 #endif
 
 #endif    // English (U.S.) resources

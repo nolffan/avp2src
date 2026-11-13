@@ -62,7 +62,11 @@ void CLoadingScreen::CreateScaleFX(char *szFXName)
 		{
 			LTVector vNewPos;
 			g_pLTClient->GetObjectPos(hSFX, &vNewPos);
+#ifdef AVP2SRC_MODERN
+			vNewPos.z *= M15_MenuDepth();	// M-15: the depth for the scaled page
+#else
 			vNewPos.z *= g_pInterfaceResMgr->GetXRatio();
+#endif
 			g_pLTClient->SetObjectPos(hSFX, &vNewPos);
 		}
 	}
@@ -101,7 +105,11 @@ void CLoadingScreen::CreateCharFX(INT_CHAR *pChar)
 	    g_pLTClient->RotateAroundAxis(&rRot, &m_vU, fRot);
 
 		VEC_MULSCALAR(vTemp, m_vF, vModPos.z);
+#ifdef AVP2SRC_MODERN
+		VEC_MULSCALAR(vTemp, vTemp, M15_MenuDepth());	// M-15: the depth for the scaled page
+#else
 		VEC_MULSCALAR(vTemp, vTemp, g_pInterfaceResMgr->GetXRatio());
+#endif
 		VEC_ADD(vPos, vPos, vTemp);
 
 		VEC_MULSCALAR(vTemp, m_vR, vModPos.x);
@@ -351,10 +359,17 @@ LTBOOL CLoadingScreen::Init()
 	m_TextPos = LTIntPt(320,320);
 	m_PhotoPos = LTIntPt(400,100);
 
+#ifdef AVP2SRC_MODERN
+	{
+	CM15Space space(M15_SPACE_MENU | M15_SPACE_INPUT);	// M-15: on the scaled page (Update draws it so)
+#endif
 	m_TextPos.x += g_pInterfaceResMgr->GetXOffset();
 	m_TextPos.y +=  g_pInterfaceResMgr->GetYOffset();
 	m_PhotoPos.x += g_pInterfaceResMgr->GetXOffset();
 	m_PhotoPos.y +=  g_pInterfaceResMgr->GetYOffset();
+#ifdef AVP2SRC_MODERN
+	}
+#endif
 
 	// Remember whether or not we're in multiplayer
 	m_bDrawMultiplayer = g_pGameClientShell->IsMultiplayerGame();// && g_pInterfaceMgr->IsFragCountDrawn();
@@ -426,6 +441,9 @@ LTBOOL CLoadingScreen::Update()
 	if ((m_eCurState != STATE_ACTIVE) && (m_eCurState != STATE_SHOW))
 		return LTFALSE;
 
+#ifdef AVP2SRC_MODERN
+	CM15Space space(M15_SPACE_MENU);	// M-15: the page scaled (this thread's space)
+#endif
 	g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
 	// Mmm..  Triple dimensional...
 	g_pLTClient->Start3D();

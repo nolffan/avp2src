@@ -35,7 +35,7 @@ or says why it is not. With an id: the world running fast above 100 frames
 a second (M-10); a joystick button bound twice (M-7); the mouse look's
 turn depending on the frame rate (M-6); the engine's
 (M-B01..M-B09), the renderers' (M-B20..M-B26), the client shells' and
-lithshared's (M-B40..M-B63), the object DLLs' and shared code's
+lithshared's (M-B40..M-B63, M-B108), the object DLLs' and shared code's
 (M-B70..M-B85) and the launchers' and Launch.dll's (M-B100..M-B107)
 (MODERN.md). The flare crash that the controller work found was a
 reconstruction error, not a retail bug, and is fixed in both builds (the
@@ -1270,3 +1270,23 @@ Not fixed: the cast cannot fail. A player's attachments are made only by
 `MID_PRECREATE`, and again after `ResetCharacter` destroys them), always as
 a `CPlayerAttachments`, before any of these runs; only a failed `new` would
 leave them null.
+
+### A folder's page change re-selects with the cursor's screen point
+
+CShell.dll and PHCShell.dll (`CBaseFolder::NextPage`, `PreviousPage`,
+`ForceMouseUpdate`, src/AVP2/ClientShellDLL/BaseFolder.cpp;
+`CGroupCtrl::OnSelChange`, GroupCtrl.cpp; addresses not looked up).
+Each re-runs its `OnMouseMove` with `CInterfaceMgr::GetCursorPos()`, which
+returns the cursor's point on the screen as the window gave it (it works
+out the page's point beside it and drops it). Everywhere else the folders
+get the point less the page's offsets (`CInterfaceMgr::OnMouseMove`), and
+their hit tests compare it against controls at page positions. At 640x480
+the offsets are 0 and the two agree; at 1024x768 the page sits at
+(192, 144) and the control re-selected after a page change, or when the
+folder's selection is forced, is the one under a point that far down and
+right of the cursor (or none). (`CListCtrl::Render` uses the same call
+against its controls' screen places while it draws, and is right.)
+
+Fixed in the modern build: the callers take the page's offsets off,
+BaseFolder.cpp and GroupCtrl.cpp; MODERN.md M-B108 (with M-15's scaled
+page the offsets are not 0 at any wide screen).
