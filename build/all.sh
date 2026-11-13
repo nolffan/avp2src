@@ -202,16 +202,14 @@ runscript linux-run-ph.sh PrimalHunt "Aliens versus Predator 2: Primal Hunt" "Pr
 sed 's/$/\r/' build/game-scripts/windows-run.bat > "$OUT/windows-run.bat"     # (CRLF)
 
 step "3. compile: the workspaces (build/compile.sh: build/build.mk, ${AVP2SRC_JOBS:-$(nproc)} jobs)"
-# A variant tree (build/variant.sh: its flags set) builds its own engines
-# too -- lithtech.exe, server.dll and d3d.ren, both games' -- which `all`
-# leaves alone (the release build's are the ones `make progress` scores):
-# otherwise the tree would ship the release build's engines, and the
-# modern build would have none of its engine changes.
-if [ -n "${AVP2SRC_CFLAGS:-}${AVP2SRC_LDFLAGS:-}${AVP2SRC_RCFLAGS:-}" ]; then
-    bash build/compile.sh all engine-link d3d-link avp2-d3d-link
-else
-    bash build/compile.sh all
-fi
+# The engines too -- lithtech.exe, server.dll and d3d.ren, both games' --
+# which `all` leaves alone. In the release tree they are the ones `make
+# progress` scores, built the same way here; a fresh tree (CI's) has none
+# until something links them ("src/engine/lithtech/AvP2Release/lithtech.exe
+# was not built"). A variant tree (build/variant.sh: its flags set) builds
+# its own with its flags, or it would ship the release build's engines, and
+# the modern build would have none of its engine changes.
+bash build/compile.sh all engine-link d3d-link avp2-d3d-link
 
 # assemble <game dir> <built> <dest> ...
 assemble() {
