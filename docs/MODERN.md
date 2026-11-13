@@ -41,9 +41,10 @@ items are AvP2's own.
 **Begun.** The define exists and the modern builds are made
 (`make modern` builds `out/avp2-modern-release/`, `make modern-debug`
 `out/avp2-modern-debug/`, both games each). Done: the frame timing
-(M-10..M-14) and the open middleware (M-X1..M-X3), so a modern game
-directory holds no RAD or Miles binary (under Done); the rest of the
-items below are not.
+(M-10..M-14), the open middleware (M-X1..M-X3, with OpenMiles' fixes
+M-X5 and M-X6), so a modern game directory holds no RAD or Miles binary,
+the music through Microsoft's DirectMusic (M-X4), and controllers through
+XInput (M-7) (under Done); the rest of the items below are not.
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
 `d3d.ren`, both games'): `build/all.sh` builds `engine-link`, `d3d-link`
@@ -51,10 +52,11 @@ and `avp2-d3d-link` in a `build/variant.sh` tree. Before M-10 it did not,
 and the modern build shipped the release build's engines, without any of
 the engine's modern blocks. Compiling them showed one that needs a file
 of nolfsrc's: `clientinput.cpp`'s M-P7-01 and M-P7-09 blocks call
-nolfsrc's `##gamepad` (XInput); `src/modern/engine/p7_gamepad.h` stands in
-for it until M-7, with no pad, so the modern engine leaves DirectInput's
-joysticks out and looks for the keyboard and mouse only (M-P7-09's crash
-fix), as those blocks do.
+nolfsrc's `##gamepad` (XInput). `src/modern/engine/p7_gamepad.h` is now
+AvP2's own `##gamepad` (M-7, under Done), so those blocks are kept: the
+modern engine leaves DirectInput's joysticks out, reads the pad through
+XInput, and creates only the keyboard and mouse besides (M-P7-09's crash
+fix).
 
 Code of the modern build's own that is more than a few lines lives in
 `src/modern/` (`engine/` for the engine's, `cshell/` for the client game
@@ -89,7 +91,7 @@ yet.
 | M-4 | Up to 16x anisotropic filtering, by way of nolfsrc's modern Direct3D 9 renderer | not implemented yet |
 | M-5 | Up to 8x antialiasing (the same renderer) | not implemented yet |
 | M-6 | Raw mouse input (WM_INPUT), in place of DirectInput's mouse | not implemented yet |
-| M-7 | Controllers through XInput, in place of DirectInput joysticks | not implemented yet |
+| M-7 | Controllers through XInput, in place of DirectInput joysticks | done (under Done) |
 | M-8 | The launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch had been clicked in the launcher (no registry, no disc check) | not implemented yet |
 | M-9 | From nolfsrc's modern build, where AvP2 has the same code: windowed modes at any size, Internet play without the dead GameSpy and WON master servers (its frame limiter is M-13) | not implemented yet |
 
@@ -252,8 +254,142 @@ that nolfsrc's NOLF findings pointed at; other client effects that step
 once a frame without the frame time have not all been looked at, nor
 measured above about 80 frames a second in play.
 
+### M-7: controllers through XInput
+
+Retail reads one DirectInput joystick, with its axes set up on the
+Joystick page (no radial dead zone, an Xbox pad's two triggers on one
+axis, nothing for the menus). The modern build reads an XInput pad
+instead, in both games. nolfsrc did this for NOLF (its M-P7-01..06 and
+M-P7-09); its design and its engine-side device are this project
+family's own code and were taken as the model, but every hook was made
+against AvP2's and Primal Hunt's own code, which differs: the bindings
+live in the player's profile per species, not in `defctrls.cfg`; the
+movement is `PlayerMovement`/`CharacterMovement`, not `CMoveMgr`; the
+mouse's look is axis offsets of 90 degrees of yaw and 45 of pitch; and
+the folders are AvP2's (the Joystick page becomes the Controller page).
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-7 | `##gamepad`: the pad as the engine's joystick, read through XInput (xinput1_4, 1_3 or 9_1_0, loaded at run time) | `src/modern/engine/p7_gamepad.h`, `m7_padread.h`; `src/engine/lithtech/clientinput.cpp` (nolfsrc's four hooks, as imported) | done |
+| M-7 | Default bindings, per species, in the profile's joystick column | `src/modern/cshell/m7_padbindings.h`; `ProfileMgr.cpp` | done |
+| M-7 | Analog look (right stick) and movement (left stick) | `src/modern/cshell/m7_pad.h`; `GameClientShell.cpp` (`Update`, `SetMouseSensitivityScale`), `PlayerMovement.cpp`, `CharacterMovement.cpp` | done |
+| M-7 | The menus with the pad | `m7_pad.h`; `GameClientShell.cpp` | done |
+| M-7 | Controls, Controller (was Joystick) | `src/modern/cshell/m7_folderjoystick.h`; `FolderJoystick.cpp`; `ClientRes.rc`/`.h` (31100-31108; `IDS_JOYSTICK` "Controller", `IDS_DEVICE_JOYSTICK` "Pad") | done |
+| M-7 | Customize Controls: a joystick button bound to a second command left the first (RETAIL_BUGS.md) | `FolderCustomControls.cpp` | done |
+
+**The device.** `##gamepad` is an object behind `IDirectInputDevice2A`
+that answers the engine's joystick calls from XInput's state (the first
+connected pad of four; empty slots asked about at most once a second):
+six absolute axes (`Left`/`Right Stick X`/`Y`, -1000..1000, Y down
+positive; `Left`/`Right Trigger Axis`, 0..1000) and sixteen buttons (`A`,
+`B`, `X`, `Y Button`, `Left`/`Right Bumper`, `Back`, `Start`,
+`Left`/`Right Stick Click`, `D-Pad Up`/`Down`/`Left`/`Right`,
+`Left`/`Right Trigger` past XInput's threshold), buffered in whatever
+data format the engine sets, acquired only while the game has the
+foreground. It is the only joystick: `clientinput.cpp` leaves
+DirectInput's out (under Wine the same pad is one of them) and
+enumerates no devices (M-P7-09's crash fix); `JoystickDisable` does not
+apply to it. With `AVP2SRC_PADTEST` naming a file, the pad is that file's
+state instead (`m7_padread.h`): the playtest's test controller.
+
+**Bindings.** A profile keeps each command as `key@mouse@joystick`;
+the joystick column is the pad's, bound whenever the pad is there
+("Use joystick" was about DirectInput's joysticks and no longer gates
+it; the profile's value is kept as it was, for retail). A profile
+without `PadLayout` in `[Basic]` -- `Default.prf`, so Customize Controls'
+Restore defaults too, and every profile made before -- gets the
+defaults where its column is empty and the button is not taken, and is
+saved with `PadLayout = 1`, so the player's own changes stay. Shared:
+right trigger Fire, left trigger Alt-Fire, A Jump, left stick click Run,
+right stick click Center View, Back Objectives / Scores, d-pad up Next
+Vision Mode. Marine (and Primal Hunt's Corporate): B Duck, X Activate, Y
+Reload, right/left bumper Next/Previous Weapon, d-pad down Shoulder
+Lamp, left Flare, right Hacking Device. Predator: B Duck, X Activate, Y
+Reload, bumpers the weapons, d-pad down Cloak, left Zoom Out, right
+Zoom In. Alien (Predalien): B Duck, X Pounce, Y Wallwalk Toggle, left
+bumper Wallwalk. Start is the menu (not bound). The buttons are bound in
+Customize Controls like keys ("Pad A Button"); the sticks are never bound
+as axes (`ApplyJoystick` no longer writes the retail axis bindings),
+since the client shell reads them. The pad's device is enabled before
+its buttons are bound (`ApplyBindings`).
+
+**Look.** The right stick past a radial dead zone (`PadLookDeadZone`),
+the rest of its travel rescaled to 0..1 and raised to `PadLookCurve`, is
+a turn rate: 180 degrees a second across and 120 up and down, times
+`PadLookSpeed` and the frame time, added to the mouse's axis offsets in
+`PlayerMovement::UpdateRotation`/`UpdateAiming` (so it turns Primal
+Hunt's turrets too, keeps to what multiplayer allows the mouse, and
+looks whether or not mouse look is on). It slows with the Predator's
+zoom as the mouse does (`SetMouseSensitivityScale`'s scale).
+`PadInvertY` turns its pitch over; the mouse's invert applies on top.
+
+**Movement.** The left stick past `PadMoveDeadZone` sets the movement
+flags by octant (what the animations and the server see), and its
+direction is the acceleration's (`CharacterMovement::UpdateAcceleration`,
+client only); past three-quarters of its travel it runs, below that it
+walks at that share of the walk speed, a third at least (the walking
+state's speed cap). Run held turns that over; RunLock does not apply to
+the stick.
+
+**Menus.** Outside play the d-pad or the left stick is the arrow keys
+(repeating after 0.4 s, every 0.12 s), A Enter, B and Start the menu key,
+the right bumper Tab. In play Start is the menu key; A skips a cinematic
+or a line of dialogue (the cinematic skip key) and goes on from a single
+player death. The keys go to the client shell's `OnKeyDown`/`OnKeyUp`,
+as the engine delivers a key; Customize Controls ignores keys while it
+waits for a control, so pressing a pad button binds it.
+
+**The Controller page** (Options, Controls; retail's Joystick page, the
+same place and layout): Look speed (25-300%), Invert look, Look dead
+zone and Move dead zone (0-50%), and Restore defaults (those, and the
+pad's default bindings in place of its column of the profile).
+
+**Checked** under Wine in the build container, both games, with the
+test controller (`build/playtest.sh`'s `pad`/`tap`, the file
+`AVP2SRC_PADTEST` names). No real or virtual pad could be used: Wine's
+XInput is fed by its HID backends (udev/hidraw/evdev or SDL), which need
+a kernel device, and the host's `/dev/uinput` is root's -- so the XInput
+path was run only with no pad connected (the games run as before with
+Wine's `xinput1_4.dll` there and no test pad); what follows the read of
+the pad's state is the same code for both. `build/playtest-avp2-pad.txt` and `build/playtest-ph-pad.txt`: the
+main menu with the d-pad, Single Player, Marine (Corporate) and Launch
+with A, the intro cinematic skipped with A, then in play (a temporary
+probe logged the player each frame; its lines were removed):
+
+| | AvP2 | Primal Hunt |
+|---|---|---|
+| right stick full right, 1 s | 184 degrees | 177 |
+| half right (curve 2, dead zone 0.15), 1 s | 31.4 | 30.9 |
+| full up, 0.27 s | 32.4 up | 35.3 (0.29 s) |
+| right stick click (Center View) | pitch back to 0 | 0 |
+| left stick half forward | 61 u/s (walk, scaled) | 63 |
+| full right / forward-left (run) | 242 (a wall) / 300 | 297 / 300 |
+| right trigger | Fire on 2.1 s (the blade swings) | 2.2 s |
+| A in play | a jump (+70 units) | a jump |
+| Start, then B | the pause menu, then play (with a training message up, Start dismisses it first, as Escape does) | the same |
+| d-pad down (Shoulder Lamp) | the lamp on (its meter shows) | the same |
+
+at 60-150 frames a second. `build/playtest-pad-menus.txt`, both games:
+Options, Controls with the d-pad and A; Customize Controls lists the
+defaults ("Pad Right Trigger", ...); Fire bound to Y through the capture
+(the profile then has `Fire = " @##3@Y Button"` and Reload's Y gone, in
+every species); the Controller page's look speed a step up (saved:
+`PadLookSpeed 1.25`); B back to the main menu.
+
+Not done: rumble (nothing in either game asks for force feedback),
+button prompts in hints, and a real pad (Windows, or Wine with a kernel
+device). Found on the way, not the pad's: throwing a flare (the d-pad
+left's Marine binding, or the keyboard's F) crashes the modern AvP2 and
+Primal Hunt engines in `lmsg_ReadCompPos` (servermsg.cpp), to be looked
+into separately.
+
 ## New console variables
 
 | Variable | Type | Default | What | Id |
 |---|---|---|---|---|
 | `FramerateLimit` | int | 240 | the client's frames a second at most (0: no limit), single player and multiplayer, not while loading; Options, Graphics, "Frame rate limit" (60, 120, 144, 240, None); saved in autoexec.cfg | M-13 |
+| `PadLookSpeed` | float | 1 | the controller's right stick: turn rate, times 180 degrees a second across and 120 up and down; Controller, "Look speed" | M-7 |
+| `PadInvertY` | int | 0 | the right stick's up looks down; Controller, "Invert look" | M-7 |
+| `PadLookCurve` | float | 2 | the right stick's response: its deflection past the dead zone raised to this (1: linear) | M-7 |
+| `PadLookDeadZone` | float | 0.15 | the right stick's radial dead zone (0..0.9 of its travel); Controller | M-7 |
+| `PadMoveDeadZone` | float | 0.2 | the left stick's radial dead zone; Controller | M-7 |

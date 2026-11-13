@@ -25,7 +25,9 @@
 # front of the null device writes each stream, raw, to
 # <prefix>-<rate>-<channels>-<format>.raw (streams of one format appended to
 # one file). The null device takes data faster than it would play, so the
-# recording holds what was played, not when. The adapted copy of
+# recording holds what was played, not when. A script's `pad` and `tap`
+# drive the modern build's test controller (docs/MODERN.md, M-7), through
+# the file AVP2SRC_PADTEST names. The adapted copy of
 # ext/tools/playtest.sh is written to
 # out/play/playtest-avp2.sh each run; ext/tools/ is not changed.
 set -u
@@ -49,6 +51,7 @@ fi
 OUT="$REPO/out/play/playtest-avp2.sh"
 sed -e 's/nolf2cmds\.txt/avp2cmds.txt/g' \
     -e 's/Lithtech\.exe/lithtech.exe/g' \
+    -e 's/NOLF2SRC_PADTEST/AVP2SRC_PADTEST/g' \
     -e 's#out/nolf2-legacy-release#out/avp2-legacy-release/AVP2#g' \
     -e 's#Worlds\\\\RetailSinglePlayer\\\\C01S01#-#' \
     -e 's#^source .*/layout\.sh"$#REPO="'"$REPO"'"#' \

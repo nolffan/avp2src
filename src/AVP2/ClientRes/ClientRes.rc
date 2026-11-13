@@ -163,7 +163,11 @@ BEGIN
     IDS_SOUND               "Sound"
     IDS_KEYBOARD            "Keyboard"
     IDS_MOUSE               "Mouse"
+#ifdef AVP2SRC_MODERN
+    IDS_JOYSTICK            "Controller"
+#else
     IDS_JOYSTICK            "Joystick"
+#endif
     IDS_BACK                "Back"
     IDS_ON                  "On"
     IDS_OFF                 "Off"
@@ -834,7 +838,11 @@ BEGIN
     IDS_HELP_SETCONTROL     "Press enter or click the left mouse button to set a control for this action."
     IDS_HELP_CUSTOMCONTROLS "Assign keyboard, mouse, and joystick actions."
     IDS_HELP_MOUSE          "Set mouse configuration options."
+#ifdef AVP2SRC_MODERN
+    IDS_HELP_JOYSTICK       "Set the controller's look speed and dead zones."
+#else
     IDS_HELP_JOYSTICK       "Set joystick configuration options."
+#endif
     IDS_HELP_ADVCONTROLS    "Set advanced controls options."
     IDS_HELP_RESTORE        "Restore controls to default values."
     IDS_HELP_SOUNDFX        "Toggle playing of sound effects."
@@ -1357,7 +1365,11 @@ BEGIN
     IDS_OPT_CLASS_WEAPONS   "Class Weapon Sets"
     IDS_OPT_BLANK           " "
     IDS_DEVICE_MOUSE        "Mouse"
+#ifdef AVP2SRC_MODERN
+    IDS_DEVICE_JOYSTICK     "Pad"
+#else
     IDS_DEVICE_JOYSTICK     "Joystick"
+#endif
     IDS_DEVICE_WHEEL_UP     "wheel up"
     IDS_HELP_OPT_RUNSPEED   "Set percentage of movement speed.  A higher percentage means faster movement."
     IDS_HELP_OPT_RESPAWN    "Set the scale of the item respawn speed. A lower percent means items will respawn faster. Zero is immediate."
@@ -4730,6 +4742,19 @@ BEGIN
     IDS_HELP_M13_FRAMERATE  "The most frames drawn a second. Choose your monitor's refresh rate for the smoothest picture."
     IDS_M13_FRAMERATE_FPS   "%1!d!"
     IDS_M13_FRAMERATE_NONE  "None"
+END
+// M-7, the controller's options (Controls, Controller)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M7_LOOKSPEED        "Look speed"
+    IDS_HELP_M7_LOOKSPEED   "How fast the right stick turns the view."
+    IDS_M7_INVERTLOOK       "Invert look"
+    IDS_HELP_M7_INVERTLOOK  "Push the right stick forward to look down."
+    IDS_M7_LOOKDEADZONE     "Look dead zone"
+    IDS_HELP_M7_LOOKDEADZONE "How far the right stick moves before the view turns."
+    IDS_M7_MOVEDEADZONE     "Move dead zone"
+    IDS_HELP_M7_MOVEDEADZONE "How far the left stick moves before you move."
+    IDS_HELP_M7_RESTORE     "Restore the controller's default settings and buttons."
 END
 #endif
 

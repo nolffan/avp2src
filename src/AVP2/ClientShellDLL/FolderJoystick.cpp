@@ -12,6 +12,10 @@
 #include "InterfaceMgr.h"
 #include "GameSettings.h"
 
+#ifdef AVP2SRC_MODERN
+// M-7: the controller's options, in place of the DirectInput joystick's
+#include "..\..\modern\cshell\m7_folderjoystick.h"
+#else
 namespace
 {
 	int kWidth = 0;
@@ -459,3 +463,4 @@ char* CFolderJoystick::GetSelectSound()
 	return m_sDefaultSelectSound;
 }
 
+#endif // AVP2SRC_MODERN

@@ -31,7 +31,7 @@ binary before listing it. Those AvP2 does not have go at the end, so nobody
 looks again.
 
 **Fixed so far** (in the modern build): the world running fast above 100
-frames a second (M-10). The entries below that say "Fixed in the modern
+frames a second (M-10); a joystick button bound twice (M-7). The entries below that say "Fixed in the modern
 build" without an id are nolfsrc's engine fixes, imported with its code
 and not yet checked here (MODERN.md, Where it stands).
 
@@ -65,6 +65,22 @@ server limits its own loop, and is not affected.)
 
 Fixed in the modern build: smgr.cpp, a tick runs only once 10 ms have
 passed since the last; MODERN.md M-10.
+
+### Binding a joystick button in Customize Controls leaves its old command bound too
+
+CShell.dll of both games (`CFolderCustomControls::SetCurrentSelection`,
+AvP2 0x1000a820, Primal Hunt 0x1000b380, and `Bind`, AvP2 0x1000af70,
+Primal Hunt 0x1000bad0; src/AVP2/ClientShellDLL/FolderCustomControls.cpp;
+read off the retail images, the functions not yet byte-identical). When a
+control is pressed for a command, the page first takes it from whatever
+command had it (`UnBind`), looking for it by its code, `"##<code>"`. That
+is how `Bind` keeps a key or a mouse button, but a joystick button it
+keeps by its name (`"Button 3"`), so the search never finds it: a joystick
+button bound to a second command stays bound to the first as well, and
+pressing it does both.
+
+Fixed in the modern build: FolderCustomControls.cpp, a joystick's button
+is looked for by its name; MODERN.md M-7.
 
 ### An unlisted Winsock error comes back as a number, not a string
 

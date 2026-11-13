@@ -1,0 +1,67 @@
+# The modern build's controller in the menus (docs/MODERN.md, M-7), either
+# game (make test TEST_GAME=out/avp2-modern-release TEST_WHICH="avp2 ph"
+# TEST_SCRIPT=build/playtest-pad-menus.txt): the main menu to Options,
+# Controls with the d-pad and A; Customize Controls shows the pad's
+# default bindings; Fire bound to the pad's Y (A starts the capture, Y is
+# taken), which takes Y from the species' Reload; the Controller page
+# (look speed a step up, invert look on with the d-pad);
+# B back out. The pad is the test controller (`pad`, `tap`:
+# ext/tools/playtest.sh).
+window 120
+wait 20
+pad
+wait 1
+shot menu
+# Options (Continue Game is skipped while there is nothing to continue)
+tap down
+tap down
+tap down
+wait 0.5
+shot menu-options
+tap a
+wait 2
+shot options
+tap a
+wait 2
+shot controls
+# Fire: the eleventh row
+tap down
+tap down
+tap down
+tap down
+tap down
+tap down
+tap down
+tap down
+tap down
+tap down
+wait 0.5
+shot fire-selected
+tap a
+wait 1
+shot capturing
+tap y
+wait 1
+shot fire-y
+# the Marine (Corporate) tab (the profile saved on leaving shows Reload
+# has lost Y)
+mclick 74 194
+wait 1
+shot species
+# the Controller page; the first control (Look speed) up a step
+mclick 566 86
+wait 2
+shot controller
+tap right
+wait 0.5
+shot controller-right
+tap down
+tap right
+wait 0.5
+shot controller-invert
+tap b
+wait 2
+shot back-options
+tap b
+wait 2
+shot back-main

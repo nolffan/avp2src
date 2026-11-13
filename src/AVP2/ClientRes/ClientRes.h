@@ -3316,6 +3316,16 @@
 #define IDS_HELP_M13_FRAMERATE          31001
 #define IDS_M13_FRAMERATE_FPS           31002
 #define IDS_M13_FRAMERATE_NONE          31003
+// M-7, the controller
+#define IDS_M7_LOOKSPEED                31100
+#define IDS_HELP_M7_LOOKSPEED           31101
+#define IDS_M7_INVERTLOOK               31102
+#define IDS_HELP_M7_INVERTLOOK          31103
+#define IDS_M7_LOOKDEADZONE             31104
+#define IDS_HELP_M7_LOOKDEADZONE        31105
+#define IDS_M7_MOVEDEADZONE             31106
+#define IDS_HELP_M7_MOVEDEADZONE        31107
+#define IDS_HELP_M7_RESTORE             31108
 #endif
 // Next default values for new objects
 // 

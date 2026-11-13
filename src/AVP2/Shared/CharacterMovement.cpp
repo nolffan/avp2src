@@ -43,12 +43,21 @@ static LTFLOAT M14_PerFrame60(LTFLOAT fFactor60, LTFLOAT fFrameTime)
 	#include "CharacterFX.h"
 	#include "ProfileMgr.h"
 	#include "VarTrack.h"
+#ifdef AVP2SRC_MODERN
+	#include "..\..\modern\cshell\m7_pad.h"	// M-7: the controller's left stick
+#endif
 #else
 	#include "WeaponMgr.h"
 	#include "Destructible.h"
 	#include "ServerSoundMgr.h"
 	#include "CVarTrack.h"
 	#include "GameServerShell.h"
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller moves only the client's player; on the server
+	// (the AI) there is none
+	static LTBOOL M7Pad_GetMove(LTFLOAT*, LTFLOAT*)	{ return LTFALSE; }
+	static LTFLOAT M7Pad_SpeedScale()				{ return 1.0f; }
+#endif
 #endif
 
 // ----------------------------------------------------------------------- //
@@ -919,8 +928,25 @@ LTFLOAT CharacterMovement::UpdateAcceleration(LTFLOAT fAccel, uint32 dwFlags, LT
 		vF = m_Vars.m_vForward;
 	}
 
+#ifdef AVP2SRC_MODERN
+	// M-7: moved by the controller's left stick (its flags, which are
+	// cleared when the character may not move), the acceleration is the
+	// stick's direction, not the nearest of the keys' eight
+	LTFLOAT fPadRight, fPadForward;
+	LTBOOL bPadMove = (m_Vars.m_dwCtrl & CM_FLAG_DIRECTIONAL) && M7Pad_GetMove(&fPadRight, &fPadForward);
+
+	if(bPadMove)
+	{
+		if(dwFlags & CM_DIR_FLAG_X_AXIS)				vAccel += (vR * (fAccel * fPadRight));
+		if(dwFlags & CM_DIR_FLAG_Z_AXIS)				vAccel += (vF * (fAccel * fPadForward));
+	}
+#endif
 	// Calculate a new acceleration vector based off the control keys being used
+#ifdef AVP2SRC_MODERN
+	if((dwFlags & CM_DIR_FLAG_X_AXIS) && !bPadMove)
+#else
 	if(dwFlags & CM_DIR_FLAG_X_AXIS)
+#endif
 	{
 		if(m_Vars.m_dwCtrl & CM_FLAG_STRAFERIGHT)		vAccel += (vR * fAccel);
 		if(m_Vars.m_dwCtrl & CM_FLAG_STRAFELEFT)		vAccel -= (vR * fAccel);
@@ -933,7 +959,11 @@ LTFLOAT CharacterMovement::UpdateAcceleration(LTFLOAT fAccel, uint32 dwFlags, LT
 			(m_Vars.m_dwCtrl & CM_FLAG_WALLWALK))		vAccel -= (vU * fAccel);
 	}
 
+#ifdef AVP2SRC_MODERN
+	if((dwFlags & CM_DIR_FLAG_Z_AXIS) && !bPadMove)
+#else
 	if(dwFlags & CM_DIR_FLAG_Z_AXIS)
+#endif
 	{
 		if(m_Vars.m_dwCtrl & CM_FLAG_FORWARD)			vAccel += (vF * fAccel);
 		if(m_Vars.m_dwCtrl & CM_FLAG_BACKWARD)			vAccel -= (vF * fAccel);
@@ -2677,7 +2707,13 @@ void CharacterMovementState_Walking(CharacterMovement *pMovement)
 
 	// ----------------------------------------------------------------------- //
 	// CALCULATE AND SET OUR VELOCITY
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller's stick, partly pushed, walks at that share of the
+	// walk speed
+	LTFLOAT fVelMag = pMovement->UpdateVelocity(cbButes->m_fBaseWalkSpeed * cvVars->m_fWalkSpeedMod * M7Pad_SpeedScale(), CM_DIR_FLAG_XZ_PLANE);
+#else
 	LTFLOAT fVelMag = pMovement->UpdateVelocity(cbButes->m_fBaseWalkSpeed * cvVars->m_fWalkSpeedMod, CM_DIR_FLAG_XZ_PLANE);
+#endif
 
 	// Give a little bit of fudge factor here...
 	if((fVelMag + CHARACTERMOVEMENT_VEL_CHECK_FUDGE) > cbButes->m_fBaseWalkSpeed*cvVars->m_fSpeedMod*cvVars->m_fWalkSpeedMod )

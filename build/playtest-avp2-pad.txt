@@ -1,0 +1,90 @@
+# AvP2's modern build with the test controller (docs/MODERN.md, M-7):
+# the menus with the pad to the first Marine mission, then look, move,
+# fire, jump and the menu with it (make test TEST_GAME=out/avp2-modern-release
+# TEST_WHICH=avp2 TEST_SCRIPT=build/playtest-avp2-pad.txt). The pad is
+# the file AVP2SRC_PADTEST names (`pad`, `tap`: ext/tools/playtest.sh).
+window 120
+wait 20
+shot menu
+pad
+wait 1
+tap down
+wait 0.5
+shot menu-down
+tap up
+wait 0.5
+# Single Player, Marine, and A on the mission page launches it
+tap a
+wait 3
+tap a
+wait 3
+shot marine
+tap a
+wait 3
+shot marine-a
+wait 60
+shot loaded
+# A skips the intro cinematic (the skip key); Space for the rest
+tap a
+wait 5
+shot after-a
+wait 3
+key space
+wait 10
+key space
+wait 5
+wait 2
+shot started
+# look: the right stick fully right 1 s, half right 1 s, fully up 0.25 s
+pad rx=100
+wait 1
+pad
+wait 1
+shot look-right
+pad rx=50
+wait 1
+pad
+wait 1
+pad ry=100
+wait 0.25
+pad
+wait 1
+shot look-up
+tap rs
+wait 1
+# move: the left stick fully forward 2 s, half forward 2 s, fully right
+# 1 s, forward-left 1 s
+pad ly=100
+wait 2
+pad ly=50
+wait 2
+pad lx=100
+wait 1
+pad lx=-70 ly=70
+wait 1
+pad
+wait 1
+shot moved
+# fire: the right trigger 2 s; jump: A
+pad rt=100
+wait 1
+shot firing
+wait 1
+pad
+wait 1
+tap a
+wait 2
+shot jumped
+# a species command: the d-pad down, the shoulder lamp (not the flare,
+# d-pad left: throwing one crashes the modern engine with the keyboard
+# too, in lmsg_ReadCompPos -- not the pad's)
+tap down
+wait 2
+shot dpad-down
+# the menu: Start, then B back to the game
+tap start
+wait 2
+shot menu-start
+tap b
+wait 2
+shot back-in-game

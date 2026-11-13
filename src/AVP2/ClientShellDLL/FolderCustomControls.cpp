@@ -8,6 +8,9 @@
 #include "ClientRes.h"
 #include "GameClientShell.h"
 #include "dinput.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m7_pad.h"	// M-7: the controller
+#endif
 
 #ifndef DIKEYBOARD_1
 	#define DIKEYBOARD_1		 0x81000402
@@ -445,7 +448,12 @@ void CFolderCustomControls::SetControlText(CLTGUIColumnTextCtrl *pCtrl)
 			++numControls;
 		}
 
+#ifdef AVP2SRC_MODERN
+		// M-7: the controller's buttons, whenever it is there
+		if (M7Pad_DeviceExists() && pData->strTriggerName[2][0] && pData->strTriggerName[2][0] != ' ' )
+#else
 		if (m_pProfile->m_bUseJoystick && pData->strTriggerName[2][0] && pData->strTriggerName[2][0] != ' ' )
+#endif
 		{
 			if (numControls)
 				strcat(strControls,", ");
@@ -544,7 +552,14 @@ LTBOOL CFolderCustomControls::SetCurrentSelection (DeviceInput* pInput)
 	{
 		sprintf(sControlCode, "##%d", pInput->m_ControlCode);
 
+#ifdef AVP2SRC_MODERN
+		// M-7 (RETAIL_BUGS.md): a joystick's button is kept by its name
+		// (Bind, below), not its code, so the code never found it: the
+		// command it was bound to kept it as well
+		UnBind(nCommand, pInput->m_DeviceType == DEVICETYPE_JOYSTICK ? pInput->m_ControlName : sControlCode, pInput->m_DeviceType);
+#else
 		UnBind(nCommand, sControlCode, pInput->m_DeviceType);
+#endif
 
 		if (pInput->m_DeviceType == DEVICETYPE_KEYBOARD)
 		{

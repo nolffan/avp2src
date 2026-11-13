@@ -13,6 +13,10 @@
 extern CGameClientShell* g_pGameClientShell;
 
 #include <Direct.h>			// For _rmdir
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m7_pad.h"			// M-7: the controller
+#include "..\..\modern\cshell\m7_padbindings.h"	// and its default bindings
+#endif
 
 
 const std::string PROFILE_DIR("Profiles\\");
@@ -252,6 +256,9 @@ void CUserProfile::Save()
 	m_buteMgr.SetInt(s_aTagName,"AutoCenter",(int)m_bAutoCenter);
 
 	m_buteMgr.SetInt(s_aTagName,"UseJoystick",(int)m_bUseJoystick);
+#ifdef AVP2SRC_MODERN
+	m_buteMgr.SetInt(s_aTagName,M7_PAD_LAYOUT_KEY,M7_PAD_LAYOUT);	// M-7: it has the controller's defaults
+#endif
 	m_AxisLook.WriteToProfile(&m_buteMgr);
 	m_AxisTurn.WriteToProfile(&m_buteMgr);
 	m_AxisStrafe.WriteToProfile(&m_buteMgr);
@@ -384,6 +391,12 @@ void CUserProfile::LoadBindings()
 		}
 
 	}
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller's default bindings, for a profile that has never
+	// had them (Default.prf too: Restore defaults)
+	if (m_buteMgr.GetInt("Basic", M7_PAD_LAYOUT_KEY, 0) < M7_PAD_LAYOUT)
+		M7Pad_DefaultBindings(this, LTFALSE);
+#endif
 }
 
 void CUserProfile::LoadMouse()
@@ -427,6 +440,12 @@ void CUserProfile::LoadJoystick()
 //take bindings from profile and apply them to the game
 void CUserProfile::ApplyBindings(Species s)
 {
+#ifdef AVP2SRC_MODERN
+	// M-7: a binding needs its device enabled: the controller's before its
+	// buttons are bound (retail enabled the joystick after, in ApplyJoystick)
+	if (M7Pad_DeviceExists())
+		g_pGameClientShell->EnableJoystick();
+#endif
 	g_pProfileMgr->ClearBindings();
 	if (s == Unknown)
 		s = g_pProfileMgr->GetSpecies();
@@ -466,7 +485,14 @@ void CUserProfile::ApplyBindings(Species s)
 				}
 				else if (pData->strRealName[d][0] && pData->strRealName[d][0] != ' ')
 				{
+#ifdef AVP2SRC_MODERN
+					// M-7: the joystick is the controller, its buttons
+					// bound whenever it is there ("Use joystick" was about
+					// DirectInput's, which are gone)
+					if (devices[d] == DEVICETYPE_JOYSTICK && !M7Pad_DeviceExists())
+#else
 					if (devices[d] == DEVICETYPE_JOYSTICK && !m_bUseJoystick)
+#endif
 					{
 						char str[256];
 						sprintf (str, "unbind \"%s\" \"%s\" ", strDeviceName[d], pData->strRealName[d]);
@@ -645,6 +671,12 @@ void CUserProfile::ApplyJoystick()
 
     g_pLTClient->FreeDeviceBindings (pBindings);
 
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller is read whenever it is there; its sticks by the
+	// client shell (m7_pad.h), not bound as axes
+	if (M7Pad_DeviceExists())
+		g_pGameClientShell->EnableJoystick();
+#else
 	if (m_bUseJoystick)
 	{
 		g_pGameClientShell->EnableJoystick();
@@ -654,6 +686,7 @@ void CUserProfile::ApplyJoystick()
 		m_AxisStrafe.SaveToConsole();
 		m_AxisMove.SaveToConsole();
 	}
+#endif
 
 	g_pLTClient->WriteConfigFile("autoexec.cfg");
 }
@@ -680,7 +713,11 @@ void CUserProfile::SetBindings(Species s)
 	}
 	for (int dev = 0; dev < 3; ++dev)
 	{
+#ifdef AVP2SRC_MODERN
+		if (devices[dev] == DEVICETYPE_JOYSTICK && !M7Pad_DeviceExists())	// M-7, as ApplyBindings
+#else
 		if (devices[dev] == DEVICETYPE_JOYSTICK && !m_bUseJoystick)
+#endif
 		{
 			continue;
 		}

@@ -24,6 +24,9 @@
 #include "CharacterFuncs.h"
 
 #include "MultiplayerClientMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m7_pad.h"		// M-7: the controller's sticks
+#endif
 
 // ----------------------------------------------------------------------- //
 
@@ -526,6 +529,11 @@ void PlayerMovement::Update()
 
 				// All the 'lock' keys should switch the current functionality
 				if(pSettings->RunLock())		dwCtrl ^= CM_FLAG_RUN;
+#ifdef AVP2SRC_MODERN
+				// M-7: the controller's left stick: the way it points, and
+				// walking or running by how far
+				M7Pad_MoveFlags(&dwCtrl);
+#endif
 
 				if(GetMovementState() == CMS_SWIMMING)
 				{
@@ -636,12 +644,19 @@ void PlayerMovement::UpdateRotation()
 	// Get the game settings
 	CGameSettings *pSettings = g_pGameClientShell->GetGameSettings();
 	LTBOOL bMouseLook = m_pInterface->IsCommandOn(COMMAND_ID_MOUSEAIMTOGGLE) || pSettings->MouseLook();
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller's right stick looks with or without mouse look
+	bMouseLook = bMouseLook || M7Pad_IsLooking();
+#endif
 
 	if(bMouseLook && CanRotate() && !m_hFollowObject && g_pGameClientShell->GetMultiplayerMgr()->AllowMouseControl())
 	{
 		// Set the rotation based off the gameclientshell values temporarily
 		LTFLOAT pOffsets[3];
 		g_pLTClient->GetAxisOffsets(pOffsets);
+#ifdef AVP2SRC_MODERN
+		M7Pad_AddLook(pOffsets);	// M-7: and the right stick's
+#endif
 
 		// Get the rotation vectors of the character
 		LTVector vR, vU, vF;
@@ -693,12 +708,18 @@ void PlayerMovement::UpdateAiming()
 	// Get the game settings
 	CGameSettings *pSettings = g_pGameClientShell->GetGameSettings();
 	LTBOOL bMouseLook = m_pInterface->IsCommandOn(COMMAND_ID_MOUSEAIMTOGGLE) || pSettings->MouseLook();
+#ifdef AVP2SRC_MODERN
+	bMouseLook = bMouseLook || M7Pad_IsLooking();	// M-7, as UpdateRotation
+#endif
 
 	if(bMouseLook && g_pGameClientShell->GetMultiplayerMgr()->AllowMouseControl())
 	{
 		// Set the rotation based off the gameclientshell values temporarily
 		LTFLOAT pOffsets[3];
 		g_pLTClient->GetAxisOffsets(pOffsets);
+#ifdef AVP2SRC_MODERN
+		M7Pad_AddLook(pOffsets);	// M-7: and the right stick's
+#endif
 
 		LTFLOAT fAimDir = pSettings->MouseInvertY() ? -1.0f : 1.0f;
 		LTFLOAT fAimRate = 45.0f;

@@ -71,6 +71,8 @@
 #include <sys/timeb.h>
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m10_framelimit.h"	// M-13: the frame-rate limit
+#define M7_PAD_IMPLEMENTATION
+#include "..\..\modern\cshell\m7_pad.h"			// M-7: the controller
 #endif
 
 static _timeb g_StartTimeB;
@@ -2329,6 +2331,11 @@ void CGameClientShell::Update()
 
 	s_bRenderCamera = LTTRUE;
 
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller, read once a frame (its sticks, and the menus'
+	// keys), before the interface takes the frame
+	M7Pad_Update(m_fFrameTime);
+#endif
 	if (m_InterfaceMgr.Update())
 	{
 		if (!(IsPlayerInWorld() && g_pGameClientShell->GetGameType()->IsMultiplayer()))
@@ -6875,6 +6882,10 @@ void CGameClientShell::OnMouseWheel(HWND hwnd, int x, int y, UINT keyFlags)
 
 void CGameClientShell::SetMouseSensitivityScale(LTFLOAT fSensScale)
 {
+#ifdef AVP2SRC_MODERN
+	// M-7: the controller's look slows with the zoom as the mouse does
+	M7Pad_SetLookScale(fSensScale);
+#endif
 	// Get the mouse sensitivity setting
 	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("MouseSensitivity");
 	LTFLOAT fSens = 1.0f;
