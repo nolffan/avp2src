@@ -6,13 +6,15 @@
 #                 fails if a function recorded as identical stops matching
 #   make help     everything else
 #
-# Needs only docker on the host and the three submodules (`git submodule
+# Needs only docker on the host and the submodules (`git submodule
 # update --init`): the compilers, ext/toolchains/ (ext/toolchains/README.md); ext/rez/,
 # which fetches the redump images of the European discs from archive.org
 # and installs Primal Hunt, and AvP2 with its English 1.0.9.6 patch, from
 # them (ext/rez/README.md;
 # `make retail`, which every build runs first, does it once); and ext/tools/, the
-# reconstruction tools. Every step runs in a throwaway container of the image
+# reconstruction tools; and, for the modern build only, ext/openmiles/
+# (OpenMiles) and ext/ffmpeg/ (FFmpeg), its open middleware (build/ext.sh).
+# Every step runs in a throwaway container of the image
 # docker/Dockerfile describes, with this checkout mounted at /repo, as you.
 
 IMAGE     ?= avp2src-build
@@ -42,7 +44,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-9044/BIN/cl.exe ext/toolchains/msvc-6.00-8966/BIN/cl.exe \
 	ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
-.PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain \
+.PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain check-ext \
 	test reference progress progress-update shell clean distclean help
 
 all: game
@@ -78,7 +80,12 @@ help:
 game: check-toolchain retail
 	$(DOCKER_RUN) bash build/all.sh
 
-debug modern modern-debug: check-toolchain retail
+debug: check-toolchain retail
+	$(DOCKER_RUN) bash build/variant.sh $@
+
+# the modern build also builds OpenMiles and its Bink player from ext/
+# (build/ext.sh)
+modern modern-debug: check-toolchain check-ext retail
 	$(DOCKER_RUN) bash build/variant.sh $@
 
 # Each game in turn (build/playtest.sh), every one run even when one fails.
@@ -119,6 +126,11 @@ check-rez:
 
 check-tools:
 	@[ -f ext/tools/progress.py ] || { echo "error: ext/tools/ is empty -- the reconstruction tools are the ext/tools/ submodule: run git submodule update --init" >&2; exit 1; }
+
+check-ext:
+	@for d in ext/openmiles ext/ffmpeg; do \
+	  [ -f $$d/LICENSE ] || [ -f $$d/LICENSE.md ] || { echo "error: $$d is empty -- the modern build's middleware is the ext/ submodules: run git submodule update --init" >&2; exit 1; }; \
+	done
 
 check-toolchain:
 	@for f in $(TOOLCHAIN_FILES); do \

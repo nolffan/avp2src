@@ -146,12 +146,18 @@ jobs:
 
       # ext/toolchains/ (the compilers, the DirectX 8.1 SDK), ext/rez/ (the discs'
       # installer and AvP2's 1.0.9.6 patch) and ext/tools/ (the reconstruction
-      # tools).
+      # tools); and for the modern builds ext/openmiles/ and ext/ffmpeg/, the
+      # open middleware build/ext.sh builds (OpenMiles, FFmpeg's Bink decoders).
       - name: Submodules
+        env:
+          MODERN: ${{ startsWith(matrix.target, 'modern') }}
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule sync
-          git submodule update --init --depth 1 --jobs 4
+          git submodule update --init --depth 1 --jobs 4 ext/toolchains ext/rez ext/tools
+          if [ "$MODERN" = true ]; then
+            git submodule update --init --depth 1 --jobs 2 ext/openmiles ext/ffmpeg
+          fi
 
       - name: Restore the disc images
         uses: actions/cache/restore@v4

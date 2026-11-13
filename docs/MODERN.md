@@ -23,7 +23,16 @@ items are AvP2's own.
   for nolfsrc's NOLF fixes: the idea often carries over, since the engine is
   the same generation, but each change is made and checked here.
 * **The original compilers.** The modern build uses the legacy build's
-  toolchain (the VC6 revisions of `progress/COMPILERS.md`).
+  toolchain (the VC6 revisions of `progress/COMPILERS.md`). The one
+  exception is the open middleware (below), which is not the games' code:
+  `build/ext.sh` builds it with Zig, as nolfsrc's, nolf2src's and
+  cjacksrc's do -- OpenMiles is written in Zig, FFmpeg is C99 that VC6
+  cannot compile, and `zig cc` (clang with its own mingw-w64) builds both
+  and our Bink player for 32-bit Windows in the build image.
+* **Open middleware.** The modern build has no RAD binaries: OpenMiles
+  (`ext/openmiles`) stands in for Miles, our player on FFmpeg
+  (`src/modern/binkw32/`, `ext/ffmpeg`) for Bink, and nothing for Smacker,
+  which neither game plays. Its movies play (no `+DisableMovies`).
 * **No disc check.** The modern build drops the launcher's protection
   wrappers and the games' own disc and CD-key checks.
 
@@ -31,9 +40,10 @@ items are AvP2's own.
 
 **Begun.** The define exists and the modern builds are made
 (`make modern` builds `out/avp2-modern-release/`, `make modern-debug`
-`out/avp2-modern-debug/`, both games each). The frame timing is done
-(M-10..M-14, under Done); the rest of the items below are not, and the
-retail middleware (Bink, Smacker, Miles) is still beside them.
+`out/avp2-modern-debug/`, both games each). Done: the frame timing
+(M-10..M-14) and the open middleware (M-X1..M-X3), so a modern game
+directory holds no RAD or Miles binary (under Done); the rest of the
+items below are not.
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
 `d3d.ren`, both games'): `build/all.sh` builds `engine-link`, `d3d-link`
@@ -87,16 +97,38 @@ yet.
 
 The proprietary libraries, replaced by open-source ones in the modern build
 only (the legacy build keeps the retail DLLs, from the player's own discs).
-Not implemented yet: the modern build still takes all three from the retail
-games (`build/all.sh`, step 2).
+`build/ext.sh` builds the replacements from the `ext/` submodules into
+`out/ext/` (once, for both modern variants; each piece again only when its
+inputs change), and `build/all.sh` step 2 installs them in each game's
+directory in place of the retail files (`MANIFEST.txt` origin `EXT`;
+`retailextract.py openruntime`, the list in `build/retail.py` and
+`build/retail_avp2.py`, `OPEN_RUNTIME`), removing any retail middleware an
+earlier build left. The public archives' install scripts copy only what
+`MANIFEST.txt` says came from the discs (`build/package.sh`,
+`build/mkinstall.py`), so a modern archive's take no RAD or Miles file from
+them (40 files, from 36 on the discs, all game data).
+CI fetches `ext/openmiles` and `ext/ffmpeg` for the modern builds only
+(`.github/workflows/public-archives.yml`).
 
-| Id | Retail | Replacement | Status |
-|---|---|---|---|
-| M-X1 | RAD's Bink, `binkw32.dll` (the intro movies) | our Bink player on FFmpeg, as nolfsrc's and nolf2src's | not implemented yet |
-| M-X2 | RAD's Smacker, `Smackw32.dll` | an open Smacker decoder (FFmpeg's) behind the same exports | not implemented yet |
-| M-X3 | Miles, `mss32.dll` (with its MP3 decoder `MP3DEC.ASI`) | OpenMiles, as nolfsrc's | not implemented yet |
+Pins: `ext/ffmpeg` at FFmpeg `n8.1.3` (1041abd, shallow), `ext/openmiles`
+at our fork's `miles6-fixes` (fe3fc7c): nolfsrc's, so the family builds one
+OpenMiles and one FFmpeg. AvP2 1.0.9.6 and Primal Hunt ship the same
+`mss32.dll` (Miles 6.0i) and `binkw32.dll` as NOLF's GOTY edition.
+
+Checked with `build/playtest.sh` on `out/avp2-modern-release/`, its
+`PLAYTEST_MOVIES=1` (the movies played) and `PLAYTEST_AUDIO` (each sound
+stream the game opened recorded through ALSA's file plugin, one raw file
+per format), under Xvfb and Wine in the build container.
+
+| Id | Retail | Replacement | Files | Checked | Status |
+|---|---|---|---|---|---|
+| M-X1 | RAD's Bink 1.0h, `binkw32.dll` (the intro movies) | our Bink player on FFmpeg's Bink decoders: the thirteen `_BinkXxx@n` entry points `lithtech.exe` looks up by name (`binkvideo.cpp`, `BinkVideoMgr::Init`; it imports nothing from the DLL), with the four `BINK` fields and the four surface formats it reads. It is nolfsrc's player unchanged -- this project family's own code, and AvP2's engine asks exactly what NOLF's does of it (the same names, fields, surface formats, `BINKSNDTRACK` texture videos and end-of-movie test) -- copied into this tree rather than shared, so either can change. Sound through `waveOut`, not Miles | `src/modern/binkw32/` (`binkw32.c`, `binkw32.def`), `build/ext.sh`; `build/avp2cmds.sh` (`open`: no `+DisableMovies`), `build/all.sh`, `build/package.sh` | AvP2: `build/playtest-movies.txt` -- Fox Interactive, Sierra, LithTech and Monolith (`Movies/*.bik`) play through in turn with their sound, then the main menu. Primal Hunt plays no Bink movie at all (its client shell shows four `Interface\intro_*.pcx` splash screens instead, `NextSplashScreen`, and it installs no `Movies/`); its engine loads our DLL at startup like AvP2's and the same script runs to its menu | done |
+| M-X2 | RAD's Smacker, `Smackw32.dll` | none: dropped. Neither game plays a Smacker video. Neither engine imports `Smackw32.dll`; it is loaded only by the Smacker video manager's `Init` (`videomgr.cpp`), and the only video manager either engine ever makes is Bink's -- the factory (`0x0048a770` in Primal Hunt's) is called once, with `"BINK"` (`clientmgr3.cpp`; the retail images push the `"SMACKER"` string only inside the factory). No `.smk` file is in either game's archives or directories; `CWinUtil::GetMoviesPath`'s `intro.smk` is only a file it looks for. With no DLL there is nothing to load: no import to satisfy and no engine change | `build/all.sh` (not installed, and removed from an older modern build) | both games run their movies/splash screens, menus and a level with no `Smackw32.dll` in the directory | done |
+| M-X3 | Miles 6.0i, `mss32.dll`, with its MP3 decoder `MP3DEC.ASI`/`.AS6` | OpenMiles' `mss32.dll` with the Miles 6.0 export table; it decodes MP3 itself (`AIL_decompress_ASI`, which the engine's sound loader calls for every MP3 `WAVE` -- most of the music, dialogue and many effects), so no `.asi` is installed. Both engines import 89 functions from it by name (`_AIL_...@n`); OpenMiles exports every one. The game never names a 3D provider (`InitSoundInfo::m_sz3DProvider` stays empty), so positional sound is the engine's own over Miles' 2D samples, as with retail (which ships no `.m3d`); filters (`AIL_enumerate_filters`) are OpenMiles' built-in one | `ext/openmiles` (submodule), `build/ext.sh` (`ext/patches/openmiles/*.patch` would be applied to a copy; none needed) | AvP2 `build/playtest-avp2-marine.txt` and Primal Hunt `build/playtest-ph-corporate.txt`: the menus' sounds, the first mission's dialogue (MP3), effects and ambience recorded, no crash, quicksave/quickload. Music is DirectMusic's (`musictype`, `ILTDirectMusicMgr`), not Miles', and is not part of this item | done |
 
 ## Done
+
+M-X1, M-X2, M-X3 (the open middleware, above).
 
 The frame timing (the user's report on the first modern build: "the high
 framerate means all the timing is wrong"). nolfsrc found the same in NOLF

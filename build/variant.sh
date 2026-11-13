@@ -22,8 +22,9 @@
 #            AVP2SRC_LOG lines go to avp2src.log in the game's directory.
 #   modern   AVP2SRC_MODERN: the modern build's fixes and features
 #            (docs/MODERN.md). Compile + /D AVP2SRC_MODERN,
-#            resource scripts + /d AVP2SRC_MODERN. Its middleware is still
-#            the retail one (the open replacements are to come).
+#            resource scripts + /d AVP2SRC_MODERN. Its middleware is the
+#            open one (build/ext.sh, into out/ext/): OpenMiles for Miles,
+#            our Bink player on FFmpeg for Bink, and no Smacker.
 #   modern-debug   both.
 #
 # The flags reach every compile and link through build/env.sh's
@@ -82,6 +83,16 @@ tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build ext/tools | ta
 [ -L "$TREE/ext/toolchains" ] || ln -s ../../../ext/toolchains "$TREE/ext/toolchains"
 [ -L "$TREE/ext/rez" ] || ln -s ../../../ext/rez "$TREE/ext/rez"
 [ -L "$TREE/progress" ] || ln -s ../../progress "$TREE/progress"
+# and the modern build's open-source middleware (build/ext.sh), built once
+# into out/ext/ for both modern variants
+case "$VARIANT" in modern*)
+    for d in openmiles ffmpeg; do
+        [ -L "$TREE/ext/$d" ] || ln -s "../../../ext/$d" "$TREE/ext/$d"
+    done
+    rm -rf "$TREE/ext/patches"
+    [ ! -d ext/patches ] || tar -C "$REPO" -cf - ext/patches | tar -C "$TREE" -xf -
+    export AVP2_EXT_OUT="$REPO/out/ext" ;;
+esac
 
 export AVP2SRC_CFLAGS="$CFLAGS"
 export AVP2SRC_LDFLAGS="$LDFLAGS"

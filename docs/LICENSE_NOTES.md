@@ -20,7 +20,10 @@ This file says which is which; it is not legal advice and grants nothing.
 | `src/engine/ltmsg/` | `ltmsg.dll`: its resource script read out of the retail DLL by `ext/tools/rsrc2rc.py` (Monolith's strings), and nolfsrc's one-line source | the strings Monolith's; the rest written for this project |
 | `src/AVP2/AVP2Up/` | `AVP2Up.dll` and `AVP2XUp.dll`, the Sierra updater's resources for AvP2 and Primal Hunt: their resource scripts read out of the retail DLLs by `ext/tools/rsrc2rc.py`, and the icons and bitmaps in `res/` extracted from them byte for byte (**Monolith Productions**' for AvP2; **Third Law Interactive**'s for Primal Hunt; game data, as the retail DLLs ship them); the DLL's few lines of source (an empty `DllMain`, Visual C++'s wizard `StdAfx` files) written for this project | the resources Monolith's and Third Law's, as the games' data; the rest written for this project |
 | `src/avp2src/` | the project's own headers (debug logging, crash backtraces), from nolfsrc's | written for this project; no licence is declared |
+| `src/modern/binkw32/` | the modern build's `binkw32.dll`, a Bink player on FFmpeg: nolfsrc's (written for that project), taken unchanged, as AvP2's engine asks the same of it | written for this project and nolfsrc; no licence is declared |
 | `build/`, `ext/tools/`, `docker/`, `progress/` (but the above), `Makefile`, the documentation | written for this project | no licence is declared |
+| `ext/openmiles` (submodule) | **OpenMiles**, a clean-room reimplementation of the Miles Sound System, upstream at github.com/maci0/openmiles; nolfsrc's fork, github.com/nolffan/openmiles (branch `miles6-fixes`: upstream's release with fixes, GPL-3.0-only as the code they change); vendors miniaudio and TinySoundFont. `ext/patches/openmiles/` holds fixes for it not yet on that branch | GPL-3.0-only (its vendored libraries: MIT, MIT-0, zlib); see its `LICENSE` and `deps/README.md` |
+| `ext/ffmpeg` (submodule) | **FFmpeg**, upstream at github.com/FFmpeg/FFmpeg | LGPL-2.1-or-later as the modern build configures it (no GPL or non-free parts enabled); see its `LICENSE.md` |
 
 ## Not in this repository, taken from the retail games at build time
 
@@ -31,8 +34,8 @@ their discs that it fetches from archive.org (`ext/rez/README.md`).
 | What | Origin | Where it goes |
 |---|---|---|
 | the game data: `.rez` archives, configs, text, movies | Monolith Productions, Third Law Interactive / Fox Interactive / Sierra | the game directories in `out/` |
-| `mss32.dll` and its `.asi`, `.as6` providers | Miles Sound System, RAD Game Tools | the game directories |
-| `binkw32.dll`, `Smackw32.dll` | Bink and Smacker, RAD Game Tools | the game directories |
+| `mss32.dll` and its `.asi`, `.as6` providers | Miles Sound System, RAD Game Tools | the legacy game directories (`out/avp2-legacy-*/`) |
+| `binkw32.dll`, `Smackw32.dll` | Bink and Smacker, RAD Game Tools | the legacy game directories |
 
 `make reference` extracts the retail binaries (`build/reference.sh`) into
 `out/reference/`, to compare our build against; they are never run and
@@ -42,3 +45,18 @@ never go into a game directory.
 
 The compilers in `ext/toolchains/` (Microsoft Visual C++ 6.0; see
 `ext/toolchains/README.md`), under their own licences.
+
+## The modern build's middleware
+
+The modern game directories (`out/avp2-modern-release/`,
+`out/avp2-modern-debug/`) have no RAD binaries. In their place each game has
+`mss32.dll`, built from OpenMiles (GPL-3.0-only), and `binkw32.dll`, our
+player (`src/modern/binkw32/`) statically linked with FFmpeg
+(LGPL-2.1-or-later), both built by `build/ext.sh` from the `ext/`
+submodules; no Smacker and no MP3 decoder (`docs/MODERN.md`, M-X1..M-X3).
+This repository only points at those projects; the terms matter when a
+built game directory is passed on. The GPL in particular may not sit well
+with a directory whose other binaries are built from Monolith's source under
+its end-user licence; work that out before distributing a modern build. The
+LGPL asks that whoever receives `binkw32.dll` can rebuild it against a
+modified FFmpeg, which `build/ext.sh` and the source here allow.

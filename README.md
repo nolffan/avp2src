@@ -98,10 +98,12 @@ the evidence, is `progress/COMPILERS.md`.
 
 ## Building
 
-Needs docker and the three submodules (`git submodule update --init`):
+Needs docker and the submodules (`git submodule update --init`):
 `ext/toolchains/` (the compilers), `ext/rez/` (which fetches the discs from
 archive.org and installs AvP2 with its 1.0.9.6 patch, and Primal Hunt
-beside it) and `ext/tools/` (the reconstruction tools).
+beside it) and `ext/tools/` (the reconstruction tools); and for the modern
+build, `ext/openmiles/` (OpenMiles) and `ext/ffmpeg/` (FFmpeg), its open
+middleware.
 
 ```sh
 make            # out/avp2-legacy-release/: both games, built here, with the retail data
@@ -112,7 +114,8 @@ make help       # everything else
 
 `make debug`, `make modern` and `make modern-debug` build the same games
 with symbols and `AVP2SRC_DEBUG` logging, with `AVP2SRC_MODERN` (the modern
-build: [`docs/MODERN.md`](docs/MODERN.md), nothing in it done yet), or
+build: [`docs/MODERN.md`](docs/MODERN.md); so far its open middleware,
+OpenMiles and a Bink player on FFmpeg in place of RAD's), or
 both, into `out/avp2-legacy-debug/`, `out/avp2-modern-release/` and
 `out/avp2-modern-debug/` (`build/variant.sh`, in a copy of the tree under
 `out/build-<variant>/`); none of them is ever scored.
@@ -132,8 +135,9 @@ where each file came from); from the retail games come only their data --
 the `.rez` archives, with the retail game DLLs inside them zeroed, the
 movies, the loose files the games read (`console.PCX`, `childmodel.map`,
 Primal Hunt's `FontData.fnt`), the readmes, the shipped `autoexec.cfg` and
-default profile -- and the middleware we have no source for: Bink, Smacker
-and Miles. Each starts as its launcher starts it, `lithtech.exe -cmdfile
+default profile -- and, in the legacy builds, the middleware we have no
+source for: Bink, Smacker and Miles (the modern builds have open
+replacements, built from `ext/` by `build/ext.sh`). Each starts as its launcher starts it, `lithtech.exe -cmdfile
 avp2cmds.txt` (`build/avp2cmds.sh`: the rez stack, the game DLLs built
 here last).
 

@@ -1,0 +1,17 @@
+; binkw32.c's entry points under the decorated names lithtech.exe asks
+; GetProcAddress for (src/engine/lithtech/binkvideo.cpp).
+LIBRARY binkw32.dll
+EXPORTS
+	_BinkOpen@8 = BinkOpen@8
+	_BinkClose@4 = BinkClose@4
+	_BinkWait@4 = BinkWait@4
+	_BinkDoFrame@4 = BinkDoFrame@4
+	_BinkNextFrame@4 = BinkNextFrame@4
+	_BinkCopyToBuffer@28 = BinkCopyToBuffer@28
+	_BinkSetSoundTrack@4 = BinkSetSoundTrack@4
+	_BinkSetSoundSystem@8 = BinkSetSoundSystem@8
+	_BinkOpenMiles@4 = BinkOpenMiles@4
+	_BinkOpenDirectSound@4 = BinkOpenDirectSound@4
+	_BinkIsSoftwareCursor@8 = BinkIsSoftwareCursor@8
+	_BinkCheckCursor@20 = BinkCheckCursor@20
+	_BinkRestoreCursor@4 = BinkRestoreCursor@4

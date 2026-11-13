@@ -1,0 +1,48 @@
+# The intro movies (Movies/*.bik: Fox, Sierra, Monolith/Third Law, LithTech),
+# which the engine plays before the main menu when +DisableMovies is not
+# given -- the modern build's avp2cmds.txt (build/avp2cmds.sh open), whose
+# binkw32.dll is our Bink player (docs/MODERN.md, M-X1). A shot every few
+# seconds through them, and the menu after; nothing pressed, so none is
+# skipped. Needs PLAYTEST_MOVIES=1 (build/playtest.sh: the harness otherwise
+# adds +DisableMovies 1); with PLAYTEST_AUDIO set the run also records
+# their sound and the menu's.
+#   PLAYTEST_MOVIES=1 build/playtest.sh out/avp2-modern-release avp2 - 5
+window 120
+wait 1
+shot movie-01s
+wait 2
+shot movie-03s
+wait 3
+shot movie-06s
+wait 3
+shot movie-09s
+wait 3
+shot movie-12s
+wait 3
+shot movie-15s
+wait 3
+shot movie-18s
+wait 3
+shot movie-21s
+wait 3
+shot movie-24s
+wait 3
+shot movie-27s
+wait 3
+shot movie-30s
+wait 5
+shot movie-35s
+wait 5
+shot movie-40s
+wait 5
+shot movie-45s
+wait 5
+shot movie-50s
+wait 5
+shot movie-55s
+wait 5
+shot movie-60s
+wait 10
+shot movie-70s
+wait 15
+shot menu

@@ -59,8 +59,12 @@ for g in "${GAMES[@]}"; do
     cp "$OUT/$g/Default.prf.retail" "$PARENT/$STAGE/$g/Profiles/Default.prf"
     FRESH+=("$STAGE/$g/autoexec.cfg" "$STAGE/$g/Profiles/Default.prf")
 done
-bash "$HERE/avp2cmds.sh" avp2 > "$PARENT/$STAGE/AVP2/avp2cmds.txt"
-bash "$HERE/avp2cmds.sh" ph > "$PARENT/$STAGE/PrimalHunt/avp2cmds.txt"
+# (a modern build's, with its open middleware -- MANIFEST.txt's EXT rows --
+# plays the movies: build/avp2cmds.sh)
+MW=retail
+grep -q '^EXT ' "$OUT/AVP2/MANIFEST.txt" && MW=open
+bash "$HERE/avp2cmds.sh" avp2 $MW > "$PARENT/$STAGE/AVP2/avp2cmds.txt"
+bash "$HERE/avp2cmds.sh" ph $MW > "$PARENT/$STAGE/PrimalHunt/avp2cmds.txt"
 CMDS=("$STAGE/AVP2/avp2cmds.txt" "$STAGE/PrimalHunt/avp2cmds.txt")
 
 # what neither archive holds

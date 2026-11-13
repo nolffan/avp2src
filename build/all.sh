@@ -42,9 +42,13 @@
 #   2. third-party runtime  Bink (binkw32.dll), Smacker (Smackw32.dll) and
 #                         Miles (mss32.dll, its MP3 decoder MP3DEC.ASI/.AS6),
 #                         from the retail games: licensed middleware with no
-#                         source, which the engines import or load. (Open
-#                         replacements are the modern build's, still to
-#                         come: docs/MODERN.md.)
+#                         source, which the engines import or load. The
+#                         modern build (AVP2SRC_MODERN) takes none of them:
+#                         OpenMiles' mss32.dll and our Bink player's
+#                         binkw32.dll instead, built from ext/ by
+#                         build/ext.sh (docs/MODERN.md, M-X1..M-X3); no
+#                         Smacker (neither engine plays one) and no MP3
+#                         decoder (OpenMiles decodes MP3 itself).
 #   3. compile            every binary, by build/build.mk, all at once (one
 #                         job per CPU; AVP2SRC_JOBS=<n> to change it) and only
 #                         what changed since the last build.
@@ -143,14 +147,29 @@ game_data() {
     [ -f "$g/autoexec.cfg" ] || cp "$g/autoexec.cfg.retail" "$g/autoexec.cfg"
     mkdir -p "$g/Save" "$g/custom" "$g/Profiles"
     [ -f "$g/Profiles/Default.prf" ] || cp "$g/Default.prf.retail" "$g/Profiles/Default.prf"
-    step "2. THIRD-PARTY RUNTIME ($name): Bink, Smacker and Miles from $r"
-    RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py thirdparty "$r" "$g"
+    if [ -n "$MODERN" ]; then
+        step "2. open runtime ($name): OpenMiles and our Bink player on FFmpeg (build/ext.sh)"
+        # what an earlier build took from the retail game: the open runtime
+        # replaces binkw32.dll and mss32.dll, and the rest is not needed
+        # (its MANIFEST.txt rows go at step 4, with the files)
+        local f
+        for f in "$g"/*; do
+            case "$(basename "$f" | tr '[:upper:]' '[:lower:]')" in
+                smackw32.dll|mp3dec.asi|mp3dec.as6) rm -f "$f"; echo "   (removed $(basename "$f"))" ;;
+            esac
+        done
+        RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py openruntime "${AVP2_EXT_OUT:-out/ext}" "$g"
+    else
+        step "2. THIRD-PARTY RUNTIME ($name): Bink, Smacker and Miles from $r"
+        RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py thirdparty "$r" "$g"
+    fi
 }
+[ -z "$MODERN" ] || { step "0. open middleware: build/ext.sh (OpenMiles, FFmpeg, our Bink player)"; bash build/ext.sh; }
 mkdir -p "$OUT/AVP2" "$OUT/PrimalHunt"
 game_data "AvP2 1.0.9.6" AVP2 "$RETAIL_AVP2" build/retail_avp2.py "${LOOSE_AVP2[@]}"
-bash build/avp2cmds.sh avp2 > "$OUT/AVP2/avp2cmds.txt"
+bash build/avp2cmds.sh avp2 ${MODERN:+open} > "$OUT/AVP2/avp2cmds.txt"
 game_data "Primal Hunt" PrimalHunt "$RETAIL_PH" build/retail.py "${LOOSE_PH[@]}"
-bash build/avp2cmds.sh ph > "$OUT/PrimalHunt/avp2cmds.txt"
+bash build/avp2cmds.sh ph ${MODERN:+open} > "$OUT/PrimalHunt/avp2cmds.txt"
 # linux-run-avp2.sh, linux-run-ph.sh: start AvP2 or Primal Hunt with the
 # host's Wine, both from one template (build/game-scripts/linux-run.sh);
 # windows-run.bat: either game straight from its avp2cmds.txt (usage in their

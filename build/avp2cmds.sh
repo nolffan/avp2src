@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # A game directory's avp2cmds.txt, as a fresh build writes it:
 #
-#   build/avp2cmds.sh avp2     AVP2/avp2cmds.txt: Aliens versus Predator 2
-#   build/avp2cmds.sh ph       PrimalHunt/avp2cmds.txt: Primal Hunt
+#   build/avp2cmds.sh avp2 [retail|open]   AVP2/avp2cmds.txt: Aliens versus Predator 2
+#   build/avp2cmds.sh ph [retail|open]     PrimalHunt/avp2cmds.txt: Primal Hunt
 #
 # Both retail launchers (AVP2.exe, PrimalHunt.exe) write the engine's
 # command line to avp2cmds.txt and run "lithtech.exe -cmdfile avp2cmds.txt"
@@ -26,14 +26,18 @@
 #     " -rez dialogue.rez", PatchRez, " -rez custom") after AvP2's.
 #
 # +DisableMovies skips the intro logos (RAD's Bink under Wine: as
-# nolfsrc's). The display is the harness's (linux-run-*.sh, playtest.sh).
+# nolfsrc's) -- in the legacy builds ("retail", the default) only: the
+# modern build's own Bink player ("open", its open middleware) plays them.
+# The display is the harness's (linux-run-*.sh, playtest.sh).
 set -e
+MOVIES=" +DisableMovies 1"
+[ "${2:-retail}" = open ] && MOVIES=""
 case "${1:-}" in
 avp2)
-    printf -- '-rez AVP2.REZ -rez SOUNDS.REZ -rez ALIEN.REZ -rez MARINE.REZ -rez PREDATOR.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez custom -rez AVP2P1.REZ +DisableMovies 1\r\n' ;;
+    printf -- '-rez AVP2.REZ -rez SOUNDS.REZ -rez ALIEN.REZ -rez MARINE.REZ -rez PREDATOR.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez custom -rez AVP2P1.REZ%s\r\n' "$MOVIES" ;;
 ph)
     A='..\AVP2'
-    printf -- '-rez %s\\AVP2.REZ -rez %s\\SOUNDS.REZ -rez %s\\ALIEN.REZ -rez %s\\MARINE.REZ -rez %s\\PREDATOR.REZ -rez %s\\MULTI.REZ -rez AVP2P.REZ -rez AVP2P1.REZ -rez AVP2X.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez DIALOGUE.REZ -rez custom +DisableMovies 1\r\n' \
-        "$A" "$A" "$A" "$A" "$A" "$A" ;;
+    printf -- '-rez %s\\AVP2.REZ -rez %s\\SOUNDS.REZ -rez %s\\ALIEN.REZ -rez %s\\MARINE.REZ -rez %s\\PREDATOR.REZ -rez %s\\MULTI.REZ -rez AVP2P.REZ -rez AVP2P1.REZ -rez AVP2X.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez DIALOGUE.REZ -rez custom%s\r\n' \
+        "$A" "$A" "$A" "$A" "$A" "$A" "$MOVIES" ;;
 *)  echo "usage: build/avp2cmds.sh avp2|ph" >&2; exit 2 ;;
 esac

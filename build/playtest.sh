@@ -17,7 +17,16 @@
 # $PLAYTEST_NAME or the game directory's name. Primal Hunt reads AvP2's
 # archives from ../AVP2/: beside its run directory that is the game
 # directory's AVP2/ (a link), or AvP2's own run directory if it was tested
-# first. The adapted copy of ext/tools/playtest.sh is written to
+# first. Two settings of its own: PLAYTEST_MOVIES=1 plays the intro movies
+# (ext/tools/playtest.sh otherwise always adds +DisableMovies 1;
+# build/playtest-movies.txt), and PLAYTEST_AUDIO=<prefix> (an absolute path)
+# records what the game plays where ext/tools/playtest.sh plays it into
+# ALSA's null device (no sound card: the container): ALSA's file plugin in
+# front of the null device writes each stream, raw, to
+# <prefix>-<rate>-<channels>-<format>.raw (streams of one format appended to
+# one file). The null device takes data faster than it would play, so the
+# recording holds what was played, not when. The adapted copy of
+# ext/tools/playtest.sh is written to
 # out/play/playtest-avp2.sh each run; ext/tools/ is not changed.
 set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -44,5 +53,7 @@ sed -e 's/nolf2cmds\.txt/avp2cmds.txt/g' \
     -e 's#Worlds\\\\RetailSinglePlayer\\\\C01S01#-#' \
     -e 's#^source .*/layout\.sh"$#REPO="'"$REPO"'"#' \
     -e "s/unhandled exception|page fault/unhandled exception|unhandled illegal instruction|unhandled page fault|page fault/g" \
+    -e 's/ +DisableMovies 1\${PLAYTEST_ARGS/$([ -n "${PLAYTEST_MOVIES:-}" ] || printf " +DisableMovies 1")${PLAYTEST_ARGS/' \
+    -e '/pcm\.!default { type null }/a\    [ -z "${PLAYTEST_AUDIO:-}" ] || printf "</usr/share/alsa/alsa.conf>\\npcm.!default { type file slave.pcm null file \\"%s-%%r-%%c-%%f.raw\\" format raw truncate false }\\n" "$PLAYTEST_AUDIO" > asound.conf' \
     "$REPO/ext/tools/playtest.sh" > "$OUT"
 PLAYTEST_NAME="$NAME/$SUB" exec bash "$OUT" "$GAME/$SUB" "$@"
