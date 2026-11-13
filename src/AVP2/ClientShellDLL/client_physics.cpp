@@ -157,6 +157,13 @@ LTBOOL BounceMovingObject(PhysicsState *pUserState, MovingObject *pObject,
 		// (c_fMinPixels*c_fMinPixels/fDelta is the maximum magnitude).
 
 		fDelta = fDelta > 0.5f ? 0.1f : (fDelta < 0.001f ? 0.001f : fDelta);
+#ifdef AVP2SRC_MODERN
+		// M-14: the speed under which a bounce comes to rest is 15 units a
+		// second times the square root of the frame rate: 116 at 60 frames
+		// a second, 232 at 240, where debris and shells stopped bouncing
+		// sooner.  The 60 fps frame's, at any rate.
+		fDelta = 1.0f / 60.0f;
+#endif
 
         LTFLOAT fMaxMag = ((c_fMinPixels*c_fMinPixels)/fDelta);
 

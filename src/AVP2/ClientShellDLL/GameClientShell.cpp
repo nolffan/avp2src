@@ -69,6 +69,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/timeb.h>
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m10_framelimit.h"	// M-13: the frame-rate limit
+#endif
 
 static _timeb g_StartTimeB;
 static _timeb g_EndTimeB;
@@ -2619,11 +2622,18 @@ void CGameClientShell::PostUpdate()
 
 	if (m_ePlayerState == PS_UNKNOWN && m_bInWorld)
 	{
+#ifdef AVP2SRC_MODERN
+		M10_EndFrame(LTFALSE);	// M-13 (nothing drawn: still a frame)
+#endif
 		return;
 	}
 	
 	
 	m_InterfaceMgr.PostUpdate();
+#ifdef AVP2SRC_MODERN
+	// M-13: the frame-rate limit, once the frame is drawn
+	M10_EndFrame(m_InterfaceMgr.GetGameState() == GS_LOADINGLEVEL);
+#endif
 }
 
 

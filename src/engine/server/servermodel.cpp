@@ -12,7 +12,7 @@
 #include "de_error.h"
 #include <stdio.h>
 #ifdef AVP2SRC_MODERN
-#include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
+#include "..\..\modern\engine\p1_frametime.h"   // M-11
 #endif
 
 // sm_SetObjectChangeFlag now lives in servermodel.h.  It is not just this
@@ -237,7 +237,7 @@ inline void sm_UpdateObjectTrackers(CServerMgr* pMgr, LTObject* pObject)
 	if (pObject->m_ObjectType == OT_MODEL)
 	{
 #ifdef AVP2SRC_MODERN
-		// M-P1-23: the tick's fraction of a millisecond carried to the
+		// M-11: the tick's fraction of a millisecond carried to the
 		// next tick (once per tick, whichever object asks first)
 		static P1TickMs s_P1Ms;
 		nMS = (uint32)P1_TickMs(&s_P1Ms, pMgr->m_FrameTime, pMgr->m_Time);

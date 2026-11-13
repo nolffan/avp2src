@@ -29,6 +29,9 @@
 #include "ClientButeMgr.h"  // For debug keys.
 #include "MultiplayerClientMgr.h"
 #include "FolderEscape.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\engine\p1_frametime.h"	// M-12: whole milliseconds
+#endif
 #ifdef PRIMAL_HUNT
 #include "TurretInfoMgr.h"
 
@@ -5068,6 +5071,16 @@ void CInterfaceMgr::UpdateModelAnimations()
 	LTFLOAT fCurTime = CWinUtil::GetTime();
 	LTFLOAT fCurFrameDelta = fCurTime - LastFrameTime;
 	LastFrameTime = fCurTime;
+#ifdef AVP2SRC_MODERN
+	// M-12: the trackers advance by whole milliseconds and drop the rest
+	// (CommonModelLT::UpdateMainTracker); with M-12's clock a frame is a
+	// few milliseconds and its fraction a large share of it, so the
+	// fraction is carried to the next frame (as M-11 does in the engine)
+	// and each frame gets its whole milliseconds, plus a half against the
+	// float's rounding on the way back.
+	static float s_fM12Carry = 0.0f;
+	fCurFrameDelta = ((float)P1_FrameMs(fCurFrameDelta, &s_fM12Carry) + 0.5f) / 1000.0f;
+#endif
 
 	for (uint32 i = 0; i < m_InterfaceSFX.GetSize(); i++)
 	{

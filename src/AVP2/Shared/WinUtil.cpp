@@ -144,6 +144,27 @@ void CWinUtil::DebugBreak()
 
 float CWinUtil::GetTime()
 {
+#ifdef AVP2SRC_MODERN
+	// M-12: the performance counter, not GetTickCount's 10-16 ms steps,
+	// which at a high frame rate made most frames last no time and a few
+	// a whole step (the menus' and the loading screen's animations).
+	// Seconds since the first call, so a float keeps its precision.
+	static LARGE_INTEGER s_liFreq, s_liStart;
+	static BOOL s_bInit = FALSE;
+	LARGE_INTEGER liNow;
+
+	if (!s_bInit)
+	{
+		s_bInit = TRUE;
+		if (!QueryPerformanceFrequency(&s_liFreq) || s_liFreq.QuadPart <= 0)
+			s_liFreq.QuadPart = 0;
+		else
+			QueryPerformanceCounter(&s_liStart);
+	}
+
+	if (s_liFreq.QuadPart && QueryPerformanceCounter(&liNow))
+		return (float)((double)(liNow.QuadPart - s_liStart.QuadPart) / (double)s_liFreq.QuadPart);
+#endif
 	return (float)GetTickCount() / 1000.0f;
 }
 

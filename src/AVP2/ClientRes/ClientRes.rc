@@ -4722,6 +4722,16 @@ BEGIN
     29801                   "The combination of class and team restrictions you have chosen disables all possible players.  Please correct these settings before starting a server."
 END
 #endif // PRIMAL_HUNT
+#ifdef AVP2SRC_MODERN
+// The modern build's strings (docs/MODERN.md: M-13, the frame-rate limit)
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_M13_FRAMERATE       "Frame rate limit"
+    IDS_HELP_M13_FRAMERATE  "The most frames drawn a second. Choose your monitor's refresh rate for the smoothest picture."
+    IDS_M13_FRAMERATE_FPS   "%1!d!"
+    IDS_M13_FRAMERATE_NONE  "None"
+END
+#endif
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////

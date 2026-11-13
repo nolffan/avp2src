@@ -19,6 +19,19 @@
 	#include <math.h>
 	#define _isnan isnan
 #endif
+#ifdef AVP2SRC_MODERN
+#include <math.h>	// M-14: pow
+
+// M-14: a factor applied once a frame, as it was tuned at 60 frames a
+// second, turned into the factor for a frame of fFrameTime seconds (so
+// that the same time sees the same total whatever the frame rate).
+static LTFLOAT M14_PerFrame60(LTFLOAT fFactor60, LTFLOAT fFrameTime)
+{
+	if (fFactor60 <= 0.0f)
+		return 0.0f;
+	return (LTFLOAT)pow(fFactor60, fFrameTime * 60.0f);
+}
+#endif
 
 // ----------------------------------------------------------------------- //
 
@@ -675,8 +688,21 @@ void CharacterMovement::Update(LTFLOAT fDeltaTime)
 //		m_Vars.m_vVelocity.Mag() );
 
 	// If the velocity is rather small, we should just set it to zero
+#ifdef AVP2SRC_MODERN
+	// M-14: below 3 units a second.  Movement starts from rest by a
+	// frame's acceleration, so a short frame starts it below that and the
+	// next frame threw it away: what started at 60 frames a second could
+	// stay put faster.  The speed is the 60 fps frame's share of it, the
+	// same acceleration passing at any rate.
+	{
+		LTFLOAT fM14Min = 3.0f * LTMIN(fDeltaTime * 60.0f, 1.0f);
+		if(m_Vars.m_vVelocity.MagSqr() < fM14Min * fM14Min)
+			SetVelocity(LTVector(0.0f, 0.0f, 0.0f));
+	}
+#else
 	if(m_Vars.m_vVelocity.MagSqr() < 9.0f)
 		SetVelocity(LTVector(0.0f, 0.0f, 0.0f));
+#endif
 
 	// Get the time that has elapsed within the last frame update
 	m_Vars.m_fFrameTime = fDeltaTime;
@@ -802,7 +828,15 @@ void CharacterMovement::Update(LTFLOAT fDeltaTime)
 	m_pPhysics->UpdateMovement(&miInfo);
 
 	// If the movement offset is greater than a very small amount... move the object
+#ifdef AVP2SRC_MODERN
+	// M-14: a frame's move under 0.1 units was dropped: 6 units a second
+	// at 60 frames a second, 24 at 240 (a slow slide, the start of a
+	// step); the 60 fps frame's share of it, at any rate
+	LTFLOAT fM14MinMove = 0.1f * LTMIN(m_Vars.m_fFrameTime * 60.0f, 1.0f);
+	if((miInfo.m_Offset.MagSqr() > fM14MinMove * fM14MinMove) || (m_Vars.m_dwFlags2 & FLAG2_ORIENTMOVEMENT))
+#else
 	if((miInfo.m_Offset.MagSqr() > 0.01f) || (m_Vars.m_dwFlags2 & FLAG2_ORIENTMOVEMENT))
+#endif
 	{
 		LTVector vNewPos = m_Vars.m_vPos + miInfo.m_Offset;
 		SetPos(vNewPos, 0);
@@ -4099,7 +4133,12 @@ void CharacterMovementState_WallWalking(CharacterMovement *pMovement)
 	{
 		// Dampen the velocity so we don't 'skid'
 		LTVector vVel = cvVars->m_vVelocity;
+#ifdef AVP2SRC_MODERN
+		// M-14: once a frame; at 60 frames a second what it was
+		vVel *= M14_PerFrame60(0.5f * (1.0f - 1.0f / 60.0f), cvVars->m_fFrameTime > 1.0f ? 1.0f : cvVars->m_fFrameTime);
+#else
 		vVel *= (0.5f * (1.0f - (cvVars->m_fFrameTime > 1.0f ? 1.0f : cvVars->m_fFrameTime)));
+#endif
 		pMovement->SetVelocity(vVel);
 	}
 
@@ -4214,7 +4253,12 @@ void CharacterMovementState_Climbing(CharacterMovement *pMovement)
 	{
 		// Dampen the velocity so we don't 'skid' across the ladder
 		LTVector vVel = cvVars->m_vVelocity;
+#ifdef AVP2SRC_MODERN
+		// M-14: as the crouch's, above
+		vVel *= M14_PerFrame60(0.75f * (1.0f - 1.0f / 60.0f), cvVars->m_fFrameTime > 1.0f ? 1.0f : cvVars->m_fFrameTime);
+#else
 		vVel *= (0.75f * (1.0f - (cvVars->m_fFrameTime > 1.0f ? 1.0f : cvVars->m_fFrameTime)));
+#endif
 		pMovement->SetVelocity(vVel);
 	}
 

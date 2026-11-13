@@ -852,7 +852,7 @@ extern "C" __declspec(dllimport) unsigned long __stdcall timeGetTime(void);
 static uint32 g_StartTime = timeGetTime();
 
 #ifdef AVP2SRC_MODERN
-// M-P1-23: the clock from the performance counter.  timeGetTime counts
+// M-12: the clock from the performance counter.  timeGetTime counts
 // whole milliseconds, so at 300 frames a second (3.3 ms) frames measured 3
 // or 4 ms in turn, and every frame-time user jittered with it.
 extern "C" __declspec(dllimport) int __stdcall QueryPerformanceCounter(__int64* pCount);

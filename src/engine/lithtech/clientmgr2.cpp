@@ -63,7 +63,7 @@
 #include "wonptrq503.h"        // the WON AuthContext pointers below
 
 #ifdef AVP2SRC_MODERN
-#include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
+#include "..\..\modern\engine\p1_frametime.h"   // M-11
 #endif
 
 
@@ -3466,7 +3466,7 @@ void cs_UpdateAnimations(CClientMgrView* pMgr)
 	int msDelta;
 
 #ifdef AVP2SRC_MODERN
-	// M-P1-23: the fraction of a millisecond carried to the next frame
+	// M-11: the fraction of a millisecond carried to the next frame
 	static float s_fP1Carry;
 	msDelta = (int)P1_FrameMs(pMgr->m_fFrameTime, &s_fP1Carry);
 #else

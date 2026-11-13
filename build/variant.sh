@@ -21,7 +21,7 @@
 #            every binary go beside it. src/avp2src/avp2src_debug.h's
 #            AVP2SRC_LOG lines go to avp2src.log in the game's directory.
 #   modern   AVP2SRC_MODERN: the modern build's fixes and features
-#            (docs/MODERN.md; none yet). Compile + /D AVP2SRC_MODERN,
+#            (docs/MODERN.md). Compile + /D AVP2SRC_MODERN,
 #            resource scripts + /d AVP2SRC_MODERN. Its middleware is still
 #            the retail one (the open replacements are to come).
 #   modern-debug   both.

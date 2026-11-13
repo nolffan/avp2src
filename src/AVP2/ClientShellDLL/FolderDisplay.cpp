@@ -10,6 +10,9 @@
 #include "GameClientShell.h"
 #include "GameSettings.h"
 #include "PerformanceMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m10_timing.h"	// M-13: the frame-rate limit
+#endif
 extern CGameClientShell* g_pGameClientShell;
 
 namespace
@@ -26,6 +29,12 @@ namespace
 	LTBOOL bInitTex;
 	LTBOOL bInitLM;
 	int kNumCfg;
+#ifdef AVP2SRC_MODERN
+	// M-13: the frame-rate limit's choice (g_nM10FramerateChoices), and
+	// the one it was when the folder opened
+	int nM13Framerate = 0;
+	int nM13InitFramerate = 0;
+#endif
 
 }
 
@@ -112,6 +121,30 @@ LTBOOL CFolderDisplay::Build()
 
 	// Setup the resolution control based on the current renderer
 	SetupResolutionCtrl();
+#ifdef AVP2SRC_MODERN
+	// M-13: the frame-rate limit, under the resolution
+	{
+		CCycleCtrl* pFramerate = AddCycleItem(IDS_M13_FRAMERATE, IDS_HELP_M13_FRAMERATE, kGap-25, 25, &nM13Framerate, LTFALSE);
+		for (int i = 0; i < (int)M10_NUM_FRAMERATE_CHOICES; i++)
+		{
+			if (g_nM10FramerateChoices[i] > 0)
+			{
+				HSTRING hText = g_pLTClient->FormatString(IDS_M13_FRAMERATE_FPS, g_nM10FramerateChoices[i]);
+				pFramerate->AddString(hText);
+				g_pLTClient->FreeString(hText);
+			}
+			else
+				pFramerate->AddString(IDS_M13_FRAMERATE_NONE);
+		}
+
+		// The page holds two lines (the layout's), above the note on
+		// performance: a line more for this one, and the note a line
+		// lower, else Performance went to a second page.
+		int nM13Line = pFramerate->GetHeight() + m_nItemSpacing;
+		m_PageRect.bottom += nM13Line;
+		ptAdditionalPerformance.y += nM13Line;
+	}
+#endif
 
 
 	CStaticTextCtrl *pStatic = CreateStaticTextItem(IDS_ADDITIONAL_PERFORMANCE, LTNULL, LTNULL, kAdditionalWidth, 100, LTTRUE, GetHelpFont());
@@ -521,6 +554,9 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg();
 		if (m_nOverall < 0)
 			m_nOverall = kNumCfg;
+#ifdef AVP2SRC_MODERN
+		nM13Framerate = nM13InitFramerate = M10_FramerateChoice(M10_GetFramerateLimit());	// M-13
+#endif
 
         UpdateData(LTFALSE);
 
@@ -528,6 +564,12 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 	else
 	{
 		UpdateData();
+#ifdef AVP2SRC_MODERN
+		// M-13: a limit set elsewhere (the console, autoexec.cfg) that is
+		// not one of the choices stays, unless another is chosen
+		if (nM13Framerate != nM13InitFramerate)
+			M10_SetFramerateLimit(g_nM10FramerateChoices[nM13Framerate]);
+#endif
 
 		g_pPerformanceMgr->SetPerformanceCfg(m_nOverall);
 

@@ -1808,9 +1808,10 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 	fTime += m_Unknown6b8;
 	m_Unknown6d4 = fTime - m_Unknown6d8;
 #ifdef AVP2SRC_MODERN
-	// M-P1-23: a game tick takes at least 10 ms (the clamp below), and the
-	// client calls this every frame: above 100 frames a second the world
-	// ran faster than real time (3x at 300).  So a tick runs only once
+	// M-10.  RETAIL BUG (RETAIL_BUGS.md): a game tick takes at least 10 ms
+	// (the clamp below), and the client calls this every frame: above 100
+	// frames a second the world ran faster than real time (measured: 2.37x
+	// at 237 with the retail AvP2 binaries, 2.97x at 297).  So a tick runs only once
 	// 10 ms have passed since the last one, measured from that tick; the
 	// packets and the network still go every call.  Time that runs
 	// backwards -- a new world re-bases it (m_Unknown6b8), leaving the last
@@ -1845,7 +1846,7 @@ LTBOOL CServerMgr::Update(long flags, float fTime)
 		if (!(flags & 1) && !(m_ServerFlags & 1))
 		{
 #ifdef AVP2SRC_MODERN
-		  // M-P1-23: see above
+		  // M-10: see above
 		  if (bP1Tick)
 		  {
 #endif

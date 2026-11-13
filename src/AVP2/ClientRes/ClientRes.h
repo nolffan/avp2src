@@ -3310,6 +3310,13 @@
 #define IDS_DIALOGUE_29502              29502
 #define IDS_DIALOGUE_29505              29505
 
+#ifdef AVP2SRC_MODERN
+// The modern build's strings (docs/MODERN.md, M-13)
+#define IDS_M13_FRAMERATE               31000
+#define IDS_HELP_M13_FRAMERATE          31001
+#define IDS_M13_FRAMERATE_FPS           31002
+#define IDS_M13_FRAMERATE_NONE          31003
+#endif
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

@@ -30,7 +30,10 @@ AvP2 runs on the same engine generation: check each against the retail
 binary before listing it. Those AvP2 does not have go at the end, so nobody
 looks again.
 
-**Fixed so far** (in the modern build): none yet.
+**Fixed so far** (in the modern build): the world running fast above 100
+frames a second (M-10). The entries below that say "Fixed in the modern
+build" without an id are nolfsrc's engine fixes, imported with its code
+and not yet checked here (MODERN.md, Where it stands).
 
 ## Format
 
@@ -44,6 +47,24 @@ Fixed in the modern build: <file>, MODERN.md <id>. (Or: not fixed, because ...)
 ```
 
 ## The bugs
+
+### Above 100 frames a second the world runs fast
+
+lithtech.exe and server.dll of both games, AvP2 1.0.9.6 and Primal Hunt
+(`CServerMgr::Update`, src/engine/server/smgr.cpp; Primal Hunt
+lithtech.exe 0x0048b5d0). The client calls the server's update once a
+frame, and every call runs a game tick of the time since the last call
+clamped to 0.01..0.2 s: a frame shorter than 10 ms still moves the world
+10 ms on. So above 100 frames a second the game runs faster than real
+time, (frame rate / 100) times -- AI, physics,
+projectiles, timers, everything the server runs. Measured with the retail
+AvP2 1.0.9.6 binaries (`ShowGameTime` against the wall clock, the first
+Marine mission): 1.44 times real time at 139 frames a second, 2.37 at 237.
+Retail machines rarely reached 100 then; today's do easily. (A dedicated
+server limits its own loop, and is not affected.)
+
+Fixed in the modern build: smgr.cpp, a tick runs only once 10 ms have
+passed since the last; MODERN.md M-10.
 
 ### An unlisted Winsock error comes back as a number, not a string
 

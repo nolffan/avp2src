@@ -398,7 +398,13 @@ LTBOOL CFireFX::Update()
 		}
 	}
 
+#ifdef AVP2SRC_MODERN
+	// M-14: one chance in ten a 60th of a second, not each frame (four
+	// times the sparks at 240 frames a second)
+	if (pFire->bCreateSparks && GetRandom(0.0f, 1.0f) < 0.1f * g_pGameClientShell->GetFrameTime() * 60.0f)
+#else
 	if (pFire->bCreateSparks && GetRandom(1, 10) == 1)
+#endif
 	{
 		CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
         if (!psfxMgr) return LTFALSE;

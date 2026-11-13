@@ -26,7 +26,7 @@
 #include "ltbasedefs.h"
 #include "ltlink.h"
 #ifdef AVP2SRC_MODERN
-#include "..\..\modern\engine\p1_frametime.h"   // M-P1-23
+#include "..\..\modern\engine\p1_frametime.h"   // M-11
 #endif
 
 
@@ -341,7 +341,7 @@ void cs_UpdateSpritesQ414(CClientMgrQ414* pMgr)
 	if (pMgr->m_pConnection)
 	{
 #ifdef AVP2SRC_MODERN
-		// M-P1-23: the fraction of a millisecond carried to the next frame
+		// M-11: the fraction of a millisecond carried to the next frame
 		static float s_fP1Carry;
 		msDelta = (uint32)P1_FrameMs(pMgr->m_pConnection->m_fFrameTime, &s_fP1Carry);
 #else
@@ -459,7 +459,7 @@ void cs_UpdateParticleSystemsQ414(CClientMgrQ414* pMgr)
 	int               msDelta;
 
 #ifdef AVP2SRC_MODERN
-	// M-P1-23: the fraction of a millisecond carried to the next frame
+	// M-11: the fraction of a millisecond carried to the next frame
 	static float s_fP1Carry;
 	msDelta = (int)P1_FrameMs(pMgr->m_fFrameTime, &s_fP1Carry);
 #else
@@ -533,7 +533,7 @@ void cs_UpdateSpriteObjectsQ414(CClientMgrQ414* pMgr)
 	uint32             msDelta;
 
 #ifdef AVP2SRC_MODERN
-	// M-P1-23: the fraction of a millisecond carried to the next frame
+	// M-11: the fraction of a millisecond carried to the next frame
 	static float s_fP1Carry;
 	msDelta = (uint32)P1_FrameMs(pMgr->m_fFrameTime, &s_fP1Carry);
 #else
@@ -656,7 +656,7 @@ void cs_UpdateModelSkinsQ414(CClientMgrQ414* pMgr)
 	uint32             msDelta;
 
 #ifdef AVP2SRC_MODERN
-	// M-P1-23: the fraction of a millisecond carried to the next frame
+	// M-11: the fraction of a millisecond carried to the next frame
 	static float s_fP1Carry;
 	msDelta = (uint32)P1_FrameMs(pMgr->m_fFrameTime, &s_fP1Carry);
 #else
