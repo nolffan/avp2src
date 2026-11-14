@@ -33,21 +33,6 @@ Compiling back to the retail bytes means compiling the retail game's bugs as
 well; their fixes go behind `AVP2SRC_MODERN`, into the modern build only, so
 the legacy build keeps matching the retail one.
 
-## Where it stands
-
-Started. Both retail games are installed from their discs (and AvP2's
-patch) by `ext/rez/`, the compilers are in `ext/toolchains/` (`msvc-6.00-8168`,
-`-8966`, `-9044`), the scoreboard scores every retail binary against our
-build, and Monolith's source release is in `src/` (`src/AVP2`, `src/LT2`;
-`docs/LICENSE_NOTES.md` says what is whose). `make` builds AvP2's game
-DLLs, their resources and the dedicated server from the release as it came
-(with its prebuilt libraries, not counted as ours): already 89 % of
-`Object.lto` and 62 % of `CShell.dll` are byte-identical to retail. The
-same source built as Primal Hunt (`PRIMAL_HUNT`, VC6 SP5) is already 47 %
-of its server objects and 26 % of its client, before any of Third Law's
-changes are put back. The engine and the launchers are to come.
-`docs/PLAN.md` is the plan, package by package.
-
 ## Progress
 
 How much of each binary compiles to exactly the bytes of the retail game
