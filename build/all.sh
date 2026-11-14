@@ -192,7 +192,7 @@ bash build/avp2cmds.sh ph ${MODERN:+open} > "$OUT/PrimalHunt/avp2cmds.txt"
 # headers). On Windows the launchers are the way in.
 runscript() {   # <script> <game directory> <title> <launcher>
     sed -e "s|@SCRIPT@|$1|g" -e "s|@GAME@|$2|g" -e "s|@TITLE@|$3|g" \
-        -e "s|@LAUNCHER@|$4|g" build/game-scripts/linux-run.sh > "$OUT/$1"
+        -e "s|@LAUNCHER@|$4|g" -e "s|@MODERN@|${MODERN:-0}|g" build/game-scripts/linux-run.sh > "$OUT/$1"
     chmod +x "$OUT/$1"
 }
 rm -f "$OUT/linux-run.sh"     # (one script for both, before linux-run-avp2/-ph.sh)

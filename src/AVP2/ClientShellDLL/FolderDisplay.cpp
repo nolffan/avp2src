@@ -13,6 +13,7 @@
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m10_timing.h"	// M-13: the frame-rate limit
 #include "..\..\modern\cshell\m1_widescreen.h"	// M-2, M-3: the cinematics, the field of view
+#include "..\..\modern\cshell\m9_window.h"		// M-9: the window modes
 #endif
 extern CGameClientShell* g_pGameClientShell;
 
@@ -48,6 +49,11 @@ namespace
 	int nM15InitMenu = 0;
 	int nM16Hud = 0;
 	int nM16InitHud = 0;
+	// M-9: the window mode (M9_WINDOW_*), what it was when the folder
+	// opened, and the mode to be set again although it is the same size
+	int nM9WindowMode = 0;
+	int nM9InitWindowMode = 0;
+	LTBOOL bM9ForceModeSet = LTFALSE;
 #endif
 
 }
@@ -129,6 +135,19 @@ LTBOOL CFolderDisplay::Build()
 
 	// Build the array of renderers
 	GetRendererData();
+#ifdef AVP2SRC_MODERN
+	// M-9: the window mode, above the resolution (a line more, as M-13's
+	// below)
+	int nM9Line = 0;
+	{
+		CCycleCtrl* pWindowMode = AddCycleItem(IDS_M9_WINDOWMODE, IDS_HELP_M9_WINDOWMODE, kGap-25, 25, &nM9WindowMode, LTFALSE);
+		pWindowMode->AddString(IDS_M9_FULLSCREEN);
+		pWindowMode->AddString(IDS_M9_WINDOWED);
+		pWindowMode->AddString(IDS_M9_BORDERLESS);
+		pWindowMode->NotifyOnChange(FOLDER_CMD_UPDATE, this);
+		nM9Line = pWindowMode->GetHeight() + m_nItemSpacing;
+	}
+#endif
 
 	// Add the "resolution" control
     m_pResolutionCtrl = AddCycleItem(IDS_DISPLAY_RESOLUTION,IDS_HELP_RESOLUTION,kGap-25,25,LTNULL, LTFALSE);
@@ -212,6 +231,10 @@ LTBOOL CFolderDisplay::Build()
 		ptAdditionalPerformance.y += nM15Lines;
 		nM1Lines += nM15Lines;
 	}
+	// M-9's line
+	m_PageRect.bottom += nM9Line;
+	ptAdditionalPerformance.y += nM9Line;
+	nM1Lines += nM9Line;
 #endif
 
 
@@ -255,6 +278,16 @@ uint32 CFolderDisplay::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 {
 	switch(dwCommand)
 	{
+#ifdef AVP2SRC_MODERN
+	case FOLDER_CMD_UPDATE:
+		{
+			// M-9: a borderless window is at the desktop's resolution
+			UpdateData();
+			if (m_pResolutionCtrl)
+				m_pResolutionCtrl->Enable(nM9WindowMode != M9_WINDOW_BORDERLESS);
+			break;
+		}
+#endif
 	case CMD_PERFORM:
 		{
 			m_pFolderMgr->SetCurrentFolder(FOLDER_ID_PERFORMANCE);
@@ -459,12 +492,27 @@ LTBOOL CFolderDisplay::SetRenderer(int nResolutionIndex)
 {
 	// Get the new renderer structure
 	RMode newMode=GetRendererModeStruct(nResolutionIndex);
+#ifdef AVP2SRC_MODERN
+	// M-9: a borderless window is at the desktop's resolution
+	if (M9Window_GetMode() == M9_WINDOW_BORDERLESS)
+	{
+		int nDeskW, nDeskH;
+		M9Window_DesktopSize(&nDeskW, &nDeskH);
+		newMode.m_Width  = (uint32)nDeskW;
+		newMode.m_Height = (uint32)nDeskH;
+	}
+#endif
 
 	// If the current renderer is the same as the one we are changing to, then don't set the renderer!
 	RMode currentMode;
 	if (g_pLTClient->GetRenderMode(&currentMode) == LT_OK)
 	{
+#ifdef AVP2SRC_MODERN
+		// M-9: a new window mode needs the mode set again
+		if (IsRendererEqual(&newMode, &currentMode) && !bM9ForceModeSet)
+#else
 		if (IsRendererEqual(&newMode, &currentMode))
+#endif
 		{
 			return LTFALSE;
 		}
@@ -481,7 +529,20 @@ LTBOOL CFolderDisplay::SetRenderer(int nResolutionIndex)
 	g_pLTClient->EndOptimized2D();
 	g_pLTClient->End3D();
 	g_pLTClient->FlipScreen(0);
+#ifdef AVP2SRC_MODERN
+	if (g_pLTClient->SetRenderMode(&newMode) != LT_OK &&
+		M9Window_GetMode() == M9_WINDOW_FULLSCREEN && nM9InitWindowMode != M9_WINDOW_FULLSCREEN)
+	{
+		// M-9: full screen failed (the display could not take the mode;
+		// the engine went back to the old one, in full screen): the
+		// window mode it was, at that mode again
+		M9Window_SetMode(nM9InitWindowMode);
+		newMode = currentMode;
+		g_pLTClient->SetRenderMode(&newMode);
+	}
+#else
 	g_pLTClient->SetRenderMode(&newMode);
+#endif
 	g_pInterfaceMgr->SetSwitchingRenderModes(LTFALSE);
 
 
@@ -640,6 +701,12 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 		                                     M15_GetPercent(M15_VAR_MENUSCALE, M15_MENUSCALE_DEFAULT));	// M-15
 		nM16Hud = nM16InitHud = M15_Choice(g_nM16HudChoices, M16_NUM_HUD_CHOICES,
 		                                   M15_GetPercent(M16_VAR_HUDSCALE, M16_HUDSCALE_DEFAULT));		// M-16
+		// M-9: the window mode; the resolution is the desktop's for a
+		// borderless window
+		if (m_pFolderMgr->GetLastFolderID() != FOLDER_ID_PERFORMANCE)
+			nM9WindowMode = nM9InitWindowMode = M9Window_GetMode();
+		if (m_pResolutionCtrl)
+			m_pResolutionCtrl->Enable(nM9WindowMode != M9_WINDOW_BORDERLESS);
 #endif
 
         UpdateData(LTFALSE);
@@ -686,7 +753,20 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 
 				int oldMO = (int)pSettings->GetFloatVar("MipmapOffset");
 
+#ifdef AVP2SRC_MODERN
+				// M-9: the window mode takes effect by setting the mode
+				// again (the renderers read Windowed when they start)
+				if (M9Window_GetMode() != nM9WindowMode)
+				{
+					M9Window_SetMode(nM9WindowMode);
+					bM9ForceModeSet = LTTRUE;
+				}
 				bSetRend = SetRenderer(m_pResolutionCtrl->GetSelIndex());
+				bM9ForceModeSet = LTFALSE;
+				nM9InitWindowMode = M9Window_GetMode();
+#else
+				bSetRend = SetRenderer(m_pResolutionCtrl->GetSelIndex());
+#endif
 
 				// If we didn't switch resolutions and the mipmap offset changed, rebind textures.
 				if(!bSetRend)

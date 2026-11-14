@@ -33,7 +33,8 @@ looks again.
 **Fixed so far** (in the modern build): every entry below is either fixed
 or says why it is not. With an id: the world running fast above 100 frames
 a second (M-10); a joystick button bound twice (M-7); the mouse look's
-turn depending on the frame rate (M-6); the engine's
+turn depending on the frame rate (M-6); a window placed for a frame it
+does not have (M-9); the engine's
 (M-B01..M-B09), the renderers' (M-B20..M-B26), the client shells' and
 lithshared's (M-B40..M-B63, M-B108), the object DLLs' and shared code's
 (M-B70..M-B85) and the launchers' and Launch.dll's (M-B100..M-B107)
@@ -55,6 +56,30 @@ Fixed in the modern build: <file>, MODERN.md <id>. (Or: not fixed, because ...)
 ```
 
 ## The bugs
+
+### A window is placed and sized for a frame it does not have
+
+d3d.ren, both games' (`d3d_Init`: AvP2 1.0.9.6 0x10010b22, Primal Hunt
+0x100118be; src/engine/d3d/ph/common_init.cpp), with lithtech.exe's
+window (`clu_dsi_RunClientApp`, clientwin.cpp: `CreateWindowExA` style
+0x10810000 at AvP2 0x00403172, Primal Hunt 0x004034e2). Run windowed
+(`Windowed 1`), the renderer centres the window with its top worked out
+from the desktop's and the mode's *widths* (the same value as the left:
+`sub; sub; shr $1` once, stored twice, AvP2 0x10010d04, Primal Hunt
+0x10011a99), and unsigned, so a mode wider than the desktop puts it 2^31
+pixels off instead of at 0; it then grows the rectangle by
+`AdjustWindowRect(WS_OVERLAPPEDWINDOW)` (0xcf0000), a caption and a sizing
+frame, while the engine's window is `WS_BORDER` only, with no title bar
+(the client shell restyles it only for full screen, `HookWindow`). So the
+client area is larger than the mode by the caption and the frame, the
+picture is stretched onto it, the menus' clicks land off by the
+difference, and the window cannot be moved.
+
+Fixed in the modern build: the client shell places the window after every
+renderer start (a title bar and the mode's client area, centred in the
+work area; or borderless, covering the desktop),
+src/modern/cshell/m9_window.h; MODERN.md M-9. (The renderers are unchanged:
+the window is put right before anything is drawn.)
 
 ### Above 100 frames a second the world runs fast
 

@@ -45,7 +45,7 @@ items are AvP2's own.
 M-X5 and M-X6), so a modern game directory holds no RAD or Miles binary,
 the music through Microsoft's DirectMusic (M-X4), raw mouse input (M-6),
 controllers through XInput (M-7), the launchers and the games started
-directly (M-8), widescreen, 4:3 cinematics and the field of view
+directly (M-8), full screen, window and borderless window modes (M-9), widescreen, 4:3 cinematics and the field of view
 (M-1..M-3), the menus and the HUD scaled to the screen (M-15, M-16),
 Internet multiplayer through a GameSpy master server such as OpenSpy's,
 without WON or a CD key (M-17..M-20), and every
@@ -100,7 +100,7 @@ yet.
 | M-6 | Raw mouse input (WM_INPUT), in place of DirectInput's mouse | done (under Done) |
 | M-7 | Controllers through XInput, in place of DirectInput joysticks | done (under Done) |
 | M-8 | The launchers as `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`, with `AVP2.exe` and `PrimalHunt.exe` starting the game directly, as if Launch had been clicked in the launcher (no registry, no disc check) | done (under Done) |
-| M-9 | From nolfsrc's modern build, where AvP2 has the same code: windowed modes at any size (its frame limiter is M-13; Internet play without the dead GameSpy and WON servers is M-17..M-20) | not implemented yet |
+| M-9 | Window modes: full screen, a window at any size, or a borderless window at the desktop's resolution, chosen in Options (its frame limiter is M-13; Internet play without the dead GameSpy and WON servers is M-17..M-20) | done (under Done) |
 
 ## Open middleware
 
@@ -141,7 +141,7 @@ per format), under Xvfb and Wine in the build container.
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-15, M-16, M-17..M-20 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing (the user's report on the first modern build: "the high
 framerate means all the timing is wrong"). nolfsrc found the same in NOLF
@@ -629,6 +629,97 @@ Wine, raw input made from a real device was not tried), and
 `RIDEV_NOLEGACY` (the mouse's own messages are kept, for DirectInput's
 buttons and the menus).
 
+### M-9: window modes
+
+The user: "I don't see a way to set fullscreen mode." Two causes. The run
+scripts (`linux-run-avp2.sh`, `linux-run-ph.sh`, from
+`build/game-scripts/linux-run.sh`) appended `++screenwidth 640
+++screenheight 480 ++bitdepth 32 ++windowed 1` to every run, so every game
+started in a 640x480 window whatever Display had been set to (M-1's wide
+modes included), and the games have no window mode in their options:
+retail's only window is the command line's `++windowed 1`, placed by the
+renderer, wrongly (RETAIL_BUGS.md, "A window is placed and sized for a
+frame it does not have"). nolfsrc's M-P1-06 and M-P1-22 (NOLF's Display
+"Window mode" and `p1_window.cpp`, NOLF's run script) were read for the
+design; AvP2's and Primal Hunt's client shells, engines and both
+`d3d.ren`s were checked against it and the code is ours: the hook points
+are the same (the client shell's `HookWindow` and `LTEVENT_RENDERINIT`,
+the renderers reading `Windowed` when they start, the engine shutting the
+renderer down on `WM_ACTIVATEAPP`), the Display folder is AvP2's
+(settings applied on leaving it, its own `SetRenderer`), and three things
+NOLF's did not need were found under Wine here (a framed window as large
+as the desktop: Windows' tracking size, and Wine drawing a window whose
+client area runs off the screen black; a full screen the display cannot
+take at start-up).
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-9 | Options, Graphics (the Display folder), "Window mode": Full screen, Window, Borderless window. The engine's `Windowed` (what both renderers read when they start) and `WindowMode` (2: that window borderless), both saved; the mode is set again when it changes. After every renderer start (a mode set, the focus regained) the window is put right: full screen as `HookWindow` makes it (no frame, topmost, the mode's size); a window with a title bar and the mode's size as its client area, centred in the work area (one as large as the desktop with its client area on the screen and the frame off it; `WM_GETMINMAXINFO` lets it be larger than the screen); a borderless window `WS_POPUP` at 0,0 at the desktop's own resolution (`EnumDisplaySettings`' registry mode), the resolution list greyed for it, and a mode set from elsewhere changed to the desktop's on the next frame. A first run (no `WindowMode`) starts borderless unless it asks for a window. A full screen that fails at start-up (the display cannot take the mode) comes up as the borderless window, before retail's 640x480x16 fallback; one chosen in the folder that fails goes back to the window mode it was | `src/modern/cshell/m9_window.h`; `GameClientShell.cpp` (`OnEngineInitialized`, `OnEvent`, `Update`, `HookedWindowProc`), `FolderDisplay.cpp` (`Build`, `OnCommand`, `SetRenderer`, `OnFocus`); `src/AVP2/ClientRes/ClientRes.rc`, `ClientRes.h` (31900-31904) | done |
+| M-9 | The run scripts keep the game's own window settings: `linux-run-avp2.sh` / `linux-run-ph.sh` pass a mode only when asked -- `--fullscreen`, `--windowed`, `--borderless` (the modern build's), `--res WxH` (as `++` arguments, so the game saves them) -- or, in the release build, on the first run (no `autoexec.cfg`): a 640x480 window, as before. `windows-run.bat` (which never added a mode) takes the same options | `build/game-scripts/linux-run.sh`, `windows-run.bat`; `build/all.sh` (`@MODERN@`) | done |
+
+**Full screen under Wine.** Both renderers' full screen is DirectDraw's
+exclusive mode with `SetDisplayMode` to the chosen resolution. Under Wine
+that changes the X display's own mode, which fails unless the X server
+offers that mode: Xvfb offers only its own size, so there (and on X
+servers or Wayland compositors without the mode) `NtUserChangeDisplaySettings`
+returns -2 (`DISP_CHANGE_BADMODE`), `SetDisplayMode` fails and so does the
+renderer. At the desktop's own resolution full screen works (measured:
+both games, 1280x720 on a 1280x720 Xvfb, the window `WS_VISIBLE`, topmost,
+0,0 1280x720). Hence the borderless window as the first run's mode, and
+the fallbacks above; the release build's run scripts keep their window.
+
+**The run scripts.** The release build has no window option of its own,
+so its first run is still a 640x480 window (its renderer's full screen
+fails under many Wine setups) and its later runs are what it saved;
+`--fullscreen`, `--windowed` and `--res` change it (`--borderless` is
+refused). Checked with a stand-in for `wine` printing the engine's command
+file, each option in both builds; `windows-run.bat` under Wine's `cmd`, its
+command file for each option (on a copy without its `cd /d ... || exit /b
+1`, at which Wine 9.0's `cmd` stops: a line the script had before).
+
+Checked under Xvfb and Wine 9.0 in the build container (a test harness
+running the game directories' own `linux-run-*.sh` under `xvfb-run`, the
+window measured as X sees it, `xdotool`, and as Windows sees it, a small
+Win32 program listing its style, rectangles and state; the game closed with
+`WM_CLOSE` so that it saves `autoexec.cfg`), on a 1280x720 display, both
+games:
+
+* A first run, no options: borderless, `WS_POPUP`, 0,0 1280x720 (client
+  the same), the menus scaled to 720 lines (M-15); saved `Windowed 1`,
+  `WindowMode 2`, 1280x720.
+* `--windowed --res 800x600` (AvP2), `--res 1024x576` (Primal Hunt): a
+  title bar, client 800x600 at 240,73 (1024x576 at 128,85), centred; the
+  main menu in it; the next run with no options the same (saved).
+* `--windowed --res 1280x720`: the client area 0,0 1280x720, the frame
+  off the screen (before: Windows cut the window to the screen, a
+  1280x700 client area, and Wine drew it black, as it did any window
+  running off the screen).
+* `--fullscreen` at 800x600 (AvP2) / 1024x576 (Primal Hunt): the display
+  refused the mode, the game came up borderless at 1280x720 and saved
+  that; `--fullscreen --res 1280x720`: full screen, topmost.
+* In the menus (AvP2, Options, Graphics, the cursor): Borderless window
+  -> Window -> Full screen -> Borderless window, each applied on leaving
+  the folder and measured, the folder entered again by the cursor at its
+  page place after each (the window's client area at 0,0, M-15's page
+  mapping unchanged); the resolution greyed in the borderless window;
+  the choice saved.
+* The focus (another program, Wine's Notepad, brought to the front):
+  borderless, the window stays where it is, behind it; full screen, Wine's
+  DirectDraw minimises the window (measured: iconic), as Windows' does, so
+  no black window is left over the desktop; the placement restores it
+  when the focus comes back (bringing it back needs a window manager or a
+  taskbar, which the container has not).
+* In play: AvP2's first Marine mission (`build/playtest-avp2-marine.txt`)
+  in a 1024x576 window on a 1280x720 desktop, and Primal Hunt's first
+  Corporate mission (`build/playtest-ph-corporate.txt`) in the borderless
+  window at 1280x720: the menus clicked at their page places, the
+  mission played, quicksaved and quickloaded, the HUD scaled (M-16).
+
+Not done: a window manager under Xvfb (none in the build image), so
+Alt+Tab back into a minimised full screen, and the window's frame as a
+desktop draws it, were not seen; a full screen that fails when chosen in
+the folder (Xvfb lists only its own resolution, which full screen takes).
+
 ### M-7: controllers through XInput
 
 Retail reads one DirectInput joystick, with its axes set up on the
@@ -1099,6 +1190,8 @@ master.
 
 | Variable | Type | Default | What | Id |
 |---|---|---|---|---|
+| `WindowMode` | int | (none: a first run, then 2) | with `Windowed` 1: 2 a borderless window at the desktop's resolution, otherwise a window with a title bar; Options, Graphics, "Window mode"; saved in autoexec.cfg. A config without it starts borderless unless `Windowed` is 1 | M-9 |
+| `Windowed` | int | (engine) | the engine's existing variable (what both renderers read when they start), now set by "Window mode" too: 0 full screen, 1 a window (either kind); the mode is set again when it changes | M-9 |
 | `MenuScale` | int | 100 | the menus' page, percent of filling the screen's height (0: retail's size; never below it, never wider than the screen); Options, Graphics, "Menu size"; saved in autoexec.cfg | M-15 |
 | `HUDScale` | int | 75 | the HUD's scale, percent of the screen's height over 480 (0: retail's size; never below it); Options, Graphics, "HUD size"; saved in autoexec.cfg | M-16 |
 | `MasterServer` | string | (empty = `master.openspy.net`) | the GameSpy master server the Internet list is read from and a hosted Internet game reports to (host or host:port; `none`: neither); `+MasterServer`, saved in autoexec.cfg; a dedicated server's is `-MasterServer` | M-17 |

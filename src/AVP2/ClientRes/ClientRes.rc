@@ -4786,6 +4786,16 @@ BEGIN
     IDS_M15_PERCENT         "%1!d!%%"
     IDS_M15_UNSCALED        "Unscaled"
 END
+
+// M-9, the window mode (Display)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M9_WINDOWMODE       "Window mode"
+    IDS_HELP_M9_WINDOWMODE  "Full screen, a window, or a borderless window at the desktop's resolution."
+    IDS_M9_FULLSCREEN       "Full screen"
+    IDS_M9_WINDOWED         "Window"
+    IDS_M9_BORDERLESS       "Borderless window"
+END
 #endif
 
 #endif    // English (U.S.) resources

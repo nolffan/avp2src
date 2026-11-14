@@ -76,6 +76,8 @@
 #define M6_MOUSE_IMPLEMENTATION
 #include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
 #include "..\..\modern\cshell\m19_netposlog.h"	// M-19: the measuring aid (debug)
+#define M9_WINDOW_IMPLEMENTATION
+#include "..\..\modern\cshell\m9_window.h"		// M-9: the window modes
 #endif
 
 static _timeb g_StartTimeB;
@@ -1580,7 +1582,18 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 
 
 	// Initialize the renderer
+#ifdef AVP2SRC_MODERN
+	// M-9: a first run's window mode; a borderless window at the
+	// desktop's resolution
+	M9Window_StartMode(pMode);
     LTRESULT hResult = g_pLTClient->SetRenderMode(pMode);
+	// M-9: full screen failed (the display could not take the mode): a
+	// borderless window, before retail's fallbacks
+	if (hResult != LT_OK && M9Window_StartFailed(pMode))
+		hResult = LT_OK;
+#else
+    LTRESULT hResult = g_pLTClient->SetRenderMode(pMode);
+#endif
 	if (hResult != LT_OK)
 	{
         g_pLTClient->DebugOut("%s Error: Couldn't set render mode!\n", GAME_NAME);
@@ -2044,6 +2057,11 @@ void CGameClientShell::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 			{
 				HookWindow();
 			}
+#ifdef AVP2SRC_MODERN
+			// M-9: the renderer placed the window (wrongly, for a
+			// window): put it right for the window mode, before the clip
+			M9Window_Apply();
+#endif
 
 			// Clip the cursor if we're NOT in a window...
 
@@ -2073,6 +2091,14 @@ void CGameClientShell::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 #endif
 		}
 		break;
+#ifdef AVP2SRC_MODERN
+		// M-9: the focus back: the window where it belongs
+		case LTEVENT_GAINEDFOCUS:
+		{
+			M9Window_Apply();
+		}
+		break;
+#endif
 	}
 
 
@@ -2373,6 +2399,8 @@ void CGameClientShell::Update()
 	M7Pad_Update(m_fFrameTime);
 	// M-6: the mouse's motion since the last frame, this frame's look
 	M6Mouse_Update();
+	// M-9: a borderless window at another mode is set to the desktop's
+	M9Window_Update();
 #endif
 	if (m_InterfaceMgr.Update())
 	{
@@ -6828,6 +6856,8 @@ LRESULT CALLBACK HookedWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	// M-6: raw input, the cursor and the focus (the message goes on to
 	// the engine as before: DefWindowProc cleans up after WM_INPUT)
 	M6Mouse_OnWindowMessage(hWnd, uMsg, wParam, lParam);
+	// M-9: a window may be larger than the screen
+	M9Window_OnWindowMessage(hWnd, uMsg, wParam, lParam);
 #endif
 	if(uMsg == WM_MOUSEWHEEL)
 	{

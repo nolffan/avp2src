@@ -3345,6 +3345,12 @@
 #define IDS_HELP_M16_HUDSIZE            31803
 #define IDS_M15_PERCENT                 31804
 #define IDS_M15_UNSCALED                31805
+// M-9, the window mode (Display)
+#define IDS_M9_WINDOWMODE               31900
+#define IDS_HELP_M9_WINDOWMODE          31901
+#define IDS_M9_FULLSCREEN               31902
+#define IDS_M9_WINDOWED                 31903
+#define IDS_M9_BORDERLESS               31904
 #endif
 // Next default values for new objects
 // 

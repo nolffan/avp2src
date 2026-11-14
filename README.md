@@ -146,7 +146,9 @@ again.
 Both archives carry the scripts that start the games
 (`build/game-scripts/`): `linux-run-avp2.sh` and `linux-run-ph.sh` (each game under Wine, in
 a prefix of its own, `~/.wine-avp2`, with the registry values the retail
-setups wrote; `--launcher` for the launcher; `--help`), and on Windows
+setups wrote; `--launcher` for the launcher; `--fullscreen`, `--windowed`,
+`--borderless` and `--res WxH` for the window, which is otherwise as the game
+last left it; `--help`), and on Windows
 `windows-run.bat [avp2|ph]`, or the launchers `AVP2\AVP2.exe` and
 `PrimalHunt\PrimalHunt.exe`.
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # @SCRIPT@ -- start @TITLE@ (built from source) with Wine.
 #
-#   ./@SCRIPT@ [engine args...]     the game, straight away
+#   ./@SCRIPT@ [window options] [engine args...]   the game, straight away
 #   ./@SCRIPT@ --launcher           its launcher, @LAUNCHER@, instead
 #   ./@SCRIPT@ --help               this text
 #
@@ -10,13 +10,27 @@
 # beside it.
 # The game starts as its launcher would start it: the engine, lithtech.exe,
 # with the command file the launcher writes (avp2cmds.txt: the rez stack,
-# with custom/ -- the game DLLs built from source -- last), plus a 640x480
-# window, plus your arguments, e.g.
-#   ./@SCRIPT@ ++windowed 0          full screen
+# with custom/ -- the game DLLs built from source -- last), plus your
+# arguments, e.g.
 #   ./@SCRIPT@ +DisableSound 1       no sound
 # (written to run-cmds.txt in the game's directory: the engine takes its
-# arguments from the command file). The window: the renderer's full screen
-# fails under many Wine setups.
+# arguments from the command file).
+#
+# The window. The game starts as it was last left: the window mode and the
+# resolution are its settings (autoexec.cfg), which the options below set
+# for this run and every later one:
+#   --fullscreen     full screen: the display changes to the resolution
+#   --windowed       a window with a title bar, the resolution's size
+#   --borderless     (the modern build) a borderless window covering the
+#                    desktop at the desktop's own resolution
+#   --res WxH        the resolution, e.g. --res 1280x720
+# In the modern build Options > Display > "Window mode" chooses the same,
+# and a first run starts in the borderless window at the desktop's
+# resolution. The release build has no such option: its first run starts
+# in a 640x480 window (Display sets the resolution), as its renderer's full
+# screen fails under many Wine setups -- it changes the display's own mode,
+# which X servers without that mode refuse (the modern build then falls
+# back to the borderless window).
 #
 # --launcher starts @LAUNCHER@ (built from src/launcher/), whose Display and
 # Advanced pages set the renderer, the resolution and the engine's options;
@@ -52,6 +66,36 @@ case "${1:-}" in
 --launcher) LAUNCHER=1; shift ;;
 esac
 GAME=@GAME@
+MODERN=@MODERN@
+# The window options (the header): engine arguments, ++ so that the engine
+# saves them in autoexec.cfg
+MODE=
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --fullscreen) MODE="$MODE ++windowed 0 ++WindowMode 0" ;;
+    --windowed)   MODE="$MODE ++windowed 1 ++WindowMode 1" ;;
+    --borderless)
+        [ "$MODERN" = 1 ] || { echo "@SCRIPT@: --borderless is the modern build's (this one has --windowed and --fullscreen)" >&2; exit 2; }
+        MODE="$MODE ++windowed 1 ++WindowMode 2" ;;
+    --res)
+        case "${2:-}" in
+        [1-9]*x[1-9]*) ;;
+        *) echo "@SCRIPT@: --res takes WIDTHxHEIGHT, e.g. --res 1280x720" >&2; exit 2 ;;
+        esac
+        W=${2%x*}; H=${2#*x}
+        MODE="$MODE ++screenwidth $W ++screenheight $H ++bitdepth 32 ++GameScreenWidth $W ++GameScreenHeight $H ++GameBitDepth 32"
+        shift ;;
+    *) break ;;
+    esac
+    shift
+done
+[ -f "$GAME/autoexec.cfg" ] || FIRST=1
+# The release build's first run: a 640x480 window (the header). The modern
+# build's chooses for itself (the borderless window).
+if [ -n "${FIRST:-}" ] && [ "$MODERN" != 1 ]; then
+    case "$MODE" in *++windowed*) ;; *) MODE=" ++windowed 1$MODE" ;; esac
+    case "$MODE" in *++screenwidth*) ;; *) MODE="$MODE ++screenwidth 640 ++screenheight 480 ++bitdepth 32" ;; esac
+fi
 WINEPREFIX="${WINEPREFIX:-$HOME/.wine-avp2}"
 WINEDEBUG="${WINEDEBUG:-fixme-all}"
 export WINEPREFIX WINEDEBUG
@@ -79,6 +123,6 @@ reg "$PHKEY" /v InstallDir /t REG_SZ /d "$("$WINE" winepath -w "$HERE/PrimalHunt
 
 cd "$GAME"
 [ -z "$LAUNCHER" ] || exec "$WINE" @LAUNCHER@ "$@"
-{ tr -d '\r\n' < avp2cmds.txt; printf ' ++screenwidth 640 ++screenheight 480 ++bitdepth 32 ++windowed 1'
+{ tr -d '\r\n' < avp2cmds.txt; printf '%s' "$MODE"
   [ $# -eq 0 ] || printf ' %s' "$*"; printf '\r\n'; } > run-cmds.txt
 exec "$WINE" lithtech.exe -cmdfile run-cmds.txt
