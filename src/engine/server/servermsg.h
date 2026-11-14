@@ -318,6 +318,12 @@ public:
 #else
 	LTBOOL Init(uint32 nItems, uint32 nGrowBy);          // 0x1000be24
 #endif
+#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+	// AvP2 1.0.9.6: the buffer's accessor, out of line (lithtech.exe
+	// 0x00465e00, server.dll 0x1002bf26: `mov 0x4(%ecx),%eax; ret`), which
+	// its localdriver.cpp calls (netmgr.cpp, name ours).
+	uint8* GetData();
+#endif
 
 	uint8 m_vptr[4];
 };

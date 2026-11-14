@@ -538,19 +538,23 @@ void __fastcall d3d_GenUVQuarter(UVVert* pOut, UVVert* pSrc, float* pUV)
 	pOut->SetUV(pUV[0] * 0.25f, pUV[1] * 0.25f);
 }
 
-// NEAR: the terms of each row's sum come out in another order (retail
-// v: y, x, z; u: y, z, x), as TU01's 0x10001420.
+// The rows accumulated, and the normal's x through a local for u's last
+// term, as TU01's 0x10001420.
 void __fastcall d3d_GenUVEnvMapOffset(CD3DModelDraw* pDraw, ModelVert* pVert, UVVert* pOut)
 {
-	pOut->SetUV(
-		(pVert->m_vNormal.x * pDraw->m_mEnvMap.m[0][0]
-		 + pVert->m_vNormal.y * pDraw->m_mEnvMap.m[0][1]
-		 + pVert->m_vNormal.z * pDraw->m_mEnvMap.m[0][2])
-			* pDraw->m_fEnvScaleU + pDraw->m_fEnvOffsetU + g_fEnvMapOffsetU,
-		(pVert->m_vNormal.x * pDraw->m_mEnvMap.m[1][0]
-		 + pVert->m_vNormal.y * pDraw->m_mEnvMap.m[1][1]
-		 + pVert->m_vNormal.z * pDraw->m_mEnvMap.m[1][2])
-			* pDraw->m_fEnvScaleV + pDraw->m_fEnvOffsetV + g_fEnvMapOffsetV);
+	float fU, fV;
+
+	fV  = pVert->m_vNormal.y * pDraw->m_mEnvMap.m[1][1];
+	fV += pVert->m_vNormal.x * pDraw->m_mEnvMap.m[1][0];
+	fV += pVert->m_vNormal.z * pDraw->m_mEnvMap.m[1][2];
+
+	float fX = pVert->m_vNormal.x;
+	fU  = pVert->m_vNormal.y * pDraw->m_mEnvMap.m[0][1];
+	fU += pVert->m_vNormal.z * pDraw->m_mEnvMap.m[0][2];
+	fU += fX * pDraw->m_mEnvMap.m[0][0];
+
+	pOut->SetUV(fU * pDraw->m_fEnvScaleU + pDraw->m_fEnvOffsetU + g_fEnvMapOffsetU,
+	            fV * pDraw->m_fEnvScaleV + pDraw->m_fEnvOffsetV + g_fEnvMapOffsetV);
 }
 #endif  // Primal Hunt's generators
 

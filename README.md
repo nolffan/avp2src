@@ -44,22 +44,22 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `lithtech.exe` | the engine | 4,032 / 4,384 | 587,489 / 747,519 bytes | `███████████████░░░░░` 78.5% | 4 | 10 |
-| `server.dll` | the server | 2,882 / 3,122 | 328,679 / 388,183 bytes | `████████████████░░░░` 84.6% | 0 | 13 |
-| `d3d.ren` | the Direct3D renderer | 1,131 / 1,291 | 132,729 / 240,249 bytes | `███████████░░░░░░░░░` 55.2% | 1 | 6 |
+| `lithtech.exe` | the engine | 4,036 / 4,384 | 590,677 / 747,519 bytes | `███████████████░░░░░` 79.0% | 4 | 10 |
+| `server.dll` | the server | 2,883 / 3,122 | 328,692 / 388,183 bytes | `████████████████░░░░` 84.6% | 0 | 13 |
+| `d3d.ren` | the Direct3D renderer | 1,138 / 1,291 | 135,188 / 240,249 bytes | `███████████░░░░░░░░░` 56.2% | 1 | 6 |
 | `cdaudio.dll` | the engine's CD-audio music driver | 80 / 81 | 5,890 / 6,194 bytes | `███████████████████░` 95.0% | 0 | 0 |
 | `Launch.dll` | the engine's command-line helper | 28 / 28 | 5,599 / 5,599 bytes | `████████████████████` 100.0% | 0 | 0 |
 | `PrimalHunt.exe` | Primal Hunt's launcher | 187 / 195 | 27,135 / 27,317 bytes | `███████████████████░` 99.3% | 0 | 0 |
 | `AVP2XServ.exe` | Primal Hunt's dedicated server | 302 / 330 | 59,367 / 61,852 bytes | `███████████████████░` 95.9% | 0 | 0 |
 | `PHCShell.dll` | Primal Hunt's game: client | 5,270 / 5,835 | 1,269,966 / 1,343,906 bytes | `██████████████████░░` 94.4% | 3 | 0 |
-| `PHObject.lto` | Primal Hunt's game: server objects | 9,218 / 10,145 | 2,246,531 / 2,363,096 bytes | `███████████████████░` 95.0% | 8 | 1 |
+| `PHObject.lto` | Primal Hunt's game: server objects | 9,235 / 10,145 | 2,249,704 / 2,363,096 bytes | `███████████████████░` 95.2% | 8 | 1 |
 | `AVP2.exe` | AvP2's launcher | 184 / 192 | 26,034 / 27,502 bytes | `██████████████████░░` 94.6% | 0 | 0 |
 | `AVP2Serv.exe` | AvP2's dedicated server | 294 / 320 | 58,735 / 58,920 bytes | `███████████████████░` 99.6% | 0 | 0 |
 | `CShell.dll` | AvP2's game: client | 6,025 / 6,528 | 1,435,149 / 1,455,467 bytes | `███████████████████░` 98.6% | 3 | 0 |
 | `Object.lto` | AvP2's game: server objects | 8,669 / 10,620 | 2,191,138 / 2,229,310 bytes | `███████████████████░` 98.2% | 2 | 0 |
-| `AvP2 lithtech.exe` | AvP2's engine | 3,706 / 4,017 | 547,292 / 702,209 bytes | `███████████████░░░░░` 77.9% | 4 | 5 |
-| `AvP2 server.dll` | AvP2's server | 2,618 / 2,850 | 293,251 / 351,844 bytes | `████████████████░░░░` 83.3% | 2 | 9 |
-| `AvP2 d3d.ren` | AvP2's Direct3D renderer | 1,115 / 1,273 | 131,540 / 236,573 bytes | `███████████░░░░░░░░░` 55.6% | 1 | 5 |
+| `AvP2 lithtech.exe` | AvP2's engine | 3,717 / 4,017 | 552,824 / 702,209 bytes | `███████████████░░░░░` 78.7% | 4 | 3 |
+| `AvP2 server.dll` | AvP2's server | 2,619 / 2,850 | 293,360 / 351,844 bytes | `████████████████░░░░` 83.3% | 2 | 9 |
+| `AvP2 d3d.ren` | AvP2's Direct3D renderer | 1,123 / 1,273 | 133,962 / 236,573 bytes | `███████████░░░░░░░░░` 56.6% | 1 | 5 |
 | libraries | the shared libraries | 4,682 / 4,707 | 657,049 / 673,940 bytes | `███████████████████░` 97.4% | 0 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AVP2XUp.dll` | Primal Hunt's Sierra updater resources, not in the total | 14 / 14 resources | 585,762 / 585,762 bytes | `████████████████████` 100.0% | 0 | -- |
@@ -69,7 +69,7 @@ those functions make up.
 | `CRes.dll` | AvP2's client resources, not in the total | 277 / 277 resources | 387,572 / 387,572 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | AvP2's server resources, not in the total | 1 / 1 resources | 156 / 156 bytes | `████████████████████` 100.0% | 0 | -- |
 | `AvP2 ltmsg.dll` | AvP2's engine messages, not in the total | 8 / 8 resources | 3,322 / 3,322 bytes | `████████████████████` 100.0% | 0 | -- |
-| **All** | | **50,423 / 55,918** | **10,003,573 / 10,919,680 bytes** | `██████████████████░░` **91.6%** | **28** | **49** |
+| **All** | | **50,472 / 55,918** | **10,020,469 / 10,919,680 bytes** | `██████████████████░░` **91.7%** | **28** | **47** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

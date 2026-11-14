@@ -847,6 +847,15 @@ void cc_WriteHistory(int argc, char** argv)
 // what the loop is written against.  VC6 rotated it: the test is emitted
 // once before the body and once at the bottom.
 //
+// AVP2: NEAR (223 of 236).  1.0.9.6 CALLS the runtime's feof instead
+// (0x00423231, 0x00423288: `push %esi; call 0x004b58eb`); `(feof)(pFile)`
+// there makes it byte-identical, but bringing libcmt's feof into the link
+// moves /OPT:ICF's pick for the folded CcnLine Reset / WONAPI
+// ReadBuffer::Rewind pair from dmgrow.obj's copy to Common.obj's (retail's,
+// 0x004a7f40), which the scoreboard then only places by shape, and the
+// recorded identical sub_4a7f40 is lost.  Left until the scoreboard credits
+// a library copy our link keeps.
+//
 // The 0x100-byte frame is the line buffer; %ebp is the count and survives
 // the whole loop.  The reload of argv into %edi at 0x0041e567 is on the
 // loop-exit path only, because the early-EOF path never clobbered it -- a

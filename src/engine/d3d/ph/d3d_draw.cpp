@@ -30,11 +30,16 @@
 //  0x10016c60 (d3d_ClipLine) is near: the scheduling of the colour lerp's
 //  byte loads, size-exact.  Near, all from VC6's inlining choices or scheduling
 //  rather than a known source difference: 0x10014550 (register choice),
-//  0x10014620 (which push_back sites expand), 0x100149c0 and 0x10014b80
-//  (the vertex copy and the transform's operand order), 0x10015070,
+//  0x10014620 (which push_back sites expand: retail calls the first of
+//  each set's three, expands the second around a _Construct call and the
+//  third whole; neither a helper per set, an AddState member nor a named
+//  temporary reproduces it), 0x100149c0 (the vertex copy and the
+//  transform's operand order), 0x10015070,
 //  0x10015760 (d3d_DrawPolyFlat's drawing spelt out, through the
 //  out-of-line transform; size within 4 bytes), 0x10015270 and 0x10017bd0 (the
-//  transform's term order), 0x10015400, 0x10017e60, 0x10018400 and
+//  transform's term order), 0x10017e60 (retail calls d3d_DrawLine for
+//  the first eleven edges and expands the twelfth, its own transform and
+//  projection calls left out of line; ours calls all twelve), 0x10018400 and
 //  0x10019040 (register choice).
 //
 // *********************************************************************** //
@@ -725,9 +730,12 @@ LTBOOL d3d_DrawPolyFlat(RenderPoly* pPoly)
 
 	for (i = 0; i < nVerts; i++)
 	{
-		MatVMul_H(&verts[i].m_Vec, &g_ViewParams.m_mDeviceTransform, &pPolyVerts[i].m_pVert->m_Vec);
-		verts[i].color = color;
-		verts[i].specular = 0xFFFFFFFF;
+		TLVertex* pVert = &verts[i];
+		LTVector* pPos = &pPolyVerts[i].m_pVert->m_Vec;
+
+		MatVMul_H(&pVert->m_Vec, &g_ViewParams.m_mDeviceTransform, pPos);
+		pVert->color = color;
+		pVert->specular = 0xFFFFFFFF;
 	}
 
 	g_nTrianglesDrawn += nVerts - 2;
@@ -1167,7 +1175,16 @@ LTBOOL d3d_DrawTLPoly(TLVertex** ppVerts, int* pnVerts)
 }
 
 
-// 0x10015400 -- an LTMatrix as a D3DMATRIX (transposed).
+// 0x10015400 -- an LTMatrix as a D3DMATRIX (transposed). NEAR (141 bytes,
+// retail 179): retail reads all sixteen before the first store, the last first
+// (seven on the FPU stack, the rest in the frame and a dead parameter
+// slot). Sixteen float locals assigned m33 down to m00, then stored
+// transposed, reproduce it byte for byte in both builds (an inline taking
+// the sixteen as parameters does too, but d3d_FullDrawScene then expands
+// it, where retail calls it). Not applied: in AvP2's link the new body
+// moves /OPT:ICF's choice of which `xor eax,eax; ret` it keeps, and
+// d3d_portal's d3d_LoadPortalFile (recorded identical at 0x1002d07c) is
+// folded into LIBCMT's setlocal.obj instead.
 void d3d_SetD3DMat(LTMatrix* pSrc, D3DMATRIX* pDest)
 {
 	D3DMATRIX Out;

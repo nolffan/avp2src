@@ -443,7 +443,9 @@ CLeashNode* CLeashGroup::FindPoint(const LTVector& vPos)
 		CLeashPoint* pPoint = (CLeashPoint*)pNode->m_Data;
 		if (fZ*fZ + fX*fX <= pPoint->m_fRadius*pPoint->m_fRadius)
 		{
-			if (pPoint->GetPos().y - vPos.y <= pPoint->m_fRadius)
+			LTFLOAT fY = pPoint->GetPos().y - vPos.y;
+			LTFLOAT fRadius = pPoint->m_fRadius;	// a local: flds/fxch/fcompp (0x10150c0a)
+			if (fY <= fRadius)
 			{
 				pFound = pPoint;
 			}

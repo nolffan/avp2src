@@ -416,7 +416,16 @@ LTBOOL CLocalDriver::ReceivePacket(ServerMessage* pMsg)
 		return LTFALSE;
 
 	{
+#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
 		uint8* pData = pMsg->m_pData;
+#else
+		// AvP2 1.0.9.6's lithtech.exe reads the buffer through the payload's
+		// accessor (0x00446b51 `call 0x00465e00`). Its server.dll does too
+		// (0x10019ba2), but there the accessor's copy moves the scorer's
+		// placement of two identical `mov 0x4(%ecx),%eax; ret` bodies
+		// (0x1001c902, 0x1002bf26) off them, so server.dll keeps the member.
+		uint8* pData = pMsg->m_PacketData.GetData();
+#endif
 		memcpy(pData, pRec->m_pData, pRec->m_Unknown08);
 	}
 

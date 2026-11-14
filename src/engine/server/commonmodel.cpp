@@ -4482,6 +4482,10 @@ LTBOOL Model::LoadSockets(ILTStream* pStream)
 //    for the stored value (0x0044dd23). Going through operator[] at all
 //    is also what turns the FIRST release loop's destructor into the
 //    shipped call to ??_G with 0 (0x0044dc8d): budget again.
+// Primal Hunt's lithtech.exe (0x0045b330) spends a little more of it: the
+// count is read with iltstream.h's operator>> (two more expansions, the same
+// Read), which leaves that first ??_G a call there too (0x0045b35d) and
+// changes nothing in AvP2's (0x00456230) or either server.dll.
 LTBOOL Model::sub_1001c560(ILTStream* pStream)
 {
 	uint32 i;
@@ -4493,7 +4497,7 @@ LTBOOL Model::sub_1001c560(ILTStream* pStream)
 
 	FreeArrayElements(pSets, (LAlloc*)m_pDataBlock);
 
-	pStream->Read(&nSets, sizeof(nSets));
+	*pStream >> nSets;
 
 	if (!pSets->SetSizeInit4(nSets, LTNULL, (LAlloc*)m_pDataBlock))
 		return LTFALSE;

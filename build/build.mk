@@ -811,7 +811,7 @@ LITHTECH_SRC := lithtech.cpp ..\server\msgterm.cpp ..\server\sdkforce.cpp ..\ser
     cissurf.cpp cltapi.cpp sndinst2.cpp sndmgr2.cpp predtick.cpp cmgrinit.cpp wgrid.cpp dmgrow.cpp \
     cmgsurf.cpp warpblit.cpp startload.cpp fntdraw.cpp videomgr.cpp visquery.cpp predobj.cpp fmcvt32.cpp fmconvert.cpp \
     ccclient.cpp clientshell.cpp ccline.cpp binkvideo.cpp smackvideo.cpp lvideomgr.cpp soundinst2.cpp \
-    tcpqarray.cpp clientmgr3.cpp clientwin.cpp clientfilemgr.cpp clientisect.cpp worldtree2.cpp transform.cpp transformmaker.cpp clientinterface.cpp linesystem.cpp \
+    tcpqarray.cpp clientmgr3.cpp clientwin.cpp clientfilemgr.cpp clientisect.cpp transform.cpp transformmaker.cpp clientinterface.cpp linesystem.cpp \
     clientphysics.cpp clientsound.cpp dmloader.cpp clientmgr2.cpp stdlithalloc.cpp clientsoundinst.cpp \
     clientworld.cpp cltcursor.cpp clientconsole.cpp clientdsi.cpp lttexmod.cpp clienttexmgr.cpp \
     clientstreams.cpp clientinput.cpp clientsoundmgr.cpp clientworldinfo.cpp clientblit.cpp \
@@ -1307,7 +1307,7 @@ LT_AVP_ORDER := \
     msgterm netmgr nettrace netobj objtypes lt2new3 partfm fmconvert fmcvt32 lttexmod predobj clientrender \
     serverengine serverlightanim smgrmisc servercommon servermodel servermessage sisegment smgr smgrnew cmodelload \
     cchandler serverthread objmover sndinst2 clientsoundinst soundinst2 clientsoundmgr sndmgr2 clientsound cacherec soundinst sprite spritecontrol \
-    streamsim clientstreams stringbank tcpdriver tcpqarray transform transformmaker fntdraw videomgr visquery smackvideo worldtree2 worldtree \
+    streamsim clientstreams stringbank tcpdriver tcpqarray transform transformmaker fntdraw videomgr visquery smackvideo worldtree \
     stdlithalloc
 SV_AVP_ORDER := \
     modelanim counter structbank worldsim console csbase sweptsphere fsstream worldmodels servermsg worldbsp \

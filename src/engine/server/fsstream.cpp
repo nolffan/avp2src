@@ -490,11 +490,6 @@ extern void* g_pUnknown582e0;
 // `size` is never pushed, so the "%u" prints whatever follows `this` on the
 // stack. The sibling read in CTreeStream::Read passes both.
 //
-// NEAR on Primal Hunt's lithtech.exe (0x00429c80, 204 of 195): shipped loads
-// m_nOffset once before the first test's branch and keeps a single call.
-// `if (A && B) Read(-1) else Read(nOffset)` with nOffset read first comes to
-// 196 (only the global's register differs) but loses server.dll's match
-// (0x1000a641), which this nested form has.
 LTRESULT CMemStream::Read(void* pData, unsigned long size)
 {
 	unsigned long nRead;
@@ -511,16 +506,27 @@ LTRESULT CMemStream::Read(void* pData, unsigned long size)
 
 	EnterCriticalSection(&m_pTree->m_CS);
 
+	// The offset is a local assigned at the head of BOTH arms: /O2 then
+	// hoists the one load between the first compare and its branch and the
+	// two calls cross-jump into one (`push $-1` / `push %eax`, lithtech.exe
+	// 0x00427425/0x00429cc5); /O1 is the same bytes as reading the member
+	// in each call.
+	uint32 nOffset;
+
 	if (g_pUnknown58358 == m_pSource)
 	{
-		if ((uint32)g_pUnknown582e0 == m_nOffset)
+		nOffset = m_nOffset;
+
+		if ((uint32)g_pUnknown582e0 == nOffset)
 			nRead = m_pSource->Read(pData, size, 0xffffffff);
 		else
-			nRead = m_pSource->Read(pData, size, m_nOffset);
+			nRead = m_pSource->Read(pData, size, nOffset);
 	}
 	else
 	{
-		nRead = m_pSource->Read(pData, size, m_nOffset);
+		nOffset = m_nOffset;
+
+		nRead = m_pSource->Read(pData, size, nOffset);
 	}
 
 	LeaveCriticalSection(&m_pTree->m_CS);

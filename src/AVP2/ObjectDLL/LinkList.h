@@ -129,12 +129,13 @@ class TLinkList
 			m_nCount--;
 		}
 
-		// e.g. 0x10151870
+		// e.g. 0x10151870. Through GetHead()/GetEnd(): the entry test then
+		// loads the head into a register (~CLeashVolumeList, 0x10153ba0).
 		void RemoveAll()
 		{
-			while (m_Head.m_pNext != &m_Head)
+			while (GetHead() != GetEnd())
 			{
-				Node* pNode = m_Head.m_pNext;
+				Node* pNode = GetHead();
 				Node* pNext = pNode->m_pNext;
 				delete pNode;
 				m_Head.m_pNext = pNext;
@@ -145,13 +146,17 @@ class TLinkList
 			m_nCount = 0;
 		}
 
-		// e.g. 0x101515c0's body
+		// e.g. 0x101515c0's body. The next link read first, through
+		// GetHead(): the delete then takes its vtable in edx, as retail's
+		// does, and of the inlined copies ~CLeashGroup's second
+		// (0x1015034a) and ~CLeashFace's (0x1014f6b0) keep a copy of the
+		// head while ~CLeashVolume's (0x10152a10) does not, as retail's.
 		void DeleteAll()
 		{
 			while (m_Head.m_pNext != &m_Head)
 			{
+				Node* pNext = GetHead()->m_pNext;
 				Node* pNode = m_Head.m_pNext;
-				Node* pNext = pNode->m_pNext;
 				T data = pNode->m_Data;
 				delete pNode;
 				delete data;

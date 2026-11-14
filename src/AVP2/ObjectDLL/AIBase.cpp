@@ -1118,10 +1118,7 @@ void CAIBase::SetSkins(int nSet, ObjectCreateStruct* pStruct, const char* aszSki
 	for (int i = 0; i < 4; i++)
 	{
 		if (!aszSkins[nSet][i])
-		{
-			m_nSoundSet = nSet;
-			return;
-		}
+			break;
 
 		SAFE_STRCPY(pStruct->m_SkinNames[i], aszSkins[nSet][i]);
 	}
@@ -1628,9 +1625,9 @@ void CAIBase::UpdateMoving(LTFLOAT fFrameTime)
 
 LTBOOL CAIBase::SetStateMoving(const AIBaseStateInfo* pInfo)
 {
-	int nNode = -1;
 	int nNext = -1;
 	int nDest = -1;
+	int nNode = -1;
 
 	if (!m_Leash.FindPath(m_MoveMgr.GetPos(m_hObject), pInfo->vPos, &nNext, &nNode, &nDest))
 		return LTFALSE;

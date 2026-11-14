@@ -547,287 +547,154 @@ HLTLINE ci_AddLine(HLOCALOBJ hObj, LTLine* pLine);           // 0x0043d1c0  (cli
 //     no literal at all, so 0x004a1a74's 0.5f is a real halving.
 //
 // ======================================================================= //
-// A by-value float min (name ours; stand-in for whatever LTMIN-like helper
-// the original used). Through a by-value inline the taken arm copies the
-// member through the FPU (`fstps` at 0x004618b9) as shipped, where the
-// written-out if/else and a plain ternary both copy with an integer `mov`;
-// the edx/eax swaps later in the rotation loop also go away with it
-// (12 -> 5 mnemonic blocks). Still open: shipped pops the compared value
-// (`fcomps`) and reloads the member (0x004618b3), ours keeps it (`fcoms`).
-// Reference parameters (either or both) bring back the 12-block `mov` form.
-inline float pt_MinQ1S(float a, float b)
-{
-	return (a < b) ? a : b;
-}
-
+// AVP2 (1.0.9.6 0x0046e250, Primal Hunt 0x00474370; one source, the two
+// compilers' branch spellings apart): Monolith's prediction pass as AvP2
+// shipped it, not NOLF's above.  No debug lines (neither image calls
+// ci_AddLine here); the full-window extrapolation is skipped when fDT has
+// reached the clamp (`test $0x44` at 0x0046e3b8, `fDT != fMax`) and the
+// fallback extrapolates with a factor of 0.0f (`push $0` at 0x0046e490)
+// and averages while fDT is short of it; the rotation is slerped twice,
+// toward the target and then halfway from the current one (0x0046e654,
+// 0x0046e66f), snaps to the target once its time runs out, and is handed
+// to the shell and set after that test (0x0046e6e6, 0x0046e6f3).
+// Shape, all measured: the extrapolation test is the fallback's condition
+// with the arms in that order (`test $0x41; jnp` / `test $0x44; jnp`, and
+// the two averages' fadd order, follow it); the step is LTMIN (`fcomps`,
+// the member reloaded through the FPU, 0x0046e60b..0x0046e622); rNew is
+// declared outside the loop and rTarget in it (the 0xb4 frame).
 void sub_461270Q1S(CClientShellQ1S* pShell)
 {
-	// 0x00461281 / 0x00461284 / 0x0046128a -- loaded before the first
-	// branch and spilled to E+0x064, then re-read at 0x00461620 and
-	// 0x004618f0.  One local, two uses.
 	IClientShellQ1S* pShellIface = pShell->m_pClientMgr->m_pClientShell;
 
-	// 0x0046128e `mov 0x4b32bc,%eax ; test %eax,%eax ; je 0x00461987`.
 	if (g_CV_PredictionQ1S)
 	{
-		LTLink*   pCur;
-		LTObjectQ1S* pObj;
-		// Declared here, not in the rotation loop: block-scoped, rNew shared
-		// its slot with the second call's hidden return buffer and the frame
-		// came out 0xc short (0x104 vs the shipped 0x110).
-		LTRotation rNew;
-		float      fStep;
+		LTLink*         pCur;
+		LTObjectQ1S*    pObj;
 		SPredictRecQ1S* pRec;
-		LTVector  vGlobalForce;
+		LTVector        vGlobalForce;
+		LTRotation      rNew;
 
-		// 0x0046129b `flds 0x125c(%ecx)` is loaded ONCE and kept in %st
-		// across the clamp below (0x004612a1 `fld %st(0)`), then stored to
-		// +0x2c at 0x004612d1 -- so it is a named local read twice, not two
-		// member reads.
 		float fTime      = pShell->m_pClientMgr->m_Time;
-		float fFrameTime = fTime - pShell->m_fLastTime2c;   // 0x004612a3
+		float fFrameTime = fTime - pShell->m_fLastTime2c;
 
-		if (fFrameTime < 0.0f)                              // 0x004612aa
-			fFrameTime = 0.0f;                              // 0x004612b7
+		if (fFrameTime < 0.0f)
+			fFrameTime = 0.0f;
 
-		pShell->m_fTime28    += fFrameTime;                 // 0x004612c3/0x004612ce
-		pShell->m_fLastTime2c = fTime;                      // 0x004612d1
+		pShell->m_fTime28    += fFrameTime;
+		pShell->m_fLastTime2c = fTime;
 
-		// 0x004612d4..0x004612df.  Virtual, one argument, callee cleanup.
 		pShell->m_pClientMgr->m_pClientDE->m_pPhysicsLT->
 			GetGlobalForce(vGlobalForce);
 
-		// --------------------------------------------------------------- //
-		//  THE POSITION LIST -- 0x004612e2 .. 0x00461882
-		// --------------------------------------------------------------- //
-		pCur = pShell->m_PosPredictList.m_pNext;            // 0x004612e2
-		while (pCur != &pShell->m_PosPredictList)           // 0x004612e5/0x0046187a
+		pCur = pShell->m_PosPredictList.m_pNext;
+		while (pCur != &pShell->m_PosPredictList)
 		{
-			LTVector vForce, vNewPos, vOldPos;
+			LTVector vForce, vNewPos;
 			LTBOOL   bStopped;
 			float    fDT;
 
-			pObj = (LTObjectQ1S*)pCur->m_pData;             // 0x004612fd
-			pCur = pCur->m_pNext;                           // 0x00461300
+			pObj = (LTObjectQ1S*)pCur->m_pData;
+			pCur = pCur->m_pNext;
 
-			// 0x0046130d `lea 0x124(%edi),%esi`: the record pointer is a
-			// named local, read through at 0x00461358 and 0x00461391 and
-			// pushed at both call sites.
 			pRec = (SPredictRecQ1S*)&pObj->m_fPosPredictTime;
 
-			// 0x00461307 `test $0x20000,%eax` -- FLAG_GRAVITY is 1<<17,
-			// and src/engine/server/commonphysics.h already reads bit 17 of
-			// this same dword as FLAG_GRAVITY.
 			if (pObj->m_Flags & FLAG_GRAVITY)
 			{
-				// 0x0046131a..0x00461337: three integer dword pairs, i.e.
-				// the whole-vector assignment, not three float stores.
 				vForce = vGlobalForce;
 			}
 			else
 			{
-				// 0x0046133d..0x00461354: three `movl $0x0` and no call.
-				// predobj.cpp records that VC6 declines to inline
-				// `_CVector::Init` (it calls 0x0041ab50), so these cannot
-				// be an Init() -- they are component assignments.
 				vForce.x = 0.0f;
 				vForce.y = 0.0f;
 				vForce.z = 0.0f;
 			}
 
-			// 0x00461355 / 0x00461358 / 0x0046135b.
 			fDT = pShell->m_fTime28 - pRec->m_fPredictStamp;
-			if (fDT < 0.0f)                                 // 0x0046135f
-				fDT = 0.0f;                                 // 0x0046136c
-			else if (fDT > g_fMaxExtrapolateTimeQ1S)        // 0x0046137a
-				fDT = g_fMaxExtrapolateTimeQ1S;             // 0x00461387
+			if (fDT < 0.0f)
+				fDT = 0.0f;
+			else if (fDT > g_fMaxExtrapolateTimeQ1S)
+				fDT = g_fMaxExtrapolateTimeQ1S;
 
-			bStopped = LTFALSE;                             // 0x004613a2
+			bStopped = LTFALSE;
 
-			// 0x00461391..0x004613b2 is Mag() expanded in place --
-			// three `flds` off +0x138/+0x13c/+0x140, x*x + y*y + z*z,
-			// `fsqrt`, no call.  0x004613ba compares it with 0.0f and
-			// 0x004613d1 compares the global with 0.0f; both `jne` to the
-			// same else at 0x004614d0, which is the `&&`.
-			if (pRec->m_vVel.Mag() > 0.0f &&
-			    g_fMaxExtrapolateTimeQ1S > 0.0f)
+			if (pRec->m_vVel.Mag() <= 0.0f ||
+			    g_fMaxExtrapolateTimeQ1S <= 0.0f ||
+			    fDT == g_fMaxExtrapolateTimeQ1S)
 			{
-				// 0x004613e2..0x00461407.  Seven pushes: the hidden buffer
-				// (E+0x108) last-pushed and therefore leftmost, then pObj,
-				// then pObj+0x124, then &vForce, then fDT/fMax, then fMax,
-				// then 1.  `add $0x1c,%esp` = 7 dwords.
-				vNewPos = sub_4619a0Q1S(
-					pObj, pRec,
-					&vForce, fDT / g_fMaxExtrapolateTimeQ1S,
-					g_fMaxExtrapolateTimeQ1S, 1);
-
-				// 0x00461415..0x004614cb.  m_Pos is copied twelve bytes to
-				// E+0x0a4 (operator+'s by-value parameter), the sum lands in
-				// E+0x0d4 and the halved result in E+0x08c before being
-				// assigned back.  /O2 canonicalises the fadd operand order,
-				// so the load order is not evidence of which term is first.
-				vNewPos = (vNewPos + pObj->m_Pos) * 0.5f;
-			}
-			else
-			{
-				// 0x004614f0..0x0046150d.  A SECOND zero vector, at
-				// E+0x0bc, distinct from vForce at E+0x068 -- so it is its
-				// own local and not a reuse.
 				LTVector vZeroForce;
 
 				vZeroForce.x = 0.0f;
 				vZeroForce.y = 0.0f;
 				vZeroForce.z = 0.0f;
 
-				// 0x004614d0..0x00461511.  Same seven pushes, hidden buffer
-				// at E+0x114 this time, and the fourth argument is the
-				// immediate 0x3f800000 = 1.0f (0x004614e0).
 				vNewPos = sub_4619a0Q1S(
 					pObj, pRec,
-					&vZeroForce, 1.0f, g_fMaxExtrapolateTimeQ1S, 1);
+					&vZeroForce, 0.0f, g_fMaxExtrapolateTimeQ1S, 1);
 
-				// 0x0046151b .. 0x0046153c.  See the DEAD CODE note above:
-				// the clamp at 0x00461387 makes this always true.
-				if (fDT <= g_fMaxExtrapolateTimeQ1S)
+				if (fDT < g_fMaxExtrapolateTimeQ1S)
 				{
-					// 0x00461542..0x004615dc.  The same expression as the
-					// other arm, written out a second time rather than
-					// shared -- VC6 would have folded one site
-					// into the other if it were one source statement.
 					vNewPos = (vNewPos + pObj->m_Pos) * 0.5f;
 				}
 				else
 				{
-					// 0x004615de..0x0046160a.
-					bStopped = LTTRUE;                      // 0x004615f0
+					bStopped = LTTRUE;
 					pObj->m_PosPredictLink.Remove();
 					pObj->m_PosPredictLink.TieOff();
 				}
 			}
+			else
+			{
+				vNewPos = sub_4619a0Q1S(
+					pObj, pRec,
+					&vForce, fDT / g_fMaxExtrapolateTimeQ1S,
+					g_fMaxExtrapolateTimeQ1S, 1);
 
-			// 0x0046160c..0x00461629.  Saved BEFORE the move, because the
-			// two calls below both write m_Pos and the red debug line wants
-			// the before/after pair.  Three integer dword moves = one
-			// whole-vector assignment.
-			vOldPos = pObj->m_Pos;
+				vNewPos = (vNewPos + pObj->m_Pos) * 0.5f;
+			}
 
-			// 0x00461630..0x00461638.  Second argument is the literal 0,
-			// where predobj.cpp's 0x00460db0 passes `bTeleport || bStopped`.
 			pShellIface->OnObjectMove(pObj, LTFALSE, &vNewPos);
 
-			// 0x0046163b `test $0x20,%ah` on the high half = 0x2000 =
-			// FLAG_SOLID (1<<13), then 0x00461646 tests bStopped.  Both
-			// `je`/`jne` go to the same else at 0x00461670, so it is one
-			// `&&`.
 			if ((pObj->m_Flags & FLAG_SOLID) && !bStopped)
 			{
-				// 0x0046164e..0x0046166b.  Virtual slot 0x30, three stack
-				// arguments, callee cleanup.
 				pShell->m_pClientMgr->m_pClientDE->m_pPhysicsLT->
-					MoveObject(pObj, &vNewPos, 0);
+					MoveObject(pObj, &vNewPos, bStopped);
 			}
 			else
 			{
-				// 0x00461670..0x00461688, `add $0x10,%esp`.
 				sub_4207a0Q1S(pShell->m_pClientMgr, pObj, &vNewPos, 1);
-			}
-
-			// 0x0046168b / 0x00461696.  The console variable is compared
-			// against the literal 1 (`cmpl $0x1,0x4b32c0`), not merely
-			// tested, so it is `== 1` and not a truth test.
-			if (pRec->m_hPredictLines && g_CV_PredictionLinesQ1S == 1)
-			{
-				LTLine line;
-
-				// RED: where the object was, to where it now is.
-				// 0x004616a3..0x00461717.
-				line.m_Points[0].m_Pos = vOldPos;
-				line.m_Points[0].r = 1.0f;
-				line.m_Points[0].g = 0.0f;
-				line.m_Points[0].b = 0.0f;
-				line.m_Points[0].a = 1.0f;
-				line.m_Points[1].m_Pos = pObj->m_Pos;
-				line.m_Points[1].r = 1.0f;
-				line.m_Points[1].g = 0.0f;
-				line.m_Points[1].b = 0.0f;
-				line.m_Points[1].a = 1.0f;
-				ci_AddLineQ1S(pRec->m_hPredictLines, &line);
-
-				// GREEN: where the object was, to where prediction asked it
-				// to go.  0x0046171c..0x00461790.
-				line.m_Points[0].m_Pos = vOldPos;
-				line.m_Points[0].r = 0.0f;
-				line.m_Points[0].g = 1.0f;
-				line.m_Points[0].b = 0.0f;
-				line.m_Points[0].a = 1.0f;
-				line.m_Points[1].m_Pos = vNewPos;
-				line.m_Points[1].r = 0.0f;
-				line.m_Points[1].g = 1.0f;
-				line.m_Points[1].b = 0.0f;
-				line.m_Points[1].a = 1.0f;
-				ci_AddLineQ1S(pRec->m_hPredictLines, &line);
-
-				// BLUE: the raw server state -- the last position we were
-				// told, and that position plus a full extrapolation window
-				// of the last velocity we were told.
-				// 0x00461795..0x00461864.  The multiply temp is at E+0x0c8
-				// and the sum reads m_vPredictPos IN PLACE (`fadds (%eax)`),
-				// with no by-value copy, which is what makes m_vPredictPos
-				// the left operand and the product the right one.
-				line.m_Points[0].m_Pos = pRec->m_vPos;
-				line.m_Points[0].r = 0.0f;
-				line.m_Points[0].g = 0.0f;
-				line.m_Points[0].b = 1.0f;
-				line.m_Points[0].a = 1.0f;
-				line.m_Points[1].m_Pos = pRec->m_vPos +
-				                         pRec->m_vVel *
-				                         g_fMaxExtrapolateTimeQ1S;
-				line.m_Points[1].r = 0.0f;
-				line.m_Points[1].g = 0.0f;
-				line.m_Points[1].b = 1.0f;
-				line.m_Points[1].a = 1.0f;
-				ci_AddLineQ1S(pRec->m_hPredictLines, &line);
 			}
 		}
 
-		// --------------------------------------------------------------- //
-		//  THE ROTATION LIST -- 0x00461884 .. 0x00461986
-		// --------------------------------------------------------------- //
-		pCur = pShell->m_RotPredictList.m_pNext;            // 0x00461884
-		while (pCur != &pShell->m_RotPredictList)           // 0x00461887/0x0046197f
+		pCur = pShell->m_RotPredictList.m_pNext;
+		while (pCur != &pShell->m_RotPredictList)
 		{
-			pObj = (LTObjectQ1S*)pCur->m_pData;             // 0x00461898
-			pCur = pCur->m_pNext;                           // 0x0046189b
+			LTRotation rTarget;
+			float      fStep;
 
-			// 0x004618a2..0x004618c3.  The member is RELOADED in the taken
-			// arm (0x004618b3); see pt_MinQ1S above.
-			fStep = pt_MinQ1S(pObj->m_fRotPredictTime, fFrameTime);
+			pObj = (LTObjectQ1S*)pCur->m_pData;
+			pCur = pCur->m_pNext;
 
-			// 0x004618c7..0x004618eb.  `push %ecx ; fstps (%esp)` is the
-			// float argument; three pointer pushes; `add $0x10,%esp`.
-			quat_SlerpQ1S(rNew.m_Quat, pObj->m_Rotation.m_Quat,
+			fStep = LTMIN(pObj->m_fRotPredictTime, fFrameTime);
+
+			quat_SlerpQ1S(rTarget.m_Quat, pObj->m_Rotation.m_Quat,
 			              pObj->m_PredictRot.m_Quat,
 			              fStep / pObj->m_fRotPredictTime);
+			quat_SlerpQ1S(rNew.m_Quat, pObj->m_Rotation.m_Quat,
+			              rTarget.m_Quat, 0.5f);
 
-			// 0x004618f7..0x00461904, virtual slot 0x40.
-			pShellIface->OnObjectRotate(pObj, LTFALSE, &rNew);
-
-			// 0x00461907..0x00461914, `add $0xc,%esp`.
-			sub_420880Q1S(pShell->m_pClientMgr, pObj, &rNew);
-
-			// 0x00461919..0x00461926 (`fsts`, so the value stays in %st for
-			// the compare that follows).
 			pObj->m_fRotPredictTime -= fStep;
 
-			if (pObj->m_fRotPredictTime <= 0.0f)            // 0x0046192c
+			if (pObj->m_fRotPredictTime <= 0.0f)
 			{
-				// 0x00461939..0x00461952: four dword pairs = ltrotation.h's
-				// inline operator=.  The direction is +0x9c -> +0x160.
-				pObj->m_PredictRot = pObj->m_Rotation;
-				pObj->m_fRotPredictTime = 0.0f;             // 0x00461955
-				pObj->m_RotPredictLink.Remove();            // 0x0046195f
-				pObj->m_RotPredictLink.TieOff();            // 0x00461973
+				rNew = pObj->m_PredictRot;
+				pObj->m_fRotPredictTime = 0.0f;
+				pObj->m_RotPredictLink.Remove();
+				pObj->m_RotPredictLink.TieOff();
 			}
+
+			pShellIface->OnObjectRotate(pObj, LTFALSE, &rNew);
+
+			sub_420880Q1S(pShell->m_pClientMgr, pObj, &rNew);
 		}
 	}
 }

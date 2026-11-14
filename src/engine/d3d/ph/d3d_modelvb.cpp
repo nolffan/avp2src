@@ -34,7 +34,7 @@
 //  shaped (inline function or macro) to land the same way.
 //
 //  Near, and why:
-//    * 0x10001420 (d3d_GenUVEnvMap), 0x100036d0, 0x10002bc0: the order of
+//    * 0x100036d0, 0x10002bc0: the order of
 //      the terms in the transform sums, which cl 8966 picks itself (every
 //      source order of the terms was measured, with no effect).
 //    * 0x10002050 (DrawTLVertsReallyClose): retail calls only its clip
@@ -48,9 +48,9 @@
 //      bytes, 4241 shipped; AvP2 4246).
 //    * 0x10005700 (DrawLOD): which register holds the vertex count at
 //      the end (size-exact, both builds).
-//    * 0x10006900, 0x100073b0, 0x10007670: ClipEdgeBottom's numerator
-//      operand order inlined into ClipBottom, and LerpClipVert's last byte
-//      lerp's load order, both cl 8966's choice (size-exact).
+//    * 0x100073b0, 0x10007670: LerpClipVert's last byte lerp's load
+//      order, cl 8966's choice (size-exact).  (0x10006900, ClipBottom,
+//      is identical with ClipEdgeBottom's numerator accumulated.)
 //
 // *********************************************************************** //
 
@@ -611,21 +611,26 @@ void __fastcall d3d_GenUVNone(CD3DModelDraw* pDraw, ModelVert* pVert,
 }
 
 // 0x10001420 -- environment map: the normal through the environment
-// matrix, scaled and offset. NEAR: the terms of each row's sum (retail
-// v: y, x, z; u: y, z, x), which no spelling tried (direct, Dot,
-// Apply3x3, MatVMul_3x3, temporaries) reproduces.
+// matrix, scaled and offset. Each row accumulated (v first: y, x, z; then
+// u: y, z, x); the one-expression sums come out in another term order, and
+// u's last term reads the normal's x through a local, which is what loads
+// it ahead of the matrix element.
 void __fastcall d3d_GenUVEnvMap(CD3DModelDraw* pDraw, ModelVert* pVert,
                                 UVVert* pOut)
 {
-	pOut->SetUV(
-		(pVert->m_vNormal.x * pDraw->m_mEnvMap.m[0][0]
-		 + pVert->m_vNormal.y * pDraw->m_mEnvMap.m[0][1]
-		 + pVert->m_vNormal.z * pDraw->m_mEnvMap.m[0][2])
-			* pDraw->m_fEnvScaleU + pDraw->m_fEnvOffsetU,
-		(pVert->m_vNormal.x * pDraw->m_mEnvMap.m[1][0]
-		 + pVert->m_vNormal.y * pDraw->m_mEnvMap.m[1][1]
-		 + pVert->m_vNormal.z * pDraw->m_mEnvMap.m[1][2])
-			* pDraw->m_fEnvScaleV + pDraw->m_fEnvOffsetV);
+	float fU, fV;
+
+	fV  = pVert->m_vNormal.y * pDraw->m_mEnvMap.m[1][1];
+	fV += pVert->m_vNormal.x * pDraw->m_mEnvMap.m[1][0];
+	fV += pVert->m_vNormal.z * pDraw->m_mEnvMap.m[1][2];
+
+	float fX = pVert->m_vNormal.x;
+	fU  = pVert->m_vNormal.y * pDraw->m_mEnvMap.m[0][1];
+	fU += pVert->m_vNormal.z * pDraw->m_mEnvMap.m[0][2];
+	fU += fX * pDraw->m_mEnvMap.m[0][0];
+
+	pOut->SetUV(fU * pDraw->m_fEnvScaleU + pDraw->m_fEnvOffsetU,
+	            fV * pDraw->m_fEnvScaleV + pDraw->m_fEnvOffsetV);
 }
 
 // 0x10001490 -- specular: the normal against the specular direction.

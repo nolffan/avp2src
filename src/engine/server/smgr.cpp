@@ -1205,7 +1205,10 @@ void sub_48d400Q502(CServerMgr* pMgr)
 			models.insert(pModel);
 	}
 
-	for (std::set<Model*>::iterator it = models.begin(); it != models.end(); ++it)
+	// Postfix: AvP2 1.0.9.6's /O2 then CALLS the tree step (0x00485272
+	// `call 0x00457ed0`) where a prefix ++ expands it; Primal Hunt's
+	// two images are identical either way.
+	for (std::set<Model*>::iterator it = models.begin(); it != models.end(); it++)
 		sm_UnloadModelFileQ523(pMgr, (*it)->GetFilename());
 }
 
@@ -4156,9 +4159,19 @@ LPBASECLASS si_CreateObjectProps(HCLASS hClass, ObjectCreateStruct* pStruct, cha
 			{
 				pProp = (ObjectProp*)sm_sb_Allocate(&g_pServerMgr->m_PropBank);
 
+#if defined(PRIMAL_HUNT) || defined(LT_SERVER_BUILD)
 				pProp->m_Type = PT_STRING;
 				pProp->m_Name[0] = 0;
 				pProp->m_String[0] = 0;
+#else
+				// AvP2 1.0.9.6's lithtech.exe clears the string first
+				// (0x0047f3ed); its server.dll (/O1, 0x1003a08a) keeps the
+				// order above, so this is cl 9044's /O2 scheduling of the
+				// same three stores, reached only by writing them so.
+				pProp->m_String[0] = 0;
+				pProp->m_Type = PT_STRING;
+				pProp->m_Name[0] = 0;
+#endif
 
 				strncpy(pProp->m_Name, parser.m_ArgPointers[0], sizeof(pProp->m_Name) - 1);
 				pProp->m_Name[sizeof(pProp->m_Name) - 1] = 0;

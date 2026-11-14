@@ -786,11 +786,12 @@ LTRESULT sm_LoadWorldObjects(CServerMgr* pMgr, ILTStream* pStream,
 		ocs.m_ObjectType = 0;
 		ocs.m_Filename[0] = 0;
 		ocs.m_SkinNames[0][0] = 0;
+		ocs.m_Pos.Init();
 #ifdef PRIMAL_HUNT
-		// PH: the extra texture name too (server.dll 0x100361c2, ocs +0x300).
+		// PH: the extra texture name too (server.dll 0x100361c2, ocs +0x300),
+		// after m_Pos (lithtech.exe 0x0047e3a8).
 		ocs.m_ExtraTextureName[0] = 0;
 #endif
-		ocs.m_Pos.Init();
 
 		pStream->Read(&nNumProps, 4);
 
@@ -799,7 +800,11 @@ LTRESULT sm_LoadWorldObjects(CServerMgr* pMgr, ILTStream* pStream,
 			pStream->ReadString(sPropName, sizeof(sPropName));
 			pStream->Read(&nPropType, 1);
 			pStream->Read(&nPropFlags, 4);
-			pStream->Read(&nPropLen, 2);
+			// iltstream.h's operator>> (and the LTStream_Read inside it):
+			// the same Read(&nPropLen, 2), but two more /O2 expansions, and
+			// they are what leave the constructor's m_Pos.Init() a CALL in
+			// both lithtech.exe images (0x00477782, PH 0x0047e162).
+			*pStream >> nPropLen;
 
 			pProp = (ObjectProp*)dalloc(nPropLen + 0x5b);
 

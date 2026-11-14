@@ -1176,6 +1176,15 @@ void CNetMgr::TermQueue(LMessageList* pQueue)
 	pQueue->m_nMessages = 0;
 }
 
+#if !defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
+// AvP2 1.0.9.6's lithtech.exe 0x00465e00 (server.dll 0x1002bf26): the
+// payload buffer, for the local driver's receive (servermsg.h).
+uint8* CMsgPacketData::GetData()
+{
+	return ((uint8**)this)[1];
+}
+#endif
+
 
 // The app guid the drivers advertise; a null argument clears it.
 void CNetMgr::SetGuid(LTGUID* pGuid)
@@ -1267,6 +1276,12 @@ void netbank_Term()
 
 	LTLink* pLink = g_NetBankList.m_pHead;
 
+#ifndef PRIMAL_HUNT
+	// AvP2 1.0.9.6 (lithtech.exe 0x004690c0) tests the head itself before
+	// the walk, and keeps it in a register for the loop's own compares,
+	// reloading it only after a delete; Primal Hunt's reloads it every step.
+	if (g_NetBankList.m_pHead)
+#endif
 	while (pLink)
 	{
 		void* pItem = pLink->m_pData;

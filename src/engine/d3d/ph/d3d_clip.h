@@ -178,7 +178,13 @@ inline float ClipEdgeBottom(LTVector* a, LTVector* b, LTVector* dst)
 	float fZ;
 
 	if (fDenom < -CLIP_EPSILON || fDenom > CLIP_EPSILON)
-		t = -(a->y + a->z) / fDenom;
+	{
+		// Accumulated, z first: retail adds a->y to a->z (TU01's ClipBottom,
+		// 0x10006900); the one expression emits y first.
+		float fNum = a->z;
+		fNum += a->y;
+		t = -fNum / fDenom;
+	}
 	else
 		t = 0.0f;
 

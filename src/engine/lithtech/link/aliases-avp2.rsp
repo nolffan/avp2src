@@ -223,6 +223,8 @@
 /ALTERNATENAME:?ClearMode@CcnConsole@@QAEXXZ=?ClearMode@CUnknown41CD10@@QAEXXZ
 # 0x44a400 Iq
 /ALTERNATENAME:?ClearPendingList@CLTDirectMusicMgr@@QAEXXZ=?ClearPendingList@CLTDirectMusicMgrQ7@@QAEXXZ
+# 0x4165f0 q
+/ALTERNATENAME:?ClearQ478@CObjectCreateStructQ478@@QAEXXZ=?Clear@ObjectCreateStruct@@QAEXXZ
 # 0x433ee0 I
 /ALTERNATENAME:?Close@CDMFileRecord@@QAEXXZ=?Release@CLockedItemView@@QAEXXZ
 # 0x49f7b0 N

@@ -1007,9 +1007,13 @@ void fnt_BlitTextQ488(CSurfaceQ488* hDest, LTRect* pSrcRect,
 	GetColorOpsQ488()->ConvertColor(&g_ScreenFormatQ488, hForeColor, &nFore);
 	GetColorOpsQ488()->ConvertColor(&g_ScreenFormatQ488, hBackColor, &nBack);
 
-	if (!((hForeColor & 0x80000000) && (hBackColor & 0x80000000)))
+	// The text's transparency is the top bit shifted down, kept in %eax for
+	// the second test (`shr $0x1f` at AvP2 1.0.9.6 0x0049bc1e); the
+	// background's is a sign test (`js`).  NEAR still: the six inlined
+	// painters load their arguments in another order (scheduling).
+	if (!((hForeColor >> 31) && (hBackColor & COLOR_TRANSPARENCY_MASK)))
 	{
-		if (hForeColor & 0x80000000)
+		if (hForeColor >> 31)
 		{
 			// The text is transparent: paint only the background.
 			if (g_ScreenFormatQ488.m_nBitDepth == FMT_565_Q488)
@@ -1017,7 +1021,7 @@ void fnt_BlitTextQ488(CSurfaceQ488* hDest, LTRect* pSrcRect,
 			else if (g_ScreenFormatQ488.m_nBitDepth == FMT_32_Q488)
 				fnt_PaintBack32Q488(pSrc, pDest, rcSrc.left, rcSrc.top, rcSrc.right, rcSrc.bottom, nDestPitch, nBack);
 		}
-		else if (hBackColor & 0x80000000)
+		else if (hBackColor & COLOR_TRANSPARENCY_MASK)
 		{
 			// The background is transparent: paint only the text.
 			if (g_ScreenFormatQ488.m_nBitDepth == FMT_565_Q488)

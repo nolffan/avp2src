@@ -3619,6 +3619,19 @@ public:
 CObjectCreateStructQ478::CObjectCreateStructQ478()
 {
 }
+
+// 0x0048b210 -- the create request's constructor, out of line in AvP2
+// 1.0.9.6 as the struct's is (called at 0x0048aeb8; lt2new4.cpp has the
+// shape); Primal Hunt expands it into ReadObjectSubPacket.
+class CClientCreateRequestOOLQ478 : public CClientCreateRequestQ478
+{
+public:
+	CClientCreateRequestOOLQ478();
+};
+
+CClientCreateRequestOOLQ478::CClientCreateRequestOOLQ478()
+{
+}
 #endif
 
 // 0x00411a70 -- clientmgr2.cpp's object create (manager, server id,
@@ -3656,8 +3669,15 @@ LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell, CPacketQ478* pPacket,
 	// create request with its constructor, as sub_47a4e0's (0x00494775..
 	// 0x004947b6: the skins through the vector constructor iterator).
 	CMsgHolderQ478           cMsg;
+#ifdef PRIMAL_HUNT
 	ObjectCreateStruct       ocs;
 	CClientCreateRequestQ478 setup;
+#else
+	// AVP2: 1.0.9.6 calls both constructors out of line (0x0048aeaf ->
+	// 0x0048b190, 0x0048aeb8 -> 0x0048b210), and the Clear below.
+	CObjectCreateStructQ478     ocs;
+	CClientCreateRequestOOLQ478 setup;
+#endif
 	CUpdListQ478             list;
 	CObjChangeInfoQ478*     pInfo;
 	CObjRecQ478*            pRec;
@@ -3685,7 +3705,11 @@ LTRESULT ReadObjectSubPacket(CClientShellQ478* pShell, CPacketQ478* pPacket,
 			}
 		}
 
+#ifdef PRIMAL_HUNT
 		ocs.Clear();
+#else
+		ocs.ClearQ478();                            // 0x0048af56
+#endif
 		sub_479500(pPacket, (CObjSetupQ479*)&setup, (CPacketQ478*)cMsg.m_pMsg);
 
 		dResult = sub_411a70Q478(pShell->m_pClientMgr, nID,
@@ -3758,7 +3782,12 @@ LTRESULT sub_478510(CClientShellQ478* pShell, CPacketQ478* pPacket)
 		// here for ReadObjectSubPacket (0x004940e0..0x00494154).
 		nFlags = pPacket->ReadTypeOOL((uint8*)0);
 		if (nFlags & 0x80)
+#ifdef PRIMAL_HUNT
 			nFlags |= (uint16)pPacket->ReadType((uint8*)0) << 8;
+#else
+			// AVP2: 1.0.9.6 calls this one too (0x0048ae1e).
+			nFlags |= (uint16)pPacket->ReadTypeOOL((uint8*)0) << 8;
+#endif
 
 		if (nFlags)
 		{
@@ -3770,7 +3799,13 @@ LTRESULT sub_478510(CClientShellQ478* pShell, CPacketQ478* pPacket)
 		}
 		else
 		{
+			// AVP2: 1.0.9.6 calls this read and the two below out of line
+			// (0x0048b0b9, 0x0048b0d3, 0x0048b0e0).
+#ifdef PRIMAL_HUNT
 			nType = pPacket->ReadType((uint8*)0);
+#else
+			nType = pPacket->ReadTypeOOL((uint8*)0);
+#endif
 
 			if (nType == 0)
 			{
@@ -3780,8 +3815,13 @@ LTRESULT sub_478510(CClientShellQ478* pShell, CPacketQ478* pPacket)
 			}
 			else if (nType == 1)
 			{
+#ifdef PRIMAL_HUNT
 				uint16 nChange = pPacket->ReadType((uint8*)0);
 				uint16 nObject = pPacket->ReadType((uint16*)0);
+#else
+				uint16 nChange = pPacket->ReadTypeOOL((uint8*)0);
+				uint16 nObject = pPacket->ReadTypeOOL((uint16*)0);
+#endif
 
 				dResult = sub_479bf0(pShell, pPacket, nObject, nChange);
 				if (dResult != LT_OK)

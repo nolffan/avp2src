@@ -9,8 +9,9 @@
 //  start point is off the plane, and its polygon test rejects non-solid
 //  surfaces first.
 //
-//  InsideConvex (0x10033013) is a near: two terms of the edge plane's
-//  distance are added in the other order.
+//  InsideConvex (0x10033013): the edge plane is the loop body's own
+//  (declared at function scope, two terms of its distance's dot product
+//  come out in the other order).
 // *********************************************************************** //
 
 #include "ltbasedefs.h"
@@ -102,7 +103,6 @@ struct IntersectRequest
 // Tells if pPt is inside the convex poly.
 inline LTBOOL InsideConvex(WorldPoly *pPoly, LTVector *pPt)
 {
-	LTPlane edgePlane;
 	float edgeDot;
 	LTVector *pNormal, vTemp;
 	SPolyVertex *pCurVert, *pPrevVert, *pEndVert;
@@ -123,6 +123,8 @@ inline LTBOOL InsideConvex(WorldPoly *pPoly, LTVector *pPt)
 
 	for(pCurVert=pPoly->m_Vertices; pCurVert != pEndVert; )
 	{
+		LTPlane edgePlane;
+
 		vTemp = *pPrevVert->m_Vec - *pCurVert->m_Vec;
 		edgePlane.m_Normal = pNormal->Cross(vTemp);
 		edgePlane.m_Normal.Norm();

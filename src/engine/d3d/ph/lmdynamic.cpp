@@ -265,7 +265,8 @@ CD3DConVar g_CV_LMDynamicSize("LMDynamicSize", 16.0f, LTNULL, LTNULL);	// 0x1007
 void d3d_FillDynamicLM16(uint16 *pData, LMDrawDesc *pDesc, float fDistSqr, LMColor *pColor, uint32 unused);
 void d3d_FillDynamicLM32(uint32 *pData, LMDrawDesc *pDesc, float fDistSqr, LMColor *pColor, uint32 unused);
 
-// 0x100333c0
+// 0x100333c0 (the plane before the position: that order puts the
+// distance in pLight's dead slot and the colour in pPoly's)
 LTBOOL d3d_DrawDynamicLM(LMDrawDesc *pDesc, LMPoly *pPoly, LMDynamicLight *pLight, float fScale)
 {
 	void *pData;
@@ -277,8 +278,8 @@ LTBOOL d3d_DrawDynamicLM(LMDrawDesc *pDesc, LMPoly *pPoly, LMDynamicLight *pLigh
 	if(!g_CV_LMDynamic.m_nValue)
 		return LTFALSE;
 
-	vPos = pLight->m_Pos;
 	pPlane = pPoly->m_pPlane;
+	vPos = pLight->m_Pos;
 	fDist = (vPos.x * pPlane->m_Normal.x + vPos.y * pPlane->m_Normal.y + vPos.z * pPlane->m_Normal.z) - pPlane->m_Dist;
 	fT = fDist / pLight->m_pObject->GetRadius(pLight->m_pObject);
 

@@ -90,6 +90,17 @@
 #include "ltlink.h"              // CheapLTLink / LTLink
 #include "iltstream.h"           // ILTStream: Read = slot 2, ErrorStatus = 4
 
+// The node class, the object base, the box query and the insert walk
+// (0x0048c540..0x0048cfe1): the same shipped translation unit, compiled
+// AHEAD of this half. AvP2 1.0.9.6's cl 9044 back end proves it: it knows
+// the register use of a function already compiled in the same unit, and
+// after `call SetDims` (0x004a0353) and `call SetDims` again (0x004a0429)
+// it reuses %ecx -- &m_RootNode, which SetDims only reads -- as CopyNodes'
+// first argument and as LoadNodes' `this` (0x004a035c, 0x004a0439), where a
+// call to another unit's function has to rebuild it. Primal Hunt's 8966
+// does not do this, so the two files' split only shows in AvP2's image.
+#include "worldtree2.cpp"
+
 
 // ======================================================================= //
 //  THE TYPES THESE EIGHT FUNCTIONS REACH
@@ -142,26 +153,11 @@ public:
 };
 
 
-// The quadtree node.  Sizes and offsets are argued in the banner; m_pad_03c
-// is the sixteen bytes between the centre and the child array that none of
-// these eight functions reads.
-class CWTNodeN48D
-{
-public:
-	// Reached, all in the module but outside this range.
-	LTBOOL AllocChildren();                                       // 0x0048ca50
-	void   SetDims(CWTVecN48D vMin, CWTVecN48D vMax);             // 0x0048c830
-	LTBOOL LoadNodes(ILTStream *pStream, uint8 *pDepth,
-	                 uint8 *pMaxDepth);                           // 0x0048c9b0
-
-public:
-	CheapLTLink  m_Objects[3];               // 0x00  indexed by *8
-	CWTVecN48D   m_vBoxMin;                  // 0x18
-	CWTVecN48D   m_vBoxMax;                  // 0x24
-	CWTVecN48D   m_vCenter;                  // 0x30
-	uint8        m_pad_03c[0x4c - 0x3c];     // 0x3c
-	CWTNodeN48D* m_Children[4];              // 0x4c
-};                                           // 0x5c
+// The quadtree node is worldtree2.cpp's (0x5c bytes: the object lists at
+// 0x00, m_vBoxMin 0x18, m_vBoxMax 0x24, m_vCenter 0x30, the children at
+// 0x4c -- the layout argued in the banner), so SetDims, LoadNodes and
+// AllocChildren are the definitions this unit has already compiled.
+typedef CWTNodeN48C CWTNodeN48D;
 
 
 // The segment-query descriptor 0x0048d210 builds at %esp+4 and 0x0048d290
@@ -289,7 +285,8 @@ public:
 // 0x0048c540 -- the box walk 0x0048d810 starts.  cdecl, three arguments
 // (0x0048d8c4: `push $0x0; push %esi; push %edx`, and the 0x14 that comes
 // off %esp at 0x0048d8da covers this call's three and the next call's two).
-void wt_FindInBoxN48D(CWTNodeN48D *pNode, CWTBoxInfoN48D *pInfo, int nFlag);
+// (worldtree2.cpp's wt_FindObjectsInBoxN48C; its descriptor is
+// CWTBoxInfoN48D, field for field.)
 
 // 0x0048d8f0 -- the same object walk 0x0048d290 does, over the tree's own
 // root list instead of a node's.  cdecl, two arguments.  DEFINED BELOW
@@ -525,8 +522,8 @@ uint32 wt_ProcessNodeSegN48D(CWTNodeN48D *pNode, CWTSegInfoN48D *pInfo)
 //  which is why its `lea` (0x0048d3f1) comes late and it gets %ebx.
 //  (helper name ours)
 // ======================================================================= //
-inline LTBOOL wt_PtInNodeN48D(const CWTVecN48D *pPt, const CWTVecN48D *pMin,
-                              const CWTVecN48D *pMax)
+inline LTBOOL wt_PtInNodeN48D(const CWTVecN48D *pPt, const LTVector *pMin,
+                              const LTVector *pMax)
 {
 	return pPt->x >= pMin->x && pPt->z >= pMin->z &&
 	       pPt->x <= pMax->x && pPt->z <= pMax->z;
@@ -605,7 +602,7 @@ inline LTBOOL wt_SegHitsEdgeQ522(float a1, float a2, float fPlane,
 // here for (0, 2) and then (2, 0) -- the second expansion's two edge tests
 // past the inline budget, which is the shipped pair of calls (name ours).
 inline LTBOOL wt_SegHitsRectQ522(const CWTVecN48D *pPt1, const CWTVecN48D *pPt2,
-                                 const CWTVecN48D *pMin, const CWTVecN48D *pMax,
+                                 const LTVector *pMin, const LTVector *pMax,
                                  uint32 nAxis1, uint32 nAxis2)
 {
 	if (wt_SegHitsEdgeQ522(((const float*)pPt1)[nAxis1], ((const float*)pPt2)[nAxis1],
@@ -708,7 +705,7 @@ void CWorldTreeN48D::FindObjectsInBox(CWTBoxInfoN48D *pInfo)
 	if (!pInfo->m_pfnTest)
 		pInfo->m_pfnTest = (void*)wt_DefaultTestN48D;
 
-	wt_FindInBoxN48D(&m_RootNode, pInfo, 0);
+	wt_FindObjectsInBoxN48C(&m_RootNode, (WTFindInfoN48C*)pInfo, 0);
 
 	wt_WalkRootListN48D(&m_RootObjects, pInfo);
 }
@@ -818,7 +815,7 @@ void CWorldTreeN48D::CopyFrom(CWorldTreeN48D *pOther)
 // ======================================================================= //
 LTBOOL CWorldTreeN48D::Load(ILTStream *pStream)
 {
-	CWTVecN48D vMin, vMax;
+	LTVector   vMin, vMax;
 	uint32     nUnused;
 	uint8      nDepth, nMaxDepth;
 

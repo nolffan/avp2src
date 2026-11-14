@@ -895,6 +895,7 @@ static int parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart)
 {
 	while (**ppPos != 0 && **ppPos != '"')
 	{
+#ifdef PRIMAL_HUNT
 		if (**ppPos == '%')
 		{
 			parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
@@ -904,6 +905,20 @@ static int parse_QuoteQ507(char** ppPos, char** ppOut, char* pStart)
 		}
 
 		parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+#else
+		// AvP2 1.0.9.6 (lithtech.exe 0x00420540, server.dll 0x10007cbb):
+		// an if/else, every arm opening with the same advance, which VC6
+		// hoists above the '%' compare.
+		if (**ppPos == '%')
+		{
+			parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+
+			if (**ppPos != 0)
+				parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+		}
+		else
+			parse_AddCharQ507(ppOut, pStart, *(*ppPos)++);
+#endif
 	}
 
 	if (**ppPos == '"')

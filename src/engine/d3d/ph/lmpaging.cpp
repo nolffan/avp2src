@@ -573,14 +573,15 @@ void d3d_TermRenderWorld(void *pWorld)
 struct SceneWorld;
 LTBOOL d3d_UpdateAnimatedLightmap(SceneWorld *pWorld, WorldPoly *pPoly, LTBOOL bForce);	// 0x10034000 (lightanim.cpp)
 
-// 0x10035389 -- page in every lightmap of the world.
+// 0x10035389 -- page in every lightmap of the world. Each model loop has
+// its own j (the frame: i at -0x4, then j).
 LTBOOL d3d_CreateLightmapPages(void *pWorld)
 {
 	LMPager *pPager = (LMPager*)pWorld;
 	WorldData *pWorldData;
 	WorldBsp *pBsp;
 	LightAnim *pAnim;
-	uint32 j, i, startTime;
+	uint32 i, startTime;
 
 	pWorldData = pPager->m_pWorldData;
 	g_LMPageCount = 0;
@@ -598,6 +599,8 @@ LTBOOL d3d_CreateLightmapPages(void *pWorld)
 
 	for(i=0; i < pWorldData->m_nModels; i++)
 	{
+		uint32 j;
+
 		pBsp = pWorldData->m_Models[i]->m_pBsp;
 
 		if(pBsp->m_nLightAnims > 0)
@@ -629,6 +632,8 @@ LTBOOL d3d_CreateLightmapPages(void *pWorld)
 
 	for(i=0; i < pWorldData->m_nModels; i++)
 	{
+		uint32 j;
+
 		pBsp = pWorldData->m_Models[i]->m_pBsp;
 
 		for(j=0; j < pBsp->m_nLMPolies; j++)

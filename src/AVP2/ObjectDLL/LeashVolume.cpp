@@ -210,8 +210,9 @@ CLeashVolume::CLeashVolume() : CLeashNode(LEASHNODE_VOLUME)
 {
 	m_nID = -1;
 
-	// An empty box: inside out, so the first ExtendBounds takes its size
-	m_Box = LeashBox(LTVector(0.0f, 0.0f, 0.0f), LTVector(-999999.0f, -999999.0f, -999999.0f));
+	// A huge box about the origin: centre 0, extents +999999 (0x1015282c
+	// pushes 999999.0f, the folded minimum is -999999.0f)
+	m_Box = LeashBox(LTVector(0.0f, 0.0f, 0.0f), LTVector(999999.0f, 999999.0f, 999999.0f));
 }
 
 // ----------------------------------------------------------------------- //
