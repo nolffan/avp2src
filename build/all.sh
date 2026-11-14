@@ -208,8 +208,11 @@ step "3. compile: the workspaces (build/compile.sh: build/build.mk, ${AVP2SRC_JO
 # until something links them ("src/engine/lithtech/AvP2Release/lithtech.exe
 # was not built"). A variant tree (build/variant.sh: its flags set) builds
 # its own with its flags, or it would ship the release build's engines, and
-# the modern build would have none of its engine changes.
-bash build/compile.sh all engine-link d3d-link avp2-d3d-link
+# the modern build would have none of its engine changes. And every
+# lithshared library of ours (`libs`): `make progress` scores each, and
+# RegMgr.lib is linked by nothing, so a fresh tree had none ("RegMgr:
+# unwritten functions went up, 0 -> 14").
+bash build/compile.sh all engine-link d3d-link avp2-d3d-link libs
 
 # assemble <game dir> <built> <dest> ...
 assemble() {
