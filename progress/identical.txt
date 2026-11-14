@@ -24957,6 +24957,7 @@ PHCShell.dll	sub_10005b70
 PHCShell.dll	sub_10005d20
 PHCShell.dll	sub_10005e00
 PHCShell.dll	sub_10006000
+PHCShell.dll	sub_10006080
 PHCShell.dll	sub_10006090
 PHCShell.dll	sub_10006150
 PHCShell.dll	sub_100061c0
@@ -25757,6 +25758,7 @@ PHCShell.dll	sub_10036880
 PHCShell.dll	sub_10036900
 PHCShell.dll	sub_10037040
 PHCShell.dll	sub_10037730
+PHCShell.dll	sub_10037780
 PHCShell.dll	sub_10037790
 PHCShell.dll	sub_100377c0
 PHCShell.dll	sub_100378b0
