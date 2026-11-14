@@ -45,7 +45,7 @@ class CAISight
 			m_fFOV			= 180.0f;
 			m_bEnabled		= LTTRUE;
 			m_fUpdateRate	= 0.25f;
-			m_fCosHalfFOV	= (LTFLOAT)cos(MATH_DEGREES_TO_RADIANS(m_fFOV) * 0.5f);
+			m_fCosHalfFOV	= (LTFLOAT)cos(m_fFOV * MATH_PI / 360.0f);
 			m_fNextUpdate	= g_pLTServer->GetTime() + 0.25f;
 			m_fRange		= 2048.0f;
 			m_fFudge		= 0.15f;
@@ -57,10 +57,12 @@ class CAISight
 
 		void	SetRange(LTFLOAT fRange) { m_fRange = fRange; }
 
+		// PH: half the FOV in radians as fFOV * MATH_PI / 360: the shipped
+		// constants are float pi folded (SetFOV(360) loads exactly (double)MATH_PI)
 		void	SetFOV(LTFLOAT fFOV)
 		{
 			m_fFOV			= fFOV;
-			m_fCosHalfFOV	= (LTFLOAT)cos(MATH_DEGREES_TO_RADIANS(m_fFOV) * 0.5f);
+			m_fCosHalfFOV	= (LTFLOAT)cos(m_fFOV * MATH_PI / 360.0f);
 		}
 
 		// nFlags is unused: the ray always hits objects and skips the
@@ -634,8 +636,8 @@ class CAIBase : public GameBase
 		int				m_ePainState;			// 0x35c
 		uint32			m_nPainMoveType;		// 0x360
 		LTBOOL			m_bPainFacePos;			// 0x364
-		uint32			m_nPainAnimTime;		// 0x368
-		HMODELANIM		m_hPainLastAnim;		// 0x36c
+		HMODELANIM		m_hPainLastAnim;		// 0x368
+		LTBOOL			m_bPainLastLoop;		// 0x36c
 		int				m_nPainChance;			// 0x370
 		CSpearList		m_Spears;				// 0x374
 };

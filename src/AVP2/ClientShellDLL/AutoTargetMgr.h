@@ -118,7 +118,8 @@ private:
 											LTVector	vF			);
 
 #ifdef PRIMAL_HUNT
-	// Primal Hunt: written inline, so UpdatePredalienTargeting expands it
+	// Primal Hunt: written inline, so UpdateChestbursterTargeting (the body
+	// that is UpdatePredalienTargeting in AvP2, AutoTargetMgr.cpp) expands it
 	// (it has no out-of-line copy in PHCShell.dll)
 	LTBOOL	CheckForLivePredalienTarget	(	HOBJECT		hTarget, 
 											LTVector	vTargetLoc, 

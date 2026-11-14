@@ -495,8 +495,9 @@
 /ALTERNATENAME:?AllocVoid@CLinkNodeBank@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
 # 0x1002dbbc D
 /ALTERNATENAME:?AllocVoid@CNetBank@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCBankElem54@@@@UAEPAXXZ
-# 0x1001b204 Dj
-/ALTERNATENAME:?AllocVoid@CThreadMsgBank@@UAEPAXXZ=?Allocate@CMessageBank@@QAEPAXXZ
+# 0x1001b204 D: retail's slot is a function of its own, `jmp 0x1001b244`
+# (the allocate; nothing else reaches the thunk), which CMessageBank::AllocVoid is
+/ALTERNATENAME:?AllocVoid@CThreadMsgBank@@UAEPAXXZ=?AllocVoid@CMessageBank@@UAEPAXXZ
 # 0x10011d20 Dj
 /ALTERNATENAME:?AllocVoid@CXferFileBankView@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
 # 0x10012bbc D

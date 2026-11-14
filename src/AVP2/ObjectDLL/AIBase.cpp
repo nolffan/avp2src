@@ -235,8 +235,8 @@ CAIBase::CAIBase(uint8 nType) : GameBase(nType)
 	m_ePainState		= eStateIdle;
 	m_nPainMoveType		= 1;
 	m_bPainFacePos		= LTFALSE;
-	m_nPainAnimTime		= (uint32)-1;
-	m_hPainLastAnim		= 1;
+	m_hPainLastAnim		= (uint32)-1;
+	m_bPainLastLoop		= 1;
 	m_nPainChance		= 25;
 }
 
@@ -603,8 +603,8 @@ void CAIBase::OnLoad(HMESSAGEREAD hRead)
 	m_ePainState = hRead->ReadByte();
 	m_nPainMoveType = hRead->ReadByte();
 	m_bPainFacePos = hRead->ReadByte();
-	m_nPainAnimTime = hRead->ReadDWord();
-	m_hPainLastAnim = hRead->ReadByte();
+	m_hPainLastAnim = hRead->ReadDWord();
+	m_bPainLastLoop = hRead->ReadByte();
 	m_nPainChance = hRead->ReadDWord();
 
 	m_Spears.Load(hRead);
@@ -684,8 +684,8 @@ void CAIBase::OnSave(HMESSAGEWRITE hWrite)
 	hWrite->WriteByte(m_ePainState);
 	hWrite->WriteByte(m_nPainMoveType);
 	hWrite->WriteByte(m_bPainFacePos);
-	hWrite->WriteDWord(m_nPainAnimTime);
-	hWrite->WriteByte(m_hPainLastAnim);
+	hWrite->WriteDWord(m_hPainLastAnim);
+	hWrite->WriteByte(m_bPainLastLoop);
 	hWrite->WriteDWord(m_nPainChance);
 
 	m_Spears.Save(hWrite);
@@ -747,7 +747,7 @@ LTBOOL CAIBase::CheckForPlayer()
 	if (!m_Sight.CanSee(pPlayer->m_hObject, vPos, m_OrientMgr.GetForward(), 3, 0, 0, 0, &fDist))
 		return LTFALSE;
 
-	if (m_Memory.IsAware(pPlayer->m_hObject) == LTTRUE)
+	if (m_Memory.Add(pPlayer->m_hObject) == LTTRUE)
 	{
 		m_Memory.AddStimulus(pPlayer->m_hObject, 0, fDist * 500.0f);
 	}
@@ -882,7 +882,7 @@ void CAIBase::UpdatePain(LTFLOAT fFrameTime)
 		LTFLOAT fMax = m_fPainDelayMax;
 		m_fNextPainTime = ((LTFLOAT)rand() / RAND_MAX) * (fMax - fMin) + fMin + fTime;
 
-		m_Animator.PlayAnim((HMODELANIM)m_nPainAnimTime, m_hPainLastAnim, LTFALSE);
+		m_Animator.PlayAnim(m_hPainLastAnim, m_bPainLastLoop, LTFALSE);
 	}
 }
 
@@ -965,9 +965,9 @@ LTBOOL CAIBase::SetStatePain(const AIBaseStateInfo* pInfo)
 	m_eState = eStatePain;
 
 	m_nPainMoveType = m_MoveMgr.GetMoveType();
-	m_hPainLastAnim = m_Animator.GetAnim(0);
+	m_bPainLastLoop = m_Animator.IsLooping(0);
 	m_bPainFacePos = m_OrientMgr.GetFacePos();
-	m_nPainAnimTime = m_Animator.IsLooping(0);
+	m_hPainLastAnim = m_Animator.GetAnim(0);
 
 	m_MoveMgr.SetMoveType(1);
 	m_OrientMgr.SetFacePos(LTFALSE);
@@ -1137,7 +1137,7 @@ void CAIBase::SetSkins(int nSet, ObjectCreateStruct* pStruct, const char* aszSki
 
 void CAIBase::HandleFootstep(HOBJECT hObj, LTBOOL bLoud, LTFLOAT fVolume)
 {
-	if (IsPlayer(hObj) && m_Memory.IsAware(hObj))
+	if (IsPlayer(hObj) && m_Memory.Add(hObj))
 	{
 		m_Memory.AddStimulus(hObj, bLoud, fVolume);
 	}

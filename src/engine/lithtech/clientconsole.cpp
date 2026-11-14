@@ -43,9 +43,13 @@ extern CClientMgrView* g_pConsoleClientMgr;                 // 0x004b2f44
 // It is variadic and cdecl; the format is its first argument.  (name ours)
 void  con_ConsolePrint(char* pFormat, ...);                 // 0x0042e6f0
 
-// src/engine/lithtech/stdlithalloc.cpp names both of these.
-void* dalloc(unsigned long nSize);                          // 0x004290b0
-void  dfree(void* pMem);                                    // 0x004290c0
+// The engine's outer allocator pair, the global operator new and operator
+// delete (one-line forwards to dalloc and dfree): what every allocation in
+// this file calls (AvP2 lithtech.exe 0x004235e0 and 0x004235f0, reached
+// from CConsoleHistory::SetSize and CConsoleView::Free29c; clientfilemgr.cpp
+// calls the pair so too).  Primal Hunt's are 0x004290b0 and 0x004290c0.
+#define con_dalloc(nSize)  operator new(nSize)
+#define con_dfree(pMem)    operator delete(pMem)
 
 // src/engine/lithtech/clientinterface.h names this one.
 // Its body is written at the bottom of this file (see there for why).
@@ -545,7 +549,7 @@ LTBOOL CConsoleHistory::SetSize(int nSize)
 	{
 		nSize++;
 
-		pNew = (ConsoleHistoryEntry*)dalloc(nSize * sizeof(ConsoleHistoryEntry));
+		pNew = (ConsoleHistoryEntry*)con_dalloc(nSize * sizeof(ConsoleHistoryEntry));
 
 		if (!pNew)
 			return LTFALSE;
@@ -589,7 +593,7 @@ LTBOOL CConsoleHistory::SetSize(int nSize)
 	}
 
 	if (m_nSize != i)
-		dfree(m_pEntries);
+		con_dfree(m_pEntries);
 
 	m_nSize = nSize;
 	m_pEntries = pNew;
@@ -1195,7 +1199,7 @@ void CConsoleView::FreeSurface()
 // int charW, the GetDC test folded into the assignment, the load test
 // split in two, or cl 8168 / 8804 / 8966.
 // Declared as their definitions are: clientstreams.cpp's growstream_Open
-// (con_FindVar is servermgr.h's, dalloc is declared at the top).
+// (con_FindVar is servermgr.h's, con_dalloc is defined at the top).
 ILTStream* growstream_Open(uint32 nWantedCache);                          // 0x00484170
 
 LTBOOL CConsoleView::InitFont()
@@ -1258,7 +1262,7 @@ LTBOOL CConsoleView::InitFont()
 			charW = bitmap.m_Unknown438 >> 4;
 			charH = bitmap.m_Unknown43c >> 4;
 
-			m_pCharBits = (uint32*)dalloc(charH << 10);
+			m_pCharBits = (uint32*)con_dalloc(charH << 10);
 			if (m_pCharBits)
 			{
 				m_nCharStride = (uint16)charH;
@@ -1315,7 +1319,7 @@ void CConsoleView::Free29c()
 {
 	if (m_pCharBits)
 	{
-		dfree(m_pCharBits);
+		con_dfree(m_pCharBits);
 		m_pCharBits = LTNULL;
 	}
 }

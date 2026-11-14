@@ -498,10 +498,12 @@ void CAutoTargetMgr::UpdateFacehuggerTargeting()
 //
 // ----------------------------------------------------------------------- //
 
+#ifndef PRIMAL_HUNT
 void CAutoTargetMgr::UpdateChestbursterTargeting()
 {
 
 }
+#endif
 
 // ----------------------------------------------------------------------- //
 //
@@ -511,7 +513,15 @@ void CAutoTargetMgr::UpdateChestbursterTargeting()
 //
 // ----------------------------------------------------------------------- //
 
+// Primal Hunt: this is the chestburster's (TargetingType 7: weapons.txt's
+// Bite and Tear_Chestburster, the tear set 1), PHCShell 0x10035ed0, which
+// UpdateTargets reaches for TT_CHESTBURSTER; the predalien's (TargetingType
+// 8) is the alien's, as the runner's is (below)
+#ifdef PRIMAL_HUNT
+void CAutoTargetMgr::UpdateChestbursterTargeting()
+#else
 void CAutoTargetMgr::UpdatePredalienTargeting()
+#endif
 {
 	//sanity check
 	if(!g_pLTClient || !g_pGameClientShell || !g_pWeaponMgr || !m_pStats) return;
@@ -652,6 +662,15 @@ void CAutoTargetMgr::UpdatePredalienTargeting()
 	}
 #endif
 }
+
+#ifdef PRIMAL_HUNT
+// PH: one body with UpdateRunnerTargeting (PHCShell 0x10036240, folded):
+// UpdateTargets reaches it for TT_PREDALIEN and TT_RUNNER
+void CAutoTargetMgr::UpdatePredalienTargeting()
+{
+	UpdateAlienTargeting();
+}
+#endif
 
 // ----------------------------------------------------------------------- //
 //
