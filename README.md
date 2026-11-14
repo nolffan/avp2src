@@ -17,10 +17,7 @@ engine generation of *No One Lives Forever* (2000), so the engine is
 reconstructed from [nolfsrc](https://github.com/nolffan/nolfsrc)'s
 reconstruction of NOLF's, brought to what Primal Hunt's binaries are,
 function by function; Primal Hunt's game DLLs from Monolith's 1.0.9.6
-source, brought to Third Law's. As for
-nolfsrc, [nolf2src](https://github.com/nolffan/nolf2src),
-[cjacksrc](https://github.com/nolffan/cjacksrc) and
-[tron20src](https://github.com/nolffan/tron20src), the aim is two builds:
+source, brought to Third Law's. As for my other recomp. projects:
 
 - **legacy**: Primal Hunt (Europe) 1.0.2.2 and Aliens versus Predator 2
   (Europe) 1.0.9.6, rebuilt so that they compile back to the retail
