@@ -3,6 +3,13 @@
 *Aliens versus Predator 2* (Monolith, 2001) and its expansion *Primal
 Hunt* (Third Law, 2002), built from source.
 
+> [!WARNING]
+> **Work in progress.** The reconstruction is not complete: not every
+> function compiles to the retail bytes yet (see
+> [`progress/README.md`](progress/README.md)), and the modern build's
+> features are still being added and tested. It is playable, though: both
+> games, AvP2 and Primal Hunt, start and play on these builds. Expect bugs.
+
 The game's last release is Primal Hunt 1.0.2.2: its engine, renderer and
 server are the newest, and its game code is AvP2 1.0.9.6's (the last AvP2
 patch) carried on. Primal Hunt plays only its own campaigns, so the game is
