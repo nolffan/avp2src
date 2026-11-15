@@ -131,3 +131,32 @@ them.
 The retail game's bugs, as they are found, are listed in
 [`docs/RETAIL_BUGS.md`](docs/RETAIL_BUGS.md); what the modern build changes
 is [`docs/MODERN.md`](docs/MODERN.md).
+
+## Credits
+
+This project builds on the work of others:
+
+- **Monolith Productions**, for *Aliens versus Predator 2* and the LithTech
+  engine, and, with **Fox Interactive**, for releasing AvP2's game source
+  code (v1.0.9.6, 2002), which `src/AVP2/` and `src/LT2/` are; and for the
+  *No One Lives Forever 2* source release, from which the launchers and much
+  of `src/lithshared/` come
+  ([`docs/LICENSE_NOTES.md`](docs/LICENSE_NOTES.md)).
+- **Third Law Interactive**, for *Primal Hunt*, and **Sierra**, its
+  publisher.
+- **[nolfsrc](https://github.com/nolffan/nolfsrc)** and
+  **[nolf2src](https://github.com/nolffan/nolf2src)**, the same project for
+  the *No One Lives Forever* games: the reconstructed engine this one's is
+  brought from, the method, the tools and guides, the Bink player, and many
+  of the modern build's designs.
+- **OpenMiles** (<https://github.com/maci0/openmiles>), the open
+  reimplementation of the Miles Sound System that the modern build uses in
+  place of Miles, with the miniaudio and TinySoundFont libraries it vendors.
+- **FFmpeg** (<https://ffmpeg.org>), on which the modern build's Bink player
+  is built; **zlib**; and **Capstone**, which the tools use to read the
+  retail machine code.
+- **Wine** and **Proton**, which run the game on Linux and the Steam Deck,
+  and **OpenSpy** (<https://openspy.net>), whose master server replaces
+  GameSpy's for the modern build's Internet games.
+- **redump.org**, for the verified disc images the installers check
+  against, and **archive.org**, which keeps them.
