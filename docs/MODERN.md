@@ -56,10 +56,10 @@ are the items of AvP2.
 
 ## Where it stands
 
-**Begun.** The define exists. The build makes the modern builds:
-`make modern` builds `out/avp2-modern-release/`, and `make modern-debug`
-builds `out/avp2-modern-debug/`. Each build has the two games. These
-items are done:
+**Most of the modern build is done.** `make modern` builds
+`out/avp2-modern-release/`, and `make modern-debug` builds
+`out/avp2-modern-debug/`. Each build has the two games, and both games are
+playable. These items are done:
 
 - The frame timing (M-10..M-14).
 - The open middleware (M-X1..M-X3, with the OpenMiles fixes M-X5 and
@@ -69,6 +69,7 @@ items are done:
 - Controllers through XInput (M-7).
 - The launchers, and the games that start directly (M-8).
 - The full screen, window and borderless window modes (M-9).
+- Alt+Tab in a window or a borderless window (M-21).
 - Widescreen, 4:3 cinematics and the field of view (M-1..M-3).
 - The menus and the HUD scaled to the screen (M-15, M-16).
 - Internet multiplayer through a GameSpy master server, for example the
@@ -76,7 +77,14 @@ items are done:
 - All the retail bugs in docs/RETAIL_BUGS.md. Each is fixed
   (M-B01..M-B108), or we showed that it does not need a fix (under Done).
 
-The other items below are not done.
+These items are not done yet:
+
+- Up to 16x anisotropic filtering (M-4) and up to 8x antialiasing (M-5).
+  Both need the Direct3D 9 renderer of nolfsrc.
+- Alt+Tab in full screen. Full screen keeps the retail focus code (M-21).
+- Our `server.dll` for the dedicated servers. It stops when a world loads,
+  so the dedicated servers use the retail `server.dll` (M-17..M-20,
+  "Still open").
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
 `d3d.ren`, for the two games). `build/all.sh` builds `engine-link`,
