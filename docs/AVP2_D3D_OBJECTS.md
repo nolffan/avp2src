@@ -1,11 +1,16 @@
 # AvP2 1.0.9.6's d3d.ren: its objects, in link order, against Primal Hunt's
 
-The machine-readable map is `progress/avp2d3d-objects.csv`, and the function pairs with Primal Hunt are `progress/avp2d3d-pairs.csv`. The `out/plan/` scripts this cites are working files, not kept in the repository.
+The machine-readable map is `progress/avp2d3d-objects.csv`. The function
+pairs with Primal Hunt are in `progress/avp2d3d-pairs.csv`. This document
+cites scripts in `out/plan/`. These are working files. The repository does
+not keep them.
 
-Analysis only (nothing in `src/`, `build/`, `progress/` changed). Scope: the
-app range of `progress/targets.py`'s "AvP2 d3d.ren", 0x10001000..0x1003b710
-of `out/reference/avp2/d3d.ren` (1,281 enumerated rows, 1,271 functions once
-the enumeration's nine extent defects are folded). Companions:
+This is an analysis only. It did not change a file in `src/`, `build/` or
+`progress/`. The scope is the app range of the "AvP2 d3d.ren" entry in
+`progress/targets.py`: 0x10001000..0x1003b710 of
+`out/reference/avp2/d3d.ren`. This range has 1,281 enumerated rows. When
+we merge the nine extent defects of the enumeration, it has 1,271
+functions. The companion files are:
 
 | file | contents |
 |---|---|
@@ -15,85 +20,128 @@ the enumeration's nine extent defects are folded). Companions:
 
 ## 1. The compiler is NOT Intel C/C++: it is Microsoft cl 12.00.8168
 
-`targets.py` (`icl=True`), `progress/COMPILERS.md` and the brief call this
-renderer Intel C/C++ 4.0 "as NOLF's". The binary says otherwise, four ways:
+`targets.py` (`icl=True`), `progress/COMPILERS.md` and the brief say that
+this renderer is Intel C/C++ 4.0 "as NOLF's". The binary shows a different
+result, in four ways:
 
-* **No Intel padding.** NOLF's (Intel) `d3d.ren` holds 795 lea-nop pads
-  (`8d b4 26 00 00 00 00` x213, `8d bc 27 00 00 00 00` x368, `8d 76 00` x214).
-  AvP2's holds **none**, nor Primal Hunt's. AvP2's functions are either
-  16-aligned with **0x90** fill (VC6 `/O2` COMDATs) or packed (VC6 `/O1`), with
-  **0xCC** linker fill at 12 `/O1`->`/O2` object boundaries -- exactly PH's
-  (MSVC) shapes, and no four-byte `/Qip` register shims.
-* **The Rich header records the objects.** NOLF's has a `(0, 0) x80` row --
-  80 objects with no `@comp.id`, its Intel objects. AvP2's has **none**: every
-  object is a Microsoft tool's, and the 73 C++ objects are **cl 12.00.8168**
-  (VC6 RTM), the compiler of `AVP2Serv.exe` and of `CShell.dll`'s bulk.
-* **Byte identity with an MSVC build.** 1,180 of AvP2's 1,255 renderer
-  functions (177,925 of 236,166 bytes, 75 %) are byte-identical, relocations
-  masked, to their Primal Hunt counterparts (MSVC 8966) -- impossible across
-  Intel/MSVC.
-* **Test compile.** `ph/*.cpp` compiled with **msvc-6.00-8168** at each file's
-  PH flags and *without* `PRIMAL_HUNT` (`a2ccall.sh`): 1,200 of the objects'
-  1,397 functions land identical on an AvP2 function (1,181 on PH). The
-  8966-built `ph/` objects score the other way round: 1,216 on PH, 1,170 on
-  AvP2. Per file the two compilers swap exactly where codegen changed between
-  RTM and SP5: fullintersectline 16 AvP2 / 9 PH with 8168 against 9 / 16 with
-  8966; lmsurfaces 11/7 against 7/11; drawobjects 22/18 against 18/22;
-  drawmodel 105/102 against 102/105; pixelformat 72/70 against 70/72.
+* **There is no Intel padding.**
+  * The NOLF (Intel) `d3d.ren` has 795 lea-nop pads (`8d b4 26 00 00 00
+    00` x213, `8d bc 27 00 00 00 00` x368, `8d 76 00` x214).
+  * The AvP2 `d3d.ren` has **none**, and the Primal Hunt `d3d.ren` has
+    none.
+  * Each AvP2 function is 16-aligned with **0x90** fill (VC6 `/O2`
+    COMDATs) or packed (VC6 `/O1`).
+  * There is **0xCC** linker fill at 12 `/O1`->`/O2` object boundaries.
+    These are exactly the PH (MSVC) shapes.
+  * There are no four-byte `/Qip` register shims.
+* **The Rich header records the objects.**
+  * The NOLF Rich header has a `(0, 0) x80` row. These are 80 objects with
+    no `@comp.id`: its Intel objects.
+  * The AvP2 Rich header has **none**. Each object comes from a Microsoft
+    tool.
+  * The 73 C++ objects are **cl 12.00.8168** (VC6 RTM). This is the
+    compiler of `AVP2Serv.exe` and of the bulk of `CShell.dll`.
+* **The bytes are identical to an MSVC build.** 1,180 of the 1,255 AvP2
+  renderer functions (177,925 of 236,166 bytes, 75 %) are byte-identical
+  to their Primal Hunt counterparts (MSVC 8966), with relocations masked.
+  This is not possible between Intel and MSVC.
+* **A test compile.**
+  * We compiled `ph/*.cpp` with **msvc-6.00-8168**, at the PH flags of
+    each file and *without* `PRIMAL_HUNT` (`a2ccall.sh`).
+  * Of the 1,397 functions of the objects, 1,200 are identical to an AvP2
+    function (1,181 to a PH function).
+  * The `ph/` objects built with 8966 give the opposite result: 1,216 on
+    PH, 1,170 on AvP2.
+  * For each file, the two compilers swap exactly where the codegen
+    changed between RTM and SP5. The pairs below are "AvP2 / PH" with 8168,
+    against "AvP2 / PH" with 8966:
+    * fullintersectline: 16 AvP2 / 9 PH against 9 / 16.
+    * lmsurfaces: 11/7 against 7/11.
+    * drawobjects: 22/18 against 18/22.
+    * drawmodel: 105/102 against 102/105.
+    * pixelformat: 72/70 against 70/72.
 
-So "the Intel flag group" of every object is moot: each AvP2 object is a VC6
-object, and its flags are the same `/O1` or `/O2` decision PH's map measured.
-`targets.py` should lose `icl=True` (not changed here: out of scope).
+Thus "the Intel flag group" of each object is not relevant. Each AvP2
+object is a VC6 object. Its flags are the same `/O1` or `/O2` decision that
+the PH map measured. We recommend that you remove `icl=True` from
+`targets.py`. This analysis did not change it, because that change is out
+of scope.
 
 ## 2. The unidentified Rich-header rows
 
-AvP2's Rich header: Linker 6.00.8168, C++ 8168 x73, C 8168 x120 (libcmt),
-masm 6.13 x37, implib 5.12.8034 x6, Import0 x91, cvtres 5.00.1720, aliasobj 7291,
-and the two rows to identify. NOLF's renderer has the same two rows.
+The AvP2 Rich header has these rows: Linker 6.00.8168, C++ 8168 x73, C
+8168 x120 (libcmt), masm 6.13 x37, implib 5.12.8034 x6, Import0 x91, cvtres
+5.00.1720, aliasobj 7291, and the two rows to identify. The NOLF renderer
+has the same two rows.
 
-* **tool 0x25 build 8755 x3 = the DirectX 8.0 SDK's `ddraw.lib` import objects.**
-  Four DLLs are imported (DDRAW, WINMM, KERNEL32, USER32): 4 x (descriptor +
-  thunk terminator) + one shared NULL descriptor = 9 import objects, and the
-  header has 6 + 3. msvc-6.00-8168's `kernel32.lib`, `user32.lib` and
-  `winmm.lib` each carry 3 objects of implib 8034 (two of each are linked: 6).
-  The remaining three are DDRAW's. Primal Hunt has the same structure with the
-  DirectX **8.1** SDK's `ddraw.lib`, whose three objects are `(25, 9210)`
-  (`ext/toolchains/dxsdk-8.1/lib/ddraw.lib`, checked). 0x25 is the import-library
-  tool id of the VC7 betas the DirectX 8.0 SDK was built with. Its thunks are
-  at 0x1003b502..0x1003b514 (`DirectDrawCreate`, `...CreateEx`,
-  `...EnumerateA`, in PH's order). **Medium-high** (the DX 8.0 SDK itself is
-  not held to read its `@comp.id`).
-* **C++ 13.00.8830 x1 = the DirectX 8.0 SDK's `dxguid.lib`.** The DX 8.1 SDK's
-  `dxguid.lib` is one `(29, 9178)` object (checked), PH's one 13.00 object; the
-  renderer's IIDs (IID_IDirect3D7 0x1004660c, IID_IDirectDraw7 0x1004662c,
-  IID_IDirectDrawGammaControl 0x1004661c, IID_IDirect3DHALDevice 0x100465ec,
-  IID_IDirect3DTnLHalDevice 0x100465bc) sit together in .rdata as that
-  object's data. Data-only, no code. **Medium-high**, same caveat.
+* **tool 0x25 build 8755 x3 = the `ddraw.lib` import objects of the DirectX 8.0 SDK.**
+  * The renderer imports four DLLs (DDRAW, WINMM, KERNEL32, USER32). This
+    gives 4 x (descriptor + thunk terminator) + one shared NULL descriptor
+    = 9 import objects. The header has 6 + 3.
+  * The `kernel32.lib`, `user32.lib` and `winmm.lib` of msvc-6.00-8168
+    each have 3 objects of implib 8034. The link uses two of each: 6.
+  * The remaining three objects are the DDRAW objects.
+  * Primal Hunt has the same structure with the `ddraw.lib` of the DirectX
+    **8.1** SDK. Its three objects are `(25, 9210)`
+    (`ext/toolchains/dxsdk-8.1/lib/ddraw.lib`, checked).
+  * 0x25 is the import-library tool id of the VC7 betas. The DirectX 8.0
+    SDK was built with these betas.
+  * The thunks are at 0x1003b502..0x1003b514 (`DirectDrawCreate`,
+    `...CreateEx`, `...EnumerateA`, in the PH order).
+  * The confidence is **Medium-high**. We do not have the DX 8.0 SDK, thus
+    we cannot read its `@comp.id`.
+* **C++ 13.00.8830 x1 = the `dxguid.lib` of the DirectX 8.0 SDK.**
+  * The `dxguid.lib` of the DX 8.1 SDK is one `(29, 9178)` object
+    (checked). This is the one 13.00 object of PH.
+  * The IIDs of the renderer are together in .rdata as the data of that
+    object: IID_IDirect3D7 0x1004660c, IID_IDirectDraw7 0x1004662c,
+    IID_IDirectDrawGammaControl 0x1004661c, IID_IDirect3DHALDevice
+    0x100465ec, IID_IDirect3DTnLHalDevice 0x100465bc.
+  * It has only data, no code.
+  * The confidence is **Medium-high**, with the same caveat.
 
 ## 3. The objects
 
-AvP2's link order is Primal Hunt's, object for object: the pairs are monotone
-over the whole image, every object change falls where PH's does, every CC
-fill (12 of them) is at a boundary, and each AvP2 object's codegen class
-(aligned/packed) is its PH counterpart's. **Fifty runs of code**: 48 renderer
-objects (PH's map less `fogvolume.cpp`, with TU01/TU02/TU03 kept apart as
-PH's map has them), the ddraw.lib thunks and three release StdLith.lib
-objects. 218 CRT initialisers (`.CRT$XCU` 0x10048004..0x10048368): PH has 219, and
-per object the counts are equal everywhere except `fogvolume.cpp`'s one
-(the "init." column).
+The AvP2 link order is the Primal Hunt link order, object for object:
 
-Object count against the Rich header: 73 C++ objects = 3 StdLith (struct_bank,
-l_allocator, dynarray; libscan-identified) + **70 renderer objects**, of which
-46 have code (if TU01-TU03 are one `d3d_modelvb.obj`, as `ph/` has it) and
-**24 have none left** (header-only, cvar-less, or wholly removed by
-`/OPT:REF`). PH: 69 = 3 StdLith (debug) + 66 renderer objects, 47 with code
-(`fogvolume.cpp` the extra), 19 without. So AvP2 links ~4 more code-less
-objects than PH even though it lacks `fogvolume.cpp`: files PH dropped from the
-project, unidentifiable from the image. *Guess.*
+* The pairs are monotone over the whole image.
+* Each object change is at the same place as in PH.
+* Each CC fill (there are 12) is at a boundary.
+* The codegen class (aligned/packed) of each AvP2 object is the class of
+  its PH counterpart.
 
-Codegen: "/O2" = every function 16-aligned with 0x90 fill; "/O1" = packed
-(unaligned starts). "identical / changed / AvP2-only" counts AvP2's functions
-in the object (identical = masked bytes equal to the PH counterpart).
+There are **Fifty runs of code**:
+
+* 48 renderer objects. These are the objects of the PH map without
+  `fogvolume.cpp`. TU01/TU02/TU03 stay separate, as in the PH map.
+* The ddraw.lib thunks.
+* Three release StdLith.lib objects.
+
+There are 218 CRT initialisers (`.CRT$XCU` 0x10048004..0x10048368). PH has
+219. The counts for each object are equal, except for the one initialiser
+of `fogvolume.cpp` (the "init." column).
+
+The object count compared with the Rich header:
+
+* AvP2: 73 C++ objects = 3 StdLith (struct_bank, l_allocator, dynarray;
+  identified by libscan) + **70 renderer objects**.
+  * 46 of the renderer objects have code, if TU01-TU03 are one
+    `d3d_modelvb.obj` (as in `ph/`).
+  * **24 have no code now**. They are header-only, have no cvars, or
+    `/OPT:REF` removed all their code.
+* PH: 69 = 3 StdLith (debug) + 66 renderer objects. 47 have code
+  (`fogvolume.cpp` is the extra one) and 19 have no code.
+* Thus AvP2 links about 4 more objects with no code than PH, although it
+  does not have `fogvolume.cpp`. These are possibly files that PH removed
+  from the project. The image does not let us identify them. *Guess.*
+
+The codegen values are:
+
+* "/O2" = each function is 16-aligned with 0x90 fill.
+* "/O1" = packed (unaligned starts).
+
+"identical / changed / AvP2-only" counts the AvP2 functions in the object.
+"identical" = the masked bytes are equal to the PH counterpart.
 
 | # | AvP2 range | fns | bytes | AvP2 codegen | init. | PH object | ph/ file | PH flags | identical / changed / AvP2-only | conf. |
 |--:|---|--:|--:|---|--:|---|---|---|---|---|
@@ -150,123 +198,167 @@ in the object (identical = masked bytes equal to the PH counterpart).
 
 
 Notes:
-* Ranges are the first function's start to the last function's end; COMDAT
-  members sit with their first user exactly as in PH (the `_CVector` operators
-  `+`/`*` that PH emitted in `fogvolume.obj`, its first user, AvP2 emits in
-  `drawpolygrid` 0x1002ce70/0x1002cec0 -- the next first user once fog
-  volumes are gone; `_CVector::Dot` lands in `d3d_draw` 0x100187c0).
-* TU17 (`d3d_init`) ends with one packed 30-byte function (0x1001bee5) after
-  23 aligned ones, as PH's does.
-* Confidence: every object is **high** (in-order pairs cover >= 90 % of its
-  functions; boundaries coincide with PH's, CC fill and initialiser runs).
-  The one judgement call is the inherited one: whether TU01..TU03 are one
-  object (`ph/d3d_modelvb.cpp`) or three.
+* A range starts at the start of the first function and stops at the end
+  of the last function.
+* COMDAT members are with their first user, exactly as in PH:
+  * PH emitted the `_CVector` operators `+`/`*` in `fogvolume.obj`, their
+    first user.
+  * AvP2 emits them in `drawpolygrid` 0x1002ce70/0x1002cec0. This is the
+    next first user when there are no fog volumes.
+  * `_CVector::Dot` is in `d3d_draw` 0x100187c0.
+* TU17 (`d3d_init`) ends with one packed 30-byte function (0x1001bee5)
+  after 23 aligned functions, as in PH.
+* Confidence: each object is **high**:
+  * The in-order pairs cover >= 90 % of its functions.
+  * The boundaries are at the same places as the PH boundaries, the CC fill
+    and the initialiser runs.
+  * The one decision is the one that comes from the PH map: are TU01..TU03
+    one object (`ph/d3d_modelvb.cpp`) or three?
 
 ## 4. Function pairs
 
-`out/plan/avp2d3d-pairs.csv`, 1,271 AvP2 functions (1,255 renderer + 3 thunks
-+ 13 StdLith):
+`out/plan/avp2d3d-pairs.csv` has 1,271 AvP2 functions (1,255 renderer + 3
+thunks + 13 StdLith):
 
 | confidence | functions | meaning |
 |---|--:|---|
-| high | 1,215 | identical masked bytes in link order (1,180), or similarity >= 0.9 in link order; the thunks; StdLith functions libscan names |
-| medium | 34 | in-order 0.65..0.9 similarity, call-graph votes, identical twins of ICF-folded templates, StdLith pieces paired by shape |
-| low | 16 | ICF-folded tiny template members/empty functions (identical bytes, placed elsewhere), and in-order pairs below 0.65 |
+| high | 1,215 | identical masked bytes in link order (1,180), or similarity >= 0.9 in link order. The thunks. The StdLith functions that libscan names. |
+| medium | 34 | in-order 0.65..0.9 similarity. Call-graph votes. Identical twins of ICF-folded templates. StdLith parts paired by shape. |
+| low | 16 | ICF-folded tiny template members/empty functions (identical bytes, placed at a different address). In-order pairs below 0.65. |
 | none | 6 | AvP2-only (below) |
 
-Method: masked-byte equality, then an order-preserving alignment (DP over a
-similarity of mnemonic sequences, strings and imports, banded on the anchor
-offsets), then within-object greedy re-pairing, then call-graph votes (a
-paired caller's n-th call names the callee pair), then the extent defects
-folded on both sides (AvP2: 0x1000eb6e, 0x10018974, 0x100195cd, 0x1001bb96,
-0x10020600, 0x10022990, 0x1002a4c4, 0x1002df60, 0x100388c6, 0x10038d08; PH:
-the ten of `docs/D3D_OBJECTS.md`). Symbols are our `ph/` objects' where their
-bytes are the PH row's (1,207 rows), else the scoreboard's pairing (`nolf:`
-prefix: a NOLF object's name for it, `[near]` when only near).
+The method has these steps:
+
+1. Find the masked-byte equality.
+2. Make an order-preserving alignment. This is a DP over a similarity of
+   mnemonic sequences, strings and imports, banded on the anchor offsets.
+3. Pair again in each object, with a greedy method.
+4. Use call-graph votes. The n-th call of a paired caller names the callee
+   pair.
+5. Merge the extent defects in the two images:
+   * AvP2: 0x1000eb6e, 0x10018974, 0x100195cd, 0x1001bb96, 0x10020600,
+     0x10022990, 0x1002a4c4, 0x1002df60, 0x100388c6, 0x10038d08.
+   * PH: the ten of `docs/D3D_OBJECTS.md`.
+
+The symbols are the symbols of our `ph/` objects where their bytes are
+the bytes of the PH row (1,207 rows). For the other rows, the symbols come
+from the pairing of the scoreboard. The `nolf:` prefix shows the name that
+a NOLF object gives to it. `[near]` shows that the pair is only near.
 
 ## 5. Primal Hunt's changes (what needs `#ifdef PRIMAL_HUNT`)
 
 **PH functions absent from AvP2 (27; 4,421 bytes)**
 
-* **`fogvolume.cpp`, the whole object** (PH TU08, 0x1000f09f..0x1000fef5): 14
-  functions, 3,573 bytes, 1 CRT initialiser -- fog volumes (CFogBox,
-  d3d_CalcFogVolume, d3d_ProcessPortalObject, ...). AvP2 has no such object.
-  Its hooks are in the changed callers below (*guess* which: the world-model
-  draw, the scene renderer, the model vertex setup).
-* `d3d_draw.cpp`: `allocator<StageState>::deallocate` 0x100195e0 (330) -- PH's
-  new STL `vector<StageState>`; its initialiser `$E55` grows 206 -> 411.
+* **`fogvolume.cpp`, the whole object** (PH TU08, 0x1000f09f..0x1000fef5):
+  * It has 14 functions, 3,573 bytes and 1 CRT initialiser.
+  * It has the fog volumes (CFogBox, d3d_CalcFogVolume,
+    d3d_ProcessPortalObject, ...).
+  * AvP2 does not have this object.
+  * Its hooks are in the changed callers below. Which callers is a
+    *guess*: the world-model draw, the scene renderer and the model vertex
+    setup.
+* `d3d_draw.cpp`: `allocator<StageState>::deallocate` 0x100195e0 (330).
+  This is from the new STL `vector<StageState>` of PH. Its initialiser
+  `$E55` increases from 206 to 411 bytes.
 * `drawmodel_env.cpp`: `d3d_GenUVQuarter` 0x1002544b (30) and
-  `d3d_GenUVEnvMapOffset` 0x10025469 (111), two new UV generators;
-  `CD3DModelDraw::DrawPasses` grows 1,312 -> 1,527 to use them.
+  `d3d_GenUVEnvMapOffset` 0x10025469 (111). These are two new UV
+  generators. `CD3DModelDraw::DrawPasses` increases from 1,312 to 1,527
+  bytes to use them.
 * 8 `CMoArray<>` template members (0x1001efaa, 0x1001efbf, 0x10029a10,
-  0x1002b7d2, 0x1003ba5b, 0x1003ba65, 0x1003bb23, 0x1003be5f, 10..182 bytes):
-  `/OPT:ICF` folding and first-use placement, no source change implied.
-* PH's debug StdLith `LAlloc::LAlloc`/`~LAlloc` (0x1003c4b0, 0x1003c4d0): the
-  release library inlines them. Not a source change.
+  0x1002b7d2, 0x1003ba5b, 0x1003ba65, 0x1003bb23, 0x1003be5f, 10..182
+  bytes). They come from `/OPT:ICF` folding and first-use placement. They
+  do not show a source change.
+* The PH debug StdLith `LAlloc::LAlloc`/`~LAlloc` (0x1003c4b0,
+  0x1003c4d0). The release library inlines them. This is not a source
+  change.
 
 **AvP2 functions with no PH counterpart (6; 1,123 bytes)**
 
-* **0x100135c0 (961 bytes), `d3d_draw.cpp`**: reached only through a pointer
-  that `d3d_RenderScene` (0x10017aa0) stores at 0x10017d15; it splits/clips
-  polygons into the CMoArray lists (calls 0x1000dfb6/0x1000e011/0x1000e06c).
-  Removed in PH (nothing in PH is > 0.32 similar). Its helper 0x1000e06c (51)
-  pairs only by call graph with PH's `_CVector::operator-` 0x10019270.
-* 5 tiny template members: 0x1000e0c1 (22) and 0x10039e10 (24) are
-  `GenBegin`-shaped vtable slots, 0x10028fa0 (4) `GenGetSize`, 0x1003ad1f (17),
-  0x1003b069 (95, `SetSize2`-shaped): ICF/placement differences.
+* **0x100135c0 (961 bytes), `d3d_draw.cpp`**:
+  * Only a pointer gets to it. `d3d_RenderScene` (0x10017aa0) stores this
+    pointer at 0x10017d15.
+  * It splits/clips polygons into the CMoArray lists (it calls
+    0x1000dfb6/0x1000e011/0x1000e06c).
+  * PH removed it. No PH function is more than 0.32 similar.
+  * Its helper 0x1000e06c (51) pairs with the PH `_CVector::operator-`
+    0x10019270 only by the call graph.
+* 5 tiny template members. They come from ICF/placement differences:
+  * 0x1000e0c1 (22) and 0x10039e10 (24) are vtable slots with the
+    `GenBegin` shape.
+  * 0x10028fa0 (4) is `GenGetSize`.
+  * 0x1003ad1f (17).
+  * 0x1003b069 (95, with the `SetSize2` shape).
 
 **Changed functions (69 pairs not byte-identical)**, all in the CSV with their
-evidence. The real source changes, by object:
+evidence. These are the real source changes, by object:
 
-* `d3d_modelvb`/`drawmodel`/`drawmodel_env`/`drawmodelshadows`: the
-  `CD3DModelDraw` layout differs (AvP2 +0x24c/+0x1d0/+0x1f8/+0x208 against PH
-  +0x260/+0x1d4/+0x1fc/+0x20c: PH adds members), `CModelVB<>::GetVertexSize`
-  0x20/0x28 swapped between the two vertex formats; `SetupModelLight`-sized
-  bodies at 0x1000c100, 0x1000ccd9 (1,639 vs 1,502), 0x1000d3a7 (2,129 vs
-  2,266, PH adds 0.025/0.02 constants), DrawPasses (above), shadow projection
-  0x100252c6 (3,395 vs 3,262).
+* `d3d_modelvb`/`drawmodel`/`drawmodel_env`/`drawmodelshadows`:
+  * The `CD3DModelDraw` layout is different. AvP2 has
+    +0x24c/+0x1d0/+0x1f8/+0x208 and PH has +0x260/+0x1d4/+0x1fc/+0x20c,
+    because PH adds members.
+  * `CModelVB<>::GetVertexSize` has 0x20/0x28 swapped between the two
+    vertex formats.
+  * There are bodies of the `SetupModelLight` size at 0x1000c100,
+    0x1000ccd9 (1,639 vs 1,502) and 0x1000d3a7 (2,129 vs 2,266). PH adds
+    0.025/0.02 constants.
+  * DrawPasses (above).
+  * The shadow projection 0x100252c6 (3,395 vs 3,262).
 * `d3d_viewparams` `d3d_GetDynamicLightAdd` (0.59 similar) and
-  `drawlightmaps` `d3d_GetSegmentPolies` (0.60): restructured bodies (the
-  "string `333?`" in their evidence is the 0.7f constant 0x3f333333 read as
-  text: both images use it).
-* `d3d_init`: `d3d_InitDevice` 0x1001acc0 (same size, 0.67 similar: strings
-  moved) and `d3d_RenderCommand` 0x1001b8a0 (same 1,221 bytes, reworked);
-  `d3d_texture`: `d3d_InitTextures` 0x1001ec50 and the uploader 0x10020360.
+  `drawlightmaps` `d3d_GetSegmentPolies` (0.60): the bodies have a new
+  structure. Their evidence has the "string `333?`". This is the 0.7f
+  constant 0x3f333333 read as text. The two images use it.
+* `d3d_init`:
+  * `d3d_InitDevice` 0x1001acc0 (same size, 0.67 similar: the strings
+    moved).
+  * `d3d_RenderCommand` 0x1001b8a0 (same 1,221 bytes, changed).
+* `d3d_texture`: `d3d_InitTextures` 0x1001ec50 and the uploader
+  0x10020360.
 * `d3d_optimizedsurface` `d3d_WarpOptimized` (1,333 vs 1,301).
-* `drawsprite` `d3d_DrawFlatSprite` 0x1002d860 (PH adds the -20/1.0 Z-bias
-  constants), `drawworldmodel` `d3d_DrawNoSortWorldModel` (211 vs 369: PH's
-  +0x8c & 4 test and fog volumes), `d3d_ProcessWorldModel`.
-* `fullintersectline`: stack frames grow (sub esp 0x48 vs 0x3c...: an
-  intersection struct differs), `i_IntersectSegment`, `i_QuickSphereTest`,
-  `i_TestWorldModel`.
+* `drawsprite` `d3d_DrawFlatSprite` 0x1002d860. PH adds the -20/1.0 Z-bias
+  constants.
+* `drawworldmodel` `d3d_DrawNoSortWorldModel` (211 vs 369). The difference
+  is the PH +0x8c & 4 test and the fog volumes.
+* `drawworldmodel` `d3d_ProcessWorldModel`.
+* `fullintersectline`:
+  * The stack frames increase (sub esp 0x48 vs 0x3c...), because an
+    intersection struct is different.
+  * `i_IntersectSegment`, `i_QuickSphereTest`, `i_TestWorldModel`.
 * `pixelformat` `ConvertDXTGeneric` x2: `jl` vs `jb` (a signed/unsigned
-  type); `lmsurfaces`/`common_init`/`lightanim` small deltas.
+  type).
+* `lmsurfaces`/`common_init`/`lightanim`: small differences.
 
-Many "changed" pairs of `/O2` objects are only compiler-revision codegen
-(the per-file swap of section 1): judge each against an 8168 build, not
-against PH's bytes.
+Many "changed" pairs of `/O2` objects show only a different compiler
+revision in the codegen (the swap for each file in section 1). Compare
+each pair with an 8168 build, not with the PH bytes.
 
-**The brief's known difference does not hold in d3d.ren.** PH 0x1003a1f0 and
-0x1003a7f0 pair with AvP2 0x10039440 and 0x10039a40, and both pairs test
-`+0x8c` with `test dh,1` (bit 0x100) -- the two functions are byte-identical,
-masked. Neither image has a `+0x8c & 0x40` test anywhere in the renderer.
-If the 0x40/0x100 difference exists, it is in the engine or game code, not
-here (or the addresses belong to another image).
+**The brief's known difference does not hold in d3d.ren.**
+
+* PH 0x1003a1f0 and 0x1003a7f0 pair with AvP2 0x10039440 and 0x10039a40.
+* The two pairs test `+0x8c` with `test dh,1` (bit 0x100). The two
+  functions are byte-identical, masked.
+* Neither image has a `+0x8c & 0x40` test in the renderer.
+* If the 0x40/0x100 difference exists, it is in the engine or game code,
+  not here. Or the addresses are from a different image.
 
 ## 6. Recommended build layout
 
-* **Compiler:** msvc-6.00-8168 `cl.exe` (and its headers/libs), *not* icl,
-  for every renderer file; link 6.00.8168-era. `/MT /W3 /D WIN32 /D NDEBUG
-  /D _WINDOWS`, no `/GX` (as PH). Link order = the table's order (PH's
-  `D3D_PH_POS`), then DX 8.0 `ddraw.lib` (or our implib stand-in), then the
-  release StdLith.lib (struct_bank, l_allocator, dynarray at 0x1003b520..), then
-  libcmt from onexit.obj.
-* **Files:** reuse each `ph/<file>.cpp` as the AvP2 object of the same row,
-  same flags as its `.mk`, compiled without `/D PRIMAL_HUNT`:
-  * `/O2 /Ob2`: d3d_modelvb (TU01/TU03; TU02's two functions are its `/Os`
-    no-`/Gy` piece, as PH), d3d_matrix, d3d_viewparams, d3d_draw (+ the STL
-    include), d3d_texture, drawobjects, drawpolygrid, d3d_drawsky, drawsprite,
-    drawworldmodel, lightanim, tagnodes.
+* **Compiler:**
+  * Use msvc-6.00-8168 `cl.exe` (and its headers/libs), *not* icl, for each
+    renderer file.
+  * Use a linker of the 6.00.8168 period.
+  * Use `/MT /W3 /D WIN32 /D NDEBUG /D _WINDOWS`, with no `/GX` (as in
+    PH).
+  * The link order is the order of the table (`D3D_PH_POS` of PH). After
+    it, link the DX 8.0 `ddraw.lib` (or our implib replacement). Then link
+    the release StdLith.lib (struct_bank, l_allocator, dynarray at
+    0x1003b520..). Then link libcmt from onexit.obj.
+* **Files:** use each `ph/<file>.cpp` again as the AvP2 object of the same
+  row. Use the same flags as its `.mk`, and compile it without `/D
+  PRIMAL_HUNT`:
+  * `/O2 /Ob2`: d3d_modelvb (TU01/TU03. The two functions of TU02 are its
+    `/Os` no-`/Gy` part, as in PH), d3d_matrix, d3d_viewparams, d3d_draw (+
+    the STL include), d3d_texture, drawobjects, drawpolygrid, d3d_drawsky,
+    drawsprite, drawworldmodel, lightanim, tagnodes.
   * `/O2`: d3d_init, drawlight.
   * `/O1 /Ob2`: drawmodel_clip, common_draw, common_init, common_stuff, counter,
     d3d_skyobjects, d3d_savedstates, dirtyrect, draw_canvas, drawpolymgr.
@@ -275,28 +367,42 @@ here (or the addresses belong to another image).
     d3d_portal, gdenum, geomroutines, intersect_line, lmdynamic, lmpaging,
     lmsurfaces, drawlightmaps, d3d_tables, pixelformat, vertexbuffer.
   * `/Os /Ob1`: fullintersectline.
-  * **leave out** `fogvolume.cpp` (`#ifdef PRIMAL_HUNT` its callers' uses).
-* **`#ifdef PRIMAL_HUNT` work**, from section 5: fog volumes (whole file and
-  its hooks), the StageState vector in d3d_draw, the two UV generators and
-  DrawPasses, the CD3DModelDraw / ModelVB layout, d3d_InitDevice /
-  d3d_RenderCommand / d3d_InitTextures / the texture uploader, WarpOptimized,
-  the sprite Z bias, DrawNoSortWorldModel, the intersection structs,
-  ConvertDXTGeneric's type; and AvP2's own 0x100135c0 to write back in
-  (`#ifndef PRIMAL_HUNT`).
+  * **leave out** `fogvolume.cpp`. Put its uses in its callers in
+    `#ifdef PRIMAL_HUNT`.
+* **`#ifdef PRIMAL_HUNT` work**, from section 5:
+  * The fog volumes (the whole file and its hooks).
+  * The StageState vector in d3d_draw.
+  * The two UV generators and DrawPasses.
+  * The CD3DModelDraw / ModelVB layout.
+  * d3d_InitDevice / d3d_RenderCommand / d3d_InitTextures / the texture
+    uploader.
+  * WarpOptimized.
+  * The sprite Z bias.
+  * DrawNoSortWorldModel.
+  * The intersection structs.
+  * The type in ConvertDXTGeneric.
+  * Also, write the AvP2 function 0x100135c0 back in (`#ifndef
+    PRIMAL_HUNT`).
 * Expected start: 1,200 functions identical with no `#ifdef` written (the
-  test compile), against today's 10.
+  test compile). Today, 10 are identical.
 
 ## 7. Regenerating
 
-From the worktree root (`out/plan/cache/` holds the pickles):
+Do these steps from the worktree root. `out/plan/cache/` has the pickles.
 
-1. `ph-rows.tsv`/`a2-rows.tsv`: `a2dump.py "d3d.ren" ...` in the build
-   container (needs the PH objects in `src/engine/d3d/Release/`).
-2. `a2feat.py` for both images (lo/hi: 10001000 1003b710 and 10001000 1003c5e5).
-3. `a2match.py`, `a2check.py`, `a2votes.py`, `a2extent.py ... > a2-tails.txt`,
-   `phsyms.py`, `a2final.py` (pairs CSV), `a2objects.py` (objects CSV);
-   `a2view.py > a2view.txt` for the side-by-side; `phtus.py` is PH's object
-   table (from the `ph/` headers and `.mk` flags).
-4. The compiler test: `build/compile.sh` once (makes `out/release-tree`),
-   then `a2ccall.sh <tag>` in the container and `a2objcmp.py -q <objs>`.
-   `a2gaps.py`, `a2tumap.py` were exploratory.
+1. `ph-rows.tsv`/`a2-rows.tsv`: run `a2dump.py "d3d.ren" ...` in the build
+   container. It needs the PH objects in `src/engine/d3d/Release/`.
+2. Run `a2feat.py` for the two images (lo/hi: 10001000 1003b710 and
+   10001000 1003c5e5).
+3. Run these scripts:
+   * `a2match.py`, `a2check.py`, `a2votes.py`, `a2extent.py ... > a2-tails.txt`,
+     `phsyms.py`.
+   * `a2final.py` (pairs CSV), `a2objects.py` (objects CSV).
+   * `a2view.py > a2view.txt` for the side-by-side view.
+   * `phtus.py` gives the PH object table (from the `ph/` headers and `.mk`
+     flags).
+4. The compiler test:
+   * Run `build/compile.sh` one time (it makes `out/release-tree`).
+   * Then run `a2ccall.sh <tag>` in the container, and then
+     `a2objcmp.py -q <objs>`.
+   * `a2gaps.py` and `a2tumap.py` were exploratory scripts.

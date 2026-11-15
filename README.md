@@ -4,43 +4,55 @@
 Hunt* (Third Law, 2002), built from source.
 
 > [!WARNING]
-> **Work in progress.** The reconstruction is not complete: not every
-> function compiles to the retail bytes yet (see
-> [`progress/README.md`](progress/README.md)), and the modern build's
-> features are still being added and tested. It is playable, though: both
-> games, AvP2 and Primal Hunt, start and play on these builds. Expect bugs.
+> **Work in progress.** The reconstruction is not complete. Not all the
+> functions compile to the retail bytes yet (see
+> [`progress/README.md`](progress/README.md)). Work continues to add and
+> test the features of the modern build. But the games are playable: AvP2
+> and Primal Hunt both start and play on these builds. Expect bugs.
 
-The game's last release is Primal Hunt 1.0.2.2: its engine, renderer and
-server are the newest, and its game code is AvP2 1.0.9.6's (the last AvP2
-patch) carried on. Primal Hunt plays only its own campaigns, so the game is
-both: Primal Hunt's engine, launcher, dedicated server and game DLLs, and
-AvP2 1.0.9.6's game DLLs, launcher and dedicated server, which play AvP2's.
+The last release of the game is Primal Hunt 1.0.2.2. Its engine, renderer
+and server are the newest. Its game code continues the game code of AvP2
+1.0.9.6, which is the last AvP2 patch. Primal Hunt plays only its own
+campaigns. Thus the game has two parts:
 
-Monolith released AvP2's game code in 2002 -- the client and server game
-DLLs, their resource DLLs, the dedicated server, the engine SDK headers and
-the `lithshared` libraries, at 1.0.9.6 -- but never the engine, and Primal
-Hunt's code was never released at all. AvP2 runs on LithTech "Talon", the
-engine generation of *No One Lives Forever* (2000), so the engine is
-reconstructed from [nolfsrc](https://github.com/nolffan/nolfsrc)'s
-reconstruction of NOLF's, brought to what Primal Hunt's binaries are,
-function by function; Primal Hunt's game DLLs from Monolith's 1.0.9.6
-source, brought to Third Law's. As for my other recomp. projects:
+- The Primal Hunt engine, launcher, dedicated server and game DLLs.
+- The AvP2 1.0.9.6 game DLLs, launcher and dedicated server. These play
+  the AvP2 campaigns.
+
+Monolith released the AvP2 game code, at 1.0.9.6, in 2002. The release
+has these parts:
+
+- the client and server game DLLs,
+- their resource DLLs,
+- the dedicated server,
+- the engine SDK headers,
+- the `lithshared` libraries.
+
+Monolith did not release the engine. Nobody released the Primal Hunt code.
+AvP2 uses LithTech "Talon", which is the engine generation of *No One Lives
+Forever* (2000). Thus the engine here starts from the reconstruction of the
+NOLF engine in [nolfsrc](https://github.com/nolffan/nolfsrc). It is changed,
+function by function, until it agrees with the Primal Hunt binaries. The
+Primal Hunt game DLLs start from the 1.0.9.6 source of Monolith. They are
+changed until they agree with the Third Law binaries. As for my other recomp. projects:
 
 - **legacy**: Primal Hunt (Europe) 1.0.2.2 and Aliens versus Predator 2
-  (Europe) 1.0.9.6, rebuilt so that they compile back to the retail
-  binaries byte for byte, as far as that can be done -- with the compilers
-  Monolith and Third Law used, Visual C++ 6.0 in the revisions each
-  binary's Rich header names, under Wine;
-- **modern**: the same source with fixes and new features (`AVP2SRC_MODERN`).
+  (Europe) 1.0.9.6. The source compiles back to the retail binaries byte
+  for byte, as far as possible. The build uses the compilers that Monolith
+  and Third Law used. These are Visual C++ 6.0, in the revision that the
+  Rich header of each binary names, under Wine.
+- **modern**: the same source, with fixes and new features (`AVP2SRC_MODERN`).
 
-Compiling back to the retail bytes means compiling the retail game's bugs as
-well; their fixes go behind `AVP2SRC_MODERN`, into the modern build only, so
-the legacy build keeps matching the retail one.
+When the source compiles back to the retail bytes, it also compiles the
+bugs of the retail game. The fixes for these bugs are behind
+`AVP2SRC_MODERN`, in the modern build only. Thus the legacy build continues
+to agree with the retail game.
 
 ## Progress
 
-How much of each binary compiles to exactly the bytes of the retail game:
-the table, with how it is scored, is in [`progress/README.md`](progress/README.md).
+The table in [`progress/README.md`](progress/README.md) shows how much of
+each binary compiles to exactly the bytes of the retail game. That file
+also tells how the score is calculated.
 
 ## Building
 
@@ -183,24 +195,26 @@ also use the launchers:
 
 ## Credits
 
-This project builds on the work of others:
+This project uses the work of others:
 
 - **Monolith Productions**, for *Aliens versus Predator 2* and the LithTech
-  engine, and, with **Fox Interactive**, for releasing AvP2's game source
-  code (v1.0.9.6, 2002), which `src/AVP2/` and `src/LT2/` are; and for the
-  *No One Lives Forever 2* source release, from which the launchers and much
-  of `src/lithshared/` come
+  engine. Monolith and **Fox Interactive** released the AvP2 game source
+  code (v1.0.9.6, 2002). `src/AVP2/` and `src/LT2/` are this source code.
+  Monolith also released the *No One Lives Forever 2* source code. The
+  launchers and much of `src/lithshared/` come from it
   ([`docs/LICENSE_NOTES.md`](docs/LICENSE_NOTES.md)).
 - **Third Law Interactive**, for *Primal Hunt*, and **Sierra**, its
   publisher.
 - **OpenMiles** (<https://github.com/maci0/openmiles>), the open
-  reimplementation of the Miles Sound System that the modern build uses in
-  place of Miles, with the miniaudio and TinySoundFont libraries it vendors.
-- **FFmpeg** (<https://ffmpeg.org>), on which the modern build's Bink player
-  is built; **zlib**; and **Capstone**, which the tools use to read the
-  retail machine code.
-- **Wine** and **Proton**, which run the game on Linux and the Steam Deck,
-  and **OpenSpy** (<https://openspy.net>), whose master server replaces
-  GameSpy's for the modern build's Internet games.
-- **redump.org**, for the verified disc images the installers check
-  against, and **archive.org**, which keeps them.
+  reimplementation of the Miles Sound System. The modern build uses it in
+  place of Miles. Also the miniaudio and TinySoundFont libraries, which
+  OpenMiles includes in its source.
+- **FFmpeg** (<https://ffmpeg.org>). The Bink player of the modern build
+  uses FFmpeg. Also **zlib**, and **Capstone**. The tools use Capstone to
+  read the retail machine code.
+- **Wine** and **Proton**, which run the game on Linux and on the Steam
+  Deck. Also **OpenSpy** (<https://openspy.net>). Its master server
+  replaces the GameSpy master server for the Internet games of the modern
+  build.
+- **redump.org**, for the verified disc images that the installers check
+  against. Also **archive.org**, which keeps these images.

@@ -1,131 +1,176 @@
 # Primal Hunt's d3d.ren: its translation units, in link order
 
-The machine-readable map is `progress/d3d-objects.csv`. The `out/plan/` scripts and tables this cites are working files, not kept in the repository; `d3dtus.txt` and the pipeline regenerate them.
+The machine-readable map is `progress/d3d-objects.csv`. This document cites
+scripts and tables in `out/plan/`. These are working files. The repository
+does not keep them. `d3dtus.txt` and the pipeline make them again.
 
-Analysis only: nothing in `src/`, `build/` or `progress/` was changed. Scope:
-the app code 0x10001000..0x1003c5e5 of `out/reference/d3d.ren` (1,301
-enumerated rows). Machine-readable companions:
+This is an analysis only. It did not change a file in `src/`, `build/` or
+`progress/`. The scope is the app code 0x10001000..0x1003c5e5 of
+`out/reference/d3d.ren` (1,301 enumerated rows). The machine-readable
+companion files are:
 
 | file | contents |
 |---|---|
 | `out/plan/d3d-objects.csv` | one row per object: `start,end,object_guess,evidence` |
 | `out/plan/d3d-functions-tu.csv` | every row of the image: addr, size, TU, scorer status, our paired symbol, extent-defect note |
-| `out/plan/d3d-unplaced.csv` | our 806 functions the scorer places nowhere, by file |
-| `out/plan/d3dtus.txt` | the TU boundaries themselves (start row index, flags, name, confidence); edit this and rerun the scripts |
-| `out/plan/d3dbase.py`, `d3dfuncs.py`, `d3ddatamap.py`, `d3dcuts.py`, `d3dview2.py`, `d3dtustats.py`, `d3dmapgen.py` | the pipeline (run in that order; `d3dmapdump.py` runs in the build container first to write `d3d-rows.tsv`) |
-| `out/plan/d3d-datamap.tsv`, `d3d-funcs.tsv`, `d3d-strfiles.tsv` | every referenced .rdata/.data/.bss address with its users; per-function evidence; strings vs NOLF2 sources |
+| `out/plan/d3d-unplaced.csv` | the 806 functions of our source that the scorer does not place, by file |
+| `out/plan/d3dtus.txt` | the TU boundaries (start row index, flags, name, confidence). Edit this file, then run the scripts again. |
+| `out/plan/d3dbase.py`, `d3dfuncs.py`, `d3ddatamap.py`, `d3dcuts.py`, `d3dview2.py`, `d3dtustats.py`, `d3dmapgen.py` | the pipeline. Run the scripts in that order. Before them, `d3dmapdump.py` runs in the build container and writes `d3d-rows.tsv`. |
+| `out/plan/d3d-datamap.tsv`, `d3d-funcs.tsv`, `d3d-strfiles.tsv` | each referenced .rdata/.data/.bss address with its users. The evidence for each function. The strings compared with the NOLF2 sources. |
 
-Scoreboard (quickscore, unchanged by this work): 139 identical, 70 near, 73
-small, 44 attempted, 976 unwritten, 806 unplaced (328 crt).
+The scoreboard (quickscore) is 139 identical, 70 near, 73 small, 44
+attempted, 976 unwritten, 806 unplaced (328 crt). This work did not change
+it.
 
 ## How the boundaries were found (and what each instrument proved)
 
-1. **Padding tells /Ot from /Os, per function** (verified by compiling test
-   files with the 8966 cl in the container, `out/plan/t/`):
-   * `/O2` (and `/Ox`) put every function in a 16-aligned COMDAT that the
-     **compiler pads with 0x90**; `/O1` (`/Os`) COMDATs are **align 1, no
-     padding**, so `/Os` functions sit back to back at odd addresses.
-   * Where an `/Os` run is followed by `/Ot` code the **linker** fills with
-     0xCC. So a CC gap is always an object boundary (an `/Os` object
-     followed by an `/Ot` one), and a function that starts unaligned is
-     always `/Os` code.
-   * Result: 315 rows are `/Ot`, 966 `/Os`, 20 ambiguous (aligned and
-     ending exactly on a 16-byte boundary). The flag never changes inside a
-     TU, so every `/Ot`<->`/Os` change is a TU boundary.
+1. **The padding shows /Ot or /Os for each function.** We compiled test
+   files with the 8966 cl in the container (`out/plan/t/`) to verify this:
+   * `/O2` (and `/Ox`) put each function in a 16-aligned COMDAT. The
+     **compiler pads this COMDAT with 0x90**.
+   * `/O1` (`/Os`) COMDATs are **align 1, with no padding**. Thus `/Os`
+     functions are back to back, at odd addresses.
+   * Where `/Ot` code follows an `/Os` run, the **linker** fills the gap
+     with 0xCC. Thus a CC gap is always an object boundary: an `/Os` object
+     and then an `/Ot` object.
+   * A function that starts at an unaligned address is always `/Os` code.
+   * Result: 315 rows are `/Ot`, 966 are `/Os` and 20 are ambiguous. An
+     ambiguous row is aligned and ends exactly on a 16-byte boundary.
+   * The flag never changes in a TU. Thus each `/Ot`<->`/Os` change is a TU
+     boundary.
 2. **The CRT initialiser table** `__xc_a` 0x1004a000 .. `__xc_z` 0x1004a370
-   (219 entries): one per global with a dynamic initialiser, in link order.
-   In `/Ot` objects an initialiser is one 22/25-byte COMDAT; in `/Os` ones a
-   5-byte `jmp` stub plus a 26/30-byte body (both shapes reproduced by the
-   test compiles). Runs of entries mark the top of a file's globals (40
-   groups).
-3. **.data string pool in address order.** The 427 referenced `.data`
-   strings are first used in increasing row order. The one inversion is
-   rows 619/620, which are one function. So the strings both name the
-   module and confirm the order. (The shared initialised tables do not
-   follow it: the cvar defaults 0x1004a72c..0x1004a798 and the
-   function-pointer tables 0x1004da98..0x1004db64.)
-4. **.bss in link order.** VC6 C++ never emits communals (tested: `int
-   g;` goes to the object's `.bss`), so each object's `.bss` is one block in
-   link order. Items read by a single function are not necessarily the
-   function's own (an extern read once looks the same), but the blocks
-   step up monotonically through the TU list below. Exception: static
-   arrays inside inline/template functions are COMDAT `.bss`, placed
-   after the runtime's, in reverse order (0x10099fc0..0x1009a960 for rows
-   52..59, 0x100999a0..0x10099ee0 for rows 850..862). They show those rows
-   are inline/template code (and those rows are called from several TUs).
-5. **Dead code.** Under `/Gy` (`/O1`, `/O2`) `/OPT:REF` removes every
-   function nothing references. A function nothing calls or points at
-   shows a **non-`/Gy`** object. Exports (`RenderDLLSetup`,
-   `GetSupportedModes`, `FreeModeList`, rows 322..324) and extent defects
-   aside, only rows 42..43 (and possibly 634) qualify.
-6. Our scorer pairs (identical/near) give NOLF addresses (our symbols are
-   named for them). NOLF's address order follows PH's TU order (with
-   COMDAT helpers placed at their first user), so the TU order is NOLF's
-   `.dsp` order.
+   (219 entries). It has one entry for each global with a dynamic
+   initialiser, in link order:
+   * In `/Ot` objects, an initialiser is one 22/25-byte COMDAT.
+   * In `/Os` objects, an initialiser is a 5-byte `jmp` stub and a
+     26/30-byte body.
+   * The test compiles made both shapes again.
+   * A run of entries marks the top of the globals of a file. There are 40
+     groups.
+3. **The .data string pool is in address order.** The functions use the
+   427 referenced `.data` strings for the first time in increasing row
+   order. The one inversion is rows 619/620, which are one function. Thus
+   the strings name the module and also confirm the order. The shared
+   initialised tables do not follow this order. These tables are the cvar
+   defaults 0x1004a72c..0x1004a798 and the function-pointer tables
+   0x1004da98..0x1004db64.
+4. **The .bss is in link order.** VC6 C++ never emits communals. We tested
+   this: `int g;` goes to the `.bss` of the object. Thus the `.bss` of each
+   object is one block, in link order:
+   * An item that only one function reads is not necessarily the item of
+     that function. An extern that one function reads looks the same.
+   * But the blocks increase monotonically through the TU list below.
+   * Exception: static arrays in inline/template functions are COMDAT
+     `.bss`. The linker puts them after the `.bss` of the runtime, in
+     reverse order: 0x10099fc0..0x1009a960 for rows 52..59 and
+     0x100999a0..0x10099ee0 for rows 850..862. These arrays show that those
+     rows are inline/template code. Also, functions in several TUs call
+     those rows.
+5. **Dead code.** Under `/Gy` (`/O1`, `/O2`), `/OPT:REF` removes each
+   function that nothing references. Thus a function that nothing calls or
+   points to shows a **non-`/Gy`** object. Only rows 42..43 (and possibly
+   634) are such functions. This count does not include the exports
+   (`RenderDLLSetup`, `GetSupportedModes`, `FreeModeList`, rows 322..324)
+   and the extent defects.
+6. Our scorer pairs (identical/near) give NOLF addresses, because the
+   names of our symbols come from these addresses. The NOLF address order
+   follows the PH TU order. (The linker puts COMDAT helpers at their first
+   user.) Thus the TU order is the NOLF `.dsp` order.
 
 ### Codegen per TU: what is settled
 
-* **`/GX`: absent everywhere.** No function sets up an EH frame (`mov
-  eax,fs:[0]`: 0 hits), there is no `__ehhandler` stub, and no FuncInfo.
-  The "EH-looking" `.rdata` tables 0x10048140.., 0x10048204.. are
-  **vtables** (12-slot list interfaces, 8-slot vertex-buffer classes). Unlike
-  PH's lithtech.exe/server.dll, the renderer is built without `/GX`.
-* **`/Ot` TUs are `/O2`**: they have intrinsic `memset`/`strlen` (`rep
-  stosd`, `repnz scasb`: TU20 has 45 inline `strlen`s) and no calls to the
-  CRT's `memset`/`memcpy`/`strlen`.
-* **`/Os` TUs are `/O1`**: they call the CRT's `memset` (0x1003d040),
-  `memcpy` (0x1003cb80), `strlen` (0x1003d5f0), `strcmp` (0x1003cfb0), so
-  no `/Oi`. (`/O1` = `/Og /Os /Oy /Ob1 /Gs /Gf /Gy`.)
-* **`/Oy`: on in both kinds.** Leaf functions address their arguments off
-  `esp` in every TU that has a leaf function. VC6 `/O1` still builds `ebp`
-  frames for functions with locals and loops (tested), so `ebp` frames in
-  `/Os` TUs are expected. The `ebp` frames in `/Ot` rows (29, 33, 44,
-  52..59, 88, 539, 540, 572, 818, 1008, 1009, 1078, 1080) are `/O2`'s own:
-  rows 29 and 33 are byte-identical to our `/O2` build.
-* **`/Ob`**: no evidence either way. Take the `/O1`/`/O2` default, `/Ob1`.
-* **`/Gy`**: implied by `/O1`/`/O2` and confirmed by the absence of dead
-  code, except TU02 (rows 42..43: two functions nothing references, packed
-  with no padding, which needs a non-COMDAT `/Os` `.text`) and possibly
-  TU18 (row 634, 30 bytes, no reference).
-* **Mixed object, the StdLith allocator (LIB below)**: VC7 Debug shape
-  (`push ebp; mov ebp,esp; sub esp,0x40; push ebx; push esi; push edi`).
-  This is the Rich header's one cl 13.00.9178 object. It defines g_DefAlloc
-  (0x1009961c, read by every `CMoArray`/`LAlloc` user). None of our
-  toolchains is 13.00 (msvc-7.10-3077 is 13.10).
+* **`/GX`: not used in any TU.**
+  * No function sets up an EH frame (`mov
+    eax,fs:[0]`: 0 hits).
+  * There is no `__ehhandler` stub and no FuncInfo.
+  * The `.rdata` tables 0x10048140.. and 0x10048204.. look like EH tables,
+    but they are **vtables**: 12-slot list interfaces and 8-slot
+    vertex-buffer classes.
+  * The PH lithtech.exe and server.dll use `/GX`. The renderer does not.
+* **The `/Ot` TUs are `/O2`.** They have intrinsic `memset`/`strlen` (`rep
+  stosd`, `repnz scasb`). For example, TU20 has 45 inline `strlen`s. They
+  do not call the CRT `memset`/`memcpy`/`strlen`.
+* **The `/Os` TUs are `/O1`.** They call the CRT `memset` (0x1003d040),
+  `memcpy` (0x1003cb80), `strlen` (0x1003d5f0) and `strcmp` (0x1003cfb0).
+  Thus they do not use `/Oi`. (`/O1` = `/Og /Os /Oy /Ob1 /Gs /Gf /Gy`.)
+* **`/Oy`: on in the two kinds.**
+  * In each TU that has a leaf function, the leaf functions address their
+    arguments from `esp`.
+  * VC6 `/O1` still makes `ebp` frames for functions with locals and loops
+    (tested). Thus we expect `ebp` frames in `/Os` TUs.
+  * The `ebp` frames in the `/Ot` rows (29, 33, 44, 52..59, 88, 539, 540,
+    572, 818, 1008, 1009, 1078, 1080) come from `/O2` itself. Rows 29 and
+    33 are byte-identical to our `/O2` build.
+* **`/Ob`**: there is no evidence for or against. Use the `/O1`/`/O2`
+  default, `/Ob1`.
+* **`/Gy`**: `/O1`/`/O2` include it, and the absence of dead code confirms
+  it. There are two exceptions:
+  * TU02 (rows 42..43). These are two functions that nothing references,
+    packed with no padding. This needs a non-COMDAT `/Os` `.text`.
+  * Possibly TU18 (row 634, 30 bytes, no reference).
+* **A mixed object, the StdLith allocator (LIB below)**:
+  * It has the VC7 Debug shape (`push ebp; mov ebp,esp; sub esp,0x40; push
+    ebx; push esi; push edi`).
+  * It is the one cl 13.00.9178 object of the Rich header.
+  * It defines g_DefAlloc (0x1009961c). Each `CMoArray`/`LAlloc` user reads
+    it.
+  * None of our toolchains is 13.00 (msvc-7.10-3077 is 13.10).
 
-The current build compiles every d3d file `/O2` (`D3D_BASE`). Per the
-table below, about two thirds of the code (TU04, TU06..TU08, TU10..TU14,
-TU16, TU18, TU19, TU21..TU24, TU26, TU27, TU29, TU30, TU32, TU35, TU36,
-TU38..TU41, TU43) is `/O1`.
+The current build compiles each d3d file `/O2` (`D3D_BASE`). But the table
+below shows that about two thirds of the code is `/O1`. These TUs are TU04,
+TU06..TU08, TU10..TU14, TU16, TU18, TU19, TU21..TU24, TU26, TU27, TU29,
+TU30, TU32, TU35, TU36, TU38..TU41 and TU43.
 
 ### Extent defects found on the way (the enumeration's rows)
 
-Each of these rows is the tail of the row before it (mid-instruction
-start, or a branch target inside the previous function). Merge them
-(`progress/extent-splits.csv`/screen-exclude, when someone takes these TUs):
-189 (0x1000be43: row 188 at 0x1000be38 is 11 bytes and does not return;
-189 opens with `fld [eax+0xb8]` on an eax 188 set), 253
-(0x1000eaaf, `mov ecx,[ebp-4]` at entry), 578 (0x1001855d, mid-instruction
-of 0x10018520's `je`), 587 (0x10019434, target of 0x10019400's `je`), 620
-(0x1001bb46, mid-instruction), 715 (0x1001fb59, a store in the middle of
-0x1001f930), 953 (0x1002b2e4, mid-instruction), 1016 (0x1002f97f, after
-0x1002f970's prologue), 1203 (0x10039704, mid-instruction). So 0x1000be38 is one
-519-byte function, 0x10018520 one of 2,671, 0x10019400 333, 0x1001b8d0 2,597, 0x1001f930
-1,151, 0x1002f970 1,105, 0x10039600 415.
+Each of these rows is the tail of the row before it. The row starts in the
+middle of an instruction, or at a branch target in the previous function.
+Merge them (`progress/extent-splits.csv`/screen-exclude) when someone works
+on these TUs:
+
+* 189 (0x1000be43). Row 188 at 0x1000be38 is 11 bytes and does not return.
+  Row 189 starts with `fld [eax+0xb8]`, and row 188 sets eax.
+* 253 (0x1000eaaf). It has `mov ecx,[ebp-4]` at the entry.
+* 578 (0x1001855d). It is in the middle of the `je` instruction of
+  0x10018520.
+* 587 (0x10019434). It is the target of the `je` of 0x10019400.
+* 620 (0x1001bb46). It starts in the middle of an instruction.
+* 715 (0x1001fb59). It is a store in the middle of 0x1001f930.
+* 953 (0x1002b2e4). It starts in the middle of an instruction.
+* 1016 (0x1002f97f). It is after the prologue of 0x1002f970.
+* 1203 (0x10039704). It starts in the middle of an instruction.
+
+Thus these are single functions:
+
+* 0x1000be38: 519 bytes.
+* 0x10018520: 2,671 bytes.
+* 0x10019400: 333 bytes.
+* 0x1001b8d0: 2,597 bytes.
+* 0x1001f930: 1,151 bytes.
+* 0x1002f970: 1,105 bytes.
+* 0x10039600: 415 bytes.
 
 ## The TUs
 
-Flags: `/O2` = `/Ot` codegen (16-aligned, 0x90-padded COMDATs, intrinsics);
-`/O1` = `/Os` codegen (packed, CRT calls). "Proposed name" is a **guess**
-unless the confidence says high: no shipped renderer file names survive
-(no `__FILE__`, assert or PDB path in any of the three d3d.ren). Names
-come from the strings and from NOLF2's descendant files
-(`render_a/src/sys/d3d`: `common_init.cpp` holds "VisibleSet::Init
-failed" and "nullrender", `common_stuff.cpp` holds "%s %f", `d3d_draw.cpp`
-holds "Sky Portals: %d" and "Triangles: %d", and so on;
-`out/plan/d3d-strfiles.tsv`). Counts are rows with the extent defects
-merged. The "our files" column lists the files whose functions the scorer
-pairs here; small/attempted pairings are weak.
+The flags are:
+
+* `/O2` = `/Ot` codegen (16-aligned, 0x90-padded COMDATs, intrinsics).
+* `/O1` = `/Os` codegen (packed, CRT calls).
+
+The "Proposed name" is a **guess** unless the confidence is high. No file
+names of the shipped renderer are in the images. None of the three
+d3d.ren has a `__FILE__`, assert or PDB path. The names come from the
+strings and from the NOLF2 descendant files in `render_a/src/sys/d3d`
+(`out/plan/d3d-strfiles.tsv`). For example:
+
+* `common_init.cpp` has "VisibleSet::Init
+  failed" and "nullrender".
+* `common_stuff.cpp` has "%s %f".
+* `d3d_draw.cpp` has "Sky Portals: %d" and "Triangles: %d".
+
+The counts are rows, with the extent defects merged. The "our files"
+column gives the files whose functions the scorer pairs in this TU. The
+small/attempted pairings are weak.
 
 | TU | range | bytes | funcs | flags (codegen) | proposed name | conf. | ident/near/small/att/todo | our files (placed functions) | NOLF addr. of paired fns |
 |---|---|--:|--:|---|---|---|---|---|---|
@@ -178,157 +223,221 @@ pairs here; small/attempted pairings are weak.
 
 ### Notes per TU (evidence and doubts)
 
-* **TU01 (rows 0..41)**: starts with `??_H` (the vector-constructor
-  iterator COMDAT) and 12 initialisers: 8 cvars (ModelMinTri,
-  ModelDetailTextureScale, SpecularPowerTest/ScaleTest, ModelVBSize/Count/
-  Cache/CacheDelay) and 4 vertex-buffer objects whose vtables sit at
-  0x10048140..0x100481bf. Their base-class slots are TU43's
-  (0x1003b45b..0x1003b611), their own slots rows 46..50. .bss
-  0x100515d0..0x10052bb8. Clip/lerp helpers 28..36 (`LerpClipVert`,
-  `ClipEdgeNear`, `ClipEdgeLeftA`, `LerpSClipVertA`) and `CD3DModelDraw`
-  pieces (rows 37, 39 = NOLF 0x10008340/0x10008680).
-* **TU02 (42..43)**: two 27-byte `push esi; mov edx,offset f; mov eax,offset
-  f; ... call 0x10004270; ret 4` wrappers around TU01 functions (0x10003b60,
-  0x10003e00). Nothing references them, and they are packed. A separate
-  `/Os` object without `/Gy` is the only reading consistent with both. So
-  rows 44..59 are a third object (TU03), not TU01's tail.
-* **TU03 (44..59)**: 44 (4,241 bytes) and 45 (2,612, called from TU26/27),
-  the VB classes' own methods 46..50, and 52..59: eight 655..693-byte
-  transform variants with function-static arrays in COMDAT `.bss` (so they
-  are inline/template, called from TU01, TU31 and TU33).
-* **TU04 (60..82)**: "vertex buffer overflow"; `ClipEdgeTop/RightA/Bottom`
-  (NOLF big24090, w14_10011980, w28_1002ef30); .bss 0x10052bd8..0x10053fe8.
-  Its row 61 is called from TU15.
-* **TU05 (83..89)**: one empty (1-byte) initialiser; `MatMul` (85); 88 uses
-  `_chkstk` for a 0x4080-byte frame. .bss 0x10053ff0..0x1005540c. The name is
-  a pure guess.
-* **TU06 (90..132)**: 7 cvars (DetailTextures, DetailTextureAdd,
-  DetailTextureAngle, FixSparkleys, LMFullBright, EnvMapWorld, LMAnim);
-  .bss 0x10055410..0x10056908.
-* **TU07 (133..262)**: 16 initialisers (model cvars LightModelSprites,
-  ModelLODOffset, ModelZoomScale, ModelLODBlend*, ExtraFOV[XY]Offset,
-  ModelFovTest, ModelSun*, ModelSaturation, DrawModelsRigid,
-  ModelCacheRigid, ModelUseTnL and two objects whose constructors are rows
-  172 and 178). 213..262 are mostly 12-slot list-interface vtable methods
-  (vtables 0x10048204, 0x10048234, 0x10048264). .bss 0x10056910..0x1005888c,
-  one block. 130 rows; **it may be two objects**, but no .bss or padding
-  evidence splits it.
-* **TU08 (263..279)**: a global (initialiser 269/270) plus helpers 263..268,
-  which only 267/274/276 call, and `_CVector` operator COMDATs 277..279.
-  Boundary 262|263: 262 is `BaseNew` called from TU07 only. .bss
-  0x100590d0..0x1005a324.
-* **TU09 (280..283)**: cvars NearZ/ReallyCloseNearZ (cvar objects
-  0x1005a328, 0x1005b748). Owns .bss 0x1005a328..~0x1005b76f (big arrays).
-  Row 283 is called from TU33.
-* **TU10 (284..308)**: five empty initialisers and one real one (289,
-  constructing 0x1005b790). Owns the most-shared .bss block
-  0x1005b790..0x1005d240 (the renderer's frame/view globals). The five
-  1-byte initialisers *could* instead be five code-less objects (a header's
-  trivially-constructed static), which would count towards the Rich
-  header's 69.
-* **TU11 (309..324)**: holds the three exports (`GetSupportedModes` 322,
-  `FreeModeList` 323, `RenderDLLSetup` 324) and the device-selection
-  strings. NOLF2 splits these between `common_init.cpp` and
-  `d3d_shell.cpp`. .bss 0x1005d258..0x1005d2a8.
-* **TU12 (325..509)**: 88 cvars (TableFog .. Dither), then the shared helpers
-  502..509 ("d3drender.dll: out of memory", "%s %f"). Its .bss
-  0x1005d2c8..0x1005df8c holds every cvar object and g_pStruct-like
-  0x1005df08.
-* **TU13 (510..517)**: an in-place upper-case loop (510, called from TU11) and
-  the 512..517 cluster (NOLF 0x100230d0). Whether it is TU12's tail or its
-  own object is undecided: no padding change, no .bss of its own.
-* **TU14 (518..521)**: its initialiser calls `QueryPerformanceFrequency`
-  into .data 0x1004ac58/0x1004ac5c, right after TU12's last string. The
-  three functions after it are a counter start/stop pair, called from all
-  over (67..1215).
-* **TU15 (522..598)**: 18 initialisers (VFog*, DrawWorldTree,
-  DrawTerrainSections, AlphaTest, DrawPortals, ShowPortalBounds,
-  PortalLightmap, ShowTexInfo, RenderToFront), world/BSP drawing (NOLF
-  0x10023c40..0x10024020 and 0x100256d0..0x1002e350, two NOLF windows), and
-  the frame-statistics printer at 0x10018520. .bss 0x1005df98..0x1005fe60:
-  the private items of rows 561..566 interleave with the cvars of 522..537,
-  so it is one object.
-* **TU16 (599..608)**: one empty initialiser; 603 is called from TU33.
-* **TU17 (609..632)**: the DirectDraw/D3D error-string function (609),
-  cvars UseD3DClip/MipMapBias/Trilinear/Anisotropic, card detection
-  (PERMEDIA/POWERVR), z-buffer, device creation (0x1001b8d0, "lithtech.gam"),
-  `d3d_CreateWorld`/`DestroyWorld`/`Start3D`/`End3D`, console commands
-  (LISTDEVICES, LOADGAMMA, ...). .bss 0x10062280..~0x100638dc (includes the
-  device pointer 0x100638c8). 609 (no .bss, before the initialisers)
-  could be its own object.
-* **TU18 (633..667)**: optimised 2D surfaces (`d3d_GetOptimized2DBlend`/
-  `Color`). .bss 0x100638e0..0x10066168. Row 634 is unreferenced.
-* **TU19 (668..693)**: LockOnFlip, surface lock/unlock, the "nonoptimized
-  surface" warning, ScreenShot. .bss 0x10066170..0x100661a0.
-* **TU20 (694..747)**: S3TCEnable; texture formats ("FORMAT_* texture format
-  missing"), texture upload (`r_TransferTexture`). .bss 0x100661a8..0x10068320.
-* **TU21..TU24 (748..809)**: one `/Os` run split by its four initialiser
-  groups and four steps of .bss (0x10069728 | 0x10069740..0x10069de0 |
-  0x10069de8..0x10069e08 | 0x1006b658..0x1006d678). TU23 has DrawCanvases.
-  TU24 has MultipassGouraud. The cuts at 763/773/796 are at the
-  initialisers. Medium confidence on the cuts, low on the names.
-* **TU25 (810..818)**: a short `/O2` object between two `/Os` runs (CC pad
-  before it). NOLF 0x10040ca0..0x10043a30 and 0x100646a0.
-* **TU26/TU27 (819..870)**: one `/Os` run. Cut at 840 (the
-  ModelShadowAlpha initialisers). TU26 .bss 0x1006d680..0x1006dac8. But
-  row 831 (TU26) privately reads 0x1006eacc/0x1006ead0, inside TU27's
-  block, so **it may be one object**. TU27 holds the shadow projector
-  ("Invalid texture size for shadows").
-* **TU28 (871..896)**: SortProfile/DrawSorted, plus the `CMoArray` list
-  template members it instantiates first (880..896).
-* **TU29 (897..905)**: PSSrcBlend/PSDestBlend (particle systems). .bss
-  0x10072810..0x10074250.
-* **TU30 (906..980)**: DetailTextureScale, DrawPolyMgr, TestGouraud,
-  TestLightmap, "Material '%s', pass %d, stage %d", the
-  `DrawPolyMgr::DrawPolyAdditionalPass` assert. Small-function tables in
-  .data 0x1004dbe8..0x1004dc84. .bss 0x10074258..0x100746d8.
-* **TU31 (981..991)**: EnvMapPolyGrids. Row 982 is 5,473 bytes.
-* **TU32 (992..999)**: only the four portal cvars' initialisers survive:
-  a file whose code `/OPT:REF` removed entirely.
-* **TU33 (1000..1017)**: AllSkyPortals and counter globals (0x1007946c..).
-  1015+1016 are one function. 1017 is called only from 1009 and is put
-  here, not in TU34.
-* **TU34 (1018..1030)**: DrawWorldModels. .bss 0x1007ad48..0x1007b170.
-* **TU35/TU36 (1031..1070)**: one `/Os` run. Cut at 1055 by .bss
-  (0x1007c178..0x1007c1d8 | 0x1007c1e4..0x1007c640). TU35 holds DirectDraw
-  device enumeration (`DirectDrawEnumerateExA`). TU36 holds LMDynamic*.
-* **TU37 (1071..1080)**: LMAnimStatic. .bss 0x1007d85e..0x1007dd60.
-* **TU38..TU41 (1081..1200)**: one `/Os` run cut by .bss steps
-  (0x1007f180..0x1008058c | 0x10080590..0x10081abc | 0x10082ebc..0x10087af8 |
-  0x10087b00..0x10097e40) and the initialiser groups at 1098, 1104 and
-  1123..1129. TU38 holds lightmap paging ("Lightmaps paged in"). TU41 has
-  function-pointer dispatch tables in .data 0x1004dfc8..0x1004e108 over
-  rows 1131..1165, and two ~2 KB workers (1199, 1200).
-* **TU42 (1201..1234)**: the visible-set lists (VS_CANVASES ..
-  VS_MODELS, "GetVisBSP returned LTNULL"), plus `CMoArray<DWORD>` members
-  first instantiated here. .bss 0x10099240..0x10099544.
-* **TU43 (1235..1279)**: the base classes of TU01's vertex-buffer objects
-  (constructor 1235 and destructor 1237, called from TU01's initialisers)
-  and list code. .bss 0x100995a8..0x10099614. The last renderer object.
-* **IMP (1280..1282)**: `jmp [__imp_...]` stubs of the DirectX import
-  libraries (the Rich header's three implib-7.00 descriptors).
+* **TU01 (rows 0..41)**:
+  * It starts with `??_H` (the vector-constructor iterator COMDAT) and 12
+    initialisers.
+  * The initialisers are 8 cvars (ModelMinTri, ModelDetailTextureScale,
+    SpecularPowerTest/ScaleTest, ModelVBSize/Count/Cache/CacheDelay) and 4
+    vertex-buffer objects.
+  * The vtables of the vertex-buffer objects are at
+    0x10048140..0x100481bf. Their base-class slots are in TU43
+    (0x1003b45b..0x1003b611). Their own slots are rows 46..50.
+  * The .bss is 0x100515d0..0x10052bb8.
+  * Rows 28..36 are clip/lerp helpers (`LerpClipVert`, `ClipEdgeNear`,
+    `ClipEdgeLeftA`, `LerpSClipVertA`).
+  * It also has `CD3DModelDraw` parts (rows 37 and 39 = NOLF
+    0x10008340/0x10008680).
+* **TU02 (42..43)**:
+  * These are two 27-byte wrappers around TU01 functions (0x10003b60,
+    0x10003e00): `push esi; mov edx,offset f; mov eax,offset f; ... call
+    0x10004270; ret 4`.
+  * Nothing references them, and they are packed. Only a separate `/Os`
+    object without `/Gy` agrees with these two facts.
+  * Thus rows 44..59 are a third object (TU03), not the tail of TU01.
+* **TU03 (44..59)**:
+  * Row 44 is 4,241 bytes. Row 45 is 2,612 bytes, and TU26/27 call it.
+  * Rows 46..50 are the own methods of the VB classes.
+  * Rows 52..59 are eight transform variants of 655..693 bytes. They have
+    function-static arrays in COMDAT `.bss`. Thus they are inline/template
+    code. TU01, TU31 and TU33 call them.
+* **TU04 (60..82)**:
+  * It has "vertex buffer overflow".
+  * It has `ClipEdgeTop/RightA/Bottom` (NOLF big24090, w14_10011980,
+    w28_1002ef30).
+  * The .bss is 0x10052bd8..0x10053fe8.
+  * TU15 calls its row 61.
+* **TU05 (83..89)**:
+  * It has one empty (1-byte) initialiser and `MatMul` (85).
+  * Row 88 uses `_chkstk` for a 0x4080-byte frame.
+  * The .bss is 0x10053ff0..0x1005540c.
+  * The name is only a guess.
+* **TU06 (90..132)**: it has 7 cvars (DetailTextures, DetailTextureAdd,
+  DetailTextureAngle, FixSparkleys, LMFullBright, EnvMapWorld, LMAnim). The
+  .bss is 0x10055410..0x10056908.
+* **TU07 (133..262)**:
+  * It has 16 initialisers. These are the model cvars LightModelSprites,
+    ModelLODOffset, ModelZoomScale, ModelLODBlend*, ExtraFOV[XY]Offset,
+    ModelFovTest, ModelSun*, ModelSaturation, DrawModelsRigid,
+    ModelCacheRigid and ModelUseTnL. There are also two objects whose
+    constructors are rows 172 and 178.
+  * Rows 213..262 are mostly methods of 12-slot list-interface vtables
+    (vtables 0x10048204, 0x10048234, 0x10048264).
+  * The .bss is 0x10056910..0x1005888c, in one block.
+  * It has 130 rows. **It is possibly two objects**, but no .bss or
+    padding evidence splits it.
+* **TU08 (263..279)**:
+  * It has a global (initialiser 269/270) and helpers 263..268. Only rows
+    267/274/276 call these helpers.
+  * It has the `_CVector` operator COMDATs 277..279.
+  * The boundary 262|263: row 262 is `BaseNew`, and only TU07 calls it.
+  * The .bss is 0x100590d0..0x1005a324.
+* **TU09 (280..283)**:
+  * It has the cvars NearZ/ReallyCloseNearZ (cvar objects 0x1005a328,
+    0x1005b748).
+  * It owns the .bss 0x1005a328..~0x1005b76f (big arrays).
+  * TU33 calls row 283.
+* **TU10 (284..308)**:
+  * It has five empty initialisers and one real initialiser (289, which
+    constructs 0x1005b790).
+  * It owns the .bss block that the most TUs share,
+    0x1005b790..0x1005d240 (the frame/view globals of the renderer).
+  * The five 1-byte initialisers *are possibly* five objects with no code
+    (a trivially-constructed static from a header). If so, they count
+    towards the 69 of the Rich header.
+* **TU11 (309..324)**:
+  * It has the three exports (`GetSupportedModes` 322, `FreeModeList` 323,
+    `RenderDLLSetup` 324) and the device-selection strings.
+  * NOLF2 divides these between `common_init.cpp` and `d3d_shell.cpp`.
+  * The .bss is 0x1005d258..0x1005d2a8.
+* **TU12 (325..509)**:
+  * It has 88 cvars (TableFog .. Dither), and then the shared helpers
+    502..509 ("d3drender.dll: out of memory", "%s %f").
+  * Its .bss 0x1005d2c8..0x1005df8c has all the cvar objects and the
+    g_pStruct-like 0x1005df08.
+* **TU13 (510..517)**:
+  * It has an in-place upper-case loop (510). TU11 calls it.
+  * It has the 512..517 cluster (NOLF 0x100230d0).
+  * It is not known if TU13 is the tail of TU12 or a separate object.
+    There is no padding change, and it has no .bss of its own.
+* **TU14 (518..521)**:
+  * Its initialiser calls `QueryPerformanceFrequency` into .data
+    0x1004ac58/0x1004ac5c, immediately after the last string of TU12.
+  * The three functions after it are a counter start/stop pair. Functions
+    in many places (67..1215) call them.
+* **TU15 (522..598)**:
+  * It has 18 initialisers (VFog*, DrawWorldTree, DrawTerrainSections,
+    AlphaTest, DrawPortals, ShowPortalBounds, PortalLightmap, ShowTexInfo,
+    RenderToFront).
+  * It has the world/BSP drawing in two NOLF windows: NOLF
+    0x10023c40..0x10024020 and 0x100256d0..0x1002e350.
+  * It has the frame-statistics printer at 0x10018520.
+  * The .bss is 0x1005df98..0x1005fe60. The private items of rows 561..566
+    are mixed with the cvars of 522..537. Thus it is one object.
+* **TU16 (599..608)**: it has one empty initialiser. TU33 calls row 603.
+* **TU17 (609..632)**:
+  * It has the DirectDraw/D3D error-string function (609).
+  * It has the cvars UseD3DClip/MipMapBias/Trilinear/Anisotropic.
+  * It has the card detection (PERMEDIA/POWERVR), the z-buffer and the
+    device creation (0x1001b8d0, "lithtech.gam").
+  * It has `d3d_CreateWorld`/`DestroyWorld`/`Start3D`/`End3D` and the
+    console commands (LISTDEVICES, LOADGAMMA, ...).
+  * The .bss is 0x10062280..~0x100638dc. It includes the device pointer
+    0x100638c8.
+  * Row 609 has no .bss and is before the initialisers. Thus it is
+    possibly a separate object.
+* **TU18 (633..667)**: it has the optimised 2D surfaces
+  (`d3d_GetOptimized2DBlend`/`Color`). The .bss is
+  0x100638e0..0x10066168. Nothing references row 634.
+* **TU19 (668..693)**: it has LockOnFlip, the surface lock/unlock, the
+  "nonoptimized surface" warning and ScreenShot. The .bss is
+  0x10066170..0x100661a0.
+* **TU20 (694..747)**: it has S3TCEnable, the texture formats ("FORMAT_*
+  texture format missing") and the texture upload (`r_TransferTexture`).
+  The .bss is 0x100661a8..0x10068320.
+* **TU21..TU24 (748..809)**:
+  * This is one `/Os` run. Its four initialiser groups and four steps of
+    .bss divide it (0x10069728 | 0x10069740..0x10069de0 |
+    0x10069de8..0x10069e08 | 0x1006b658..0x1006d678).
+  * TU23 has DrawCanvases. TU24 has MultipassGouraud.
+  * The cuts at 763/773/796 are at the initialisers.
+  * The confidence is medium for the cuts and low for the names.
+* **TU25 (810..818)**: it is a short `/O2` object between two `/Os` runs.
+  There is a CC pad before it. It pairs with NOLF 0x10040ca0..0x10043a30
+  and 0x100646a0.
+* **TU26/TU27 (819..870)**:
+  * This is one `/Os` run. The cut is at 840 (the ModelShadowAlpha
+    initialisers).
+  * The .bss of TU26 is 0x1006d680..0x1006dac8.
+  * But row 831 (TU26) privately reads 0x1006eacc/0x1006ead0, in the block
+    of TU27. Thus **it is possibly one object**.
+  * TU27 has the shadow projector ("Invalid texture size for shadows").
+* **TU28 (871..896)**: it has SortProfile/DrawSorted. It also has the
+  members of the `CMoArray` list template (880..896), because it is the
+  first TU that instantiates them.
+* **TU29 (897..905)**: it has PSSrcBlend/PSDestBlend (particle systems).
+  The .bss is 0x10072810..0x10074250.
+* **TU30 (906..980)**:
+  * It has DetailTextureScale, DrawPolyMgr, TestGouraud, TestLightmap,
+    "Material '%s', pass %d, stage %d" and the
+    `DrawPolyMgr::DrawPolyAdditionalPass` assert.
+  * It has small-function tables in .data 0x1004dbe8..0x1004dc84.
+  * The .bss is 0x10074258..0x100746d8.
+* **TU31 (981..991)**: it has EnvMapPolyGrids. Row 982 is 5,473 bytes.
+* **TU32 (992..999)**: only the initialisers of the four portal cvars
+  stay. `/OPT:REF` removed all the code of this file.
+* **TU33 (1000..1017)**:
+  * It has AllSkyPortals and the counter globals (0x1007946c..).
+  * Rows 1015+1016 are one function.
+  * Only row 1009 calls row 1017. Thus we put row 1017 here, not in TU34.
+* **TU34 (1018..1030)**: it has DrawWorldModels. The .bss is
+  0x1007ad48..0x1007b170.
+* **TU35/TU36 (1031..1070)**:
+  * This is one `/Os` run. The .bss cuts it at 1055
+    (0x1007c178..0x1007c1d8 | 0x1007c1e4..0x1007c640).
+  * TU35 has the DirectDraw device enumeration
+    (`DirectDrawEnumerateExA`).
+  * TU36 has LMDynamic*.
+* **TU37 (1071..1080)**: it has LMAnimStatic. The .bss is
+  0x1007d85e..0x1007dd60.
+* **TU38..TU41 (1081..1200)**:
+  * This is one `/Os` run. The .bss steps cut it
+    (0x1007f180..0x1008058c | 0x10080590..0x10081abc |
+    0x10082ebc..0x10087af8 | 0x10087b00..0x10097e40).
+  * The initialiser groups at 1098, 1104 and 1123..1129 also cut it.
+  * TU38 has the lightmap paging ("Lightmaps paged in").
+  * TU41 has function-pointer dispatch tables in .data
+    0x1004dfc8..0x1004e108 for rows 1131..1165. It also has two workers of
+    about 2 KB (1199, 1200).
+* **TU42 (1201..1234)**:
+  * It has the visible-set lists (VS_CANVASES .. VS_MODELS, "GetVisBSP
+    returned LTNULL").
+  * It also has the `CMoArray<DWORD>` members, because it is the first TU
+    that instantiates them.
+  * The .bss is 0x10099240..0x10099544.
+* **TU43 (1235..1279)**:
+  * It has the base classes of the vertex-buffer objects of TU01
+    (constructor 1235 and destructor 1237). The initialisers of TU01 call
+    them.
+  * It also has list code.
+  * The .bss is 0x100995a8..0x10099614.
+  * It is the last renderer object.
+* **IMP (1280..1282)**: these are the `jmp [__imp_...]` stubs of the
+  DirectX import libraries (the three implib-7.00 descriptors of the Rich
+  header).
 * **LIB (1283..1296)**: see above (cl 13.00.9178, unoptimised; StdLith
   allocator).
-* **CRT (1297..1300)**: libcmt code below `onexit.obj`, as `targets.py`
-  says.
+* **CRT (1297..1300)**: this is the libcmt code below `onexit.obj`, as
+  `targets.py` says.
 
 ### How many objects: 43 found, the Rich header says 69
 
-The Rich header counts every C++ 8966 object the link was given. 43
-objects with code are delimited here (TU01..TU43). The other ~26 are,
-in some mix:
-* **objects whose code `/OPT:REF` removed entirely.** TU32 is one that kept
-  its cvars. Ones with no dynamic initialiser leave nothing, or only
-  .bss, behind. No unreferenced initialised .data exists (checked), so
-  such objects had no initialised data either.
-* **splits this map could not prove**: TU07 (130 rows), TU12/TU13, TU17
-  (609 alone?), TU26/TU27 (one?), TU41 (79 rows), TU43, and the 1-byte
-  initialisers of TU10 (five possible code-less objects).
+The Rich header counts each C++ 8966 object that the link used. This
+document finds the limits of 43 objects with code (TU01..TU43). The other
+~26 objects are a mix of these:
+
+* **Objects whose code `/OPT:REF` removed entirely.** TU32 is one of them
+  that kept its cvars. Such an object with no dynamic initialiser leaves
+  nothing, or only .bss. There is no unreferenced initialised .data
+  (checked). Thus such objects also had no initialised data.
+* **Splits that this map could not prove**: TU07 (130 rows), TU12/TU13,
+  TU17 (is 609 a separate object?), TU26/TU27 (one object?), TU41 (79
+  rows), TU43, and the 1-byte initialisers of TU10 (possibly five objects
+  with no code).
 
 ## Retail functions with no counterpart in our source (unwritten), by TU
 
-All 967 rows, with sizes, are in `out/plan/d3d-functions-tu.csv` (status
-`todo`). The five largest of each TU:
+`out/plan/d3d-functions-tu.csv` has all the 967 rows, with their sizes
+(status `todo`). This table gives the five largest of each TU:
 
 | TU | unwritten functions | bytes | largest (addr:size) |
 |---|--:|--:|---|
@@ -382,22 +491,27 @@ All 967 rows, with sizes, are in `out/plan/d3d-functions-tu.csv` (status
 
 ## Our functions retail no longer has
 
-The scorer places 806 of our functions nowhere (`out/plan/d3d-unplaced.csv`).
-"Unplaced" is not proof of absence, since an Intel-shaped function rarely
-pairs with MSVC code. 127 of our files (379 functions, 204,041 bytes) have
-nothing placed at all. The ones certainly gone:
+The scorer does not place 806 of our functions
+(`out/plan/d3d-unplaced.csv`). "Unplaced" does not prove that the function
+is absent, because an Intel-shaped function seldom pairs with MSVC code.
+127 of our files (379 functions, 204,041 bytes) have no placed function.
+These functions are certainly not in the image:
 
-* **NOLF's profiling code.** Every string these functions print is absent
-  from PH's image: `CD3DModelDraw` NOLF 0x10008a40 ("DrawTris: %d"),
-  0x10008e10 ("SetupVerts: %d"), 0x10017c10 ("Model::SetupTransforms failed
-  for %s.", "SetupModelLight: %d (%d lights)"), 0x10015c70 ("%s: %d ticks"),
-  `C100500a0` 0x1004fea4 ("Sort: %d ticks"), and the "Shadow -> Find: %d,
-  Setup: %d, Texture" line of `CShadowRenderer` 0x1004b720.
+* **The NOLF profiling code.** The PH image does not have the strings
+  that these functions print:
+  * `CD3DModelDraw` NOLF 0x10008a40 ("DrawTris: %d").
+  * 0x10008e10 ("SetupVerts: %d").
+  * 0x10017c10 ("Model::SetupTransforms failed
+    for %s.", "SetupModelLight: %d (%d lights)").
+  * 0x10015c70 ("%s: %d ticks").
+  * `C100500a0` 0x1004fea4 ("Sort: %d ticks").
+  * The "Shadow -> Find: %d,
+    Setup: %d, Texture" line of `CShadowRenderer` 0x1004b720.
 * `d3d.cpp` compiles to an empty object for Primal Hunt.
 
-Files with nothing placed, the largest first (NOLF address range from
-their symbol names: these NOLF modules are the candidates for "removed in
-PH", or for "rewritten past recognition"):
+This table gives the files with no placed function, the largest first. The
+NOLF address range comes from their symbol names. These NOLF modules are
+possibly "removed in PH", or possibly "rewritten past recognition":
 
 | our file | functions | bytes | NOLF range |
 |---|--:|--:|---|
@@ -413,7 +527,7 @@ PH", or for "rewritten past recognition"):
 | big40e10.cpp | 1 | 5226 | 0x10040e10 |
 | (117 more) | 295 | 123530 | see `d3d-unplaced.csv` |
 
-Unplaced functions per file (all 203 files):
+This table gives the unplaced functions of each file (all 203 files):
 
 | our file | unplaced functions | bytes | placed elsewhere |
 |---|--:|--:|--:|

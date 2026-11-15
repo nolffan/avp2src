@@ -1,20 +1,25 @@
 # Multiplayer tests (docs/MODERN.md, M-17..M-20)
 
-Scripts for testing the modern build's multiplayer in containers: a server
-and two clients, each under Xvfb and Wine.
+These scripts test the multiplayer of the modern build in containers. There
+is a server and two clients, each under Xvfb and Wine.
 
-- `dock.sh` -- run a command in the build image with this checkout at /repo
-  (the extra docker options in `DOCK_ENV`).
-- `srv.sh` -- start a dedicated server (AVP2Serv.exe or AVP2XServ.exe) in
-  `out/mp/run/<name>/`, its binaries copied and its data linked.
-- `masterstub.py` -- a local GameSpy master: heartbeat, `\secure\` challenge
-  and `\validate\` check, list request, status queries.
-- `gsprobe.py` -- one validated list request to a master (e.g.
-  master.openspy.net), to see whether a game is registered and listed.
-- `measure.sh` -- a server, one client running in circles and one watching:
-  how smoothly the other player moves (with `netpos.py`, which reads the
-  watcher's `netpos.log`, written by the modern debug build's `NetPosLog`).
-- `c-*.txt` -- the clients' playtest scripts (build/playtest.sh's format).
+- `dock.sh` -- runs a command in the build image, with this checkout at
+  /repo. `DOCK_ENV` gives the extra docker options.
+- `srv.sh` -- starts a dedicated server (AVP2Serv.exe or AVP2XServ.exe) in
+  `out/mp/run/<name>/`. It copies the binaries of the server and links its
+  data.
+- `masterstub.py` -- a local GameSpy master. It does the heartbeat, the
+  `\secure\` challenge and the `\validate\` check, the list request, and
+  the status queries.
+- `gsprobe.py` -- sends one validated list request to a master (for
+  example master.openspy.net). Use it to see if a game is registered and
+  listed.
+- `measure.sh` -- starts a server, one client that runs in circles and one
+  client that watches. It measures how smoothly the other player moves. It
+  uses `netpos.py`, which reads the `netpos.log` of the watcher. The
+  `NetPosLog` of the modern debug build writes this log.
+- `c-*.txt` -- the playtest scripts of the clients, in the format of
+  build/playtest.sh.
 
 Until our own server.dll loads a world (docs/MODERN.md, M-17..M-20, open
-items), the servers run on retail's server.dll (`SRV_DLL`).
+items), the servers use the retail server.dll (`SRV_DLL`).
