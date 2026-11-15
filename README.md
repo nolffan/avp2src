@@ -116,22 +116,6 @@ last left it; `--help`), and on Windows
 `windows-run.bat [avp2|ph]`, or the launchers `AVP2\AVP2.exe` and
 `PrimalHunt\PrimalHunt.exe`.
 
-## Releases
-
-GitHub Actions (`.github/workflows/public-archives.yml`) builds the four
-public archives on every push and pull request, and checks the legacy
-release with `make progress`. Pushing a tag `v*` makes a GitHub release of
-it with the modern build's two public archives (`avp2src-<tag>.tar.gz` and
-`avp2src-debug-<tag>.tar.gz`; a tag with a hyphen is a pre-release), and
-every push to `master` whose builds pass replaces the pre-release
-`nightly` with that commit's (`avp2src-nightly-<commit>.tar.gz`). The
-release text is `.github/release_notes.md`. No retail data is in any of
-them.
-
-The retail game's bugs, as they are found, are listed in
-[`docs/RETAIL_BUGS.md`](docs/RETAIL_BUGS.md); what the modern build changes
-is [`docs/MODERN.md`](docs/MODERN.md).
-
 ## Credits
 
 This project builds on the work of others:
