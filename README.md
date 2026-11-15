@@ -144,11 +144,6 @@ This project builds on the work of others:
   ([`docs/LICENSE_NOTES.md`](docs/LICENSE_NOTES.md)).
 - **Third Law Interactive**, for *Primal Hunt*, and **Sierra**, its
   publisher.
-- **[nolfsrc](https://github.com/nolffan/nolfsrc)** and
-  **[nolf2src](https://github.com/nolffan/nolf2src)**, the same project for
-  the *No One Lives Forever* games: the reconstructed engine this one's is
-  brought from, the method, the tools and guides, the Bink player, and many
-  of the modern build's designs.
 - **OpenMiles** (<https://github.com/maci0/openmiles>), the open
   reimplementation of the Miles Sound System that the modern build uses in
   place of Miles, with the miniaudio and TinySoundFont libraries it vendors.
