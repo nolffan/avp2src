@@ -44,11 +44,12 @@
 //           full screen that fails falls back to the borderless window
 //           (M9Window_StartFailed, and the Display folder's own).
 //
-//           The focus (Alt+Tab) is the engine's, in every mode as in
-//           retail: it shuts the renderer down when the focus goes and
+//           The focus (Alt+Tab) is the engine's: in full screen as in
+//           retail, it shuts the renderer down when the focus goes and
 //           starts it again when it comes back, and the window is put
 //           right again then (LTEVENT_GAINEDFOCUS, LTEVENT_RENDERINIT; a
-//           full screen DirectDraw minimised is restored).  A window
+//           full screen DirectDraw minimised is restored); a window and a
+//           borderless window keep the renderer (M-21, clientwin.cpp).  A window
 //           larger than the screen is let be (WM_GETMINMAXINFO).
 //
 //           Retail files include this inside #ifdef AVP2SRC_MODERN; one

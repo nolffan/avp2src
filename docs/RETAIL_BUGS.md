@@ -81,6 +81,25 @@ work area; or borderless, covering the desktop),
 src/modern/cshell/m9_window.h; MODERN.md M-9. (The renderers are unchanged:
 the window is put right before anything is drawn.)
 
+### Alt+Tab freezes the picture
+
+lithtech.exe of both games, AvP2 1.0.9.6 and Primal Hunt (`clu_WndProc`'s
+`WM_ACTIVATEAPP`, src/engine/lithtech/clientwin.cpp; Primal Hunt
+lithtech.exe 0x004034b0). Losing the focus shuts the renderer down
+(`r_TermRender`) and holds every playing sound (the sound manager's
+release, `sub_481e70`: with a 3D provider, `PauseSounds`), and regaining
+it starts the renderer again and lets the sounds go. Under Wine (9.0,
+wined3d) neither comes back: the restarted renderer draws nothing (the
+retail binaries in a window: a black window), and the held sounds never
+play out, so whatever waits on one -- the opening cinematic's line of
+dialogue -- waits for ever. The game runs on behind it (it saves, it takes
+keys), but the picture stays on its last frame. (Single player is
+paused meanwhile, as intended.)
+
+Fixed in the modern build for a window and a borderless window: the
+renderer is kept up and the sounds are not held through a focus change
+(clientwin.cpp); MODERN.md M-21. Full screen still goes the retail way.
+
 ### Above 100 frames a second the world runs fast
 
 lithtech.exe and server.dll of both games, AvP2 1.0.9.6 and Primal Hunt

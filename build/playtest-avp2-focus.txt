@@ -1,0 +1,38 @@
+# AvP2: into the first Marine mission's opening, then alt-tab away and back
+# (blur / wmfocus: the focus to another X client, then given back as a
+# window manager does), and on: the opening has to go on playing, the
+# picture to move and the keys to work (make test TEST_GAME=out/avp2-modern-release
+# TEST_WHICH=avp2 TEST_SCRIPT=build/playtest-avp2-focus.txt; docs/MODERN.md
+# M-21).
+window 120
+wait 20
+mclick 128 175
+wait 3
+mclick 85 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 10
+shot before
+hold w 2
+turn 300 0
+wait 2
+shot before-moved
+blur
+wait 5
+wmfocus
+wait 5
+shot restored
+hold w 2
+turn 300 0
+wait 2
+shot restored-moved
+wait 3
+shot restored-later
+key F6
+wait 8
+shot restored-saved
+key Escape
+wait 3
+shot restored-menu

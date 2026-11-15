@@ -1007,6 +1007,37 @@ LTBOOL clu_dsi_InitGame(CluClientGlob* pGlob, CluCommandLineArgs* pArgs)
 //  WM_CHAR's `return 0`, WM_CHAR first in the switch, a `return 0` after
 //  the switch, or sixteen orders of the case bodies.
 // ----------------------------------------------------------------------- //
+#ifdef AVP2SRC_MODERN
+// M-21.  RETAIL BUGS (RETAIL_BUGS.md): losing the focus shuts the renderer
+// down and holds every sound, and regaining it starts the renderer again
+// and lets the sounds go.  Under Wine the restart leaves the game drawing
+// nothing (the retail binaries as ours: a black window), and the held
+// sounds never play out, so whatever waits on one -- a cinematic's line of
+// dialogue -- waits for ever: the picture stops while the game runs on and
+// takes input behind it.  A window -- framed or borderless (M-9), the
+// engine's Windowed 1 -- keeps its Direct3D device through a focus change,
+// so the modern build keeps the renderer up then, and the sounds playing;
+// full screen still goes the retail way.  The rest of the focus handling
+// (the events, the input cleared, the game paused) is retail's.
+class LTCommandVarView
+{
+public:
+	uint8 m_pad_00[0x18];
+	float m_FloatVal;                              // 0x18 (clientshell.cpp's view)
+};
+LTCommandVarView* con_FindVar(void* pState, char* pName);
+class ConsoleState;
+extern ConsoleState g_ClientConsoleState;
+
+static int s_bM21KeptRender = 0;      // the focus went with the renderer kept up
+
+static int M21_KeepRenderer()
+{
+	LTCommandVarView* pVar = con_FindVar(&g_ClientConsoleState, "windowed");
+	return pVar && pVar->m_FloatVal != 0.0f;
+}
+#endif
+
 LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	PAINTSTRUCT ps;
@@ -1045,6 +1076,12 @@ LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						{
 							g_CluClientGlob.m_pClientMgr->m_pClientShell->OnEvent(7, 0);
 
+#ifdef AVP2SRC_MODERN
+							// M-21: the renderer was kept up
+							if (s_bM21KeptRender)
+								OutputDebugStringA("Regained focus.. renderer kept.\n");
+							else
+#endif
 							if (!g_CluClientGlob.m_bRenderShutdown)
 							{
 								OutputDebugStringA("Regained focus.. initializing renderer.\n");
@@ -1057,6 +1094,10 @@ LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 								}
 							}
 
+#ifdef AVP2SRC_MODERN
+							// M-21: nor were the sounds held
+							if (!s_bM21KeptRender)
+#endif
 							if (g_CluClientGlob.m_pClientMgr->m_pUnknown898)
 							{
 								((CSoundMgrView*)
@@ -1076,14 +1117,29 @@ LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						g_CluClientGlob.m_pClientMgr->m_pClientShell->OnEvent(6, 0);
 
+#ifdef AVP2SRC_MODERN
+						// M-21: a window keeps its renderer
+						s_bM21KeptRender = M21_KeepRenderer();
+						if (s_bM21KeptRender)
+							OutputDebugStringA("Losing focus.. keeping the renderer (a window).\n");
+						else
+						{
+#endif
 						OutputDebugStringA("Losing focus.. shutting down renderer.\n");
 
 						clu_r_TermRender(g_CluClientGlob.m_pClientMgr, 1);
+#ifdef AVP2SRC_MODERN
+						}
+#endif
 						g_CluClientGlob.m_pClientMgr->ClearInput();
 
 						g_CluClientGlob.m_bAppLostFocus = 1;
 						g_CluClientGlob.m_nUnknown60 = 0;
 
+#ifdef AVP2SRC_MODERN
+						// M-21: nor are the sounds held in a window
+						if (!s_bM21KeptRender)
+#endif
 						if (!g_CluClientGlob.m_bMinimizing)
 						{
 							if (g_CluClientGlob.m_pClientMgr->m_pUnknown898)
