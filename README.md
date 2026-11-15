@@ -3,6 +3,15 @@
 *Aliens versus Predator 2* (Monolith, 2001) and its expansion *Primal
 Hunt* (Third Law, 2002), built from source.
 
+<p align="center">
+  <img src="screenshots/00-avp2-main-menu.jpg" alt="The main menu of Aliens versus Predator 2" width="49%">
+  <img src="screenshots/01-avp2-space-ship.jpg" alt="The opening of the Marine campaign: the USS Verloc approaches the orbit of LV-1201" width="49%">
+  <img src="screenshots/02-avp2-marine.jpg" alt="The Marine campaign: marines outside a building in a canyon at night" width="49%">
+  <img src="screenshots/03-avp2-predator.jpg" alt="The Predator campaign, seen through a vision mode of the Predator" width="49%">
+</p>
+
+<p align="center"><sub>The modern build at 3840x2160. The menus keep 4:3, and the game uses the full widescreen.</sub></p>
+
 > [!WARNING]
 > **Work in progress.** The reconstruction is not complete. Not all the
 > functions compile to the retail bytes yet (see
