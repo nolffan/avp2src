@@ -8,9 +8,13 @@ Hunt* (Third Law, 2002), built from source.
   <img src="screenshots/01-avp2-space-ship.jpg" alt="The opening of the Marine campaign: the USS Verloc approaches the orbit of LV-1201" width="49%">
   <img src="screenshots/02-avp2-marine.jpg" alt="The Marine campaign: marines outside a building in a canyon at night" width="49%">
   <img src="screenshots/03-avp2-predator.jpg" alt="The Predator campaign, seen through a vision mode of the Predator" width="49%">
+  <img src="screenshots/04-avp2ph-alien.jpg" alt="Primal Hunt: aliens in a hive" width="49%">
+  <img src="screenshots/05-avp2ph-alien.jpg" alt="Primal Hunt: aliens in a facility, seen through the alien vision" width="49%">
+  <img src="screenshots/06-avp2ph-corp1.jpg" alt="Primal Hunt, the Corporate campaign: a flamethrower and a soldier in a dark corridor" width="49%">
+  <img src="screenshots/07-avp2ph-corp2.jpg" alt="Primal Hunt, the Corporate campaign: aliens attack soldiers through flamethrower fire" width="49%">
 </p>
 
-<p align="center"><sub>The modern build at 3840x2160. The menus keep 4:3, and the game uses the full widescreen.</sub></p>
+<p align="center"><sub>The modern build at 3840x2160: Aliens versus Predator 2 (top) and Primal Hunt (bottom). The menus keep 4:3, and the game uses the full widescreen.</sub></p>
 
 > [!WARNING]
 > **Work in progress.** The reconstruction is not complete. Not all the
