@@ -62,7 +62,7 @@ help:
 	@echo "                TEST_GAME=out/avp2-modern-release; results in out/play/test*/)"
 	@echo "make progress   score the build against the retail binaries; fails if a"
 	@echo "                function recorded in progress/identical.txt stops matching"
-	@echo "make progress-update  record the score in progress/ and README.md"
+	@echo "make progress-update  record the score in progress/ (and its README.md table)"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     fetch the disc images and install Primal Hunt, and AvP2 with its"
 	@echo "                1.0.9.6 patch, from them, and fetch the USA releases' discs too, for"

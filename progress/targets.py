@@ -89,6 +89,10 @@ DATA = "progress"               # the recorded baseline and the evidence
 # been written for), unless the target names its own `cited_src`.
 CITED_SRC = []
 
+# The file holding the progress table ext/tools/ratchet.py writes
+# (its <!-- progress:begin --> .. <!-- progress:end --> block).
+README = "progress/README.md"
+
 # The lithshared libraries we build (build/build.mk, "The lithshared
 # libraries, ours"), into the paths the project files link them from: each
 # scored object by object against the release's prebuilt build of it
