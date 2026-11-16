@@ -143,6 +143,7 @@ items: not implemented yet.
 | M-8 | The launchers are `AVP2Launcher.exe` and `PrimalHuntLauncher.exe`. `AVP2.exe` and `PrimalHunt.exe` start the game directly, as if you clicked Launch in the launcher (no registry, no disc check) | done (under Done) |
 | M-9 | Window modes: full screen, a window at all sizes, or a borderless window at the resolution of the desktop. You select the mode in Options. (M-13 is the frame limiter of this item. M-17..M-20 give Internet play without the dead GameSpy and WON servers) | done (under Done) |
 | M-21 | Alt+Tab in a window or a borderless window: the game comes back as it was. (The retail focus code stopped the renderer and held all the sounds. Under Wine, the renderer and the sounds did not come back, and the picture stopped) | done (under Done) |
+| M-22 | The launchers stay open while the game runs, so that the Steam overlay and Steam Remote Play work (GitHub issue #5) | done (under Done) |
 
 ## Open middleware
 
@@ -1331,6 +1332,7 @@ program (`g_bM8Direct`).
 | Id | What | Files | Status |
 |---|---|---|---|
 | M-8 | `AVP2.exe` and `PrimalHunt.exe` start the game directly, as Launch does, and wait for it (their exit code is the exit code of the game). `AVP2Launcher.exe` and `PrimalHuntLauncher.exe` are the launchers. The programs do not need the registry or a disc | `src/modern/launcher/` (`m8_entry.cpp`, `m8_launch.h`); `src/launcher/Launcher.cpp`, `LauncherDlg.cpp`, `LauncherDlg.h`, `DisplayMgr.cpp`; `build/build.mk` (`launcher_exe`, `launcher_modern`), `build/all.sh`; `build/game-scripts/linux-run.sh`, `windows-run.bat`, `windows-install.ps1`, `mac-install.command` | done |
+| M-22 | After Launch, the launcher windows (`AVP2Launcher.exe`, `PrimalHuntLauncher.exe`) hide and wait for the game. They exit when the game exits. The command-line starts of the launcher (host, join, find, play, server) do the same. Before, the launcher exited when the engine started. Steam watches the program that it starts. When that program exits, Steam takes the game as ended, and the overlay and Remote Play stop (GitHub issue #5). While the launcher waits, it handles the messages of its window (`MsgWaitForMultipleObjects`). `AVP2.exe` and `PrimalHunt.exe` already waited (M-8) | `src/launcher/LauncherDlg.cpp` (`LaunchGame`, `M22WaitForGame`) | `build/playtest-launcher.txt` with `AVP2Launcher.exe`. We listed the processes every 5 s. While the engine ran, the launcher process stayed | done |
 
 **The direct start** goes through the code of the launcher, as its
 `-GOGAME` does, but it does not show the dialog. `InitInstance` reads the

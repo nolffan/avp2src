@@ -446,6 +446,34 @@ void CLauncherDlg::OnDestroy()
 //				and runs lithtech.exe with -cmdfile
 //
 // ----------------------------------------------------------------------- //
+#ifdef AVP2SRC_MODERN
+// M-22: wait for the game process to end, and handle this thread's
+// messages meanwhile (a thread with a window that stops reading its
+// messages can stop other programs that send messages to all windows).
+// A WM_QUIT is posted again for the caller's loop.
+static void M22WaitForGame(HANDLE hProcess)
+{
+	for (;;)
+	{
+		DWORD dwResult = MsgWaitForMultipleObjects(1, &hProcess, FALSE, INFINITE, QS_ALLINPUT);
+		if (dwResult != WAIT_OBJECT_0 + 1)
+			return;
+
+		MSG msg;
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+			{
+				PostQuitMessage((int)msg.wParam);
+				return;
+			}
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+}
+#endif
+
 BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 {
 	if(dwAction == ACTION_STANDALONESERVER)
@@ -856,6 +884,18 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	{
 		if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_OBJECT_0)
 			GetExitCodeProcess(pi.hProcess, &g_dwM8ExitCode);
+	}
+	else
+	{
+		// M-22: the launcher's own Launch (and its command-line starts)
+		// waits for the game too, with its window hidden, and exits after
+		// it. Steam watches the program it started: when the launcher
+		// exits, Steam takes the game as ended, and its overlay and Remote
+		// Play go with it (GitHub issue #5). The window's messages are
+		// still handled while it waits.
+		if (m_hWnd)
+			ShowWindow(SW_HIDE);
+		M22WaitForGame(pi.hProcess);
 	}
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);
