@@ -108,6 +108,12 @@ extern void		d3d_WarpOptimized(RenderBlitRequest *pRequest);                    
 //  Globals.
 // ---------------------------------------------------------------------- //
 #ifdef AVP2SRC_MODERN
+// M-24: wait for the vertical blank at each full-screen flip (0: no, the
+// default; 1: yes). DirectX 7 ddraw.h value, absent from older headers.
+CD3DConVar	g_CV_VSync("VSync", 0.0f, LTNULL, LTNULL);
+#define M24_DDFLIP_NOVSYNC 0x00000008L
+#endif
+#ifdef AVP2SRC_MODERN
 // M-23: off by default. The lock of the back buffer before each flip
 // made the card finish the frame on 2001 hardware. Under Wine and Proton,
 // a lock of a render target copies the surface back to memory and stops
@@ -649,7 +655,15 @@ void d3d_SwapBuffers(uint32 flags)
 	}
 	else
 	{
+#ifdef AVP2SRC_MODERN
+		// M-24: no wait for the vertical blank unless VSync is 1. With
+		// DDFLIP_WAIT alone, each full-screen flip waits for the vertical
+		// blank, and the frame rate cannot go above the refresh rate (60 Hz
+		// in Steam). The frame-rate limit (M-13) sets the rate.
+		g_pPrimarySurface->Flip(NULL, g_CV_VSync.m_nValue ? DDFLIP_WAIT : (DDFLIP_WAIT | M24_DDFLIP_NOVSYNC));
+#else
 		g_pPrimarySurface->Flip(NULL, DDFLIP_WAIT);
+#endif
 	}
 
 	ClearDirtyRects();
