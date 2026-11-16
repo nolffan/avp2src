@@ -107,7 +107,15 @@ extern void		d3d_WarpOptimized(RenderBlitRequest *pRequest);                    
 // ---------------------------------------------------------------------- //
 //  Globals.
 // ---------------------------------------------------------------------- //
+#ifdef AVP2SRC_MODERN
+// M-23: off by default. The lock of the back buffer before each flip
+// made the card finish the frame on 2001 hardware. Under Wine and Proton,
+// a lock of a render target copies the surface back to memory and stops
+// the card on every frame (GitHub issue #2). "LockOnFlip 1" puts it back.
+CD3DConVar	g_CV_LockOnFlip("LockOnFlip", 0.0f, LTNULL, LTNULL);
+#else
 CD3DConVar	g_CV_LockOnFlip("LockOnFlip", 1.0f, LTNULL, LTNULL);       // 0x10066170  $E 0x1001e650/0x1001e655
+#endif
 
 RECT		g_ScreenLockRect;                           // 0x10066190
 uint32		g_bScreenLocked;                            // 0x100661a0
