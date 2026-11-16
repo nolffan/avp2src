@@ -263,6 +263,23 @@ four times. This is harmless unless the receiver reads the third byte.
 
 Fixed in the modern build: tcpdriver.cpp, the third byte is set to zero.
 
+### The 3D voice count can come from an uninitialised value
+
+lithtech.exe 0x0049c60d, AvP2 1.0.9.6 lithtech.exe 0x00492b7d
+(`CSoundMgrView::Init`, src/engine/lithtech/clientsoundmgr.cpp).
+
+When the game opens a 3D provider, the engine asks the provider for its
+"Maximum supported samples" attribute. The engine gives the address of a
+local variable that it does not initialise. Then it uses the value as
+the number of 3D voices (clamped to 255 and to the game's request). The
+real Miles providers write the attribute, thus the bug does not show
+with them. A provider that does not write the attribute (older OpenMiles
+versions) gives a random voice count.
+
+Fixed in the modern build: clientsoundmgr.cpp, the value starts at zero;
+MODERN.md M-B109. OpenMiles also writes the attribute now (MODERN.md
+M-X7).
+
 ### Texture reference counts are wiped on every texture sweep (probable)
 
 lithtech.exe 0x00428940, AvP2 1.0.9.6 lithtech.exe 0x004261a0

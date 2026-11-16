@@ -1173,6 +1173,12 @@ LTRESULT CSoundMgrView::Init(InitSoundInfo* pSoundInfo)
 
 	if (m_3DProvider.m_hProvider)
 	{
+#ifdef AVP2SRC_MODERN
+		// Retail reads nValue uninitialised when the provider does not
+		// answer the attribute (docs/RETAIL_BUGS.md).  Zero gives no 3D
+		// voices, and the sounds use software voices.
+		nValue = 0;
+#endif
 		AIL_lock();
 		AIL_3D_provider_attribute(m_3DProvider.m_hProvider, "Maximum supported samples", &nValue);
 		AIL_unlock();

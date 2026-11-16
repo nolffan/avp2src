@@ -2179,10 +2179,6 @@
 /ALTERNATENAME:?Read@CStreamSource@@QAEKPAXKK@Z=?Read@CRezItm@@QAEKPAEKK@Z
 # 0x4b16c0 I; nolfsrc: ?SetDirSeparators@CRezMgrX380@@QAEXPBD@Z
 /ALTERNATENAME:?SetDelimiters@CFileArchive@@QAEXPAD@Z=?SetDirSeparators@CRezMgr@@QAEXPBD@Z
-# 0x494710 I; nolfsrc: ?SetSampleUserData@CSoundMgrView@@QAEKPAXK@Z
-/ALTERNATENAME:?SetSampleUserData@CSoundMgrQ47C@@QAEKPAXK@Z=?SetStreamUserData@CSoundMgrView@@QAEKPAXK@Z
-# 0x494710 I; nolfsrc: ?SetSampleUserData@CSoundMgrView@@QAEKPAXK@Z
-/ALTERNATENAME:?SetSampleUserData@CSoundMgrSI@@QAEKPAXK@Z=?SetStreamUserData@CSoundMgrView@@QAEKPAXK@Z
 # 0x414110 I; nolfsrc: ?SetSize2@?$CMoArray@VCCollElem08@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
 /ALTERNATENAME:?SetSize@CWDArray54@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@VCCollElem18PQ514@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
 # 0x4b1640 I; nolfsrc: ?TypeToStr@CRezMgrX380@@QAEXKPAD@Z
@@ -2253,6 +2249,20 @@
 # 0x4b2620: RezMgr.lib's CRezFileSingleFile::ReallyClose, its masked bytes
 # matching there (out/k1/libat.py); the call from CChain14View::sub_490710 (0x4b228a)
 /ALTERNATENAME:?sub_490ac0@CChain14Item@@QAEXXZ=?ReallyClose@CRezFileSingleFile@@AAEHXZ
+# 0x494710 by hand: the function placed there calls AIL_set_sample_user_data
+# (retail calls it at 0x004903ac, 0x004907e7); the scoreboard placed
+# SetStreamUserData there, whose bytes differ only in the import.
+/ALTERNATENAME:?SetSampleUserData@CSoundMgrQ47C@@QAEKPAXK@Z=?SetSampleUserData@CSoundMgrView@@QAEKPAXK@Z
+# 0x494710 by hand: the function placed there calls AIL_set_sample_user_data
+# (retail calls it at 0x004903ac, 0x004907e7); the scoreboard placed
+# SetStreamUserData there, whose bytes differ only in the import.
+/ALTERNATENAME:?SetSampleUserData@CSoundMgrSI@@QAEKPAXK@Z=?SetSampleUserData@CSoundMgrView@@QAEKPAXK@Z
+# 0x4917c0 by hand: slot +0x04 of the ambient sound's table; CSoundInstance1
+# declares the Init that soundinst2.cpp defines under the J name.
+/ALTERNATENAME:?Init@CSoundInstance1@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z=?Init@CSndInstanceAmbientJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
+# 0x491e00 by hand: slot +0x04 of the 3D sound's table; CSoundInstance2
+# declares the Init that soundinst2.cpp defines under the J name.
+/ALTERNATENAME:?Init@CSoundInstance2@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z=?Init@CSndInstance3DJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
 #
 # New: no nolfsrc binding; the target is placed where the sites reach.
 # 0x466530 I

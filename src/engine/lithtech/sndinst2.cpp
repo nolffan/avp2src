@@ -1429,9 +1429,11 @@ LTRESULT CSoundInstanceQ47C::sub_47d9a0()
 //     field-level shadow selection, same `* m_f34 + 0.5f` rate, same 0x40 pan,
 //     same SetUserData (0x004819f0 is clientsoundmgr.cpp's
 //     SetStreamUserData), same AIL_unlock.
-//   * the format string at 0x004ae710 is "\\\\%d" and the handle is
-//     CreateFileA's, which is Miles' documented way of streaming from an
-//     already-open Win32 file.
+//   * the format string at 0x004ae710 is four backslashes and "%d" (the
+//     image's bytes 5c 5c 5c 5c 25 64 00 -- C source "\\\\\\\\%d") and the
+//     handle is CreateFileA's, which is Miles' documented way of streaming
+//     from an already-open Win32 file.  With two backslashes only, the real
+//     Miles refuses the name and AIL_open_stream returns 0.
 //   * the CreateFileA arguments read off 0x0047ddd7..0x0047ddee are
 //     (szPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
 //     FILE_ATTRIBUTE_NORMAL, NULL).
@@ -1491,7 +1493,7 @@ LTRESULT CSoundInstanceQ47C::sub_47dd50()
 			}
 		}
 
-		sprintf(szName, "\\\\%d", m_hFile50);
+		sprintf(szName, "\\\\\\\\%d", m_hFile50);
 
 		AIL_lock();
 

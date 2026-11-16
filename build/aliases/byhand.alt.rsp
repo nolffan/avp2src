@@ -29,3 +29,17 @@
 # where the scoreboard places msg_AllocPacket -- as its siblings
 # msg_StartWrite and msg_StartWriteQ411 are bound.
 /ALTERNATENAME:?msg_StartWriteQ2B@@YA?AVCMsgRefQ2B@@KK@Z=?msg_AllocPacket@@YA?AVCMessageRef@@KK@Z
+# 0x494710 by hand: the function placed there calls AIL_set_sample_user_data
+# (retail calls it at 0x004903ac, 0x004907e7); the scoreboard placed
+# SetStreamUserData there, whose bytes differ only in the import.
+/ALTERNATENAME:?SetSampleUserData@CSoundMgrQ47C@@QAEKPAXK@Z=?SetSampleUserData@CSoundMgrView@@QAEKPAXK@Z
+# 0x494710 by hand: the function placed there calls AIL_set_sample_user_data
+# (retail calls it at 0x004903ac, 0x004907e7); the scoreboard placed
+# SetStreamUserData there, whose bytes differ only in the import.
+/ALTERNATENAME:?SetSampleUserData@CSoundMgrSI@@QAEKPAXK@Z=?SetSampleUserData@CSoundMgrView@@QAEKPAXK@Z
+# 0x4917c0 by hand: slot +0x04 of the ambient sound's table; CSoundInstance1
+# declares the Init that soundinst2.cpp defines under the J name.
+/ALTERNATENAME:?Init@CSoundInstance1@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z=?Init@CSndInstanceAmbientJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z
+# 0x491e00 by hand: slot +0x04 of the 3D sound's table; CSoundInstance2
+# declares the Init that soundinst2.cpp defines under the J name.
+/ALTERNATENAME:?Init@CSoundInstance2@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z=?Init@CSndInstance3DJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z

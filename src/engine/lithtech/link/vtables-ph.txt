@@ -558,7 +558,7 @@ vtable ??_7CServerWorldFull@@6B@ 0x004d50f4  # compiled with 3 slots; 3 _purecal
     ?FindFlagged10@CWorldModelList@@QAEPAVCWorldModelData@@XZ
 vtable ??_7CSoundInstance1@@6B@ 0x004d6780  # compiled with 23 slots; 8 _purecall where the shipped slot is concrete
     ??_GCSoundInstance1@@UAEPAXI@Z  # the compiled slot, kept over ??_GCLoaderThreadQ415@@UAEPAXI@Z placed there
-    ?Init@CSoundInstanceView@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z  # the compiled slot, kept over ?Init@CSndInstanceAmbientJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z placed there
+    ?Init@CSndInstanceAmbientJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z  # the class's own, placed here (CSoundInstance1's Init)
     ?Term@CSoundInstanceView@@UAEXXZ
     ?_v0c@CSoundInstanceView@@UAEKXZ
     ?Update@CSndInstanceAmbientJ@@UAEIK@Z
@@ -582,7 +582,7 @@ vtable ??_7CSoundInstance1@@6B@ 0x004d6780  # compiled with 23 slots; 8 _purecal
     ?ApplyFilter@CSoundInstanceQ47C@@UAEKXZ
 vtable ??_7CSoundInstance2@@6B@ 0x004d67e0  # compiled with 23 slots; 4 _purecall where the shipped slot is concrete
     ??_GCSoundInstance2@@UAEPAXI@Z  # the compiled slot, kept over ??_GCLoaderThreadQ415@@UAEPAXI@Z placed there
-    ?Init@CSoundInstanceView@@UAEKPAVCSoundDataView@@PAUPlaySoundInfo@@K@Z  # the compiled slot, kept over ?Init@CSndInstance3DJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z placed there
+    ?Init@CSndInstance3DJ@@UAEKPAUCSndDataJ@@PAUPlaySoundInfo@@K@Z  # the class's own, placed here (CSoundInstance2's Init)
     ?Term@CSoundInstanceView@@UAEXXZ
     ?_v0c@CSoundInstanceView@@UAEKXZ
     ?Update@CSndInstance3DJ@@UAEIK@Z  # near pairing only

@@ -1715,6 +1715,15 @@ class CSoundInstance1 : public CSoundInstanceView
 {
 public:
 	CSoundInstance1();                       // 0x0047e970
+
+	// +0x04 -- the class's own Init (0x0047e9a0; AvP2 1.0.9.6 0x004917c0).
+	// It is soundinst2.cpp's CSndInstanceAmbientJ::Init, and the link
+	// aliases bind this name to it.  It keeps the position and the two
+	// radii of the PlaySoundInfo.  Without the declaration the table
+	// inherits the base's Init, which keeps none of them: the sound then
+	// sits at the origin with a zero radius and never gets a voice.
+	virtual LTRESULT Init(CSoundDataView* pData, PlaySoundInfo* pInfo,
+	                      uint32 nStartMS);
 };
 
 // 0x0047e970 — construct it. Called from 0x004817b4 and 0x00483500.
@@ -1750,6 +1759,11 @@ class CSoundInstance2 : public CSoundInstanceView
 {
 public:
 	CSoundInstance2();                           // 0x0047eda0
+	// +0x04 -- the class's own Init (0x0047ee50; AvP2 1.0.9.6 0x00491e00):
+	// soundinst2.cpp's CSndInstance3DJ::Init, bound by the link aliases.
+	// See CSoundInstance1 above.
+	virtual LTRESULT Init(CSoundDataView* pData, PlaySoundInfo* pInfo,
+	                      uint32 nStartMS);
 	LTRESULT SetPosition(LTVector* pPos, int bReset);    // +0x38  0x0047edf0
 	LTRESULT SetObstruction(LTFLOAT fLevel);     // +0x28  0x0047f590
 	LTRESULT GetObstruction(LTFLOAT* pLevel);    // +0x2c  0x0047f5f0
