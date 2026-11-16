@@ -1751,6 +1751,19 @@ public:
 // unrecoverable; the argument list is not (name ours).
 void xfer_OnFileAdded(uint32 nFileID, uint32 nUnknown, char* pName);
 
+#ifndef LT_SERVER_BUILD
+// lithtech.exe: the hook is not empty. Both lithtech.exe images call the
+// client file manager's dispatch here (AvP2 1.0.9.6 0x0043747b -> 0x00436f90,
+// clientdsi.cpp's sub_42f920). It gives each file to the local client's hook
+// record (clientfilemgr.cpp's clu_fm_OnServerFile) at once. Thus the client
+// knows the server's file ids before sm_AddClientForConnection lets it take
+// the server's models (cs_InheritFileFromServer). Without this call the
+// client knows no id at that time. Then it loads each model again itself,
+// without the world's child-model links (childmodel.map), and the
+// animation numbers of the server and the client do not agree.
+void sub_42f920(uint16 nA, uint32 nB, void* pC);             // 0x00436f90
+#endif
+
 
 // The five dwords ph_CreateHolder copies to +0x60 in one piece: the three
 // hooks, the net manager and the connection. smgr.cpp builds one on its
@@ -1930,7 +1943,10 @@ int xfer_AddFile(CClientFiles* pState, char* pName, uint32 nUnknown,
 	// AVP2: AvP2 1.0.9.6's server.dll has no hook here (0x10011d4d goes
 	// straight from the send to the count); its lithtech.exe (0x00437370)
 	// and Primal Hunt's server.dll (0x1001259e) both have it.
-#if !defined(LT_SERVER_BUILD) || defined(PRIMAL_HUNT)
+#ifndef LT_SERVER_BUILD
+	if (pState->m_Flags & 4)
+		sub_42f920((uint16)nFileID, nUnknown, pName);
+#elif defined(PRIMAL_HUNT)
 	if (pState->m_Flags & 4)
 		xfer_OnFileAdded(nFileID, nUnknown, pName);
 #endif
