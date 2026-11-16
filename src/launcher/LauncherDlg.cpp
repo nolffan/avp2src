@@ -478,6 +478,28 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 {
 	if(dwAction == ACTION_STANDALONESERVER)
 	{
+#ifdef AVP2SRC_MODERN
+		// M-22: the server through CreateProcess (WinExec gives no process
+		// to wait on); the launcher hides and waits for it, as for the game
+		STARTUPINFO siServer;
+		PROCESS_INFORMATION piServer;
+		memset(&siServer, 0, sizeof(siServer));
+		siServer.cb = sizeof(siServer);
+		CString sServer = theApp.m_csServerExe;
+		if (CreateProcess(NULL, sServer.GetBuffer(0), NULL, NULL, FALSE, 0, NULL, NULL, &siServer, &piServer))
+		{
+			sServer.ReleaseBuffer();
+			CloseHandle(piServer.hThread);
+			if (m_hWnd)
+				ShowWindow(SW_HIDE);
+			M22WaitForGame(piServer.hProcess);
+			CloseHandle(piServer.hProcess);
+			return TRUE;
+		}
+		sServer.ReleaseBuffer();
+		theApp.MessageBox(IDS_CANTLAUNCHSERVER, IDS_APPNAME, MB_OK | MB_ICONSTOP);
+		return FALSE;
+#else
 		if(WinExec(theApp.m_csServerExe,SW_SHOW) > 31)
 		{
 			// Just let it happen...
@@ -488,6 +510,7 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 			theApp.MessageBox(IDS_CANTLAUNCHSERVER, IDS_APPNAME, MB_OK | MB_ICONSTOP);
 			return FALSE;
 		}
+#endif
 	}
 
 	// See if we need to bring up the detail settings dialog box
