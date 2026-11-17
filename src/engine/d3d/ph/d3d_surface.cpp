@@ -108,10 +108,9 @@ extern void		d3d_WarpOptimized(RenderBlitRequest *pRequest);                    
 //  Globals.
 // ---------------------------------------------------------------------- //
 #ifdef AVP2SRC_MODERN
-// M-24: wait for the vertical blank at each full-screen flip (0: no, the
-// default; 1: yes). DirectX 7 ddraw.h value, absent from older headers.
+// M-24: wait for the vertical blank at each full-screen frame (0: no, the
+// default, the frame is copied with a Blt; 1: yes, the retail flip).
 CD3DConVar	g_CV_VSync("VSync", 0.0f, LTNULL, LTNULL);
-#define M24_DDFLIP_NOVSYNC 0x00000008L
 #endif
 #ifdef AVP2SRC_MODERN
 // M-23: off by default. The lock of the back buffer before each flip
@@ -657,10 +656,16 @@ void d3d_SwapBuffers(uint32 flags)
 	{
 #ifdef AVP2SRC_MODERN
 		// M-24: no wait for the vertical blank unless VSync is 1. With
-		// DDFLIP_WAIT alone, each full-screen flip waits for the vertical
-		// blank, and the frame rate cannot go above the refresh rate (60 Hz
-		// in Steam). The frame-rate limit (M-13) sets the rate.
-		g_pPrimarySurface->Flip(NULL, g_CV_VSync.m_nValue ? DDFLIP_WAIT : (DDFLIP_WAIT | M24_DDFLIP_NOVSYNC));
+		// DDFLIP_WAIT, each full-screen flip waits for the vertical blank,
+		// and the frame rate cannot go above the refresh rate (60 Hz in
+		// Steam). A flip with DDFLIP_NOVSYNC did not wait, but under Proton
+		// the Steam overlay then did not show. So with VSync 0 the frame
+		// goes to the screen with a Blt from the back buffer, as in a
+		// window. The frame-rate limit (M-13) sets the rate.
+		if (g_CV_VSync.m_nValue)
+			g_pPrimarySurface->Flip(NULL, DDFLIP_WAIT);
+		else
+			g_pPrimarySurface->Blt(NULL, g_pBackBuffer, NULL, DDBLT_WAIT, NULL);
 #else
 		g_pPrimarySurface->Flip(NULL, DDFLIP_WAIT);
 #endif
