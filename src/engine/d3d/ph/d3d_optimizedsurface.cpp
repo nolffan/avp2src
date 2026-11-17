@@ -141,8 +141,8 @@ extern LTBOOL					g_bRunWindowed;         // 0x1005d538
 extern LTBOOL					g_bIn3D;                // 0x100638d8
 extern LTBOOL					g_bInOptimized2D;       // 0x100638dc
 extern int32					g_CV_OptimizeSurfaces;  // 0x1005d750
-extern int32					g_CV_Bilinear;          // 0x1005dbb0
-extern LTBOOL					g_bCanBilinear;         // 0x1005d2c4
+extern int32					g_CV_FilterOptimized;   // 0x1005dbb0
+extern int32					g_CV_Bilinear;          // 0x1005d2c4
 // The device's capabilities (d3d_init.cpp's g_D3DCaps), as far as they
 // are read here: the triangle caps (D3DPTEXTURECAPS_ in dwTextureCaps).
 struct D3DCaps
@@ -521,7 +521,7 @@ LTBOOL d3d_StartOptimized2D()
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, FALSE);
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, FALSE);
 
-	if (!g_CV_Bilinear && g_bCanBilinear)
+	if (!g_CV_FilterOptimized && g_CV_Bilinear)
 	{
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTFN_POINT);
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTFG_POINT);
@@ -551,7 +551,7 @@ void d3d_EndOptimized2D()
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, TRUE);
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_FOGENABLE, g_SavedFogEnable);
 
-	if (!g_CV_Bilinear && g_bCanBilinear)
+	if (!g_CV_FilterOptimized && g_CV_Bilinear)
 	{
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTFN_LINEAR);
 		g_pD3DDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTFG_LINEAR);

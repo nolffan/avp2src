@@ -3633,7 +3633,7 @@ void CWeaponModel::OnFireButtonUp()
 	// a dual muzzle weapon lets its shot finish, and both muzzles fire
 	if(m_pBarrel->bDualMuzzle == LTTRUE)
 	{
-		if(!(g_pInterface->GetModelPlaybackState(m_hObject) & MS_PLAYDONE))
+		if(!(g_pLTClient->GetModelPlaybackState(m_hObject) & MS_PLAYDONE))
 			return;
 
 		if(m_eState == W_START_FIRING)

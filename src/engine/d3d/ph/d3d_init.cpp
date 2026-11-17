@@ -178,7 +178,6 @@ LTBOOL              g_bRage128;                             // 0x100638d4
 LTBOOL              g_100638c4;                             // 0x100638c4
 LTBOOL              g_bIn3D;                                // 0x100638d8
 LTBOOL              g_bInOptimized2D;                       // 0x100638dc (an optimised 2D surface is being drawn)
-LTBOOL              g_100638d4;                             // 0x100638d4 (lmsurfaces.cpp reads it)
 LTBOOL              g_bMultiPass;                           // 0x10062278 (the lightmaps are a second pass)
 uint32              g_bAnimateLightmaps;                    // 0x100628b0
 LTBOOL              g_bLightmapPages;                       // 0x100638b8

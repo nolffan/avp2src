@@ -1250,8 +1250,12 @@ void cc_InitClientState()
 	g_ClientConsoleState.m_nBuiltins = CC_NUM_COMMANDS;
 
 	g_ClientConsoleState.m_pPrint = con_Print;
-	g_ClientConsoleState.m_pAlloc = dalloc;
-	g_ClientConsoleState.m_pFree = dfree;
+	// Retail stores the operator new and delete wrappers (0x00433580,
+	// 0x00479ee0 in Primal Hunt), which call dalloc and dfree.
+	void* (*pNew)(size_t) = &::operator new;
+	void  (*pDelete)(void*) = &::operator delete;
+	g_ClientConsoleState.m_pAlloc = (void* (*)(uint32))pNew;
+	g_ClientConsoleState.m_pFree = pDelete;
 
 	con_Init(&g_ClientConsoleState);
 

@@ -589,7 +589,10 @@ void d3d_DrawPolyLights(RenderPoly* pPoly, TLVertex* pVerts, int nVerts)
 
 
 // ---------------------------------------------------------------------- //
-//  0x10023f80 / 0x10023ffc -- fill TL vertices from a polygon's.
+//  0x10023f80 / 0x10023ffc -- fill TL vertices from a polygon's. A
+//  gouraud polygon takes its colours through the gamma ramps (doubled
+//  when Saturate is on), a lightmapped one through the light ramps (its
+//  lightmap pass doubles it). AvP2 0x1002329f / 0x1002331b.
 // ---------------------------------------------------------------------- //
 void d3d_SetupGouraudVerts(TLVertex* pOut, SPolyVertex* pIn, int nVerts)
 {
@@ -600,9 +603,9 @@ void d3d_SetupGouraudVerts(TLVertex* pOut, SPolyVertex* pIn, int nVerts)
 		pOut->m_Vec.x = pIn->m_pVec->x;
 		pOut->m_Vec.y = pIn->m_pVec->y;
 		pOut->m_Vec.z = pIn->m_pVec->z;
-		pOut->m_Color[2] = g_LightTableR[pIn->m_Color[2]];
-		pOut->m_Color[1] = g_LightTableG[pIn->m_Color[1]];
-		pOut->m_Color[0] = g_LightTableB[pIn->m_Color[0]];
+		pOut->m_Color[2] = g_GammaTableR[pIn->m_Color[2]];
+		pOut->m_Color[1] = g_GammaTableG[pIn->m_Color[1]];
+		pOut->m_Color[0] = g_GammaTableB[pIn->m_Color[0]];
 		pOut->m_Color[3] = g_VertexAlpha;
 		g_pfnCalcFog(&pOut->m_Vec, &pOut->m_Specular);
 		pOut->SetUV(pIn->m_U, pIn->m_V);
@@ -620,9 +623,9 @@ void d3d_SetupLightmapVerts(TLVertex* pOut, SPolyVertex* pIn, int nVerts)
 		pOut->m_Vec.x = pIn->m_pVec->x;
 		pOut->m_Vec.y = pIn->m_pVec->y;
 		pOut->m_Vec.z = pIn->m_pVec->z;
-		pOut->m_Color[2] = g_GammaTableR[pIn->m_Color[2]];
-		pOut->m_Color[1] = g_GammaTableG[pIn->m_Color[1]];
-		pOut->m_Color[0] = g_GammaTableB[pIn->m_Color[0]];
+		pOut->m_Color[2] = g_LightTableR[pIn->m_Color[2]];
+		pOut->m_Color[1] = g_LightTableG[pIn->m_Color[1]];
+		pOut->m_Color[0] = g_LightTableB[pIn->m_Color[0]];
 		pOut->m_Color[3] = g_VertexAlpha;
 		g_pfnCalcFog(&pOut->m_Vec, &pOut->m_Specular);
 		pOut->SetUV(pIn->m_U, pIn->m_V);

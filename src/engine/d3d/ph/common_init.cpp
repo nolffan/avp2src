@@ -215,7 +215,6 @@ LPDIRECTDRAWSURFACE7    g_pFrontBuffer;                     // 0x1005d2ac
 LPDIRECTDRAWSURFACE7    g_pPrimarySurface;                  // 0x1005d2b0
 LPDIRECTDRAWSURFACE7    g_pBackBuffer;                      // 0x1005d2b4
 LPDIRECTDRAWSURFACE7    g_pZBuffer;                         // 0x1005d2b8
-LTBOOL                  g_bCanBilinear;                     // 0x1005d2c4
 
 
 // 0x100116fe

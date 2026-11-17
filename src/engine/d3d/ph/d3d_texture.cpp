@@ -953,7 +953,7 @@ void d3d_CheckS3TCFormats()
 	LTLink *pCur;
 	D3DTextureFormat *pFormat;
 
-	g_bS3TCDXT5 = g_bS3TCDXT3 = g_bS3TCDXT1 = LTFALSE;
+	g_bS3TCDXT1 = g_bS3TCDXT3 = g_bS3TCDXT5 = LTFALSE;
 
 	for (pCur = g_TextureFormatList.m_pNext; pCur != &g_TextureFormatList; pCur = pCur->m_pNext)
 	{

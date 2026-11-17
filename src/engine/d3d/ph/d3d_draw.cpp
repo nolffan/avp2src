@@ -783,7 +783,7 @@ union GenericColor
 class FormatMgr
 {
 public:
-	LTRESULT    PValueFromFormatColor(PFormat* pFormat, GenericColor in, uint32& out);   // 0x10037780
+	LTRESULT    PValueToFormatColor(PFormat* pFormat, uint32 in, GenericColor& out);    // 0x10037780
 };
 
 // pixelformat.cpp's, as far as this file reads it.
@@ -862,7 +862,7 @@ void d3d_Clear(LTRect* pRect, uint32 flags, LTVector* pClearColor)
 			fx.dwSize = sizeof(fx);
 			if (g_ScreenFormat.m_eType == BPP_16)
 			{
-				g_FormatMgr.PValueFromFormatColor((PFormat*)&g_ScreenFormat, *(GenericColor*)&dwColor, fillColor);
+				g_FormatMgr.PValueToFormatColor((PFormat*)&g_ScreenFormat, dwColor, *(GenericColor*)&fillColor);
 				fx.dwFillColor = (uint16)fillColor;
 			}
 			else

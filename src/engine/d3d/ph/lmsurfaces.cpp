@@ -136,7 +136,7 @@ extern uint16				g_CurFrameCode;             // 0x1005d238
 extern RTexture*			g_pCurTextures[];           // 0x10067270
 extern TexPair				g_TexelSize[];              // 0x100672a8
 extern int32				g_CV_LightMap;              // 0x1004a790
-extern LTBOOL				g_100638d4;                 // 0x100638d4
+extern LTBOOL				g_bRage128;                 // 0x100638d4 (d3d_init.cpp: a Rage 128 loads the whole scratch)
 // d3d_texture.cpp's texture formats. The pools are filled only when the
 // device has a lightmap format (FORMAT_LIGHTMAP, 0x100682dc).
 struct D3DTextureFormat;
@@ -291,7 +291,7 @@ LTBOOL LMDrawDesc::End(LTBOOL bChanged)
 		if(pTexture->m_FrameCode != g_CurFrameCode)
 			pTexture->m_FrameCode = g_CurFrameCode;
 
-		if(!g_100638d4)
+		if(!g_bRage128)
 			hr = g_pD3DDevice->Load(pTexture->m_pSurface, LTNULL, m_pScratch->m_pSurface, &rect, 0);
 		else
 			hr = g_pD3DDevice->Load(pTexture->m_pSurface, LTNULL, m_pScratch->m_pSurface, LTNULL, 0);
