@@ -430,7 +430,6 @@ struct TexPair
 };
 
 TexPair			g_TexelSize[MAX_TEXTURESTAGES];         // 0x100672a8
-LTBOOL			g_bLightmapTextures;                    // 0x100682dc
 uint32			g_bS3TCDXT5;                            // 0x100682e4
 uint32			g_bS3TCDXT3;                            // 0x100682e8
 uint32			g_bS3TCDXT1;                            // 0x100682ec

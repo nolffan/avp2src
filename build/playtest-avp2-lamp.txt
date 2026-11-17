@@ -1,0 +1,30 @@
+# AvP2: the first Marine level, then the Marine's shoulder lamp (G,
+# COMMAND_ID_SHOULDERLAMP) on the dark ground: the lamp must light the
+# ground, as the retail engine does (make test TEST_WHICH=avp2
+# TEST_SCRIPT=build/playtest-avp2-lamp.txt).
+window 120
+wait 20
+mclick 128 175
+wait 3
+mclick 85 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 10
+key space
+wait 120
+shot late-1
+turn 400 0
+turn 0 300
+wait 2
+shot off
+key g
+wait 3
+shot g
+turn 0 -200
+wait 2
+shot g-up
+turn 600 0
+wait 2
+shot g-side

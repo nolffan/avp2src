@@ -137,7 +137,11 @@ extern RTexture*			g_pCurTextures[];           // 0x10067270
 extern TexPair				g_TexelSize[];              // 0x100672a8
 extern int32				g_CV_LightMap;              // 0x1004a790
 extern LTBOOL				g_100638d4;                 // 0x100638d4
-extern LTBOOL				g_bLightmapTextures;        // 0x100682dc
+// d3d_texture.cpp's texture formats. The pools are filled only when the
+// device has a lightmap format (FORMAT_LIGHTMAP, 0x100682dc).
+struct D3DTextureFormat;
+extern D3DTextureFormat*	g_TextureFormats[];         // 0x100682c8
+#define FORMAT_LIGHTMAP		5
 
 void	r_SetPFormat(DDPIXELFORMAT* pPF, PFormat* pFormat);    // 0x10011794
 void	d3d_FreeTextureList(LTLink *pList);                     // 0x10020600
@@ -337,7 +341,7 @@ void CLightmapPages::SetAllocator(void* (*fn)(uint32 width, uint32 height, uint3
 	uint32 i, j, size;
 	RTexture *pTexture;
 
-	if(!g_bLightmapTextures)
+	if(!g_TextureFormats[FORMAT_LIGHTMAP])
 		return;
 
 	for(i=0; i < NUM_LMSIZES; i++)
