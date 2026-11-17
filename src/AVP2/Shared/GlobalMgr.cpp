@@ -45,6 +45,11 @@
 	#include "PropTypeMgr.h"
 	#include "SpawnButeMgr.h"
 
+	#ifdef PRIMAL_HUNT
+		// timeGetTime (winmm), declared alone, as GameServerShell.cpp does
+		extern "C" __declspec(dllimport) DWORD __stdcall timeGetTime(void);
+	#endif
+
 #endif
 
 // ----------------------------------------------------------------------- //
@@ -71,8 +76,9 @@ DBOOL CGlobalMgr::Init(ILTCSBase *pInterface)
 	// Be sure everything is clear before initializing.
 	Term();
 
-#if defined(_CLIENTBUILD) && defined(PRIMAL_HUNT)
-	// Primal Hunt times the attributes' loading (PHCShell 0x100d3eec)
+#ifdef PRIMAL_HUNT
+	// Primal Hunt times the attributes' loading (PHCShell 0x100d3eec,
+	// PHObject.lto 0x1002259b)
 	DWORD dwInitStart = timeGetTime();
 #endif
 
@@ -238,12 +244,20 @@ DBOOL CGlobalMgr::Init(ILTCSBase *pInterface)
 		return LTFALSE;
 	}
 
+#ifdef PRIMAL_HUNT
+	DWORD dwTestStart = timeGetTime();
+#endif
+
 	if( !m_pAttachButeMgr || !m_pAttachButeMgr->Init(pInterface))
 	{
 		FillErrorMsg(szErrorBuf, nErrorBufSize - 1, "AttachButeMgr", g_szAttachButeMgrFile, m_pAttachButeMgr->GetErrorString());
 		g_pInterface->CPrint(szErrorBuf);
 		return LTFALSE;
 	}
+
+#ifdef PRIMAL_HUNT
+	DWORD dwTestEnd = timeGetTime();
+#endif
 
 	if (!m_pServerSoundMgr || !m_pServerSoundMgr->Init(pInterface))
 	{
@@ -272,6 +286,12 @@ DBOOL CGlobalMgr::Init(ILTCSBase *pInterface)
 		g_pInterface->CPrint(szErrorBuf);
 		return LTFALSE;
 	}
+
+#ifdef PRIMAL_HUNT
+	DWORD dwInitEnd = timeGetTime();
+	g_pInterface->CPrint("Server attribute initialization took %.2f seconds.", ((LTFLOAT)dwInitEnd - dwInitStart) * 0.001f);
+	g_pInterface->CPrint("Test initialization took %.2f seconds.", ((LTFLOAT)dwTestEnd - dwTestStart) * 0.001f);
+#endif
 
 #endif
 

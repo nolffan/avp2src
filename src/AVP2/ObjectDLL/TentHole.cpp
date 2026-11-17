@@ -91,19 +91,16 @@ CTentHole* CTentHole::Spawn(const LTVector & vPos, const LTVector & vNormal, LTF
 
 	theStruct.m_Pos = vPos;
 
-	LTFLOAT fX, fZ;
+	LTVector vRight;
 	if (vNormal.y > 0.999f)
 	{
-		fX = 1.0f;
-		fZ = 0.0f;
+		vRight.Init(1.0f, 0.0f, 0.0f);
 	}
 	else
 	{
-		fX = vNormal.x;
-		fZ = vNormal.z;
+		vRight.Init(vNormal.x, 0.0f, vNormal.z);
 	}
 
-	LTVector vRight(fX, 0.0f, fZ);
 	LTVector vForward = vRight.Cross(vNormal);
 
 	LTRotation rRot;

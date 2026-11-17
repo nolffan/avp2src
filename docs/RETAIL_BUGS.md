@@ -1785,6 +1785,36 @@ Fixed in the modern build: the terminator goes to `strID[11]`,
 Character.cpp; MODERN.md M-B87. (We found this when we wrote the `Cheats`
 list of the console, M-25: `mpmillertime` goes through this function.)
 
+### The OldCloak cloak clears every object flag but the environment map
+
+PHObject.lto 0x100be470 (`CCharacter::UpdateCloakEffect`,
+src/AVP2/ObjectDLL/Character.cpp; the two `and $0x20` are at 0x100be641
+and 0x100be7d6).
+
+Primal Hunt's cloak sets the environment map flag (`FLAG_ENVIRONMENTMAP`)
+and two flags of its own engine (`OFT_Flags2` bits 11 and 12) while the
+cloak goes on and while it is on. The console variable `OldCloak` gives
+AvP2's cloak back. With `OldCloak` not 0, the code must remove the
+environment map flag. It does `dwFlags & FLAG_ENVIRONMENTMAP`, not
+`dwFlags & ~FLAG_ENVIRONMENTMAP`. Thus it clears all the other flags of
+the Predator (`FLAG_VISIBLE`, `FLAG_SOLID`, `FLAG_GRAVITY` and the
+others), at each update while the cloak goes on and while it is on. The
+bug shows only when a player sets `OldCloak`, which the game does not do.
+
+Not fixed: `OldCloak` is a developer's console variable.
+
+### The turret heat reads an ammo id that it did not set
+
+PHObject.lto 0x1008d0d6 (`Turret::Update`, src/AVP2/ObjectDLL/turret.cpp).
+The update gets the ammo count of the current weapon of the turret, to
+find if the turret fired. It sets the ammo id only when the turret has a
+current weapon. When the turret has no current weapon, the code gives the
+old contents of a stack slot to `CWeapons::GetAmmoCount`.
+
+Not fixed: it is harmless. `GetAmmoCount` examines the id
+(`IsValidAmmoId`) and gives 0 for an id that is not valid. Each turret
+has its weapon.
+
 ## NOLF's bugs AvP2 does not have
 
 (none checked yet)

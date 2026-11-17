@@ -125,10 +125,18 @@ CL_Object__AINodeMgr := $(V8966)/BIN/cl.exe
 # GameServerShell.cpp, MultiplayerMgr.cpp and MissionMgr.cpp are three
 # more, each with functions identical only under 8966 and none lost
 # (GetGameType's return copy, CreatePlayer, AddCharacterToCache, Setup,
-# CreateUniqueClientName, PreHook_EditStringList). Character.cpp is not:
-# under 8966 seven of its near functions match, but its map<int,CTimer>
-# insert, insert_unique and _M_insert (no other object instantiates them)
-# are 8168's code.
+# CreateUniqueClientName, PreHook_EditStringList). Character.cpp is
+# an 8966 object too: under 8966 all ten of its near functions
+# match (GetAimForward's return value built in place, the class
+# initializer _$E163), and so do its map<int,CTimer> insert, insert_unique
+# and _M_insert, at 0x10180f90.. in Character.obj's own range (8168's
+# copies match 0x10004980.., another map's). Under 8966 the
+# linker keeps WONAPI Common.obj's copy of the folded `xor al,al; ret`
+# virtuals (AIExosuit::AllowSnapTurn and the others), not
+# AIScriptCommands.obj's, and the scorer then loses the recorded 3-byte
+# sub_100852e0, which it credited by its place. Built with 8966: +13
+# identical, that one tiny function given up.
+CL_Object__Character       := $(V8966)/BIN/cl.exe
 CL_Object__GameServerShell := $(V8966)/BIN/cl.exe
 CL_Object__MultiplayerMgr  := $(V8966)/BIN/cl.exe
 CL_Object__MissionMgr      := $(V8966)/BIN/cl.exe

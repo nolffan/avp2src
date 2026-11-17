@@ -35,6 +35,10 @@
 
 #include <string>
 
+#ifdef PRIMAL_HUNT
+extern LTFLOAT g_fOldCloak;	// PH: the server's "OldCloak" (GameClientShell.cpp)
+#endif
+
 extern CGameClientShell* g_pGameClientShell;
 
 #define FOOTSTEP_SOUND_RADIUS	1000.0f
@@ -1702,6 +1706,13 @@ void CCharacterFX::SetMode(const std::string& mode)
 			SAFE_STRCPY(newSkins.m_SkinNames[i], skinName.GetBuffer()); 
 		}
 
+#ifdef PRIMAL_HUNT
+		// The model's extra texture: the character's environment map
+		// (PHCShell.dll 0x100f4a95, 0x100f4fa4)
+		CString envMap = g_pCharacterButeMgr->GetCharacterButes(m_cs.nCharacterSet).m_szDefaultEnvMap;
+		SAFE_STRCPY(newSkins.m_ExtraTextureName, envMap.GetBuffer());
+#endif
+
 		// Set this up to not interupt the current animation.
 		newSkins.m_bResetAnimations = LTFALSE;
 
@@ -1723,6 +1734,23 @@ void CCharacterFX::SetMode(const std::string& mode)
 
 			if(dwFlags & USRFLG_CHAR_CLOAKED)
 			{
+#ifdef PRIMAL_HUNT
+				// Primal Hunt's cloak: unless the server's "OldCloak" is
+				// set, the red channel carries it (0.75 while the
+				// character moves), not the alpha (PHCShell.dll 0x100f4d04,
+				// 0x100f50eb)
+				LTVector vVel;
+				m_pClientDE->Physics()->GetVelocity(m_hServerObject, &vVel);
+				LTFLOAT fVelMag = vVel.MagSqr();
+
+				LTFLOAT r, g, b, a;
+				g_pLTClient->GetObjectColor(m_hServerObject, &r, &g, &b, &a);
+
+				if(g_fOldCloak == 0.0f)
+					r = fVelMag < 0.001f ? 0.0f : 0.75f;
+				else
+					a = fVelMag == 0.0f ? 0.0f : 0.15f;
+#else
 				LTFLOAT r, g, b, a;
 				g_pLTClient->GetObjectColor(m_hServerObject, &r, &g, &b, &a);
 
@@ -1730,6 +1758,7 @@ void CCharacterFX::SetMode(const std::string& mode)
 				m_pClientDE->Physics()->GetVelocity(m_hServerObject, &vVel);
 				
 				a = vVel.MagSqr()==0.0f?0.0f:0.15f;
+#endif
 				g_pLTClient->SetObjectColor(m_hServerObject, r, g, b, a);
 			}
 		}
@@ -1752,6 +1781,13 @@ void CCharacterFX::SetMode(const std::string& mode)
 			CString skinName = g_pCharacterButeMgr->GetDefaultSkin(m_cs.nCharacterSet, i, skinDir.GetBuffer());
 			SAFE_STRCPY(newSkins.m_SkinNames[i], skinName.GetBuffer()); 
 		}
+
+#ifdef PRIMAL_HUNT
+		// The model's extra texture: the character's environment map
+		// (PHCShell.dll 0x100f4a95, 0x100f4fa4)
+		CString envMap = g_pCharacterButeMgr->GetCharacterButes(m_cs.nCharacterSet).m_szDefaultEnvMap;
+		SAFE_STRCPY(newSkins.m_ExtraTextureName, envMap.GetBuffer());
+#endif
 
 		// check for .spr swap
 		LTBOOL bSwap=LTFALSE;
@@ -1788,6 +1824,23 @@ void CCharacterFX::SetMode(const std::string& mode)
 
 			if(dwFlags & USRFLG_CHAR_CLOAKED)
 			{
+#ifdef PRIMAL_HUNT
+				// Primal Hunt's cloak: unless the server's "OldCloak" is
+				// set, the red channel carries it (0.75 while the
+				// character moves), not the alpha (PHCShell.dll 0x100f4d04,
+				// 0x100f50eb)
+				LTVector vVel;
+				m_pClientDE->Physics()->GetVelocity(m_hServerObject, &vVel);
+				LTFLOAT fVelMag = vVel.MagSqr();
+
+				LTFLOAT r, g, b, a;
+				g_pLTClient->GetObjectColor(m_hServerObject, &r, &g, &b, &a);
+
+				if(g_fOldCloak == 0.0f)
+					r = fVelMag < 0.001f ? 0.0f : 0.75f;
+				else
+					a = fVelMag == 0.0f ? 0.0f : 0.15f;
+#else
 				LTFLOAT r, g, b, a;
 				g_pLTClient->GetObjectColor(m_hServerObject, &r, &g, &b, &a);
 
@@ -1795,6 +1848,7 @@ void CCharacterFX::SetMode(const std::string& mode)
 				m_pClientDE->Physics()->GetVelocity(m_hServerObject, &vVel);
 				
 				a = vVel.MagSqr()==0.0f?0.0f:0.15f;
+#endif
 				g_pLTClient->SetObjectColor(m_hServerObject, r, g, b, a);
 			}
 		}

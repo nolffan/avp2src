@@ -12,6 +12,11 @@
 
 #include "stdafx.h"
 #include <stdio.h>
+#ifdef PRIMAL_HUNT
+// timeGetTime (winmm), declared alone: all of <mmsystem.h> here changes
+// the code of HandleLoadGameMsg (PHObject.lto 0x1005a2d0)
+extern "C" __declspec(dllimport) DWORD __stdcall timeGetTime(void);
+#endif
 
 #include "cpp_server_de.h"
 #include "GameServerShell.h"
@@ -276,6 +281,11 @@ void* CGameServerShell::GetAuthContext()
 
 CGameServerShell::CGameServerShell(ILTServer *pLTServer)
 {
+#ifdef PRIMAL_HUNT
+	// PH: the shell times its own construction (PHObject.lto 0x10057874)
+	DWORD dwInitStart = timeGetTime();
+#endif
+
 	m_pMPMgr = new MultiplayerMgr;
 
 	// Perform our CRC checks if this is a multiplayer game
@@ -309,6 +319,11 @@ CGameServerShell::CGameServerShell(ILTServer *pLTServer)
 
 	m_bLoadingKeepAlive = LTFALSE;
 	m_bHasQueenStartPoint = LTFALSE;
+
+#ifdef PRIMAL_HUNT
+	DWORD dwInitEnd = timeGetTime();
+	g_pInterface->CPrint("Server shell initialization took %.2f seconds.", ((LTFLOAT)dwInitEnd - dwInitStart) * 0.001f);
+#endif
 }
 
 

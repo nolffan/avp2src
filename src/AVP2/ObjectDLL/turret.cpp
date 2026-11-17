@@ -691,6 +691,20 @@ uint32 Turret::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		}
 		break;
 
+#ifdef PRIMAL_HUNT
+		// PH: what crushes the turret destroys it (PHObject.lto 0x10089a98)
+		case MID_CRUSH:
+		{
+			DamageStruct damage;
+			damage.eType	= DT_CRUSH;
+			damage.fDamage	= 5000.0f;
+			damage.hDamager	= (HOBJECT)pData;
+			LPBASECLASS pDamager = g_pLTServer->HandleToObject(damage.hDamager);
+			damage.DoDamage(pDamager, m_hObject);
+		}
+		break;
+#endif
+
 		default : break;
 	}
 
@@ -992,6 +1006,14 @@ uint32 Turret::ObjectMessageFn(HOBJECT hSender, uint32 messageID, HMESSAGEREAD h
 
 		case MID_DAMAGE:
 		{
+#ifdef PRIMAL_HUNT
+			// PH: an invisible turret takes no damage (PHObject.lto 0x10089cd4)
+			uint32 dwFlags;
+			g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+			if( !(dwFlags & FLAG_VISIBLE) )
+				return 0;
+#endif
+
 			// Let our damage aggregate process the message first...
 
 			uint32 dwRet = Prop::ObjectMessageFn(hSender, messageID, hRead);
@@ -1603,6 +1625,99 @@ LTBOOL Turret::Update()
 	}
 
 	SetNextUpdate(UPDATE_DELTA);
+
+#ifdef PRIMAL_HUNT
+	// PH: on a world model (a lift, a door), push down so that we go
+	// with it (PHObject.lto 0x1008d06e)
+	CollisionInfo info;
+	g_pLTServer->GetStandingOn(m_hObject, &info);
+	if (info.m_hObject)
+	{
+		uint32 dwType;
+		g_pLTServer->Common()->GetObjectType(info.m_hObject, &dwType);
+		if (dwType == OT_WORLDMODEL)
+		{
+			LTVector vVel(0.0f, -1.0f, 0.0f);
+			g_pLTServer->Physics()->SetVelocity(m_hObject, &vVel);
+		}
+	}
+
+	// PH: the heat. Each update that uses ammo heats the gun; at 100 it
+	// overheats and turns off until it cools to 50 (PHObject.lto
+	// 0x1008d0d6). RETAIL BUG: with no current weapon, nAmmoId is not
+	// set.
+	int nAmmoId;
+	CWeapon* pWeapon = m_GunMgr.GetCurWeapon();
+	if (pWeapon)
+	{
+		nAmmoId = pWeapon->GetAmmoId();
+	}
+
+	int nAmmo = m_GunMgr.GetAmmoCount(nAmmoId);
+
+	if (nAmmo < m_nLastAmmo)
+	{
+		LTFLOAT fOldHeat = m_fHeat;
+		m_fHeat += g_pLTServer->GetFrameTime() * 100.0f;
+
+		if (m_fHeat >= 100.0f)
+		{
+			if (fOldHeat < 100.0f)
+			{
+				SendTriggerMsgToObject(this, m_hObject, "OFF");
+
+				PlaySoundInfo psi;
+				SAFE_STRCPY(psi.m_szSoundName, "Sounds/Exp/Weapons/Marine/Turret/Overheat.wav");
+				g_pLTServer->GetObjectPos(m_hObject, &psi.m_vPosition);
+				psi.m_fInnerRadius	= 256.0f;
+				psi.m_fOuterRadius	= 2048.0f;
+				psi.m_nPriority		= 0;
+				psi.m_nVolume		= 100;
+				psi.m_dwFlags		= PLAYSOUND_3D;
+
+				HLTSOUND hSound;
+				g_pLTServer->SoundMgr()->PlaySound(&psi, hSound);
+			}
+
+			m_fHeat = 100.0f;
+		}
+	}
+	else if (m_fHeat > 0.0f)
+	{
+		LTFLOAT fOldHeat = m_fHeat;
+		m_fHeat -= g_pLTServer->GetFrameTime() * 50.0f;
+
+		if (fOldHeat >= 50.0f && m_fHeat < 50.0f)
+		{
+			uint32 dwFlags;
+			g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+			if (dwFlags & FLAG_VISIBLE)
+			{
+				SendTriggerMsgToObject(this, m_hObject, "ON");
+			}
+		}
+
+		if (m_fHeat < 0.0f)
+		{
+			m_fHeat = 0.0f;
+		}
+	}
+
+	// PH: tell the clients the ammo and the heat, a quarter second after
+	// they change
+	if (m_fNextAmmoMsgTime != 0.0f)
+	{
+		if (g_pLTServer->GetTime() >= m_fNextAmmoMsgTime)
+		{
+			SendAmmoMessage(nAmmo);
+			m_fNextAmmoMsgTime = 0.0f;
+		}
+	}
+	else if (m_nLastAmmo != nAmmo || m_fHeat > 0.0f)
+	{
+		m_fNextAmmoMsgTime = g_pLTServer->GetTime() + 0.25f;
+	}
+#endif
 
 	// Update our position and rotation relative to the base (in case the base has moved).
 	if( m_bHasGunModel )
@@ -3229,11 +3344,13 @@ HOBJECT SpawnTurret(HOBJECT hSpawner, const LTVector & vPos, const LTRotation & 
 	// A spawned turret glows, until it is picked up
 	if (hSpawner)
 	{
-		g_pLTServer->SetObjectUserFlags(pTurret->m_hObject, g_pLTServer->GetObjectUserFlags(pTurret->m_hObject) | USRFLG_GLOW);
+		uint32 dwUsrFlags = g_pLTServer->GetObjectUserFlags(pTurret->m_hObject);
+		g_pLTServer->SetObjectUserFlags(pTurret->m_hObject, dwUsrFlags | USRFLG_GLOW);
 
 		if (pTurret->m_hGunHandle)
 		{
-			g_pLTServer->SetObjectUserFlags(pTurret->m_hGunHandle, g_pLTServer->GetObjectUserFlags(pTurret->m_hGunHandle) | USRFLG_GLOW);
+			dwUsrFlags = g_pLTServer->GetObjectUserFlags(pTurret->m_hGunHandle);
+			g_pLTServer->SetObjectUserFlags(pTurret->m_hGunHandle, dwUsrFlags | USRFLG_GLOW);
 		}
 	}
 

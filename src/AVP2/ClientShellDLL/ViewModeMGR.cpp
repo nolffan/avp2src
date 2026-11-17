@@ -125,6 +125,13 @@ ViewModeData::ViewModeData() :	m_TextureModeMGR(Views::START_MODE),
 // Local function declarations
 //-----------------------------------------------------------------------------
 void SetVisionMode(ViewModeData* data, std::string mode);
+
+#ifdef PRIMAL_HUNT
+// PH: the client's vision mode, for the server's AI (name ours; the server
+// has the same number, GameServerShell.cpp)
+#define MID_PH_VISIONMODE		226
+#endif
+
 void UpdateStarLight(ViewModeData* data);
 void SetStarLightMode(ViewModeData* data, std::string mode);
 
@@ -534,8 +541,31 @@ void SetVisionMode(ViewModeData* data, std::string mode)
 	// Starlight gets a turn
 	SetStarLightMode(data, mode);
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt first tells the server's AI the vision mode: message 226,
+	// which CGameServerShell::OnMessage passes to AIBaseList_SetVisionMode
+	// (PHCShell.dll 0x100b2531, PHObject.lto 0x1005897d)
+	HMESSAGEWRITE hMessage = g_pClientDE->StartMessage(MID_PH_VISIONMODE);
+
+	if(VisionMode::g_pButeMgr->IsMarineNightVision(mode))
+		g_pClientDE->WriteToMessageByte(hMessage, VM_NIGHTV_ON);
+	else if(VisionMode::g_pButeMgr->IsPredatorHeatVision(mode))
+		g_pClientDE->WriteToMessageByte(hMessage, VM_PRED_HEAT);
+	else if(VisionMode::g_pButeMgr->IsPredatorElecVision(mode))
+		g_pClientDE->WriteToMessageByte(hMessage, VM_PRED_ELEC);
+	else if(VisionMode::g_pButeMgr->IsPredatorNavVision(mode))
+		g_pClientDE->WriteToMessageByte(hMessage, VM_PRED_NAV);
+	else
+		g_pClientDE->WriteToMessageByte(hMessage, VM_NIGHTV_OFF);
+
+	g_pClientDE->EndMessage(hMessage);
+
+	// Send message to server
+	hMessage = g_pClientDE->StartMessage(MID_PLAYER_CLIENTMSG);
+#else
 	// Send message to server
 	HMESSAGEWRITE hMessage = g_pClientDE->StartMessage(MID_PLAYER_CLIENTMSG);
+#endif
 	g_pClientDE->WriteToMessageByte(hMessage, CP_VISIONMODE);
 
 	if(VisionMode::g_pButeMgr->IsMarineNightVision(mode))

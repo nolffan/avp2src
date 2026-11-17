@@ -730,6 +730,17 @@ void CNodeController::UpdateLipSyncControl(NCSTRUCT *pNodeControl)
 	LTRotation rRot;
 	ROT_INIT(rRot);
 	LTVector vAxis(0.0f, 0.0f, 1.0f);
+
+#ifdef PRIMAL_HUNT
+	// A model with a "ShowerBody" piece turns the jaw about the y axis
+	// (PHCShell.dll 0x10099534)
+	HMODELPIECE hShowerPiece = INVALID_MODEL_PIECE;
+	g_pLTClient->GetModelLT()->GetPiece(m_hServerObj, "ShowerBody", hShowerPiece);
+
+	if(hShowerPiece != INVALID_MODEL_PIECE)
+		vAxis.Init(0.0f, 1.0f, 0.0f);
+#endif
+
 	LTFLOAT fMaxRot = MATH_DEGREES_TO_RADIANS(g_vtLipSyncMaxRot.GetFloat());
 
 	// Calculate the rotation.
@@ -1770,7 +1781,15 @@ void CNodeController::HandleNodeControlLipSyncMessage(HMESSAGEREAD hMessage)
 	// Increment the number of controllers for this node...
 	m_aNodes[eModelNode].cControllers++;
 
+#ifdef PRIMAL_HUNT
+	// Primal Hunt also tests the upper-case directory name, as a third
+	// test that sets the flag (PHCShell.dll 0x1009b676: a setne)
 	bool bIsDialogue = ( (strstr(szSound,"dialogue\\") != LTNULL) || (strstr(szSound,"Dialogue\\") != LTNULL) );
+	if (!bIsDialogue)
+		bIsDialogue = (strstr(szSound,"DIALOGUE\\") != LTNULL);
+#else
+	bool bIsDialogue = ( (strstr(szSound,"dialogue\\") != LTNULL) || (strstr(szSound,"Dialogue\\") != LTNULL) );
+#endif
 
 	if (bIsDialogue)
 	{

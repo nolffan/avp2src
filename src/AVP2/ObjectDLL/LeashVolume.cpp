@@ -210,9 +210,21 @@ CLeashVolume::CLeashVolume() : CLeashNode(LEASHNODE_VOLUME)
 {
 	m_nID = -1;
 
-	// A huge box about the origin: centre 0, extents +999999 (0x1015282c
-	// pushes 999999.0f, the folded minimum is -999999.0f)
-	m_Box = LeashBox(LTVector(0.0f, 0.0f, 0.0f), LTVector(999999.0f, 999999.0f, 999999.0f));
+	// An empty (inside-out) box about the origin: centre 0, extents
+	// -999999. Thus the minimum is +999999 (the vector that 0x10152874
+	// constructs from 999999.0f) and the maximum is -999999 (0 + the folded
+	// -999999.0f, through the out-of-line operator+). ExtendBounds then
+	// grows it to the faces' bounds.
+	//
+	// NEAR (142 of 242 bytes): retail expands this LeashBox constructor one
+	// level only: it calls the _CVector constructor in the inlined
+	// operator-, and it calls operator+ (0x1004b810). These calls give it
+	// an exception frame for the three lists. Ours expands all of it.
+	// Tried, in a probe TU: the temporary as a named local, the two vectors
+	// as named locals, a unary minus, and the LeashBox constructor with
+	// body assignments, by-value parameters, or an out-of-class inline
+	// definition. No form reaches it.
+	m_Box = LeashBox(LTVector(0.0f, 0.0f, 0.0f), LTVector(-999999.0f, -999999.0f, -999999.0f));
 }
 
 // ----------------------------------------------------------------------- //

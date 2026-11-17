@@ -58,7 +58,16 @@ uint32 CMarker::OnInitialUpdate(uint32 nInfo)
 
 uint32 CMarker::OnUpdate(LTFLOAT fFrameTime)
 {
-	g_pLTServer->RemoveObject(m_hObject);
+	// The empty test is in the shipped code's shape: without it, the
+	// compiler copies 'this' to eax and reads m_hObject after
+	// g_pLTServer. Its body was probably a line that the Final build
+	// removes.
+	HOBJECT hObj = m_hObject;
+	if (hObj)
+	{
+	}
+
+	g_pLTServer->RemoveObject(hObj);
 	return LTFALSE;
 }
 

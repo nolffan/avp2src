@@ -1090,6 +1090,45 @@ void CDestructible::DoDamage(DamageStruct & damage, HOBJECT hSender)
 
             g_pLTServer->SetVelocity(m_hObject, &vImpactVel);
 		}
+#ifdef PRIMAL_HUNT
+		// PH: a backhand knocks the victim away and up (PHObject.lto
+		// 0x100d6537)
+		else if (eType == DT_BACKHAND && !m_bDead)
+		{
+			LTVector vVel, vTemp;
+
+			g_pLTServer->Physics()->GetVelocity(m_hObject, &vVel);
+
+			vTemp = vDir;
+			if (vTemp.y < 0.0f)
+			{
+				vTemp.y = 0.0f;
+			}
+			vTemp.Norm();
+
+			if (m_fMass <= 0.0f)
+			{
+				m_fMass = 100.0f;
+			}
+
+			LTFLOAT fMultiplier = GetRandom(450.0f, 750.0f);
+
+			// If not on ground, scale down velocity...
+
+			CollisionInfo standingInfo;
+			g_pLTServer->Physics()->GetStandingOn(m_hObject, &standingInfo);
+
+			if (!standingInfo.m_hObject)
+			{
+				fMultiplier /= 10.0f;
+			}
+
+			vVel = vVel + vTemp * fMultiplier;
+			vVel.y = GetRandom(350.0f, 550.0f);
+
+			g_pLTServer->Physics()->SetVelocity(m_hObject, &vVel);
+		}
+#endif
 
 
 		// Armor absorbs as much damage as it can based off the ArmorPoints

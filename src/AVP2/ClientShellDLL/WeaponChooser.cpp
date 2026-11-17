@@ -348,9 +348,14 @@ void CMarineWepChooser::NextWeapon()
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 	}
 
-	// that we have
-	while(!m_pPlayerStats->HaveWeapon(pWep->nId))
+	// that we have (the exit test is a named result: the shipped loop
+	// is not rotated)
+	while(TRUE)
 	{
+		LTBOOL bHave = m_pPlayerStats->HaveWeapon(pWep->nId);
+		if(bHave)
+			break;
+
 		nWep = s_aNextWeapon[nWep];
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 
@@ -385,9 +390,14 @@ void CMarineWepChooser::PrevWeapon()
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 	}
 
-	// that we have
-	while(!m_pPlayerStats->HaveWeapon(pWep->nId))
+	// that we have (the exit test is a named result: the shipped loop
+	// is not rotated)
+	while(TRUE)
 	{
+		LTBOOL bHave = m_pPlayerStats->HaveWeapon(pWep->nId);
+		if(bHave)
+			break;
+
 		nWep = s_aPrevWeapon[nWep];
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 
@@ -1247,9 +1257,14 @@ void CCorporateWepChooser::NextWeapon()
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 	}
 
-	// that we have
-	while(!m_pPlayerStats->HaveWeapon(pWep->nId))
+	// that we have (the exit test is a named result: the shipped loop
+	// is not rotated)
+	while(TRUE)
 	{
+		LTBOOL bHave = m_pPlayerStats->HaveWeapon(pWep->nId);
+		if(bHave)
+			break;
+
 		nWep = s_aNextWeapon[nWep];
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 
@@ -1284,9 +1299,14 @@ void CCorporateWepChooser::PrevWeapon()
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 	}
 
-	// that we have
-	while(!m_pPlayerStats->HaveWeapon(pWep->nId))
+	// that we have (the exit test is a named result: the shipped loop
+	// is not rotated)
+	while(TRUE)
 	{
+		LTBOOL bHave = m_pPlayerStats->HaveWeapon(pWep->nId);
+		if(bHave)
+			break;
+
 		nWep = s_aPrevWeapon[nWep];
 		pWep = g_pWeaponMgr->GetWeapon(m_pPlayerStats->GetWeaponFromSet(nWep));
 

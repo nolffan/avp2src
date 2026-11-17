@@ -343,8 +343,23 @@ LTFLOAT CAISenseSeeEnemy::GetRateMultiplier(HOBJECT hStimulus, const LTVector & 
 	LTFLOAT r_unused, g_unused, b_unused, a;
 	a = 1.0f;
 
+#ifdef PRIMAL_HUNT
+	// PH: Primal Hunt's cloak (OFT_Flags2 bit 11, as CCharacter::UpdateCloakEffect
+	// sets it) keeps its amount in the red of the colour (PHObject.lto 0x101fdae7)
+	if( hStimulus )
+	{
+		uint32 dwFlags2;
+		g_pLTServer->Common()->GetObjectFlags(hStimulus, OFT_Flags2, dwFlags2);
+
+		if( dwFlags2 & (1<<11) )
+			g_pInterface->GetObjectColor(hStimulus, &a, &g_unused, &b_unused, &r_unused);
+		else
+			g_pInterface->GetObjectColor(hStimulus, &r_unused, &g_unused, &b_unused, &a);
+	}
+#else
 	if( hStimulus )
 		g_pInterface->GetObjectColor(hStimulus, &r_unused, &g_unused, &b_unused, &a);
+#endif
 
 	if( m_fCloakSensitivity > 0.0f && a < 1.0f )
 	{

@@ -374,6 +374,13 @@ void BodyProp::Setup(HOBJECT hObj, CDestructible *pDest, LTBOOL bCarryOverAttach
 	// Set the gib override...
 	m_bCanGIB = g_pCharacterButeMgr->GetCanLoseLimb(m_nCharacterSet);
 
+#ifdef PRIMAL_HUNT
+	// PH: a Praetorian can always be gibbed (PHObject.lto 0x100a7d6f)
+	const char* szName = g_pCharacterButeMgr->GetName(m_nCharacterSet);
+	if(szName && strstr(szName, "Praetorian"))
+		m_bCanGIB = LTTRUE;
+#endif
+
 	// Special case for stair volumes
 	if (m_pCurrentVolume)
 	{
@@ -389,7 +396,26 @@ void BodyProp::Setup(HOBJECT hObj, CDestructible *pDest, LTBOOL bCarryOverAttach
 	LTFLOAT r, g, b, a;
 	g_pLTServer->GetObjectColor(hObj, &r, &g, &b, &a);
 	g_pLTServer->SetObjectColor(m_hObject, r, g, b, a);
+#ifdef PRIMAL_HUNT
+	// PH: a Predator in Primal Hunt's cloak (OFT_Flags2 bit 11, as
+	// CCharacter::UpdateCloakEffect sets it) keeps the cloak's amount in
+	// the red, not in the alpha (PHObject.lto 0x100a7e57)
+	uint32 dwFlags, dwFlags2;
+	g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
+	g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags2, dwFlags2);
+
+	if(szName && IsPredator(butes) == LTTRUE)
+	{
+		if(dwFlags2 & (1<<11))
+		{
+			m_bFadeIn			= LTTRUE;
+			m_fDecloakStartTime	= g_pLTServer->GetTime();
+		}
+	}
+	else if(a != 1.0f)
+#else
 	if(a != 1.0f)
+#endif
 	{
 		m_bFadeIn			= LTTRUE;
 		m_fDecloakStartTime	= g_pLTServer->GetTime();
@@ -405,17 +431,26 @@ void BodyProp::Setup(HOBJECT hObj, CDestructible *pDest, LTBOOL bCarryOverAttach
 
 	// ----------------------------------------------------------------------- //
 	// Get the current flags of the character
+#ifdef PRIMAL_HUNT
+	uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(hObj);
+#else
 	uint32 dwFlags, dwFlags2;
 	uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(hObj);
 
 	g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags, dwFlags);
 	g_pLTServer->Common()->GetObjectFlags(hObj, OFT_Flags2, dwFlags2);
+#endif
 
 	// Make some flag adjustments that we know we'll need
 	dwFlags = dwFlags & ~FLAG_SOLID & ~FLAG_GOTHRUWORLD & ~FLAG_SHADOW & ~FLAG_STAIRSTEP;
 	dwFlags |= FLAG_GRAVITY | FLAG_VISIBLE | FLAG_REMOVEIFOUTSIDE | FLAG_NOSLIDING;
 
+#ifdef PRIMAL_HUNT
+	// PH: but keep the cloak's flags (OFT_Flags2 bits 11 and 12)
+	dwFlags2 = dwFlags2 & ((1<<11) | (1<<12));
+#else
 	dwFlags2 = 0;
+#endif
 
 	// Need to do this here and after the call to SetupByDeathType... this is
 	// so that the flags are set properly for limbs that might need to be created
@@ -451,6 +486,10 @@ void BodyProp::Setup(HOBJECT hObj, CDestructible *pDest, LTBOOL bCarryOverAttach
 				g_pLTServer->GetVelocity(hObj, &vVelOffset);
 				ExplodeLimb(m_eNodeLastHit, LTFALSE, vVelOffset);
 
+#ifdef PRIMAL_HUNT
+				// PH: not for a bullet death without gibs (PHObject.lto 0x100a80d5)
+				if(m_eDeathType != CD_BULLET_NOGIB)
+#endif
 				DoSpecialDamageSound(m_hLastDamager);
 			}
 		}
@@ -1828,6 +1867,17 @@ void BodyProp::Update()
 			fTimeDelta = 1.0f;
 		}
 
+#ifdef PRIMAL_HUNT
+		// PH: in Primal Hunt's cloak (OFT_Flags2 bit 11) the red is the
+		// cloak's amount, and it fades out as the alpha fades in
+		// (PHObject.lto 0x100ab309)
+		uint32 dwFlags2;
+		g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+
+		if(dwFlags2 & (1<<11))
+			g_pLTServer->SetObjectColor(m_hObject, 1.0f - fTimeDelta, g, b, fTimeDelta);
+		else
+#endif
 		// Fade him out
 		g_pLTServer->SetObjectColor(m_hObject, r, g, b, fTimeDelta);
 	}

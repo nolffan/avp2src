@@ -192,7 +192,10 @@ uint32 CTentacle::OnInitialUpdate(uint32 nInfo)
 	uint32 hWeightSet = m_Anim.FindWeightSet("Full");
 	m_Anim.SetWeightSet(hWeightSet, 0);
 
-	m_Sounds.m_hObject = m_hObject;
+	// Through a pointer, as the shipped code reads m_hObject again after
+	// this write
+	CAISounds* pSounds = &m_Sounds;
+	pSounds->m_hObject = m_hObject;
 
 	g_pLTServer->SetBlockingPriority(m_hObject, 255);
 	uint32 dwUsrFlags = SurfaceToUserFlag(ST_FLESH_HUMAN);
@@ -648,22 +651,19 @@ void CTentacle::Burrow()
 // PH: 0x101575b0
 void CTentacle::StartAttack()
 {
-	const char* szSound;
-
 	if (rand() % 100 < 50)
 	{
 		m_Anim.PlayAnim("Attack0", LTFALSE, 0);
 		m_tmrAttack.Start(1.0f);
-		szSound = s_aszSounds[eSoundAttack1];
+		m_Sounds.PlayVoice(s_aszSounds[eSoundAttack1]);
 	}
 	else
 	{
 		m_Anim.PlayAnim("Attack1", LTFALSE, 0);
 		m_tmrAttack.Start(1.0f);
-		szSound = s_aszSounds[eSoundAttack2];
+		m_Sounds.PlayVoice(s_aszSounds[eSoundAttack2]);
 	}
 
-	m_Sounds.PlayVoice(szSound);
 	m_eState = eAttacking;
 }
 
@@ -794,16 +794,15 @@ static LTBOOL GroundFilterFn(HOBJECT hObj, void *pUserData)
 // PH: 0x101578d0
 LTBOOL CTentacle::FindGround(LTVector & vPos, LTVector & vNormal)
 {
-	LTVector vMyPos;
-	g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
-
 	IntersectQuery iQuery;
-	IntersectInfo iInfo;
-
-	iQuery.m_From = vMyPos;
-	iQuery.m_To = LTVector(vMyPos.x, vMyPos.y - TENTACLE_GROUND_DIST, vMyPos.z);
+	g_pLTServer->GetObjectPos(m_hObject, &iQuery.m_From);
+	iQuery.m_To = LTVector(iQuery.m_From.x, iQuery.m_From.y - TENTACLE_GROUND_DIST, iQuery.m_From.z);
 	iQuery.m_Flags = INTERSECT_HPOLY | INTERSECT_OBJECTS | IGNORE_NONSOLID;
 	iQuery.m_FilterFn = GroundFilterFn;
+	iQuery.m_PolyFilterFn = LTNULL;
+	iQuery.m_pUserData = LTNULL;
+
+	IntersectInfo iInfo;
 
 	if (!g_pLTServer->IntersectSegment(&iQuery, &iInfo)) return LTFALSE;
 	if (iInfo.m_Plane.m_Normal.y < 0.7071f) return LTFALSE;

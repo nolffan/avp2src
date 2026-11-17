@@ -313,8 +313,15 @@ inline LTBOOL CDestructible::CanRagDoll(LTVector & vDir, DamageType eType)
         uint32 dwFlags = g_pLTServer->GetObjectFlags(m_hObject);
 		if ((dwFlags & FLAG_SOLID) && (dwFlags & FLAG_GRAVITY))
 		{
+#ifdef PRIMAL_HUNT
+			// PH: and not a backhand (CDestructible::DoDamage knocks the
+			// victim back itself, PHObject.lto 0x100d63c1)
+			return (m_bApplyDamagePhysics && !m_bIsPlayer && (eType != DT_BULLET) && (eType != DT_HIGHCALIBER) && (eType != DT_SHOTGUN) && 
+					(eType != DT_BACKHAND) && (m_fMass < INFINITE_MASS) && (vDir.MagSqr() > 0.001f));
+#else
 			return (m_bApplyDamagePhysics && !m_bIsPlayer && (eType != DT_BULLET) && (eType != DT_HIGHCALIBER) && (eType != DT_SHOTGUN) && 
 					(m_fMass < INFINITE_MASS) && (vDir.MagSqr() > 0.001f));
+#endif
 		}
 	}
 

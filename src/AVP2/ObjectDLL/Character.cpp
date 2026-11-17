@@ -1846,6 +1846,19 @@ LTBOOL CCharacter::HandlePickup(char **pToks, int nToks, HOBJECT hSender, uint32
 
 				return LTFALSE;
 			}
+#ifdef PRIMAL_HUNT
+			// PH: a pickup that takes the Predator's mask away
+			// (PHObject.lto 0x100b62d8)
+			else if(_stricmp(pToks[0], "PREDATOR_ANTIMASK") == 0)
+			{
+				if(IsPredator(m_cmMovement.GetCharacterButes()) == LTTRUE && HasMask() == LTTRUE)
+				{
+					SetHasMask(LTFALSE, LTFALSE);
+				}
+
+				return LTFALSE;
+			}
+#endif
 			else if(_stricmp(pToks[0], "NIGHT_VISION") == 0)
 			{
 				if(IsHuman(m_cmMovement.GetCharacterButes()))
@@ -2094,6 +2107,24 @@ LTBOOL CCharacter::HandlePickup(char **pToks, int nToks, HOBJECT hSender, uint32
 #ifdef PRIMAL_HUNT
 					// PH: not a weapon the server forbids (PHObject.lto 0x100b6bb8)
 					if(!g_pGameServerShell->IsWeaponAllowed(pWeap->nId)) return LTFALSE;
+
+					// PH: a second pistol makes dual pistols (0x100b6bd1)
+					CPlayerAttachments* pAttach = dynamic_cast<CPlayerAttachments*>(GetAttachments());
+					CWeapons* pWeapons = pAttach->GetWeapons();
+
+					if(pWeapons && !NeedsWeapon(pWeap))
+					{
+						if(g_pGameServerShell->GetGameType().IsMultiplayer() == LTTRUE)
+						{
+							if(_stricmp(pWeap->szName, "Pistol_MP") == 0)
+								pWeap = g_pWeaponMgr->GetWeapon("Dual_Pistols_MP");
+						}
+						else
+						{
+							if(_stricmp(pWeap->szName, "Pistol") == 0)
+								pWeap = g_pWeaponMgr->GetWeapon("Dual_Pistols");
+						}
+					}
 #endif
 
 					AMMO *pAmmo = g_pWeaponMgr->GetAmmo(szAmmo);
@@ -2491,6 +2522,15 @@ void CCharacter::InitialUpdate(int nInfo)
 
 	ResetCharacter();
 
+#ifdef PRIMAL_HUNT
+	// PH: a facehugger casts no shadow (PHObject.lto 0x100b7bf1)
+	if(strstr(GetButes()->m_szName, "Facehugger"))
+	{
+		uint32 dwFlags = m_cmMovement.GetObjectFlags(OFT_Flags);
+		m_cmMovement.SetObjectFlags(OFT_Flags, dwFlags & ~FLAG_SHADOW, LTTRUE);
+	}
+#endif
+
 	// Create the box used for weapon impact detection...
 
 	CreateHitBox();
@@ -2731,6 +2771,16 @@ void CCharacter::CacheFiles()
 	strcpy(szVisionModes[0], "ElectroVision/");
 	strcpy(szVisionModes[1], "HeatVision/");
 	strcpy(szVisionModes[2], "NavVision/");
+#endif
+
+#ifdef PRIMAL_HUNT
+	// PH: cache the environment map too (PHObject.lto 0x100b8811)
+	CString strEnvMap = g_pCharacterButeMgr->GetCharacterButes(m_nCharacterSet).m_szDefaultEnvMap;
+
+	if(!strEnvMap.IsEmpty())
+	{
+		g_pLTServer->CacheFile(FT_TEXTURE, strEnvMap.GetBuffer());
+	}
 #endif
 
 	// Go through each texture and append the vision mode directories
@@ -6129,6 +6179,213 @@ void CCharacter::ResetCloak()
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef PRIMAL_HUNT
+
+// PH: Primal Hunt's engine draws the cloak with two flags of its own in
+// OFT_Flags2 (bits 11 and 12; not in the SDK's ltbasedefs.h, name ours),
+// and the environment map; the red of the object's colour is the amount
+// of the effect (PHObject.lto 0x100be470)
+#define FLAG2_PH_CLOAK		((1<<11) | (1<<12))
+
+void CCharacter::UpdateCloakEffect() 
+{ 
+	if(!m_bHasCloakDevice && !IsPredator(m_hObject))
+		return;
+
+	if (m_cmMovement.IsInLiquidContainer(CM_CONTAINER_LOWER))
+	{
+		if(m_nCloakState != CLOAK_STATE_INACTIVE && m_nCloakState != CLOAK_STATE_RAMPDOWN)
+		{
+			ForceCloakOff();
+
+			// Make a noise
+			g_pServerSoundMgr->PlaySoundFromObject(m_hObject, "predcloakoff");
+		}
+	}
+
+	// Handle the states differently
+	switch(m_nCloakState)
+	{
+		case CLOAK_STATE_INACTIVE:
+		{
+			// Make sure the user flags are set properly
+			uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
+			g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags & ~USRFLG_CHAR_CLOAKED);
+
+			// Turn on Predator's shadow
+			m_cmMovement.SetObjectFlags(OFT_Flags, m_cmMovement.GetObjectFlags(OFT_Flags) | FLAG_SHADOW, LTFALSE);
+
+			if(g_cvarOldCloak.GetFloat() == 0.0f)
+			{
+				// Take the cloak's flags off and give the colour back
+				uint32 dwFlags, dwFlags2;
+				g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+				g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+
+				m_cmMovement.SetObjectFlags(OFT_Flags, dwFlags & ~FLAG_ENVIRONMENTMAP, LTTRUE);
+				m_cmMovement.SetObjectFlags(OFT_Flags2, dwFlags2 & ~FLAG2_PH_CLOAK, LTTRUE);
+
+				g_pLTServer->SetObjectColor(m_hObject, 1.0f, 1.0f, 1.0f, 1.0f);
+			}
+			break;
+		}
+
+		case CLOAK_STATE_RAMPUP:
+		{
+			{
+				uint32 dwFlags, dwFlags2;
+				g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+				g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+
+				uint32 dwNewFlags, dwNewFlags2;
+				if(g_cvarOldCloak.GetFloat() != 0.0f)
+				{
+					// RETAIL BUG: '&' with the flag, not with its complement:
+					// this clears every other flag (docs/RETAIL_BUGS.md)
+					dwNewFlags = dwFlags & FLAG_ENVIRONMENTMAP;
+					dwNewFlags2 = dwFlags2 & ~FLAG2_PH_CLOAK;
+				}
+				else
+				{
+					dwNewFlags = dwFlags | FLAG_ENVIRONMENTMAP;
+					dwNewFlags2 = dwFlags2 | FLAG2_PH_CLOAK;
+				}
+
+				m_cmMovement.SetObjectFlags(OFT_Flags, dwNewFlags, LTTRUE);
+				m_cmMovement.SetObjectFlags(OFT_Flags2, dwNewFlags2, LTTRUE);
+			}
+
+			// Make sure the user flags are set properly
+			uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
+			g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags | USRFLG_CHAR_CLOAKED);
+
+			// Get the time difference
+			LTFLOAT fPercent = (g_pLTServer->GetTime() - m_fCloakStartTime) / CLOAK_RAMPUP_TIME;
+			LTFLOAT fDestAlpha = 1.0f - fPercent;
+
+			// Change states if needed
+			if(fDestAlpha < 0.0f)
+			{
+				m_nCloakState = CLOAK_STATE_ACTIVE;
+				return;
+			}
+
+			// Get the color of our character and fade him out
+			LTFLOAT r, g, b, a;
+			g_pLTServer->GetObjectColor(m_hObject, &r, &g, &b, &a);
+
+			if(g_cvarOldCloak.GetFloat() == 0.0f)
+				r = PHCloakAmountFromState(m_cmMovement.GetMovementState(), m_cmMovement.GetControlFlags()) * fPercent;
+
+			g_pLTServer->SetObjectColor(m_hObject, r, g, b, fDestAlpha);
+
+			// Update the energy used
+			m_fCloakEnergyUsed += g_cvarCloakCostPerSecond.GetFloat() * GetUpdateDelta();
+			break;
+		}
+
+		case CLOAK_STATE_ACTIVE:
+		{
+			{
+				uint32 dwFlags, dwFlags2;
+				g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+				g_pLTServer->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+
+				uint32 dwNewFlags, dwNewFlags2;
+				if(g_cvarOldCloak.GetFloat() != 0.0f)
+				{
+					// RETAIL BUG: as in CLOAK_STATE_RAMPUP
+					dwNewFlags = dwFlags & FLAG_ENVIRONMENTMAP;
+					dwNewFlags2 = dwFlags2 & ~FLAG2_PH_CLOAK;
+				}
+				else
+				{
+					dwNewFlags = dwFlags | FLAG_ENVIRONMENTMAP;
+					dwNewFlags2 = dwFlags2 | FLAG2_PH_CLOAK;
+				}
+
+				m_cmMovement.SetObjectFlags(OFT_Flags, dwNewFlags, LTTRUE);
+				m_cmMovement.SetObjectFlags(OFT_Flags2, dwNewFlags2, LTTRUE);
+			}
+
+			// Make sure the user flags are set properly
+			uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
+			g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags | USRFLG_CHAR_CLOAKED);
+
+			// Turn off Predator's shadow
+			m_cmMovement.SetObjectFlags(OFT_Flags, m_cmMovement.GetObjectFlags(OFT_Flags) & ~FLAG_SHADOW, LTFALSE);
+
+			LTFLOAT fDestAlpha = PHCloakAmountFromState(m_cmMovement.GetMovementState(), m_cmMovement.GetControlFlags());
+
+			// Set the color of our character to fade him out
+			LTFLOAT r, g, b, a;
+			g_pLTServer->GetObjectColor(m_hObject, &r, &g, &b, &a);
+
+			if(g_cvarOldCloak.GetFloat() == 0.0f)
+			{
+				r = fDestAlpha;
+				fDestAlpha = 0.0f;
+			}
+			else
+				r = 1.0f;
+
+			g_pLTServer->SetObjectColor(m_hObject, r, g, b, fDestAlpha);
+
+			// Update the energy used
+			m_fCloakEnergyUsed += g_cvarCloakCostPerSecond.GetFloat() * GetUpdateDelta();
+			break;
+		}
+
+		case CLOAK_STATE_RAMPDOWN:
+		{
+			// Make sure the user flags are set properly
+			uint32 dwUserFlags = g_pLTServer->GetObjectUserFlags(m_hObject);
+			g_pLTServer->SetObjectUserFlags(m_hObject, dwUserFlags | USRFLG_CHAR_CLOAKED);
+
+			// Get the time difference
+			LTFLOAT fTimeDelta = g_pLTServer->GetTime() - m_fCloakStartTime;
+			LTFLOAT fDestAlpha = (fTimeDelta / CLOAK_RAMPDOWN_TIME);
+
+			// Get the color of our character 
+			LTFLOAT r, g, b, a;
+			g_pLTServer->GetObjectColor(m_hObject, &r, &g, &b, &a);
+
+			// Change states if needed
+			if(fDestAlpha > 1.0f)
+			{
+				m_nCloakState = CLOAK_STATE_INACTIVE;
+				fDestAlpha = 1.0f;
+			}
+
+			if(g_cvarOldCloak.GetFloat() == 0.0f)
+			{
+				r = (1.0f - (fTimeDelta / CLOAK_RAMPUP_TIME)) * 0.37f;
+
+				if(fDestAlpha > 1.0f)
+					r = 1.0f;
+			}
+
+			// Fade him out
+			g_pLTServer->SetObjectColor(m_hObject, r, g, b, fDestAlpha);
+			break;
+		}
+	}
+
+	// Ok update the energy pool
+	if(m_fCloakEnergyUsed >= 1.0f)
+	{
+		DecrementPredatorEnergy((int)m_fCloakEnergyUsed);
+
+		m_fCloakEnergyUsed -= (int)m_fCloakEnergyUsed;
+
+		// Now check if there is any energy left
+		if(GetPredatorEnergy() == 0)
+			ForceCloakOff();
+	}
+}
+
+#else
+
 void CCharacter::UpdateCloakEffect() 
 { 
 	if (m_cmMovement.IsInLiquidContainer(CM_CONTAINER_LOWER))
@@ -6247,6 +6504,7 @@ void CCharacter::UpdateCloakEffect()
 			ForceCloakOff();
 	}
 }
+#endif
 
 // ----------------------------------------------------------------------- //
 //

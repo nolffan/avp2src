@@ -91,8 +91,9 @@ GetMOTDOpPtr			GSClient_gGetMOTDOp;
 // Prototypes...
 
 void GSCM_CallBackFunction(GServerList pServerList, int nMsg, void* pInstance, void* pParam1, void* pParam2);
-void GetAVP2ServersOpCompletion(AsyncOpPtr theOp, CGameSpyClientMgr* pGameSpyClientMgr);
-void GetVersionOpCompletion(AsyncOpPtr theOp, CGameSpyClientMgr* pGameSpyClientMgr);
+// (static: the shipped object has both as local symbols)
+static void GetAVP2ServersOpCompletion(AsyncOpPtr theOp, CGameSpyClientMgr* pGameSpyClientMgr);
+static void GetVersionOpCompletion(AsyncOpPtr theOp, CGameSpyClientMgr* pGameSpyClientMgr);
 
 
 // Functions...

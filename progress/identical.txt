@@ -13823,6 +13823,7 @@ CShell.dll	sub_101324f0
 CShell.dll	sub_10132560
 CShell.dll	sub_101325c0
 CShell.dll	sub_101325f0
+CShell.dll	sub_10132620
 CShell.dll	sub_101327f0
 CShell.dll	sub_10132850
 CShell.dll	sub_10132970
@@ -15681,6 +15682,7 @@ LithTrackMgrClient	?ClipFont@LithSystemFont@@MAEIAAVLTRect@@@Z
 LithTrackMgrClient	?Command_Camera@LithTrackMgr@@AAEXHPAPAD@Z
 LithTrackMgrClient	?Command_Cursor@LithTrackMgr@@AAEXHPAPAD@Z
 LithTrackMgrClient	?Command_EditModeOff@LithTrackMgr@@AAEXXZ
+LithTrackMgrClient	?Command_EditModeOn@LithTrackMgr@@AAEXXZ
 LithTrackMgrClient	?Command_Font@LithTrackMgr@@AAEXHPAPAD@Z
 LithTrackMgrClient	?Command_Key@LithTrackMgr@@AAEXHPAPAD@Z
 LithTrackMgrClient	?Command_Track@LithTrackMgr@@AAEXHPAPAD@Z
@@ -18065,7 +18067,6 @@ Object.lto	sub_100851a0
 Object.lto	sub_100851c0
 Object.lto	sub_100851d0
 Object.lto	sub_10085240
-Object.lto	sub_100852e0
 Object.lto	sub_100852f0
 Object.lto	sub_10085310
 Object.lto	sub_100853c0
@@ -19737,6 +19738,7 @@ Object.lto	sub_100e6190
 Object.lto	sub_100e6210
 Object.lto	sub_100e72f0
 Object.lto	sub_100e7300
+Object.lto	sub_100e7390
 Object.lto	sub_100e73a0
 Object.lto	sub_100e7470
 Object.lto	sub_100e74d0
@@ -21884,6 +21886,8 @@ Object.lto	sub_10170330
 Object.lto	sub_10170340
 Object.lto	sub_10170360
 Object.lto	sub_10170370
+Object.lto	sub_10170600
+Object.lto	sub_10170610
 Object.lto	sub_101711e0
 Object.lto	sub_10171200
 Object.lto	sub_10171220
@@ -21896,6 +21900,7 @@ Object.lto	sub_101719b0
 Object.lto	sub_10171a60
 Object.lto	sub_10171a70
 Object.lto	sub_10171e50
+Object.lto	sub_10172090
 Object.lto	sub_101728c0
 Object.lto	sub_10172b80
 Object.lto	sub_10172ba0
@@ -21937,6 +21942,7 @@ Object.lto	sub_10177820
 Object.lto	sub_10177870
 Object.lto	sub_10177b60
 Object.lto	sub_10177db0
+Object.lto	sub_10177ea0
 Object.lto	sub_101783f0
 Object.lto	sub_10178450
 Object.lto	sub_101785d0
@@ -22000,8 +22006,12 @@ Object.lto	sub_1017c540
 Object.lto	sub_1017c5b0
 Object.lto	sub_1017c6d0
 Object.lto	sub_1017c740
+Object.lto	sub_1017c840
+Object.lto	sub_1017cad0
 Object.lto	sub_1017cc90
 Object.lto	sub_1017cd30
+Object.lto	sub_1017cde0
+Object.lto	sub_1017ce30
 Object.lto	sub_1017ce80
 Object.lto	sub_1017cfb0
 Object.lto	sub_1017d020
@@ -22010,6 +22020,8 @@ Object.lto	sub_1017d0f0
 Object.lto	sub_1017d160
 Object.lto	sub_1017d250
 Object.lto	sub_1017d480
+Object.lto	sub_1017d4d0
+Object.lto	sub_1017d9f0
 Object.lto	sub_1017e510
 Object.lto	sub_1017e5c0
 Object.lto	sub_1017e670
@@ -22022,6 +22034,8 @@ Object.lto	sub_1017ed20
 Object.lto	sub_1017eec0
 Object.lto	sub_1017f0d0
 Object.lto	sub_1017f1a0
+Object.lto	sub_1017f380
+Object.lto	sub_1017f730
 Object.lto	sub_1017f900
 Object.lto	sub_1017fca0
 Object.lto	sub_1017fde0
@@ -26406,6 +26420,8 @@ PHCShell.dll	sub_10056c60
 PHCShell.dll	sub_10056cc0
 PHCShell.dll	sub_10056d80
 PHCShell.dll	sub_10056ef0
+PHCShell.dll	sub_10056f50
+PHCShell.dll	sub_10057050
 PHCShell.dll	sub_10057150
 PHCShell.dll	sub_100575f0
 PHCShell.dll	sub_10057790
@@ -26415,6 +26431,8 @@ PHCShell.dll	sub_10057860
 PHCShell.dll	sub_100578b0
 PHCShell.dll	sub_10057910
 PHCShell.dll	sub_10057a80
+PHCShell.dll	sub_10057c70
+PHCShell.dll	sub_10057d70
 PHCShell.dll	sub_10057e70
 PHCShell.dll	sub_10058310
 PHCShell.dll	sub_100583b0
@@ -27385,6 +27403,7 @@ PHCShell.dll	sub_10098e20
 PHCShell.dll	sub_10098e60
 PHCShell.dll	sub_10099000
 PHCShell.dll	sub_10099190
+PHCShell.dll	sub_100993b0
 PHCShell.dll	sub_10099660
 PHCShell.dll	sub_10099980
 PHCShell.dll	sub_10099a40
@@ -27395,6 +27414,7 @@ PHCShell.dll	sub_1009ad90
 PHCShell.dll	sub_1009ade0
 PHCShell.dll	sub_1009aec0
 PHCShell.dll	sub_1009b370
+PHCShell.dll	sub_1009b440
 PHCShell.dll	sub_1009b760
 PHCShell.dll	sub_1009b880
 PHCShell.dll	sub_1009bb60
@@ -27781,6 +27801,7 @@ PHCShell.dll	sub_100b1ff0
 PHCShell.dll	sub_100b2010
 PHCShell.dll	sub_100b2170
 PHCShell.dll	sub_100b2310
+PHCShell.dll	sub_100b2350
 PHCShell.dll	sub_100b26e0
 PHCShell.dll	sub_100b2710
 PHCShell.dll	sub_100b2800
@@ -27828,6 +27849,7 @@ PHCShell.dll	sub_100b4e90
 PHCShell.dll	sub_100b4fc0
 PHCShell.dll	sub_100b52e0
 PHCShell.dll	sub_100b5500
+PHCShell.dll	sub_100b5720
 PHCShell.dll	sub_100b5940
 PHCShell.dll	sub_100b5980
 PHCShell.dll	sub_100b6560
@@ -28604,6 +28626,7 @@ PHCShell.dll	sub_100f4160
 PHCShell.dll	sub_100f41f0
 PHCShell.dll	sub_100f4230
 PHCShell.dll	sub_100f4690
+PHCShell.dll	sub_100f47b0
 PHCShell.dll	sub_100f51d0
 PHCShell.dll	sub_100f5200
 PHCShell.dll	sub_100f5230
@@ -29468,6 +29491,7 @@ PHCShell.dll	sub_10136620
 PHCShell.dll	sub_10136650
 PHCShell.dll	sub_10136680
 PHCShell.dll	sub_101366b0
+PHCShell.dll	sub_101366e0
 PHCShell.dll	sub_10136700
 PHCShell.dll	sub_10136750
 PHCShell.dll	sub_10136770
@@ -29746,6 +29770,7 @@ PHCShell.dll	sub_101409a0
 PHCShell.dll	sub_10140a10
 PHCShell.dll	sub_10140a70
 PHCShell.dll	sub_10140aa0
+PHCShell.dll	sub_10140ad0
 PHCShell.dll	sub_10140ca0
 PHCShell.dll	sub_10140d00
 PHCShell.dll	sub_10140e20
@@ -30590,6 +30615,7 @@ PHObject.lto	sub_10023080
 PHObject.lto	sub_10023320
 PHObject.lto	sub_100233b0
 PHObject.lto	sub_100233d0
+PHObject.lto	sub_100235c0
 PHObject.lto	sub_100235d0
 PHObject.lto	sub_10023700
 PHObject.lto	sub_100238b0
@@ -30656,7 +30682,6 @@ PHObject.lto	sub_10025670
 PHObject.lto	sub_10025700
 PHObject.lto	sub_10025720
 PHObject.lto	sub_100257a0
-PHObject.lto	sub_10026880
 PHObject.lto	sub_10026890
 PHObject.lto	sub_10026960
 PHObject.lto	sub_100269c0
@@ -30936,7 +30961,6 @@ PHObject.lto	sub_10038a80
 PHObject.lto	sub_10038d90
 PHObject.lto	sub_10038db0
 PHObject.lto	sub_10038e00
-PHObject.lto	sub_10039190
 PHObject.lto	sub_100391a0
 PHObject.lto	sub_10039590
 PHObject.lto	sub_100395b0
@@ -31530,6 +31554,7 @@ PHObject.lto	sub_100575c0
 PHObject.lto	sub_100575e0
 PHObject.lto	sub_100577d0
 PHObject.lto	sub_100577f0
+PHObject.lto	sub_10057800
 PHObject.lto	sub_100579d0
 PHObject.lto	sub_100579f0
 PHObject.lto	sub_10057af0
@@ -32239,6 +32264,7 @@ PHObject.lto	sub_100894d0
 PHObject.lto	sub_10089580
 PHObject.lto	sub_10089630
 PHObject.lto	sub_100896e0
+PHObject.lto	sub_10089910
 PHObject.lto	sub_1008a980
 PHObject.lto	sub_1008aae0
 PHObject.lto	sub_1008b470
@@ -32251,6 +32277,7 @@ PHObject.lto	sub_1008cc30
 PHObject.lto	sub_1008cdf0
 PHObject.lto	sub_1008ce20
 PHObject.lto	sub_1008cfb0
+PHObject.lto	sub_1008d040
 PHObject.lto	sub_1008d8f0
 PHObject.lto	sub_1008d9b0
 PHObject.lto	sub_1008e8c0
@@ -32698,6 +32725,7 @@ PHObject.lto	sub_100a7900
 PHObject.lto	sub_100a7930
 PHObject.lto	sub_100a7960
 PHObject.lto	sub_100a7980
+PHObject.lto	sub_100a7b80
 PHObject.lto	sub_100a8620
 PHObject.lto	sub_100a8650
 PHObject.lto	sub_100a8b30
@@ -32713,6 +32741,7 @@ PHObject.lto	sub_100a9d30
 PHObject.lto	sub_100a9e30
 PHObject.lto	sub_100aa3a0
 PHObject.lto	sub_100aa4c0
+PHObject.lto	sub_100aa920
 PHObject.lto	sub_100ab490
 PHObject.lto	sub_100ab6b0
 PHObject.lto	sub_100ab7b0
@@ -32789,6 +32818,48 @@ PHObject.lto	sub_100b2400
 PHObject.lto	sub_100b24c0
 PHObject.lto	sub_100b2590
 PHObject.lto	sub_100b2630
+PHObject.lto	sub_100b28c0
+PHObject.lto	sub_100b28d0
+PHObject.lto	sub_100b28f0
+PHObject.lto	sub_100b2900
+PHObject.lto	sub_100b2920
+PHObject.lto	sub_100b2930
+PHObject.lto	sub_100b2950
+PHObject.lto	sub_100b2960
+PHObject.lto	sub_100b2980
+PHObject.lto	sub_100b2990
+PHObject.lto	sub_100b29b0
+PHObject.lto	sub_100b29c0
+PHObject.lto	sub_100b29e0
+PHObject.lto	sub_100b29f0
+PHObject.lto	sub_100b2a10
+PHObject.lto	sub_100b2a20
+PHObject.lto	sub_100b2a40
+PHObject.lto	sub_100b2a50
+PHObject.lto	sub_100b2a70
+PHObject.lto	sub_100b2a80
+PHObject.lto	sub_100b2aa0
+PHObject.lto	sub_100b2ab0
+PHObject.lto	sub_100b2ad0
+PHObject.lto	sub_100b2ae0
+PHObject.lto	sub_100b2b00
+PHObject.lto	sub_100b2b10
+PHObject.lto	sub_100b2b30
+PHObject.lto	sub_100b2b40
+PHObject.lto	sub_100b2b60
+PHObject.lto	sub_100b2b70
+PHObject.lto	sub_100b2b90
+PHObject.lto	sub_100b2ba0
+PHObject.lto	sub_100b2bc0
+PHObject.lto	sub_100b2bd0
+PHObject.lto	sub_100b2bf0
+PHObject.lto	sub_100b2c00
+PHObject.lto	sub_100b2c20
+PHObject.lto	sub_100b2c30
+PHObject.lto	sub_100b2c50
+PHObject.lto	sub_100b2c60
+PHObject.lto	sub_100b2c80
+PHObject.lto	sub_100b2c90
 PHObject.lto	sub_100b2f20
 PHObject.lto	sub_100b2f30
 PHObject.lto	sub_100b3b00
@@ -32815,6 +32886,7 @@ PHObject.lto	sub_100b6e00
 PHObject.lto	sub_100b6e50
 PHObject.lto	sub_100b6ea0
 PHObject.lto	sub_100b6f30
+PHObject.lto	sub_100b6fe0
 PHObject.lto	sub_100b7c80
 PHObject.lto	sub_100b7d40
 PHObject.lto	sub_100b7f50
@@ -32884,6 +32956,7 @@ PHObject.lto	sub_100bdf60
 PHObject.lto	sub_100be020
 PHObject.lto	sub_100be300
 PHObject.lto	sub_100be3c0
+PHObject.lto	sub_100be470
 PHObject.lto	sub_100beb70
 PHObject.lto	sub_100bebf0
 PHObject.lto	sub_100becb0
@@ -33138,6 +33211,7 @@ PHObject.lto	sub_100d5e30
 PHObject.lto	sub_100d5ea0
 PHObject.lto	sub_100d5ef0
 PHObject.lto	sub_100d5f40
+PHObject.lto	sub_100d6090
 PHObject.lto	sub_100d6aa0
 PHObject.lto	sub_100d6b20
 PHObject.lto	sub_100d6c90
@@ -34803,6 +34877,7 @@ PHObject.lto	sub_10153c90
 PHObject.lto	sub_10153cf0
 PHObject.lto	sub_10153d50
 PHObject.lto	sub_10153da0
+PHObject.lto	sub_10153db0
 PHObject.lto	sub_10153dd0
 PHObject.lto	sub_10153e00
 PHObject.lto	sub_10153e50
@@ -34849,6 +34924,7 @@ PHObject.lto	sub_10154d00
 PHObject.lto	sub_10154d80
 PHObject.lto	sub_10154db0
 PHObject.lto	sub_10154de0
+PHObject.lto	sub_10154e10
 PHObject.lto	sub_10154e30
 PHObject.lto	sub_10154e80
 PHObject.lto	sub_10154ea0
@@ -34877,6 +34953,7 @@ PHObject.lto	sub_10155340
 PHObject.lto	sub_10155350
 PHObject.lto	sub_10155550
 PHObject.lto	sub_101555a0
+PHObject.lto	sub_10155900
 PHObject.lto	sub_101559b0
 PHObject.lto	sub_10155b60
 PHObject.lto	sub_10155b90
@@ -34905,6 +34982,7 @@ PHObject.lto	sub_101561d0
 PHObject.lto	sub_101563c0
 PHObject.lto	sub_101563e0
 PHObject.lto	sub_101565c0
+PHObject.lto	sub_10156660
 PHObject.lto	sub_10156790
 PHObject.lto	sub_10156890
 PHObject.lto	sub_10156d40
@@ -34920,10 +34998,12 @@ PHObject.lto	sub_10157130
 PHObject.lto	sub_10157190
 PHObject.lto	sub_101571f0
 PHObject.lto	sub_101574b0
+PHObject.lto	sub_101575b0
 PHObject.lto	sub_10157640
 PHObject.lto	sub_10157700
 PHObject.lto	sub_10157760
 PHObject.lto	sub_101578a0
+PHObject.lto	sub_101578d0
 PHObject.lto	sub_10157a20
 PHObject.lto	sub_10157ae0
 PHObject.lto	sub_10157e40
@@ -34935,6 +35015,7 @@ PHObject.lto	sub_10157f90
 PHObject.lto	sub_10157fe0
 PHObject.lto	sub_10158010
 PHObject.lto	sub_10158040
+PHObject.lto	sub_10158070
 PHObject.lto	sub_10158180
 PHObject.lto	sub_10158200
 PHObject.lto	sub_101585c0
@@ -37684,6 +37765,7 @@ PHObject.lto	sub_101f80e0
 PHObject.lto	sub_101f81d0
 PHObject.lto	sub_101f8220
 PHObject.lto	sub_101f8250
+PHObject.lto	sub_101f8260
 PHObject.lto	sub_101f8270
 PHObject.lto	sub_101f8290
 PHObject.lto	sub_101f8660
@@ -37848,6 +37930,7 @@ PHObject.lto	sub_101fd560
 PHObject.lto	sub_101fd7b0
 PHObject.lto	sub_101fd7f0
 PHObject.lto	sub_101fd830
+PHObject.lto	sub_101fd860
 PHObject.lto	sub_101fdc70
 PHObject.lto	sub_101fddc0
 PHObject.lto	sub_101fde70

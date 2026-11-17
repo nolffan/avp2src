@@ -272,7 +272,11 @@ LTBOOL CMultiFile_FILE::IsEOF()
 {
 	if(!m_pFile) return LTFALSE;
 
-	return feof(m_pFile) ? LTTRUE : LTFALSE;
+	// The shipped code reads the flag through a char: a movsx of its low
+	// byte (PHCShell.dll 0x101366e0).
+	char bEOF = feof(m_pFile);
+	if(bEOF) return LTTRUE;
+	return LTFALSE;
 }
 
 void CMultiFile_FILE::Seek(uint32 nOffset, int nOrigin)

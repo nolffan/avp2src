@@ -28,6 +28,12 @@
 //
 // ----------------------------------------------------------------------- //
 
+// NEAR (637 of 675 bytes): the shipped loop over the new polygon keeps
+// j + 1 and j * 4 as two induction variables and spills 'this' and
+// nVerts. Ours keeps j and nVerts in registers. The frame is 4 bytes
+// smaller (the nVerts slot). The dot product order, the local CPolygon,
+// the interpolation and the copy are as shipped. Tried: one 'i' for both
+// loops, m_nVerts in the modulo.
 LTBOOL CPolygon::Clip(LTPlane* pPlane, LTFLOAT fEpsilon)
 {
 	int anCounts[5];
@@ -37,14 +43,19 @@ LTBOOL CPolygon::Clip(LTPlane* pPlane, LTFLOAT fEpsilon)
 	anCounts[3] = 0;
 	anCounts[4] = 0;
 
-	LTFLOAT afDists[POLYGON_MAX_VERTS + 1];
-	int anSides[POLYGON_MAX_VERTS + 1];
+	LTFLOAT afDists[POLYGON_MAX_VERTS];
+	int anSides[POLYGON_MAX_VERTS];
+
+	int nVerts = m_nVerts;
 
 	int i;
-	for (i = 0; i < m_nVerts; i++)
+	for (i = 0; i < nVerts; i++)
 	{
 		LTVector vVert = m_Verts[i];
-		LTFLOAT fDist = vVert.y*pPlane->m_Normal.y + vVert.x*pPlane->m_Normal.x + vVert.z*pPlane->m_Normal.z - pPlane->m_Dist;
+		LTFLOAT fDist = vVert.y*pPlane->m_Normal.y;
+		fDist += vVert.x*pPlane->m_Normal.x;
+		fDist += vVert.z*pPlane->m_Normal.z;
+		fDist -= pPlane->m_Dist;
 		afDists[i] = fDist;
 
 		if (fDist > fEpsilon)
@@ -69,38 +80,39 @@ LTBOOL CPolygon::Clip(LTPlane* pPlane, LTFLOAT fEpsilon)
 	if (!anCounts[SIDE_FRONT]) return LTFALSE;
 	if (!anCounts[SIDE_BACK]) return LTTRUE;
 
-	LTVector aNewVerts[POLYGON_MAX_VERTS];
-	int nNewVerts = 0;
+	CPolygon newPoly;
+	newPoly.m_nVerts = 0;
 
-	for (i = 0; i < m_nVerts; i++)
+	for (int j = 0; j < nVerts; j++)
 	{
-		LTVector* pVert = &m_Verts[i];
+		LTVector* pVert = &m_Verts[j];
 
-		if (anSides[i] == SIDE_ON)
+		if (anSides[j] == SIDE_ON)
 		{
-			aNewVerts[nNewVerts++] = *pVert;
+			newPoly.m_Verts[newPoly.m_nVerts++] = *pVert;
 			continue;
 		}
 
-		if (anSides[i] == SIDE_FRONT)
+		if (anSides[j] == SIDE_FRONT)
 		{
-			aNewVerts[nNewVerts++] = *pVert;
+			newPoly.m_Verts[newPoly.m_nVerts++] = *pVert;
 		}
 
-		int iNext = (i + 1) % m_nVerts;
-		if (anSides[iNext] == SIDE_ON || anSides[iNext] == anSides[i]) continue;
+		int iNext = (j + 1) % nVerts;
+		if (anSides[iNext] == SIDE_ON || anSides[iNext] == anSides[j]) continue;
 
-		LTFLOAT fT = afDists[i] / (afDists[i] - afDists[iNext]);
-		LTVector vVert = *pVert;
-		aNewVerts[nNewVerts++] = vVert + (m_Verts[iNext] - vVert) * fT;
+		LTFLOAT fDist = afDists[j];
+		LTFLOAT fT = fDist / (fDist - afDists[iNext]);
+		newPoly.m_Verts[newPoly.m_nVerts++] = *pVert + (m_Verts[iNext] - *pVert) * fT;
 	}
 
-	if (nNewVerts > 0)
+	if (newPoly.m_nVerts > 0)
 	{
-		memcpy(m_Verts, aNewVerts, nNewVerts * sizeof(LTVector));
+		// (the mask is in the shipped code: a dword copy with no byte tail)
+		memcpy(m_Verts, newPoly.m_Verts, (newPoly.m_nVerts * sizeof(LTVector)) & ~3);
 	}
 
-	m_nVerts = nNewVerts;
+	m_nVerts = newPoly.m_nVerts;
 
 	return LTTRUE;
 }
@@ -118,13 +130,15 @@ void CPolygon::GetBounds(LTVector* pvMin, LTVector* pvMax)
 
 	for (int i = 0; i < m_nVerts; i++)
 	{
-		if (m_Verts[i].x < pvMin->x) pvMin->x = m_Verts[i].x;
-		if (m_Verts[i].y < pvMin->y) pvMin->y = m_Verts[i].y;
-		if (m_Verts[i].z < pvMin->z) pvMin->z = m_Verts[i].z;
+		LTVector* pVert = &m_Verts[i];
 
-		if (m_Verts[i].x > pvMax->x) pvMax->x = m_Verts[i].x;
-		if (m_Verts[i].y > pvMax->y) pvMax->y = m_Verts[i].y;
-		if (m_Verts[i].z > pvMax->z) pvMax->z = m_Verts[i].z;
+		if (pVert->x < pvMin->x) pvMin->x = pVert->x;
+		if (pVert->y < pvMin->y) pvMin->y = pVert->y;
+		if (pVert->z < pvMin->z) pvMin->z = pVert->z;
+
+		if (pVert->x > pvMax->x) pvMax->x = pVert->x;
+		if (pVert->y > pvMax->y) pvMax->y = pVert->y;
+		if (pVert->z > pvMax->z) pvMax->z = pVert->z;
 	}
 }
 

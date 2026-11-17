@@ -1591,8 +1591,15 @@ void CWeaponModel::UpdateFlash(CMuzzleFlashFX* pFlash, int nMuzzle, WeaponState 
 	HCAMERA hCamera = g_pGameClientShell->GetPlayerCamera();
 
 	//otherwise, update the flash
-	if(	fCurTime >= m_fFlashStartTime[nMuzzle] + fFlashDuration ||
-		g_pGameClientShell->GetPlayerState() != PS_ALIVE ||
+	// Two arms that hide the flash: the shipped code puts the hide after
+	// the time test and jumps back to it from the other two tests
+	// (PHCShell.dll 0x100b57bf)
+	if(	fCurTime >= m_fFlashStartTime[nMuzzle] + fFlashDuration )
+	{
+		if( pFlash )
+			pFlash->Hide();
+	}
+	else if( g_pGameClientShell->GetPlayerState() != PS_ALIVE ||
 		CameraMgrFX_VolumeBrushInLiquid(hCamera))
 	{
 		if( pFlash )

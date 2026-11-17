@@ -144,19 +144,30 @@ DBOOL LithTrackMgr::Update()
 
 //---------------------------------------------------------------------------------
 
+// NEAR (560 of 596 bytes before; now 626): the frame (0x64) and the roll
+// third are as shipped. The shipped build inlines every vector
+// constructor and Dot of the yaw and pitch thirds, and so folds the
+// constant axes (vF.Dot(DVector(1,0,0)) becomes vF.x); ours runs out of
+// inline budget there and calls _CVector(float,float,float) and Dot out of
+// line. Tried: the named vectors declared at the top and assigned (this
+// form), "(d + 1.0f) / 2.0f * 180.0f" and "* 0.5f; *= 180.0f" (both fold
+// to one multiply by 90), vF.x in place of the yaw Dot (worse), /Ob2.
+// The inlining-budget class.
 void LithTrackMgr::Rot2Vec(DRotation &rRot, DVector &vAngles)
 {
 	ILTMath *pMath = m_pInterface->GetMathLT();
 	DRotation rTemp = rRot;
-	DVector vR, vU, vF;
+	DVector vR, vU, vF, vTemp, vUp, vForward;
 
 	// Roll
 	pMath->GetRotationVectors(rTemp, vR, vU, vF);
 
-	DVector vTemp = vF.Cross(DVector(0.0f, 1.0f, 0.0f));
-	DVector vUp = vF.Cross(vTemp);
+	vTemp = vF.Cross(DVector(0.0f, 1.0f, 0.0f));
+	vUp = vF.Cross(vTemp);
 
-	vAngles.z = (vR.Dot(vTemp) + 1.0f) * 0.5f * 180.0f;
+	// (180.0f * (... * 0.5f): the shipped code multiplies by 0.5 and then
+	// by 180; "(d + 1.0f) * 0.5f * 180.0f" folds to one multiply by 90)
+	vAngles.z = 180.0f * ((vR.Dot(vTemp) + 1.0f) * 0.5f);
 	if(vR.Dot(vUp) < 0.0f) vAngles.z = 360.0f - vAngles.z;
 
 	pMath->AlignRotation(rTemp, vF, vUp);
@@ -164,9 +175,9 @@ void LithTrackMgr::Rot2Vec(DRotation &rRot, DVector &vAngles)
 	// Yaw
 	pMath->GetRotationVectors(rTemp, vR, vU, vF);
 
-	DVector vForward = vU.Cross(DVector(1.0f, 0.0f, 0.0f));
+	vForward = vU.Cross(DVector(1.0f, 0.0f, 0.0f));
 
-	vAngles.y = (vF.Dot(vForward) + 1.0f) * 0.5f * 180.0f;
+	vAngles.y = 180.0f * ((vF.Dot(vForward) + 1.0f) * 0.5f);
 	if(vF.Dot(DVector(1.0f, 0.0f, 0.0f)) < 0.0f) vAngles.y = 360.0f - vAngles.y;
 
 	pMath->AlignRotation(rTemp, vForward, vU);
@@ -174,7 +185,7 @@ void LithTrackMgr::Rot2Vec(DRotation &rRot, DVector &vAngles)
 	// Pitch
 	pMath->GetRotationVectors(rTemp, vR, vU, vF);
 
-	vAngles.x = (vF.Dot(DVector(0.0f, 0.0f, 1.0f)) + 1.0f) * 0.5f * 180.0f;
+	vAngles.x = 180.0f * ((vF.Dot(DVector(0.0f, 0.0f, 1.0f)) + 1.0f) * 0.5f);
 	if(vF.Dot(DVector(0.0f, 1.0f, 0.0f)) < 0.0f) vAngles.x = 360.0f - vAngles.x;
 }
 
@@ -366,7 +377,12 @@ void LithTrackMgr::Command_EditModeOn()
 
 		m_dCamera.m_vPos = vPos;
 
-		vAngles *= (180.0f / MATH_PI);
+		// MATH_RADIANS_TO_DEGREES, one axis at a time: its constant
+		// (57.2957795130967f, 0x42652EE1) is one ulp above the quotient
+		// 180.0f / MATH_PI (0x42652EE0).
+		vAngles.x = MATH_RADIANS_TO_DEGREES(vAngles.x);
+		vAngles.y = MATH_RADIANS_TO_DEGREES(vAngles.y);
+		vAngles.z = MATH_RADIANS_TO_DEGREES(vAngles.z);
 
 		m_dCamera.m_fPitch = vAngles.x;
 		m_dCamera.m_fYaw = vAngles.y;
@@ -813,6 +829,10 @@ DBOOL LithTrackMgr::Ext_Height(int nToks, char **szToks, int &nHeight)
 
 //---------------------------------------------------------------------------------
 
+// NEAR (497 of 497 bytes): the shipped code shifts m_nThickness (edx)
+// before m_nSize (eax) for nPos; ours the other way round. Not moved by
+// "nPos = size >> 1; nPos -= thick >> 1", by the operands reversed, or by
+// a local for the half thickness. A scheduling choice.
 DBOOL LithTrackMgr::SetupMouseCursor()
 {
 	if(!m_pInterface) return DFALSE;
@@ -829,7 +849,10 @@ DBOOL LithTrackMgr::SetupMouseCursor()
 	m_dCursor.m_hSurf = m_pInterface->CreateSurface(m_dCursor.m_nSize, m_dCursor.m_nSize);
 	if(!m_dCursor.m_hSurf) return DFALSE;
 
-	m_pInterface->FillRect(m_dCursor.m_hSurf, DNULL, m_pInterface->SetupColor2(1.0f, 1.0f, 1.0f, DFALSE));
+	// (the colour in a local: the shipped code reloads m_pInterface for
+	// FillRect after the SetupColor2 call; the nested call keeps it in edi)
+	HDECOLOR hColor = m_pInterface->SetupColor2(1.0f, 1.0f, 1.0f, DFALSE);
+	m_pInterface->FillRect(m_dCursor.m_hSurf, DNULL, hColor);
 
 	if(m_dCursor.m_nThickness < 1) m_dCursor.m_nThickness = 1;
 	if(m_dCursor.m_nThickness >= m_dCursor.m_nSize) m_dCursor.m_nThickness = m_dCursor.m_nSize - 2;
@@ -972,22 +995,27 @@ void LithTrackMgr::UpdateMouseClicks()
 
 //---------------------------------------------------------------------------------
 
+// NEAR (687 of 717 bytes before; now 707): vDir is assigned, not
+// initialised, so the difference goes through a temporary and a copy, as
+// shipped. What is left is the inlining budget: the shipped build inlines
+// two of the three _CVector::Init calls of the ClientIntersectQuery
+// constructor, ours one (with the vector arithmetic taken out, ours
+// inlines two as well), and so the frame layout differs too.
 void LithTrackMgr::HandleScreenClick()
 {
 	if(!m_pInterface || !m_dCamera.m_hObj || !m_dCtrl.m_bMouse0Clicked) return;
 
 	// Find the point in the world under the cursor
-	DVector vPt;
+	DVector vPt, vPos, vDir;
 	if(m_pInterface->Get3DCameraPt(m_dCamera.m_hObj, m_dCursor.m_nX, m_dCursor.m_nY, &vPt) == LT_OUTSIDE)
 		return;
 
-	DVector vPos;
 	ClientIntersectQuery iq;
 	ClientIntersectInfo ii;
 
 	m_pInterface->GetObjectPos(m_dCamera.m_hObj, &vPos);
 
-	DVector vDir = vPt - vPos;
+	vDir = vPt - vPos;
 	iq.m_From = vPos;
 	vDir *= 1.0f / vDir.Mag();
 	vDir *= 3000.0f;
