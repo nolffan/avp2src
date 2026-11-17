@@ -2229,30 +2229,14 @@
 /ALTERNATENAME:??0SharedTextureK@@QAE@XZ=??0SharedTextureQ517@@QAE@XZ
 # 0x4304f0 I
 /ALTERNATENAME:??0SharedTextureS@@QAE@XZ=??0SharedTextureQ517@@QAE@XZ
-# 0x404fb0 D
-/ALTERNATENAME:?AllocVoid@CFileBank@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
-# 0x416060 D
-/ALTERNATENAME:?AllocVoid@CHashElementBankQ532@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ
 # 0x46b200 Dj
 /ALTERNATENAME:?AllocVoid@CNetBank@@UAEPAXXZ=?Allocate@CNetBankQ11@@QAEPAVCNetSentPacketQ11@@XZ
-# 0x416060 D
-/ALTERNATENAME:?AllocVoid@CXferFileBank@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ
-# 0x416060 D
-/ALTERNATENAME:?AllocVoid@CXferFileBankQ464@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCObjSprite@@@@UAEPAXXZ
 # 0x404fb0 I
 /ALTERNATENAME:?Allocate@CHashElementBank@@QAEPAVCHashElement@@XZ=?AllocVoid@?$CObjectBank@VCBankElem70@@@@UAEPAXXZ
 # 0x46b5c0 N
 /ALTERNATENAME:?Allocate@CNetBankAllocView@@QAEPAVCNetSentPacketView@@XZ=?Allocate@CNetBankQ11@@QAEPAVCNetSentPacketQ11@@XZ
 # 0x468ca0 I
 /ALTERNATENAME:?Disconnect@CNetMgrView@@QAEXKK@Z=?Disconnect@CNetMgr@@QAEXPAVNetConnection@@K@Z
-# 0x416070 D
-/ALTERNATENAME:?FreeVoid@CFileBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x416070 D
-/ALTERNATENAME:?FreeVoid@CHashElementBankQ532@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x416070 D
-/ALTERNATENAME:?FreeVoid@CXferFileBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x416070 D
-/ALTERNATENAME:?FreeVoid@CXferFileBankQ464@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
 # 0x4133c0 I
 /ALTERNATENAME:?GetMiscCRCQ556@CClientMgrQ2B@@QAEKPBDAAK@Z=?CreateStringCRC@CClientMgrCRCQ558@@QAEKPADPAK@Z
 # 0x468d80 I
@@ -2281,10 +2265,6 @@
 /ALTERNATENAME:?Sub410e40Q556@CClientMgrQ2B@@QAEXXZ=?StartPeerAuthQ548@CCmgClientMgr@@QAEXXZ
 # 0x4a50c0 q
 /ALTERNATENAME:?_AllocateTArray@?$TCPQueryArrayT@VTCPQueryResponse@@@@QAEPAVTCPQueryResponse@@KPAVLAlloc@@@Z=?BaseNew@@YAPAVTCPQueryResponseC4@@PAVLAlloc@@PAV1@K@Z
-# 0x40d020 I
-/ALTERNATENAME:?_DeleteAndDestroyArray@CWorldArrayPtrsView@@QAEXPAVLAlloc@@K@Z=?_DeleteAndDestroyArray@?$CMoArray@EVDefaultCache@@@@AAEXPAVLAlloc@@K@Z
-# 0x4330a0 Nq
-/ALTERNATENAME:?_InitArray@CMsgPacketData@@QAEXK@Z=?_InitArray@?$CMoArray@KVDefaultCache@@@@AAEXK@Z
 # 0x49fa20 D
 /ALTERNATENAME:?_v5c@CCmgSoundMgr@@UAEXXZ=?GetFilterParamName@CSoundMgr@@QAEKKPBDPAPBD@Z
 # 0x49f320 D
