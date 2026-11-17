@@ -112,6 +112,11 @@
 #define COMMAND_ID_TURRET			78	// MID_PLAYER_TURRETS: pick up or put down a turret
 #endif
 
+#ifdef AVP2SRC_MODERN
+// M-25 (docs/MODERN.md): open or close the console (both games)
+#define COMMAND_ID_TOGGLE_CONSOLE	79
+#endif
+
 // Add new commands here 77-98 available...
 
 

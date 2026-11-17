@@ -1,0 +1,82 @@
+# The modern build's console (docs/MODERN.md, M-25): in play, ~ opens it,
+# GameTime two times 3 s apart (the game is paused), Help, GetPos, a cheat,
+# Cheats, Page Up, recall, close; Shift+Esc opens it, Esc closes it
+# (make test TEST_GAME=out/avp2-modern-release TEST_WHICH=ph
+# TEST_SCRIPT=build/playtest-ph-console.txt)
+window 120
+wait 20
+mclick 128 175
+wait 3
+mclick 100 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 6
+shot play
+key grave
+wait 2
+shot open
+type GameTime
+key Return
+wait 3
+type GameTime
+key Return
+wait 1
+shot gametime-paused
+type Help
+key Return
+wait 1
+shot help
+type GetPos
+key Return
+wait 1
+shot getpos
+type mpcanthurtme
+key Return
+wait 1
+shot cheat
+type Cheats
+key Return
+wait 1
+shot cheats
+key Prior
+wait 1
+shot scrolled
+key Next
+key Up
+wait 1
+shot recall
+key Escape
+wait 1
+key grave
+wait 1
+type GetPos
+key Return
+wait 1
+shot getpos2
+key grave
+wait 3
+shot closed
+down Shift_L
+key Escape
+up Shift_L
+wait 2
+shot shiftesc
+type GameTime
+key Return
+wait 1
+shot shiftesc-gametime
+key Escape
+wait 2
+shot closed2

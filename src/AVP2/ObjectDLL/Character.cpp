@@ -4290,7 +4290,11 @@ LTBOOL CCharacter::PlayDialogue(DWORD dwID, CinematicTrigger* pCinematic,
 
 	char strID[12];
 	_snprintf(strID,12,"%d",dwID);
+#ifdef AVP2SRC_MODERN
+	strID[11] = 0;	// M-B87 (RETAIL_BUGS.md): RETAIL BUG: strID[12], one past the end
+#else
 	strID[12] = 0;
+#endif
 
 	PlayDialogueSound( FullSoundName(strID).c_str() );
 

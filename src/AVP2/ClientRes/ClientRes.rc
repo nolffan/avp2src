@@ -4796,6 +4796,14 @@ BEGIN
     IDS_M9_WINDOWED         "Window"
     IDS_M9_BORDERLESS       "Borderless window"
 END
+
+// M-25, the console: the name in Customize Controls, and the name of the
+// action (the console's "bind" and the profile use it: do not translate)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_CONTROL_M25_CONSOLE "Console"
+    IDS_ACTION_M25_CONSOLE  "ToggleConsole"
+END
 #endif
 
 #endif    // English (U.S.) resources

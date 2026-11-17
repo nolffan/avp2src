@@ -279,6 +279,14 @@ vtable ??_7CLTClientQ404@@6B@ 0x004c6530  # compiled with 2 slots
     ?UpdateQuery@CLTClient@@QAEKXZ
     ?GetQueryResults@CLTClient@@QAEKAAPAVNetSession@@@Z
     ?EndQuery@CLTClient@@QAEKXZ
+%ifdef AVP2SRC_MODERN
+    # M-25: the modern build's ILTClient additions (iltclient.h), after the
+    # last retail slot; the bodies are in clientconsole.cpp. build.mk gives
+    # --define AVP2SRC_MODERN to mkvtabobj.py in the modern build only.
+    ?SetConsoleOutputFn@CLTClientModern@@QAEKP6AXPAXKHPBD@Z0@Z
+    ?EnumConsoleCommands@CLTClientModern@@QAEKP6AXPAXPBDK@Z0@Z
+    ?SetCommandToggle@CLTClientModern@@QAEKHI@Z
+%endif
 vtable ??_7CLTServer@@6B@ 0x004c8110  # compiled with 125 slots; 79 _purecall where the shipped slot is concrete
     ?StartHMessageWrite@CLTServerWriteView@@QAEPAVILTMessage@@XZ
     ?WriteToMessageFloat@ILTCSBase@@UAEKPAVILTMessage@@M@Z  # the compiled slot, kept over ?WriteToMessageFloat@CLTServer@@QAEKPAVIMessageWrite@@M@Z placed there

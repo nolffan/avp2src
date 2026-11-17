@@ -50,6 +50,9 @@
 #endif
 
 #include "ServerRes.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\object\m25_server.h"	// M-25: the console's messages
+#endif
 
 // ----------------------------------------------------------------------- //
 
@@ -1035,6 +1038,20 @@ void CGameServerShell::OnMessage(HCLIENT hSender, uint8 messageID, HMESSAGEREAD 
 			HandleConsoleCmdMsg(hSender, hMessage);
 		}
 		break;
+#ifdef AVP2SRC_MODERN
+		// M-25: the console (from the local client only: m25_server.h)
+		case MID_M25_CONSOLE_COMMAND :
+		{
+			M25Server_OnConsoleCommand(hSender, hMessage);
+		}
+		break;
+
+		case MID_M25_SETPOS :
+		{
+			M25Server_OnSetPos(hSender, hMessage);
+		}
+		break;
+#endif
 
 		case MID_SFX_MESSAGE:
 		{
@@ -2890,6 +2907,12 @@ void CGameServerShell::HandleConsoleCmdMsg(HCLIENT hSender, HMESSAGEREAD hMessag
 #ifdef PRIMAL_HUNT
 	// PH: the local client's commands only (0x1005abea)
 	if (g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL)
+#else
+#ifdef AVP2SRC_MODERN
+	// M-B86 (RETAIL_BUGS.md): RETAIL BUG: AvP2 ran the command of each
+	// client; the local client's commands only, as Primal Hunt
+	if (g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL)
+#endif
 #endif
 	if (m_CmdMgr.Process(g_pLTServer->GetStringData(hMsg)))
 	{
@@ -2916,6 +2939,11 @@ void CGameServerShell::HandleConsoleTriggerMsg(HCLIENT hSender, HMESSAGEREAD hMe
 {
 	CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->GetClientUserData(hSender);
 	if (!pPlayer) return;
+#ifdef AVP2SRC_MODERN
+	// M-B86 (RETAIL_BUGS.md): RETAIL BUG: the trigger of each client was
+	// sent; the local client's triggers only
+	if (!(g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL)) return;
+#endif
 
 		// Read the message data...
 

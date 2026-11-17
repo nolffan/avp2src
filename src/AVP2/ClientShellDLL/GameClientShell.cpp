@@ -78,6 +78,8 @@
 #include "..\..\modern\cshell\m19_netposlog.h"	// M-19: the measuring aid (debug)
 #define M9_WINDOW_IMPLEMENTATION
 #include "..\..\modern\cshell\m9_window.h"		// M-9: the window modes
+#define M25_CONSOLE_IMPLEMENTATION
+#include "..\..\modern\cshell\m25_console.h"		// M-25: the console
 #endif
 
 static _timeb g_StartTimeB;
@@ -1410,6 +1412,7 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	*pAppGuid = AVP2GUID;
 #ifdef AVP2SRC_MODERN
 	M15_Install();	// M-15, M-16: the menus and the HUD scaled (m15_uiscale.h)
+	M25Console_Init();	// M-25: the console (before the profile binds its key)
 #endif
 
 	char strTimeDiff[64];
@@ -2026,6 +2029,7 @@ void CGameClientShell::OnEngineTerm()
 
 	m_Music.Term();
 #ifdef AVP2SRC_MODERN
+	M25Console_Term();	// M-25: the engine calls this DLL no more
 	M15_Uninstall();	// M-15, M-16: the engine's own surface functions back
 #endif
 }
@@ -3295,6 +3299,11 @@ void CGameClientShell::ChangeWeapon(DBYTE nWeaponId, LTBOOL bForce, LTBOOL bPlay
 
 void CGameClientShell::OnCommandOn(int command)
 {
+#ifdef AVP2SRC_MODERN
+	// M-25: the console's command, and no game command while it is open
+	if (M25Console_OnCommandOn(command))
+		return;
+#endif
 	// Make sure we're not in a cinematic
 	if ((command != COMMAND_ID_ACTIVATE) && (g_pCameraMgr->GetCameraActive(m_hCinematicCamera)))
 		return;
@@ -3775,6 +3784,11 @@ void CGameClientShell::OnCommandOff(int command)
 
 void CGameClientShell::OnKeyDown(int key, int rep)
 {
+#ifdef AVP2SRC_MODERN
+	// M-25: the console's key opens it; while it is open, it gets each key
+	if (M25Console_OnKeyDown(key, rep))
+		return;
+#endif
 	if (IsMultiplayerGame())
 	{
 		if (VK_F1 == key)
@@ -3970,6 +3984,10 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 
 void CGameClientShell::OnKeyUp(int key)
 {
+#ifdef AVP2SRC_MODERN
+	if (M25Console_OnKeyUp(key))	// M-25: the console is open
+		return;
+#endif
 	// Let the multiplayer manager handle it...
 	if(IsMultiplayerGame() && !m_InterfaceMgr.GetMessageMgr()->IsEditing())
 	{

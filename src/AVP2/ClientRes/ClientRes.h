@@ -3351,6 +3351,9 @@
 #define IDS_M9_FULLSCREEN               31902
 #define IDS_M9_WINDOWED                 31903
 #define IDS_M9_BORDERLESS               31904
+// M-25, the console (Customize Controls)
+#define IDS_CONTROL_M25_CONSOLE         32000
+#define IDS_ACTION_M25_CONSOLE          32001
 #endif
 // Next default values for new objects
 // 

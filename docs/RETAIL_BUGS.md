@@ -43,7 +43,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - The engine bugs (M-B01..M-B09).
 - The renderer bugs (M-B20..M-B26).
 - The bugs in the client shells and in lithshared (M-B40..M-B63, M-B108).
-- The bugs in the object DLLs and in the shared code (M-B70..M-B85).
+- The bugs in the object DLLs and in the shared code (M-B70..M-B87).
 - The bugs in the launchers and in Launch.dll (M-B100..M-B107).
 
 The controller work found a flare crash. That crash was a reconstruction
@@ -1743,6 +1743,47 @@ positions of its controls while it draws, and is correct.)
 Fixed in the modern build: the callers remove the offsets of the page,
 BaseFolder.cpp and GroupCtrl.cpp; MODERN.md M-B108. (With the scaled page
 of M-15, the offsets are not 0 at any wide screen.)
+
+### A remote client can run commands and triggers on the server
+
+Object.lto and PHObject.lto (`CGameServerShell::HandleConsoleCmdMsg`,
+`HandleConsoleTriggerMsg`, src/AVP2/ObjectDLL/GameServerShell.cpp; we
+did not look up the AvP2 addresses; the Primal Hunt test is at
+PHObject.lto 0x1005abea).
+
+`MID_CONSOLE_COMMAND` (211) carries a string that the server gives to its
+command manager (`CCommandMgr::Process`: messages to the objects of the
+world, `SVAR`). `MID_CONSOLE_TRIGGER` (210) carries an object name and a
+message, which the server sends to the objects of that name. The client
+sends them from its console programs (`Trigger` and `List`, and Primal
+Hunt's `svar`).
+
+AvP2 1.0.9.6 runs the command of each client. Primal Hunt runs it only if
+the client is the local client (`CIF_LOCAL`). Neither game tests the
+client of a trigger. Thus, in a multiplayer game, a player with a changed
+client (or a console string in the config) can send triggers and commands
+to the objects of the server: for example, open doors, or start the end
+of the level.
+
+Fixed in the modern build: the server runs the command and the trigger
+only from the local client (single player, or the player who hosts the
+game), GameServerShell.cpp; MODERN.md M-B86.
+
+### The dialogue ID string is terminated one byte after its end
+
+Object.lto and PHObject.lto (`CCharacter::PlayDialogue`, the version
+with a dialogue ID, src/AVP2/ObjectDLL/Character.cpp; we did not look up
+the addresses).
+
+The function writes the ID into `char strID[12]` with
+`_snprintf(strID, 12, ...)`, then writes `strID[12] = 0`. Index 12 is one
+byte after the end of the array, on the stack. An ID has a maximum of 11
+characters (`%d`), thus `_snprintf` always terminates the string itself. The write
+changes one byte of a different local value or of the padding.
+
+Fixed in the modern build: the terminator goes to `strID[11]`,
+Character.cpp; MODERN.md M-B87. (We found this when we wrote the `Cheats`
+list of the console, M-25: `mpmillertime` goes through this function.)
 
 ## NOLF's bugs AvP2 does not have
 

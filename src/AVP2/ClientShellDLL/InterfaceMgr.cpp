@@ -36,6 +36,7 @@
 #include "..\..\modern\engine\p1_frametime.h"	// M-12: whole milliseconds
 #include "..\..\modern\cshell\m1_widescreen.h"	// M-1, M-2: the bars beside 4:3
 #include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
+#include "..\..\modern\cshell\m25_console.h"	// M-25: the console
 #endif
 #ifdef PRIMAL_HUNT
 #include "TurretInfoMgr.h"
@@ -785,6 +786,9 @@ DBOOL CInterfaceMgr::PostUpdate()
 
 	if (m_eGameState != GS_LOADINGLEVEL && bCanFlipScreen)
 	{
+#ifdef AVP2SRC_MODERN
+		M25Console_Draw();	// M-25: the console, over the frame
+#endif
 		g_pClientDE->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 	}
 
@@ -802,6 +806,12 @@ DBOOL CInterfaceMgr::PostUpdate()
 
 DBOOL CInterfaceMgr::Update()
 {
+#ifdef AVP2SRC_MODERN
+	// M-25: the console holds the game: the copy of the screen, no frame
+	// of the world
+	if (M25Console_Update())
+		return DTRUE;
+#endif
 	// Update based on the game state...
 	DBOOL bHandled = DFALSE;
 	switch (m_eGameState)
@@ -5681,6 +5691,10 @@ void CInterfaceMgr::UpdateActivate(LTVector vPos, LTVector vDir)
 void CInterfaceMgr::OnChar(char c)
 {
 	if (c < ' ') return;
+#ifdef AVP2SRC_MODERN
+	if (M25Console_OnChar(c))	// M-25: the console's edit line
+		return;
+#endif
 	
 	if (m_eGameState == GS_FOLDER)
 	{

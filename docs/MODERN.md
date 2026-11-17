@@ -74,6 +74,7 @@ playable. These items are done:
 - The menus and the HUD scaled to the screen (M-15, M-16).
 - Internet multiplayer through a GameSpy master server, for example the
   OpenSpy server, without WON or a CD key (M-17..M-20).
+- A console in single player (M-25).
 - All the retail bugs in docs/RETAIL_BUGS.md. Each is fixed
   (M-B01..M-B109), or we showed that it does not need a fix (under Done).
 
@@ -146,6 +147,7 @@ items: not implemented yet.
 | M-22 | The launchers stay open while the game runs, so that the Steam overlay and Steam Remote Play work (GitHub issue #5) | done (under Done) |
 | M-23 | No lock of the back buffer before each flip (`LockOnFlip` 0 by default), for a higher frame rate under Wine and Proton (GitHub issue #2) | done (under Done) |
 | M-24 | No wait for the vertical blank in full screen (`VSync` 0 by default): the frame is copied, not flipped, so the frame rate is not locked to the refresh rate | done (under Done) |
+| M-25 | A console in single player, as in nolfsrc (its M-P2-01..M-P2-04, -05, -08, -09, -14, -15): the ~ key or Shift+Esc opens it over the top half of the screen, and the game pauses. It runs console commands and cheat codes. A new ToggleConsole control in Customize Controls. Retail AvP2 has no console that a player can open | done (under Done) |
 
 ## Open middleware
 
@@ -198,7 +200,7 @@ We used these options of the script:
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B85 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing. The user reported this on the first modern build: "the
 high framerate means all the timing is wrong". nolfsrc found the same
@@ -1272,7 +1274,7 @@ checked each from the code, and the games still run (`make modern`, then
 the first Marine mission of AvP2 under Wine). The layout of Primal Hunt
 has the two motion-detector tags, so M-B61 changes nothing with its data.
 
-### Retail-bug fixes: the object DLLs and the shared code (M-B70..M-B85)
+### Retail-bug fixes: the object DLLs and the shared code (M-B70..M-B87)
 
 These are fixes of `RETAIL_BUGS.md` entries in the object DLLs and in the
 code that they share with the client (`src/AVP2/ObjectDLL/`,
@@ -1299,6 +1301,8 @@ The fixes are in Primal Hunt, if the row does not say a different game
 | M-B83 | A turret gun with a full turn of yaw wraps the yaw | `ObjectDLL/TurretGun.cpp` | Code | done |
 | M-B84 | When the target of a facehugger is not a character, its attack does not crash | `ObjectDLL/SimpleAIAlien.cpp` | Code | done |
 | M-B85 | A tracer without a Flare has no flares. It does not get sprite names from the old contents of memory (we found this here) | `Shared/FXButeMgr.cpp` (`TRACERFX::TRACERFX`) | Code. The Standard and Laser tracers have no Flare | done |
+| M-B86 | The server runs `MID_CONSOLE_COMMAND` (its command manager) and `MID_CONSOLE_TRIGGER` (a message to the objects of a name) only from the local client: the player in single player, or the player who hosts the game. AvP2 ran both from each client, Primal Hunt ran the trigger from each client (RETAIL_BUGS.md: "A remote client can run commands and triggers on the server") | `ObjectDLL/GameServerShell.cpp` (`HandleConsoleCmdMsg`, `HandleConsoleTriggerMsg`) | Code. In single player, the client is the local client (the `Trigger` console program still works) | done |
+| M-B87 | The dialogue ID string gets its terminator at its last byte, not one byte after its end (RETAIL_BUGS.md: "The dialogue ID string is terminated one byte after its end") | `ObjectDLL/Character.cpp` (`CCharacter::PlayDialogue`) | Code | done |
 
 **Checked.** The modern builds of the two games compile (`make modern`).
 They play `build/playtest-ph-corporate.txt` to the end (the first Marine
@@ -1542,6 +1546,31 @@ opposite is also true, under the same game names.
   `PLAYTEST_CFG` for `MasterServer`.
 - `gsprobe.py` sends one list request to a master.
 
+### M-25: the console
+
+Retail AvP2 and Primal Hunt have no console that a player can open: the
+~ key does nothing. The engine has a console, but the client shells never
+show it. nolfsrc gave NOLF a console (its M-P2-01..M-P2-15, after the
+NOLF Modernizer). We took its design for the two games. The code is our
+code, for the interface code of AvP2 (`CInterfaceMgr`, the folders, the
+HUD space of M-16). We did not take the big heads (M-P2-10), the trigger
+boxes (M-P2-11) or the speed-run addresses (M-P2-12) of nolfsrc.
+
+The console is in single player only. It does not open in multiplayer,
+during a loading screen, in Customize Controls (a key can wait for a
+control there), when a control of a folder has the input (an edit box),
+in a dialogue, or while the chat line or a message box is open.
+
+| Id | What | Files | Checked | Status |
+|---|---|---|---|---|
+| M-25 | The console (nolfsrc M-P2-01). The ToggleConsole control or Shift+Esc opens it over the top half of the screen (nolfsrc M-P2-15: a keyboard can have a different key to the left of 1). Esc or the control closes it. It shows the console output of the engine and of the game, an edit line with a cursor, the commands typed before (Up, Down) and the lines before (Page Up, Page Down, Home, End; 512 lines). Opened in play, it pauses the game (the server, the sounds and the input, as the pause key does) and shows a copy of the last frame, as the pause screen does: no frame of the world runs, thus the player does not move. Opened in a menu, the menu stays below it. While it is open, it gets each key and each character, and the game gets no command. It is drawn in the HUD space (M-16), thus its text is as large as the HUD text | `src/modern/cshell/m25_console.h`; `GameClientShell.cpp` (`OnEngineInitialized`, `OnEngineTerm`, `OnKeyDown`, `OnKeyUp`, `OnCommandOn`), `InterfaceMgr.cpp` (`OnChar`, `Update`, `PostUpdate`), `InterfaceMgr.h` | Under Xvfb and Wine, in the first Marine mission (AvP2) and the first Corporate mission (Primal Hunt): `build/playtest-avp2-console.txt`, `build/playtest-ph-console.txt`. The ~ key opened the console with the engine output in it. `GameTime` two times, 3 s apart, gave the same time (2.984152): the game was paused. Page Up showed the earlier lines and the note "13 more lines (Page Down)". Up recalled the last command. The ~ key closed it, and the game continued. Shift+Esc opened it, Esc closed it (not the pause menu), and the game time had moved on | done |
+| M-25 (Enter) | Enter runs the line (nolfsrc M-P2-02). A cheat code (CheatMgr.cpp) runs as a cheat, with the cheat sound. Else the client runs the line as a console command. If the first word is not a command of the client (thus a variable, or a command of the server), the client also sends the line to the server (`MID_M25_CONSOLE_COMMAND`, 250), so that server variables can be set. (nolfsrc sent each line. The server then made a variable of each client command.) | `m25_console.h` (`M25Submit`); `src/AVP2/Shared/MsgIDs.h` | The same runs: `mpcanthurtme` printed "God Mode: ON"; `GetPos` and `Help` ran on the client | done |
+| M-25 (control) | A new command, `COMMAND_ID_TOGGLE_CONSOLE` (79), the action `ToggleConsole`, the last control of the shared list of Customize Controls ("Console"; nolfsrc M-P2-03). The client adds the action (`AddAction ToggleConsole 79`) before the profile binds its key: AvP2 has its other actions in autoexec.cfg, Primal Hunt adds each action of `g_CommandArray` itself. A profile keeps the bindings of each command, by the action name. The retail `Default.prf` (which "Restore defaults" reads too) and the profiles from before do not have `ToggleConsole`. A profile that has never had the console key gets the key to the left of 1 (DirectInput `##41`), if the control has no key and no other control uses `##41` (no retail default does). `ConsoleKey` 1 in the `[Basic]` section of the profile records this; after that, the choice of the player stays. The console finds the virtual key of the binding from its `##<DIK>` name. A key with no virtual key that it knows still opens the console, through the command | `src/AVP2/Shared/CommandIDs.h`; `ClientUtilities.cpp` (`g_CommandArray`); `src/modern/cshell/m25_consolekey.h`, `ProfileMgr.cpp` (`LoadBindings`, `Save`); `ClientRes.rc`, `ClientRes.h` (32000, 32001) | `build/playtest-avp2-console-rebind.txt`: Customize Controls lists "Console" last in Shared, with the key to the left of 1 for a new profile. The ~ key there did not open the console. The control took the O key. In play, ~ did not open the console after that, and O opened and closed it. The ~ runs above use the default key of a new profile | done |
+| M-25 (programs) | Console programs (nolfsrc M-P2-04, -09, -14). `Help` lists the programs of the game and the commands of the engine, sorted (`ILTClient::EnumConsoleCommands`). `Cheats` lists the cheat codes of CheatMgr.cpp (its table keeps them encoded) and what each code does (our descriptions, from the code). `GetPos` prints the position of the player as `SetPos x y z`. `SetPos x y z` (single player) sends `MID_M25_SETPOS` (251): the server moves the player object (`CPlayerObj::Teleport`, as the teleport cheat), then sends the client its new position, so the player does not cross the space between the two positions | `m25_console.h` | The runs above: `Help` (the game programs, 38 engine commands), `Cheats` (both games; Primal Hunt adds its two codes), `GetPos`. `build/playtest-avp2-console-setpos.txt`: `GetPos` gave 320.0 42.9 -1538.0, `SetPos 320 42.9 -1420` moved the player forward, and `GetPos` then gave 317.2 43.8 -1428.5 (the player was put down on the floor); the view after the close was from the new position | done |
+| M-25 (backdrop) | `ConsoleBackdrop` (nolfsrc M-P2-05): 0 (the default) `console.pcx` of the game directory (a facehugger: the art of the retail console of the engine; both games have it), 1 black. If `console.pcx` does not load, the backdrop is black | `m25_console.h` (`M25Backdrop`) | The runs above: the facehugger of `console.pcx` behind the text. `CreateSurfaceFromBitmap` does not find the file (it is not in a .rez file), thus the console reads the PCX itself (`M25LoadPcx`, as the engine opens it with `fopen`). It draws the backdrop before the optimized 2D mode, where black is transparent | done |
+| M-25 (server) | The server half (nolfsrc M-P2-08). The server runs `MID_M25_CONSOLE_COMMAND` and `MID_M25_SETPOS` ONLY from the local client (`CIF_LOCAL`: the player in single player, or the player who hosts a listen server), and `SetPos` only in single player. It ignores the message from each other client and writes that to its console. (The Modernizer ran its console message from each client: a security fault. M-B86 makes the retail `MID_CONSOLE_COMMAND` and `MID_CONSOLE_TRIGGER` local too) | `src/modern/object/m25_server.h`; `ObjectDLL/GameServerShell.cpp` (`OnMessage`) | Code | done |
+| M-25 (engine) | The engine gives each console line to the game (`ILTClient::SetConsoleOutputFn`) and lists its commands (`EnumConsoleCommands`). The bodies were in `clientconsole.cpp` (from nolfsrc, M-P0-02), but the ILTClient table of the AvP2 engines did not have them. Now `iltclient.h` declares the three modern methods after `EndQuery`, the last retail slot, and the `%ifdef AVP2SRC_MODERN` block of `link/vtables-avp2.txt` and `vtables-ph.txt` puts them in the table. `build.mk` gives `--define AVP2SRC_MODERN` to `mkvtabobj.py` in the modern build only: the release `vtables.obj` does not change | `src/LT2/sdk/inc/iltclient.h`; `src/engine/lithtech/link/vtables-avp2.txt`, `vtables-ph.txt`; `build/build.mk` | The modern link report of `lithtech.exe` (both games) has no unresolved `CLTClientModern` symbol, and `vtables.obj` names the three. The console output and `Help` in the runs above come through these slots. `make progress` passes (the release build) | done |
+
 ## New console variables
 
 | Variable | Type | Default | What | Id |
@@ -1561,5 +1590,6 @@ opposite is also true, under the same game names.
 | `PadLookCurve` | float | 2 | The response of the right stick: the game raises its deflection past the dead zone to this value (1: linear) | M-7 |
 | `PadLookDeadZone` | float | 0.15 | The radial dead zone of the right stick (0..0.9 of its travel). Controller | M-7 |
 | `PadMoveDeadZone` | float | 0.2 | The radial dead zone of the left stick. Controller | M-7 |
+| `ConsoleBackdrop` | int | 0 | The backdrop of the console: 0 `console.pcx` (the art of the retail console of the engine), 1 black | M-25 |
 | `OldMouseLook` | int | 0 | The retail mouse look (the DirectInput offsets of the engine, `CursorCenter 1`) in place of raw input. Controls, Mouse, "Legacy mouse look". Saved in autoexec.cfg | M-6 |
 | `NoRawInput` | int | 0 | The new mouse look from the motion of the cursor (the game puts the cursor back in the middle of the window on each frame), in place of raw input. Saved in autoexec.cfg | M-6 |

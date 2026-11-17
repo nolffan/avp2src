@@ -129,6 +129,13 @@
 #define MID_TURRET_USE						225	// The turret being used (0x10116884), also sent to the turret itself (0x1015a20e)
 #endif
 
+#ifdef AVP2SRC_MODERN
+// M-25 (docs/MODERN.md): the console. The server accepts these only from
+// the local client (single player, or the player who hosts the game).
+#define MID_M25_CONSOLE_COMMAND				250	// Client to server: a console string for the server
+#define MID_M25_SETPOS						251	// Client to server: SetPos, a position (single player)
+#endif
+
 #define MID_CMD_ID_CLOAK					230	// Client to server
 #define MID_CMD_ID_DISC_RETRIEVE			231	// Client to server
 #define MID_CMD_ID_MEDI_COMP				232	// Client to server

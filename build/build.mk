@@ -1228,9 +1228,11 @@ SV_OBJS := $(sort $(patsubst %.cpp,$(SERVER)/Release/%.obj,$(filter-out $(addsuf
 # ILTClient slot 53 through CLTClientQ404's two). ext/tools/mkvtabobj.py makes
 # it <object dir>/vtables.obj, pick-any COMDATs linked ahead of our
 # objects, so its copy of each table is the one kept.
+# The modern build gives --define AVP2SRC_MODERN, for the spec's
+# "%ifdef AVP2SRC_MODERN" block (M-25: the slots after ILTClient's last).
 define eng_aliases
 $(call tool,$(1)/$(2)/aliases.obj,$(1)/link/$(3),python3 ext/tools/mkaliasobj.py $(1)/link/$(3) $(1)/$(2)/aliases.obj)
-$(call tool,$(1)/$(2)/vtables.obj,$(1)/link/$(4),python3 ext/tools/mkvtabobj.py $(1)/link/$(4) $(1)/$(2)/vtables.obj >/dev/null)
+$(call tool,$(1)/$(2)/vtables.obj,$(1)/link/$(4),python3 ext/tools/mkvtabobj.py $(if $(MODERN_BUILD),--define AVP2SRC_MODERN) $(1)/link/$(4) $(1)/$(2)/vtables.obj >/dev/null)
 endef
 $(eval $(call eng_aliases,$(LITHTECH),Release,aliases-ph.rsp,vtables-ph.txt))
 $(eval $(call eng_aliases,$(LITHTECH),AvP2Release,aliases-avp2.rsp,vtables-avp2.txt))

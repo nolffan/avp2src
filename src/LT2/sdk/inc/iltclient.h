@@ -66,6 +66,11 @@
 	class ILTCursor;
 	class ILTClientSoundMgr;
 	class ILTDirectMusicMgr;
+#ifdef AVP2SRC_MODERN
+	// M-25: the callbacks of the modern build's ILTClient additions
+	typedef void (*ConsoleOutputFn)(void *pUser, uint32 nColor, int nLevel, const char *pText);
+	typedef void (*ConsoleCommandEnumFn)(void *pUser, const char *pName, uint32 nFlags);
+#endif
 
 
 	// ------------------------------------------------------------------ //
@@ -1133,6 +1138,28 @@
 
 		// End the current query.
 		virtual LTRESULT EndQuery()=0;
+
+#ifdef AVP2SRC_MODERN
+		// M-25 (docs/MODERN.md): the modern build's additions, after the
+		// last retail slot, so that each retail slot keeps its position.
+		// The table of the engine: src/engine/lithtech/link/vtables-avp2.txt
+		// and vtables-ph.txt; the bodies: src/engine/lithtech/clientconsole.cpp.
+
+		// Give each line that the console prints to pFn as well (NULL
+		// removes it). pFn runs in the lock of the console: it must not
+		// print to the console. Remove it before the shell DLL unloads.
+		virtual LTRESULT SetConsoleOutputFn(ConsoleOutputFn pFn, void *pUser)=0;
+
+		// Call pFn one time for each console command of the client, in the
+		// order of registration. nFlags bit 0: the game registered it
+		// (RegisterConsoleProgram); else it is a command of the engine.
+		virtual LTRESULT EnumConsoleCommands(ConsoleCommandEnumFn pFn, void *pUser)=0;
+
+		// bToggle TRUE: the binding of the command toggles it, from one
+		// press to the next. (The engine has the body; the game does not
+		// use it yet.)
+		virtual LTRESULT SetCommandToggle(int nCommand, LTBOOL bToggle)=0;
+#endif
 
 
 		// Determines if we werw lobby launched.

@@ -236,6 +236,10 @@ class CInterfaceMgr
 
 		void		PlayInterfaceSound(InterfaceSound eIS, char* pSnd = LTNULL);
 		CFolderMgr*	GetFolderMgr()		{ return &m_FolderMgr; }
+#ifdef AVP2SRC_MODERN
+		// M-25: the console does not open over a message box
+		LTBOOL		M25_IsMessageBoxVisible()	{ return m_MessageBox.IsVisible(); }
+#endif
 
 		// NOLF
 		eFolderID	GetCurrentFolder();

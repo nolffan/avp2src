@@ -134,6 +134,11 @@ CommandData g_CommandArray[] =
 	{ IDS_CONTROL_FACEHUG,			-1,							IDS_ACTION_FACEHUG,			COM_ALIEN },
 	{ IDS_CONTROL_TEAR,				-1,							IDS_ACTION_TEAR,			COM_ALIEN },
 
+#ifdef AVP2SRC_MODERN
+	// M-25: the console's key, the last control of the shared list
+	{ IDS_CONTROL_M25_CONSOLE,		COMMAND_ID_TOGGLE_CONSOLE,	IDS_ACTION_M25_CONSOLE,		COM_SHARED },
+#endif
+
 	// This control must always remain as the last one in the array
 	{ IDS_CONTROL_UNASSIGNED,		COMMAND_ID_UNASSIGNED,		IDS_ACTION_UNASSIGNED }
 };

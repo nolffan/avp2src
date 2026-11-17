@@ -1,0 +1,29 @@
+# The modern build's console (docs/MODERN.md, M-25), AvP2: GetPos, SetPos
+# to a point 118 units ahead in the first Marine mission, GetPos
+window 120
+wait 20
+mclick 128 175
+wait 3
+mclick 85 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 10
+key space
+wait 60
+shot before
+key grave
+wait 1
+type GetPos
+key Return
+type SetPos 320 42.9 -1420
+key Return
+wait 2
+type GetPos
+key Return
+wait 1
+shot setpos
+key grave
+wait 3
+shot after

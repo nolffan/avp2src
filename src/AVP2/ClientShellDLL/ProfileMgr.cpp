@@ -16,6 +16,7 @@ extern CGameClientShell* g_pGameClientShell;
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m7_pad.h"			// M-7: the controller
 #include "..\..\modern\cshell\m7_padbindings.h"	// and its default bindings
+#include "..\..\modern\cshell\m25_consolekey.h"	// M-25: the console's key
 #endif
 
 
@@ -270,6 +271,7 @@ void CUserProfile::Save()
 	m_buteMgr.SetInt(s_aTagName,"UseJoystick",(int)m_bUseJoystick);
 #ifdef AVP2SRC_MODERN
 	m_buteMgr.SetInt(s_aTagName,M7_PAD_LAYOUT_KEY,M7_PAD_LAYOUT);	// M-7: it has the controller's defaults
+	m_buteMgr.SetInt(s_aTagName,M25_CONSOLE_KEY_KEY,M25_CONSOLE_KEY);	// M-25: it had the console's key
 #endif
 	m_AxisLook.WriteToProfile(&m_buteMgr);
 	m_AxisTurn.WriteToProfile(&m_buteMgr);
@@ -411,6 +413,9 @@ void CUserProfile::LoadBindings()
 	// had them (Default.prf too: Restore defaults)
 	if (m_buteMgr.GetInt("Basic", M7_PAD_LAYOUT_KEY, 0) < M7_PAD_LAYOUT)
 		M7Pad_DefaultBindings(this, LTFALSE);
+	// M-25: the console's key, for a profile that has never had it
+	if (m_buteMgr.GetInt("Basic", M25_CONSOLE_KEY_KEY, 0) < M25_CONSOLE_KEY)
+		M25Console_DefaultBinding(this);
 #endif
 }
 

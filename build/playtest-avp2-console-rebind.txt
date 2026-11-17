@@ -1,0 +1,47 @@
+# The modern build's console (docs/MODERN.md, M-25), AvP2: in Customize
+# Controls, ~ does not open it; Console is rebound to O; in play ~ does
+# not open it now, O opens and closes it
+window 120
+wait 20
+mclick 60 340
+wait 3
+mclick 90 178
+wait 3
+key grave
+wait 2
+shot controls-grave-locked
+mclick 180 433
+wait 2
+key o
+wait 2
+shot rebound
+mclick 45 452
+wait 2
+mclick 45 452
+wait 2
+shot main
+mclick 128 175
+wait 3
+mclick 85 245
+wait 3
+mclick 497 434
+wait 60
+key space
+wait 10
+key space
+wait 60
+key grave
+wait 2
+shot grave-not-console
+key o
+wait 2
+shot o-opens
+type GameTime
+key Return
+wait 1
+key o
+wait 2
+shot o-closes
+key Escape
+wait 2
+shot escape-menu
