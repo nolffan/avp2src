@@ -570,7 +570,8 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	// M-8: the rez stack of build/avp2cmds.sh -- AvP2's archives from
 	// AvP2's directory, then Primal Hunt's own, then a patch's, custom last
 	static const char* const s_aM8AvP2Rez[] = { "AVP2.REZ", "SOUNDS.REZ", "ALIEN.REZ", "MARINE.REZ", "PREDATOR.REZ", "MULTI.REZ" };
-	static const char* const s_aM8Rez[] = { "AVP2P.REZ", "AVP2P1.REZ", "AVP2X.REZ", "MULTI.REZ", "AVP2DLL.REZ", "AVP2L.REZ", "DIALOGUE.REZ" };
+	// (the order of the dedicated server, AVP2XServ.exe: build/avp2cmds.sh)
+	static const char* const s_aM8Rez[] = { "MULTI.REZ", "AVP2DLL.REZ", "AVP2L.REZ", "DIALOGUE.REZ", "AVP2P.REZ", "AVP2P1.REZ", "AVP2X.REZ" };
 	int iM8;
 	for (iM8 = 0; iM8 < sizeof(s_aM8AvP2Rez) / sizeof(s_aM8AvP2Rez[0]); iM8++)
 	{

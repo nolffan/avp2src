@@ -18,12 +18,18 @@
 #     also names avp2p.rez and avp2p2.rez, which no release installs.)
 #   Primal Hunt: AvP2's archives, from AvP2's directory beside it (the
 #     retail launcher finds them by AvP2's InstallDir in the registry), then
-#     Primal Hunt's own: its patch data (AVP2P.REZ, AVP2P1.REZ), its worlds
-#     and data (AVP2X.REZ), MULTI.REZ, AVP2DLL.REZ, AVP2L.REZ, DIALOGUE.REZ,
-#     custom. What the retail launcher does here lies in the pages its
-#     protection wrapper keeps encrypted (docs/PLAN.md, package 8); this is
-#     its string pool's order (" -rez multi.rez", "dll.rez", "l.rez",
-#     " -rez dialogue.rez", PatchRez, " -rez custom") after AvP2's.
+#     Primal Hunt's own: MULTI.REZ, AVP2DLL.REZ, AVP2L.REZ, DIALOGUE.REZ,
+#     its patch data (AVP2P.REZ, AVP2P1.REZ), its worlds and data
+#     (AVP2X.REZ), custom. What the retail launcher does here lies in the
+#     pages its protection wrapper keeps encrypted (docs/PLAN.md, package
+#     8); its string pool has " -rez multi.rez", "dll.rez", "l.rez",
+#     " -rez dialogue.rez", PatchRez, " -rez custom" in this order. The
+#     order of Primal Hunt's own archives is the order of its dedicated
+#     server (AVP2XServ.exe, ServerDlg.cpp's AddResources). The two must
+#     agree: MULTI.REZ and AVP2P1.REZ both hold DM_Compound and
+#     Over_Compound, in two versions, and a client that loads the other
+#     version cannot join ("world version is different": docs/MODERN.md,
+#     M-26).
 #
 # +DisableMovies skips the intro logos (RAD's Bink under Wine: as
 # nolfsrc's) -- in the legacy builds ("retail", the default) only: the
@@ -37,7 +43,7 @@ avp2)
     printf -- '-rez AVP2.REZ -rez SOUNDS.REZ -rez ALIEN.REZ -rez MARINE.REZ -rez PREDATOR.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez custom -rez AVP2P1.REZ%s\r\n' "$MOVIES" ;;
 ph)
     A='..\AVP2'
-    printf -- '-rez %s\\AVP2.REZ -rez %s\\SOUNDS.REZ -rez %s\\ALIEN.REZ -rez %s\\MARINE.REZ -rez %s\\PREDATOR.REZ -rez %s\\MULTI.REZ -rez AVP2P.REZ -rez AVP2P1.REZ -rez AVP2X.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez DIALOGUE.REZ -rez custom%s\r\n' \
+    printf -- '-rez %s\\AVP2.REZ -rez %s\\SOUNDS.REZ -rez %s\\ALIEN.REZ -rez %s\\MARINE.REZ -rez %s\\PREDATOR.REZ -rez %s\\MULTI.REZ -rez MULTI.REZ -rez AVP2DLL.REZ -rez AVP2L.REZ -rez DIALOGUE.REZ -rez AVP2P.REZ -rez AVP2P1.REZ -rez AVP2X.REZ -rez custom%s\r\n' \
         "$A" "$A" "$A" "$A" "$A" "$A" "$MOVIES" ;;
 *)  echo "usage: build/avp2cmds.sh avp2|ph" >&2; exit 2 ;;
 esac

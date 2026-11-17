@@ -75,6 +75,8 @@ playable. These items are done:
 - Internet multiplayer through a GameSpy master server, for example the
   OpenSpy server, without WON or a CD key (M-17..M-20).
 - A console in single player (M-25).
+- Dedicated servers on our own `server.dll`, and scripts that start them
+  on Linux (M-26).
 - All the retail bugs in docs/RETAIL_BUGS.md. Each is fixed
   (M-B01..M-B109), or we showed that it does not need a fix (under Done).
 
@@ -83,9 +85,6 @@ These items are not done yet:
 - Up to 16x anisotropic filtering (M-4) and up to 8x antialiasing (M-5).
   Both need the Direct3D 9 renderer of nolfsrc.
 - Alt+Tab in full screen. Full screen keeps the retail focus code (M-21).
-- Our `server.dll` for the dedicated servers. It stops when a world loads,
-  so the dedicated servers use the retail `server.dll` (M-17..M-20,
-  "Still open").
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
 `d3d.ren`, for the two games). `build/all.sh` builds `engine-link`,
@@ -148,6 +147,7 @@ items: not implemented yet.
 | M-23 | No lock of the back buffer before each flip (`LockOnFlip` 0 by default), for a higher frame rate under Wine and Proton (GitHub issue #2) | done (under Done) |
 | M-24 | No wait for the vertical blank in full screen (`VSync` 0 by default): the frame is copied, not flipped, so the frame rate is not locked to the refresh rate | done (under Done) |
 | M-25 | A console in single player, as in nolfsrc (its M-P2-01..M-P2-04, -05, -08, -09, -14, -15): the ~ key or Shift+Esc opens it over the top half of the screen, and the game pauses. It runs console commands and cheat codes. A new ToggleConsole control in Customize Controls. Retail AvP2 has no console that a player can open | done (under Done) |
+| M-26 | Dedicated servers on Linux, as in nolfsrc: `linux-server-avp2.sh` and `linux-server-ph.sh` start `AVP2Serv.exe` or `AVP2XServ.exe` under Wine, with a display or headless (`xvfb-run`). The servers run on our own `server.dll` | done (under Done) |
 
 ## Open middleware
 
@@ -200,7 +200,7 @@ We used these options of the script:
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing. The user reported this on the first modern build: "the
 high framerate means all the timing is wrong". nolfsrc found the same
@@ -1366,9 +1366,10 @@ if nothing is missing.
   build installs), if `AVP2.REZ` is there. If not, it plays on the AvP2
   of the registry.
 - The rez stack of Primal Hunt is the stack of `build/avp2cmds.sh`: the
-  six archives of AvP2 from the AvP2 directory, then its own `AVP2P`,
-  `AVP2P1`, `AVP2X`, `MULTI`, `AVP2DLL`, `AVP2L` and `DIALOGUE`, a
-  registry `PatchRez`, and `custom`.
+  six archives of AvP2 from the AvP2 directory, then its own `MULTI`,
+  `AVP2DLL`, `AVP2L`, `DIALOGUE`, `AVP2P`, `AVP2P1` and `AVP2X`, a
+  registry `PatchRez`, and `custom`. This is the order of its dedicated
+  server (M-26).
 - The launcher still keeps its settings in the registry when the key is
   there. Nothing creates the key.
 
@@ -1509,16 +1510,10 @@ reconstruction error, so we fixed it in the two builds:
   binaries"). Now, `build/all.sh` writes `customrez.txt`
   (`Rez0 = "custom"`). AVP2Serv.exe reads this file for more archives.
 
-**Still open.**
-
-- Our `server.dll` (the engine of the dedicated server) links with two
-  unresolved references. It stops with "pure virtual function call" when
-  a world loads. Thus, the tests ran the dedicated servers on the retail
-  `server.dll` (with our AVP2Serv.exe/AVP2XServ.exe and game DLLs).
-- A Primal Hunt server on `DM_Compound` refuses a Primal Hunt client
-  ("world version is different"). The world is in the MULTI.REZ and
-  AVP2P1.REZ of AvP2, and the archive order of the server is different
-  from the order of the client. The Primal Hunt tests used `DM_Aizin`.
+**Closed later (M-26).** The tests above ran the dedicated servers on the
+retail `server.dll`, because our `server.dll` did not load a world. Also,
+a Primal Hunt server on `DM_Compound` refused a Primal Hunt client ("world
+version is different"). M-26 fixes the two.
 
 **Retail players.** The engine compares the CRC of `CShell.dll` and of
 the attribute files on the server with the CRC on the client
@@ -1570,6 +1565,37 @@ in a dialogue, or while the chat line or a message box is open.
 | M-25 (backdrop) | `ConsoleBackdrop` (nolfsrc M-P2-05): 0 (the default) `console.pcx` of the game directory (a facehugger: the art of the retail console of the engine; both games have it), 1 black. If `console.pcx` does not load, the backdrop is black | `m25_console.h` (`M25Backdrop`) | The runs above: the facehugger of `console.pcx` behind the text. `CreateSurfaceFromBitmap` does not find the file (it is not in a .rez file), thus the console reads the PCX itself (`M25LoadPcx`, as the engine opens it with `fopen`). It draws the backdrop before the optimized 2D mode, where black is transparent | done |
 | M-25 (server) | The server half (nolfsrc M-P2-08). The server runs `MID_M25_CONSOLE_COMMAND` and `MID_M25_SETPOS` ONLY from the local client (`CIF_LOCAL`: the player in single player, or the player who hosts a listen server), and `SetPos` only in single player. It ignores the message from each other client and writes that to its console. (The Modernizer ran its console message from each client: a security fault. M-B86 makes the retail `MID_CONSOLE_COMMAND` and `MID_CONSOLE_TRIGGER` local too) | `src/modern/object/m25_server.h`; `ObjectDLL/GameServerShell.cpp` (`OnMessage`) | Code | done |
 | M-25 (engine) | The engine gives each console line to the game (`ILTClient::SetConsoleOutputFn`) and lists its commands (`EnumConsoleCommands`). The bodies were in `clientconsole.cpp` (from nolfsrc, M-P0-02), but the ILTClient table of the AvP2 engines did not have them. Now `iltclient.h` declares the three modern methods after `EndQuery`, the last retail slot, and the `%ifdef AVP2SRC_MODERN` block of `link/vtables-avp2.txt` and `vtables-ph.txt` puts them in the table. `build.mk` gives `--define AVP2SRC_MODERN` to `mkvtabobj.py` in the modern build only: the release `vtables.obj` does not change | `src/LT2/sdk/inc/iltclient.h`; `src/engine/lithtech/link/vtables-avp2.txt`, `vtables-ph.txt`; `build/build.mk` | The modern link report of `lithtech.exe` (both games) has no unresolved `CLTClientModern` symbol, and `vtables.obj` names the three. The console output and `Help` in the runs above come through these slots. `make progress` passes (the release build) | done |
+
+### M-26: dedicated servers on Linux, on our own server.dll
+
+nolfsrc has `linux-server.sh`, a script that starts the dedicated server
+of NOLF under Wine (its docs/INSTALL.md, "A dedicated server"). M-26 gives
+the same to AvP2 and Primal Hunt. Before, the dedicated servers did not
+run on our `server.dll`. Thus, the multiplayer tests used the retail
+`server.dll`, and the public archive cannot hold that file. M-26 also
+fixes this. Except for the scripts, each fix is a reconstruction error.
+Thus, we fixed it in the two builds.
+
+**How the servers take their settings.** `AVP2Serv.exe` (AvP2) and
+`AVP2XServ.exe` (Primal Hunt) read one configuration,
+`ServerData\<name>.txt`, in the game directory (`ServerDlg.cpp`, `DoHost`,
+`FixupConfigPath`). `-config <name>` names it. Without `-config`, the
+server shows its dialog: a list of the files in `ServerData\`. The dialog
+starts the only file at once. With no file, it stops ("A configuration
+file must be setup inside the game menus"). The Host menu of the game
+writes these files (`ServerOptionMgr.cpp`). `-port <n>` and `-name <text>`
+override the port and the name of the file. The modern build adds
+`-MasterServer` (M-17). Primal Hunt's server reads the archives of AvP2
+from the `InstallDir` of the AvP2 key in the registry (`AddResources`).
+Primal Hunt ships one file, `ServerData\default.txt` (port 27890, the four
+deathmatch worlds of Primal Hunt, and the classes and the weapons that its
+server allows). AvP2 ships no file.
+
+| Id | What | Files | Checked | Status |
+|---|---|---|---|---|
+| M-26 (scripts) | `linux-server-avp2.sh` and `linux-server-ph.sh`, from one template, as the `linux-run-*.sh` scripts. Each starts the server of its game under Wine in its game directory. `--config <name>` (default `server`) starts it with `ServerData/<name>.txt`. When this file does not exist, the script writes it: deathmatch, 8 players, port 27888, the deathmatch worlds of the game (Primal Hunt: its `default.txt`, with new settings), and a random server-control password, which the script shows (the retail default is `AVP2` or `AVP2PH`, and a player who types it controls the server). The modern build writes an Internet server (`LANConnection = 0`). The legacy build writes a LAN-only server: a legacy server that is not LAN only crashes when the world starts (RETAIL_BUGS.md, "Hosting an Internet game without SierraUp.cfg crashes the server"). The script also warns when a legacy configuration has `LANConnection = 0`. `--wizard` shows the dialog of the server (the dialog needs a display). `--headless` runs the server under `xvfb-run` (a 24-bit virtual screen), in a Wine prefix of its own (`~/.wine-avp2-server-AVP2` or `~/.wine-avp2-server-PrimalHunt`). When no server of the game runs, a headless start first stops a Wine server that a server stopped by force left on its prefix: the next start there crashed ("Unhandled page fault"), also when it was the other game's server. This is the default when `$DISPLAY` is not set. `--help` shows the header. The script gives all other arguments to the server. It writes the registry values of `linux-run-*.sh` into its prefix, so that Primal Hunt's server finds the archives of AvP2. `build/all.sh` writes the two scripts (`serverscript`). Thus, the two archives hold them (`build/package.sh` packs the whole directory) | `build/game-scripts/linux-server.sh`, `build/all.sh` | In the build container, without `$DISPLAY`, on a copy of the game directory: `linux-server-avp2.sh -name ls-le` and `linux-server-ph.sh -name ls-lf` (the legacy build) wrote `server.txt` and started headless. A client of ours (`build/playtest.sh`, `c-runner.txt` without the `%n` chat) in a second container found each server in Find LAN Games, joined, spawned, sent a chat line and ran (Primal Hunt: `DM_Aizin`, from `default.txt`; AvP2: `DM_Compound`). The modern build, with `-MasterServer none`: the two servers (an Internet configuration, `LANConnection = 0`) were also on the LAN list. The client joined each one, and `server-console.log` shows "New client" and the chat line. Without `$DISPLAY` and without `--config`, the legacy server with `LANConnection = 0` crashed with the retail page fault on a read of 0x34 (thus the LAN-only default of the legacy build) | done |
+| M-26 (server.dll) | Our `server.dll` runs a dedicated server. These were the faults, in both games unless the text says one: (1) `TCPDriver`'s vtable (`link/vtables-avp2.txt`, `vtables-ph.txt`) had `_purecall` in slot 3, `Update`. `CNetMgr::Update` calls it each frame, so the server stopped with "pure virtual function call" before the world. The shipped slot (AvP2 0x10042138, Primal Hunt 0x1004076f) is the one bare `ret` of the image, which `/OPT:ICF` folds all empty functions onto: now `_dsi_OnReturnError` (dsi.cpp, also a bare `ret`). (2) AvP2: `link/aliases-avp2.rsp` bound `CWDArray04::SetSize`, the resize of the light animations of a world (`CWorldData::LoadObjects`), to the resize of `CMoArray<CCollElem04F>`. Its bytes are the same with the relocations masked, but its array new has a stride of 4 bytes. The shipped resize (0x1000f43d) calls the array new of the 0x60-byte record (0x100106ed). Thus the animations overran their array, `LoadObjects` failed, and the server showed "Unable to load the selected map". Now the binding is `CMoArray<CWorldAnimRecQ>`'s resize, as nolfsrc's and Primal Hunt's. (3) The references that the link left unresolved: the 0x60-byte record's constructor `CWorldAnimRecQ::CWorldAnimRecQ` (both; a call to address 0 in each array new of the light animations) is bound to `CCollElem60::CCollElem60` (collection.cpp), whose bytes are the shipped constructor's (AvP2 0x1000a9d1, Primal Hunt 0x1000abcf). `CWorldTable::CWorldTable` (Primal Hunt; a call to 0 in the constructor of each world) is bound to the template's constructor, as in AvP2. `sm_Sub34688` (AvP2: the save code's object check) is bound to `sm_CheckObjectIntegrityQ474`, which is byte-identical to its shipped target (0x1003ec10), as in Primal Hunt. (4) `mkaliasobj.py` keeps the first binding of a name. Eleven bank slots of each alias file (`AllocVoid` and `FreeVoid` of the file, hash, link-node, thread-message, transfer and packet banks) had an early binding before the correct one of the "k2" section. In AvP2, four `AllocVoid` slots went to a `FreeVoid` (`ret 4`). The early lines are gone. How we found them: a copy of `server.dll` with `_purecall` patched to fault gave the caller (`CNetMgr::Update`). Then `winedbg` breakpoints on the error hook (`dsi_OnReturnError`) and on the returns of `CServerMgr::LoadWorld` gave `CWorldData::LoadObjects` | `src/engine/server/link/vtables-avp2.txt`, `vtables-ph.txt`, `aliases-avp2.rsp`, `aliases-ph.rsp` | The two links have no unresolved reference now. Legacy build, `build/mptest/srv.sh` without `SRV_DLL`: the AvP2 and Primal Hunt servers loaded `DM_Compound` ("Loaded world", "Running world"). A client of ours in a second container joined each server, spawned, sent a chat line and ran (`build/playtest.sh`, `c-runner.txt` without the `%n` chat line: the legacy `AVP2Serv.exe` crashes on that line, M-20). `make progress`: every recorded function is still identical; the counts of `server.dll` and `AvP2 server.dll` did not change | done |
+| M-26 (DM_Compound) | A Primal Hunt client could not join a Primal Hunt server on `DM_Compound` ("world version is different"). `MULTI.REZ` and `AVP2P1.REZ` of Primal Hunt hold two versions of `DM_Compound` and `Over_Compound`. The server (`AVP2XServ.exe`, `AddResources`) loads Primal Hunt's `MULTI.REZ`, `AVP2DLL.REZ`, `AVP2L.REZ` and `DIALOGUE.REZ` before `AVP2P.REZ`, `AVP2P1.REZ` and `AVP2X.REZ`. The client loaded `AVP2P.REZ`, `AVP2P1.REZ` and `AVP2X.REZ` first, thus it had the other version. Now `build/avp2cmds.sh` and the modern launcher (M-8) use the order of the server. The retail launcher's own code is encrypted; the order of its string pool (`multi.rez`, `dll.rez`, `l.rez`, `dialogue.rez`, `PatchRez`, `custom`) agrees | `build/avp2cmds.sh`; `src/launcher/LauncherDlg.cpp` (`s_aM8Rez`, modern only) | Legacy build: a Primal Hunt server of ours on `DM_Compound` and a Primal Hunt client of ours: the client joined, spawned and ran | done |
 
 ## New console variables
 

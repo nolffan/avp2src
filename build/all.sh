@@ -33,6 +33,7 @@
 #                  the game directly, and AVP2Launcher.exe and
 #                  PrimalHuntLauncher.exe are the launchers; MODERN.md M-8)
 #   linux-run-avp2.sh, linux-run-ph.sh, windows-run.bat   start a game (build/game-scripts/)
+#   linux-server-avp2.sh, linux-server-ph.sh   start a dedicated server (build/game-scripts/)
 #
 # The steps, in order (each for both games):
 #   1. resources          the games' data from the retail games: the .rez
@@ -200,6 +201,16 @@ L=; [ -z "$MODERN" ] || L=Launcher      # (the launchers' names: M-8)
 runscript linux-run-avp2.sh AVP2 "Aliens versus Predator 2" "AVP2$L.exe"
 runscript linux-run-ph.sh PrimalHunt "Aliens versus Predator 2: Primal Hunt" "PrimalHunt$L.exe"
 sed 's/$/\r/' build/game-scripts/windows-run.bat > "$OUT/windows-run.bat"     # (CRLF)
+# linux-server-avp2.sh, linux-server-ph.sh: a dedicated server of AvP2 or
+# Primal Hunt with the host's Wine, both from one template
+# (build/game-scripts/linux-server.sh; docs/MODERN.md, M-26)
+serverscript() {   # <script> <game directory> <title> <server program>
+    sed -e "s|@SCRIPT@|$1|g" -e "s|@GAME@|$2|g" -e "s|@TITLE@|$3|g" \
+        -e "s|@EXE@|$4|g" -e "s|@MODERN@|${MODERN:-0}|g" build/game-scripts/linux-server.sh > "$OUT/$1"
+    chmod +x "$OUT/$1"
+}
+serverscript linux-server-avp2.sh AVP2 "Aliens vs. Predator 2" AVP2Serv.exe
+serverscript linux-server-ph.sh PrimalHunt "Primal Hunt" AVP2XServ.exe
 
 step "3. compile: the workspaces (build/compile.sh: build/build.mk, ${AVP2SRC_JOBS:-$(nproc)} jobs)"
 # The engines too -- lithtech.exe, server.dll and d3d.ren, both games' --
@@ -254,7 +265,7 @@ done
 # nothing but the two games' directories and the run scripts at the top
 for f in "$OUT"/*; do
     case "$(basename "$f")" in
-        AVP2|PrimalHunt|linux-run-avp2.sh|linux-run-ph.sh|windows-run.bat) ;;
+        AVP2|PrimalHunt|linux-run-avp2.sh|linux-run-ph.sh|linux-server-avp2.sh|linux-server-ph.sh|windows-run.bat) ;;
         *) echo "error: $f: not a file the build puts there" >&2; exit 1 ;;
     esac
 done

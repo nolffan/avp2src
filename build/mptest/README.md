@@ -21,5 +21,6 @@ is a server and two clients, each under Xvfb and Wine.
 - `c-*.txt` -- the playtest scripts of the clients, in the format of
   build/playtest.sh.
 
-Until our own server.dll loads a world (docs/MODERN.md, M-17..M-20, open
-items), the servers use the retail server.dll (`SRV_DLL`).
+The servers use our own server.dll (docs/MODERN.md, M-26). `SRV_DLL`
+gives a different one, for example the retail server.dll
+(`out/reference/avp2/server.dll`, `out/reference/server.dll`), to compare.

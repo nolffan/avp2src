@@ -206,6 +206,57 @@ also use the launchers:
   `PrimalHunt\PrimalHuntLauncher.exe`. `AVP2.exe` and `PrimalHunt.exe`
   start the game directly.
 
+### A dedicated server
+
+Each game has a dedicated server: `AVP2\AVP2Serv.exe` (AvP2) and
+`PrimalHunt\AVP2XServ.exe` (Primal Hunt). A dedicated server has no
+player of its own. Players join it from the Multiplayer menu, on the
+Internet list or on the LAN list. Each server reads its settings from a
+configuration, `ServerData\<name>.txt` in its game directory. The Host
+menu of the game saves these files.
+
+On Linux, use `linux-server-avp2.sh` or `linux-server-ph.sh`
+(`build/game-scripts/linux-server.sh`, docs/MODERN.md M-26). Each script
+starts the server under Wine. These are the options:
+
+- `--config <name>`: use `ServerData/<name>.txt`. The default name is
+  `server`. If the file does not exist, the script writes it with default
+  settings: deathmatch, 8 players, UDP port 27888, and a random
+  server-control password (the script shows it). In the legacy build, the
+  server of this file is LAN only. A legacy server that is not LAN only
+  crashes (docs/RETAIL_BUGS.md).
+- `--wizard`: show the dialog of the server. It lists the configurations
+  in `ServerData/`. Select one to start the server.
+- `--headless`: run without a display, under `xvfb-run` (install the
+  `xvfb` package). This is the default when `$DISPLAY` is not set. The
+  server then uses its own Wine prefix: `~/.wine-avp2-server-AVP2` or
+  `~/.wine-avp2-server-PrimalHunt`. If a server stopped by force (Ctrl+C),
+  the script clears its prefix before the next start.
+- `--help`: show the options.
+
+The script gives all other arguments to the server: `-port <n>`,
+`-name <text>`, and in the modern build `-MasterServer <host>`. For
+example:
+
+```sh
+./linux-server-avp2.sh -name "My server"
+```
+
+On Windows, start the server with a configuration, for example
+`AVP2\AVP2Serv.exe -config server`. Without `-config`, it shows its
+dialog. `AVP2XServ.exe` finds the archives of AvP2 through the registry
+values of AvP2. `windows-install.bat` writes them, when you run it as an
+administrator.
+
+The server uses UDP port 27888 (or the `PortID` of the configuration, or
+`-port`). Let this port through the firewall of the server computer.
+Players on your LAN need nothing more. For the Internet list, also
+forward this UDP port on your router to the server computer. The server
+sends its address to the master server. Each player then asks the server
+for its details and joins it on this port. Only the modern build has an
+Internet list (M-17). The master servers of the legacy build do not
+exist now.
+
 ## Credits
 
 This project uses the work of others:

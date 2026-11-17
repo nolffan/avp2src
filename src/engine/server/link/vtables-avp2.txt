@@ -391,7 +391,7 @@ vtable ??_7TCPDriver@@6B@ 0x1006aac0  # compiled with 27 slots; 10 _purecall whe
     ??_GTCPDriver@@UAEPAXI@Z  # the compiled slot, kept over ??_GCObjContainer@@UAEPAXI@Z placed there
     ?Init@TCPDriver@@UAEIXZ
     ?Term@TCPDriver@@UAEXXZ
-    __purecall  # the shipped slot is 0x10042138, which nothing of ours is placed at
+    _dsi_OnReturnError  # Update: the shipped slot is 0x10042138, the one bare `ret` that /OPT:ICF folds the empty functions onto (dsi_OnReturnError among them). With _purecall here, CNetMgr::Update stopped the dedicated server at its first frame ("pure virtual function call")
     ?Connect@CLocalDriverBase@@UAEXPAVCBaseDriver@@@Z
     ?GetServiceList@TCPDriver@@UAEKPAPAVNetService@@@Z
     ?MakeExtraLink@CWorldLightRoot@@UAEPAXK@Z  # placed by shape

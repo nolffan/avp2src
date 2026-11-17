@@ -487,29 +487,8 @@
 /ALTERNATENAME:?sm_CreateInterlink@@YAKPAVSavServerMgr@@PAVSavObject@@1K@Z=?sm_CreateInterObjectLink@@YAKPAVCServerMgr@@PAVLTObject@@1H@Z
 #
 # New: no nolfsrc binding; the target is placed where the sites reach.
-# 0x1003883a D
-/ALTERNATENAME:?AllocVoid@CFileBank@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
-# 0x10011d20 Dj
-/ALTERNATENAME:?AllocVoid@CHashElementBankQ532@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
-# 0x10011d20 Dj
-/ALTERNATENAME:?AllocVoid@CLinkNodeBank@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
-# 0x1002dbbc D
-/ALTERNATENAME:?AllocVoid@CNetBank@@UAEPAXXZ=?AllocVoid@?$CObjectBank@VCBankElem54@@@@UAEPAXXZ
 # 0x1001b204 D: retail's slot is a function of its own, `jmp 0x1001b244`
 # (the allocate; nothing else reaches the thunk), which CMessageBank::AllocVoid is
-/ALTERNATENAME:?AllocVoid@CThreadMsgBank@@UAEPAXXZ=?AllocVoid@CMessageBank@@UAEPAXXZ
-# 0x10011d20 Dj
-/ALTERNATENAME:?AllocVoid@CXferFileBankView@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
-# 0x10012bbc D
-/ALTERNATENAME:?FreeVoid@CFileBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x10012bbc D
-/ALTERNATENAME:?FreeVoid@CHashElementBankQ532@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x10012bbc D
-/ALTERNATENAME:?FreeVoid@CLinkNodeBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x10012bbc D
-/ALTERNATENAME:?FreeVoid@CThreadMsgBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x10012bbc D
-/ALTERNATENAME:?FreeVoid@CXferFileBankView@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
 # 0x10031041 I
 /ALTERNATENAME:?ReadString@CServerMessageStrQ528@@QAEPBDXZ=?ReadStringInPlace@CMsgStringReader@@QAEPADXZ
 # 0x1002a7ed I
@@ -566,7 +545,12 @@
 # ---- k2: the engine symbols nolfsrc's aliases never named ------------------
 #
 # Each one is bound to the definition of ours the retail call or vtable slot
-# reaches. Addresses are Primal Hunt's server.dll, then AvP2 1.0.9.6's.
+# reaches.
+#
+# mkaliasobj.py keeps the FIRST binding of a name. The "New" section above
+# bound the eleven bank slots below too (AvP2: four AllocVoid slots to a
+# FreeVoid, `ret 4`), so the bindings here had no effect. Those earlier
+# lines are gone now. Addresses are Primal Hunt's server.dll, then AvP2 1.0.9.6's.
 #
 # The struct banks' three slots (bankbase.h's CBankBase). /O1 keeps every
 # POD bank's AllocVoid and FreeVoid as the same folded forwarders and Term
@@ -610,3 +594,16 @@
 # transformmaker.cpp's.
 /ALTERNATENAME:?sub_100386c6@ModelWalkerQ521@@QAEIXZ=?SetupTransforms@CTransformMaker_C@@QAEIXZ
 /ALTERNATENAME:?sub_100386c6@ModelWalkerQ554@@QAEIXZ=?SetupTransforms@CTransformMaker_C@@QAEIXZ
+#
+# ---- the dedicated server: references the link left unresolved -----------
+#
+# 0x1000abcf I -- the 0x60 light-animation record's constructor, the only one
+# that the array new of its CMoArray (commonmodel.cpp's CWorldSub04) calls.
+# collection.cpp's CCollElem60 has the same body.
+/ALTERNATENAME:??0CWorldAnimRecQ@@QAE@XZ=??0CCollElem60@@QAE@XZ
+# 0x1000f2ba (vtable 0x1007463c) -- commonmodel.cpp's CWorldTable, the table of the
+# world (CServerWorld+0x188). The server build only declares its
+# constructor (commonmodel.cpp): bound to the template's, as in AvP2. Its
+# 34 bytes are the template's but for the vptr, and its slots do what the
+# template's do.
+/ALTERNATENAME:??0CWorldTable@@QAE@XZ=??0?$CMoArray@PAVCWorldPart@@VDefaultCache@@@@QAE@XZ

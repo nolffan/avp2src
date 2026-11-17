@@ -468,7 +468,13 @@
 # 0x10047400 I; nolfsrc: ?SetDirSeparators@CRezMgrX380@@QAEXPBD@Z
 /ALTERNATENAME:?SetDelimiters@CFileArchive@@QAEXPAD@Z=?SetDirSeparators@CRezMgr@@QAEXPBD@Z
 # 0x1000f43d I; nolfsrc: ?SetSize2@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
-/ALTERNATENAME:?SetSize@CWDArray04@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@VCCollElem04F@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
+# (nolfsrc's binding is the right one. This was CMoArray<CCollElem04F>'s
+# resize: the same bytes with the relocations masked, but its array new has
+# a stride of 4, where retail's 0x1000f43d calls the array new of the 0x60
+# record, 0x100106ed. The light animations of a world then overran their
+# array, and CWorldData::LoadObjects failed: the dedicated server loaded no
+# world, "Unable to load the selected map".)
+/ALTERNATENAME:?SetSize@CWDArray04@@QAEIKPAVCMoAllocator@@@Z=?SetSize2@?$CMoArray@VCWorldAnimRecQ@@VDefaultCache@@@@QAEIKPAVLAlloc@@@Z
 # 0x10047370 q; nolfsrc: ?TypeToStr@CRezMgrX380@@QAEXKPAD@Z
 /ALTERNATENAME:?TypeToStr@CFileArchive@@QAEXKPAD@Z=?TypeToStr@CRezMgr@@QAEXKPAD@Z
 # 0x100081d2 D; nolfsrc: ?WriteToMessageObject@ILTCSBase@@UAEKPAVILTMessage@@PAVLTObject@@@Z
@@ -485,28 +491,6 @@
 /ALTERNATENAME:?sm_CreateInterlink@@YAKPAVSavServerMgr@@PAVSavObject@@1K@Z=?sm_CreateInterObjectLink@@YAKPAVCServerMgr@@PAVLTObject@@1H@Z
 #
 # New: no nolfsrc binding; the target is placed where the sites reach.
-# 0x1003599a D
-/ALTERNATENAME:?AllocVoid@CFileBank@@UAEPAXXZ=?AllocObject@?$CObjectBank@VCBankElem0c@@@@QAEPAVCBankElem0c@@XZ
-# 0x10012203 D
-/ALTERNATENAME:?AllocVoid@CHashElemBank@@UAEPAXXZ=?FreeVoid@?$CObjectBank@VCObjLight@@@@UAEXPAX@Z
-# 0x10012203 D
-/ALTERNATENAME:?AllocVoid@CLinkNodeBank@@UAEPAXXZ=?FreeVoid@?$CObjectBank@VCObjLight@@@@UAEXPAX@Z
-# 0x1002bf2a D
-/ALTERNATENAME:?AllocVoid@CNetBank@@UAEPAXXZ=?FreeVoid@?$CObjectBank@VCObjCamera@@@@UAEXPAX@Z
-# 0x1001a435 Dj
-/ALTERNATENAME:?AllocVoid@CThreadMsgBank@@UAEPAXXZ=?Allocate@LThreadMessageBank@@QAEPAVLThreadMessage@@XZ
-# 0x10012203 D
-/ALTERNATENAME:?AllocVoid@CXferFileBankView@@UAEPAXXZ=?FreeVoid@?$CObjectBank@VCObjLight@@@@UAEXPAX@Z
-# 0x1003f676 D
-/ALTERNATENAME:?FreeVoid@CFileBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x1003f676 D
-/ALTERNATENAME:?FreeVoid@CHashElemBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x1003f676 D
-/ALTERNATENAME:?FreeVoid@CLinkNodeBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x1003f676 D
-/ALTERNATENAME:?FreeVoid@CThreadMsgBank@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
-# 0x1003f676 D
-/ALTERNATENAME:?FreeVoid@CXferFileBankView@@UAEXPAX@Z=?FreeVoid@?$CObjectBank@VCBankElem70@@@@UAEXPAX@Z
 # 0x1002e9e2 I
 /ALTERNATENAME:?ReadString@CServerMessageStrQ528@@QAEPBDXZ=?ReadStringInPlace@CMsgStringReader@@QAEPADXZ
 # 0x10028e9a I
@@ -571,7 +555,12 @@
 # ---- k2: the engine symbols nolfsrc's aliases never named ------------------
 #
 # Each one is bound to the definition of ours the retail call or vtable slot
-# reaches. Addresses are Primal Hunt's server.dll, then AvP2 1.0.9.6's.
+# reaches.
+#
+# mkaliasobj.py keeps the FIRST binding of a name. The "New" section above
+# bound the eleven bank slots below too (AvP2: four AllocVoid slots to a
+# FreeVoid, `ret 4`), so the bindings here had no effect. Those earlier
+# lines are gone now. Addresses are Primal Hunt's server.dll, then AvP2 1.0.9.6's.
 #
 # The struct banks' three slots (bankbase.h's CBankBase). /O1 keeps every
 # POD bank's AllocVoid and FreeVoid as the same folded forwarders and Term
@@ -615,3 +604,13 @@
 # transformmaker.cpp's.
 /ALTERNATENAME:?sub_100386c6@ModelWalkerQ521@@QAEIXZ=?SetupTransforms@CTransformMaker_C@@QAEIXZ
 /ALTERNATENAME:?sub_100386c6@ModelWalkerQ554@@QAEIXZ=?SetupTransforms@CTransformMaker_C@@QAEIXZ
+#
+# ---- the dedicated server: references the link left unresolved -----------
+#
+# 0x1000a9d1 I -- the 0x60 light-animation record's constructor, the only one
+# that the array new of its CMoArray (commonmodel.cpp's CWorldSub04) calls.
+# collection.cpp's CCollElem60 has the same body.
+/ALTERNATENAME:??0CWorldAnimRecQ@@QAE@XZ=??0CCollElem60@@QAE@XZ
+# 0x1003ec10 I -- the saveio.cpp calls (0x10014038, 0x10014138, 0x100141e3,
+# 0x10014c02) reach sm_CheckObjectIntegrity, as in Primal Hunt (0x100425b0).
+/ALTERNATENAME:?sm_Sub34688@@YAXPAVSavServerMgr@@@Z=?sm_CheckObjectIntegrityQ474@@YAKPAVCServerMgr@@@Z

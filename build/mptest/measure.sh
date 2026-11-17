@@ -7,7 +7,7 @@ N=$1; CFG=$2; BW=${3:-}
 W="$(cd "$(dirname "$0")/../.." && pwd)"
 G=out/avp2-modern-debug
 docker kill mp-srv mp-c1 mp-c2 >/dev/null 2>&1; sleep 2
-DOCK_ENV="-e SRV_DLL=/repo/out/reference/avp2/server.dll ${BW:+-e SRV_BW=$BW}" $W/build/mptest/dock.sh mp-srv bash out/mp/srv.sh /repo/$G/AVP2 m-$N 330 1 > $W/build/mptest/srv-m-$N.out 2>&1 &
+DOCK_ENV="${SRV_DLL:+-e SRV_DLL=$SRV_DLL} ${BW:+-e SRV_BW=$BW}" $W/build/mptest/dock.sh mp-srv bash build/mptest/srv.sh /repo/$G/AVP2 m-$N 330 1 > $W/build/mptest/srv-m-$N.out 2>&1 &
 sleep 25
 DOCK_ENV="-e PLAYTEST_NAME=m-$N-watch -e PLAYTEST_SCRIPT=build/mptest/c-watcher.txt -e PLAYTEST_CFG=/repo/$CFG" timeout 400 $W/build/mptest/dock.sh mp-c2 bash build/playtest.sh $G avp2 - 0 > $W/build/mptest/c2-m-$N.out 2>&1 &
 sleep 20
