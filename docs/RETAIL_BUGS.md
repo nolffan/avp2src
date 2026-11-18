@@ -131,6 +131,20 @@ renderer stays on and the sounds are not held when the focus changes
 (clientwin.cpp); MODERN.md M-21. Full screen continues to work as in the
 retail game.
 
+### With display scaling above 100%, the game shows in a box in a corner
+
+lithtech.exe of both games, AvP2 1.0.9.6 and Primal Hunt (`WinMain`,
+src/engine/lithtech/clientwin.cpp). The engine declares nothing about
+DPI. Thus, on Windows with display scaling above 100%, Windows virtualises
+the game. The display mode and the desktop size are in pixels. The cursor,
+`ClipCursor`, the window rectangles and `GetSystemMetrics` are in scaled
+units. The game then shows in a box in a corner of the screen, and its
+cursor and its clicks miss the buttons (GitHub issue #6). Windows of 2001
+had no display scaling.
+
+Fixed in the modern build: clientwin.cpp, the engine declares itself
+DPI-aware before it makes a window; MODERN.md M-27.
+
 ### Above 100 frames a second the world runs fast
 
 lithtech.exe and server.dll of both games, AvP2 1.0.9.6 and Primal Hunt

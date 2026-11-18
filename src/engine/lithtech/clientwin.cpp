@@ -1532,6 +1532,47 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 //  the body's, `jle` signed against the limit and `jb` unsigned against the
 //  counter), and the two frees through 0x00433520 on both exits.
 // ----------------------------------------------------------------------- //
+#ifdef AVP2SRC_MODERN
+// M-27: declare the process DPI-aware before any window exists (nolfsrc's
+// M-P1-30). Retail declares nothing about DPI. Thus, with display scaling
+// above 100%, Windows virtualises the game: the display mode and the
+// desktop size are in pixels, but the cursor, ClipCursor, the window
+// rectangles and GetSystemMetrics are in scaled units. The game then shows
+// in a box in a corner of the screen, and its cursor and clicks miss the
+// buttons (GitHub issue #6; RETAIL_BUGS.md). Per-monitor (v2) where Windows
+// has it, then per-monitor, then system-wide. Each is looked up at run
+// time, because the oldest is from Windows Vista.
+static void M27_DeclareDpiAware()
+{
+	typedef BOOL (WINAPI *SetContextFn)(HANDLE);
+	typedef HRESULT (WINAPI *SetAwarenessFn)(int);
+	typedef BOOL (WINAPI *SetAwareFn)(void);
+
+	HMODULE hUser = GetModuleHandleA("user32.dll");
+	if (hUser)
+	{
+		SetContextFn pSetContext = (SetContextFn)GetProcAddress(hUser, "SetProcessDpiAwarenessContext");
+		if (pSetContext && pSetContext((HANDLE)-4))   // PER_MONITOR_AWARE_V2
+			return;
+	}
+
+	HMODULE hShcore = LoadLibraryA("shcore.dll");
+	if (hShcore)
+	{
+		SetAwarenessFn pSetAwareness = (SetAwarenessFn)GetProcAddress(hShcore, "SetProcessDpiAwareness");
+		if (pSetAwareness && SUCCEEDED(pSetAwareness(2)))   // PROCESS_PER_MONITOR_DPI_AWARE
+			return;
+	}
+
+	if (hUser)
+	{
+		SetAwareFn pSetAware = (SetAwareFn)GetProcAddress(hUser, "SetProcessDPIAware");
+		if (pSetAware)
+			pSetAware();
+	}
+}
+#endif
+
 int WINAPI clu_WinMainQ501(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                            LPSTR lpCmdLine, int nCmdShow)
 {
@@ -1539,6 +1580,9 @@ int WINAPI clu_WinMainQ501(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	int                nRet;
 
 	AVP2SRC_INSTALL_CRASH_HANDLER();   // debug build only
+#ifdef AVP2SRC_MODERN
+	M27_DeclareDpiAware();   // M-27: before any window exists
+#endif
 
 	args.m_pArgs = NULL;
 	args.m_nArgs = 0;
