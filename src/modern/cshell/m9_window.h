@@ -246,6 +246,56 @@ void M9Window_Update()
 	M9SetRenderMode(&mode);
 }
 
+// GitHub issue #6: one console line for each new mode, with what Windows
+// tells the game about the display. With "+ErrorLog 1" the line goes to
+// error.log too. A DPI awareness of 0 (unaware) and two desktop sizes that
+// differ show that Windows scales the game. The Windows 10 functions are
+// looked up at run time.
+namespace
+{
+	void M9Window_Report(const RMode& mode)
+	{
+		typedef HANDLE (WINAPI *GetContextFn)(void);
+		typedef int (WINAPI *GetAwarenessFn)(HANDLE);
+		typedef UINT (WINAPI *GetDpiFn)(HWND);
+
+		int nAware = -1;
+		int nDpi = -1;
+		HMODULE hUser = GetModuleHandleA("user32.dll");
+		if (hUser)
+		{
+			GetContextFn pGetContext = (GetContextFn)GetProcAddress(hUser, "GetThreadDpiAwarenessContext");
+			GetAwarenessFn pGetAwareness = (GetAwarenessFn)GetProcAddress(hUser, "GetAwarenessFromDpiAwarenessContext");
+			GetDpiFn pGetDpi = (GetDpiFn)GetProcAddress(hUser, "GetDpiForWindow");
+			if (pGetContext && pGetAwareness)
+				nAware = pGetAwareness(pGetContext());
+			if (pGetDpi && g_hMainWnd)
+				nDpi = (int)pGetDpi(g_hMainWnd);
+		}
+
+		DEVMODE dmReg, dmNow;
+		memset(&dmReg, 0, sizeof(dmReg));
+		dmReg.dmSize = sizeof(dmReg);
+		memset(&dmNow, 0, sizeof(dmNow));
+		dmNow.dmSize = sizeof(dmNow);
+		EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &dmReg);
+		EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dmNow);
+
+		RECT rcClient;
+		SetRect(&rcClient, 0, 0, 0, 0);
+		if (g_hMainWnd)
+			GetClientRect(g_hMainWnd, &rcClient);
+
+		g_pLTClient->CPrint("Display: mode %dx%d, window mode %d, client %dx%d, desktop %dx%d, current %dx%d, metrics %dx%d, DPI awareness %d, DPI %d",
+			(int)mode.m_Width, (int)mode.m_Height, M9Window_GetMode(),
+			(int)(rcClient.right - rcClient.left), (int)(rcClient.bottom - rcClient.top),
+			(int)dmReg.dmPelsWidth, (int)dmReg.dmPelsHeight,
+			(int)dmNow.dmPelsWidth, (int)dmNow.dmPelsHeight,
+			GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
+			nAware, nDpi);
+	}
+}
+
 void M9Window_Apply()
 {
 	if (!g_hMainWnd)
@@ -276,6 +326,8 @@ void M9Window_Apply()
 			GetWindowRect(g_hMainWnd, g_prcClip);
 		}
 		s_eM9Placed = M9_PLACED_FULLSCREEN;
+		if (bModeChanged)
+			M9Window_Report(mode);
 		return;
 	}
 
@@ -358,6 +410,9 @@ void M9Window_Apply()
 	// new one in play, after this: M6Mouse_OnRenderInit)
 	if (!bRight)
 		ClipCursor(NULL);
+
+	if (bModeChanged)
+		M9Window_Report(mode);
 }
 
 // A window with a title bar as large as the screen (or larger) would be

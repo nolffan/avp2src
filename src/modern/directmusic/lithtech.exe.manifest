@@ -6,9 +6,20 @@
   DirectMusic DLLs serve, mapped to the copies the build installs beside
   lithtech.exe as ms_<name>.dll. The names are not Wine's, so Wine loads
   Microsoft's code rather than its own builtin of the same name.
+
+  The windowsSettings block (M-27, GitHub issue #6) tells Windows that
+  lithtech.exe is DPI-aware. Windows reads it when it starts the process,
+  before any code runs. The call in clu_WinMainQ501 does the same, but
+  Windows ignores that call if a window already exists.
 -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity type="win32" name="AVP2SRC.lithtech" version="1.0.0.0" processorArchitecture="x86"/>
+  <asmv3:application xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+    <asmv3:windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
+    </asmv3:windowsSettings>
+  </asmv3:application>
   <file name="ms_dmband.dll">
     <comClass clsid="{79BA9E00-B6EE-11D1-86BE-00C04FBF8FEF}" threadingModel="Both" description="DirectMusicBand"/>
     <comClass clsid="{D2AC2894-B39B-11D1-8704-00600893B1BD}" threadingModel="Both" description="DirectMusicBandTrack"/>
