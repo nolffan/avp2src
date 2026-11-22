@@ -1,21 +1,33 @@
-# The public archives of every build variant, as workflow artifacts (each
-# the .tar.gz itself, not a zip around it):
-# out/avp2-{legacy,modern}-{release,debug}-public.tar.gz (build/package.sh),
-# the game directory -- both games, AVP2/ and PrimalHunt/ -- without
-# anything from the retail games, with the scripts that install that from
-# the player's own disc images (build/mkinstall.py). The -private archives,
-# which hold the retail data, are not made here. The legacy release build
-# is also checked for byte regressions (make progress).
+# The four build variants without the retail games, their public archives,
+# the byte check, and the nightly and tagged releases.
 #
-# The build needs, from archive.org, the redump zips of the European discs
-# of AvP2 and Primal Hunt (the retail games: `make retail` installs them
-# from them, and AvP2's 1.0.9.6 patch, which ext/rez/ carries) and of the USA
-# discs (the install scripts are made against both releases'): about 2.6
-# GB, checked against ext/rez/isos/SHA256SUMS. The build itself needs no retail
-# file beyond those: the compilers are the ext/toolchains/ submodule's. The job
-# "prepare" fetches them once, into a cache keyed on that file, and builds
-# the docker image into a layer cache; then the four builds run at the same
-# time, each in a job of its own that restores both. None of the builds
+# The runner has no disc images and no retail data, so every build is
+# `make NODISCS=1 <target>` (build/all.sh, AVP2_NODISCS=1):
+#
+#   * It compiles every binary from this repository as always, with the
+#     retail art that is committed in assets/art/. So every binary is the
+#     same as in a build with the retail games. It takes no game data and
+#     no Bink, Smacker or Miles.
+#   * Its game directory, out/<name>-nodiscs/, does not play. Its public
+#     archive, out/<name>-public.tar.gz, does: the same archive as a build
+#     with the retail games makes (build/package.sh), both games, AVP2/ and
+#     PrimalHunt/. Its install scripts copy the games' data out of the
+#     player's own disc images (build/mkinstall.py, from
+#     build/retail-files.txt and build/retail-ranges.txt). The -private
+#     archives hold retail data: they are never made here.
+#
+# Each variant is a job of its own, named for the variant, and uploads its
+# public archive as a workflow artifact (the .tar.gz itself, not a zip
+# around it). The legacy release build is also checked for byte regressions
+# without the retail binaries (`make progress-ci`, build/progress.sh ci): it
+# compares the build with the hashes in progress/hashes/, which `make
+# progress-update` records locally from the full check. It fails if a
+# function, a resource, a float constant, a string, a vtable or a call
+# recorded there changed. It finds no new match: only a local `make
+# progress-update` does.
+#
+# The job "prepare" builds the docker image once into the layer cache; the
+# four builds then run at the same time and only read it. None of the builds
 # needs another's output.
 #
 # Pushing a tag (v*, e.g. v0.1.0-alpha) also makes a GitHub release of it,
@@ -41,7 +53,7 @@
 # watchers are not notified of every merge, and it is never marked the
 # latest release. A run whose commit is no longer master's head (one re-run
 # later, say) leaves it alone.
-name: Public archives
+name: CI
 
 on:
   push:
@@ -51,7 +63,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: public-archives-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -61,46 +73,8 @@ jobs:
   prepare:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    outputs:
-      discs-key: ${{ steps.key.outputs.key }}
     steps:
       - uses: actions/checkout@v4
-
-      # .gitmodules names the submodules by SSH; all of them are public, so
-      # fetch them over HTTPS instead, at the commit this one records. Only
-      # ext/rez/ (the disc list and fetch-isos.sh) is needed here.
-      - name: Submodules
-        run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync
-          git submodule update --init --depth 1 ext/rez
-
-      # hashFiles() sees only the checkout, so the key is made once the
-      # submodule is there, and handed to the builds.
-      - name: Cache key
-        id: key
-        run: echo "key=redump-avp2-eu-usa-$(sha256sum ext/rez/isos/SHA256SUMS | cut -c1-64)" >> "$GITHUB_OUTPUT"
-
-      # Only whether the cache has them: nothing is downloaded on a hit.
-      - name: Look for the disc images
-        id: discs
-        uses: actions/cache/restore@v4
-        with:
-          path: ext/rez/isos/*.zip
-          key: ${{ steps.key.outputs.key }}
-          lookup-only: true
-
-      # Checked against SHA256SUMS before it is saved.
-      - name: Fetch the disc images
-        if: steps.discs.outputs.cache-hit != 'true'
-        run: ext/rez/fetch-isos.sh avp2-eu avp2-ph-eu avp2-usa avp2-ph-usa
-
-      - name: Save the disc images
-        if: steps.discs.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ext/rez/isos/*.zip
-          key: ${{ steps.key.outputs.key }}
 
       # Written to the layer cache here, once; the builds only read it.
       - uses: docker/setup-buildx-action@v3
@@ -120,22 +94,30 @@ jobs:
       fail-fast: false         # one build failing still lets the others finish
       matrix:
         include:
+          # submodules: the legacy builds need only ext/tools (the build's
+          # scripts) and ext/toolchains (the compilers, the DirectX 8.1 SDK);
+          # the modern builds also ext/openmiles and ext/ffmpeg, the open
+          # middleware build/ext.sh builds (OpenMiles, FFmpeg's Bink
+          # decoders)
           - name: avp2-legacy-release
             target: all
+            submodules: ext/tools ext/toolchains
           - name: avp2-legacy-debug
             target: debug
+            submodules: ext/tools ext/toolchains
           - name: avp2-modern-release
             target: modern
+            submodules: ext/tools ext/toolchains ext/openmiles ext/ffmpeg
           - name: avp2-modern-debug
             target: modern-debug
+            submodules: ext/tools ext/toolchains ext/openmiles ext/ffmpeg
     name: ${{ matrix.name }}
     env:
       AVP2_ARCHIVES: public
       IMAGE_BUILD: 0           # the step "Build image" loads it, cached
     steps:
       # The runner's preinstalled SDKs we never use: about 30 GB, where a
-      # build needs about 12 (the image, the discs and the retail game, a
-      # game directory and its build tree).
+      # build needs a few (the image, the compilers, a build tree).
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
@@ -144,27 +126,16 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      # ext/toolchains/ (the compilers, the DirectX 8.1 SDK), ext/rez/ (the discs'
-      # installer and AvP2's 1.0.9.6 patch) and ext/tools/ (the reconstruction
-      # tools); and for the modern builds ext/openmiles/ and ext/ffmpeg/, the
-      # open middleware build/ext.sh builds (OpenMiles, FFmpeg's Bink decoders).
+      # .gitmodules names the submodules by SSH; all of them are public, so
+      # fetch them over HTTPS instead, at the commit this one records.
       - name: Submodules
         env:
-          MODERN: ${{ startsWith(matrix.target, 'modern') }}
+          SUBMODULES: ${{ matrix.submodules }}
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule sync
-          git submodule update --init --depth 1 --jobs 4 ext/toolchains ext/rez ext/tools
-          if [ "$MODERN" = true ]; then
-            git submodule update --init --depth 1 --jobs 2 ext/openmiles ext/ffmpeg
-          fi
-
-      - name: Restore the disc images
-        uses: actions/cache/restore@v4
-        with:
-          path: ext/rez/isos/*.zip
-          key: ${{ needs.prepare.outputs.discs-key }}
-          fail-on-cache-miss: true
+          # shellcheck disable=SC2086 # (a list of paths)
+          git submodule update --init --depth 1 --jobs 4 $SUBMODULES
 
       # Loaded as avp2src-build, which the Makefile then uses (IMAGE_BUILD=0).
       - uses: docker/setup-buildx-action@v3
@@ -176,20 +147,14 @@ jobs:
           load: true
           cache-from: type=gha
 
-      # Checks the zips against SHA256SUMS, converts them to .iso, then
-      # installs the retail game.
-      - name: Install the retail game
-        run: make retail
-
       - name: Build ${{ matrix.name }}
-        run: make ${{ matrix.target }}
+        run: make NODISCS=1 ${{ matrix.target }}
 
-      # The release build scored against the retail binaries: fails if a
-      # function recorded in progress/identical.txt is no longer
-      # byte-identical (build/progress.sh).
-      - name: Byte regressions (make progress)
+      # Fails if a function recorded in progress/identical.txt is no longer
+      # byte-identical, by its hash in progress/hashes/
+      - name: Byte regressions (make progress-ci)
         if: matrix.name == 'avp2-legacy-release'
-        run: make progress
+        run: make progress-ci
 
       # Uploaded as the .tar.gz itself (archive: false), not zipped again;
       # the artifact takes the file's name.
