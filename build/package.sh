@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # The game directory as one file, to copy to the machine that plays it:
 #
-#   build/package.sh out/avp2-<legacy|modern>-<release|debug>
+#   build/package.sh out/avp2-<legacy|modern>-<release|debug>[-nodiscs] [<name>]
 #
-# writes two archives, each unpacking to <name>/ (AVP2/, PrimalHunt/ and the
-# run scripts: build/all.sh):
+# writes two archives, each unpacking to <name>/ (by default the game
+# directory's own name; AVP2/, PrimalHunt/ and the run scripts:
+# build/all.sh):
 #
 #   out/<name>-private.tar.gz   the whole directory, the retail games' data
 #                               included: for your own machines, and anyone
@@ -29,6 +30,12 @@
 # "public" alone (the CI build, .github/workflows/ci.yml) the private one is
 # not made.
 #
+# A game directory built without the retail games (NODISCS=1: it has
+# NOT-PLAYABLE.txt, and it is out/<name>-nodiscs/) has no private archive:
+# it is skipped, or an error if AVP2_ARCHIVES asks for it. Its public
+# archive is the same as one built with the retail games (NOT-PLAYABLE.txt
+# is left out of it).
+#
 # build/all.sh runs it for the release build (step 6) and build/variant.sh
 # for each variant, once its symbols are in place.
 #
@@ -42,23 +49,30 @@
 # beside and renamed into place, so a failed run never leaves a truncated
 # one.
 set -e
-OUT="${1:?usage: build/package.sh <game directory>}"
+OUT="${1:?usage: build/package.sh <game directory> [<name>]}"
 OUT="${OUT%/}"
-NAME="$(basename "$OUT")"
+DIR="$(basename "$OUT")"
+NAME="${2:-$DIR}"
 PARENT="$(dirname "$OUT")"
 PKG="$PARENT/$NAME-private.tar.gz"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARCHIVES=" ${AVP2_ARCHIVES:-private public} "
 GAMES=(AVP2 PrimalHunt)
+NODISCS=
+[ -f "$OUT/NOT-PLAYABLE.txt" ] && NODISCS=1
 
 # The fresh files, staged beside the directory and renamed into it.
 STAGE=".pkg-$NAME"
 rm -rf "$PARENT/$STAGE"
 mkdir -p "$PARENT/$STAGE"
 trap 'rm -rf "$PARENT/$STAGE"' EXIT
+# <DIR>/... is <NAME>/... in the archives, and so is the stage
+NAMES=(--transform="s|^$STAGE/|$NAME/|")
+[ "$DIR" = "$NAME" ] || NAMES+=(--transform="s|^$DIR/|$NAME/|" --transform="s|^$DIR\$|$NAME|")
 FRESH=()
 for g in "${GAMES[@]}"; do
     mkdir -p "$PARENT/$STAGE/$g/Profiles"
+    [ -n "$NODISCS" ] && continue
     cp "$OUT/$g/autoexec.cfg.retail" "$PARENT/$STAGE/$g/autoexec.cfg"
     cp "$OUT/$g/Default.prf.retail" "$PARENT/$STAGE/$g/Profiles/Default.prf"
     FRESH+=("$STAGE/$g/autoexec.cfg" "$STAGE/$g/Profiles/Default.prf")
@@ -74,16 +88,22 @@ CMDS=("$STAGE/AVP2/avp2cmds.txt" "$STAGE/PrimalHunt/avp2cmds.txt")
 # what neither archive holds
 EXCLUDE=()
 for g in "${GAMES[@]}"; do
-    EXCLUDE+=(--exclude="$NAME/$g/Save/*" --exclude="$NAME/$g/Profiles/*"
-              --exclude="$NAME/$g/autoexec.cfg" --exclude="$NAME/$g/avp2cmds.txt")
+    EXCLUDE+=(--exclude="$DIR/$g/Save/*" --exclude="$DIR/$g/Profiles/*"
+              --exclude="$DIR/$g/autoexec.cfg" --exclude="$DIR/$g/avp2cmds.txt")
 done
 EXCLUDE+=(--exclude='*.log' --exclude=run-cmds.txt --exclude='*.part')
 
 rm -f "$PARENT/$NAME.tar" "$PARENT/$NAME.tar.gz"
-if [[ $ARCHIVES == *" private "* ]]; then
+if [[ $ARCHIVES == *" private "* ]] && [ -n "$NODISCS" ]; then
+    if [ -n "${AVP2_ARCHIVES:-}" ]; then
+        echo "   $PKG: $OUT was built without the retail games, but AVP2_ARCHIVES asks for it" >&2
+        exit 1
+    fi
+    echo "   $PKG: skipped (built without the retail games)"
+elif [[ $ARCHIVES == *" private "* ]]; then
     tar -C "$PARENT" -h -cf - "${EXCLUDE[@]}" \
-        --transform="s|^$STAGE/|$NAME/|" \
-        "$NAME" "${FRESH[@]}" "${CMDS[@]}" |
+        "${NAMES[@]}" \
+        "$DIR" "${FRESH[@]}" "${CMDS[@]}" |
         gzip -6 > "$PKG.part"
     mv "$PKG.part" "$PKG"
     echo "   $PKG: $(du -h "$PKG" | cut -f1) (unpacks to $NAME/)"
@@ -94,11 +114,12 @@ fi
 # left out.
 PUB="$PARENT/$NAME-public.tar.gz"
 python3 "$HERE/mkinstall.py" "$OUT" "$PARENT/$STAGE"
-sed "s|^|$NAME/|" "$PARENT/$STAGE/disc-files.txt" > "$PARENT/$STAGE/exclude.txt"
+sed "s|^|$DIR/|" "$PARENT/$STAGE/disc-files.txt" > "$PARENT/$STAGE/exclude.txt"
+echo "$DIR/NOT-PLAYABLE.txt" >> "$PARENT/$STAGE/exclude.txt"
 tar -C "$PARENT" -h -cf "$PARENT/$STAGE/public.tar" "${EXCLUDE[@]}" \
     --anchored --no-wildcards --exclude-from="$PARENT/$STAGE/exclude.txt" \
-    --transform="s|^$STAGE/|$NAME/|" \
-    "$NAME" "${CMDS[@]}" "$STAGE/linux-install.sh" "$STAGE/windows-install.bat" \
+    "${NAMES[@]}" \
+    "$DIR" "${CMDS[@]}" "$STAGE/linux-install.sh" "$STAGE/windows-install.bat" \
     "$STAGE/mac-install.command"
 # Last, SHA256SUMS: every file of the archive and every file the install
 # scripts write, but the settings the games rewrite. `sha256sum -c

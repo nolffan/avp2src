@@ -41,7 +41,9 @@
 # are extracted into out/<name>/ on its first run (hard links to the retail
 # files where they can be) and kept after that. Last, the game directory is
 # packaged as out/<name>-private.tar.gz and -public.tar.gz, like the release
-# build's (build/package.sh).
+# build's (build/package.sh). With AVP2_NODISCS=1 (make NODISCS=1) the game
+# directory is out/<name>-nodiscs/, without the retail games' data, and only
+# its public archive is made (build/all.sh).
 set -e
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
@@ -102,13 +104,17 @@ export AVP2_RETAIL="${AVP2_RETAIL:-$REPO/out/retail}"
 export AVP2SRC_CFLAGS="$CFLAGS"
 export AVP2SRC_LDFLAGS="$LDFLAGS"
 export AVP2SRC_RCFLAGS="$RCFLAGS"
-export AVP2_GAME_OUT="$REPO/out/$NAME"
+# (AVP2_NODISCS=1, make NODISCS=1: without the retail games, into
+# out/<name>-nodiscs/, which does not play; build/all.sh)
+GAMEDIR="out/$NAME"
+[ "${AVP2_NODISCS:-0}" = 1 ] && GAMEDIR="out/$NAME-nodiscs"
+export AVP2_GAME_OUT="$REPO/$GAMEDIR"
 export AVP2_PACKAGE=0
 bash "$TREE/build/all.sh"
 
 case "$VARIANT" in *debug)
     echo
-    echo "== symbols: each built binary's .pdb (and .map) beside it in out/$NAME/"
+    echo "== symbols: each built binary's .pdb (and .map) beside it in $GAMEDIR/"
     # each MANIFEST.txt has `built <source>\t<installed path>` for every
     # binary we built; its .pdb is the link output's name with .pdb, and the
     # debugger looks for it by that name in the binary's own directory.
@@ -130,6 +136,6 @@ case "$VARIANT" in *debug)
     done ;;
 esac
 echo
-echo "== package: out/$NAME/ -> out/$NAME-private.tar.gz, -public.tar.gz"
-bash "$TREE/build/package.sh" "out/$NAME"
-echo "== done: out/$NAME/"
+echo "== package: $GAMEDIR/ -> out/$NAME-private.tar.gz, -public.tar.gz"
+bash "$TREE/build/package.sh" "$GAMEDIR" "$NAME"
+echo "== done: $GAMEDIR/"

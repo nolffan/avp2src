@@ -4,6 +4,7 @@
 #   make modern   the games with AVP2SRC_MODERN, in out/avp2-modern-release/
 #   make progress how much of the build is byte-identical to the retail game;
 #                 fails if a function recorded as identical stops matching
+#   make ci       the CI build and check, without the retail games
 #   make help     everything else
 #
 # Needs only docker on the host, the submodules (`git submodule update
@@ -34,13 +35,18 @@ TEST_SECS ?= $(if $(TEST_SCRIPT),5,60)
 TEST_NAME = $(if $(filter out/avp2-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
 
 # Your disc images, if they are not in isos/: AVP2SRC_ISOS=<directory>
-# (mounted read-only)
+# (mounted read-only). NODISCS=1: build without the retail games, any
+# variant (`make ci`; build/all.sh): into out/<name>-nodiscs/, which does
+# not play, and out/<name>-public.tar.gz, which installs from your disc
+# images.
 AVP2SRC_ISOS ?=
+NODISCS ?=
 ISO_MOUNT := $(if $(AVP2SRC_ISOS),-v $(abspath $(AVP2SRC_ISOS)):/isos:ro -e AVP2SRC_ISOS=/isos)
 
 DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 	-u $(shell id -u):$(shell id -g) -e HOME=/tmp/home $(if $(JOBS),-e AVP2SRC_JOBS=$(JOBS)) \
 	$(if $(AVP2_ARCHIVES),-e AVP2_ARCHIVES="$(AVP2_ARCHIVES)") \
+	$(if $(filter 1,$(NODISCS)),-e AVP2_NODISCS=1) \
 	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT) $(IMAGE)
 
 # The VC6 revisions the Rich headers name (progress/COMPILERS.md): SP5's
@@ -51,7 +57,7 @@ TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-9044/BIN/cl.exe ext/toolchains/msvc-6
 	ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game debug modern modern-debug image retail retail-ranges check-tools check-toolchain check-ext \
-	test reference art art-check progress progress-update progress-ci shell clean distclean help
+	test reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -70,8 +76,10 @@ help:
 	@echo "                function recorded in progress/identical.txt stops matching"
 	@echo "make progress-update  record the score in progress/ (and its README.md table), and the"
 	@echo "                hashes make progress-ci checks against in progress/hashes/"
-	@echo "make progress-ci  the check without the retail game: the build against"
+	@echo "make progress-ci  the check without the retail games: the build against"
 	@echo "                progress/hashes/ (finds no new matches)"
+	@echo "make ci         what CI runs: make NODISCS=1 (the legacy release build without"
+	@echo "                the retail games: no game data), then make progress-ci"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     install Primal Hunt, and AvP2 with its 1.0.9.6 patch, from your"
 	@echo "                three disc images in isos/ (once; every build runs it), and check them"
@@ -88,7 +96,8 @@ help:
 	@echo
 	@echo "Variables: JOBS=<n> (parallel compiles; default one per CPU)"
 	@echo "           AVP2_ARCHIVES=\"private public\" (the archives build/package.sh writes)"
-	@echo "           AVP2SRC_ISOS=<dir> (your disc images, if not in isos/)"
+	@echo "           AVP2SRC_ISOS=<dir> (your disc images, if not in isos/), NODISCS=1 (without"
+	@echo "           them: out/<name>-nodiscs/, which does not play, and out/<name>-public.tar.gz)"
 	@echo "           IMAGE_BUILD=0 (use the docker image as it is, as CI does)"
 	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1 (progress/README.md)"
 
@@ -114,7 +123,7 @@ test: image
 	done; exit $$rc
 
 # IMAGE_BUILD=0: use $(IMAGE) as it is (CI builds it with a layer cache
-# first, .github/workflows/public-archives.yml).
+# first, .github/workflows/ci.yml).
 IMAGE_BUILD ?= 1
 image:
 ifeq ($(IMAGE_BUILD),0)
@@ -128,9 +137,14 @@ endif
 
 # The retail games the build takes its data from (build/retail.sh): installed
 # from your disc images (isos/, or AVP2SRC_ISOS) by build/discs.py the first
-# time, checked against build/retail-files.txt every time.
+# time, checked against build/retail-files.txt every time. Nothing with
+# NODISCS=1.
 retail: check-tools image
+ifeq ($(NODISCS),1)
+	@echo "== NODISCS=1: no retail games (the build has no game data; its art is assets/art/)"
+else
 	@$(DOCKER_RUN) bash -c 'source build/retail.sh && retail_install && retail_verify'
+endif
 
 # build/retail-ranges.txt, written again from the retail games
 # (build/discs.py ranges): only needed when what the build zeroes in them
@@ -176,15 +190,23 @@ progress: retail
 progress-update: retail
 	$(DOCKER_RUN) env ACCEPT_LOSSES=$(ACCEPT_LOSSES) $(EVIDENCE_ENV) bash build/progress.sh update
 
-# Without the retail game: the build against progress/hashes/ (build/progress.sh ci)
+# Without the retail games: the build against progress/hashes/ (build/progress.sh ci)
 progress-ci: check-tools image
 	$(DOCKER_RUN) bash build/progress.sh ci
+
+# What CI runs for the legacy release build (.github/workflows/ci.yml): the
+# build without the retail games, then the check without them
+ci:
+	$(MAKE) --no-print-directory NODISCS=1 game
+	$(MAKE) --no-print-directory progress-ci
 
 shell: image
 	docker run --rm -it --init --name $(CONTAINER)-shell \
 	  -u $(shell id -u):$(shell id -g) -e HOME=/tmp/home \
 	  -v $(CURDIR):/repo -w /repo $(ISO_MOUNT) $(IMAGE) bash
 
+# (out/retail/, the installed retail games, goes too: the next build installs
+# them again from your disc images)
 clean:
 	rm -rf out .wine .build
 	[ ! -d src ] || find src -depth -type d \( -name built -o -name Built \) -exec rm -rf {} +

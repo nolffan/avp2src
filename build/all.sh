@@ -81,15 +81,32 @@ export WINEDEBUG=-all
 
 cd "$REPO"
 source build/retail.sh
-OUT="${AVP2_GAME_OUT:-out/avp2-legacy-release}"
-RETAIL_PH="$(retail_dir)"
-RETAIL_AVP2="$(retail_avp2_dir)"
-retail_verify
+# AVP2_NODISCS=1 (make NODISCS=1): without the retail games. Every binary is
+# compiled as always (the art is assets/art/'s), but steps 1 and 2 copy no
+# game data and no Bink, Smacker or Miles: they write only the MANIFEST.txt
+# rows (build/nodiscs.py, from build/retail-files.txt). The game directory
+# is out/<name>-nodiscs/, with NOT-PLAYABLE.txt in it; it does not play.
+# Its public archive, out/<name>-public.tar.gz, is the one a build with the
+# retail games makes (build/package.sh).
+NODISCS=
+[ "${AVP2_NODISCS:-0}" = 1 ] && NODISCS=1
+NAME="$(basename "${AVP2_GAME_OUT:-out/avp2-legacy-release}")"
+OUT="${AVP2_GAME_OUT:-out/avp2-legacy-release${NODISCS:+-nodiscs}}"
+if [ -n "$NODISCS" ]; then
+    NAME="${NAME%-nodiscs}"
+    RETAIL_PH= RETAIL_AVP2=
+else
+    RETAIL_PH="$(retail_dir)"
+    RETAIL_AVP2="$(retail_avp2_dir)"
+    retail_verify
+    # build/retail-ranges.txt (what the install scripts zero), and the retail
+    # art the launchers and Primal Hunt's server are compiled with, committed
+    # in assets/art/: still what the retail games give
+    echo "== build/retail-ranges.txt and assets/art/ against the retail games"
+    python3 build/discs.py ranges check "$(dirname "$RETAIL_PH")"
+    python3 build/art.py check "$(dirname "$RETAIL_PH")"
+fi
 T0=$(date +%s)
-# the retail art the launchers and Primal Hunt's server are compiled with,
-# committed in assets/art/: still the retail games' (build/art.py)
-echo "== assets/art/ against the retail games (build/art.py check)"
-python3 build/art.py check "$(dirname "$RETAIL_PH")"
 step() { echo; echo "######## $* ($(( $(date +%s) - T0 ))s)"; }
 MODERN=
 case " ${AVP2SRC_CFLAGS:-} " in *AVP2SRC_MODERN*) MODERN=1 ;; esac
@@ -142,6 +159,10 @@ loose() {
     local r=$1 g=$2 f
     shift 2
     for f in "$@"; do
+        if [ -n "$NODISCS" ]; then
+            printf 'data %s:%s\t%s\n' "$(basename "$r")" "$f" "$f" >> "$g/MANIFEST.txt"
+            continue
+        fi
         [ -f "$r/$f" ] || { echo "error: $r/$f missing" >&2; exit 1; }
         if [ ! -f "$g/$f" ] || ! cmp -s "$r/$f" "$g/$f"; then
             cp "$r/$f" "$g/$f.part" && mv "$g/$f.part" "$g/$f"
@@ -151,17 +172,24 @@ loose() {
 }
 
 # game <name> <dir> <retail dir> <layout>: steps 1 and 2 for one game
+# (NODISCS: <retail dir> is the release's name only, and nothing is copied)
 game_data() {
     local name=$1 g="$OUT/$2" r=$3 layout=$4
     shift 4
-    step "1. resources ($name): game data from $r -> $g"
-    RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py resources "$r" "$g"
-    loose "$r" "$g" "$@"
-    # autoexec.cfg and the default profile start as the shipped ones (the
-    # games rewrite them); a rebuild keeps the player's.
-    [ -f "$g/autoexec.cfg" ] || cp "$g/autoexec.cfg.retail" "$g/autoexec.cfg"
     mkdir -p "$g/Save" "$g/custom" "$g/Profiles"
-    [ -f "$g/Profiles/Default.prf" ] || cp "$g/Default.prf.retail" "$g/Profiles/Default.prf"
+    if [ -n "$NODISCS" ]; then
+        step "1. resources ($name): no game data (NODISCS=1), only its MANIFEST.txt rows"
+        RETAIL_LAYOUT=$layout python3 build/nodiscs.py resources "$r" "$g"
+        loose "$r" "$g" "$@"
+    else
+        step "1. resources ($name): game data from $r -> $g"
+        RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py resources "$r" "$g"
+        loose "$r" "$g" "$@"
+        # autoexec.cfg and the default profile start as the shipped ones (the
+        # games rewrite them); a rebuild keeps the player's.
+        [ -f "$g/autoexec.cfg" ] || cp "$g/autoexec.cfg.retail" "$g/autoexec.cfg"
+        [ -f "$g/Profiles/Default.prf" ] || cp "$g/Default.prf.retail" "$g/Profiles/Default.prf"
+    fi
     if [ -n "$MODERN" ]; then
         step "2. open runtime ($name): OpenMiles and our Bink player on FFmpeg (build/ext.sh)"
         # what an earlier build took from the retail game: the open runtime
@@ -174,6 +202,9 @@ game_data() {
             esac
         done
         RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py openruntime "${AVP2_EXT_OUT:-out/ext}" "$g"
+    elif [ -n "$NODISCS" ]; then
+        step "2. THIRD-PARTY RUNTIME ($name): no Bink, Smacker or Miles (NODISCS=1), only their MANIFEST.txt rows"
+        RETAIL_LAYOUT=$layout python3 build/nodiscs.py thirdparty "$r" "$g"
     else
         step "2. THIRD-PARTY RUNTIME ($name): Bink, Smacker and Miles from $r"
         RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py thirdparty "$r" "$g"
@@ -181,6 +212,16 @@ game_data() {
 }
 [ -z "$MODERN" ] || { step "0. open middleware: build/ext.sh (OpenMiles, FFmpeg, our Bink player)"; bash build/ext.sh; }
 mkdir -p "$OUT/AVP2" "$OUT/PrimalHunt"
+if [ -n "$NODISCS" ]; then
+    RETAIL_AVP2=$RETAIL_AVP2_RELEASE RETAIL_PH=$RETAIL_RELEASE
+    cat > "$OUT/NOT-PLAYABLE.txt" <<'TXT'
+This game directory was built without the retail games (make NODISCS=1).
+Its binaries are complete, but it has no game data, and no Bink, Smacker
+or Miles: it does not play. Its public archive (<name>-public.tar.gz) is
+the one to play: unpack it, and its install scripts copy the games' data
+out of your own disc images.
+TXT
+fi
 game_data "AvP2 1.0.9.6" AVP2 "$RETAIL_AVP2" build/retail_avp2.py "${LOOSE_AVP2[@]}"
 bash build/avp2cmds.sh avp2 ${MODERN:+open} > "$OUT/AVP2/avp2cmds.txt"
 # customrez.txt: AvP2's dedicated server (AVP2Serv.exe, ServerDlg.cpp's
@@ -242,15 +283,17 @@ assemble() {
         echo "   $1/${b[i+1]}  <-  ${b[i]}"
     done
     # one row per file: the manifest is rewritten by the next step's tool
-    python3 - "$g/MANIFEST.txt" <<'PY'
+    python3 - "$g/MANIFEST.txt" "${NODISCS:-0}" <<'PY'
 import os, sys
-p = sys.argv[1]
+p, nodiscs = sys.argv[1], sys.argv[2] == "1"
 rows = {}
 for line in open(p).read().splitlines():
     if "\t" in line and not line.startswith("#"):
         origin, path = line.split("\t", 1)
-        # a file an older build put here and this one removed
-        if os.path.exists(os.path.join(os.path.dirname(p), path)):
+        # a file an older build put here and this one removed (without the
+        # retail games, their rows stay: their files are the install's)
+        if os.path.exists(os.path.join(os.path.dirname(p), path)) or \
+                (nodiscs and origin.startswith(("data ", "THIRD-PARTY "))):
             rows[path] = origin
 with open(p, "w") as f:
     f.write("# origin<TAB>path, one row per file build/all.sh put here\n")
@@ -271,6 +314,7 @@ done
 for f in "$OUT"/*; do
     case "$(basename "$f")" in
         AVP2|PrimalHunt|linux-run-avp2.sh|linux-run-ph.sh|linux-server-avp2.sh|linux-server-ph.sh|windows-run.bat) ;;
+        NOT-PLAYABLE.txt) [ -n "$NODISCS" ] || { echo "error: $f: a build with the retail games is playable" >&2; exit 1; } ;;
         *) echo "error: $f: not a file the build puts there" >&2; exit 1 ;;
     esac
 done
@@ -278,8 +322,12 @@ done
 # (AVP2_PACKAGE=0 skips it: build/variant.sh packages its game directory
 # itself, once the symbols are in)
 if [ "${AVP2_PACKAGE:-1}" = 1 ]; then
-    step "6. package: $OUT -> $OUT-private.tar.gz, -public.tar.gz"
-    bash "$REPO/build/package.sh" "$OUT"
+    step "6. package: $OUT -> $(dirname "$OUT")/$NAME-private.tar.gz, -public.tar.gz"
+    bash "$REPO/build/package.sh" "$OUT" "$NAME"
 fi
 
-step "done: $OUT ($(( $(date +%s) - T0 ))s)${MODERN:+ (the modern build)} -- play it with $OUT/linux-run-avp2.sh or linux-run-ph.sh, or test it with make test"
+if [ -n "$NODISCS" ]; then
+    step "done: $OUT ($(( $(date +%s) - T0 ))s)${MODERN:+ (the modern build)} -- built without the retail games: it does not play; its public archive does"
+else
+    step "done: $OUT ($(( $(date +%s) - T0 ))s)${MODERN:+ (the modern build)} -- play it with $OUT/linux-run-avp2.sh or linux-run-ph.sh, or test it with make test"
+fi

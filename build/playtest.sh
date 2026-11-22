@@ -42,6 +42,10 @@ esac
 shift 2 2>/dev/null || shift $#
 case "$GAMEDIR" in /*) GAME="$GAMEDIR" ;; *) GAME="$REPO/$GAMEDIR" ;; esac
 GAME="${GAME%/}"
+if [ -f "$GAME/NOT-PLAYABLE.txt" ]; then
+    echo "error: $GAMEDIR was built without the retail games (NODISCS=1) and does not play" >&2
+    exit 1
+fi
 NAME="${PLAYTEST_NAME:-$(basename "$GAME")}"
 mkdir -p "$REPO/out/play/$NAME"
 if [ "$SUB" = PrimalHunt ] && [ ! -e "$REPO/out/play/$NAME/AVP2" ]; then

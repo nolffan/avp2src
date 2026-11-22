@@ -59,6 +59,7 @@
 set -e
 cd "$(dirname "$0")"
 HERE="$(pwd)"
+[ ! -f NOT-PLAYABLE.txt ] || { echo "@SCRIPT@: this directory was built without the retail games and does not play (NOT-PLAYABLE.txt): use its public archive" >&2; exit 1; }
 GAME=@GAME@
 EXE=@EXE@
 MODERN=@MODERN@
