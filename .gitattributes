@@ -4,3 +4,6 @@
 # shipped with.
 src/AVP2/ClientRes/credits.txt -text
 src/AVP2/ClientRes/phcredits.txt -text
+# The retail art our launchers and Primal Hunt's server are compiled with
+# (assets/art/, build/art.py): kept byte for byte.
+assets/art/** -text -diff

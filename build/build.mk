@@ -1090,15 +1090,16 @@ launcher-objs: $(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/Release/%.obj) $(LAUNCHER_SRC:%.
 #     (src/lithshared/RegMgr32/), compiled with 8966 (the Rich header's one
 #     object of it) into a library of its own; its code lies between the C
 #     runtime and MFC in the retail images, outside their own code
-#   - launcher.res: launcher.rc, with the art read out of the retail image
-#     the variant is built against (ext/tools/rsrc2rc.py, into <dir>/res/: not in
-#     the tree), compiled in the object directory, where res\ is
+#   - launcher.res: launcher.rc, with the retail launcher's art, which is
+#     committed in assets/art/launcher/<avp2|ph>/ (build/art.py: read out of
+#     the retail image by ext/tools/rsrc2rc.py) and copied into <dir>/res/,
+#     compiled in the object directory, where res\ is
 #   - the import libraries the retail import tables name, and MFC's and the
 #     C runtime's (SP5's, from the environment's LIB)
 REGMGR32 := src/lithshared/RegMgr32
-# (the installed retail games', which every tree has -- ext/rez/, linked into a
-# variant's -- not out/reference/'s copies, which a fresh tree lacks)
-LAUNCHER_REF := ext/rez/games
+# (assets/art/ is linked into the release tree and a variant's: build/env.sh,
+# build/variant.sh)
+LAUNCHER_ART := assets/art/launcher
 LAUNCHER_LIBS := nafxcw.lib libcmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib \
     comctl32.lib comdlg32.lib winmm.lib
 # The modern build (AVP2SRC_MODERN, docs/MODERN.md M-8) links two programs
@@ -1124,21 +1125,22 @@ $(foreach e,game:1 launcher:0,$(eval $(call compile,$(LAUNCHER)/$(1)/m8_$(firstw
     $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LAUNCHER_CL) /D M8_DIRECT=$(lastword $(subst :, ,$(e))) /Fo$(1)/m8_$(firstword $(subst :, ,$(e))).obj,wine-drives)))
 $(call launcher_exe,$(1),$(2),m8_launcher.obj)
 endef
-# $(call launcher_link,<object dir>,<image>,<retail image>,<rc defines>,<launcher image>)
+# $(call launcher_link,<object dir>,<image>,<art directory>,<rc defines>,<launcher image>)
 define launcher_link
 $(eval $(call compile,$(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,$(REGMGR32),regmgr32.cpp,$(ENV_GAME),$(V8966)/BIN/cl.exe,\
     /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /c /Fo..\..\launcher\$(1)\regmgr32\regmgr32.obj,wine-drives))
 $(eval $(call library,$(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib,$(LAUNCHER)/$(1)/regmgr32,/nologo /out:RegMgr32.lib,\
     $(LAUNCHER)/$(1)/regmgr32/regmgr32.obj,regmgr32.obj,$(ENV_GAME),$(LIBEXE)))
-$(eval $(call tool,$(LAUNCHER)/$(1)/res/retail.rc,$(LAUNCHER_REF)/$(3),\
-    python3 ext/tools/rsrc2rc.py $(LAUNCHER_REF)/$(3) $(LAUNCHER)/$(1)/res/retail.rc --res-dir=. --name=launcher >/dev/null))
-$(eval $(call tool,$(LAUNCHER)/$(1)/launcher.res,$(LAUNCHER)/launcher.rc $(LAUNCHER)/resource.h $(LAUNCHER)/$(1)/res/retail.rc | wine-drives,\
+$(eval $(call tool,$(LAUNCHER)/$(1)/res/art.stamp,$(sort $(wildcard $(LAUNCHER_ART)/$(3)/*)),\
+    mkdir -p $(LAUNCHER)/$(1)/res && \
+    cp $(LAUNCHER_ART)/$(3)/* $(LAUNCHER)/$(1)/res/ && touch $(LAUNCHER)/$(1)/res/art.stamp))
+$(eval $(call tool,$(LAUNCHER)/$(1)/launcher.res,$(LAUNCHER)/launcher.rc $(LAUNCHER)/resource.h $(LAUNCHER)/$(1)/res/art.stamp | wine-drives,\
     cd $(LAUNCHER)/$(1) && $(ENV_GAME) $(WINE) $(RC) $(AVP2SRC_RCFLAGS) /l 0x409 /d NDEBUG $(4) /folauncher.res '..\launcher.rc'))
 $(call launcher_exe,$(1),$(2),$(if $(MODERN_BUILD),m8_game.obj))
 $(if $(MODERN_BUILD),$(call launcher_modern,$(1),$(5)))
 endef
-$(eval $(call launcher_link,Release,AVP2.exe,avp2-eu-1.0.9.6/AVP2.exe,,AVP2Launcher.exe))
-$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,avp2-ph-eu/PrimalHunt.exe,/d PRIMAL_HUNT,PrimalHuntLauncher.exe))
+$(eval $(call launcher_link,Release,AVP2.exe,avp2,,AVP2Launcher.exe))
+$(eval $(call launcher_link,PrimalHunt,PrimalHunt.exe,ph,/d PRIMAL_HUNT,PrimalHuntLauncher.exe))
 .PHONY: launchers
 launchers: $(LAUNCHER)/Release/AVP2.exe $(LAUNCHER)/PrimalHunt/PrimalHunt.exe \
     $(if $(MODERN_BUILD),$(LAUNCHER)/Release/AVP2Launcher.exe $(LAUNCHER)/PrimalHunt/PrimalHuntLauncher.exe)
@@ -1567,15 +1569,11 @@ $(eval $(call compile,src/lithshared/RegMgr32/Release/regmgr32.obj,$(REGMGR32),r
     /nologo /MT /W3 /GX /O2 /D WIN32 /D NDEBUG /D _WINDOWS /D _MBCS /c /FoRelease/,wine-drives))
 $(eval $(call tool,$(LOUT)/RegMgr32.lib,src/lithshared/RegMgr32/Release/regmgr32.obj | wine-drives,\
     cd $(REGMGR32) && $(ENV_GAME) $(WINE) $(LIBEXE) /nologo '/out:$(call ws,$(ROOT)/$(LOUT))\RegMgr32.lib' 'Release\regmgr32.obj'))
-# Its splash screen is Primal Hunt's (ServerApp.rc, PRIMAL_HUNT): read out
-# of the retail image (ext/tools/rsrc2rc.py) into PrimalHunt/res/, not the tree.
-# (the installed retail game's, which every tree has -- ext/rez/, linked into
-# a variant's -- not out/reference/'s copy of it, which a fresh tree lacks:
-# the path was /AVP2XServ.exe in CI's)
-SVPH_REF := ext/rez/games/avp2-ph-eu
-$(eval $(call tool,src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp,$(SVPH_REF)/AVP2XServ.exe,\
-    python3 ext/tools/rsrc2rc.py $(SVPH_REF)/AVP2XServ.exe src/AVP2/AVP2Serv/PrimalHunt/res/retail.rc --res-dir=. --name=retail >/dev/null && \
-    cp src/AVP2/AVP2Serv/PrimalHunt/res/retail_142.bmp src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp))
+# Its splash screen is Primal Hunt's (ServerApp.rc, PRIMAL_HUNT): the retail
+# bitmap, committed in assets/art/avp2xserv/ (build/art.py: read out of the
+# retail image by ext/tools/rsrc2rc.py), copied into PrimalHunt/res/.
+$(eval $(call tool,src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp,assets/art/avp2xserv/splash.bmp,\
+    mkdir -p src/AVP2/AVP2Serv/PrimalHunt/res && cp assets/art/avp2xserv/splash.bmp src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp))
 src/AVP2/AVP2Serv/PrimalHunt/ServerApp.res: src/AVP2/AVP2Serv/PrimalHunt/res/splash.bmp
 .PHONY: servers
 servers: ServerApp ServerApp_PH

@@ -85,6 +85,10 @@ RETAIL_PH="$(retail_dir)"
 RETAIL_AVP2="$(retail_avp2_dir)"
 retail_verify
 T0=$(date +%s)
+# the retail art the launchers and Primal Hunt's server are compiled with,
+# committed in assets/art/: still the retail games' (build/art.py)
+echo "== assets/art/ against the retail games (build/art.py check)"
+python3 build/art.py check "$(dirname "$RETAIL_PH")"
 step() { echo; echo "######## $* ($(( $(date +%s) - T0 ))s)"; }
 MODERN=
 case " ${AVP2SRC_CFLAGS:-} " in *AVP2SRC_MODERN*) MODERN=1 ;; esac

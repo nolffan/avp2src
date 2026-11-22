@@ -83,6 +83,9 @@ tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build ext/tools | ta
 [ -L "$TREE/ext/toolchains" ] || ln -s ../../../ext/toolchains "$TREE/ext/toolchains"
 [ -L "$TREE/ext/rez" ] || ln -s ../../../ext/rez "$TREE/ext/rez"
 [ -L "$TREE/progress" ] || ln -s ../../progress "$TREE/progress"
+# the retail art the launchers and Primal Hunt's server are compiled with
+# (assets/art/: build/art.py)
+[ -L "$TREE/assets" ] || ln -s ../../assets "$TREE/assets"
 # and the modern build's open-source middleware (build/ext.sh), built once
 # into out/ext/ for both modern variants
 case "$VARIANT" in modern*)

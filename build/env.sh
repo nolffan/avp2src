@@ -76,6 +76,7 @@ avp2src_release_tree() {
     [ -L "$tree/progress" ] || ln -s ../../progress "$tree/progress"
     [ -L "$tree/ext/toolchains" ] || ln -s ../../../ext/toolchains "$tree/ext/toolchains"
     [ -L "$tree/ext/rez" ] || ln -s ../../../ext/rez "$tree/ext/rez"
+    [ -L "$tree/assets" ] || ln -s ../../assets "$tree/assets"
     ( cd "$tree" && AVP2SRC_IN_RELEASE_TREE=1 bash "build/$script" "$@" ) || rc=$?
     python3 "$REPO/ext/tools/releasesrc.py" outputs "$tree/src" "$REPO/src" || exit 1
     exit $rc

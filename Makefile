@@ -45,7 +45,7 @@ TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-9044/BIN/cl.exe ext/toolchains/msvc-6
 	ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain check-ext \
-	test reference progress progress-update progress-ci shell clean distclean help
+	test reference art art-check progress progress-update progress-ci shell clean distclean help
 
 all: game
 
@@ -70,6 +70,10 @@ help:
 	@echo "make retail     fetch the disc images and install Primal Hunt, and AvP2 with its"
 	@echo "                1.0.9.6 patch, from them, and fetch the USA releases' discs too, for"
 	@echo "                the public archive (ext/rez/, once; every build runs it); check them"
+	@echo "make art        write the retail art our launchers and Primal Hunt's server are"
+	@echo "                compiled with into assets/art/ again, from the retail binaries"
+	@echo "make art-check  check that assets/art/ is the retail art (every build with"
+	@echo "                the retail games also does this)"
 	@echo "make shell      a shell in the build container (build/*.sh, ext/tools/ work there)"
 	@echo "make image      (re)build the docker image $(IMAGE)"
 	@echo "make clean      remove out/ and every build output in the source tree"
@@ -123,6 +127,16 @@ retail: check-rez check-tools image
 
 reference: retail
 	$(DOCKER_RUN) bash build/reference.sh
+
+# The retail art the launchers and Primal Hunt's dedicated server are
+# compiled with, committed in assets/art/: written again from the retail
+# binaries' resources, or checked against them (build/art.py; every build
+# with the retail games checks it)
+art: check-tools retail
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/art.py write "$$(dirname "$$(retail_dir)")"'
+
+art-check: check-tools retail
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/art.py check "$$(dirname "$$(retail_dir)")"'
 
 check-rez:
 	@[ -f ext/rez/install-games.sh ] || { echo "error: ext/rez/ is empty -- the disc images and their installer are the ext/rez/ submodule: run git submodule update --init (see ext/rez/README.md)" >&2; exit 1; }
