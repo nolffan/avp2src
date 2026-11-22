@@ -82,11 +82,39 @@ git submodule update --init
 The submodules are:
 
 - `ext/toolchains/`: the compilers.
-- `ext/rez/`: the installer. It gets the disc images from archive.org. It
-  installs AvP2, the AvP2 1.0.9.6 patch and Primal Hunt.
 - `ext/tools/`: the reconstruction tools.
 - `ext/openmiles/` and `ext/ffmpeg/`: the open-source audio and video
   libraries. Only the modern build uses them.
+
+You must also have your own images of the three discs: the two discs of
+Aliens versus Predator 2 (Europe) and the disc of Primal Hunt (Europe).
+The build takes the data of the games from them. This repository does not
+supply them. Put the three images in `isos/` at the root of the checkout,
+or set `AVP2SRC_ISOS=<directory>` (make gives that directory to the
+container, read-only). The directory must hold the files, not symbolic
+links to files outside it: the container cannot follow those. A hard link
+is good, and it uses no more disk: `ln <image> isos/`. An image can be:
+
+- a `.iso`, with 2048-byte sectors (your own copy, for example);
+- a raw `.bin`, with 2352-byte sectors, with or without its `.cue`;
+- a `.zip` that holds one `.bin` or `.iso` (the build reads it in place).
+
+For example, the redump dumps of the discs are good images:
+`Aliens Versus Predator 2 (Europe) (Disc 1)`,
+`Aliens Versus Predator 2 (Europe) (Disc 2)` and
+`Aliens Versus Predator 2 - Primal Hunt (Europe)`. Any correct copy of the
+discs is good: the build does not check the image as a whole. It finds
+each disc by its volume label and size, and it checks each file that it
+installs. The AvP2 1.0.9.6 patch is on the Primal Hunt disc. The USA discs
+are not sufficient: the AvP2 launcher, readme and EULA on them are not the
+European files.
+
+`make retail` (each build does it first) installs the two games from the
+images into `out/retail/` one time, as their setups and the patch do
+(`build/discs.py`). `build/retail-files.txt` is the list of the installed
+files: for each file, its size, its SHA-256, and where it is on which
+disc. It holds no game data. Without the images, `make` stops with a
+message that tells you what to supply.
 
 ### Commands
 
@@ -110,6 +138,24 @@ There are three more builds:
 These three builds use a copy of the source tree in `out/build-<variant>/`
 (`build/variant.sh`). `make progress` does not compare them with the
 retail binaries.
+
+### The build without the retail games
+
+`make NODISCS=1` (also with `debug`, `modern` or `modern-debug`) builds
+without the disc images. The CI does this
+(`.github/workflows/ci.yml`). It compiles all the binaries, the same as a
+build with the discs: the retail art that the launchers and the Primal
+Hunt dedicated server use is in `assets/art/` (`assets/README.md`). It
+copies no game data, and no Bink, Smacker or Miles. Its game directory is
+`out/<name>-nodiscs/`, with the file `NOT-PLAYABLE.txt`. You cannot play
+this directory: the run scripts and `make test` refuse it. Its public
+archive, `out/<name>-public.tar.gz`, is the same as the public archive of
+a build with the discs, and you can install it from your discs. It has no
+private archive.
+
+`make progress-ci` checks a build against `progress/hashes/`, without the
+retail games (`progress/README.md`). `make ci` does the two steps of the CI
+for the legacy build: `make NODISCS=1`, then `make progress-ci`.
 
 ### The game directory
 
@@ -154,10 +200,17 @@ Each build also makes two archives of its game directory
 
 The public archive has install scripts (`build/mkinstall.py`). The scripts
 copy the data from the player's own disc images: the two AvP2 discs and
-the Primal Hunt disc. The European discs are the default. The scripts also
-accept some USA discs. They accept a `.iso` file, or a redump `.bin`/`.cue`
-or `.zip` file. They copy the AvP2 1.0.9.6 patch from the Primal Hunt disc.
-They make sure that each file they write is correct.
+the Primal Hunt disc (Europe). They accept a `.iso` file, or a raw
+`.bin`/`.cue` file, or a `.zip` file that holds one. They copy the AvP2
+1.0.9.6 patch from the Primal Hunt disc. They make sure that each file
+they write is correct. `build/mkinstall.py` needs no disc image and no
+retail game: `build/retail-files.txt` and `build/retail-ranges.txt` give
+where each file is on the discs. The archive ships all our files (the
+binaries, the scripts, `MANIFEST.txt`) at their real paths. Its
+`SHA256SUMS` lists each file of the archive and each file that the scripts
+write, but the settings that the games write again (`autoexec.cfg` and
+`Profiles/Default.prf`). Thus `sha256sum -c SHA256SUMS` in the game
+directory checks an installation.
 
 To install on Linux, do this command:
 
@@ -176,6 +229,22 @@ This script also writes the registry values that the retail setups wrote.
 
 If you do not give the images, the scripts look for them in the game
 directory and in the directory above it. You can do the scripts again.
+
+To upgrade, unpack the new release over your installed game. Use the same
+build (legacy or modern) as the installed game. Each archive holds one
+directory with the name of its release, so put the files that are in that
+directory into the directory of the installed game. On Linux:
+
+```sh
+tar xzf avp2src-<release>.tar.gz --strip-components=1 -C /path/to/installed/game
+```
+
+On Windows or a Mac, unpack the archive, then copy the files in its
+directory into the folder of the installed game, and replace the files that
+are there. Do not run the install script again: the release replaces all
+of our files, and the files from your discs stay. Your saved games
+(`Save`), your profiles and your settings stay too. Then use `sha256sum -c
+SHA256SUMS` to check the directory.
 
 ### Starting the games
 
@@ -280,5 +349,5 @@ This project uses the work of others:
   Deck. Also **OpenSpy** (<https://openspy.net>). Its master server
   replaces the GameSpy master server for the Internet games of the modern
   build.
-- **redump.org**, for the verified disc images that the installers check
-  against. Also **archive.org**, which keeps these images.
+- **redump**, for the verified dumps of the discs. The disc images are
+  named here by their redump names.

@@ -170,7 +170,7 @@ player. The replacements work as follows:
   copies no RAD or Miles file from the discs. It copies 40 files, from 36
   files on the discs. All of them are game data.
 - CI gets `ext/openmiles` and `ext/ffmpeg` only for the modern builds
-  (`.github/workflows/public-archives.yml`).
+  (`.github/workflows/ci.yml`).
 
 Pins: `ext/ffmpeg` is at FFmpeg `n8.1.3` (1041abd, shallow).
 `ext/openmiles` is at `miles6-fixes` (fd41544) of our fork. This branch is

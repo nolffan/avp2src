@@ -58,10 +58,11 @@ anywhere (2026-11). We could not find any Primal Hunt game source.
 
 ## The retail games
 
-`ext/rez/` installs both (`build/retail.sh`). They are the European
-releases:
+`make retail` installs both from your own images of their three discs
+(`build/discs.py`, `build/retail.sh`) into `out/retail/`. They are the
+European releases:
 
-- `ext/rez/games/avp2-ph-eu`: Primal Hunt (Europe) 1.0.2.2, "Typical".
+- `out/retail/avp2-ph-eu`: Primal Hunt (Europe) 1.0.2.2, "Typical".
   `build/retail.py` gives its layout, for the tools. The European and USA
   releases are the same files. The Italian release is different only in
   its language archive, its launcher and its dedicated server. Its
@@ -76,7 +77,7 @@ releases:
 
   Its launcher builds the rez stack from these archives and AvP2's install
   (`InstallDir` in AvP2's registry key).
-- `ext/rez/games/avp2-eu-1.0.9.6`: AvP2 (Europe) with the English 1.0.9.6
+- `out/retail/avp2-eu-1.0.9.6`: AvP2 (Europe) with the English 1.0.9.6
   patch (April 2002). `build/retail_avp2.py` gives its layout. This patch is
   the last one, and it includes the earlier ones. AvP2 had no GOTY edition.
   The patch put a new engine, renderer and dedicated server over the
@@ -169,8 +170,10 @@ These parts are third-party, and this project does not build them:
 
 Done.
 
-- `ext/rez/` installs `avp2-ph-eu` and `avp2-eu-1.0.9.6`
-  (`ext/rez/tools/install.py`). `ext/rez/games.sha256` records both:
+- `ext/rez/` installed `avp2-ph-eu` and `avp2-eu-1.0.9.6`
+  (`ext/rez/tools/install.py`); `ext/rez/games.sha256` recorded both. Now
+  `build/discs.py` installs them from your disc images, and
+  `build/retail-files.txt` records both:
   - `avp2-ph-eu` is the European release, "Typical".
   - `avp2-eu-1.0.9.6` is the European release, "Typical", then the
     patch's `Update Files` (`Update Command Line` `-rez AVP2P1.REZ`).

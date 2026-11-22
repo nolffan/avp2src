@@ -11,8 +11,8 @@
 # has a USA set -- in any order, each as any of
 #
 #   .iso   a plain image (2048-byte sectors), e.g. your own rip
-#   .bin   redump's raw image (2352-byte sectors), or its .cue
-#   .zip   redump's download as archive.org serves it (the .cue and .bin)
+#   .bin   a raw image (2352-byte sectors), e.g. a redump dump, or its .cue
+#   .zip   a .zip that holds the .bin (and its .cue)
 #
 # AvP2's English 1.0.9.6 patch is read from the Primal Hunt disc
 # (Updates/avp2_en_096.exe: read, not run).

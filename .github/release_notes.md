@@ -1,5 +1,5 @@
 <!--
-The release text (.github/workflows/public-archives.yml, the job "release").
+The release text (.github/workflows/ci.yml, the job "release").
 The job fills in {{TAG}}, {{ARCHIVE}} and {{REPO}}, and removes this comment.
 -->
 ## Download
@@ -13,18 +13,21 @@ The job fills in {{TAG}}, {{ARCHIVE}} and {{REPO}}, and removes this comment.
 
 **No game data is included.** The archive includes an installer for each platform. The installer copies the data of the games from your own images of the two Aliens versus Predator 2 discs and the Primal Hunt disc. It reads the images, but it does not run them. It reads the AvP2 1.0.9.6 patch from the Primal Hunt disc.
 
-These images are supported, with their redump names (a plain `.iso`, a redump `.bin`/`.cue`, or a redump `.zip`):
+Supported images (the redump dumps of the three European discs; a plain `.iso`, a raw `.bin`/`.cue`, or a `.zip` that holds one):
 
-- Europe: `Aliens Versus Predator 2 (Europe) (Disc 1)`, `Aliens Versus Predator 2 (Europe) (Disc 2)`, `Aliens Versus Predator 2 - Primal Hunt (Europe)`
-- USA, where the installer lists a USA set: `Aliens Versus Predator 2 (USA) (Disc 1)`, `Aliens Versus Predator 2 (USA, Asia) (Disc 2)`, `Aliens Versus Predator 2 - Primal Hunt (USA)`
+- AvP2 disc 1: `Aliens Versus Predator 2 (Europe) (Disc 1)`
+- AvP2 disc 2: `Aliens Versus Predator 2 (Europe) (Disc 2)`
+- Primal Hunt: `Aliens Versus Predator 2 - Primal Hunt (Europe)`
+
+The USA discs do not have all the files of the European release (the AvP2 launcher, readme and EULA are not the same), so the installer does not accept them.
 
 ## Install
 
-**This is the full game, not a patch.** Unpack it into a new, empty directory. Do not unpack it over an earlier release or another installation. It holds the two games: `AVP2/` and `PrimalHunt/`. To keep your saved games and profiles, copy your old `Save` and `Profiles` folders into each of the two directories.
+**This is the full game, not a patch.** For a first installation, unpack it into a new, empty directory and run the installer. It holds the two games: `AVP2/` and `PrimalHunt/`. **To upgrade, unpack it over your installed game** (the same build, legacy or modern): put the files of its directory into your game's directory, e.g. `tar xzf <archive> --strip-components=1 -C <game directory>`. Do not run the installer again: the files from your discs, your saved games, your profiles and your settings stay. `sha256sum -c SHA256SUMS` in the game directory checks the installation.
 
 ### Windows
 
-1. Unpack the archive.
+1. Unpack the archive. To upgrade, copy the files in its folder over the installed game instead, and skip step 2.
 2. Drop the three disc images onto `windows-install.bat`.
 3. Start `AVP2\AVP2.exe` or `PrimalHunt\PrimalHunt.exe`. To go directly into the game, use `windows-run.bat avp2` or `windows-run.bat ph`.
 

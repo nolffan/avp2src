@@ -16,22 +16,38 @@ nothing.
 | `src/engine/` | The LithTech engine (`lithtech.exe`, `server.dll`, `d3d.ren`). It is nolfsrc's reconstruction of NOLF's engine, which was written for that project from the retail NOLF binaries. This project is bringing it to Primal Hunt's engine. It implements Monolith's engine and interfaces | Written for this project and nolfsrc. No licence is declared |
 | `src/launch/` | `Launch.dll`, NOLF's launcher DLL, as AvP2 and Primal Hunt ship it. It was written for this project from the retail DLL. `RezFind.cpp` follows the `RezFind.cpp` of nolfsrc's launcher, which is Monolith's code (from the launcher of the *No One Lives Forever 2* source release). `cdcheck.cpp` follows the shape of nolfsrc's `cdcheck.cpp` | `RezFind.cpp` is Monolith's code under the terms of the release that it came from. The rest was written for this project. No licence is declared |
 | `src/engine/cdaudio/`, `src/lithshared/redmgr/` | `cdaudio.dll`, the CD-audio music driver of the engine, and the `Redmgr.lib` that it links. This project reconstructed them from the retail Primal Hunt `cdaudio.dll` and the prebuilt `Redmgr.lib` of the release (against the release's `redmgr.h`). The interfaces are Monolith's. `musicmgr.h` is the music-driver interface of Monolith's public *No One Lives Forever 2* source release (`runtime/shared/src/musicmgr.h`, through nolf2src). It was brought back to the interface of this engine | Monolith's interfaces are under the terms of the releases that they came from. The rest was written for this project. No licence is declared |
-| `src/launcher/` | The launchers, `AVP2.exe` and `PrimalHunt.exe`. The base is the launcher source of **Monolith Productions** from the public *No One Lives Forever 2* source release (its `Game/Launcher`, through nolf2src: the dialogs and controls, `Launcher.cpp`, `RezFind.cpp`, `Utils.cpp`, and the names in `resource.h`). It was brought back to the 2001 AvP2 launcher that it descends from, with the retail `AVP2.exe` and `PrimalHunt.exe` as the evidence. `DisplayMgr.cpp` is nolfsrc's reconstruction of NOLF's display-mode code (its `dlgdisplay.cpp`, from the retail `NOLF.exe`). `ext/tools/rsrc2rc.py` reads `launcher.rc` out of the retail images (Monolith's strings and dialogs). The art is not in the tree | Monolith's code is under the terms of the NOLF2 release. The rest was written for this project and nolfsrc. No licence is declared |
+| `src/launcher/` | The launchers, `AVP2.exe` and `PrimalHunt.exe`. The base is the launcher source of **Monolith Productions** from the public *No One Lives Forever 2* source release (its `Game/Launcher`, through nolf2src: the dialogs and controls, `Launcher.cpp`, `RezFind.cpp`, `Utils.cpp`, and the names in `resource.h`). It was brought back to the 2001 AvP2 launcher that it descends from, with the retail `AVP2.exe` and `PrimalHunt.exe` as the evidence. `DisplayMgr.cpp` is nolfsrc's reconstruction of NOLF's display-mode code (its `dlgdisplay.cpp`, from the retail `NOLF.exe`). `ext/tools/rsrc2rc.py` reads `launcher.rc` out of the retail images (Monolith's strings and dialogs). The art is in `assets/art/launcher/` (below) | Monolith's code is under the terms of the NOLF2 release. The rest was written for this project and nolfsrc. No licence is declared |
 | `src/lithshared/RegMgr32/` | The registry class of the launchers, `CRegMgr32`. It is the `Libs/RegMgr32` of **Monolith Productions** from the same NOLF2 source release (through nolf2src). It is unmodified, except for line endings | The same as that release |
 | `src/engine/ltmsg/` | `ltmsg.dll`. Its resource script is read out of the retail DLL by `ext/tools/rsrc2rc.py` (Monolith's strings). Its one-line source is nolfsrc's | The strings are Monolith's. The rest was written for this project |
 | `src/AVP2/AVP2Up/` | `AVP2Up.dll` and `AVP2XUp.dll`, the resources of the Sierra updater for AvP2 and Primal Hunt. Their resource scripts are read out of the retail DLLs by `ext/tools/rsrc2rc.py`. The icons and bitmaps in `res/` were extracted from the DLLs byte for byte. Those for AvP2 are **Monolith Productions**'. Those for Primal Hunt are **Third Law Interactive**'s. They are game data, as the retail DLLs ship them. The few lines of source of the DLL (an empty `DllMain`, and the `StdAfx` files of the Visual C++ wizard) were written for this project | The resources are Monolith's and Third Law's, as the data of the games. The rest was written for this project |
+| `assets/art/` | **Monolith Productions** and **Third Law Interactive**: the retail art that our launchers and the Primal Hunt dedicated server are compiled with, as the resources of the retail binaries hold it: the icons, cursor, bitmaps, sounds and animation of the AvP2 launcher (`AVP2.exe`, Monolith's) and of the Primal Hunt launcher (`PrimalHunt.exe`, Third Law's), and the splash bitmap of `AVP2XServ.exe` (Third Law's). About 12 MB. They are unchanged. They are committed so that every build, also one without the discs, compiles binaries that are complete. `make art` makes them from the retail binaries, and every build with the discs checks them (`assets/README.md`). Our binaries, and thus the public archives, carry them | Monolith's and Third Law's, as the data of the games: the games' end-user licences |
 | `src/avp2src/` | The project's own headers (debug logging, crash backtraces). They come from nolfsrc's headers | Written for this project. No licence is declared |
 | `src/modern/binkw32/` | The `binkw32.dll` of the modern build, a Bink player on FFmpeg. It is nolfsrc's (written for that project), taken unchanged, because AvP2's engine asks the same of it | Written for this project and nolfsrc. No licence is declared |
 | `build/`, `ext/tools/`, `docker/`, `progress/` (except the paths above), `Makefile`, the documentation | Written for this project | No licence is declared |
 | `ext/openmiles` (submodule) | **OpenMiles**, a clean-room reimplementation of the Miles Sound System. Upstream is at github.com/maci0/openmiles. The submodule is nolfsrc's fork, github.com/nolffan/openmiles (branch `miles6-fixes`). That branch is upstream's release with fixes. The fixes are GPL-3.0-only, the same as the code that they change. OpenMiles vendors miniaudio and TinySoundFont. `ext/patches/openmiles/` holds fixes for it that are not yet on that branch | GPL-3.0-only (its vendored libraries: MIT, MIT-0, zlib). See its `LICENSE` and `deps/README.md` |
 | `ext/ffmpeg` (submodule) | **FFmpeg**. Upstream is at github.com/FFmpeg/FFmpeg | LGPL-2.1-or-later, as the modern build configures it (it enables no GPL or non-free parts). See its `LICENSE.md` |
 
+## The retail data in this repository
+
+This repository holds this retail data, and no other:
+
+- `assets/art/`: the retail art that our launchers and the Primal Hunt
+  dedicated server are compiled with (above; `assets/README.md`).
+- The resources in `src/AVP2/AVP2Up/res/` (the Sierra updater's icons and
+  bitmaps) and `src/engine/ltmsg/ltmsg.rc` (the engine's message strings),
+  above.
+- `progress/reference/`: Monolith's prebuilt `lithshared` libraries of the
+  1.0.9.6 source release, for comparison only.
+
+All other game data comes from the player's own discs. The build names
+the discs only by their redump names. It does not fetch them.
+
 ## Not in this repository, taken from the retail games at build time
 
 The build takes these files from Primal Hunt, and from AvP2 with its
-1.0.9.6 patch, as the `ext/rez/` submodule installs them. The submodule
-installs them from the redump images of their discs, which it gets from
-archive.org (`ext/rez/README.md`).
+1.0.9.6 patch. `make retail` installs them into `out/retail/` from your own
+images of the three discs (`build/discs.py`, with the list
+`build/retail-files.txt`, which holds no game data).
 
 | What | Origin | Where it goes |
 |---|---|---|
