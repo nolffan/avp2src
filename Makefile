@@ -45,7 +45,7 @@ TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-9044/BIN/cl.exe ext/toolchains/msvc-6
 	ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain check-ext \
-	test reference progress progress-update shell clean distclean help
+	test reference progress progress-update progress-ci shell clean distclean help
 
 all: game
 
@@ -62,7 +62,10 @@ help:
 	@echo "                TEST_GAME=out/avp2-modern-release; results in out/play/test*/)"
 	@echo "make progress   score the build against the retail binaries; fails if a"
 	@echo "                function recorded in progress/identical.txt stops matching"
-	@echo "make progress-update  record the score in progress/ (and its README.md table)"
+	@echo "make progress-update  record the score in progress/ (and its README.md table), and the"
+	@echo "                hashes make progress-ci checks against in progress/hashes/"
+	@echo "make progress-ci  the check without the retail game: the build against"
+	@echo "                progress/hashes/ (finds no new matches)"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     fetch the disc images and install Primal Hunt, and AvP2 with its"
 	@echo "                1.0.9.6 patch, from them, and fetch the USA releases' discs too, for"
@@ -148,6 +151,10 @@ progress: retail
 
 progress-update: retail
 	$(DOCKER_RUN) env ACCEPT_LOSSES=$(ACCEPT_LOSSES) $(EVIDENCE_ENV) bash build/progress.sh update
+
+# Without the retail game: the build against progress/hashes/ (build/progress.sh ci)
+progress-ci: check-tools image
+	$(DOCKER_RUN) bash build/progress.sh ci
 
 shell: image
 	docker run --rm -it --init --name $(CONTAINER)-shell \

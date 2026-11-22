@@ -15,6 +15,7 @@ The table below is made from this record.
 make                       # build (the scoring reads the output)
 make progress              # score the build; fail on a regression
 make progress-update       # record the score here, and write the table below again
+make progress-ci           # the check without the retail games (CI)
 ```
 
 ## Progress
@@ -278,6 +279,44 @@ tree. After you change the source, do `make`. Then do `make progress`. The
 scoring needs only Python 3. Thus `build/progress.sh check` works directly
 inside `make shell`, or on a host with Python.
 
+## The check without the retail games: `make progress-ci`
+
+`make progress` needs the retail binaries, so it needs your disc images.
+The CI does not have them. For the CI, `make progress-update` also records
+what each check compares against, as hashes, in `progress/hashes/`. It
+writes the files only when every check passes. `make progress-ci`
+(`build/progress.sh ci`) then checks the build against these files and
+needs no retail data. It compiles nothing; run `make` (or `make
+NODISCS=1`, without the retail games: the README, "Building") first.
+
+| File | What it records | What `make progress-ci` does with it |
+|---|---|---|
+| `hashes/identical.tsv` | each function in `identical.txt`: its retail address and length, where it is in our link (a symbol of our `.map`), the offsets that the comparison masks (the relocations), and the SHA-256 of the retail bytes with those offsets set to zero. Each identical resource and library function: the SHA-256 of the retail data | finds each function in our image through our `.map`, hashes it with the same mask, and compares (`ext/tools/hashcheck.py`). It fails on a hash that differs, a function that is not in our map, or a function of `identical.txt` with no row |
+| `hashes/data.tsv` | the SHA-256 of each string in the retail images' data, with its count | the data check, with the retail strings compared by their hashes (`datacheck.py ci`). A new string only in the retail image shows as its hash |
+| `hashes/fpconst.tsv` | the SHA-256 of each float or double behind a masked relocation that `fpconst.py` checked | our constant at each recorded place, against the hash (`fpconst.py --targets --ci`) |
+| `hashes/vtab.tsv` | for each vtable that `vtabcheck.py` compared: the retail table's length and a hash of our symbols in its slots. For each function whose calls and addresses it compared: their offsets and a hash of the symbols they reach | our tables and calls, read through our `.map`, against the hashes (`vtabcheck.py --targets --ci`). A table that is now shorter, or a slot or a call that reaches another symbol, fails |
+
+The files hold no retail bytes: addresses, lengths, offsets, symbols of
+ours, and hashes. Together they are about 20 MB.
+
+A build without the retail games has the same art as one with them: the
+retail art that the launchers and Primal Hunt's dedicated server are
+compiled with is committed in `assets/art/`. Thus the check covers every
+recorded resource and all the code.
+
+Know these limits:
+
+* The check finds no new match: it can only hold the build to what is
+  recorded. Only `make progress-update`, with the retail games, records a
+  new identical function. Thus, when you make a function identical, run
+  `make progress-update` and commit `progress/` with the change.
+* The check finds each function by its symbol. If you rename a function, or
+  a symbol that a recorded table or call reaches, run `make progress-update`
+  again.
+* The vtable and wiring check holds our symbols to what the full check
+  verified. It also fails on a change that the full check reports only as
+  unverified.
+
 ## Files
 
 | File | What |
@@ -288,6 +327,7 @@ inside `make shell`, or on a host with Python.
 | `reference.sha256` | The retail images that `out/reference/` must hold for the scoring. |
 | `vtab-known.txt` | The known vtable and wiring differences that `ext/tools/vtabcheck.py` finds, each with its reason. |
 | `evidence.json` | The data that the recorded run used (`ext/tools/evidence.py`). |
+| `hashes/` | What each check compared against, as hashes: what `make progress-ci` checks a build against (above). `make progress-update` writes it. |
 | `data-known.txt` | The known text differences from the retail images, each under its reason (`ext/tools/datacheck.py`). |
 | `COMPILERS.md` | The compiler and flags that built each retail binary, and the evidence. |
 | `<stem>-screen-exclude.csv` | (None yet.) For each image, the enumerated addresses that a person examined. A reason that starts with `NOT A FUNCTION` or `NOT GAME CODE` removes the row from the count. All other reasons mark the address `attempted` in an image whose addresses `src/` cites. |
