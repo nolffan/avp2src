@@ -1,7 +1,7 @@
 # The retail game's layout, for ext/tools/retailextract.py (it reads this file
 # from build/; see its header): Aliens versus Predator 2: Primal Hunt
-# (Europe), version 1.0.2.2, as ext/rez/ installs it (ext/rez/games/avp2-ph-eu,
-# build/retail.sh). Primal Hunt (Third Law, June 2002) is the last release
+# (Europe), version 1.0.2.2, as build/discs.py installs it from your own disc
+# images (out/retail/avp2-ph-eu, build/retail.sh). Primal Hunt (Third Law, June 2002) is the last release
 # of the game: it "includes all of the changes made in Aliens Versus
 # Predator 2 patches up to version 1.0.9.6" (its readme), and its engine,
 # renderer, server and game DLLs are the newest there are. No later patch
@@ -64,31 +64,18 @@ OPEN_RUNTIME = [
 # disc 1 as they are) and Primal Hunt's one disc -- by
 # build/game-scripts/linux-install.sh, windows-install.ps1 and
 # mac-install.command with the list build/mkinstall.py writes. AvP2's
-# 1.0.9.6 patch is on Primal Hunt's disc (Updates/avp2_en_096.exe, the same
-# file as ext/rez/'s patches/avp2_en_096.exe), so the scripts read it from
-# there and ask for the three discs alone. The European release is first;
-# the USA one is the fallback, where its files are the same ones (mkinstall
-# leaves out a set that does not have them all).
-_AVP2 = "Aliens Versus Predator 2"
+# 1.0.9.6 patch is on Primal Hunt's disc (Updates/avp2_en_096.exe), so the
+# scripts read it from there and ask for the three discs alone. Where each
+# file is on which disc is build/retail-files.txt (build/discs.py, which
+# installs the retail games for the build from the same discs): the
+# European discs first, the USA ones as a second set where their files are
+# the same (mkinstall leaves out a set that does not have them all).
+# Each game's directory in the game directory, its release (its directory
+# in out/retail/ and in build/retail-files.txt) and its layout.
 INSTALL_GAMES = [
-    {"dir": "AVP2", "release": "avp2-eu-1.0.9.6", "layout": "build/retail_avp2.py",
-     "regions": {"Europe": ("eu1", "eu2"), "USA": ("us1", "us2")},
-     "update": "patches/avp2_en_096.exe"},
-    {"dir": "PrimalHunt", "release": "avp2-ph-eu", "layout": "build/retail.py",
-     "regions": {"Europe": ("pheu",), "USA": ("phus",)}},
+    {"dir": "AVP2", "release": "avp2-eu-1.0.9.6", "layout": "build/retail_avp2.py"},
+    {"dir": "PrimalHunt", "release": "avp2-ph-eu", "layout": "build/retail.py"},
 ]
-INSTALL_DISCS = {
-    "eu1": f"{_AVP2} (Europe) (Disc 1)",
-    "eu2": f"{_AVP2} (Europe) (Disc 2)",
-    "pheu": f"{_AVP2} - Primal Hunt (Europe)",
-    "us1": f"{_AVP2} (USA) (Disc 1)",
-    "us2": f"{_AVP2} (USA, Asia) (Disc 2)",
-    "phus": f"{_AVP2} - Primal Hunt (USA)",
-}
-# where each Primal Hunt disc carries the 1.0.9.6 patch
-INSTALL_UPDATE_ON = {"pheu": "Updates/avp2_en_096.exe", "phus": "Updates/avp2_en_096.exe"}
-INSTALL_SETS = [("Europe", ["eu1", "eu2", "pheu"]), ("USA", ["us1", "us2", "phus"])]
-# (the disc images they are made against: build/retail.sh, retail_discs)
 INSTALL_TAG = "AVP2"
 INSTALL_BAT_HEADER = r"""@echo off
 rem windows-install.bat -- install the game data from your AvP2 and Primal Hunt discs.
@@ -97,8 +84,8 @@ rem   Drop the images of the two discs of Aliens versus Predator 2 and the
 rem   disc of Primal Hunt (the European or the USA releases) onto this
 rem   file -- or put them in this folder or the one above it and
 rem   double-click it. AvP2's 1.0.9.6 patch is read from the Primal Hunt
-rem   disc. An image is a plain .iso, redump's .bin (or its .cue), or
-rem   redump's .zip download; a .bin or .zip is first converted to a
+rem   disc. An image is a plain .iso, a raw .bin (or its .cue), or a
+rem   .zip that holds the .bin; a .bin or .zip is first converted to a
 rem   temporary .iso in this folder (up to 0.6 GB a disc, removed at the end).
 rem
 rem It checks each file's SHA-256, copies the games' data out of them into

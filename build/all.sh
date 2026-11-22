@@ -10,10 +10,11 @@
 #   make test               (then: play it -- build/playtest.sh)
 #
 # Needs: the toolchain (ext/toolchains/, see ext/toolchains/README.md), Wine (the
-# build container has it), and the two retail games as the ext/rez/ submodule
-# installs them (build/retail.sh): Primal Hunt (Europe) 1.0.2.2,
-# ext/rez/games/avp2-ph-eu/, and AvP2 (Europe) with the English 1.0.9.6 patch,
-# ext/rez/games/avp2-eu-1.0.9.6/. It only reads them.
+# build container has it), and the two retail games as build/discs.py
+# installs them from your own disc images (`make retail`, build/retail.sh):
+# Primal Hunt (Europe) 1.0.2.2, out/retail/avp2-ph-eu/, and AvP2 (Europe)
+# with the English 1.0.9.6 patch, out/retail/avp2-eu-1.0.9.6/. It only
+# reads them.
 #
 # The game directory holds both games, each in a directory of its own, as
 # their setups install them (Primal Hunt installs beside AvP2, never over

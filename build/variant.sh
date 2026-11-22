@@ -78,10 +78,11 @@ mkdir -p "$TREE"
 python3 ext/tools/releasesrc.py mirror "$REPO/src" "$TREE/src"
 rm -rf "$TREE/build" "$TREE/tools" "$TREE/ext/tools"; rm -f "$TREE/toolchains" "$TREE/rez"
 tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build ext/tools | tar -C "$TREE" -xf -
-# the compilers, the retail games where build/retail.sh looks for them, and
-# the prebuilt libraries build/build.mk takes from progress/reference/
+# the compilers, and the prebuilt libraries build/build.mk takes from
+# progress/reference/ (the retail games are the checkout's: AVP2_RETAIL)
 [ -L "$TREE/ext/toolchains" ] || ln -s ../../../ext/toolchains "$TREE/ext/toolchains"
-[ -L "$TREE/ext/rez" ] || ln -s ../../../ext/rez "$TREE/ext/rez"
+# (an older tree's link to the ext/rez submodule, which is gone)
+[ ! -L "$TREE/ext/rez" ] || rm -f "$TREE/ext/rez"
 [ -L "$TREE/progress" ] || ln -s ../../progress "$TREE/progress"
 # the retail art the launchers and Primal Hunt's server are compiled with
 # (assets/art/: build/art.py)
@@ -97,6 +98,7 @@ case "$VARIANT" in modern*)
     export AVP2_EXT_OUT="$REPO/out/ext" ;;
 esac
 
+export AVP2_RETAIL="${AVP2_RETAIL:-$REPO/out/retail}"
 export AVP2SRC_CFLAGS="$CFLAGS"
 export AVP2SRC_LDFLAGS="$LDFLAGS"
 export AVP2SRC_RCFLAGS="$RCFLAGS"

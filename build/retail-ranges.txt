@@ -1,0 +1,27 @@
+## What the build changes in the retail games' files that it copies: the
+## retail game DLLs inside the .rez archives, which it writes zeros over
+## (ext/tools/retailextract.py resources). This list holds no game data:
+## only names, offsets, sizes and SHA-256 values. build/discs.py writes it
+## from the installed retail games (`make retail-ranges`), and every build
+## with the retail games checks it. A build without them (NODISCS=1) and the
+## install scripts of a public archive (build/mkinstall.py) use it in place
+## of the retail games.
+##
+## ZERO <release> <archive> <offset> <size> <entry>
+##   A retail game DLL in an archive: the build writes zeros over its data
+##   in the game directory's copy. The offset is in the archive.
+## ZSUM <release> <archive> <size> <SHA-256>
+##   The game directory's copy of that archive, with those zeros.
+## The fields are separated by one TAB.
+ZERO	avp2-eu-1.0.9.6	AVP2DLL.REZ	168	2084864	cshell.dll
+ZERO	avp2-eu-1.0.9.6	AVP2DLL.REZ	2085032	3198976	object.lto
+ZSUM	avp2-eu-1.0.9.6	AVP2DLL.REZ	5284080	48e221495acb95e0ce4de32774693caf87b27db9e43e5d6709cc686d9f36f58d
+ZERO	avp2-eu-1.0.9.6	AVP2L.REZ	2468579	446464	cres.dll
+ZERO	avp2-eu-1.0.9.6	AVP2L.REZ	2915043	45056	sres.dll
+ZSUM	avp2-eu-1.0.9.6	AVP2L.REZ	2961956	b75f5e69cbb26691c72341cc5cbc3c0082bab18f63980005c2946bb0223ec6c6
+ZERO	avp2-ph-eu	AVP2DLL.REZ	168	2183168	CSHELL.dll
+ZERO	avp2-ph-eu	AVP2DLL.REZ	2183336	3375104	OBJECT.lto
+ZSUM	avp2-ph-eu	AVP2DLL.REZ	5558512	e6bd06f6825875f8d0634a8d7daa84a680cbab6c14110f71b0a19ed8e46c1109
+ZERO	avp2-ph-eu	AVP2L.REZ	2568913	503808	CRES.dll
+ZERO	avp2-ph-eu	AVP2L.REZ	3072721	45056	SRES.dll
+ZSUM	avp2-ph-eu	AVP2L.REZ	3119634	0901b2f3b09aafe77e5602395e52c7f4013769bdc3222785f2ee76f68e4c99c1

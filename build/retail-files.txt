@@ -1,0 +1,291 @@
+## The retail games the build takes its data from: Aliens versus Predator 2
+## (Europe) with its English 1.0.9.6 patch (avp2-eu-1.0.9.6), and Primal
+## Hunt (Europe) 1.0.2.2 (avp2-ph-eu), as their setups install them from
+## their three discs. This list holds no game data. It tells build/discs.py
+## which bytes of which disc make each file, and what each file must be
+## (its size and SHA-256). build/mkinstall.py reads it too, for the install
+## scripts of a public archive.
+##
+## D <id> <volume label> <volume blocks> <image size> <image SHA-256> <image name>
+##   One disc. A disc image is recognised by its volume label and its volume
+##   size (blocks of 2048 bytes). The image size, SHA-256 and name are those
+##   of one known good image (the .iso of the redump dump). Another correct
+##   copy of the disc can have another size and SHA-256: each file is checked.
+## M <id> <disc> <offset> <size> <SHA-256> <path on the disc>
+##   The 1.0.9.6 patch's payload: the one folder of the Microsoft cabinet at
+##   that offset of the disc's image, unpacked; its size and SHA-256.
+## S <name> <id> ...
+##   A set of discs the games install from (the first that is complete).
+## F <release> <path> <size> <SHA-256> <origin>
+##   One installed file: its release, its path in the install, its size and
+##   SHA-256, and where it comes from (disc, or update: the patch).
+## W <sets> copy|is <id>:<offset>:<length> ...
+##   A way to read the file above in those sets: the byte ranges (of a
+##   disc's 2048-byte-sector image, or of the payload), joined, are the file
+##   (copy), or its InstallShield 6 cabinet data (is: chunks, each a 16-bit
+##   length and a raw deflate stream).
+## The fields are separated by one TAB.
+D	eu1	DISK1	284361	582678528	d2b084e4f50c9e52c3680f0e6a2c32a581f218bc290ef3b8ca1fd691e3cd2afc	Aliens Versus Predator 2 (Europe) (Disc 1)
+D	eu2	DISK2	230089	471529472	c6e5950238ffc81e52e18c0783d79f4ba4099cea491b51312d926471a4711cf5	Aliens Versus Predator 2 (Europe) (Disc 2)
+D	pheu	AVP2_EXP	149889	307279872	97f2073aa4d885f6d549ead0f2b2f40745864416cbfb542fed048babc753ff16	Aliens Versus Predator 2 - Primal Hunt (Europe)
+D	us1	AVP2_1	281821	577476608	4543f677a31b0f166a4d9d99ae8716c9b075fca53b69ad3c22abb539e61d3ec1	Aliens Versus Predator 2 (USA) (Disc 1)
+D	us2	AVP2_2	231079	473556992	cdd27848e8165324d48f9047b0bea14b135c91ebcb0193d4a1c49e5389ad91eb	Aliens Versus Predator 2 (USA, Asia) (Disc 2)
+D	phus	AVP2_EXP	150033	307267584	fe4f19ca3504ef7ac4cef6dfcb14d0a87e0019c54d23ee6e71eb9dc5620e6809	Aliens Versus Predator 2 - Primal Hunt (USA)
+M	pay	pheu	105171666	7853537	aaeb6cbc5ce2d148d1e73e0eae6c809267f4c81f9ec2a61c34c63dffd13a525a	Updates/avp2_en_096.exe
+M	pay	phus	105171666	7853537	aaeb6cbc5ce2d148d1e73e0eae6c809267f4c81f9ec2a61c34c63dffd13a525a	Updates/avp2_en_096.exe
+S	Europe	eu1 eu2 pheu
+S	USA	us1 us2 phus
+F	avp2-eu-1.0.9.6	ALIEN.REZ	152647526	7d23e9ef9c79d9b5a1ea32b09b742b410e5605fc0d814f0e3fe827cc4f502533	disc
+W	Europe	copy	eu1:51200:152647526
+W	USA	copy	us1:51200:152647526
+F	avp2-eu-1.0.9.6	autoexec.cfg	4572	a3634f5a626923348f3154880ca953aa12d64b02ca33a70de0f5b3e5a39d3b93	disc
+W	Europe	is	eu1:153670144:1588
+W	USA	is	us1:158796288:1588
+F	avp2-eu-1.0.9.6	Autorun.exe	45056	d1ad76f37586f37a77bce6f3acf6976e46c85fb94ef482b0261583f7db3d568d	disc
+W	Europe	is	eu1:161507921:16166
+W	USA	is	us1:163693771:16166
+F	avp2-eu-1.0.9.6	AutoRun.ico	7358	673b65a31f258ac81c44559c38ff02c1e839eba572bf79036fb8c625d094c275	disc
+W	Europe	is	eu1:153671732:5326
+F	avp2-eu-1.0.9.6	AutoRun.inf	48	b2a30e1a1a50a6a0187f847e11e0581c8c4a652f064aed071f3b368caa3d8312	disc
+W	Europe	is	eu1:153677058:43
+F	avp2-eu-1.0.9.6	AVP2.exe	5343363	516ae2949d609aadc6a4c83160fb7bf380265d488f3b0d5f4f717bf8b36af404	disc
+W	Europe	is	eu1:153677101:2934925
+F	avp2-eu-1.0.9.6	AVP2.REZ	529599976	2f7a99daa71929bc3f64ce5f58c6be0ca07e17d4fa024d58c9826e241606010c	disc
+W	Europe	is	eu1:175077131:88957173 eu2:32453120:261353811
+W	USA	is	us1:177245814:86929802 us2:32453120:263381182
+F	avp2-eu-1.0.9.6	AVP2DLL.REZ	5284080	62b7ad0659fbfb5832ad369174be8c9fa66d1acfd7941fb80f69b5d34e8f4c9d	update
+W	Europe,USA	is	pay:4273343:2293937
+F	avp2-eu-1.0.9.6	AVP2L.REZ	2961956	5d1963fee979c213f67bc4724e4dfdfa235d87fdadde326f9ae97ec6dcdffc79	update
+W	Europe,USA	is	pay:457541:387117
+F	avp2-eu-1.0.9.6	AVP2P1.REZ	4659497	3a5b8dafb7b6a39ff06fa661ab2dbc1255aca06b4e0a05f0b53db89f1376f6c1	update
+W	Europe,USA	is	pay:844658:2068133
+F	avp2-eu-1.0.9.6	AVP2Serv.exe	1282048	42431431a0131b7c24e69b2e346086d1ec3e9696ba15ec0d51080466663a982b	update
+W	Europe,USA	is	pay:2912791:415636
+F	avp2-eu-1.0.9.6	AVP2Up.dll	249856	95bca7399e740b00023a2f43c64da55ca9621aac9fc6204e1c3422a775f7bb51	disc
+W	Europe	is	eu1:159341720:90234
+W	USA	is	us1:161527570:90234
+F	avp2-eu-1.0.9.6	binkw32.dll	262656	6b33d3f6a522f08be15bf57a9af39aa6bcaaea3233e37b8dd66447a8f8871b59	disc
+W	Europe	is	eu1:159431954:120771
+W	USA	is	us1:161617804:120771
+F	avp2-eu-1.0.9.6	changelog.txt	8832	b514ec5f35177c1283879d236c1e0d985005ed4121a8f5b9cf9bc02ea9b2207b	update
+W	Europe,USA	is	pay:3328427:3678
+F	avp2-eu-1.0.9.6	childmodel.map	11844	20b56258c1824884f3dc78cb0303a002604710285221fce553810cdd6a6e2613	disc
+W	Europe	is	eu1:161908479:1013
+W	USA	is	us1:164094329:1013
+F	avp2-eu-1.0.9.6	console.PCX	17202	260e12251e7c0e536b827933bfbaf2220ee0fdaa28e38fced835de3ccd7f8284	disc
+W	Europe	is	eu1:159552725:13798
+W	USA	is	us1:161738575:13798
+F	avp2-eu-1.0.9.6	d3d.ren	348160	108d4e9083cffa97dbe9ae8d7d1c38f1179b9d7d627a11c0cc6483a48349226c	update
+W	Europe,USA	is	pay:3332105:178890
+F	avp2-eu-1.0.9.6	EULA.txt	13341	b2baccdcab63d9d66215896641a5b9166c32ce09115ec3347c7870a926828278	disc
+W	Europe	is	eu1:153145213:5220
+F	avp2-eu-1.0.9.6	Launch.dll	241722	0a66417229cfbc673f31a08603dbdcf53a0a4725a75ae3f001e68b468da66c89	disc
+W	Europe	is	eu1:159861344:100712
+W	USA	is	us1:162047194:100712
+F	avp2-eu-1.0.9.6	lithtech.exe	937984	62c8f98091187909df0edfb062b0ed4abd09c7c4af75991c0a2bae713087b0be	update
+W	Europe,USA	is	pay:3510995:472219
+F	avp2-eu-1.0.9.6	ltmsg.dll	32768	8552415b8818018b23561b03fddc3550adea136e621123b9dcdec5bb0c2b6fa6	disc
+W	Europe	is	eu1:160437597:10683
+W	USA	is	us1:162623447:10683
+F	avp2-eu-1.0.9.6	MARINE.REZ	148540645	8f812962fb497e1cac6e1cf84878403c7ada6beaf5bc9dea22f7a360ba5012ae	disc
+W	Europe	copy	eu1:264374272:148540645
+W	USA	copy	us1:264531968:148540645
+F	avp2-eu-1.0.9.6	Movies/foxlogo.bik	5049968	472ba4db6fe7983d84e9a3fa48035ce30355a94ef5e67a9a18df413368d5d93f	disc
+W	Europe	is	eu1:170093838:4982684
+W	USA	is	us1:172262287:4982684
+F	avp2-eu-1.0.9.6	Movies/lithlogo.bik	3799320	9ebc2e8fc2a4d4730311d3d36412d3e8a8159020047f60d1a633ff402ad9cb7f	disc
+W	Europe	is	eu1:163933422:3741831
+W	USA	is	us1:166101871:3741831
+F	avp2-eu-1.0.9.6	Movies/ltlogo.bik	2539652	f4dab811ad6c2d8ffb675270354c5d0cc589576ac5ad2aa9e6a76b7c403c84b2	disc
+W	Europe	is	eu1:167675253:2418585
+W	USA	is	us1:169843702:2418585
+F	avp2-eu-1.0.9.6	Movies/sierralogo.bik	2049744	1673c8210a8c59d18ae4859c47586aa987ad26f3c8f5ab8a1fadd0b64ecb9c37	disc
+W	Europe	is	eu1:161926893:2006529
+W	USA	is	us1:164095342:2006529
+F	avp2-eu-1.0.9.6	MP3DEC.AS6	141312	751dce2c87ee38517120b6dcfda302cee203402f1f04738532d575ebde22875a	disc
+W	Europe	is	eu1:160448280:47918
+W	USA	is	us1:162634130:47918
+F	avp2-eu-1.0.9.6	MP3DEC.ASI	126464	0fce7cda7db80498029f1527d3033ae990afae8926fd315d53779ff8ca4998e0	disc
+W	Europe	is	eu1:160496198:57065
+W	USA	is	us1:162682048:57065
+F	avp2-eu-1.0.9.6	mss32.dll	347648	f09e6024ad35eb6b7b46982efb998df26d162391b26fcf56519a4c23fcbc7015	disc
+W	Europe	is	eu1:160553263:153148
+W	USA	is	us1:162739113:153148
+F	avp2-eu-1.0.9.6	MULTI.REZ	52722873	6564107f721c4ca4d4120a4668956ee17a3fd74e9d6a124be574b66ff6698878	disc
+W	Europe	copy	eu1:412915712:52722873
+W	USA	copy	us1:413073408:52722873
+F	avp2-eu-1.0.9.6	PREDATOR.REZ	110196968	a50fd34ee7f269b5a08c897ea980d7724acfa66353d5cda7c8c1ed3b3a43b88d	disc
+W	Europe	copy	eu1:465639424:110196968
+W	USA	copy	us1:465797120:110196968
+F	avp2-eu-1.0.9.6	Profiles/Default.prf	1950	25b6e73191173dce1078af69fc12b23417edbcaf60818fe067374382beb8b06c	disc
+W	Europe	is	eu1:175076522:609
+W	USA	is	us1:177244971:609
+F	avp2-eu-1.0.9.6	readme.txt	33802	8144eee5c5968e87ab3b7994671025a27b6400c2016d2e996190ba751f3479f8	disc
+W	Europe	is	eu1:161914712:12181
+F	avp2-eu-1.0.9.6	readme1096.txt	9352	eec8b9a1424be275ab1737cee7c18886da536a3b09c488b503881809913f8d91	update
+W	Europe,USA	is	pay:237471:4008
+F	avp2-eu-1.0.9.6	server.dll	557056	ee6b51d6075791c7aa8bd2af3a1f4317052d4899567ecaea6807701c0af7e2d1	update
+W	Europe,USA	is	pay:3987222:286121
+F	avp2-eu-1.0.9.6	Sierra.inf	182	3929584d487c9283664a0e73da580545c92723fc95ce4bfe93e6791d10041ace	disc
+W	Europe	is	eu1:161507765:156
+W	USA	is	us1:163693615:156
+F	avp2-eu-1.0.9.6	SierraPt.dll	606208	7906f305052e4f0d9c5dc8039c9e880edcc1b08e007498f7b06e4323461f5e09	disc
+W	Europe	is	eu1:160992753:271351
+W	USA	is	us1:163178603:271351
+F	avp2-eu-1.0.9.6	SierraUp.cfg	320	77ecad954bc8585842676611e100f312001bb34fd22b1a9a686785aa0da83d4b	update
+W	Europe,USA	is	pay:457375:166
+F	avp2-eu-1.0.9.6	SierraUp.exe	462848	6e31358c3f1f23b5520201004cf3542a0db00061686e8d50105d8e0628a46588	disc
+W	Europe	is	eu1:161264317:206594
+W	USA	is	us1:163450167:206594
+F	avp2-eu-1.0.9.6	Smackw32.dll	83456	ab21e93c78f8ffdd88585b5bcf71d846eb11ca72f274e17beac240bcc3334438	disc
+W	Europe	is	eu1:161470911:36854
+W	USA	is	us1:163656761:36854
+F	avp2-eu-1.0.9.6	SOUNDS.REZ	198356809	fe4619fdaf786306fbaefba113f503bf65d860f367137a87dfe87f82d44a2531	disc
+W	Europe	is	eu2:293806931:176239855
+W	USA	is	us2:295834302:176239855
+F	avp2-ph-eu	autoexec.cfg	4672	ffd2b981f5dc0b877b7431473683ab77db3fd027b622c9b99ea09e9c15382cb4	disc
+W	Europe	is	pheu:146326241:1638
+W	USA	is	phus:146326241:1638
+F	avp2-ph-eu	AVP2DLL.REZ	5558512	52a0393219f836c2ededfc3f8c0e8e8478cc726d7febc73409a825a070f3791e	disc
+W	Europe	is	pheu:143589561:2458877
+W	USA	is	phus:143589561:2458877
+F	avp2-ph-eu	AVP2L.REZ	3119634	8d4845771bebefb2418876f5096e3cb70afd08f5d5159db370140b53732c7c40	disc
+W	Europe	is	pheu:148792151:411542
+W	USA	is	phus:148792151:411542
+F	avp2-ph-eu	AVP2P.REZ	45287360	4f3700985a99e99fe1d44bfe98b7cb3bc530cb02d15a5bd3ea959deba2df9ab9	disc
+W	Europe	is	pheu:269923974:12434433
+W	USA	is	phus:269923974:12434433
+F	avp2-ph-eu	AVP2P1.REZ	4659497	3a5b8dafb7b6a39ff06fa661ab2dbc1255aca06b4e0a05f0b53db89f1376f6c1	disc
+W	Europe	is	pheu:282358407:2068133
+W	USA	is	phus:282358407:2068133
+F	avp2-ph-eu	AVP2X.REZ	291009005	20c81a7fdf717ed03020bb5be63dd008c235cf00a8551072ce7972bb89c526eb	disc
+W	Europe	is	pheu:155513029:114410945
+W	USA	is	phus:155513029:114410945
+F	avp2-ph-eu	AVP2XServ.exe	1298432	c9ced4219bce07c6e9258339321da87f8a053d56fd09fcb4e905dfe258198b57	disc
+W	Europe	is	pheu:148076965:712878
+W	USA	is	phus:148076965:712878
+F	avp2-ph-eu	AVP2XUp.dll	634880	48eb06938b653ca9c7ee935c3c9ad50daa60ea03979820ef1091f163b3ec260a	disc
+W	Europe	is	pheu:147878037:198928
+W	USA	is	phus:147878037:198928
+F	avp2-ph-eu	binkw32.dll	262656	6b33d3f6a522f08be15bf57a9af39aa6bcaaea3233e37b8dd66447a8f8871b59	disc
+W	Europe	is	pheu:146048438:120771
+W	USA	is	phus:146048438:120771
+F	avp2-ph-eu	cdaudio.dll	102400	f5f374161dee45ed903eda896dae58ba8b7fc1b1f20225aec7f174c04606af83	disc
+W	Europe	is	pheu:143272448:43660
+W	USA	is	phus:143272448:43660
+F	avp2-ph-eu	childmodel.map	11844	20b56258c1824884f3dc78cb0303a002604710285221fce553810cdd6a6e2613	disc
+W	Europe	is	pheu:146169209:1013
+W	USA	is	phus:146169209:1013
+F	avp2-ph-eu	console.PCX	17202	260e12251e7c0e536b827933bfbaf2220ee0fdaa28e38fced835de3ccd7f8284	disc
+W	Europe	is	pheu:146170222:13798
+W	USA	is	phus:146170222:13798
+F	avp2-ph-eu	d3d.ren	364544	43b2397164cdfd49b87c3d4af8c17755e13ba48f58fb6fdec98f9d53616109da	disc
+W	Europe	is	pheu:146327879:183862
+W	USA	is	phus:146327879:183862
+F	avp2-ph-eu	DIALOGUE.REZ	6657455	e45a6897992b90053c0b88127eab6d1680c779ed51d4d4b52ec16ce1f46cf9b5	disc
+W	Europe	is	pheu:149203693:6309336
+W	USA	is	phus:149203693:6309336
+F	avp2-ph-eu	FontData.fnt	45548	f7bd81cd66126b04566b7b74e9ae601531cc992d02c980635c4a62fb1adbaa87	disc
+W	Europe	is	pheu:146321745:4496
+W	USA	is	phus:146321745:4496
+F	avp2-ph-eu	Launch.dll	241722	0a66417229cfbc673f31a08603dbdcf53a0a4725a75ae3f001e68b468da66c89	disc
+W	Europe	is	pheu:146184020:100712
+W	USA	is	phus:146184020:100712
+F	avp2-ph-eu	license.txt	12547	67d89a4611c342fc9b6fa69807859e0e7ba4a6ca869065bb890d5934a2805875	disc
+W	Europe	is	pheu:142941758:4903
+F	avp2-ph-eu	lithtech.exe	1007616	042cf0d6f1fa5c4c29b662b43930690dfa34067d315392f7cd76e9bb1b6b2f89	disc
+W	Europe	is	pheu:146511741:494442
+W	USA	is	phus:146511741:494442
+F	avp2-ph-eu	ltmsg.dll	45056	5fcb7801c9142870a68a709c89aef9866853abdc9850b46622c2b75e633edefe	disc
+W	Europe	is	pheu:143316108:15322
+W	USA	is	phus:143316108:15322
+F	avp2-ph-eu	MP3DEC.AS6	141312	751dce2c87ee38517120b6dcfda302cee203402f1f04738532d575ebde22875a	disc
+W	Europe	is	pheu:143331430:47918
+W	USA	is	phus:143331430:47918
+F	avp2-ph-eu	MP3DEC.ASI	126464	0fce7cda7db80498029f1527d3033ae990afae8926fd315d53779ff8ca4998e0	disc
+W	Europe	is	pheu:143379348:57065
+W	USA	is	phus:143379348:57065
+F	avp2-ph-eu	mss32.dll	347648	f09e6024ad35eb6b7b46982efb998df26d162391b26fcf56519a4c23fcbc7015	disc
+W	Europe	is	pheu:143436413:153148
+W	USA	is	phus:143436413:153148
+F	avp2-ph-eu	MULTI.REZ	52722873	6564107f721c4ca4d4120a4668956ee17a3fd74e9d6a124be574b66ff6698878	disc
+W	Europe	is	pheu:284426540:12571612
+W	USA	is	phus:284426540:12571612
+F	avp2-ph-eu	phunrez.bat	867	6747c61fb7dfc004000fe10ebd994ba0ca21dc8e491ab4f2e1e994d7d0cec982	disc
+W	Europe	is	pheu:148789843:390
+W	USA	is	phus:148789843:390
+F	avp2-ph-eu	PrimalHunt.exe	7216595	66bcd4b2d8f8a6a70a56a4a458449ad2696c97a9859cc35dc6cc46c22116edf1	disc
+W	Europe	copy	pheu:298557440:7216595
+W	USA	copy	phus:298534912:7216595
+F	avp2-ph-eu	Profiles/Default.prf	2201	67c5969af7ceba6ba226eaa089c969be6492ca4b903ef957d957b2f990a4aae5	disc
+W	Europe	is	pheu:148790233:727
+W	USA	is	phus:148790233:727
+F	avp2-ph-eu	readme.txt	48427	f0273c831114a83f873a01b9447213f83c8da964f556b2f0ee79848671d1c4de	disc
+W	Europe	is	pheu:147314199:16756
+W	USA	is	phus:142946637:16756
+F	avp2-ph-eu	server.dll	610304	2f53d30d4223ab7e7a006b490de2620953af8194145810cec9fcd932a2bdf268	disc
+W	Europe	is	pheu:147006183:308016
+W	USA	is	phus:147006183:308016
+F	avp2-ph-eu	ServerData/default.txt	3781	a5d3cf83889eaf9965424c0a01832969eb9d8c8f83c263d6f3484fca0b0b009e	disc
+W	Europe	is	pheu:148790960:1191
+W	USA	is	phus:148790960:1191
+F	avp2-ph-eu	Sierra.inf	184	76e48b5cb0497b41aa2e76e4eb26a6b6b6909620cc1368ce8aa7e54ba7f3945f	disc
+W	Europe	is	pheu:146284732:159
+W	USA	is	phus:146284732:159
+F	avp2-ph-eu	SierraPt.dll	630784	b5dba72784012542edbfabc4f0805d2e01453dfc0f9c4b77cebc5022bdad2b22	disc
+W	Europe	is	pheu:147330955:279994
+W	USA	is	phus:147330955:279994
+F	avp2-ph-eu	SierraUp.cfg	598	1841cbb5a14fafca14d26471eceee01b7a799dd8320f4f198e72b093f9c32438	disc
+W	Europe	is	pheu:147610949:302
+W	USA	is	phus:147610949:302
+F	avp2-ph-eu	SierraUp.exe	466944	fdacea5607f5da00b9ea0f34cc4c91bab7f3e06a09eb5739670bbda503017d7f	disc
+W	Europe	is	pheu:147611251:203809
+W	USA	is	phus:147611251:203809
+F	avp2-ph-eu	Smackw32.dll	83456	ab21e93c78f8ffdd88585b5bcf71d846eb11ca72f274e17beac240bcc3334438	disc
+W	Europe	is	pheu:146284891:36854
+W	USA	is	phus:146284891:36854
+F	avp2-ph-eu	SuDE.dll	57344	2c6a1f2187c3e5ebc03ec642697fda518b9d33f8a97d5022717614677301a52e	disc
+W	Europe	is	pheu:147815060:15936
+W	USA	is	phus:147815060:15936
+F	avp2-ph-eu	SuES.dll	57344	3202c2389857709c973669716b2b7169d38b029cc5f5b090486bce7f8b50ddef	disc
+W	Europe	is	pheu:147830996:15823
+W	USA	is	phus:147830996:15823
+F	avp2-ph-eu	SuFR.dll	57344	7dacf6e7ee35773c84197d7db7d2ffd04eca60650ad4d2d4a7f671e036be7343	disc
+W	Europe	is	pheu:147846819:15619
+W	USA	is	phus:147846819:15619
+F	avp2-ph-eu	SuIT.dll	57344	908472b355029d669f127c964d68592edc40e4dc86deec300505a508e1817c35	disc
+W	Europe	is	pheu:147862438:15599
+W	USA	is	phus:147862438:15599
+F	avp2-ph-eu	Tools/avp2tools.exe	9160760	828bc1c9e70b5fe1901e45c7b42b9948c4212990bc04910339057d72dcf4669e	disc
+W	Europe	copy	pheu:32837632:9160760
+W	USA	copy	phus:32837632:9160760
+F	avp2-ph-eu	Tools/avp2tools_update.exe	2469840	7c3fd1f389ed9833331ca6b2200f40f409ff64200c20ccf800c04a17707775ab	disc
+W	Europe	copy	pheu:42000384:2469840
+W	USA	copy	phus:42000384:2469840
+F	avp2-ph-eu	Tools/avp2tools_update2.exe	3296165	485a8ea0b8f5055ccbd40c1bdb2d2a100d54d0476d2c692955407b3398ba5662	disc
+W	Europe	copy	pheu:44470272:3296165
+W	USA	copy	phus:44470272:3296165
+F	avp2-ph-eu	Trailers/NOLF2_576.exe	38011392	3789e9494d63b2c52398a4dc43175ad966b8a43b8c6ceb7f9f9c63ea00389acb	disc
+W	Europe	copy	pheu:47767552:38011392
+W	USA	copy	phus:47767552:38011392
+F	avp2-ph-eu	Updates/avp2_en_093.exe	5268252	9069eb9760602248244c0ea45296e284babd4269924262d47d971e36b69e576e	disc
+W	Europe	copy	pheu:85780480:5268252
+W	USA	copy	phus:85780480:5268252
+F	avp2-ph-eu	Updates/avp2_en_094.exe	6656640	9cc3250cdf2fad782829b9fb5c0af37133eb82a4fcc84207f792145f3deba425	disc
+W	Europe	copy	pheu:91049984:6656640
+W	USA	copy	phus:91049984:6656640
+F	avp2-ph-eu	Updates/avp2_en_095.exe	7293987	7ec7db2150559370a721e29f5df9d007bddf28d0595035ae2b940ed0c7edf15d	disc
+W	Europe	copy	pheu:97708032:7293987
+W	USA	copy	phus:97708032:7293987
+F	avp2-ph-eu	Updates/avp2_en_096.exe	7297476	8314c512fa7ee3b190f19c63e4cec7f0ad8092e34275b04658a762f3a3913398	disc
+W	Europe	copy	pheu:105003008:7297476
+W	USA	copy	phus:105003008:7297476
+F	avp2-ph-eu	Updates/avp2_en_mp1.exe	13247496	0fcb5f7e90905756670e209503c243455dc4ad3b2f85e41884a1ea987bb3aaa8	disc
+W	Europe	copy	pheu:112302080:13247496
+W	USA	copy	phus:112302080:13247496
+F	avp2-ph-eu	Updates/avp2_en_sp1.exe	12620920	f9c1d447cbf1f78784bfffaa30c9f006129c4774432c0280dd9486e39a6b524d	disc
+W	Europe	copy	pheu:125550592:12620920
+W	USA	copy	phus:125550592:12620920
+F	avp2-ph-eu	Updates/avp2_us_092.exe	3931064	d8e2591524d9ed7713bebefe5fb5e73c3ec0b76540cb99d3e1516a8c4cbf5822	disc
+W	Europe	copy	pheu:138172416:3931064
+W	USA	copy	phus:138172416:3931064

@@ -15,15 +15,19 @@
 #                               `THIRD-PARTY` files), which its
 #                               linux-install.sh / windows-install.bat /
 #                               mac-install.command copy out of the player's
-#                               own disc images (build/mkinstall.py): the one
-#                               to give to other people. It needs the images
-#                               of the European and the USA releases' discs
-#                               in ext/rez/isos/ (build/retail.sh, retail_discs);
-#                               without them it is skipped.
+#                               own disc images (build/mkinstall.py, from
+#                               build/retail-files.txt and
+#                               build/retail-ranges.txt: no disc image is
+#                               needed here): the one to give to other
+#                               people. Its SHA256SUMS lists every file of
+#                               the archive and every file the scripts
+#                               write, but the settings the games rewrite
+#                               (autoexec.cfg, Profiles/Default.prf), so
+#                               `sha256sum -c SHA256SUMS` checks an install.
 #
 # AVP2_ARCHIVES (default "private public") says which to write; with
-# "public" alone (the CI build, .github/workflows/public-archives.yml) the
-# private one is not made, and no disc images is an error, not a skip.
+# "public" alone (the CI build, .github/workflows/ci.yml) the private one is
+# not made.
 #
 # build/all.sh runs it for the release build (step 6) and build/variant.sh
 # for each variant, once its symbols are in place.
@@ -89,24 +93,33 @@ fi
 # The public archive: the install scripts beside the rest, the retail files
 # left out.
 PUB="$PARENT/$NAME-public.tar.gz"
-rc=0
-python3 "$HERE/mkinstall.py" "$OUT" "$PARENT/$STAGE" || rc=$?
-if [ $rc = 3 ] && [ -n "${AVP2_ARCHIVES:-}" ]; then
-    echo "   $PUB: no disc images, but AVP2_ARCHIVES asks for it" >&2
-    exit 1
-elif [ $rc = 3 ]; then
-    echo "   $PUB: skipped (no disc images)"
-    rm -f "$PUB"
-    exit 0
-elif [ $rc != 0 ]; then
-    exit $rc
-fi
+python3 "$HERE/mkinstall.py" "$OUT" "$PARENT/$STAGE"
 sed "s|^|$NAME/|" "$PARENT/$STAGE/disc-files.txt" > "$PARENT/$STAGE/exclude.txt"
-tar -C "$PARENT" -h -cf - "${EXCLUDE[@]}" \
+tar -C "$PARENT" -h -cf "$PARENT/$STAGE/public.tar" "${EXCLUDE[@]}" \
     --anchored --no-wildcards --exclude-from="$PARENT/$STAGE/exclude.txt" \
     --transform="s|^$STAGE/|$NAME/|" \
     "$NAME" "${CMDS[@]}" "$STAGE/linux-install.sh" "$STAGE/windows-install.bat" \
-    "$STAGE/mac-install.command" |
-    gzip -6 > "$PUB.part"
+    "$STAGE/mac-install.command"
+# Last, SHA256SUMS: every file of the archive and every file the install
+# scripts write, but the settings the games rewrite. `sha256sum -c
+# SHA256SUMS` in the unpacked directory checks an install.
+python3 - "$PARENT/$STAGE/public.tar" "$PARENT/$STAGE/disc-sums.txt" \
+    > "$PARENT/$STAGE/SHA256SUMS" <<'PY'
+import hashlib, sys, tarfile
+lines = []
+with tarfile.open(sys.argv[1]) as t:
+    for m in t:
+        rel = m.name.split("/", 1)[1] if "/" in m.name else ""
+        if m.isfile() and rel:
+            lines.append(f"{hashlib.sha256(t.extractfile(m).read()).hexdigest()}  {rel}")
+lines += open(sys.argv[2]).read().splitlines()
+names = [l[66:] for l in lines]
+if len(set(n.lower() for n in names)) != len(names):
+    sys.exit("package.sh: a file twice in SHA256SUMS")
+for l in sorted(lines, key=lambda l: l[66:].lower()):
+    sys.stdout.write(l + "\n")
+PY
+tar -C "$PARENT" -rf "$PARENT/$STAGE/public.tar" --transform="s|^$STAGE/|$NAME/|" "$STAGE/SHA256SUMS"
+gzip -6 < "$PARENT/$STAGE/public.tar" > "$PUB.part"
 mv "$PUB.part" "$PUB"
 echo "   $PUB: $(du -h "$PUB" | cut -f1) (unpacks to $NAME/; its data from the discs)"

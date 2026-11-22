@@ -6,16 +6,17 @@
 #                 fails if a function recorded as identical stops matching
 #   make help     everything else
 #
-# Needs only docker on the host and the submodules (`git submodule
-# update --init`): the compilers, ext/toolchains/ (ext/toolchains/README.md); ext/rez/,
-# which fetches the redump images of the European discs from archive.org
-# and installs Primal Hunt, and AvP2 with its English 1.0.9.6 patch, from
-# them (ext/rez/README.md;
-# `make retail`, which every build runs first, does it once); and ext/tools/, the
-# reconstruction tools; and, for the modern build only, ext/openmiles/
-# (OpenMiles) and ext/ffmpeg/ (FFmpeg), its open middleware (build/ext.sh).
-# Every step runs in a throwaway container of the image
-# docker/Dockerfile describes, with this checkout mounted at /repo, as you.
+# Needs only docker on the host, the submodules (`git submodule update
+# --init`): the compilers, ext/toolchains/ (ext/toolchains/README.md);
+# ext/tools/, the reconstruction tools; and, for the modern build only,
+# ext/openmiles/ (OpenMiles) and ext/ffmpeg/ (FFmpeg), its open middleware
+# (build/ext.sh) -- and your own images of the three discs, the two of
+# Aliens versus Predator 2 (Europe) and the one of Primal Hunt (Europe), in
+# isos/ (or AVP2SRC_ISOS=<dir>), from which `make retail`, which every build
+# runs first, installs Primal Hunt, and AvP2 with its English 1.0.9.6 patch
+# (on the Primal Hunt disc), once (build/discs.py). Every step runs in a
+# throwaway container of the image docker/Dockerfile describes, with this
+# checkout mounted at /repo, as you.
 
 IMAGE     ?= avp2src-build
 CONTAINER ?= avp2src-build
@@ -32,10 +33,15 @@ TEST_SCRIPT ?=
 TEST_SECS ?= $(if $(TEST_SCRIPT),5,60)
 TEST_NAME = $(if $(filter out/avp2-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
 
+# Your disc images, if they are not in isos/: AVP2SRC_ISOS=<directory>
+# (mounted read-only)
+AVP2SRC_ISOS ?=
+ISO_MOUNT := $(if $(AVP2SRC_ISOS),-v $(abspath $(AVP2SRC_ISOS)):/isos:ro -e AVP2SRC_ISOS=/isos)
+
 DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 	-u $(shell id -u):$(shell id -g) -e HOME=/tmp/home $(if $(JOBS),-e AVP2SRC_JOBS=$(JOBS)) \
 	$(if $(AVP2_ARCHIVES),-e AVP2_ARCHIVES="$(AVP2_ARCHIVES)") \
-	-v $(CURDIR):/repo -w /repo $(IMAGE)
+	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT) $(IMAGE)
 
 # The VC6 revisions the Rich headers name (progress/COMPILERS.md): SP5's
 # 8966 for Primal Hunt's engine and game DLLs (and the lithshared
@@ -44,7 +50,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-9044/BIN/cl.exe ext/toolchains/msvc-6.00-8966/BIN/cl.exe \
 	ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
-.PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain check-ext \
+.PHONY: all game debug modern modern-debug image retail retail-ranges check-tools check-toolchain check-ext \
 	test reference art art-check progress progress-update progress-ci shell clean distclean help
 
 all: game
@@ -67,9 +73,10 @@ help:
 	@echo "make progress-ci  the check without the retail game: the build against"
 	@echo "                progress/hashes/ (finds no new matches)"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
-	@echo "make retail     fetch the disc images and install Primal Hunt, and AvP2 with its"
-	@echo "                1.0.9.6 patch, from them, and fetch the USA releases' discs too, for"
-	@echo "                the public archive (ext/rez/, once; every build runs it); check them"
+	@echo "make retail     install Primal Hunt, and AvP2 with its 1.0.9.6 patch, from your"
+	@echo "                three disc images in isos/ (once; every build runs it), and check them"
+	@echo "make retail-ranges  write build/retail-ranges.txt from the retail games: the"
+	@echo "                zeroed game DLLs in their archives (for the install scripts)"
 	@echo "make art        write the retail art our launchers and Primal Hunt's server are"
 	@echo "                compiled with into assets/art/ again, from the retail binaries"
 	@echo "make art-check  check that assets/art/ is the retail art (every build with"
@@ -81,6 +88,7 @@ help:
 	@echo
 	@echo "Variables: JOBS=<n> (parallel compiles; default one per CPU)"
 	@echo "           AVP2_ARCHIVES=\"private public\" (the archives build/package.sh writes)"
+	@echo "           AVP2SRC_ISOS=<dir> (your disc images, if not in isos/)"
 	@echo "           IMAGE_BUILD=0 (use the docker image as it is, as CI does)"
 	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1 (progress/README.md)"
 
@@ -119,11 +127,16 @@ endif
 	@echo "== docker image $(IMAGE) ready"
 
 # The retail games the build takes its data from (build/retail.sh): installed
-# by ext/rez/ the first time, checked against ext/rez/games.sha256 every time; and
-# the USA releases' disc images, which the public archive's install scripts
-# read too.
-retail: check-rez check-tools image
-	@$(DOCKER_RUN) bash -c 'source build/retail.sh && retail_install && retail_discs && retail_verify'
+# from your disc images (isos/, or AVP2SRC_ISOS) by build/discs.py the first
+# time, checked against build/retail-files.txt every time.
+retail: check-tools image
+	@$(DOCKER_RUN) bash -c 'source build/retail.sh && retail_install && retail_verify'
+
+# build/retail-ranges.txt, written again from the retail games
+# (build/discs.py ranges): only needed when what the build zeroes in them
+# changes; every build with them checks the list
+retail-ranges: check-tools retail
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/discs.py ranges write "$$(dirname "$$(retail_dir)")"'
 
 reference: retail
 	$(DOCKER_RUN) bash build/reference.sh
@@ -137,9 +150,6 @@ art: check-tools retail
 
 art-check: check-tools retail
 	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/art.py check "$$(dirname "$$(retail_dir)")"'
-
-check-rez:
-	@[ -f ext/rez/install-games.sh ] || { echo "error: ext/rez/ is empty -- the disc images and their installer are the ext/rez/ submodule: run git submodule update --init (see ext/rez/README.md)" >&2; exit 1; }
 
 check-tools:
 	@[ -f ext/tools/progress.py ] || { echo "error: ext/tools/ is empty -- the reconstruction tools are the ext/tools/ submodule: run git submodule update --init" >&2; exit 1; }
@@ -173,7 +183,7 @@ progress-ci: check-tools image
 shell: image
 	docker run --rm -it --init --name $(CONTAINER)-shell \
 	  -u $(shell id -u):$(shell id -g) -e HOME=/tmp/home \
-	  -v $(CURDIR):/repo -w /repo $(IMAGE) bash
+	  -v $(CURDIR):/repo -w /repo $(ISO_MOUNT) $(IMAGE) bash
 
 clean:
 	rm -rf out .wine .build

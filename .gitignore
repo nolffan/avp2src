@@ -21,6 +21,11 @@ __pycache__/
 !src/**/*.log
 # agents' worktrees (ext/tools/agentwt.sh)
 /.worktrees/
+# your own images of the three discs (build/discs.py; README.md, Building)
+/isos/
+# where the ext/rez/ submodule was: the old disc images and installs, left
+# on disk for you to keep or delete
+/ext/rez/
 src/engine/*/[Rr]elease/
 src/engine/*/AvP2Release/
 src/lithshared/**/[Rr]elease/
