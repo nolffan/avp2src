@@ -737,6 +737,17 @@ int parse_Command(char* pCommand, char** pNewCommandPos, char* argBuffer,
 	return 0;
 }
 
+#ifdef AVP2SRC_MODERN
+// M-28: a character above 127 is not a control character. The signed char
+// made it a negative index into the CRT's type table, and some of these
+// characters (for example 0xF3, "o" with an acute accent) ended the
+// command there. A bind command with the mouse's DirectInput device name,
+// which Windows translates, could then do nothing (RETAIL_BUGS.md).
+#define PARSE_ISCNTRL(c) iscntrl((unsigned char)(c))
+#else
+#define PARSE_ISCNTRL(c) iscntrl(c)
+#endif
+
 // lithtech.exe 0x00422700, server.dll 0x10007b71 -- one token off the front
 // of the text, copied into the argument buffer with its own terminator. The
 // answer says what was found: nothing left at all, an argument, or the end
@@ -776,7 +787,7 @@ static int parse_Token(char** ppPos, char** ppOut)
 			// the space test's `je` (0x10007bd7) and on to the shared
 			// parse_AddChar call (0x10007bd9).
 		}
-		else if (c == ';' || iscntrl(c))
+		else if (c == ';' || PARSE_ISCNTRL(c))
 #else
 			// The escaped character's copy is its own (lithtech.exe
 			// 0x0042274d); the fall-through spelling above loses it at /O2
@@ -786,7 +797,7 @@ static int parse_Token(char** ppPos, char** ppOut)
 			continue;
 		}
 
-		if (c == ';' || iscntrl(c))
+		if (c == ';' || PARSE_ISCNTRL(c))
 #endif
 		{
 			**ppOut = 0;

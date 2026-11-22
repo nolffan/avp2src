@@ -145,6 +145,29 @@ had no display scaling.
 Fixed in the modern build: clientwin.cpp, the engine declares itself
 DPI-aware before it makes a window; MODERN.md M-27.
 
+### The console ends a command at some characters above 127
+
+lithtech.exe and server.dll of both games, AvP2 1.0.9.6 and Primal Hunt
+(`parse_Token`, src/engine/server/console.cpp; Primal Hunt lithtech.exe
+0x00422700, server.dll 0x10007b71). The console parser ends a token at a
+semicolon or at a control character, and it tests each character with
+`iscntrl`. The character is a signed `char`, thus a character above 127
+is a negative number. `iscntrl` then reads the CRT's type table at a
+negative index. For some of these characters, `iscntrl` answers "yes",
+and the command ends there. nolfsrc found 0xF3 ("o" with an acute
+accent) to be such a character.
+
+The profile code (ProfileMgr.cpp) binds each control with a console
+command that holds the device name from DirectInput, for example
+`bind "<mouse>" "##3" "Fire"`. Windows translates the device names into
+the language of the user. When a name holds such a character, the
+command ends early, and the binding does nothing. The buttons themselves
+are bound by number (`##3`), thus only the device name can cause this.
+
+Fixed in the modern build: console.cpp gives `iscntrl` an
+`unsigned char`; MODERN.md M-28. This is nolfsrc's M-P1-33 (its console
+half). Not yet confirmed on a Windows with such a device name.
+
 ### Above 100 frames a second the world runs fast
 
 lithtech.exe and server.dll of both games, AvP2 1.0.9.6 and Primal Hunt
