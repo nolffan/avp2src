@@ -29,7 +29,7 @@
 # drive the modern build's test controller (docs/MODERN.md, M-7), through
 # the file AVP2SRC_PADTEST names. The adapted copy of
 # ext/tools/playtest.sh is written to
-# out/play/playtest-avp2.sh each run; ext/tools/ is not changed.
+# out/play/<name>/playtest-<AVP2 or PrimalHunt>.sh each run; ext/tools/ is not changed.
 set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GAMEDIR="${1:-out/avp2-legacy-release}"
@@ -52,7 +52,8 @@ if [ "$SUB" = PrimalHunt ] && [ ! -e "$REPO/out/play/$NAME/AVP2" ]; then
     ln -s "$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' \
         "$GAME/AVP2" "$REPO/out/play/$NAME")" "$REPO/out/play/$NAME/AVP2"
 fi
-OUT="$REPO/out/play/playtest-avp2.sh"
+# One copy for each run name: runs at the same time do not share it.
+OUT="$REPO/out/play/$NAME/playtest-$SUB.sh"
 sed -e 's/nolf2cmds\.txt/avp2cmds.txt/g' \
     -e 's/Lithtech\.exe/lithtech.exe/g' \
     -e 's/NOLF2SRC_PADTEST/AVP2SRC_PADTEST/g' \
