@@ -942,8 +942,8 @@ inline void cis_UnlockSurfaceQ40E(CSurfaceQ40E* pSurface)
 // and writes the pixels in software, which costs the video card a round
 // trip of the frame per rectangle -- menus, sliders, the scope and the
 // letterbox fill many each frame.  A renderer that offers a colour fill
-// (the modern d3d.ren: GetRenderObject("FillScreenRect"), d3dblit.cpp)
-// does it there instead.  The colour is converted to the screen format the
+// (d3d9.ren: GetRenderObject("FillScreenRect"), src/modern/render/;
+// our d3d.ren has none) does it there instead.  The colour is converted to the screen format the
 // same way the software fill converts it, so the pixels are the same.
 // Returns FALSE (and the caller does the retail fill) when the renderer has
 // no such fill or it fails.
@@ -956,10 +956,13 @@ public:
 	                                  unsigned long* pOut);   // 0x0045f5e0
 };
 
+// AVP2: the renderer's GetRenderObject is at +0xc0 (NOLF's +0xb8 plus 8,
+// as every slot from CreateWorld on: clientrender.cpp). With nolfsrc's
+// +0xb8, this called RenderScene with the name.
 struct RenderHookQ40E
 {
-	uint8   m_pad_00[0xb8];
-	void*  (*GetRenderObject)(const char* pName);                   // 0x0b8
+	uint8   m_pad_00[0xc0];
+	void*  (*GetRenderObject)(const char* pName);                   // 0x0c0
 };
 
 typedef LTBOOL (__cdecl *FillScreenRectFnQ40E)(LTRectQ438* pRect, uint32 nPixel);
