@@ -7,8 +7,8 @@
 // translucent, far to near; sprites that ignore the depth buffer last.
 //
 // World models are drawn by mr_scene.cpp, which owns the world's
-// polygons. Stage 2 of the port (README.md): the other kinds are not
-// drawn yet.
+// polygons; models by mr_models.cpp; sprites by mr_sprites.cpp; particle
+// systems, poly grids, line systems and canvases by mr_effects.cpp.
 
 #include <math.h>
 
@@ -114,10 +114,45 @@ void mr_QueueObject(LTObject* pObj)
     case OT_CONTAINER:
         mr_ProcessWorldModel(pObj);
         break;
+    case OT_MODEL:
+        // d3d_ProcessModel: a really-close model is drawn with the others.
+        if (pObj->m_ColorA != 255)
+            mr_AddTranslucent(pObj, mr_DrawTranslucentModel);
+        else if (pObj->m_Flags2 & FLAG2_CHROMAKEY)
+            mr_ObjList(VS_MODELS_CHROMAKEY)->Add(pObj);
+        else
+            mr_ObjList(VS_MODELS)->Add(pObj);
+        break;
+    case OT_SPRITE:
+        if (!cvi(CV_DrawSprites))
+            break;
+        if (pObj->m_Flags & FLAG_SPRITE_NOZ)
+            mr_ObjList(VS_SPRITES_NOZ)->Add(pObj);
+        else
+            mr_AddTranslucent(pObj, mr_DrawSprite);
+        break;
     case OT_LIGHT:
         // d3d_ProcessLight: only while DynamicLight is on.
         if (cvi(CV_DynamicLight))
             mr_ObjList(VS_LIGHTS)->Add(pObj);
+        break;
+    case OT_POLYGRID:
+        if (pObj->m_ColorA != 255)
+            mr_AddTranslucent(pObj, mr_DrawPolyGrid);
+        else
+            mr_ObjList(VS_POLYGRIDS)->Add(pObj);
+        break;
+    case OT_PARTICLESYSTEM:
+        mr_AddTranslucent(pObj, mr_DrawParticleSystem);
+        break;
+    case OT_LINESYSTEM:
+        mr_AddTranslucent(pObj, mr_DrawLineSystem);
+        break;
+    case OT_CANVAS:
+        if (mr_CanvasIsSolid(pObj))
+            mr_ObjList(VS_CANVASES)->Add(pObj);
+        else
+            mr_AddTranslucent(pObj, mr_DrawCanvas);
         break;
     default:
         break;
@@ -132,16 +167,26 @@ static void mr_DrawSet(MRObjSet eSet, MRDrawFn fnDraw)
             fnDraw(pList->m_pObjects[i]);
 }
 
+// d3d_FlushObjectQueues: solid world models, models, poly grids and
+// canvases; the chromakeyed world models and models; then everything
+// translucent, far to near; the sprites that ignore depth last.
 void mr_FlushObjects(void)
 {
-    // Solid.
     mr_DrawSet(VS_WORLDMODELS, mr_DrawSolidWorldModel);
+    rd_PushAttrib(RD_ATTR_COLOR);
+    rd_BlendFunc(RD_SRC_ALPHA, RD_ONE_MINUS_SRC_ALPHA);     // d3d_DrawSolidModels
+    mr_DrawSet(VS_MODELS, mr_DrawModel);
+    rd_PopAttrib();
+    mr_DrawSet(VS_POLYGRIDS, mr_DrawPolyGrid);
+    mr_DrawSet(VS_CANVASES, mr_DrawCanvas);
 
     // Chromakey: texels whose alpha the key cleared are dropped.
     rd_PushAttrib(RD_ATTR_COLOR);
     rd_Enable(RD_ALPHA_TEST);
     rd_AlphaGreater(0.5f);
     mr_DrawSet(VS_WORLDMODELS_CHROMAKEY, mr_DrawSolidWorldModel);
+    rd_BlendFunc(RD_SRC_ALPHA, RD_ONE_MINUS_SRC_ALPHA);
+    mr_DrawSet(VS_MODELS_CHROMAKEY, mr_DrawModel);
     rd_PopAttrib();
 
     // Translucent, far to near, blended over what is there without writing
@@ -152,9 +197,23 @@ void mr_FlushObjects(void)
             qsort(g_pTrans, g_nTrans, sizeof(MRTranslucent), mr_CompareTranslucent);
         mr_DrawTranslucentRange(0, g_nTrans);
     }
+
+    // Sprites that ignore the depth buffer, over everything.
+    if (mr_ObjList(VS_SPRITES_NOZ)->m_nObjects)
+    {
+        rd_PushAttrib(RD_ATTR_COLOR | RD_ATTR_DEPTH);
+        rd_Enable(RD_BLEND);
+        rd_DepthMask(false);
+        mr_DrawSet(VS_SPRITES_NOZ, mr_DrawNoZSprite);
+        rd_PopAttrib();
+    }
 }
 
+// The sky's sprites and poly grids, with the sky camera loaded.
 void mr_DrawSkyObject(LTObject* pObj)
 {
-    (void)pObj;
+    if (pObj->m_ObjectType == OT_SPRITE)
+        mr_DrawSkySprite(pObj);
+    else if (pObj->m_ObjectType == OT_POLYGRID)
+        mr_DrawPolyGrid(pObj);
 }

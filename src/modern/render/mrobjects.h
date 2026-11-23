@@ -33,4 +33,32 @@ void mr_QueueObject(LTObject* pObj);           // the type's Process function
 void mr_FlushObjects(void);                    // draws the set
 void mr_DrawSkyObject(LTObject* pObj);         // a sky sprite or poly grid
 
+// mr_sprites.cpp
+bool mr_LightGridSample(const LTVector& pos, float* pOut);
+void mr_DynamicLightAdd(const LTVector& pos, float* pOut);
+void mr_ObjectBlend(LTObject* pObj);
+SharedTexture* mr_SpriteFrame(LTObject* pObj);
+void mr_DrawSprite(LTObject* pObj);
+void mr_DrawNoZSprite(LTObject* pObj);
+void mr_DrawSkySprite(LTObject* pObj);
+
+// mr_effects.cpp
+void mr_ObjectMatrix(LTObject* pObj, const LTVector& pos, const LTVector& scale, LTMatrix* pM);
+void mr_DrawParticleSystem(LTObject* pObj);
+void mr_DrawPolyGrid(LTObject* pObj);
+void mr_DrawLineSystem(LTObject* pObj);
+void mr_DrawCanvas(LTObject* pObj);
+bool mr_CanvasIsSolid(LTObject* pObj);
+
+// mr_models.cpp
+void mr_DrawModel(LTObject* pObj);
+void mr_DrawTranslucentModel(LTObject* pObj);
+void mr_BeginReallyClose(LTObject* pObj);     // the camera-space view for it
+void mr_EndReallyClose(void);
+
+// mr_shadows.cpp: a model's shadow on the world (drawmodelshadows.cpp). The
+// nodes are the model's, in the world.
+void mr_DrawModelShadow(LTObject* pInst, const void* pModel, const LTMatrix* pNodes, uint32_t nNodes,
+                        uint32_t iLOD);
+
 #endif

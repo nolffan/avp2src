@@ -229,6 +229,10 @@ MRVar g_Vars[] = {
     { "VFogMaxYVal", 0 }, { "VFogMax", 180 }, { "VFogDensity", 1800 }, { "DrawPortals", 1 }, { "PortalLightmap", 1 },
     { "LightModels", 1 }, { "TintModels", 1 }, { "ModelFullbrite", 1 },
     { "ExtraFOVXOffset", 0 }, { "ExtraFOVYOffset", 0 }, { "ModelFovTest", 0 },
+    { "ModelZoomScale", 1 }, { "ModelLODBlendEnable", 1 }, { "ModelLODBlendDist", 60 },
+    { "ModelSpecular", 1 }, { "ModelDetailTextureScale", 3 }, { "LightModelSprites", 0 },
+    { "ModelShadowProj", 0 }, { "ModelShadowProjRes", 128 }, { "ModelShadowProjLOD", 1 },
+    { "ModelShadowProjShow", 0 },
 };
 static_assert(sizeof(g_Vars) / sizeof(g_Vars[0]) == CV_Count, "g_Vars and the CV_ enum");
 

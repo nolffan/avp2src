@@ -918,6 +918,23 @@ polygon does not light some of its vertices.
 Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
 lights every vertex that it draws.
 
+### A model with no lower LODs gets no projected shadow
+
+d3d.ren 0x10027e40 (`CD3DModelDraw::DrawProjShadows`,
+src/engine/d3d/ph/drawmodelshadows.cpp; the same code in AvP2).
+
+The projected shadow draws the model `ModelShadowProjLOD` LODs lower
+than the model itself. The code limits this LOD to the number of extra
+LODs minus 1, which is the last LOD but one. It must limit the LOD to
+the last LOD. When a model has no extra LODs, the limit is -1 as an
+unsigned number, so the LOD stays at 1. No piece has LOD 1, and the
+shadow image is empty. When a model has extra LODs, the shadow never
+uses the last LOD. The bug shows only with `ModelShadowProj` 1 (the
+default is 0).
+
+Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
+limits the LOD to the last LOD.
+
 ### A lightmap page leaks its allocation bitmap when there is no lightmap format
 
 d3d.ren 0x10034f32 (the page allocator of the lightmap pager,

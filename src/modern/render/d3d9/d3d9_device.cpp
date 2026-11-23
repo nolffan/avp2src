@@ -794,6 +794,8 @@ static DWORD d9_Op(RDCombineOp e, float fScale)
     case RD_OP_REPLACE:    return D3DTOP_SELECTARG1;
     case RD_OP_ADD:        return D3DTOP_ADD;
     case RD_OP_ADD_SIGNED: return fScale >= 2.0f ? D3DTOP_ADDSIGNED2X : D3DTOP_ADDSIGNED;
+    case RD_OP_MODALPHA_ADDCOLOR: return D3DTOP_MODULATEALPHA_ADDCOLOR;
+    case RD_OP_ARG1:       return D3DTOP_SELECTARG2;
     default:               return fScale >= 4.0f ? D3DTOP_MODULATE4X : fScale >= 2.0f ? D3DTOP_MODULATE2X : D3DTOP_MODULATE;
     }
 }

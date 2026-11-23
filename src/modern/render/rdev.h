@@ -129,7 +129,11 @@ void rd_TexEnv(RDTexEnv eEnv);
 
 // A combine environment: each of colour and alpha is Op(Arg0, Arg1),
 // colour times fScale (1, 2 or 4).
-enum RDCombineOp { RD_OP_REPLACE, RD_OP_MODULATE, RD_OP_ADD, RD_OP_ADD_SIGNED };
+enum RDCombineOp {
+    RD_OP_REPLACE, RD_OP_MODULATE, RD_OP_ADD, RD_OP_ADD_SIGNED,
+    RD_OP_MODALPHA_ADDCOLOR,        // Arg0 + Arg0.alpha x Arg1 (Direct3D's MODULATEALPHA_ADDCOLOR)
+    RD_OP_ARG1                      // Arg1 alone
+};
 enum RDCombineArg { RD_ARG_TEXTURE, RD_ARG_PRIMARY, RD_ARG_PREVIOUS };
 struct RDCombine {
     RDCombineOp  eColorOp;

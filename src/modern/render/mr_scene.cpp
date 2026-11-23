@@ -1632,8 +1632,9 @@ static WorldPoly* mr_IntersectNode(Node* pNode, LTVector vFrom, LTVector vTo, in
 bool mr_SeesSky(const LTVector& vFrom, const LTVector& vRay)
 {
     MainWorld* pWorld = g_Frame.m_pContext ? g_Frame.m_pContext->m_pWorld : NULL;
-    WorldData* pData = pWorld && pWorld->m_Worlds.m_nElements ? mw_World(pWorld, 0) : NULL;
-    WorldBsp* pMain = pData ? pData->m_pWorldBsp : NULL;
+    // The main world's BSP is the one the vis query walks (MainWorld
+    // vtable slot 1); the first WorldData is another.
+    WorldBsp* pMain = pWorld ? mw_GetVisBsp(pWorld) : NULL;
     if (!pMain || !pMain->m_RootNode)
         return false;
     LTVector vTo = { vFrom.x + vRay.x, vFrom.y + vRay.y, vFrom.z + vRay.z };

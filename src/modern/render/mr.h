@@ -112,6 +112,9 @@ enum {
     CV_TableFog, CV_VFog, CV_VFogMinY, CV_VFogMaxY, CV_VFogMinYVal, CV_VFogMaxYVal, CV_VFogMax,
     CV_VFogDensity, CV_DrawPortals, CV_PortalLightmap, CV_LightModels, CV_TintModels, CV_ModelFullbrite,
     CV_ExtraFOVXOffset, CV_ExtraFOVYOffset, CV_ModelFovTest,
+    CV_ModelZoomScale, CV_ModelLODBlendEnable, CV_ModelLODBlendDist, CV_ModelSpecular,
+    CV_ModelDetailTextureScale, CV_LightModelSprites,
+    CV_ModelShadowProj, CV_ModelShadowProjRes, CV_ModelShadowProjLOD, CV_ModelShadowProjShow,
     CV_Count
 };
 extern MRVar g_Vars[CV_Count];
