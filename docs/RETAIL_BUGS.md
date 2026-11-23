@@ -900,6 +900,24 @@ sun) is the `ModelWarble` curve:
 
 We corrected the comment in the source.
 
+### With FixTJunc, the dynamic lights do not light all the vertices of a sky polygon
+
+d3d.ren 0x1001a533 (`d3d_LightSkyPoly`,
+src/engine/d3d/ph/d3d_skyobjects.cpp; AvP2 0x10019923, identical in the
+two renderers).
+
+The sky polygon draw (`d3d_DrawSkyPoly`) copies the T-junction vertex
+list of the polygon when `FixTJunc` is 1. This list can have more
+vertices than the polygon. The draw gives the count of its list to
+`d3d_LightSkyPoly`. But the light loop counts `pPoly->m_nVerts`, and it
+ignores the count that it gets. Thus the dynamic lights do not light the
+vertices after the first `m_nVerts`. The default of `FixTJunc` is 0, so
+the bug shows only when a player sets it. Then a light near a sky
+polygon does not light some of its vertices.
+
+Not fixed: the modern build uses the retail renderer code here. The
+Direct3D 9 renderer must count the vertices that it draws.
+
 ### A lightmap page leaks its allocation bitmap when there is no lightmap format
 
 d3d.ren 0x10034f32 (the page allocator of the lightmap pager,
