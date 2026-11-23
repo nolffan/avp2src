@@ -37,6 +37,7 @@
 #include "..\..\modern\cshell\m1_widescreen.h"	// M-1, M-2: the bars beside 4:3
 #include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
 #include "..\..\modern\cshell\m25_console.h"	// M-25: the console
+#include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
 #endif
 #ifdef PRIMAL_HUNT
 #include "TurretInfoMgr.h"
@@ -1021,6 +1022,11 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 	if ((g_pGameClientShell->IsInWorld() && (m_nOldLoadWorldCount != m_nLoadWorldCount)) &&
 		hPlayerObj)
 	{
+#ifdef AVP2SRC_MODERN
+		// M-30: the loading screen stays until a key is pressed
+		if (M30LoadPrompt_Wait(m_LoadingScreen))
+			return;
+#endif
 		// Turn off the loading screen
 		m_LoadingScreen.Hide();
 
@@ -2044,6 +2050,9 @@ void CInterfaceMgr::HandleLoadNewLevel()
 		//load the new level
 		g_pGameClientShell->GetGameType()->SetStartMission(LTFALSE);
 
+#ifdef AVP2SRC_MODERN
+		M30LoadPrompt_Want();	// M-30: the next level of the mission
+#endif
 		g_pGameClientShell->LoadWorld(const_cast<char*>(prevMissionButes.m_szNextLevel), LTNULL, LTNULL, LOAD_NEW_LEVEL);
 		m_bPlayedOutro = LTFALSE;
 	}
@@ -5724,6 +5733,9 @@ void CInterfaceMgr::StartMission(int nPrevMissionId)
 
 	ChangeState(GS_LOADINGLEVEL);
 
+#ifdef AVP2SRC_MODERN
+	M30LoadPrompt_Want();	// M-30: the first level of a mission
+#endif
 	//load the new level
 	if( g_pGameClientShell->LoadWorld( const_cast<char*>(prevMissionButes.m_szNextLevel) ) )
 	{

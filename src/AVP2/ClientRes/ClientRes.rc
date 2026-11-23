@@ -4820,6 +4820,12 @@ BEGIN
     IDS_HELP_M5_ANTIALIAS   "Smooth the edges of the 3D picture (Direct3D 9 renderer only)."
     IDS_M5_ANTIALIAS_SAMPLES "%1!d!x"
 END
+
+// M-30, the loading screen's prompt after a level has loaded
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M30_PRESS_ANY_KEY   "Press any key to continue."
+END
 #endif
 
 #endif    // English (U.S.) resources

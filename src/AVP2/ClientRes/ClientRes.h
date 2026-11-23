@@ -3364,6 +3364,8 @@
 #define IDS_M5_ANTIALIAS                32106
 #define IDS_HELP_M5_ANTIALIAS           32107
 #define IDS_M5_ANTIALIAS_SAMPLES        32108
+// M-30, the loading screen's prompt (NOLF2's IDS_PRESS_ANY_KEY)
+#define IDS_M30_PRESS_ANY_KEY           32200
 #endif
 // Next default values for new objects
 // 

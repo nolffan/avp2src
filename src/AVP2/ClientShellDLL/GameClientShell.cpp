@@ -80,6 +80,8 @@
 #include "..\..\modern\cshell\m9_window.h"		// M-9: the window modes
 #define M25_CONSOLE_IMPLEMENTATION
 #include "..\..\modern\cshell\m25_console.h"		// M-25: the console
+#define M30_LOADPROMPT_IMPLEMENTATION
+#include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
 #endif
 
 static _timeb g_StartTimeB;
@@ -2713,8 +2715,10 @@ void CGameClientShell::PostUpdate()
 #endif
 #endif
 #ifdef AVP2SRC_MODERN
-	// M-13: the frame-rate limit, once the frame is drawn
-	M10_EndFrame(m_InterfaceMgr.GetGameState() == GS_LOADINGLEVEL);
+	// M-13: the frame-rate limit, once the frame is drawn (M-30: also
+	// while the loading screen waits for a key; the level is loaded)
+	M10_EndFrame(m_InterfaceMgr.GetGameState() == GS_LOADINGLEVEL &&
+	             !M30LoadPrompt_IsWaiting());
 #endif
 }
 
@@ -3302,6 +3306,9 @@ void CGameClientShell::OnCommandOn(int command)
 #ifdef AVP2SRC_MODERN
 	// M-25: the console's command, and no game command while it is open
 	if (M25Console_OnCommandOn(command))
+		return;
+	// M-30: no game command while the loading screen waits for a key
+	if (M30LoadPrompt_IsWaiting())
 		return;
 #endif
 	// Make sure we're not in a cinematic
@@ -5219,6 +5226,11 @@ DBOOL CGameClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 
 	// Change to the loading level state...
 
+#ifdef AVP2SRC_MODERN
+	// M-30: a level of a mission (StartMission, HandleLoadNewLevel) waits
+	// for a key once loaded; a saved game and a demo do not
+	M30LoadPrompt_OnLoadWorld(nFlags != LOAD_RESTORE_GAME && !pPlaydemoFile);
+#endif
 	m_InterfaceMgr.ChangeState(GS_LOADINGLEVEL);
 
 	// Clean up any old story object images...

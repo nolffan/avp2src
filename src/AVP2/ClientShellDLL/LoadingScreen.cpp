@@ -19,6 +19,9 @@
 #include "ServerUtilities.h"		// For DEG2RAD()
 #include "ProfileMgr.h"
 #include "FXButeMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
+#endif
 
 extern CGameClientShell* g_pGameClientShell;
 
@@ -471,6 +474,10 @@ LTBOOL CLoadingScreen::Update()
 		pFont->Draw(m_hWorldName, hDestSurf, m_TextPos.x+1, m_TextPos.y+1, LTF_JUSTIFY_CENTER,kBlack);
 		pFont->Draw(m_hWorldName, hDestSurf, m_TextPos.x, m_TextPos.y, LTF_JUSTIFY_CENTER,kWhite);
 	}
+#ifdef AVP2SRC_MODERN
+	// M-30: and, once the level has loaded, the prompt
+	M30LoadPrompt_Draw(hDestSurf);
+#endif
 
     g_pLTClient->EndOptimized2D();
 

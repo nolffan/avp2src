@@ -70,6 +70,7 @@ void	M7Pad_AddLook(LTFLOAT* pOffsets);			// the right stick, into the axis offse
 void	M7Pad_MoveFlags(uint32* pdwCtrl);			// the left stick's direction and run flags
 LTBOOL	M7Pad_GetMove(LTFLOAT* pRight, LTFLOAT* pForward);	// the left stick's direction, a unit vector
 LTFLOAT	M7Pad_SpeedScale();							// the share of the walk speed the stick asks for
+LTBOOL	M7Pad_AnyButtonDown();						// M-30: a button held, or a trigger past half way
 
 // A Pad* variable's value (its default if it is not set).
 inline LTFLOAT M7Pad_GetVar(const char* pName, LTFLOAT fDefault)
@@ -350,6 +351,11 @@ LTFLOAT M7Pad_SpeedScale()
 
 	fScale = g_fM7MoveMag / c_fM7RunAt;
 	return fScale < c_fM7MinWalk ? c_fM7MinWalk : fScale;
+}
+
+LTBOOL M7Pad_AnyButtonDown()
+{
+	return g_M7Pad.wButtons != 0 || g_M7Pad.bLeftTrigger > 128 || g_M7Pad.bRightTrigger > 128;
 }
 
 #endif // M7_PAD_IMPLEMENTATION
