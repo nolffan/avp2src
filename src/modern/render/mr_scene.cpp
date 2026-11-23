@@ -677,6 +677,9 @@ static int mr_CompareDrawPoly(const void* a, const void* b)
 // test, the fog and environment maps).
 static LTVector g_vPolyCam;
 
+// RenderStruct's PanInfo[0]: the sky-pan texture (mr_SetupPan).
+struct PanInfo { SharedTexture* m_pTexture; float m_xOffset, m_zOffset, m_xScale, m_zScale; };
+
 // Queue a poly unless it faces away from the camera (tagnodes.cpp: its
 // plane's distance to the eye at most 0.01), by its surface (tagnodes.cpp
 // d3d_TagVisibleLeaves).
@@ -706,7 +709,10 @@ static void mr_QueueFacingPoly(WorldPoly* pPoly, const LTVector& vCam, float fEp
     }
     if ((nFlags & SURF_LIGHTMAP) && g_Frame.m_bLightmaps && pPoly->m_pLMPage)
         mr_QueuePoly(pTex, pPoly, PK_LIGHTMAP);
-    else if ((nFlags & SURF_PANNINGSKY) && g_Frame.m_bLightmaps)
+    // d3d_SetDrawFunctions: with no sky-pan texture these polys are drawn
+    // as vertex-lit polys (the light layer would have no texture to draw).
+    else if ((nFlags & SURF_PANNINGSKY) && g_Frame.m_bLightmaps &&
+             ((const PanInfo*)g.pStruct->m_GlobalPanInfo)->m_pTexture)
         mr_QueuePoly(pTex, pPoly, PK_PANSKY);
     else
         mr_QueuePoly(pTex, pPoly, PK_GOURAUD);
@@ -869,7 +875,6 @@ static inline void mr_Fog(const LTVector& pos)
 // The sky-pan texture (the clouds' shadows on SURF_PANNINGSKY polys):
 // RenderStruct's PanInfo[0], planar on world XZ, its offsets animated by
 // the engine (d3d_SetupScreenScale, d3d_DrawDeferredPiece).
-struct PanInfo { SharedTexture* m_pTexture; float m_xOffset, m_zOffset, m_xScale, m_zScale; };
 static MRTexture* g_pPanTex;
 
 static void mr_SetupPan(void)
@@ -1218,7 +1223,10 @@ static void mr_DrawGouraudPoly(WorldPoly* pPoly, MRTexture* pTex, uint8_t nAlpha
     MRWorldLight lights[MR_MAXWORLDLIGHTS];
     uint32_t nLights = g_nWLights && cvi(CV_LMDynamic) ? mr_PolyLights(pPoly, lights) : 0;
     const uint8_t (*G)[256] = g_Frame.m_GammaRamp;
-    if (!nLights)
+    // A fullbright texture (DTX_FULLBRITE) is drawn over the vertex colours
+    // as d3d_DrawLMPieces draws it: its bright texels (its alpha) added.
+    bool bFullbrite = pTex && (pTex->m_DtxFlags & DTX_FULLBRITE) && !cvi(CV_LMFullBright);
+    if (!nLights && !bFullbrite)
     {
         mr_SetBaseTexture(pTex);
         rd_TexEnv(RD_ENV_MODULATE);
@@ -1249,28 +1257,47 @@ static void mr_DrawGouraudPoly(WorldPoly* pPoly, MRTexture* pTex, uint8_t nAlpha
 
     // The lights (d3d_DrawPolyLights), two times under Saturate.
     rd_PushAttrib(RD_ATTR_COLOR | RD_ATTR_DEPTH | RD_ATTR_FOG);
-    mr_DrawPolyDynLights(pPoly, pVerts, nVerts, lights, nLights, cvi(CV_MultipassGouraud) ? 1.0f : 2.0f,
-                         cvi(CV_Saturate) ? 2 : 1);
+    if (nLights)
+        mr_DrawPolyDynLights(pPoly, pVerts, nVerts, lights, nLights, cvi(CV_MultipassGouraud) ? 1.0f : 2.0f,
+                             cvi(CV_Saturate) ? 2 : 1);
     rd_Enable(RD_BLEND);
     rd_DepthMask(false);
 
-    // The texture, multiplied over it.
+    // The texture over it: multiplied (two times under Saturate). A
+    // fullbright texture: under Saturate the doubled product, then the
+    // texture blended by its alpha; otherwise only the texture times its
+    // alpha plus the vertex colours times the texture.
     if (pTex)
     {
-        rd_BlendFunc(RD_ZERO, RD_SRC_COLOR);
-        rd_FogColor(1, 1, 1);
+        bool bSaturate = cvi(CV_Saturate) != 0;
         mr_SetBaseTexture(pTex);
         rd_TexEnv(RD_ENV_MODULATE);
-        rd_Begin(RD_TRIANGLE_FAN);
-        for (uint32_t v = 0; v < nVerts; v++)
+        for (int nPass = 0; nPass < 2; nPass++)
         {
-            const LTVector& pos = *pVerts[v].m_pPos;
-            rd_Color4ub(255, 255, 255, 255);
-            rd_TexCoord2f(pVerts[v].m_U * fU, pVerts[v].m_V * fV);
-            mr_Fog(pos);
-            rd_Vertex3f(pos.x, pos.y, pos.z);
+            if (nPass == 0)
+            {
+                if (bFullbrite && !bSaturate)
+                    continue;
+                rd_BlendFunc(bFullbrite ? RD_DST_COLOR : RD_ZERO, RD_SRC_COLOR);
+                rd_FogColor(1, 1, 1);
+            }
+            else
+            {
+                if (!bFullbrite)
+                    break;
+                rd_BlendFunc(RD_SRC_ALPHA, bSaturate ? RD_ONE_MINUS_SRC_ALPHA : RD_SRC_COLOR);
+            }
+            rd_Begin(RD_TRIANGLE_FAN);
+            for (uint32_t v = 0; v < nVerts; v++)
+            {
+                const LTVector& pos = *pVerts[v].m_pPos;
+                rd_Color4ub(255, 255, 255, 255);
+                rd_TexCoord2f(pVerts[v].m_U * fU, pVerts[v].m_V * fV);
+                mr_Fog(pos);
+                rd_Vertex3f(pos.x, pos.y, pos.z);
+            }
+            rd_End();
         }
-        rd_End();
     }
     rd_PopAttrib();
     mr_ForgetBindings();
