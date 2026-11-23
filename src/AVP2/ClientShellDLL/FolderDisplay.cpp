@@ -54,6 +54,10 @@ namespace
 	int nM9WindowMode = 0;
 	int nM9InitWindowMode = 0;
 	LTBOOL bM9ForceModeSet = LTFALSE;
+	// M-4, M-5: the texture filtering (Bilinear, Trilinear, Anisotropic)
+	// and the antialiasing when the folder opened (Performance sets them)
+	int nM4InitFilter[3] = { 0, 0, 0 };
+	int nM5InitAA = 0;
 #endif
 
 }
@@ -688,6 +692,12 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 			nInitTB = GetConsoleInt("TripleBuffer",0);
 			bInitTex = (LTBOOL)GetConsoleInt("32BitTextures",0);
 			bInitLM	= (LTBOOL)GetConsoleInt("32BitLightmaps",0);
+#ifdef AVP2SRC_MODERN
+			nM4InitFilter[0] = GetConsoleInt("Bilinear",1);
+			nM4InitFilter[1] = GetConsoleInt("Trilinear",0);
+			nM4InitFilter[2] = GetConsoleInt("Anisotropic",0);
+			nM5InitAA = GetConsoleInt("Antialiasing",0);
+#endif
 		}
 
 		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg();
@@ -789,7 +799,21 @@ void CFolderDisplay::OnFocus(LTBOOL bFocus)
 						bRebind = LTTRUE;
 					}
 				}
+#ifdef AVP2SRC_MODERN
+				// M-4: a new texture filtering takes effect on the textures
+				// bound again
+				if (nM4InitFilter[0] != GetConsoleInt("Bilinear",1) ||
+					nM4InitFilter[1] != GetConsoleInt("Trilinear",0) ||
+					nM4InitFilter[2] != GetConsoleInt("Anisotropic",0))
+				{
+					bRebind = LTTRUE;
+				}
+				// M-5: the renderer reads Antialiasing when it starts
+				if (nInitTB != GetConsoleInt("TripleBuffer",0) ||
+					nM5InitAA != GetConsoleInt("Antialiasing",0))
+#else
 				if (nInitTB != GetConsoleInt("TripleBuffer",0))
+#endif
 				{
 					// Set the renderer mode
 					g_pInterfaceMgr->SetSwitchingRenderModes(LTTRUE);

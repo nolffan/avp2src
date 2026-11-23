@@ -4804,6 +4804,22 @@ BEGIN
     IDS_CONTROL_M25_CONSOLE "Console"
     IDS_ACTION_M25_CONSOLE  "ToggleConsole"
 END
+
+// M-4, M-5, texture filtering and antialiasing (Display, Performance).
+// The Direct3D 9 renderer (d3d9.ren) does both; d3d.ren does up to its
+// own anisotropic filtering and no antialiasing.
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_M4_TEXFILTER        "Texture filtering"
+    IDS_HELP_M4_TEXFILTER   "How the textures are smoothed. Aniso keeps them sharp at a low angle."
+    IDS_M4_TEXFILTER_NONE   "None"
+    IDS_M4_TEXFILTER_BILINEAR "Bilinear"
+    IDS_M4_TEXFILTER_TRILINEAR "Trilinear"
+    IDS_M4_TEXFILTER_ANISO  "Aniso %1!d!x"
+    IDS_M5_ANTIALIAS        "Antialiasing"
+    IDS_HELP_M5_ANTIALIAS   "Smooth the edges of the 3D picture (Direct3D 9 renderer only)."
+    IDS_M5_ANTIALIAS_SAMPLES "%1!d!x"
+END
 #endif
 
 #endif    // English (U.S.) resources

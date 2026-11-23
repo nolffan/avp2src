@@ -935,6 +935,28 @@ default is 0).
 Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
 limits the LOD to the last LOD.
 
+### A vision mode shows an old frame where the sky must be
+
+Game code: `SetVisionMode` (src/AVP2/ClientShellDLL/ViewModeMGR.cpp) and
+`CInterfaceMgr::PreUpdate` (src/AVP2/ClientShellDLL/InterfaceMgr.cpp), in
+CShell.dll and PHCShell.dll. Renderer: d3d.ren 0x1002e280 (`d3d_DrawSky`,
+src/engine/d3d/ph/d3d_drawsky.cpp; byte-identical in Primal Hunt's
+renderer). The two CShell functions are not in progress/identical.txt,
+so this entry does not give their retail addresses.
+
+`SetVisionMode` writes `DrawSky` from the `DrawSky` key of the vision
+mode (VisionModeButeMGR). The Predator's vision modes set it to 0. Then
+`d3d_DrawSky` returns at once, and the sky portal polygons are never
+drawn. On each frame, `PreUpdate` clears only the depth buffer
+(`CLEARSCREEN_RENDER`, with the void colour), and `d3d_Clear` uses the
+colour only with `CLEARSCREEN_SCREEN`. Thus nothing writes the area of
+the sky in a frame. The player sees there an old frame from the back
+buffer, with the light scale and light add passes of the vision mode
+built up on it, one time for each frame that the buffer comes back.
+
+Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
+shows the area dark. The user will review this look in the game later.
+
 ### A lightmap page leaks its allocation bitmap when there is no lightmap format
 
 d3d.ren 0x10034f32 (the page allocator of the lightmap pager,

@@ -3354,6 +3354,16 @@
 // M-25, the console (Customize Controls)
 #define IDS_CONTROL_M25_CONSOLE         32000
 #define IDS_ACTION_M25_CONSOLE          32001
+// M-4, M-5, texture filtering and antialiasing (Display, Performance)
+#define IDS_M4_TEXFILTER                32100
+#define IDS_HELP_M4_TEXFILTER           32101
+#define IDS_M4_TEXFILTER_NONE           32102
+#define IDS_M4_TEXFILTER_BILINEAR       32103
+#define IDS_M4_TEXFILTER_TRILINEAR      32104
+#define IDS_M4_TEXFILTER_ANISO          32105
+#define IDS_M5_ANTIALIAS                32106
+#define IDS_HELP_M5_ANTIALIAS           32107
+#define IDS_M5_ANTIALIAS_SAMPLES        32108
 #endif
 // Next default values for new objects
 // 

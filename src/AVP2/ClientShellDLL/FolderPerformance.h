@@ -45,6 +45,10 @@ protected:
 	LTBOOL  m_bEnvironment;
 	LTBOOL  m_bChrome;
 	LTBOOL  m_bTrilinear;
+#ifdef AVP2SRC_MODERN
+	int		m_nM4Filter;	// M-4: the texture-filtering choice
+	int		m_nM5AA;		// M-5: the antialiasing choice
+#endif
 	LTBOOL  m_bTriple;
 	LTBOOL	m_bDrawSky;
 	LTBOOL  m_bCasings;

@@ -34,6 +34,70 @@ namespace
 
 }
 
+#ifdef AVP2SRC_MODERN
+// M-4: texture filtering. Each choice and what it writes to the
+// renderers' variables Bilinear, Trilinear and Anisotropic (nolfsrc's
+// M-P1-09 cycle).
+namespace
+{
+	struct M4Filter
+	{
+		int nBilinear;
+		int nTrilinear;
+		int nAnisotropic;
+	};
+
+	const M4Filter s_aM4Filters[] =
+	{
+		{ 0, 0, 0 },	// none
+		{ 1, 0, 0 },	// bilinear
+		{ 1, 1, 0 },	// trilinear
+		{ 1, 1, 2 },
+		{ 1, 1, 4 },
+		{ 1, 1, 8 },
+		{ 1, 1, 16 },
+	};
+	const int kM4NumFilters = sizeof(s_aM4Filters) / sizeof(s_aM4Filters[0]);
+
+	// M-5: antialiasing, the samples for each pixel (0 is off).
+	const int s_aM5Samples[] = { 0, 2, 4, 8 };
+	const int kM5NumAA = sizeof(s_aM5Samples) / sizeof(s_aM5Samples[0]);
+}
+
+// The choice that the current variables are nearest to.
+static int M4_CurrentFilter()
+{
+	int nAniso = GetConsoleInt("Anisotropic",0);
+	if (nAniso > 0)
+	{
+		int i;
+		for (i = kM4NumFilters - 1; i > 3; i--)
+		{
+			if (nAniso >= s_aM4Filters[i].nAnisotropic)
+				break;
+		}
+		return i;
+	}
+	if (GetConsoleInt("Trilinear",0) > 0)
+		return 2;
+	if (GetConsoleInt("Bilinear",1) > 0)
+		return 1;
+	return 0;
+}
+
+static int M5_CurrentAA()
+{
+	int nSamples = GetConsoleInt("Antialiasing",0);
+	int i;
+	for (i = kM5NumAA - 1; i > 0; i--)
+	{
+		if (nSamples >= s_aM5Samples[i])
+			break;
+	}
+	return i;
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -226,9 +290,35 @@ void CFolderPerformance::BuildControlList()
 			pToggle->SetOnString(IDS_ON);
 			pToggle->SetOffString(IDS_OFF);
 
+#ifdef AVP2SRC_MODERN
+			// M-4: texture filtering in place of the Trilinear toggle;
+			// M-5: antialiasing
+			{
+				CCycleCtrl* pFilter = AddCycleItem(IDS_M4_TEXFILTER, IDS_HELP_M4_TEXFILTER, kGeneralWidth-25, 25, &m_nM4Filter);
+				pFilter->AddString(IDS_M4_TEXFILTER_NONE);
+				pFilter->AddString(IDS_M4_TEXFILTER_BILINEAR);
+				pFilter->AddString(IDS_M4_TEXFILTER_TRILINEAR);
+				for (int i = 3; i < kM4NumFilters; i++)
+				{
+					HSTRING hText = g_pLTClient->FormatString(IDS_M4_TEXFILTER_ANISO, s_aM4Filters[i].nAnisotropic);
+					pFilter->AddString(hText);
+					g_pLTClient->FreeString(hText);
+				}
+
+				CCycleCtrl* pAA = AddCycleItem(IDS_M5_ANTIALIAS, IDS_HELP_M5_ANTIALIAS, kGeneralWidth-25, 25, &m_nM5AA);
+				pAA->AddString(IDS_OFF);
+				for (int j = 1; j < kM5NumAA; j++)
+				{
+					HSTRING hText = g_pLTClient->FormatString(IDS_M5_ANTIALIAS_SAMPLES, s_aM5Samples[j]);
+					pAA->AddString(hText);
+					g_pLTClient->FreeString(hText);
+				}
+			}
+#else
 			pToggle=AddToggle(IDS_TRILINEAR, IDS_HELP_TRILINEAR, kGeneralWidth, &m_bTrilinear);
 			pToggle->SetOnString(IDS_ON);
 			pToggle->SetOffString(IDS_OFF);
+#endif
 
 			pToggle=AddToggle(IDS_TRIPLE, IDS_HELP_TRIPLE, kGeneralWidth, &m_bTriple);
 			pToggle->SetOnString(IDS_ON);
@@ -593,6 +683,10 @@ void CFolderPerformance::GetPerformanceValues()
 	m_bEnvironment = (LTBOOL)GetConsoleInt("EnvMapWorld",1);
 	m_bChrome = (LTBOOL)GetConsoleInt("EnvMapEnable",1);
 	m_bTrilinear = (LTBOOL)GetConsoleInt("Trilinear",0);
+#ifdef AVP2SRC_MODERN
+	m_nM4Filter = M4_CurrentFilter();	// M-4
+	m_nM5AA = M5_CurrentAA();			// M-5
+#endif
 	m_bTriple = (LTBOOL)GetConsoleInt("TripleBuffer",0);
 	m_bDrawSky = (LTBOOL)GetConsoleInt("EnableSky",1);
 	m_bCasings = (LTBOOL)GetConsoleInt("ShellCasings",1);
@@ -627,7 +721,21 @@ void CFolderPerformance::SetPerformanceValues()
 	WriteConsoleInt("DetailTextures",m_bDetTextures);
 	WriteConsoleInt("EnvMapWorld",m_bEnvironment);
 	WriteConsoleInt("EnvMapEnable",m_bChrome);
+#ifdef AVP2SRC_MODERN
+	// M-4: written only when the choice changed, so values that the cycle
+	// has no choice for stay. The Display folder rebinds the textures, and
+	// (M-5) starts the renderer again for a new antialiasing.
+	if (m_nM4Filter != M4_CurrentFilter() && m_nM4Filter >= 0 && m_nM4Filter < kM4NumFilters)
+	{
+		WriteConsoleInt("Bilinear",s_aM4Filters[m_nM4Filter].nBilinear);
+		WriteConsoleInt("Trilinear",s_aM4Filters[m_nM4Filter].nTrilinear);
+		WriteConsoleInt("Anisotropic",s_aM4Filters[m_nM4Filter].nAnisotropic);
+	}
+	if (m_nM5AA != M5_CurrentAA() && m_nM5AA >= 0 && m_nM5AA < kM5NumAA)
+		WriteConsoleInt("Antialiasing",s_aM5Samples[m_nM5AA]);
+#else
 	WriteConsoleInt("Trilinear",m_bTrilinear);
+#endif
 	WriteConsoleInt("TripleBuffer",m_bTriple);
 	WriteConsoleInt("EnableSky",m_bDrawSky);
 	WriteConsoleInt("ShellCasings",m_bCasings);
