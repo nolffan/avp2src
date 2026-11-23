@@ -159,7 +159,7 @@ LTBOOL d3d_SegmentTouchesBox(const LTVector* pA, const LTVector* pB,
                              const CFogBox* pBox)
 {
 	LTVector vSeg, vDir, vT;
-	float fHalfLen;
+	float fHalfLen, fR;
 
 	vSeg = *pB - *pA;
 	vSeg = vSeg * 0.5f;
@@ -175,14 +175,18 @@ LTBOOL d3d_SegmentTouchesBox(const LTVector* pA, const LTVector* pB,
 	if (fabs(vT.z) > fabs(vDir.z) * fHalfLen + pBox->m_vDims.z)
 		return LTFALSE;
 
-	if (fabs(vT.y * vDir.z - vT.z * vDir.y) >
-		pBox->m_vDims.y * fabs(vDir.z) + pBox->m_vDims.z * fabs(vDir.y))
+	// Retail rounds each term of a cross-axis limit to a float.
+	fR = (float)(pBox->m_vDims.y * fabs(vDir.z));
+	fR = (float)(pBox->m_vDims.z * fabs(vDir.y) + fR);
+	if (fabs(vT.y * vDir.z - vT.z * vDir.y) > fR)
 		return LTFALSE;
-	if (fabs(vT.z * vDir.x - vT.x * vDir.z) >
-		pBox->m_vDims.z * fabs(vDir.x) + pBox->m_vDims.x * fabs(vDir.z))
+	fR = (float)(pBox->m_vDims.z * fabs(vDir.x));
+	fR = (float)(pBox->m_vDims.x * fabs(vDir.z) + fR);
+	if (fabs(vT.z * vDir.x - vT.x * vDir.z) > fR)
 		return LTFALSE;
-	if (fabs(vT.x * vDir.y - vT.y * vDir.x) >
-		pBox->m_vDims.y * fabs(vDir.x) + pBox->m_vDims.x * fabs(vDir.y))
+	fR = (float)(pBox->m_vDims.y * fabs(vDir.x));
+	fR = (float)(pBox->m_vDims.x * fabs(vDir.y) + fR);
+	if (fabs(vT.x * vDir.y - vT.y * vDir.x) > fR)
 		return LTFALSE;
 
 	return LTTRUE;
