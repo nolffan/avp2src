@@ -1081,7 +1081,7 @@ void DrawPolyMgr::DrawPolyFirstPass(WorldPoly* pPoly, PassDesc* pDesc, uint32 iN
 	}
 
 	m_7d0 += batch.m_nVerts;
-	AddPoly(pPoly, iNextPass);
+	AddPoly(pPoly, 1);	// the first pass is pass 0: the next is pass 1
 }
 
 
