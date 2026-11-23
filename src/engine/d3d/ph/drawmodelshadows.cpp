@@ -1460,13 +1460,15 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 			info.m_Planes[2].m_Normal.Norm(1.0f);
 			info.m_Planes[2].m_Dist = info.m_Planes[2].m_Normal.Dot(info.m_vOrigin);
 
-			info.m_Planes[3].m_Normal = info.m_vUp.Cross(vRightP - info.m_vOrigin);
-			info.m_Planes[3].m_Normal.Norm(1.0f);
-			info.m_Planes[3].m_Dist = info.m_Planes[3].m_Normal.Dot(info.m_vOrigin);
-
-			info.m_Planes[4].m_Normal = (vTop - info.m_vOrigin).Cross(info.m_vRight);
+			// Retail puts the right side in plane 4 and the top in plane 3,
+			// as the planar pass does.
+			info.m_Planes[4].m_Normal = info.m_vUp.Cross(vRightP - info.m_vOrigin);
 			info.m_Planes[4].m_Normal.Norm(1.0f);
-			info.m_Planes[4].m_Dist = info.m_vOrigin.Dot(info.m_Planes[4].m_Normal);
+			info.m_Planes[4].m_Dist = info.m_Planes[4].m_Normal.Dot(info.m_vOrigin);
+
+			info.m_Planes[3].m_Normal = (vTop - info.m_vOrigin).Cross(info.m_vRight);
+			info.m_Planes[3].m_Normal.Norm(1.0f);
+			info.m_Planes[3].m_Dist = info.m_vOrigin.Dot(info.m_Planes[3].m_Normal);
 
 			info.m_Planes[5].m_Normal = info.m_vRight.Cross(vBottom - info.m_vOrigin);
 			info.m_Planes[5].m_Normal.Norm(1.0f);
