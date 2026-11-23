@@ -1442,6 +1442,29 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 										bInQuote = true;
 									}
 #else
+#ifdef AVP2SRC_MODERN
+									// M-B110 (AVP2): Primal Hunt's code, which
+									// stores a one-word quoted value such as
+									// `"Direct3D9"` at once. AvP2's retail code
+									// opened a quoted run for it, and the run
+									// took the rest of the line into szToken
+									// (200 bytes) and past it.
+									nLen = strlen(pToken);
+									strncpy(szToken, pToken + 1, nLen - 1);
+									szToken[nLen - 1] = 0;
+
+									if (nLen - 2 >= 0 && szToken[nLen - 2] == '"')
+									{
+										szToken[nLen - 2] = 0;
+										strncpy(szArgs[nArgs], szToken, 200);
+										pToken = strtok(NULL, " ");
+										nArgs++;
+									}
+									else
+									{
+										bInQuote = true;
+									}
+#else
 									// AVP2: the token is copied without its
 									// quote by hand, and it always opens a
 									// quoted run (0x00403b79..0x00403baa).
@@ -1456,6 +1479,7 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 
 									bInQuote = true;
 #endif
+#endif
 
 									continue;
 								}
@@ -1465,8 +1489,19 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 							else
 							{
 								pToken = strtok(NULL, "\"");
+#ifdef AVP2SRC_MODERN
+								// M-B110: a quote with no end gives no token,
+								// and the text appended stops at the end of
+								// szToken.
+								szToken[sizeof(szToken) - 1] = 0;
+								if (strlen(szToken) + 1 < sizeof(szToken))
+									strcat(szToken, " ");
+								if (pToken)
+									strncat(szToken, pToken, sizeof(szToken) - 1 - strlen(szToken));
+#else
 								strncat(szToken, " ", 1);
 								strncat(szToken, pToken, strlen(pToken));
+#endif
 								bInQuote = false;
 								strncpy(szArgs[nArgs], szToken, 200);
 							}
