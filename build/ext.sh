@@ -11,9 +11,10 @@
 #                         Bink decoders (ext/ffmpeg, static, only what Bink
 #                         needs), in place of RAD's Bink 1.0h
 #   out/ext/d3d9.ren      our Direct3D 9 renderer (src/modern/render/), installed
-#                         beside d3d.ren; "RenderDll" "d3d9.ren" picks it
-#   out/ext/debug/d3d9.ren  the same with AVP2SRC_DEBUG (the renderer's debug
-#                         checks), which the modern-debug build installs
+#                         beside d3d.ren; "RenderDll" "d3d9.ren" picks it;
+#                         out/ext/ph/d3d9.ren is Primal Hunt's (PRIMAL_HUNT)
+#   out/ext/debug/, out/ext/ph/debug/  the same with AVP2SRC_DEBUG (the
+#                         renderer's debug checks), which modern-debug installs
 #
 # Smacker has no replacement: neither engine ever plays a Smacker video
 # (docs/MODERN.md, M-X2), so the modern build ships no Smackw32.dll.
@@ -139,27 +140,34 @@ else
     stamp binkw32 ext/ffmpeg build/ext.sh "$B/binkw32.c" "$B/binkw32.def"
 fi
 
-# --- our Direct3D 9 renderer -> out/ext/d3d9.ren ------------------------------
+# --- our Direct3D 9 renderer -> out/ext/d3d9.ren, out/ext/ph/d3d9.ren -------
 # The renderer core (src/modern/render/) over its Direct3D 9 backend (d3d9/),
 # as nolfsrc builds its own: C++ without exceptions, RTTI or the C++
 # library, so the DLL needs nothing but Windows' own libraries (d3d9.dll:
-# DXVK under Proton, wined3d under Wine). The debug copy has AVP2SRC_DEBUG
-# (src/modern/render/mr.h: MR_CHECK, MR_ASSERT), is not stripped, and keeps
-# the frame pointers for the crash handler's stack walk.
+# DXVK under Proton, wined3d under Wine). It is built once for each game,
+# as our d3d.ren is: AvP2's into out/ext/, Primal Hunt's (PRIMAL_HUNT) into
+# out/ext/ph/. The debug copies (out/ext/debug/, out/ext/ph/debug/) have
+# AVP2SRC_DEBUG (src/modern/render/mr.h: MR_CHECK, MR_ASSERT), are not
+# stripped, and keep the frame pointers for the crash handler's stack walk.
 R=src/modern/render
 DSRC=$(ls "$R"/*.cpp "$R"/*.h "$R"/d3d9/*.cpp "$R"/d3d9/*.def "$R"/d3d9/*.rc | sort)
 RFLAGS="-shared -std=c++17 -fno-exceptions -fno-rtti -nostdlib++ -Wall -Wno-unused-function"
+d3d9ren() {     # <output> <flags...>
+    local o=$1
+    shift
+    zig c++ -target $TARGET "$@" $RFLAGS -o "$o" \
+        $(ls "$R"/*.cpp "$R"/d3d9/*.cpp | sort) "$R/d3d9/d3d9.rc" "$R/d3d9/d3d9.def" \
+        -ld3d9 -lgdi32 -luser32
+}
 if fresh d3d9 build/ext.sh $DSRC; then
-    echo "== d3d9.ren: up to date ($OUT/d3d9.ren, $OUT/debug/d3d9.ren)"
+    echo "== d3d9.ren: up to date ($OUT/d3d9.ren, $OUT/ph/d3d9.ren and their debug copies)"
 else
-    echo "== d3d9.ren: $R/ + $R/d3d9/ -> $OUT/d3d9.ren, $OUT/debug/d3d9.ren (AVP2SRC_DEBUG)"
-    mkdir -p "$OUT/debug"
-    zig c++ -target $TARGET -O2 -s $RFLAGS -o "$OUT/d3d9.ren" \
-        $(ls "$R"/*.cpp "$R"/d3d9/*.cpp | sort) "$R/d3d9/d3d9.rc" "$R/d3d9/d3d9.def" \
-        -ld3d9 -lgdi32 -luser32
-    zig c++ -target $TARGET -O2 -DAVP2SRC_DEBUG -fno-omit-frame-pointer $RFLAGS -o "$OUT/debug/d3d9.ren" \
-        $(ls "$R"/*.cpp "$R"/d3d9/*.cpp | sort) "$R/d3d9/d3d9.rc" "$R/d3d9/d3d9.def" \
-        -ld3d9 -lgdi32 -luser32
-    rm -f "$OUT/d3d9.lib" "$OUT/d3d9.pdb" "$OUT/debug/"*.lib
+    echo "== d3d9.ren: $R/ + $R/d3d9/ -> $OUT/d3d9.ren, $OUT/ph/d3d9.ren (PRIMAL_HUNT), and debug/ copies (AVP2SRC_DEBUG)"
+    mkdir -p "$OUT/debug" "$OUT/ph/debug"
+    d3d9ren "$OUT/d3d9.ren" -O2 -s
+    d3d9ren "$OUT/ph/d3d9.ren" -O2 -s -DPRIMAL_HUNT
+    d3d9ren "$OUT/debug/d3d9.ren" -O2 -DAVP2SRC_DEBUG -fno-omit-frame-pointer
+    d3d9ren "$OUT/ph/debug/d3d9.ren" -O2 -DAVP2SRC_DEBUG -DPRIMAL_HUNT -fno-omit-frame-pointer
+    rm -f "$OUT"/*.lib "$OUT"/*.pdb "$OUT"/debug/*.lib "$OUT"/ph/*.lib "$OUT"/ph/debug/*.lib
     stamp d3d9 build/ext.sh $DSRC
 fi

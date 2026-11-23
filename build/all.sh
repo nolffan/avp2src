@@ -205,11 +205,15 @@ game_data() {
             esac
         done
         RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py openruntime "${AVP2_EXT_OUT:-out/ext}" "$g"
-        # modern-debug: d3d9.ren with its debug checks (build/ext.sh)
-        case "${AVP2SRC_CFLAGS:-}" in *AVP2SRC_DEBUG*)
-            cp "${AVP2_EXT_OUT:-out/ext}/debug/d3d9.ren" "$g/d3d9.ren"
-            echo "   d3d9.ren  <-  ${AVP2_EXT_OUT:-out/ext}/debug/d3d9.ren (AVP2SRC_DEBUG)" ;;
-        esac
+        # d3d9.ren is built for each game (build/ext.sh): Primal Hunt's is
+        # out/ext/ph/; modern-debug's have the debug checks
+        local x="${AVP2_EXT_OUT:-out/ext}"
+        [ "$name" = "Primal Hunt" ] && x="$x/ph"
+        case "${AVP2SRC_CFLAGS:-}" in *AVP2SRC_DEBUG*) x="$x/debug" ;; esac
+        if [ "$x" != "${AVP2_EXT_OUT:-out/ext}" ]; then
+            cp "$x/d3d9.ren" "$g/d3d9.ren.part" && mv "$g/d3d9.ren.part" "$g/d3d9.ren"
+            echo "   d3d9.ren  <-  $x/d3d9.ren"
+        fi
     elif [ -n "$NODISCS" ]; then
         step "2. THIRD-PARTY RUNTIME ($name): no Bink, Smacker or Miles (NODISCS=1), only their MANIFEST.txt rows"
         RETAIL_LAYOUT=$layout python3 build/nodiscs.py thirdparty "$r" "$g"

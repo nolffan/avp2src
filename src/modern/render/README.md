@@ -26,10 +26,12 @@ stacks, immediate primitives). `d3d9/` implements `rdev.h` on Direct3D 9.
 (nolfsrc also has an OpenGL backend; this port does not have it.)
 
 `build/ext.sh` builds the DLL with `zig c++` (no VC6: nothing here has to
-match a retail binary) into `out/ext/d3d9.ren`, and a copy with the debug
-checks (`AVP2SRC_DEBUG`) into `out/ext/debug/d3d9.ren`. `build/all.sh`
-installs it in the two game directories of the modern builds, beside
-`d3d.ren` (the modern-debug build installs the debug copy).
+match a retail binary) once for each game, as our `d3d.ren` is built:
+AvP2's into `out/ext/d3d9.ren`, Primal Hunt's (`PRIMAL_HUNT`: the fog
+volumes in place of the vertical fog) into `out/ext/ph/d3d9.ren`, each
+with a copy with the debug checks (`AVP2SRC_DEBUG`) in its `debug/`.
+`build/all.sh` installs each in its game directory of the modern builds,
+beside `d3d.ren` (the modern-debug build installs the debug copies).
 
 ## Using it
 

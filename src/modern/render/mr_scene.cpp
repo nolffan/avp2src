@@ -317,19 +317,15 @@ static float mr_VFogFactor(const LTVector& vPos)
 // objects); a vertex is fogged by how much of the segment from the eye to
 // it lies in the first box it touches.
 
-static bool mr_IsPrimalHunt(void)
+// d3d9.ren is built once for each game, as our d3d.ren is: PRIMAL_HUNT
+// for Primal Hunt's (build/ext.sh).
+static inline bool mr_IsPrimalHunt(void)
 {
-    static int s_n = -1;
-    if (s_n < 0)
-    {
-        char szPath[MAX_PATH];
-        DWORD n = GetModuleFileNameA(NULL, szPath, sizeof(szPath));
-        char* p = n ? strrchr(szPath, '\\') : NULL;
-        if (p)
-            strcpy(p + 1, "AVP2XServ.exe");
-        s_n = p && GetFileAttributesA(szPath) != INVALID_FILE_ATTRIBUTES;
-    }
-    return s_n == 1;
+#ifdef PRIMAL_HUNT
+    return true;
+#else
+    return false;
+#endif
 }
 
 struct MRFogBox {
