@@ -191,11 +191,9 @@ void mr_CheckFailed(const char* pFile, int nLine, bool bFatal, const char* pForm
 #endif
 
 // The names and defaults d3d.ren registers (src/engine/d3d/ph/), where it
-// has the variable. Ours: Antialiasing, and the VSync default. Our
-// d3d.ren's VSync (M-24) is 1 by default, for the Steam overlay under
-// Proton; Direct3D 9 (DXVK) shows the overlay at any frame rate, so here
-// it is 0. The two renderers share the variable: the first one that
-// starts in a session makes it.
+// has the variable. Ours: Antialiasing. VSync is our d3d.ren's (M-24), and
+// both renderers register it with the default 0, so the default does not
+// depend on which renderer starts first.
 MRVar g_Vars[] = {
     { "RenderDebug", 0 }, { "Bilinear", 1 }, { "Trilinear", 0 }, { "Anisotropic", 0 },
     { "MipmapOffset", 0 }, { "FilterOptimized", 0 }, { "MaxTextureSize", 16384 },

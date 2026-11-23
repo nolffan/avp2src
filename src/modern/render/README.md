@@ -52,8 +52,9 @@ the names and defaults of `d3d.ren`, where it has the variable, and two of
 ours:
 
 - `VSync` (0): wait for the display's refresh at each frame. `d3d.ren`
-  also reads `VSync` (M-24), with the default 1. The renderer that starts
-  first in a session makes the variable.
+  reads the same variable (M-24) with the same default. With `d3d.ren`,
+  `VSync 1` is the retail flip, which the Steam overlay under Proton
+  needs with that renderer.
 - `Antialiasing` (0): samples for each pixel (0 off, 2, 4 or 8). The
   renderer draws into a multisampled target and resolves it before a flip
   or a read.
