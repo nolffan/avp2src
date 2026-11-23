@@ -39,8 +39,8 @@ extern CD3DConVar g_CV_VFogMinY;                            // 0x1005fde0
 extern CD3DConVar g_CV_VFogMaxY;                            // 0x1005fda8
 extern CD3DConVar g_CV_VFogMinYVal;                         // 0x1005e1d0
 extern CD3DConVar g_CV_VFogMaxYVal;                         // 0x1005e078
-extern float    g_fVFogRangeScale;                          // 0x1005df90 (d3d_draw.cpp)
-extern float    g_fVFogValScale;                            // 0x1005e210 (d3d_draw.cpp)
+extern float    g_fVFogRangeScale;                          // 0x1005e210 (d3d_draw.cpp)
+extern float    g_fVFogValScale;                            // 0x1005df90 (d3d_draw.cpp)
 
 struct ViewParams
 {

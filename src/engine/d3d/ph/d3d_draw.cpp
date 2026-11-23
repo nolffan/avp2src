@@ -226,8 +226,8 @@ void __fastcall d3d_CalcSkyFog(const LTVector* pPos, uint32* pSpecular)
 
 // The vertical fog's scales (d3d_RenderScene sets them; d3d_viewparams.cpp
 // reads the camera's).
-float           g_fVFogRangeScale;                          // 0x1005df90
-float           g_fVFogValScale;                            // 0x1005e210
+float           g_fVFogRangeScale;                          // 0x1005e210
+float           g_fVFogValScale;                            // 0x1005df90
 float           g_fVFogDensityScale;                        // 0x1005e20c
 
 
@@ -1907,6 +1907,13 @@ void d3d_DrawPortals(SceneDesc* pDesc, VisibleSet* pVisibleSet)
 			fMaxX = fMaxY = -100000.0f;
 			for (i = 0; i < nVerts; i++)
 			{
+				// NOT RETAIL: retail writes only the three colour bytes
+				// (B = 0, G = 0, R = 0xFF) and keeps the alpha byte (the
+				// top byte of `color`, the polygon or surface pointer).
+				// This store also sets the alpha to 0. Each form of the
+				// fix that we tried changes the inlining in this function,
+				// and the scoreboard link then loses two identical
+				// functions, so the store stays.
 				pVerts[i].color = 0x00FF0000;
 				pVerts[i].rhw = fRHW;
 				pVerts[i].m_Vec.z = fZ;
@@ -2379,8 +2386,8 @@ extern int32        g_CV_Wireframe;                         // 0x1005df64
 extern int32        g_CV_ShowTextureCounts;                 // 0x1005df5c
 extern int32        g_CV_ShowPolyCounts;                    // 0x1005df70
 extern int32        g_CV_ModelProfile;                      // 0x1005da08
-extern float        g_fVFogValScale;                        // 0x1005e210
-extern float        g_fVFogRangeScale;                      // 0x1005df90
+extern float        g_fVFogValScale;                        // 0x1005df90
+extern float        g_fVFogRangeScale;                      // 0x1005e210
 extern float        g_fVFogDensityScale;                    // 0x1005e20c
 extern LTVector     g_vGlobalLightColor;                    // 0x1005b780
 extern LTVector     g_vLightAdd;                            // 0x1005bc90
