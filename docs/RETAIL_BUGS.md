@@ -40,7 +40,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - A joystick button is bound two times (M-7).
 - The turn of the mouse look changes with the frame rate (M-6).
 - A window is placed for a frame that it does not have (M-9).
-- The engine bugs (M-B01..M-B09).
+- The engine bugs (M-B01..M-B09, M-B111).
 - The renderer bugs (M-B20..M-B26).
 - The bugs in the client shells and in lithshared (M-B40..M-B63, M-B108).
 - The bugs in the object DLLs and in the shared code (M-B70..M-B87).
@@ -638,6 +638,34 @@ fail with `LT_ERROR`.
 Fixed in the modern build: interlink.cpp, the code checks each of the
 three allocations. When one fails, the code gives back what it took and
 returns `LT_ERROR`; MODERN.md M-B05.
+
+### Each start leaves an empty file in the temp folder
+
+The client's copy: Primal Hunt lithtech.exe 0x004384c0, AvP2 1.0.9.6
+lithtech.exe 0x00434c20 (`sub_42e110`, src/engine/lithtech/clientdsi.cpp).
+The server's copy: Primal Hunt lithtech.exe 0x00437cf0 and server.dll
+0x10011f07, AvP2 1.0.9.6 lithtech.exe 0x00434460 and server.dll
+0x100116b9 (`sub_1000e05b`, src/engine/server/counter.cpp).
+
+The engine copies each game DLL out of the rez files into the Windows
+temp folder, and loads it from there. If the copy to `<temp>\<name>`
+fails, the function gets a new name from `GetTempFileName` and copies to
+that name. `GetTempFileName` makes the file. If this second copy also
+fails, the function returns the error and does not delete the file.
+
+The client always asks for `cresl.dll`, and no rez file of the two games
+has it (`AVP2L.REZ` has `cres.dll` and `sres.dll`, `AVP2DLL.REZ` has
+`cshell.dll` and `object.lto`). Thus each start of the game adds one
+empty file, `cre<hex>.tmp`, to the temp folder. The server's function
+(`object.lto`, `sres.dll`) has the same mistake, but its files are
+always there.
+
+Fixed in the modern build: clientdsi.cpp and counter.cpp, when the second
+copy fails, the function deletes the file that `GetTempFileName` made;
+MODERN.md M-B111. Not changed: a copy to a new name that succeeds also
+stays in the temp folder after the game stops. The engine makes such a
+copy when a second game runs at the same time, because the first game
+uses `<temp>\<name>`.
 
 ### A command-line argument of 200 characters or more is left unterminated
 
