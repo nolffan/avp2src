@@ -53,7 +53,10 @@
 #                         binkw32.dll instead, built from ext/ by
 #                         build/ext.sh (docs/MODERN.md, M-X1..M-X3); no
 #                         Smacker (neither engine plays one) and no MP3
-#                         decoder (OpenMiles decodes MP3 itself).
+#                         decoder (OpenMiles decodes MP3 itself). It also
+#                         installs our Direct3D 9 renderer, d3d9.ren
+#                         (src/modern/render/; docs/MODERN.md, M-29), beside
+#                         d3d.ren.
 #   3. compile            every binary, by build/build.mk, all at once (one
 #                         job per CPU; AVP2SRC_JOBS=<n> to change it) and only
 #                         what changed since the last build.
@@ -191,7 +194,7 @@ game_data() {
         [ -f "$g/Profiles/Default.prf" ] || cp "$g/Default.prf.retail" "$g/Profiles/Default.prf"
     fi
     if [ -n "$MODERN" ]; then
-        step "2. open runtime ($name): OpenMiles and our Bink player on FFmpeg (build/ext.sh)"
+        step "2. open runtime ($name): OpenMiles, our Bink player on FFmpeg and our d3d9.ren (build/ext.sh)"
         # what an earlier build took from the retail game: the open runtime
         # replaces binkw32.dll and mss32.dll, and the rest is not needed
         # (its MANIFEST.txt rows go at step 4, with the files)
@@ -202,6 +205,11 @@ game_data() {
             esac
         done
         RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py openruntime "${AVP2_EXT_OUT:-out/ext}" "$g"
+        # modern-debug: d3d9.ren with its debug checks (build/ext.sh)
+        case "${AVP2SRC_CFLAGS:-}" in *AVP2SRC_DEBUG*)
+            cp "${AVP2_EXT_OUT:-out/ext}/debug/d3d9.ren" "$g/d3d9.ren"
+            echo "   d3d9.ren  <-  ${AVP2_EXT_OUT:-out/ext}/debug/d3d9.ren (AVP2SRC_DEBUG)" ;;
+        esac
     elif [ -n "$NODISCS" ]; then
         step "2. THIRD-PARTY RUNTIME ($name): no Bink, Smacker or Miles (NODISCS=1), only their MANIFEST.txt rows"
         RETAIL_LAYOUT=$layout python3 build/nodiscs.py thirdparty "$r" "$g"
@@ -210,7 +218,7 @@ game_data() {
         RETAIL_LAYOUT=$layout python3 ext/tools/retailextract.py thirdparty "$r" "$g"
     fi
 }
-[ -z "$MODERN" ] || { step "0. open middleware: build/ext.sh (OpenMiles, FFmpeg, our Bink player)"; bash build/ext.sh; }
+[ -z "$MODERN" ] || { step "0. open middleware: build/ext.sh (OpenMiles, FFmpeg, our Bink player, d3d9.ren)"; bash build/ext.sh; }
 mkdir -p "$OUT/AVP2" "$OUT/PrimalHunt"
 if [ -n "$NODISCS" ]; then
     RETAIL_AVP2=$RETAIL_AVP2_RELEASE RETAIL_PH=$RETAIL_RELEASE

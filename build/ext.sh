@@ -10,6 +10,10 @@
 #   out/ext/binkw32.dll   our Bink player (src/modern/binkw32/) on FFmpeg's
 #                         Bink decoders (ext/ffmpeg, static, only what Bink
 #                         needs), in place of RAD's Bink 1.0h
+#   out/ext/d3d9.ren      our Direct3D 9 renderer (src/modern/render/), installed
+#                         beside d3d.ren; "RenderDll" "d3d9.ren" picks it
+#   out/ext/debug/d3d9.ren  the same with AVP2SRC_DEBUG (the renderer's debug
+#                         checks), which the modern-debug build installs
 #
 # Smacker has no replacement: neither engine ever plays a Smacker video
 # (docs/MODERN.md, M-X2), so the modern build ships no Smackw32.dll.
@@ -133,4 +137,29 @@ else
         -lwinmm -lbcrypt
     rm -f "$OUT/binkw32.lib" "$OUT/binkw32.pdb"
     stamp binkw32 ext/ffmpeg build/ext.sh "$B/binkw32.c" "$B/binkw32.def"
+fi
+
+# --- our Direct3D 9 renderer -> out/ext/d3d9.ren ------------------------------
+# The renderer core (src/modern/render/) over its Direct3D 9 backend (d3d9/),
+# as nolfsrc builds its own: C++ without exceptions, RTTI or the C++
+# library, so the DLL needs nothing but Windows' own libraries (d3d9.dll:
+# DXVK under Proton, wined3d under Wine). The debug copy has AVP2SRC_DEBUG
+# (src/modern/render/mr.h: MR_CHECK, MR_ASSERT), is not stripped, and keeps
+# the frame pointers for the crash handler's stack walk.
+R=src/modern/render
+DSRC=$(ls "$R"/*.cpp "$R"/*.h "$R"/d3d9/*.cpp "$R"/d3d9/*.def "$R"/d3d9/*.rc | sort)
+RFLAGS="-shared -std=c++17 -fno-exceptions -fno-rtti -nostdlib++ -Wall -Wno-unused-function"
+if fresh d3d9 build/ext.sh $DSRC; then
+    echo "== d3d9.ren: up to date ($OUT/d3d9.ren, $OUT/debug/d3d9.ren)"
+else
+    echo "== d3d9.ren: $R/ + $R/d3d9/ -> $OUT/d3d9.ren, $OUT/debug/d3d9.ren (AVP2SRC_DEBUG)"
+    mkdir -p "$OUT/debug"
+    zig c++ -target $TARGET -O2 -s $RFLAGS -o "$OUT/d3d9.ren" \
+        $(ls "$R"/*.cpp "$R"/d3d9/*.cpp | sort) "$R/d3d9/d3d9.rc" "$R/d3d9/d3d9.def" \
+        -ld3d9 -lgdi32 -luser32
+    zig c++ -target $TARGET -O2 -DAVP2SRC_DEBUG -fno-omit-frame-pointer $RFLAGS -o "$OUT/debug/d3d9.ren" \
+        $(ls "$R"/*.cpp "$R"/d3d9/*.cpp | sort) "$R/d3d9/d3d9.rc" "$R/d3d9/d3d9.def" \
+        -ld3d9 -lgdi32 -luser32
+    rm -f "$OUT/d3d9.lib" "$OUT/d3d9.pdb" "$OUT/debug/"*.lib
+    stamp d3d9 build/ext.sh $DSRC
 fi

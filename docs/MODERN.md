@@ -118,8 +118,9 @@ We changed the name of these blocks from `NOLFSRC_MODERN`. They still
 refer to the `MODERN.md` ids of nolfsrc (M-P6-02, ...). They are the NOLF
 fixes, and we did not check them against AvP2 yet. Some of them use
 modern files of nolfsrc: the engine block and the launcher block that
-name `d3d9.ren`, the Direct3D 9 renderer of nolfsrc. This project does
-not build that renderer. We removed these two blocks (M-8 and M-1). We will check each
+name `d3d9.ren`, the Direct3D 9 renderer of nolfsrc. This project did
+not build that renderer then. Now it builds its own `d3d9.ren` (M-29),
+which is not the default renderer yet. We removed these two blocks (M-8 and M-1). We will check each
 block, and keep or remove it, when the items are done.
 
 The id of each item is a series and a number (M-1, ..., and M-X for the
@@ -150,6 +151,7 @@ items: not implemented yet.
 | M-25 | A console in single player, as in nolfsrc (its M-P2-01..M-P2-04, -05, -08, -09, -14, -15): the ~ key or Shift+Esc opens it over the top half of the screen, and the game pauses. It runs console commands and cheat codes. A new ToggleConsole control in Customize Controls. Retail AvP2 has no console that a player can open | done (under Done) |
 | M-26 | Dedicated servers on Linux, as in nolfsrc: `linux-server-avp2.sh` and `linux-server-ph.sh` start `AVP2Serv.exe` or `AVP2XServ.exe` under Wine, with a display or headless (`xvfb-run`). The servers run on our own `server.dll` | done (under Done) |
 | M-28 | The console parser does not end a command at a character above 127, so a bind command with a translated device name works. Not yet confirmed on Windows | done (under Done) |
+| M-29 | A Direct3D 9 renderer, `d3d9.ren`, beside `d3d.ren`: the device at all resolutions (GitHub issue #6), the Steam overlay at all frame rates under Proton (GitHub issue #2), and the renderer of M-4 and M-5 | under way (under Done) |
 
 ## Open middleware
 
@@ -1601,6 +1603,24 @@ server allows). AvP2 ships no file.
 | M-26 (server.dll) | Our `server.dll` runs a dedicated server. These were the faults, in both games unless the text says one: (1) `TCPDriver`'s vtable (`link/vtables-avp2.txt`, `vtables-ph.txt`) had `_purecall` in slot 3, `Update`. `CNetMgr::Update` calls it each frame, so the server stopped with "pure virtual function call" before the world. The shipped slot (AvP2 0x10042138, Primal Hunt 0x1004076f) is the one bare `ret` of the image, which `/OPT:ICF` folds all empty functions onto: now `_dsi_OnReturnError` (dsi.cpp, also a bare `ret`). (2) AvP2: `link/aliases-avp2.rsp` bound `CWDArray04::SetSize`, the resize of the light animations of a world (`CWorldData::LoadObjects`), to the resize of `CMoArray<CCollElem04F>`. Its bytes are the same with the relocations masked, but its array new has a stride of 4 bytes. The shipped resize (0x1000f43d) calls the array new of the 0x60-byte record (0x100106ed). Thus the animations overran their array, `LoadObjects` failed, and the server showed "Unable to load the selected map". Now the binding is `CMoArray<CWorldAnimRecQ>`'s resize, as nolfsrc's and Primal Hunt's. (3) The references that the link left unresolved: the 0x60-byte record's constructor `CWorldAnimRecQ::CWorldAnimRecQ` (both; a call to address 0 in each array new of the light animations) is bound to `CCollElem60::CCollElem60` (collection.cpp), whose bytes are the shipped constructor's (AvP2 0x1000a9d1, Primal Hunt 0x1000abcf). `CWorldTable::CWorldTable` (Primal Hunt; a call to 0 in the constructor of each world) is bound to the template's constructor, as in AvP2. `sm_Sub34688` (AvP2: the save code's object check) is bound to `sm_CheckObjectIntegrityQ474`, which is byte-identical to its shipped target (0x1003ec10), as in Primal Hunt. (4) `mkaliasobj.py` keeps the first binding of a name. Eleven bank slots of each alias file (`AllocVoid` and `FreeVoid` of the file, hash, link-node, thread-message, transfer and packet banks) had an early binding before the correct one of the "k2" section. In AvP2, four `AllocVoid` slots went to a `FreeVoid` (`ret 4`). The early lines are gone. How we found them: a copy of `server.dll` with `_purecall` patched to fault gave the caller (`CNetMgr::Update`). Then `winedbg` breakpoints on the error hook (`dsi_OnReturnError`) and on the returns of `CServerMgr::LoadWorld` gave `CWorldData::LoadObjects` | `src/engine/server/link/vtables-avp2.txt`, `vtables-ph.txt`, `aliases-avp2.rsp`, `aliases-ph.rsp` | The two links have no unresolved reference now. Legacy build, `build/mptest/srv.sh` without `SRV_DLL`: the AvP2 and Primal Hunt servers loaded `DM_Compound` ("Loaded world", "Running world"). A client of ours in a second container joined each server, spawned, sent a chat line and ran (`build/playtest.sh`, `c-runner.txt` without the `%n` chat line: the legacy `AVP2Serv.exe` crashes on that line, M-20). `make progress`: every recorded function is still identical; the counts of `server.dll` and `AvP2 server.dll` did not change | done |
 | M-26 (DM_Compound) | A Primal Hunt client could not join a Primal Hunt server on `DM_Compound` ("world version is different"). `MULTI.REZ` and `AVP2P1.REZ` of Primal Hunt hold two versions of `DM_Compound` and `Over_Compound`. The server (`AVP2XServ.exe`, `AddResources`) loads Primal Hunt's `MULTI.REZ`, `AVP2DLL.REZ`, `AVP2L.REZ` and `DIALOGUE.REZ` before `AVP2P.REZ`, `AVP2P1.REZ` and `AVP2X.REZ`. The client loaded `AVP2P.REZ`, `AVP2P1.REZ` and `AVP2X.REZ` first, thus it had the other version. Now `build/avp2cmds.sh` and the modern launcher (M-8) use the order of the server. The retail launcher's own code is encrypted; the order of its string pool (`multi.rez`, `dll.rez`, `l.rez`, `dialogue.rez`, `PatchRez`, `custom`) agrees | `build/avp2cmds.sh`; `src/launcher/LauncherDlg.cpp` (`s_aM8Rez`, modern only) | Legacy build: a Primal Hunt server of ours on `DM_Compound` and a Primal Hunt client of ours: the client joined, spawned and ran | done |
 
+### M-29: the Direct3D 9 renderer
+
+`d3d9.ren` is a render DLL on the fixed-function pipeline of Direct3D 9
+(`src/modern/render/`, its README.md). It is nolfsrc's renderer (its
+M-P0-04, M-P0-05, M-P0-06, M-P1-18), changed to the contract and the data
+of AvP2 and Primal Hunt. The reference for each change is our `d3d.ren`
+source (`src/engine/d3d/ph/`). `build/ext.sh` builds it with `zig c++`, and
+the modern builds install it beside `d3d.ren` (`MANIFEST.txt` origin
+`EXT`; the modern-debug build installs the copy with the debug checks).
+`d3d.ren` stays the default renderer. `+RenderDll d3d9.ren +CardDesc
+Direct3D9` selects `d3d9.ren`.
+
+| Id | What | Files | Status |
+|---|---|---|---|
+| M-29 (stage 1) | The device and 2D. The contract of AvP2 (`ltrender.h`): the renderer's 38 slots from +0x70, `RebindWorld`, `Clear` with a colour, `GetTexture` with its second argument, a `SharedTexture` of 0x40 bytes. A windowed Direct3D 9 device on the window of the engine; for full screen, the renderer first changes the display mode. The mode list has every mode of the display at 16 and 32 bits, from 640x480. Clear and present; the surfaces of the engine and every blit; Optimized 2D with its blend modes; `FillScreenRect`; `BlitFromScreen`; screenshots (F8); DTX textures (the mipmaps as `d3d.ren` selects them). The screen lock keeps the screen in a shadow buffer: it reads the back buffer only when the device drew after the last lock, and it writes it back before the next draw. (The text of the engine onto the screen locks the screen for each string. The console locks it hundreds of times in one frame, and a read of the back buffer for each lock stopped the console.) The movies play through DirectDraw stand-ins. `VSync` (0 here) and `Antialiasing`. The engine's fast `FillRect` (nolfsrc's M-P0-03) called the slot +0xb8, which is `RenderScene` in AvP2; it now calls `GetRenderObject` at +0xc0 | `src/modern/render/`; `build/ext.sh`, `build/all.sh`, `build/retail.py`, `build/retail_avp2.py`; `src/engine/lithtech/warpblit.cpp` (`ci_ModernFillScreen`) | Under Xvfb and Wine 9.0: both games to the menu, the menus, the console, F8, the intro movies; full screen, a window and a borderless window at 1280x720; 2560x1440 and 3840x2160 (borderless and full screen); `VSync 1` with 4x antialiasing. The 3D parts of the menus (their backgrounds) are not drawn yet (stage 3). Not yet confirmed on Windows or under Proton |
+| M-29 (stage 2) | The world | `src/modern/render/` | not started |
+| M-29 (stage 3) | The objects | `src/modern/render/` | not started |
+
 ## New console variables
 
 | Variable | Type | Default | What | Id |
@@ -1620,6 +1640,7 @@ server allows). AvP2 ships no file.
 | `PadLookCurve` | float | 2 | The response of the right stick: the game raises its deflection past the dead zone to this value (1: linear) | M-7 |
 | `PadLookDeadZone` | float | 0.15 | The radial dead zone of the right stick (0..0.9 of its travel). Controller | M-7 |
 | `PadMoveDeadZone` | float | 0.2 | The radial dead zone of the left stick. Controller | M-7 |
+| `Antialiasing` | int | 0 | `d3d9.ren`: samples for each pixel (0 off, 2, 4, 8), read when the renderer starts | M-29 |
 | `ConsoleBackdrop` | int | 0 | The backdrop of the console: 0 `console.pcx` (the art of the retail console of the engine), 1 black | M-25 |
 | `OldMouseLook` | int | 0 | The retail mouse look (the DirectInput offsets of the engine, `CursorCenter 1`) in place of raw input. Controls, Mouse, "Legacy mouse look". Saved in autoexec.cfg | M-6 |
 | `NoRawInput` | int | 0 | The new mouse look from the motion of the cursor (the game puts the cursor back in the middle of the window on each frame), in place of raw input. Saved in autoexec.cfg | M-6 |

@@ -52,6 +52,7 @@ REFERENCE_GAME = [("cshell.dll", "PHCShell.dll", "AVP2DLL.REZ"),
 OPEN_RUNTIME = [
     ("binkw32.dll", "src/modern/binkw32 + ext/ffmpeg: our Bink player"),
     ("mss32.dll", "ext/openmiles: OpenMiles"),
+    ("d3d9.ren", "src/modern/render: our Direct3D 9 renderer"),
 ]
 
 # --- the public archive's install scripts (build/mkinstall.py) -------------

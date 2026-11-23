@@ -1,0 +1,6 @@
+// String 5 (RDLL_DESCRIPTION_STRINGID) is the name the launcher lists the
+// renderer under, as retail d3d.ren's "LithTech Direct3D Renderer".
+STRINGTABLE
+BEGIN
+    5, "LithTech Direct3D 9 Renderer"
+END

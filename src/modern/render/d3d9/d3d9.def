@@ -1,0 +1,6 @@
+; d3d9.ren's exports: what lithtech.exe and the launcher look up by name
+LIBRARY d3d9.ren
+EXPORTS
+    RenderDLLSetup
+    GetSupportedModes
+    FreeModeList
