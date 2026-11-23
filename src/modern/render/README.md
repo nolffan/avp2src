@@ -97,7 +97,7 @@ A report goes to the console, to stderr and to `d3d9.log`.
 | stage | what | state |
 |---|---|---|
 | 1 | the device and 2D: the device on the engine's window (full screen, a window, a borderless window), the mode list, clear and present, the engine's surfaces and every blit, Optimized 2D, the screen lock, `FillScreenRect`, `BlitFromScreen`, screenshots, DTX textures, the movies (DirectDraw stand-ins), VSync | done: both games to the menu, the menus' 2D, the console, F8, the intro movies, under Xvfb and Wine (wined3d), in each window mode and at 2560x1440 and 3840x2160. The screen lock keeps a shadow of the screen (`mr_SyncScreen`): the text of the engine locks the screen for each string. The menus' 3D parts are stage 3 |
-| 2 | the world: polygons, textures, lightmaps, visibility, world models, the sky, fog, mirrors and portals | not started |
+| 2 | the world: polygons, textures, lightmaps, visibility, world models, the sky, fog, mirrors and portals | done but for a check of the mirrors (no test level has one yet): the engine's visibility query; the polys as `d3d.ren` draws them with its default two passes (a lightmap, or the sky-pan texture times the vertex colours, then the texture over it, two times the product under `Saturate`; a fullbright texture a third time; `Force1Pass` one pass), vertex-lit polys through the world colour's gamma ramp, the vertex light animations, the light animations into lightmap atlases (32-bit runs, shadow-map masks, the layers added by their brightness), dynamic lights into the lightmaps and as small lightmaps added over the other polys (`LMDynamic`), detail textures and the world's environment maps; world models (solid, chromakey, translucent back to front with `WMAmbient`); the sky from its squashed camera, its polys lit by the lights that reach them; `d3d.ren`'s fog for each vertex (by distance, AvP2's vertical fog with its retail cut, Primal Hunt's fog volumes), drawn as pre-transformed vertices, whose specular alpha Direct3D 9 takes as the fog; the light scale (`InvertHack`) and light add passes; mirrors through the stencil. The first Marine and Predator levels of AvP2 and the first Corporate level of Primal Hunt match `d3d.ren` (out/play/d3d9-s2*, d3d7-s2*), but for the objects (stage 3) and the screens of two monitors in the Marine level |
 | 3 | objects: models, sprites, particles, poly grids, line systems, canvases, dynamic lights, shadows | not started |
 | 4 | anisotropic filtering and antialiasing in the Display menus | not started |
 
@@ -114,7 +114,10 @@ Not yet confirmed on Windows or under Proton.
 | `mrplatform.h`, `mr_window.cpp` | display modes and the size of the engine's window (user32) |
 | `mr_2d.cpp` | surfaces, blits, Optimized 2D, the screen lock |
 | `mr_texture.cpp` | textures |
-| `mr_scene.cpp` | the world's slots and `RenderScene` |
+| `ltworld.h` | the engine's scene, world and object data of AvP2: `SceneDesc` (0x104 bytes), `MainWorld`, `WorldBsp`, `Node`, `Leaf`, `Surface`, `WorldPoly`, `LightAnim`, `LTObject` (0x1b0), the visibility query |
+| `mrscene.h`, `mr_scene.cpp` | the world's slots, the camera, the fog, the world's polys, world models, the sky, mirrors, `RenderScene` |
+| `mr_lightmap.cpp` | lightmaps: the light animations composed into atlases, dynamic lights into them |
+| `mrobjects.h`, `mr_objects.cpp` | the visible set: objects by kind and the order they are drawn in |
 | `mr_movie.cpp` | DirectDraw stand-ins for the movie players |
 | `d3d9/d3d9_device.cpp` | `rdev.h` on Direct3D 9 |
 | `d3d9/d3d9.def`, `d3d9/d3d9.rc` | the DLL's three exports; the launcher's name for it (string 5) |

@@ -35,6 +35,7 @@ struct RDCaps {
     float    fMaxAniso;
     bool     bDepthClamp;           // RD_DEPTH_CLAMP works
     bool     bNearDepth;            // and rd_NearDepth with it
+    bool     bStencil;              // rd_StencilMode works
     int      nSamples;              // the multisampling the device got (1: none)
 };
 extern RDCaps g_RDCaps;
@@ -78,6 +79,10 @@ void rd_AlphaGreater(float fRef);
 enum RDDepthFunc { RD_LESS, RD_LEQUAL, RD_ALWAYS };
 void rd_DepthFunc(RDDepthFunc eFunc);
 void rd_DepthMask(bool bWrite);
+// The stencil (8 bits, cleared with the depth): off, write 1 where drawn,
+// or draw only where it is 1 (a mirror's area). Kept with the depth.
+enum RDStencil { RD_STENCIL_OFF, RD_STENCIL_WRITE1, RD_STENCIL_TEST1 };
+void rd_StencilMode(RDStencil eMode);
 void rd_ColorMask(bool bWrite);
 
 // Linear fog on eye-space depth; or, with rd_FogExplicit(true), each
@@ -102,7 +107,7 @@ void rd_Scissor(int x, int y, int w, int h);
 // What the push saves and the pop restores, as glPushAttrib's groups.
 enum {
     RD_ATTR_COLOR    = 1,           // blend, blend func, alpha test, alpha ref, colour mask, clear colour
-    RD_ATTR_DEPTH    = 2,           // depth test, depth func, depth mask
+    RD_ATTR_DEPTH    = 2,           // depth test, depth func, depth mask, stencil
     RD_ATTR_FOG      = 4,           // fog enable, colour, range, explicit
     RD_ATTR_ENABLE   = 8,           // every RDCap, on every unit
     RD_ATTR_TEXTURE  = 16,          // the active unit, and each unit's texture, enable and environment

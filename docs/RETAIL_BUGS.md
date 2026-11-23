@@ -915,8 +915,8 @@ vertices after the first `m_nVerts`. The default of `FixTJunc` is 0, so
 the bug shows only when a player sets it. Then a light near a sky
 polygon does not light some of its vertices.
 
-Not fixed: the modern build uses the retail renderer code here. The
-Direct3D 9 renderer must count the vertices that it draws.
+Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
+lights every vertex that it draws.
 
 ### A lightmap page leaks its allocation bitmap when there is no lightmap format
 

@@ -226,7 +226,7 @@ MRVar g_Vars[] = {
     { "LMDynamic", 1 }, { "LMDynamicScale", 2.5f }, { "LMDynamicSize", 16 }, { "MultipassGouraud", 1 },
     { "InvertHack", 0 },
     { "TableFog", 0 }, { "VFog", 0 }, { "VFogMinY", 0 }, { "VFogMaxY", 1300 }, { "VFogMinYVal", 0.5f },
-    { "VFogMaxYVal", 0 }, { "VFogMax", 180 }, { "VFogDensity", 1800 }, { "DrawPortals", 1 },
+    { "VFogMaxYVal", 0 }, { "VFogMax", 180 }, { "VFogDensity", 1800 }, { "DrawPortals", 1 }, { "PortalLightmap", 1 },
     { "LightModels", 1 }, { "TintModels", 1 }, { "ModelFullbrite", 1 },
     { "ExtraFOVXOffset", 0 }, { "ExtraFOVYOffset", 0 }, { "ModelFovTest", 0 },
 };

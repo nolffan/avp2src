@@ -110,7 +110,7 @@ enum {
     CV_NearZ, CV_ReallyCloseNearZ, CV_LMAnim, CV_Force1Pass, CV_LightmapsOnly, CV_LMFullBright,
     CV_LMDynamic, CV_LMDynamicScale, CV_LMDynamicSize, CV_MultipassGouraud, CV_InvertHack,
     CV_TableFog, CV_VFog, CV_VFogMinY, CV_VFogMaxY, CV_VFogMinYVal, CV_VFogMaxYVal, CV_VFogMax,
-    CV_VFogDensity, CV_DrawPortals, CV_LightModels, CV_TintModels, CV_ModelFullbrite,
+    CV_VFogDensity, CV_DrawPortals, CV_PortalLightmap, CV_LightModels, CV_TintModels, CV_ModelFullbrite,
     CV_ExtraFOVXOffset, CV_ExtraFOVYOffset, CV_ModelFovTest,
     CV_Count
 };

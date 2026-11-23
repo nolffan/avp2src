@@ -340,6 +340,7 @@ struct D9State {
     float       m_fAlphaRef;
     RDDepthFunc m_eDepthFunc;
     bool        m_bDepthMask, m_bColorMask;
+    int         m_nStencil;             // RDStencil
     float       m_Fog[3], m_fFogStart, m_fFogEnd;
     bool        m_bFogExplicit;         // the vertices carry their fog factors
     int         m_Viewport[4], m_Scissor[4];
@@ -398,6 +399,7 @@ void rd_AlphaGreater(float fRef)              { s_S.m_fAlphaRef = fRef; }
 void rd_DepthFunc(RDDepthFunc eFunc)          { s_S.m_eDepthFunc = eFunc; }
 void rd_DepthMask(bool bWrite)                { s_S.m_bDepthMask = bWrite; }
 void rd_ColorMask(bool bWrite)                { s_S.m_bColorMask = bWrite; }
+void rd_StencilMode(RDStencil eMode)          { s_S.m_nStencil = eMode; }
 
 void rd_FogColor(float r, float g, float b)
 {
@@ -470,6 +472,7 @@ void rd_PopAttrib(void)
         s_S.m_Caps[RD_DEPTH_TEST] = o.m_Caps[RD_DEPTH_TEST];
         s_S.m_eDepthFunc = o.m_eDepthFunc;
         s_S.m_bDepthMask = o.m_bDepthMask;
+        s_S.m_nStencil = o.m_nStencil;
     }
     if (m & RD_ATTR_FOG)
     {
@@ -826,14 +829,28 @@ static void d9_Apply(void)
     d9_RS(D3DRS_ZFUNC, s.m_eDepthFunc == RD_LESS ? D3DCMP_LESS : s.m_eDepthFunc == RD_ALWAYS ? D3DCMP_ALWAYS : D3DCMP_LESSEQUAL);
     d9_RS(D3DRS_ZWRITEENABLE, s.m_bDepthMask);
     d9_RS(D3DRS_COLORWRITEENABLE, s.m_bColorMask ? 0xf : 0);
+    d9_RS(D3DRS_STENCILENABLE, s.m_nStencil != RD_STENCIL_OFF);
+    if (s.m_nStencil != RD_STENCIL_OFF)
+    {
+        d9_RS(D3DRS_STENCILREF, 1);
+        d9_RS(D3DRS_STENCILMASK, 0xff);
+        d9_RS(D3DRS_STENCILWRITEMASK, 0xff);
+        d9_RS(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+        d9_RS(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
+        d9_RS(D3DRS_STENCILPASS, s.m_nStencil == RD_STENCIL_WRITE1 ? D3DSTENCILOP_REPLACE : D3DSTENCILOP_KEEP);
+        d9_RS(D3DRS_STENCILFUNC, s.m_nStencil == RD_STENCIL_WRITE1 ? D3DCMP_ALWAYS : D3DCMP_EQUAL);
+    }
     d9_RS(D3DRS_FOGENABLE, s.m_Caps[RD_FOG]);
     if (s.m_Caps[RD_FOG])
     {
         DWORD c = D3DCOLOR_COLORVALUE(s.m_Fog[0], s.m_Fog[1], s.m_Fog[2], 1.0f);
         d9_RS(D3DRS_FOGCOLOR, c);
-        d9_RS(D3DRS_FOGSTART, d9_F2DW(s.m_fFogStart));
-        d9_RS(D3DRS_FOGEND, d9_F2DW(s.m_fFogEnd));
-        // Both modes off: the vertex's specular alpha is its fog factor.
+        // Explicit: both modes off, so the vertex's specular alpha is its
+        // fog factor. wined3d puts that through the linear equation, (end -
+        // a) / (end - start): start 1 and end 0 give a itself; the runtime
+        // and DXVK use a as it is and ignore the two.
+        d9_RS(D3DRS_FOGSTART, d9_F2DW(s.m_bFogExplicit ? 1.0f : s.m_fFogStart));
+        d9_RS(D3DRS_FOGEND, d9_F2DW(s.m_bFogExplicit ? 0.0f : s.m_fFogEnd));
         d9_RS(D3DRS_FOGTABLEMODE, s.m_bFogExplicit ? D3DFOG_NONE : D3DFOG_LINEAR);
     }
     d9_RS(D3DRS_SCISSORTESTENABLE, s.m_Caps[RD_SCISSOR_TEST]);
@@ -974,7 +991,7 @@ struct D9TVertex {
 };
 #define D9_TFVF (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX4)
 static_assert(sizeof(D9TVertex) == 4 * 4 + 4 + 4 + D9_UNITS * 2 * 4, "D9_TFVF's stride");
-static D9TVertex s_TVerts[D9_MAXVERTS / 4 * 6 > D9_MAXVERTS * 3 ? D9_MAXVERTS / 4 * 6 : D9_MAXVERTS * 3];
+static D9TVertex s_TVerts[D9_MAXVERTS * 9];     // each triangle clipped to at most three
 
 static void d9_Xform(const D9Matrix& M, const float* v, float* o)
 {
@@ -999,7 +1016,7 @@ static void d9_Lerp(const D9CVertex& a, const D9CVertex& b, float f, D9CVertex& 
         po[i] = pa[i] + (pb[i] - pa[i]) * f;
 }
 
-static void d9_Project(const D9CVertex& v, D9TVertex& t)
+static void d9_Project(const D9CVertex& v, D9TVertex& t, bool bClamp)
 {
     const int* vp = s_S.m_Viewport;
     float iw = 1.0f / v.c[3];
@@ -1017,7 +1034,8 @@ static void d9_Project(const D9CVertex& v, D9TVertex& t)
     }
     else
     {
-        z = z < 0.0f ? 0.0f : z > 1.0f ? 1.0f : z;
+        if (bClamp)
+            z = z < 0.0f ? 0.0f : z > 1.0f ? 1.0f : z;
         t.z = s_S.m_DepthRange[0] + z * (s_S.m_DepthRange[1] - s_S.m_DepthRange[0]);
     }
     t.rhw = iw;
@@ -1041,7 +1059,11 @@ static void d9_Project(const D9CVertex& v, D9TVertex& t)
     }
 }
 
-static void d9_DrawClamped(D3DPRIMITIVETYPE eType, const D9Vertex* pVerts, int nPrims)
+// bClamp: depth clamping (above). Without it, the vertices are drawn
+// pre-transformed only for their explicit fog factors (rd_FogExplicit),
+// which Direct3D 9 takes from the specular alpha of pre-transformed
+// vertices: clipped at the near and far planes as the device clips.
+static void d9_DrawClamped(D3DPRIMITIVETYPE eType, const D9Vertex* pVerts, int nPrims, bool bClamp)
 {
     D9Matrix MVP = s_Proj[s_nProj];
     d9_Mul(&MVP, s_MV[s_nMV].m);
@@ -1066,32 +1088,62 @@ static void d9_DrawClamped(D3DPRIMITIVETYPE eType, const D9Vertex* pVerts, int n
                 d9_Xform(s_TexM[u][s_nTexM[u]], v.t[u], in[k].t[u]);
         }
         // Clip against w > 0 (GL clips there; with clamping, nowhere else in
-        // depth), or at rd_NearDepth's eye depth.
-        D9CVertex poly[4];
+        // depth), or at rd_NearDepth's eye depth; without clamping, against
+        // -w <= z <= w.
+        D9CVertex poly[5], tmp[5];
         int nPoly = 0;
+        int nPlanes = bClamp ? 1 : 2;
         for (int k = 0; k < nPer; k++)
+            tmp[k] = in[k];
+        int nTmp = nPer;
+        for (int pl = 0; pl < nPlanes; pl++)
         {
-            const D9CVertex& a = in[k];
-            const D9CVertex& b = in[(k + 1) % nPer];
-            bool bIn = a.c[3] >= fMinW, bNextIn = b.c[3] >= fMinW;
-            if (bIn)
-                poly[nPoly++] = a;
-            if (bIn != bNextIn && (nPer == 3 || k == 0))
-                d9_Lerp(a, b, (fMinW - a.c[3]) / (b.c[3] - a.c[3]), poly[nPoly++]);
+            nPoly = 0;
+            for (int k = 0; k < nTmp; k++)
+            {
+                const D9CVertex& a = tmp[k];
+                const D9CVertex& b = tmp[(k + 1) % nTmp];
+                float da, db;
+                if (bClamp)
+                {
+                    da = a.c[3] - fMinW;
+                    db = b.c[3] - fMinW;
+                }
+                else if (pl == 0)
+                {
+                    da = a.c[2] + a.c[3];
+                    db = b.c[2] + b.c[3];
+                }
+                else
+                {
+                    da = a.c[3] - a.c[2];
+                    db = b.c[3] - b.c[2];
+                }
+                bool bIn = da >= 0.0f, bNextIn = db >= 0.0f;
+                if (bIn && nPoly < 5)
+                    poly[nPoly++] = a;
+                if (bIn != bNextIn && (nTmp >= 3 || k == 0) && nPoly < 5)
+                    d9_Lerp(a, b, da / (da - db), poly[nPoly++]);
+            }
+            for (int k = 0; k < nPoly; k++)
+                tmp[k] = poly[k];
+            nTmp = nPoly;
+            if (nTmp < nPer)
+                break;
         }
         if (nPer == 2)
         {
             if (nPoly != 2 || nOut + 2 > nMaxOut)
                 continue;
-            d9_Project(poly[0], s_TVerts[nOut++]);
-            d9_Project(poly[1], s_TVerts[nOut++]);
+            d9_Project(poly[0], s_TVerts[nOut++], bClamp);
+            d9_Project(poly[1], s_TVerts[nOut++], bClamp);
             continue;
         }
         for (int k = 1; k + 1 < nPoly && nOut + 3 <= nMaxOut; k++)
         {
-            d9_Project(poly[0], s_TVerts[nOut++]);
-            d9_Project(poly[k], s_TVerts[nOut++]);
-            d9_Project(poly[k + 1], s_TVerts[nOut++]);
+            d9_Project(poly[0], s_TVerts[nOut++], bClamp);
+            d9_Project(poly[k], s_TVerts[nOut++], bClamp);
+            d9_Project(poly[k + 1], s_TVerts[nOut++], bClamp);
         }
     }
     if (!nOut)
@@ -1146,9 +1198,9 @@ static void d9_Draw(int n)
 #endif
     d9_BeginScene();
     d9_Apply();
-    if (s_S.m_Caps[RD_DEPTH_CLAMP])
+    if (s_S.m_Caps[RD_DEPTH_CLAMP] || (s_S.m_Caps[RD_FOG] && s_S.m_bFogExplicit))
     {
-        d9_DrawClamped(eType, pVerts, nPrims);
+        d9_DrawClamped(eType, pVerts, nPrims, s_S.m_Caps[RD_DEPTH_CLAMP]);
         return;
     }
     s_pDev->SetFVF(D9_FVF);
@@ -1492,6 +1544,7 @@ bool rd_CreateDevice(void* hWnd, uint32_t nWidth, uint32_t nHeight, bool bWindow
     g_RDCaps.fMaxAniso = g_RDCaps.bAniso ? (float)caps.MaxAnisotropy : 1.0f;
     g_RDCaps.bDepthClamp = true;
     g_RDCaps.bNearDepth = true;
+    g_RDCaps.bStencil = true;     // D24S8
 
     // The most samples asked for that the device has.
     s_eMS = D3DMULTISAMPLE_NONE;
