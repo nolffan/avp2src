@@ -207,7 +207,7 @@ We used these options of the script:
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B26 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B27 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing. The user reported this on the first modern build: "the
 high framerate means all the timing is wrong". nolfsrc found the same
@@ -1176,7 +1176,7 @@ in its `#else`, or modern-only lines that the retail code does not have.
 | M-B08 | The CD driver forgets the current play list when the play list is removed | `src/engine/cdaudio/cdaudio.cpp` | From the code. The two games do not play CD audio in our tests (Wine has no Red Book drive; the music is DirectMusic and Miles). Thus, the tests do not get to the driver | done |
 | M-B09 | `sm_DetachClient` allocates the message that it sends | `src/engine/lithtech/ccobj.cpp`, `src/engine/server/smgr.cpp` | From the code. Only `ILTServer::AttachClient` gives a view client to a client, and the DLLs of the two games do not call it. Thus, play never gets to the detach | done |
 
-### Retail-bug fixes: the renderers (M-B20..M-B26)
+### Retail-bug fixes: the renderers (M-B20..M-B27)
 
 These are the `RETAIL_BUGS.md` entries in `src/engine/d3d/ph/` (the
 `d3d.ren` of the two games, if the row does not give a different file).
@@ -1195,6 +1195,7 @@ ModelWarble). We did not fix it.
 | M-B24 | `CD3DLMTexture::Init` fails when it cannot make its surface. It does not lock null ("A dynamic-lightmap texture whose surface cannot be made locks a null surface") | `d3d_optimizedsurface.cpp` | done |
 | M-B25 | The specular pass of the models keeps its stage-1 states during its draw ("The models' specular pass sets its texture-stage states and undoes them at once") | `drawmodel_env.cpp` (`CD3DModelDraw::DrawPasses`) | done |
 | M-B26 | The screen-space and lightmap-only polygon draws compare the vertex count with their 64-entry buffers ("A screen-space lightmap polygon is copied without checking its vertex count") | `drawlightmaps.cpp` (`d3d_DrawScreenLMPoly`, `d3d_DrawLightmapOnly`) | done |
+| M-B27 | The two model-shadow passes release the old stage-0 texture after they set it again. `GetTexture` adds a reference, and retail does not release it, so each shadow draw leaks one reference. `DrawProjShadows` and `DrawShadows` are not byte-identical, thus this has no RETAIL_BUGS.md entry | `drawmodelshadows.cpp` (`CD3DModelDraw::DrawShadows`, `CD3DModelDraw::DrawProjShadows`) | done |
 
 Checked: the modern build compiles them (`make modern`), and the two
 games run on it (`build/playtest-avp2-marine.txt` and
@@ -1216,6 +1217,12 @@ code:
 - M-B25 needs a model with `SpecularEnable` in its command string. No
   shipped model of the two games has it.
 - M-B26 needs a polygon of more than 64 vertices.
+- M-B27: the leak is one reference to a texture at each shadow draw,
+  when stage 0 has a texture. You cannot see it. The retail code
+  (0x1002611f and 0x10027e40 in Primal Hunt, 0x100252c6 and 0x1002701e
+  in AvP2) calls `GetTexture` (slot 0x88) once and never calls `Release`
+  (slot 0x08). Under Wine, with `ModelShadowProj` 0 and 1, the two games
+  run.
 
 ### Retail-bug fixes: the client shells and the lithshared libraries (M-B40..M-B63)
 

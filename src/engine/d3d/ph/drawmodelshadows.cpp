@@ -247,6 +247,18 @@ LTBOOL d3d_ClipToPlane(P* pPlane, V** ppVerts, int32* pnVerts, V** ppOut)
 //  The engine's structures, as the shadow draws read them.
 // ---------------------------------------------------------------------- //
 
+#ifdef AVP2SRC_MODERN
+// The first three slots of every COM object: GetTexture gives one of
+// these, with a reference added (MODERN.md M-B27).
+struct ShadowComObject
+{
+public:
+	virtual long __stdcall QueryInterface(void*, void**) = 0;
+	virtual uint32  __stdcall AddRef() = 0;
+	virtual uint32  __stdcall Release() = 0;
+};
+#endif
+
 // IDirect3DDevice7, the slots used here (drawmodel_env.cpp's view).
 struct IDirect3DDevice7
 {
@@ -876,6 +888,13 @@ void CD3DModelDraw::DrawShadows()
 	}
 
 	g_pD3DDevice->SetTexture(0, pOldTexture);
+#ifdef AVP2SRC_MODERN
+	// RETAIL BUG: GetTexture adds a reference to the old texture, and
+	// retail does not release it. Thus each shadow draw leaks one
+	// reference (MODERN.md M-B27).
+	if (pOldTexture)
+		((ShadowComObject*)pOldTexture)->Release();
+#endif
 }
 
 
@@ -1531,4 +1550,10 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_SRCBLEND, oldStates[4]);
 	g_pD3DDevice->SetRenderState(D3DRENDERSTATE_DESTBLEND, oldStates[5]);
 	g_pD3DDevice->SetTexture(0, pOldTexture);
+#ifdef AVP2SRC_MODERN
+	// RETAIL BUG: as in DrawShadows, release the reference that
+	// GetTexture added (MODERN.md M-B27).
+	if (pOldTexture)
+		((ShadowComObject*)pOldTexture)->Release();
+#endif
 }
