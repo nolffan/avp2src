@@ -45,6 +45,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - The bugs in the client shells and in lithshared (M-B40..M-B63, M-B108).
 - The bugs in the object DLLs and in the shared code (M-B70..M-B87).
 - The bugs in the launchers and in Launch.dll (M-B100..M-B107).
+- Text from the network that overruns its buffers (M-31).
 
 The controller work found a flare crash. That crash was a reconstruction
 error, not a retail bug. Both builds have the fix (the message-object
@@ -1936,6 +1937,90 @@ old contents of a stack slot to `CWeapons::GetAmmoCount`.
 Not fixed: it is harmless. `GetAmmoCount` examines the id
 (`IsValidAmmoId`) and gives 0 for an id that is not valid. Each turret
 has its weapon.
+
+### A server's name in the LAN or Internet list can overrun the browser's stack
+
+AvP2 CShell.dll 0x1001c630 (`CFolderJoinInfo::BuildGeneralString`,
+src/AVP2/ClientShellDLL/FolderJoinInfo.cpp), and the same `sprintf` in
+`CFolderJoin::AddServerCtrl` (src/AVP2/ClientShellDLL/FolderJoin.cpp; our
+function is not byte-identical yet). Both games.
+
+The browser copies the name, the map and the game type of each server,
+and on the information page also the version and each player's name,
+from the GameSpy reply of the server into buffers of 128 bytes on the
+stack, with `sprintf` and no limit. The reply can be 1400 bytes. Thus a
+server (or a program that answers GameSpy queries on the LAN) with a long
+name writes past the buffer of each player who looks at the list.
+
+Tested: a program on the LAN (in a second container) answered the LAN search with a server name
+of 400 characters ("NNNN..."). The modern build before this fix jumped to
+the address 0x4E4E4E4E (the "NNNN" of the name) when it showed the list.
+
+Fixed in the modern build: FolderJoin.cpp, FolderJoinInfo.cpp, the text
+is cut to the buffer (`src/modern/cshell/m31_nettext.h`). MODERN.md M-31.
+
+### A race number from a server's GameSpy reply is used as an index unchecked
+
+CShell.dll and PHCShell.dll (`CFolderJoinInfo::BuildGeneralString`, AvP2
+CShell.dll 0x1001c630; `CFolderJoinInfo::BuildSetupString`,
+src/AVP2/ClientShellDLL/FolderJoinInfo.cpp).
+
+The information page shows the race of each player (`race_<n>`) and the
+races of the game rules (`hrace`, `prace`, `srace`, `mrace`, `drace`,
+`arace`) by their names. It takes each name from a table of four string
+handles, with the number from the reply as the index, and it does not
+examine the number. A number outside 0..3 reads a handle from outside the
+table, and the game reads through it.
+
+Fixed in the modern build: FolderJoinInfo.cpp, a number outside the table
+shows as "?". MODERN.md M-31.
+
+### A chat line from the server can overrun the message list
+
+PHCShell.dll 0x10089f30 (`CMessageMgr::AddMessage`,
+src/AVP2/ClientShellDLL/MessageMgr.cpp).
+
+`MultiplayerClientMgr::OnMessage_Message` reads a chat line of up to 255
+characters from the server, and `AddMessage` copies it with `strcpy` into
+the 130 bytes of a message slot. The server sends on the line that a
+client sent, up to 255 characters. The input line of the game stops at
+128 characters, so the bug shows only with a changed client.
+
+Fixed in the modern build: MessageMgr.cpp, the line is cut to the slot.
+MODERN.md M-31.
+
+### The server's console print formats its line two times
+
+lithtech.exe 0x00487d30 (`CLTServer::CPrint`,
+src/engine/server/servermessage.cpp), and the same code in server.dll.
+Also `si_BPrint` (src/engine/server/smgr.cpp).
+
+`CPrint` formats its arguments into a buffer, and then gives the buffer
+to `dsi_ServerError` as its format. `dsi_ServerError` formats it again
+with `vsprintf`. Thus a `%` in the text of an argument (for example
+`CPrint("Master server: %s", sName)`) is a format the second time, with
+no arguments. `BPrint` gives its line to `sm_BroadcastPrintf` in the same
+way. The game DLLs of the two games do not give a player's text to
+`CPrint` or `BPrint` (we examined each call), thus a player cannot get to
+this bug.
+
+Fixed in the modern build: servermessage.cpp and smgr.cpp, the line goes
+through `"%s"`. MODERN.md M-31.
+
+### A client's name need not be terminated
+
+Object.lto 0x10122210 (`MultiplayerMgr::CreateUniqueClientName`), after
+`MultiplayerMgr::AddClient` (src/AVP2/ObjectDLL/MultiplayerMgr.cpp). Both
+games.
+
+The server copies the client data of a joining client, with its name of
+32 bytes, as the client sent it. It then uses the name with `strlen` and
+`strcpy` (`CreateUniqueClientName`) and sends it to each client. A
+changed client that sends 32 bytes with no terminator makes the server
+read past the name.
+
+Fixed in the modern build: MultiplayerMgr.cpp, the last byte of the name
+is set to 0. MODERN.md M-31.
 
 ## NOLF's bugs AvP2 does not have
 

@@ -629,7 +629,15 @@ void CLTServer::CPrint(char *pMsg, ...)
 	// No va_end here — FormatString has one, this never did.
 	va_start(marker, pMsg);
 	_vsnprintf(msg, sizeof(msg) - 1, pMsg, marker);
+#ifdef AVP2SRC_MODERN
+	// M-31: RETAIL BUG: dsi_ServerError takes a format, and the line is
+	// already formatted: a '%' in its text (a name, a typed command) is
+	// formatted a second time, through an empty argument list
+	msg[sizeof(msg) - 1] = '\0';
+	dsi_ServerError("%s", msg);
+#else
 	dsi_ServerError(msg);
+#endif
 }
 
 uint32 CLTServer::GetPointContainers(LTVector *pPoint, HOBJECT *pList, uint32 maxListSize)

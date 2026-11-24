@@ -290,6 +290,12 @@ LTBOOL MultiplayerMgr::AddClient(HCLIENT hClient, MPClientData *pData)
 
 			if(pData)
 				memcpy(&m_ClientData[i].m_Data, pData, sizeof(MPClientData));
+#ifdef AVP2SRC_MODERN
+			// M-31: RETAIL BUG: the client data comes from the client, and
+			// its name need not have a terminator, but the name goes to
+			// strlen, strcpy and to every client; terminate it
+			m_ClientData[i].m_Data.m_szName[MAX_MP_CLIENT_NAME_LENGTH - 1] = '\0';
+#endif
 
 			// Create a unique name for this client
 			LTBOOL bRenamed = CreateUniqueClientName(hClient);

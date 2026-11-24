@@ -19,6 +19,7 @@
 #endif
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m17_master.h"	// M-17: the master server
+#include "..\..\modern\cshell\m31_nettext.h"	// M-31: network text, bounded
 #endif
 
 
@@ -1005,7 +1006,13 @@ void CFolderJoin::AddServerCtrl(CGameSpyServer* pGame)
 	g_pLTClient->FreeString(hText);
 
 	// mission name
+#ifdef AVP2SRC_MODERN
+	// M-31: RETAIL BUG: the name comes from the server's GameSpy reply, of
+	// any length, and szTemp holds 127 characters
+	M31_Copy(szTemp, sizeof(szTemp), pGame->GetName());
+#else
 	sprintf(szTemp,"%s",pGame->GetName());
+#endif
 	szTemp[30] = '\0';
 
 	if(!szTemp[0])
@@ -1039,7 +1046,11 @@ void CFolderJoin::AddServerCtrl(CGameSpyServer* pGame)
 	g_pLTClient->FreeString(hText);
 
 	// type
+#ifdef AVP2SRC_MODERN
+	M31_Copy(szTemp, sizeof(szTemp), pGame->GetGameType());	// M-31 (as the name)
+#else
 	sprintf(szTemp,"%s",pGame->GetGameType());
+#endif
 
 	if(!szTemp[0])
 		sprintf(szTemp,"%s",g_pLTClient->GetStringData(hUnknown));
@@ -1049,7 +1060,11 @@ void CFolderJoin::AddServerCtrl(CGameSpyServer* pGame)
 	g_pLTClient->FreeString(hText);
 	
 	// map
+#ifdef AVP2SRC_MODERN
+	M31_Copy(szTemp, sizeof(szTemp), pGame->GetMap());	// M-31 (as the name)
+#else
 	sprintf(szTemp,"%s",pGame->GetMap());
+#endif
 
 	if(!szTemp[0])
 		sprintf(szTemp,"%s",g_pLTClient->GetStringData(hUnknown));

@@ -10,6 +10,17 @@
 #include "ClientRes.h"
 #include "GameClientShell.h"
 #include "ServerOptionMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m31_nettext.h"	// M-31: network text, bounded
+
+// M-31: the name of a race number from the server's GameSpy reply; "?"
+// when the number is not a race (retail used it as the index as it was)
+static const char* M31_TeamName(HSTRING* hTeams, int nRace)
+{
+	int i = M31_Index(nRace, MAX_TEAMS);
+	return (i < 0) ? "?" : g_pLTClient->GetStringData(hTeams[i]);
+}
+#endif
 
 
 namespace
@@ -224,7 +235,13 @@ void CFolderJoinInfo::BuildGeneralString(std::string &szGeneral)
 
 	// Name of the server
 	hTemp = g_pLTClient->FormatString(IDS_SERVER);
+#ifdef AVP2SRC_MODERN
+	// M-31: RETAIL BUG: the value comes from the server, of any length,
+	// and szTemp holds 127 characters
+	M31_Format(szTemp, sizeof(szTemp), "%s: %s\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("hostname"));
+#else
 	sprintf(szTemp, "%s: %s\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("hostname"));
+#endif
 	szGeneral += szTemp;
 	g_pLTClient->FreeString(hTemp);
 
@@ -236,7 +253,11 @@ void CFolderJoinInfo::BuildGeneralString(std::string &szGeneral)
 
 	// Game version
 	hTemp = g_pLTClient->FormatString(IDS_INFO_VERSION);
+#ifdef AVP2SRC_MODERN
+	M31_Format(szTemp, sizeof(szTemp), "%s: %s\n\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("gamever"));	// M-31
+#else
 	sprintf(szTemp, "%s: %s\n\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("gamever"));
+#endif
 	szGeneral += szTemp;
 	g_pLTClient->FreeString(hTemp);
 
@@ -244,13 +265,21 @@ void CFolderJoinInfo::BuildGeneralString(std::string &szGeneral)
 
 	// Game type
 	hTemp = g_pLTClient->FormatString(IDS_GAME_TYPE);
+#ifdef AVP2SRC_MODERN
+	M31_Format(szTemp, sizeof(szTemp), "%s: %s\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("gametype"));	// M-31
+#else
 	sprintf(szTemp, "%s: %s\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("gametype"));
+#endif
 	szGeneral += szTemp;
 	g_pLTClient->FreeString(hTemp);
 
 	// Current level
 	hTemp = g_pLTClient->FormatString(IDS_LEVEL);
+#ifdef AVP2SRC_MODERN
+	M31_Format(szTemp, sizeof(szTemp), "%s: %s\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("mapname"));	// M-31
+#else
 	sprintf(szTemp, "%s: %s\n", g_pLTClient->GetStringData(hTemp), m_pServer->GetStringValue("mapname"));
+#endif
 	szGeneral += szTemp;
 	g_pLTClient->FreeString(hTemp);
 
@@ -296,7 +325,13 @@ void CFolderJoinInfo::BuildGeneralString(std::string &szGeneral)
 
 	while(pPlayer)
 	{
+#ifdef AVP2SRC_MODERN
+		// M-31: (as above) the player's name, and a race number that may
+		// not be a race
+		M31_Format(szTemp, sizeof(szTemp), "  %s (%s)\n", pPlayer->GetName(), M31_TeamName(hTeams, pPlayer->GetRace()));
+#else
 		sprintf(szTemp, "  %s (%s)\n", pPlayer->GetName(), g_pLTClient->GetStringData(hTeams[pPlayer->GetRace()]));
+#endif
 		szGeneral += szTemp;
 
 //		pPlayer->GetFrags()
@@ -357,6 +392,74 @@ void CFolderJoinInfo::BuildSetupString(std::string &szSetup)
 	HSTRING hOff = g_pLTClient->FormatString(IDS_OFF);
 
 
+#ifdef AVP2SRC_MODERN
+	// M-31: RETAIL BUG: each race number comes from the server's GameSpy
+	// reply, and retail used it as the index of hTeams as it was
+	switch(gt.Get())
+	{
+		case MP_DM:
+		case MP_TEAMDM:
+		{
+			M31_Format(szTemp, sizeof(szTemp), "%s: %d\n%s: %d\n%s: %d\n%s: %d\n%s: %d\n%s: %d\n%s: %d\n%s: %s",
+						g_pLTClient->GetStringData(hMaxMarines), m_pServer->GetIntValue("maxm", 0),
+						g_pLTClient->GetStringData(hMaxAliens), m_pServer->GetIntValue("maxa", 0),
+						g_pLTClient->GetStringData(hMaxPredators), m_pServer->GetIntValue("maxp", 0),
+						g_pLTClient->GetStringData(hMaxCorporates), m_pServer->GetIntValue("maxc", 0),
+						g_pLTClient->GetStringData(hFragLimit), m_pServer->GetIntValue("frags", 0),
+						g_pLTClient->GetStringData(hScoreLimit), m_pServer->GetIntValue("score", 0),
+						g_pLTClient->GetStringData(hTimeLimit), m_pServer->GetIntValue("time", 0) / 60,
+						g_pLTClient->GetStringData(hLifecycle), g_pLTClient->GetStringData(m_pServer->GetIntValue("lc", 0) ? hOn : hOff));
+			break;
+		}
+
+		case MP_HUNT:
+		{
+			M31_Format(szTemp, sizeof(szTemp), "%s: %s\n%s: %s\n%s: 1:%d\n%s: %d\n%s: %d",
+						g_pLTClient->GetStringData(hHunterRace), M31_TeamName(hTeams, m_pServer->GetIntValue("hrace", 0)),
+						g_pLTClient->GetStringData(hPreyRace), M31_TeamName(hTeams, m_pServer->GetIntValue("prace", 0)),
+						g_pLTClient->GetStringData(hHuntRatio), m_pServer->GetIntValue("ratio", 0),
+						g_pLTClient->GetStringData(hFragLimit), m_pServer->GetIntValue("frags", 0),
+						g_pLTClient->GetStringData(hTimeLimit), m_pServer->GetIntValue("time", 0) / 60);
+			break;
+		}
+
+		case MP_SURVIVOR:
+		{
+			M31_Format(szTemp, sizeof(szTemp), "%s: %s\n%s: %s\n%s: %d\n%s: %d\n%s: %d",
+						g_pLTClient->GetStringData(hSurvivorRace), M31_TeamName(hTeams, m_pServer->GetIntValue("srace", 0)),
+						g_pLTClient->GetStringData(hMutateRace), M31_TeamName(hTeams, m_pServer->GetIntValue("mrace", 0)),
+						g_pLTClient->GetStringData(hScoreLimit), m_pServer->GetIntValue("score", 0),
+						g_pLTClient->GetStringData(hRoundLimit), m_pServer->GetIntValue("rounds", 0),
+						g_pLTClient->GetStringData(hRoundTime), m_pServer->GetIntValue("time", 0) / 60);
+			break;
+		}
+
+		case MP_OVERRUN:
+		{
+			M31_Format(szTemp, sizeof(szTemp), "%s: %s\n%s: %d\n%s: %s\n%s: %d\n%s: %d\n%s: %d",
+						g_pLTClient->GetStringData(hDefenderRace), M31_TeamName(hTeams, m_pServer->GetIntValue("drace", 0)),
+						g_pLTClient->GetStringData(hDefenderLives), m_pServer->GetIntValue("dlive", 0),
+						g_pLTClient->GetStringData(hAttackerRace), M31_TeamName(hTeams, m_pServer->GetIntValue("arace", 0)),
+						g_pLTClient->GetStringData(hAttackerLives), m_pServer->GetIntValue("alive", 0),
+						g_pLTClient->GetStringData(hRoundLimit), m_pServer->GetIntValue("rounds", 0),
+						g_pLTClient->GetStringData(hRoundTime), m_pServer->GetIntValue("time", 0) / 60);
+			break;
+		}
+
+		case MP_EVAC:
+		{
+			M31_Format(szTemp, sizeof(szTemp), "%s: %s\n%s: %d\n%s: %s\n%s: %d\n%s: %d\n%s: %d",
+						g_pLTClient->GetStringData(hEvacRace), M31_TeamName(hTeams, m_pServer->GetIntValue("drace", 0)),
+						g_pLTClient->GetStringData(hEvacLives), m_pServer->GetIntValue("dlive", 0),
+						g_pLTClient->GetStringData(hAttackerRace), M31_TeamName(hTeams, m_pServer->GetIntValue("arace", 0)),
+						g_pLTClient->GetStringData(hAttackerLives), m_pServer->GetIntValue("alive", 0),
+						g_pLTClient->GetStringData(hRoundLimit), m_pServer->GetIntValue("rounds", 0),
+						g_pLTClient->GetStringData(hRoundTime), m_pServer->GetIntValue("time", 0) / 60);
+			break;
+		}
+	}
+
+#else
 	switch(gt.Get())
 	{
 		case MP_DM:
@@ -421,6 +524,7 @@ void CFolderJoinInfo::BuildSetupString(std::string &szSetup)
 		}
 	}
 
+#endif
 
 	szSetup += szTemp;
 

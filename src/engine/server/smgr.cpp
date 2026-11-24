@@ -5652,7 +5652,14 @@ void si_BPrint(char* pMsg, ...)
 
 	va_start(marker, pMsg);
 	_vsnprintf(msg, sizeof(msg) - 1, pMsg, marker);
+#ifdef AVP2SRC_MODERN
+	// M-31: RETAIL BUG: as CLTServer::CPrint, the formatted line went to
+	// sm_BroadcastPrintf as a format again
+	msg[sizeof(msg) - 1] = '\0';
+	sm_BroadcastPrintf("%s", msg);
+#else
 	sm_BroadcastPrintf(msg);
+#endif
 }
 
 LTRESULT si_GetSkyDef(SkyDef* pDef)

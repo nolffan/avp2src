@@ -26,6 +26,9 @@
 #include "MultiplayerClientMgr.h"
 #include "ClientButeMgr.h"
 #include "CheatMgr.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m31_nettext.h"	// M-31: network text, bounded
+#endif
 
 CMessageMgr*	g_pMessageMgr	= LTNULL;
 
@@ -801,11 +804,21 @@ void CMessageMgr::AddMessage(char *szMsg, HLTCOLOR clrMsg, char *szFrom, HLTCOLO
 
 
 	// Now fill in the message for the last slot
+#ifdef AVP2SRC_MODERN
+	// M-31: RETAIL BUG: a chat line from the server can be 255 characters
+	// (MultiplayerClientMgr reads 256 bytes), and szMsg holds 129; cut it
+	M31_Copy(m_Messages[nIndex].szMsg, sizeof(m_Messages[nIndex].szMsg), szMsg);
+#else
 	strcpy(m_Messages[nIndex].szMsg, szMsg);
+#endif
 	m_Messages[nIndex].clrMsg = clrMsg;
 
 	if(szFrom)
+#ifdef AVP2SRC_MODERN
+		M31_Format(m_Messages[nIndex].szFrom, sizeof(m_Messages[nIndex].szFrom), "%s:  ", szFrom);	// M-31
+#else
 		sprintf(m_Messages[nIndex].szFrom, "%s:  ", szFrom);
+#endif
 	else
 		m_Messages[nIndex].szFrom[0] = '\0';
 
