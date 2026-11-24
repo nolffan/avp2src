@@ -38,6 +38,7 @@
 #include "..\..\modern\cshell\m6_mouse.h"		// M-6: raw mouse input
 #include "..\..\modern\cshell\m25_console.h"	// M-25: the console
 #include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
+#include "..\..\modern\cshell\m33_joinlog.h"	// M-33: the join log
 #endif
 #ifdef PRIMAL_HUNT
 #include "TurretInfoMgr.h"
@@ -1766,6 +1767,11 @@ DBOOL CInterfaceMgr::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 
 		case LTEVENT_DISCONNECT :
 		{
+#ifdef AVP2SRC_MODERN
+			// M-33: the join log
+			if (g_pGameClientShell->IsMultiplayerGame())
+				M33_OnDisconnect(m_nDisconnectError, dwParam);
+#endif
 			if(	g_pGameClientShell->IsMultiplayerGame() &&
 				((m_eGameState == GS_PLAYING) || (m_eGameState == GS_LOADINGLEVEL) || (m_eGameState == GS_FOLDER)))
 			{

@@ -82,6 +82,10 @@
 #include "..\..\modern\cshell\m25_console.h"		// M-25: the console
 #define M30_LOADPROMPT_IMPLEMENTATION
 #include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
+#include "..\..\modern\cshell\m33_joinlog.h"		// M-33: the join log
+#endif
+#ifdef AVP2SRC_MODERN
+M33Server g_M33Server = { "", 0, "", LTFALSE };	// M-33: the server of the last join
 #endif
 
 static _timeb g_StartTimeB;
@@ -6333,8 +6337,14 @@ LTRESULT CGameClientShell::JoinMultiplayerGameAtIP(const char *szIP, uint16 port
 	request.m_ClientDataLen = sizeof(cd);
 
 
+#ifdef AVP2SRC_MODERN
+	M33_OnJoin(szIP, port, szPassword);	// M-33: the join log
+#endif
 	// Try to start it up!! Varoom varoom!
 	DRESULT dr = g_pLTClient->StartGame(&request);
+#ifdef AVP2SRC_MODERN
+	M33_OnJoinResult(dr);
+#endif
 
 	if(dr != LT_OK)
 	{
