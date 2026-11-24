@@ -1427,6 +1427,22 @@ BOOL CServerDlg::AddResources( )
 	CString sVersion;
 	sVersion.LoadString( IDS_APPVERSION );
 
+#ifdef AVP2SRC_MODERN
+	// M-38: AvP2's install directory from the registry, as retail; when the
+	// registry does not have it, AvP2 beside Primal Hunt (..\AVP2, as the
+	// build installs the two games, and as the launchers find it: M-8)
+	char szInstallDir[256];
+	szInstallDir[0] = '\0';
+	DWORD dwSize = 255;
+	if( !regMgr.OpenKey( HKEY_LOCAL_MACHINE, "SOFTWARE", "Monolith Productions",
+			( char* )( LPCTSTR )sAvP2Name, ( char* )( LPCTSTR )sVersion ) ||
+		!regMgr.GetField( "InstallDir", szInstallDir, dwSize ) || !szInstallDir[0] )
+	{
+		if( !CWinUtil::FileExist( "..\\AVP2\\avp2.rez" ))
+			return FALSE;
+		strcpy( szInstallDir, "..\\AVP2\\" );
+	}
+#else
 	if( !regMgr.OpenKey( HKEY_LOCAL_MACHINE, "SOFTWARE", "Monolith Productions",
 		( char* )( LPCTSTR )sAvP2Name, ( char* )( LPCTSTR )sVersion ))
 		return FALSE;
@@ -1435,6 +1451,7 @@ BOOL CServerDlg::AddResources( )
 	DWORD dwSize = 255;
 	if( !regMgr.GetField( "InstallDir", szInstallDir, dwSize ) || !szInstallDir[0] )
 		return FALSE;
+#endif
 
 	if( szInstallDir[strlen( szInstallDir ) - 1] != '\\' && szInstallDir[strlen( szInstallDir ) - 1] != '/' )
 		strcat( szInstallDir, "\\" );

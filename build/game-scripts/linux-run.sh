@@ -45,13 +45,16 @@
 #   WINE         the wine binary (default: wine)
 #   WINEDEBUG    Wine's log channels (default: fixme-all)
 #
-# The launchers expect what the retail setups left behind, and this script
-# writes it into its Wine prefix: the registry values under
+# The legacy build's launchers expect what the retail setups left behind,
+# and this script writes it into its Wine prefix: the registry values under
 # HKLM\Software\Monolith Productions\Aliens vs. Predator 2\1.0 (InstallDir:
 # AVP2/; "Update Command Line": the 1.0.9.6 patch's archive) and
 # HKLM\Software\Third Law Interactive\Aliens versus Predator 2: Primal
 # Hunt\1.0 (InstallDir: PrimalHunt/). Primal Hunt's launcher will not start
-# without AvP2's InstallDir. On the first run each game's autoexec.cfg --
+# without AvP2's InstallDir. The modern build needs none of them (its
+# launchers find AvP2 beside Primal Hunt and the 1.0.9.6 archive in AVP2/,
+# and keep their options in launcher.ini), and this script writes nothing to
+# the registry for it. On the first run each game's autoexec.cfg --
 # its settings, rewritten on every exit -- starts as the shipped one.
 #
 # Sound: the games use the Miles Sound System (mss32.dll) through
@@ -114,6 +117,8 @@ done
 # while the launchers, 32-bit programs, read HKLM\Software through the
 # 32-bit one (Wow6432Node). (A 32-bit prefix has one view; the /reg:64 write
 # then fails, harmlessly.)
+# (the legacy build only: the header)
+if [ "$MODERN" != 1 ]; then
 reg() { "$WINE" reg add "$@" /reg:32 /f >/dev/null 2>&1
         "$WINE" reg add "$@" /reg:64 /f >/dev/null 2>&1 || true; }
 AVP2KEY='HKLM\Software\Monolith Productions\Aliens vs. Predator 2\1.0'
@@ -121,6 +126,7 @@ PHKEY='HKLM\Software\Third Law Interactive\Aliens versus Predator 2: Primal Hunt
 reg "$AVP2KEY" /v InstallDir /t REG_SZ /d "$("$WINE" winepath -w "$HERE/AVP2" 2>/dev/null)"
 reg "$AVP2KEY" /v 'Update Command Line' /t REG_SZ /d '-rez AVP2P1.REZ'
 reg "$PHKEY" /v InstallDir /t REG_SZ /d "$("$WINE" winepath -w "$HERE/PrimalHunt" 2>/dev/null)"
+fi
 
 cd "$GAME"
 [ -z "$LAUNCHER" ] || exec "$WINE" @LAUNCHER@ "$@"

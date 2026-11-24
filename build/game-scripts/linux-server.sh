@@ -157,9 +157,12 @@ ondisplay() {
 }
 
 # The registry values of the retail setups, as linux-run-avp2.sh writes
-# them: Primal Hunt's server finds AvP2's archives by AvP2's InstallDir.
-# Both views (linux-run-avp2.sh tells why).
+# them: the legacy build's Primal Hunt server finds AvP2's archives by
+# AvP2's InstallDir. Both views (linux-run-avp2.sh tells why). The modern
+# build's server finds AvP2 beside it (..\AVP2) when the registry does not
+# name it, and this script writes nothing to the registry for it.
 [ -d "$WINEPREFIX/dosdevices" ] || ondisplay "$WINE" wineboot -i >/dev/null 2>&1 || true
+if [ "$MODERN" != 1 ]; then
 reg() { "$WINE" reg add "$@" /reg:32 /f >/dev/null 2>&1
         "$WINE" reg add "$@" /reg:64 /f >/dev/null 2>&1 || true; }
 AVP2KEY='HKLM\Software\Monolith Productions\Aliens vs. Predator 2\1.0'
@@ -167,6 +170,7 @@ PHKEY='HKLM\Software\Third Law Interactive\Aliens versus Predator 2: Primal Hunt
 reg "$AVP2KEY" /v InstallDir /t REG_SZ /d "$("$WINE" winepath -w "$HERE/AVP2" 2>/dev/null)"
 reg "$AVP2KEY" /v 'Update Command Line' /t REG_SZ /d '-rez AVP2P1.REZ'
 reg "$PHKEY" /v InstallDir /t REG_SZ /d "$("$WINE" winepath -w "$HERE/PrimalHunt" 2>/dev/null)"
+fi
 # The registry commands above run with no display, and they start a Wine
 # server whose desktop has no display. Wait until it stops: when headless,
 # a server program that connects to it crashes ("Unhandled page fault").
