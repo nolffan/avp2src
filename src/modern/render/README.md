@@ -76,7 +76,8 @@ The engine calls the renderer from more than one thread. While a level
 loads, the loading screen draws whole frames from a thread of its own
 (`LoadingScreen.cpp`, `CLoadingScreen::RunThread`), and the main thread
 binds textures and makes surfaces at the same time. Thus each way into the
-renderer (each `RenderStruct` slot, the `FillScreenRect` hook, and the
+renderer (each `RenderStruct` slot, the `FillScreenRect` and
+`SolidColorToScreen` hooks, and the
 `Blt` and `BltFast` of the movie stand-ins) holds one recursive lock for
 all of its call (`MRLock`, `mr.h`). The device is made with
 `D3DCREATE_MULTITHREADED`. A new way in must hold the lock too.

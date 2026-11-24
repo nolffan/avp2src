@@ -1213,6 +1213,79 @@ LTRESULT cis_TransparentDrawQ40C(LTBOOL bOverlap, void* pSrcBits, void* pDestBit
                                  uint32 nSrcPitch, uint32 nDestPitch,
                                  LTRect* pSrcRect, LTRect* pDestRect); // 0x0040d710
 
+#ifdef AVP2SRC_MODERN
+// M-29: solid-colour draws onto the screen go to the renderer.
+// DrawSurfaceSolidColor (LithSystemFont text, as the "Quick Save" message,
+// and the crosshair) and ScaleSurfaceToSurfaceSolidColor onto the screen
+// have no renderer path in the retail engine: they lock the whole screen
+// and write the pixels in software, one lock for each draw.  A renderer
+// that offers the draw (d3d9.ren: GetRenderObject("SolidColorToScreen"),
+// src/modern/render/; our d3d.ren has none) does it there instead.  It
+// gets the BlitToScreen request (the key in m_TransColor) and the fill
+// colour, both in the screen format, as cis_SolidColorDraw uses them.
+// The rects come clipped.  Returns LTFALSE (and the caller does the retail draw) when the
+// renderer has no such draw or it fails.
+struct CisRenderHookQ40C
+{
+	uint8   m_pad_00[0xc0];
+	void*  (*GetRenderObject)(const char* pName);                   // 0x0c0 (warpblit.cpp)
+};
+
+// The source pixel of each screen pixel, for a scaled draw (16.16): column
+// n of the destination takes source column (m_nU + n * m_nDU) >> 16, row n
+// source row (m_nV + n * m_nDV) >> 16.  ScaleSurfaceToSurfaceSolidColor
+// (clientinterface.cpp) gives the retail warp's steps.  NULL: one for one.
+struct CisSolidStepQ40C
+{
+	int32 m_nU, m_nDU;
+	int32 m_nV, m_nDV;
+};
+
+typedef LTBOOL (__cdecl *SolidColorToScreenFnQ40C)(CisBlitRequestQ40C* pRequest,
+                                                   uint32 nFillPixel,
+                                                   CisSolidStepQ40C* pStep);
+
+LTBOOL cis_ModernSolidToScreen(CSurfaceQ40C* hSrc, LTRect* pSrcRect, LTRect* pDestRect,
+                               CisSolidStepQ40C* pStep)
+{
+	SolidColorToScreenFnQ40C fnDraw;
+	CisBlitRequestQ40C       request;
+	uint32                   nTrans, nFill;
+
+	if (!g_pRender || !hSrc
+	    || (g_ScreenFormat.m_nBitDepth != 2 && g_ScreenFormat.m_nBitDepth != 3))
+		return LTFALSE;
+
+	fnDraw = (SolidColorToScreenFnQ40C)
+		((CisRenderHookQ40C*)g_pRender)->GetRenderObject("SolidColorToScreen");
+	if (!fnDraw)
+		return LTFALSE;
+
+	// 16-bit screens compare and write the low word, as cis_SolidColorDraw.
+	nTrans = g_TransColorQ40C;
+	nFill  = g_FillColorQ40C;
+	if (g_ScreenFormat.m_nBitDepth == 2)
+	{
+		nTrans &= 0xffff;
+		nFill  &= 0xffff;
+	}
+
+	cis_OptimizeIfDirtyQ40C(hSrc);
+
+	request.m_pSurfaceData = hSrc->m_pRenderData;
+	request.m_bTransparent = 1;
+	request.m_TransColor   = nTrans;
+	request.m_pSrcRect     = pSrcRect;
+	request.m_pDestRect    = pDestRect;
+	request.m_fAlpha       = hSrc->m_fAlpha;
+	if (!fnDraw(&request, nFill, pStep))
+		return LTFALSE;
+
+	g_ScreenSurface.m_nFlags |= 4;
+	return LTTRUE;
+}
+#endif
+
 LTRESULT cis_DoDrawSurfaceToSurfaceQ40C(CSurfaceQ40C* hDest, CSurfaceQ40C* hSrc,
                                         LTRect* pSrcRect, int destX, int destY,
                                         BlitFnQ40C pfnBlit)
@@ -1281,6 +1354,15 @@ LTRESULT cis_DoDrawSurfaceToSurfaceQ40C(CSurfaceQ40C* hDest, CSurfaceQ40C* hSrc,
 				}
 			}
 		}
+
+#ifdef AVP2SRC_MODERN
+		// M-29: a solid-colour draw onto the screen goes to the renderer.
+		if (pfnBlit == cis_SolidColorDrawQ40C && hDest == &g_ScreenSurface
+		    && cis_ModernSolidToScreen(hSrc, &srcRect, &destRect, LTNULL))
+		{
+			return LT_OK;
+		}
+#endif
 
 		bOk = LTFALSE;                                    // 0x0040d446
 

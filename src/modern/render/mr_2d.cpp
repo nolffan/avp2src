@@ -29,6 +29,15 @@ struct MRSurface {
     bool     m_bMaskDirty;
     bool     m_bMaskKeyed;
     uint32_t m_nMaskKey;
+    // A scaled solid-colour draw's texture (see mr_UploadScaledMask): the
+    // draw's source pixels at the destination size, white where not keyed.
+    uint32_t m_TexScaled;
+    uint32_t m_nScaledGen;
+    bool     m_bScaledDirty;
+    uint32_t m_nScaledKey;
+    int32_t  m_ScaledStep[4];
+    uint32_t m_nScaledW, m_nScaledH;
+    uint32_t m_nScaledTexW, m_nScaledTexH;
 };
 
 static uint32_t mr_Pow2(uint32_t n)
@@ -121,7 +130,7 @@ void* mr_CreateSurface(uint32_t nWidth, uint32_t nHeight)
         free(s);
         return NULL;
     }
-    s->m_bDirty = s->m_bMaskDirty = true;
+    s->m_bDirty = s->m_bMaskDirty = s->m_bScaledDirty = true;
     return s;
 }
 
@@ -134,6 +143,9 @@ static void mr_FreeSurfaceTexture(MRSurface* s)
     if (s->m_TexMask && s->m_nMaskGen == g.nContextGen && g.bContext)
         rd_DeleteTexture(s->m_TexMask);
     s->m_TexMask = 0;
+    if (s->m_TexScaled && s->m_nScaledGen == g.nContextGen && g.bContext)
+        rd_DeleteTexture(s->m_TexScaled);
+    s->m_TexScaled = 0;
 }
 
 void mr_DeleteSurface(void* pSurface)
@@ -160,7 +172,7 @@ void* mr_LockSurface(void* pSurface)
     MRSurface* s = (MRSurface*)pSurface;
     if (!s)
         return NULL;
-    s->m_bDirty = s->m_bMaskDirty = true;
+    s->m_bDirty = s->m_bMaskDirty = s->m_bScaledDirty = true;
     return s->m_pPixels;
 }
 
@@ -377,6 +389,158 @@ void mr_BlitToScreen(RenderBlitRequest* pRequest)
                  mr_UploadMask(s, (pRequest->m_bTransparent & 1) != 0, pRequest->m_TransColor);
     mr_DrawSurfaceQuad(s, fSrc, fCorners, pRequest->m_fAlpha,
                         bScaled && cvi(CV_FilterOptimized), bMask);
+}
+
+// A scaled solid-colour draw: the source pixels the retail warp reads for
+// each destination pixel, w x h, into a texture drawn one for one. (Texture
+// coordinates scaled on the device cannot give the warp's 16.16 steps
+// exactly: a device that keeps few bits of the coordinate takes the next
+// texel where the warp is just under a texel edge.) Kept while the surface,
+// the key and the steps stay the same, as for the crosshair each frame.
+static bool mr_UploadScaledMask(MRSurface* s, uint32_t nKey, const MRSolidStep* p, uint32_t w, uint32_t h)
+{
+    if (s->m_TexScaled && s->m_nScaledGen != g.nContextGen)
+        s->m_TexScaled = 0;
+    nKey &= g.nBitDepth == 16 ? 0xffff : 0x00ffffff;
+    if (s->m_TexScaled && !s->m_bScaledDirty && s->m_nScaledKey == nKey && s->m_nScaledW == w &&
+        s->m_nScaledH == h && s->m_ScaledStep[0] == p->nU && s->m_ScaledStep[1] == p->nDU &&
+        s->m_ScaledStep[2] == p->nV && s->m_ScaledStep[3] == p->nDV)
+        return true;
+
+    uint32_t tw = mr_Pow2(w), th = mr_Pow2(h);
+    if ((int)tw > g_RDCaps.nMaxTextureSize || (int)th > g_RDCaps.nMaxTextureSize)
+        return false;
+    uint32_t* pRGBA = (uint32_t*)calloc(tw * th, 4);
+    if (!pRGBA)
+        return false;
+    int32_t v = p->nV;
+    for (uint32_t y = 0; y < h; y++, v += p->nDV)
+    {
+        uint32_t sy = (uint32_t)(v >> 16);
+        int32_t u = p->nU;
+        for (uint32_t x = 0; x < w; x++, u += p->nDU)
+        {
+            uint32_t sx = (uint32_t)(u >> 16);
+            if (sx >= s->m_nWidth || sy >= s->m_nHeight)
+                continue;
+            const uint8_t* pRow = s->m_pPixels + sy * s->m_nPitch;
+            uint32_t px = g.nBitDepth == 16 ? ((const uint16_t*)pRow)[sx] : (((const uint32_t*)pRow)[sx] & 0x00ffffff);
+            if (px != nKey)
+                pRGBA[y * tw + x] = 0xffffffff;
+        }
+    }
+    if (!s->m_TexScaled || s->m_nScaledTexW != tw || s->m_nScaledTexH != th)
+    {
+        if (s->m_TexScaled)
+            rd_DeleteTexture(s->m_TexScaled);
+        s->m_TexScaled = rd_GenTexture();
+        rd_BindTexture(s->m_TexScaled);
+        rd_TexWrap(false, false);
+        rd_TexMaxLevel(0);
+        rd_TexImage(0, RD_FMT_RGBA8, tw, th, RD_PIX_BGRA, pRGBA);
+        s->m_nScaledTexW = tw;
+        s->m_nScaledTexH = th;
+    }
+    else
+    {
+        rd_BindTexture(s->m_TexScaled);
+        rd_TexSubImage(0, 0, 0, tw, th, RD_PIX_BGRA, pRGBA);
+    }
+    free(pRGBA);
+    s->m_nScaledGen = g.nContextGen;
+    s->m_bScaledDirty = false;
+    s->m_nScaledKey = nKey;
+    s->m_ScaledStep[0] = p->nU;
+    s->m_ScaledStep[1] = p->nDU;
+    s->m_ScaledStep[2] = p->nV;
+    s->m_ScaledStep[3] = p->nDV;
+    s->m_nScaledW = w;
+    s->m_nScaledH = h;
+    return true;
+}
+
+// The modern engine's DrawSurfaceSolidColor and ScaleSurfaceToSurfaceSolidColor
+// onto the screen (cissurf.cpp, cis_ModernSolidToScreen): each source pixel
+// that is not the key becomes nFill on the screen, as the retail software
+// draw writes it. Thus no blend, no alpha and no optimized-2D colour. The
+// retail path locks the whole screen instead (LithSystemFont text, the
+// crosshair). The rects come clipped. pStep (16.16) gives the source pixel
+// of each screen pixel: column n takes source column (nU + n x nDU) >> 16,
+// row n source row (nV + n x nDV) >> 16, as the retail warp calculates it
+// for a scaled draw. Without pStep the draw is one for one. The key and
+// nFill are in the screen format.
+LTBOOL mr_SolidColorToScreen(RenderBlitRequest* pRequest, uint32_t nFill, const MRSolidStep* pStep)
+{
+    if (!g.bContext || !pRequest || !pRequest->m_pSurfaceData || g.pScreenLock)
+        return 0;
+    MRSurface* s = (MRSurface*)pRequest->m_pSurfaceData;
+    const LTRect* src = pRequest->m_pSrcRect;
+    const LTRect* dst = pRequest->m_pDestRect;
+    if (!src || !dst)
+        return 0;
+    mr_Debug(4, "solid %ux%u (%d,%d,%d,%d)->(%d,%d,%d,%d) key %06x fill %06x step %d",
+              s->m_nWidth, s->m_nHeight, src->left, src->top, src->right, src->bottom,
+              dst->left, dst->top, dst->right, dst->bottom, pRequest->m_TransColor, nFill,
+              pStep ? pStep->nDU : 0x10000);
+    int w = dst->right - dst->left, h = dst->bottom - dst->top;
+    if (w <= 0 || h <= 0)
+        return 1;
+    // One for one: the surface's own texture, each pixel centre on a texel centre.
+    int sx = src->left, sy = src->top;
+    bool bScaled = false;
+    if (pStep)
+    {
+        bScaled = pStep->nDU != 0x10000 || pStep->nDV != 0x10000 ||
+                  (pStep->nU & 0xffff) || (pStep->nV & 0xffff);
+        sx = pStep->nU >> 16;
+        sy = pStep->nV >> 16;
+    }
+    float u0, v0, u1, v1;
+    uint32_t nTex;
+    if (bScaled)
+    {
+        if (!mr_UploadScaledMask(s, pRequest->m_TransColor, pStep, w, h))
+            return 0;
+        nTex = s->m_TexScaled;
+        u0 = 0.0f;
+        v0 = 0.0f;
+        u1 = (float)w / s->m_nScaledTexW;
+        v1 = (float)h / s->m_nScaledTexH;
+    }
+    else
+    {
+        if (!mr_UploadSurface(s, true, pRequest->m_TransColor))
+            return 0;
+        nTex = s->m_Tex;
+        u0 = (float)sx / s->m_nTexWidth;
+        v0 = (float)sy / s->m_nTexHeight;
+        u1 = (float)(sx + w) / s->m_nTexWidth;
+        v1 = (float)(sy + h) / s->m_nTexHeight;
+    }
+    uint32_t argb = g.nBitDepth == 16 ? mr_PixelToARGB(nFill & 0xffff) : nFill;
+    mr_SyncScreen(false);
+    mr_Begin2D();
+    rd_Enable(RD_TEXTURE_2D);
+    rd_BindTexture(nTex);
+    rd_TexFilter(RD_NEAREST, RD_NEAREST);
+    // The colour is the fill (the vertex colour), the alpha the key test.
+    RDCombine c = { RD_OP_REPLACE, RD_ARG_PRIMARY, RD_ARG_PRIMARY, 1.0f,
+                    RD_OP_REPLACE, RD_ARG_TEXTURE, RD_ARG_TEXTURE };
+    rd_TexCombine(c);
+    rd_Disable(RD_BLEND);
+    rd_Enable(RD_ALPHA_TEST);
+    rd_AlphaGreater(0.0f);
+    rd_Color4f(((argb >> 16) & 0xff) / 255.0f, ((argb >> 8) & 0xff) / 255.0f,
+               (argb & 0xff) / 255.0f, 1.0f);
+    float x0 = (float)dst->left, y0 = (float)dst->top, x1 = (float)dst->right, y1 = (float)dst->bottom;
+    rd_Begin(RD_QUADS);
+    rd_TexCoord2f(u0, v0); rd_Vertex2f(x0, y0);
+    rd_TexCoord2f(u1, v0); rd_Vertex2f(x1, y0);
+    rd_TexCoord2f(u1, v1); rd_Vertex2f(x1, y1);
+    rd_TexCoord2f(u0, v1); rd_Vertex2f(x0, y1);
+    rd_End();
+    mr_End2D();
+    return 1;
 }
 
 // TransformSurfaceToSurface onto the screen: four warp points, the source
@@ -659,5 +823,5 @@ void mr_BlitFromScreen(RenderBlitRequest* pRequest)
         }
     }
     free(pRead);
-    s->m_bDirty = s->m_bMaskDirty = true;
+    s->m_bDirty = s->m_bMaskDirty = s->m_bScaledDirty = true;
 }

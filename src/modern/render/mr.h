@@ -158,6 +158,10 @@ void  mr_BlitFromScreen(RenderBlitRequest* pRequest);
 LTBOOL mr_StartOptimized2D(void);
 void  mr_EndOptimized2D(void);
 LTBOOL mr_FillScreenRect(LTRect* pRect, uint32_t nPixel);
+// The engine's source steps for a scaled solid-colour draw (cissurf.cpp's
+// CisSolidStepQ40C): 16.16, column 0 and per column, row 0 and per row.
+struct MRSolidStep { int32_t nU, nDU, nV, nDV; };
+LTBOOL mr_SolidColorToScreen(RenderBlitRequest* pRequest, uint32_t nFill, const MRSolidStep* pStep);
 // The screen lock's shadow buffer to the device before anything else draws
 // on or reads the screen; bKeep when the back buffer does not change.
 void  mr_SyncScreen(bool bKeep);

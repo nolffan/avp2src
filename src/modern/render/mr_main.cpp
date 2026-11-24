@@ -506,12 +506,15 @@ static void r_RenderCommand(int argc, char** argv)
 // screen-mode movie players want DirectDraw ("LPDIRECTDRAW",
 // "BACKBUFFER"): they get mr_movie.cpp's stand-ins. The modern engine asks
 // for "FillScreenRect" (warpblit.cpp, ci_ModernFillScreen: nolfsrc's
-// M-P0-03).
+// M-P0-03) and "SolidColorToScreen" (cissurf.cpp, cis_ModernSolidToScreen).
 static constexpr char mrn_FillScreenRect[] = "FillScreenRect";
+static constexpr char mrn_SolidColorToScreen[] = "SolidColorToScreen";
 static void* r_GetHook(const char* pName)
 {
     if (pName && !_stricmp(pName, "FillScreenRect"))
         return (void*)&MRLocked<mrn_FillScreenRect, mr_FillScreenRect>::Call;
+    if (pName && !_stricmp(pName, "SolidColorToScreen"))
+        return (void*)&MRLocked<mrn_SolidColorToScreen, mr_SolidColorToScreen>::Call;
     return mr_MovieHook(pName);
 }
 

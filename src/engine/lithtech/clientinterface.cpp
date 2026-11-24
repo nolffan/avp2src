@@ -1911,6 +1911,18 @@ LTBOOL cis_ClipScaledBlitQ438(int nSrcWidth, int nSrcHeight,
                               int nDstRight, int nDstBottom,
                               LTRect* pSrcOut, LTRect* pDstOut);   // 0x0043a0e0
 
+#ifdef AVP2SRC_MODERN
+// M-29 (cissurf.cpp): the renderer's solid-colour draw onto the screen.
+// pStep gives the source pixel of each screen pixel (NULL: one for one).
+struct CisSolidStepQ40C
+{
+	int32 m_nU, m_nDU;                       // 16.16: column 0, and per column
+	int32 m_nV, m_nDV;                       // 16.16: row 0, and per row
+};
+LTBOOL cis_ModernSolidToScreen(CSurfaceQ40C* hSrc, LTRect* pSrcRect, LTRect* pDestRect,
+                               CisSolidStepQ40C* pStep);
+#endif
+
 LTRESULT sub_40dcc0(HSURFACE hDest, HSURFACE hSrc, LTRect* pDestRect,
                     LTRect* pSrcRect, int nMode, HLTCOLOR hTransColor,
                     HLTCOLOR hFillColor)
@@ -1968,6 +1980,52 @@ LTRESULT sub_40dcc0(HSURFACE hDest, HSURFACE hSrc, LTRect* pDestRect,
 				return LT_OK;
 			}
 		}
+
+#ifdef AVP2SRC_MODERN
+		// M-29: ScaleSurfaceToSurfaceSolidColor onto the screen goes to the
+		// renderer, with the colours converted as
+		// ci_WarpSurfaceToSurfaceSolidColor converts them.  The renderer
+		// gets the source pixel of each screen pixel exactly as the retail
+		// warp (sub_40e120, cis_SetupWarpEdges, cis_DrawWarp32SolidColor)
+		// calculates it: the source corners clamped to the surface less
+		// one pixel, 16.16 steps, the rows and the columns to the bottom
+		// and the right edge not drawn.  A destination that the warp
+		// clips (off the screen or on its last row or column), or a
+		// renderer with no such draw, gets the retail warp.
+		if (nMode == 2 && hDest == (HSURFACE)&g_ScreenSurface
+		    && destRect.left >= 0 && destRect.top >= 0
+		    && destRect.right > destRect.left && destRect.bottom > destRect.top
+		    && destRect.right <= (int)pDest->m_nWidth - 1
+		    && destRect.bottom <= (int)pDest->m_nHeight - 1)
+		{
+			CisSolidStepQ40C step;
+			LTRect           src;
+			float            fLeft, fTop, fRight, fBottom;
+
+			fLeft   = LTCLAMP((float)srcRect.left,   0.0f, (float)(pSrc->m_nWidth - 1));
+			fTop    = LTCLAMP((float)srcRect.top,    0.0f, (float)(pSrc->m_nHeight - 1));
+			fRight  = LTCLAMP((float)srcRect.right,  0.0f, (float)(pSrc->m_nWidth - 1));
+			fBottom = LTCLAMP((float)srcRect.bottom, 0.0f, (float)(pSrc->m_nHeight - 1));
+
+			step.m_nU  = (int32)(fLeft * 65536.0f);
+			step.m_nDU = ((int32)(fRight * 65536.0f) - step.m_nU)
+			             / (destRect.right - destRect.left);
+			step.m_nV  = (int32)(fTop * 65536.0f);
+			step.m_nDV = (int32)((fBottom - fTop)
+			                     / ((float)destRect.bottom - (float)destRect.top)
+			                     * 65536.0f);
+
+			src.left   = (int)fLeft;
+			src.top    = (int)fTop;
+			src.right  = (int)fRight;
+			src.bottom = (int)fBottom;
+
+			CI_FMCONVERT()->PValueToFormatColor((FMFormat*)&g_ScreenFormat, hTransColor, &g_TransColorQ40C);
+			CI_FMCONVERT()->PValueToFormatColor((FMFormat*)&g_ScreenFormat, hFillColor, &g_FillColorQ40C);
+			if (cis_ModernSolidToScreen((CSurfaceQ40C*)hSrc, &src, &destRect, &step))
+				return LT_OK;
+		}
+#endif
 
 		warpPts[0].dest_x   = (float)destRect.left;
 		warpPts[0].dest_y   = (float)destRect.top;
