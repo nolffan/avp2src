@@ -41,7 +41,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - The turn of the mouse look changes with the frame rate (M-6).
 - A window is placed for a frame that it does not have (M-9).
 - The engine bugs (M-B01..M-B09, M-B111).
-- The renderer bugs (M-B20..M-B26, M-B28).
+- The renderer bugs (M-B20..M-B26, M-B28, M-B29).
 - The bugs in the client shells and in lithshared (M-B40..M-B63, M-B108).
 - The bugs in the object DLLs and in the shared code (M-B70..M-B87).
 - The bugs in the launchers and in Launch.dll (M-B100..M-B107).
@@ -962,8 +962,10 @@ shadow image is empty. When a model has extra LODs, the shadow never
 uses the last LOD. The bug shows only with `ModelShadowProj` 1 (the
 default is 0).
 
-Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
-limits the LOD to the last LOD.
+Fixed in the modern build: drawmodelshadows.cpp, `DrawProjShadows` limits
+the LOD to the last LOD (`m_nLODs`), as the Direct3D 9 renderer
+(`d3d9.ren`, M-29) does. At the last LOD there is no next LOD, so the
+shadow does not blend LODs there; MODERN.md M-B29.
 
 ### A vision mode shows an old frame where the sky must be
 

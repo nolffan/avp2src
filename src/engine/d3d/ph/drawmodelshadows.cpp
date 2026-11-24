@@ -1201,6 +1201,9 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 	uint32 nShadows, i, j, k, nRes, iLOD, iPiece, nVerts, nTris;
 	float fDist, fMag, fSize, fRes, fScale, fMaxX, fMaxY, fUScale, fVScale, fHalf, fRadius;
 	float d1, d2;
+#ifdef AVP2SRC_MODERN
+	uint32 bBlendLOD;
+#endif
 
 	vObjPos = m_pInstance->m_Pos;
 	vDims = m_pInstance->m_Dims;
@@ -1256,8 +1259,17 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 	}
 
 	iLOD = m_iLOD + g_CV_ModelShadowProjLOD.m_nValue;
+#ifdef AVP2SRC_MODERN
+	// m_nLODs counts the LODs after the first, so the last LOD is
+	// m_nLODs (MODERN.md M-B29).
+	if (iLOD > m_pModel->m_nLODs)
+		iLOD = m_pModel->m_nLODs;
+#else
+	// RETAIL BUG: the limit is the last LOD but one. A model with no lower
+	// LODs gets -1 as an unsigned number, thus LOD 1, and no shadow.
 	if (iLOD >= m_pModel->m_nLODs - 1)
 		iLOD = m_pModel->m_nLODs - 1;
+#endif
 
 	fMag = vDims.Mag();
 	fSize = fMag + fMag;
@@ -1362,8 +1374,18 @@ void CD3DModelDraw::DrawProjShadows(uint32 nMaxShadows)
 				if (m_pInstance->m_HiddenPieces & (1 << iPiece))
 					continue;
 
+#ifdef AVP2SRC_MODERN
+				// The shadow can now use the last LOD, which has no next
+				// LOD to blend to. Do not blend then (M-B29).
+				bBlendLOD = m_bBlendLOD;
+				if (!pPrevLOD)
+					m_bBlendLOD = LTFALSE;
+#endif
 				TransformVerts(pLOD, pPrevLOD, pTLVerts, m_pfnGenSpecular, m_pModel->m_pTransforms,
 					vColorSum, false, &vMin, &vMax);
+#ifdef AVP2SRC_MODERN
+				m_bBlendLOD = bBlendLOD;
+#endif
 
 				pVert = pTLVerts;
 				nVerts = pLOD->m_nVerts;

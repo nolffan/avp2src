@@ -207,7 +207,7 @@ We used these options of the script:
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B28 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B29 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing. The user reported this on the first modern build: "the
 high framerate means all the timing is wrong". nolfsrc found the same
@@ -1176,7 +1176,7 @@ in its `#else`, or modern-only lines that the retail code does not have.
 | M-B08 | The CD driver forgets the current play list when the play list is removed | `src/engine/cdaudio/cdaudio.cpp` | From the code. The two games do not play CD audio in our tests (Wine has no Red Book drive; the music is DirectMusic and Miles). Thus, the tests do not get to the driver | done |
 | M-B09 | `sm_DetachClient` allocates the message that it sends | `src/engine/lithtech/ccobj.cpp`, `src/engine/server/smgr.cpp` | From the code. Only `ILTServer::AttachClient` gives a view client to a client, and the DLLs of the two games do not call it. Thus, play never gets to the detach | done |
 
-### Retail-bug fixes: the renderers (M-B20..M-B28)
+### Retail-bug fixes: the renderers (M-B20..M-B29)
 
 These are the `RETAIL_BUGS.md` entries in `src/engine/d3d/ph/` (the
 `d3d.ren` of the two games, if the row does not give a different file).
@@ -1197,6 +1197,7 @@ ModelWarble). We did not fix it.
 | M-B26 | The screen-space and lightmap-only polygon draws compare the vertex count with their 64-entry buffers ("A screen-space lightmap polygon is copied without checking its vertex count") | `drawlightmaps.cpp` (`d3d_DrawScreenLMPoly`, `d3d_DrawLightmapOnly`) | done |
 | M-B27 | The two model-shadow passes release the old stage-0 texture after they set it again. `GetTexture` adds a reference, and retail does not release it, so each shadow draw leaks one reference. `DrawProjShadows` and `DrawShadows` are not byte-identical, thus this has no RETAIL_BUGS.md entry | `drawmodelshadows.cpp` (`CD3DModelDraw::DrawShadows`, `CD3DModelDraw::DrawProjShadows`) | done |
 | M-B28 | The sky polygon lights all the vertices that it draws ("With FixTJunc, the dynamic lights do not light all the vertices of a sky polygon") | `d3d_skyobjects.cpp` (`d3d_LightSkyPoly`) | done |
+| M-B29 | The projected shadow limits its LOD to the last LOD ("A model with no lower LODs gets no projected shadow") | `drawmodelshadows.cpp` (`CD3DModelDraw::DrawProjShadows`) | done |
 
 Checked: the modern build compiles them (`make modern`), and the two
 games run on it (`build/playtest-avp2-marine.txt` and
@@ -1227,6 +1228,12 @@ code:
 - M-B28 shows only with `FixTJunc` 1 and a dynamic light near a sky
   polygon with T-junction vertices. Under Wine, with `FixTJunc` 1, the
   first Marine and Predator missions of AvP2 (outdoors, with a sky) run.
+- M-B29 shows only with `ModelShadowProj` 1. Under Wine, with
+  `ModelShadowProj` 1 and `ModelShadowProjShow` 1 (it shows the shadow
+  image on the screen), in the hangar of the first Marine mission: the
+  legacy build shows an empty (white) shadow image for the marines. The
+  modern build shows their shape. On the floor, we could not clearly
+  see a projected shadow with either build.
 
 ### Retail-bug fixes: the client shells and the lithshared libraries (M-B40..M-B63)
 
