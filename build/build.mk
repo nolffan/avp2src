@@ -1109,12 +1109,18 @@ LAUNCHER_LIBS := nafxcw.lib libcmt.lib kernel32.lib user32.lib gdi32.lib winspoo
 # twice (M8_DIRECT 1 or 0), tells them apart. The release build links
 # <image> alone, from the objects above, as before.
 MODERN_BUILD := $(findstring AVP2SRC_MODERN,$(AVP2SRC_CFLAGS))
+# The settings class of each launcher: RegMgr32.lib (the registry), or in
+# the modern build src/modern/launcher/m35_settings.cpp, the same class
+# with the values in launcher.ini beside the program (docs/MODERN.md M-35)
+# $(call launcher_reg,<object dir>) / $(call launcher_reglink,<object dir>)
+launcher_reg = $(if $(MODERN_BUILD),$(LAUNCHER)/$(1)/m35_settings.obj,$(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib)
+launcher_reglink = $(if $(MODERN_BUILD),$(1)\m35_settings.obj,$(1)\regmgr32\RegMgr32.lib)
 # $(call launcher_exe,<object dir>,<image>,<more objects>)
 define launcher_exe
 $(eval $(call tool,$(LAUNCHER)/$(1)/$(2),$(LAUNCHER_SRC:%.cpp=$(LAUNCHER)/$(1)/%.obj) $(addprefix $(LAUNCHER)/$(1)/,$(3)) $(LAUNCHER)/$(1)/launcher.res \
-    $(LAUNCHER)/$(1)/regmgr32/RegMgr32.lib | wine-drives,\
+    $(call launcher_reg,$(1)) | wine-drives,\
     cd $(LAUNCHER) && { printf '%s\n' $(call q,/nologo $(AVP2SRC_LDFLAGS) /subsystem:windows /machine:I386 /out:$(1)\$(2) \
-    /map:$(1)\$(basename $(2)).map $(addprefix $(1)\,$(LAUNCHER_SRC:.cpp=.obj) $(3)) $(1)\launcher.res $(1)\regmgr32\RegMgr32.lib $(LAUNCHER_LIBS)) \
+    /map:$(1)\$(basename $(2)).map $(addprefix $(1)\,$(LAUNCHER_SRC:.cpp=.obj) $(3)) $(1)\launcher.res $(call launcher_reglink,$(1)) $(LAUNCHER_LIBS)) \
     > $(ROOT)/$(LAUNCHER)/$(1)/$(2).rsp; } && \
     { $(ENV_GAME) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(LAUNCHER)/$(1)/$(2)).rsp' > $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt 2>&1 || \
       { grep -i 'error\|fatal' $(ROOT)/$(LAUNCHER)/$(1)/$(basename $(2))-link.txt | head -20 >&2; false; }; }))
@@ -1123,6 +1129,8 @@ endef
 define launcher_modern
 $(foreach e,game:1 launcher:0,$(eval $(call compile,$(LAUNCHER)/$(1)/m8_$(firstword $(subst :, ,$(e))).obj,$(LAUNCHER),..\modern\launcher\m8_entry.cpp,\
     $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LAUNCHER_CL) /D M8_DIRECT=$(lastword $(subst :, ,$(e))) /Fo$(1)/m8_$(firstword $(subst :, ,$(e))).obj,wine-drives)))
+$(eval $(call compile,$(LAUNCHER)/$(1)/m35_settings.obj,$(LAUNCHER),..\modern\launcher\m35_settings.cpp,\
+    $(ENV_GAME),$(V8966)/BIN/cl.exe,$(LAUNCHER_CL) /Fo$(1)/m35_settings.obj,wine-drives))
 $(call launcher_exe,$(1),$(2),m8_launcher.obj)
 endef
 # $(call launcher_link,<object dir>,<image>,<art directory>,<rc defines>,<launcher image>)
