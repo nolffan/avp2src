@@ -57,6 +57,7 @@ extern "C" __declspec(dllimport) DWORD __stdcall timeGetTime(void);
 #include "ServerRes.h"
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\object\m25_server.h"	// M-25: the console's messages
+#include "..\..\modern\object\m32_joincheck.h"	// M-32: the server enforces its refusals
 #endif
 
 // ----------------------------------------------------------------------- //
@@ -432,6 +433,10 @@ void CGameServerShell::OnRemoveClient(HCLIENT hClient)
 		pPlayer->SetClient(LTNULL);
 	}
 
+#ifdef AVP2SRC_MODERN
+	M32_Forget(hClient);	// M-32
+#endif
+
 	g_nNumClients--;
 }
 
@@ -447,6 +452,10 @@ void CGameServerShell::VerifyClient(HCLIENT hClient, void *pClientData, uint32 &
 {
 	if (!hClient || !pClientData)
 		return;
+#ifdef AVP2SRC_MODERN
+	// M-32: a new examination; each refusal below records itself
+	M32_SetRefused(hClient, LTFALSE);
+#endif
 
 	// If it's a multiplayer game... check for the correct password immediately
 	if(GetGameType().IsMultiplayer())
@@ -463,6 +472,9 @@ void CGameServerShell::VerifyClient(HCLIENT hClient, void *pClientData, uint32 &
 		if((nIndex >= 0) && !MPRestrict_IsClassAllowed(nIndex))
 		{
 			nVerifyCode = 0x10001;
+#ifdef AVP2SRC_MODERN
+			M32_SetRefused(hClient, LTTRUE);	// M-32
+#endif
 			return;
 		}
 #endif
@@ -474,14 +486,24 @@ void CGameServerShell::VerifyClient(HCLIENT hClient, void *pClientData, uint32 &
 			if(g_nNumClients > pInfo->m_nPlayerLimit)
 			{
 				nVerifyCode = LT_REJECTED;
+#ifdef AVP2SRC_MODERN
+				M32_SetRefused(hClient, LTTRUE);	// M-32
+#endif
 				return;
 			}
 
 			if(pInfo->m_bLocked)
 			{
+#ifdef AVP2SRC_MODERN
+				// M-32: (the client's password need not be terminated)
+				pData->m_szPassword[MAX_MP_PASSWORD_LENGTH - 1] = '\0';
+#endif
 				if(stricmp(pInfo->m_szPassword, pData->m_szPassword))
 				{
 					nVerifyCode = LT_ERROR;
+#ifdef AVP2SRC_MODERN
+					M32_SetRefused(hClient, LTTRUE);	// M-32
+#endif
 					return;
 				}
 			}
@@ -501,6 +523,20 @@ void CGameServerShell::VerifyClient(HCLIENT hClient, void *pClientData, uint32 &
 LPBASECLASS CGameServerShell::OnClientEnterWorld(HCLIENT hClient, void *pClientData, uint32 clientDataLen)
 {
 	if (!hClient) return LTNULL;
+#ifdef AVP2SRC_MODERN
+	// M-32: RETAIL BUG: the engine only tells a refused client to leave
+	// (with the world it sends), and the client refuses itself. A client
+	// that goes on gets into the world. Kick it here, at the next update.
+	// Also a client whose client data is not a whole MPClientData.
+	if (GetGameType().IsMultiplayer() && !(g_pLTServer->GetClientInfoFlags(hClient) & CIF_LOCAL))
+	{
+		if (M32_IsRefused(hClient) || !pClientData || clientDataLen != sizeof(MPClientData))
+		{
+			g_pLTServer->CPrint("A refused client (id %lu) entered the world: it is kicked", (unsigned long)g_pLTServer->GetClientID(hClient));
+			M32_KickLater(hClient);
+		}
+	}
+#endif
 
 	CPlayerObj* pPlayer  = LTNULL;
 	g_pLastPlayerStartPt = LTNULL;
@@ -2660,6 +2696,9 @@ void CGameServerShell::ReportError(HCLIENT hSender, uint8 nErrorType)
 
 void CGameServerShell::Update(LTFLOAT timeElapsed)
 {
+#ifdef AVP2SRC_MODERN
+	M32_KickPending();	// M-32: the refused clients that entered the world
+#endif
 	// Update the command mgr...
 
 	m_CmdMgr.Update();

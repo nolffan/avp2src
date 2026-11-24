@@ -46,6 +46,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - The bugs in the object DLLs and in the shared code (M-B70..M-B87).
 - The bugs in the launchers and in Launch.dll (M-B100..M-B107).
 - Text from the network that overruns its buffers (M-31).
+- Only the client enforces the refusal of the server (M-32).
 
 The controller work found a flare crash. That crash was a reconstruction
 error, not a retail bug. Both builds have the fix (the message-object
@@ -2024,6 +2025,33 @@ read past the name.
 
 Fixed in the modern build: MultiplayerMgr.cpp, the last byte of the name
 is set to 0. MODERN.md M-31.
+
+### Only the joining client enforces the server's refusal
+
+lithtech.exe 0x004a7da0 (`CClientShell::DoLoadWorld`,
+src/engine/lithtech/startload.cpp), with the server's half in server.dll
+and lithtech.exe (`sm_ClientEnterWorld2`, src/engine/server/smgr.cpp) and
+the game's in Object.lto and PHObject.lto (`CGameServerShell::VerifyClient`,
+src/AVP2/ObjectDLL/GameServerShell.cpp). Both games.
+
+The server examines each joining client in `VerifyClient`: the password
+of a locked server, the player limit, and in Primal Hunt the class lock.
+The engine puts the result in the packet of the world and sends it to the
+client. It does not act on the result itself. The client reads the result
+in `DoLoadWorld`, and when it is not 0 the client stops the load and
+disconnects. Thus a changed client that ignores the result (one jump in
+`DoLoadWorld`) loads the world and the server puts it in the game: it
+joins a locked server with a wrong password, or a full server.
+
+The GameSpy reply of a locked AvP2 server does not give the password (it
+gives `lock` 1), thus nolfsrc's other half of this bug (NOLF sends the
+password to each query) is not in the two games.
+
+Tested: a client of ours with that jump changed joined a locked dedicated
+server with the password "wrong", spawned and played.
+
+Fixed in the modern build: GameServerShell.cpp, the server kicks a client
+that it refused when the client enters the world. MODERN.md M-32.
 
 ## NOLF's bugs AvP2 does not have
 
