@@ -431,7 +431,10 @@ LTBOOL mr_WarpToScreen(RenderBlitRequest* pRequest)
 // an unlock only marks it to go back to the device. The next draw, read,
 // clear or flip (mr_SyncScreen) first draws the shadow over the screen.
 static uint8_t* s_pShadow;          // the screen, top-down, in the screen format
+static uint8_t* s_pShown;           // what the device has (the last read or write back)
 static uint32_t s_nShadowBytes;
+static uint32_t s_ShadowTex, s_nShadowTexGen;   // the texture the writes go back through
+static uint8_t* s_pRect;            // one changed rectangle, packed for the upload
 static bool     s_bShadowValid;     // the shadow is what the back buffer holds
 static bool     s_bShadowPending;   // the shadow holds writes the device does not
 
@@ -446,7 +449,18 @@ LTBOOL mr_LockScreen(int left, int top, int right, int bottom, void** ppPixels, 
     if (!s_pShadow || s_nShadowBytes != nBytes)
     {
         free(s_pShadow);
+        free(s_pShown);
+        free(s_pRect);
         s_pShadow = (uint8_t*)malloc(nBytes);
+        s_pShown = (uint8_t*)malloc(nBytes);
+        s_pRect = (uint8_t*)malloc(nBytes);
+        if (!s_pShadow || !s_pShown || !s_pRect)
+        {
+            free(s_pShadow);
+            free(s_pShown);
+            free(s_pRect);
+            s_pShadow = s_pShown = s_pRect = NULL;
+        }
         s_nShadowBytes = s_pShadow ? nBytes : 0;
         s_bShadowValid = s_bShadowPending = false;
         if (!s_pShadow)
@@ -461,6 +475,7 @@ LTBOOL mr_LockScreen(int left, int top, int right, int bottom, void** ppPixels, 
             for (uint32_t i = 0; i < g.nWidth * g.nHeight; i++)
                 p[i] &= 0x00ffffff;             // X8R8G8B8: no alpha in the format
         }
+        memcpy(s_pShown, s_pShadow, nBytes);
         s_bShadowValid = true;
     }
     g.pScreenLock = s_pShadow;
@@ -486,37 +501,73 @@ void mr_SyncScreen(bool bKeep)
     if (s_bShadowPending && g.bContext && s_pShadow && !g.pScreenLock)
     {
         s_bShadowPending = false;
-        uint32_t tw = mr_Pow2(g.nWidth), th = mr_Pow2(g.nHeight);
-        uint32_t tex = rd_GenTexture();
-        rd_BindTexture(tex);
-        rd_TexFilter(RD_NEAREST, RD_NEAREST);
-        rd_TexMaxLevel(0);
-        if (g.nBitDepth == 16)
+        // Only the rectangle the engine changed goes back: the engine locks
+        // the whole screen to write a few strings, and a full upload and
+        // draw at each lock made a frame with a message much slower.
+        uint32_t bpp = mr_BytesPerPixel(), nPitch = g.nWidth * bpp;
+        int y0 = -1, y1 = -1, x0 = (int)g.nWidth, x1 = -1;
+        for (uint32_t y = 0; y < g.nHeight; y++)
         {
-            rd_TexImage(0, RD_FMT_RGB, tw, th, RD_PIX_565, NULL);
-            rd_TexSubImage(0, 0, 0, g.nWidth, g.nHeight, RD_PIX_565, s_pShadow);
+            const uint8_t* a = s_pShadow + y * nPitch;
+            const uint8_t* b = s_pShown + y * nPitch;
+            if (!memcmp(a, b, nPitch))
+                continue;
+            if (y0 < 0)
+                y0 = (int)y;
+            y1 = (int)y;
+            uint32_t l = 0, r = g.nWidth - 1;
+            while (l < g.nWidth && !memcmp(a + l * bpp, b + l * bpp, bpp))
+                l++;
+            while (r > l && !memcmp(a + r * bpp, b + r * bpp, bpp))
+                r--;
+            if ((int)l < x0)
+                x0 = (int)l;
+            if ((int)r > x1)
+                x1 = (int)r;
         }
-        else
+        if (y0 >= 0)
         {
-            rd_TexImage(0, RD_FMT_RGB8, tw, th, RD_PIX_BGRA, NULL);
-            rd_TexSubImage(0, 0, 0, g.nWidth, g.nHeight, RD_PIX_BGRA, s_pShadow);
-        }
+            int w = x1 - x0 + 1, h = y1 - y0 + 1;
+            for (int y = 0; y < h; y++)
+            {
+                const uint8_t* src = s_pShadow + (y0 + y) * nPitch + x0 * bpp;
+                memcpy(s_pRect + y * w * bpp, src, w * bpp);
+                memcpy(s_pShown + (y0 + y) * nPitch + x0 * bpp, src, w * bpp);
+            }
+            uint32_t tw = mr_Pow2(g.nWidth), th = mr_Pow2(g.nHeight);
+            bool bNew = !s_ShadowTex || s_nShadowTexGen != g.nContextGen;
+            if (bNew)
+            {
+                s_ShadowTex = rd_GenTexture();
+                s_nShadowTexGen = g.nContextGen;
+            }
+            rd_BindTexture(s_ShadowTex);
+            if (bNew)
+            {
+                rd_TexFilter(RD_NEAREST, RD_NEAREST);
+                rd_TexMaxLevel(0);
+                if (g.nBitDepth == 16)
+                    rd_TexImage(0, RD_FMT_RGB, tw, th, RD_PIX_565, NULL);
+                else
+                    rd_TexImage(0, RD_FMT_RGB8, tw, th, RD_PIX_BGRA, NULL);
+            }
+            rd_TexSubImage(0, x0, y0, w, h, g.nBitDepth == 16 ? RD_PIX_565 : RD_PIX_BGRA, s_pRect);
 
-        mr_Begin2D();
-        rd_Enable(RD_TEXTURE_2D);
-        rd_Disable(RD_BLEND);
-        rd_Disable(RD_ALPHA_TEST);
-        rd_TexEnv(RD_ENV_REPLACE);
-        float u = (float)g.nWidth / tw, v = (float)g.nHeight / th;
-        rd_Begin(RD_QUADS);
-        rd_TexCoord2f(0, 0); rd_Vertex2f(0, 0);
-        rd_TexCoord2f(u, 0); rd_Vertex2f((float)g.nWidth, 0);
-        rd_TexCoord2f(u, v); rd_Vertex2f((float)g.nWidth, (float)g.nHeight);
-        rd_TexCoord2f(0, v); rd_Vertex2f(0, (float)g.nHeight);
-        rd_End();
-        mr_End2D();
-        rd_DeleteTexture(tex);
-        mr_ForgetBindings();
+            mr_Begin2D();
+            rd_Enable(RD_TEXTURE_2D);
+            rd_Disable(RD_BLEND);
+            rd_Disable(RD_ALPHA_TEST);
+            rd_TexEnv(RD_ENV_REPLACE);
+            float u0 = (float)x0 / tw, v0 = (float)y0 / th, u1 = (float)(x1 + 1) / tw, v1 = (float)(y1 + 1) / th;
+            rd_Begin(RD_QUADS);
+            rd_TexCoord2f(u0, v0); rd_Vertex2f((float)x0, (float)y0);
+            rd_TexCoord2f(u1, v0); rd_Vertex2f((float)(x1 + 1), (float)y0);
+            rd_TexCoord2f(u1, v1); rd_Vertex2f((float)(x1 + 1), (float)(y1 + 1));
+            rd_TexCoord2f(u0, v1); rd_Vertex2f((float)x0, (float)(y1 + 1));
+            rd_End();
+            mr_End2D();
+            mr_ForgetBindings();
+        }
     }
     if (!bKeep)
         s_bShadowValid = false;
@@ -525,7 +576,13 @@ void mr_SyncScreen(bool bKeep)
 // The device and the shadow are gone (Term).
 void mr_FreeScreenShadow(void)
 {
+    if (s_ShadowTex && s_nShadowTexGen == g.nContextGen && g.bContext)
+        rd_DeleteTexture(s_ShadowTex);
+    s_ShadowTex = 0;
     free(s_pShadow);
+    free(s_pShown);
+    free(s_pRect);
+    s_pShown = s_pRect = NULL;
     s_pShadow = NULL;
     s_nShadowBytes = 0;
     s_bShadowValid = s_bShadowPending = false;
