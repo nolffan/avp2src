@@ -211,7 +211,7 @@ We used these options of the script:
 ## Done
 
 M-X1, M-X2, M-X3 (the open middleware, above); M-X4 (the music, above); M-X5, M-X6 (OpenMiles fixes).
-M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B29 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
+M-1..M-3, M-6, M-7, M-8, M-9, M-15, M-16, M-17..M-20, M-25, M-26, M-31..M-35 (below); the retail-bug fixes M-B01..M-B09 (the engine), M-B20..M-B29 (the renderers), M-B40..M-B63 and M-B108 (the client shells and lithshared), M-B70..M-B87 (the object DLLs and shared code), M-B100..M-B107 (the launchers and Launch.dll), below.
 
 The frame timing. The user reported this on the first modern build: "the
 high framerate means all the timing is wrong". nolfsrc found the same
@@ -1711,6 +1711,9 @@ result for each item. The rows below the table give the fixes.
 | M-P6-06 (join log) | No log: added | M-33 |
 | M-P6-05 (rejoin after a time-out) | The same engine time-out (120 s without a packet), and no rejoin: added | M-34 |
 | M-P1-28 (`launcher.ini`) | The launchers wrote their options to the registry: fixed (the file first, then the retail registry values, read only) | M-35 |
+| M-P6-03 (version filter) | Not a fault: the browser's version filter is on by default (`CFolderJoin::OnFocus`: `GetConsoleInt("JoinVersionFilter",1)`), and a join of a server of another version is refused (`JoinMultiplayerGame`) | -- |
+| M-P6-13 (the dedicated server's master server) | Not a fault: M-17 gives the dedicated servers `-MasterServer`, and their console says `Master server: <name>`; `linux-server.sh` (M-26) gives its other arguments to the server. Tested again on our own `server.dll` (the M-17 test used the retail one): `AVP2Serv.exe` and `AVP2XServ.exe` of the modern build with `-MasterServer mp-master` and a local master (`build/mptest/masterstub.py`) in a second container sent the heartbeat, answered `\secure\` with a `\validate\` that the master accepted (`avp2`, `avp2ph`), and answered its `\status\` | -- |
+| M-P6-15 (the rate of fire at a high frame rate) | Measured (M-13, above): the server takes every shot; the blade and the pulse rifle fire at the same rate at each frame rate, the pistol 8% faster above 60 frames a second. Not fixed | -- |
 
 | Id | What | Files | Checked | Status |
 |---|---|---|---|---|
