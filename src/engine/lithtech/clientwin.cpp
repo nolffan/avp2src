@@ -1410,6 +1410,19 @@ LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs)
 						}
 
 						fclose(pFile);
+#ifdef AVP2SRC_MODERN
+						// M-B112.  RETAIL BUG (RETAIL_BUGS.md): fgets keeps
+						// the line end, and the words split at spaces only,
+						// so a command file with a line end gave its last
+						// word a "\n" ("-rez custom\n" named no directory).
+						// The end of the line is not part of a word.
+						{
+							int nEnd = strlen(pBuffer);
+							while (nEnd > 0 && (pBuffer[nEnd - 1] == '\n' || pBuffer[nEnd - 1] == '\r' ||
+								pBuffer[nEnd - 1] == ' ' || pBuffer[nEnd - 1] == '\t'))
+								pBuffer[--nEnd] = '\0';
+						}
+#endif
 
 						pToken = strtok(pBuffer, " ");
 						while (pToken)

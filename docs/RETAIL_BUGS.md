@@ -40,7 +40,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - A joystick button is bound two times (M-7).
 - The turn of the mouse look changes with the frame rate (M-6).
 - A window is placed for a frame that it does not have (M-9).
-- The engine bugs (M-B01..M-B09, M-B111).
+- The engine bugs (M-B01..M-B09, M-B111, M-B112).
 - The renderer bugs (M-B20..M-B26, M-B28, M-B29).
 - The bugs in the client shells and in lithshared (M-B40..M-B63, M-B108).
 - The bugs in the object DLLs and in the shared code (M-B70..M-B87).
@@ -668,6 +668,25 @@ MODERN.md M-B111. Not changed: a copy to a new name that succeeds also
 stays in the temp folder after the game stops. The engine makes such a
 copy when a second game runs at the same time, because the first game
 uses `<temp>\<name>`.
+
+### The last word of a command file keeps the line end
+
+AvP2 lithtech.exe 0x00404380 (`clu_dsi_BuildCommandLine`,
+src/engine/lithtech/clientwin.cpp), and the same code in Primal Hunt's
+lithtech.exe.
+
+The engine reads a `-cmdfile` with `fgets` and splits it into words at
+spaces only. `fgets` keeps the line end, so when the file has one, the
+last word ends with it. Thus `-rez custom` with a line end names the
+directory "custom\n", which is not there: the game DLLs of the build then
+come from the archives, where the install has zeroed them ("Missing shell
+DLL cshell.dll"), and AvP2's `-rez AVP2P1.REZ` with a line end does not
+load the 1.0.9.6 archive. The retail launcher writes its command file
+without a line end, so retail does not show the bug. `linux-run.sh` and
+`windows-run.bat` wrote one (`linux-run.sh` no longer does).
+
+Fixed in the modern build: clientwin.cpp, the line end and the spaces at
+the end of the line are removed before the split. MODERN.md M-B112.
 
 ### A command-line argument of 200 characters or more is left unterminated
 
