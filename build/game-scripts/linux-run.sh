@@ -130,6 +130,11 @@ fi
 
 cd "$GAME"
 [ -z "$LAUNCHER" ] || exec "$WINE" @LAUNCHER@ "$@"
+# No line end: the engine takes the command file's last word up to the end
+# of the file, and a CR or LF after it is part of that word ("custom" then
+# names no directory, and the game DLLs come from the archives, where the
+# install has zeroed them: "Missing shell DLL cshell.dll"). The retail
+# engine does the same.
 { tr -d '\r\n' < avp2cmds.txt; printf '%s' "$MODE"
-  [ $# -eq 0 ] || printf ' %s' "$*"; printf '\r\n'; } > run-cmds.txt
+  [ $# -eq 0 ] || printf ' %s' "$*"; } > run-cmds.txt
 exec "$WINE" lithtech.exe -cmdfile run-cmds.txt
