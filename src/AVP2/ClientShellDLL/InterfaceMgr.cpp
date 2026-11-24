@@ -39,6 +39,7 @@
 #include "..\..\modern\cshell\m25_console.h"	// M-25: the console
 #include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
 #include "..\..\modern\cshell\m33_joinlog.h"	// M-33: the join log
+#include "..\..\modern\cshell\m34_rejoin.h"	// M-34: join again after a time-out
 #endif
 #ifdef PRIMAL_HUNT
 #include "TurretInfoMgr.h"
@@ -1771,6 +1772,11 @@ DBOOL CInterfaceMgr::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 			// M-33: the join log
 			if (g_pGameClientShell->IsMultiplayerGame())
 				M33_OnDisconnect(m_nDisconnectError, dwParam);
+			// M-34: after a time-out, join the server again (at the next
+			// update); the client leaves the level as for each disconnect,
+			// but shows no message
+			LTBOOL bM34Rejoin = g_pGameClientShell->IsMultiplayerGame() &&
+				M34_OnDisconnect(m_nDisconnectError, dwParam);
 #endif
 			if(	g_pGameClientShell->IsMultiplayerGame() &&
 				((m_eGameState == GS_PLAYING) || (m_eGameState == GS_LOADINGLEVEL) || (m_eGameState == GS_FOLDER)))
@@ -1825,6 +1831,9 @@ DBOOL CInterfaceMgr::OnEvent(DDWORD dwEventID, DDWORD dwParam)
 					default:						hStr = g_pLTClient->FormatString(IDS_DISCONNECTED_FROM_SERVER);	break;
 				}
 
+#ifdef AVP2SRC_MODERN
+				if (!bM34Rejoin)
+#endif
 				ShowMessageBox(hStr, LTMB_OK, LTNULL, LTNULL);
 				g_pLTClient->FreeString(hStr);
 

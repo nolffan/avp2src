@@ -83,9 +83,11 @@
 #define M30_LOADPROMPT_IMPLEMENTATION
 #include "..\..\modern\cshell\m30_loadprompt.h"	// M-30: "Press any key to continue."
 #include "..\..\modern\cshell\m33_joinlog.h"		// M-33: the join log
+#include "..\..\modern\cshell\m34_rejoin.h"		// M-34: join again after a time-out
 #endif
 #ifdef AVP2SRC_MODERN
 M33Server g_M33Server = { "", 0, "", LTFALSE };	// M-33: the server of the last join
+M34Rejoin g_M34Rejoin = { M34_MAX_REJOINS, LTFALSE, 0 };	// M-34
 #endif
 
 static _timeb g_StartTimeB;
@@ -2182,6 +2184,9 @@ void CGameClientShell::PreLoadWorld(char *pWorldName)
 
 void CGameClientShell::OnEnterWorld()
 {
+#ifdef AVP2SRC_MODERN
+	M34_OnEnterWorld();	// M-34: in a world: the rejoins are there again
+#endif
 	m_PlayerMovement.Init(g_pLTClient, DNULL);
 	m_PlayerMovement.SetCharacterButes("Harris");
 	m_PlayerMovement.CreateObject();
@@ -2411,6 +2416,13 @@ void CGameClientShell::Update()
 	M6Mouse_Update();
 	// M-9: a borderless window at another mode is set to the desktop's
 	M9Window_Update();
+	// M-34: a rejoin that a time-out started
+	if (M34_TakePending())
+	{
+		M33Server& srv = M33_Server();
+		if (JoinMultiplayerGameAtIP(srv.szIP, srv.nPort, srv.szPassword) != LT_OK)
+			M34_OnRejoinFailed();
+	}
 #endif
 	if (m_InterfaceMgr.Update())
 	{
