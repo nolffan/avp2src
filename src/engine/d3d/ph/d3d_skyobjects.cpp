@@ -535,7 +535,8 @@ void d3d_DrawSkyObjects()
 //
 // RETAIL BUG: it lights pPoly->m_nVerts vertices and ignores nVerts, the
 // count the caller filled (the T-junction vertex count when FixTJunc is
-// set), so with FixTJunc some of the drawn vertices go unlit.
+// set), so with FixTJunc some of the drawn vertices go unlit. The modern
+// build lights nVerts vertices (MODERN.md M-B28).
 void d3d_LightSkyPoly(RenderPoly* pPoly, TLVertex* pVerts, uint32 nVerts)
 {
 	LightLink* pLink;
@@ -572,7 +573,12 @@ void d3d_LightSkyPoly(RenderPoly* pPoly, TLVertex* pVerts, uint32 nVerts)
 		fInvRadius = 1.0f / pLight->m_LightRadius;
 
 		pVert = pVerts;
+#ifdef AVP2SRC_MODERN
+		// Light all the vertices that the caller filled (MODERN.md M-B28).
+		for (i = nVerts; i > 0; i--)
+#else
 		for (i = pPoly->m_nVerts; i > 0; i--)
+#endif
 		{
 			VEC_SUB(vDelta, pVert->m_Vec, vLightPos);
 			fDistSqr = vDelta.MagSqr();

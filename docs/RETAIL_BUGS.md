@@ -41,7 +41,7 @@ gives the reason why it is not fixed. These fixes have an id (MODERN.md):
 - The turn of the mouse look changes with the frame rate (M-6).
 - A window is placed for a frame that it does not have (M-9).
 - The engine bugs (M-B01..M-B09, M-B111).
-- The renderer bugs (M-B20..M-B26).
+- The renderer bugs (M-B20..M-B26, M-B28).
 - The bugs in the client shells and in lithshared (M-B40..M-B63, M-B108).
 - The bugs in the object DLLs and in the shared code (M-B70..M-B87).
 - The bugs in the launchers and in Launch.dll (M-B100..M-B107).
@@ -944,8 +944,9 @@ vertices after the first `m_nVerts`. The default of `FixTJunc` is 0, so
 the bug shows only when a player sets it. Then a light near a sky
 polygon does not light some of its vertices.
 
-Not fixed in our `d3d.ren`. The Direct3D 9 renderer (`d3d9.ren`, M-29)
-lights every vertex that it draws.
+Fixed in the modern build: d3d_skyobjects.cpp, `d3d_LightSkyPoly` lights
+the `nVerts` vertices that it gets, as the Direct3D 9 renderer
+(`d3d9.ren`, M-29) lights every vertex that it draws; MODERN.md M-B28.
 
 ### A model with no lower LODs gets no projected shadow
 
