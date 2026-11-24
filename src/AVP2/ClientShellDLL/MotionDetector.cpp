@@ -916,6 +916,20 @@ DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 		nHalfWidth	= 75;
 		nHeight		= 150;
 		nHalfHeight	= 75;
+#ifdef AVP2SRC_MODERN
+		// M-36: the size of the round grid as it is (150x150 in the
+		// retail art), so that the pulse fits it
+		uint32 nGridW = 0, nGridH = 0;
+		if(m_ahGridSurf[0])
+			g_pClientDE->GetSurfaceDims(m_ahGridSurf[0], &nGridW, &nGridH);
+		if(nGridW && nGridH)
+		{
+			nWidth		= nGridW;
+			nHalfWidth	= nGridW >> 1;
+			nHeight		= nGridH;
+			nHalfHeight	= nGridH >> 1;
+		}
+#endif
 	}
 
 	m_nBlipIndex = (uint32)((m_nBlipSurfaces-1)*(1-fSeqTimeDelta/fTotSeqTime));
@@ -945,6 +959,11 @@ DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 		//set dest rect
 		rcRval.left		= m_ptGridDest.x + nHalfWidth;
 		rcRval.top		= m_ptGridDest.y + nHeight;
+#ifdef AVP2SRC_MODERN
+		// M-36: the round grid's pulse starts at its centre
+		if(GetMDType() == 1)
+			rcRval.top	= m_ptGridDest.y + nHalfHeight;
+#endif
 		rcRval.right	= rcRval.left;
 		rcRval.bottom	= rcRval.top;
 
@@ -968,7 +987,15 @@ DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 				rcRval.left		= m_ptGridDest.x + (int)(nHalfWidth * (1-fRatio));
 				rcRval.top		= m_ptGridDest.y + (int)(nHalfHeight * (1-fRatio));
 				rcRval.right	= m_ptGridDest.x + nWidth - (int)(nHalfWidth * (1-fRatio));
+#ifdef AVP2SRC_MODERN
+				// M-36: RETAIL BUG: the bottom was the grid's top edge less
+				// the growth, above the top, so the pulse drew flipped and
+				// centred on the grid's top edge. A circle that grows from
+				// the centre of the round grid
+				rcRval.bottom	= m_ptGridDest.y + nHeight - (int)(nHalfHeight * (1-fRatio));
+#else
 				rcRval.bottom	= m_ptGridDest.y - (int)(nHalfHeight * (1-fRatio));
+#endif
 			}
 			else
 			{
@@ -998,6 +1025,15 @@ DRect CMotionDetector::GetMDAnimDestRect (LTBOOL bEMPEffect)
 		rcRval.top		= m_ptGridDest.y + (int)(nHeight * (1-fRatio));
 		rcRval.right	= m_ptGridDest.x + nWidth - (int)(nHalfWidth * (1-fRatio));
 		rcRval.bottom	= m_ptGridDest.y + (int)nHeight;
+#ifdef AVP2SRC_MODERN
+		// M-36: the EMP flicker of the round grid is a circle about its
+		// centre too (the rectangular grid's arc grows from its bottom edge)
+		if(GetMDType() == 1)
+		{
+			rcRval.top		= m_ptGridDest.y + (int)(nHalfHeight * (1-fRatio));
+			rcRval.bottom	= m_ptGridDest.y + nHeight - (int)(nHalfHeight * (1-fRatio));
+		}
+#endif
 	}
 
 	return rcRval;
