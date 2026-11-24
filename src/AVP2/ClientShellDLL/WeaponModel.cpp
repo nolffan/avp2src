@@ -26,6 +26,7 @@
 #include "MuzzleFlashFX.h"
 #ifdef AVP2SRC_MODERN
 #include "..\..\modern\cshell\m13_firelog.h"	// M-13: the measuring aid (debug)
+#include "..\..\modern\cshell\m37_firerate.h"	// M-37: the rate of fire at any frame rate
 #endif
 
 // ----------------------------------------------------------------------- //
@@ -698,6 +699,9 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 {
 	//sanity check
 	if (!m_hObject || !g_pInterface || !g_pWeaponMgr) return W_IDLE;
+#ifdef AVP2SRC_MODERN
+	M37_Update(m_hObject);	// M-37: a faster fire animation that has ended
+#endif
 
 	// See if we can change weapons..
 	if(m_bDelayedWeaponChange)
@@ -2321,6 +2325,23 @@ WeaponState CWeaponModel::Fire(LTBOOL bUpdateAmmo)
 	m_bFire = LTFALSE;
 #ifdef AVP2SRC_MODERN
 	M13_FIRELOG("firelog-client.log", "fire", m_nWeaponId, eRet == W_FIRED);	// M-13 (debug)
+#ifdef AVP2SRC_DEBUG
+	// M-13: where in its animation the fire key came (the key's time), and
+	// the animation's length, in ms
+	{
+		LTAnimTracker* pM13Tracker = LTNULL;
+		uint32 nM13Time = 0, nM13Len = 0;
+		if (g_pModelLT->GetMainTracker(m_hObject, pM13Tracker) == LT_OK && pM13Tracker)
+		{
+			g_pModelLT->GetCurAnimTime(pM13Tracker, nM13Time, LTFALSE);
+			g_pModelLT->GetCurAnimLength(pM13Tracker, nM13Len, LTFALSE);
+		}
+		M13_FIRELOG("firelog-client.log", "keytime", m_nWeaponId, (int)nM13Time);
+		M13_FIRELOG("firelog-client.log", "animlen", m_nWeaponId, (int)nM13Len);
+		M13_FIRELOG("firelog-client.log", "anim", m_nWeaponId, (int)g_pInterface->GetModelAnimation(m_hObject));
+		M13_FIRELOG("firelog-client.log", "frameus", m_nWeaponId, (int)(g_pLTClient->GetFrameTime() * 1000000.0f));
+	}
+#endif
 #endif
 	
 	return eRet;
@@ -3038,6 +3059,10 @@ LTBOOL CWeaponModel::PlayFireAnimation(LTBOOL bResetAni)
 			g_pInterface->SetModelLooping(m_hObject, bLooping);
 			g_pInterface->SetModelAnimation(m_hObject, dwFireAni);
 			g_pInterface->ResetModelAnimation(m_hObject);  // Start from beginning
+#ifdef AVP2SRC_MODERN
+			// M-37: the time the last fire animation overran, taken back
+			M37_OnFireAnimation(m_hObject, dwFireAni, bIsFireAni && (dwState & MS_PLAYDONE), bLooping);
+#endif
 
 			// If this is a melee weapon... send up the melee weapon state on the server
 			if(m_pWeapon->bMelee)
