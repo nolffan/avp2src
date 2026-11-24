@@ -50,6 +50,9 @@
 #include "Prop.h"
 #include "Camera.h"
 #include "CinematicTrigger.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m13_firelog.h"	// M-13: the measuring aid (debug)
+#endif
 #ifdef PRIMAL_HUNT
 #include "Turret.h"
 #include "TurretGun.h"
@@ -4418,7 +4421,17 @@ void CPlayerObj::HandleMessage_WeaponFire(HMESSAGEREAD hRead)
 	}
 
 
+#ifdef AVP2SRC_MODERN
+#ifdef AVP2SRC_DEBUG
+	// M-13: the measuring aid (debug)
+	DBOOL bM13Fired = pWeapon->Fire(fireInfo);
+	M13_FIRELOG("firelog-server.log", "recv", nWeaponId, bM13Fired);
+#else
 	pWeapon->Fire(fireInfo);
+#endif
+#else
+	pWeapon->Fire(fireInfo);
+#endif
 
 
 	// Update number of shots fired...

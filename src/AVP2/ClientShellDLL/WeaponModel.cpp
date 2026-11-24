@@ -24,6 +24,9 @@
 
 #include "CharacterFX.h"
 #include "MuzzleFlashFX.h"
+#ifdef AVP2SRC_MODERN
+#include "..\..\modern\cshell\m13_firelog.h"	// M-13: the measuring aid (debug)
+#endif
 
 // ----------------------------------------------------------------------- //
 // Tracked console variables
@@ -2316,6 +2319,9 @@ WeaponState CWeaponModel::Fire(LTBOOL bUpdateAmmo)
 	}
 
 	m_bFire = LTFALSE;
+#ifdef AVP2SRC_MODERN
+	M13_FIRELOG("firelog-client.log", "fire", m_nWeaponId, eRet == W_FIRED);	// M-13 (debug)
+#endif
 	
 	return eRet;
 }
@@ -4256,6 +4262,9 @@ void CWeaponModel::SendFireMsg()
 	if(g_pGameClientShell->IsMultiplayerGame() && m_pAmmo && m_pAmmo->eType == VECTOR)
 		bSendFireMessage = ClientHitDetection(wp, vFirePos);
 
+#ifdef AVP2SRC_MODERN
+	M13_FIRELOG("firelog-client.log", "send", m_nWeaponId, bSendFireMessage);	// M-13 (debug)
+#endif
 	if(bSendFireMessage)
 	{
 		// Send Fire message to server...

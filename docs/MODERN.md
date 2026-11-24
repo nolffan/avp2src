@@ -361,6 +361,41 @@ at all the other client effects that step one time each frame without
 the frame time. We did not measure them above about 80 frames a second in
 play.
 
+**M-13, the rate of fire in multiplayer** (as nolfsrc's M-P6-15). A
+dedicated server of the modern debug build (`build/mptest/srv.sh`,
+`DM_Compound`) and a client of the same build that joined it over the
+LAN, in two containers. The client spawned as a Marine and held the fire
+button 8 s with the blade, then the pistol, then again (the pistol ran
+out of ammunition, and the game changed to the pulse rifle), then 8 s
+with the pulse rifle. The measuring aid `m13_firelog.h` (the modern debug
+build only, with the environment variable `AVP2_FIRELOG`) wrote each shot
+of the client (`CWeaponModel::Fire`) and each fire message that the
+server took (`CPlayerObj::HandleMessage_WeaponFire`). `ShowRate 1` with
+`TraceConsole 1` gave the frame rate. The container drew 93-128 frames a
+second in play with the limit 240 or none (the limit 60: 60).
+
+| Limit (frames a second in play) | Blade: shots, median interval | Pistol: shots, mean interval | Pulse rifle: shots, mean interval | Server: shots taken |
+|---|---|---|---|---|
+| 60 (60) | 16, 333 ms | 36, 233 ms | 100, 112 ms | all (152 of 152) |
+| 240 (99-122) | 16, 336 ms | 36, 215 ms | 102, 113 ms | all (154 of 154) |
+| none (94-128) | 16, 336 ms | 36, 217 ms | 102, 112 ms | all (154 of 154) |
+
+The blade and the pulse rifle fire at the same rate at each frame rate.
+The pistol fires 8% faster above 60 frames a second. Its fire animation
+does not loop: `CWeaponModel::PlayFireAnimation` starts the next shot's
+animation from its start only at the first update after the last one
+ended (`MS_PLAYDONE`). Thus each shot takes a whole number of frames, and
+the time between the end of the animation and that update is lost: at 60
+frames a second the interval is 233 ms, 14 frames exactly; at about 100 it
+is 215 ms. Thus a higher frame rate gives a rate nearer to the rate of the
+animation, and 60 frames a second (the rate of retail players) is the
+slowest. The server takes each fire message (AvP2's server has no check
+of the rate of fire), so the faster rate counts. Not fixed: the fix would
+start the next animation at the time that the last one overran, but
+`ILTModel::SetCurAnimTime` does not run the model keys that it passes,
+and the key that fires a shot can be at the start of the animation. The
+data rates (M-19) and the server's 30 ticks a second do not change this.
+
 ### M-1..M-3: widescreen, 4:3 cinematics, the field of view
 
 The NOLF items of nolfsrc were the guide:
