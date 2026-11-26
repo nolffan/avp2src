@@ -197,8 +197,8 @@ vtable ??_7CLTClientQ404@@6B@ 0x004d452c  # compiled with 2 slots
     ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
     ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
-    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
-    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # slot 28 is EndHMessageRead: the shipped target passes the string "ILTCSBase::EndHMessageRead"
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
     ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?GetAnimIndex@CLTServer@@QAEKPAVLTObject@@PAD@Z  # ?CompareStrings@CLTServer@@QAEIPAUHSTRING_t@@0@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?SetModelAnimation@CLTClient@@QAEXPAVLTObject@@K@Z
@@ -837,8 +837,8 @@ vtable ??_7ILTCSBaseQ404@@6B@ 0x004d48a0  # compiled with 2 slots
     ?ReadFromMessageHString@ILTCSBase@@UAEPAUHSTRING_t@@PAVILTMessage@@@Z  # ?ReadFromMessageHString@CLTServer@@QAEPAUHSTRING_t@@PAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     ?ReadFromLoadSaveMessageObject@CLTServer@@QAEKPAVIMessageRead@@PAPAVLTObject@@@Z
     ?ReadFromMessageHMessageRead@ILTCSBase@@UAEPAVILTMessage@@PAV2@@Z  # ?ReadFromMessageHMessageRead@CLTServer@@QAEPAXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
-    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?EndHMessageWrite@CLTServer@@QAEXPAVIMessageWrite@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
-    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z
+    ?EndHMessageRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # slot 28 is EndHMessageRead: the shipped target passes the string "ILTCSBase::EndHMessageRead"
+    ?EndHMessageWrite@ILTCSBase@@UAEXPAVILTMessage@@@Z
     ?ResetRead@ILTCSBase@@UAEXPAVILTMessage@@@Z  # ?ResetRead@CLTServer@@QAEXPAVIMessageRead@@@Z is placed here, but its data operands read back elsewhere; this twin's read back right
     __purecall
     __purecall
