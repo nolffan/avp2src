@@ -332,6 +332,22 @@ void CAITentacle::HandleSound(HOBJECT hObj, const LTVector& vPos, LTFLOAT fVolum
 	}
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITentacle::HandleDamage()
+//
+//	PURPOSE:	Nothing: the beast takes no damage itself, only its
+//				tentacles do (CTentacle). Slot 40 of the shipped vtable
+//				(0x1028ae08) is the linker's one copy of an empty member
+//				with one argument (PH: 0x10151c90, `ret $0x4`), not
+//				CAIBase::HandleDamage.
+//
+// ----------------------------------------------------------------------- //
+
+void CAITentacle::HandleDamage(const DamageStruct& damage)
+{
+}
+
 // PH: 0x1014c6d0
 LTBOOL CAITentacle::ChooseTarget()
 {

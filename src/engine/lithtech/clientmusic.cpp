@@ -661,7 +661,7 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 	int i;
 	static char sReadError[] = "ERROR! Unable to read control file. (CLTDirectMusicMgr::InitLevel)\n";
 #ifdef PRIMAL_HUNT
-	static char sSeparator[] = "\\";
+	const char* sSeparator = "\\";
 #endif
 
 #ifdef AVP2SRC_MODERN

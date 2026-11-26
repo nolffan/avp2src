@@ -822,13 +822,14 @@ public:
 //   * the pointer is nulled AFTER the free and only inside the guard:
 //     `if (p) { free(p); p = 0; }`. Nulling unconditionally would hoist the
 //     `movl $0x0,(%esi)` out past the `je`.
-//   * `push %eax; call; add $0x4,%esp` -> plain __cdecl free (0x004290c0,
-//     the partner of the 0x004290b0 malloc used all over this run).
+//   * `push %eax; call; add $0x4,%esp` -> __cdecl operator delete (PH
+//     0x00479ee0, AvP2 1.0.9.6 0x004235f0: dfree), not the C library's
+//     free. The scorer's data-reference check proves it (tools 9c3083b).
 COwnedBlock::~COwnedBlock()
 {
 	if (m_pData)
 	{
-		free(m_pData);
+		::operator delete(m_pData);
 		m_pData = NULL;
 	}
 }

@@ -187,7 +187,6 @@ LTBOOL              g_bLightmapPages;                       // 0x100638b8
 DDPIXELFORMAT       g_ZBufferFormat;                        // 0x10062868
 uint32*             g_pnZFormats;                           // 0x10062434
 DDPIXELFORMAT*      g_pZFormats;                            // 0x100638bc
-D3DDEVICEDESC7      g_DeviceDesc;                           // 0x100623c0
 
 // What the device can do, read when it is created (d3d_InitDevice).
 struct D3DCaps
@@ -492,7 +491,8 @@ CD3DConVar g_CV_Anisotropic("Anisotropic", 0.0f, LTNULL, LTNULL);    // 0x100624
 inline void d3d_SetFogStates()
 {
 	// No table fog without the hardware, nor with an empty range.
-	if (!(g_DeviceDesc.dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE))
+	// The caps that d3d_InitDevice keeps (0x10062404: g_D3DCaps.m_TriCaps).
+	if (!(g_D3DCaps.m_TriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE))
 		g_CV_FogEnable = 0;
 
 	if (g_CV_FogNearZ == g_CV_FogFarZ)

@@ -1872,9 +1872,7 @@ void cc_ShowGameVars(int argc, char** argv)
 //
 // AVP2: a third line, the world-model ambient ccclient.cpp's "WMAmbient"
 // sets (Primal Hunt 0x00425ca7, AvP2 1.0.9.6 0x0042354b).
-extern float g_fWMAmbientR;                                   // 0x004f4830
-extern float g_fWMAmbientG;                                   // 0x004f4834
-extern float g_fWMAmbientB;                                   // 0x004f4838
+extern LTVector g_WMAmbient;                                  // 0x004f4830
 
 void cc_SaveModelVars(FILE* pFile)
 {
@@ -1883,7 +1881,7 @@ void cc_SaveModelVars(FILE* pFile)
 	fprintf(pFile, "ModelDirAdd %f %f %f\n",
 	        g_ModelDirAdd.x, g_ModelDirAdd.y, g_ModelDirAdd.z);
 	fprintf(pFile, "WMAmbient %f %f %f\n",
-	        g_fWMAmbientR, g_fWMAmbientG, g_fWMAmbientB);
+	        g_WMAmbient.x, g_WMAmbient.y, g_WMAmbient.z);
 }
 
 

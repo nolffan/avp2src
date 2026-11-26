@@ -2290,7 +2290,7 @@ struct SceneDescQ5
 	// "WMAmbient" triple (cc_WMAmbient, 0x00422480), which push everything
 	// after them 0x18 bytes on (0x00412461, 0x004124e1; names ours).
 	LTVector     m_GlobalLightScale2;              // 0x5c  mgr+0x778
-	LTVector     m_WMAmbient;                      // 0x68  g_fWMAmbientR/G/B
+	LTVector     m_WMAmbient;                      // 0x68  g_WMAmbient
 	LTVector     m_GlobalLightAdd;                 // 0x5c  camera+0x1c4
 	float        m_FrameTime;                      // 0x68
 	SkyDef       m_SkyDef;                         // 0x6c
@@ -2419,9 +2419,7 @@ public:
 };
 
 // ccclient.cpp's "WMAmbient" (0x004e36a8..0x004e36b0).
-extern float g_fWMAmbientR;
-extern float g_fWMAmbientG;
-extern float g_fWMAmbientB;
+extern LTVector g_WMAmbient;
 
 uint32 g_nRenderTicksQ5;                           // 0x004defa8
 uint32 g_nSceneTicksQ5;                            // 0x004ded10
@@ -2490,9 +2488,9 @@ LTBOOL cm_RenderCamera(CRenderMgrQ5* pClientMgr, CCameraQ5* pCamera,
 			VecCopyQ5(sceneDesc.m_GlobalLightAdd, pCamera->m_LightAdd);
 			VecCopyQ5(sceneDesc.m_ModelAdd, g_ModelAdd);
 			VecCopyQ5(sceneDesc.m_ModelDirAdd, g_ModelDirAdd);
-			sceneDesc.m_WMAmbient.x = g_fWMAmbientR;
-			sceneDesc.m_WMAmbient.y = g_fWMAmbientG;
-			sceneDesc.m_WMAmbient.z = g_fWMAmbientB;
+			sceneDesc.m_WMAmbient.x = g_WMAmbient.x;
+			sceneDesc.m_WMAmbient.y = g_WMAmbient.y;
+			sceneDesc.m_WMAmbient.z = g_WMAmbient.z;
 			sceneDesc.m_FrameTime = pClientMgr->m_FrameTime;
 			sceneDesc.m_pUser4 = pUser4;
 			sceneDesc.m_pUser5 = pUser5;
