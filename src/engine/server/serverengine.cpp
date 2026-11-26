@@ -351,9 +351,11 @@ void CDepList::RemoveLink(void* pLink)
 // function is compiled into.
 void* dl_MakeLink(void* pRecord, void* pData)
 {
-#ifdef PRIMAL_HUNT
+#if defined(PRIMAL_HUNT) && !defined(LT_SERVER_BUILD)
 	// PH: through the bank's slot-1 entry, called directly on the global
 	// (0x004486e0 `mov $0x4f5460,%ecx; call 0x00448860`), not expanded.
+	// Primal Hunt's server.dll calls the typed Allocate (0x10019557 onto
+	// 0x1001964b), as AvP2 1.0.9.6 does.
 	CDepLink* pLink = (CDepLink*)g_DepLinkBank.AllocVoid();
 #else
 	CDepLink* pLink = g_DepLinkBank.Allocate();
