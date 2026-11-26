@@ -647,6 +647,7 @@ typedef int (*CluGetLithTechCommandLineFn)(int argc, char** argv, int* pnArgs,
 // ======================================================================= //
 
 LTBOOL clu_dsi_InitGame(CluClientGlob* pGlob, CluCommandLineArgs* pArgs);   // 0x00403330
+void   con_Printf(char* pMsg, ...);                                         // dsi.cpp
 LRESULT CALLBACK clu_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LTBOOL clu_dsi_BuildCommandLine(CluCommandLineArgs* pArgs);                 // 0x00403d80 (PH)
 int WINAPI clu_WinMainQ501(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -955,7 +956,9 @@ LTBOOL clu_dsi_InitGame(CluClientGlob* pGlob, CluCommandLineArgs* pArgs)
 
 	((CluVersionView*)pGlob->m_pClientMgr->m_Version)->GetString(szVersion, 32);
 
-	printf("LithTech build %s initialized in %.2f seconds.\n",
+	// The engine's debug printer (dsi.cpp, PH 0x00433d30, AvP2
+	// 0x00430710): to the debugger's output, not to the C library's stdout.
+	con_Printf("LithTech build %s initialized in %.2f seconds.\n",
 	       szVersion,
 	       (timeGetTime() - nStartTime) * 0.001f);
 

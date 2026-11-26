@@ -1331,6 +1331,7 @@ AvP2 d3d.ren	sub_1001a380
 AvP2 d3d.ren	sub_1001a3a0
 AvP2 d3d.ren	sub_1001a3c0
 AvP2 d3d.ren	sub_1001a3e0
+AvP2 d3d.ren	sub_1001a400
 AvP2 d3d.ren	sub_1001a850
 AvP2 d3d.ren	sub_1001a860
 AvP2 d3d.ren	sub_1001aa70
@@ -1978,6 +1979,7 @@ AvP2 lithtech.exe	sub_402ed0
 AvP2 lithtech.exe	sub_402ef0
 AvP2 lithtech.exe	sub_402f90
 AvP2 lithtech.exe	sub_402fb0
+AvP2 lithtech.exe	sub_403350
 AvP2 lithtech.exe	sub_403d90
 AvP2 lithtech.exe	sub_403e80
 AvP2 lithtech.exe	sub_403f10
@@ -2557,6 +2559,7 @@ AvP2 lithtech.exe	sub_41c400
 AvP2 lithtech.exe	sub_41d620
 AvP2 lithtech.exe	sub_41d640
 AvP2 lithtech.exe	sub_41d770
+AvP2 lithtech.exe	sub_41d820
 AvP2 lithtech.exe	sub_41f680
 AvP2 lithtech.exe	sub_41f6a0
 AvP2 lithtech.exe	sub_41f6d0
@@ -3124,6 +3127,7 @@ AvP2 lithtech.exe	sub_436110
 AvP2 lithtech.exe	sub_436130
 AvP2 lithtech.exe	sub_436140
 AvP2 lithtech.exe	sub_436160
+AvP2 lithtech.exe	sub_436170
 AvP2 lithtech.exe	sub_436190
 AvP2 lithtech.exe	sub_4361a0
 AvP2 lithtech.exe	sub_4361b0
@@ -5536,6 +5540,7 @@ AvP2 lithtech.exe	sub_4b4260
 AvP2 lithtech.exe	sub_4b4290
 AvP2 lithtech.exe	sub_4b42a0
 AvP2 lithtech.exe	sub_4b42b0
+AvP2 lithtech.exe	sub_4b42c0
 AvP2 ltmsg.dll	rsrc:5/130/1033
 AvP2 ltmsg.dll	rsrc:5/131/1033
 AvP2 ltmsg.dll	rsrc:5/139/1033
@@ -5611,6 +5616,7 @@ AvP2 server.dll	sub_10004895
 AvP2 server.dll	sub_10004fcd
 AvP2 server.dll	sub_10005a43
 AvP2 server.dll	sub_10005c40
+AvP2 server.dll	sub_10005cbf
 AvP2 server.dll	sub_100071db
 AvP2 server.dll	sub_100071f4
 AvP2 server.dll	sub_1000722d
@@ -29667,6 +29673,7 @@ PHObject.lto	sub_10025670
 PHObject.lto	sub_10025700
 PHObject.lto	sub_10025720
 PHObject.lto	sub_100257a0
+PHObject.lto	sub_10026880
 PHObject.lto	sub_10026890
 PHObject.lto	sub_10026960
 PHObject.lto	sub_100269c0
@@ -30137,7 +30144,6 @@ PHObject.lto	sub_10043c40
 PHObject.lto	sub_10043e00
 PHObject.lto	sub_10043f80
 PHObject.lto	sub_10044040
-PHObject.lto	sub_10044090
 PHObject.lto	sub_100440b0
 PHObject.lto	sub_100441c0
 PHObject.lto	sub_10044210
@@ -30147,7 +30153,6 @@ PHObject.lto	sub_100447d0
 PHObject.lto	sub_100447e0
 PHObject.lto	sub_10044800
 PHObject.lto	sub_10044bd0
-PHObject.lto	sub_10044cd0
 PHObject.lto	sub_10044cf0
 PHObject.lto	sub_10044d00
 PHObject.lto	sub_10045430
@@ -30316,7 +30321,6 @@ PHObject.lto	sub_1004de50
 PHObject.lto	sub_1004ded0
 PHObject.lto	sub_1004dee0
 PHObject.lto	sub_1004e000
-PHObject.lto	sub_1004e050
 PHObject.lto	sub_1004e0a0
 PHObject.lto	sub_1004e0b0
 PHObject.lto	sub_1004e1d0
@@ -30613,6 +30617,7 @@ PHObject.lto	sub_1005d4a0
 PHObject.lto	sub_1005e530
 PHObject.lto	sub_1005e570
 PHObject.lto	sub_1005e590
+PHObject.lto	sub_1005e710
 PHObject.lto	sub_1005e730
 PHObject.lto	sub_1005e8a0
 PHObject.lto	sub_1005ea20
@@ -30819,6 +30824,7 @@ PHObject.lto	sub_1006d5b0
 PHObject.lto	sub_1006d8c0
 PHObject.lto	sub_1006d8d0
 PHObject.lto	sub_1006db80
+PHObject.lto	sub_1006dbb0
 PHObject.lto	sub_1006dc00
 PHObject.lto	sub_1006df90
 PHObject.lto	sub_1006dfa0
@@ -30839,6 +30845,7 @@ PHObject.lto	sub_1006e740
 PHObject.lto	sub_1006e9f0
 PHObject.lto	sub_1006ea10
 PHObject.lto	sub_1006ea80
+PHObject.lto	sub_1006eae0
 PHObject.lto	sub_1006eb00
 PHObject.lto	sub_1006eb20
 PHObject.lto	sub_1006ed40
@@ -33442,6 +33449,8 @@ PHObject.lto	sub_1014bb30
 PHObject.lto	sub_1014bea0
 PHObject.lto	sub_1014bf10
 PHObject.lto	sub_1014bf60
+PHObject.lto	sub_1014bf90
+PHObject.lto	sub_1014c0d0
 PHObject.lto	sub_1014c0e0
 PHObject.lto	sub_1014c210
 PHObject.lto	sub_1014c390
@@ -33590,6 +33599,7 @@ PHObject.lto	sub_10151a60
 PHObject.lto	sub_10151ad0
 PHObject.lto	sub_10151b30
 PHObject.lto	sub_10151b40
+PHObject.lto	sub_10151c90
 PHObject.lto	sub_10151ca0
 PHObject.lto	sub_10151ce0
 PHObject.lto	sub_10151d00
@@ -33607,7 +33617,6 @@ PHObject.lto	sub_10152280
 PHObject.lto	sub_101522a0
 PHObject.lto	sub_101522f0
 PHObject.lto	sub_101524a0
-PHObject.lto	sub_101524b0
 PHObject.lto	sub_101528d0
 PHObject.lto	sub_10152940
 PHObject.lto	sub_10152a10
@@ -36304,7 +36313,6 @@ PHObject.lto	sub_101f80e0
 PHObject.lto	sub_101f81d0
 PHObject.lto	sub_101f8220
 PHObject.lto	sub_101f8250
-PHObject.lto	sub_101f8260
 PHObject.lto	sub_101f8270
 PHObject.lto	sub_101f8290
 PHObject.lto	sub_101f8660
@@ -41723,6 +41731,7 @@ d3d.ren	sub_1001af90
 d3d.ren	sub_1001afb0
 d3d.ren	sub_1001afd0
 d3d.ren	sub_1001aff0
+d3d.ren	sub_1001b010
 d3d.ren	sub_1001b460
 d3d.ren	sub_1001b470
 d3d.ren	sub_1001b680
@@ -42432,6 +42441,7 @@ lithtech.exe	sub_403240
 lithtech.exe	sub_403250
 lithtech.exe	sub_403300
 lithtech.exe	sub_403320
+lithtech.exe	sub_4036c0
 lithtech.exe	sub_403d80
 lithtech.exe	sub_404180
 lithtech.exe	sub_404270
@@ -43067,6 +43077,7 @@ lithtech.exe	sub_41e6f0
 lithtech.exe	sub_41f940
 lithtech.exe	sub_41f960
 lithtech.exe	sub_41fa90
+lithtech.exe	sub_41fb80
 lithtech.exe	sub_421700
 lithtech.exe	sub_4219c0
 lithtech.exe	sub_4219e0
@@ -43672,6 +43683,7 @@ lithtech.exe	sub_439a20
 lithtech.exe	sub_439a40
 lithtech.exe	sub_439a50
 lithtech.exe	sub_439a70
+lithtech.exe	sub_439a80
 lithtech.exe	sub_439aa0
 lithtech.exe	sub_439ab0
 lithtech.exe	sub_439ac0
@@ -44031,6 +44043,7 @@ lithtech.exe	sub_44b550
 lithtech.exe	sub_44b970
 lithtech.exe	sub_44ba20
 lithtech.exe	sub_44bbc0
+lithtech.exe	sub_44bdd0
 lithtech.exe	sub_44c390
 lithtech.exe	sub_44c3a0
 lithtech.exe	sub_44c590
@@ -46231,6 +46244,7 @@ lithtech.exe	sub_4be3d0
 lithtech.exe	sub_4be400
 lithtech.exe	sub_4be410
 lithtech.exe	sub_4be420
+lithtech.exe	sub_4be430
 lithtech.exe	sub_4be450
 lithtech.exe	sub_4be4a0
 lithtech.exe	sub_4be4d0
@@ -46706,6 +46720,7 @@ server.dll	sub_10004864
 server.dll	sub_10004f9e
 server.dll	sub_10005a58
 server.dll	sub_10005c4c
+server.dll	sub_10005ce3
 server.dll	sub_100071e2
 server.dll	sub_100071fb
 server.dll	sub_10007234
@@ -48288,6 +48303,7 @@ server.dll	sub_10037670
 server.dll	sub_10037685
 server.dll	sub_1003770c
 server.dll	sub_1003772e
+server.dll	sub_10037780
 server.dll	sub_10037808
 server.dll	sub_10037836
 server.dll	sub_10037891

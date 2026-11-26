@@ -1465,6 +1465,8 @@
 /ALTERNATENAME:?g_ModelAdd@@3V?$_CVector@M@@A=?g_ModelAddQ42C@@3VCVectorZeroInitQ42C@@A
 # 0x4e369c I
 /ALTERNATENAME:?g_ModelDirAdd@@3V?$_CVector@M@@A=?g_ModelDirAddQ42C@@3VCVectorZeroInitQ42C@@A
+# 0x4e36a8 I: cc_WMAmbient writes it; demodtx.cpp's initialiser 0x436170 zeroes the same words
+/ALTERNATENAME:?g_WMAmbient@@3V?$_CVector@M@@A=?g_WMAmbientQ42C@@3VCVectorZeroInitQ42C@@A
 # 0x4de2b4 I
 /ALTERNATENAME:?g_NetNameBuf@@3PADA=??_C@_00A@?$AA@
 # 0x4def70 I

@@ -1124,11 +1124,10 @@ void cc_RebindLightmaps(int argc, char** argv)
 	}
 }
 
-// AVP2: Primal Hunt 0x004f4830 -- the world models' ambient light, three
-// floats that "WMAmbient" sets.  (name ours)
-float g_fWMAmbientR;                                            // 0x004f4830
-float g_fWMAmbientG;                                            // 0x004f4834
-float g_fWMAmbientB;                                            // 0x004f4838
+// AVP2: Primal Hunt 0x004f4830 -- the world models' ambient light that
+// "WMAmbient" sets: a vector of demodtx.cpp's, with ModelAdd and
+// ModelDirAdd (g_WMAmbientQ42C; link/aliases-*.rsp).  (name ours)
+extern LTVector g_WMAmbient;                                    // 0x004f4830
 
 // AVP2: "WMAmbient <r> <g> <b>" (AvP2 0x00422480, Primal Hunt 0x00424b20):
 // set the three, each clamped to 0..250.  The shipped function sits in the
@@ -1139,24 +1138,24 @@ void cc_WMAmbient(int argc, char** argv)
 	if (argc < 3)
 		return;
 
-	g_fWMAmbientR = (float)atof(argv[0]);
-	g_fWMAmbientG = (float)atof(argv[1]);
-	g_fWMAmbientB = (float)atof(argv[2]);
+	g_WMAmbient.x = (float)atof(argv[0]);
+	g_WMAmbient.y = (float)atof(argv[1]);
+	g_WMAmbient.z = (float)atof(argv[2]);
 
-	if (g_fWMAmbientR < 0.0f)
-		g_fWMAmbientR = 0.0f;
-	else if (g_fWMAmbientR > 250.0f)
-		g_fWMAmbientR = 250.0f;
+	if (g_WMAmbient.x < 0.0f)
+		g_WMAmbient.x = 0.0f;
+	else if (g_WMAmbient.x > 250.0f)
+		g_WMAmbient.x = 250.0f;
 
-	if (g_fWMAmbientG < 0.0f)
-		g_fWMAmbientG = 0.0f;
-	else if (g_fWMAmbientG > 250.0f)
-		g_fWMAmbientG = 250.0f;
+	if (g_WMAmbient.y < 0.0f)
+		g_WMAmbient.y = 0.0f;
+	else if (g_WMAmbient.y > 250.0f)
+		g_WMAmbient.y = 250.0f;
 
-	if (g_fWMAmbientB < 0.0f)
-		g_fWMAmbientB = 0.0f;
-	else if (g_fWMAmbientB > 250.0f)
-		g_fWMAmbientB = 250.0f;
+	if (g_WMAmbient.z < 0.0f)
+		g_WMAmbient.z = 0.0f;
+	else if (g_WMAmbient.z > 250.0f)
+		g_WMAmbient.z = 250.0f;
 }
 
 // 0x00438d80, the other config-file writer: the input manager's saver

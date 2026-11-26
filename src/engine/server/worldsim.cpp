@@ -761,9 +761,11 @@ void ws_PushBoxOutOfContacts()
 	float       fMin, fDist;
 	int         i, nTries, n;
 
-	vTest.Init(g_vMoveBase.x + g_vMoveEnd.x,
-	           g_vMoveBase.y + g_vMoveEnd.y,
-	           g_vMoveBase.z + g_vMoveEnd.z);
+	// End first: cl loads the right operand of each sum first (retail
+	// `flds g_vMoveBase; fadds g_vMoveEnd`).
+	vTest.Init(g_vMoveEnd.x + g_vMoveBase.x,
+	           g_vMoveEnd.y + g_vMoveBase.y,
+	           g_vMoveEnd.z + g_vMoveBase.z);
 
 	pState = g_pMoveState;
 
