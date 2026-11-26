@@ -783,7 +783,9 @@ LTBOOL CAIBase::ChooseTarget()
 	}
 
 found:
-	if (IsBodyProp(hTarget) == LTTRUE)
+	// IsCharacter, not IsBodyProp: retail calls 0x10084350, whose class
+	// name is "CCharacter" (0x102d53ec). The cast below needs a CCharacter.
+	if (IsCharacter(hTarget) == LTTRUE)
 	{
 		CCharacter* pChar = (CCharacter*)g_pLTServer->HandleToObject(hTarget);
 		if (!pChar || pChar->IsDead() == LTTRUE)
@@ -1303,7 +1305,8 @@ LTBOOL CAIBase::IsTargetGone()
 {
 	if (!m_hTarget) return LTTRUE;
 
-	if (IsBodyProp(m_hTarget) == LTTRUE)
+	// IsCharacter, as in ChooseTarget (retail calls 0x10084350).
+	if (IsCharacter(m_hTarget) == LTTRUE)
 	{
 		CCharacter* pChar = (CCharacter*)g_pLTServer->HandleToObject(m_hTarget);
 		if (pChar && pChar->IsDead() == LTTRUE)
