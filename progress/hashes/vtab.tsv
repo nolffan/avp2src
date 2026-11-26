@@ -3239,6 +3239,7 @@ W	server.dll	?digest@MD5Digest@WONAPI@@QAE?AV?$basic_string@EU?$char_traits@E@st
 W	server.dll	?digest@MD5Digest@WONAPI@@QAE?AV?$basic_string@EU?$char_traits@E@std@@V?$allocator@E@2@@std@@ABV34@H@Z	58+0,143,154,206,251,271,276+0,302,322,405,430+0,460,474+0,524,549+0,584,597+0,635,654,660+0,675,708	b88652f1b08043a90c5b6ddec91ecfb2650ab91dae782b29c5a7ffb9b5a7bbf5
 W	server.dll	?digest@MD5Digest@WONAPI@@QAE?AV?$basic_string@EU?$char_traits@E@std@@V?$allocator@E@2@@std@@XZ	31+0,68,77+0,105,111,123,152,169,204,237	683a45adcbe90eb98eeb701637cf31a3766623cd4806468474b53f9f19809d9a
 W	server.dll	?dl_AddLink@@YAKPAX0@Z	11+0,18,36	b1a82228738d4beb6fed1255281f31b0e799c8c821981ea2244bc7122b6f0664
+W	server.dll	?dl_MakeLink@@YAPAXPAX0@Z	1+0,6	7420bfda0fd1cc94525b446bdd461eb8c2270d91f278f24be7103c3cef467451
 W	server.dll	?dl_UnlinkAndFree@@YAKPAXPAVCDepLink@@HPAH@Z	16,36+0,41	5ffe6816855b37788ea71b11304b2b471889b8b52f9d2cf4573a87d4d027a952
 W	server.dll	?dsi_FreeMessageModule@@YAXXZ	1+0,12+0,18+0	8491d2f5e80c87e0cd5e652ffc85937e9089dbb85d8fd007edb974ada419700e
 W	server.dll	?dsi_Init@@YAHXZ	4+0,14+0,23,28,33,38,43,48,60	800abecec75ecabe51d1931143f0a6bac2fa4335e419b495511a655c040005b6
@@ -8210,7 +8211,7 @@ W	PHCShell.dll	?find@?$_Tree@V?$basic_string@GU?$char_traits@G@std@@V?$allocator
 W	PHCShell.dll	?find@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QBEIPBDII@Z	118+0	6bb8b40f5d1975d2faf072160d4aa38ba354ad13ca56a2c13b66f5f2b3c5a0df
 W	PHCShell.dll	?find_or_insert@?$hashtable@U?$pair@$$CBKE@_STL@@KU?$hash@K@2@U?$_Select1st@U?$pair@$$CBKE@_STL@@@2@U?$equal_to@K@2@V?$allocator@U?$pair@$$CBKE@_STL@@@2@@_STL@@QAEAAU?$pair@$$CBKE@2@ABU32@@Z	12,69	3e70822ad95185f72d1b3320e3bc677492decae15bc36c9ddd42aed27ccedc2d
 W	PHCShell.dll	?find_or_insert@?$hashtable@U?$pair@QBDVCReservedWord@CReservedWords@@@_STL@@PBDUhash_str_nocase@@U?$_Select1st@U?$pair@QBDVCReservedWord@CReservedWords@@@_STL@@@2@Uequal_str_nocase@@V?$allocator@U?$pair@QBDVCReservedWord@CReservedWords@@@_STL@@@2@@_STL@@QAEAAU?$pair@QBDVCReservedWord@CReservedWords@@@2@ABU32@@Z	12,126	e100b753b43652993e2dd4f112c74c9829348253736db2381289f7b5ce8f0bdf
-W	PHCShell.dll	?for_each@_STL@@YA?AVEraseLine@?%.\DebugLineFX.cpp1149715605@@U?$_Deque_iterator@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@U?$_Nonconst_traits@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@@2@@1@0V23@@Z	23,62	3b34b162bfd432d8d345944870b7e724f74fc47f630ca09af638d13ad3050d79
+W	PHCShell.dll	?for_each@_STL@@YA?AVEraseLine@?%.\DebugLineFX.cpp7533744@@U?$_Deque_iterator@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@U?$_Nonconst_traits@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@@2@@1@0V23@@Z	23,62	3b34b162bfd432d8d345944870b7e724f74fc47f630ca09af638d13ad3050d79
 W	PHCShell.dll	?fromBinary@BigInteger@WONAPI@@QAEXABV?$basic_string@EU?$char_traits@E@std@@V?$allocator@E@2@@std@@@Z	32,81+0	a4d45ee3e7cc555fd373f3119a6160128c770d8200cf0f420527a706d57045d8
 W	PHCShell.dll	?getSeed@Random@WONAPI@@SA?AV?$basic_string@EU?$char_traits@E@std@@V?$allocator@E@2@@std@@H@Z	61,66+0,80+0,105+0,146+0,171+0,207,264+0,274	ed4507b2d778f07408e7ad430fa6fcc01cbf2c3e654efd8c8f2ce8c81da32a46
 W	PHCShell.dll	?initXORMask@Blowfish@WONAPI@@ABEXXZ	3+0,38,64,150,169+0,190,238,246	c5342f4e6060a0508ce02b4acce3200312247c4f9feee9aaf4afb33fca33eea2
@@ -9291,7 +9292,7 @@ W	PHObject.lto	??A?$map@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2
 W	PHObject.lto	??H_STL@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@0@ABV10@0@Z	86,102,134,156,170,210,220,265	4b057d7fd41bbb808dde20e71fcd21276b6793e437bea824d8fecbd02d7960a7
 W	PHObject.lto	??H_STL@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@0@ABV10@PBD@Z	66,106,122,155,173,187,215,243,253,299	78274ab7b459be6dbcf3d062266a2ef0be7d2b898bc8c6a2c70266d1d90046d5
 W	PHObject.lto	??Hstd@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@0@ABV10@PBD@Z	30+0,69,132,203+0,213	d861159880b8375a5c2900778335aa6f0e8de36e3d2b9adbd2fe3a4bc602ffc1
-W	PHObject.lto	??RVolumeHeuristic@?%.\AIVolumeMgr.cpp1791930854@@QBEMABVCAIVolume@@@Z	2+0	bdd1ad2736340ddf029757d8842224c85af1ed05a2473cb5a747f303a732cea2
+W	PHObject.lto	??RVolumeHeuristic@?%.\AIVolumeMgr.cpp1175123879@@QBEMABVCAIVolume@@@Z	2+0	bdd1ad2736340ddf029757d8842224c85af1ed05a2473cb5a747f303a732cea2
 W	PHObject.lto	??_F?$map@IV?$SmartPtr@VSocketOp@WONAPI@@@WONAPI@@U?$less@I@std@@V?$allocator@V?$SmartPtr@VSocketOp@WONAPI@@@WONAPI@@@4@@std@@QAEXXZ	12	41bbf59f798aa681d22861d61acdf0e0477d53cdeeac68af398d72aa8f0d06b9
 W	PHObject.lto	??_FLTSmartLink@@QAEXXZ	1+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	PHObject.lto	??_GEvent@WONAPI@@UAEPAXI@Z	8+0,15+0	46a56d426857a235c6af07ae810081b0eba5520a106bd70c6f8769137ffd1201
@@ -9573,8 +9574,9 @@ W	PHObject.lto	?CheckResponse@GetDirOp@WONAPI@@MAE?AW4WONStatus@2@XZ	40,54	6a32e
 W	PHObject.lto	?CheckResponse@RenewEntityOp@WONAPI@@MAE?AW4WONStatus@2@XZ	43,52,63,74,100,117	bcd1774418f981218388186602672f2a69b1ae6afcdb79f838b9297c55f019e9
 W	PHObject.lto	?CheckWrite@WriteBuffer@WONAPI@@AAEXK@Z	38	b19c3d0421fd7ea22ac1348f78fc630496d528e768ff68dd32804d7fb93e1a07
 W	PHObject.lto	?ChooseBestWeapon@CAI@@UAEXM@Z	168,207,311,1319	9249e1ebe8b5e44a7c60440dbf15e24c12a3fe9d6eeb07111ba1fd2bc6cea961
+W	PHObject.lto	?ChooseTarget@CAIBase@@UAEIXZ	19,34,46+0,77,103,122,136+0,167,190+0	9e0af2e1e084693ad53c386c8f80eebc80dd032c382ed52980d9bf4080bfaec8
 W	PHObject.lto	?ChooseTarget@CAITentacle@@MAEIXZ	16,34+0,65	0e074ea012dc43bbc7e15ed7545f574976f830deff1770af8ba545612720b95d
-W	PHObject.lto	?ClampAngle@?%.\turret.cpp2384516316@@YAMM@Z	6+0,29+0,35+0,48+0,66+0,72+0	3e81628fd3dcf66aeca0192e745b44953517ddb317a28786d384d710c6047817
+W	PHObject.lto	?ClampAngle@?%.\turret.cpp2480322750@@YAMM@Z	6+0,29+0,35+0,48+0,66+0,72+0	3e81628fd3dcf66aeca0192e745b44953517ddb317a28786d384d710c6047817
 W	PHObject.lto	?CleanupFile@RecvBytesOp@WONAPI@@IAE?AW4WONStatus@2@W432@@Z	75+0	9eccf0be13bf26986c08daa7a9ac31e3ccb0f6981d31949fb7d58016e8d1fd0c
 W	PHObject.lto	?CleanupHook@RecvBytesOp@WONAPI@@MAEXXZ	4,15	602d421524df4732c28e96d23022a24f7fca9037625415b2a6f8b7475849fd45
 W	PHObject.lto	?CleanupHook@ServerRequestOp@WONAPI@@MAEXXZ	6,37,49+0,58	29943d593f4e8cad84405dcae0434b7beece50db727935687918053ebae320a4
@@ -9955,7 +9957,7 @@ W	PHObject.lto	?ExplodeLimb@BodyProp@@AAEXW4ModelNode@@IV?$_CVector@M@@I@Z	13+0,
 W	PHObject.lto	?ExplodeLimb@CCharacter@@IAEXW4ModelNode@@W4ModelSkeleton@@@Z	44+0,51,71+0,104+0,141+0,151,167+0,173,225+0,233,266+0,273,279+0,288,340,357+0,392+0,405+0,417+0,456+0,493,515	f1e63675adcd3dd66d556cef9e9650915ac53ad3b6e3427c87f73bba4eed6347
 W	PHObject.lto	?ExplodeNode@CModelButeMgr@@QAEIW4ModelSkeleton@@W4ModelNode@@M@Z	104+0,145+0,209+0,253+0	f3ce93841e52f1d601ef7006467d5cc4a2b4e6844d461875c0e04959fbb7e9e7
 W	PHObject.lto	?ExplosionFilterFn@@YAIPAVLTObject@@PAX@Z	2+0,27+0,43+0,70	506d47a5ad40f942ba7d64c7edf70a5b36a77760ac3ca550d5191f27d46886b9
-W	PHObject.lto	?ExtendedFace@?%.\AIVolume.cpp1814610445@@YA?AUFace@@ABU2@0@Z	110,357,492,561,601,629,696	95a7abf152ccbc61d925b3150d8194bc83d920ff291102a060d571137bacbfd4
+W	PHObject.lto	?ExtendedFace@?%.\AIVolume.cpp1343313306@@YA?AUFace@@ABU2@0@Z	110,357,492,561,601,629,696	95a7abf152ccbc61d925b3150d8194bc83d920ff291102a060d571137bacbfd4
 W	PHObject.lto	?Extract@IntegerExtractor@WONAPI@@QAE_NAAVBigInteger@2@@Z	23,42,53,73,84,109,128,151	bf1729889ad015312c604e88b142a3d30a615338bfec81a2cd96bc47e1a1477d
 W	PHObject.lto	?ExtractMsg@RecvMsgOp@WONAPI@@IAE?AW4WONStatus@2@XZ	23+0,38+0,44+0,50+0,56+4,64+0,73+0,79+4,85+0,97,137+0,167+0,199+0,224	2de0a9eaf9a9d86aae600f993f389c13ab6c95085015853346ac9b86922e9605
 W	PHObject.lto	?ExtractMusicSetting@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@PAD@Z	33+0,77,86+0,108+0,114+0,121,131+0,153+0,175+0,193+0,211+0,257,290,326,364,378	26287e53bfccae1f8369c457d5820baa8dd753a48848da48e77407326bfc3e2c
@@ -9966,7 +9968,7 @@ W	PHObject.lto	?FadeOut@CTentHole@@QAEXXZ	12+0,31+0,41+0	d0dec71b789d439c8f3f285
 W	PHObject.lto	?FillAllClips@CWeapons@@QAEXXZ	8,24+0,54+0,71+0,87+0	cd36a8a96df15552721dee2aed02c3e0a358b0f4911d9c92de46f9d2887055c0
 W	PHObject.lto	?FillClip@CWeapons@@QAEXE@Z	8,24+0,54+0,71+0,87+0,104+0	a6e702d3a5141131e4ad04a4b24eecc2d33a7582ebd08a4e280d9bd3944a0038
 W	PHObject.lto	?FillErrorMsg@@YAXPADHPBD1VCString@@@Z	50+0,59,87+0,114	52a1a74dd9d516df0dbbb162d10b77b18d3160278f2033abdc80475d8753c86c
-W	PHObject.lto	?FillPotentialObstacleList@?%.\ObstacleMgr.cpp2369732078@@YAXPAV?$list@UObstacle@@V?$allocator@UObstacle@@@_STL@@@_STL@@ABV?$_CVector@M@@11PAVLTObject@@I@Z	31+0,83,157+0,170+0,190+0,352+0,378+0,384+0,389+0,419+0,424+0,452+0,458+0,463+0,493+0,498+0,529+0,535+0,540+0,576+0,600+0,637,683+0,835,850,915+0	f1740148b9c669d36ae973af802e9c577b7811cca9a06d377e55303542f40c57
+W	PHObject.lto	?FillPotentialObstacleList@?%.\ObstacleMgr.cpp1178817165@@YAXPAV?$list@UObstacle@@V?$allocator@UObstacle@@@_STL@@@_STL@@ABV?$_CVector@M@@11PAVLTObject@@I@Z	31+0,83,157+0,170+0,190+0,352+0,378+0,384+0,389+0,419+0,424+0,452+0,458+0,463+0,493+0,498+0,529+0,535+0,540+0,576+0,600+0,637,683+0,835,850,915+0	f1740148b9c669d36ae973af802e9c577b7811cca9a06d377e55303542f40c57
 W	PHObject.lto	?FillSpecialNodeLists@CAINodeMgr@@AAEXXZ	35,62,91,120,151+0,156+0,217,231+0,236+0,297,311+0,316+0,374,385+0,390+0,461	84f037cc3479d9e4f69d88403e86d46172756fded25ed6527faab945b1be31b8
 W	PHObject.lto	?FilterFn_CharactersOnly@@YAIPAVLTObject@@PAX@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	PHObject.lto	?FilterNonSolid@@YAIPAVLTObject@@PAX@Z	10+0	08e5bd234c725b5abb734ec270a7dae04cc0218488fdb246b64708cd790fb266
@@ -10031,7 +10033,7 @@ W	PHObject.lto	?FirstUpdate@SearchLight@@AAEXXZ	34+0,72+0,109+0,136+0	9fa1d8b836
 W	PHObject.lto	?FirstUpdate@Striker@@AAEXXZ	45+0,121+0	5675692fadd9c0af97fcd64c87cea52b362a2a6538d47128d5bfb55d1182a99d
 W	PHObject.lto	?FirstUpdate@TranslucentWorldModel@@AAEXXZ	5+0,28+0,74+0	47d4658625fcc6190ee53cf3820ca0e78f761f64f55e9d4989541db799d35ab7
 W	PHObject.lto	?FirstUpdate@Turret@@AAEXXZ	70,124+0,161,169	4d7ab769a6b00a1e45490eb14e9dcafdc8b6cad96e8bdde76191ada8b030b247
-W	PHObject.lto	?FitIntoVolume@?%.\AIStrategyMove.cpp2656623418@@YA?AV?$_CVector@M@@ABVCAIVolume@@ABV2@1PA_N@Z	57,123+0,137+0,151+0,166+0,195+0,266	876fab3ffae758d0a915f7b2893e1085a99ea71e7362658464a2bbbdbb1220a3
+W	PHObject.lto	?FitIntoVolume@?%.\AIStrategyMove.cpp224576362@@YA?AV?$_CVector@M@@ABVCAIVolume@@ABV2@1PA_N@Z	57,123+0,137+0,151+0,166+0,195+0,266	876fab3ffae758d0a915f7b2893e1085a99ea71e7362658464a2bbbdbb1220a3
 W	PHObject.lto	?FlushResponse@CGameSpyMgr@@AAEXXZ	42+0,91,104+0,115,124+0,129,156	0c8675eae706e29364ab77548062b9d50992aafff21aef191f9af4a043234320
 W	PHObject.lto	?FocusCanBeShotFrom@CTurretVision@@QBE_NABV?$_CVector@M@@M@Z	51+0,220,414+0,426+0,439+0,490+0,495+0,503+0,540,567,573+0,597+0,609,697+0,749+0,801+0	fe64372c8e6dce65ebd487871a8899c4ae3ca8116a1c8bbe571bd3c8c4f0fae4
 W	PHObject.lto	?FootStepStateVolumeMod@@YAMW4CharacterMovementState@@@Z	21+0,28+0,35+0	958403ef7efe1b0a27332ba4e1b2aa3c19a72f90094d399e97c8ced75777757c
@@ -10105,7 +10107,7 @@ W	PHObject.lto	?GetBid@ScriptGoal@@UAEMXZ	2+0,106+0,113+0,118+0,152+0,159,170+0	
 W	PHObject.lto	?GetBid@SnipeGoal@@UAEMXZ	4+0,18+0,24+0,59+0,78,192+0	7ddf09091e9dcf4eae1f918a994da79b3a2e39954cdcbc3bc1029bc6a58a765b
 W	PHObject.lto	?GetBidder@BidMgr@@QAEPAVBidder@@ABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	73	11e4786dd5aa536ddd77713557e1f3d10e883b40d5eff7ef4b5654b9af05420a
 W	PHObject.lto	?GetBool@CButeMgr@@QAE_NPBD0_N@Z	20,36+0,42	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
-W	PHObject.lto	?GetBoolProp@?%.\turret.cpp2384516316@@YAIAAUGenericProp@@PBDI@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
+W	PHObject.lto	?GetBoolProp@?%.\turret.cpp2480322750@@YAIAAUGenericProp@@PBDI@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	PHObject.lto	?GetBuffer@CString@@QAEPADK@Z	10	1f6fda9c9f80acbb858eddeb513afc1a0e95749f806ff144d0f2d42b3ba28168
 W	PHObject.lto	?GetByte@CButeMgr@@QAEEPBD0E@Z	20,36+0,42	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
 W	PHObject.lto	?GetByte@IntegerExtractor@WONAPI@@AAEEXZ	120,148+0	f5ea5b38f10112f1a7fefac03d547cd5896c14c4ef550f9595de56f6490e4979
@@ -10143,7 +10145,7 @@ W	PHObject.lto	?GetDouble@CButeMgr@@QAENPBD0@Z	26,44+0,52	952d8b581532244322bfd4
 W	PHObject.lto	?GetDouble@CButeMgr@@QAENPBD0N@Z	20,41+0,47	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
 W	PHObject.lto	?GetDouble@CHierarchicalButeMgr@@QAENPBD0N@Z	59+0,68+0,79,90+0,104,114,119+0,136+0,145,182,192+0,203+0,208,215+0,224,230+0,251,265,288+0,306+0,334,339+0,361+0,366	a21db8133fc7d49cb02859611ddba1eb1290ad3aa7a38e45ab67033aa9bef303
 W	PHObject.lto	?GetDoubleAttrib@CPickupButeMgr@@AAENHPAD@Z	23+0,28+0,62	92d78dda5a0be749c0598c197a8148ca5130b1c363c58ba8ccfe09d8c994a784
-W	PHObject.lto	?GetDoubleProp@?%.\turret.cpp2384516316@@YANAAUGenericProp@@PBDN@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
+W	PHObject.lto	?GetDoubleProp@?%.\turret.cpp2480322750@@YANAAUGenericProp@@PBDN@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	PHObject.lto	?GetDword@CButeMgr@@QAEKPBD0@Z	19,35+0,41	f930e5a221c7a01a61c83084bd457e9b09d7c458ec37fd59c4940fa9057be790
 W	PHObject.lto	?GetDword@CButeMgr@@QAEKPBD0K@Z	20,38+0,44	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
 W	PHObject.lto	?GetEntryPos@CLeashGroup@@QAEIHHABV?$_CVector@M@@PAV2@M@Z	11,23,47,59	7832dee8ffe68e511e10915551480e09e705bb1409b3d835659753851df08539
@@ -10298,7 +10300,7 @@ W	PHObject.lto	?GetString@CButeMgr@@QAE?AVCString@@PBD0ABV2@@Z	29,53,69+0,75,98	
 W	PHObject.lto	?GetString@CHierarchicalButeMgr@@QAE?AVCString@@PBD0ABV2@@Z	81+0,90+0,101,117+0,127,137,143+0,161+0,169,187,204,214+0,230+0,235,245+0,254,260+0,281,295,319+0,334+0,342,375,381+0,404+0,409,431,445,463	e1ebf3a82352f57b33dacecfe526ead29ac7a66eaea9081ccb015b4555bb61da
 W	PHObject.lto	?GetStringAttrib@CMissionMgr@@IAE?AVCString@@HPAD@Z	33+0,38+0,74	6b4f5f19dd70274764f2d7d4483a4b1bed83c9b29476f1f31ae379bda8d6c2ef
 W	PHObject.lto	?GetStringAttrib@CSpawnButeMgr@@AAE?AVCString@@HPBD0@Z	54+0,59+0,86,121,143	73dbc8d5dad98d7bc9df0800b548797279c5b6508999869303382df0c1524fad
-W	PHObject.lto	?GetStringProp@?%.\turret.cpp2384516316@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@AAUGenericProp@@PBDV23@@Z	43+0,113,146,178,211,239,249,295	b6f4d178dbdc1a2b7cfcb6558b67ff4c774f83624e865fc31f150108c0740064
+W	PHObject.lto	?GetStringProp@?%.\turret.cpp2480322750@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@AAUGenericProp@@PBDV23@@Z	43+0,113,146,178,211,239,249,295	b6f4d178dbdc1a2b7cfcb6558b67ff4c774f83624e865fc31f150108c0740064
 W	PHObject.lto	?GetStringValue@CPropDef@@QAEIAAVCString@@@Z	29,57+0,63,87,106+0,113+0,119+0,134,161+0,167,191,234+0,240,264,278+0,288	b2ec47b8ed319198a83ca3c974f82c5c29fb30112b4de82a04067563e395ad42
 W	PHObject.lto	?GetSurfaceType@@YA?AW4SurfaceType@@ABUIntersectInfo@@@Z	18,37+0,56+0,93	bc39db4f161dd1c2b88f7eae1e7f1953c08c1952dff2b1836b544268e13f0c0e
 W	PHObject.lto	?GetSurfaceType@@YA?AW4SurfaceType@@ABVCollisionInfo@@@Z	17,37	6953790706affe6dc70da61225f4e9a076d5abc804f21709949fa324758089a1
@@ -10690,6 +10692,7 @@ W	PHObject.lto	?IsStuck@CAIStrategyFollowPath@@QBE_NXZ	10	b0270f42801c34e327bb14
 W	PHObject.lto	?IsStuck@SimpleAIAlien@@IAEIXZ	36+0,96+0,150+0,204+0	283a19c7c1326916146b5e5da28a85f038856048abcc2685351f7c54af54e398
 W	PHObject.lto	?IsSuccess@CAIScriptPlayAnimationSet@@UBE_NXZ	11	bceed16a0f55494df89b6093cf115c8b7d79a3ef3dd07797cf3ac23b08142ea6
 W	PHObject.lto	?IsSuccess@CAIScriptWait@@UBE_NXZ	8+0,53+0	9a14fe38a4e0ad6ee6210c15314500d77f98e287face626d0434d30ff7083950
+W	PHObject.lto	?IsTargetGone@CAIBase@@UAEIXZ	46,73+0,146,165,192	5d0ce1e313591a2f3fc6727ddc58abfd408cd5f3049cf4694028a6dcb6003d5e
 W	PHObject.lto	?IsTargetVertical@SimpleAIAlien@@IAEIXZ	50+0,145+0,207+0,323+0,336+0,424+0	88599334f802f2cddef043e60f9c471c01ae8a389de567f0b53d0fb70eeded2c
 W	PHObject.lto	?IsTargetVisibleFromWeapon@CAI@@UBEIP6AIPAVLTObject@@PAX@ZP6AIK1@ZPAM4PAV?$_CVector@M@@@Z	78+0,120	dc174aa7e9db10433db81d784c7709db1cef6776c9bb610ab1af583440ecf6f0
 W	PHObject.lto	?IsValid@AuthPeerData@WONAPI@@QBE_NXZ	24	f4e8ef66ac97225e4d87c5c199a602a335eb33701ed171f456118e0aa6c8bcf1
@@ -10716,7 +10719,7 @@ W	PHObject.lto	?KillWaveTrack@CMusicMgr@@IAEXXZ	12+0,17,22+0,79,84+0,91	f130bdf0
 W	PHObject.lto	?LaunchWindshield@AIExosuit@@IAEXXZ	30+0,54+0,70+0,137+0,187+0,211+0,225+0,239+0,248,254+0	a76c25f9dea0eca61f49e034ba1055ebee78148b428f7bea763adcd4a4228a12
 W	PHObject.lto	?Left@CString@@QBE?AV1@K@Z	62,92,113,133,155	72cb19bd7c535925594dadd4874e800887441ae9569c6be9b3608f8e3af567bc
 W	PHObject.lto	?LengthDecode@IntegerExtractor@WONAPI@@AAE_NXZ	5,33,50,72	5923953599c3fa222559fc6e0a9f1b074d0248e7bb398f1c570c5bb4ecca4036
-W	PHObject.lto	?LineSegmentDistSqr@?%.\AvoidancePath.cpp232905199@@YAMABV?$_CVector@M@@0@Z	135+0,162+0	a91fd65f8c948aee267271998d06f318bff7c8ea312317fe6b99b463a424a466
+W	PHObject.lto	?LineSegmentDistSqr@?%.\AvoidancePath.cpp88410390@@YAMABV?$_CVector@M@@0@Z	135+0,162+0	a91fd65f8c948aee267271998d06f318bff7c8ea312317fe6b99b463a424a466
 W	PHObject.lto	?LiquidFilterFn@@YAIPAVLTObject@@PAX@Z	9+0,20+0,25+0	32695d05514241142411b381828c83ff8e0ed26741b0aa4fec15b6b26dce8e28
 W	PHObject.lto	?ListProperties@CEditable@@IAEXPAVBaseClass@@@Z	39+0,44+0,59+0,80+0,85+0,156,167,187,218,225+0,236+0,242+0,249+0,278,335+0,340+0	0cf0b6e8981b1d0e4b9fa6d5303c4bf5cffba1aa53b985f1366ec905cd5e1308
 W	PHObject.lto	?Load@AIActionBezierTo@@UAEXPAVILTMessage@@@Z	179+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
@@ -11066,7 +11069,7 @@ W	PHObject.lto	?OpenDoor@CAI@@QAEXPAVLTObject@@@Z	5+0,12	101a4eb8c9f39a6c78bfe5d
 W	PHObject.lto	?Opening@Door@@MAEXXZ	8+0,119,130,136+0	52052b3ca8aaf3530c4f64b6e77c7b3495a8252644ff96fcf68b5f89fbda441f
 W	PHObject.lto	?Opening@RotatingDoor@@MAEXXZ	172,201+0,219+0	c9d9ddf6c1214a14456cb54fb8050aa8c80748b4d3fabebddcc48a11cee4c835
 W	PHObject.lto	?Overlaps@CLeashPoint@@QAEIPAVCLeashNode@@@Z	49	46ca4e01d4f5adbf6d4a2947b544de6ac09c5ea46c1d61684e85f74fd8e6a3c6
-W	PHObject.lto	?OvershotDest@?%.\AIStrategyMove.cpp2656623418@@YA_NABV?$_CVector@M@@000@Z	111+0,182+0	796e7155a419c1c2aa2aac67a87eb521e91ade1f7ef1f2a44c074d53cf0d3a74
+W	PHObject.lto	?OvershotDest@?%.\AIStrategyMove.cpp224576362@@YA_NABV?$_CVector@M@@000@Z	111+0,182+0	796e7155a419c1c2aa2aac67a87eb521e91ade1f7ef1f2a44c074d53cf0d3a74
 W	PHObject.lto	?Pack@GetEntityRequest@WONAPI@@QAEXPAVWriteBuffer@2@W4PACKFLAG@12@@Z	33,49,65,78,89,111,120+0	7a1a00546b848442568d105f5d1c12758e19081164d291cbfb746eaff260d9c9
 W	PHObject.lto	?Pain@CAISenseHearAllyPain@@QAEXABUSoundButes@@PBVCCharacter@@@Z	24	0320704b6f6740932f961d62980e164a8a5455ee9912f5391fa6c245f1b96ad7
 W	PHObject.lto	?Pain@CAISenseMgr@@QAEXABUSoundButes@@PBVCCharacter@@@Z	56	5f3fd5522847accb4daa15062c2a292c0cbb6b09d61952b3568fbb62ba8e2b11
@@ -11907,7 +11910,7 @@ W	PHObject.lto	?Shutdown@WONAPICore@WONAPI@@UAEXXZ	33,45,58,65,72,83,90,109	41e3
 W	PHObject.lto	?Signal@SocketThreadEx@WONAPI@@UAEXXZ	16	12c6cb3a4acc277442d0ae08ea94ece24a9e36622e8f099ff65b54f29fd3262e
 W	PHObject.lto	?SkipBytes@WriteBuffer@WONAPI@@QAEXK@Z	10	55780b43232464d2d9c400faa482cc28340d8ac685df60dffb407540672ec49e
 W	PHObject.lto	?SnapTurn@CAI@@QAEXV?$_CVector@M@@@Z	164+0,177+0,209,216	b707275ca696ef5fc4417dc2a10650df6673480e34d19f429f0aa6bd7d06c676
-W	PHObject.lto	?SoundIsDone@?%.\turret.cpp2384516316@@YAIPAUHLTSOUND_t@@@Z	7+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
+W	PHObject.lto	?SoundIsDone@?%.\turret.cpp2480322750@@YAIPAUHLTSOUND_t@@@Z	7+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	PHObject.lto	?Spawn@CTentHole@@SAPAV1@ABV?$_CVector@M@@0M@Z	11,50+0,67+0,73+0,125+0,234	11157f4621e7881697a67bbafd505c7ddee46075cc41a2b024fb65f690179f4b
 W	PHObject.lto	?Spawn@CTurretSpawner@@AAEXXZ	5+0,33+0,64,174	fc408451a4c2df9154961752eafd358b252a3ae63851175da677f35c1ad81d2d
 W	PHObject.lto	?Spawn@RandomSpawner@@IAEXXZ	138	1e562e63d3f22216d78d0295316ca4ef307c446edbf76d29a9c31c72b3f69f15
@@ -12811,7 +12814,7 @@ W	PHObject.lto	?sb_Init2@@YAHPAUStructBank_t@@KKK@Z	17,28	9d65d241d2d9d7d5d80e86
 W	PHObject.lto	?sb_Term2@@YAXPAUStructBank_t@@H@Z	20	c8e01eeab0dd4f367887fb71f33951543f1420eaac23de38a11e99223a7c8092
 W	PHObject.lto	?setSeed@Random@WONAPI@@QAEXABV?$basic_string@EU?$char_traits@E@std@@V?$allocator@E@2@@std@@@Z	42,60,71+0,108,141,159,171,182,204+0,219,231+0,266,282+0,293,304	8f96cf41a9feb7a0f614a1740d94b0d9f6b9029510dd0cf3becc21cab24d9769
 W	PHObject.lto	?shiftRight@BigInteger@WONAPI@@QAEAAV12@H@Z	12	6d41dcb7c7f2d1220216c32aaa3f9bad89efca14e989bf7a17aefe671b8a8dd8
-W	PHObject.lto	?sort_heap@_STL@@YAXPAPAVCAINodeWallWalk@@0VCmpDist@?%.\AINodeMgr.cpp173917474@@@Z	462	6a067b237313eb42910fefecf4e7955dc610aa5e9ff808f54ba5ff86dfd5ee53
+W	PHObject.lto	?sort_heap@_STL@@YAXPAPAVCAINodeWallWalk@@0VCmpDist@?%.\AINodeMgr.cpp256751656@@@Z	462	6a067b237313eb42910fefecf4e7955dc610aa5e9ff808f54ba5ff86dfd5ee53
 W	PHObject.lto	?st_add@BigInteger@WONAPI@@SAXAAV12@ABV12@1@Z	22,44,75,98,120,136	e783caab7f00fa546d7c06a1f9686e001f2e69ccfc4939df7e5db9da6328f739
 W	PHObject.lto	?st_add_unsigned@BigInteger@WONAPI@@SAXAAV12@ABV12@1@Z	62,89	2e5bcbceb36117ed181a8fdd789cd9f644816029ebc1ace7ede44dca212d1383
 W	PHObject.lto	?st_cmp@BigInteger@WONAPI@@SAHABV12@0@Z	42,67	a60a2449873bdc7d3faab9d480e1bd8d8bf01e353901c166f88854f2869ba4ec
@@ -15685,7 +15688,7 @@ W	CShell.dll	?RefreshAsync@AuthContext@WONAPI@@QAEXPAVLightGetCertOp@2@K@Z	40+0,
 W	CShell.dll	?RefreshBlock@AuthContext@WONAPI@@QAE?AW4WONStatus@2@K@Z	69,94+0,114,129,154+0	fc8bd0516ae7fcf998e80f6d25bff2a4d7b5a42cef5227fc481240271b6379ae
 W	CShell.dll	?RefreshLANServers@CGameSpyClientMgr@@QAEHXZ	20,35,48,59,87,100,120,127+0,132+0,138,161,166+0,171+0,179,196	c2449e708d9662b9bf9c03ae1b065d34c5219909da3bedc2e2e8d9ce15fb42b6
 W	CShell.dll	?RefreshServers@CFolderJoin@@IAEXXZ	13+0,59,74,80+0	d301feeb5fc6ab9a9217c76e39b141d3f0f6a9e5359915772192ca7dbbfc0e64
-W	CShell.dll	?RefreshServers@CGameSpyClientMgr@@QAEHH@Z	31+0,44,77,108,121,131,146,177+0,185,195+0,208,213+0,232+0,254,291,296+0,338,352,358+0,364+0,398,412+0,438,475+0,486+0,505,519+0,531+0,541,549+0,558,564+0,569,582	a8d1a521b9ea07175afcb2bf30a335e87a671c408bc9499e16f36f3eba29c049
+W	CShell.dll	?RefreshServers@CGameSpyClientMgr@@QAEHH@Z	31+0,44,77,108,121,131,146,177+0,185,195+0,208,213+0,232+0,254,291,296+0,338,352,358+0,364+0,398,412+0,438,475+0,486+0,505,519+0,531+0,541,549+0,558,564+0,569,582,587	8ee0df9da716f0316ec1779cb3ecef9b04277cb423af934dcec2175ee659351d
 W	CShell.dll	?RegisterTexture@TextureModeMGR@@QAEXPAPAUStateChange@@PBD@Z	41,94,125,172,190,219,251,269,323+0,374+0,498+0,559+0,645,683,711,730,793,831,859,878,1032,1069,1088,1143,1148+0,1172+0,1178+0,1187,1209,1218+0	ed8f945a20233bf17084b9e24a1a189572fdceb988bb84cde49345e0d5ea3a8d
 W	CShell.dll	?RegisterTexture@ViewModeMGR@@QAEXPAPAUStateChange@@PBD@Z	17	f2b48cc514831757e8fea7e3bfb78454a80a7dad0a648516325f9b7341552ac8
 W	CShell.dll	?Release@RefCount@WONAPI@@QAEXXZ	9+0	d81b84a25ca797a633025aa9786e67fc02d537c73862b0c4dc4a177db06f6583
@@ -16669,7 +16672,7 @@ W	CShell.dll	?find@?$_Rb_tree@V?$basic_string@GV?$char_traits@G@_STL@@V?$allocat
 W	CShell.dll	?find@?$set@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@U?$less@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QBE?AU?$_Rb_tree_iterator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@U?$_Const_traits@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@2@ABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@2@@Z	40	85105668df634d3f86cb00a6f276d7e1a6d9560e0b5418d2d9936fa197e15ce8
 W	CShell.dll	?find_or_insert@?$hashtable@U?$pair@$$CBKE@_STL@@KU?$hash@K@2@U?$_Select1st@U?$pair@$$CBKE@_STL@@@2@U?$equal_to@K@2@V?$allocator@U?$pair@$$CBKE@_STL@@@2@@_STL@@QAEAAU?$pair@$$CBKE@2@ABU32@@Z	12,69	3e70822ad95185f72d1b3320e3bc677492decae15bc36c9ddd42aed27ccedc2d
 W	CShell.dll	?find_or_insert@?$hashtable@U?$pair@QBDVCReservedWord@CReservedWords@@@_STL@@PBDUhash_str_nocase@@U?$_Select1st@U?$pair@QBDVCReservedWord@CReservedWords@@@_STL@@@2@Uequal_str_nocase@@V?$allocator@U?$pair@QBDVCReservedWord@CReservedWords@@@_STL@@@2@@_STL@@QAEAAU?$pair@QBDVCReservedWord@CReservedWords@@@2@ABU32@@Z	12,126	e100b753b43652993e2dd4f112c74c9829348253736db2381289f7b5ce8f0bdf
-W	CShell.dll	?for_each@_STL@@YA?AVEraseLine@?%.\DebugLineFX.cpp2718015311@@U?$_Deque_iterator@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@U?$_Nonconst_traits@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@@2@@1@0V23@@Z	23,62	3b34b162bfd432d8d345944870b7e724f74fc47f630ca09af638d13ad3050d79
+W	CShell.dll	?for_each@_STL@@YA?AVEraseLine@?%.\DebugLineFX.cpp1973930425@@U?$_Deque_iterator@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@U?$_Nonconst_traits@U?$pair@PAUHLTLINE_t@@UDebugLine@@@_STL@@@2@@1@0V23@@Z	23,62	3b34b162bfd432d8d345944870b7e724f74fc47f630ca09af638d13ad3050d79
 W	CShell.dll	?fromBinary@BigInteger@WONAPI@@QAEXABV?$basic_string@EV?$char_traits@E@_STL@@V?$allocator@E@2@@_STL@@@Z	44	622dd66ecc03f176174fc054f8a241140a36d49d70bcf39f29f293dc0be0cacf
 W	CShell.dll	?getSeed@Random@WONAPI@@SA?AV?$basic_string@EV?$char_traits@E@_STL@@V?$allocator@E@2@@_STL@@H@Z	60,76,105+0,119+0,153+0,197+0,222+0,357,371,395,422,459	4edc91dde5db334c1dc909372b72f0fc575cf822bd6fa43362cec8f2f7d3b14c
 W	CShell.dll	?initXORMask@Blowfish@WONAPI@@ABEXXZ	186	1802ff35c5b18a2e2f15fa52b348eda9b21dabe5f7736346ff84e9c13b0d8e63
@@ -17714,7 +17717,7 @@ W	Object.lto	??A?$map@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@
 W	Object.lto	??A?$map@VIPAddr@WONAPI@@U?$_List_iterator@VIPAddr@WONAPI@@U?$_Nonconst_traits@VIPAddr@WONAPI@@@_STL@@@_STL@@U?$less@VIPAddr@WONAPI@@@4@V?$allocator@U?$pair@$$CBVIPAddr@WONAPI@@U?$_List_iterator@VIPAddr@WONAPI@@U?$_Nonconst_traits@VIPAddr@WONAPI@@@_STL@@@_STL@@@_STL@@@4@@_STL@@QAEAAU?$_List_iterator@VIPAddr@WONAPI@@U?$_Nonconst_traits@VIPAddr@WONAPI@@@_STL@@@1@ABVIPAddr@WONAPI@@@Z	39,60,87,163,175,218	5d1c212d04d444dbe65d218889bc8d9c06d67ca581b58e8399a6f18b145a7d2a
 W	Object.lto	??H_STL@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@0@ABV10@0@Z	86,102,134,156,170,210,220,265	4b057d7fd41bbb808dde20e71fcd21276b6793e437bea824d8fecbd02d7960a7
 W	Object.lto	??H_STL@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@0@ABV10@PBD@Z	66,106,122,155,173,187,215,243,253,299	78274ab7b459be6dbcf3d062266a2ef0be7d2b898bc8c6a2c70266d1d90046d5
-W	Object.lto	??RVolumeHeuristic@?%.\AIVolumeMgr.cpp131631984@@QBEMABVCAIVolume@@@Z	2+0	bdd1ad2736340ddf029757d8842224c85af1ed05a2473cb5a747f303a732cea2
+W	Object.lto	??RVolumeHeuristic@?%.\AIVolumeMgr.cpp2791625009@@QBEMABVCAIVolume@@@Z	2+0	bdd1ad2736340ddf029757d8842224c85af1ed05a2473cb5a747f303a732cea2
 W	Object.lto	??_FLTSmartLink@@QAEXXZ	1+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	Object.lto	??_G?$ConstSmartPtr@UDirEntity@WONAPI@@@WONAPI@@QAEPAXI@Z	16+0	d81b84a25ca797a633025aa9786e67fc02d537c73862b0c4dc4a177db06f6583
 W	Object.lto	??_GEvent@WONAPI@@UAEPAXI@Z	8+0,15+0	46a56d426857a235c6af07ae810081b0eba5520a106bd70c6f8769137ffd1201
@@ -17979,7 +17982,7 @@ W	Object.lto	?CheckResponse@GetDirOp@WONAPI@@MAE?AW4WONStatus@2@XZ	40,54	6a32e88
 W	Object.lto	?CheckResponse@RenewEntityOp@WONAPI@@MAE?AW4WONStatus@2@XZ	43,52,63,74,100,117	bcd1774418f981218388186602672f2a69b1ae6afcdb79f838b9297c55f019e9
 W	Object.lto	?CheckWrite@WriteBuffer@WONAPI@@AAEXK@Z	38	b19c3d0421fd7ea22ac1348f78fc630496d528e768ff68dd32804d7fb93e1a07
 W	Object.lto	?ChooseBestWeapon@CAI@@UAEXM@Z	168,207,311,611,1298	a249db2c51a5d0345678054d85bb4b9f1fca1f5d6db8d2d2d135d5cbcf1e72f0
-W	Object.lto	?ClampAngle@?%.\turret.cpp1044117796@@YAMM@Z	6+0,29+0,35+0,48+0,66+0,72+0	3e81628fd3dcf66aeca0192e745b44953517ddb317a28786d384d710c6047817
+W	Object.lto	?ClampAngle@?%.\turret.cpp895323661@@YAMM@Z	6+0,29+0,35+0,48+0,66+0,72+0	3e81628fd3dcf66aeca0192e745b44953517ddb317a28786d384d710c6047817
 W	Object.lto	?CleanupHook@RecvBytesOp@WONAPI@@MAEXXZ	4,15	602d421524df4732c28e96d23022a24f7fca9037625415b2a6f8b7475849fd45
 W	Object.lto	?CleanupHook@ServerRequestOp@WONAPI@@MAEXXZ	6,37,46+0,55	29943d593f4e8cad84405dcae0434b7beece50db727935687918053ebae320a4
 W	Object.lto	?CleanupHook@SocketOp@WONAPI@@MAEXXZ	9	2c2cce6052b823fb4fd6e020eed35f2469693e326d755d5d4f295734c83ac7a8
@@ -18346,7 +18349,7 @@ W	Object.lto	?ExplodeLimb@BodyProp@@AAEXW4ModelNode@@IV?$_CVector@M@@I@Z	13+0,19
 W	Object.lto	?ExplodeLimb@CCharacter@@IAEXW4ModelNode@@W4ModelSkeleton@@@Z	44+0,51,71+0,104+0,141+0,151,167+0,173,225+0,233,266+0,273,279+0,288,340,357+0,392+0,405+0,417+0,456+0,493,515	f1e63675adcd3dd66d556cef9e9650915ac53ad3b6e3427c87f73bba4eed6347
 W	Object.lto	?ExplodeNode@CModelButeMgr@@QAEIW4ModelSkeleton@@W4ModelNode@@M@Z	104+0,145+0,209+0,253+0	f3ce93841e52f1d601ef7006467d5cc4a2b4e6844d461875c0e04959fbb7e9e7
 W	Object.lto	?ExplosionFilterFn@@YAIPAVLTObject@@PAX@Z	2+0,27+0,43+0,70	506d47a5ad40f942ba7d64c7edf70a5b36a77760ac3ca550d5191f27d46886b9
-W	Object.lto	?ExtendedFace@?%.\AIVolume.cpp295849821@@YA?AUFace@@ABU2@0@Z	110,357,492,561,601,629,696	95a7abf152ccbc61d925b3150d8194bc83d920ff291102a060d571137bacbfd4
+W	Object.lto	?ExtendedFace@?%.\AIVolume.cpp3173112963@@YA?AUFace@@ABU2@0@Z	110,357,492,561,601,629,696	95a7abf152ccbc61d925b3150d8194bc83d920ff291102a060d571137bacbfd4
 W	Object.lto	?Extract@IntegerExtractor@WONAPI@@QAE_NAAVBigInteger@2@@Z	23,42,53,73,84,109,128,151	bf1729889ad015312c604e88b142a3d30a615338bfec81a2cd96bc47e1a1477d
 W	Object.lto	?ExtractMsg@RecvMsgOp@WONAPI@@IAE?AW4WONStatus@2@XZ	23+0,38+0,44+0,50+0,56+4,64+0,73+0,79+4,85+0,97,137+0,167+0,199+0,224	2de0a9eaf9a9d86aae600f993f389c13ab6c95085015853346ac9b86922e9605
 W	Object.lto	?ExtractMusicSetting@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@PAD@Z	33+0,77,86+0,108+0,114+0,121,131+0,153+0,175+0,193+0,211+0,257,290,326,364,378	26287e53bfccae1f8369c457d5820baa8dd753a48848da48e77407326bfc3e2c
@@ -18356,7 +18359,7 @@ W	Object.lto	?FaceTarget@@YAXPAVCAI@@@Z	29,168+0,258,365	35ee33cc38c97547de0001d
 W	Object.lto	?FillAllClips@CWeapons@@QAEXXZ	8,24+0,54+0,71+0,87+0	cd36a8a96df15552721dee2aed02c3e0a358b0f4911d9c92de46f9d2887055c0
 W	Object.lto	?FillClip@CWeapons@@QAEXE@Z	8,24+0,54+0,71+0,87+0,104+0	a6e702d3a5141131e4ad04a4b24eecc2d33a7582ebd08a4e280d9bd3944a0038
 W	Object.lto	?FillErrorMsg@@YAXPADHPBD1VCString@@@Z	50+0,59,87+0,114	52a1a74dd9d516df0dbbb162d10b77b18d3160278f2033abdc80475d8753c86c
-W	Object.lto	?FillPotentialObstacleList@?%.\ObstacleMgr.cpp32250377@@YAXPAV?$list@UObstacle@@V?$allocator@UObstacle@@@_STL@@@_STL@@ABV?$_CVector@M@@11PAVLTObject@@I@Z	31+0,83,168+0,181+0,201+0,417+0,443+0,449+0,454+0,484+0,489+0,517+0,523+0,528+0,558+0,563+0,594+0,600+0,605+0,641+0,665+0,702,748+0,903,912,924,989+0	d4cd3c378b79e3d14b2f8d77c9cdcc233034775074e2bc43d1d16dd96c24e691
+W	Object.lto	?FillPotentialObstacleList@?%.\ObstacleMgr.cpp2968817648@@YAXPAV?$list@UObstacle@@V?$allocator@UObstacle@@@_STL@@@_STL@@ABV?$_CVector@M@@11PAVLTObject@@I@Z	31+0,83,168+0,181+0,201+0,417+0,443+0,449+0,454+0,484+0,489+0,517+0,523+0,528+0,558+0,563+0,594+0,600+0,605+0,641+0,665+0,702,748+0,903,912,924,989+0	d4cd3c378b79e3d14b2f8d77c9cdcc233034775074e2bc43d1d16dd96c24e691
 W	Object.lto	?FillSpecialNodeLists@CAINodeMgr@@AAEXXZ	35,62,91,120,151+0,156+0,217,231+0,236+0,297,311+0,316+0,374,385+0,390+0,461	84f037cc3479d9e4f69d88403e86d46172756fded25ed6527faab945b1be31b8
 W	Object.lto	?FilterFn_CharactersOnly@@YAIPAVLTObject@@PAX@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	Object.lto	?FilterNonSolid@@YAIPAVLTObject@@PAX@Z	10+0	08e5bd234c725b5abb734ec270a7dae04cc0218488fdb246b64708cd790fb266
@@ -18416,7 +18419,7 @@ W	Object.lto	?FirstUpdate@SearchLight@@AAEXXZ	34+0,72+0,109+0,136+0	9fa1d8b8365b
 W	Object.lto	?FirstUpdate@Striker@@AAEXXZ	45+0,121+0	5675692fadd9c0af97fcd64c87cea52b362a2a6538d47128d5bfb55d1182a99d
 W	Object.lto	?FirstUpdate@TranslucentWorldModel@@AAEXXZ	5+0,28+0,74+0	47d4658625fcc6190ee53cf3820ca0e78f761f64f55e9d4989541db799d35ab7
 W	Object.lto	?FirstUpdate@Turret@@AAEXXZ	85	2f30f13846dc250043ba92b93f661025f8c785e209411588a3a0266481710f70
-W	Object.lto	?FitIntoVolume@?%.\AIStrategyMove.cpp732722755@@YA?AV?$_CVector@M@@ABVCAIVolume@@ABV2@1PA_N@Z	57,123+0,137+0,159+0,190+0,219+0,290	876fab3ffae758d0a915f7b2893e1085a99ea71e7362658464a2bbbdbb1220a3
+W	Object.lto	?FitIntoVolume@?%.\AIStrategyMove.cpp273926065@@YA?AV?$_CVector@M@@ABVCAIVolume@@ABV2@1PA_N@Z	57,123+0,137+0,159+0,190+0,219+0,290	876fab3ffae758d0a915f7b2893e1085a99ea71e7362658464a2bbbdbb1220a3
 W	Object.lto	?FlushResponse@CGameSpyMgr@@AAEXXZ	42+0,91,104+0,115,121+0,126,153	0c8675eae706e29364ab77548062b9d50992aafff21aef191f9af4a043234320
 W	Object.lto	?FocusCanBeShotFrom@CTurretVision@@QBE_NABV?$_CVector@M@@M@Z	51+0,220,414+0,426+0,439+0,490+0,495+0,503+0,540,567,573+0,597+0,609,697+0,749+0,801+0	fe64372c8e6dce65ebd487871a8899c4ae3ca8116a1c8bbe571bd3c8c4f0fae4
 W	Object.lto	?FootStepStateVolumeMod@@YAMW4CharacterMovementState@@@Z	21+0,28+0,35+0	958403ef7efe1b0a27332ba4e1b2aa3c19a72f90094d399e97c8ced75777757c
@@ -18487,7 +18490,7 @@ W	Object.lto	?GetBid@ScriptGoal@@UAEMXZ	2+0,106+0,113+0,118+0,152+0,159,170+0	54
 W	Object.lto	?GetBid@SnipeGoal@@UAEMXZ	4+0,18+0,24+0,59+0,78,192+0	7ddf09091e9dcf4eae1f918a994da79b3a2e39954cdcbc3bc1029bc6a58a765b
 W	Object.lto	?GetBidder@BidMgr@@QAEPAVBidder@@ABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	16	03b961ed9a2cf33e2aaefdde23e825c949b4d1e9ae8997eff203d69c2c2fa586
 W	Object.lto	?GetBool@CButeMgr@@QAE_NPBD0_N@Z	20,36+0,42	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
-W	Object.lto	?GetBoolProp@?%.\turret.cpp1044117796@@YAIAAUGenericProp@@PBDI@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
+W	Object.lto	?GetBoolProp@?%.\turret.cpp895323661@@YAIAAUGenericProp@@PBDI@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	Object.lto	?GetBuffer@CString@@QAEPADK@Z	10	1f6fda9c9f80acbb858eddeb513afc1a0e95749f806ff144d0f2d42b3ba28168
 W	Object.lto	?GetByte@CButeMgr@@QAEEPBD0E@Z	20,36+0,42	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
 W	Object.lto	?GetCertCallback@AuthContext@WONAPI@@AAEXPAVGetCertOp@2@@Z	39+0,73+0,120+0,169,183+0,207,217,254,286,312,331+0,350+0	749f5be981412165cf31fbc34202d3e355918536f0f5f762707436760ddf3c6c
@@ -18525,7 +18528,7 @@ W	Object.lto	?GetDouble@CButeMgr@@QAENPBD0@Z	26,44+0,52	952d8b581532244322bfd492
 W	Object.lto	?GetDouble@CButeMgr@@QAENPBD0N@Z	20,41+0,47	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
 W	Object.lto	?GetDouble@CHierarchicalButeMgr@@QAENPBD0N@Z	59+0,68+0,79,90+0,104,114,119+0,136+0,145,182,192+0,203+0,208,215+0,224,230+0,251,265,288+0,306+0,334,339+0,361+0,366	a21db8133fc7d49cb02859611ddba1eb1290ad3aa7a38e45ab67033aa9bef303
 W	Object.lto	?GetDoubleAttrib@CPickupButeMgr@@AAENHPAD@Z	23+0,28+0,62	92d78dda5a0be749c0598c197a8148ca5130b1c363c58ba8ccfe09d8c994a784
-W	Object.lto	?GetDoubleProp@?%.\turret.cpp1044117796@@YANAAUGenericProp@@PBDN@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
+W	Object.lto	?GetDoubleProp@?%.\turret.cpp895323661@@YANAAUGenericProp@@PBDN@Z	6+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	Object.lto	?GetDword@CButeMgr@@QAEKPBD0@Z	19,35+0,41	f930e5a221c7a01a61c83084bd457e9b09d7c458ec37fd59c4940fa9057be790
 W	Object.lto	?GetDword@CButeMgr@@QAEKPBD0K@Z	20,38+0,44	fef38ac19ac087cfb5e07c829ccb85b14f2576f732411138e2b82329bb64a8eb
 W	Object.lto	?GetErrorString@CButeMgr@@QAE?AVCString@@XZ	21	4a03be14b971cd1623c38588ef6d3a6a164f216703afb5a3e934bd9170212d03
@@ -18665,7 +18668,7 @@ W	Object.lto	?GetString@CButeMgr@@QAE?AVCString@@PBD0ABV2@@Z	29,53,69+0,75,98	aa
 W	Object.lto	?GetString@CHierarchicalButeMgr@@QAE?AVCString@@PBD0ABV2@@Z	81+0,90+0,101,117+0,127,137,143+0,161+0,169,187,204,214+0,230+0,235,245+0,254,260+0,281,295,319+0,334+0,342,375,381+0,404+0,409,431,445,463	e1ebf3a82352f57b33dacecfe526ead29ac7a66eaea9081ccb015b4555bb61da
 W	Object.lto	?GetStringAttrib@CMissionMgr@@IAE?AVCString@@HPAD@Z	33+0,38+0,74	6b4f5f19dd70274764f2d7d4483a4b1bed83c9b29476f1f31ae379bda8d6c2ef
 W	Object.lto	?GetStringAttrib@CSpawnButeMgr@@AAE?AVCString@@HPBD0@Z	54+0,59+0,86,121,143	73dbc8d5dad98d7bc9df0800b548797279c5b6508999869303382df0c1524fad
-W	Object.lto	?GetStringProp@?%.\turret.cpp1044117796@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@AAUGenericProp@@PBDV23@@Z	43+0,113,146,178,211,239,249,295	b6f4d178dbdc1a2b7cfcb6558b67ff4c774f83624e865fc31f150108c0740064
+W	Object.lto	?GetStringProp@?%.\turret.cpp895323661@@YA?AV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@AAUGenericProp@@PBDV23@@Z	43+0,113,146,178,211,239,249,295	b6f4d178dbdc1a2b7cfcb6558b67ff4c774f83624e865fc31f150108c0740064
 W	Object.lto	?GetStringValue@CPropDef@@QAEIAAVCString@@@Z	29,57+0,63,87,106+0,113+0,119+0,134,161+0,167,191,234+0,240,264,278+0,288	b2ec47b8ed319198a83ca3c974f82c5c29fb30112b4de82a04067563e395ad42
 W	Object.lto	?GetSurfaceType@@YA?AW4SurfaceType@@ABUIntersectInfo@@@Z	18,37+0,56+0,93	bc39db4f161dd1c2b88f7eae1e7f1953c08c1952dff2b1836b544268e13f0c0e
 W	Object.lto	?GetSurfaceType@@YA?AW4SurfaceType@@ABVCollisionInfo@@@Z	17,37	6953790706affe6dc70da61225f4e9a076d5abc804f21709949fa324758089a1
@@ -19069,7 +19072,7 @@ W	Object.lto	?KillWaveTrack@CMusicMgr@@IAEXXZ	12+0,17,22+0,79,84+0,91	f130bdf0f4
 W	Object.lto	?LaunchWindshield@AIExosuit@@IAEXXZ	30+0,54+0,70+0,137+0,229+0,239+0,257+0,271+0,280,286+0	ace5dd44ba421cfadeeb3562b769796a0e1c2916655d77bcbe8fa766c2981238
 W	Object.lto	?Left@CString@@QBE?AV1@K@Z	62,92,113,133,155	72cb19bd7c535925594dadd4874e800887441ae9569c6be9b3608f8e3af567bc
 W	Object.lto	?LengthDecode@IntegerExtractor@WONAPI@@AAE_NXZ	5,37,54,76	5923953599c3fa222559fc6e0a9f1b074d0248e7bb398f1c570c5bb4ecca4036
-W	Object.lto	?LineSegmentDistSqr@?%.\AvoidancePath.cpp155115754@@YAMABV?$_CVector@M@@0@Z	135+0,162+0	a91fd65f8c948aee267271998d06f318bff7c8ea312317fe6b99b463a424a466
+W	Object.lto	?LineSegmentDistSqr@?%.\AvoidancePath.cpp1681811729@@YAMABV?$_CVector@M@@0@Z	135+0,162+0	a91fd65f8c948aee267271998d06f318bff7c8ea312317fe6b99b463a424a466
 W	Object.lto	?LiquidFilterFn@@YAIPAVLTObject@@PAX@Z	9+0,20+0,25+0	32695d05514241142411b381828c83ff8e0ed26741b0aa4fec15b6b26dce8e28
 W	Object.lto	?ListProperties@CEditable@@IAEXPAVBaseClass@@@Z	39+0,44+0,59+0,80+0,85+0,156,167,187,218,225+0,236+0,242+0,249+0,278,335+0,340+0	0cf0b6e8981b1d0e4b9fa6d5303c4bf5cffba1aa53b985f1366ec905cd5e1308
 W	Object.lto	?Load@AIActionBezierTo@@UAEXPAVILTMessage@@@Z	179+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
@@ -19360,7 +19363,7 @@ W	Object.lto	?OnStatusQuery@CGameSpyMgr@@QAEHXZ	4	8a726adbb134fad5ec1890036207b3
 W	Object.lto	?OpenDoor@CAI@@QAEXPAVLTObject@@@Z	5+0,12	101a4eb8c9f39a6c78bfe5daf773ca5f69768b6b9abcfdfb62744d751fda4872
 W	Object.lto	?Opening@Door@@MAEXXZ	8+0,119,130,136+0	52052b3ca8aaf3530c4f64b6e77c7b3495a8252644ff96fcf68b5f89fbda441f
 W	Object.lto	?Opening@RotatingDoor@@MAEXXZ	172,201+0,219+0	c9d9ddf6c1214a14456cb54fb8050aa8c80748b4d3fabebddcc48a11cee4c835
-W	Object.lto	?OvershotDest@?%.\AIStrategyMove.cpp732722755@@YA_NABV?$_CVector@M@@000@Z	111+0,182+0	796e7155a419c1c2aa2aac67a87eb521e91ade1f7ef1f2a44c074d53cf0d3a74
+W	Object.lto	?OvershotDest@?%.\AIStrategyMove.cpp273926065@@YA_NABV?$_CVector@M@@000@Z	111+0,182+0	796e7155a419c1c2aa2aac67a87eb521e91ade1f7ef1f2a44c074d53cf0d3a74
 W	Object.lto	?Pack@GetEntityRequest@WONAPI@@QAEXPAVWriteBuffer@2@W4PACKFLAG@12@@Z	33,49,65,78,89,112	ae46157b1c7c048ef75416bbc8b18f182b31d97f60bda7f9970c8a7717010301
 W	Object.lto	?Pain@CAISenseHearAllyPain@@QAEXABUSoundButes@@PBVCCharacter@@@Z	24	0320704b6f6740932f961d62980e164a8a5455ee9912f5391fa6c245f1b96ad7
 W	Object.lto	?Pain@CAISenseMgr@@QAEXABUSoundButes@@PBVCCharacter@@@Z	56	5f3fd5522847accb4daa15062c2a292c0cbb6b09d61952b3568fbb62ba8e2b11
@@ -20136,7 +20139,7 @@ W	Object.lto	?Shutdown@WONAPICore@WONAPI@@UAEXXZ	33,45,58,65,72,83,90,109	41e3b9
 W	Object.lto	?Signal@SocketThreadEx@WONAPI@@UAEXXZ	16	12c6cb3a4acc277442d0ae08ea94ece24a9e36622e8f099ff65b54f29fd3262e
 W	Object.lto	?SkipBytes@WriteBuffer@WONAPI@@QAEXK@Z	10	55780b43232464d2d9c400faa482cc28340d8ac685df60dffb407540672ec49e
 W	Object.lto	?SnapTurn@CAI@@QAEXV?$_CVector@M@@@Z	164+0,177+0,209,216	b707275ca696ef5fc4417dc2a10650df6673480e34d19f429f0aa6bd7d06c676
-W	Object.lto	?SoundIsDone@?%.\turret.cpp1044117796@@YAIPAUHLTSOUND_t@@@Z	7+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
+W	Object.lto	?SoundIsDone@?%.\turret.cpp895323661@@YAIPAUHLTSOUND_t@@@Z	7+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	Object.lto	?Spawn@RandomSpawner@@IAEXXZ	138	1e562e63d3f22216d78d0295316ca4ef307c446edbf76d29a9c31c72b3f69f15
 W	Object.lto	?SpawnExosuit@GameStartPoint@@QAEXXZ	25+0,39+0,59+0,93+0,98+0,108,251+0,256+0,261,276+0,295+0	14086a90b113311227f825eda951931bd0e6e1c4a715742aff70adabbd9d6e6b
 W	Object.lto	?SpawnFacehugger@Egg@@AAEIXZ	41,62,82,102,107+0,127,132+0,144,171+0,176+0,181,216+0,221+0,226,269,285,301,317,326+0,347+0,368+0,397+0,435+0,451,486,506,526,549,568,632,659,679,790+0,857,997,1104,1134+0,1209,1215+0,1231,1307,1346,1376,1382+0,1428,1448	5b699eb255b3ae2ba044c708e30827f39627cd0a0b453aca0582f30f4f603840
@@ -20968,7 +20971,7 @@ W	Object.lto	?sb_Init2@@YAHPAUStructBank_t@@KKK@Z	17,28	9d65d241d2d9d7d5d80e8666
 W	Object.lto	?sb_Term2@@YAXPAUStructBank_t@@H@Z	20	c8e01eeab0dd4f367887fb71f33951543f1420eaac23de38a11e99223a7c8092
 W	Object.lto	?setSeed@Random@WONAPI@@QAEXABV?$basic_string@EV?$char_traits@E@_STL@@V?$allocator@E@2@@_STL@@@Z	43,61,154,220+0,230+0,235,250+0	53e0b7914fa65399002b875ca0f7ac63abe57498a6d6c54af4ab2b7156afa980
 W	Object.lto	?shiftRight@BigInteger@WONAPI@@QAEAAV12@H@Z	12	6d41dcb7c7f2d1220216c32aaa3f9bad89efca14e989bf7a17aefe671b8a8dd8
-W	Object.lto	?sort_heap@_STL@@YAXPAPAVCAINodeWallWalk@@0VCmpDist@?%.\AINodeMgr.cpp278058711@@@Z	462	6a067b237313eb42910fefecf4e7955dc610aa5e9ff808f54ba5ff86dfd5ee53
+W	Object.lto	?sort_heap@_STL@@YAXPAPAVCAINodeWallWalk@@0VCmpDist@?%.\AINodeMgr.cpp295641379@@@Z	462	6a067b237313eb42910fefecf4e7955dc610aa5e9ff808f54ba5ff86dfd5ee53
 W	Object.lto	?st_add@BigInteger@WONAPI@@SAXAAV12@ABV12@1@Z	22,44,75,98,120,136	e783caab7f00fa546d7c06a1f9686e001f2e69ccfc4939df7e5db9da6328f739
 W	Object.lto	?st_add_unsigned@BigInteger@WONAPI@@SAXAAV12@ABV12@1@Z	62,89	2e5bcbceb36117ed181a8fdd789cd9f644816029ebc1ace7ede44dca212d1383
 W	Object.lto	?st_cmp@BigInteger@WONAPI@@SAHABV12@0@Z	42,67	a60a2449873bdc7d3faab9d480e1bd8d8bf01e353901c166f88854f2869ba4ec
@@ -21108,6 +21111,7 @@ T	AvP2 lithtech.exe	??_7CXferFileBankQ464@@6B@	4	378840668cd1337fa7ddd827a8a0d7c
 T	AvP2 lithtech.exe	??_7CluFileRecBank@@6B@	4	5385592b401c608ee7ac99c3003a8814ac2c1c94ebb21a61d66cb151319dc975
 T	AvP2 lithtech.exe	??_7CluNetFileRecBank@@6B@	4	cab68ddf0a0e1b3b76114c591725643e0674d636b6bed94097a9aea0e768fe72
 T	AvP2 lithtech.exe	??_7IDirectMusicGetLoader@@6B@	4	2c266ecf597682b4ee8ffb1548481d3aa300ea8ccdcb71b0ce1df6043ac37c1a
+T	AvP2 lithtech.exe	??_7ILTCSBaseQ404@@6B@	110	72ca3312c73aa2c86551c3a71a0ec0fd75923a0cf1a1fa8672848041749c90e8
 T	AvP2 lithtech.exe	??_7ILTCommon@@6B@	21	1375fa4a0799207133c4dff27d7a729e867bea518fdbd54d61b7ca4f88b87521
 T	AvP2 lithtech.exe	??_7ILTCursorInst@@6B@	3	02b92f6a3dcad4f955d8cabcef18bccbd967446e001421d95d4fcfc2a1aadc8c
 T	AvP2 lithtech.exe	??_7ILTServer@@6B@	125	b0b83f7c6b213fc3022156653436e4489a4138dbb692fd7a954fb9f459c3ef7e
@@ -21320,6 +21324,7 @@ W	AvP2 lithtech.exe	??_G?$pair@$$CBV?$basic_string@DV?$char_traits@D@_STL@@V?$al
 W	AvP2 lithtech.exe	??_GCElem1CQ428@@QAEPAXI@Z	9+0,19+0,24+0,62	9522a562b05627e40e15a2be60b46d886196d1fdc0d952b980c6a909d1d420ff
 W	AvP2 lithtech.exe	??_GCFileStream@@UAEPAXI@Z	8+0,31+0,41	ddc8e95a05a5d54d8b127034165380729fc46b6652f994588d70aa30fb95bdbe
 W	AvP2 lithtech.exe	??_GCGrowStream@@UAEPAXI@Z	9+0,28+0,33,69+0,77	ccc832e64bdab970d9ea4b9aa3cac078c5abef96688327041d8e6bfd5e9010e0
+W	AvP2 lithtech.exe	??_GCLTClientQ404@@UAEPAXI@Z	11+0,21,48+0,56+0,64	9afa9f94575db0f3430fee75cd0c764203536b2597e4c6d1e037ca1708b39cbe
 W	AvP2 lithtech.exe	??_GCLTServer@@UAEPAXI@Z	13+0,42,53,93,107+0,116+0,124	1ceb06d8af431ec2812b4d7413a39a0ad7bd47c3c2297b00281f9c59d4efe1c5
 W	AvP2 lithtech.exe	??_GCLocalDriver@@UAEPAXI@Z	11,30	1d26cdc9cc0eb1d152b3abb858f5c3699ced975a7db2bbdd1720a2ba71f4f8b7
 W	AvP2 lithtech.exe	??_GCServerMgrView@@UAEPAXI@Z	6+0,13+0,18,29,48+0,53,58+0,78,97+0,102,122+0,130+0,135,146,157,176+0,181,206+0,211,236+0,241,261,272,283,294,305,316,327,338,349+0,357+0,362,373+0,381+0,386,397,408,419+0,427+0,432,443+0,451+0,456,467+0,475+0,480,491+0,499+0,504,515+0,523+0,528,538+0,548	bf0473d96965ce639a254c8a979da8a6e39ff30661ed50fcad4553bb7d83717a
@@ -22360,6 +22365,7 @@ W	AvP2 lithtech.exe	?cis_SetupWarpEdgesQ438@@YAXPAUSWarpEdgeW12Q438@@0PAULTWarpP
 W	AvP2 lithtech.exe	?cis_SolidColorDrawQ40C@@YAKIPAX0KKPAVLTRect@@1@Z	14+0,79+4,103+0,114+0,149+0,159+0	4dd32f5002234d1f08ec9801ec2ff7ab2a6e0a3a20b0baf7b11732dbca723dab
 W	AvP2 lithtech.exe	?cis_TermQ40C@@YAXXZ	1,6+0,11,19,25+0	9d63db2c04819fbf0f58b33dee23569623dafb1e47a1e4ed75c65fb2ed1fd8b6
 W	AvP2 lithtech.exe	?cis_TransparentDrawQ40C@@YAKIPAX0KKPAVLTRect@@1@Z	14+0,80+4,107+0,146+0	a2c95c699557a8e9444849b53a14975ecbb28741a37ca39e09d85d81b7dad1dd
+W	AvP2 lithtech.exe	?clt_CreateClientQ404@@YAPAVCLTClientQ404@@PAVCClientMgr@@@Z	7,36+0,44+0,49,65+0,82+0,102+0,118+0,134+0,151+0,162,178+0,214+0,219,325	7b4b95e76ae3fb87ef2721f8f0b08c3fe879cf95d3fcfaad5e734a02042950bb
 W	AvP2 lithtech.exe	?clu_WinMainQ501@@YGHPAUHINSTANCE__@@0PADH@Z	29+0,34+0,44,65,82,111,118+0,132+0,141+0,149+0,162+0,167,173+0,180+0,201,218	e02ed3bd6c8cfa2d826f53292d00bc97d6d9520729cc6e0639a307c7f840b21b
 W	AvP2 lithtech.exe	?clu_dsi_InitGame@@YAIPAUCluClientGlob@@PAUCluCommandLineArgs@@@Z	38+0,43,71+0,76,101+0,154+0,159,188+0,193,207+0,219+0,224,238+0,244+0,273,308,345+0,354+0,359	6ac58758cce1152ddaaca7bab176d6658f34440404071011038e25fb57940e3e
 W	AvP2 lithtech.exe	?clu_dsi_RunClientApp@@YAHPAUHINSTANCE__@@PAUCluCommandLineArgs@@@Z	10+0,42+0,47,65+0,71+4,112+0,117,131+0,142,155+0,162+0,169+0,177+0,182,200+0,211,233+0,238,263+0,268,320+0,335+0,346+0,368+0,378+0,385+0,460+0,470,499+0,509+0,517,531+0,537+0,544+0,549,563+0,570+0,576+0,584+0,590+0,610+0,618+0,623,632+0,640+100,656+0,690+0,721+0,731+0,754,797,807,830,836,856+0,861,880+0,891+0,897+0,904+0	da68a9b328e57cc698c0c39dbb22dd651e21f8747eed50d813cafe168327d27f
