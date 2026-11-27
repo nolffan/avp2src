@@ -275,6 +275,15 @@ also use the launchers:
   `PrimalHunt\PrimalHuntLauncher.exe`. `AVP2.exe` and `PrimalHunt.exe`
   start the game directly.
 
+The modern build draws with `d3d9.ren`, our Direct3D 9 renderer. Our
+DirectX 7 renderer (the retail renderer's code) is beside it as
+`d3d7.ren`. To use `d3d7.ren`, select it in the Display dialog of the
+launcher, or put `"RenderDll" "d3d7.ren"` and `"CardDesc" "display"` into
+`autoexec.cfg`. The game keeps this choice. A config of an older build
+that names `d3d.ren` changes to `d3d9.ren` one time
+(`src/modern/render/README.md`). This is not yet confirmed on Windows or
+under Proton.
+
 ### A dedicated server
 
 Each game has a dedicated server: `AVP2\AVP2Serv.exe` (AvP2) and

@@ -391,6 +391,30 @@ void CFolderDisplay::GetRendererData()
 	// Build the list of render modes
     RMode *pRenderModes=g_pLTClient->GetRenderModes();
 
+#ifdef AVP2SRC_MODERN
+	// M-29: the modern build has two renderers (d3d9.ren, the default, and
+	// d3d7.ren): the modes are the running renderer's, when it has any.
+	// (A config can name a renderer and the other's card.)
+	char szDll[128];
+	GetConsoleString("renderdll",szDll,"none");
+	if (_stricmp(szDll,"d3d.ren")==0)
+		strcpy(szDll,"d3d9.ren");		// as the engine loads it
+	LTBOOL bSpecifyDll = LTFALSE;
+	LTBOOL bDllHasCard = LTFALSE;
+	for (RMode* pDllMode = pRenderModes; pDllMode; pDllMode = pDllMode->m_pNext)
+	{
+		if (_stricmp(pDllMode->m_RenderDLL, szDll) == 0)
+		{
+			bSpecifyDll = LTTRUE;
+			if (_stricmp(pDllMode->m_InternalName, szRend) == 0)
+				bDllHasCard = LTTRUE;
+		}
+	}
+	// the config's card is not this renderer's: any of its cards
+	if (bSpecifyDll && !bDllHasCard)
+		bSpecifyCard = LTFALSE;
+#endif
+
 	// Iterate through the list of render modes adding each one to the array
 	RMode *pCurrentMode=pRenderModes;
     while (pCurrentMode != LTNULL)
@@ -408,6 +432,15 @@ void CFolderDisplay::GetRendererData()
 				continue;
 			}
 #endif	// M-1: every shape of screen (the field of view widens, Hor+)
+
+#ifdef AVP2SRC_MODERN
+			if(bSpecifyDll && _stricmp(pCurrentMode->m_RenderDLL, szDll) != 0)
+			{
+				// Go to the next render mode
+				pCurrentMode=pCurrentMode->m_pNext;
+				continue;
+			}
+#endif
 
 			// see if we need to specify the card..
 			if(bSpecifyCard)

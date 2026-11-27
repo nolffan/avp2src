@@ -3856,12 +3856,22 @@ void r_GetRequestedMode(RMode* pMode)
 	if (pVar)
 		strncpy(pMode->m_RenderDLL, pVar->m_pStringVal, sizeof(pMode->m_RenderDLL) - 1);
 	else
+#ifdef AVP2SRC_MODERN
+		// M-29: the modern build's default renderer is d3d9.ren
+		strcpy(pMode->m_RenderDLL, "d3d9.ren");
+#else
 		strcpy(pMode->m_RenderDLL, "d3d.ren");
-	// (nolfsrc's modern engine asks for its d3d9.ren here in place of
-	// d3d.ren. AvP2's modern build has no d3d9.ren, and with that block the
-	// engine's own mode failed to come up, the game's fallback to 640x480x16
-	// with it, and every modern game ran in the last fallback, 640x480x16
-	// with d3d.ren, whatever the mode asked for: dropped, M-1.)
+#endif
+
+#ifdef AVP2SRC_MODERN
+	// M-29: the modern build ships d3d9.ren as its default renderer and our
+	// d3d.ren as d3d7.ren. A config or a command line that names d3d.ren
+	// gets the default (the client shell then writes d3d9.ren into the
+	// config once). (An earlier block of nolfsrc did this before AvP2 had a
+	// d3d9.ren; with no d3d9.ren, every mode failed: removed then, M-1.)
+	if (!_stricmp(pMode->m_RenderDLL, "d3d.ren"))
+		strcpy(pMode->m_RenderDLL, "d3d9.ren");
+#endif
 
 	pVar = con_FindVarQ40F(&g_ClientConsoleStateRef, "carddesc");
 	if (pVar && pVar->m_pStringVal)

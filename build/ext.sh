@@ -10,8 +10,9 @@
 #   out/ext/binkw32.dll   our Bink player (src/modern/binkw32/) on FFmpeg's
 #                         Bink decoders (ext/ffmpeg, static, only what Bink
 #                         needs), in place of RAD's Bink 1.0h
-#   out/ext/d3d9.ren      our Direct3D 9 renderer (src/modern/render/), installed
-#                         beside d3d.ren; "RenderDll" "d3d9.ren" picks it;
+#   out/ext/d3d9.ren      our Direct3D 9 renderer (src/modern/render/), the
+#                         modern build's default renderer (our d3d.ren is
+#                         d3d7.ren beside it: "RenderDll" "d3d7.ren" picks it);
 #                         out/ext/ph/d3d9.ren is Primal Hunt's (PRIMAL_HUNT)
 #   out/ext/debug/, out/ext/ph/debug/  the same with AVP2SRC_DEBUG (the
 #                         renderer's debug checks), which modern-debug installs

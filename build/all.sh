@@ -55,8 +55,8 @@
 #                         Smacker (neither engine plays one) and no MP3
 #                         decoder (OpenMiles decodes MP3 itself). It also
 #                         installs our Direct3D 9 renderer, d3d9.ren
-#                         (src/modern/render/; docs/MODERN.md, M-29), beside
-#                         d3d.ren.
+#                         (src/modern/render/; docs/MODERN.md, M-29), its
+#                         default renderer; our d3d.ren is d3d7.ren there.
 #   3. compile            every binary, by build/build.mk, all at once (one
 #                         job per CPU; AVP2SRC_JOBS=<n> to change it) and only
 #                         what changed since the last build.
@@ -147,6 +147,14 @@ BUILT_PH=(
     "$P/ClientRes/PrimalHunt/CRes.dll"       custom/cres.dll
     "$P/ServerRes/PrimalHunt/SRes.dll"       custom/sres.dll
 )
+# The modern build's default renderer is d3d9.ren (src/modern/render/,
+# docs/MODERN.md M-29); our d3d.ren ships beside it as d3d7.ren. (The engine
+# and the launcher load d3d9.ren for a config that names d3d.ren, and do not
+# list a d3d.ren that an older modern build left.)
+if [ -n "$MODERN" ]; then
+    BUILT_AVP2[5]=d3d7.ren
+    BUILT_PH[5]=d3d7.ren
+fi
 # The modern build's launchers (docs/MODERN.md M-8): AVP2.exe and
 # PrimalHunt.exe start the game directly; these are the launchers
 if [ -n "$MODERN" ]; then
@@ -314,6 +322,8 @@ with open(p, "w") as f:
 PY
 }
 step "4. assemble: the built binaries -> $OUT/AVP2, $OUT/PrimalHunt"
+# (the modern build's d3d.ren is d3d7.ren: an older build's d3d.ren goes)
+[ -z "$MODERN" ] || rm -f "$OUT/AVP2/d3d.ren" "$OUT/PrimalHunt/d3d.ren"
 assemble AVP2 "${BUILT_AVP2[@]}"
 assemble PrimalHunt "${BUILT_PH[@]}"
 

@@ -76,6 +76,8 @@ playable. These items are done:
   OpenSpy server, without WON or a CD key (M-17..M-20).
 - A console in single player (M-25).
 - "Press any key to continue." after a level loads (M-30).
+- The Direct3D 9 renderer `d3d9.ren`, the default renderer, with up to
+  16x anisotropic filtering (M-4) and up to 8x antialiasing (M-5) (M-29).
 - Dedicated servers on our own `server.dll`, and scripts that start them
   on Linux (M-26).
 - All the retail bugs in docs/RETAIL_BUGS.md. Each is fixed
@@ -83,8 +85,6 @@ playable. These items are done:
 
 These items are not done yet:
 
-- Up to 16x anisotropic filtering (M-4) and up to 8x antialiasing (M-5).
-  Both need the Direct3D 9 renderer of nolfsrc.
 - Alt+Tab in full screen. Full screen keeps the retail focus code (M-21).
 
 A variant build makes its own engines (`lithtech.exe`, `server.dll`,
@@ -120,8 +120,9 @@ refer to the `MODERN.md` ids of nolfsrc (M-P6-02, ...). They are the NOLF
 fixes, and we did not check them against AvP2 yet. Some of them use
 modern files of nolfsrc: the engine block and the launcher block that
 name `d3d9.ren`, the Direct3D 9 renderer of nolfsrc. This project did
-not build that renderer then. Now it builds its own `d3d9.ren` (M-29),
-which is not the default renderer yet. We removed these two blocks (M-8 and M-1). We will check each
+not build that renderer then. We removed these two blocks (M-8 and M-1).
+Now it builds its own `d3d9.ren`, the default renderer, and the blocks
+are back (M-29 stage 5). We will check each
 block, and keep or remove it, when the items are done.
 
 The id of each item is a series and a number (M-1, ..., and M-X for the
@@ -152,7 +153,7 @@ items: not implemented yet.
 | M-25 | A console in single player, as in nolfsrc (its M-P2-01..M-P2-04, -05, -08, -09, -14, -15): the ~ key or Shift+Esc opens it over the top half of the screen, and the game pauses. It runs console commands and cheat codes. A new ToggleConsole control in Customize Controls. Retail AvP2 has no console that a player can open | done (under Done) |
 | M-26 | Dedicated servers on Linux, as in nolfsrc: `linux-server-avp2.sh` and `linux-server-ph.sh` start `AVP2Serv.exe` or `AVP2XServ.exe` under Wine, with a display or headless (`xvfb-run`). The servers run on our own `server.dll` | done (under Done) |
 | M-28 | The console parser does not end a command at a character above 127, so a bind command with a translated device name works. Not yet confirmed on Windows | done (under Done) |
-| M-29 | A Direct3D 9 renderer, `d3d9.ren`, beside `d3d.ren`: the device at all resolutions (GitHub issue #6), the Steam overlay at all frame rates under Proton (GitHub issue #2), and the renderer of M-4 and M-5 | under way (under Done) |
+| M-29 | A Direct3D 9 renderer, `d3d9.ren`, the default renderer (our `d3d.ren` is beside it as `d3d7.ren`): the device at all resolutions (GitHub issue #6), the Steam overlay at all frame rates under Proton (GitHub issue #2), and the renderer of M-4 and M-5 | done (under Done) |
 | M-30 | "Press any key to continue." after loading, as in nolfsrc (its M-P3-27, nolfsrc issue #66): after a new single-player level loads, the loading screen stays with the prompt until the player presses a key, the left mouse button or a controller button | done (under Done) |
 | M-31 | Text from the network (GameSpy replies, chat, names) goes into its buffers with a limit, as nolfsrc checks it (its M-P6-01) | done (under Done) |
 | M-32 | The server kicks a client that it refused (the password of a locked server, the player limit, the class lock of Primal Hunt) when the client enters the world anyway, as nolfsrc checks the password on the server (its M-P6-10) | done (under Done) |
@@ -1469,7 +1470,9 @@ protection wrapper keeps encrypted.)
 (the Play of Primal Hunt never did). Also, the display code of the
 launcher does not map `d3d.ren` to `d3d9.ren` now (a block that came in
 with the `DisplayMgr.cpp` of nolfsrc). This build has no `d3d9.ren`, and
-the mapping caused the launcher not to find the configured renderer.
+the mapping caused the launcher not to find the configured renderer. (M-29
+stage 5 put the mapping back: the modern build now has `d3d9.ren`, its
+default renderer.)
 
 **Checked** under Wine in the build container, with `build/playtest.sh`,
 `PLAYTEST_LAUNCH` and a new Wine prefix (no registry values):
@@ -1691,10 +1694,11 @@ server allows). AvP2 ships no file.
 M-P0-04, M-P0-05, M-P0-06, M-P1-18), changed to the contract and the data
 of AvP2 and Primal Hunt. The reference for each change is our `d3d.ren`
 source (`src/engine/d3d/ph/`). `build/ext.sh` builds it with `zig c++`, and
-the modern builds install it beside `d3d.ren` (`MANIFEST.txt` origin
-`EXT`; the modern-debug build installs the copy with the debug checks).
-`d3d.ren` stays the default renderer. `+RenderDll d3d9.ren +CardDesc
-Direct3D9` selects `d3d9.ren`.
+the modern builds install it (`MANIFEST.txt` origin `EXT`; the
+modern-debug build installs the copy with the debug checks). It is the
+default renderer of the modern builds (stage 5). Our `d3d.ren` is beside
+it as `d3d7.ren`: `+RenderDll d3d7.ren +CardDesc display` selects it, or
+the launcher's Display dialog.
 
 | Id | What | Files | Status |
 |---|---|---|---|
@@ -1703,6 +1707,7 @@ Direct3D9` selects `d3d9.ren`.
 | M-29 (stage 3) | The objects, as `d3d.ren` draws them. Models: the node matrices of the engine, skinned and blended between LODs on the CPU; each vertex lit in model space from its bind pose (the light grid times the world colour, the sun with its sky test, up to `MaxModelLights` point and spot lights, each `(r^2 - d^2) N.L` times its colour), after the model hook of the game (the vision modes) changes the colour, the add and the flags; the distance sprite; the environment map pass, the specular pass and the detail texture (Primal Hunt: the map of the instance, the cloak, the turning offset). The really-close view (the weapon of the player): its own field of view, at 4:3 then made wider as `d3d.ren` does (M-1). Sprites, particle systems, poly grids, line systems, canvases. The planar and the projected shadows of models (the image of the model made on the CPU). The sun test walks the BSP of the vis query (the first `WorldData` is not the main world). A retail bug fixed: RETAIL_BUGS.md, "A model with no lower LODs gets no projected shadow" | `src/modern/render/` (`mr_models.cpp`, `mr_sprites.cpp`, `mr_effects.cpp`, `mr_shadows.cpp`, `mr_objects.cpp`), `d3d9/d3d9_device.cpp` (two combiner operations) | Under Xvfb and Wine: the menus, the loading screens, the intro of the first Marine level, the first minutes of the first Marine and Predator levels at 640x480 and at 1280x720 match `d3d.ren` in series of screenshots. The Predator's vision modes tint the models and the screen. One difference stays: a vision mode turns the sky off (`DrawSky` 0), and the game clears only the depth on each frame. With `d3d.ren` the area of the sky shows an old frame with the screen passes built up on it (RETAIL_BUGS.md, "A vision mode shows an old frame where the sky must be"); `d3d9.ren` shows the area dark. The user will review this look in the game later. Two faults of stage 2 were found here and are fixed: the polys with surface flag 0x8000 (the sky-pan light layer) were not drawn in a level with no sky-pan texture (`d3d.ren` then draws them as vertex-lit polys: a barrel and a lamp of the first Marine hangar), and a vertex-lit poly with a fullbright texture was not drawn with its bright texels added (the lit tubes of the ceiling lamps in `m3s4`). The mirror of `m3s4` matches `d3d.ren`. The shadows, the poly grids and the cloak of Primal Hunt are not yet checked in play. Not yet confirmed on Windows or under Proton |
 | M-29 (stage 4) | M-4 and M-5 in the menus, as nolfsrc has them (its M-P1-09, M-P1-18). Options, Graphics, Custom Performance, General: "Texture filtering" (None, Bilinear, Trilinear, Aniso 2x, 4x, 8x, 16x) takes the place of the Trilinear toggle and writes `Bilinear`, `Trilinear` and `Anisotropic`, only when the choice changes. "Antialiasing" (Off, 2x, 4x, 8x) writes `Antialiasing`. When you leave the Graphics folder, a new texture filtering rebinds the textures, and a new antialiasing starts the renderer again (as a change of triple buffering does). `d3d.ren` reads `Anisotropic` too, but it has no antialiasing | `src/AVP2/ClientShellDLL/FolderPerformance.cpp`, `FolderPerformance.h`, `FolderDisplay.cpp`; `src/AVP2/ClientRes/ClientRes.rc`, `ClientRes.h` | Under Xvfb and Wine with `d3d9.ren`: the two choices, the values in autoexec.cfg (`Anisotropic` 16, `Antialiasing` 8), the renderer started again with 4x antialiasing (the most that the test device has). make progress: ALL 50555 identical, 905 near, both PASS lines. Not yet confirmed on Windows or under Proton |
 | M-29 (solid-colour draws) | The engine draws `DrawSurfaceSolidColor` and `ScaleSurfaceToSurfaceSolidColor` onto the screen through the renderer (`GetRenderObject("SolidColorToScreen")`), not through a lock of all the screen. LithSystemFont text (for example the "Quick Save" message), the bitmap-font HUD numbers and the crosshair use these draws. The renderer gets the source pixel of each screen pixel as the retail software draw and the retail warp calculate it (16.16 steps), thus the pixels are the same. A scaled draw that the warp clips, and `d3d.ren` (it has no such hook), keep the retail path | `src/engine/lithtech/cissurf.cpp` (`cis_ModernSolidToScreen`), `src/engine/lithtech/clientinterface.cpp` (`sub_40dcc0`), `src/modern/render/mr_2d.cpp` | Under Xvfb and Wine at 1600x1200 in the first Corporate level of Primal Hunt: while "Quick Save" shows, `d3d9.ren` stays at about 29 fps (`d3d.ren`: 30 fps falls to 19..25). The text and the HUD numbers have the same pixels as with `d3d.ren`. Not yet confirmed on Windows or under Proton |
+| M-29 (stage 5) | `d3d9.ren` is the default renderer of the modern builds, and our `d3d.ren` is installed beside it as `d3d7.ren` (the legacy builds keep `d3d.ren`). With no `RenderDll`, the engine loads `d3d9.ren`, and so do its fallbacks in the client shell. The engine (`r_GetRequestedMode`) and the launcher (`FindRenderer`) load `d3d9.ren` for the name `d3d.ren`, which the retail `autoexec.cfg` and older configs give. The engine's mode list and the launcher's renderer list do not include a `d3d.ren` that an older modern build left in the directory. One time, the client shell writes `RenderDll d3d9.ren` and `CardDesc Direct3D9` (and `Renderer Direct3D9`, when the config has it) into a config that names `d3d.ren` or no renderer, and sets `RenderD3D9` to 1. A renderer that the player selects after that (`d3d7.ren` too) stays. With no renderer in the config, the launcher's Display dialog selects `d3d9.ren`. Options, Graphics lists the modes of the renderer in use (a config can name one renderer and the card of the other) | `src/engine/lithtech/clientmgr2.cpp`, `clientinterface.cpp` (`ci_GetRenderModes`), `src/AVP2/ClientShellDLL/GameClientShell.cpp`, `FolderDisplay.cpp`, `src/launcher/DisplayMgr.cpp`, `build/all.sh` | done. Under Xvfb and Wine, in both games: with no renderer in `autoexec.cfg`, the game draws with `d3d9.ren` (Wine's `loaddll` trace) and writes `d3d9.ren`, `Direct3D9` and `RenderD3D9 1`; the retail `autoexec.cfg` (`d3d.ren`, `display`) gets the same; a config with `RenderD3D9 1` and `d3d7.ren` draws with `d3d7.ren` and keeps it. The launchers' Display dialogs list both renderers and select `d3d9.ren`, also with a config that names `d3d.ren`; they do not list a `d3d.ren` left by an older build. The public archive unpacked over an install of an older build: `sha256sum -c SHA256SUMS` passes for the renderers. Not yet confirmed on Windows or under Proton |
 
 ### M-30: "Press any key to continue." after loading
 
@@ -1767,6 +1772,7 @@ result for each item. The rows below the table give the fixes.
 | `PadLookDeadZone` | float | 0.15 | The radial dead zone of the right stick (0..0.9 of its travel). Controller | M-7 |
 | `PadMoveDeadZone` | float | 0.2 | The radial dead zone of the left stick. Controller | M-7 |
 | `Antialiasing` | int | 0 | `d3d9.ren`: samples for each pixel (0 off, 2, 4, 8), read when the renderer starts | M-29 |
+| `RenderD3D9` | flag | -- | This shows that the one-time change of a config from `d3d.ren` to `d3d9.ren` is done | M-29 |
 | `ConsoleBackdrop` | int | 0 | The backdrop of the console: 0 `console.pcx` (the art of the retail console of the engine), 1 black | M-25 |
 | `LoadScreenWait` | int | 1 | 1: after a level of a single-player mission loads, the loading screen stays with "Press any key to continue." until a key, the left mouse button or a controller button is pressed. The game does not run while it waits. 0: straight into play (the variable of NOLF2) | M-30 |
 | `OldMouseLook` | int | 0 | The retail mouse look (the DirectInput offsets of the engine, `CursorCenter 1`) in place of raw input. Controls, Mouse, "Legacy mouse look". Saved in autoexec.cfg | M-6 |

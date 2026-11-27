@@ -1,9 +1,10 @@
 # src/modern/render/ -- the modern build's Direct3D 9 renderer
 
-`d3d9.ren` is a render DLL that the engine can load in place of `d3d.ren`
-(docs/MODERN.md, M-29). It draws with the fixed-function pipeline of
-Direct3D 9. Proton runs Direct3D 9 on Vulkan (DXVK), and Wine runs it on
-OpenGL (wined3d). The reasons for it:
+`d3d9.ren` is the default render DLL of the modern builds (docs/MODERN.md,
+M-29). Our `d3d.ren` (DirectX 7) is beside it as `d3d7.ren`. `d3d9.ren`
+draws with the fixed-function pipeline of Direct3D 9. Proton runs
+Direct3D 9 on Vulkan (DXVK), and Wine runs it on OpenGL (wined3d). The
+reasons for it:
 
 - Modern drivers limit the render targets of Direct3D 7. At 2560x1440 our
   `d3d.ren` (DirectX 7) cannot make its device (GitHub issue #6).
@@ -30,21 +31,35 @@ match a retail binary) once for each game, as our `d3d.ren` is built:
 AvP2's into `out/ext/d3d9.ren`, Primal Hunt's (`PRIMAL_HUNT`: the fog
 volumes in place of the vertical fog) into `out/ext/ph/d3d9.ren`, each
 with a copy with the debug checks (`AVP2SRC_DEBUG`) in its `debug/`.
-`build/all.sh` installs each in its game directory of the modern builds,
-beside `d3d.ren` (the modern-debug build installs the debug copies).
+`build/all.sh` installs each in its game directory of the modern builds
+(the modern-debug build installs the debug copies), and installs our
+`d3d.ren` there as `d3d7.ren`.
 
 ## Using it
 
-`d3d.ren` stays the default renderer. To use `d3d9.ren`, give the engine
-`+RenderDll d3d9.ren +CardDesc Direct3D9`, or put these lines in
-`autoexec.cfg`:
+`d3d9.ren` is the default renderer of the modern builds:
 
-    "RenderDll" "d3d9.ren"
-    "CardDesc" "Direct3D9"
+- With no renderer in `autoexec.cfg`, the engine loads `d3d9.ren`.
+- The engine and the launcher load `d3d9.ren` for the name `d3d.ren`
+  (the retail `autoexec.cfg` and the configs of older builds name it),
+  and do not list a `d3d.ren` that an older modern build left.
+- One time, the client shell writes `"RenderDll" "d3d9.ren"` and
+  `"CardDesc" "Direct3D9"` into a config that names `d3d.ren` or no
+  renderer. It then sets `RenderD3D9` to 1, and does not do it again.
 
-A playtest:
+To use our DirectX 7 renderer, select "d3d7.ren" in the launcher's
+Display dialog, give the engine `+RenderDll d3d7.ren +CardDesc display`,
+or put these lines in `autoexec.cfg`:
 
-    PLAYTEST_ARGS="+RenderDll d3d9.ren +CardDesc Direct3D9" \
+    "RenderDll" "d3d7.ren"
+    "CardDesc" "display"
+
+The game keeps this choice. (`display` is the card name of `d3d7.ren`
+under Wine; the launcher writes the name of the card on the computer.)
+A playtest with each renderer:
+
+    build/playtest.sh out/avp2-modern-release avp2 -
+    PLAYTEST_ARGS="+RenderDll d3d7.ren +CardDesc display" \
         build/playtest.sh out/avp2-modern-release avp2 -
 
 `RenderCommand info` prints the device in use. The console variables are
@@ -104,6 +119,7 @@ A report goes to the console, to stderr and to `d3d9.log`.
 | 2 | the world: polygons, textures, lightmaps, visibility, world models, the sky, fog, mirrors and portals | done but for a check of the mirrors (no test level has one yet): the engine's visibility query; the polys as `d3d.ren` draws them with its default two passes (a lightmap, or the sky-pan texture times the vertex colours, then the texture over it, two times the product under `Saturate`; a fullbright texture a third time; `Force1Pass` one pass), vertex-lit polys through the world colour's gamma ramp, the vertex light animations, the light animations into lightmap atlases (32-bit runs, shadow-map masks, the layers added by their brightness), dynamic lights into the lightmaps and as small lightmaps added over the other polys (`LMDynamic`), detail textures and the world's environment maps; world models (solid, chromakey, translucent back to front with `WMAmbient`); the sky from its squashed camera, its polys lit by the lights that reach them; `d3d.ren`'s fog for each vertex (by distance, AvP2's vertical fog with its retail cut, Primal Hunt's fog volumes), drawn as pre-transformed vertices, whose specular alpha Direct3D 9 takes as the fog; the light scale (`InvertHack`) and light add passes; mirrors through the stencil. The first Marine and Predator levels of AvP2 and the first Corporate level of Primal Hunt match `d3d.ren` (out/play/d3d9-s2*, d3d7-s2*), but for the objects (stage 3) and the screens of two monitors in the Marine level |
 | 3 | objects: models, sprites, particles, poly grids, line systems, canvases, dynamic lights, shadows | done, checked in part: models (the engine's node matrices, skinned and LOD-blended on the CPU, lit in model space from the bind pose as `d3d.ren` lights them: the light grid, the sun with its sky test, up to `MaxModelLights` point and spot lights, the model hook (the vision modes) on the colour, the add and the flags), the distance sprite, the environment map pass (Primal Hunt: its own map, the cloak, the turning offset), the specular pass (the gamma texture) and the detail texture; the really-close view (the player's weapon) with its own field of view, worked out at 4:3 and widened as `d3d.ren` does (M-1); sprites (SPRITEBIAS, really close, `Flag2` 0x200), particles, poly grids (the environment map with the retail edge normals), line systems, canvases; shadows (`mr_shadows.cpp`: the planar shadows, and the projected shadows with the model's image made on the CPU). The menus, the loading screens, the intro of the first Marine level (the dropships, the people) and the first minutes of the first Marine and Predator levels match `d3d.ren` in series of shots (out/play/s3*). The vision modes tint as `d3d.ren` does. Where a vision mode turns the sky off (`DrawSky` 0), the game does not clear the colour: the area of the sky shows an old frame with the screen passes built up on it with `d3d.ren` (docs/RETAIL_BUGS.md), and is dark here. The user will review this look in the game later. Two faults of stage 2 were found here and are fixed: the polys with surface flag 0x8000 (the sky-pan light layer) were not drawn in a level with no sky-pan texture (`d3d.ren` then draws them as vertex-lit polys: a barrel and a lamp of the first Marine hangar), and a vertex-lit poly with a fullbright texture was not drawn with its bright texels added (the lit tubes of the ceiling lamps in `m3s4`). The mirror of `m3s4` matches `d3d.ren`. The shadows, the poly grids and the cloak of Primal Hunt are not yet checked in play |
 | 4 | anisotropic filtering and antialiasing in the Display menus | done: Options, Graphics, Custom Performance: "Texture filtering" (up to Aniso 16x) and "Antialiasing" (up to 8x) (docs/MODERN.md, M-29 stage 4) |
+| 5 | the default renderer | done: `d3d9.ren` is the default of the modern builds, our `d3d.ren` is `d3d7.ren` beside it, and a config that names `d3d.ren` is changed one time (above; docs/MODERN.md, M-29 stage 5) |
 
 Not yet confirmed on Windows or under Proton.
 

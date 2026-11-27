@@ -1744,7 +1744,13 @@ RMode* ci_GetRenderModes()
 	{
 		do
 		{
+#ifdef AVP2SRC_MODERN
+			// M-29: a d3d.ren is left from an older modern build (ours is
+			// d3d7.ren now); the engine loads d3d9.ren for that name
+			if (!(findData.attrib & _A_SUBDIR) && _stricmp(findData.name, "d3d.ren"))
+#else
 			if (!(findData.attrib & _A_SUBDIR))
+#endif
 				sub_42de60(findData.name, &pModeList);
 		}
 		while (_findnext(hFind, &findData) != -1);

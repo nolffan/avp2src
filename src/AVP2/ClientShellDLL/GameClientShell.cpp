@@ -1517,6 +1517,29 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 #endif
 
 
+#ifdef AVP2SRC_MODERN
+	// M-29: the modern build's default renderer is d3d9.ren, and our d3d.ren
+	// is d3d7.ren there. A config from before (it names d3d.ren, as the
+	// retail autoexec.cfg does, or no renderer) gets d3d9.ren and its card
+	// once; the engine already loaded d3d9.ren for that name. A renderer
+	// that the player picks later (d3d7.ren too) stays.
+	hIsSet = g_pLTClient->GetConsoleVar("RenderD3D9");
+	if(!hIsSet || g_pLTClient->GetVarValueFloat(hIsSet) != 1.0f)
+	{
+		g_pLTClient->RunConsoleString("+RenderD3D9 1");
+
+		HCONSOLEVAR hDll = g_pLTClient->GetConsoleVar("RenderDll");
+		char* pDll = hDll ? g_pLTClient->GetVarValueString(hDll) : LTNULL;
+		if(!pDll || !pDll[0] || !_stricmp(pDll, "d3d.ren"))
+		{
+			g_pLTClient->RunConsoleString("+RenderDll d3d9.ren");
+			g_pLTClient->RunConsoleString("+CardDesc Direct3D9");
+			if(g_pLTClient->GetConsoleVar("Renderer"))
+				g_pLTClient->RunConsoleString("+Renderer Direct3D9");
+		}
+	}
+#endif
+
 	m_CheatMgr.Init();
 
 	//init the head bob mgr
@@ -1630,7 +1653,12 @@ DDWORD CGameClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 
             rMode.m_bHardware = LTFALSE;
 
+#ifdef AVP2SRC_MODERN
+			// M-29: the modern build's default renderer (its d3d.ren is d3d7.ren)
+			sprintf(rMode.m_RenderDLL, "d3d9.ren");
+#else
 			sprintf(rMode.m_RenderDLL, "d3d.ren");
+#endif
 			sprintf(rMode.m_InternalName, "");
 			sprintf(rMode.m_Description, "");
 
@@ -1990,7 +2018,12 @@ void CGameClientShell::SetMenuRenderMode(RMode *pMode)
 		// Okay, that didn't work, looks like we're stuck with software...
 		m_rMenuMode.m_bHardware = LTFALSE;
 
+#ifdef AVP2SRC_MODERN
+		// M-29: the modern build's default renderer (its d3d.ren is d3d7.ren)
+		sprintf(m_rMenuMode.m_RenderDLL, "d3d9.ren");
+#else
 		sprintf(m_rMenuMode.m_RenderDLL, "d3d.ren");
+#endif
 		sprintf(m_rMenuMode.m_InternalName, "");
 		sprintf(m_rMenuMode.m_Description, "");
 

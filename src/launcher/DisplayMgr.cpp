@@ -730,6 +730,12 @@ BOOL CDisplayModes::Init(const char* sDir, const char* sFile)
 		return(FALSE);
 	}
 
+#ifdef AVP2SRC_MODERN
+	// M-29: with no renderer in the config, the modern build's default,
+	// d3d9.ren (the config's renderer, read below, replaces it)
+	m_pCurRenderer = FindRenderer("d3d9.ren");
+#endif
+
 	SetDefaultModes();
 
 	ReadDisplayConfig(sFile);
@@ -795,6 +801,12 @@ CRenderer* CDisplayModes::AddRenderer(const char* sDll)
 CRenderer* CDisplayModes::FindRenderer(const char* sDll)
 {
 	if (!sDll) return(NULL);
+
+#ifdef AVP2SRC_MODERN
+	// M-29: as the engine: d3d.ren is d3d9.ren in the modern build (our
+	// d3d.ren is d3d7.ren there)
+	if (_stricmp(sDll, "d3d.ren") == 0) sDll = "d3d9.ren";
+#endif
 
 	POSITION pos = m_renderers.GetHeadPosition();
 	while (pos)
@@ -1051,7 +1063,13 @@ int CDisplayModes::FindRenderers(const char* sDir)
 	BOOL bMore = (hFind != -1);
 	while (bMore)
 	{
+#ifdef AVP2SRC_MODERN
+		// M-29: a d3d.ren is left from an older modern build (ours is
+		// d3d7.ren now); the engine loads d3d9.ren for that name
+		if (_stricmp(fileinfo.name, "d3d.ren") != 0 && AddRenderer(fileinfo.name))
+#else
 		if (AddRenderer(fileinfo.name))
+#endif
 		{
 			nCount++;
 		}
